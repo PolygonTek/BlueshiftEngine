@@ -25,11 +25,9 @@ How To Build
 
   1. Clone the repository `git clone --recursive git@bitbucket.org:PolygonTek/blueshift.git`
 
-  2. `cd blueshift`
+  2. Run `Copy-EngineData.bat` to copy essential data to the engine folder.
 
-  3. Run `Copy-EngineData.bat` to copy essential data to the engine folder.
-
-  4. Run `Build-Win64.bat` to build engine from the sources.
+  3. Run `Build-Win64.bat` to build engine from the sources.
 
 ## macOS and iOS
 
@@ -42,18 +40,16 @@ How To Build
 
   1. Clone the repository `git clone --recursive git@bitbucket.org:PolygonTek/blueshift.git`
 
-  2. `cd blueshift`
+  2. Run `Copy-EngineData.command` to copy essential data to the engine folder.
 
-  3. Run `Copy-EngineData.command` to copy essential data to the engine folder.
+  3. Run `Build-macOS.command` to build engine for macOS from the sources.
 
-  4. Run `Build-macOS.command` to build engine for macOS from the sources.
-
-  5. Run `Build-iOS.command` to build engine for iOS from the sources.
+  4. Run `Build-iOS.command` to build engine for iOS from the sources.
 
 License
 -------------------
 
-The Blueshift game engine source code is released under the Apache 2.0 license. Please see LICENSE.md for complete licensing information.
+The Blueshift game engine source code is released under the Apache 2.0 license. Please see [LICENSE.md](LICENSE.md) for complete licensing information.
 
 How To Contribute
 -------------------
