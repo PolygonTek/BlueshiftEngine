@@ -52,19 +52,19 @@
     <ClCompile Include="jni\main.cpp">
       <Filter>jni</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\Player\Precompiled.cpp" />
-    <ClCompile Include="..\..\..\Source\Player\Application.cpp" />
     <ClCompile Include="jni\dso_handle.c">
       <Filter>jni</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Precompiled.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\AndroidMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="jni\engine.h">
       <Filter>jni</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Player\PreCompiled.h" />
-    <ClInclude Include="..\..\..\Source\Player\resource.h" />
-    <ClInclude Include="..\..\..\Source\Player\Application.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Precompiled.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
   </ItemGroup>
   <ItemGroup>
     <AndroidBuild Include="AndroidManifest.xml" />

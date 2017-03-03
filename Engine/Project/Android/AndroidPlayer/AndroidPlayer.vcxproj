@@ -77,7 +77,7 @@
       <EchoCommandLines>true</EchoCommandLines>
     </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Player;..\..\..\Source\Engine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\zlib;..\..\..\Build\android-make\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-android\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CppLanguageStandard>gnu++1y</CppLanguageStandard>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <GccExceptionHandling>true</GccExceptionHandling>
@@ -98,7 +98,7 @@
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Player;..\..\..\Source\Engine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\zlib;..\..\..\Build\android-make\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-android\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CppLanguageStandard>gnu++1y</CppLanguageStandard>
       <GccExceptionHandling>true</GccExceptionHandling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
@@ -117,7 +117,7 @@
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Player;..\..\..\Source\Engine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\zlib;..\..\..\Build\android-make\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-android\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CppLanguageStandard>gnu++1y</CppLanguageStandard>
       <GccExceptionHandling>true</GccExceptionHandling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
@@ -137,18 +137,17 @@
     <None Include="res\values\strings.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Source\Player\Application.cpp" />
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Precompiled.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Precompiled.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\AndroidMain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="jni\dso_handle.c" />
     <ClCompile Include="jni\engine.cpp" />
     <ClCompile Include="jni\main.cpp" />
-    <ClInclude Include="..\..\..\Source\Player\Application.h" />
     <ClInclude Include="jni\engine.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\Source\Player\Precompiled.h" />
-    <ClInclude Include="..\..\..\Source\Player\resource.h" />
-    <ClCompile Include="..\..\..\Source\Player\Precompiled.cpp">
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <AndroidBuild Include="AndroidManifest.xml">
