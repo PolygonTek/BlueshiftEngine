@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\arm\arm_init.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\arm\filter_neon_intrinsics.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\png.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngerror.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngget.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngmem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngpread.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngread.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrio.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrtran.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrutil.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngset.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngtrans.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwio.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwrite.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwtran.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwutil.c" />
+  </ItemGroup>
+</Project>

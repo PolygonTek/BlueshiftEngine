@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="NsightTegraProject">
+    <NsightTegraProjectRevisionNumber>11</NsightTegraProjectRevisionNumber>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Tegra-Android">
+      <Configuration>Debug</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Tegra-Android">
+      <Configuration>Release</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Shipping|Tegra-Android">
+      <Configuration>Shipping</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5B3D054E-BE57-439E-8C5F-A8129D344AD2}</ProjectGuid>
+    <RootNamespace>LuaCpp</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++1y</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\LuaCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <GccExceptionHandling>true</GccExceptionHandling>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++1y</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\LuaCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <GccExceptionHandling>true</GccExceptionHandling>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++1y</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\LuaCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <GccExceptionHandling>true</GccExceptionHandling>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\LuaCpp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\BaseFunc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Class.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ClassFunc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Ctor.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Dtor.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ExceptionHandler.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ExceptionTypes.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Func.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\function.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\LuaRef.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\MetatableRegistry.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Obj.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ObjFunc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Searcher.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Module.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\LuaStack.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Reference.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Pointer.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Registry.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ResourceHandler.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Selector.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\State.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Traits.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Tuple.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Util.h" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\BaseFunc.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\MetatableRegistry.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\Selector.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\State.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\Util.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

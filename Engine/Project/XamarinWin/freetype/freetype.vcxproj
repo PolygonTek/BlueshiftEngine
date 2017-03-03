@@ -1,0 +1,328 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|Win32">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|Win32">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGUID>{F07B5211-BE78-4DD9-A4C1-9F28E786895F}</ProjectGUID>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>Win32</Platform>
+    <ProjectName>freetype</ProjectName>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\..\Build\XamarinWin\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">freetype_d</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\Build\XamarinWin\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">freetype</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">..\..\..\Build\XamarinWin\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">freetype</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">..\..\..\Build\XamarinWin\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">freetype</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">.lib</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\freetype\include</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Debug/</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAs>CompileAsC</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;DEBUG;_DEBUG;_UNICODE;UNICODE;FT2_BUILD_LIBRARY;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;DEBUG;_DEBUG;_UNICODE;UNICODE;FT2_BUILD_LIBRARY;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\..\Source\Dependencies\freetype\src\truetype;..\..\..\..\..\Source\Dependencies\freetype\src\sfnt;..\..\..\..\..\Source\Dependencies\freetype\src\autofit;..\..\..\..\..\Source\Dependencies\freetype\src\smooth;..\..\..\..\..\Source\Dependencies\freetype\src\raster;..\..\..\..\..\Source\Dependencies\freetype\src\psaux;..\..\..\..\..\Source\Dependencies\freetype\src\psnames;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>..\..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\..\Source\Dependencies\freetype\src\truetype;..\..\..\..\..\Source\Dependencies\freetype\src\sfnt;..\..\..\..\..\Source\Dependencies\freetype\src\autofit;..\..\..\..\..\Source\Dependencies\freetype\src\smooth;..\..\..\..\..\Source\Dependencies\freetype\src\raster;..\..\..\..\..\Source\Dependencies\freetype\src\psaux;..\..\..\..\..\Source\Dependencies\freetype\src\psnames;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\freetype\include</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Release/</AssemblerListingLocation>
+      <CompileAs>CompileAsC</CompileAs>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;FT2_BUILD_LIBRARY;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;FT2_BUILD_LIBRARY;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\..\Source\Dependencies\freetype\src\truetype;..\..\..\..\..\Source\Dependencies\freetype\src\sfnt;..\..\..\..\..\Source\Dependencies\freetype\src\autofit;..\..\..\..\..\Source\Dependencies\freetype\src\smooth;..\..\..\..\..\Source\Dependencies\freetype\src\raster;..\..\..\..\..\Source\Dependencies\freetype\src\psaux;..\..\..\..\..\Source\Dependencies\freetype\src\psnames;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>..\..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\..\Source\Dependencies\freetype\src\truetype;..\..\..\..\..\Source\Dependencies\freetype\src\sfnt;..\..\..\..\..\Source\Dependencies\freetype\src\autofit;..\..\..\..\..\Source\Dependencies\freetype\src\smooth;..\..\..\..\..\Source\Dependencies\freetype\src\raster;..\..\..\..\..\Source\Dependencies\freetype\src\psaux;..\..\..\..\..\Source\Dependencies\freetype\src\psnames;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\freetype\include</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>MinSizeRel/</AssemblerListingLocation>
+      <CompileAs>CompileAsC</CompileAs>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;FT2_BUILD_LIBRARY;CMAKE_INTDIR="MinSizeRel";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;FT2_BUILD_LIBRARY;CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\..\Source\Dependencies\freetype\src\truetype;..\..\..\..\..\Source\Dependencies\freetype\src\sfnt;..\..\..\..\..\Source\Dependencies\freetype\src\autofit;..\..\..\..\..\Source\Dependencies\freetype\src\smooth;..\..\..\..\..\Source\Dependencies\freetype\src\raster;..\..\..\..\..\Source\Dependencies\freetype\src\psaux;..\..\..\..\..\Source\Dependencies\freetype\src\psnames;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>..\..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\..\Source\Dependencies\freetype\src\truetype;..\..\..\..\..\Source\Dependencies\freetype\src\sfnt;..\..\..\..\..\Source\Dependencies\freetype\src\autofit;..\..\..\..\..\Source\Dependencies\freetype\src\smooth;..\..\..\..\..\Source\Dependencies\freetype\src\raster;..\..\..\..\..\Source\Dependencies\freetype\src\psaux;..\..\..\..\..\Source\Dependencies\freetype\src\psnames;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\freetype\include</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>RelWithDebInfo/</AssemblerListingLocation>
+      <CompileAs>CompileAsC</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;FT2_BUILD_LIBRARY;CMAKE_INTDIR="RelWithDebInfo";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;FT2_BUILD_LIBRARY;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\..\Source\Dependencies\freetype\src\truetype;..\..\..\..\..\Source\Dependencies\freetype\src\sfnt;..\..\..\..\..\Source\Dependencies\freetype\src\autofit;..\..\..\..\..\Source\Dependencies\freetype\src\smooth;..\..\..\..\..\Source\Dependencies\freetype\src\raster;..\..\..\..\..\Source\Dependencies\freetype\src\psaux;..\..\..\..\..\Source\Dependencies\freetype\src\psnames;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>..\..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\..\Source\Dependencies\freetype\src\truetype;..\..\..\..\..\Source\Dependencies\freetype\src\sfnt;..\..\..\..\..\Source\Dependencies\freetype\src\autofit;..\..\..\..\..\Source\Dependencies\freetype\src\smooth;..\..\..\..\..\Source\Dependencies\freetype\src\raster;..\..\..\..\..\Source\Dependencies\freetype\src\psaux;..\..\..\..\..\Source\Dependencies\freetype\src\psnames;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\freetype.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ft2build.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftadvanc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftautoh.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftbbox.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftbdf.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftbitmap.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftbzip2.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftcache.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftcffdrv.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftchapters.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftcid.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\fterrdef.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\fterrors.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftgasp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftglyph.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftgxval.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftgzip.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftimage.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftincrem.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftlcdfil.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftlist.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftlzw.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftmac.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftmm.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftmodapi.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftmoderr.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftotval.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftoutln.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftpfr.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftrender.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftsizes.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftsnames.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftstroke.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftsynth.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftsystem.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\fttrigon.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftttdrv.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\fttypes.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftwinfnt.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ftxf86.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\t1tables.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ttnameid.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\tttables.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\tttags.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\ttunpat.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\config\ftconfig.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\config\ftheader.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\config\ftmodule.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\config\ftoption.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\config\ftstdlib.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\autohint.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftcalc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftdebug.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftdriver.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftgloadr.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftmemory.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftobjs.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftpic.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftrfork.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftserv.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftstream.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\fttrace.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\ftvalid.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\internal.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\psaux.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\pshints.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\sfnt.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\t1types.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\freetype\include\internal\tttypes.h" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\autofit\autofit.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftadvanc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftbbox.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftbdf.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftbitmap.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftcalc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftcid.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftdbgmem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftdebug.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftfstype.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftgasp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftgloadr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftglyph.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftgxval.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftinit.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftlcdfil.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftmm.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftobjs.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftotval.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftoutln.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftpatent.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftpfr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftrfork.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftsnames.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftstream.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftstroke.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftsynth.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftsystem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\fttrigon.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\fttype1.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftutil.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftwinfnt.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftxf86.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\bdf\bdf.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\bzip2\ftbzip2.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\cache\ftcache.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\cff\cff.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\cid\type1cid.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\gzip\ftgzip.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\lzw\ftlzw.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\pcf\pcf.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\pfr\pfr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\psaux\psaux.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\pshinter\pshinter.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\psnames\psmodule.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\raster\raster.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\sfnt\sfnt.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\smooth\smooth.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\truetype\truetype.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\type1\type1.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\type42\type42.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\winfonts\winfnt.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

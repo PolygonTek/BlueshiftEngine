@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\BaseFunc.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\MetatableRegistry.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\Selector.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\State.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\LuaCpp\Util.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\LuaCpp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\BaseFunc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Class.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ClassFunc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Ctor.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Dtor.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ExceptionHandler.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ExceptionTypes.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Func.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\function.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\LuaRef.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\MetatableRegistry.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Obj.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ObjFunc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Searcher.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Module.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\LuaStack.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Reference.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Pointer.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Registry.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\ResourceHandler.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Selector.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\State.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Traits.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Tuple.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\LuaCpp\Util.h" />
+  </ItemGroup>
+</Project>

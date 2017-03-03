@@ -1,0 +1,123 @@
+Output Directory: ..\..\..\Build\Android\$(Platform)\$(Configuration)\
+Intermidiate Directory: ..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\
+Min Android API Level : Android 5.0 (android-21)
+Target Android API Level : Android 5.0 (android-21)
+Additional Include Directory: ..\..\..\Source\Dependencies\jsoncpp\include
+Preprocesson Definition: JSON_USE_EXCEPTION=0
+
+
+
+cmake_minimum_required(VERSION 2.8.12)
+
+project(Bullet)
+
+set(SRC_FILES
+"btBulletCollisionCommon.h"  "btBulletDynamicsCommon.h"  "Bullet-C-Api.h"  "BulletCollision\BroadphaseCollision\btAxisSweep3.h"  "BulletCollision\BroadphaseCollision\btBroadphaseInterface.h"  "BulletCollision\BroadphaseCollision\btBroadphaseProxy.h"  
+"BulletCollision\BroadphaseCollision\btCollisionAlgorithm.h"  "BulletCollision\BroadphaseCollision\btDbvt.h"  "BulletCollision\BroadphaseCollision\btDbvtBroadphase.h"  "BulletCollision\BroadphaseCollision\btDispatcher.h"  
+"BulletCollision\BroadphaseCollision\btMultiSapBroadphase.h"  "BulletCollision\BroadphaseCollision\btOverlappingPairCache.h"  "BulletCollision\BroadphaseCollision\btOverlappingPairCallback.h"  "BulletCollision\BroadphaseCollision\btQuantizedBvh.h"
+"BulletCollision\BroadphaseCollision\btSimpleBroadphase.h"  "BulletCollision\BroadphaseCollision\btAxisSweep3.cpp"  "BulletCollision\BroadphaseCollision\btBroadphaseProxy.cpp"  "BulletCollision\BroadphaseCollision\btCollisionAlgorithm.cpp"  
+"BulletCollision\BroadphaseCollision\btDbvt.cpp"  "BulletCollision\BroadphaseCollision\btDbvtBroadphase.cpp"  "BulletCollision\BroadphaseCollision\btDispatcher.cpp"  "BulletCollision\BroadphaseCollision\btMultiSapBroadphase.cpp"  
+"BulletCollision\BroadphaseCollision\btOverlappingPairCache.cpp"  "BulletCollision\BroadphaseCollision\btQuantizedBvh.cpp"  "BulletCollision\BroadphaseCollision\btSimpleBroadphase.cpp"  
+"BulletCollision\CollisionDispatch\btActivatingCollisionAlgorithm.h"  "BulletCollision\CollisionDispatch\btBoxBoxCollisionAlgorithm.h"  "BulletCollision\CollisionDispatch\btBox2dBox2dCollisionAlgorithm.h" 
+"BulletCollision\CollisionDispatch\btBoxBoxDetector.h"  "BulletCollision\CollisionDispatch\btCollisionConfiguration.h"  "BulletCollision\CollisionDispatch\btCollisionCreateFunc.h"  
+"BulletCollision\CollisionDispatch\btCollisionDispatcher.h"  "BulletCollision\CollisionDispatch\btCollisionObject.h"  "BulletCollision\CollisionDispatch\btCollisionObjectWrapper.h"  "BulletCollision\CollisionDispatch\btCollisionWorld.h" 
+"BulletCollision\CollisionDispatch\btCompoundCollisionAlgorithm.h"  "BulletCollision\CollisionDispatch\btCompoundCompoundCollisionAlgorithm.h"  "BulletCollision\CollisionDispatch\btConvexConcaveCollisionAlgorithm.h"  
+"BulletCollision\CollisionDispatch\btConvexConvexAlgorithm.h"  "BulletCollision\CollisionDispatch\btConvex2dConvex2dAlgorithm.h"  "BulletCollision\CollisionDispatch\btConvexPlaneCollisionAlgorithm.h"  
+"BulletCollision\CollisionDispatch\btDefaultCollisionConfiguration.h"  "BulletCollision\CollisionDispatch\btEmptyCollisionAlgorithm.h"  "BulletCollision\CollisionDispatch\btGhostObject.h" 
+"BulletCollision\CollisionDispatch\btHashedSimplePairCache.h"  "BulletCollision\CollisionDispatch\btManifoldResult.h"  "BulletCollision\CollisionDispatch\btSimulationIslandManager.h" 
+"BulletCollision\CollisionDispatch\btSphereBoxCollisionAlgorithm.h"  "BulletCollision\CollisionDispatch\btSphereSphereCollisionAlgorithm.h"  "BulletCollision\CollisionDispatch\btSphereTriangleCollisionAlgorithm.h"
+"BulletCollision\CollisionDispatch\btUnionFind.h"  "BulletCollision\CollisionDispatch\SphereTriangleDetector.h"  "BulletCollision\CollisionDispatch\btActivatingCollisionAlgorithm.cpp" 
+"BulletCollision\CollisionDispatch\btBoxBoxCollisionAlgorithm.cpp"  "BulletCollision\CollisionDispatch\btBox2dBox2dCollisionAlgorithm.cpp"  "BulletCollision\CollisionDispatch\btBoxBoxDetector.cpp" 
+"BulletCollision\CollisionDispatch\btCollisionDispatcher.cpp"  "BulletCollision\CollisionDispatch\btCollisionObject.cpp"  "BulletCollision\CollisionDispatch\btCollisionWorld.cpp"  "BulletCollision\CollisionDispatch\btCompoundCollisionAlgorithm.cpp" 
+"BulletCollision\CollisionDispatch\btCompoundCompoundCollisionAlgorithm.cpp"  "BulletCollision\CollisionDispatch\btConvexConcaveCollisionAlgorithm.cpp"  "BulletCollision\CollisionDispatch\btConvexConvexAlgorithm.cpp"  
+"BulletCollision\CollisionDispatch\btConvexPlaneCollisionAlgorithm.cpp"  "BulletCollision\CollisionDispatch\btConvex2dConvex2dAlgorithm.cpp"  "BulletCollision\CollisionDispatch\btDefaultCollisionConfiguration.cpp"  
+"BulletCollision\CollisionDispatch\btEmptyCollisionAlgorithm.cpp"  "BulletCollision\CollisionDispatch\btGhostObject.cpp"  "BulletCollision\CollisionDispatch\btHashedSimplePairCache.cpp"  "BulletCollision\CollisionDispatch\btInternalEdgeUtility.cpp"  
+"BulletCollision\CollisionDispatch\btInternalEdgeUtility.h"  "BulletCollision\CollisionDispatch\btManifoldResult.cpp"  "BulletCollision\CollisionDispatch\btSimulationIslandManager.cpp"  "BulletCollision\CollisionDispatch\btSphereBoxCollisionAlgorithm.cpp"  
+"BulletCollision\CollisionDispatch\btSphereSphereCollisionAlgorithm.cpp"  "BulletCollision\CollisionDispatch\btSphereTriangleCollisionAlgorithm.cpp"
+ 
+"BulletCollision\CollisionDispatch\btUnionFind.cpp" "BulletCollision\CollisionDispatch\SphereTriangleDetector.cpp" "BulletCollision\CollisionShapes\btBoxShape.h" "BulletCollision\CollisionShapes\btBox2dShape.h" 
+"BulletCollision\CollisionShapes\btBvhTriangleMeshShape.h" "BulletCollision\CollisionShapes\btCapsuleShape.h" "BulletCollision\CollisionShapes\btCollisionMargin.h" "BulletCollision\CollisionShapes\btCollisionShape.h" 
+"BulletCollision\CollisionShapes\btCompoundShape.h" "BulletCollision\CollisionShapes\btConcaveShape.h" "BulletCollision\CollisionShapes\btConeShape.h" "BulletCollision\CollisionShapes\btConvexHullShape.h" 
+"BulletCollision\CollisionShapes\btConvexInternalShape.h" "BulletCollision\CollisionShapes\btConvexPointCloudShape.h" "BulletCollision\CollisionShapes\btConvexPolyhedron.h" "BulletCollision\CollisionShapes\btConvexShape.h" 
+"BulletCollision\CollisionShapes\btConvex2dShape.h" "BulletCollision\CollisionShapes\btConvexTriangleMeshShape.h" "BulletCollision\CollisionShapes\btCylinderShape.h" "BulletCollision\CollisionShapes\btEmptyShape.h" 
+"BulletCollision\CollisionShapes\btHeightfieldTerrainShape.h" "BulletCollision\CollisionShapes\btMaterial.h" "BulletCollision\CollisionShapes\btMinkowskiSumShape.h" "BulletCollision\CollisionShapes\btMultimaterialTriangleMeshShape.h" 
+"BulletCollision\CollisionShapes\btMultiSphereShape.h" "BulletCollision\CollisionShapes\btOptimizedBvh.h" "BulletCollision\CollisionShapes\btPolyhedralConvexShape.h" "BulletCollision\CollisionShapes\btScaledBvhTriangleMeshShape.h" 
+"BulletCollision\CollisionShapes\btShapeHull.h" "BulletCollision\CollisionShapes\btSphereShape.h" "BulletCollision\CollisionShapes\btStaticPlaneShape.h" "BulletCollision\CollisionShapes\btStridingMeshInterface.h" 
+"BulletCollision\CollisionShapes\btTetrahedronShape.h" "BulletCollision\CollisionShapes\btTriangleBuffer.h" "BulletCollision\CollisionShapes\btTriangleCallback.h" "BulletCollision\CollisionShapes\btTriangleIndexVertexArray.h"
+"BulletCollision\CollisionShapes\btTriangleIndexVertexMaterialArray.h" "BulletCollision\CollisionShapes\btTriangleInfoMap.h" "BulletCollision\CollisionShapes\btTriangleMesh.h" "BulletCollision\CollisionShapes\btTriangleMeshShape.h"
+"BulletCollision\CollisionShapes\btTriangleShape.h" "BulletCollision\CollisionShapes\btUniformScalingShape.h" "BulletCollision\CollisionShapes\btBoxShape.cpp" "BulletCollision\CollisionShapes\btBox2dShape.cpp" 
+"BulletCollision\CollisionShapes\btBvhTriangleMeshShape.cpp" "BulletCollision\CollisionShapes\btCapsuleShape.cpp" "BulletCollision\CollisionShapes\btCollisionShape.cpp" "BulletCollision\CollisionShapes\btCompoundShape.cpp" 
+"BulletCollision\CollisionShapes\btConcaveShape.cpp" "BulletCollision\CollisionShapes\btConeShape.cpp" "BulletCollision\CollisionShapes\btConvexHullShape.cpp" "BulletCollision\CollisionShapes\btConvexInternalShape.cpp" 
+"BulletCollision\CollisionShapes\btConvexPointCloudShape.cpp" "BulletCollision\CollisionShapes\btConvexPolyhedron.cpp" "BulletCollision\CollisionShapes\btConvexShape.cpp" "BulletCollision\CollisionShapes\btConvex2dShape.cpp" 
+"BulletCollision\CollisionShapes\btConvexTriangleMeshShape.cpp" "BulletCollision\CollisionShapes\btCylinderShape.cpp" "BulletCollision\CollisionShapes\btEmptyShape.cpp" "BulletCollision\CollisionShapes\btHeightfieldTerrainShape.cpp" 
+"BulletCollision\CollisionShapes\btMinkowskiSumShape.cpp" "BulletCollision\CollisionShapes\btMultimaterialTriangleMeshShape.cpp" "BulletCollision\CollisionShapes\btMultiSphereShape.cpp" "BulletCollision\CollisionShapes\btOptimizedBvh.cpp" 
+"BulletCollision\CollisionShapes\btPolyhedralConvexShape.cpp" "BulletCollision\CollisionShapes\btScaledBvhTriangleMeshShape.cpp" "BulletCollision\CollisionShapes\btShapeHull.cpp" "BulletCollision\CollisionShapes\btSphereShape.cpp" 
+"BulletCollision\CollisionShapes\btStaticPlaneShape.cpp" "BulletCollision\CollisionShapes\btStridingMeshInterface.cpp" "BulletCollision\CollisionShapes\btTetrahedronShape.cpp" "BulletCollision\CollisionShapes\btTriangleBuffer.cpp" 
+"BulletCollision\CollisionShapes\btTriangleCallback.cpp" "BulletCollision\CollisionShapes\btTriangleIndexVertexArray.cpp" "BulletCollision\CollisionShapes\btTriangleIndexVertexMaterialArray.cpp" "BulletCollision\CollisionShapes\btTriangleMesh.cpp" 
+
+"BulletCollision\CollisionShapes\btTriangleMeshShape.cpp" "BulletCollision\CollisionShapes\btUniformScalingShape.cpp" "BulletCollision\Gimpact\btBoxCollision.h" "BulletCollision\Gimpact\btClipPolygon.h" "BulletCollision\Gimpact\btContactProcessing.h" 
+"BulletCollision\Gimpact\btGenericPoolAllocator.h" "BulletCollision\Gimpact\btGeometryOperations.h" "BulletCollision\Gimpact\btGImpactBvh.h" "BulletCollision\Gimpact\btGImpactCollisionAlgorithm.h" "BulletCollision\Gimpact\btGImpactMassUtil.h" 
+"BulletCollision\Gimpact\btGImpactQuantizedBvh.h" "BulletCollision\Gimpact\btGImpactShape.h" "BulletCollision\Gimpact\btQuantization.h" "BulletCollision\Gimpact\btTriangleShapeEx.h" "BulletCollision\Gimpact\gim_array.h" 
+"BulletCollision\Gimpact\gim_basic_geometry_operations.h" "BulletCollision\Gimpact\gim_bitset.h" "BulletCollision\Gimpact\gim_box_collision.h" "BulletCollision\Gimpact\gim_box_set.h" "BulletCollision\Gimpact\gim_clip_polygon.h" 
+"BulletCollision\Gimpact\gim_contact.h" "BulletCollision\Gimpact\gim_geom_types.h" "BulletCollision\Gimpact\gim_geometry.h" "BulletCollision\Gimpact\gim_hash_table.h" "BulletCollision\Gimpact\gim_linear_math.h" "BulletCollision\Gimpact\gim_math.h" 
+"BulletCollision\Gimpact\gim_memory.h" "BulletCollision\Gimpact\gim_radixsort.h" "BulletCollision\Gimpact\gim_tri_collision.h" "BulletCollision\Gimpact\btContactProcessing.cpp" "BulletCollision\Gimpact\btGenericPoolAllocator.cpp" 
+"BulletCollision\Gimpact\btGImpactBvh.cpp" "BulletCollision\Gimpact\btGImpactCollisionAlgorithm.cpp" "BulletCollision\Gimpact\btGImpactQuantizedBvh.cpp" "BulletCollision\Gimpact\btGImpactShape.cpp" "BulletCollision\Gimpact\btTriangleShapeEx.cpp" 
+"BulletCollision\Gimpact\gim_box_set.cpp" "BulletCollision\Gimpact\gim_contact.cpp" "BulletCollision\Gimpact\gim_memory.cpp" "BulletCollision\Gimpact\gim_tri_collision.cpp" "BulletCollision\NarrowPhaseCollision\btContinuousConvexCollision.h" 
+"BulletCollision\NarrowPhaseCollision\btConvexCast.h" "BulletCollision\NarrowPhaseCollision\btConvexPenetrationDepthSolver.h" "BulletCollision\NarrowPhaseCollision\btDiscreteCollisionDetectorInterface.h" "BulletCollision\NarrowPhaseCollision\btGjkConvexCast.h" 
+"BulletCollision\NarrowPhaseCollision\btGjkEpa2.h" "BulletCollision\NarrowPhaseCollision\btGjkEpaPenetrationDepthSolver.h" "BulletCollision\NarrowPhaseCollision\btGjkPairDetector.h" "BulletCollision\NarrowPhaseCollision\btManifoldPoint.h" 
+"BulletCollision\NarrowPhaseCollision\btMinkowskiPenetrationDepthSolver.h" "BulletCollision\NarrowPhaseCollision\btPersistentManifold.h" "BulletCollision\NarrowPhaseCollision\btPointCollector.h" "BulletCollision\NarrowPhaseCollision\btRaycastCallback.h" 
+"BulletCollision\NarrowPhaseCollision\btSimplexSolverInterface.h" "BulletCollision\NarrowPhaseCollision\btSubSimplexConvexCast.h" "BulletCollision\NarrowPhaseCollision\btVoronoiSimplexSolver.h" 
+"BulletCollision\NarrowPhaseCollision\btPolyhedralContactClipping.h" "BulletCollision\NarrowPhaseCollision\btContinuousConvexCollision.cpp" "BulletCollision\NarrowPhaseCollision\btConvexCast.cpp" "BulletCollision\NarrowPhaseCollision\btGjkConvexCast.cpp" 
+"BulletCollision\NarrowPhaseCollision\btGjkEpa2.cpp" "BulletCollision\NarrowPhaseCollision\btGjkEpaPenetrationDepthSolver.cpp" "BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp" 
+"BulletCollision\NarrowPhaseCollision\btMinkowskiPenetrationDepthSolver.cpp" "BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp" "BulletCollision\NarrowPhaseCollision\btRaycastCallback.cpp" 
+"BulletCollision\NarrowPhaseCollision\btSubSimplexConvexCast.cpp" "BulletCollision\NarrowPhaseCollision\btVoronoiSimplexSolver.cpp" "BulletCollision\NarrowPhaseCollision\btPolyhedralContactClipping.cpp" 
+"BulletDynamics\Character\btCharacterControllerInterface.h" "BulletDynamics\Character\btKinematicCharacterController.h" "BulletDynamics\Character\btKinematicCharacterController.cpp" "BulletDynamics\ConstraintSolver\btConeTwistConstraint.h" 
+"BulletDynamics\ConstraintSolver\btConstraintSolver.h" "BulletDynamics\ConstraintSolver\btContactConstraint.h" "BulletDynamics\ConstraintSolver\btContactSolverInfo.h" "BulletDynamics\ConstraintSolver\btFixedConstraint.h" 
+"BulletDynamics\ConstraintSolver\btGearConstraint.h" "BulletDynamics\ConstraintSolver\btGeneric6DofConstraint.h" "BulletDynamics\ConstraintSolver\btGeneric6DofSpringConstraint.h" "BulletDynamics\ConstraintSolver\btHinge2Constraint.h" 
+"BulletDynamics\ConstraintSolver\btHingeConstraint.h" "BulletDynamics\ConstraintSolver\btJacobianEntry.h" "BulletDynamics\ConstraintSolver\btPoint2PointConstraint.h" "BulletDynamics\ConstraintSolver\btSequentialImpulseConstraintSolver.h" 
+"BulletDynamics\ConstraintSolver\btSliderConstraint.h" "BulletDynamics\ConstraintSolver\btSolve2LinearConstraint.h" "BulletDynamics\ConstraintSolver\btSolverBody.h" "BulletDynamics\ConstraintSolver\btSolverConstraint.h"
+"BulletDynamics\ConstraintSolver\btTypedConstraint.h" "BulletDynamics\ConstraintSolver\btUniversalConstraint.h" "BulletDynamics\ConstraintSolver\btConeTwistConstraint.cpp" "BulletDynamics\ConstraintSolver\btContactConstraint.cpp" 
+"BulletDynamics\ConstraintSolver\btFixedConstraint.cpp" "BulletDynamics\ConstraintSolver\btGearConstraint.cpp" "BulletDynamics\ConstraintSolver\btGeneric6DofConstraint.cpp" "BulletDynamics\ConstraintSolver\btGeneric6DofSpringConstraint.cpp"
+"BulletDynamics\ConstraintSolver\btHinge2Constraint.cpp" "BulletDynamics\ConstraintSolver\btHingeConstraint.cpp" "BulletDynamics\ConstraintSolver\btPoint2PointConstraint.cpp" "BulletDynamics\ConstraintSolver\btSequentialImpulseConstraintSolver.cpp" 
+"BulletDynamics\ConstraintSolver\btSliderConstraint.cpp" "BulletDynamics\ConstraintSolver\btSolve2LinearConstraint.cpp" "BulletDynamics\ConstraintSolver\btTypedConstraint.cpp" "BulletDynamics\ConstraintSolver\btUniversalConstraint.cpp" 
+"BulletDynamics\Dynamics\btActionInterface.h" "BulletDynamics\Dynamics\btDiscreteDynamicsWorld.h" "BulletDynamics\Dynamics\btDynamicsWorld.h" "BulletDynamics\Dynamics\btSimpleDynamicsWorld.h" "BulletDynamics\Dynamics\btRigidBody.h" 
+"BulletDynamics\Dynamics\btDiscreteDynamicsWorld.cpp" "BulletDynamics\Dynamics\btRigidBody.cpp" "BulletDynamics\Dynamics\btSimpleDynamicsWorld.cpp" "BulletDynamics\Dynamics\Bullet"-"C"-"API.cpp" "BulletDynamics\Vehicle\btRaycastVehicle.h" 
+"BulletDynamics\Vehicle\btVehicleRaycaster.h" "BulletDynamics\Vehicle\btWheelInfo.h" "BulletDynamics\Vehicle\btRaycastVehicle.cpp" "BulletDynamics\Vehicle\btWheelInfo.cpp" "BulletDynamics\Featherstone\btMultiBody.h" 
+"BulletDynamics\Featherstone\btMultiBodyConstraintSolver.h" "BulletDynamics\Featherstone\btMultiBodyDynamicsWorld.h" "BulletDynamics\Featherstone\btMultiBodyLink.h" "BulletDynamics\Featherstone\btMultiBodyLinkCollider.h" 
+"BulletDynamics\Featherstone\btMultiBodySolverConstraint.h" "BulletDynamics\Featherstone\btMultiBodyConstraint.h" "BulletDynamics\Featherstone\btMultiBodyJointLimitConstraint.h" "BulletDynamics\Featherstone\btMultiBodyConstraint.h"
+"BulletDynamics\Featherstone\btMultiBodyPoint2Point.h" "BulletDynamics\Featherstone\btMultiBodyJointMotor.h" "BulletDynamics\Featherstone\btMultiBody.cpp" "BulletDynamics\Featherstone\btMultiBodyConstraintSolver.cpp" 
+"BulletDynamics\Featherstone\btMultiBodyDynamicsWorld.cpp" "BulletDynamics\Featherstone\btMultiBodyJointLimitConstraint.cpp" "BulletDynamics\Featherstone\btMultiBodyConstraint.cpp" "BulletDynamics\Featherstone\btMultiBodyPoint2Point.cpp" 
+"BulletDynamics\Featherstone\btMultiBodyJointMotor.cpp" "BulletDynamics\MLCPSolvers\btDantzigLCP.h" "BulletDynamics\MLCPSolvers\btDantzigSolver.h" "BulletDynamics\MLCPSolvers\btMLCPSolver.h" "BulletDynamics\MLCPSolvers\btMLCPSolverInterface.h" 
+"BulletDynamics\MLCPSolvers\btPATHSolver.h" "BulletDynamics\MLCPSolvers\btSolveProjectedGaussSeidel.h" "BulletDynamics\MLCPSolvers\btDantzigLCP.cpp" "BulletDynamics\MLCPSolvers\btMLCPSolver.cpp" "BulletSoftBody\btSoftBody.h" 
+"BulletSoftBody\btSoftBodyData.h" "BulletSoftBody\btSoftBodyConcaveCollisionAlgorithm.h" "BulletSoftBody\btSoftBodyHelpers.h" "BulletSoftBody\btSoftBodyRigidBodyCollisionConfiguration.h" "BulletSoftBody\btSoftRigidCollisionAlgorithm.h" 
+"BulletSoftBody\btSoftRigidDynamicsWorld.h" "BulletSoftBody\btSoftSoftCollisionAlgorithm.h" "BulletSoftBody\btSparseSDF.h" "BulletSoftBody\btSoftBodySolvers.h" "BulletSoftBody\btDefaultSoftBodySolver.h" "BulletSoftBody\btSoftBodySolverVertexBuffer.h" 
+"BulletSoftBody\btSoftBody.cpp" "BulletSoftBody\btSoftBodyConcaveCollisionAlgorithm.cpp" "BulletSoftBody\btSoftBodyHelpers.cpp" "BulletSoftBody\btSoftBodyRigidBodyCollisionConfiguration.cpp" "BulletSoftBody\btSoftRigidCollisionAlgorithm.cpp"
+"BulletSoftBody\btSoftRigidDynamicsWorld.cpp" "BulletSoftBody\btSoftSoftCollisionAlgorithm.cpp" "BulletSoftBody\btDefaultSoftBodySolver.cpp" "LinearMath\btAabbUtil2.h" "LinearMath\btAlignedAllocator.h" "LinearMath\btAlignedObjectArray.h" 
+"LinearMath\btConvexHull.h" "LinearMath\btConvexHullComputer.h" "LinearMath\btDefaultMotionState.h" "LinearMath\btGeometryUtil.h" "LinearMath\btGrahamScan2dConvexHull.h" "LinearMath\btHashMap.h" "LinearMath\btIDebugDraw.h" "LinearMath\btList.h" 
+"LinearMath\btMatrix3x3.h" "LinearMath\btMinMax.h" "LinearMath\btMotionState.h" "LinearMath\btPolarDecomposition.h" "LinearMath\btPoolAllocator.h" "LinearMath\btQuadWord.h" "LinearMath\btQuaternion.h" "LinearMath\btQuickprof.h" "LinearMath\btRandom.h"
+"LinearMath\btScalar.h" "LinearMath\btSerializer.h" "LinearMath\btStackAlloc.h" "LinearMath\btTransform.h" "LinearMath\btTransformUtil.h" "LinearMath\btVector3.h" "LinearMath\btAlignedAllocator.cpp" "LinearMath\btConvexHull.cpp" 
+"LinearMath\btConvexHullComputer.cpp" "LinearMath\btGeometryUtil.cpp" "LinearMath\btPolarDecomposition.cpp" "LinearMath\btQuickprof.cpp" "LinearMath\btSerializer.cpp" "LinearMath\btVector3.cpp" "ConvexDecomposition\ConvexDecomposition.h" 
+"ConvexDecomposition\cd_vector.h" "ConvexDecomposition\concavity.h" "ConvexDecomposition\bestfitobb.h" "ConvexDecomposition\ConvexBuilder.h" "ConvexDecomposition\cd_wavefront.h" "ConvexDecomposition\fitsphere.h" "ConvexDecomposition\meshvolume.h"
+"ConvexDecomposition\raytri.h" "ConvexDecomposition\vlookup.h" "ConvexDecomposition\bestfit.h" "ConvexDecomposition\cd_hull.h" "ConvexDecomposition\bestfitobb.cpp" "ConvexDecomposition\ConvexBuilder.cpp" "ConvexDecomposition\cd_wavefront.cpp"
+"ConvexDecomposition\fitsphere.cpp" "ConvexDecomposition\meshvolume.cpp" "ConvexDecomposition\raytri.cpp" "ConvexDecomposition\vlookup.cpp" "ConvexDecomposition\bestfit.cpp" "ConvexDecomposition\cd_hull.cpp" "ConvexDecomposition\ConvexDecomposition.cpp"
+"ConvexDecomposition\concavity.cpp" "ConvexDecomposition\float_math.cpp" "ConvexDecomposition\planetri.cpp" "ConvexDecomposition\splitplane.cpp" 
+)
+
+include_directories(
+	${PROJECT_SOURCE_DIR}
+)
+
+auto_source_group(${SRC_FILES})
+
+add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
+
+target_include_directories(${PROJECT_NAME}
+	PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Dependencies)
+set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}\Library\${ENGINE_BUILD_PLATFORM_DIR})
+set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}\Library\${ENGINE_BUILD_PLATFORM_DIR})

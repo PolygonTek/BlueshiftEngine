@@ -1,0 +1,78 @@
+in vec4 in_position : POSITION;
+in vec3 in_normal : NORMAL;
+in vec4 in_color : COLOR;
+in vec2 in_st : TEXCOORD0;
+in vec4 in_tangent : TEXCOORD1;
+
+out vec3 v2f_color;
+out vec2 v2f_texCoord;
+out vec3 v2f_eyeVector;
+out vec2 v2f_distortion;
+out vec3 v2f_tangentToWorldMatrixS;
+out vec3 v2f_tangentToWorldMatrixT;
+out vec3 v2f_tangentToWorldMatrixR;
+
+#ifdef INSTANCED_DRAW
+	struct entityData_t {
+		vec4 worldMatrixS;
+		vec4 worldMatrixT;
+		vec4 worldMatrixR;
+		vec3 localViewOrigin;
+		vec4 textureMatrixS;
+		vec4 textureMatrixT;
+		vec4 vertexColorScale;
+		vec4 vertexColorAdd;
+		vec4 constantColor;
+	};
+
+	uniform entityData_t entityData[256];
+	#define ED entityData[gl_InstanceIDARB]
+#else
+	uniform vec4 worldMatrixS;
+	uniform vec4 worldMatrixT;
+	uniform vec4 worldMatrixR;
+	uniform vec3 localViewOrigin;
+	uniform vec4 textureMatrixS;
+	uniform vec4 textureMatrixT;
+	uniform vec4 vertexColorScale;
+	uniform vec4 vertexColorAdd;
+	uniform vec4 constantColor;
+#endif
+
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 modelViewMatrixTranspose;
+uniform mat4 projectionMatrixTranspose;
+
+void main() {
+#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+	vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
+    vec4 vTangent = in_tangent * 2.0 - 1.0;
+#else
+	vec3 vNormal = in_normal.xyz;
+    vec4 vTangent = in_tangent;
+#endif
+
+	vec3 tan = vTangent.xyz;
+	vec3 bitan = cross(vNormal, vTangent.xyz) * vTangent.w;
+	mat3 TBN = mat3(tan, bitan, vNormal);
+
+	vec3 E = in_position.xyz - localViewOrigin.xyz;
+
+	v2f_eyeVector.xyz = E * TBN;
+
+	v2f_tangentToWorldMatrixS = worldMatrixS.xyz * TBN;
+	v2f_tangentToWorldMatrixT = worldMatrixT.xyz * TBN;
+	v2f_tangentToWorldMatrixR = worldMatrixR.xyz * TBN;
+
+	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
+	v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+
+	v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
+
+	vec4 temp = vec4(1.0, 0.0, 0.0, 1.0);
+	temp.z = dot(modelViewMatrixTranspose[2], in_position);
+	v2f_distortion.x = dot(temp, projectionMatrixTranspose[0]);
+	v2f_distortion.y = dot(temp, projectionMatrixTranspose[3]);
+
+	gl_Position = modelViewProjectionMatrix * in_position;
+}

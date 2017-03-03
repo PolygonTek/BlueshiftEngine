@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Renderer\Precompiled.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\OpenGL\OpenGL.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLBuffer.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLCommon.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLQuery.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLRenderTarget.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLShader.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLState.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLSync.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLTexture.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLVertexFormat.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\OpenGL\OpenGLES3.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\OpenGL\AndroidOpenGL.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\RGLPlatformAndroid.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer\Private\OpenGL\ggles3\ggl.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Renderer\Precompiled.h" />
+    <ClInclude Include="..\..\..\Source\Renderer\Public\Renderer.h" />
+    <ClInclude Include="..\..\..\Source\Renderer\Public\RendererInterface.h" />
+    <ClInclude Include="..\..\..\Source\Renderer\Public\RendererGL.h" />
+    <ClInclude Include="..\..\..\Source\Renderer\Private\OpenGL\OpenGL.h" />
+    <ClInclude Include="..\..\..\Source\Renderer\Private\RGLInternal.h" />
+    <ClInclude Include="..\..\..\Source\Renderer\Private\OpenGL\OpenGLES3.h" />
+    <ClInclude Include="..\..\..\Source\Renderer\Private\OpenGL\AndroidOpenGL.h" />
+    <ClInclude Include="..\..\..\Source\Renderer\Private\OpenGL\ggles3\ggl.h" />
+  </ItemGroup>
+</Project>

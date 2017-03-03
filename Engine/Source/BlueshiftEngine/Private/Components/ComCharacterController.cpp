@@ -1,0 +1,509 @@
+#include "Precompiled.h"
+#include "Render/Render.h"
+#include "Physics/Collider.h"
+#include "Components/ComTransform.h"
+#include "Components/ComCollider.h"
+#include "Components/ComRigidBody.h"
+#include "Components/ComCharacterController.h"
+#include "Game/Entity.h"
+#include "Game/GameWorld.h"
+#include "Game/CastResult.h"
+
+BE_NAMESPACE_BEGIN
+
+OBJECT_DECLARATION("Character Controller", ComCharacterController, Component)
+BEGIN_EVENTS(ComCharacterController)
+END_EVENTS
+BEGIN_PROPERTIES(ComCharacterController)
+    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.1f), "10", PropertySpec::ReadWrite),
+    PROPERTY_RANGED_FLOAT("capsuleRadius", "Capsule Radius", "", Rangef(0.01, 2, 0.01), "0.5", PropertySpec::ReadWrite),
+    PROPERTY_RANGED_FLOAT("capsuleHeight", "Capsule Height", "", Rangef(0.01, 2, 0.01), "0.8", PropertySpec::ReadWrite),
+    PROPERTY_RANGED_FLOAT("stepOffset", "Step Offset", "", Rangef(0, 1.0, 0.1), "0.5", PropertySpec::ReadWrite),
+    PROPERTY_RANGED_FLOAT("slopeLimit", "Slope Limit Angle", "", Rangef(0, 90, 1), "60", PropertySpec::ReadWrite),
+END_PROPERTIES
+
+void ComCharacterController::RegisterProperties() {
+    //REGISTER_PROPERTY("Mass", float, mass, "10", PropertySpec::ReadWrite).SetRange(0, 100, 0.1f);
+    //REGISTER_ACCESSOR_PROPERTY("Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, "0.5", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
+    //REGISTER_ACCESSOR_PROPERTY("Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, "0.8", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
+    //REGISTER_ACCESSOR_PROPERTY("Step Offset", float, GetStepOffset, SetStepOffset, "0.8", PropertySpec::ReadWrite).SetRange(0.0, 1.0, 0.1);
+    //REGISTER_ACCESSOR_PROPERTY("Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, "0.8", PropertySpec::ReadWrite).SetRange(0, 90, 1);
+}
+
+ComCharacterController::ComCharacterController() {
+    collider = nullptr;
+    body = nullptr;
+    correctionSensor = nullptr;
+
+    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComCharacterController::PropertyChanged);
+}
+
+ComCharacterController::~ComCharacterController() {
+    Purge(false);
+}
+
+bool ComCharacterController::IsConflictComponent(const MetaObject &componentClass) const {
+    if (componentClass.IsTypeOf(ComCollider::metaObject)) {
+        return true;
+    }
+
+    return false;
+}
+
+void ComCharacterController::Purge(bool chainPurge) {
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+        collider = nullptr;
+    }
+
+    if (correctionSensor) {
+        physicsSystem.DestroyCollidable(correctionSensor);
+        correctionSensor = nullptr;
+    }
+
+    if (body) {
+        physicsSystem.DestroyCollidable(body);
+        body = nullptr;
+    }
+
+    if (chainPurge) {
+        Component::Purge();
+    }
+}
+
+void ComCharacterController::Init() {
+    Purge();
+
+    Component::Init();
+
+    //
+    mass = props->Get("mass").As<float>();
+
+    capsuleRadius = MeterToUnit(props->Get("capsuleRadius").As<float>());
+    capsuleHeight = MeterToUnit(props->Get("capsuleHeight").As<float>());
+
+    stepOffset = MeterToUnit(props->Get("stepOffset").As<float>());
+    slopeDotZ = Math::Cos(DEG2RAD(props->Get("slopeLimit").As<float>())); 
+    //
+
+    ComTransform *transform = GetEntity()->GetTransform();
+
+    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComCharacterController::PhysicsUpdated, SignalObject::Unique);
+}
+
+void ComCharacterController::Awake() {
+    if (!body) {
+        ComTransform *transform = GetEntity()->GetTransform();
+
+        Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
+        Vec3 scaledCenter = transform->GetScale() * center;
+        float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
+        float scaledHeight = transform->GetScale().z * capsuleHeight;
+
+        collider = colliderManager.AllocUnnamedCollider();
+        collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight, scaledRadius);
+
+        PhysCollidableDesc desc;
+        desc.type = PhysCollidable::Type::RigidBody;
+        desc.kinematic = true;
+        desc.ccd = false;
+        desc.mass = mass;
+        desc.restitution = 0.5f;
+        desc.friction = 1.0f;
+        desc.rollingFriction = 1.0f;
+        desc.linearDamping = 0.0f;
+        desc.angularDamping = 0.0f;
+        desc.origin = transform->GetOrigin();
+        desc.axis = transform->GetAxis();
+
+        PhysShapeDesc shapeDesc;
+        shapeDesc.localOrigin.SetFromScalar(0);
+        shapeDesc.localAxis.SetIdentity();
+        shapeDesc.collider = collider;
+        desc.shapes.Append(shapeDesc);
+
+        body = (PhysRigidBody *)physicsSystem.CreateCollidable(&desc);
+        body->SetAngularFactor(Vec3(0, 0, 0));
+        body->SetCharacter(true);
+        body->SetUserPointer(this);
+        //body->SetCollisionListener(this);
+        
+        desc.type = PhysCollidable::Sensor;
+        desc.kinematic = false;
+        desc.ccd = false;
+        desc.mass = 0.0f;
+        desc.restitution = 0.0f;
+        desc.friction = 0.0f;
+        desc.rollingFriction = 0.0f;
+        desc.linearDamping = 0.0f;
+        desc.angularDamping = 0.0f;
+
+        correctionSensor = (PhysSensor *)physicsSystem.CreateCollidable(&desc);
+        correctionSensor->SetCollisionFilterMask(PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::DefaultGroup);
+        correctionSensor->SetDebugDraw(false);
+
+        if (IsEnabled()) {
+            body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+
+            correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        }
+    }
+}
+
+void ComCharacterController::Update() {
+    if (!IsEnabled()) {
+        return;
+    }
+
+    origin = GetEntity()->GetTransform()->GetOrigin();
+    
+    RecoverFromPenetration();
+
+    GroundTrace();
+
+    GetEntity()->GetTransform()->SetOrigin(origin);
+}
+
+void ComCharacterController::Enable(bool enable) {
+    if (enable) {
+        if (!IsEnabled()) {
+            if (body) {
+                body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+            }
+            if (correctionSensor) {
+                correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+            }
+            Component::Enable(true);
+        }
+    } else {
+        if (IsEnabled()) {
+            if (body) {
+                body->RemoveFromWorld();
+            }
+            if (correctionSensor) {
+                correctionSensor->RemoveFromWorld();
+            }
+            Component::Enable(false);
+        }
+    }
+}
+
+void ComCharacterController::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+    if (selected) {
+        const ComTransform *transform = GetEntity()->GetTransform();
+
+        Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
+        float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
+        float scaledHeight = transform->GetScale().z * capsuleHeight;
+
+        Vec3 worldCenter = transform->GetWorldMatrix() * center;
+
+        renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
+        renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);
+    }
+}
+
+void ComCharacterController::GroundTrace() {
+    Vec3 p1 = origin;
+    Vec3 p2 = p1;
+
+    // 땅에 닿아있는지 체크하기위해 z 축으로 1.5cm 만큼 내려서 이동시켜 본다
+    p2.z -= CentiToUnit(1.5);
+    if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2, 
+        PhysCollidable::CharacterGroup, PhysCollidable::StaticGroup | PhysCollidable::DefaultGroup, groundTrace)) {
+        onGround = false;
+        isValidGroundTrace = false;
+        return;
+    }
+
+    isValidGroundTrace = true;
+
+    // FIXME: speration normal 이 아닌 표면의 normal 과 비교해야 한다
+    if (groundTrace.normal.z < slopeDotZ) {
+        onGround = false;
+        return;
+    }
+
+    onGround = true;
+}
+
+void ComCharacterController::RecoverFromPenetration() {
+    Array<Contact> contacts;
+    
+    int numPenetrationLoop = 0;
+    while (1) {
+        numPenetrationLoop++;
+        // 최대 4 번까지 iteration
+        if (numPenetrationLoop > 4) {
+            break;
+        }
+
+        contacts.Clear();
+
+        correctionSensor->SetOrigin(origin);
+        correctionSensor->GetContacts(contacts);
+
+        float maxPen = 0;
+
+        for (int i = 0; i < contacts.Count(); i++) {
+            Contact &contact = contacts[i];
+            if (!contact.object->IsStatic()) {
+                continue;
+            }
+
+            if (contact.dist < maxPen) {
+                maxPen = contact.dist;
+
+                // 한번에 밀어내지 않고, 가장 깊이 penetration 된 contact 부터 조금씩 밀어낸다.
+                origin -= contact.normal * contact.dist * 0.25f;	
+            }
+        }
+
+        // 다 밀어냈다면 종료
+        if (maxPen == 0) {
+            break;
+        }	
+    }
+}
+
+bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
+    const float backoffScale = 1.001f;
+    CastResultEx trace;
+    Vec3 moveVec = moveVector;
+    Vec3 slideVec;
+
+    // bump normal 리스트를 작성한다. 
+    Vec3 bumpNormals[5];
+    int numBumpNormals = 0;
+    
+    if (isValidGroundTrace) {
+        // 땅 바닥과 슬라이드
+        moveVec = moveVec.Slide(groundTrace.normal, backoffScale);
+
+        // 땅 바닥 normal 을 bump normal 리스트에 추가
+        bumpNormals[numBumpNormals++] = groundTrace.normal;
+    }
+
+    if (moveVec.LengthSqr() == 0) {
+        return false;
+    }
+
+    // 시작 move 방향을 bump normal 리스트에 추가
+    bumpNormals[numBumpNormals] = moveVec;
+    bumpNormals[numBumpNormals].Normalize();
+    numBumpNormals++;
+
+    float f = 1.0f;	
+    for (int bumpCount = 0; bumpCount < 4; bumpCount++) {
+        Vec3 targetPos = origin + moveVec * f;
+
+        // origin 에서 targetPos 로 capsule cast 
+        GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, origin, targetPos, 
+            PhysCollidable::CharacterGroup, PhysCollidable::StaticGroup | PhysCollidable::DefaultGroup, trace);
+
+        // 이동 가능한 fraction 만큼 origin 이동
+        if (trace.fraction > 0.0f) {
+            origin = trace.endpos;
+            numBumpNormals = 0;
+        }
+        
+        // cast 결과 충돌이 없다면 종료
+        if (trace.fraction == 1.0f) {
+            break;
+        }
+
+        // 이동한 만큼 이동거리를 빼준다.
+        f -= f * trace.fraction;
+
+        //BE_LOG(L"%i %f\n", bumpCount, trace.normal.z);	
+        //GetGameWorld()->GetRenderWorld()->SetDebugColor(Vec4Color::cyan, Vec4(0, 0, 0, 0));
+        //GetGameWorld()->GetRenderWorld()->DebugLine(trace.point, trace.point + trace.normal * 10, 1, false, 10000);
+
+        // 누적된 bump normals 의 최대 개수를 초과했다면..
+        if (numBumpNormals >= COUNT_OF(bumpNormals)) {
+            // 여기로 오면 안된다. 혹시나 만약 오게되면 여기서 종료.
+            return true;
+        }
+
+        // 같은 평면에 부딛혔다면 moveVec 을 normal 방향으로 약간 nudge 시킨다.
+        int i = 0;
+        for (; i < numBumpNormals; i++) {
+            if (trace.normal.Dot(bumpNormals[i]) > 0.99f) {
+                moveVec += trace.normal * 0.01f;
+                break;
+            }
+        }
+
+        if (i < numBumpNormals) {
+            continue;
+        }
+
+        // 부딪힌 normal 을 추가
+        bumpNormals[numBumpNormals++] = trace.normal;
+
+        for (int i = 0; i < numBumpNormals; i++) {
+            // moveVec 방향으로 부딪힐 수 없는 normal 은 제외
+            if (moveVec.Dot(bumpNormals[i]) >= 0.0f) {
+                continue;
+            }
+
+            // 부딪힌 normal 로 slide
+            slideVec = moveVec.Slide(bumpNormals[i], backoffScale);
+
+            for (int j = 0; j < numBumpNormals; j++) {
+                if (j == i) {
+                    continue;
+                }
+
+                if (slideVec.Dot(bumpNormals[j]) >= 0.0f) {
+                    continue;
+                }
+
+                // 또 다시 다른 평면으로 slide 
+                slideVec = slideVec.Slide(bumpNormals[j], backoffScale);
+
+                if (slideVec.Dot(bumpNormals[i]) >= 0.0f) {
+                    continue;
+                }
+                
+                // 두번째 slide vector 가 첫번째 부딛힌 normal 과 또 부딛힌다면, cross 방향으로 slide
+                Vec3 slideDir = bumpNormals[i].Cross(bumpNormals[j]);
+                slideDir.Normalize();
+                slideVec = slideDir * slideDir.Dot(moveVec);
+
+                slideVec += (bumpNormals[i] + bumpNormals[j]) * 0.01f;
+                
+                for (int k = 0; k < numBumpNormals; k++) {
+                    if (k == i || k == j) {
+                        continue;
+                    }
+
+                    if (slideVec.Dot(bumpNormals[k]) >= 0.0f) {
+                        continue;
+                    }
+
+                    // 다른 normal 과 또 부딛힌다면 slide 를 멈춘다.
+                    return true;
+                }
+            }
+
+            moveVec = slideVec;
+            break;
+        }
+    }
+
+    return false;
+}
+
+bool ComCharacterController::Move(const Vec3 &moveVector) {
+    if (!IsEnabled()) {
+        return false;
+    }
+
+    origin = GetEntity()->GetTransform()->GetOrigin();
+    
+    if (moveVector.z > 0.0f) {
+        onGround = false;
+        isValidGroundTrace = false;
+    }
+
+    bool stuck = SlideMove(moveVector);
+    
+    body->SetOrigin(origin);
+
+    GetEntity()->GetTransform()->SetOrigin(origin);
+
+    return stuck;
+}
+
+void ComCharacterController::TransformUpdated(const ComTransform *transform) {
+    if (body) {
+        body->SetOrigin(transform->GetOrigin());
+        body->SetAxis(transform->GetAxis());
+    }
+}
+
+void ComCharacterController::PhysicsUpdated(const PhysRigidBody *body) {
+    if (this->body) {
+        this->body->SetOrigin(body->GetOrigin());
+        this->body->SetAxis(body->GetAxis());
+    }
+}
+
+void ComCharacterController::PropertyChanged(const char *classname, const char *propName) {
+    if (!IsInitalized()) {
+        return;
+    }
+
+    if (!Str::Cmp(propName, "mass")) {
+        SetMass(props->Get("mass").As<float>());
+        return;
+    }
+
+    if (!Str::Cmp(propName, "capsuleRadius")) {
+        SetCapsuleRadius(props->Get("capsuleRadius").As<float>());
+        return;
+    }
+
+    if (!Str::Cmp(propName, "capsuleHeight")) {    
+        SetCapsuleHeight(props->Get("capsuleHeight").As<float>());
+        return;
+    }
+
+    if (!Str::Cmp(propName, "stepOffset")) {
+        SetStepOffset(props->Get("stepOffset").As<float>());
+        return;
+    } 
+
+    if (!Str::Cmp(propName, "slopeLimit")) {
+        SetSlopeLimit(props->Get("slopeLimit").As<float>());
+        return;
+    }
+
+    Component::PropertyChanged(classname, propName);
+}
+
+float ComCharacterController::GetMass() const {
+    return mass;
+}
+
+void ComCharacterController::SetMass(const float mass) {
+    this->mass = mass;
+}
+
+float ComCharacterController::GetCapsuleRadius() const {
+    return UnitToMeter(capsuleRadius);
+}
+
+void ComCharacterController::SetCapsuleRadius(const float capsuleRadius) {
+    this->capsuleRadius = MeterToUnit(capsuleRadius);
+}
+
+float ComCharacterController::GetCapsuleHeight() const {
+    return UnitToMeter(capsuleHeight);
+}
+
+void ComCharacterController::SetCapsuleHeight(const float capsuleHeight) {
+    this->capsuleHeight = MeterToUnit(capsuleHeight);
+}
+
+float ComCharacterController::GetStepOffset() const {
+    return UnitToMeter(stepOffset);
+}
+
+void ComCharacterController::SetStepOffset(const float stepOffset) {
+    this->stepOffset = MeterToUnit(stepOffset);
+}
+
+float ComCharacterController::GetSlopeLimit() const {
+    return RAD2DEG(Math::ACos(slopeDotZ));
+}
+
+void ComCharacterController::SetSlopeLimit(const float slopeLimit) {
+    this->slopeDotZ = Math::Cos(DEG2RAD(slopeLimit));
+}
+
+BE_NAMESPACE_END

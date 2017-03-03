@@ -1,0 +1,310 @@
+cmake_minimum_required(VERSION 2.8.12)
+
+project(BlueshiftPlayer)
+
+set(ALL_FILES
+  Precompiled.h
+  Precompiled.cpp
+  Application.h
+  Precompiled.h
+  Application.cpp
+)
+
+if (XAMARIN)
+  list(APPEND ALL_FILES
+    XamarinIOSMain.cpp
+  )
+  if (IOS) 
+    list(APPEND ALL_FILES
+       	Binding/XMCustomView.h 
+	Binding/XMCustomView.m 
+	Binding/XMCustomViewDelegate.h 
+	Binding/XMUtilities.h
+	Binding/XMUtilities.m
+	Binding/XMBindingLibrarySample/XMBindingLibrarySample-Prefix.pch
+	Binding/XMBindingLibrarySample/XMBindingLibrarySample.h
+	Binding/XMBindingLibrarySample/XMBindingLibrarySample.m
+    )
+endif ()
+elseif (ANDROID)
+  list(APPEND ALL_FILES
+    AndroidMain.cpp
+  )
+elseif (WIN32)
+  list(APPEND ALL_FILES
+    WinMain.cpp
+    WinResource.h
+    ResourceFiles/player.rc
+    ResourceFiles/player.ico
+    ResourceFiles/small.ico
+  )
+elseif (APPLE)
+  if (IOS)
+    list(APPEND ALL_FILES
+      iOSMain.mm
+      iOSLaunchScreen.xib
+      Assets.xcassets
+    )
+  else ()
+    list(APPEND ALL_FILES
+      macOSMain.mm
+      macOSMainMenu.xib
+    )
+  endif ()
+endif ()
+
+auto_source_group(${ALL_FILES})
+
+include_directories(
+  ${PROJECT_SOURCE_DIR}
+  ${ENGINE_INCLUDE_DIR}/BlueshiftEngine/Public
+  ${ENGINE_INCLUDE_DIR}/Dependencies
+)
+if (ANDROID)
+	include_directories(
+		${ENGINE_INCLUDE_DIR}/Dependencies/nvidia
+	)
+endif ()
+enable_precompiled_header(Precompiled.h Precompiled.cpp ALL_FILES)
+
+SET(BS_APP_NAME "Blueshift Player" CACHE STRING "BS_APP_NAME variable defaulting")
+SET(BS_APP_IDENTIFIER "com.polygontek.BlueshiftPlayer" CACHE STRING "BS_APP_IDENTIFIER variable defaulting")
+SET(BS_APP_VERSION "1.0" CACHE STRING "BS_APP_VERSION variable defaulting")
+SET(BS_PRODUCT_NAME "BlueshiftPlayer" CACHE STRING "BS_PRODUCT_NAME variable defaulting")
+
+if (XAMARIN)
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
+    set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+    set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+    set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
+    set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
+
+    #APPLE
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++0x")
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO")
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES")
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu99")
+    #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS NO)
+    #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] YES)
+    if (WITHDEBUG)
+        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP NO)
+    else ()
+        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP YES)
+        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] NO)
+    endif ()
+
+    if (IOS)
+		add_framework(${PROJECT_NAME} Foundation)
+		add_framework(${PROJECT_NAME} UIKit)
+		add_framework(${PROJECT_NAME} OpenGLES)
+		add_framework(${PROJECT_NAME} CoreGraphics)
+		add_framework(${PROJECT_NAME} QuartzCore)
+		add_framework(${PROJECT_NAME} OpenAL)
+		add_framework(${PROJECT_NAME} AudioToolbox)
+		add_framework(${PROJECT_NAME} AVFoundation)
+	endif ()
+    target_link_libraries(${PROJECT_NAME} 
+        zlib
+        minizip
+        libjpeg
+        libpng
+        libpvrt
+        libogg
+        libvorbis
+        rg_etc1
+        freetype
+        jsoncpp
+        Bullet
+        HACD
+        lua
+        LuaCpp
+		luasocket
+        BlueshiftEngine
+    )
+	if (ANDROID)
+	    target_link_libraries(${PROJECT_NAME} nvidia)
+	endif ()
+	 
+else ()
+    if (ANDROID)
+		add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
+	else ()
+		add_executable(${PROJECT_NAME} WIN32 MACOSX_BUNDLE ${ALL_FILES})
+	endif ()
+
+    if (BUILD_ENGINE)
+      set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
+    endif ()
+
+    if (NOT IOS)
+      set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+      set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
+      set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+      set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
+    endif ()
+
+    if (WIN32)      
+      find_package(OpenGL REQUIRED)
+      target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
+      target_link_libraries(${PROJECT_NAME} winmm.lib imm32.lib dxguid.lib dsound.lib ws2_32.lib)
+      if (MSVC)
+        set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)
+      endif ()
+    elseif (APPLE)
+      # App name
+      set(CMAKEVAR_APP_NAME ${BS_APP_NAME})
+      # App version
+      set(CMAKEVAR_BUNDLE_SHORT_VERSION_STRING ${BS_APP_VERSION})
+      # Bundle version
+      set(CMAKEVAR_BUNDLE_VERSION "1")
+
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_NAME ${BS_PRODUCT_NAME})
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER ${BS_APP_IDENTIFIER})
+
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++0x")
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO")
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES")
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu99")
+      #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS NO)
+      #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] YES)
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP YES)
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] NO)
+      #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_PREFIX_HEADER ${CMAKE_CURRENT_LIST_DIR}/Precompiled.h)
+      #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES")
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_INSTALL_PATH "/Applications")
+      set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_SKIP_INSTALL "NO")
+
+      if (IOS)
+        #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_DEVELOPMENT_TEAM XXX)
+
+        #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET 8.2)
+        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
+        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer")
+        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon")
+
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_LIST_DIR}/iOSplist.in)
+
+        set_source_files_properties(iOSLaunchScreen.xib Assets.xcassets PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+
+        add_framework(${PROJECT_NAME} Foundation)
+        add_framework(${PROJECT_NAME} UIKit)
+        add_framework(${PROJECT_NAME} OpenGLES)
+        add_framework(${PROJECT_NAME} CoreGraphics)
+        add_framework(${PROJECT_NAME} QuartzCore)
+        add_framework(${PROJECT_NAME} OpenAL)
+        add_framework(${PROJECT_NAME} AudioToolbox)
+        add_framework(${PROJECT_NAME} AVFoundation)
+      else ()
+        set(CMAKEVAR_COPYRIGHT "Copyright (c) 2014 PolygonTek. All rights reserved.")
+
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_LIST_DIR}/macOSplist.in)
+
+        set_source_files_properties(macOSMainMenu.xib PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+        #source_group("${Resource}" FILES macOSMainMenu.xib)
+
+        add_framework(${PROJECT_NAME} Foundation)
+        add_framework(${PROJECT_NAME} AppKit)
+        add_framework(${PROJECT_NAME} Carbon)
+        add_framework(${PROJECT_NAME} OpenGL)
+        add_framework(${PROJECT_NAME} CoreGraphics)
+        add_framework(${PROJECT_NAME} CoreVideo)
+        add_framework(${PROJECT_NAME} OpenAL)
+        add_framework(${PROJECT_NAME} AudioToolbox)
+        add_framework(${PROJECT_NAME} AVFoundation)
+      endif ()
+    endif ()
+
+    if (BUILD_ENGINE)
+      target_link_libraries(${PROJECT_NAME}
+        BlueshiftEngine
+      )
+      if (IOS)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+          #COMMAND rm -rf \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\"
+          COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Data\"
+          COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Config\"
+          COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Scripts\"
+          COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Data\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+          COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+          COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+          COMMENT "Copying data files"
+          USES_TERMINAL
+        )
+      endif ()
+    elseif (BUILD_PLAYER)
+      set(LIB_FILES
+        zlib
+        minizip
+        libjpeg
+        libpng
+        libpvrt
+        libogg
+        libvorbis
+        rg_etc1
+        freetype
+        jsoncpp
+        Bullet
+        HACD
+        lua
+        LuaCpp
+		luasocket
+        BlueshiftEngine
+      )
+		if (ANDROID)
+			list(APPEND LIB_FILES nvidia android GLESv3 EGL OpenSLES)
+		endif ()
+  
+
+      if (WIN32)
+        foreach (FILE ${LIB_FILES})
+          add_library(${FILE} STATIC IMPORTED)
+
+          set_target_properties(${FILE} PROPERTIES
+            IMPORTED_LOCATION_DEBUG   ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/Debug/${FILE}${CMAKE_DEBUG_POSTFIX}.lib
+            IMPORTED_LOCATION_RELEASE ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/Release/${FILE}.lib)
+        endforeach()
+      elseif (APPLE)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+          #COMMAND rm -rf \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\"
+          COMMAND mkdir -p \"$(PROJECT_DIR)/Scripts\"
+          COMMAND cp -Rf \"$(PROJECT_DIR)/Data\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+          COMMAND cp -Rf \"$(PROJECT_DIR)/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+          COMMAND cp -Rf \"$(PROJECT_DIR)/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+          COMMENT "Copying data files"
+          USES_TERMINAL
+        )
+
+        foreach (FILE ${LIB_FILES})
+          add_library(${FILE} STATIC IMPORTED)
+
+          set_target_properties(${FILE} PROPERTIES
+            IMPORTED_LOCATION_DEBUG   ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/Debug/${FILE}${CMAKE_DEBUG_POSTFIX}.a
+            IMPORTED_LOCATION_RELEASE ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/Release/${FILE}.a)
+        endforeach()
+      endif ()
+
+      target_link_libraries(${PROJECT_NAME} ${LIB_FILES})
+    #  target_link_libraries(${PROJECT_NAME}
+    #    debug zlib${CMAKE_DEBUG_POSTFIX} optimized zlib
+    #    debug minizip${CMAKE_DEBUG_POSTFIX} optimized minizip
+    #    debug libjpeg${CMAKE_DEBUG_POSTFIX} optimized libjpeg
+    #    debug libpng${CMAKE_DEBUG_POSTFIX} optimized libpng
+    #    debug libpvrt${CMAKE_DEBUG_POSTFIX} optimized libpvrt
+    #    debug jsoncpp${CMAKE_DEBUG_POSTFIX} optimized jsoncpp
+    #    debug freetype${CMAKE_DEBUG_POSTFIX} optimized freetype
+    #    debug Bullet${CMAKE_DEBUG_POSTFIX} optimized Bullet
+    #    debug HACD${CMAKE_DEBUG_POSTFIX} optimized HACD
+    #    debug Core${CMAKE_DEBUG_POSTFIX} optimized BlueshiftEngine
+    #  )
+    endif ()
+	if (ANDROID)
+		set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -landroid -lGLESv3 -lEGL -lOpenSLES")
+	endif ()
+
+endif ()
+

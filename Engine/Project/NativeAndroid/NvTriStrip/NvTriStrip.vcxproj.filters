@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\NvTriStrip\src\NvTriStrip\NvTriStrip.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\NvTriStrip\src\NvTriStrip\NvTriStripObjects.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\NvTriStrip\src\NvTriStrip\VertexCache.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\NvTriStrip\include\NvTriStrip.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\NvTriStrip\src\NvTriStrip\NvTriStripObjects.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\NvTriStrip\src\NvTriStrip\VertexCache.h" />
+  </ItemGroup>
+</Project>

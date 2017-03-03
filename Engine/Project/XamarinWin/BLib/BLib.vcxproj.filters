@@ -1,0 +1,254 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\BLib\Precompiled.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\BLib.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Checksum\Checksum_CRC32.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Checksum\Checksum_MD5.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Common\Heap.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Common\Str.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Common\WStr.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Containers\HashIndex.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\Image.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageColorSpace.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageConvert.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageDecompressPVRTC.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageDecompressETC.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile_bmp.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile_dds.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile_pvr.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile_hdr.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile_jpg.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile_pcx.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile_png.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFile_tga.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageFormat.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageProcess.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Image\ImageResize.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Dxt\DxtDecoder.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Dxt\DxtEncoder.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\AABB.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Frustum.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Matrix4.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Quaternion.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Vector3.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Angles.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Half.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\OBB.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Rect.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Vector4.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\CQuaternion.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Math.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Plane.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Rotation.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Complex.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Matrix2.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Pluecker.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Sphere.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Cylinder.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Matrix3.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Point.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Math\Vector2.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Simd\Simd.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Simd\Simd_AVX.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Simd\Simd_Generic.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Simd\Simd_SSE4.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\cpuid.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\PlatformBaseProcess.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\PlatformBaseFile.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\PlatformBaseThread.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\PlatformBaseTime.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\File\File.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\File\FileSystem.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\File\FileMapping.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\File\ZipArchiver.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\ByteOrder.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\CmdArgs.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\Cmds.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\CVars.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\Timespan.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\DateTime.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\Dict.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\Expr.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\Lexer.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\WLexer.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Utils\Task.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\Windows\PlatformWinProcess.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\Windows\PlatformWinFile.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\Windows\PlatformWinThread.cpp" />
+    <ClCompile Include="..\..\..\Source\BLib\Private\Platform\Windows\PlatformWinTime.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\BLib\Precompiled.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\BLib.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\BLibCommon.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Checksum\Checksum_CRC32.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Checksum\Checksum_MD5.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Common\Heap.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Common\Range.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Common\Str.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Common\Variant.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Common\WStr.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Common\Algorithm.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\Array.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\BinSearch.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\HashIndex.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\HashMap.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\HashTable.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\Hierarchy.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\LinkList.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\List.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\Pair.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\Stack.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\Queue.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\StrList.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\StrPool.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Containers\LinkedList.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Image\Image.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Dxt\DxtCodec.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Dxt\DxtDecoder.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Dxt\DxtEncoder.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\AABB.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Angles.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Complex.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\CQuaternion.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Cylinder.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Frustum.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Half.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Math.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Matrix.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Matrix2.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Matrix3.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Matrix4.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\OBB.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Plane.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Pluecker.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Point.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Quaternion.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Random.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Ray.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Rect.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Rotation.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Sphere.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Vector.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Vector2.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Vector3.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Math\Vector4.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\Simd.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\Simd_AVX.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\Simd_Generic.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\Simd_SSE4.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\smmintrin_emu.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\immintrin_emu.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\SSE\sse.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\SSE\sseb.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\SSE\ssef.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Simd\SSE\ssei.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\cpuid.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\Intrinsics.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\PlatformAtomic.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\PlatformProcess.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\PlatformFile.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\PlatformThread.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\PlatformTime.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\File\File.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\File\FileSystem.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\File\FileMapping.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\File\ZipArchiver.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\ByteOrder.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\CmdArgs.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\Cmds.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\CVars.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\Timespan.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\DateTime.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\Dict.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\Expr.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\Lexer.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\RemQual.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\WLexer.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Utils\Task.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Private\Image\ImageInternal.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\Windows\PlatformWinProcess.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\Windows\PlatformWinFile.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\Windows\PlatformWinThread.h" />
+    <ClInclude Include="..\..\..\Source\BLib\Public\Platform\Windows\PlatformWinTime.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Private\Checksum">
+      <UniqueIdentifier>{3A3EDBA6-371A-47B5-8844-06AE97EC9E1C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Common">
+      <UniqueIdentifier>{ECE47F2B-B1FE-405E-B4CE-1994111CFF43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Containers">
+      <UniqueIdentifier>{8CC80ADD-2219-42A9-B0DA-02ADC752F00B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Image">
+      <UniqueIdentifier>{B2E31D42-7DB0-48E6-B6D4-2178CFD3A6B7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Dxt">
+      <UniqueIdentifier>{76D4F4CA-BE1B-4B1B-BD63-D0E30C63DA25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Math">
+      <UniqueIdentifier>{F093F784-F01D-4EEE-A1F8-27746217CAAD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Simd">
+      <UniqueIdentifier>{4B0E59A3-3B91-4382-9136-0727612D6F8A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Platform">
+      <UniqueIdentifier>{D738384D-26D3-4271-B55B-E3320E455D77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\File">
+      <UniqueIdentifier>{22996713-F34B-43B1-8429-E1E284161736}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Utils">
+      <UniqueIdentifier>{1494FB11-B9C6-467F-A413-8639F7160C6F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public">
+      <UniqueIdentifier>{445A5EED-E3E4-4E5D-82F8-3D0B462E41A7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private">
+      <UniqueIdentifier>{52E839F2-EE0C-474A-8A6F-B7968D79C764}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Checksum">
+      <UniqueIdentifier>{2C7A31CF-8553-4BCF-9B37-9C9ABD6F32BE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Common">
+      <UniqueIdentifier>{52EA6B4A-63DF-420A-A0AD-9CA16CA0B692}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Containers">
+      <UniqueIdentifier>{3EAC8AC0-2019-4D22-B1B7-03C8DA43FCAB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Image">
+      <UniqueIdentifier>{8637AC2B-818F-4113-8687-B389D9FE05EA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Dxt">
+      <UniqueIdentifier>{8CD7DD07-1FEC-41F7-8C2D-F62148A71732}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Math">
+      <UniqueIdentifier>{0B452068-9946-49A8-A70B-F4E75411BBF3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Simd">
+      <UniqueIdentifier>{F1521226-72F3-4B1C-8F39-EC4B701B6737}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Platform">
+      <UniqueIdentifier>{13DF4BDD-2E12-4ED2-8F64-C02FD4AD7E20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\File">
+      <UniqueIdentifier>{0C52F5E4-7605-4729-9447-C77DF3C05199}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Utils">
+      <UniqueIdentifier>{8F41F459-35BF-4065-B7E4-AABE5CE38545}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Simd\SSE">
+      <UniqueIdentifier>{68CBF1B8-CD52-4BCA-BF52-21A694F347DC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Platform\Windows">
+      <UniqueIdentifier>{A56D4105-6C09-49FB-B2AB-B90B39BE9E1B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Platform\Windows">
+      <UniqueIdentifier>{2B1C17E9-1412-409E-8D41-08490B3BAB33}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

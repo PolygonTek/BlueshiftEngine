@@ -1,0 +1,87 @@
+#pragma once
+
+#include "Script/LuaVM.h"
+#include "Component.h"
+
+BE_NAMESPACE_BEGIN
+
+class Collision;
+class ScriptAsset;
+
+class ComScript : public Component {
+public:
+    OBJECT_PROTOTYPE(ComScript);
+
+    ComScript();
+    virtual ~ComScript();
+
+    void                    InitPropertySpec(Json::Value &jsonComponent);
+
+    virtual void            GetPropertySpecList(Array<const PropertySpec *> &pspecs) const override;
+
+    virtual bool            AllowSameComponent() const override { return true; }
+
+    virtual void            Purge(bool chainPurge = true) override;
+
+    virtual void            Init() override;
+
+    virtual void            Awake() override;
+
+    virtual void            Start() override;
+
+    virtual void            Update() override;
+
+    virtual void            LateUpdate() override;
+
+    const char *            GetSandboxName() const { return sandboxName.c_str(); }
+
+    template <typename... Args>
+    void                    CallFunc(const char *funcName, Args&&... args);
+
+    virtual void            OnPointerEnter();
+    virtual void            OnPointerExit();
+    virtual void            OnPointerOver();
+    virtual void            OnPointerDown();
+    virtual void            OnPointerUp();
+    virtual void            OnPointerDrag();
+
+    virtual void            OnCollisionEnter(const Collision &collision);
+    virtual void            OnCollisionExit(const Collision &collision);
+    virtual void            OnCollisionStay(const Collision &collision);
+
+    virtual void            OnSensorEnter(const Entity *entity);
+    virtual void            OnSensorExit(const Entity *entity);
+    virtual void            OnSensorStay(const Entity *entity);
+    
+    void                    OnApplicationTerminate();
+    void                    OnApplicationPause(bool pause);
+
+protected:
+    void                    InitPropertySpecImpl(const Guid &scriptGuid);
+    bool                    LoadScriptWithSandboxed(const char *filename, const char *sandboxName);
+    void                    SetScriptProperties();
+
+    void                    ChangeScript(const Guid &scriptGuid);
+    void                    ScriptReloaded();
+
+    const Guid              GetScript() const;
+    void                    SetScript(const Guid &guid);
+
+    void                    PropertyChanged(const char *classname, const char *propName);
+
+    ScriptAsset *           scriptAsset;
+    Str                     sandboxName;
+    LuaCpp::Selector        sandbox;
+
+    Array<const PropertySpec *> scriptPropertySpecs;
+};
+
+template <typename... Args>
+BE_INLINE void ComScript::CallFunc(const char *funcName, Args&&... args) {
+    auto func = sandbox[funcName];
+    if (func.IsFunction()) {
+        func(std::forward<Args>(args)...);
+    }
+}
+
+BE_NAMESPACE_END

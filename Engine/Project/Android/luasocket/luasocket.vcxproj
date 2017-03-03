@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="NsightTegraProject">
+    <NsightTegraProjectRevisionNumber>11</NsightTegraProjectRevisionNumber>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Tegra-Android">
+      <Configuration>Debug</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Tegra-Android">
+      <Configuration>Release</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Shipping|Tegra-Android">
+      <Configuration>Shipping</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F576B150-AD8C-4CF3-B3F5-01370D146F3E}</ProjectGuid>
+    <RootNamespace>luasocket</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\lua</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\lua</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\lua</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\auxiliar.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\buffer.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\except.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\inet.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\io.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\luasocket.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\options.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\select.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\tcp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\timeout.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\udp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\usocket.h" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\auxiliar.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\buffer.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\except.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\inet.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\io.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\luasocket.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\options.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\select.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\tcp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\timeout.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\udp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\usocket.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

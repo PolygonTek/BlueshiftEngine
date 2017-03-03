@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\Source\Dependencies\HACD\hacdGraph.cpp" />
+    <ClCompile Include="..\..\..\..\..\Source\Dependencies\HACD\hacdHACD.cpp" />
+    <ClCompile Include="..\..\..\..\..\Source\Dependencies\HACD\hacdICHull.cpp" />
+    <ClCompile Include="..\..\..\..\..\Source\Dependencies\HACD\hacdManifoldMesh.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdCircularList.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdGraph.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdHACD.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdICHull.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdManifoldMesh.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdVector.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdVersion.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdCircularList.inl" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\HACD\hacdVector.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\..\..\Source\Dependencies\HACD\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+</Project>

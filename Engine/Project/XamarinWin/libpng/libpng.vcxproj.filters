@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\png.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngerror.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngget.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngmem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngpread.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngread.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrio.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrtran.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrutil.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngset.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngtrans.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwio.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwrite.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwtran.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwutil.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\libpng\png.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\libpng\pngconf.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\libpng\pnglibconf.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\libpng\pngdebug.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\libpng\pnginfo.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\libpng\pngpriv.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\libpng\pngstruct.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{2D334889-DE3A-4A3B-9DA2-8E009401A3F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BD779E8B-2BE4-45C6-80A8-F605201B190D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

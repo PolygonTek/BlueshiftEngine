@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="NsightTegraProject">
+    <NsightTegraProjectRevisionNumber>11</NsightTegraProjectRevisionNumber>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Tegra-Android">
+      <Configuration>Debug</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Tegra-Android">
+      <Configuration>Release</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{EE72CD8A-9383-4CF0-AA4F-F04BB85F3289}</ProjectGuid>
+    <RootNamespace>libjpeg</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings"></ImportGroup>
+  <PropertyGroup Label="UserMacros"></PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\libjpeg</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\libjpeg</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcinit.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdapimin.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdinput.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jfdctflt.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcmainct.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdapistd.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdmainct.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jfdctfst.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jaricom.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcmarker.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdarith.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdmarker.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jfdctint.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcapimin.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcmaster.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdatadst.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdmaster.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jidctflt.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jquant1.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcapistd.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcomapi.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdatasrc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdmerge.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jidctfst.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jquant2.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcarith.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdcoefct.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdpostct.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jidctint.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jutils.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jccoefct.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcparam.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdcolor.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdsample.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jccolor.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcprepct.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdtrans.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jmemmgr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\transupp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcdctmgr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jcsample.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jddctmgr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jerror.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jmemnobs.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jchuff.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jctrans.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libjpeg\jdhuff.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets"></ImportGroup>
+</Project>

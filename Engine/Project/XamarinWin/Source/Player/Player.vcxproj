@@ -1,0 +1,418 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|Win32">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|Win32">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGUID>{2509B16F-0A6C-473A-B898-38A3E2983DAE}</ProjectGUID>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>Win32</Platform>
+    <ProjectName>Player</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\..\..\Bin\Win32\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Player.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Player_d</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\..\Bin\Win32\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Player.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Player</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">..\..\..\..\Bin\Win32\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Player.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Player</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">..\..\..\..\Bin\Win32\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Player.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Player</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Debug/</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;DEBUG;_DEBUG;_UNICODE;UNICODE;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;DEBUG;_DEBUG;_UNICODE;UNICODE;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalOptions> /machine:X86 /debug %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;winmm.lib;imm32.lib;glu32.lib;opengl32.lib;..\..\..\..\Library\Win32\Debug\BLib_d.lib;..\..\..\..\Library\Win32\Debug\Renderer_d.lib;..\..\..\..\Library\Win32\Debug\Core_d.lib;..\..\..\..\Library\Win32\Debug\Renderer_d.lib;glu32.lib;opengl32.lib;..\..\..\..\Library\Win32\Debug\BLib_d.lib;..\..\..\..\Library\Win32\Debug\minizip_d.lib;..\..\..\..\Library\Win32\Debug\libjpeg_d.lib;..\..\..\..\Library\Win32\Debug\libpng_d.lib;..\..\..\..\Library\Win32\Debug\zlib_d.lib;..\..\..\..\Library\Win32\Debug\libpvrt_d.lib;..\..\..\..\Library\Win32\Debug\jsoncpp_d.lib;..\..\..\..\Library\Win32\Debug\freetype_d.lib;..\..\..\..\Library\Win32\Debug\Bullet_d.lib;..\..\..\..\Library\Win32\Debug\HACD_d.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>../../../../Build/msvc2015/Source/Player/Debug/Player_d.lib</ImportLibrary>
+      <ProgramDataBaseFile>../../../../Bin/Win32/Debug/Player_d.pdb</ProgramDataBaseFile>
+      <SubSystem>Windows</SubSystem>
+      <Version>
+      </Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Release/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalOptions> /machine:X86 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;winmm.lib;imm32.lib;glu32.lib;opengl32.lib;..\..\..\..\Library\Win32\Release\BLib.lib;..\..\..\..\Library\Win32\Release\Renderer.lib;..\..\..\..\Library\Win32\Release\Core.lib;..\..\..\..\Library\Win32\Release\Renderer.lib;glu32.lib;opengl32.lib;..\..\..\..\Library\Win32\Release\BLib.lib;..\..\..\..\Library\Win32\Release\minizip.lib;..\..\..\..\Library\Win32\Release\libjpeg.lib;..\..\..\..\Library\Win32\Release\libpng.lib;..\..\..\..\Library\Win32\Release\zlib.lib;..\..\..\..\Library\Win32\Release\libpvrt.lib;..\..\..\..\Library\Win32\Release\jsoncpp.lib;..\..\..\..\Library\Win32\Release\freetype.lib;..\..\..\..\Library\Win32\Release\Bullet.lib;..\..\..\..\Library\Win32\Release\HACD.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>../../../../Build/msvc2015/Source/Player/Release/Player.lib</ImportLibrary>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <ProgramDataBaseFile>../../../../Bin/Win32/Release/Player.pdb</ProgramDataBaseFile>
+      <SubSystem>Windows</SubSystem>
+      <Version>
+      </Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>MinSizeRel/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;CMAKE_INTDIR="MinSizeRel";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalOptions> /machine:X86 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;winmm.lib;imm32.lib;glu32.lib;opengl32.lib;..\..\..\..\Library\Win32\MinSizeRel\BLib.lib;..\..\..\..\Library\Win32\MinSizeRel\Renderer.lib;..\..\..\..\Library\Win32\MinSizeRel\Core.lib;..\..\..\..\Library\Win32\MinSizeRel\Renderer.lib;glu32.lib;opengl32.lib;..\..\..\..\Library\Win32\MinSizeRel\BLib.lib;..\..\..\..\Library\Win32\MinSizeRel\minizip.lib;..\..\..\..\Library\Win32\MinSizeRel\libjpeg.lib;..\..\..\..\Library\Win32\MinSizeRel\libpng.lib;..\..\..\..\Library\Win32\MinSizeRel\zlib.lib;..\..\..\..\Library\Win32\MinSizeRel\libpvrt.lib;..\..\..\..\Library\Win32\MinSizeRel\jsoncpp.lib;..\..\..\..\Library\Win32\MinSizeRel\freetype.lib;..\..\..\..\Library\Win32\MinSizeRel\Bullet.lib;..\..\..\..\Library\Win32\MinSizeRel\HACD.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>../../../../Build/msvc2015/Source/Player/MinSizeRel/Player.lib</ImportLibrary>
+      <ProgramDataBaseFile>../../../../Bin/Win32/MinSizeRel/Player.pdb</ProgramDataBaseFile>
+      <SubSystem>Windows</SubSystem>
+      <Version>
+      </Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>RelWithDebInfo/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;CMAKE_INTDIR="RelWithDebInfo";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>..\..\..\..\Source\Player;..\..\..\..\Source\Core\Public;..\..\..\..\Source\Renderer\Public;..\..\..\..\Source\BLib\Public;..\..\..\..\Source\Dependencies;..\..\..\..\Source\Dependencies\zlib;..\..\..\..\Build\msvc2015\Source\Dependencies\zlib;..\..\..\..\Source\Dependencies\freetype\include;..\..\..\..\Source\Dependencies\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalOptions> /machine:X86 /debug %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;winmm.lib;imm32.lib;glu32.lib;opengl32.lib;..\..\..\..\Library\Win32\RelWithDebInfo\BLib.lib;..\..\..\..\Library\Win32\RelWithDebInfo\Renderer.lib;..\..\..\..\Library\Win32\RelWithDebInfo\Core.lib;..\..\..\..\Library\Win32\RelWithDebInfo\Renderer.lib;glu32.lib;opengl32.lib;..\..\..\..\Library\Win32\RelWithDebInfo\BLib.lib;..\..\..\..\Library\Win32\RelWithDebInfo\minizip.lib;..\..\..\..\Library\Win32\RelWithDebInfo\libjpeg.lib;..\..\..\..\Library\Win32\RelWithDebInfo\libpng.lib;..\..\..\..\Library\Win32\RelWithDebInfo\zlib.lib;..\..\..\..\Library\Win32\RelWithDebInfo\libpvrt.lib;..\..\..\..\Library\Win32\RelWithDebInfo\jsoncpp.lib;..\..\..\..\Library\Win32\RelWithDebInfo\freetype.lib;..\..\..\..\Library\Win32\RelWithDebInfo\Bullet.lib;..\..\..\..\Library\Win32\RelWithDebInfo\HACD.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>../../../../Build/msvc2015/Source/Player/RelWithDebInfo/Player.lib</ImportLibrary>
+      <ProgramDataBaseFile>../../../../Bin/Win32/RelWithDebInfo/Player.pdb</ProgramDataBaseFile>
+      <SubSystem>Windows</SubSystem>
+      <Version>
+      </Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\..\Source\Player\CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building Custom Rule ../../../../Source/Player/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">setlocal
+..\..\..\..\Bin\CMake\Windows_x86\bin\cmake.exe -H../../../.. -B../../../../Build/msvc2015 --check-stamp-file ..\..\..\..\Build\msvc2015\Source\Player\CMakeFiles\generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../../../../Source/Player/CMakeLists.txt;..\..\..\..\Source\Player\CMakeLists.txt;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindOpenGL.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindPackageHandleStandardArgs.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindPackageMessage.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\CMakeParseArguments.cmake;..\..\..\..\Source\Player\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\..\..\Build\msvc2015\Source\Player\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building Custom Rule ../../../../Source/Player/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">setlocal
+..\..\..\..\Bin\CMake\Windows_x86\bin\cmake.exe -H../../../.. -B../../../../Build/msvc2015 --check-stamp-file ..\..\..\..\Build\msvc2015\Source\Player\CMakeFiles\generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">../../../../Source/Player/CMakeLists.txt;..\..\..\..\Source\Player\CMakeLists.txt;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindOpenGL.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindPackageHandleStandardArgs.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindPackageMessage.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\CMakeParseArguments.cmake;..\..\..\..\Source\Player\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\..\Build\msvc2015\Source\Player\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Building Custom Rule ../../../../Source/Player/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">setlocal
+..\..\..\..\Bin\CMake\Windows_x86\bin\cmake.exe -H../../../.. -B../../../../Build/msvc2015 --check-stamp-file ..\..\..\..\Build\msvc2015\Source\Player\CMakeFiles\generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">../../../../Source/Player/CMakeLists.txt;..\..\..\..\Source\Player\CMakeLists.txt;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindOpenGL.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindPackageHandleStandardArgs.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindPackageMessage.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\CMakeParseArguments.cmake;..\..\..\..\Source\Player\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">..\..\..\..\Build\msvc2015\Source\Player\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Building Custom Rule ../../../../Source/Player/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">setlocal
+..\..\..\..\Bin\CMake\Windows_x86\bin\cmake.exe -H../../../.. -B../../../../Build/msvc2015 --check-stamp-file ..\..\..\..\Build\msvc2015\Source\Player\CMakeFiles\generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">../../../../Source/Player/CMakeLists.txt;..\..\..\..\Source\Player\CMakeLists.txt;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindOpenGL.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindPackageHandleStandardArgs.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\FindPackageMessage.cmake;..\..\..\..\Bin\CMake\Windows_x86\share\cmake-3.2\Modules\CMakeParseArguments.cmake;..\..\..\..\Source\Player\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">..\..\..\..\Build\msvc2015\Source\Player\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\Source\Player\Precompiled.h" />
+    <ClInclude Include="..\..\..\..\Source\Player\ComCameraLogic.h" />
+    <ClInclude Include="..\..\..\..\Source\Player\ComEnemyLogic.h" />
+    <ClInclude Include="..\..\..\..\Source\Player\ComPlayerLogic.h" />
+    <ClInclude Include="..\..\..\..\Source\Player\MyGame.h" />
+    <ClInclude Include="..\..\..\..\Source\Player\UserCmdGen.h" />
+    <ClInclude Include="..\..\..\..\Source\Player\resource.h" />
+    <ClCompile Include="..\..\..\..\Source\Player\Precompiled.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Precompiled.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Source\Player\ComCameraLogic.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Precompiled.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Source\Player\ComEnemyLogic.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Precompiled.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Source\Player\ComPlayerLogic.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Precompiled.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Source\Player\MyGame.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Precompiled.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Source\Player\UserCmdGen.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Precompiled.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\Source\Player\MainWin.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Precompiled.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ResourceCompile Include="..\..\..\..\Source\Player\ResourceFiles\player.rc" />
+    <None Include="..\..\..\..\Source\Player\ResourceFiles\player.ico" />
+    <None Include="..\..\..\..\Source\Player\ResourceFiles\small.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../../Build/msvc2015/Source/BLib/BLib.vcxproj">
+      <Project>A2E9B1FB-12C0-487F-B7ED-D3FDBFAA0C1B</Project>
+    </ProjectReference>
+    <ProjectReference Include="../../../../Build/msvc2015/Source/Core/Core.vcxproj">
+      <Project>A1A6B3DC-54B6-4AEF-AF6E-00FBAF75ABCE</Project>
+    </ProjectReference>
+    <ProjectReference Include="../../../../Build/msvc2015/Source/Renderer/Renderer.vcxproj">
+      <Project>09BBBA10-2E27-436C-8988-5CE884766451</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

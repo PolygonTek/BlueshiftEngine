@@ -1,0 +1,2 @@
+del /Q .\html\*
+doxygen

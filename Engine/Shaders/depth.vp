@@ -1,0 +1,36 @@
+in vec4 in_position : POSITION;
+in vec2 in_st : TEXCOORD0;
+
+out vec2 v2f_texCoord;
+
+uniform mat4 modelViewProjectionMatrix;
+
+#ifdef INSTANCED_DRAW
+	struct entityData_t {
+		vec4 textureMatrixS;
+		vec4 textureMatrixT;
+	};
+
+	uniform entityData_t entityData[256];
+	#define ED entityData[gl_InstanceIDARB]
+#else
+	uniform vec4 textureMatrixS;
+	uniform vec4 textureMatrixT;
+#endif
+
+void main() {
+	vec4 localVertex;
+
+#ifdef PERFORATED
+	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
+	v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+#endif
+
+#ifdef GPU_SKINNING
+	skinningMatrix(in_position, localVertex);
+#else
+	localVertex = in_position;
+#endif
+
+	gl_Position = modelViewProjectionMatrix * localVertex;
+}

@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">iPhoneSimulator</Platform>
+    <ProjectTypeGuids>{FEACFBD2-3405-455C-9665-78FE426C6842};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{9106E460-71C7-4545-9354-9EF1CC25524D}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>XamarinPlayer</RootNamespace>
+    <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
+    <AssemblyName>XamarinPlayer</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|iPhoneSimulator' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\iPhoneSimulator\Debug</OutputPath>
+    <DefineConstants>DEBUG;ENABLE_TEST_CLOUD;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <MtouchArch>i386</MtouchArch>
+    <MtouchLink>None</MtouchLink>
+    <MtouchUseRefCounting>true</MtouchUseRefCounting>
+    <MtouchUseSGen>true</MtouchUseSGen>
+    <MtouchDebug>true</MtouchDebug>
+    <CodesignKey>iPhone Developer</CodesignKey>
+    <MtouchFastDev>false</MtouchFastDev>
+    <CustomCommands>
+      <CustomCommands>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>debug-iphonesimulator.command</command>
+        </Command>
+      </CustomCommands>
+    </CustomCommands>
+    <MtouchExtraArgs>-cxx -gcc_flags "-L${ProjectDir}/libs -lluasocket -lBlueshiftEngine -lminizip -llibjpeg -llibpng -lzlib -llibpvrt -llibvorbis -llibogg -ljsoncpp -lfreetype -lBullet -lHACD -lLuaCpp -llua -lluasocket -lNvTriStrip -framework OpenAL -framework AudioToolbox -framework AVFoundation"</MtouchExtraArgs>
+    <OptimizePNGs>false</OptimizePNGs>
+    <MtouchNoSymbolStrip>true</MtouchNoSymbolStrip>
+    <DeviceSpecificBuild>false</DeviceSpecificBuild>
+    <MtouchFloat32>true</MtouchFloat32>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|iPhone' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\iPhone\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <MtouchArch>ARMv7, ARM64</MtouchArch>
+    <CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
+    <MtouchFloat32>true</MtouchFloat32>
+    <MtouchUseSGen>true</MtouchUseSGen>
+    <CodesignKey>iPhone Developer</CodesignKey>
+    <MtouchUseRefCounting>true</MtouchUseRefCounting>
+    <CustomCommands>
+      <CustomCommands>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>release-iphoneos.command</command>
+        </Command>
+      </CustomCommands>
+    </CustomCommands>
+    <MtouchNoSymbolStrip>true</MtouchNoSymbolStrip>
+    <MtouchExtraArgs>-cxx -gcc_flags "-L${ProjectDir}/libs -lluasocket -lBlueshiftEngine -lminizip -llibjpeg -llibpng -lzlib -llibpvrt -llibvorbis -llibogg -ljsoncpp -lfreetype -lBullet -lHACD -lLuaCpp -llua -lluasocket -lNvTriStrip -framework OpenAL -framework AudioToolbox -framework AVFoundation"</MtouchExtraArgs>
+    <OptimizePNGs>false</OptimizePNGs>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|iPhoneSimulator' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\iPhoneSimulator\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <MtouchArch>i386</MtouchArch>
+    <MtouchLink>None</MtouchLink>
+    <MtouchUseRefCounting>true</MtouchUseRefCounting>
+    <CodesignKey>iPhone Developer</CodesignKey>
+    <MtouchUseSGen>true</MtouchUseSGen>
+    <CustomCommands>
+      <CustomCommands>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>release-iphonesimulator.command</command>
+        </Command>
+      </CustomCommands>
+    </CustomCommands>
+    <MtouchNoSymbolStrip>true</MtouchNoSymbolStrip>
+    <MtouchExtraArgs>-cxx -gcc_flags "-L${ProjectDir}/libs -lluasocket -lBlueshiftEngine -lminizip -llibjpeg -llibpng -lzlib -llibpvrt -llibvorbis -llibogg -ljsoncpp -lfreetype -lBullet -lHACD -lLuaCpp -llua -lluasocket -lNvTriStrip -framework OpenAL -framework AudioToolbox -framework AVFoundation"</MtouchExtraArgs>
+    <OptimizePNGs>false</OptimizePNGs>
+    <MtouchFloat32>true</MtouchFloat32>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|iPhone' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\iPhone\Debug</OutputPath>
+    <DefineConstants>DEBUG;ENABLE_TEST_CLOUD;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <MtouchArch>ARMv7, ARM64</MtouchArch>
+    <CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
+    <MtouchFloat32>true</MtouchFloat32>
+    <MtouchUseRefCounting>true</MtouchUseRefCounting>
+    <MtouchDebug>true</MtouchDebug>
+    <DeviceSpecificBuild>false</DeviceSpecificBuild>
+    <CodesignKey>iPhone Developer</CodesignKey>
+    <MtouchUseSGen>true</MtouchUseSGen>
+    <MtouchExtraArgs>-cxx -gcc_flags "-L${ProjectDir}/libs -lluasocket -lBlueshiftEngine -lminizip -llibjpeg -llibpng -lzlib -llibpvrt -llibvorbis -llibogg -ljsoncpp -lfreetype -lBullet -lHACD -lLuaCpp -llua -lluasocket -lNvTriStrip -framework OpenAL -framework AudioToolbox -framework AVFoundation"</MtouchExtraArgs>
+    <CustomCommands>
+      <CustomCommands>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>debug-iphoneos.command</command>
+        </Command>
+      </CustomCommands>
+    </CustomCommands>
+    <OptimizePNGs>false</OptimizePNGs>
+    <MtouchNoSymbolStrip>true</MtouchNoSymbolStrip>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="Xamarin.iOS" />
+    <Reference Include="OpenTK-1.0" />
+    <Reference Include="BlueshiftPlayer">
+      <HintPath>libs\BlueshiftPlayer.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ImageAsset Include="Resources\Images.xcassets\AppIcons.appiconset\Contents.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="Resources\LaunchScreen.xib" />
+    <InterfaceDefinition Include="Main.storyboard" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+    <None Include="Entitlements.plist" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="AppDelegate.cs" />
+    <Compile Include="GameViewController.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <BundleResource Include="Shader.fsh" />
+    <BundleResource Include="Shader.vsh" />
+    <BundleResource Include="Resources\Config\config.cfg" />
+    <BundleResource Include="Resources\Data\.DS_Store" />
+    <BundleResource Include="Resources\Data\EngineData.zip" />
+    <BundleResource Include="Resources\Data\EngineShaders.zip" />
+    <BundleResource Include="Resources\Data\guidmap" />
+    <BundleResource Include="Resources\Data\Contents\.DS_Store" />
+    <BundleResource Include="Resources\Data\Contents\Maps\title.map" />
+    <BundleResource Include="Resources\Data\Contents\Materials\floor.material" />
+    <BundleResource Include="Resources\Data\Contents\Materials\joypad_bg.material" />
+    <BundleResource Include="Resources\Data\Contents\Materials\joypad_knob.material" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.animcon" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.bmesh" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.bskel" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.fbm\Boy01_FacialAnimMap.pvr" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.fbm\Boy01_FacialAnimMap.pvr.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.fbm\Boy01_diffuse.pvr" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.fbm\Boy01_diffuse.pvr.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.fbm\Boy01_normal.pvr" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.fbm\Boy01_normal.pvr.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.fbm\Boy01_spec.pvr" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Aj.fbm\Boy01_spec.pvr.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Materials\Boy01_FacialAnimMap.material" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\Materials\Boy01_diffuse.material" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\Standing_React_Death_Backward.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\Standing_React_Death_Backward.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\Standing_React_Death_Forward.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\Standing_React_Death_Forward.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\falling_idle.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\falling_idle.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\idle.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\idle.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\jump.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\jump.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\jumping_down.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\jumping_down.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\left_strafe.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\left_strafe.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\left_strafe_walking.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\left_strafe_walking.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\left_turn_90.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\left_turn_90.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\right_strafe.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\right_strafe.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\right_strafe_walking.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\right_strafe_walking.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\right_turn_90.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\right_turn_90.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\running_backward.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\running_backward.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\running_slide.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\running_slide.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\standard_run.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\standard_run.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\throw.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\throw.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\walking.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\walking.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\walking_backward.banim" />
+    <BundleResource Include="Resources\Data\Contents\Models\Aj\animation\walking_backward.banim.clip" />
+    <BundleResource Include="Resources\Data\Contents\Script\joypad_knob_logic.blua" />
+    <BundleResource Include="Resources\Data\Contents\Script\player_logic.blua" />
+    <BundleResource Include="Resources\Data\Contents\Sound\run1.wav" />
+    <BundleResource Include="Resources\Data\Contents\Sound\run2.wav" />
+    <BundleResource Include="Resources\Data\Contents\Sound\run3.wav" />
+    <BundleResource Include="Resources\Data\Contents\Sound\run4.wav" />
+    <BundleResource Include="Resources\Data\Contents\Sound\slide.wav" />
+    <BundleResource Include="Resources\Data\Contents\Textures\mini_background_1.png" />
+    <BundleResource Include="Resources\Data\Contents\Textures\mini_background_1.png.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Textures\mini_background_2.png" />
+    <BundleResource Include="Resources\Data\Contents\Textures\mini_background_2.png.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Textures\mini_background_4.png" />
+    <BundleResource Include="Resources\Data\Contents\Textures\mini_background_4.png.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Textures\mini_thumb_1.png" />
+    <BundleResource Include="Resources\Data\Contents\Textures\mini_thumb_1.png.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Textures\tilefloor001b.pvr" />
+    <BundleResource Include="Resources\Data\Contents\Textures\tilefloor001b.pvr.texinfo" />
+    <BundleResource Include="Resources\Data\Contents\Textures\tilefloor001b_normal.pvr" />
+    <BundleResource Include="Resources\Data\Contents\Textures\tilefloor001b_normal.pvr.texinfo" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
+</Project>

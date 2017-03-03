@@ -1,0 +1,37 @@
+﻿ZeroBrane Studio 를 설치한다.
+ZeroBrane Studio > Project > Start Debug Server 를 켠다.
+ZeroBrane Studio > File > Open > %HOMEPATH%\Documents\BasicGame\Contents\Script\player_logic.lua 를 연다
+(패스에 특수 문자가 포함되어 있을 경우, ZeroBrane Studio > Project > Project Directory를 설정해 줘야 한다.)
+function start() 다음 줄에 Breakpoint 를 설정한다.
+Blueshift Editor 에서 %HOMEPATH%\Documents\BasicGame 를 연다.
+Blueshift Editor > Edit > Play를 실행한다.
+ZeroBrane Studio 의 Output 창에서 "Debugging session started in" 메시지를 확인한다.
+ZeroBrane Studio > Project > Continue 를 실행
+ZeroBrane Studio 의 Breakpoint에서 스크립트가 중단되었는지 확인한다.
+
+if IOS
+	ZeroBrane Studio > Project > Project Directory > ~/Documents/BasicGame/Contents/Script 로 설정한다.
+    ~/Documents/BasicGameIOS/Config/config.cfg에서  
+    set lua_server "192.168.0.10"(ZeroBraneStudio Server 의 ip 주소)를 설정한다.
+    set lua_path "/Users/sjpark/Documents/BasicGame" 으로 설정한다.
+    cp -rf ~/blueshift/Engine/Scripts ~/Documents/BasicGameIOS
+endif
+if ANDROID
+	ZeroBrane Studio > Project > Project Directory > %HOMEPATH%\Documents\BasicGame\Contents\Script 로 설정한다.
+    %HOMEPATH%\Documents\BasicGameAnd\Project\Android\AndroidPlayer\assets\Config\config.cfg에서  
+    set lua_server "192.168.0.10"(ZeroBraneStudio Server 의 ip 주소)를 설정한다.
+    set lua_path "C:\Users\sjpark\Documents\BasicGame"으로 설정한다.
+endif
+if IOS
+    ~/Documents/BasicGameIOS/Config/config.cfg에서  
+    	set lua_server "192.168.0.10"(ZeroBraneStudio Server 의 ip 주소)를 설정한다.
+    	set lua_path "/Users/sjpark/Documents/BasicGame" 으로 설정한다.
+    cp -rf ~/blueshift/Engine/Scripts ~/Documents/BasicGameIOS
+endif
+
+if ANDROID
+    %HOMEPATH%\Documents\BasicGameAnd\Project\Android\AndroidPlayer\assets\Config\config.cfg에서  
+    	set lua_server "192.168.0.10"(ZeroBraneStudio Server 의 ip 주소)를 설정한다.
+    	set lua_path "C:\Users\sjpark\Documents\BasicGame"으로 설정한다.
+    xcopy %HOMEPATH%\Documents\blueshift\Engine\Scripts %HOMEPATH%\Documents\BasicGameAnd\Project\Android\AndroidPlayer\assets\Scripts /I /e /y
+endif

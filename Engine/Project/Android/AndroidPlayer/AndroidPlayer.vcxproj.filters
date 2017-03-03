@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="bin\res\drawable\icon.png">
+      <Filter>bin\res\drawable</Filter>
+    </None>
+    <None Include="jni\Android.mk">
+      <Filter>jni</Filter>
+    </None>
+    <None Include="jni\Application.mk">
+      <Filter>jni</Filter>
+    </None>
+    <None Include="res\drawable\icon.png">
+      <Filter>bin\res\drawable</Filter>
+    </None>
+    <None Include="res\values\strings.xml">
+      <Filter>bin\res\values</Filter>
+    </None>
+    <None Include="assets\courier+lucida_256.abc" />
+    <None Include="assets\courier+lucida_256.dds" />
+    <None Include="assets\utahcond+bold_1024.abc" />
+    <None Include="assets\utahcond+bold_1024.dds" />
+    <None Include="link.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="bin">
+      <UniqueIdentifier>{542d9fce-76ac-4ae1-affc-605d4dbd6db8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bin\res">
+      <UniqueIdentifier>{edd204c7-46bf-42f9-8b3e-b846d7243c10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bin\res\drawable">
+      <UniqueIdentifier>{c3defc57-8692-48fa-843e-eb05a931907f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jni">
+      <UniqueIdentifier>{cc43603a-eead-4b5f-8777-65b597cf3cd9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bin\res\values">
+      <UniqueIdentifier>{890b9f23-004a-4440-b6f1-42b260dcbcef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{8fc2770a-4d82-4632-8109-5b487479adea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".settings">
+      <UniqueIdentifier>{3edcdb87-6a0f-4ab2-b872-e013ec84b3eb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="jni\engine.cpp">
+      <Filter>jni</Filter>
+    </ClCompile>
+    <ClCompile Include="jni\main.cpp">
+      <Filter>jni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Player\Precompiled.cpp" />
+    <ClCompile Include="..\..\..\Source\Player\Application.cpp" />
+    <ClCompile Include="jni\dso_handle.c">
+      <Filter>jni</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="jni\engine.h">
+      <Filter>jni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Player\PreCompiled.h" />
+    <ClInclude Include="..\..\..\Source\Player\resource.h" />
+    <ClInclude Include="..\..\..\Source\Player\Application.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidBuild Include="AndroidManifest.xml" />
+    <AndroidBuild Include="build.xml" />
+    <AndroidBuild Include="project.properties" />
+  </ItemGroup>
+</Project>

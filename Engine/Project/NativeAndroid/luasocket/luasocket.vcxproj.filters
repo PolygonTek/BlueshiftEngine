@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\auxiliar.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\buffer.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\except.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\inet.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\io.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\luasocket.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\options.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\select.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\tcp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\timeout.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\udp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\usocket.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\auxiliar.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\buffer.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\except.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\inet.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\io.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\luasocket.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\options.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\select.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\tcp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\timeout.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\udp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\usocket.h" />
+  </ItemGroup>
+</Project>

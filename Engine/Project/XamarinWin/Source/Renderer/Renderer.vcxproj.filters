@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\Source\Renderer\Precompiled.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\OpenGL\OpenGL.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLBuffer.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLCommon.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLQuery.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLRenderTarget.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLShader.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLState.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLTexture.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLVertexFormat.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\OpenGL\OpenGL3.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\RGLPlatformWin.cpp" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\OpenGL\ggl3\ggl.c" />
+    <ClCompile Include="..\..\..\..\Source\Renderer\Private\OpenGL\ggl3\gwgl.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\Source\Renderer\Precompiled.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Public\Renderer.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Public\RendererInterface.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Public\RendererGL.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Private\OpenGL\OpenGL.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Private\RGLInternal.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Private\OpenGL\OpenGL3.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Private\OpenGL\WinOpenGL.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Private\OpenGL\ggl3\ggl.h" />
+    <ClInclude Include="..\..\..\..\Source\Renderer\Private\OpenGL\ggl3\gwgl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Public">
+      <UniqueIdentifier>{445A5EED-E3E4-4E5D-82F8-3D0B462E41A7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private">
+      <UniqueIdentifier>{52E839F2-EE0C-474A-8A6F-B7968D79C764}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\OpenGL\ggl3">
+      <UniqueIdentifier>{870AA8F5-3A27-453F-B59E-81D116FCB9AC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\OpenGL">
+      <UniqueIdentifier>{CAF029D1-8B43-4993-ADCB-BDC002D37536}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

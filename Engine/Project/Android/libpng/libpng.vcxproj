@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="NsightTegraProject">
+    <NsightTegraProjectRevisionNumber>11</NsightTegraProjectRevisionNumber>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Tegra-Android">
+      <Configuration>Debug</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Tegra-Android">
+      <Configuration>Release</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E681969C-DBEC-432D-A93F-F65B9648076E}</ProjectGuid>
+    <RootNamespace>libpng</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\libpng;..\zlib;..\..\..\Source\Dependencies\zlib</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\libpng;..\zlib;..\..\..\Source\Dependencies\zlib</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\arm\arm_init.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\arm\filter_neon_intrinsics.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\png.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngerror.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngget.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngmem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngpread.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngread.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrio.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrtran.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngrutil.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngset.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngtrans.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwio.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwrite.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwtran.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\libpng\pngwutil.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

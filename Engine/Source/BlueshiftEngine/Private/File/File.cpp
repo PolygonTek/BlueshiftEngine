@@ -1,0 +1,310 @@
+#include "Precompiled.h"
+#include "Core/ByteOrder.h"
+#include "Core/Guid.h"
+#include "File/File.h"
+#include "minizip/unzip.h"
+
+BE_NAMESPACE_BEGIN
+
+//---------------------------------------------------------------
+// File
+//---------------------------------------------------------------
+
+const char *File::GetFilePath() const {
+    return "";
+}
+
+size_t File::Size() const {
+    return 0;
+}
+
+int File::Tell() const {
+    return 0;
+}
+
+int File::Seek(long offset) {
+    return -1;
+}
+
+int File::SeekFromEnd(long offset) {
+    return -1;
+}
+
+size_t File::Read(void *buffer, size_t bytesToRead) const {
+    BE_FATALERROR(L"File::Read: cannot read from File");
+    return 0;
+}
+
+bool File::Write(const void *buffer, size_t bytesToWrite) {
+    BE_FATALERROR(L"File::Write: cannot write from File");
+    return false;
+}
+
+bool File::Printf(const char *format, ...) {
+    char buffer[4096];
+    va_list	args;
+    
+    va_start(args, format);
+    ::vsprintf(buffer, format, args);
+    va_end(args);
+    
+    return Write(buffer, (int)strlen(buffer));
+}
+
+bool File::Printf(const wchar_t *format, ...) {
+    wchar_t buffer[4096];
+    va_list	args;
+    
+    va_start(args, format);
+    ::vswprintf(buffer, COUNT_OF(buffer), format, args);
+    va_end(args);
+    
+    return Write(buffer, (int)wcslen(buffer) * sizeof(wchar_t));
+}
+
+size_t File::ReadChar(char &value) {
+    return Read(&value, sizeof(value));
+}
+
+size_t File::ReadUChar(unsigned char &value) {
+    return Read(&value, sizeof(value));
+}
+
+size_t File::ReadInt16(int16_t &value) {
+    size_t result = Read(&value, sizeof(value));
+    ByteOrder::LittleEndianToSystem(value);
+    return result;
+}
+
+size_t File::ReadUInt16(uint16_t &value) {
+    size_t result = Read(&value, sizeof(value));
+    ByteOrder::LittleEndianToSystem(value);
+    return result;
+}
+
+size_t File::ReadInt32(int32_t &value) {
+    size_t result = Read(&value, sizeof(value));
+    ByteOrder::LittleEndianToSystem(value);
+    return result;
+}
+
+size_t File::ReadUInt32(uint32_t &value) {
+    size_t result = Read(&value, sizeof(value));
+    ByteOrder::LittleEndianToSystem(value);
+    return result;
+}
+
+size_t File::ReadInt64(int64_t &value) {
+    size_t result = Read(&value, sizeof(value));
+    ByteOrder::LittleEndianToSystem(value);
+    return result;
+}
+
+size_t File::ReadUInt64(uint64_t &value) {
+    size_t result = Read(&value, sizeof(value));
+    ByteOrder::LittleEndianToSystem(value);
+    return result;
+}
+
+size_t File::ReadFloat(float &value) { 
+    size_t result = Read(&value, sizeof(value));
+    ByteOrder::LittleEndianToSystem(value);
+    return result;
+}
+
+size_t File::ReadDouble(double &value) {
+    size_t result = Read(&value, sizeof(value));
+    ByteOrder::LittleEndianToSystem(value);
+    return result;
+}
+
+size_t File::ReadString(Str &value) {
+    size_t result = 0;
+    int32_t len;
+
+    ReadInt32(len);
+    if (len >= 0) {
+        value.Fill(' ', len);
+        result = Read(&value[0], len);
+    }
+
+    return result;
+}
+
+size_t File::ReadGuid(Guid &value) {
+    uint32_t a, b, c, d;
+    size_t result = ReadUInt32(a);
+    result += ReadUInt32(b); 
+    result += ReadUInt32(c);
+    result += ReadUInt32(d);
+    value.Set(a, b, c, d);
+    return result;
+}
+
+size_t File::WriteChar(const char value) { 
+    return Write(&value, sizeof(value));
+}
+
+size_t File::WriteUChar(const unsigned char value) {
+    return Write(&value, sizeof(value));
+}
+
+size_t File::WriteInt16(const int16_t value) { 
+    int16_t v = value;
+    ByteOrder::SystemToLittleEndian(value);
+    return Write(&v, sizeof(v));
+}
+
+size_t File::WriteUInt16(const uint16_t value) {
+    int16_t v = value;
+    ByteOrder::SystemToLittleEndian(value);
+    return Write(&v, sizeof(v));
+}
+
+size_t File::WriteInt32(const int32_t value) { 
+    int32_t v = value;
+    ByteOrder::SystemToLittleEndian(value);
+    return Write(&v, sizeof(v));
+}
+
+size_t File::WriteUInt32(const uint32_t value) {
+    uint32_t v = value;
+    ByteOrder::SystemToLittleEndian(value);
+    return Write(&v, sizeof(v));
+}
+
+size_t File::WriteInt64(const int64_t value) { 
+    int64_t v = value;
+    ByteOrder::SystemToLittleEndian(value);
+    return Write(&v, sizeof(v));
+}
+
+size_t File::WriteUInt64(const uint64_t value) {
+    uint64_t v = value;
+    ByteOrder::SystemToLittleEndian(value);
+    return Write(&v, sizeof(v));
+}
+
+size_t File::WriteFloat(const float value) { 
+    float v = value;
+    ByteOrder::SystemToLittleEndian(value);
+    return Write(&v, sizeof(v));
+}
+
+size_t File::WriteDouble(const double value) {
+    double v = value;
+    ByteOrder::SystemToLittleEndian(value);
+    return Write(&v, sizeof(v));
+}
+
+size_t File::WriteString(const char *value) { 
+    int32_t len = (int32_t)strlen(value);
+    WriteInt32(len);
+    return Write(value, len);
+}
+
+size_t File::WriteGuid(const Guid &value) {
+    size_t result = WriteUInt32(value[0]);
+    result += WriteUInt32(value[1]);
+    result += WriteUInt32(value[2]);
+    result += WriteUInt32(value[3]);
+    return result;
+}
+
+//---------------------------------------------------------------
+// FileReal
+//---------------------------------------------------------------
+
+FileReal::FileReal(const char *filename, PlatformFile *pf) {
+    Str::Copynz(this->filename, filename, COUNT_OF(this->filename));
+    this->pf = pf;
+}
+
+FileReal::~FileReal() {
+    SAFE_DELETE(pf);
+}
+
+size_t FileReal::Size() const {
+    return size;
+}
+
+int FileReal::Tell() const {
+    if (!pf) {
+        return 0;
+    }
+    return pf->Tell();
+}
+
+int FileReal::Seek(long offset) {
+    if (!pf) {
+        return 0;
+    }
+
+    return pf->Seek(offset, PlatformFile::Start);
+}
+
+int FileReal::SeekFromEnd(long offset) {
+    if (!pf) {
+        return 0;
+    }
+    
+    return pf->Seek(offset, PlatformFile::End);
+}
+
+size_t FileReal::Read(void *buffer, size_t bytesToRead) const {
+    if (!pf) {
+        return 0;
+    }
+
+    return pf->Read(buffer, bytesToRead);
+}
+
+bool FileReal::Write(const void *buffer, size_t bytesToWrite) {
+    if (!pf) {
+        return false;
+    }
+    
+    return pf->Write(buffer, bytesToWrite);
+}
+
+//---------------------------------------------------------------
+// FileInZip
+//---------------------------------------------------------------
+
+FileInZip::FileInZip(const char *filename, void *pointer) {
+    Str::Copynz(this->filename, filename, COUNT_OF(this->filename));
+    this->pointer = pointer;
+}
+
+FileInZip::~FileInZip() {
+    unzCloseCurrentFile(pointer);
+}
+
+size_t FileInZip::Size() const {
+    return size;
+}
+
+int FileInZip::Tell() const {
+    return (int)unztell(pointer);
+}
+
+int FileInZip::Seek(long offset) {
+    BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
+    return 0;
+}
+
+int FileInZip::SeekFromEnd(long offset) {
+    BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
+    return 0;
+}
+
+size_t FileInZip::Read(void *buffer, size_t bytesToRead) const {
+    return unzReadCurrentFile(pointer, buffer, (unsigned int)bytesToRead);
+}
+
+bool FileInZip::Write(const void *buffer, size_t len) {
+    BE_FATALERROR(L"ZIP FILE WRITE IS NOT ALLOWED");
+    return false;
+}
+
+BE_NAMESPACE_END

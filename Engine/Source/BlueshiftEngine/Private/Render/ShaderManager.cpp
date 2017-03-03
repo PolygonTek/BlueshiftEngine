@@ -1,0 +1,507 @@
+#include "Precompiled.h"
+#include "Render/Render.h"
+#include "RenderInternal.h"
+#include "Core/Cmds.h"
+
+BE_NAMESPACE_BEGIN
+
+struct engineShader_t {
+    const char *filename;
+};
+
+static const engineShader_t originalShaderList[] = {
+    { "Shaders/drawArrayTexture" },
+    { "Shaders/gui" },
+    { "Shaders/selectionId" },
+    { "Shaders/depth" },
+    { "Shaders/constantColor" },
+    { "Shaders/vertexColor" },
+    { "Shaders/amblit" },
+    { "Shaders/objectMotionBlur" },
+
+    { "Shaders/lightingGeneric" },
+
+    { "Shaders/fogLight" },
+    { "Shaders/blendLight" },
+    
+    //{ "Shaders/SH_projection" },
+    //{ "Shaders/SH_evalIrradianceCubeMap" },
+
+    { "Shaders/postObjectMotionBlur" },
+    { "Shaders/postCameraMotionBlur" },
+    { "Shaders/passThru" },
+    { "Shaders/passThruColor" },
+    { "Shaders/downscale2x2" },
+    { "Shaders/downscale4x4" },
+    { "Shaders/downscale4x4LogLum" },
+    { "Shaders/downscale4x4ExpLum" },
+    { "Shaders/blur5x" },
+    { "Shaders/blur7x" },
+    { "Shaders/blur15x" },
+    { "Shaders/blurBilinear3x" },
+    { "Shaders/blurBilinear4x" },
+    { "Shaders/blurBilinear8x" },
+    { "Shaders/blurAlphaMaskedBilinear8x" },
+    { "Shaders/kawaseBlur" },
+    { "Shaders/radialBlur" },
+    { "Shaders/aoBlur" },
+    { "Shaders/colorTransform" },
+    { "Shaders/gammaCorrection" },
+    { "Shaders/linearizeDepth" },
+    { "Shaders/copyDownscaledCocToAlpha" },
+    { "Shaders/copyColorAndCoc" },
+    { "Shaders/applyDOF" },
+    { "Shaders/sunShaftsMaskGen" },
+    { "Shaders/sunShaftsGen" },
+    { "Shaders/sunShaftsDisplay" },
+    { "Shaders/luminanceAdaptation" },
+    { "Shaders/brightFilter" },
+    { "Shaders/HDRFinal" },
+    { "Shaders/chromaShift" },
+    { "Shaders/SSAO" },
+    { "Shaders/generateHOM" },
+    { "Shaders/queryHOM" }
+};
+
+ShaderManager       shaderManager;
+
+Shader *            ShaderManager::originalShaders[MaxPredefinedOriginalShaders];
+
+Shader *            ShaderManager::drawArrayTextureShader;
+Shader *            ShaderManager::guiShader;
+Shader *            ShaderManager::selectionIdShader;
+Shader *            ShaderManager::depthShader;
+Shader *            ShaderManager::constantColorShader;
+Shader *            ShaderManager::vertexColorShader;
+Shader *            ShaderManager::amblitNoAmbientCubeMapShader;
+Shader *            ShaderManager::amblitNoBumpShader;
+Shader *            ShaderManager::objectMotionBlurShader;
+Shader *            ShaderManager::lightingDefaultShader;
+Shader *            ShaderManager::fogLightShader;
+Shader *            ShaderManager::blendLightShader;
+Shader *            ShaderManager::shProjectionShader;
+Shader *            ShaderManager::shEvalIrradianceCubeMapShader;
+Shader *            ShaderManager::postObjectMotionBlurShader;
+Shader *            ShaderManager::postCameraMotionBlurShader;
+Shader *            ShaderManager::postPassThruShader;
+Shader *            ShaderManager::postPassThruColorShader;
+Shader *            ShaderManager::downscale2x2Shader;
+Shader *            ShaderManager::downscale4x4Shader;
+Shader *            ShaderManager::downscale4x4LogLumShader;
+Shader *            ShaderManager::downscale4x4ExpLumShader;
+Shader *            ShaderManager::blur5xShader;
+Shader *            ShaderManager::blur7xShader;
+Shader *            ShaderManager::blur15xShader;
+Shader *            ShaderManager::blurBilinear3xShader;
+Shader *            ShaderManager::blurBilinear4xShader;
+Shader *            ShaderManager::blurBilinear8xShader;
+Shader *            ShaderManager::blurAlphaMaskedBilinear8xShader;
+Shader *            ShaderManager::kawaseBlurShader;
+Shader *            ShaderManager::radialBlurShader;
+Shader *            ShaderManager::aoBlurShader;
+Shader *            ShaderManager::postColorTransformShader;
+Shader *            ShaderManager::postGammaCorrectionShader;
+Shader *            ShaderManager::linearizeDepthShader;
+Shader *            ShaderManager::copyDownscaledCocToAlphaShader;
+Shader *            ShaderManager::copyColorAndCocShader;
+Shader *            ShaderManager::applyDofShader;
+Shader *            ShaderManager::sunShaftsMaskGenShader;
+Shader *            ShaderManager::sunShaftsGenShader;
+Shader *            ShaderManager::sunShaftsDisplayShader;
+Shader *            ShaderManager::brightFilterShader;
+Shader *            ShaderManager::luminanceAdaptationShader;
+Shader *            ShaderManager::hdrFinalShader;
+Shader *            ShaderManager::chromaShiftShader;
+Shader *            ShaderManager::ssaoShader;
+Shader *            ShaderManager::generateHomShader;
+Shader *            ShaderManager::queryHomShader;
+
+void ShaderManager::Init() {
+    cmdSystem.AddCommand(L"listShaders", Cmd_ListShaders);
+    cmdSystem.AddCommand(L"reloadShader", Cmd_ReloadShader);
+
+    shaderHashMap.Init(1024, 128, 128);
+
+    InitShaders();
+
+    //defaultShader = AllocShader("_defaultShader", DefaultShaderGuid);
+    //defaultShader->Create(va("{ }", DefaultShaderGuid));
+    //defaultShader->permanence = true;
+}
+
+void ShaderManager::Shutdown() {
+    cmdSystem.RemoveCommand(L"listShaders");
+    cmdSystem.RemoveCommand(L"reloadShader");
+
+    // purge instantiated shaders first
+    for (int i = 0; i < shaderHashMap.Count(); i++) {
+        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
+        Shader *shader = entry->second;
+
+        if (shader->IsInstantiatedShader()) {
+            shader->Purge();
+        }
+    }
+    
+    // and then purge original shaders
+    for (int i = 0; i < shaderHashMap.Count(); i++) {
+        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
+        Shader *shader = entry->second;
+        
+        if (shader->IsOriginalShader()) {
+            shader->Purge();
+        }
+    }
+
+    shaderHashMap.DeleteContents(true);
+
+    globalHeaderList.Clear();
+}
+
+void ShaderManager::InitShaders() {
+    InitGlobalDefines();
+
+    LoadEngineShaders();
+
+    InstantiateEngineShaders();
+}
+
+void ShaderManager::InitGlobalDefines() {
+    if (textureManager.texture_useNormalCompression.GetBool()) {
+        if (glr.SupportsTextureCompressionLATC()) {
+            shaderManager.AddGlobalHeader("#define LATC_NORMAL\n");
+        } else if (glr.SupportsTextureCompressionETC2()) {
+            //shaderManager.AddGlobalHeader("#define ETC2_NORMAL\n");
+        } else if (glr.SupportsTextureCompressionS3TC()) {
+            shaderManager.AddGlobalHeader("#define DXT5_XGBR_NORMAL\n");
+        }
+    }
+
+#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+    shaderManager.AddGlobalHeader("#define COMPRESSED_VERTEX_NORMAL_TANGENTS\n");
+#endif
+
+    if (r_usePostProcessing.GetBool()) {
+        if (r_motionBlur.GetInteger() == 2) {
+            shaderManager.AddGlobalHeader("#define OBJECT_MOTION_BLUR\n");
+        }
+
+        if (r_SSAO_quality.GetInteger() > 0) {
+            shaderManager.AddGlobalHeader("#define HIGH_QUALITY_SSAO\n");
+        }
+    }
+    
+    if (renderGlobal.skinningMethod == Mesh::VtfSkinning) {
+        shaderManager.AddGlobalHeader("#define VTF_SKINNING\n");
+    }
+
+    if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+        shaderManager.AddGlobalHeader("#define USE_BUFFER_TEXTURE\n");
+    }
+
+    if (r_shadows.GetInteger() == 1) {
+        shaderManager.AddGlobalHeader("#define USE_SHADOW_MAP\n");
+    }
+
+    shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
+    
+    int maxShaderJoints = (glr.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);
+    shaderManager.AddGlobalHeader(va("#define MAX_SHADER_JOINTSX3 %i\n", maxShaderJoints * 3));
+
+    shaderManager.AddGlobalHeader(va("#define CSM_COUNT %i\n", r_CSM_count.GetInteger()));
+    shaderManager.AddGlobalHeader(va("#define CASCADE_SELECTION_METHOD %i\n", r_CSM_selectionMethod.GetInteger()));
+
+    if (r_CSM_blend.GetBool()) {
+        shaderManager.AddGlobalHeader("#define BLEND_CASCADE\n");
+    }
+
+    if (r_showShadows.GetInteger() == 1) {
+        shaderManager.AddGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
+    }
+}
+
+void ShaderManager::LoadEngineShaders() {
+    for (int i = 0; i < COUNT_OF(originalShaderList); i++) {
+        Str filename = originalShaderList[i].filename;
+        filename.SetFileExtension(".shader");
+
+        Shader *shader = AllocShader(filename);
+        if (!shader->Load(filename)) {
+            DestroyShader(shader);
+            BE_FATALERROR(L"Failed to create shader '%hs'", filename.c_str());
+        }
+
+        originalShaders[i] = shader;
+    }
+}
+
+void ShaderManager::InstantiateEngineShaders() {
+    Array<Shader::Define> defineArray;
+
+    drawArrayTextureShader = originalShaders[DrawArrayTextureShader]->InstantiateShader(Array<Shader::Define>());
+
+    guiShader = originalShaders[GuiShader]->InstantiateShader(Array<Shader::Define>());
+
+    selectionIdShader = originalShaders[SelectionIdShader]->InstantiateShader(Array<Shader::Define>());
+
+    depthShader = originalShaders[DepthShader]->InstantiateShader(Array<Shader::Define>());
+
+    constantColorShader = originalShaders[ConstantColorShader]->InstantiateShader(Array<Shader::Define>());
+    vertexColorShader = originalShaders[VertexColorShader]->InstantiateShader(Array<Shader::Define>());
+
+    defineArray.Clear();
+    defineArray.Append(Shader::Define("NO_AMBIENT_CUBE_MAP", 1));
+    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    amblitNoAmbientCubeMapShader = originalShaders[AmblitShader]->InstantiateShader(defineArray);
+
+    defineArray.Clear();
+    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    amblitNoBumpShader = originalShaders[AmblitShader]->InstantiateShader(defineArray);
+
+    objectMotionBlurShader = originalShaders[ObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
+
+    defineArray.Clear();
+    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
+    lightingDefaultShader = originalShaders[LightingGenericShader]->InstantiateShader(defineArray);
+
+    fogLightShader = originalShaders[FogLightShader]->InstantiateShader(Array<Shader::Define>());
+    blendLightShader = originalShaders[BlendLightShader]->InstantiateShader(Array<Shader::Define>());
+
+    //shProjectionShader = originalShaders[SHProjectionShader]->InstantiateShader(Array<Shader::Define>());
+    //shEvalIrradianceCubeMapShader = originalShaders[SHEvalIrradianceCubeMapShader]->InstantiateShader(Array<Shader::Define>());
+
+    postObjectMotionBlurShader = originalShaders[PostObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
+    postCameraMotionBlurShader = originalShaders[PostCameraMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
+    postPassThruShader = originalShaders[PostPassThruShader]->InstantiateShader(Array<Shader::Define>());
+    postPassThruColorShader = originalShaders[PostPassThruColorShader]->InstantiateShader(Array<Shader::Define>());
+
+    downscale2x2Shader = originalShaders[Downscale2x2Shader]->InstantiateShader(Array<Shader::Define>());
+    downscale4x4Shader = originalShaders[Downscale4x4Shader]->InstantiateShader(Array<Shader::Define>());
+    downscale4x4LogLumShader = originalShaders[Downscale4x4LogLumShader]->InstantiateShader(Array<Shader::Define>());
+    downscale4x4ExpLumShader = originalShaders[Downscale4x4ExpLumShader]->InstantiateShader(Array<Shader::Define>());
+
+    blur5xShader = originalShaders[Blur5xShader]->InstantiateShader(Array<Shader::Define>());
+    blur7xShader = originalShaders[Blur7xShader]->InstantiateShader(Array<Shader::Define>());
+    blur15xShader = originalShaders[Blur15xShader]->InstantiateShader(Array<Shader::Define>());
+    blurBilinear3xShader = originalShaders[BlurBilinear3xShader]->InstantiateShader(Array<Shader::Define>());
+    blurBilinear4xShader = originalShaders[BlurBilinear4xShader]->InstantiateShader(Array<Shader::Define>());
+    blurBilinear8xShader = originalShaders[BlurBilinear8xShader]->InstantiateShader(Array<Shader::Define>());
+    blurAlphaMaskedBilinear8xShader = originalShaders[BlurAlphaMaskedBilinear8xShader]->InstantiateShader(Array<Shader::Define>());
+    kawaseBlurShader = originalShaders[KawaseBlurShader]->InstantiateShader(Array<Shader::Define>());
+    radialBlurShader = originalShaders[RadialBlurShader]->InstantiateShader(Array<Shader::Define>());
+    aoBlurShader = originalShaders[AoBlurShader]->InstantiateShader(Array<Shader::Define>());
+
+    postColorTransformShader = originalShaders[PostColorTransformShader]->InstantiateShader(Array<Shader::Define>());
+    postGammaCorrectionShader = originalShaders[PostGammaCorrectionShader]->InstantiateShader(Array<Shader::Define>());
+
+    linearizeDepthShader = originalShaders[LinearizeDepthShader]->InstantiateShader(Array<Shader::Define>());
+
+    copyDownscaledCocToAlphaShader = originalShaders[CopyDownscaledCocToAlphaShader]->InstantiateShader(Array<Shader::Define>());
+    copyColorAndCocShader = originalShaders[CopyColorAndCocShader]->InstantiateShader(Array<Shader::Define>());
+
+    applyDofShader = originalShaders[ApplyDofShader]->InstantiateShader(Array<Shader::Define>());
+
+    sunShaftsMaskGenShader = originalShaders[SunShaftsMaskGenShader]->InstantiateShader(Array<Shader::Define>());
+    sunShaftsGenShader = originalShaders[SunShaftsGenShader]->InstantiateShader(Array<Shader::Define>());
+    sunShaftsDisplayShader = originalShaders[SunShaftsDisplayShader]->InstantiateShader(Array<Shader::Define>());
+
+    brightFilterShader = originalShaders[BrightFilterShader]->InstantiateShader(Array<Shader::Define>());
+    luminanceAdaptationShader = originalShaders[LuminanceAdaptationShader]->InstantiateShader(Array<Shader::Define>());
+    hdrFinalShader = originalShaders[HdrFinalShader]->InstantiateShader(Array<Shader::Define>());
+
+    chromaShiftShader = originalShaders[ChromaShiftShader]->InstantiateShader(Array<Shader::Define>());
+
+    ssaoShader = originalShaders[SsaoShader]->InstantiateShader(Array<Shader::Define>());
+
+    generateHomShader = originalShaders[GenerateHomShader]->InstantiateShader(Array<Shader::Define>());
+    queryHomShader = originalShaders[QueryHomShader]->InstantiateShader(Array<Shader::Define>());
+}
+
+void ShaderManager::ReloadShaders() {
+    for (int i = 0; i < shaderHashMap.Count(); i++) {
+        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
+        Shader *shader = entry->second;
+
+        if (shader->IsOriginalShader()) {
+            shader->Reload();
+        }
+    }
+}
+
+void ShaderManager::ReloadLightingShaders() {
+    for (int i = 0; i < shaderHashMap.Count(); i++) {
+        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
+        Shader *shader = entry->second;
+
+        if (shader->IsOriginalShader()) {
+            if (shader->flags & Shader::Lighting) {
+                shader->Reload();
+            }
+        }
+    }
+}
+
+void ShaderManager::DestroyUnusedShaders() {
+    Array<Shader *> removeArray;
+
+    for (int i = 0; i < shaderHashMap.Count(); i++) {
+        const auto *entry = shaderHashMap.GetByIndex(i);
+        Shader *shader = entry->second;
+
+        if (shader && shader->refCount == 0) {
+            removeArray.Append(shader);
+        }
+    }
+
+    for (int i = 0; i < removeArray.Count(); i++) {
+        DestroyShader(removeArray[i]);
+    }
+}
+
+void ShaderManager::DestroyShader(Shader *shader) {
+    if (shader->refCount > 1) {
+        BE_WARNLOG(L"ShaderManager::DestroyShader: shader '%hs' has %i reference count\n", shader->hashName.c_str(), shader->refCount);
+    }
+
+    shaderHashMap.Remove(shader->hashName);
+
+    delete shader;
+}
+
+Shader *ShaderManager::AllocShader(const char *hashName) {	
+    if (shaderHashMap.Get(hashName)) {
+        BE_FATALERROR(L"%hs shader already allocated", hashName);
+    }
+
+    Shader *shader = new Shader;
+    shader->hashName = hashName;
+    shader->name = hashName;
+    shader->name.StripPath();
+    shader->name.StripFileExtension();
+    shader->refCount = 1;
+
+    shaderHashMap.Set(shader->hashName, shader);
+
+    return shader;
+}
+
+Shader *ShaderManager::FindShader(const char *hashName) const {
+    const auto *entry = shaderHashMap.Get(hashName);
+    if (entry) {
+        return entry->second;
+    }
+
+    return nullptr;
+}
+
+Shader *ShaderManager::GetShader(const char *hashName) {
+    if (!hashName || !hashName[0]) {
+        return nullptr;
+    }
+
+    Shader *shader = FindShader(hashName);
+    if (shader) {
+        shader->refCount++;
+        return shader;
+    }
+
+    shader = AllocShader(hashName);
+    if (!shader->Load(hashName)) {
+        DestroyShader(shader);
+        return nullptr;
+    }
+
+    return shader;
+}
+
+void ShaderManager::ReleaseShader(Shader *shader, bool immediateDestroy) {
+    if (shader->permanence) {
+        return;
+    }
+
+    if (shader->refCount > 0) {
+        shader->refCount--;
+    }
+
+    if (immediateDestroy && shader->refCount == 0) {
+        DestroyShader(shader);
+    }
+}
+
+bool ShaderManager::FindGlobalHeader(const char *text) const {
+    for (int i = 0; i < globalHeaderList.Count(); i++) {
+        if (!globalHeaderList[i].Cmpn(text, Str::Length(text))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ShaderManager::AddGlobalHeader(const char *text) {
+    globalHeaderList.Append(Str(text));
+}
+
+void ShaderManager::RemoveGlobalHeader(const char *text) {
+    int removeIndex = -1;
+
+    for (int i = 0; i < globalHeaderList.Count(); i++) {
+        if (!globalHeaderList[i].Cmpn(text, Str::Length(text))) {
+            removeIndex = i;
+            break;
+        }
+    }
+
+    if (removeIndex >= 0) {
+        globalHeaderList.RemoveIndex(removeIndex);
+    }
+}
+
+void ShaderManager::Cmd_ListShaders(const CmdArgs &args) {
+    int count = 0;	
+
+    BE_LOG(L"NUM. REF. TYPE NAME\n");
+
+    for (int i = 0; i < shaderManager.shaderHashMap.Count(); i++) {
+        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
+        Shader *shader = entry->second;
+
+        BE_LOG(L"%4d %4d %hs\n", i, shader->refCount, shader->hashName.c_str());
+
+        count++;
+    }
+
+    BE_LOG(L"%i total shaders\n", count);
+}
+
+void ShaderManager::Cmd_ReloadShader(const CmdArgs &args) {
+    if (args.Argc() != 2) {
+        BE_LOG(L"reloadShader <filename>\n");
+        return;
+    }
+
+    if (!WStr::Icmp(args.Argv(1), L"all")) {
+        int count = shaderManager.shaderHashMap.Count();
+
+        for (int i = 0; i < count; i++) {
+            const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
+            Shader *shader = entry->second;
+            if (shader->IsOriginalShader()) {
+                shader->Reload();
+            }
+        }
+    } else {
+        Shader *shader = shaderManager.FindShader(WStr::ToStr(args.Argv(1)));
+        if (!shader) {
+            BE_WARNLOG(L"Couldn't find shader to reload \"%ls\"\n", args.Argv(1));
+            return;
+        }
+
+        shader->Reload();
+    }
+}
+
+BE_NAMESPACE_END

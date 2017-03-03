@@ -1,0 +1,6 @@
+<project name="secure_properties">
+  <property name="key.store" value=".\polygontek.keystore" />
+  <property name="key.store.password" value="11112222" />
+  <property name="key.alias" value="AndroidPlayer" />
+  <property name="key.alias.password" value="11112222" />
+</project>

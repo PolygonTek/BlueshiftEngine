@@ -1,0 +1,22 @@
+in vec4 in_position : POSITION;
+
+out vec4 v2f_color;
+out vec4 v2f_texCoord0;
+out vec2 v2f_texCoord1;
+
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 modelViewMatrixTranspose;
+uniform mat4 lightTextureMatrix;
+uniform vec3 fogColor;
+uniform float fogDistance;
+
+void main() {
+	v2f_texCoord0 = lightTextureMatrix * in_position;
+
+	v2f_texCoord1.x = clamp(-dot(in_position, modelViewMatrixTranspose[2]) / fogDistance, 0.0, 1.0);
+	v2f_texCoord1.y = 0.5;
+
+	v2f_color = vec4(fogColor.xyz, 1.0);
+
+	gl_Position = modelViewProjectionMatrix * in_position;
+}

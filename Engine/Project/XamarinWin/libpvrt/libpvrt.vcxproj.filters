@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTError.cpp" />
+    <ClCompile Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTResourceFile.cpp" />
+    <ClCompile Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTString.cpp" />
+    <ClCompile Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTTexture.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTArray.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTError.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTGlobal.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTMap.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTMemoryFileSystem.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTResourceFile.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTString.h" />
+    <ClInclude Include="..\..\..\..\..\Source\Dependencies\libpvrt\PVRTTexture.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\..\..\Source\Dependencies\libpvrt\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{2D334889-DE3A-4A3B-9DA2-8E009401A3F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BD779E8B-2BE4-45C6-80A8-F605201B190D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

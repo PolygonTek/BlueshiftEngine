@@ -1,0 +1,450 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Core\Precompiled.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Core.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Main\Common.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Main\GameClient.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Asset\Asset.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Asset\AssetImporter.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Asset\GuidMapper.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\AnimController\AnimBlendTree.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\AnimController\AnimClip.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\AnimController\AnimLayer.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\AnimController\AnimState.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\AnimController\AnimController.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Animator\Animator.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Animator\AnimStateBlender.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComAudioListener.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComAudioSource.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComBoxCollider.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComCamera.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComCapsuleCollider.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComCharacterController.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComCharacterJoint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComCollider.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComConstantForce.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComCylinderCollider.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComFixedJoint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComHingeJoint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComJoint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComLight.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComLogic.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComMeshCollider.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\Component.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComRenderable.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComRigidBody.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComSensor.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComSkinnedMeshRenderer.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComSocketJoint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComSphereCollider.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComSpringJoint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComStaticMeshRenderer.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Component\ComTransform.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\GameSettings\GameSettings.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\GameSettings\TagLayerSettings.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\GameSettings\PhysicsSettings.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\GameWorld\Entity.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\GameWorld\Prefab.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\GameWorld\GameWorld.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Introspection\Event.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Introspection\Object.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Introspection\Property.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Introspection\Signal.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Introspection\SignalObject.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\Collider.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\ColliderManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsCollidable.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsCollisionListener.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsConstraint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsCVars.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsDebugDraw.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsGenericConstraint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsGenericSpringConstraint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsHingeConstraint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsP2PConstraint.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsRigidBody.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsSensor.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsSystem.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Physics\PhysicsWorld.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Sound\Sound.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Sound\WaveFile.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Anim.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Anim_banim.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Anim_optimize.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\AnimManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\BufferCache.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\GuiModel.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Material.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\MaterialManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Mesh.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Mesh_bmesh.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Mesh_CreateMesh.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Mesh_SortAndMerge.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\MeshManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\RenderContext.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\RenderEntity.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\RenderLight.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\RenderSystem.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\RenderView.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\RenderWorld.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\RenderWorld_view.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Shader.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\ShaderManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Skeleton.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\SkeletonManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Skin.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\SkinManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\SubMesh.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Texture.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\TextureManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Font\Font.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Font\FontBitmap.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Font\FontFreeType.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\FrameData.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RB_DebugTools.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RB_DrawSimple.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RB_Main.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RB_Pass.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RB_PassLit.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RB_PostProcess.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RB_Surf.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RB_Surf_Render.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RenderCVars.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RenderPostProcess.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RenderTarget.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\RenderUtils.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\ShadowMapManager.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Render\Internal\VertexFormat.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Platform\Platform.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Platform\PlatformGeneric.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Input\InputSystem.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Input\KeyCmd.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Console\Console.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Utils\CustomSIMD.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Utils\CustomSIMD_Generic.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Utils\CustomSIMD_SSE4.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Utils\Decl.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Utils\DynamicAABBTree.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Utils\JointTransform.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Utils\Vec4Color.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Platform\PlatformWin.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Sound\Player.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Network\Socket.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Private\Network\Packet.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Core\Precompiled.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Core.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\CoreCommon.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Main\Common.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Main\GameClient.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Asset\Asset.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Asset\AssetImporter.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Asset\GuidMapper.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\AnimController\AnimBlendTree.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\AnimController\AnimClip.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\AnimController\AnimLayer.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\AnimController\AnimState.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\AnimController\AnimController.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Animator\Animator.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Animator\AnimStateBlender.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComAudioListener.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComAudioSource.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComBoxCollider.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComCamera.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComCapsuleCollider.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComCharacterController.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComCharacterJoint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComCollider.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComConstantForce.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComCylinderCollider.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComFixedJoint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComHingeJoint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComJoint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComLight.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComLogic.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComMeshCollider.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\Component.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComRenderable.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComRigidBody.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComSensor.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComSkinnedMeshRenderer.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComSocketJoint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComSphereCollider.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComSpringJoint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComStaticMeshRenderer.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Component\ComTransform.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\GameSettings\GameSettings.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\GameSettings\TagLayerSettings.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\GameSettings\PhysicsSettings.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\GameWorld\Entity.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\GameWorld\Prefab.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\GameWorld\GameWorld.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Introspection\Event.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Introspection\Object.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Introspection\Property.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Introspection\Signal.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Introspection\SignalObject.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\Collider.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\Physics.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsCollidable.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsCollisionListener.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsConstraint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsGenericConstraint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsGenericSpringConstraint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsHingeConstraint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsP2PConstraint.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsRigidBody.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsSensor.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsSystem.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Physics\PhysicsWorld.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Sound\Sound.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Anim.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\BufferCache.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Font.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\GuiModel.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Material.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Mesh.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Render.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\RenderContext.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\RenderEntity.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\RenderLight.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\RenderSystem.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\RenderView.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\RenderWorld.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Shader.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Skeleton.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Skin.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\SubMesh.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Render\Texture.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Platform\Platform.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Input\InputSystem.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Input\KeyCmd.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Input\Keys.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Console\Console.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Utils\CustomSIMD.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Utils\Decl.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Utils\DynamicAABBTree.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Utils\JointTransform.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Utils\StrColor.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Utils\Vec4Color.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Utils\Vertex.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Physics\ColliderInternal.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Physics\PhysicsCVars.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Physics\PhysicsInternal.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Sound\WaveFile.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\BModel.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Font\FontBitmap.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Font\FontFreeType.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\DrawSurf.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\FrameData.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\RBackEnd.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\RenderCmd.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\RenderCVars.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\RenderInternal.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\RenderPostProcess.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\RenderTarget.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\RenderUtils.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\ShadowMapManager.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\Simplex.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Render\Internal\VertexFormat.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Platform\PlatformGeneric.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Platform\PlatformWin.h" />
+    <ClInclude Include="..\..\..\Source\Core\Private\Sound\Player.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Network\Socket.h" />
+    <ClInclude Include="..\..\..\Source\Core\Public\Network\Packet.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\shaders\ambient.fp" />
+    <None Include="..\..\..\shaders\ambient.shader" />
+    <None Include="..\..\..\shaders\ambient.vp" />
+    <None Include="..\..\..\shaders\amblit.fp" />
+    <None Include="..\..\..\shaders\amblit.shader" />
+    <None Include="..\..\..\shaders\amblit.vp" />
+    <None Include="..\..\..\shaders\aoBlur.shader" />
+    <None Include="..\..\..\shaders\applyDOF.shader" />
+    <None Include="..\..\..\shaders\blendLight.fp" />
+    <None Include="..\..\..\shaders\blendLight.shader" />
+    <None Include="..\..\..\shaders\blendLight.vp" />
+    <None Include="..\..\..\shaders\blur15x.shader" />
+    <None Include="..\..\..\shaders\blur5x.shader" />
+    <None Include="..\..\..\shaders\blur7x.shader" />
+    <None Include="..\..\..\shaders\blurAlphaMaskedBilinear8x.shader" />
+    <None Include="..\..\..\shaders\blurBilinear3x.shader" />
+    <None Include="..\..\..\shaders\blurBilinear4x.shader" />
+    <None Include="..\..\..\shaders\blurBilinear8x.shader" />
+    <None Include="..\..\..\shaders\brightFilter.shader" />
+    <None Include="..\..\..\shaders\chromaShift.shader" />
+    <None Include="..\..\..\shaders\clipQuad.vp" />
+    <None Include="..\..\..\shaders\colorTransform.shader" />
+    <None Include="..\..\..\shaders\constantColor.shader" />
+    <None Include="..\..\..\shaders\copyColorAndCoc.shader" />
+    <None Include="..\..\..\shaders\copyDownscaledCocToAlpha.shader" />
+    <None Include="..\..\..\shaders\customLighting.glsl" />
+    <None Include="..\..\..\shaders\depth.fp" />
+    <None Include="..\..\..\shaders\depth.shader" />
+    <None Include="..\..\..\shaders\depth.vp" />
+    <None Include="..\..\..\shaders\downscale2x2.shader" />
+    <None Include="..\..\..\shaders\downscale4x4.shader" />
+    <None Include="..\..\..\shaders\downscale4x4ExpLum.shader" />
+    <None Include="..\..\..\shaders\downscale4x4LogLum.shader" />
+    <None Include="..\..\..\shaders\drawArrayTexture.shader" />
+    <None Include="..\..\..\shaders\foglight.fp" />
+    <None Include="..\..\..\shaders\fogLight.shader" />
+    <None Include="..\..\..\shaders\foglight.vp" />
+    <None Include="..\..\..\shaders\fragment_common.glsl" />
+    <None Include="..\..\..\shaders\gammaCorrection.shader" />
+    <None Include="..\..\..\shaders\generateHom.shader" />
+    <None Include="..\..\..\shaders\gui.fp" />
+    <None Include="..\..\..\shaders\gui.shader" />
+    <None Include="..\..\..\shaders\gui.vp" />
+    <None Include="..\..\..\shaders\HDRFinal.shader" />
+    <None Include="..\..\..\shaders\image_processing.glsl" />
+    <None Include="..\..\..\shaders\kawaseBlur.shader" />
+    <None Include="..\..\..\shaders\lightingGeneric.fp" />
+    <None Include="..\..\..\shaders\lightingGeneric.shader" />
+    <None Include="..\..\..\shaders\lightingGeneric.vp" />
+    <None Include="..\..\..\shaders\lightingToon.fp" />
+    <None Include="..\..\..\shaders\lightingToon.shader" />
+    <None Include="..\..\..\shaders\lightingToon.vp" />
+    <None Include="..\..\..\shaders\linearizeDepth.shader" />
+    <None Include="..\..\..\shaders\liquid.fp" />
+    <None Include="..\..\..\shaders\liquid.shader" />
+    <None Include="..\..\..\shaders\liquid.vp" />
+    <None Include="..\..\..\shaders\logluv.glsl" />
+    <None Include="..\..\..\shaders\luminanceAdaptation.shader" />
+    <None Include="..\..\..\shaders\motionBlurObject.fp" />
+    <None Include="..\..\..\shaders\motionBlurObject.vp" />
+    <None Include="..\..\..\shaders\objectMotionBlur.shader" />
+    <None Include="..\..\..\shaders\passThru.shader" />
+    <None Include="..\..\..\shaders\passThruColor.shader" />
+    <None Include="..\..\..\shaders\postCameraMotionBlur.shader" />
+    <None Include="..\..\..\shaders\postObjectMotionBlur.shader" />
+    <None Include="..\..\..\shaders\queryHom.shader" />
+    <None Include="..\..\..\shaders\radialBlur.shader" />
+    <None Include="..\..\..\shaders\screenGrayScale.shader" />
+    <None Include="..\..\..\shaders\selectionId.fp" />
+    <None Include="..\..\..\shaders\selectionId.shader" />
+    <None Include="..\..\..\shaders\selectionId.vp" />
+    <None Include="..\..\..\shaders\shadow.fp" />
+    <None Include="..\..\..\shaders\shadow.vp" />
+    <None Include="..\..\..\shaders\shadowVolume.shader" />
+    <None Include="..\..\..\shaders\shadowVolumeParallel.shader" />
+    <None Include="..\..\..\shaders\showTangentSpace.shader" />
+    <None Include="..\..\..\shaders\sh_common.glsl" />
+    <None Include="..\..\..\shaders\SH_evalIrradianceCubeMap.shader" />
+    <None Include="..\..\..\shaders\SH_projection.shader" />
+    <None Include="..\..\..\shaders\skinning_matrix1.glsl" />
+    <None Include="..\..\..\shaders\skinning_matrix4.glsl" />
+    <None Include="..\..\..\shaders\skinning_matrix8.glsl" />
+    <None Include="..\..\..\shaders\skinning_matrix_common.glsl" />
+    <None Include="..\..\..\shaders\skybox.shader" />
+    <None Include="..\..\..\shaders\SSAO.shader" />
+    <None Include="..\..\..\shaders\sunShaftsDisplay.shader" />
+    <None Include="..\..\..\shaders\sunShaftsGen.shader" />
+    <None Include="..\..\..\shaders\sunShaftsMaskGen.shader" />
+    <None Include="..\..\..\shaders\vertexColor.shader" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Private\Main">
+      <UniqueIdentifier>{80914BF7-C72F-40F9-B315-D87AF76899F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Asset">
+      <UniqueIdentifier>{6F503160-B3A0-4423-A6D4-38AE338C5DD6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Avatar">
+      <UniqueIdentifier>{FFD86433-CDCE-4081-B5D0-969D5BCECFA3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Component">
+      <UniqueIdentifier>{D82E2BF4-220A-476B-887A-E72C86D02A09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\GameWorld">
+      <UniqueIdentifier>{CC77ED51-7159-4AC9-8090-3B9880A6F540}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Introspection">
+      <UniqueIdentifier>{8800B7D2-9666-4205-8FA8-66EEAB2DFD5B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Physics">
+      <UniqueIdentifier>{8E0A84E1-AE19-4F45-9505-BA7F7241D5AD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Sound">
+      <UniqueIdentifier>{13F9EF24-7A09-4E99-B5BF-EDE99856CAAA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Render">
+      <UniqueIdentifier>{5DDB6255-C08B-4D76-ADDC-3802863FD655}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Platform">
+      <UniqueIdentifier>{D738384D-26D3-4271-B55B-E3320E455D77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Input">
+      <UniqueIdentifier>{75EF01F1-7862-475B-A733-13C7DADD4709}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Console">
+      <UniqueIdentifier>{29FE5BA3-CA03-44F5-8728-6470C6B7E79B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Utils">
+      <UniqueIdentifier>{1494FB11-B9C6-467F-A413-8639F7160C6F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Network">
+      <UniqueIdentifier>{7D75AB3B-CAB9-4141-BDF6-1242615FA590}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Render\Font">
+      <UniqueIdentifier>{E669CDCC-32FB-41A8-BA39-BBB283068A55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Render\Internal">
+      <UniqueIdentifier>{D39D8104-3BF5-40C4-B196-795BD9E324DD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Main">
+      <UniqueIdentifier>{8FBA3CE5-048D-4412-BB6E-53675B6337BD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Asset">
+      <UniqueIdentifier>{D1D8816E-3F30-44A2-A51D-FFEBFB1CD68B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Avatar">
+      <UniqueIdentifier>{43CB1DD0-C2C4-4396-B774-A0EC0E5E0485}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Component">
+      <UniqueIdentifier>{C9B2F5AA-A3B8-4321-AFA4-483DF9B1AF00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\GameWorld">
+      <UniqueIdentifier>{5D20F94D-C9D6-498B-A669-38220C2CC3A0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Introspection">
+      <UniqueIdentifier>{E9F6194F-9095-4612-8799-B518BBFA6E88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Physics">
+      <UniqueIdentifier>{58277A43-DCE6-4826-8D60-A6C00D9C0F0D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Sound">
+      <UniqueIdentifier>{9B81F06F-FAF9-4052-86C8-6629564FFE98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Render">
+      <UniqueIdentifier>{CD34105D-5277-4F89-947B-8288C44D7D06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Platform">
+      <UniqueIdentifier>{13DF4BDD-2E12-4ED2-8F64-C02FD4AD7E20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Input">
+      <UniqueIdentifier>{DF7DD2CA-1C61-4114-8304-9EBA7C46E40C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Console">
+      <UniqueIdentifier>{0F650937-66DB-4D10-9A52-BFDBB4554C74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Utils">
+      <UniqueIdentifier>{8F41F459-35BF-4065-B7E4-AABE5CE38545}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Network">
+      <UniqueIdentifier>{CB952A4F-12B1-4B40-AAC7-E844A7618127}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public">
+      <UniqueIdentifier>{445A5EED-E3E4-4E5D-82F8-3D0B462E41A7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private">
+      <UniqueIdentifier>{52E839F2-EE0C-474A-8A6F-B7968D79C764}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{80F70CFD-2778-40AE-A7CD-C018B6A9ABEF}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

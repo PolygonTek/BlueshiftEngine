@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="NsightTegraProject">
+    <NsightTegraProjectRevisionNumber>11</NsightTegraProjectRevisionNumber>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Tegra-Android">
+      <Configuration>Debug</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Tegra-Android">
+      <Configuration>Release</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Shipping|Tegra-Android">
+      <Configuration>Shipping</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C69E3335-CDB8-4654-96AF-33E51FE1D63A}</ProjectGuid>
+    <RootNamespace>lua</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-21</AndroidTargetAPI>
+    <AndroidMinAPI>android-21</AndroidMinAPI>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lapi.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lauxlib.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lcode.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lctype.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\ldebug.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\ldo.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lfunc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lgc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\llex.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\llimits.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lmem.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lobject.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lopcodes.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lparser.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lstate.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lstring.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\ltable.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\ltm.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lua.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lua.hpp" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\luaconf.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lualib.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lundump.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lvm.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lzio.h" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lapi.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lauxlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lbaselib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lbitlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lcode.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lcorolib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lctype.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldblib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldebug.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldo.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldump.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lfunc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lgc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\linit.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\liolib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\llex.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lmathlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lmem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\loadlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lobject.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lopcodes.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\loslib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lparser.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstate.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstring.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstrlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltable.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltablib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltm.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lundump.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lvm.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lzio.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

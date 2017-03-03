@@ -1,0 +1,168 @@
+#include "Precompiled.h"
+#include "Render/Render.h"
+#include "Components/ComTransform.h"
+#include "Components/ComRigidBody.h"
+#include "Components/ComHingeJoint.h"
+#include "Game/Entity.h"
+#include "Game/GameWorld.h"
+
+BE_NAMESPACE_BEGIN
+
+OBJECT_DECLARATION("Hinge Joint", ComHingeJoint, ComJoint)
+BEGIN_EVENTS(ComHingeJoint)
+END_EVENTS
+BEGIN_PROPERTIES(ComHingeJoint)
+    PROPERTY_VEC3("anchor", "Anchor", "", "0 0 0", PropertySpec::ReadWrite),
+    PROPERTY_ANGLES("angles", "Angles", "", "0 0 0", PropertySpec::ReadWrite),
+    PROPERTY_FLOAT("motorSpeed", "Motor Speed", "", "0", PropertySpec::ReadWrite),
+    PROPERTY_FLOAT("maxMotorImpulse", "Max Motor Impulse", "", "0", PropertySpec::ReadWrite),
+END_PROPERTIES
+
+void ComHingeJoint::RegisterProperties() {
+    //REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", PropertySpec::ReadWrite);
+    //REGISTER_ACCESSOR_PROPERTY("Angles", Angles, Angles, GetAngles, SetAngles, "0 0 0", PropertySpec::ReadWrite);
+    //REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, "0", PropertySpec::ReadWrite);
+    //REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, "0", PropertySpec::ReadWrite);
+}
+
+ComHingeJoint::ComHingeJoint() {
+    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComHingeJoint::PropertyChanged);
+}
+
+ComHingeJoint::~ComHingeJoint() {
+}
+
+void ComHingeJoint::Init() {
+    ComJoint::Init();
+
+    anchor = props->Get("anchor").As<Vec3>();
+    axis = props->Get("angles").As<Angles>().ToMat3();    
+    axis.FixDegeneracies();
+    motorSpeed = props->Get("motorSpeed").As<float>();
+    maxMotorImpulse = props->Get("maxMotorImpulse").As<float>();
+}
+
+void ComHingeJoint::Start() {
+    ComJoint::Start();
+
+    const ComTransform *transform = GetEntity()->GetTransform();
+    const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
+    assert(rigidBody);
+
+    PhysConstraintDesc desc;
+    desc.type           = PhysConstraint::Hinge;
+    desc.bodyA          = rigidBody->GetBody();
+    desc.axisInA        = axis;
+    desc.anchorInA      = transform->GetScale() * anchor;
+
+    if (connectedBody) {
+        Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
+
+        desc.bodyB      = connectedBody->GetBody();
+        desc.axisInB    = axis;
+        desc.anchorInB  = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+    } else {
+        desc.bodyB      = nullptr;
+    }
+    
+    desc.collision      = collisionEnabled;
+    desc.breakImpulse   = breakImpulse;
+    constraint = physicsSystem.CreateConstraint(&desc);
+
+    PhysHingeConstraint *hingeConstraint = static_cast<PhysHingeConstraint *>(constraint);
+    hingeConstraint->EnableMotor(motorSpeed != 0.0f ? true : false);
+    hingeConstraint->SetMotor(motorSpeed, maxMotorImpulse);
+
+    if (IsEnabled()) {
+        hingeConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+}
+
+void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+    const ComTransform *transform = GetEntity()->GetTransform();
+    Vec3 worldOrigin = transform->GetWorldMatrix() * anchor;
+    Mat3 worldAxis = transform->GetAxis() * axis;
+    
+    renderWorld->SetDebugColor(Color4::red, Color4::zero);
+    renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5), worldOrigin + worldAxis[0] * CentiToUnit(5), 1);
+    renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(5), worldOrigin + worldAxis[1] * CentiToUnit(5), 1);
+    renderWorld->DebugLine(worldOrigin - worldAxis[2] * CentiToUnit(10), worldOrigin + worldAxis[2] * CentiToUnit(10), 1);
+}
+
+void ComHingeJoint::PropertyChanged(const char *classname, const char *propName) {
+    if (!IsInitalized()) {
+        return;
+    }
+
+    if (!Str::Cmp(propName, "anchor")) {
+        SetAnchor(props->Get("anchor").As<Vec3>());
+        return;
+    }
+    
+    if (!Str::Cmp(propName, "angles")) {
+        SetAngles(props->Get("angles").As<Angles>());
+        return;
+    }
+
+    if (!Str::Cmp(propName, "motorSpeed")) {
+        SetMotorSpeed(props->Get("motorSpeed").As<float>());
+        return;
+    }
+
+    if (!Str::Cmp(propName, "maxMotorImpulse")) {
+        SetMaxMotorImpulse(props->Get("maxMotorImpulse").As<float>());
+        return;
+    }
+    
+    ComJoint::PropertyChanged(classname, propName);
+}
+
+const Vec3 &ComHingeJoint::GetAnchor() const {
+    return anchor;
+}
+
+void ComHingeJoint::SetAnchor(const Vec3 &anchor) {
+    this->anchor = anchor;
+    if (constraint) {
+        ((PhysHingeConstraint *)constraint)->SetFrameA(anchor, axis);
+    }
+}
+
+const Angles ComHingeJoint::GetAngles() const {
+    return axis.ToAngles();
+}
+
+void ComHingeJoint::SetAngles(const Angles &angles) {
+    this->axis = angles.ToMat3();
+    if (constraint) {
+        ((PhysHingeConstraint *)constraint)->SetFrameA(anchor, axis);
+    }
+}
+
+const float ComHingeJoint::GetMotorSpeed() const {
+    return motorSpeed;
+}
+
+void ComHingeJoint::SetMotorSpeed(const float motorSpeed) {
+    this->motorSpeed = motorSpeed;
+    if (constraint) {
+        ((PhysHingeConstraint *)constraint)->EnableMotor(motorSpeed != 0.0f ? true : false);
+        ((PhysHingeConstraint *)constraint)->SetMotor(motorSpeed, maxMotorImpulse);
+    }
+}
+
+const float ComHingeJoint::GetMaxMotorImpulse() const {
+    return maxMotorImpulse;
+}
+
+void ComHingeJoint::SetMaxMotorImpulse(const float maxMotorImpulse) {
+    this->maxMotorImpulse = maxMotorImpulse;
+    if (constraint) {
+        ((PhysHingeConstraint *)constraint)->EnableMotor(motorSpeed != 0.0f ? true : false);
+        ((PhysHingeConstraint *)constraint)->SetMotor(motorSpeed, maxMotorImpulse);
+    }
+}
+
+BE_NAMESPACE_END

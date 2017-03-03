@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Seongjae\Documents\blueshift\Engine\Source\Dependencies\minizip\ioapi.c" />
+    <ClCompile Include="C:\Users\Seongjae\Documents\blueshift\Engine\Source\Dependencies\minizip\unzip.c" />
+    <ClCompile Include="C:\Users\Seongjae\Documents\blueshift\Engine\Source\Dependencies\minizip\zip.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\Seongjae\Documents\blueshift\Engine\Source\Dependencies\minizip\ioapi.h" />
+    <ClInclude Include="C:\Users\Seongjae\Documents\blueshift\Engine\Source\Dependencies\minizip\unzip.h" />
+    <ClInclude Include="C:\Users\Seongjae\Documents\blueshift\Engine\Source\Dependencies\minizip\zip.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{2D334889-DE3A-4A3B-9DA2-8E009401A3F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BD779E8B-2BE4-45C6-80A8-F605201B190D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
