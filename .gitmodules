@@ -1,0 +1,3 @@
+[submodule "EngineData"]
+	path = EngineData
+	url = https://github.com/PolygonTek/BlueshiftEngineData.git
