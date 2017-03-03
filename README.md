@@ -23,7 +23,7 @@ How To Build
 
 ### Instruction
 
-  1. Clone the repository `git clone --recursive git@bitbucket.org:PolygonTek/blueshift.git`
+  1. Clone the repository `git clone --progress --recursive https://github.com/PolygonTek/BlueshiftEngine.git`
 
   2. Run `Copy-EngineData.bat` to copy essential data to the engine folder.
 
@@ -38,7 +38,7 @@ How To Build
 
 ### Instruction
 
-  1. Clone the repository `git clone --recursive git@bitbucket.org:PolygonTek/blueshift.git`
+  1. Clone the repository `git clone --progress --recursive https://github.com/PolygonTek/BlueshiftEngine.git`
 
   2. Run `Copy-EngineData.command` to copy essential data to the engine folder.
 
