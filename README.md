@@ -11,8 +11,17 @@ Screenshots
 
 ![Screenshot1](Screenshots/screenshot1.png)
 
+Download
+-------------------
+
+Blueshift editor binaries are downloadable [here](https://github.com/PolygonTek/BlueshiftEngine/releases).
+
 How To Build
 -------------------
+
+You can build Blueshift engine but Blueshift editor is **not** open source yet.
+
+**Please note**: Building from source code is intended for users who want to use/test new features or customize the C++ source code. For most users, we recommend the binary releases available for download.
 
 ## Windows (64 bit)
 
