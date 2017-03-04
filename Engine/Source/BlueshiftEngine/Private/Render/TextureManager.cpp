@@ -37,7 +37,7 @@ void TextureManager::Init() {
     cmdSystem.AddCommand(L"convertNormalAR2RGB", Cmd_ConvertNormalAR2RGB);
 
     textureHashMap.Init(1024, 1024, 1024);
-        
+
     // bilinear filtering
     SetFilter(WStr::ToStr(texture_filter.GetString()));//"LinearMipmapNearest");
 
@@ -46,23 +46,19 @@ void TextureManager::Init() {
 
     // _default
     defaultTexture = AllocTexture("_defaultTexture");
-    defaultTexture->CreateDefaultTexture(16);
-    defaultTexture->flags |= Texture::Permanence;
+    defaultTexture->CreateDefaultTexture(16, Texture::Permanence);
 
     // _zeroClamp
     zeroClampTexture = AllocTexture("_zeroClampTexture");
-    zeroClampTexture->CreateZeroClampTexture(16);
-    zeroClampTexture->flags |= Texture::Permanence;   
+    zeroClampTexture->CreateZeroClampTexture(16, Texture::Permanence);
 
     // _defaultCube
     defaultCubeMapTexture = AllocTexture("_defaultCubeTexture");
-    defaultCubeMapTexture->CreateDefaultCubeMapTexture(16);
-    defaultCubeMapTexture->flags |= Texture::Permanence;
+    defaultCubeMapTexture->CreateDefaultCubeMapTexture(16, Texture::Permanence);
 
     // _blackCube
     blackCubeMapTexture = AllocTexture("_blackCubeTexture");
-    blackCubeMapTexture->CreateBlackCubeMapTexture(8);
-    blackCubeMapTexture->flags |= Texture::Permanence;
+    blackCubeMapTexture->CreateBlackCubeMapTexture(8, Texture::Permanence);
 
     // _white
     image.Create2D(8, 8, 1, Image::L_8, nullptr, Image::SRGBFlag);
@@ -96,43 +92,35 @@ void TextureManager::Init() {
 
     // _exponent
     exponentTexture = AllocTexture("_exponentTexture");
-    exponentTexture->CreateExponentTexture();
-    exponentTexture->flags |= Texture::Permanence;
+    exponentTexture->CreateExponentTexture(Texture::Permanence);
 
     // _flatNormal
-    flatNormalTexture = AllocTexture("_flatNormalTexture");	
-    flatNormalTexture->CreateFlatNormalTexture(16);	
-    flatNormalTexture->flags |= Texture::Permanence;
+    flatNormalTexture = AllocTexture("_flatNormalTexture");
+    flatNormalTexture->CreateFlatNormalTexture(16, Texture::Permanence);
 
     // _normalCube
-    normalCubeMapTexture = AllocTexture("_normalCubeTexture");	
-    normalCubeMapTexture->CreateNormalizationCubeMapTexture(32);
-    normalCubeMapTexture->flags |= Texture::Permanence;
+    normalCubeMapTexture = AllocTexture("_normalCubeTexture");
+    normalCubeMapTexture->CreateNormalizationCubeMapTexture(32, Texture::Permanence);
 
     // _cubicNormalCube
-    cubicNormalCubeMapTexture = AllocTexture("_cubicNormalCubeTexture");	 
-    cubicNormalCubeMapTexture->CreateCubicNormalCubeMapTexture(1);
-    cubicNormalCubeMapTexture->flags |= Texture::Permanence;
+    cubicNormalCubeMapTexture = AllocTexture("_cubicNormalCubeTexture");
+    cubicNormalCubeMapTexture->CreateCubicNormalCubeMapTexture(1, Texture::Permanence);
 
     // _fog
     fogTexture = AllocTexture("_fogTexture");
-    fogTexture->CreateFogTexture();
-    fogTexture->flags |= Texture::Permanence;
+    fogTexture->CreateFogTexture(Texture::Permanence);
 
     // _fogEnter
     fogEnterTexture = AllocTexture("_fogEnterTexture");
-    fogEnterTexture->CreateFogEnterTexture();
-    fogEnterTexture->flags |= Texture::Permanence;
+    fogEnterTexture->CreateFogEnterTexture(Texture::Permanence);
 
     // _randomRotMat
     randomRotMatTexture = AllocTexture("_randomRotMatTexture");
-    randomRotMatTexture->CreateRandomRotMatTexture(64);
-    randomRotMatTexture->flags |= Texture::Permanence;
+    randomRotMatTexture->CreateRandomRotMatTexture(64, Texture::Permanence);
 
     // _randomRot4x4
     randomDir4x4Texture = AllocTexture("_randomDir4x4Texture");
-    randomDir4x4Texture->CreateRandomDir4x4Texture();
-    randomDir4x4Texture->flags |= Texture::Permanence;
+    randomDir4x4Texture->CreateRandomDir4x4Texture(Texture::Permanence);
 }
 
 void TextureManager::Shutdown() {
@@ -150,7 +138,7 @@ void TextureManager::DestroyUnusedTextures() {
         const auto *entry = textureHashMap.GetByIndex(i);
         Texture *texture = entry->second;
 
-        if (texture && texture->refCount == 0) {
+        if (texture && !texture->permanence && texture->refCount == 0) {
             removeArray.Append(texture);
         }
     }
@@ -174,7 +162,7 @@ void TextureManager::SetFilter(const char *filterName) {
 
     textureFilter = textureFilterNames[mode].filter;
     
-    for (int i = 0; i < textureHashMap.Count(); i++) {		
+    for (int i = 0; i < textureHashMap.Count(); i++) {
         const auto *entry = textureHashMap.GetByIndex(i);
         Texture *texture = entry->second;
 

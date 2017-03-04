@@ -81,7 +81,7 @@ void AnimControllerManager::DestroyUnusedAnimControllers() {
         const auto *entry = animControllerHashMap.GetByIndex(i);
         AnimController *animController = entry->second;
 
-        if (animController && animController->refCount == 0) {
+        if (animController && !animController->permanence && animController->refCount == 0) {
             removeArray.Append(animController);
         }
     }

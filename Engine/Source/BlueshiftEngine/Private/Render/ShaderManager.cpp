@@ -352,7 +352,7 @@ void ShaderManager::DestroyUnusedShaders() {
         const auto *entry = shaderHashMap.GetByIndex(i);
         Shader *shader = entry->second;
 
-        if (shader && shader->refCount == 0) {
+        if (shader && !shader->permanence && shader->refCount == 0) {
             removeArray.Append(shader);
         }
     }
@@ -372,7 +372,7 @@ void ShaderManager::DestroyShader(Shader *shader) {
     delete shader;
 }
 
-Shader *ShaderManager::AllocShader(const char *hashName) {	
+Shader *ShaderManager::AllocShader(const char *hashName) {
     if (shaderHashMap.Get(hashName)) {
         BE_FATALERROR(L"%hs shader already allocated", hashName);
     }

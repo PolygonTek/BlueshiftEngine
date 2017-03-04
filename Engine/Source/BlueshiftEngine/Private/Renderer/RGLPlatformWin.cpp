@@ -4,7 +4,7 @@
 
 BE_NAMESPACE_BEGIN
 
-#define MAX_PIXEL_FORMAT        512
+#define MAX_PIXEL_FORMAT        1024
 #define MAX_ATTRIB_SIZE         32
 
 #define FAKE_WINDOW_CLASSNAME   _T("BLUESHIFT_FAKE_WINDOW")
@@ -159,7 +159,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
             BE_FATALERROR(L"ChoosePixelFormat: failed");	
         }
     } else {
-        int	results[MAX_ATTRIB_SIZE];
+        int results[MAX_ATTRIB_SIZE];
         int attribs[MAX_ATTRIB_SIZE];
         attribs[0] = WGL_NUMBER_PIXEL_FORMATS_ARB;
         gwglGetPixelFormatAttribivARB(hDC, 0, 0, 1, attribs, results);

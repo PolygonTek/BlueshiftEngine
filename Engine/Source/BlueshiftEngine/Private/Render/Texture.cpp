@@ -45,7 +45,7 @@ void Texture::CreateFromBuffer(Image::Format format, Renderer::Handle bufferHand
     Purge();
 
     this->type = Renderer::TextureBuffer;
-    this->textureHandle = glr.CreateTexture(Renderer::TextureBuffer);	
+    this->textureHandle = glr.CreateTexture(Renderer::TextureBuffer);
     this->flags = 0;
     this->format = format;
 
@@ -59,7 +59,7 @@ void Texture::CreateFromBuffer(Image::Format format, Renderer::Handle bufferHand
 }
 
 // Indirection Cube map : cubic coord -> VCM coord
-void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight) {
+void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags) {
     Image cubeImage;
     cubeImage.CreateCube(size, 1, Image::LA_16_16, nullptr, Image::LinearFlag);
 
@@ -94,7 +94,7 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight) {
         }
     }
 
-    Create(Renderer::TextureCubeMap, cubeImage, Clamp | NoMipmaps | HighQuality);
+    Create(Renderer::TextureCubeMap, cubeImage, Clamp | NoMipmaps | HighQuality | flags);
 }
 
 /*
@@ -105,7 +105,7 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateDefaultTexture(int size) {
+void Texture::CreateDefaultTexture(int size, int flags) {
     Image image;
     image.Create2D(size, size, 1, Image::RGB_8_8_8, nullptr, Image::SRGBFlag);
     byte *dst = image.GetPixels();
@@ -124,7 +124,7 @@ void Texture::CreateDefaultTexture(int size) {
         }
     }
 
-    Create(Renderer::Texture2D, image, Texture::HighQuality);
+    Create(Renderer::Texture2D, image, Texture::HighQuality | flags);
 }
 
 /*
@@ -135,7 +135,7 @@ void Texture::CreateDefaultTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateZeroClampTexture(int size) {
+void Texture::CreateZeroClampTexture(int size, int flags) {
     Image image;
     image.Create2D(size, size, 1, Image::LA_8_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
@@ -148,7 +148,7 @@ void Texture::CreateZeroClampTexture(int size) {
         }
     }
 
-    Create(Renderer::Texture2D, image, Texture::ZeroClamp | Texture::HighQuality);
+    Create(Renderer::Texture2D, image, Texture::ZeroClamp | Texture::HighQuality | flags);
 }
 
 /*
@@ -159,7 +159,7 @@ void Texture::CreateZeroClampTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateFlatNormalTexture(int size) {
+void Texture::CreateFlatNormalTexture(int size, int flags) {
     Image image;
     image.Create2D(size, size, 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
@@ -172,7 +172,7 @@ void Texture::CreateFlatNormalTexture(int size) {
         }
     }
 
-    Create(Renderer::Texture2D, image, Texture::NormalMap | Texture::NoScaleDown);
+    Create(Renderer::Texture2D, image, Texture::NormalMap | Texture::NoScaleDown | flags);
 }
 
 /*
@@ -183,7 +183,7 @@ void Texture::CreateFlatNormalTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateDefaultCubeMapTexture(int size) {
+void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
     Image image;
     image.CreateCube(size, 1, Image::L_8, nullptr, Image::SRGBFlag);
     byte *dst = image.GetPixels();
@@ -200,7 +200,7 @@ void Texture::CreateDefaultCubeMapTexture(int size) {
         dst += faceSize;
     }
 
-    Create(Renderer::TextureCubeMap, image, Texture::Clamp | Texture::NoCompression | Texture::NoScaleDown);
+    Create(Renderer::TextureCubeMap, image, Texture::Clamp | Texture::NoCompression | Texture::NoScaleDown | flags);
 }
 
 /*
@@ -211,7 +211,7 @@ void Texture::CreateDefaultCubeMapTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateBlackCubeMapTexture(int size) {
+void Texture::CreateBlackCubeMapTexture(int size, int flags) {
     Image image;
     image.CreateCube(size, 1, Image::L_8, nullptr, Image::SRGBFlag);
     byte *dst = image.GetPixels();
@@ -223,7 +223,7 @@ void Texture::CreateBlackCubeMapTexture(int size) {
         dst += facesize;
     }
 
-    Create(Renderer::TextureCubeMap, image, Texture::Clamp | Texture::NoCompression | Texture::NoScaleDown);
+    Create(Renderer::TextureCubeMap, image, Texture::Clamp | Texture::NoCompression | Texture::NoScaleDown | flags);
 }
 
 /*
@@ -234,7 +234,7 @@ void Texture::CreateBlackCubeMapTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateNormalizationCubeMapTexture(int size) {
+void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     Image image;
     image.CreateCube(size, 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
@@ -242,7 +242,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size) {
     int facesize = image.GetSliceSize();
     Vec3 vec;
 
-    for (int i = 0; i < 6; i++) {		
+    for (int i = 0; i < 6; i++) {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
                 R_CubeCoord(size, i, x, y, vec);
@@ -256,7 +256,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size) {
         dst += facesize;
     }
 
-    Create(Renderer::TextureCubeMap, image, Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown);
+    Create(Renderer::TextureCubeMap, image, Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
 }
 
 /*
@@ -267,7 +267,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateCubicNormalCubeMapTexture(int size) {
+void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
     char faceNormal[6][3];
     
     faceNormal[0][0] = 127;
@@ -312,7 +312,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size) {
         dst += facesize;
     }
 
-    Create(Renderer::TextureCubeMap, image, Texture::Nearest | Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown);
+    Create(Renderer::TextureCubeMap, image, Texture::Nearest | Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
 }
 
 /*
@@ -323,7 +323,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateAttenuationTexture(int size) {
+void Texture::CreateAttenuationTexture(int size, int flags) {
     Image image;
     image.Create2D(size, size, 1, Image::LA_8_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
@@ -347,7 +347,7 @@ void Texture::CreateAttenuationTexture(int size) {
         }
     }
 
-    Create(Renderer::Texture2D, image, Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown);	
+    Create(Renderer::Texture2D, image, Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
 }
 
 /*
@@ -358,7 +358,7 @@ void Texture::CreateAttenuationTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateExponentTexture() {
+void Texture::CreateExponentTexture(int flags) {
     Image image;
     image.Create2D(256, 256, 1, Image::L_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
@@ -370,7 +370,7 @@ void Texture::CreateExponentTexture() {
         }
     }
 
-    Create(Renderer::Texture2D, image, Texture::Nearest | Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality);
+    Create(Renderer::Texture2D, image, Texture::Nearest | Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality | flags);
 }
 
 /*
@@ -381,7 +381,7 @@ void Texture::CreateExponentTexture() {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateFogTexture() {
+void Texture::CreateFogTexture(int flags) {
     Image image;
     image.Create2D(256, 1, 1, Image::A_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
@@ -391,7 +391,7 @@ void Texture::CreateFogTexture() {
         dst[s] = Min(c, 255);
     }
 
-    Create(Renderer::Texture2D, image, Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality);
+    Create(Renderer::Texture2D, image, Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality | flags);
 }
 
 /*
@@ -402,7 +402,7 @@ void Texture::CreateFogTexture() {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateFogEnterTexture() {
+void Texture::CreateFogEnterTexture(int flags) {
     Image image;
     image.Create2D(256, 1, 1, Image::A_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
@@ -412,7 +412,7 @@ void Texture::CreateFogEnterTexture() {
         dst[s] = Min(c, 255);
     }
 
-    Create(Renderer::Texture2D, image, Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality);
+    Create(Renderer::Texture2D, image, Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality | flags);
 }
 
 /*
@@ -423,7 +423,7 @@ void Texture::CreateFogEnterTexture() {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateRandomRotMatTexture(int size) {
+void Texture::CreateRandomRotMatTexture(int size, int flags) {
     Image image;
     image.Create2D(size, size, 1, Image::RGBA_8_8_8_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
@@ -444,7 +444,7 @@ void Texture::CreateRandomRotMatTexture(int size) {
         }
     }
 
-    Create(Renderer::Texture2D, image, Texture::Nearest | Texture::Repeat | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown);
+    Create(Renderer::Texture2D, image, Texture::Nearest | Texture::Repeat | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
 }
 
 /*
@@ -455,13 +455,13 @@ void Texture::CreateRandomRotMatTexture(int size) {
 -------------------------------------------------------------------------------
 */
 
-void Texture::CreateRandomDir4x4Texture() {
+void Texture::CreateRandomDir4x4Texture(int flags) {
     Image image;
     image.Create2D(4, 4, 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
     Vec3 dir;
 
-    Random random;		
+    Random random;
     random.SetSeed(810202);
 
     for (int y = 0; y < 4; y++) {
@@ -479,7 +479,7 @@ void Texture::CreateRandomDir4x4Texture() {
         }
     }
 
-    Create(Renderer::Texture2D, image, Texture::Nearest | Texture::Repeat | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown);
+    Create(Renderer::Texture2D, image, Texture::Nearest | Texture::Repeat | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
 }
 
 static Renderer::AddressMode TextureFlagsToAddressMode(int flags) {

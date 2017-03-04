@@ -93,7 +93,7 @@ void MeshManager::DestroyUnusedMeshes() {
         const auto *entry = meshHashMap.GetByIndex(i);
         Mesh *mesh = entry->second;
 
-        if (mesh && mesh->refCount == 0) {
+        if (mesh && !mesh->permanence && mesh->refCount == 0) {
             removeArray.Append(mesh);
         }
     }

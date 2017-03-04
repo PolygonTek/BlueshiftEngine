@@ -54,7 +54,7 @@ void SkinManager::DestroyUnusedSkins() {
         const auto *entry = skinHashMap.GetByIndex(i);
         Skin *skin = entry->second;
 
-        if (skin && skin->refCount == 0) {
+        if (skin && !skin->permanence && skin->refCount == 0) {
             removeArray.Append(skin);
         }
     }

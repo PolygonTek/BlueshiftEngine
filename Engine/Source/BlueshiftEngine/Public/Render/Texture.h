@@ -67,20 +67,20 @@ public:
                             /// @param size size of indirection cubemap
                             /// @param vcmWidth actual height of virtual cubemap texture
                             /// @param vcmHeight actual width of virtual cubemap texture
-    void                    CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight);
-    void                    CreateDefaultTexture(int size);
-    void                    CreateZeroClampTexture(int size);
-    void                    CreateFlatNormalTexture(int size);
-    void                    CreateDefaultCubeMapTexture(int size);
-    void                    CreateBlackCubeMapTexture(int size);
-    void                    CreateNormalizationCubeMapTexture(int size);
-    void                    CreateCubicNormalCubeMapTexture(int size);
-    void                    CreateAttenuationTexture(int size);
-    void                    CreateExponentTexture();
-    void                    CreateFogTexture();
-    void                    CreateFogEnterTexture();
-    void                    CreateRandomRotMatTexture(int size);
-    void                    CreateRandomDir4x4Texture();
+    void                    CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags = 0);
+    void                    CreateDefaultTexture(int size, int flags = 0);
+    void                    CreateZeroClampTexture(int size, int flags = 0);
+    void                    CreateFlatNormalTexture(int size, int flags = 0);
+    void                    CreateDefaultCubeMapTexture(int size, int flags = 0);
+    void                    CreateBlackCubeMapTexture(int size, int flags = 0);
+    void                    CreateNormalizationCubeMapTexture(int size, int flags = 0);
+    void                    CreateCubicNormalCubeMapTexture(int size, int flags = 0);
+    void                    CreateAttenuationTexture(int size, int flags = 0);
+    void                    CreateExponentTexture(int flags = 0);
+    void                    CreateFogTexture(int flags = 0);
+    void                    CreateFogEnterTexture(int flags = 0);
+    void                    CreateRandomRotMatTexture(int size, int flags = 0);
+    void                    CreateRandomDir4x4Texture(int flags = 0);
 
     void                    Upload(const Image *srcImage);
 

@@ -73,7 +73,7 @@ void SkeletonManager::DestroyUnusedSkeletons() {
         const auto *entry = skeletonHashMap.GetByIndex(i);
         Skeleton *skeleton = entry->second;
 
-        if (skeleton && skeleton->refCount == 0) {
+        if (skeleton && !skeleton->permanence && skeleton->refCount == 0) {
             removeArray.Append(skeleton);
         }
     }

@@ -61,7 +61,7 @@ void MaterialManager::DestroyUnusedMaterials() {
         const auto *entry = materialHashMap.GetByIndex(i);
         Material *material = entry->second;
 
-        if (material && material->refCount == 0) {
+        if (material && !material->permanence && material->refCount == 0) {
             removeArray.Append(material);
         }
     }
@@ -81,9 +81,9 @@ Material *MaterialManager::AllocMaterial(const char *hashName) {
     material->name = hashName;
     material->name.StripPath();
     material->name.StripFileExtension();
-    material->refCount = 1;	
+    material->refCount = 1;
     material->index = materialHashMap.Count();
-    materialHashMap.Set(material->hashName, material);	
+    materialHashMap.Set(material->hashName, material);
 
     return material;
 }
@@ -95,7 +95,7 @@ void MaterialManager::DestroyMaterial(Material *material) {
 
     materialHashMap.Remove(material->hashName);
 
-    delete material;	
+    delete material;
 }
 
 Material *MaterialManager::GetMaterialByIndex(int index) const { 

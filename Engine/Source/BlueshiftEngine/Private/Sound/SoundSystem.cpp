@@ -86,7 +86,7 @@ void SoundSystem::DestroyUnusedSounds() {
         const auto *entry = soundHashMap.GetByIndex(i);
         Sound *sound = entry->second;
 
-        if (sound && sound->refCount == 0) {
+        if (sound && !sound->permanence && sound->refCount == 0) {
             removeArray.Append(sound);
         }
     }

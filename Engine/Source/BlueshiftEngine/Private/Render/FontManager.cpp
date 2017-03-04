@@ -76,7 +76,7 @@ void FontManager::DestroyUnusedFonts() {
         const auto *entry = fontHashMap.GetByIndex(i);
         Font *font = entry->second;
 
-        if (font && font->refCount == 0) {
+        if (font && !font->permanence && font->refCount == 0) {
             removeArray.Append(font);
         }
     }
