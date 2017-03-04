@@ -34,9 +34,9 @@ You can build Blueshift engine but Blueshift editor is **not** open source yet.
 
   1. Clone the repository `git clone --progress --recursive https://github.com/PolygonTek/BlueshiftEngine.git`
 
-  2. Run `Copy-EngineData.bat` to copy essential data to the engine folder.
+  2. Run `Scripts\Copy-EngineData.bat` to copy essential data to the engine folder.
 
-  3. Run `Build-Win64.bat` to build engine from the sources.
+  3. Run `Scripts\Build-Win64.bat` to build engine from the sources.
 
 ## macOS and iOS
 
@@ -49,11 +49,11 @@ You can build Blueshift engine but Blueshift editor is **not** open source yet.
 
   1. Clone the repository `git clone --progress --recursive https://github.com/PolygonTek/BlueshiftEngine.git`
 
-  2. Run `Copy-EngineData.command` to copy essential data to the engine folder.
+  2. Run `Scripts/Copy-EngineData.command` to copy essential data to the engine folder.
 
-  3. Run `Build-macOS.command` to build engine for macOS from the sources.
+  3. Run `Scripts/Build-macOS.command` to build engine for macOS from the sources.
 
-  4. Run `Build-iOS.command` to build engine for iOS from the sources.
+  4. Run `Scripts/Build-iOS.command` to build engine for iOS from the sources.
 
 License
 -------------------
