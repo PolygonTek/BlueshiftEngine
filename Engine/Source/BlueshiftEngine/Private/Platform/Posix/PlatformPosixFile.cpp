@@ -1,3 +1,17 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http ://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "Precompiled.h"
 #include "Platform/PlatformFile.h"
 #include <unistd.h>
@@ -23,13 +37,13 @@ int PlatformPosixFile::Tell() const {
 }
 
 int PlatformPosixFile::Size() const {
-	struct stat fileInfo;
-	fileInfo.st_size = -1;
+    struct stat fileInfo;
+    fileInfo.st_size = -1;
     if (fstat(fileno(fp), &fileInfo) < 0) {
-		return -1;
+        return -1;
     }
 
-	return fileInfo.st_size;
+    return fileInfo.st_size;
 }
 
 int PlatformPosixFile::Seek(long offset, Origin origin) {
@@ -175,10 +189,10 @@ size_t PlatformPosixFile::FileSize(const char *filename) {
 bool PlatformPosixFile::IsFileWritable(const char *filename) {
     struct stat fileInfo;
     Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
-	if (stat(normalizedFilename, &fileInfo) == -1) {
-		return true;
-	}
-	return (fileInfo.st_mode & S_IWUSR) != 0;
+    if (stat(normalizedFilename, &fileInfo) == -1) {
+        return true;
+    }
+    return (fileInfo.st_mode & S_IWUSR) != 0;
 }
 
 bool PlatformPosixFile::IsReadOnly(const char *filename) {
@@ -254,9 +268,9 @@ void PlatformPosixFile::SetTimeStamp(const char *filename, const DateTime &timeS
 bool PlatformPosixFile::DirectoryExists(const char *dirname) {
     struct stat fileInfo;
     Str normalizedDirname = PlatformFile::NormalizeDirectoryName(dirname);
-	if (stat(normalizedDirname, &fileInfo) == 0 && S_ISDIR(fileInfo.st_mode)) {
-		return true;
-	}
+    if (stat(normalizedDirname, &fileInfo) == 0 && S_ISDIR(fileInfo.st_mode)) {
+        return true;
+    }
     return false;
 }
 
@@ -264,7 +278,7 @@ bool PlatformPosixFile::CreateDirectory(const char *dirname) {
     if (PlatformFile::DirectoryExists(dirname)) {
         return true;
     }
-	return mkdir(PlatformFile::NormalizeDirectoryName(dirname), S_IRWXU | S_IRWXG | S_IRWXO) == 0;
+    return mkdir(PlatformFile::NormalizeDirectoryName(dirname), S_IRWXU | S_IRWXG | S_IRWXO) == 0;
 }
 
 bool PlatformPosixFile::RemoveDirectory(const char *dirname) {

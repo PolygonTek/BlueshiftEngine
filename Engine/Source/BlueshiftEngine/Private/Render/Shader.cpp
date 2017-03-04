@@ -1,3 +1,17 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http ://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
@@ -592,23 +606,23 @@ void Shader::Reinstantiate() {
 
 
 bool Shader::Instantiate(const Array<Define> &defineArray) {
-	
+    
 #if defined __ANDROID__ && ! defined __XAMARIN__
-	static int progress = 0;
+    static int progress = 0;
 
-	float f = progress * (M_PI * 0.01f);
-	progress++;
-	Color4 color;
-	color.r = sinf(f) * 0.5f + 0.5f;
-	color.g = sinf(f + M_PI * 2.0f / 3.0f)* 0.5f + 0.5f;
-	color.b = sinf(f + M_PI * 4.0f / 3.0f)* 0.5f + 0.5f;
-	color.a = 1.0f;
+    float f = progress * (M_PI * 0.01f);
+    progress++;
+    Color4 color;
+    color.r = sinf(f) * 0.5f + 0.5f;
+    color.g = sinf(f + M_PI * 2.0f / 3.0f)* 0.5f + 0.5f;
+    color.b = sinf(f + M_PI * 4.0f / 3.0f)* 0.5f + 0.5f;
+    color.a = 1.0f;
 
-	glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
-	glr.Clear(Renderer::ColorBit, color, 0, 0);
-	glr.SwapBuffers();
+    glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
+    glr.Clear(Renderer::ColorBit, color, 0, 0);
+    glr.SwapBuffers();
 
-	//BE_LOG(L"progress %f %f %f %f %d", color.r, color.g, color.b, f, progress);
+    //BE_LOG(L"progress %f %f %f %f %d", color.r, color.g, color.b, f, progress);
 #endif
 
     Str processedVsText;
