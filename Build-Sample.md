@@ -1,4 +1,4 @@
-Build Sample Program
+﻿Build Sample Program
 --------------------
 
 ## Prerequisite
@@ -11,7 +11,7 @@ Build Sample Program
 [BasicGame.zip] (https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame.zip) 파일을 받아 
 도큐먼트 폴더(~/Documents) 에 압축을 푼다.
 
-에디터(BlueshiftEngine/Engine/Bin/Win64\/Release/BlueshiftEditor.exe)를 실행하고,
+에디터(BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe)를 실행하고,
 File/Open Project 메뉴에서 ~/Document/BasicGame 폴더를 선택하고,
 File/Open Scene 메뉴에서 ~/Documents/BasicGame/Contents/Maps/title.map 을 선택한다.
 
