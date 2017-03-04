@@ -11,7 +11,7 @@ Screenshots
 
 ![Screenshot1](Screenshots/screenshot1.png)
 
-Download
+Downloads
 -------------------
 
 Blueshift editor binaries are downloadable [here](https://github.com/PolygonTek/BlueshiftEngine/releases).
