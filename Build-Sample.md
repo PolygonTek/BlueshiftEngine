@@ -13,7 +13,7 @@ Build Sample Program
 
 에디터(BlueshiftEngine/Engine/Bin/Win64\/Release/BlueshiftEditor.exe)를 실행하고,
 File/Open Project 메뉴에서 ~/Document/BasicGame 폴더를 선택하고,
-File/Open Scene 메뉴에서 ~/Documents/BasicGame/Contents/Maps/stage1.map 을 선택한다.
+File/Open Scene 메뉴에서 ~/Documents/BasicGame/Contents/Maps/title.map 을 선택한다.
 
 Project/Build Settings... 메뉴에서 플랫폼을 선택하고 빌드를 하면 빌드 폴더를
 ~/Document/BasicGameAnd (BasicGameIOS, BasicGameWin, ...) 으로 지정한다.
