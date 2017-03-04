@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Core/Str.h"
-
 BE_NAMESPACE_BEGIN
 
 class File;

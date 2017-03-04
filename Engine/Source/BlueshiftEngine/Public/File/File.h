@@ -30,26 +30,26 @@ public:
         AppendMode
     };
     
-    virtual                 ~File() {}
+    virtual ~File() {}
 
     virtual const char *    GetFilePath() const;
 
-    /// Returns size of a file
+                            /// Returns size of a file
     virtual size_t          Size() const;
-    /// Returns offset in file.
+                            /// Returns offset in file.
     virtual int             Tell() const;
-    /// Seek from the start on a file.
+                            /// Seek from the start on a file.
     virtual int             Seek(long offset);
-    /// Seek from the end on a file
+                            /// Seek from the end on a file
     virtual int             SeekFromEnd(long offset);
     
-    /// Read data from the file to the buffer.
+                            /// Read data from the file to the buffer.
     virtual size_t          Read(void *buffer, size_t bytesToRead) const;
-    /// Write data from the buffer to the file.
+                            /// Write data from the buffer to the file.
     virtual bool            Write(const void *buffer, size_t bytesToWrite);
-    /// Like fprintf
+                            /// Like fprintf
     virtual bool            Printf(const char *format, ...);
-    /// Like fprintf with wchar_t
+                            /// Like fprintf with wchar_t
     virtual bool            Printf(const wchar_t *format, ...);
 
     size_t                  ReadChar(char &value);
@@ -83,23 +83,23 @@ class BE_API FileReal : public File {
     friend class FileSystem;
 
 public:
-                            FileReal(const char *filename, PlatformFile *pf);
-    virtual                 ~FileReal();
+    FileReal(const char *filename, PlatformFile *pf);
+    virtual ~FileReal();
     
     virtual const char *    GetFilePath() const { return filename; }
     
-    /// Returns size of a file 
+                            /// Returns size of a file 
     virtual size_t          Size() const;
-    /// Returns offset in file.
+                            /// Returns offset in file.
     virtual int             Tell() const;
-    /// Seek from the start on a file.
+                            /// Seek from the start on a file.
     virtual int             Seek(long offset);
-    /// Seek from the end on a file
+                            /// Seek from the end on a file
     virtual int             SeekFromEnd(long offset);
     
-    /// Read data from the file to the buffer.
+                            /// Read data from the file to the buffer.
     virtual size_t          Read(void *buffer, size_t bytesToRead) const;
-    /// Write data from the buffer to the file.
+                            /// Write data from the buffer to the file.
     virtual bool            Write(const void *buffer, size_t bytesToWrite);
     
 protected:
@@ -112,22 +112,22 @@ class BE_API FileInZip : public File {
     friend class FileSystem;
     
 public:
-                            FileInZip(const char *filename, void *pointer);
-    virtual                 ~FileInZip();
+    FileInZip(const char *filename, void *pointer);
+    virtual ~FileInZip();
     
     virtual const char *    GetFilePath() const { return filename; }
     
     virtual size_t          Size() const;
-    /// Returns offset in file.
+                            /// Returns offset in file.
     virtual int             Tell() const;
-    /// Seek from the start on a file.
+                            /// Seek from the start on a file.
     virtual int             Seek(long offset);
-    /// Seek from the end on a file
+                            /// Seek from the end on a file
     virtual int             SeekFromEnd(long offset);
     
-    /// Read data from the file to the buffer.
+                            /// Read data from the file to the buffer.
     virtual size_t          Read(void *buffer, size_t bytesToRead) const;
-    /// Write data from the buffer to the file.
+                            /// Write data from the buffer to the file.
     virtual bool            Write(const void *buffer, size_t bytesToWrite);
     
 protected:

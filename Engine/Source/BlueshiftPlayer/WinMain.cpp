@@ -353,7 +353,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         key = ((lParam >> 16) & 0xFF ) | (((lParam >> 24) & 1) << 7);
 
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, key, false, 0, NULL);
-        return 0;	
+        return 0;
     case WM_SYSCHAR:
     case WM_CHAR: // WM_CHAR message uses Unicode Transformation Format (UTF)-16
     case WM_IME_CHAR:
@@ -385,7 +385,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         }
                 
         ImmReleaseContext(hWnd, hImmContext);
-        return 0;	
+        return 0;
     case WM_LBUTTONDOWN:
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse1, true, 0, NULL);
         return 0;
@@ -437,5 +437,5 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     
-    return DefWindowProc(hWnd, message, wParam, lParam);	
+    return DefWindowProc(hWnd, message, wParam, lParam);
 }
