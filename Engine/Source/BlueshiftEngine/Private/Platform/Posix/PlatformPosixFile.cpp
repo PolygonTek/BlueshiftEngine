@@ -237,6 +237,18 @@ bool PlatformPosixFile::MoveFile(const char *srcFilename, const char *dstFilenam
     return rename(normalizedSrcFilename, normalizedDstFilename) == 0 ? true : false;
 }
 
+int PlatformPosixFile::GetFileMode(const char *filename) {
+    struct stat fileInfo;
+    if (stat(NormalizeFilename(filename), &fileInfo) != 0) {
+        return -1;
+    }
+    return fileInfo.st_mode;
+}
+
+int PlatformPosixFile::SetFileMode(const char *filename, int mode) {
+    return chmod(NormalizeFilename(filename), mode);
+}
+
 DateTime PlatformPosixFile::GetTimeStamp(const char *filename) {
     static const DateTime epoch(1970, 1, 1);
     struct stat fileInfo;

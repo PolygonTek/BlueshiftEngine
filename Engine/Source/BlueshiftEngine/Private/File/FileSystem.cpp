@@ -458,7 +458,10 @@ bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, Prog
 
     CloseFile(dstFile);
     CloseFile(srcFile);
-
+    
+    int mode = PlatformFile::GetFileMode(srcFilename);
+    PlatformFile::SetFileMode(dstFilename, mode);
+    
     return complete;
 }
 
