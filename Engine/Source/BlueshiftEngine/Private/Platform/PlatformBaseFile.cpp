@@ -82,6 +82,14 @@ bool PlatformBaseFile::MoveFile(const char *srcFilename, const char *dstFilename
     return false;
 }
 
+int PlatformBaseFile::GetFileMode(const char *filename) {
+    return -1;
+}
+
+int PlatformBaseFile::SetFileMode(const char *filename, int mode) {
+    return -1;
+}
+
 DateTime GetTimeStamp(const char *filename) {
     return DateTime(0);
 }
@@ -159,7 +167,5 @@ int PlatformBaseFile::ListFiles(const char *directory, const char *nameFilter, b
     files.Clear();
     return 0;
 }
-
-
 
 BE_NAMESPACE_END
