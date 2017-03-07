@@ -3,12 +3,12 @@
 
 ## Prerequisite
 
-  * [Build-Android.md] (Build-Android.md)
-  * [README.md] (README.md) 중에서 iOS 부분
+  * [Build-Android.md](Build-Android.md)
+  * [README.md](README.md) 중에서 iOS 부분
 
 ## Game 빌드 테스트
 -------------------
-[BasicGame.zip] (https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame.zip) 파일을 받아 
+[BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame.zip) 파일을 받아 
 도큐먼트 폴더(~/Documents) 에 압축을 푼다.
 
 에디터(BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe)를 실행하고,
@@ -19,6 +19,12 @@ Project/Build Settings... 메뉴에서 플랫폼을 선택하고 빌드를 하�
 ~/Document/BasicGameAnd (BasicGameIOS, BasicGameWin, ...) 으로 지정한다.
 
 프로젝트 빌드가 끝나면 지정한 폴더의 BasicGameAnd 프로젝트 폴더가 자동으로 열린다.
+
+
+## 참고사항
+___________
+
+[Build iOS](https://github.com/PolygonTek/BlueshiftDocument/blob/master/Build%20iOS.pdf
 
 
 ##Debugging Tips for mobile platform
