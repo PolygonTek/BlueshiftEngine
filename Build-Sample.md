@@ -24,7 +24,7 @@ Project/Build Settings... 메뉴에서 플랫폼을 선택하고 빌드를 하�
 ## 참고사항
 ___________
 
-[Build iOS](https://github.com/PolygonTek/BlueshiftDocument/blob/master/Build%20iOS.pdf
+[Build iOS](https://github.com/PolygonTek/BlueshiftDocument/blob/master/Build%20iOS.pdf)
 
 
 ##Debugging Tips for mobile platform
