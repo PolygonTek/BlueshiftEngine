@@ -4,7 +4,7 @@
 
 ### Prerequisite
 
-  * [README.md] (README.md) 의 Windows (64 bit) 부분
+  * [README.md] (README.md) 의 Android 부분
   * [NVIDIA CodeWorks for Android](https://developer.nvidia.com/rdp/assets/codeworksforandroid-1r6-windows) (NVIDIA developer account required)
 
 ### Instruction (only for debug)
