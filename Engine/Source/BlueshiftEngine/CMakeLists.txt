@@ -798,18 +798,11 @@ elseif (APPLE)
   endif ()
 
   add_framework(${PROJECT_NAME} OpenAL)
-  add_framework(${PROJECT_NAME} AudioToolbox)
-  add_framework(${PROJECT_NAME} AVFoundation)
 endif ()
 
 target_link_libraries(${PROJECT_NAME}
-  zlib minizip libjpeg libpng libpvrt libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket
-  #debug zlib${CMAKE_DEBUG_POSTFIX} optimized zlib
-  #debug minizip${CMAKE_DEBUG_POSTFIX} optimized minizip
-  #debug libjpeg${CMAKE_DEBUG_POSTFIX} optimized libjpeg
-  #debug libpng${CMAKE_DEBUG_POSTFIX} optimized libpng
-  #debug libpvrt${CMAKE_DEBUG_POSTFIX} optimized libpvrt
-)
+  zlib minizip libjpeg libpng libpvrt libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
+
 if (ANDROID)
 	target_link_libraries(${PROJECT_NAME} nvidia)
 endif ()
