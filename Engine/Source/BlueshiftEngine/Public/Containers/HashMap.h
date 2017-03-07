@@ -103,11 +103,11 @@ public:
     size_t                  Allocated() const { return pairs.Allocated() + hashIndex.Allocated(); }
 
                             /// Returns total size of allocated memory including size of this type
-    size_t                  Size() const { return pairs.Size() + hashIndex.Size(); + sizeof(*this); }
+    size_t                  Size() const { return pairs.Size() + hashIndex.Size() + sizeof(*this); }
 
                             /// Direct access of pair array
-    const KVArray &          GetPairs() const { return pairs; }
-    KVArray &                GetPairs() { return pairs; }
+    const KVArray &         GetPairs() const { return pairs; }
+    KVArray &               GetPairs() { return pairs; }
 
                             // key 값으로 search 해서 value pointer 를 얻는다.
     KV *                    Get(const KeyT &key);
