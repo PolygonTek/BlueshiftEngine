@@ -8,7 +8,7 @@
 
 ## Game 빌드 테스트
 -------------------
-[BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame.zip) 파일을 받아 
+[BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame/BasicGame.zip) 파일을 받아 
 도큐먼트 폴더(~/Documents) 에 압축을 푼다.
 
 에디터(BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe)를 실행하고,
