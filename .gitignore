@@ -57,4 +57,5 @@ log.txt
 *.VC.VC.opendb
 Engine/LuaXML/*
 Engine/XML/*
-*.timestamp
+.oracle_jre_usage
+.vs
