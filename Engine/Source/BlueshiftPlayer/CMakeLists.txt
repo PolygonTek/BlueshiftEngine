@@ -10,13 +10,10 @@ set(ALL_FILES
   Application.cpp
 )
 
-if (XAMARIN)
+if (XAMARIN AND IOS)
   list(APPEND ALL_FILES
     XamarinIOSMain.cpp
-  )
-  if (IOS) 
-    list(APPEND ALL_FILES
-       	Binding/XMCustomView.h 
+    Binding/XMCustomView.h 
 	Binding/XMCustomView.m 
 	Binding/XMCustomViewDelegate.h 
 	Binding/XMUtilities.h
@@ -24,8 +21,7 @@ if (XAMARIN)
 	Binding/XMBindingLibrarySample/XMBindingLibrarySample-Prefix.pch
 	Binding/XMBindingLibrarySample/XMBindingLibrarySample.h
 	Binding/XMBindingLibrarySample/XMBindingLibrarySample.m
-    )
-endif ()
+  )
 elseif (ANDROID)
   list(APPEND ALL_FILES
     AndroidMain.cpp

@@ -149,7 +149,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
-      <AdditionalIncludeDirectories>.;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Player;..\..\..\Source\Engine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\zlib;..\..\..\Build\android-make\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;$(Sysroot)\usr\include;$(StlIncludeDirectories)%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-XamarinAndroid\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Enabled</ExceptionHandling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <CppLanguageStandard>c++1y</CppLanguageStandard>
@@ -171,7 +171,7 @@ copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a</Command
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
-      <AdditionalIncludeDirectories>.;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Player;..\..\..\Source\Engine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\zlib;..\..\..\Build\android-make\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;$(Sysroot)\usr\include;$(StlIncludeDirectories)%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-XamarinAndroid\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Enabled</ExceptionHandling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <CppLanguageStandard>c++1y</CppLanguageStandard>
@@ -188,14 +188,14 @@ copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a</Command
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Source\Player\Application.h" />
-    <ClInclude Include="jni\importgl.h" />
-    <ClInclude Include="jni\pch.h" />
-    <ClInclude Include="..\..\..\Source\Player\PreCompiled.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Precompiled.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Precompiled.cpp"  />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp"  />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Source\Player\Application.cpp" />
-    <ClCompile Include="..\..\..\Source\Player\Precompiled.cpp" />
+    <ClInclude Include="jni\importgl.h" />
+    <ClInclude Include="jni\pch.h" />
     <ClCompile Include="jni\app-android.cpp" />
     <ClCompile Include="jni\demo.cpp" />
     <ClCompile Include="jni\importgl.cpp" />
