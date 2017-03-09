@@ -68,7 +68,8 @@ if (APPLE)
   add_compile_options("-Wno-inconsistent-missing-override")
 
   if (NOT IOS)
-    set(CMAKE_OSX_SYSROOT "macosx10.12")
+    set(CMAKE_OSX_SYSROOT "macosx")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
     #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
   endif ()
 endif ()
