@@ -11,13 +11,13 @@ Build Sample Program
 Download the file [BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame/BasicGame.zip),
 extract to the `~/Documents` folder
 
-Run `BlueshiftEditor (BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe)`,
+Run `BlueshiftEditor` (`BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe`),
 select the `~/Document/BasicGame` folder from the `File/Open Project` menu,
 and select the `~/Documents/BasicGame/Contents/Maps/title.map` from the `File/Open Scene` menu.
 
 
 Select the platform from the `Project/Build Settings...` menu,
-and set build folder  to `~/Document/BasicGameAnd (BasicGameIOS, BasicGameWin, ...)`.
+set build folder  to `~/Document/BasicGameAnd (BasicGameIOS, BasicGameWin, ...)`.
 
 When the project builds, the `BasicGameAnd` Project folder opens automatically within the build folder.
 
