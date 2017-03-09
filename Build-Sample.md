@@ -19,7 +19,7 @@ and select the `~/Documents/BasicGame/Contents/Maps/title.map` from the `File/Op
 Select the platform from the `Project/Build Settings...` menu,
 set build folder  to `~/Document/BasicGameAnd (BasicGameIOS, BasicGameWin, ...)`.
 
-When the project builds, the `BasicGameAnd` Project folder opens automatically within the build folder.
+When the project builds, the project folder opens automatically within the build folder `BasicGameAnd`.
 
 ## See also
 
