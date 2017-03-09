@@ -10,13 +10,10 @@ set(ALL_FILES
   Application.cpp
 )
 
-if (XAMARIN)
+if (XAMARIN AND IOS)
   list(APPEND ALL_FILES
     XamarinIOSMain.cpp
-  )
-  if (IOS) 
-    list(APPEND ALL_FILES
-       	Binding/XMCustomView.h 
+    Binding/XMCustomView.h 
 	Binding/XMCustomView.m 
 	Binding/XMCustomViewDelegate.h 
 	Binding/XMUtilities.h
@@ -24,8 +21,7 @@ if (XAMARIN)
 	Binding/XMBindingLibrarySample/XMBindingLibrarySample-Prefix.pch
 	Binding/XMBindingLibrarySample/XMBindingLibrarySample.h
 	Binding/XMBindingLibrarySample/XMBindingLibrarySample.m
-    )
-endif ()
+  )
 elseif (ANDROID)
   list(APPEND ALL_FILES
     AndroidMain.cpp
@@ -220,9 +216,8 @@ else ()
     endif ()
 
     if (BUILD_ENGINE)
-      target_link_libraries(${PROJECT_NAME}
-        BlueshiftEngine
-      )
+      target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
+
       if (IOS)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
           #COMMAND rm -rf \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\"
@@ -233,32 +228,14 @@ else ()
           COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
           COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
           COMMENT "Copying data files"
-          USES_TERMINAL
-        )
+          USES_TERMINAL)
       endif ()
     elseif (BUILD_PLAYER)
-      set(LIB_FILES
-        zlib
-        minizip
-        libjpeg
-        libpng
-        libpvrt
-        libogg
-        libvorbis
-        rg_etc1
-        freetype
-        jsoncpp
-        Bullet
-        HACD
-        lua
-        LuaCpp
-		luasocket
-        BlueshiftEngine
-      )
-		if (ANDROID)
-			list(APPEND LIB_FILES nvidia android GLESv3 EGL OpenSLES)
-		endif ()
-  
+      set(LIB_FILES zlib minizip libjpeg libpng libpvrt libogg libvorbis rg_etc1 freetype jsoncpp Bullet HACD lua LuaCpp luasocket BlueshiftEngine)
+
+      if (ANDROID)
+        list(APPEND LIB_FILES nvidia android GLESv3 EGL OpenSLES)
+      endif ()
 
       if (WIN32)
         foreach (FILE ${LIB_FILES})
@@ -276,8 +253,7 @@ else ()
           COMMAND cp -Rf \"$(PROJECT_DIR)/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
           COMMAND cp -Rf \"$(PROJECT_DIR)/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
           COMMENT "Copying data files"
-          USES_TERMINAL
-        )
+          USES_TERMINAL)
 
         foreach (FILE ${LIB_FILES})
           add_library(${FILE} STATIC IMPORTED)
@@ -285,26 +261,14 @@ else ()
           set_target_properties(${FILE} PROPERTIES
             IMPORTED_LOCATION_DEBUG   ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/Debug/${FILE}${CMAKE_DEBUG_POSTFIX}.a
             IMPORTED_LOCATION_RELEASE ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/Release/${FILE}.a)
-        endforeach()
+        endforeach ()
       endif ()
 
       target_link_libraries(${PROJECT_NAME} ${LIB_FILES})
-    #  target_link_libraries(${PROJECT_NAME}
-    #    debug zlib${CMAKE_DEBUG_POSTFIX} optimized zlib
-    #    debug minizip${CMAKE_DEBUG_POSTFIX} optimized minizip
-    #    debug libjpeg${CMAKE_DEBUG_POSTFIX} optimized libjpeg
-    #    debug libpng${CMAKE_DEBUG_POSTFIX} optimized libpng
-    #    debug libpvrt${CMAKE_DEBUG_POSTFIX} optimized libpvrt
-    #    debug jsoncpp${CMAKE_DEBUG_POSTFIX} optimized jsoncpp
-    #    debug freetype${CMAKE_DEBUG_POSTFIX} optimized freetype
-    #    debug Bullet${CMAKE_DEBUG_POSTFIX} optimized Bullet
-    #    debug HACD${CMAKE_DEBUG_POSTFIX} optimized HACD
-    #    debug Core${CMAKE_DEBUG_POSTFIX} optimized BlueshiftEngine
-    #  )
     endif ()
-	if (ANDROID)
+
+    if (ANDROID)
 		set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -landroid -lGLESv3 -lEGL -lOpenSLES")
 	endif ()
-
 endif ()
 
