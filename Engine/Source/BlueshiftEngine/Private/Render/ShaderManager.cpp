@@ -147,24 +147,11 @@ void ShaderManager::Shutdown() {
     cmdSystem.RemoveCommand(L"listShaders");
     cmdSystem.RemoveCommand(L"reloadShader");
 
-    // purge instantiated shaders first
-    for (int i = 0; i < shaderHashMap.Count(); i++) {
-        const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
-        Shader *shader = entry->second;
-
-        if (shader->IsInstantiatedShader()) {
-            shader->Purge();
-        }
-    }
-    
-    // and then purge original shaders
     for (int i = 0; i < shaderHashMap.Count(); i++) {
         const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
         Shader *shader = entry->second;
         
-        if (shader->IsOriginalShader()) {
-            shader->Purge();
-        }
+        shader->Purge();
     }
 
     shaderHashMap.DeleteContents(true);

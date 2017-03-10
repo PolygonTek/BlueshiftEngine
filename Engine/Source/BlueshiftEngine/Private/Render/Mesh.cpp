@@ -47,11 +47,6 @@ void Mesh::Purge() {
 
         SAFE_DELETE_ARRAY(joints);
     }
-
-    if (originalMesh) {
-        originalMesh->instantiatedMeshes.Remove(this);
-        originalMesh = nullptr;
-    }
 }
 
 MeshSurf *Mesh::AllocSurface(int numVerts, int numIndexes) const {
