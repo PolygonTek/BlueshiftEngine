@@ -151,6 +151,7 @@ set(ENGINE_FILES
   Public/Components/ComMeshRenderer.h
   Public/Components/ComTextRenderer.h
   Public/Components/Component.h
+  Public/Components/ComParticleSystem.h
   Public/Components/ComRenderable.h
   Public/Components/ComRigidBody.h
   Public/Components/ComSensor.h
@@ -371,6 +372,7 @@ set(ENGINE_FILES
   Private/Components/ComMeshRenderer.cpp
   Private/Components/ComTextRenderer.cpp
   Private/Components/Component.cpp
+  Private/Components/ComParticleSystem.cpp
   Private/Components/ComRenderable.cpp
   Private/Components/ComRigidBody.cpp
   Private/Components/ComSensor.cpp
