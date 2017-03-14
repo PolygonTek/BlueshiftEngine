@@ -10,8 +10,6 @@ if exist "msvc2015-android" rd "msvc2015-android" /s /q
 md msvc2015-android
 cd msvc2015-android
 cmake -DCMAKE_TOOLCHAIN_FILE="CMake/Android.toolchain.cmake" -DANDROID=1 -DBUILD_ENGINE=1 -DBUILD_PLAYER=1 ../..
-cd ..
-ren msvc2015-android msvc2015-android-temp
 @echo:
 @echo Solution created in %~dp0Build\msvc2015-android
 @echo:
