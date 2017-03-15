@@ -17,16 +17,16 @@ and select the `~/Documents/BasicGame/Contents/Maps/title.map` from the `File/Op
 
 
 Select the platform from the `Project/Build Settings...` menu,
-set build folder  to `~/Document/BasicGameAnd` (`BasicGameIOS, BasicGameWin, ...`).
+set build folder  to `~/Documents/BasicGameAnd` (`BasicGameIOS, BasicGameWin, ...`).
 
-When the build is complete, the project folder opens automatically within the build folder `BasicGameAnd`.
+When the build is complete, the project folder opens automatically within the build folder `~/Documents/BasicGameAnd`.
 
 ## See also
 
 * [Building iOS Sample Program](https://github.com/PolygonTek/BlueshiftDocument/blob/master/Build%20iOS.pdf)
 
 
-##Debugging Tips for mobile platform
+## Debugging Tips for mobile platform
 
 ### Android
 
