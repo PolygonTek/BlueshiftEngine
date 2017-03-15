@@ -12,7 +12,7 @@ Download the file [BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocumen
 extract to the `~/Documents` folder
 
 Run `BlueshiftEditor` (`BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe`),
-select the `~/Document/BasicGame` folder from the `File/Open Project` menu,
+select the `~/Documents/BasicGame` folder from the `File/Open Project` menu,
 and select the `~/Documents/BasicGame/Contents/Maps/title.map` from the `File/Open Scene` menu.
 
 
