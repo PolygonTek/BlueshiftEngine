@@ -6,16 +6,16 @@ Blueshift Game Engine
 Blueshift is a cross-platform 3D game engine. it's free, open-source, and works on Windows, macOS, iOS, and Android.
 The project is currently in an early stage of development.
 
+Downloads
+-------------------
+
+Blueshift editor binaries are downloadable [here](https://github.com/PolygonTek/BlueshiftEngine/releases).
+
 Screenshots
 -------------------
 
 ![Screenshot1](Screenshots/screenshot1.png)
 ![Screenshot2](Screenshots/screenshot2.png)
-
-Downloads
--------------------
-
-Blueshift editor binaries are downloadable [here](https://github.com/PolygonTek/BlueshiftEngine/releases).
 
 How To Build Engine
 -------------------
