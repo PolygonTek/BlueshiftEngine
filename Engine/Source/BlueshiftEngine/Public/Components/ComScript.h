@@ -66,6 +66,8 @@ public:
     virtual void            OnSensorEnter(const Entity *entity);
     virtual void            OnSensorExit(const Entity *entity);
     virtual void            OnSensorStay(const Entity *entity);
+
+    virtual void            OnParticleCollision(const Entity *entity);
     
     void                    OnApplicationTerminate();
     void                    OnApplicationPause(bool pause);

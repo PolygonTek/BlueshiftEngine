@@ -35,6 +35,8 @@ public:
 
     virtual void            Update() override;
 
+    void                    Emit(int numParticles);
+
 protected:
     void                    PropertyChanged(const char *classname, const char *propName);
 };

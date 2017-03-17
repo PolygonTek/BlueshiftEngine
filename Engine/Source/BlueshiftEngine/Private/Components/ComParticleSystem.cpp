@@ -61,6 +61,10 @@ void ComParticleSystem::Enable(bool enable) {
     Component::Enable(enable);
 }
 
+void ComParticleSystem::Emit(int numParticles) {
+
+}
+
 void ComParticleSystem::PropertyChanged(const char *classname, const char *propName) {
     if (!IsInitalized()) {
         return;
