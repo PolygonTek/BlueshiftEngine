@@ -1,4 +1,4 @@
-﻿Blueshift Game Engine
+Blueshift Game Engine
 =======================
 
 [![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)]()
@@ -6,22 +6,23 @@
 Blueshift is a cross-platform 3D game engine. it's free, open-source, and works on Windows, macOS, iOS, and Android.
 The project is currently in an early stage of development.
 
-Screenshots
--------------------
-
-![Screenshot1](Screenshots/screenshot1.png)
-
 Downloads
 -------------------
 
 Blueshift editor binaries are downloadable [here](https://github.com/PolygonTek/BlueshiftEngine/releases).
 
-How To Build
+Screenshots
 -------------------
 
-You can build Blueshift engine but Blueshift editor is **not** open source yet.
+![Screenshot1](Screenshots/screenshot1.png)
+![Screenshot2](Screenshots/screenshot2.png)
 
-**Please note**: Building from source code is intended for users who want to use/test new features or customize the C++ source code. For most users, we recommend the binary releases.
+How To Build Engine
+-------------------
+
+You can build Blueshift Engine but Blueshift Editor is **not** open source yet.
+
+**Please note**: Building from source code is intended for users who want to use/test new features or customize the C++ source code. For most users, we recommend the [binary releases](https://github.com/PolygonTek/BlueshiftEngine/releases).
 
 ## Windows (64 bit) and Android
 
@@ -30,9 +31,9 @@ You can build Blueshift engine but Blueshift editor is **not** open source yet.
   * [MS Visual Studio 2015](https://www.visualstudio.com/downloads/)
   * [CMake](https://cmake.org/download/)
 
-### Instruction (only for debug)
+### Instruction
 
-  1. Clone the repository `git clone --progress --recursive https://github.com/PolygonTek/BlueshiftEngine.git`
+  1. Clone the repository `git clone --recursive --progress https://github.com/PolygonTek/BlueshiftEngine.git`
 
   2. Run `Scripts\Copy-EngineData.bat` to copy essential data to the engine folder.
 
@@ -45,9 +46,9 @@ You can build Blueshift engine but Blueshift editor is **not** open source yet.
   * Xcode
   * [CMake](https://cmake.org/download/)
 
-### Instruction (only for debug)
+### Instruction
 
-  1. Clone the repository `git clone --progress --recursive https://github.com/PolygonTek/BlueshiftEngine.git`
+  1. Clone the repository `git clone --recursive --progress https://github.com/PolygonTek/BlueshiftEngine.git`
 
   2. Run `Scripts/Copy-EngineData.command` to copy essential data to the engine folder.
 
