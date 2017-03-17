@@ -1,10 +1,9 @@
 ﻿Build Android
 -------------------
 
-
 ### Prerequisite
 
-  * [README.md] (README.md) 의 Android 부분
+  * Android part of [README.md] (README.md)
   * [NVIDIA CodeWorks for Android](https://developer.nvidia.com/rdp/assets/codeworksforandroid-1r6-windows) (NVIDIA developer account required)
 
 ### Instruction (only for debug)

@@ -140,7 +140,7 @@ Mesh *MeshManager::AllocInstantiatedMesh(Mesh *refMesh) {
     mesh->name              = refMesh->name;
     mesh->isInstantiated    = true;
     mesh->originalMesh      = refMesh;
-    mesh->useGpuSkinning	= refMesh->useGpuSkinning;
+    mesh->useGpuSkinning    = refMesh->useGpuSkinning;
     mesh->numJoints         = refMesh->numJoints;
     mesh->joints            = refMesh->joints;
     mesh->aabb              = refMesh->aabb;

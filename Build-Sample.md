@@ -1,43 +1,43 @@
-﻿Build Sample Program
+Build Sample Program
 --------------------
 
 ## Prerequisite
 
   * [Build-Android.md](Build-Android.md)
-  * [README.md](README.md) 중에서 iOS 부분
+  * iOS part of [README.md](README.md)
 
-## Game 빌드 테스트
--------------------
-[BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame/BasicGame.zip) 파일을 받아 
-도큐먼트 폴더(~/Documents) 에 압축을 푼다.
+## Game Build Test
 
-에디터(BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe)를 실행하고,
-File/Open Project 메뉴에서 ~/Document/BasicGame 폴더를 선택하고,
-File/Open Scene 메뉴에서 ~/Documents/BasicGame/Contents/Maps/title.map 을 선택한다.
+Download the file [BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame/BasicGame.zip),
+extract to the `~/Documents` folder
 
-Project/Build Settings... 메뉴에서 플랫폼을 선택하고 빌드를 하면 빌드 폴더를
-~/Document/BasicGameAnd (BasicGameIOS, BasicGameWin, ...) 으로 지정한다.
-
-프로젝트 빌드가 끝나면 지정한 폴더의 BasicGameAnd 프로젝트 폴더가 자동으로 열린다.
+Run `BlueshiftEditor` (`BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe`),
+select the `~/Documents/BasicGame` folder from the `File/Open Project` menu,
+and select the `~/Documents/BasicGame/Contents/Maps/title.map` from the `File/Open Scene` menu.
 
 
-## 참고사항
-___________
+Select the platform from the `Project/Build Settings...` menu,
+set build folder  to `~/Documents/BasicGameAnd` (`BasicGameIOS, BasicGameWin, ...`).
 
-[Build iOS](https://github.com/PolygonTek/BlueshiftDocument/blob/master/Build%20iOS.pdf)
+When the build is complete, the project folder opens automatically within the build folder `~/Documents/BasicGameAnd`.
+
+## See also
+
+* [Building iOS Sample Program](https://github.com/PolygonTek/BlueshiftDocument/blob/master/Build%20iOS.pdf)
 
 
-##Debugging Tips for mobile platform
-------------------------------------
+## Debugging Tips for mobile platform
 
 ### Android
 
-%USERPROFILE%\Documents\BasicGameAnd\Project\Android\AndroidPlayer\assets 밑의 Data와 Config를
-안드로이드 장비의 /sdcard/blueshift 밑으로 복사
-BlueshiftEngine/Engine/Project/Android/AndroidPlayer.sln을 열고, AndroidPlayer를 실행한다.
+Copy `data` and `config` directory under `%USERPROFILE%\Documents\BasicGameAnd\Project\Android\AndroidPlayer\assets` 
+to `/sdcard/blueshift` of Android device.
+
+Open `BlueshiftEngine/Engine/Project/Android/AndroidPlayer.sln`, then build and run `AndroidPlayer`.
 
 ### iOS
 
-~/Documents/BasicGameIOS 밑의 Data와 Config를 BlueshiftEngine/Engine/Source/Player 밑으로 복사
-BlueshiftEngine/Engine/Build/xcode-iOS/BlueshiftEngine.xcodeproj를 열고, BlueshiftPlayer를 실행한다.
+Copy `data` and `config` directory under `~/Documents/BasicGameIOS` to `BlueshiftEngine/Engine/Source/Player`.
+
+Open `BlueshiftEngine/Engine/Build/xcode-iOS/BlueshiftEngine.xcodeproj`, then build and run `BlueshiftPlayer`.
 

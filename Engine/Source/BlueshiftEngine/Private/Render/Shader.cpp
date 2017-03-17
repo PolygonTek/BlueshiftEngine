@@ -96,11 +96,6 @@ void Shader::Purge() {
         }
     }
 
-    if (originalShader) {
-        originalShader->instantiatedShaders.Remove(this);
-        originalShader = nullptr;
-    }
-
     defineArray.Clear();
     specHashMap.Clear();
 }
@@ -684,7 +679,7 @@ bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
             return true;
         }
 
-        const char *data_p = outText.c_str() + pos + Str::Length(directiveInclude);				    
+        const char *data_p = outText.c_str() + pos + Str::Length(directiveInclude);
         lexer.Load(data_p, Str::Length(data_p), hashName);
 
         Str relativeFileName;
