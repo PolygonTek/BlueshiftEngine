@@ -22,6 +22,9 @@ OBJECT_DECLARATION("Particle System", ComParticleSystem, Component)
 BEGIN_EVENTS(ComParticleSystem)
 END_EVENTS
 BEGIN_PROPERTIES(ComParticleSystem)
+    PROPERTY_FLOAT("timeOffset", "Time Offset", "", "0", PropertySpec::ReadWrite),
+    PROPERTY_FLOAT("timeScale", "Time Scale", "", "1", PropertySpec::ReadWrite),
+    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "16384", PropertySpec::ReadWrite),
 END_PROPERTIES
 
 void ComParticleSystem::RegisterProperties() {}
