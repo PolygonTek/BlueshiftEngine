@@ -39,6 +39,11 @@ void Mesh::Purge() {
 
             SAFE_DELETE(skinningJointCache);
         }
+
+        if (originalMesh) {
+            originalMesh->instantiatedMeshes.Remove(this);
+            originalMesh = nullptr;
+        }
     } else {
         for (int i = 0; i < surfaces.Count(); i++) {
             FreeSurface(surfaces[i]);
