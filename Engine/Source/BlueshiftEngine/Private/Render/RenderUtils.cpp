@@ -21,34 +21,34 @@ BE_NAMESPACE_BEGIN
 void R_CubeMapFaceToAxis(Renderer::CubeMapFace face, Mat3 &axis) {
     switch (face) {
     case Renderer::PositiveX:
-        axis[0]	= Vec3(1, 0, 0);
-        axis[1]	= Vec3(0, 0, 1);
-        axis[2]	= Vec3(0, -1, 0);
+        axis[0] = Vec3(1, 0, 0);
+        axis[1] = Vec3(0, 0, 1);
+        axis[2] = Vec3(0, -1, 0);
         break;
     case Renderer::NegativeX:
-        axis[0]	= Vec3(-1, 0, 0);
-        axis[1]	= Vec3(0, 0, -1);
-        axis[2]	= Vec3(0, -1, 0);
+        axis[0] = Vec3(-1, 0, 0);
+        axis[1] = Vec3(0, 0, -1);
+        axis[2] = Vec3(0, -1, 0);
         break;
     case Renderer::PositiveY:
-        axis[0]	= Vec3(0, 1, 0);
-        axis[1]	= Vec3(-1, 0, 0);
-        axis[2]	= Vec3(0, 0, 1);
+        axis[0] = Vec3(0, 1, 0);
+        axis[1] = Vec3(-1, 0, 0);
+        axis[2] = Vec3(0, 0, 1);
         break;
     case Renderer::NegativeY:
-        axis[0]	= Vec3(0, -1, 0);
-        axis[1]	= Vec3(-1, 0, 0);
-        axis[2]	= Vec3(0, 0, -1);
+        axis[0] = Vec3(0, -1, 0);
+        axis[1] = Vec3(-1, 0, 0);
+        axis[2] = Vec3(0, 0, -1);
         break;
     case Renderer::PositiveZ:
-        axis[0]	= Vec3(0, 0, 1);
-        axis[1]	= Vec3(-1, 0, 0);
-        axis[2]	= Vec3(0, -1, 0);
+        axis[0] = Vec3(0, 0, 1);
+        axis[1] = Vec3(-1, 0, 0);
+        axis[2] = Vec3(0, -1, 0);
         break;
     case Renderer::NegativeZ:
-        axis[0]	= Vec3(0, 0, -1);
-        axis[1]	= Vec3(1, 0, 0);
-        axis[2]	= Vec3(0, -1, 0);
+        axis[0] = Vec3(0, 0, -1);
+        axis[1] = Vec3(1, 0, 0);
+        axis[2] = Vec3(0, -1, 0);
         break;
     }
 }
@@ -497,7 +497,7 @@ void R_GenerateSphereTriangleStripVerts(const Sphere &sphere, int lats, int long
             float y = Math::Sin(lng);
 
             *vptr++ = sphere.origin + Vec3(x * r0, y * r0, z0);
-            *vptr++ = sphere.origin + Vec3(x * r1, y * r1, z1);			
+            *vptr++ = sphere.origin + Vec3(x * r1, y * r1, z1);
         }
     }
 }

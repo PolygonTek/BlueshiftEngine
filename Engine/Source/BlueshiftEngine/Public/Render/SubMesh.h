@@ -126,30 +126,30 @@ private:
     int                     type;
     bool                    alloced;
     const SubMesh *         refSubMesh;
-    bool                    tangentsCalculated;     // is tangents calculated ?
-    bool                    normalsCalculated;      // is normals calculated ?
-    bool                    edgesCalculated;        // is edge calculated ?
+    bool                    tangentsCalculated;         // is tangents calculated ?
+    bool                    normalsCalculated;          // is normals calculated ?
+    bool                    edgesCalculated;            // is edge calculated ?
 
-    int                     numVerts;               // mirrored vertices 스플릿팅 후에,
-    VertexLightingGeneric * verts;                  // verts 배열 뒷 부분에 스플릿팅된 vertex 들이 추가된다.
-    int                     numMirroredVerts;       // numVerts 에 합산되어 있다 (numOriginalVerts = numVerts - numMirroredVerts)
-    int *                   mirroredVerts;          // 추가된 mirrored vertex 들의 original vertex index 배열	
-    DominantTri *           dominantTris;           // dominant triangles for each vertices
+    int                     numVerts;                   // mirrored vertices 스플릿팅 후에,
+    VertexLightingGeneric * verts;                      // verts 배열 뒷 부분에 스플릿팅된 vertex 들이 추가된다.
+    int                     numMirroredVerts;           // numVerts 에 합산되어 있다 (numOriginalVerts = numVerts - numMirroredVerts)
+    int *                   mirroredVerts;              // 추가된 mirrored vertex 들의 original vertex index 배열
+    DominantTri *           dominantTris;               // dominant triangles for each vertices
 
-    int                     numIndexes;             // number of triangle indexes
-    TriIndex *              indexes;                // counter clock-wise order triangle indexes
+    int                     numIndexes;                 // number of triangle indexes
+    TriIndex *              indexes;                    // counter clock-wise order triangle indexes
                             
-    int                     numEdges;               // number of edges that is not including shared edges
-    Edge *                  edges;                  // shared edges are not stored explicitly
-    int *                   edgeIndexes;            // triangle edge indexes to edge indexes including negative index number
+    int                     numEdges;                   // number of edges that is not including shared edges
+    Edge *                  edges;                      // shared edges are not stored explicitly
+    int *                   edgeIndexes;                // triangle edge indexes to edge indexes including negative index number
 
-    int                     numJointWeights;        // verts 와 별개로 weight 배열을 따로 관리 (CPU skinning 용)
-    JointWeight *           jointWeights;           // weight 정보 배열
-    Vec4 *                  jointWeightVerts;       // weight 의 local vertex
+    int                     numJointWeights;            // verts 와 별개로 weight 배열을 따로 관리 (CPU skinning 용)
+    JointWeight *           jointWeights;               // weight 정보 배열
+    Vec4 *                  jointWeightVerts;           // weight 의 local vertex
 
-    void *                  vertWeights;            // GPU skinning 용 vertex weights (numVerts * sizeof(VertexWeightX))
+    void *                  vertWeights;                // GPU skinning 용 vertex weights (numVerts * sizeof(VertexWeightX))
     bool                    useGpuSkinning;
-    int                     gpuSkinningVersionIndex;
+    int                     gpuSkinningVersionIndex;    // 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 
     AABB                    aabb;
 

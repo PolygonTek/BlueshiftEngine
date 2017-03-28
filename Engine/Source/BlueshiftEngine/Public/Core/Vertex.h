@@ -363,23 +363,23 @@ BE_INLINE uint32_t VertexLightingGeneric::GetColor() const {
 */
 
 #if 1
-typedef byte VertexWeightValue;
+typedef byte JointWeightType;
 #else
-typedef float VertexWeightValue;
+typedef float JointWeightType;
 #endif
 
 struct VertexWeight1 {
-    uint32_t            index;
+    uint32_t            jointIndex;
 };
  
 struct VertexWeight4 {
-    byte                index[4];
-    VertexWeightValue   weight[4];
+    byte                jointIndexes[4];
+    JointWeightType     jointWeights[4];
 };
 
 struct VertexWeight8 {
-    byte                index[8];
-    VertexWeightValue   weight[8];
+    byte                jointIndexes[8];
+    JointWeightType     jointWeights[8];
 };
 
 BE_NAMESPACE_END

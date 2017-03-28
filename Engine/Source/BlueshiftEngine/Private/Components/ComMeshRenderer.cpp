@@ -74,12 +74,12 @@ void ComMeshRenderer::Init() {
     ChangeMesh(props->Get("mesh").As<Guid>());
 
     // Set SceneEntity parameters
-    sceneEntity.layer          = GetEntity()->GetLayer();
-    sceneEntity.mesh           = nullptr;
-    sceneEntity.aabb           = referenceMesh->GetAABB();
-    sceneEntity.customSkin     = nullptr;
-    sceneEntity.castShadows    = props->Get("castShadows").As<bool>();
-    sceneEntity.receiveShadows = props->Get("receiveShadows").As<bool>();
+    sceneEntity.layer           = GetEntity()->GetLayer();
+    sceneEntity.mesh            = nullptr;
+    sceneEntity.aabb            = referenceMesh->GetAABB();
+    sceneEntity.customSkin      = nullptr;
+    sceneEntity.castShadows     = props->Get("castShadows").As<bool>();
+    sceneEntity.receiveShadows  = props->Get("receiveShadows").As<bool>();
 }
 
 void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {

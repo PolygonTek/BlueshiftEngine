@@ -170,7 +170,7 @@ void SubMesh::CacheStaticDataToGpu() {
     // Fill in static vertex buffer
     if (!bufferCacheManager.IsCached(ambientCache)) {
         // skinning subMesh 라면 vertex weight 값을 vertex buffer 뒤에 write 한다
-        if (vertWeights) {//surfEntity->def->parms.joints && useGpuSkinning) {
+        if (vertWeights) {//surfSpace->def->parms.joints && useGpuSkinning) {
             int sizeofVertWeight = VertexWeightSize();
             int size = sizeof(VertexLightingGeneric) * numVerts + sizeofVertWeight * numVerts;
             
@@ -195,39 +195,41 @@ void SubMesh::CacheStaticDataToGpu() {
 }
 
 void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *material) {
-    if (!bufferCacheManager.IsCached(ambientCache)) {
-        if (joints) {
-            simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
-        }
-
-        bool unsmoothedTangents = false;
-        if (r_useUnsmoothedTangents.GetBool() && (material->GetFlags() & Material::UnsmoothTangents)) {
-            unsmoothedTangents = true;
-        }
-
-        ComputeTangents(true, unsmoothedTangents);
-
-        FixMirroredVerts();
-
-        // Fill in dynamic vertex buffer
-        bufferCacheManager.AllocVertex(numVerts, sizeof(VertexLightingGeneric), verts, ambientCache);
-
-        int filledVertexCount = ambientCache->offset / sizeof(VertexLightingGeneric);
-
-        // Fill in dynamic index buffer
-        bufferCacheManager.AllocIndex(numIndexes, sizeof(TriIndex), nullptr, indexCache);
-
-        TriIndex *dst_idxptr = (TriIndex *)bufferCacheManager.MapIndexBuffer(indexCache);
-        TriIndex *src_idxptr = indexes;
-
-        for (int i = 0; i < numIndexes; i += 3, dst_idxptr += 3, src_idxptr += 3) {
-            dst_idxptr[0] = filledVertexCount + src_idxptr[0];
-            dst_idxptr[1] = filledVertexCount + src_idxptr[1];
-            dst_idxptr[2] = filledVertexCount + src_idxptr[2];
-        }
-
-        bufferCacheManager.UnmapIndexBuffer(indexCache);
+    if (bufferCacheManager.IsCached(ambientCache)) {
+        return;
     }
+
+    if (joints) {
+        simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
+    }
+
+    bool unsmoothedTangents = false;
+    if (r_useUnsmoothedTangents.GetBool() && (material->GetFlags() & Material::UnsmoothTangents)) {
+        unsmoothedTangents = true;
+    }
+
+    ComputeTangents(true, unsmoothedTangents);
+
+    FixMirroredVerts();
+
+    // Fill in dynamic vertex buffer
+    bufferCacheManager.AllocVertex(numVerts, sizeof(VertexLightingGeneric), verts, ambientCache);
+
+    int filledVertexCount = ambientCache->offset / sizeof(VertexLightingGeneric);
+
+    // Fill in dynamic index buffer
+    bufferCacheManager.AllocIndex(numIndexes, sizeof(TriIndex), nullptr, indexCache);
+
+    TriIndex *dst_idxptr = (TriIndex *)bufferCacheManager.MapIndexBuffer(indexCache);
+    TriIndex *src_idxptr = indexes;
+
+    for (int i = 0; i < numIndexes; i += 3, dst_idxptr += 3, src_idxptr += 3) {
+        dst_idxptr[0] = filledVertexCount + src_idxptr[0];
+        dst_idxptr[1] = filledVertexCount + src_idxptr[1];
+        dst_idxptr[2] = filledVertexCount + src_idxptr[2];
+    }
+
+    bufferCacheManager.UnmapIndexBuffer(indexCache);
 }
 
 void SubMesh::SplitMirroredVerts() {

@@ -26,25 +26,25 @@ bool Mesh::IsDefaultMesh() const {
 }
 
 void Mesh::Purge() {
-    if (isInstantiated) {
-        for (int i = 0; i < surfaces.Count(); i++) {
-            FreeSurface(surfaces[i]);
-        }
-        surfaces.Clear();
+    for (int i = 0; i < surfaces.Count(); i++) {
+        FreeSurface(surfaces[i]);
+    }
+    surfaces.Clear();
 
+    if (isInstantiated) {
         if (skinningJointCache) {
             if (skinningJointCache->skinningJoints) {
                 Mem_AlignedFree(skinningJointCache->skinningJoints);
             }
+            delete skinningJointCache;
+            skinningJointCache = nullptr;
+        }
 
-            SAFE_DELETE(skinningJointCache);
+        if (originalMesh) {
+            originalMesh->instantiatedMeshes.Remove(this);
+            originalMesh = nullptr;
         }
     } else {
-        for (int i = 0; i < surfaces.Count(); i++) {
-            FreeSurface(surfaces[i]);
-        }
-        surfaces.Clear();
-
         SAFE_DELETE_ARRAY(joints);
     }
 }
@@ -91,17 +91,6 @@ Mesh *Mesh::InstantiateMesh(int meshType) {
     return mesh;
 }
 
-void Mesh::Reinstantiate() {
-    int meshType;
-    if (isSkinnedMesh) {
-        meshType = SkinnedMesh;
-    } else {
-        meshType = StaticMesh;
-    }
-
-    Instantiate(meshType);
-}
-
 void Mesh::Instantiate(int meshType) {
     if (meshType == SkinnedMesh && numJoints > 0) {
         isSkinnedMesh = true;
@@ -110,39 +99,40 @@ void Mesh::Instantiate(int meshType) {
         meshType = StaticMesh; // override to static mesh
     }
 
+    // Free previously allocated skinning joint cache
     if (skinningJointCache) {
         if (skinningJointCache->skinningJoints) {
             Mem_AlignedFree(skinningJointCache->skinningJoints);
         }
         delete skinningJointCache;
+        skinningJointCache = nullptr;
     }
 
     if (isSkinnedMesh) {
-        useGpuSkinning = CheckGPUJointSkinning(renderGlobal.skinningMethod, numJoints);
+        useGpuSkinning = CapableGPUJointSkinning((Mesh::SkinningMethod)renderGlobal.skinningMethod, numJoints);
 
         if (useGpuSkinning) {
-            SkinningJointCache *cache = new SkinningJointCache;	
-            cache->viewFrameCount = -1;
+            skinningJointCache = new SkinningJointCache;
+            skinningJointCache->viewFrameCount = -1;
 
             // NOTE: VTF skinning 일 때만 모션블러 함
             if (renderGlobal.skinningMethod == VtfSkinning) {
-                cache->numJoints = numJoints;
+                skinningJointCache->numJoints = numJoints;
                 if (r_motionBlur.GetInteger() == 2) {
-                    cache->numJoints *= 2;
+                    skinningJointCache->numJoints *= 2;
                 }
-                cache->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * cache->numJoints);
+                skinningJointCache->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * skinningJointCache->numJoints);
 
-                cache->jointIndexOffsetCurr = 0;
-                cache->jointIndexOffsetPrev = 0;
+                skinningJointCache->jointIndexOffsetCurr = 0;
+                skinningJointCache->jointIndexOffsetPrev = 0;
             } else {
-                cache->numJoints = numJoints;
-                cache->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * cache->numJoints);
+                skinningJointCache->numJoints = numJoints;
+                skinningJointCache->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * skinningJointCache->numJoints);
             }
-
-            skinningJointCache = cache;
         }
     }
 
+    // Free previously allocated surfaces
     if (surfaces.Count() > 0) {
         for (int i = 0; i < surfaces.Count(); i++) {
             FreeSurface(surfaces[i]);
@@ -154,6 +144,17 @@ void Mesh::Instantiate(int meshType) {
         MeshSurf *surf = AllocInstantiatedSurface(originalMesh->surfaces[i], meshType);
         surfaces.Append(surf);
     }
+}
+
+void Mesh::Reinstantiate() {
+    int meshType;
+    if (isSkinnedMesh) {
+        meshType = SkinnedMesh;
+    } else {
+        meshType = StaticMesh;
+    }
+
+    Instantiate(meshType);
 }
 
 void Mesh::FinishSurfaces(int flags) {
@@ -316,12 +317,12 @@ bool Mesh::IsCompatibleSkeleton(const Skeleton *skeleton) const {
     return true;
 }
 
-bool Mesh::CheckGPUJointSkinning(int skinning, int numJoints) const {
+bool Mesh::CapableGPUJointSkinning(SkinningMethod skinningMethod, int numJoints) const {
     assert(numJoints > 0 && numJoints < 256);
 
-    if (renderGlobal.skinningMethod == VtfSkinning) {
+    if (skinningMethod == VtfSkinning) {
         return true;
-    } else if (renderGlobal.skinningMethod == VertexShaderSkinning) {	
+    } else if (skinningMethod == VertexShaderSkinning) {
         if (numJoints <= 74) {
             if (glr.HWLimit().maxVertexUniformComponents >= 256) {
                 return true;
@@ -367,7 +368,7 @@ void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *join
 }
 
 float Mesh::ComputeVolume() const {
-    float	totalVolume = 0;
+    float   totalVolume = 0;
 
     for (int i = 0; i < NumSurfaces(); i++) {
         const MeshSurf *surf = GetSurface(i);
@@ -386,10 +387,10 @@ float Mesh::ComputeVolume() const {
 }
 
 const Vec3 Mesh::ComputeCentroid() const {
-    float	totalVolume = 0;
-    Vec3	totalVolumeCentroid(0.0f);
-    float	volume;
-    Vec3	centroid;
+    float   totalVolume = 0;
+    Vec3    totalVolumeCentroid(0.0f);
+    float   volume;
+    Vec3    centroid;
 
     for (int i = 0; i < NumSurfaces(); i++) {
         const MeshSurf *surf = GetSurface(i);
@@ -426,7 +427,7 @@ bool Mesh::Load(const char *filename) {
 
     BE_LOG(L"Loading mesh '%hs'...\n", bMeshFilename.c_str());
     
-    bool ret = LoadBMesh(bMeshFilename);
+    bool ret = LoadBinaryMesh(bMeshFilename);
     if (!ret) {
         return false;
     }
@@ -435,7 +436,7 @@ bool Mesh::Load(const char *filename) {
 }
 
 void Mesh::Write(const char *filename) {
-    WriteBMesh(filename);
+    WriteBinaryMesh(filename);
 }
 
 bool Mesh::Reload() {

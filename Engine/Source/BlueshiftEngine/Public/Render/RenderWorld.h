@@ -99,9 +99,9 @@ public:
     void                        DebugJoints(const SceneEntity *ent, bool showJointsNames, const Mat3 &viewAxis);
 
 private:
-    viewEntity_t *              AddViewEntity(view_t *view, SceneEntity *sceneEntity);
-    viewLight_t *               AddViewLight(view_t *view, SceneLight *sceneLight);
-    void                        AddViewLightsAndEntities(view_t *view);
+    viewEntity_t *              RegisterViewEntity(view_t *view, SceneEntity *sceneEntity);
+    viewLight_t *               RegisterViewLight(view_t *view, SceneLight *sceneLight);
+    void                        FindViewLightsAndEntities(view_t *view);
     void                        AddStaticMeshes(view_t *view);
     void                        AddSkinnedMeshes(view_t *view);
     void                        AddTextMeshes(view_t *view);

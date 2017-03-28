@@ -183,7 +183,7 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const Frustu
 
 static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool skipNoSelfShadow) {
     int                 prevSortkey = -1;
-    viewEntity_t *      prevEntity = nullptr;
+    const viewEntity_t *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -194,30 +194,30 @@ static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool s
             continue;
         }
 
-        if (surf->sortkey != prevSortkey) {
+        if (surf->sortKey != prevSortkey) {
             if (surf->material->GetSort() != Material::OpaqueSort && 
                 surf->material->GetSort() != Material::AlphaTestSort && 
                 surf->material->GetSort() != Material::AdditiveLightingSort) {
                 continue;
             }
 
-            if (surf->material != prevMaterial || surf->entity != prevEntity) {
+            if (surf->material != prevMaterial || surf->space != prevSpace) {
                 if (prevMaterial) {
                     backEnd.rbsurf.Flush();
                 }
 
-                backEnd.rbsurf.Begin(RBSurf::LitFlush, surf->material, surf->materialRegisters, surf->entity, viewLight);
+                backEnd.rbsurf.Begin(RBSurf::LitFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
 
                 prevMaterial = surf->material;
             }
 
-            if (surf->entity != prevEntity) {
-                prevEntity = surf->entity;
+            if (surf->space != prevSpace) {
+                prevSpace = surf->space;
 
-                backEnd.modelViewMatrix = surf->entity->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->entity->modelViewProjMatrix;
+                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                bool depthHack = surf->entity->def->parms.depthHack;
+                bool depthHack = surf->space->def->parms.depthHack;
                 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -230,7 +230,7 @@ static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool s
                 }
             }
 
-            prevSortkey = surf->sortkey;
+            prevSortkey = surf->sortKey;
         }
 
         backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
@@ -248,17 +248,17 @@ static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool s
 
 static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &lightViewMatrix, const Frustum &lightFrustum, const Frustum &viewFrustum, bool forceClear, int cubeMapFace) {
     int                 prevSortkey = -1;
-    viewEntity_t *      prevEntity = nullptr;
-    viewEntity_t *      skipEntity = nullptr;
-    viewEntity_t *      entity2 = nullptr;
+    const viewEntity_t *prevSpace = nullptr;
+    const viewEntity_t *skipEntity = nullptr;
+    const viewEntity_t *entity2 = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
     
     for (drawSurfNode_t *shadowCasterSurfNode = viewLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
         const DrawSurf *surf = shadowCasterSurfNode->drawSurf;
 
-        if (surf->sortkey != prevSortkey) {
-            if (surf->entity == skipEntity) {
+        if (surf->sortKey != prevSortkey) {
+            if (surf->space == skipEntity) {
                 continue;
             }
             
@@ -271,42 +271,42 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
                 continue;
             }
 
-            if (surf->material != prevMaterial || surf->entity != prevEntity) {
+            if (surf->material != prevMaterial || surf->space != prevSpace) {
                 if (!prevMaterial) {
-                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->entity, viewLight);
+                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
                 } else {
-                    if (surf->entity != prevEntity ||
+                    if (surf->space != prevSpace ||
                         (prevMaterial->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage)) == Material::PerforatedCoverage || 
                         (surf->material->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage)) == Material::PerforatedCoverage) {
                         backEnd.rbsurf.Flush();
-                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->entity, viewLight);
+                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
                     }
                 }
 
                 prevMaterial = surf->material;
             }
 
-            if (surf->entity != prevEntity) {
-                prevEntity = surf->entity;
+            if (surf->space != prevSpace) {
+                prevSpace = surf->space;
 
-                if (!surf->entity->def->parms.castShadows) {
+                if (!surf->space->def->parms.castShadows) {
                     continue;
                 }
                 
-                OBB obb(surf->entity->def->GetAABB(), surf->entity->def->parms.origin, surf->entity->def->parms.axis);
+                OBB obb(surf->space->def->GetAABB(), surf->space->def->parms.origin, surf->space->def->parms.axis);
                 if (lightFrustum.CullOBB(obb)) {
-                    skipEntity = surf->entity;
+                    skipEntity = surf->space;
                     continue;
                 }
 
                 skipEntity = nullptr;
             }
 
-            prevSortkey = surf->sortkey;
+            prevSortkey = surf->sortKey;
         }
         
-        if (!surf->entity->def->parms.joints) {
-            OBB obb(surf->subMesh->GetAABB() * surf->entity->def->parms.scale, surf->entity->def->parms.origin, surf->entity->def->parms.axis);
+        if (!surf->space->def->parms.joints) {
+            OBB obb(surf->subMesh->GetAABB() * surf->space->def->parms.scale, surf->space->def->parms.origin, surf->space->def->parms.axis);
             if (lightFrustum.CullOBB(obb)) {
                 continue;
             }
@@ -337,10 +337,10 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
             }
         }
 
-        if (surf->entity != entity2) {
-            entity2 = surf->entity;
+        if (surf->space != entity2) {
+            entity2 = surf->space;
 
-            backEnd.modelViewMatrix = lightViewMatrix * surf->entity->def->GetModelMatrix();
+            backEnd.modelViewMatrix = lightViewMatrix * surf->space->def->GetModelMatrix();
             backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
         }
 
@@ -464,9 +464,9 @@ static void RB_ShadowCubeMapAndLitPass(const viewLight_t *viewLight) {
 // TODO: cascade 별로 컬링해야함
 static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFrustum, int cascadeIndex, bool forceClear) {
     int                 prevSortkey = -1;
-    viewEntity_t *      prevEntity = nullptr;
-    viewEntity_t *      skipEntity = nullptr;
-    viewEntity_t *      entity2 = nullptr;
+    const viewEntity_t *prevSpace = nullptr;
+    const viewEntity_t *skipEntity = nullptr;
+    const viewEntity_t *entity2 = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
     Rect                prevScissorRect;
@@ -481,8 +481,8 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
     for (drawSurfNode_t *shadowCasterSurfNode = viewLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
         const DrawSurf *surf = shadowCasterSurfNode->drawSurf;
 
-        if (surf->sortkey != prevSortkey) {
-            if (surf->entity == skipEntity) {
+        if (surf->sortKey != prevSortkey) {
+            if (surf->space == skipEntity) {
                 continue;
             }
 
@@ -495,33 +495,33 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
                 continue;
             }
 
-            if (surf->material != prevMaterial || surf->entity != prevEntity) {
+            if (surf->material != prevMaterial || surf->space != prevSpace) {
                 if (!prevMaterial) {
-                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->entity, viewLight);
+                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
                 } else {
-                    if (surf->entity != prevEntity ||
+                    if (surf->space != prevSpace ||
                         (prevMaterial->GetCoverage() & Material::PerforatedCoverage) || (surf->material->GetCoverage() & Material::PerforatedCoverage) ||
                         (surf->material->GetCullType() != prevMaterial->GetCullType())) {
                         backEnd.rbsurf.Flush();
-                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->entity, viewLight);
+                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
                     }
                 }
 
                 prevMaterial = surf->material;
             }
 
-            if (surf->entity != prevEntity) {
-                prevEntity = surf->entity;
+            if (surf->space != prevSpace) {
+                prevSpace = surf->space;
 
-                if (!surf->entity->def->parms.castShadows) {
-                    skipEntity = surf->entity;
+                if (!surf->space->def->parms.castShadows) {
+                    skipEntity = surf->space;
                     continue;
                 }
 
                 skipEntity = nullptr;
             }
 
-            prevSortkey = surf->sortkey;
+            prevSortkey = surf->sortKey;
         }
 
         if (firstDraw) {
@@ -540,10 +540,10 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
             backEnd.projMatrix = backEnd.shadowProjectionMatrix;
         }
 
-        if (surf->entity != entity2) {
-            entity2 = surf->entity;
+        if (surf->space != entity2) {
+            entity2 = surf->space;
 
-            backEnd.modelViewMatrix = viewLight->def->viewMatrix * surf->entity->def->GetModelMatrix();
+            backEnd.modelViewMatrix = viewLight->def->viewMatrix * surf->space->def->GetModelMatrix();
             backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
         }
 
@@ -925,7 +925,7 @@ void RB_AllShadowAndLitPass(viewLight_t *viewLights) {
                 backEnd.depthMax = Min(lightDepthMax, visSurfDepthMax);
             }
 
-            //BE_LOG("%f %f\n", depthMin, depthMax);			
+            //BE_LOG("%f %f\n", depthMin, depthMax);
         }
 
         // viewLight texture transform matrix

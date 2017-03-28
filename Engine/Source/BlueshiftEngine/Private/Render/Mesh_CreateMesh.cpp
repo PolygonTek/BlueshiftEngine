@@ -123,7 +123,7 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
             *idx++ = b + 1;
             *idx++ = c;
             
-            *idx++ = c;            
+            *idx++ = c;
             *idx++ = b + 1;
             *idx++ = c + 1;
         }
@@ -181,18 +181,18 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     v[23].xyz.Set(-extents[0], -extents[1],  extents[2]); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);	
         
     TriIndex *idx = surf->subMesh->indexes;
-    idx[0] = 0;		idx[1] = 1;		idx[2] = 2;
-    idx[3] = 2;		idx[4] = 3;		idx[5] = 0;
-    idx[6] = 4;		idx[7] = 5;		idx[8] = 6;
-    idx[9] = 6;		idx[10] = 7;	idx[11] = 4;
-    idx[12] = 8;	idx[13] = 9;	idx[14] = 10;
-    idx[15] = 10;	idx[16] = 11;	idx[17] = 8;
-    idx[18] = 12;	idx[19] = 13;	idx[20] = 14;
-    idx[21] = 14;	idx[22] = 15;	idx[23] = 12;
-    idx[24] = 16;	idx[25] = 17;	idx[26] = 18;
-    idx[27] = 18;	idx[28] = 19;	idx[29] = 16;
-    idx[30] = 20;	idx[31] = 21;	idx[32] = 22;
-    idx[33] = 22;	idx[34] = 23;	idx[35] = 20;
+    idx[0] = 0;     idx[1] = 1;     idx[2] = 2;
+    idx[3] = 2;     idx[4] = 3;     idx[5] = 0;
+    idx[6] = 4;     idx[7] = 5;     idx[8] = 6;
+    idx[9] = 6;     idx[10] = 7;    idx[11] = 4;
+    idx[12] = 8;    idx[13] = 9;    idx[14] = 10;
+    idx[15] = 10;   idx[16] = 11;   idx[17] = 8;
+    idx[18] = 12;   idx[19] = 13;   idx[20] = 14;
+    idx[21] = 14;   idx[22] = 15;   idx[23] = 12;
+    idx[24] = 16;   idx[25] = 17;   idx[26] = 18;
+    idx[27] = 18;   idx[28] = 19;   idx[29] = 16;
+    idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
+    idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
     
     FinishSurfaces(ComputeTangentsFlag);
 

@@ -462,7 +462,7 @@ void ShaderManager::RemoveGlobalHeader(const char *text) {
 }
 
 void ShaderManager::Cmd_ListShaders(const CmdArgs &args) {
-    int count = 0;	
+    int count = 0;
 
     BE_LOG(L"NUM. REF. TYPE NAME\n");
 

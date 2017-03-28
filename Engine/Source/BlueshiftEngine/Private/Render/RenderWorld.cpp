@@ -329,7 +329,7 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     Mat4 projMatrix;
     projMatrix.SetOrtho(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0);
 
-    viewEntity_t *viewEntity = AddViewEntity(guiView, &sceneEntity);
+    viewEntity_t *viewEntity = RegisterViewEntity(guiView, &sceneEntity);
     viewEntity->modelViewMatrix.SetIdentity();
     viewEntity->modelViewMatrix.Scale(renderSystem.currentContext->GetUpscaleFactorX(), renderSystem.currentContext->GetUpscaleFactorY(), 1.0f);
     viewEntity->modelViewProjMatrix = projMatrix * viewEntity->modelViewMatrix;

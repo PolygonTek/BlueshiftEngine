@@ -32,7 +32,7 @@ void RBSurf::Init() {
 
     material = nullptr;
     subMesh = nullptr;
-    surfEntity = nullptr;
+    surfSpace = nullptr;
 }
 
 void RBSurf::Shutdown() {
@@ -42,19 +42,19 @@ void RBSurf::EndFrame() {
     startIndex = -1;
 }
 
-void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfEntity, const viewLight_t *surfLight) {
-    this->flushType         = flushType;
-    this->material          = const_cast<Material *>(material);
+void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfSpace, const viewLight_t *surfLight) {
+    this->flushType = flushType;
+    this->material = const_cast<Material *>(material);
     this->materialRegisters = materialRegisters;
-    this->surfEntity        = surfEntity;
-    this->surfLight         = surfLight;
+    this->surfSpace = surfSpace;
+    this->surfLight = surfLight;
 }
 
 void RBSurf::DrawSubMesh(SubMesh *subMesh, GuiSubMesh *guiSubMesh) {
     if (guiSubMesh) {
         DrawGuiSubMesh(guiSubMesh);
     } else {
-        if (surfEntity->def->parms.joints && !subMesh->useGpuSkinning) {
+        if (surfSpace->def->parms.joints && !subMesh->useGpuSkinning) {
             // CPU skinning mesh 일 경우 
             DrawDynamicSubMesh(subMesh);
         } else {
@@ -135,7 +135,7 @@ void RBSurf::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatInde
         }
     } else {
         // HACK: subMesh is nullptr for guiSubMesh
-        glr.SetVertexFormat(vertexFormats[VertexFormat::PicXyzStColor].vertexFormatHandle);
+        glr.SetVertexFormat(vertexFormats[VertexFormat::XyzStColor].vertexFormatHandle);
         glr.SetStreamSource(0, vbHandle, 0, sizeof(VertexNoLit));
     }
 }
@@ -202,7 +202,7 @@ void RBSurf::Flush() {
 
 void RBSurf::Flush_SelectionPass() {
     // Convert entity ID to Vec3
-    int id = surfEntity->def->index;
+    int id = surfSpace->def->index;
     int b = Max(id / 65536, 0);
     int g = Max((id - b * 65536) / 256, 0);
     int r = Max(id - b * 65536 - g * 256, 0);
@@ -406,10 +406,10 @@ void RBSurf::Flush_TrisPass() {
     if (r_showWireframe.GetInteger() > 0) {
         wireframeMode = r_showWireframe.GetInteger();
     } else {
-        wireframeMode = surfEntity->def->parms.wireframeMode;
+        wireframeMode = surfSpace->def->parms.wireframeMode;
     }
 
-    DrawDebugWireframe(wireframeMode, surfEntity->def->parms.wireframeColor);	
+    DrawDebugWireframe(wireframeMode, surfSpace->def->parms.wireframeColor);	
 }
 
 void RBSurf::Flush_VelocityMapPass() {
@@ -440,7 +440,7 @@ void RBSurf::Flush_GuiPass() {
 
     glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
 
-    SetSubMeshVertexFormat(subMesh, VertexFormat::PicXyzStColor);
+    SetSubMeshVertexFormat(subMesh, VertexFormat::XyzStColor);
 
     if (mtrlPass->stateBits & Renderer::MaskAF) {
         glr.SetAlphaRef(mtrlPass->alphaRef);

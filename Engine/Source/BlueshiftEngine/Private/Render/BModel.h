@@ -26,8 +26,8 @@ BE_NAMESPACE_BEGIN
 #define BANIM_VERSION   1
 
 enum BAnimFlag {
-    RootTranslationXY        = BIT(0),
-    RootTranslationZ         = BIT(1),
+    RootTranslationXY   = BIT(0),
+    RootTranslationZ    = BIT(1),
     RootRotation        = BIT(2),
 };
 

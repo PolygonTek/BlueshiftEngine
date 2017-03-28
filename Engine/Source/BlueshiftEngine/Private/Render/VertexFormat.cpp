@@ -22,38 +22,38 @@ VertexFormat vertexFormats[VertexFormat::MaxVertexFormats];
 
 void VertexFormat::Init() {
     // Xy
-    vertexFormats[Xy].Append(0, 0, Renderer::VertexElement::Position, 2, Renderer::VertexElement::FloatType, false);
-    vertexFormats[Xy].Create();
+    vertexFormats[VertexFormat::Type::Xy].Append(0, 0, Renderer::VertexElement::Position, 2, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::Xy].Create();
 
     // XySt
-    vertexFormats[XySt].Append(0, 0, Renderer::VertexElement::Position, 2, Renderer::VertexElement::FloatType, false);
-    vertexFormats[XySt].Append(0, 8, Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::FloatType, false);
-    vertexFormats[XySt].Create();
+    vertexFormats[VertexFormat::Type::XySt].Append(0, 0, Renderer::VertexElement::Position, 2, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::XySt].Append(0, 8, Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::XySt].Create();
 
     // XyStr
-    vertexFormats[XyStr].Append(0, 0, Renderer::VertexElement::Position, 2, Renderer::VertexElement::FloatType, false);
-    vertexFormats[XyStr].Append(0, 8, Renderer::VertexElement::TexCoord0, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[XyStr].Create();
+    vertexFormats[VertexFormat::Type::XyStr].Append(0, 0, Renderer::VertexElement::Position, 2, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::XyStr].Append(0, 8, Renderer::VertexElement::TexCoord0, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::XyStr].Create();
 
     // XyzStr
-    vertexFormats[XyzStr].Append(0, 0, Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[XyzStr].Append(0, 12, Renderer::VertexElement::TexCoord0, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[XyzStr].Create();
+    vertexFormats[VertexFormat::Type::XyzStr].Append(0, 0, Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::XyzStr].Append(0, 12, Renderer::VertexElement::TexCoord0, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::XyzStr].Create();
 
     // Xyz
-    vertexFormats[Xyz].Append(0, 0, Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[Xyz].Create();
+    vertexFormats[VertexFormat::Type::Xyz].Append(0, 0, Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::Xyz].Create();
 
     // XyzColor
-    vertexFormats[XyzColor].Append(0, 0, Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[XyzColor].Append(0, 12, Renderer::VertexElement::Color, 4, Renderer::VertexElement::UByteType, true);
-    vertexFormats[XyzColor].Create();
+    vertexFormats[VertexFormat::Type::XyzColor].Append(0, 0, Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::XyzColor].Append(0, 12, Renderer::VertexElement::Color, 4, Renderer::VertexElement::UByteType, true);
+    vertexFormats[VertexFormat::Type::XyzColor].Create();
 
-    // PicXyzStColor
-    vertexFormats[PicXyzStColor].Append(0, OFFSET_OF(VertexNoLit, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[PicXyzStColor].Append(0, OFFSET_OF(VertexNoLit, st), Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::HalfType, false);
-    vertexFormats[PicXyzStColor].Append(0, OFFSET_OF(VertexNoLit, color), Renderer::VertexElement::Color, 4, Renderer::VertexElement::UByteType, true);
-    vertexFormats[PicXyzStColor].Create();
+    // XyzStColor
+    vertexFormats[VertexFormat::Type::XyzStColor].Append(0, 0, Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::XyzStColor].Append(0, 12, Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::HalfType, false);
+    vertexFormats[VertexFormat::Type::XyzStColor].Append(0, 16, Renderer::VertexElement::Color, 4, Renderer::VertexElement::UByteType, true);
+    vertexFormats[VertexFormat::Type::XyzStColor].Create();
 
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     Renderer::VertexElement::Type normalTangentType = Renderer::VertexElement::UByteType;
@@ -64,63 +64,87 @@ void VertexFormat::Init() {
 #endif
 
     // GenericXyz
-    vertexFormats[GenericXyz].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[GenericXyz].Create();
+    vertexFormats[VertexFormat::Type::GenericXyz].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::GenericXyz].Create();
 
-    CreateSkinningVertexFormats(GenericXyz, GenericXyzSkinning1, GenericXyzSkinning4, GenericXyzSkinning8);
+    // GenericXyzSkinning1, GenericXyzSkinning4, GenericXyzSkinning8
+    CreateSkinningVertexFormats(VertexFormat::Type::GenericXyz, 
+        VertexFormat::Type::GenericXyzSkinning1, 
+        VertexFormat::Type::GenericXyzSkinning4, 
+        VertexFormat::Type::GenericXyzSkinning8);
 
     // GenericXyzSt
-    vertexFormats[GenericXyzSt].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[GenericXyzSt].Append(0, OFFSET_OF(VertexLightingGeneric, st), Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::HalfType, false);
-    vertexFormats[GenericXyzSt].Create();
+    vertexFormats[VertexFormat::Type::GenericXyzSt].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::GenericXyzSt].Append(0, OFFSET_OF(VertexLightingGeneric, st), Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::HalfType, false);
+    vertexFormats[VertexFormat::Type::GenericXyzSt].Create();
 
-    CreateSkinningVertexFormats(GenericXyzSt, GenericXyzStSkinning1, GenericXyzStSkinning4, GenericXyzStSkinning8);
+    // GenericXyzStSkinning1, GenericXyzStSkinning4, GenericXyzStSkinning8
+    CreateSkinningVertexFormats(VertexFormat::Type::GenericXyzSt, 
+        VertexFormat::Type::GenericXyzStSkinning1, 
+        VertexFormat::Type::GenericXyzStSkinning4, 
+        VertexFormat::Type::GenericXyzStSkinning8);
 
     // GenericXyzStColor
-    vertexFormats[GenericXyzStColor].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[GenericXyzStColor].Append(0, OFFSET_OF(VertexLightingGeneric, st), Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::HalfType, false);
-    vertexFormats[GenericXyzStColor].Append(0, OFFSET_OF(VertexLightingGeneric, color), Renderer::VertexElement::Color, 4, Renderer::VertexElement::UByteType, true);
-    vertexFormats[GenericXyzStColor].Create();
+    vertexFormats[VertexFormat::Type::GenericXyzStColor].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::GenericXyzStColor].Append(0, OFFSET_OF(VertexLightingGeneric, st), Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::HalfType, false);
+    vertexFormats[VertexFormat::Type::GenericXyzStColor].Append(0, OFFSET_OF(VertexLightingGeneric, color), Renderer::VertexElement::Color, 4, Renderer::VertexElement::UByteType, true);
+    vertexFormats[VertexFormat::Type::GenericXyzStColor].Create();
 
-    CreateSkinningVertexFormats(GenericXyzStColor, GenericXyzColorStSkinning1, GenericXyzColorStSkinning4, GenericXyzColorStSkinning8);
+    // GenericXyzColorStSkinning1, GenericXyzColorStSkinning4, GenericXyzColorStSkinning8
+    CreateSkinningVertexFormats(VertexFormat::Type::GenericXyzStColor, 
+        VertexFormat::Type::GenericXyzColorStSkinning1, 
+        VertexFormat::Type::GenericXyzColorStSkinning4, 
+        VertexFormat::Type::GenericXyzColorStSkinning8);
 
     // GenericXyzNormal
-    vertexFormats[GenericXyzNormal].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[GenericXyzNormal].Append(0, OFFSET_OF(VertexLightingGeneric, normal), Renderer::VertexElement::Normal, 3, normalTangentType, normalTangentNormalize);
-    vertexFormats[GenericXyzNormal].Create();
+    vertexFormats[VertexFormat::Type::GenericXyzNormal].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::GenericXyzNormal].Append(0, OFFSET_OF(VertexLightingGeneric, normal), Renderer::VertexElement::Normal, 3, normalTangentType, normalTangentNormalize);
+    vertexFormats[VertexFormat::Type::GenericXyzNormal].Create();
 
-    CreateSkinningVertexFormats(GenericXyzNormal, GenericXyzNormalSkinning1, GenericXyzNormalSkinning4, GenericXyzNormalSkinning8);
+    // GenericXyzNormalSkinning1, GenericXyzNormalSkinning4, GenericXyzNormalSkinning8
+    CreateSkinningVertexFormats(VertexFormat::Type::GenericXyzNormal, 
+        VertexFormat::Type::GenericXyzNormalSkinning1, 
+        VertexFormat::Type::GenericXyzNormalSkinning4, 
+        VertexFormat::Type::GenericXyzNormalSkinning8);
 
     // GenericLit
-    vertexFormats[GenericLit].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[GenericLit].Append(0, OFFSET_OF(VertexLightingGeneric, st), Renderer::VertexElement::TexCoord, 2, Renderer::VertexElement::HalfType, false);
-    vertexFormats[GenericLit].Append(0, OFFSET_OF(VertexLightingGeneric, normal), Renderer::VertexElement::Normal, 3, normalTangentType, normalTangentNormalize);
-    vertexFormats[GenericLit].Append(0, OFFSET_OF(VertexLightingGeneric, tangent), Renderer::VertexElement::TexCoord1, 4, normalTangentType, normalTangentNormalize);
-    vertexFormats[GenericLit].Create();
+    vertexFormats[VertexFormat::Type::GenericLit].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::GenericLit].Append(0, OFFSET_OF(VertexLightingGeneric, st), Renderer::VertexElement::TexCoord, 2, Renderer::VertexElement::HalfType, false);
+    vertexFormats[VertexFormat::Type::GenericLit].Append(0, OFFSET_OF(VertexLightingGeneric, normal), Renderer::VertexElement::Normal, 3, normalTangentType, normalTangentNormalize);
+    vertexFormats[VertexFormat::Type::GenericLit].Append(0, OFFSET_OF(VertexLightingGeneric, tangent), Renderer::VertexElement::TexCoord1, 4, normalTangentType, normalTangentNormalize);
+    vertexFormats[VertexFormat::Type::GenericLit].Create();
 
-    CreateSkinningVertexFormats(GenericLit, GenericLitSkinning1, GenericLitSkinning4, GenericLitSkinning8);
+    // GenericLitSkinning1, GenericLitSkinning4, GenericLitSkinning8
+    CreateSkinningVertexFormats(VertexFormat::Type::GenericLit, 
+        VertexFormat::Type::GenericLitSkinning1, 
+        VertexFormat::Type::GenericLitSkinning4, 
+        VertexFormat::Type::GenericLitSkinning8);
 
     // GenericLitColor
-    vertexFormats[GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, st), Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::HalfType, false);
-    vertexFormats[GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, color), Renderer::VertexElement::Color, 4, Renderer::VertexElement::UByteType, true);
-    vertexFormats[GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, normal), Renderer::VertexElement::Normal, 3, normalTangentType, normalTangentNormalize);
-    vertexFormats[GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, tangent), Renderer::VertexElement::TexCoord1, 4, normalTangentType, normalTangentNormalize);
-    vertexFormats[GenericLitColor].Create();
+    vertexFormats[VertexFormat::Type::GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, xyz), Renderer::VertexElement::Position, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, st), Renderer::VertexElement::TexCoord0, 2, Renderer::VertexElement::HalfType, false);
+    vertexFormats[VertexFormat::Type::GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, color), Renderer::VertexElement::Color, 4, Renderer::VertexElement::UByteType, true);
+    vertexFormats[VertexFormat::Type::GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, normal), Renderer::VertexElement::Normal, 3, normalTangentType, normalTangentNormalize);
+    vertexFormats[VertexFormat::Type::GenericLitColor].Append(0, OFFSET_OF(VertexLightingGeneric, tangent), Renderer::VertexElement::TexCoord1, 4, normalTangentType, normalTangentNormalize);
+    vertexFormats[VertexFormat::Type::GenericLitColor].Create();
 
-    CreateSkinningVertexFormats(GenericLitColor, GenericLitColorSkinning1, GenericLitColorSkinning4, GenericLitColorSkinning8);	
+    // GenericLitColorSkinning1, GenericLitColorSkinning4, GenericLitColorSkinning8
+    CreateSkinningVertexFormats(VertexFormat::Type::GenericLitColor, 
+        VertexFormat::Type::GenericLitColorSkinning1, 
+        VertexFormat::Type::GenericLitColorSkinning4, 
+        VertexFormat::Type::GenericLitColorSkinning8);
 
     // Occludee
-    vertexFormats[Occludee].Append(0, 0, Renderer::VertexElement::Position, 2, Renderer::VertexElement::FloatType, false);
-    vertexFormats[Occludee].Append(0, 8, Renderer::VertexElement::TexCoord0, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[Occludee].Append(0, 20, Renderer::VertexElement::TexCoord1, 3, Renderer::VertexElement::FloatType, false);
-    vertexFormats[Occludee].Create();
+    vertexFormats[VertexFormat::Type::Occludee].Append(0, 0, Renderer::VertexElement::Position, 2, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::Occludee].Append(0, 8, Renderer::VertexElement::TexCoord0, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::Occludee].Append(0, 20, Renderer::VertexElement::TexCoord1, 3, Renderer::VertexElement::FloatType, false);
+    vertexFormats[VertexFormat::Type::Occludee].Create();
 }
 
-void VertexFormat::CreateSkinningVertexFormats(int originalIndex, int skinning1Index, int skinning4Index, int skinning8Index) {	
+void VertexFormat::CreateSkinningVertexFormats(int originalIndex, int skinning1Index, int skinning4Index, int skinning8Index) {
     Renderer::VertexElement::Type weightType;
 
-    if (sizeof(VertexWeightValue) == sizeof(byte)) {
+    if (sizeof(JointWeightType) == sizeof(byte)) {
         weightType = Renderer::VertexElement::UByteType;
     } else {
         weightType = Renderer::VertexElement::FloatType;
@@ -128,28 +152,28 @@ void VertexFormat::CreateSkinningVertexFormats(int originalIndex, int skinning1I
 
     VertexFormat *vf = &vertexFormats[skinning1Index];
     vf->CopyFrom(vertexFormats[originalIndex]);
-    vf->Append(1, OFFSET_OF(VertexWeight1, index), Renderer::VertexElement::WeightIndex, 1, Renderer::VertexElement::UIntType, false);
+    vf->Append(1, OFFSET_OF(VertexWeight1, jointIndex), Renderer::VertexElement::WeightIndex, 1, Renderer::VertexElement::UIntType, false);
     vf->Create();
 
     vf = &vertexFormats[skinning4Index];
     vf->CopyFrom(vertexFormats[originalIndex]);
-    vf->Append(1, OFFSET_OF(VertexWeight4, index[0]), Renderer::VertexElement::WeightIndex, 4, Renderer::VertexElement::UByteType, false);
-    vf->Append(1, OFFSET_OF(VertexWeight4, weight[0]), Renderer::VertexElement::WeightValue, 4, weightType, true);
+    vf->Append(1, OFFSET_OF(VertexWeight4, jointIndexes[0]), Renderer::VertexElement::WeightIndex, 4, Renderer::VertexElement::UByteType, false);
+    vf->Append(1, OFFSET_OF(VertexWeight4, jointWeights[0]), Renderer::VertexElement::WeightValue, 4, weightType, true);
     vf->Create();
 
     vf = &vertexFormats[skinning8Index];
     vf->CopyFrom(vertexFormats[originalIndex]);
-    vf->Append(1, OFFSET_OF(VertexWeight8, index[0]), Renderer::VertexElement::WeightIndex0, 4, Renderer::VertexElement::UByteType, false);
-    vf->Append(1, OFFSET_OF(VertexWeight8, index[4]), Renderer::VertexElement::WeightIndex1, 4, Renderer::VertexElement::UByteType, false);
-    vf->Append(1, OFFSET_OF(VertexWeight8, weight[0]), Renderer::VertexElement::WeightValue0, 4, weightType, true);
-    vf->Append(1, OFFSET_OF(VertexWeight8, weight[4]), Renderer::VertexElement::WeightValue1, 4, weightType, true);
+    vf->Append(1, OFFSET_OF(VertexWeight8, jointIndexes[0]), Renderer::VertexElement::WeightIndex0, 4, Renderer::VertexElement::UByteType, false);
+    vf->Append(1, OFFSET_OF(VertexWeight8, jointIndexes[4]), Renderer::VertexElement::WeightIndex1, 4, Renderer::VertexElement::UByteType, false);
+    vf->Append(1, OFFSET_OF(VertexWeight8, jointWeights[0]), Renderer::VertexElement::WeightValue0, 4, weightType, true);
+    vf->Append(1, OFFSET_OF(VertexWeight8, jointWeights[4]), Renderer::VertexElement::WeightValue1, 4, weightType, true);
     vf->Create();
 }
 
 void VertexFormat::Free() {
     for (int i = 0; i < COUNT_OF(vertexFormats); i++) {
         vertexFormats[i].Delete();
-    }	
+    }
 }
 
 VertexFormat::VertexFormat() {
@@ -157,28 +181,36 @@ VertexFormat::VertexFormat() {
 }
 
 void VertexFormat::Append(int stream, int offset, Renderer::VertexElement::Usage usage, int components, Renderer::VertexElement::Type type, bool normalize) {
-    Renderer::VertexElement ve;
-    ve.offset		= offset;
-    ve.stream		= stream;
-    ve.usage		= usage;
-    ve.components	= components;
-    ve.type			= type;
-    ve.normalize	= normalize;
+    Renderer::VertexElement element;
+    element.stream      = stream;
+    element.offset      = offset;
+    element.usage       = usage;
+    element.components  = components;
+    element.type        = type;
+    element.normalize   = normalize;
 
-    elements.Append(ve);
+    elements.Append(element);
 
     int typeSize;
     switch (type) {
-    case Renderer::VertexElement::UByteType: typeSize = 1; break;
-    case Renderer::VertexElement::UIntType: typeSize = 4; break;
-    case Renderer::VertexElement::FloatType: typeSize = 4; break;
-    case Renderer::VertexElement::HalfType: typeSize = 2; break;
-    default: assert(0); break;
+    case Renderer::VertexElement::UByteType:
+        typeSize = 1; 
+        break;
+    case Renderer::VertexElement::HalfType:
+        typeSize = 2;
+        break;
+    case Renderer::VertexElement::UIntType:
+    case Renderer::VertexElement::FloatType:
+        typeSize = 4; 
+        break;
+    default: 
+        assert(0); 
+        break;
     }
 }
 
 void VertexFormat::CopyFrom(const VertexFormat &other) {
-    elements	= other.elements;
+    elements = other.elements;
 }
 
 void VertexFormat::Create() {

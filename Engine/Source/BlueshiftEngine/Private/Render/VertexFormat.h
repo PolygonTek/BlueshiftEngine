@@ -26,14 +26,14 @@ BE_NAMESPACE_BEGIN
 
 class VertexFormat {
 public:
-    enum {
+    enum Type {
         Xy,
         XySt,
         XyStr,
         XyzStr,
         Xyz,
         XyzColor,
-        PicXyzStColor,
+        XyzStColor,
         GenericXyz,
         GenericXyzSkinning1,
         GenericXyzSkinning4,
@@ -66,6 +66,7 @@ public:
 
     void                    Append(int stream, int offset, Renderer::VertexElement::Usage usage, int components, Renderer::VertexElement::Type type, bool normalize);
     void                    CopyFrom(const VertexFormat &other);
+
     void                    Create();
     void                    Delete();
 

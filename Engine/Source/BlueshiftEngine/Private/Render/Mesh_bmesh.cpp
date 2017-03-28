@@ -20,7 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
-bool Mesh::LoadBMesh(const char *filename) {
+bool Mesh::LoadBinaryMesh(const char *filename) {
     byte *data;
     fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
@@ -31,7 +31,7 @@ bool Mesh::LoadBMesh(const char *filename) {
     byte *ptr = data + sizeof(BMeshHeader);
     
     if (bMeshHeader->ident != BMESH_IDENT) {
-        BE_WARNLOG(L"Mesh::LoadBMesh: bad format %hs\n", filename);
+        BE_WARNLOG(L"Mesh::LoadBinaryMesh: bad format %hs\n", filename);
         fileSystem.FreeFile(data);
         return false;
     }
@@ -41,11 +41,11 @@ bool Mesh::LoadBMesh(const char *filename) {
         joints = new Joint[numJoints];
 
         // --- joints ---
-        for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
+        for (int jointIndexes = 0; jointIndexes < numJoints; jointIndexes++) {
             const BJoint *bJoint = (const BJoint *)ptr;
 
-            joints[jointIndex].name = bJoint->name;
-            joints[jointIndex].parent = bJoint->parentIndex >= 0 ? &this->joints[bJoint->parentIndex] : nullptr;
+            joints[jointIndexes].name = bJoint->name;
+            joints[jointIndexes].parent = bJoint->parentIndex >= 0 ? &this->joints[bJoint->parentIndex] : nullptr;
 
             ptr += sizeof(BJoint);
         }
@@ -90,7 +90,7 @@ bool Mesh::LoadBMesh(const char *filename) {
 
                 VertexWeight1 *dstPtr = (VertexWeight1 *)subMesh->vertWeights;
                 for (int i = 0; i < bMeshSurf->numVerts; i++, dstPtr++) {
-                    dstPtr->index = *ptr++;
+                    dstPtr->jointIndex = *ptr++;
                 }
             } else if (bMeshSurf->maxWeights <= 4) {
                 vertexWeightSize = sizeof(VertexWeight4);
@@ -99,15 +99,15 @@ bool Mesh::LoadBMesh(const char *filename) {
 
                 VertexWeight4 *dstPtr = (VertexWeight4 *)subMesh->vertWeights;
                 for (int i = 0; i < bMeshSurf->numVerts; i++, dstPtr++) {
-                    dstPtr->index[0] = *ptr++;
-                    dstPtr->index[1] = *ptr++;
-                    dstPtr->index[2] = *ptr++;
-                    dstPtr->index[3] = *ptr++;
+                    dstPtr->jointIndexes[0] = *ptr++;
+                    dstPtr->jointIndexes[1] = *ptr++;
+                    dstPtr->jointIndexes[2] = *ptr++;
+                    dstPtr->jointIndexes[3] = *ptr++;
 
-                    dstPtr->weight[0] = *ptr++;
-                    dstPtr->weight[1] = *ptr++;
-                    dstPtr->weight[2] = *ptr++;
-                    dstPtr->weight[3] = *ptr++;
+                    dstPtr->jointWeights[0] = *ptr++;
+                    dstPtr->jointWeights[1] = *ptr++;
+                    dstPtr->jointWeights[2] = *ptr++;
+                    dstPtr->jointWeights[3] = *ptr++;
                 }
             } else if (bMeshSurf->maxWeights <= 8) {
                 vertexWeightSize = sizeof(VertexWeight8);
@@ -116,23 +116,23 @@ bool Mesh::LoadBMesh(const char *filename) {
 
                 VertexWeight8 *dstPtr = (VertexWeight8 *)subMesh->vertWeights;
                 for (int i = 0; i < bMeshSurf->numVerts; i++, dstPtr++) {
-                    dstPtr->index[0] = *ptr++;
-                    dstPtr->index[1] = *ptr++;
-                    dstPtr->index[2] = *ptr++;
-                    dstPtr->index[3] = *ptr++;
-                    dstPtr->index[4] = *ptr++;
-                    dstPtr->index[5] = *ptr++;
-                    dstPtr->index[6] = *ptr++;
-                    dstPtr->index[7] = *ptr++;
+                    dstPtr->jointIndexes[0] = *ptr++;
+                    dstPtr->jointIndexes[1] = *ptr++;
+                    dstPtr->jointIndexes[2] = *ptr++;
+                    dstPtr->jointIndexes[3] = *ptr++;
+                    dstPtr->jointIndexes[4] = *ptr++;
+                    dstPtr->jointIndexes[5] = *ptr++;
+                    dstPtr->jointIndexes[6] = *ptr++;
+                    dstPtr->jointIndexes[7] = *ptr++;
 
-                    dstPtr->weight[0] = *ptr++;
-                    dstPtr->weight[1] = *ptr++;
-                    dstPtr->weight[2] = *ptr++;
-                    dstPtr->weight[3] = *ptr++;
-                    dstPtr->weight[4] = *ptr++;
-                    dstPtr->weight[5] = *ptr++;
-                    dstPtr->weight[6] = *ptr++;
-                    dstPtr->weight[7] = *ptr++;
+                    dstPtr->jointWeights[0] = *ptr++;
+                    dstPtr->jointWeights[1] = *ptr++;
+                    dstPtr->jointWeights[2] = *ptr++;
+                    dstPtr->jointWeights[3] = *ptr++;
+                    dstPtr->jointWeights[4] = *ptr++;
+                    dstPtr->jointWeights[5] = *ptr++;
+                    dstPtr->jointWeights[6] = *ptr++;
+                    dstPtr->jointWeights[7] = *ptr++;
                 }
             } else {
                 assert(0);
@@ -160,10 +160,10 @@ bool Mesh::LoadBMesh(const char *filename) {
     return true;
 }
 
-void Mesh::WriteBMesh(const char *filename) {
+void Mesh::WriteBinaryMesh(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Mesh::WriteBMesh: file open error\n");
+        BE_WARNLOG(L"Mesh::WriteBinaryMesh: file open error\n");
         return;
     }
 
@@ -176,8 +176,8 @@ void Mesh::WriteBMesh(const char *filename) {
 
     if (bMeshHeader.numJoints > 0) {
         // --- joints ---
-        for (int jointIndex = 0; jointIndex < bMeshHeader.numJoints; jointIndex++) {
-            const Joint *joint = &joints[jointIndex];
+        for (int jointIndexes = 0; jointIndexes < bMeshHeader.numJoints; jointIndexes++) {
+            const Joint *joint = &joints[jointIndexes];
 
             BJoint bJoint;
             Str::Copynz(bJoint.name, joint->name, sizeof(bJoint.name));
@@ -221,41 +221,41 @@ void Mesh::WriteBMesh(const char *filename) {
             if (bMeshSurf.maxWeights == 1) {
                 VertexWeight1 *vw = (VertexWeight1 *)subMesh->vertWeights;
                 for (int i = 0; i < bMeshSurf.numVerts; i++, vw++) {
-                    fp->WriteUChar(vw->index);
+                    fp->WriteUChar(vw->jointIndex);
                 }
             } else if (bMeshSurf.maxWeights <= 4) {
                 VertexWeight4 *vw = (VertexWeight4 *)subMesh->vertWeights;
                 for (int i = 0; i < bMeshSurf.numVerts; i++, vw++) {
-                    fp->WriteUChar(vw->index[0]);
-                    fp->WriteUChar(vw->index[1]);
-                    fp->WriteUChar(vw->index[2]);
-                    fp->WriteUChar(vw->index[3]);
+                    fp->WriteUChar(vw->jointIndexes[0]);
+                    fp->WriteUChar(vw->jointIndexes[1]);
+                    fp->WriteUChar(vw->jointIndexes[2]);
+                    fp->WriteUChar(vw->jointIndexes[3]);
 
-                    fp->WriteUChar(vw->weight[0]);
-                    fp->WriteUChar(vw->weight[1]);
-                    fp->WriteUChar(vw->weight[2]);
-                    fp->WriteUChar(vw->weight[3]);
+                    fp->WriteUChar(vw->jointWeights[0]);
+                    fp->WriteUChar(vw->jointWeights[1]);
+                    fp->WriteUChar(vw->jointWeights[2]);
+                    fp->WriteUChar(vw->jointWeights[3]);
                 }
             } else if (bMeshSurf.maxWeights <= 8) {
                 VertexWeight8 *vw = (VertexWeight8 *)subMesh->vertWeights;
                 for (int i = 0; i < bMeshSurf.numVerts; i++, vw++) {
-                    fp->WriteUChar(vw->index[0]);
-                    fp->WriteUChar(vw->index[1]);
-                    fp->WriteUChar(vw->index[2]);
-                    fp->WriteUChar(vw->index[3]);
-                    fp->WriteUChar(vw->index[4]);
-                    fp->WriteUChar(vw->index[5]);
-                    fp->WriteUChar(vw->index[6]);
-                    fp->WriteUChar(vw->index[7]);
+                    fp->WriteUChar(vw->jointIndexes[0]);
+                    fp->WriteUChar(vw->jointIndexes[1]);
+                    fp->WriteUChar(vw->jointIndexes[2]);
+                    fp->WriteUChar(vw->jointIndexes[3]);
+                    fp->WriteUChar(vw->jointIndexes[4]);
+                    fp->WriteUChar(vw->jointIndexes[5]);
+                    fp->WriteUChar(vw->jointIndexes[6]);
+                    fp->WriteUChar(vw->jointIndexes[7]);
 
-                    fp->WriteUChar(vw->weight[0]);
-                    fp->WriteUChar(vw->weight[1]);
-                    fp->WriteUChar(vw->weight[2]);
-                    fp->WriteUChar(vw->weight[3]);
-                    fp->WriteUChar(vw->weight[4]);
-                    fp->WriteUChar(vw->weight[5]);
-                    fp->WriteUChar(vw->weight[6]);
-                    fp->WriteUChar(vw->weight[7]);
+                    fp->WriteUChar(vw->jointWeights[0]);
+                    fp->WriteUChar(vw->jointWeights[1]);
+                    fp->WriteUChar(vw->jointWeights[2]);
+                    fp->WriteUChar(vw->jointWeights[3]);
+                    fp->WriteUChar(vw->jointWeights[4]);
+                    fp->WriteUChar(vw->jointWeights[5]);
+                    fp->WriteUChar(vw->jointWeights[6]);
+                    fp->WriteUChar(vw->jointWeights[7]);
                 }
             }
         }

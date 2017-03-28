@@ -123,7 +123,7 @@ bool RenderSystem::IsFullscreen() const {
 void RenderSystem::SetGamma(double gamma) {
     unsigned short ramp[768];
 
-    Clamp(gamma, 0.5, 3.0);	
+    Clamp(gamma, 0.5, 3.0);
     double one_gamma = 1.0 / gamma;
 
     double div = (double)(1.0 / 255.0);
@@ -195,8 +195,8 @@ void RenderSystem::CmdDrawView(const view_t *view) {
         return;
     }
 
-    cmd->commandId		= DrawViewCommand;
-    cmd->view			= *view;
+    cmd->commandId      = DrawViewCommand;
+    cmd->view           = *view;
 }
 
 void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char *filename) {
@@ -205,11 +205,11 @@ void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char
         return;
     }
 
-    cmd->commandId		= ScreenShotCommand;
-    cmd->x				= x;
-    cmd->y				= y;
-    cmd->width			= width;
-    cmd->height			= height;
+    cmd->commandId      = ScreenShotCommand;
+    cmd->x              = x;
+    cmd->y              = y;
+    cmd->width          = width;
+    cmd->height         = height;
     Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
 }
 
@@ -266,20 +266,20 @@ void RenderSystem::CheckModifiedCVars() {
     if (TextureManager::texture_anisotropy.IsModified()) {
         TextureManager::texture_anisotropy.ClearModified();
 
-        textureManager.SetAnisotropy(TextureManager::texture_anisotropy.GetFloat());		
+        textureManager.SetAnisotropy(TextureManager::texture_anisotropy.GetFloat());
     }
 
     if (TextureManager::texture_lodBias.IsModified()) {
         TextureManager::texture_lodBias.ClearModified();
 
-        textureManager.SetLodBias(TextureManager::texture_lodBias.GetFloat());		
+        textureManager.SetLodBias(TextureManager::texture_lodBias.GetFloat());
     }
 
     if (r_swapInterval.IsModified()) {
         r_swapInterval.ClearModified();
 
         glr.SwapInterval(r_swapInterval.GetInteger());
-    }   
+    }
 
     if (r_useDeferredLighting.IsModified()) {
         r_useDeferredLighting.ClearModified();
@@ -298,7 +298,7 @@ void RenderSystem::CheckModifiedCVars() {
 
                 RecreateScreenMapRT();
             }
-        }		
+        }
     }
 
     if (r_usePostProcessing.IsModified()) {
@@ -400,7 +400,7 @@ void RenderSystem::CheckModifiedCVars() {
                 shaderManager.RemoveGlobalHeader("#define USE_SHADOW_MAP\n");
                 shaderManager.ReloadLightingShaders();
             }
-        }		
+        }
     }
 
     if (r_showShadows.IsModified()) {
@@ -473,7 +473,7 @@ void RenderSystem::CheckModifiedCVars() {
 
 //--------------------------------------------------------------------------------------------------
 
-void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {	
+void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
     char	path[1024];
     char	picname[16];
     int		i;

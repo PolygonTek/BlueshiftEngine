@@ -79,7 +79,7 @@ void ComRenderable::Init() {
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    memset(&sceneEntity, 0, sizeof(sceneEntity));	
+    memset(&sceneEntity, 0, sizeof(sceneEntity));
 
     sceneEntity.layer = GetEntity()->GetLayer();
     sceneEntity.maxVisDist = props->Get("maxVisDist").As<float>();

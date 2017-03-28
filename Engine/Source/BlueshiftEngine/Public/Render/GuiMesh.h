@@ -66,7 +66,7 @@ public:
     
     int                     DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode);
 
-    void                    DrawText(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text);
+    void                    Draw(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text);
 
     AABB                    Compute3DTextAABB(Font *font, SceneEntity::TextAnchor anchor, float lineSpacing, float textScale, const wchar_t *text) const;
 
@@ -75,6 +75,7 @@ private:
     void                    DrawTris(const VertexNoLit *verts, const TriIndex *indexes, int vertCount, int indexCount, const Material *material);
     
     Array<GuiMeshSurf>      surfaces;
+
     GuiMeshSurf *           currentSurf;
 
     int                     numVerts;

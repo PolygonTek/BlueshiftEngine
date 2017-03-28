@@ -156,7 +156,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
 
         localVerts[1].xyz[0] = x;
         localVerts[1].xyz[1] = y + h;
-        localVerts[1].xyz[2] = 0;        
+        localVerts[1].xyz[2] = 0;
 
         localVerts[2].xyz[0] = x + w;
         localVerts[2].xyz[1] = y + h;
@@ -244,7 +244,7 @@ int GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t 
     return pitch;
 }
 
-void GuiMesh::DrawText(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text) {
+void GuiMesh::Draw(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text) {
     static const int MaxTextLines = 256;
     const wchar_t *textLines[MaxTextLines];
     int lineLen[MaxTextLines];
