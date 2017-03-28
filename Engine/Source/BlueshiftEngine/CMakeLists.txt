@@ -204,6 +204,7 @@ set(ENGINE_FILES
   Public/Render/Render.h
   Public/Render/RenderSystem.h
   Public/Render/RenderContext.h  
+  Public/Render/ParticleSystem.h
   Public/Render/SceneEntity.h
   Public/Render/SceneLight.h
   Public/Render/SceneView.h
@@ -441,6 +442,7 @@ set(ENGINE_FILES
   Private/Render/MeshManager.cpp
   Private/Render/RenderSystem.cpp
   Private/Render/RenderContext.cpp
+  Private/Render/ParticleSystem.cpp
   Private/Render/SceneEntity.cpp
   Private/Render/SceneLight.cpp
   Private/Render/SceneView.cpp
