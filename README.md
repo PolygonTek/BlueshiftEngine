@@ -69,5 +69,5 @@ Contributions are always welcome, either reporting issues/bugs or forking the re
 See also
 -------------------
 
-[Bluseshift Document](https://github.com/PolygonTek/BlueshiftDocument/blob/master/README.md)
+[Blueshift Document](https://github.com/PolygonTek/BlueshiftDocument/blob/master/README.md)
 
