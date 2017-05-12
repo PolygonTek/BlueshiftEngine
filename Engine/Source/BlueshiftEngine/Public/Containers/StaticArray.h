@@ -73,6 +73,18 @@ public:
                     /// 'index' must be a valid index position in the array (i.e., 0 <= index < Count()).
     T &             operator[](int index);
 
+                    /// Returns the first item.
+    const T &       First() const { assert(count > 0); return elements[0]; }
+
+                    /// Returns the first item.
+    T &             First() { assert(count > 0); return elements[0]; }
+
+                    /// Returns the last item.
+    const T &       Last() const { assert(count > 0); return elements[count - 1]; }
+
+                    /// Returns the last item.
+    T &             Last() { assert(count > 0); return elements[count - 1]; }
+
                     /// Compares with another array.
     bool            operator==(const StaticArray<T, capacity> &rhs) const;
 
