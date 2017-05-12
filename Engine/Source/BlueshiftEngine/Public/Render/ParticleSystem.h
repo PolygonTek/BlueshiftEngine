@@ -31,7 +31,7 @@ class ParticleMesh;
 
 // Definition of the each particles
 struct Particle {
-    static const int            MaxTrails = 32;
+    enum { MaxTrails = 32 };
 
     struct Trail {
         Vec3                    position;
