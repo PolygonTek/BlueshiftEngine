@@ -285,7 +285,7 @@ void RenderWorld::RenderScene(const SceneView *view) {
 }
 
 void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
-    if (guiMesh.surfaces.Count() == 0) {
+    if (guiMesh.NumSurfaces() == 0) {
         return;
     }
 
@@ -322,7 +322,7 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     view_t *guiView         = (view_t *)frameData.ClearedAlloc(sizeof(*guiView));
     guiView->def            = &sceneView;
     guiView->is2D           = true;
-    guiView->maxDrawSurfs   = guiMesh.surfaces.Count();
+    guiView->maxDrawSurfs   = guiMesh.NumSurfaces();
     guiView->drawSurfs      = (DrawSurf **)frameData.Alloc(guiView->maxDrawSurfs * sizeof(DrawSurf *));
 
     // GUI view entity
@@ -333,27 +333,31 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     viewEntity->modelViewMatrix.SetIdentity();
     viewEntity->modelViewMatrix.Scale(renderSystem.currentContext->GetUpscaleFactorX(), renderSystem.currentContext->GetUpscaleFactorY(), 1.0f);
     viewEntity->modelViewProjMatrix = projMatrix * viewEntity->modelViewMatrix;
+
+    guiMesh.CacheIndexes();
     
-    for (int surfaceIndex = 0; surfaceIndex < guiMesh.surfaces.Count(); surfaceIndex++) {
-        GuiMeshSurf *guiSurf = &guiMesh.surfaces[surfaceIndex];
+    for (int surfaceIndex = 0; surfaceIndex < guiMesh.NumSurfaces(); surfaceIndex++) {
+        const GuiMeshSurf *guiSurf = guiMesh.Surface(surfaceIndex);
         if (!guiSurf->numIndexes) {
             break;
         }
 
-        GuiSubMesh *guiSubMesh      = (GuiSubMesh *)frameData.ClearedAlloc(sizeof(GuiSubMesh));
-        guiSubMesh->numIndexes      = guiSurf->numIndexes;
-        guiSubMesh->numVerts        = guiSurf->numVerts;
+        SubMesh *subMesh        = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
+        subMesh->alloced        = false;
+        subMesh->type           = Mesh::DynamicMesh;
+        subMesh->numIndexes     = guiSurf->numIndexes;
+        subMesh->numVerts       = guiSurf->numVerts;
 #if 1
-        guiSubMesh->vertexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
-        *(guiSubMesh->vertexCache)  = guiSurf->vertexCache;
+        subMesh->vertexCache    = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+        *(subMesh->vertexCache) = guiSurf->vertexCache;
 
-        guiSubMesh->indexCache      = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
-        *(guiSubMesh->indexCache)   = guiSurf->indexCache;
+        subMesh->indexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+        *(subMesh->indexCache)  = guiSurf->indexCache;
 #else
-        guiSubMesh->vertexCache     = &guiSurf->vertexCache;
-        guiSubMesh->indexCache      = &guiSurf->indexCache;
+        subMesh->vertexCache    = &guiSurf->vertexCache;
+        subMesh->indexCache     = &guiSurf->indexCache;
 #endif
-        AddDrawSurf(guiView, viewEntity, guiSurf->material, nullptr, guiSubMesh, 0);
+        AddDrawSurf(guiView, viewEntity, guiSurf->material, subMesh, 0);
     }
 
     renderSystem.CmdDrawView(guiView);

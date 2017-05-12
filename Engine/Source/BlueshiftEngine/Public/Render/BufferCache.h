@@ -40,12 +40,15 @@ public:
 
     void                        BeginBackEnd();
 
+                                /// Allocates vertex buffer in the local device memory
     void                        AllocStaticVertex(int bytes, const void *data, BufferCache *vc);
+                                /// Allocates index buffer in the local device memory
     void                        AllocStaticIndex(int bytes, const void *data, BufferCache *vc);
+                                /// Allocates texel buffer in the local device memory
     void                        AllocStaticTexel(int bytes, const void *data, BufferCache *vc);
 
-    bool                        AllocVertex(int numVertexes, int sizeofVertex, const void *data, BufferCache *vc);
-    bool                        AllocIndex(int numIndexes, int sizeofIndex, const void *data, BufferCache *vc);
+    bool                        AllocVertex(int numVertexes, int vertexSize, const void *data, BufferCache *vc);
+    bool                        AllocIndex(int numIndexes, int indexSize, const void *data, BufferCache *vc);
     bool                        AllocTexel(int bytes, const void *data, BufferCache *vc);
 
     byte *                      MapVertexBuffer(BufferCache *bc) const;

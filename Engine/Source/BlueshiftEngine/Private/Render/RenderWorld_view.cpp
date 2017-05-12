@@ -153,12 +153,12 @@ void RenderWorld::FindViewLightsAndEntities(view_t *view) {
             view->aabb.AddAABB(proxy->aabb);
 
             if (r_showAABB.GetInteger() > 0) {
-                this->SetDebugColor(Color4::blue, Color4::zero);
-                this->DebugAABB(proxy->aabb, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
+                SetDebugColor(Color4::blue, Color4::zero);
+                DebugAABB(proxy->aabb, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
             }
 
             if (viewEntity->def->parms.numJoints > 0 && r_showSkeleton.GetInteger() > 0) {
-                this->DebugJoints(viewEntity->def, r_showSkeleton.GetInteger() == 2, view->def->frustum.GetAxis());
+                DebugJoints(viewEntity->def, r_showSkeleton.GetInteger() == 2, view->def->frustum.GetAxis());
             }
         }
 
@@ -178,10 +178,10 @@ void RenderWorld::AddStaticMeshes(view_t *view) {
     // Returns true if it want to proceed next query
     auto addStaticMeshSurfs = [this, view](int32_t proxyId) -> bool {
         DbvtProxy *proxy = (DbvtProxy *)staticDbvt.GetUserData(proxyId);
-        MeshSurf *meshSurf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
+        MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
 
-        // meshSurf 가 없다면 static mesh 이 아님
-        if (!meshSurf) {
+        // surf 가 없다면 static mesh 가 아님
+        if (!surf) {
             return true;
         }
 
@@ -191,7 +191,7 @@ void RenderWorld::AddStaticMeshes(view_t *view) {
 
         /*if (proxy->lodGroup >= 0) {
             // Compute LOD value [0, 1]
-            AABB aabb = meshSurf->subMesh->GetAABB() * proxy->sceneEntity->parms.scale;
+            AABB aabb = surf->subMesh->GetAABB() * proxy->sceneEntity->parms.scale;
             Vec3 size = aabb[1] - aabb[0];
             float area = view->def->parms.axis[0].Abs().Dot(Vec3(size.y * size.z, size.z * size.x, size.x * size.y));
             float d = view->def->parms.origin.DistanceSqr(proxy->sceneEntity->parms.origin);
@@ -212,11 +212,11 @@ void RenderWorld::AddStaticMeshes(view_t *view) {
         }
 
         viewEntity_t *viewEntity = proxy->sceneEntity->viewEntity;
-        AddDrawSurf(view, viewEntity, viewEntity->def->parms.customMaterials[meshSurf->materialIndex], meshSurf->subMesh, nullptr, flags);
+        AddDrawSurf(view, viewEntity, viewEntity->def->parms.customMaterials[surf->materialIndex], surf->subMesh, flags);
 
-        meshSurf->viewCount = this->viewCount;
-        meshSurf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
-        //bool has = meshSurf->drawSurf->material->IsLitSurface();
+        surf->viewCount = this->viewCount;
+        surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
+        //bool has = surf->drawSurf->material->IsLitSurface();
 
         if (r_showAABB.GetInteger() > 0) {
             SetDebugColor(Color4(1, 1, 1, 0.5), Color4::zero);
@@ -267,10 +267,55 @@ void RenderWorld::AddSkinnedMeshes(view_t *view) {
         for (int surfaceIndex = 0; surfaceIndex < entityParms.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = entityParms.mesh->GetSurface(surfaceIndex);
 
-            AddDrawSurf(view, viewEntity, entityParms.customMaterials[surf->materialIndex], surf->subMesh, nullptr, flags);
+            AddDrawSurf(view, viewEntity, entityParms.customMaterials[surf->materialIndex], surf->subMesh, flags);
 
             surf->viewCount = viewCount;
             surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
+        }
+    }
+}
+
+void RenderWorld::AddParticleMeshes(view_t *view) {
+    for (viewEntity_t *viewEntity = view->viewEntities; viewEntity; viewEntity = viewEntity->next) {
+        if (!viewEntity->ambientVisible) {
+            continue;
+        }
+
+        const SceneEntity::Parms &entityParms = viewEntity->def->parms;
+
+        if (!entityParms.particleSystem) {
+            continue;
+        }
+
+        int flags = DrawSurf::AmbientVisible;
+        if (entityParms.wireframeMode != SceneEntity::WireframeMode::ShowNone || r_showWireframe.GetInteger() > 0) {
+            flags |= DrawSurf::ShowWires;
+        }
+
+        particleMesh.Clear();
+        particleMesh.Draw(entityParms.particleSystem, entityParms.stageParticles, viewEntity->def, view->def);
+        particleMesh.CacheIndexes();
+
+        for (int surfaceIndex = 0; surfaceIndex < particleMesh.surfaces.Count(); surfaceIndex++) {
+            PrtMeshSurf *prtMeshSurf = &particleMesh.surfaces[surfaceIndex];
+            if (!prtMeshSurf->numIndexes) {
+                break;
+            }
+
+            // Copy this SubMesh to the temporary frame data for use in back end
+            SubMesh *subMesh        = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
+            subMesh->alloced        = false;
+            subMesh->type           = Mesh::DynamicMesh;
+            subMesh->numIndexes     = prtMeshSurf->numIndexes;
+            subMesh->numVerts       = prtMeshSurf->numVerts;
+
+            subMesh->vertexCache    = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+            *(subMesh->vertexCache) = prtMeshSurf->vertexCache;
+
+            subMesh->indexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+            *(subMesh->indexCache)  = prtMeshSurf->indexCache;
+
+            AddDrawSurf(view, viewEntity, prtMeshSurf->material, subMesh, flags);
         }
     }
 }
@@ -294,27 +339,29 @@ void RenderWorld::AddTextMeshes(view_t *view) {
 
         textMesh.Clear();
         textMesh.SetColor(Color4(&entityParms.materialParms[SceneEntity::RedParm]));
+        textMesh.Draw(entityParms.font, entityParms.textAnchor, entityParms.textAlignment, entityParms.lineSpacing, entityParms.textScale, entityParms.text);        
+        textMesh.CacheIndexes();
 
-        textMesh.Draw(entityParms.font, entityParms.textAnchor, entityParms.textAlignment, entityParms.lineSpacing, entityParms.textScale, entityParms.text);
-        
-        for (int surfaceIndex = 0; surfaceIndex < textMesh.surfaces.Count(); surfaceIndex++) {
-            GuiMeshSurf *guiSurf = &textMesh.surfaces[surfaceIndex];
-            if (!guiSurf->numIndexes) {
+        for (int surfaceIndex = 0; surfaceIndex < textMesh.NumSurfaces(); surfaceIndex++) {
+            const GuiMeshSurf *guiMeshSurf = textMesh.Surface(surfaceIndex);
+            if (!guiMeshSurf->numIndexes) {
                 break;
             }
 
-            // 임시 frame data 에 back end 에서 사용할 GuiSubMesh 를 copy
-            GuiSubMesh *guiSubMesh  = (GuiSubMesh *)frameData.ClearedAlloc(sizeof(GuiSubMesh));
-            guiSubMesh->vertexCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
-            guiSubMesh->indexCache  = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+            // Copy this SubMesh to the temporary frame data for use in back end
+            SubMesh *subMesh        = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
+            subMesh->alloced        = false;
+            subMesh->type           = Mesh::DynamicMesh;
+            subMesh->numIndexes     = guiMeshSurf->numIndexes;
+            subMesh->numVerts       = guiMeshSurf->numVerts;
 
-            guiSubMesh->numIndexes  = guiSurf->numIndexes;
-            guiSubMesh->numVerts    = guiSurf->numVerts;
+            subMesh->vertexCache    = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+            *(subMesh->vertexCache) = guiMeshSurf->vertexCache;
 
-            *(guiSubMesh->vertexCache) = guiSurf->vertexCache;
-            *(guiSubMesh->indexCache)  = guiSurf->indexCache;
+            subMesh->indexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+            *(subMesh->indexCache)  = guiMeshSurf->indexCache;
 
-            AddDrawSurf(view, viewEntity, guiSurf->material, nullptr, guiSubMesh, flags);
+            AddDrawSurf(view, viewEntity, guiMeshSurf->material, subMesh, flags);
         }
     }
 }
@@ -327,34 +374,36 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
     // Returns true if it want to proceed next query
     auto addStaticMeshSurfsForLights = [this, view, &viewLight](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)staticDbvt.GetUserData(proxyId);
+        const SceneEntity *proxyEntity = proxy->sceneEntity;
 
-        MeshSurf *meshSurf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
+        MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
 
-        if (!meshSurf) {
+        if (!surf) {
             return true;
         }
 
         // Skip first person view only entity in subView 
-        if (proxy->sceneEntity->parms.firstPersonOnly && view->isSubview) {
+        if (proxyEntity->parms.firstPersonOnly && view->isSubview) {
             return true;
         }
 
         // Skip 3rd person view only entity in subView
-        if (proxy->sceneEntity->parms.thirdPersonOnly && !view->isSubview) {
+        if (proxyEntity->parms.thirdPersonOnly && !view->isSubview) {
             return true;
         }
 
         // Skip if a entity is farther than maximum visible distance
-        if (proxy->sceneEntity->parms.origin.DistanceSqr(view->def->parms.origin) > proxy->sceneEntity->parms.maxVisDist * proxy->sceneEntity->parms.maxVisDist) {
+        if (proxyEntity->parms.origin.DistanceSqr(view->def->parms.origin) > proxyEntity->parms.maxVisDist * proxyEntity->parms.maxVisDist) {
             return true;
         }
 
-        const Material *material = proxy->sceneEntity->parms.customMaterials[meshSurf->materialIndex];
+        const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
 
-        if (meshSurf->viewCount == this->viewCount) {
-            if ((meshSurf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
+        // Is surface visible for this frame ?
+        if (surf->viewCount == this->viewCount) {
+            if ((surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
                 drawSurfNode_t *drawSurfNode = (drawSurfNode_t *)frameData.Alloc(sizeof(drawSurfNode_t));
-                drawSurfNode->drawSurf = meshSurf->drawSurf;
+                drawSurfNode->drawSurf = surf->drawSurf;
                 drawSurfNode->next = viewLight->litSurfs;
 
                 viewLight->litSurfs = drawSurfNode;
@@ -363,23 +412,25 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
         }
             
         if (material->IsShadowCaster()) {
-            OBB obb = OBB(meshSurf->subMesh->GetAABB() * proxy->sceneEntity->parms.scale, proxy->sceneEntity->parms.origin, proxy->sceneEntity->parms.axis);
-            if (viewLight->def->CullShadowCasterOBB(obb, view->def->frustum, view->aabb)) {
+            OBB surfBounds = OBB(surf->subMesh->GetAABB() * proxyEntity->parms.scale, proxyEntity->parms.origin, proxyEntity->parms.axis);
+            if (viewLight->def->CullShadowCasterOBB(surfBounds, view->def->frustum, view->aabb)) {
                 return true;
             }
 
-            if (meshSurf->viewCount != this->viewCount) {
+            // This surface is not visible but shadow might be visible as a shadow caster.
+            if (surf->viewCount != this->viewCount) {
+                // Register a viewEntity used only for shadow caster
                 viewEntity_t *shadowViewEntity = RegisterViewEntity(view, proxy->sceneEntity);
                 shadowViewEntity->shadowVisible = true;
 
-                AddDrawSurf(view, shadowViewEntity, material, meshSurf->subMesh, nullptr, 0);
+                AddDrawSurf(view, shadowViewEntity, material, surf->subMesh, 0);
 
-                meshSurf->viewCount = this->viewCount;
-                meshSurf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
+                surf->viewCount = this->viewCount;
+                surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
             }
 
             drawSurfNode_t *drawSurfNode = (drawSurfNode_t *)frameData.Alloc(sizeof(drawSurfNode_t));
-            drawSurfNode->drawSurf = meshSurf->drawSurf;
+            drawSurfNode->drawSurf = surf->drawSurf;
             drawSurfNode->next = viewLight->shadowCasterSurfs;
 
             viewLight->shadowCasterSurfs = drawSurfNode;
@@ -422,67 +473,67 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
     // Returns true if it want to proceed next query
     auto addShadowCasterEntities = [this, view, &viewLight](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)this->dynamicDbvt.GetUserData(proxyId);
-
-        SceneEntity *sceneEntity = proxy->sceneEntity;
+        const SceneEntity *proxyEntity = proxy->sceneEntity;
             
         // sceneEntity 가 없다면 mesh 가 아님
-        if (!sceneEntity) {
+        if (!proxyEntity) {
             return true;
         }
 
-        if (!sceneEntity->parms.joints) {
+        if (!proxyEntity->parms.joints) {
             return true;
         }
 
         // Skip first person view only entity in subView 
-        if (sceneEntity->parms.firstPersonOnly && view->isSubview) {
+        if (proxyEntity->parms.firstPersonOnly && view->isSubview) {
             return true;
         }
 
         // Skip 3rd person view only entity in subView
-        if (sceneEntity->parms.thirdPersonOnly && !view->isSubview) {
+        if (proxyEntity->parms.thirdPersonOnly && !view->isSubview) {
             return true;
         }
 
-        for (int surfaceIndex = 0; surfaceIndex < sceneEntity->parms.mesh->NumSurfaces(); surfaceIndex++) {
-            MeshSurf *surf = sceneEntity->parms.mesh->GetSurface(surfaceIndex);
+        for (int surfaceIndex = 0; surfaceIndex < proxyEntity->parms.mesh->NumSurfaces(); surfaceIndex++) {
+            MeshSurf *surf = proxyEntity->parms.mesh->GetSurface(surfaceIndex);
 
-            const Material *material = sceneEntity->parms.customMaterials[surf->materialIndex];
+            const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
 
             // 이미 ambient visible surf 로 등록되었고, lighting 이 필요한 surf 라면 litSurfs 리스트에 추가한다.
             if (surf->viewCount == this->viewCount && surf->drawSurf->flags & DrawSurf::AmbientVisible && material->IsLitSurface()) {
                 drawSurfNode_t *drawSurfNode = (drawSurfNode_t *)frameData.Alloc(sizeof(drawSurfNode_t));
                 drawSurfNode->drawSurf = surf->drawSurf;
                 drawSurfNode->next = viewLight->litSurfs;
+
                 viewLight->litSurfs = drawSurfNode;
             }
         }
 
-        if (sceneEntity->viewEntity && sceneEntity->viewEntity->ambientVisible) {
+        if (proxyEntity->viewEntity && proxyEntity->viewEntity->ambientVisible) {
             viewLight->litAABB.AddAABB(proxy->aabb);
         }
 
-        if (!sceneEntity->parms.castShadows) {
+        if (!proxyEntity->parms.castShadows) {
             return true;
         }
 
-        OBB obb = OBB(sceneEntity->GetAABB(), sceneEntity->parms.origin, sceneEntity->parms.axis);
+        OBB obb = OBB(proxyEntity->GetAABB(), proxyEntity->parms.origin, proxyEntity->parms.axis);
         if (viewLight->def->CullShadowCasterOBB(obb, view->def->frustum, view->aabb)) {
             return true;
         }
 
         viewEntity_t *shadowViewEntity = nullptr;
             
-        for (int surfaceIndex = 0; surfaceIndex < sceneEntity->parms.mesh->NumSurfaces(); surfaceIndex++) {
-            MeshSurf *surf = sceneEntity->parms.mesh->GetSurface(surfaceIndex);
+        for (int surfaceIndex = 0; surfaceIndex < proxyEntity->parms.mesh->NumSurfaces(); surfaceIndex++) {
+            MeshSurf *surf = proxyEntity->parms.mesh->GetSurface(surfaceIndex);
 
-            const Material *material = sceneEntity->parms.customMaterials[surf->materialIndex];
+            const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
 
             if (material->IsShadowCaster()) {
                 if (surf->viewCount != this->viewCount) {
                     // ambient visible 하지 않으므로 shadow 용 viewEntity 를 등록해준다.
                     if (!shadowViewEntity) {
-                        shadowViewEntity = RegisterViewEntity(view, sceneEntity);
+                        shadowViewEntity = RegisterViewEntity(view, proxy->sceneEntity);
                         shadowViewEntity->shadowVisible = true;
                     }
 
@@ -491,7 +542,7 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
                     }
 
                     // drawSurf for shadow
-                    AddDrawSurf(view, shadowViewEntity, material, surf->subMesh, nullptr, 0);
+                    AddDrawSurf(view, shadowViewEntity, material, surf->subMesh, 0);
 
                     surf->viewCount = this->viewCount;
                     surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
@@ -537,29 +588,36 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
 
 void RenderWorld::OptimizeLights(view_t *view) {
     Rect screenClipRect;
-    viewLight_t *prevViewLight = nullptr;
+    viewLight_t *prevLight = nullptr;
 
-    for (viewLight_t *viewLight = view->viewLights; viewLight; viewLight = viewLight->next) {
-        viewLight->litAABB.IntersectSelf(viewLight->def->GetAABB());
+    for (viewLight_t *light = view->viewLights; light; light = light->next) {
+        const AABB lightAABB = light->def->GetAABB();        
+        // litAABB 와 원래 lightAABB 를 intersect
+        light->litAABB.IntersectSelf(lightAABB);
+        // shadowCasterAABB 와 원래 lightAABB 를 intersect
+        light->shadowCasterAABB.IntersectSelf(lightAABB);
+        // 결과적으로 필요한 AABB 만 남는다.
 
-        if (!viewLight->def->parms.isMainLight) {
-            if (!view->def->GetClipRectFromAABB(viewLight->litAABB, screenClipRect)) {
-                if (prevViewLight) {
-                    prevViewLight->next = viewLight->next;
-                }
-                continue;
+        if (light->def->parms.isMainLight) {
+            continue;
+        }
+
+        if (!view->def->GetClipRectFromAABB(light->litAABB, screenClipRect)) {
+            if (prevLight) {
+                prevLight->next = light->next;
             }
+            continue;
+        }
 
-            Rect visScissorRect = screenClipRect;
-            visScissorRect.y = view->def->parms.renderRect.h - (screenClipRect.y + screenClipRect.h);
-            viewLight->scissorRect.IntersectSelf(visScissorRect);
+        Rect visScissorRect = screenClipRect;
+        visScissorRect.y = view->def->parms.renderRect.h - (screenClipRect.y + screenClipRect.h);
+        light->scissorRect.IntersectSelf(visScissorRect);
 
-            if (viewLight->scissorRect.IsEmpty()) {
-                if (prevViewLight) {
-                    prevViewLight->next = viewLight->next;
-                }
-                continue;
+        if (light->scissorRect.IsEmpty()) {
+            if (prevLight) {
+                prevLight->next = light->next;
             }
+            continue;
         }
     }
 }
@@ -592,6 +650,8 @@ void RenderWorld::RenderView(view_t *view) {
 
     // viewEntities 를 iteration 하며 skinned mesh surface 를 drawSurf 에 등록
     AddSkinnedMeshes(view);
+
+    AddParticleMeshes(view);
 
     AddTextMeshes(view);
 
@@ -639,7 +699,7 @@ void RenderWorld::RenderView(view_t *view) {
 void RenderWorld::RenderSubView(viewEntity_t *viewEntity, const DrawSurf *drawSurf, const Material *material) {
 }
 
-void RenderWorld::AddDrawSurf(view_t *view, viewEntity_t *viewEntity, const Material *material, SubMesh *subMesh, GuiSubMesh *guiSubMesh, int flags) {
+void RenderWorld::AddDrawSurf(view_t *view, viewEntity_t *viewEntity, const Material *material, SubMesh *subMesh, int flags) {
     if (view->numDrawSurfs + 1 > view->maxDrawSurfs) {
         BE_WARNLOG(L"RenderWorld::AddDrawSurf: not enough renderable surfaces\n");
         return;
@@ -661,11 +721,11 @@ void RenderWorld::AddDrawSurf(view_t *view, viewEntity_t *viewEntity, const Mate
 
     realMaterial->GetExprChunk()->Evaluate(localParms, outputValues);*/
 
-    if (subMesh) {
-        if (viewEntity->def->parms.skeleton && viewEntity->def->parms.joints && !subMesh->IsGpuSkinning()) {
-            subMesh->CacheDynamicDataToGpu(viewEntity->def->parms.joints, realMaterial);
-        } else {
+    if (!bufferCacheManager.IsCached(subMesh->vertexCache)) {
+        if (subMesh->GetType() == Mesh::StaticMesh || subMesh->GetType() == Mesh::SkinnedMesh) {
             subMesh->CacheStaticDataToGpu();
+        } else {
+            subMesh->CacheDynamicDataToGpu(viewEntity->def->parms.joints, realMaterial);
         }
     }
 
@@ -674,7 +734,6 @@ void RenderWorld::AddDrawSurf(view_t *view, viewEntity_t *viewEntity, const Mate
     drawSurf->material          = realMaterial;
     drawSurf->materialRegisters = nullptr;//outputValues;
     drawSurf->subMesh           = subMesh;
-    drawSurf->guiSubMesh        = guiSubMesh;
     drawSurf->flags             = flags;
 
     drawSurf->MakeSortKey(viewEntity->def->index, realMaterial);

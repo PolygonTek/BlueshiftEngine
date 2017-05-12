@@ -48,7 +48,7 @@ public:
     void                Shutdown();
 
     void                Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfSpace, const viewLight_t *surfLight);
-    void                DrawSubMesh(SubMesh *subMesh, GuiSubMesh *guiSubMesh);
+    void                DrawSubMesh(SubMesh *subMesh);
     void                Flush();
 
     void                EndFrame();
@@ -56,7 +56,6 @@ public:
 private:                
     void                DrawDynamicSubMesh(SubMesh *subMesh);
     void                DrawStaticSubMesh(SubMesh *subMesh);
-    void                DrawGuiSubMesh(GuiSubMesh *guiSubMesh);
 
     void                Flush_SelectionPass();
     void                Flush_DepthPass();

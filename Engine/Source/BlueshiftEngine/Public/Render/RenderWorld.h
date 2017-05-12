@@ -104,11 +104,12 @@ private:
     void                        FindViewLightsAndEntities(view_t *view);
     void                        AddStaticMeshes(view_t *view);
     void                        AddSkinnedMeshes(view_t *view);
+    void                        AddParticleMeshes(view_t *view);
     void                        AddTextMeshes(view_t *view);
     void                        AddStaticMeshesForLights(view_t *view);
     void                        AddSkinnedMeshesForLights(view_t *view);
     void                        OptimizeLights(view_t *view);
-    void                        AddDrawSurf(view_t *view, viewEntity_t *entity, const Material *material, SubMesh *subMesh, GuiSubMesh *guiSubMesh, int flags);
+    void                        AddDrawSurf(view_t *view, viewEntity_t *entity, const Material *material, SubMesh *subMesh, int flags);
     void                        SortDrawSurfs(view_t *view);
 
     void                        RenderView(view_t *view);
@@ -126,7 +127,8 @@ private:
     view_t *                    currentView;
     int                         viewCount;
 
-    GuiMesh                     textMesh;
+    ParticleMesh                particleMesh;   ///< particle mesh
+    GuiMesh                     textMesh;       ///< 3D text mesh
 
     Array<SceneEntity *>        sceneEntities;  ///< Array of scene entities
     Array<SceneLight *>         sceneLights;    ///< Array of scene lights

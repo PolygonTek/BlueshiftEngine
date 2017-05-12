@@ -233,7 +233,7 @@ static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool s
             prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -344,7 +344,7 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
             backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (!firstDraw) {
@@ -547,7 +547,7 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
             backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (!firstDraw) {

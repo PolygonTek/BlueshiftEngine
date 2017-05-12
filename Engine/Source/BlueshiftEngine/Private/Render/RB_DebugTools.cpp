@@ -554,6 +554,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
+
         if (!(surf->flags & DrawSurf::AmbientVisible)) {
             continue;
         }
@@ -599,7 +600,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -639,6 +640,8 @@ static void RB_DrawDebugLights(int mode) {
         shader->SetConstant4f("color", &viewLight->def->parms.materialParms[SceneEntity::RedParm]);
     
         RB_DrawLightVolume(viewLight->def);
+
+        RB_DrawAABB(viewLight->litAABB);
     }
 
     if (mode == 2) {

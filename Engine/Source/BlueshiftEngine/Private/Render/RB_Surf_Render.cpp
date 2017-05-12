@@ -585,7 +585,7 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
 
     shader->SetConstant3f(shader->builtInConstantLocations[Shader::LocalViewOriginConst], localViewOrigin);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalLightOriginConst], localLightOrigin);
-    shader->SetConstant3x3f(shader->builtInConstantLocations[Shader::LocalLightAxisConst], false, localLightAxis);	
+    shader->SetConstant3x3f(shader->builtInConstantLocations[Shader::LocalLightAxisConst], false, localLightAxis);
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);

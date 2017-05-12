@@ -78,7 +78,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -154,7 +154,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -229,7 +229,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -298,7 +298,7 @@ void RB_AmbientPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevSortkey = surf->sortKey;
         }
         
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -363,7 +363,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -444,7 +444,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             glr.Clear(Renderer::ColorBit | Renderer::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (!firstDraw) {
@@ -531,7 +531,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -588,7 +588,7 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevSortkey = surf->sortKey;
         }
         
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {

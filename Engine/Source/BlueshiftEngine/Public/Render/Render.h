@@ -23,6 +23,7 @@
 #include "Render/Skeleton.h"
 #include "Render/SubMesh.h"
 #include "Render/Mesh.h"
+#include "Render/ParticleMesh.h"
 #include "Render/GuiMesh.h"
 #include "Render/Anim.h"
 #include "Render/SceneEntity.h"

@@ -285,8 +285,8 @@ static void WriteBuffer(void *dst, const void *src, int numBytes) {
     memcpy(dst, src, numBytes);
 }
 
-bool BufferCacheManager::AllocVertex(int numVertexes, int sizeofVertex, const void *data, BufferCache *bc) {
-    int bytes = sizeofVertex * numVertexes;
+bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void *data, BufferCache *bc) {
+    int bytes = vertexSize * numVertexes;
 
     FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
 
@@ -295,7 +295,7 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int sizeofVertex, const vo
 
     //glr.BindBuffer(Renderer::VertexBuffer, currentBufferSet->vertexBuffer);
     // Check just write offset (don't write)
-    int offset = glr.BufferWrite(currentBufferSet->vertexBuffer, sizeofVertex, bytes, nullptr);
+    int offset = glr.BufferWrite(currentBufferSet->vertexBuffer, vertexSize, bytes, nullptr);
     if (offset == -1) {
         BE_FATALERROR(L"Out of vertex cache");
         return false;
@@ -326,8 +326,8 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int sizeofVertex, const vo
     return true;
 }
 
-bool BufferCacheManager::AllocIndex(int numIndexes, int sizeofIndex, const void *data, BufferCache *bc) {
-    int bytes = numIndexes * sizeofIndex;
+bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *data, BufferCache *bc) {
+    int bytes = numIndexes * indexSize;
     
     FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
 
@@ -336,7 +336,7 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int sizeofIndex, const void 
 
     //glr.BindBuffer(Renderer::IndexBuffer, currentBufferSet->indexBuffer);
     // Check just write offset (don't write)
-    int offset = glr.BufferWrite(currentBufferSet->indexBuffer, sizeofIndex, bytes, nullptr);
+    int offset = glr.BufferWrite(currentBufferSet->indexBuffer, indexSize, bytes, nullptr);
     if (offset == -1) {
         BE_FATALERROR(L"Out of index cache");
         return false;

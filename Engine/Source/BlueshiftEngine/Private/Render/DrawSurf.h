@@ -19,19 +19,24 @@ BE_NAMESPACE_BEGIN
 class DrawSurf {
 public:
     enum Flag {
-        AmbientVisible  = BIT(0),           ///< means visible surface (can be invisible for shadow caster surface)
-        ShowWires       = BIT(1)            ///< means to draw wireframes
+        AmbientVisible      = BIT(0),           ///< means visible surface (can be invisible for shadow caster surface)
+        ShowWires           = BIT(1)            ///< means to draw wireframes
     };
 
-    void                MakeSortKey(int entityIdx, const Material *material);
+    void                    MakeSortKey(int entityIdx, const Material *material);
 
-    uint32_t            sortKey;
-    uint32_t            flags;
-    const viewEntity_t *space;              ///< entity of this surface
-    const Material *    material;           ///< material of this surface
-    const float *       materialRegisters;
-    SubMesh *           subMesh;            ///< sub mesh of this surface
-    GuiSubMesh *        guiSubMesh;
+    uint32_t                sortKey;
+    uint32_t                flags;
+    const viewEntity_t *    space;              ///< entity of this surface
+    const Material *        material;           ///< material of this surface
+    const float *           materialRegisters;
+    SubMesh *               subMesh;
+    //GuiSubMesh *            guiSubMesh;
+    //int                     numVerts;
+    //int                     numIndexes;
+    //BufferCache *           vertexCache;
+    //BufferCache *           indexCache;
+    //SkinningJointCache *    skinningJointCache;
 };
 
 // sortKey:
