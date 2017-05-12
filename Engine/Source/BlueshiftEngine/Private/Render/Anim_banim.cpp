@@ -17,7 +17,7 @@
 #include "Render/Render.h"
 #include "BModel.h"
 #include "File/FileSystem.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 

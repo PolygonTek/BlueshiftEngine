@@ -15,8 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Core/JointPose.h"
-#include "SIMD/Simd.h"
-#include "SIMD/SIMD.h"
+#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 

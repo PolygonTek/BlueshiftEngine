@@ -392,7 +392,7 @@ bool ParticleSystem::ParseTimedVar(Lexer &lexer, TimedVar *var) const {
                 if (var->type == TimedVar::ConstantType) {
                     lexer.ExpectTokenString("constant");
                     var->constant = lexer.ParseFloat();
-                } else if (var->type == TimedMinMaxVar::CurveType) {
+                } else if (var->type == TimedVar::CurveType) {
                     lexer.ExpectTokenString("minTime");
                     float minTime = lexer.ParseFloat();
                     Hermite<float>::TimeWrapMode minTimeWrapMode;
@@ -989,9 +989,9 @@ static void WriteTimedVar(File *fp, const Str &name, const TimedVar &var, Str &i
     fp->Printf("%s%s \"%s\" {\n", indentSpace.c_str(), name.c_str(), timedVarTypeNames[var.type]);
     indentSpace += "  ";
 
-    if (var.type == TimedMinMaxVar::ConstantType) {
+    if (var.type == TimedVar::ConstantType) {
         fp->Printf("%sconstant %.3f\n", indentSpace.c_str(), var.constant);
-    } else if (var.type == TimedMinMaxVar::CurveType) {
+    } else if (var.type == TimedVar::CurveType) {
         const auto &curve = var.curve;
 
         fp->Printf("%sminTime %.3f \"%s\"\n", indentSpace.c_str(),

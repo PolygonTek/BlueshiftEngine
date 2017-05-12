@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Core/JointPose.h"
-#include "SIMD/Simd.h"
-#include "SIMD/SIMD.h"
+#include "Simd/Simd.h"
+#include "Simd/Simd.h"
 
 //#define CYCLIC_DELTA_MOVEMENT
 

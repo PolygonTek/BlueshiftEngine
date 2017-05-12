@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Str.h"
 #include "Math/Math.h"
-#include "DXT/DxtDecoder.h"
+#include "Dxt/DxtDecoder.h"
 
 BE_NAMESPACE_BEGIN
 

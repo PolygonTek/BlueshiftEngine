@@ -13,13 +13,13 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "SIMD/Simd.h"
-#include "SIMD/Simd_Generic.h"
+#include "Simd/Simd.h"
+#include "Simd/Simd_Generic.h"
 
 #if defined(__X86__)
 
-#include "SIMD/Simd_SSE4.h"
-#include "SIMD/Simd_AVX.h"
+#include "Simd/Simd_SSE4.h"
+#include "Simd/Simd_AVX.h"
 
 #endif
 

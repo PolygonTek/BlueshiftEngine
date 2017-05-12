@@ -249,7 +249,6 @@ int WStr::FileNameHash() const {
         }
 
         hash += (long)(letter) * (i + 119);
-        i++;
     }
     hash &= (FileNameHashSize - 1);
     return (int)hash;

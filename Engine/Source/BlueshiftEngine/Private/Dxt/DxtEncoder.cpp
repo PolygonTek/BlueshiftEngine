@@ -16,7 +16,7 @@
 #include "Core/Str.h"
 #include "Core/Task.h"
 #include "Math/Math.h"
-#include "DXT/DxtEncoder.h"
+#include "Dxt/DxtEncoder.h"
 #include "Eigen/Eigen/Dense"
 
 BE_NAMESPACE_BEGIN

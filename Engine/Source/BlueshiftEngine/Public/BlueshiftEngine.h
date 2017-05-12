@@ -88,11 +88,11 @@
 #include "Core/Object.h"
 
 // SIMD
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 
 // DXT encoder/decoder
-#include "DXT/DxtEncoder.h"
-#include "DXT/DxtDecoder.h"
+#include "Dxt/DxtEncoder.h"
+#include "Dxt/DxtDecoder.h"
 
 // Image
 #include "Image/Image.h"

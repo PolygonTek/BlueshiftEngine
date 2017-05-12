@@ -18,7 +18,7 @@
 #include "Core/Heap.h"
 #include "File/FileSystem.h"
 #include "FontFace.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 
 // FreeType2 reference:
 // http://freetype.sourceforge.net/freetype2/docs/reference/ft2-base_interface.html

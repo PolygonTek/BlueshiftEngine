@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Core/Heap.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 #include "File/FileSystem.h"
 #include "Sound/Pcm.h"
 

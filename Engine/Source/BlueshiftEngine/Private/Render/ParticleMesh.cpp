@@ -131,6 +131,9 @@ static Mat3 ComputeParticleAxis(ParticleSystem::StandardModule::Orientation orie
         worldAxis[1] = Vec3::unitY;
         worldAxis[2] = -Vec3::unitX;
         break;
+    default:
+        assert(0);
+        break;
     }
 
     return modelAxis.TransposedMul(worldAxis);

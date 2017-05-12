@@ -18,9 +18,8 @@
 #include "Render/Mesh.h"
 #include "AnimController/AnimController.h"
 #include "Animator/Animator.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 #include "Core/JointPose.h"
-#include "SIMD/SIMD.h"
 #include "Game/Entity.h"
 
 BE_NAMESPACE_BEGIN

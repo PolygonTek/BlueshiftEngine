@@ -16,7 +16,7 @@
 #include "Core/Str.h"
 #include "Core/WStr.h"
 #include "Core/Heap.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 #include "Math/Math.h"
 #include "File/FileSystem.h"
 #include "Image/Image.h"
