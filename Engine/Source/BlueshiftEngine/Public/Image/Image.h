@@ -283,7 +283,7 @@ private:
     int                 numMipmaps;     ///< Number of mipmaps
     Image::Format       format;         ///< Image format
     int                 flags;
-    bool                allocated;      ///< Is memory allocated ?
+    bool                alloced;        ///< Is memory allocated ?
     byte *              pic;            ///< Actual pixel data
 };
 
@@ -295,18 +295,18 @@ BE_INLINE Image::Image() {
     numMipmaps = 0;
     format = Image::UnknownFormat;
     flags = 0;
-    allocated = false;
+    alloced = false;
     pic = nullptr;
 }
 
 BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, byte *data, int flags) {
-    allocated = false;
+    alloced = false;
     InitFromMemory(width, height, depth, numSlices, numMipmaps, format, data, flags);
     //Create(width, height, depth, numSlices, numMipmaps, format, data, flags);
 }
 
 BE_INLINE Image::Image(const Image &rhs) {
-    allocated = false;
+    alloced = false;
     Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.pic, rhs.flags);
 }
 
@@ -318,7 +318,7 @@ BE_INLINE Image::Image(Image &&rhs) : Image() {
     BE1::Swap(numMipmaps, rhs.numMipmaps);
     BE1::Swap(format, rhs.format);
     BE1::Swap(flags, rhs.flags);
-    BE1::Swap(allocated, rhs.allocated);
+    BE1::Swap(alloced, rhs.alloced);
     BE1::Swap(pic, rhs.pic);
 }
 

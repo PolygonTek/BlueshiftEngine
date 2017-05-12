@@ -35,42 +35,42 @@ void MeshManager::Init() {
     meshHashMap.Init(1024, 64, 64);
     instantiatedMeshList.Resize(64, 64);
 
-    // 디폴트 모델 (box) 생성
+    // Create default (box shape) mesh
     defaultMesh = AllocMesh("_defaultMesh");
     defaultMesh->permanence = true;
     defaultMesh->CreateDefaultBox();
 
-    // default quad
+    // Create default quad mesh
     defaultQuadMesh = AllocMesh("_defaultQuadMesh");
     defaultQuadMesh->permanence = true;
     defaultQuadMesh->CreatePlane(Vec3::origin, Angles(0, 90, 0).ToMat3(), MeterToUnit(1), 1);
 
-    // default plane
+    // Create default plane mesh
     defaultPlaneMesh = AllocMesh("_defaultPlaneMesh");
     defaultPlaneMesh->permanence = true;
     defaultPlaneMesh->CreatePlane(Vec3::origin, Mat3::identity, MeterToUnit(10), 10);
 
-    // default box
+    // Create default box mesh
     defaultBoxMesh = AllocMesh("_defaultBoxMesh");
     defaultBoxMesh->permanence = true;
     defaultBoxMesh->CreateBox(Vec3::origin, Mat3::identity, Vec3(MeterToUnit(0.5)));
 
-    // default sphere
+    // Create default sphere mesh
     defaultSphereMesh = AllocMesh("_defaultSphereMesh");
     defaultSphereMesh->permanence = true;
     defaultSphereMesh->CreateSphere(Vec3::origin, MeterToUnit(0.5), 12);
 
-    // default geosphere
+    // Create default geosphere mesh
     defaultGeoSphereMesh = AllocMesh("_defaultGeoSphereMesh");
     defaultGeoSphereMesh->permanence = true;
     defaultGeoSphereMesh->CreateGeosphere(Vec3::origin, MeterToUnit(0.5), 3);
 
-    // default cylinder
+    // Create default cylinder mesh
     defaultCylinderMesh = AllocMesh("_defaultCylinderMesh");
     defaultCylinderMesh->permanence = true;
     defaultCylinderMesh->CreateCylinder(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(2), 24);
 
-    // default capsule
+    // Create default capsule mesh
     defaultCapsuleMesh = AllocMesh("_defaultCapsuleMesh");
     defaultCapsuleMesh->permanence = true;
     defaultCapsuleMesh->CreateCapsule(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(1), 24);

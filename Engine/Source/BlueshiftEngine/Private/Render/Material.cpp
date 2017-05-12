@@ -107,7 +107,7 @@ bool Material::Create(const char *text) {
         } else if (!token.Icmp("sort")) {
             ParseSort(lexer);
         } else if (!token.Icmp("lightSort")) {
-            ParseLightSort(lexer);        
+            ParseLightSort(lexer);
         } else {
             BE_WARNLOG(L"unknown general material parameter '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
@@ -208,7 +208,7 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
             if (lexer.ReadToken(&token, false)) {
                 const Guid textureGuid = Guid::ParseString(token);
                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
-                pass->texture = textureManager.GetTexture(texturePath);                
+                pass->texture = textureManager.GetTexture(texturePath);
             } else {
                 BE_WARNLOG(L"missing map GUID in material '%hs'\n", hashName.c_str());
             }
@@ -482,7 +482,7 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
 bool Material::ParseAlphaFunc(Lexer &lexer, int *alphaFunc, Pass *pass) const {
     Str	token;
 
-    if (lexer.ReadToken(&token, false))	{
+    if (lexer.ReadToken(&token, false)) {
         if (!token.Icmp("GT")) {
             *alphaFunc = Renderer::AF_Greater;
         } else if (!token.Icmp("GE")) {
@@ -602,7 +602,7 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
     }
 
     BE_WARNLOG(L"missing parameter for blendFunc keyword in material '%hs'\n", hashName.c_str());
-    return false;	
+    return false;
 }
 
 bool Material::ParseSort(Lexer &lexer) {
@@ -722,7 +722,7 @@ void Material::Write(const char *filename) {
     Str cullStr;
     switch (cullType) {
     case Renderer::BackCull: cullStr = "back"; break;
-    case Renderer::FrontCull: cullStr = "front"; break;       
+    case Renderer::FrontCull: cullStr = "front"; break;
     case Renderer::NoCull: default: cullStr = "none"; break;
     }
     fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
@@ -896,7 +896,7 @@ void Material::Write(const char *filename) {
         fp->Printf("%s%s\n", indentSpace.c_str(), vertexColorModeStr.c_str());
     }
 
-    fp->Printf("%scolor (%s)\n", indentSpace.c_str(), Vec4(pass->constantColor).ToString());
+    fp->Printf("%scolor (%s)\n", indentSpace.c_str(), pass->constantColor.ToString());
     indentSpace.Truncate(indentSpace.Length() - 2);
 
     fp->Printf("%s}\n", indentSpace.c_str());

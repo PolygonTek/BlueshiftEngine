@@ -195,10 +195,10 @@ static int RB_CompareDebugPrims(const void *elem1, const void *elem2) {
     const DebugPrims *p1 = (DebugPrims *)elem1;
     const DebugPrims *p2 = (DebugPrims *)elem2;
 
-    int sortkey1 = (p1->depthTest << 5) | (((p1->color[3] + 1) & 0x100) >> 4) | (p1->prims);
-    int sortkey2 = (p2->depthTest << 5) | (((p2->color[3] + 1) & 0x100) >> 4) | (p2->prims);
+    int sortKey1 = (p1->depthTest << 5) | (((p1->color[3] + 1) & 0x100) >> 4) | (p1->prims);
+    int sortKey2 = (p2->depthTest << 5) | (((p2->color[3] + 1) & 0x100) >> 4) | (p2->prims);
     
-    return sortkey1 - sortkey2;
+    return sortKey1 - sortKey2;
 }
 
 static void RB_DrawDebugPrims() {
@@ -546,14 +546,15 @@ static void RB_DrawDebugText() {
 }
 
 void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
-    int					prevSortkey = -1;
-    const Material *	prevMaterial = nullptr;
-    viewEntity_t *		prevEntity = nullptr;
-    bool				depthhack = false;
-    bool				prevDepthHack = false;
+    int                 prevSortkey = -1;
+    const Material *    prevMaterial = nullptr;
+    const viewEntity_t *prevSpace = nullptr;
+    bool                depthhack = false;
+    bool                prevDepthHack = false;
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
+
         if (!(surf->flags & DrawSurf::AmbientVisible)) {
             continue;
         }
@@ -562,28 +563,28 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             continue;
         }
         
-        if (surf->sortkey != prevSortkey) {
+        if (surf->sortKey != prevSortkey) {
             if (surf->material->GetCoverage() == Material::EmptyCoverage) {
                 continue;
             }
 
-            if (surf->material != prevMaterial || surf->entity != prevEntity) {
+            if (surf->material != prevMaterial || surf->space != prevSpace) {
                 if (prevMaterial) {
                     backEnd.rbsurf.Flush();
                 }
 
-                backEnd.rbsurf.Begin(RBSurf::TriFlush, surf->material, surf->materialRegisters, surf->entity, nullptr);
+                backEnd.rbsurf.Begin(RBSurf::TriFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
 
                 prevMaterial = surf->material;
             }
 
-            if (surf->entity != prevEntity) {
-                prevEntity = surf->entity;
+            if (surf->space != prevSpace) {
+                prevSpace = surf->space;
 
-                backEnd.modelViewMatrix = surf->entity->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->entity->modelViewProjMatrix;
+                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                depthhack = surf->entity->def->parms.depthHack;
+                depthhack = surf->space->def->parms.depthHack;
             
                 if (prevDepthHack != depthhack) {
                     if (depthhack) {
@@ -596,10 +597,10 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                 }
             }
 
-            prevSortkey = surf->sortkey;
+            prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -639,6 +640,8 @@ static void RB_DrawDebugLights(int mode) {
         shader->SetConstant4f("color", &viewLight->def->parms.materialParms[SceneEntity::RedParm]);
     
         RB_DrawLightVolume(viewLight->def);
+
+        RB_DrawAABB(viewLight->litAABB);
     }
 
     if (mode == 2) {

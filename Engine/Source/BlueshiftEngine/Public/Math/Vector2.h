@@ -156,19 +156,19 @@ public:
                         /// This function is identical to the member function DivCompSelf().
     Vec2 &              operator/=(const Vec2 &rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Vec2 &a) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Vec2 &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Vec2 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Vec2 &rhs) const { return !Equals(rhs); }
 
                         /// Tests if this is the zero vector, up to the given epsilon.
     bool                IsZero(const float epsilon = 0.0f) const;
 
-                        /// Sets all element of this vector
+                        /// Sets all element of this vector.
     void                Set(float x, float y);
                         /// Sets this Vec2 to (s, s).
     void                SetFromScalar(float s) { x = y = s; }
@@ -176,13 +176,13 @@ public:
                         /// Returns Vec2(s, s).
     static Vec2         FromScalar(float s) { return Vec2(s, s); }
 
-                        /// Get the minimum component of a vector
+                        /// Get the minimum component of a vector.
     float               MinComponent() const { return Min(x, y); }
-                        /// Get the maximum component of a vector
+                        /// Get the maximum component of a vector.
     float               MaxComponent() const { return Max(x, y); }
-                        /// Get the minimum component index of a vector
+                        /// Get the minimum component index of a vector.
     int                 MinComponentIndex() const { return MinIndex(x, y); }
-                        /// Get the maximum component index of a vector
+                        /// Get the maximum component index of a vector.
     int                 MaxComponentIndex() const { return MaxIndex(x, y); }
 
                         /// Computes the length of this vector.
@@ -195,10 +195,10 @@ public:
     float               DistanceSqr(const Vec2 &v) const;
 
                         /// Normalizes this vector.
-                        /// @return Length of this vector
+                        /// @return Length of this vector.
     float               Normalize();
                         /// Normalizes this vector fast but approximately.
-                        /// @return Length of this vector
+                        /// @return Length of this vector.
     float               NormalizeFast();
 
                         /// Scales this vector so that its new length is as given.
@@ -217,17 +217,20 @@ public:
                         /// Sets from linear interpolation between vector v1 and the vector v2.
     void                SetFromLerp(const Vec2 &v1, const Vec2 &v2, float l);
 
-                        /// Returns "x y z"
+                        /// Sets this vector on unit circle.
+    static Vec2         FromUnitCircle(float u);
+
+                        /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "x y z" with the given precision
+                        /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
-                        /// Returns radian [-PI, PI] as a direction vector
+                        /// Returns radian [-PI, PI] as a direction vector.
     float               ToAngle() const;
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
 
-                        /// Compute 2D barycentric coordinates from the point based on 2 simplex vector
+                        /// Compute 2D barycentric coordinates from the point based on 2 simplex vector.
     static const Vec2   Compute2DBarycentricCoords(const float s1, const float s2, const float p);
 
     static const Vec2   origin;     ///< (0, 0)
@@ -408,8 +411,14 @@ BE_INLINE void Vec2::SetFromLerp(const Vec2 &v1, const Vec2 &v2, const float l) 
     } else if (l >= 1.0f) {
         (*this) = v2;
     } else {
-        (*this) = v1 + l * (v2 - v1);	
+        (*this) = v1 + l * (v2 - v1);
     }
+}
+
+BE_INLINE Vec2 Vec2::FromUnitCircle(float u) {
+    float s, c;
+    Math::SinCos(Math::TwoPi * u, s, c);
+    return Vec2(c, s);
 }
 
 BE_INLINE const char *Vec2::ToString(int precision) const {

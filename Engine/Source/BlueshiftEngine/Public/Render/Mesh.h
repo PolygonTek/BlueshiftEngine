@@ -110,7 +110,7 @@ public:
     MeshSurf *              AllocSurface(int numVerts, int numIndexes) const;
     void                    FinishSurfaces(int finishFlags = 0);
 
-    void                    TransformVerts(const Mat3 &rotation, const Vec3 &translation);	
+    void                    TransformVerts(const Mat3 &rotation, const Vec3 &translation);
 
     void                    OptimizeIndexedTriangles();
 
@@ -153,10 +153,10 @@ private:
     void                    ComputeTangents(bool includeNormals, bool useUnsmoothedTangents);
     void                    ComputeEdges();
 
-    bool                    CheckGPUJointSkinning(int skinning, int numJoints) const;
+    bool                    CapableGPUJointSkinning(SkinningMethod skinningMethod, int numJoints) const;
 
-    bool                    LoadBMesh(const char *filename);
-    void                    WriteBMesh(const char *filename);
+    bool                    LoadBinaryMesh(const char *filename);
+    void                    WriteBinaryMesh(const char *filename);
 
     Str                     hashName;
     Str                     name;

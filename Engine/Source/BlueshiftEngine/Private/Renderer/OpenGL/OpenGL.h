@@ -25,8 +25,10 @@
 /*
 ------------------------------------------------------------------------------
  OpenGL extensions and core versions
+
+ https://www.khronos.org/opengl/wiki/History_of_OpenGL
  
- OpenGL 1.2
+ OpenGL 1.2 (1998)
     EXT_texture3D
     EXT_bgra
     EXT_packed_pixels
@@ -36,7 +38,7 @@
     SGIS_texture_lod
     EXT_draw_range_elements
  
- OpenGL 1.3
+ OpenGL 1.3 (2001)
     ARB_texture_compression
     ARB_texture_cube_map
     ARB_multisample
@@ -47,7 +49,7 @@
     ARB_texture_border_clamp
     ARB_transpose_matrix
  
- OpenGL 1.4
+ OpenGL 1.4 (2002)
     SGIS_generate_mipmap
     NV_blend_square
     EXT_blend_color
@@ -65,12 +67,12 @@
     ARB_texture_mirrored_repeat
     ARB_window_pos
  
- OpenGL 1.5
+ OpenGL 1.5 (2003)
     ARB_vertex_buffer_object
     ARB_occlusion_query
     EXT_shadow_funcs
  
- OpenGL 2.0
+ OpenGL 2.0 (2004)
     GLSL 1.10
     ARB_shading_language_100
     ARB_shader_objects
@@ -82,12 +84,12 @@
     EXT_blend_equation_separate
     EXT_stencil_two_side
  
- OpenGL 2.1
+ OpenGL 2.1 (2006)
     GLSL 1.20
     ARB_pixel_buffer_object
     EXT_texture_sRGB
  
- OpenGL 3.0
+ OpenGL 3.0 (2008)
     GLSL 1.30
     EXT_gpu_shader4
     NV_conditional_render
@@ -111,7 +113,7 @@
     APPLE_vertex_array_object
     EXT_framebuffer_sRGB
  
- OpenGL 3.1
+ OpenGL 3.1 (2009)
     GLSL 1.40
     ARB_draw_instanced
     ARB_copy_buffer
@@ -120,7 +122,7 @@
     ARB_texture_rectangle
     ARB_uniform_buffer_object
  
- OpenGL 3.2
+ OpenGL 3.2 (2009)
     GLSL 1.50
     ARB_geometry_shader4
     ARB_sync
@@ -132,7 +134,7 @@
     ARB_texture_multisample
     ARB_depth_clamp
  
- OpenGL 3.3
+ OpenGL 3.3 (2010)
     GLSL 3.30
     ARB_blend_func_extended
     ARB_explicit_attrib_location
@@ -144,7 +146,7 @@
     ARB_texture_rgb10_a2ui
     ARB_vertex_type_2_10_10_10_rev
  
- OpenGL 4.0
+ OpenGL 4.0 (2010)
     GLSL 4.00
     ARB_draw_buffers_blend
     ARB_draw_indirect
@@ -159,7 +161,7 @@
     ARB_texture_query_lod
     ARB_transform_feedback2
  
- OpenGL 4.1
+ OpenGL 4.1 (2010)
     GLSL 4.10
     ARB_debug_output
     ARB_ES2_compatibility
@@ -169,7 +171,7 @@
     ARB_vertex_attrib_64bit
     ARB_viewport_array
  
- OpenGL 4.2
+ OpenGL 4.2 (2011)
     GLSL 4.20
     ARB_base_instance
     ARB_compressed_texture_pixel_storage
@@ -183,7 +185,59 @@
     ARB_texture_compression_bptc
     ARB_texture_storage
     ARB_transform_feedback_instanced
-    
+
+OpenGL 4.3 (2012)
+    GLSL 4.30
+    KHR_debug
+    ARB_arrays_of_arrays
+    ARB_clear_buffer_object
+    ARB_compute_shader
+    ARB_copy_image
+    ARB_ES3_compatibility
+    ARB_explicit_uniform_location
+    ARB_fragment_layer_viewport
+    ARB_framebuffer_no_attachments
+    ARB_internalformat_query2
+    ARB_invalidate_subdata
+    ARB_multi_draw_indirect
+    ARB_program_interface_query
+    ARB_shader_image_size
+    ARB_shader_storage_buffer_object
+    ARB_stencil_texturing
+    ARB_texture_buffer_range
+    ARB_texture_query_levels
+    ARB_texture_storage_multisample
+    ARB_texture_view
+    ARB_vertex_attrib_binding
+    ARB_robust_buffer_access_behavior
+    ARB_robustness_isolation
+    WGL_ARB_robustness_isolation
+    GLX_ARB_robustness_isolation
+
+OpenGL 4.4 (2013)
+    GLSL 4.40
+    ARB_buffer_storage
+    ARB_clear_texture
+    ARB_enhanced_layouts
+    ARB_multi_bind
+    ARB_query_buffer_object
+    ARB_texture_mirror_clamp_to_edge
+    ARB_texture_stencil8
+    ARB_vertex_type_10f_11f_11f_rev
+
+OpenGL 4.5 (2014)
+    GLSL 4.50
+    ARB_clip_control
+    ARB_cull_distance
+    ARB_ES3_1_compatibility
+    ARB_conditional_render_inverted
+    ARB_derivative_control
+    ARB_direct_state_access
+    ARB_get_texture_sub_image
+    KHR_robustness
+    ARB_shader_texture_image_samples
+    ARB_texture_barrier
+
 ------------------------------------------------------------------------------
 */
 

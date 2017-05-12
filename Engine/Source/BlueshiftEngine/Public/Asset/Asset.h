@@ -80,6 +80,7 @@ class Shader;
 class Material;
 class Skeleton;
 class Mesh;
+class ParticleSystem;
 class Anim;
 class AnimController;
 class Prefab;
@@ -192,6 +193,23 @@ public:
 
 private:
     Mesh *                      mesh;
+};
+
+class ParticleSystemAsset : public Asset {
+public:
+    OBJECT_PROTOTYPE(ParticleSystemAsset);
+
+    ParticleSystemAsset();
+    ~ParticleSystemAsset();
+
+    ParticleSystem *            GetParticleSystem();
+
+    virtual void                Reload() override;
+
+    virtual void                Save() override;
+
+private:
+    ParticleSystem *            particleSystem;
 };
 
 class AnimAsset : public Asset {

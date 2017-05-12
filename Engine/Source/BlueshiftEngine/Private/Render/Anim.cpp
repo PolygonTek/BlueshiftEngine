@@ -226,7 +226,7 @@ bool Anim::Load(const char *filename) {
 
     BE_LOG(L"Loading anim '%hs'...\n", bAnimFilename.c_str());
 
-    bool ret = LoadBAnim(filename);
+    bool ret = LoadBinaryAnim(filename);
     if (!ret) {
         return false;
     }
@@ -247,7 +247,7 @@ bool Anim::Reload() {
 }
 
 void Anim::Write(const char *filename) {
-    WriteBAnim(filename);
+    WriteBinaryAnim(filename);
 }
 
 bool Anim::CheckHierarchy(const Skeleton *skeleton) const {
@@ -372,13 +372,13 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                     Vec3 resultPos = Vec3::zero;
 
                     for (int weightIndex = 0; weightIndex < 8; weightIndex++) {
-                        float w = vw->weight[weightIndex];
+                        float w = vw->jointWeights[weightIndex];
                         if (w != 0.0f) {
-                            if (sizeof(VertexWeightValue) == sizeof(byte)) {
-                                w /= 255.0f;
+                            if (sizeof(JointWeightType) == sizeof(byte)) {
+                                w *= 1.0f / 255.0f;
                             }
 
-                            resultPos += w * jointMats2[vw->index[weightIndex]].Transform(pos);
+                            resultPos += w * jointMats2[vw->jointIndexes[weightIndex]].Transform(pos);
                         }
                     }
 
@@ -393,12 +393,12 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                     Vec3 resultPos = Vec3::zero;
 
                     for (int weightIndex = 0; weightIndex < 4; weightIndex++) {
-                        float w = vw->weight[weightIndex];
+                        float w = vw->jointWeights[weightIndex];
                         if (w != 0.0f) {
-                            if (sizeof(VertexWeightValue) == sizeof(byte)) {
-                                w /= 255.0f;
+                            if (sizeof(JointWeightType) == sizeof(byte)) {
+                                w *= 1.0f / 255.0f;
                             }
-                            resultPos += w * jointMats2[vw->index[weightIndex]].Transform(pos);
+                            resultPos += w * jointMats2[vw->jointIndexes[weightIndex]].Transform(pos);
                         }
                     }
 
@@ -410,7 +410,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                     const VertexWeight1 *vertWeights = (const VertexWeight1 *)subMesh->VertWeights();
                     const VertexWeight1 *vw = &vertWeights[vertexIndex];
                     const BE1::Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
-                    Vec3 resultPos = jointMats2[vw->index].Transform(pos);
+                    Vec3 resultPos = jointMats2[vw->jointIndex].Transform(pos);
 
                     frameAABB.AddPoint(resultPos);
                 }
@@ -433,7 +433,7 @@ void Anim::TimeToFrameInterpolation(int time, FrameInterpolation &frameInterpola
 
     if (time <= 0) {
         frameInterpolation.frame1 = 0;
-        frameInterpolation.frame2 = 1;		
+        frameInterpolation.frame2 = 1;
         frameInterpolation.frontlerp = 1.0f;
         frameInterpolation.backlerp = 0.0f;
         frameInterpolation.cycleCount = 0;

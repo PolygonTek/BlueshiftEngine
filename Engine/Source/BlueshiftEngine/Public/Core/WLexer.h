@@ -92,7 +92,7 @@ private:
     const wchar_t *     whiteSpaceBegin_p;
     const wchar_t *     whiteSpaceEnd_p;
     bool                loaded;
-    bool                allocated;
+    bool                alloced;
     int                 tokenType;
     int                 punctuationType;
     WStr                token;

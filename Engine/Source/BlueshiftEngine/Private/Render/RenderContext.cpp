@@ -85,6 +85,7 @@ void RenderContext::Init(Renderer::WindowHandle hwnd, int renderWidth, int rende
     this->renderHeight = renderHeight;
     
     this->guiMesh.Clear();
+    this->guiMesh.SetCoordFrame(GuiMesh::CoordFrame2D);
     this->guiMesh.SetClipRect(Rect(0, 0, renderWidth, renderHeight));
     
     glr.SetContextDisplayFunc(contextHandle, displayFunc, displayFuncDataPtr, (flags & OnDemandDrawing) ? true : false);
@@ -846,7 +847,7 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     viewParms.fovY = 90;
     viewParms.zNear = 4.0f;
     viewParms.zFar = 8192.0f;
-    viewParms.origin = origin;	
+    viewParms.origin = origin;
 
     Mat3 axis[6];
     axis[0]	= Angles(  0,   0, -90).ToMat3();

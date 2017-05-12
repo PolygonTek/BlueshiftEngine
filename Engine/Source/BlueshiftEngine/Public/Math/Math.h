@@ -35,4 +35,5 @@
 #include "Math/Point.h"
 #include "Math/Rect.h"
 #include "Math/Curve.h"
+#include "Math/Hermite.h"
 #include "Math/Random.h"

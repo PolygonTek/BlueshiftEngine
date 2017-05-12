@@ -14,18 +14,19 @@
 
 #pragma once
 
+#include "Containers/Array.h"
 #include "Core/Vertex.h"
 #include "BufferCache.h"
-#include "SceneEntity.h"
+#include "ParticleSystem.h"
 
 BE_NAMESPACE_BEGIN
 
 class Material;
-class Font;
+class SceneEntity;
+class SceneView;
 
-struct GuiMeshSurf {
+struct PrtMeshSurf {
     const Material *        material;
-    uint32_t                color;
 
     int                     numVerts;
     int                     numIndexes;
@@ -34,50 +35,31 @@ struct GuiMeshSurf {
     BufferCache             indexCache;
 };
 
-class GuiMesh {
+class ParticleMesh {
+    friend class RenderWorld;
+
 public:
-    enum CoordFrame {
-        CoordFrame2D,
-        CoordFrame3D
-    };
-
-    GuiMesh();
-
-    CoordFrame              GetCoordFrame() const { return coordFrame; }
-    void                    SetCoordFrame(CoordFrame frame) { coordFrame = frame; }
+    ParticleMesh();
 
     int                     NumSurfaces() const { return surfaces.Count(); }
-    const GuiMeshSurf *     Surface(int surfaceIndex) const { return &surfaces[surfaceIndex]; }
+    const PrtMeshSurf &     Surface(int surfaceIndex) const { return surfaces[surfaceIndex]; }
 
     void                    Clear();
 
-    void                    SetClipRect(const Rect &clipRect);
+    void                    Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const SceneEntity *entity, const SceneView *view);
 
-    void                    SetColor(const Color4 &rgba);
-
-    void                    DrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
-    
-    int                     DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode);
-
-    void                    Draw(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text);
-
-                            // Call this function when drawing ends
     void                    CacheIndexes();
-
-    AABB                    Compute3DTextAABB(Font *font, SceneEntity::TextAnchor anchor, float lineSpacing, float textScale, const wchar_t *text) const;
 
 private:
     void                    PrepareNextSurf();
     void                    DrawQuad(const VertexGeneric *verts, const Material *material);
-    
-    Array<GuiMeshSurf>      surfaces;
-    GuiMeshSurf *           currentSurf;
+    int                     CountDrawingVerts(const ParticleSystem::Stage &stage, const Particle *stageParticles) const;
+
+    Array<PrtMeshSurf>      surfaces;
+    PrtMeshSurf *           currentSurf;
 
     int                     totalVerts;         ///< Total number of the vertices
     int                     totalIndexes;       ///< Total number of the indices
-
-    CoordFrame              coordFrame;
-    Rect                    clipRect;
 };
 
 BE_NAMESPACE_END

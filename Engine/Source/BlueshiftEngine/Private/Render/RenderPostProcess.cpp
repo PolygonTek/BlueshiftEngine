@@ -18,15 +18,15 @@
 
 BE_NAMESPACE_BEGIN
 
-static LinearKernel<5>	gaussKernel5x;
-static LinearKernel<7>	gaussKernel7x;
-static LinearKernel<15>	gaussKernel15x;
+static LinearKernel<5>  gaussKernel5x;
+static LinearKernel<7>  gaussKernel7x;
+static LinearKernel<15> gaussKernel15x;
 
-static Vec3				ssaoRandomKernel[8];
+static Vec3             ssaoRandomKernel[8];
                         
 // for camera motion blur
-static const int		sphereLats = 32;
-static const int		sphereLongs = 32;
+static const int        sphereLats = 32;
+static const int        sphereLongs = 32;
 static Renderer::Handle sphereVB;
 
 void PP_Init() {
@@ -107,7 +107,7 @@ void PP_Downscale2x2(const Texture *srcTexture, RenderTarget *dstRT) {
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 1, sampleOffsets);
 
-        s = 0;		
+        s = 0;
         t = 0;
         s2 = 1.0f;
         t2 = 1.0f;
@@ -170,7 +170,7 @@ void PP_Downscale4x4(const Texture *srcTexture, RenderTarget *dstRT) {
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
 
-        s = -1.0f / srcTexture->GetWidth();		
+        s = -1.0f / srcTexture->GetWidth();
         t = -1.0f / srcTexture->GetHeight();
         s2 = 1.0f - 1.0f / srcTexture->GetWidth();
         t2 = 1.0f - 1.0f / srcTexture->GetHeight();
@@ -233,7 +233,7 @@ void PP_Downscale4x4LogLum(const Texture *srcTexture, float s, float t, float s2
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
 
-        s = -1.0f / srcTexture->GetWidth();		
+        s = -1.0f / srcTexture->GetWidth();
         t = -1.0f / srcTexture->GetHeight();
         s2 = 1.0f - 1.0f / srcTexture->GetWidth();
         t2 = 1.0f - 1.0f / srcTexture->GetHeight();
@@ -254,7 +254,7 @@ void PP_Downscale4x4LogLum(const Texture *srcTexture, float s, float t, float s2
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 16, sampleOffsets);
 
-        s = 0.0f;		
+        s = 0.0f;
         t = 0.0f;
         s2 = 1.0f;
         t2 = 1.0f;
@@ -296,7 +296,7 @@ void PP_Downscale4x4ExpLum(const Texture *srcTexture, RenderTarget *dstRT) {
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
 
-        s = -1.0f / srcTexture->GetWidth();		
+        s = -1.0f / srcTexture->GetWidth();
         t = -1.0f / srcTexture->GetHeight();
         s2 = 1.0f - 1.0f / srcTexture->GetWidth();
         t2 = 1.0f - 1.0f / srcTexture->GetHeight();
@@ -342,7 +342,7 @@ void PP_HBlur5x(const Texture *srcTexture, const float *weights, RenderTarget *d
     shader->Bind();
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 5, weights);
-    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));	
+    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -353,7 +353,7 @@ void PP_HBlur5x(const Texture *srcTexture, const float *weights, RenderTarget *d
 void PP_VBlur5x(const Texture *srcTexture, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -363,7 +363,7 @@ void PP_VBlur5x(const Texture *srcTexture, const float *weights, RenderTarget *d
     shader->Bind();
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 5, weights);
-    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));	
+    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));
     
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -374,7 +374,7 @@ void PP_VBlur5x(const Texture *srcTexture, const float *weights, RenderTarget *d
 void PP_HBlur7x(const Texture *srcTexture, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -384,7 +384,7 @@ void PP_HBlur7x(const Texture *srcTexture, const float *weights, RenderTarget *d
     shader->Bind();
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 7, weights);
-    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));	
+    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -395,7 +395,7 @@ void PP_HBlur7x(const Texture *srcTexture, const float *weights, RenderTarget *d
 void PP_VBlur7x(const Texture *srcTexture, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -405,7 +405,7 @@ void PP_VBlur7x(const Texture *srcTexture, const float *weights, RenderTarget *d
     shader->Bind();
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 7, weights);
-    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));	
+    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -416,7 +416,7 @@ void PP_VBlur7x(const Texture *srcTexture, const float *weights, RenderTarget *d
 void PP_HBlur15x(const Texture *srcTexture, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -426,7 +426,7 @@ void PP_HBlur15x(const Texture *srcTexture, const float *weights, RenderTarget *
     shader->Bind();
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 15, weights);
-    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));	
+    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -437,7 +437,7 @@ void PP_HBlur15x(const Texture *srcTexture, const float *weights, RenderTarget *
 void PP_VBlur15x(const Texture *srcTexture, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -447,7 +447,7 @@ void PP_VBlur15x(const Texture *srcTexture, const float *weights, RenderTarget *
     shader->Bind();
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 15, weights);
-    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));	
+    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -458,7 +458,7 @@ void PP_VBlur15x(const Texture *srcTexture, const float *weights, RenderTarget *
 void PP_HBlurBilinear3x(const Texture *srcTexture, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -469,7 +469,7 @@ void PP_HBlurBilinear3x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 3, weights);
     shader->SetConstantArray2f("sampleOffsets", 3, sampleOffsets);
-    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));	
+    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -480,7 +480,7 @@ void PP_HBlurBilinear3x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
 void PP_VBlurBilinear3x(const Texture *srcTexture, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -491,7 +491,7 @@ void PP_VBlurBilinear3x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 3, weights);
     shader->SetConstantArray2f("sampleOffsets", 3, sampleOffsets);
-    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));	
+    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -502,7 +502,7 @@ void PP_VBlurBilinear3x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
 void PP_HBlurBilinear4x(const Texture *srcTexture, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -513,7 +513,7 @@ void PP_HBlurBilinear4x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 4, weights);
     shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
-    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));	
+    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -524,7 +524,7 @@ void PP_HBlurBilinear4x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
 void PP_VBlurBilinear4x(const Texture *srcTexture, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -535,7 +535,7 @@ void PP_VBlurBilinear4x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 4, weights);
     shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
-    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));	
+    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -546,7 +546,7 @@ void PP_VBlurBilinear4x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
 void PP_HBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -557,7 +557,7 @@ void PP_HBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 8, weights);
     shader->SetConstantArray2f("sampleOffsets", 8, sampleOffsets);
-    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));	
+    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -568,7 +568,7 @@ void PP_HBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
 void PP_VBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -579,7 +579,7 @@ void PP_VBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     shader->SetTexture("tex0", srcTexture);
     shader->SetConstantArray1f("weights", 8, weights);
     shader->SetConstantArray2f("sampleOffsets", 8, sampleOffsets);
-    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));	
+    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -590,7 +590,7 @@ void PP_VBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
 void PP_HBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *maskTexture, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -602,7 +602,7 @@ void PP_HBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *mas
     shader->SetTexture("tex1", maskTexture);
     shader->SetConstantArray1f("weights", 8, weights);
     shader->SetConstantArray2f("sampleOffsets", 8, sampleOffsets);
-    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));	
+    shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 0.0f));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -613,7 +613,7 @@ void PP_HBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *mas
 void PP_VBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *maskTexture, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -625,7 +625,7 @@ void PP_VBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *mas
     shader->SetTexture("tex1", maskTexture);
     shader->SetConstantArray1f("weights", 8, weights);
     shader->SetConstantArray2f("sampleOffsets", 8, sampleOffsets);
-    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));	
+    shader->SetConstant2f("texelOffset", Vec2(0.0f, 1.0f / srcTexture->GetHeight()));
     
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -666,7 +666,7 @@ void PP_GaussBlur15x15(const Texture *srcTexture, RenderTarget *tempRT, RenderTa
 void PP_KawaseBlur(const Texture *srcTexture, int iteration, RenderTarget *dstRT) {
     Rect prevViewportRect = glr.GetViewport();
     dstRT->Begin();
-    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));	
+    glr.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
     glr.SetCullFace(Renderer::NoCull);
@@ -729,7 +729,7 @@ void PP_AoBlur(const Texture *aoMap, const Texture *depthTexture, RenderTarget *
     shader->Bind();
     shader->SetTexture("colorMap", tempRT->ColorTexture());
     shader->SetTexture("depthMap", depthTexture);
-    shader->SetConstant2f("texelOffset", Vec2(1.0f / aoMap->GetWidth(), 0.0f));	
+    shader->SetConstant2f("texelOffset", Vec2(1.0f / aoMap->GetWidth(), 0.0f));
     shader->SetConstant2f("projComp", Vec2(projectionMatrix[2][2], projectionMatrix[2][3]));
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
@@ -749,7 +749,7 @@ void PP_LinearizeDepth(const Texture *depthTexture, float zNear, float zFar, Ren
     const Shader *shader = ShaderManager::linearizeDepthShader;
    
     shader->Bind();
-    shader->SetTexture("depthMap", depthTexture);	
+    shader->SetTexture("depthMap", depthTexture);
     shader->SetConstant2f("depthRange", Vec2(zNear, zFar));
     
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
@@ -769,7 +769,7 @@ void PP_CopyCocToAlpha(const Texture *depthTexture, float zFar, RenderTarget *ds
     const Shader *shader = ShaderManager::copyDownscaledCocToAlphaShader;
    
     shader->Bind();
-    shader->SetTexture("depthMap", depthTexture);	
+    shader->SetTexture("depthMap", depthTexture);
     shader->SetConstant2f("maxBlurDistance", Vec2(r_DOF_maxBlurNear.GetFloat(), r_DOF_maxBlurFar.GetFloat()));
     shader->SetConstant1f("focalDistance", r_DOF_focalDistance.GetFloat());
     shader->SetConstant1f("noBlurFraction", r_DOF_noBlurFraction.GetFloat());
@@ -794,7 +794,7 @@ void PP_CopyColorAndCoc(const Texture *colorTexture, const Texture *depthTexture
    
     shader->Bind();
     shader->SetTexture("colorMap", colorTexture);
-    shader->SetTexture("depthMap", depthTexture);	
+    shader->SetTexture("depthMap", depthTexture);
     shader->SetConstant2f("maxBlurDistance", Vec2(r_DOF_maxBlurNear.GetFloat(), r_DOF_maxBlurFar.GetFloat()));
     shader->SetConstant1f("focalDistance", r_DOF_focalDistance.GetFloat());
     shader->SetConstant1f("noBlurFraction", r_DOF_noBlurFraction.GetFloat());
@@ -932,7 +932,7 @@ void PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture,
     shader->SetConstant3f("worldViewPos", cameraPos);
     shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / frameTime);
     shader->SetConstant1f("blurScale", blurScale);
-    shader->SetConstant1f("maxBlur", r_motionBlur_MaxBlur.GetFloat());	
+    shader->SetConstant1f("maxBlur", r_motionBlur_MaxBlur.GetFloat());
     
     shader->SetConstant4x4f("currViewProjectionMatrix", true, viewProjectionMatrix[0]);
     shader->SetConstant4x4f("prevViewProjectionMatrix", true, viewProjectionMatrix[1]);
@@ -959,7 +959,7 @@ void PP_MeasureLuminance(const Texture *srcTexture, const float *screenTc, Rende
         PP_Downscale4x4(lsrc->ColorTexture(), ldst);
 
         lsrc = ldst;
-        ldst = backEnd.ctx->hdrLumAverageRT[i + 1];		
+        ldst = backEnd.ctx->hdrLumAverageRT[i + 1];
     }
 
     // 1x1 로 최종 luminance 값을 구함

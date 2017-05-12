@@ -58,7 +58,7 @@ static void RB_InitLightQueries() {
         backEnd.lightQueries[i].light = nullptr;
         backEnd.lightQueries[i].frameCount = 0;
         backEnd.lightQueries[i].resultSamples = 0;
-    }*/	
+    }*/
 }
 
 static void RB_FreeLightQueries() {
@@ -67,7 +67,7 @@ static void RB_FreeLightQueries() {
     }*/
 }
 
-void RB_Init() {	
+void RB_Init() {
     backEnd.rbsurf.Init();
 
     RB_InitStencilStates();
@@ -388,15 +388,15 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
         DrawSurf *surf = drawSurfs[index];
 
         if (visibilityPtr[2] == 0) {
-            viewEntity_t *entity = surf->entity;
+            const viewEntity_t *space = surf->space;
 
             surf->flags &= ~DrawSurf::AmbientVisible;
 
-            if (entity->def->parms.joints) {
+            if (space->def->parms.joints) {
                 int sameEntityIndex = index + 1;
                 while (sameEntityIndex < numDrawSurfs) {
                     surf = drawSurfs[sameEntityIndex];
-                    if (surf->entity != entity) {
+                    if (surf->space != space) {
                         break;
                     }
 
@@ -412,7 +412,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
 }
 
 static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
-    viewEntity_t *prevEntity = nullptr;
+    const viewEntity_t *prevSpace = nullptr;
 
     // count ambient occludees for culling
     AABB *occludeeAABB = (AABB *)_alloca(numDrawSurfs * sizeof(AABB));
@@ -429,15 +429,15 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
             continue;
         }
 
-        viewEntity_t *entity = surf->entity;
+        const viewEntity_t *space = surf->space;
 
-        if (entity->def->parms.joints) {
-            if (entity == prevEntity) {
+        if (space->def->parms.joints) {
+            if (space == prevSpace) {
                 continue;
             }
-            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(entity->def->GetAABB(), entity->def->parms.origin, entity->def->parms.axis);
+            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(space->def->GetAABB(), space->def->parms.origin, space->def->parms.axis);
         } else {	
-            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(surf->subMesh->GetAABB() * entity->def->parms.scale, entity->def->parms.origin, entity->def->parms.axis);
+            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(surf->subMesh->GetAABB() * space->def->parms.scale, space->def->parms.origin, space->def->parms.axis);
         }
         
         //BE_LOG(L"%.2f %.2f %.2f %.2f\n", nearPlane.a, nearPlane.b, nearPlane.c, nearPlane.d);
@@ -448,7 +448,7 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
         occludeeSurfIndexes[numAmbientOccludees] = i;
         numAmbientOccludees++;
 
-        prevEntity = entity;
+        prevSpace = space;
     }
 
     if (numAmbientOccludees == 0) {
@@ -465,15 +465,15 @@ static void RB_ClearView() {
     
     if (backEnd.view->def->parms.clearMethod == SceneView::DepthOnlyClear) {
         clearBits = Renderer::DepthBit | Renderer::StencilBit;
+
+        glr.SetStateBits(glr.GetStateBits() | Renderer::DepthWrite);
+        glr.Clear(clearBits, Color4::black, 1.0f, 0);
     } else if (backEnd.view->def->parms.clearMethod == SceneView::ColorClear) {
         clearBits = Renderer::DepthBit | Renderer::StencilBit | Renderer::ColorBit;
         Color4 clearColor = backEnd.view->def->parms.clearColor;
 
         glr.SetStateBits(glr.GetStateBits() | Renderer::DepthWrite | Renderer::ColorWrite | Renderer::AlphaWrite);
         glr.Clear(clearBits, clearColor, 1.0f, 0);
-    } else {
-        glr.SetStateBits(glr.GetStateBits() | Renderer::DepthWrite);
-        glr.Clear(clearBits, Color4::black, 1.0f, 0);
     }
 }
 
@@ -494,7 +494,6 @@ static void RB_DrawView() {
         glr.SetViewport(renderRect);
         glr.SetScissor(renderRect);
         glr.SetDepthRange(0, 1);
-
         glr.SetStateBits(Renderer::DepthWrite | Renderer::ColorWrite | Renderer::AlphaWrite);
         glr.Clear(Renderer::ColorBit | Renderer::DepthBit, Color4::white, 1.0f, 0);
 
@@ -511,7 +510,14 @@ static void RB_DrawView() {
 
     RB_ClearView();
 
-    if (!(backEnd.view->def->parms.flags & SceneView::WireFrameMode)) {
+    if (backEnd.view->def->parms.flags & SceneView::WireFrameMode) {
+        RB_DrawTris(backEnd.numDrawSurfs, backEnd.drawSurfs, true);
+
+        // Render debug tools
+        if (!(backEnd.view->def->parms.flags & SceneView::SkipDebugDraw)) {
+            RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+        }
+    } else {
         if (r_HOM.GetBool()) {
             // Render occluder to HiZ occlusion buffer
             RB_RenderOcclusionMap(backEnd.numDrawSurfs, backEnd.drawSurfs);
@@ -564,13 +570,6 @@ static void RB_DrawView() {
         // Render no lighting interaction surfaces
         if (!r_skipFinalPass.GetBool()) {
             RB_FinalPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
-        }
-    } else {
-        RB_DrawTris(backEnd.numDrawSurfs, backEnd.drawSurfs, true);
-
-        // Render debug tools
-        if (!(backEnd.view->def->parms.flags & SceneView::SkipDebugDraw)) {
-            RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
         }
     }
 
@@ -642,8 +641,8 @@ static const void *RB_ExecuteDrawView(const void *data) {
     backEnd.screenRect.Set(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());
 
     // NOTE: glViewport() 의 y 는 밑에서부터 증가되므로 여기서 뒤집어 준다
-    backEnd.renderRect.y	= backEnd.ctx->GetRenderHeight() - backEnd.renderRect.Y2();
-    backEnd.screenRect.y	= backEnd.ctx->GetDeviceHeight() - backEnd.screenRect.Y2();
+    backEnd.renderRect.y    = backEnd.ctx->GetRenderHeight() - backEnd.renderRect.Y2();
+    backEnd.screenRect.y    = backEnd.ctx->GetDeviceHeight() - backEnd.screenRect.Y2();
     
     if (backEnd.view->is2D) {
         RB_Draw2DView();

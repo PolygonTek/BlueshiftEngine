@@ -120,7 +120,7 @@ void Mesh::SortAndMerge() {
             MeshSurf *newSurf = AllocSurface(numNewVerts, numNewIndexes);
             newSurf->materialIndex = surfaces[m0]->materialIndex;
 
-            VertexLightingGeneric *vp = newSurf->subMesh->verts;
+            VertexGenericLit *vp = newSurf->subMesh->verts;
             TriIndex *ip = newSurf->subMesh->indexes;
 
             int filledVertexCount = 0;
@@ -128,7 +128,7 @@ void Mesh::SortAndMerge() {
             for (int i = m0; i <= m1; i++) {
                 MeshSurf *surf = surfaces[i];
 
-                simdProcessor->Memcpy(vp, surf->subMesh->verts, sizeof(VertexLightingGeneric) * surf->subMesh->numVerts);
+                simdProcessor->Memcpy(vp, surf->subMesh->verts, sizeof(VertexGenericLit) * surf->subMesh->numVerts);
                 vp += surf->subMesh->numVerts;
 
                 for (int j = 0; j < surf->subMesh->numIndexes; j++) {

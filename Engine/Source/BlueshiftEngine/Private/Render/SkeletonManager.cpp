@@ -27,7 +27,7 @@ void SkeletonManager::Init() {
 
     skeletonHashMap.Init(1024, 64, 64);
 
-    // create default skeleton
+    // Create default skeleton
     defaultSkeleton = AllocSkeleton("_defaultSkeleton");
     defaultSkeleton->permanence = true;
     defaultSkeleton->CreateDefaultSkeleton();

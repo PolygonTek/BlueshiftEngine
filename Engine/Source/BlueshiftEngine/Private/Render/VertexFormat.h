@@ -26,14 +26,15 @@ BE_NAMESPACE_BEGIN
 
 class VertexFormat {
 public:
-    enum {
+    enum Type {
+        // --- For Debug ---
         Xy,
         XySt,
         XyStr,
         XyzStr,
         Xyz,
         XyzColor,
-        PicXyzStColor,
+        // --- VertexGeneric ---
         GenericXyz,
         GenericXyzSkinning1,
         GenericXyzSkinning4,
@@ -43,21 +44,23 @@ public:
         GenericXyzStSkinning4,
         GenericXyzStSkinning8,
         GenericXyzStColor,
-        GenericXyzColorStSkinning1,
-        GenericXyzColorStSkinning4,
-        GenericXyzColorStSkinning8,
+        GenericXyzStColorSkinning1,
+        GenericXyzStColorSkinning4,
+        GenericXyzStColorSkinning8,
+        // --- VertexGenericLit ---
         GenericXyzNormal,
         GenericXyzNormalSkinning1,
         GenericXyzNormalSkinning4,
         GenericXyzNormalSkinning8,
-        GenericLit,
-        GenericLitSkinning1,
-        GenericLitSkinning4,
-        GenericLitSkinning8,
-        GenericLitColor,
-        GenericLitColorSkinning1,
-        GenericLitColorSkinning4,
-        GenericLitColorSkinning8,
+        GenericXyzStNT,
+        GenericXyzStNTSkinning1,
+        GenericXyzStNTSkinning4,
+        GenericXyzStNTSkinning8,
+        GenericXyzStColorNT,
+        GenericXyzStColorNTSkinning1,
+        GenericXyzStColorNTSkinning4,
+        GenericXyzStColorNTSkinning8,
+        // -----------------------------
         Occludee,
         MaxVertexFormats
     };
@@ -66,6 +69,7 @@ public:
 
     void                    Append(int stream, int offset, Renderer::VertexElement::Usage usage, int components, Renderer::VertexElement::Type type, bool normalize);
     void                    CopyFrom(const VertexFormat &other);
+
     void                    Create();
     void                    Delete();
 

@@ -204,7 +204,7 @@ bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter
         break;
     }
 
-    if (this->allocated) {
+    if (this->alloced) {
         Mem_AlignedFree(this->pic);
     }
 

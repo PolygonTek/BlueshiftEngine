@@ -79,6 +79,8 @@ public:
     static Guid             cylinderMeshGuid;
     static Guid             capsuleMeshGuid;
 
+    static Guid             defaultParticleSystemGuid;
+
     static Guid             defaultSkeletonGuid;
 
     static Guid             defaultAnimControllerGuid;

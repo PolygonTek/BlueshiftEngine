@@ -25,58 +25,58 @@ void Mesh::CreateDefaultBox() {
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    VertexLightingGeneric *v = surf->subMesh->verts;
+    VertexGenericLit *v = surf->subMesh->verts;
     // 아래
-    v[0].xyz.Set(-10.0f, -10.0f,  0.0f); v[0].SetTexCoord(0.0f, 1.0f); v[0].SetNormal(0.0f, 0.0f, -1.0f); v[0].SetColor(0xffffffff);
-    v[1].xyz.Set(-10.0f,  10.0f,  0.0f); v[1].SetTexCoord(1.0f, 1.0f); v[1].SetNormal(0.0f, 0.0f, -1.0f); v[1].SetColor(0xffffffff);	
-    v[2].xyz.Set( 10.0f,  10.0f,  0.0f); v[2].SetTexCoord(1.0f, 0.0f); v[2].SetNormal(0.0f, 0.0f, -1.0f); v[2].SetColor(0xffffffff);
-    v[3].xyz.Set( 10.0f, -10.0f,  0.0f); v[3].SetTexCoord(0.0f, 0.0f); v[3].SetNormal(0.0f, 0.0f, -1.0f); v[3].SetColor(0xffffffff);
+    v[0].SetPosition(-10.0f, -10.0f,  0.0f); v[0].SetTexCoord(0.0f, 1.0f); v[0].SetNormal(0.0f, 0.0f, -1.0f); v[0].SetColor(0xffffffff);
+    v[1].SetPosition(-10.0f,  10.0f,  0.0f); v[1].SetTexCoord(1.0f, 1.0f); v[1].SetNormal(0.0f, 0.0f, -1.0f); v[1].SetColor(0xffffffff);
+    v[2].SetPosition( 10.0f,  10.0f,  0.0f); v[2].SetTexCoord(1.0f, 0.0f); v[2].SetNormal(0.0f, 0.0f, -1.0f); v[2].SetColor(0xffffffff);
+    v[3].SetPosition( 10.0f, -10.0f,  0.0f); v[3].SetTexCoord(0.0f, 0.0f); v[3].SetNormal(0.0f, 0.0f, -1.0f); v[3].SetColor(0xffffffff);
     
     // 위
-    v[4].xyz.Set( 10.0f, -10.0f, 20.0f); v[4].SetTexCoord(0.0f, 1.0f); v[4].SetNormal(0.0f, 0.0f,  1.0f); v[4].SetColor(0xffffffff);
-    v[5].xyz.Set( 10.0f,  10.0f, 20.0f); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetNormal(0.0f, 0.0f,  1.0f); v[5].SetColor(0xffffffff);	
-    v[6].xyz.Set(-10.0f,  10.0f, 20.0f); v[6].SetTexCoord(1.0f, 0.0f); v[6].SetNormal(0.0f, 0.0f,  1.0f); v[6].SetColor(0xffffffff);
-    v[7].xyz.Set(-10.0f, -10.0f, 20.0f); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetNormal(0.0f, 0.0f,  1.0f); v[7].SetColor(0xffffffff);	
+    v[4].SetPosition( 10.0f, -10.0f, 20.0f); v[4].SetTexCoord(0.0f, 1.0f); v[4].SetNormal(0.0f, 0.0f,  1.0f); v[4].SetColor(0xffffffff);
+    v[5].SetPosition( 10.0f,  10.0f, 20.0f); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetNormal(0.0f, 0.0f,  1.0f); v[5].SetColor(0xffffffff);	
+    v[6].SetPosition(-10.0f,  10.0f, 20.0f); v[6].SetTexCoord(1.0f, 0.0f); v[6].SetNormal(0.0f, 0.0f,  1.0f); v[6].SetColor(0xffffffff);
+    v[7].SetPosition(-10.0f, -10.0f, 20.0f); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetNormal(0.0f, 0.0f,  1.0f); v[7].SetColor(0xffffffff);	
     
     // 앞
-    v[8].xyz.Set( 10.0f, -10.0f,  0.0f); v[8].SetTexCoord(0.0f, 1.0f); v[8].SetNormal(1.0f, 0.0f, 0.0f); v[8].SetColor(0xffffffff);
-    v[9].xyz.Set( 10.0f,  10.0f,  0.0f); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetNormal(1.0f, 0.0f, 0.0f); v[9].SetColor(0xffffffff);	
-    v[10].xyz.Set(10.0f,  10.0f, 20.0f); v[10].SetTexCoord(1.0f, 0.0f); v[10].SetNormal(1.0f, 0.0f, 0.0f); v[10].SetColor(0xffffffff);
-    v[11].xyz.Set(10.0f, -10.0f, 20.0f); v[11].SetTexCoord(0.0f, 0.0f); v[11].SetNormal(1.0f, 0.0f, 0.0f); v[11].SetColor(0xffffffff);	
+    v[8].SetPosition( 10.0f, -10.0f,  0.0f); v[8].SetTexCoord(0.0f, 1.0f); v[8].SetNormal(1.0f, 0.0f, 0.0f); v[8].SetColor(0xffffffff);
+    v[9].SetPosition( 10.0f,  10.0f,  0.0f); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetNormal(1.0f, 0.0f, 0.0f); v[9].SetColor(0xffffffff);	
+    v[10].SetPosition(10.0f,  10.0f, 20.0f); v[10].SetTexCoord(1.0f, 0.0f); v[10].SetNormal(1.0f, 0.0f, 0.0f); v[10].SetColor(0xffffffff);
+    v[11].SetPosition(10.0f, -10.0f, 20.0f); v[11].SetTexCoord(0.0f, 0.0f); v[11].SetNormal(1.0f, 0.0f, 0.0f); v[11].SetColor(0xffffffff);	
     
     // 오른
-    v[12].xyz.Set( 10.0f,  10.0f,  0.0f); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetNormal(0.0f, 1.0f, 0.0f); v[12].SetColor(0xffffffff);	
-    v[13].xyz.Set(-10.0f,  10.0f,  0.0f); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetNormal(0.0f, 1.0f, 0.0f); v[13].SetColor(0xffffffff);	
-    v[14].xyz.Set(-10.0f,  10.0f, 20.0f); v[14].SetTexCoord(1.0f, 0.0f); v[14].SetNormal(0.0f, 1.0f, 0.0f); v[14].SetColor(0xffffffff);
-    v[15].xyz.Set( 10.0f,  10.0f, 20.0f); v[15].SetTexCoord(0.0f, 0.0f); v[15].SetNormal(0.0f, 1.0f, 0.0f); v[15].SetColor(0xffffffff);
+    v[12].SetPosition( 10.0f,  10.0f,  0.0f); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetNormal(0.0f, 1.0f, 0.0f); v[12].SetColor(0xffffffff);	
+    v[13].SetPosition(-10.0f,  10.0f,  0.0f); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetNormal(0.0f, 1.0f, 0.0f); v[13].SetColor(0xffffffff);	
+    v[14].SetPosition(-10.0f,  10.0f, 20.0f); v[14].SetTexCoord(1.0f, 0.0f); v[14].SetNormal(0.0f, 1.0f, 0.0f); v[14].SetColor(0xffffffff);
+    v[15].SetPosition( 10.0f,  10.0f, 20.0f); v[15].SetTexCoord(0.0f, 0.0f); v[15].SetNormal(0.0f, 1.0f, 0.0f); v[15].SetColor(0xffffffff);
     
     // 뒤
-    v[16].xyz.Set(-10.0f,  10.0f,  0.0f); v[16].SetTexCoord(0.0f, 1.0f); v[16].SetNormal(-1.0f, 0.0f, 0.0f); v[16].SetColor(0xffffffff);
-    v[17].xyz.Set(-10.0f, -10.0f,  0.0f); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetNormal(-1.0f, 0.0f, 0.0f); v[17].SetColor(0xffffffff);	
-    v[18].xyz.Set(-10.0f, -10.0f, 20.0f); v[18].SetTexCoord(1.0f, 0.0f); v[18].SetNormal(-1.0f, 0.0f, 0.0f); v[18].SetColor(0xffffffff);
-    v[19].xyz.Set(-10.0f,  10.0f, 20.0f); v[19].SetTexCoord(0.0f, 0.0f); v[19].SetNormal(-1.0f, 0.0f, 0.0f); v[19].SetColor(0xffffffff);
+    v[16].SetPosition(-10.0f,  10.0f,  0.0f); v[16].SetTexCoord(0.0f, 1.0f); v[16].SetNormal(-1.0f, 0.0f, 0.0f); v[16].SetColor(0xffffffff);
+    v[17].SetPosition(-10.0f, -10.0f,  0.0f); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetNormal(-1.0f, 0.0f, 0.0f); v[17].SetColor(0xffffffff);	
+    v[18].SetPosition(-10.0f, -10.0f, 20.0f); v[18].SetTexCoord(1.0f, 0.0f); v[18].SetNormal(-1.0f, 0.0f, 0.0f); v[18].SetColor(0xffffffff);
+    v[19].SetPosition(-10.0f,  10.0f, 20.0f); v[19].SetTexCoord(0.0f, 0.0f); v[19].SetNormal(-1.0f, 0.0f, 0.0f); v[19].SetColor(0xffffffff);
     
     // 왼
-    v[20].xyz.Set(-10.0f, -10.0f,  0.0f); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetNormal(0.0f, -1.0f, 0.0f); v[20].SetColor(0xffffffff);
-    v[21].xyz.Set( 10.0f, -10.0f,  0.0f); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetNormal(0.0f, -1.0f, 0.0f); v[21].SetColor(0xffffffff);		
-    v[22].xyz.Set( 10.0f, -10.0f, 20.0f); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetNormal(0.0f, -1.0f, 0.0f); v[22].SetColor(0xffffffff);
-    v[23].xyz.Set(-10.0f, -10.0f, 20.0f); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);
+    v[20].SetPosition(-10.0f, -10.0f,  0.0f); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetNormal(0.0f, -1.0f, 0.0f); v[20].SetColor(0xffffffff);
+    v[21].SetPosition( 10.0f, -10.0f,  0.0f); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetNormal(0.0f, -1.0f, 0.0f); v[21].SetColor(0xffffffff);		
+    v[22].SetPosition( 10.0f, -10.0f, 20.0f); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetNormal(0.0f, -1.0f, 0.0f); v[22].SetColor(0xffffffff);
+    v[23].SetPosition(-10.0f, -10.0f, 20.0f); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);
         
     TriIndex *idx = surf->subMesh->indexes;
-    idx[0] = 0;		idx[1] = 1;		idx[2] = 2;
-    idx[3] = 2;		idx[4] = 3;		idx[5] = 0;
-    idx[6] = 4;		idx[7] = 5;		idx[8] = 6;
-    idx[9] = 6;		idx[10] = 7;	idx[11] = 4;
-    idx[12] = 8;	idx[13] = 9;	idx[14] = 10;
-    idx[15] = 10;	idx[16] = 11;	idx[17] = 8;
-    idx[18] = 12;	idx[19] = 13;	idx[20] = 14;
-    idx[21] = 14;	idx[22] = 15;	idx[23] = 12;
-    idx[24] = 16;	idx[25] = 17;	idx[26] = 18;
-    idx[27] = 18;	idx[28] = 19;	idx[29] = 16;
-    idx[30] = 20;	idx[31] = 21;	idx[32] = 22;
-    idx[33] = 22;	idx[34] = 23;	idx[35] = 20;
+    idx[0] = 0;     idx[1] = 1;     idx[2] = 2;
+    idx[3] = 2;     idx[4] = 3;     idx[5] = 0;
+    idx[6] = 4;     idx[7] = 5;     idx[8] = 6;
+    idx[9] = 6;     idx[10] = 7;    idx[11] = 4;
+    idx[12] = 8;    idx[13] = 9;    idx[14] = 10;
+    idx[15] = 10;   idx[16] = 11;   idx[17] = 8;
+    idx[18] = 12;   idx[19] = 13;   idx[20] = 14;
+    idx[21] = 14;   idx[22] = 15;   idx[23] = 12;
+    idx[24] = 16;   idx[25] = 17;   idx[26] = 18;
+    idx[27] = 18;   idx[28] = 19;   idx[29] = 16;
+    idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
+    idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
     
-    FinishSurfaces(Mesh::ComputeTangentsFlag);
+    FinishSurfaces(ComputeTangentsFlag | UseUnsmoothedTangentsFlag);
 }
 
 void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int numSegments) {
@@ -91,19 +91,19 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    VertexLightingGeneric *v = surf->subMesh->verts;
+    VertexGenericLit *v = surf->subMesh->verts;
 
     for (int i = 0; i < numSegments + 1; i++) { // y
         for (int j = 0; j < numSegments + 1; j++) { // x
-            float x = size * ((float)j / numSegments - 0.5f);
             float y = size * ((float)i / numSegments - 0.5f);
+            float x = size * ((float)j / numSegments - 0.5f);
             float s = (float)i / numSegments;
             float t = (float)j / numSegments;
 
-            v->xyz.Set(x, y, 0);
-            v->SetNormal(Vec3(0, 0, 1));
-            v->SetTangent(Vec3(1, 0, 0));
-            v->SetBiTangent(Vec3(0, 1, 0));
+            v->SetPosition(x, y, 0);
+            v->SetNormal(0, 0, 1);
+            v->SetTangent(0, 1, 0);
+            v->SetBiTangent(1, 0, 0);
             v->SetTexCoord(s, t);
             v->SetColor(0xffffffff);
             v++;
@@ -123,7 +123,7 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
             *idx++ = b + 1;
             *idx++ = c;
             
-            *idx++ = c;            
+            *idx++ = c;
             *idx++ = b + 1;
             *idx++ = c + 1;
         }
@@ -143,58 +143,58 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    VertexLightingGeneric *v = surf->subMesh->verts;
+    VertexGenericLit *v = surf->subMesh->verts;
     // 아래
-    v[0].xyz.Set(-extents[0], -extents[1], -extents[2]); v[0].SetTexCoord(0.0f, 1.0f); v[0].SetNormal(0.0f, 0.0f, -1.0f); v[0].SetColor(0xffffffff);
-    v[1].xyz.Set(-extents[0],  extents[1], -extents[2]); v[1].SetTexCoord(1.0f, 1.0f); v[1].SetNormal(0.0f, 0.0f, -1.0f); v[1].SetColor(0xffffffff);
-    v[2].xyz.Set( extents[0],  extents[1], -extents[2]); v[2].SetTexCoord(1.0f, 0.0f); v[2].SetNormal(0.0f, 0.0f, -1.0f); v[2].SetColor(0xffffffff);
-    v[3].xyz.Set( extents[0], -extents[1], -extents[2]); v[3].SetTexCoord(0.0f, 0.0f); v[3].SetNormal(0.0f, 0.0f, -1.0f); v[3].SetColor(0xffffffff);
+    v[0].SetPosition(-extents[0], -extents[1], -extents[2]); v[0].SetTexCoord(0.0f, 1.0f); v[0].SetNormal(0.0f, 0.0f, -1.0f); v[0].SetColor(0xffffffff);
+    v[1].SetPosition(-extents[0],  extents[1], -extents[2]); v[1].SetTexCoord(1.0f, 1.0f); v[1].SetNormal(0.0f, 0.0f, -1.0f); v[1].SetColor(0xffffffff);
+    v[2].SetPosition( extents[0],  extents[1], -extents[2]); v[2].SetTexCoord(1.0f, 0.0f); v[2].SetNormal(0.0f, 0.0f, -1.0f); v[2].SetColor(0xffffffff);
+    v[3].SetPosition( extents[0], -extents[1], -extents[2]); v[3].SetTexCoord(0.0f, 0.0f); v[3].SetNormal(0.0f, 0.0f, -1.0f); v[3].SetColor(0xffffffff);
     
     // 위
-    v[4].xyz.Set( extents[0], -extents[1],  extents[2]); v[4].SetTexCoord(0.0f, 1.0f); v[4].SetNormal(0.0f, 0.0f,  1.0f); v[4].SetColor(0xffffffff);
-    v[5].xyz.Set( extents[0],  extents[1],  extents[2]); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetNormal(0.0f, 0.0f,  1.0f); v[5].SetColor(0xffffffff);	
-    v[6].xyz.Set(-extents[0],  extents[1],  extents[2]); v[6].SetTexCoord(1.0f, 0.0f); v[6].SetNormal(0.0f, 0.0f,  1.0f); v[6].SetColor(0xffffffff);
-    v[7].xyz.Set(-extents[0], -extents[1],  extents[2]); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetNormal(0.0f, 0.0f,  1.0f); v[7].SetColor(0xffffffff);
+    v[4].SetPosition( extents[0], -extents[1],  extents[2]); v[4].SetTexCoord(0.0f, 1.0f); v[4].SetNormal(0.0f, 0.0f,  1.0f); v[4].SetColor(0xffffffff);
+    v[5].SetPosition( extents[0],  extents[1],  extents[2]); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetNormal(0.0f, 0.0f,  1.0f); v[5].SetColor(0xffffffff);	
+    v[6].SetPosition(-extents[0],  extents[1],  extents[2]); v[6].SetTexCoord(1.0f, 0.0f); v[6].SetNormal(0.0f, 0.0f,  1.0f); v[6].SetColor(0xffffffff);
+    v[7].SetPosition(-extents[0], -extents[1],  extents[2]); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetNormal(0.0f, 0.0f,  1.0f); v[7].SetColor(0xffffffff);
 
     // 앞
-    v[8].xyz.Set( extents[0], -extents[1], -extents[2]); v[8].SetTexCoord(0.0f, 1.0f); v[8].SetNormal(1.0f, 0.0f, 0.0f); v[8].SetColor(0xffffffff);
-    v[9].xyz.Set( extents[0],  extents[1], -extents[2]); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetNormal(1.0f, 0.0f, 0.0f); v[9].SetColor(0xffffffff);	
-    v[10].xyz.Set(extents[0],  extents[1],  extents[2]); v[10].SetTexCoord(1.0f, 0.0f); v[10].SetNormal(1.0f, 0.0f, 0.0f); v[10].SetColor(0xffffffff);
-    v[11].xyz.Set(extents[0], -extents[1],  extents[2]); v[11].SetTexCoord(0.0f, 0.0f); v[11].SetNormal(1.0f, 0.0f, 0.0f); v[11].SetColor(0xffffffff);
+    v[8].SetPosition( extents[0], -extents[1], -extents[2]); v[8].SetTexCoord(0.0f, 1.0f); v[8].SetNormal(1.0f, 0.0f, 0.0f); v[8].SetColor(0xffffffff);
+    v[9].SetPosition( extents[0],  extents[1], -extents[2]); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetNormal(1.0f, 0.0f, 0.0f); v[9].SetColor(0xffffffff);	
+    v[10].SetPosition(extents[0],  extents[1],  extents[2]); v[10].SetTexCoord(1.0f, 0.0f); v[10].SetNormal(1.0f, 0.0f, 0.0f); v[10].SetColor(0xffffffff);
+    v[11].SetPosition(extents[0], -extents[1],  extents[2]); v[11].SetTexCoord(0.0f, 0.0f); v[11].SetNormal(1.0f, 0.0f, 0.0f); v[11].SetColor(0xffffffff);
     
     // 오른
-    v[12].xyz.Set( extents[0], extents[1], -extents[2]); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetNormal(0.0f, 1.0f, 0.0f); v[12].SetColor(0xffffffff);	
-    v[13].xyz.Set(-extents[0], extents[1], -extents[2]); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetNormal(0.0f, 1.0f, 0.0f); v[13].SetColor(0xffffffff);
-    v[14].xyz.Set(-extents[0], extents[1],  extents[2]); v[14].SetTexCoord(1.0f, 0.0f); v[14].SetNormal(0.0f, 1.0f, 0.0f); v[14].SetColor(0xffffffff);
-    v[15].xyz.Set( extents[0], extents[1],  extents[2]); v[15].SetTexCoord(0.0f, 0.0f); v[15].SetNormal(0.0f, 1.0f, 0.0f); v[15].SetColor(0xffffffff);
+    v[12].SetPosition( extents[0], extents[1], -extents[2]); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetNormal(0.0f, 1.0f, 0.0f); v[12].SetColor(0xffffffff);	
+    v[13].SetPosition(-extents[0], extents[1], -extents[2]); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetNormal(0.0f, 1.0f, 0.0f); v[13].SetColor(0xffffffff);
+    v[14].SetPosition(-extents[0], extents[1],  extents[2]); v[14].SetTexCoord(1.0f, 0.0f); v[14].SetNormal(0.0f, 1.0f, 0.0f); v[14].SetColor(0xffffffff);
+    v[15].SetPosition( extents[0], extents[1],  extents[2]); v[15].SetTexCoord(0.0f, 0.0f); v[15].SetNormal(0.0f, 1.0f, 0.0f); v[15].SetColor(0xffffffff);
     
     // 뒤
-    v[16].xyz.Set(-extents[0],  extents[1], -extents[2]); v[16].SetTexCoord(0.0f, 1.0f); v[16].SetNormal(-1.0f, 0.0f, 0.0f); v[16].SetColor(0xffffffff);
-    v[17].xyz.Set(-extents[0], -extents[1], -extents[2]); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetNormal(-1.0f, 0.0f, 0.0f); v[17].SetColor(0xffffffff);
-    v[18].xyz.Set(-extents[0], -extents[1],  extents[2]); v[18].SetTexCoord(1.0f, 0.0f); v[18].SetNormal(-1.0f, 0.0f, 0.0f); v[18].SetColor(0xffffffff);
-    v[19].xyz.Set(-extents[0],  extents[1],  extents[2]); v[19].SetTexCoord(0.0f, 0.0f); v[19].SetNormal(-1.0f, 0.0f, 0.0f); v[19].SetColor(0xffffffff);
+    v[16].SetPosition(-extents[0],  extents[1], -extents[2]); v[16].SetTexCoord(0.0f, 1.0f); v[16].SetNormal(-1.0f, 0.0f, 0.0f); v[16].SetColor(0xffffffff);
+    v[17].SetPosition(-extents[0], -extents[1], -extents[2]); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetNormal(-1.0f, 0.0f, 0.0f); v[17].SetColor(0xffffffff);
+    v[18].SetPosition(-extents[0], -extents[1],  extents[2]); v[18].SetTexCoord(1.0f, 0.0f); v[18].SetNormal(-1.0f, 0.0f, 0.0f); v[18].SetColor(0xffffffff);
+    v[19].SetPosition(-extents[0],  extents[1],  extents[2]); v[19].SetTexCoord(0.0f, 0.0f); v[19].SetNormal(-1.0f, 0.0f, 0.0f); v[19].SetColor(0xffffffff);
     
     // 왼
-    v[20].xyz.Set(-extents[0], -extents[1], -extents[2]); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetNormal(0.0f, -1.0f, 0.0f); v[20].SetColor(0xffffffff);
-    v[21].xyz.Set( extents[0], -extents[1], -extents[2]); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetNormal(0.0f, -1.0f, 0.0f); v[21].SetColor(0xffffffff);
-    v[22].xyz.Set( extents[0], -extents[1],  extents[2]); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetNormal(0.0f, -1.0f, 0.0f); v[22].SetColor(0xffffffff);
-    v[23].xyz.Set(-extents[0], -extents[1],  extents[2]); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);	
+    v[20].SetPosition(-extents[0], -extents[1], -extents[2]); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetNormal(0.0f, -1.0f, 0.0f); v[20].SetColor(0xffffffff);
+    v[21].SetPosition( extents[0], -extents[1], -extents[2]); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetNormal(0.0f, -1.0f, 0.0f); v[21].SetColor(0xffffffff);
+    v[22].SetPosition( extents[0], -extents[1],  extents[2]); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetNormal(0.0f, -1.0f, 0.0f); v[22].SetColor(0xffffffff);
+    v[23].SetPosition(-extents[0], -extents[1],  extents[2]); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);	
         
     TriIndex *idx = surf->subMesh->indexes;
-    idx[0] = 0;		idx[1] = 1;		idx[2] = 2;
-    idx[3] = 2;		idx[4] = 3;		idx[5] = 0;
-    idx[6] = 4;		idx[7] = 5;		idx[8] = 6;
-    idx[9] = 6;		idx[10] = 7;	idx[11] = 4;
-    idx[12] = 8;	idx[13] = 9;	idx[14] = 10;
-    idx[15] = 10;	idx[16] = 11;	idx[17] = 8;
-    idx[18] = 12;	idx[19] = 13;	idx[20] = 14;
-    idx[21] = 14;	idx[22] = 15;	idx[23] = 12;
-    idx[24] = 16;	idx[25] = 17;	idx[26] = 18;
-    idx[27] = 18;	idx[28] = 19;	idx[29] = 16;
-    idx[30] = 20;	idx[31] = 21;	idx[32] = 22;
-    idx[33] = 22;	idx[34] = 23;	idx[35] = 20;
+    idx[0] = 0;     idx[1] = 1;     idx[2] = 2;
+    idx[3] = 2;     idx[4] = 3;     idx[5] = 0;
+    idx[6] = 4;     idx[7] = 5;     idx[8] = 6;
+    idx[9] = 6;     idx[10] = 7;    idx[11] = 4;
+    idx[12] = 8;    idx[13] = 9;    idx[14] = 10;
+    idx[15] = 10;   idx[16] = 11;   idx[17] = 8;
+    idx[18] = 12;   idx[19] = 13;   idx[20] = 14;
+    idx[21] = 14;   idx[22] = 15;   idx[23] = 12;
+    idx[24] = 16;   idx[25] = 17;   idx[26] = 18;
+    idx[27] = 18;   idx[28] = 19;   idx[29] = 16;
+    idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
+    idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
     
-    FinishSurfaces(ComputeTangentsFlag);
+    FinishSurfaces(ComputeTangentsFlag | UseUnsmoothedTangentsFlag);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, origin);
@@ -218,7 +218,7 @@ void Mesh::CreateSphere(const Vec3 &origin, float radius, int numSegments) {
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    VertexLightingGeneric *v = surf->subMesh->verts;
+    VertexGenericLit *v = surf->subMesh->verts;
 
     for (int i = 0; i < numLat; i++) {
         float phi = Math::Pi * i / (numLat - 1); // 0 ~ pi
@@ -236,7 +236,7 @@ void Mesh::CreateSphere(const Vec3 &origin, float radius, int numSegments) {
             float s = theta * Math::InvPi;
             float t = phi * Math::InvPi;
 
-            v->xyz.Set(x, y, z);
+            v->SetPosition(x, y, z);
             v->SetNormal(x * invR, y * invR, cp);
             v->SetTangent(st * cp, ct * sp, st);
             v->SetBiTangent(v->GetNormal().Cross(v->GetTangent()));
@@ -300,7 +300,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    VertexLightingGeneric *v = surf->subMesh->verts;
+    VertexGenericLit *v = surf->subMesh->verts;
     for (int i = 0; i < COUNT_OF(icosa_verts); i++) {
         Vec3 n = icosa_verts[i];
         n.Normalize();
@@ -309,7 +309,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
         float s = theta * Math::InvPi;
         float t = phi * Math::InvPi;
 
-        v->xyz = icosa_verts[i] * radius;
+        v->SetPosition(icosa_verts[i] * radius);
         v->SetNormal(n);
         v->SetTexCoord(s, t);
         v->SetColor(0xffffffff);
@@ -346,11 +346,11 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    VertexLightingGeneric *v = surf->subMesh->verts;
+    VertexGenericLit *v = surf->subMesh->verts;
 
     // top cap, bottom cap verts
     for (int i = 0; i < 2; i++) {
-        v->xyz = n[i] * half_height;
+        v->SetPosition(n[i] * half_height);
         v->SetNormal(n[i]);
         v->SetTexCoord(0.5f, 0.5f);
         v->SetColor(0xffffffff);
@@ -365,7 +365,7 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
             float s = st * 0.5f + 0.5f;
             float t = ct * 0.5f + 0.5f;
 
-            v->xyz = n[i] * half_height + Vec3(x, y, 0);
+            v->SetPosition(n[i] * half_height + Vec3(x, y, 0));
             v->SetNormal(n[i]);
             v->SetTexCoord(s, t);
             v->SetColor(0xffffffff);
@@ -383,13 +383,13 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
         float s = theta * Math::InvPi;
         Vec3 n = Vec3(ct, st, 0);
 
-        v->xyz = Vec3(x, y, half_height);
+        v->SetPosition(x, y, half_height);
         v->SetNormal(n);
         v->SetTexCoord(s, 0.0f);
         v->SetColor(0xffffffff);
         v++;
 
-        v->xyz = Vec3(x, y, -half_height);
+        v->SetPosition(x, y, -half_height);
         v->SetNormal(n);
         v->SetTexCoord(s, 1.0f);
         v->SetColor(0xffffffff);
@@ -458,7 +458,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    VertexLightingGeneric *v = surf->subMesh->verts;
+    VertexGenericLit *v = surf->subMesh->verts;
 
     for (int i = 0; i < numLat; i++) {
         float phi = Math::HalfPi * i / (numLat - 1); // 0 ~ pi/2
@@ -476,7 +476,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
             float y = st * zr;
             float s = theta * Math::InvPi;
 
-            v->xyz.Set(x, y, z + half_height);
+            v->SetPosition(x, y, z + half_height);
             v->SetNormal(x * invR, y * invR, cp);
             v->SetTangent(st * cp, ct * sp, st);
             v->SetBiTangent(v->GetNormal().Cross(v->GetTangent()));
@@ -502,7 +502,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
             float y = st * zr;
             float s = theta * Math::InvPi;
 
-            v->xyz.Set(x, y, z - half_height);
+            v->SetPosition(x, y, z - half_height);
             v->SetNormal(x * invR, y * invR, cp);
             v->SetTangent(st * cp, ct * sp, st);
             v->SetBiTangent(v->GetNormal().Cross(v->GetTangent()));

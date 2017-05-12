@@ -37,7 +37,7 @@ int SubMesh::Allocated() const {
     if (edges) {
         size += sizeof(edges[0]) * numEdges;
     }
-    if (ambientCache) {
+    if (vertexCache) {
         size += sizeof(BufferCache);
     }
     if (indexCache) {
@@ -57,7 +57,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
     this->refSubMesh                = nullptr;
 
     this->numVerts                  = numVerts;
-    this->verts                     = (VertexLightingGeneric *)Mem_Alloc16(sizeof(VertexLightingGeneric) * numVerts);
+    this->verts                     = (VertexGenericLit *)Mem_Alloc16(sizeof(VertexGenericLit) * numVerts);
     this->numMirroredVerts          = 0;
     this->mirroredVerts             = nullptr;
 
@@ -77,7 +77,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
     this->useGpuSkinning            = false;
     this->gpuSkinningVersionIndex   = 0;
 
-    this->ambientCache              = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
+    this->vertexCache               = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
     this->indexCache                = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
 }
 
@@ -117,15 +117,15 @@ void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
     if (this->type == Mesh::StaticMesh || this->useGpuSkinning) {
         this->verts                 = ref->verts;
 
-        this->ambientCache          = ref->ambientCache;
+        this->vertexCache           = ref->vertexCache;
         this->indexCache            = ref->indexCache;
     } else {
-        this->verts                 = (VertexLightingGeneric *)Mem_Alloc16(sizeof(VertexLightingGeneric) * ref->numVerts);
+        this->verts                 = (VertexGenericLit *)Mem_Alloc16(sizeof(VertexGenericLit) * ref->numVerts);
 
-        this->ambientCache          = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
+        this->vertexCache           = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
         this->indexCache            = nullptr;
 
-        simdProcessor->Memcpy(this->verts, ref->verts, sizeof(VertexLightingGeneric) * ref->numVerts);
+        simdProcessor->Memcpy(this->verts, ref->verts, sizeof(VertexGenericLit) * ref->numVerts);
     }
 }
 
@@ -137,8 +137,8 @@ void SubMesh::FreeSubMesh() {
     alloced = false;
 
     if (type == Mesh::ReferenceMesh) {
-        if (ambientCache->buffer != Renderer::NullBuffer) {
-            glr.DeleteBuffer(ambientCache->buffer);
+        if (vertexCache->buffer != Renderer::NullBuffer) {
+            glr.DeleteBuffer(vertexCache->buffer);
         }
 
         if (indexCache->buffer != Renderer::NullBuffer) {
@@ -155,36 +155,36 @@ void SubMesh::FreeSubMesh() {
         Mem_AlignedFree(jointWeightVerts);
         Mem_AlignedFree(vertWeights);
 
-        Mem_Free(ambientCache);
+        Mem_Free(vertexCache);
         Mem_Free(indexCache);
         return;
     }
 
     if (type == Mesh::DynamicMesh || (type == Mesh::SkinnedMesh && !useGpuSkinning)) {
         Mem_AlignedFree(verts);
-        Mem_Free(ambientCache);
+        Mem_Free(vertexCache);
     }
 }
 
 void SubMesh::CacheStaticDataToGpu() {
     // Fill in static vertex buffer
-    if (!bufferCacheManager.IsCached(ambientCache)) {
+    if (!bufferCacheManager.IsCached(vertexCache)) {
         // skinning subMesh 라면 vertex weight 값을 vertex buffer 뒤에 write 한다
-        if (vertWeights) {//surfEntity->def->parms.joints && useGpuSkinning) {
+        if (vertWeights) {//surfSpace->def->parms.joints && useGpuSkinning) {
             int sizeofVertWeight = VertexWeightSize();
-            int size = sizeof(VertexLightingGeneric) * numVerts + sizeofVertWeight * numVerts;
+            int size = sizeof(VertexGenericLit) * numVerts + sizeofVertWeight * numVerts;
             
-            bufferCacheManager.AllocStaticVertex(size, nullptr, ambientCache);
+            bufferCacheManager.AllocStaticVertex(size, nullptr, vertexCache);
 
-            glr.BindBuffer(Renderer::VertexBuffer, ambientCache->buffer);
-            byte *ptr = (byte *)glr.MapBufferRange(ambientCache->buffer, Renderer::WriteOnly, 0, size);
+            glr.BindBuffer(Renderer::VertexBuffer, vertexCache->buffer);
+            byte *ptr = (byte *)glr.MapBufferRange(vertexCache->buffer, Renderer::WriteOnly, 0, size);
 
-            simdProcessor->Memcpy(ptr, verts, sizeof(VertexLightingGeneric) * numVerts);
-            simdProcessor->Memcpy(ptr + sizeof(VertexLightingGeneric) * numVerts, vertWeights, sizeofVertWeight * numVerts);
+            simdProcessor->Memcpy(ptr, verts, sizeof(VertexGenericLit) * numVerts);
+            simdProcessor->Memcpy(ptr + sizeof(VertexGenericLit) * numVerts, vertWeights, sizeofVertWeight * numVerts);
 
-            glr.UnmapBuffer(ambientCache->buffer);
+            glr.UnmapBuffer(vertexCache->buffer);
         } else {
-            bufferCacheManager.AllocStaticVertex(numVerts * sizeof(VertexLightingGeneric), verts, ambientCache);
+            bufferCacheManager.AllocStaticVertex(numVerts * sizeof(VertexGenericLit), verts, vertexCache);
         }
     }
 
@@ -195,39 +195,41 @@ void SubMesh::CacheStaticDataToGpu() {
 }
 
 void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *material) {
-    if (!bufferCacheManager.IsCached(ambientCache)) {
-        if (joints) {
-            simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
-        }
-
-        bool unsmoothedTangents = false;
-        if (r_useUnsmoothedTangents.GetBool() && (material->GetFlags() & Material::UnsmoothTangents)) {
-            unsmoothedTangents = true;
-        }
-
-        ComputeTangents(true, unsmoothedTangents);
-
-        FixMirroredVerts();
-
-        // Fill in dynamic vertex buffer
-        bufferCacheManager.AllocVertex(numVerts, sizeof(VertexLightingGeneric), verts, ambientCache);
-
-        int filledVertexCount = ambientCache->offset / sizeof(VertexLightingGeneric);
-
-        // Fill in dynamic index buffer
-        bufferCacheManager.AllocIndex(numIndexes, sizeof(TriIndex), nullptr, indexCache);
-
-        TriIndex *dst_idxptr = (TriIndex *)bufferCacheManager.MapIndexBuffer(indexCache);
-        TriIndex *src_idxptr = indexes;
-
-        for (int i = 0; i < numIndexes; i += 3, dst_idxptr += 3, src_idxptr += 3) {
-            dst_idxptr[0] = filledVertexCount + src_idxptr[0];
-            dst_idxptr[1] = filledVertexCount + src_idxptr[1];
-            dst_idxptr[2] = filledVertexCount + src_idxptr[2];
-        }
-
-        bufferCacheManager.UnmapIndexBuffer(indexCache);
+    if (bufferCacheManager.IsCached(vertexCache)) {
+        return;
     }
+
+    if (joints) {
+        simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
+    }
+
+    bool unsmoothedTangents = false;
+    if (r_useUnsmoothedTangents.GetBool() && (material->GetFlags() & Material::UnsmoothTangents)) {
+        unsmoothedTangents = true;
+    }
+
+    ComputeTangents(true, unsmoothedTangents);
+
+    FixMirroredVerts();
+
+    // Fill in dynamic vertex buffer
+    bufferCacheManager.AllocVertex(numVerts, sizeof(VertexGenericLit), verts, vertexCache);
+
+    int filledVertexCount = vertexCache->offset / sizeof(VertexGenericLit);
+
+    // Fill in dynamic index buffer
+    bufferCacheManager.AllocIndex(numIndexes, sizeof(TriIndex), nullptr, indexCache);
+
+    TriIndex *dst_idxptr = (TriIndex *)bufferCacheManager.MapIndexBuffer(indexCache);
+    TriIndex *src_idxptr = indexes;
+
+    for (int i = 0; i < numIndexes; i += 3, dst_idxptr += 3, src_idxptr += 3) {
+        dst_idxptr[0] = filledVertexCount + src_idxptr[0];
+        dst_idxptr[1] = filledVertexCount + src_idxptr[1];
+        dst_idxptr[2] = filledVertexCount + src_idxptr[2];
+    }
+
+    bufferCacheManager.UnmapIndexBuffer(indexCache);
 }
 
 void SubMesh::SplitMirroredVerts() {
@@ -239,7 +241,7 @@ void SubMesh::SplitMirroredVerts() {
     TriIndex *mirroredVertsIndexMap = (TriIndex *)_alloca16(sizeof(TriIndex) * numVerts);
     TriIndex *mirroredVertsIndexes = (TriIndex *)_alloca16(sizeof(TriIndex) * numVerts);
 
-    VertexLightingGeneric *dupVerts = (VertexLightingGeneric *)Mem_Alloc16(sizeof(VertexLightingGeneric) * numVerts);
+    VertexGenericLit *dupVerts = (VertexGenericLit *)Mem_Alloc16(sizeof(VertexGenericLit) * numVerts);
 
     for (int i = 0; i < numVerts; i++) {
         vertHandednesses[i] = 0;
@@ -281,10 +283,10 @@ void SubMesh::SplitMirroredVerts() {
     }
 
     if (numMirroredVerts > 0) {
-        VertexLightingGeneric *newVerts = (VertexLightingGeneric *)Mem_Alloc16(sizeof(VertexLightingGeneric) * (numVerts + numMirroredVerts));
+        VertexGenericLit *newVerts = (VertexGenericLit *)Mem_Alloc16(sizeof(VertexGenericLit) * (numVerts + numMirroredVerts));
 
-        simdProcessor->Memcpy(newVerts, verts, sizeof(VertexLightingGeneric) * numVerts);
-        simdProcessor->Memcpy(newVerts + numVerts, dupVerts, sizeof(VertexLightingGeneric) * numMirroredVerts);
+        simdProcessor->Memcpy(newVerts, verts, sizeof(VertexGenericLit) * numVerts);
+        simdProcessor->Memcpy(newVerts + numVerts, dupVerts, sizeof(VertexGenericLit) * numMirroredVerts);
 
         int *newMirroredVerts = (int *)Mem_Alloc16(sizeof(int) * numMirroredVerts);
         simdProcessor->Memcpy(newMirroredVerts, mirroredVertsIndexes, sizeof(int) * numMirroredVerts);
@@ -379,10 +381,10 @@ void SubMesh::SplitMirroredVerts() {
 }
 
 void SubMesh::FixMirroredVerts() {
-    VertexLightingGeneric *v0 = &verts[numVerts - numMirroredVerts];
+    VertexGenericLit *v0 = &verts[numVerts - numMirroredVerts];
 
     for (int i = 0; i < numMirroredVerts; i++, v0++) {
-        VertexLightingGeneric *v1 = &verts[mirroredVerts[i]];
+        VertexGenericLit *v1 = &verts[mirroredVerts[i]];
 
         // NOTE: normalize 해줘야 한다
         //v0->normal += v1->normal;
@@ -413,9 +415,9 @@ void SubMesh::ComputeNormals() {
         int i1 = indexes[i + 1];
         int i2 = indexes[i + 2];
 
-        const VertexLightingGeneric &v0 = verts[i0];
-        const VertexLightingGeneric &v1 = verts[i1];
-        const VertexLightingGeneric &v2 = verts[i2];
+        const VertexGenericLit &v0 = verts[i0];
+        const VertexGenericLit &v1 = verts[i1];
+        const VertexGenericLit &v2 = verts[i2];
 
         const Vec3 side0 = v1.xyz - v0.xyz;
         const Vec3 side1 = v2.xyz - v0.xyz;
@@ -438,7 +440,7 @@ void SubMesh::ComputeNormals() {
     normalsCalculated = true;
 }
 
-static void R_DeriveTangentsWithoutNormals(VertexLightingGeneric *verts, const int numVerts, const TriIndex *indexes, const int numIndexes) {
+static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int numVerts, const TriIndex *indexes, const int numIndexes) {
     Vec3 *triangleTangents = (Vec3 *)Mem_Alloc16((numIndexes / 3) * sizeof(Vec3));
     Vec3 *triangleBitangents = (Vec3 *)Mem_Alloc16((numIndexes / 3) * sizeof(Vec3));
 
@@ -453,9 +455,9 @@ static void R_DeriveTangentsWithoutNormals(VertexLightingGeneric *verts, const i
         int v1 = indexes[i + 1];
         int v2 = indexes[i + 2];
 
-        VertexLightingGeneric *a = verts + v0;
-        VertexLightingGeneric *b = verts + v1;
-        VertexLightingGeneric *c = verts + v2;
+        VertexGenericLit *a = verts + v0;
+        VertexGenericLit *b = verts + v1;
+        VertexGenericLit *c = verts + v2;
 
         const Vec2 aST = a->GetTexCoord();
         const Vec2 bST = b->GetTexCoord();
@@ -549,7 +551,7 @@ static void R_DeriveTangentsWithoutNormals(VertexLightingGeneric *verts, const i
     Mem_AlignedFree(triangleBitangents);
 }
 
-static void R_DeriveNormalsAndTangents(VertexLightingGeneric *verts, const int numVerts, const TriIndex *indexes, const int numIndexes) {
+static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVerts, const TriIndex *indexes, const int numIndexes) {
     Vec3 *vertexNormals = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
     Vec3 *vertexTangents = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
     Vec3 *vertexBitangents = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
@@ -563,9 +565,9 @@ static void R_DeriveNormalsAndTangents(VertexLightingGeneric *verts, const int n
         int v1 = indexes[i + 1];
         int v2 = indexes[i + 2];
 
-        VertexLightingGeneric *a = verts + v0;
-        VertexLightingGeneric *b = verts + v1;
-        VertexLightingGeneric *c = verts + v2;
+        VertexGenericLit *a = verts + v0;
+        VertexGenericLit *b = verts + v1;
+        VertexGenericLit *c = verts + v2;
 
         const Vec2 aST = a->GetTexCoord();
         const Vec2 bST = b->GetTexCoord();
@@ -679,7 +681,7 @@ static void R_DeriveNormalsAndTangents(VertexLightingGeneric *verts, const int n
 // For each vertex the normal and tangent vectors are derived from a single dominant triangle.
 //#define DERIVE_UNSMOOTHED_BITANGENT
 
-static void R_DeriveUnsmoothedNormalsAndTangents(VertexLightingGeneric *verts, const DominantTri *dominantTris, const int numVerts) {
+static void R_DeriveUnsmoothedNormalsAndTangents(VertexGenericLit *verts, const DominantTri *dominantTris, const int numVerts) {
     for (int i = 0; i < numVerts; i++) {
         float d0, d1, d2, d3, d4;
         float d5, d6, d7, d8, d9;
@@ -690,9 +692,9 @@ static void R_DeriveUnsmoothedNormalsAndTangents(VertexLightingGeneric *verts, c
 
         const DominantTri &dt = dominantTris[i];
 
-        VertexLightingGeneric *a = verts + i;
-        VertexLightingGeneric *b = verts + dt.v2;
-        VertexLightingGeneric *c = verts + dt.v3;
+        VertexGenericLit *a = verts + i;
+        VertexGenericLit *b = verts + dt.v2;
+        VertexGenericLit *c = verts + dt.v3;
 
         const Vec2 aST = a->GetTexCoord();
         const Vec2 bST = b->GetTexCoord();
@@ -784,9 +786,9 @@ void SubMesh::ComputeDominantTris() {
         dominantTris[i].v2 = dominantTriVertex2;
         dominantTris[i].v3 = dominantTriVertex3;
 
-        VertexLightingGeneric *a = &verts[i];
-        VertexLightingGeneric *b = &verts[dominantTriVertex2];
-        VertexLightingGeneric *c = &verts[dominantTriVertex3];
+        VertexGenericLit *a = &verts[i];
+        VertexGenericLit *b = &verts[dominantTriVertex2];
+        VertexGenericLit *c = &verts[dominantTriVertex3];
 
         const Vec2 aST = a->GetTexCoord();
         const Vec2 bST = b->GetTexCoord();
@@ -1204,7 +1206,7 @@ void SubMesh::OptimizeIndexedTriangles() {
     }
 
     // remap vertices
-    VertexLightingGeneric *remappedVerts = (VertexLightingGeneric *)Mem_Alloc16(sizeof(verts[0]) * numVerts);
+    VertexGenericLit *remappedVerts = (VertexGenericLit *)Mem_Alloc16(sizeof(verts[0]) * numVerts);
 
     for (int i = 0; i < numIndexes; i++) {
         remappedVerts[dstPrimGroup->indices[i]] = verts[srcPrimGroup->indices[i]];

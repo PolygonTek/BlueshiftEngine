@@ -272,7 +272,7 @@ public:
         };
 
         enum Usage {
-            Position	                    = 0,
+            Position                        = 0,
             Normal                          = 1,
             Color                           = 2,
             SecondaryColor                  = 3,

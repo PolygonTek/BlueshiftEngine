@@ -104,7 +104,7 @@ public:
     Component *                 GetComponent(int index) const { return components[index]; }
     Component *                 GetComponent(const MetaObject &type) const;
     template <typename T> T *   GetComponent() const;
-    ComponentPtrArray            GetComponents(const MetaObject &type) const;
+    ComponentPtrArray           GetComponents(const MetaObject &type) const;
     ComTransform *              GetTransform() const;
 
                                 /// Adds a component to the entity

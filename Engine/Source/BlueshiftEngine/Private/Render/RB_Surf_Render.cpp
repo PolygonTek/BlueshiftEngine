@@ -192,7 +192,7 @@ void RBSurf::RenderColor(const Color4 &color) const {
     SetMatrixConstants(shader);
 
     if (subMesh && subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfEntity->def->parms.mesh;
+        const Mesh *mesh = surfSpace->def->parms.mesh;
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
@@ -218,7 +218,7 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
     SetMatrixConstants(shader);
 
     if (subMesh && subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfEntity->def->parms.mesh;
+        const Mesh *mesh = surfSpace->def->parms.mesh;
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
@@ -231,7 +231,7 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
 
         Color4 color;
         if (mtrlPass->useOwnerColor) {
-            color = Color4(&surfEntity->def->parms.materialParms[SceneEntity::RedParm]);
+            color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
         } else {
             color = mtrlPass->constantColor;
         }
@@ -264,7 +264,7 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
     SetMatrixConstants(shader);
 
     if (subMesh && subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfEntity->def->parms.mesh;
+        const Mesh *mesh = surfSpace->def->parms.mesh;
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
@@ -277,7 +277,7 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
 
         Color4 color;
         if (mtrlPass->useOwnerColor) {
-            color = Color4(&surfEntity->def->parms.materialParms[SceneEntity::RedParm]);
+            color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
         } else {
             color = mtrlPass->constantColor;
         }
@@ -286,7 +286,7 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
 
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "diffuseMap") : mtrlPass->texture;
         shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
-    }	
+    }
 
     DrawPrimitives();
 }
@@ -307,14 +307,14 @@ void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
 
     SetMatrixConstants(shader);
 
-    Mat4 prevModelViewMatrix = backEnd.view->def->viewMatrix * surfEntity->def->motionBlurModelMatrix[1];
+    Mat4 prevModelViewMatrix = backEnd.view->def->viewMatrix * surfSpace->def->motionBlurModelMatrix[1];
     //shader->SetConstantMatrix4fv("prevModelViewMatrix", 1, true, prevModelViewMatrix);
 
     Mat4 prevModelViewProjMatrix = backEnd.view->def->projMatrix * prevModelViewMatrix;
     shader->SetConstant4x4f("prevModelViewProjectionMatrix", true, prevModelViewProjMatrix);
 
     shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / backEnd.ctx->frameTime);
-    //shader->SetConstant1f("motionBlurID", (float)surfEntity->id);
+    //shader->SetConstant1f("motionBlurID", (float)surfSpace->id);
 
     shader->SetTexture("depthMap", backEnd.ctx->screenDepthTexture);
 
@@ -330,7 +330,7 @@ void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
     }
 
     if (subMesh && subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfEntity->def->parms.mesh;
+        const Mesh *mesh = surfSpace->def->parms.mesh;
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
@@ -375,7 +375,7 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
         SetMatrixConstants(shader);
 
         if (subMesh && subMesh->useGpuSkinning) {
-            const Mesh *mesh = surfEntity->def->parms.mesh;
+            const Mesh *mesh = surfSpace->def->parms.mesh;
             SetSkinningConstants(shader, mesh->skinningJointCache);
         }
 
@@ -385,11 +385,11 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
         shader->SetConstant1f("ambientLerp", 0.0f);
 
         // view vector: world -> to mesh coordinates
-        Vec3 localViewOrigin = surfEntity->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfEntity->def->parms.origin) / surfEntity->def->parms.scale;
-        //Vec3 localViewOrigin = (backEnd.view->def->parms.origin - surfEntity->def->parms.origin) * surfEntity->def->parms.axis;
+        Vec3 localViewOrigin = surfSpace->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfSpace->def->parms.origin) / surfSpace->def->parms.scale;
+        //Vec3 localViewOrigin = (backEnd.view->def->parms.origin - surfSpace->def->parms.origin) * surfSpace->def->parms.axis;
         shader->SetConstant3f(shader->builtInConstantLocations[Shader::LocalViewOriginConst], localViewOrigin);
 
-        const Mat4 &worldMatrix = surfEntity->def->GetModelMatrix();
+        const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
         shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
         shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
         shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);			
@@ -413,7 +413,7 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
         SetMatrixConstants(shader);
 
         if (subMesh && subMesh->useGpuSkinning) {
-            const Mesh *mesh = surfEntity->def->parms.mesh;
+            const Mesh *mesh = surfSpace->def->parms.mesh;
             SetSkinningConstants(shader, mesh->skinningJointCache);
         }
 
@@ -433,7 +433,7 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
 
     Color4 color;
     if (mtrlPass->useOwnerColor) {
-        color = Color4(&surfEntity->def->parms.materialParms[SceneEntity::RedParm]);
+        color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
     } else {
         color = mtrlPass->constantColor;
     }
@@ -479,15 +479,15 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
     SetMatrixConstants(shader);
 
     if (subMesh && subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfEntity->def->parms.mesh;
+        const Mesh *mesh = surfSpace->def->parms.mesh;
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
-    Vec3 localViewOrigin = surfEntity->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfEntity->def->parms.origin) / surfEntity->def->parms.scale;
-    //Vec3 localViewOrigin = (backEnd.view->def->parms.origin - surfEntity->def->parms.origin) * surfEntity->def->parms.axis;
+    Vec3 localViewOrigin = surfSpace->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfSpace->def->parms.origin) / surfSpace->def->parms.scale;
+    //Vec3 localViewOrigin = (backEnd.view->def->parms.origin - surfSpace->def->parms.origin) * surfSpace->def->parms.axis;
     shader->SetConstant3f(shader->builtInConstantLocations[Shader::LocalViewOriginConst], localViewOrigin);
 
-    const Mat4 &worldMatrix = surfEntity->def->GetModelMatrix();
+    const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
@@ -502,7 +502,7 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
 
     Color4 color;
     if (mtrlPass->useOwnerColor) {
-        color = Color4(&surfEntity->def->parms.materialParms[SceneEntity::RedParm]);
+        color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
     } else {
         color = mtrlPass->constantColor;
     }
@@ -513,7 +513,7 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
 }
 
 void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
-    bool useShadowMap = (r_shadows.GetInteger() == 0) || (!surfLight->def->parms.castShadows || !surfEntity->def->parms.receiveShadows) ? false : true;
+    bool useShadowMap = (r_shadows.GetInteger() == 0) || (!surfLight->def->parms.castShadows || !surfSpace->def->parms.receiveShadows) ? false : true;
     const Shader *shader;
 
     if (mtrlPass->shader) {
@@ -560,32 +560,32 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
 
     SetMatrixConstants(shader);
 
-    const Mat4 &worldMatrix = surfEntity->def->GetModelMatrix();
+    const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
 
     // world coordinates -> entity's local coordinates
-    Vec3 localViewOrigin = surfEntity->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfEntity->def->parms.origin) / surfEntity->def->parms.scale;
+    Vec3 localViewOrigin = surfSpace->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfSpace->def->parms.origin) / surfSpace->def->parms.scale;
     Vec4 localLightOrigin;
     Vec3 lightInvRadius;
 
     if (surfLight->def->parms.type == SceneLight::DirectionalLight) {
-        localLightOrigin = Vec4(surfEntity->def->parms.axis.TransposedMulVec(-surfLight->def->parms.axis[0]), 1.0f);
+        localLightOrigin = Vec4(surfSpace->def->parms.axis.TransposedMulVec(-surfLight->def->parms.axis[0]), 1.0f);
         lightInvRadius.SetFromScalar(0);
     } else {
-        localLightOrigin = Vec4(surfEntity->def->parms.axis.TransposedMulVec(surfLight->def->parms.origin - surfEntity->def->parms.origin) / surfEntity->def->parms.scale, 0.0f);
+        localLightOrigin = Vec4(surfSpace->def->parms.axis.TransposedMulVec(surfLight->def->parms.origin - surfSpace->def->parms.origin) / surfSpace->def->parms.scale, 0.0f);
         lightInvRadius = 1.0f / surfLight->def->GetRadius();
     }
 
-    Mat3 localLightAxis = surfEntity->def->parms.axis.TransposedMul(surfLight->def->parms.axis);
-    localLightAxis[0] *= surfEntity->def->parms.scale;
-    localLightAxis[1] *= surfEntity->def->parms.scale;
-    localLightAxis[2] *= surfEntity->def->parms.scale;
+    Mat3 localLightAxis = surfSpace->def->parms.axis.TransposedMul(surfLight->def->parms.axis);
+    localLightAxis[0] *= surfSpace->def->parms.scale;
+    localLightAxis[1] *= surfSpace->def->parms.scale;
+    localLightAxis[2] *= surfSpace->def->parms.scale;
 
     shader->SetConstant3f(shader->builtInConstantLocations[Shader::LocalViewOriginConst], localViewOrigin);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalLightOriginConst], localLightOrigin);
-    shader->SetConstant3x3f(shader->builtInConstantLocations[Shader::LocalLightAxisConst], false, localLightAxis);	
+    shader->SetConstant3x3f(shader->builtInConstantLocations[Shader::LocalLightAxisConst], false, localLightAxis);
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -597,7 +597,7 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
 
     Color4 color;
     if (mtrlPass->useOwnerColor) {
-        color = Color4(&surfEntity->def->parms.materialParms[SceneEntity::RedParm]);
+        color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
     } else {
         color = mtrlPass->constantColor;
     }
@@ -605,7 +605,7 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::ConstantColorConst], color);
 
     if (subMesh && subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfEntity->def->parms.mesh;
+        const Mesh *mesh = surfSpace->def->parms.mesh;
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
         
@@ -701,7 +701,7 @@ void RBSurf::RenderFogLightInteraction(const Material::Pass *mtrlPass) const {
     shader->Bind();
 
     // light texture transform matrix
-    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfEntity->def->GetModelMatrix();	
+    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetModelMatrix();	
     shader->SetConstant4x4f("lightTextureMatrix", true, viewProjScaleBiasMat);
     shader->SetConstant3f("fogColor", &surfLight->def->parms.materialParms[SceneEntity::RedParm]);
 
@@ -740,7 +740,7 @@ void RBSurf::RenderBlendLightInteraction(const Material::Pass *mtrlPass) const {
     shader->Bind();
 
     // light texture transform matrix
-    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfEntity->def->GetModelMatrix();
+    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetModelMatrix();
     shader->SetConstant4x4f("lightTextureMatrix", true, viewProjScaleBiasMat);
     shader->SetConstant3f("blendColor", blendColor);
 
@@ -777,7 +777,7 @@ void RBSurf::RenderGui(const Material::Pass *mtrlPass) const {
 
     Color4 color;
     if (mtrlPass->useOwnerColor) {
-        color = Color4(&surfEntity->def->parms.materialParms[SceneEntity::RedParm]);
+        color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
     } else {
         color = mtrlPass->constantColor;
     }

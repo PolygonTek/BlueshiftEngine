@@ -47,8 +47,8 @@ public:
     void                Init();
     void                Shutdown();
 
-    void                Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfEntity, const viewLight_t *surfLight);
-    void                DrawSubMesh(SubMesh *subMesh, GuiSubMesh *guiSubMesh);
+    void                Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfSpace, const viewLight_t *surfLight);
+    void                DrawSubMesh(SubMesh *subMesh);
     void                Flush();
 
     void                EndFrame();
@@ -56,7 +56,6 @@ public:
 private:                
     void                DrawDynamicSubMesh(SubMesh *subMesh);
     void                DrawStaticSubMesh(SubMesh *subMesh);
-    void                DrawGuiSubMesh(GuiSubMesh *guiSubMesh);
 
     void                Flush_SelectionPass();
     void                Flush_DepthPass();
@@ -96,7 +95,8 @@ private:
     Material *          material;
     const float *       materialRegisters;
     SubMesh *           subMesh;
-    const viewEntity_t *surfEntity;
+
+    const viewEntity_t *surfSpace;
     const viewLight_t * surfLight;
 
     Renderer::Handle    vbHandle;
@@ -197,7 +197,7 @@ void    RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_AmbientPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs);	
+void    RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);
 void    RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs);

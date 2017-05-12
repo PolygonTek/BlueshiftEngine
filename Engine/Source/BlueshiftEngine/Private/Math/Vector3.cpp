@@ -121,6 +121,21 @@ void Vec3::SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
     (*this) = (v1 * scale0 + v2 * scale1);
 }
 
+Vec3 Vec3::FromUnitSphere(float u1, float u2) {
+    float z = 1.0f - 2.0f * u1;
+    float r = Math::Sqrt(1.0f - z * z);
+    float s, c;
+    Math::SinCos(Math::TwoPi * u2, s, c);
+    return Vec3(r * c, r * s, z);
+}
+
+Vec3 Vec3::FromUnitHemisphere(float u1, float u2) {
+    float r = Math::Sqrt(1.0f - u1 * u1);
+    float s, c;
+    Math::SinCos(Math::TwoPi * u2, s, c);
+    return Vec3(r * c, r * s, u1);
+}
+
 float Vec3::ComputeYaw() const {
     float yaw;
     

@@ -87,7 +87,7 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
     
     this->pic = (byte *)Mem_Alloc16(header->dwTextureDataSize);
     simdProcessor->Memcpy(this->pic, ptr, header->dwTextureDataSize);
-    this->allocated = true;
+    this->alloced = true;
     
     return true;
 }
@@ -256,7 +256,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     
     this->pic = (byte *)Mem_Alloc16(dataSize);
     simdProcessor->Memcpy(this->pic, ptr, (int)dataSize);
-    this->allocated = true;
+    this->alloced = true;
     
     return false;
 }

@@ -54,11 +54,11 @@ public:
         Vec3                origin;
         Mat3                axis;
 
-                            // Point Light 일 경우 radius 값
-                            // Directional or Spot Light 일 경우 각 xyz axis 별 extent 값
+                            // Point Light 일 경우 radius 값, 또는
+                            // Directional/Spot Light 일 경우 각 xyz axis 별 extent 값
         Vec3                value;
 
-                            // for LT_PROJECTED
+                            // for SpotLight
         float               zNear;
 
         float               fallOffExponent;

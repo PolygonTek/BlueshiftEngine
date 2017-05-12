@@ -417,6 +417,7 @@ void GameWorld::FinishMapLoading() {
     shaderManager.DestroyUnusedShaders();
     materialManager.DestroyUnusedMaterials();
     meshManager.DestroyUnusedMeshes();
+    particleSystemManager.DestroyUnusedParticleSystems();
     skeletonManager.DestroyUnusedSkeletons();
     animManager.DestroyUnusedAnims();
     skinManager.DestroyUnusedSkins();

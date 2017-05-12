@@ -399,6 +399,10 @@ void ComScript::OnSensorStay(const Entity *entity) {
     CallFunc("on_sensor_stay", entity);
 }
 
+void ComScript::OnParticleCollision(const Entity *entity) {
+    CallFunc("on_particle_collision", entity);
+}
+
 void ComScript::OnApplicationTerminate() {
     CallFunc("on_application_terminate");
 }

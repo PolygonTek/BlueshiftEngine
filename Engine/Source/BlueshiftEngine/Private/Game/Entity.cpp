@@ -189,7 +189,8 @@ bool Entity::IsPrefabInstance() const {
 
 Entity *Entity::GetPrefabParent() const {
     Guid prefabParentGuid = props->Get("prefabParent").As<Guid>();
-    Entity *prefabParent = Entity::FindInstance(prefabParentGuid)->Cast<Entity>();
+    Object *prefabParentObj = Entity::FindInstance(prefabParentGuid);
+    Entity *prefabParent = prefabParentObj ? prefabParentObj->Cast<Entity>() : nullptr;
     return prefabParent;
 }
 
@@ -334,7 +335,8 @@ void Entity::InitHierarchy() {
 
     const Guid parentGuid = props->Get("parent").As<Guid>();
     if (!parentGuid.IsZero()) {
-        parent = Entity::FindInstance(parentGuid)->Cast<Entity>();
+        Object *parentObj = Entity::FindInstance(parentGuid);
+        parent = parentObj ? parentObj->Cast<Entity>() : nullptr;
         if (!parent) {
             BE_WARNLOG(L"Couldn't find parent entity %hs\n", parentGuid.ToString());
         }
@@ -556,7 +558,8 @@ void Entity::PropertyChanged(const char *classname, const char *propName) {
 
     if (!Str::Cmp(propName, "parent")) {
         Guid parentGuid = props->Get("parent").As<Guid>();
-        Entity *parent = Entity::FindInstance(parentGuid)->Cast<Entity>();
+        Object *parentObj = Entity::FindInstance(parentGuid);
+        Entity *parent = parentObj ? parentObj->Cast<Entity>() : nullptr;
         ComTransform *transform = GetTransform();
         Mat4 localMatrix;
 

@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "RenderCmd.h"
+
 BE_NAMESPACE_BEGIN
 
 /// All of the information needed by the back end must be contained in.
