@@ -61,11 +61,11 @@ void Animator::FreeData() {
     animController = nullptr;
 }
 
-int Animator::Allocated() const {
+size_t Animator::Allocated() const {
     return numJoints * sizeof(jointMats[0]);
 }
 
-int Animator::Size() const {
+size_t Animator::Size() const {
     return sizeof(*this) + Allocated();
 }
 

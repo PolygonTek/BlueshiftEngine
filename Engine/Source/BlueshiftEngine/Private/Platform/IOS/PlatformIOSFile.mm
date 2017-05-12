@@ -163,10 +163,6 @@ Str PlatformIOSFile::ConvertToIOSPath(const Str &filename, bool forWrite) {
     Str appPath = PlatformFile::ExecutablePath();
     Str relFilename = filename.ToRelativePath(appPath);
     
-    if (relFilename[0] == '.') {
-        assert(0);
-    }
-    
     if (!forWrite) {
         static NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
         const char *cstr = (const char *)[bundlePath cStringUsingEncoding:NSUTF8StringEncoding];
