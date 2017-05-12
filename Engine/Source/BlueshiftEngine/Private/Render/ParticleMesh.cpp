@@ -83,9 +83,9 @@ void ParticleMesh::DrawQuad(const VertexGeneric *verts, const Material *material
 int ParticleMesh::CountDrawingVerts(const ParticleSystem::Stage &stage, const Particle *stageParticles) const {
     int numVerts = 0;
     
-    for (int particleIndex = 0; particleIndex < stage.standardModule.count; particleIndex++) {
-        int trailCount = stage.TrailCount();
+    int trailCount = (stage.moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage.trailsModule.count : 0;
 
+    for (int particleIndex = 0; particleIndex < stage.standardModule.count; particleIndex++) {
         int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
         Particle *particle = (Particle *)((byte *)stageParticles + particleIndex * particleSize);
         
@@ -191,8 +191,9 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             bufferCacheManager.AllocVertex(numVerts, sizeof(VertexGeneric), nullptr, &vertexCache);
             VertexGeneric *vertexPointer = (VertexGeneric *)bufferCacheManager.MapVertexBuffer(&vertexCache);
            
+            int trailCount = (stage.moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage.trailsModule.count : 0;
+
             for (int particleIndex = 0; particleIndex < stage.standardModule.count; particleIndex++) {
-                int trailCount = stage.TrailCount();
                 int pivotCount = trailCount + 1;
 
                 int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;

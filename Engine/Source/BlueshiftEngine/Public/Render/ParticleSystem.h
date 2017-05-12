@@ -218,8 +218,6 @@ public:
     struct Stage {
         void                    Reset();
 
-        int                     TrailCount() const;
-
         Str                     name;
         bool                    skipRender;     // used for Editor
         int                     moduleFlags;
@@ -350,11 +348,6 @@ BE_INLINE void ParticleSystem::Stage::Reset() {
     sizeOverLifetimeModule.Reset();
     aspectRatioOverLifetimeModule.Reset();
     trailsModule.Reset();
-}
-
-BE_INLINE int ParticleSystem::Stage::TrailCount() const {
-    int trailCount = (moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? trailsModule.count : 0;
-    return trailCount;
 }
 
 class ParticleSystemManager {

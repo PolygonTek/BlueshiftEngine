@@ -123,7 +123,8 @@ void ComParticleSystem::ResetParticles() {
 
         startDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1));
 
-        int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * stage->TrailCount();
+        int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
+        int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
         int size = stage->standardModule.count * particleSize;
 
         sceneEntity.stageParticles[stageIndex] = (Particle *)Mem_Alloc(size);
@@ -144,8 +145,9 @@ int ComParticleSystem::GetAliveParticleCount() const {
         const ParticleSystem::Stage *stage = sceneEntity.particleSystem->GetStage(stageIndex);
         const ParticleSystem::StandardModule &standardModule = stage->standardModule;
 
+        int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
+
         for (int particleIndex = 0; particleIndex < standardModule.count; particleIndex++) {
-            int trailCount = stage->TrailCount();
             int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
 
             // Get the particle pointer with the given particle index
@@ -204,6 +206,8 @@ void ComParticleSystem::UpdateSimulation(int time) {
 
         float inCycleTime = t - curCycles * cycleDuration;
 
+        int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
+
         for (int particleIndex = 0; particleIndex < standardModule.count; particleIndex++) {
             float particleGenTime = standardModule.lifeTime * standardModule.spawnBunching * particleIndex / standardModule.count;
             float particleAge = inCycleTime - particleGenTime;
@@ -215,7 +219,6 @@ void ComParticleSystem::UpdateSimulation(int time) {
                 }
             }
 
-            int trailCount = stage->TrailCount();
             int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
 
             // Get the particle pointer with the given particle index
@@ -395,7 +398,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         offsetMatrix = GetEntity()->GetTransform()->GetWorldMatrix().AffineInverse() * particle->worldMatrix;
     }
     
-    int trailCount = stage->TrailCount();
+    int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
 
     for (int trailIndex = 0; trailIndex < 1 + trailCount; trailIndex++) {
         Particle::Trail *trail = &particle->trails[trailIndex];
