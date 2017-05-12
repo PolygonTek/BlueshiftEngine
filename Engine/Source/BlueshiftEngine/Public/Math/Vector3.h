@@ -230,7 +230,7 @@ public:
 
                         /// Refracts this vector about a plane with the given normal.
     Vec3                Refract(const Vec3 &normal, float eta) const;
-                        /// Refracts this vector about a plane with the given normal, in-place
+                        /// Refracts this vector about a plane with the given normal, in-place.
     Vec3 &              RefractSelf(const Vec3 &normal, float eta);
 
                         /// Returns this vector slided about a plane with the given normal.
@@ -241,21 +241,27 @@ public:
                         /// Sets from spherical linear interpolation between the vector v1 and the vector v2.
     void                SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t);
 
-                        /// Compute yaw angle in degree looking from the viewpoint of 2D view in x-y plane
+                        /// Sets this vector on unit sphere.
+    static Vec3         FromUnitSphere(float u1, float u2);
+
+                        /// Sets this vector on unit hemisphere.
+    static Vec3         FromUnitHemisphere(float u1, float u2);
+
+                        /// Compute yaw angle in degree looking from the viewpoint of 2D view in x-y plane.
     float               ComputeYaw() const;
-                        /// Compute pitch angle in degree looking from the viewpoint of 2D view in x-y plane
+                        /// Compute pitch angle in degree looking from the viewpoint of 2D view in x-y plane.
     float               ComputePitch() const;
 
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "x y z" with the given precision
+                        /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
         
                         /// Casts this Vec3 to a Vec2.
     const Vec2 &        ToVec2() const;
     Vec2 &              ToVec2();
 
-    /// Casts this Vec3 to a Color3.
+                        /// Casts this Vec3 to a Color3.
     const Color3 &      ToColor3() const;
     Color3 &            ToColor3();
 
@@ -271,10 +277,10 @@ public:
                         /// @param up[out] Receives vector up.
     void                OrthogonalBasis(Vec3 &left, Vec3 &up) const;
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
 
-                        /// Compute 3D barycentric coordinates from the point based on 3 simplex vector
+                        /// Compute 3D barycentric coordinates from the point based on 3 simplex vector.
     static const Vec3   Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, const Vec2 &s3, const Vec2 &p);
 
     static float        ComputeBitangentSign(const Vec3 &n, const Vec3 &t0, const Vec3 &t1);
