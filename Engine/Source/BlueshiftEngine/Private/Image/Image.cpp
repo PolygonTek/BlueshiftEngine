@@ -32,7 +32,7 @@ Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, in
     this->numMipmaps = Max(numMipmaps, 1);
     this->format = format;
     this->flags = flags;
-    this->allocated = false;
+    this->alloced = false;
     this->pic = data;
 
     return *this;
@@ -51,7 +51,7 @@ Image &Image::Create(int width, int height, int depth, int numSlices, int numMip
     
     int size = GetSize(0, numMipmaps);	
     this->pic = (byte *)Mem_Alloc16(size);
-    this->allocated = true;
+    this->alloced = true;
     
     if (data) {
         simdProcessor->Memcpy(this->pic, data, size);
@@ -73,7 +73,7 @@ Image &Image::CreateCubeFromMultipleImages(const Image *images) {
     
     int sliceSize = GetSliceSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
-    this->allocated = true;
+    this->alloced = true;
     
     byte *dst = this->pic;
     
@@ -122,20 +122,20 @@ Image &Image::operator=(Image &&rhs) {
     numMipmaps = rhs.numMipmaps;
     format = rhs.format;
     flags = rhs.flags;
-    allocated = rhs.allocated;
+    alloced = rhs.alloced;
     pic = rhs.pic;
 
-    rhs.allocated = false;
+    rhs.alloced = false;
     rhs.pic = nullptr;
     
     return (*this);
 }
 
 void Image::Clear() {
-    if (allocated && pic) {
+    if (alloced && pic) {
         Mem_AlignedFree(pic);
         pic = nullptr;
-        allocated = false;
+        alloced = false;
     }
 }
 

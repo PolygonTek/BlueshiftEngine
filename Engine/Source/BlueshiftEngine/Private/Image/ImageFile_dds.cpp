@@ -301,7 +301,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
 
     int bufSize = GetSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(bufSize);
-    this->allocated = true;
+    this->alloced = true;
 
     if (isCube) {
         for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
