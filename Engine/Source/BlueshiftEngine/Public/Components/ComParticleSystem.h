@@ -14,11 +14,13 @@
 
 #pragma once
 
-#include "Component.h"
+#include "ComRenderable.h"
 
 BE_NAMESPACE_BEGIN
 
-class ComParticleSystem : public Component {
+class ParticleSystemAsset;
+
+class ComParticleSystem : public ComRenderable {
 public:
     OBJECT_PROTOTYPE(ComParticleSystem);
 
@@ -31,14 +33,32 @@ public:
 
     virtual void            Awake() override;
 
-    virtual void            Enable(bool enable) override;
-
     virtual void            Update() override;
 
-    void                    Emit(int numParticles);
+    void                    UpdateSimulation(int simulationTime);
+
+    void                    StartSimulation();
+    void                    PauseSimulation();
+    void                    RestartSimulation();
+    void                    StopSimulation();
+
+    int                     GetAliveParticleCount() const;
 
 protected:
+    void                    ChangeParticleSystem(const Guid &particleSystemGuid);
+    void                    ResetParticles();
+    void                    InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFraction);
+    void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float genTimeDelta);
+    void                    ParticleSystemReloaded();
     void                    PropertyChanged(const char *classname, const char *propName);
+
+    Guid                    GetParticleSystem() const;
+    void                    SetParticleSystem(const Guid &guid);
+
+    ParticleSystemAsset *   particleSystemAsset;
+    Array<float>            startDelay;
+    bool                    simulationStarted;
+    int                     simulationTime;
 };
 
 BE_NAMESPACE_END

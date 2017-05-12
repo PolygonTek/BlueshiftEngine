@@ -81,7 +81,7 @@ public:
         Vec3                origin;
         Vec3                scale;
         Mat3                axis;
-        AABB                aabb;                   // non-scaled AABB 
+        AABB                aabb;                   // non-scaled AABB (don't use cleared AABB)
         float               maxVisDist;
         int                 layer;
 
@@ -98,6 +98,7 @@ public:
         float               lineSpacing;
 
         ParticleSystem *    particleSystem;
+        Array<Particle *>   stageParticles;
         
         Array<Material *>   customMaterials;
         Skin *              customSkin;
