@@ -188,7 +188,7 @@ private:
     const char *        whiteSpaceBegin_p;
     const char *        whiteSpaceEnd_p;
     bool                loaded;
-    bool                allocated;
+    bool                alloced;
     int                 tokenType;
     int                 punctuationType;
     Str                 token;
