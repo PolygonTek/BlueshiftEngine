@@ -55,6 +55,7 @@ struct BufferCache;
 class SubMesh {
     friend class Mesh;
     friend class MeshManager;
+    friend class RenderWorld;
     friend class RBSurf;
     friend class ::MeshImporter;
     
@@ -69,7 +70,8 @@ public:
 
     int                     NumVerts() const { return numVerts; }
     int                     NumOriginalVerts() const { return numVerts - numMirroredVerts; }
-    VertexLightingGeneric * Verts() const { return verts; }
+
+    VertexGenericLit *      Verts() const { return verts; }
 
     int                     NumIndexes() const { return numIndexes; }
     TriIndex *              Indexes() const { return indexes; }
@@ -126,12 +128,13 @@ private:
     int                     type;
     bool                    alloced;
     const SubMesh *         refSubMesh;
+
     bool                    tangentsCalculated;         // is tangents calculated ?
     bool                    normalsCalculated;          // is normals calculated ?
     bool                    edgesCalculated;            // is edge calculated ?
 
     int                     numVerts;                   // mirrored vertices 스플릿팅 후에,
-    VertexLightingGeneric * verts;                      // verts 배열 뒷 부분에 스플릿팅된 vertex 들이 추가된다.
+    VertexGenericLit *      verts;                      // verts 배열 뒷 부분에 스플릿팅된 vertex 들이 추가된다.
     int                     numMirroredVerts;           // numVerts 에 합산되어 있다 (numOriginalVerts = numVerts - numMirroredVerts)
     int *                   mirroredVerts;              // 추가된 mirrored vertex 들의 original vertex index 배열
     DominantTri *           dominantTris;               // dominant triangles for each vertices
@@ -153,7 +156,7 @@ private:
 
     AABB                    aabb;
 
-    BufferCache *           ambientCache;
+    BufferCache *           vertexCache;
     BufferCache *           indexCache;
 };
 

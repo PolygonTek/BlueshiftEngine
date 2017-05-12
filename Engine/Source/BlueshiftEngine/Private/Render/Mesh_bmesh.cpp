@@ -64,7 +64,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 
         // --- vertexes ---
         for (int i = 0; i < bMeshSurf->numVerts; i++) {
-            VertexLightingGeneric *v = &subMesh->verts[i];
+            VertexGenericLit *v = &subMesh->verts[i];
             
             BMeshVert copy;
             memcpy(&copy, ptr, sizeof(BMeshVert)); // for alignment BUS Error
@@ -201,7 +201,7 @@ void Mesh::WriteBinaryMesh(const char *filename) {
 
         // --- vertexes ---
         for (int i = 0; i < subMesh->numVerts; i++) {
-            const VertexLightingGeneric *v  = &subMesh->verts[i];
+            const VertexGenericLit *v = &subMesh->verts[i];
             const Vec3 position     = v->GetPosition();
             const Vec2 texCoord     = v->GetTexCoord();
             const Vec3 normal       = v->GetNormal();

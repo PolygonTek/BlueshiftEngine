@@ -16,20 +16,12 @@
 
 #include "Core/Vertex.h"
 #include "BufferCache.h"
-#include "Render/SceneEntity.h"
+#include "SceneEntity.h"
 
 BE_NAMESPACE_BEGIN
 
 class Material;
 class Font;
-
-struct GuiSubMesh {
-    int                     numVerts;
-    int                     numIndexes;
-
-    BufferCache *           vertexCache;
-    BufferCache *           indexCache;
-};
 
 struct GuiMeshSurf {
     const Material *        material;
@@ -43,8 +35,6 @@ struct GuiMeshSurf {
 };
 
 class GuiMesh {
-    friend class RenderWorld;
-
 public:
     enum CoordFrame {
         CoordFrame2D,
@@ -55,6 +45,9 @@ public:
 
     CoordFrame              GetCoordFrame() const { return coordFrame; }
     void                    SetCoordFrame(CoordFrame frame) { coordFrame = frame; }
+
+    int                     NumSurfaces() const { return surfaces.Count(); }
+    const GuiMeshSurf *     Surface(int surfaceIndex) const { return &surfaces[surfaceIndex]; }
 
     void                    Clear();
 
@@ -68,18 +61,20 @@ public:
 
     void                    Draw(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text);
 
+                            // Call this function when drawing ends
+    void                    CacheIndexes();
+
     AABB                    Compute3DTextAABB(Font *font, SceneEntity::TextAnchor anchor, float lineSpacing, float textScale, const wchar_t *text) const;
 
 private:
     void                    PrepareNextSurf();
-    void                    DrawTris(const VertexNoLit *verts, const TriIndex *indexes, int vertCount, int indexCount, const Material *material);
+    void                    DrawQuad(const VertexGeneric *verts, const Material *material);
     
     Array<GuiMeshSurf>      surfaces;
-
     GuiMeshSurf *           currentSurf;
 
-    int                     numVerts;
-    int                     numIndexes;
+    int                     totalVerts;         ///< Total number of the vertices
+    int                     totalIndexes;       ///< Total number of the indices
 
     CoordFrame              coordFrame;
     Rect                    clipRect;
