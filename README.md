@@ -65,3 +65,9 @@ How To Contribute
 -------------------
 
 Contributions are always welcome, either reporting issues/bugs or forking the repository and then issuing pull requests when you have completed some additional coding that you feel will be beneficial to the main project. If you are interested in contributing in a more dedicated capacity, then please contact me.
+
+See also
+-------------------
+
+[Blueshift Document](https://github.com/PolygonTek/BlueshiftDocument/blob/master/README.md)
+
