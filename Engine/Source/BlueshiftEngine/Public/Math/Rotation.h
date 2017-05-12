@@ -68,7 +68,7 @@ public:
     void                Scale(const float s);
     void                ReCalculateMatrix();
 
-    void                RotatePoint(Vec3 &point) const;
+    Vec3                RotatePoint(const Vec3 &point) const;
 
     void                Normalize180();
     void                Normalize360();
@@ -166,12 +166,12 @@ BE_INLINE Vec3 &operator*=(Vec3 &v, const Rotation &r) {
     return v;
 }
 
-BE_INLINE void Rotation::RotatePoint(Vec3 &point) const {
+BE_INLINE Vec3 Rotation::RotatePoint(const Vec3 &point) const {
     if (!axisValid) {
         ToMat3();
     }
 
-    point = axis * (point - origin) + origin;
+    return axis * (point - origin) + origin;
 }
 
 BE_NAMESPACE_END
