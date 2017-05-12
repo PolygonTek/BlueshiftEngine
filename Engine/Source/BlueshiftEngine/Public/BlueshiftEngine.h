@@ -50,6 +50,7 @@
 
 #include "Core/Timespan.h"
 #include "Core/DateTime.h"
+#include "Core/TimedMinMaxVar.h"
 
 // Platform
 #include "Platform/Intrinsics.h"
