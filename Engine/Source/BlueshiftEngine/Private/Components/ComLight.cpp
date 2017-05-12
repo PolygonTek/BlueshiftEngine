@@ -259,8 +259,8 @@ void ComLight::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
                 frustum.SetAxis(sceneLight.axis);
                 frustum.SetSize(sceneLight.zNear, sceneLight.value[0], sceneLight.value[1], sceneLight.value[2]);
                 renderWorld->DebugFrustum(frustum, false, 1.0f, true, true);
-            }			
-        }		
+            }
+        }
     } else if (sceneLight.type == SceneLight::PointLight) {
         if (selected) {
             renderWorld->SetDebugColor(Color4::white, Color4::zero);

@@ -72,7 +72,7 @@ void ComParticleSystem::Init() {
     sceneEntity.castShadows = false;
     sceneEntity.receiveShadows = false;
 
-    simulationTime = 0;
+    currentTime = 0;
 
     simulationStarted = false;
  
@@ -173,13 +173,13 @@ void ComParticleSystem::Update() {
 
     int elapsedTime = GetGameWorld()->GetTime() - GetGameWorld()->GetPrevTime();
 
-    simulationTime += elapsedTime;
+    currentTime += elapsedTime;
 
-    UpdateSimulation(simulationTime);
+    UpdateSimulation(currentTime);
 }
 
-void ComParticleSystem::UpdateSimulation(int time) {
-    float simulationTime = MS2SEC(time);
+void ComParticleSystem::UpdateSimulation(int currentTime) {
+    float time = MS2SEC(currentTime);
 
     sceneEntity.aabb.SetZero();
 
@@ -189,14 +189,14 @@ void ComParticleSystem::UpdateSimulation(int time) {
         const ParticleSystem::Stage *stage = sceneEntity.particleSystem->GetStage(stageIndex);
         const ParticleSystem::StandardModule &standardModule = stage->standardModule;
 
-        float t = standardModule.simulationSpeed * simulationTime - startDelay[stageIndex];
-        if (t < 0) {
+        float simulationTime = standardModule.simulationSpeed * time - startDelay[stageIndex];
+        if (simulationTime < 0) {
             continue;
         }
 
         float cycleDuration = standardModule.lifeTime + standardModule.deadTime;
 
-        int curCycles = (int)t / cycleDuration;
+        int curCycles = (int)(simulationTime / cycleDuration);
 
         if (!standardModule.looping) {
             if (curCycles > standardModule.maxCycles) {
@@ -204,7 +204,7 @@ void ComParticleSystem::UpdateSimulation(int time) {
             }
         }
 
-        float inCycleTime = t - curCycles * cycleDuration;
+        float inCycleTime = simulationTime - curCycles * cycleDuration;
 
         int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
 
@@ -224,7 +224,7 @@ void ComParticleSystem::UpdateSimulation(int time) {
             // Get the particle pointer with the given particle index
             Particle *particle = (Particle *)((byte *)sceneEntity.stageParticles[stageIndex] + particleIndex * particleSize);
 
-            // Check this particle is living now
+            // Check this particle is alive now 
             if (particleAge >= 0 && particleAge < standardModule.lifeTime) {
                 // Generate if this particle is not generated yet. 
                 bool regenerate = !particle->generated;
@@ -272,7 +272,7 @@ void ComParticleSystem::UpdateSimulation(int time) {
     ComRenderable::UpdateVisuals();
 }
 
-void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFrac) {
+void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFrac) const {
     particle->generated = true;
 
     particle->initialSpeed = MeterToUnit(stage->standardModule.startSpeed.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
@@ -399,14 +399,15 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
     }
     
     int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
+    int pivotCount = 1 + trailCount;
 
-    for (int trailIndex = 0; trailIndex < 1 + trailCount; trailIndex++) {
-        Particle::Trail *trail = &particle->trails[trailIndex];
+    for (int pivotIndex = 0; pivotIndex < pivotCount; pivotIndex++) {
+        Particle::Trail *trail = &particle->trails[pivotIndex];
         
         float trailAge = particleAge;
 
         if (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) {
-            trailAge -= (stage->standardModule.lifeTime * stage->trailsModule.length) * trailIndex / trailCount;
+            trailAge -= (stage->standardModule.lifeTime * stage->trailsModule.length) * pivotIndex / trailCount;
             
             if (stage->trailsModule.trailCut) {
                 if (trailAge < 0) {
@@ -425,7 +426,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         }
 
         if (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) {
-            trail->size *= Lerp(1.0f, stage->trailsModule.trailScale, (float)trailIndex / trailCount);
+            trail->size *= Lerp(1.0f, stage->trailsModule.trailScale, (float)pivotIndex / trailCount);
         }
 
         // Compute aspect ratio
@@ -445,10 +446,12 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         
         // Compute color
         if (stage->moduleFlags & BIT(ParticleSystem::LTColorModuleBit)) {
-            if (trailFrac < stage->colorOverLifetimeModule.fadeLocation) { // fade in
+            if (trailFrac < stage->colorOverLifetimeModule.fadeLocation) {
+                // fade in
                 float f = trailFrac / stage->colorOverLifetimeModule.fadeLocation;
                 trail->color = Lerp(stage->colorOverLifetimeModule.targetColor, particle->initialColor, f);
-            } else { // fade out
+            } else { 
+                // fade out
                 float f = (trailFrac - stage->colorOverLifetimeModule.fadeLocation) / (1.f - stage->colorOverLifetimeModule.fadeLocation);
                 trail->color = Lerp(particle->initialColor, stage->colorOverLifetimeModule.targetColor, f);
             }
@@ -458,42 +461,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
 
         // Compute position
         if (stage->moduleFlags & BIT(ParticleSystem::CustomPathModuleBit)) {
-            const ParticleSystem::CustomPathModule &customPathModule = stage->customPathModule;
-
-            if (customPathModule.customPath == ParticleSystem::CustomPathModule::ConePath) {
-                float radialTheta = trailFrac * DEG2RAD(customPathModule.radialSpeed);
-                float s, c;
-                Math::SinCos(radialTheta, s, c);
-                c = c * (1.0f - trailFrac);
-                s = s * (1.0f - trailFrac);
-
-                trail->position.x = particle->initialPosition.x * c + particle->initialPosition.y * s;
-                trail->position.y = particle->initialPosition.y * c - particle->initialPosition.x * s;
-                trail->position.z = 0;
-            } else if (customPathModule.customPath == ParticleSystem::CustomPathModule::HelixPath) {
-                float radialTheta = trailFrac * DEG2RAD(customPathModule.radialSpeed);
-                float s, c;
-                Math::SinCos(radialTheta, s, c);
-
-                trail->position.x = particle->initialPosition.x * c + particle->initialPosition.y * s;
-                trail->position.y = particle->initialPosition.y * c - particle->initialPosition.x * s;
-                trail->position.z = particle->initialPosition.z + trailFrac * particle->direction.z;
-            } else if (customPathModule.customPath == ParticleSystem::CustomPathModule::SphericalPath) {
-                float radialTheta = trailFrac * DEG2RAD(customPathModule.radialSpeed);
-                float axialTheta = trailFrac * customPathModule.axialSpeed;
-                float s, c;
-                Math::SinCos(radialTheta, s, c);
-
-                Vec3 tmp = particle->initialPosition;
-                tmp.Normalize();
-                Vec3 rotDir = Vec3::unitZ.Cross(tmp);
-                Rotation rotation(Vec3::origin, rotDir, axialTheta);
-                Vec3 vec = rotation.RotatePoint(particle->initialPosition);
-
-                trail->position.x = vec.x * c + vec.y * s;
-                trail->position.y = vec.y * c - vec.x * s;
-                trail->position.z = vec.z;
-            }
+            ComputeTrailPositionFromCustomPath(stage->customPathModule, particle, trailFrac, trail);
         } else if (stage->moduleFlags & BIT(ParticleSystem::LTSpeedModuleBit)) {
             float dist = particle->initialSpeed * trailFrac + MeterToUnit(stage->speedOverLifetimeModule.speed.Integrate(particle->randomSpeed, trailFrac));
 
@@ -517,7 +485,11 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         // Apply gravity
         trail->position.z -= MeterToUnit(stage->standardModule.gravity) * 0.5f * trailFrac * trailFrac;
 
-        // Add a particle trail bounds to entity bounds
+        if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
+            trail->position = offsetMatrix * trail->position;
+        }
+
+        // Add trail bounds to the entity bounds
         float radius;
         if (stage->standardModule.orientation == ParticleSystem::StandardModule::Orientation::Aimed || 
             stage->standardModule.orientation == ParticleSystem::StandardModule::Orientation::AimedZ) {
@@ -526,11 +498,59 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             radius = trail->size * 0.5f;
         }
 
-        if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
-            trail->position = offsetMatrix * trail->position;
-        }
-
         sceneEntity.aabb.AddAABB(Sphere(trail->position, radius).ToAABB());
+    }
+}
+
+void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem::CustomPathModule &customPathModule, const Particle *particle, float t, Particle::Trail *trail) const {
+    if (customPathModule.customPath == ParticleSystem::CustomPathModule::ConePath) {
+        float radialTheta = t * DEG2RAD(customPathModule.radialSpeed);
+        float s, c;
+        Math::SinCos(radialTheta, s, c);
+        c = c * (1.0f - t);
+        s = s * (1.0f - t);
+
+        trail->position.x = particle->initialPosition.x * c + particle->initialPosition.y * s;
+        trail->position.y = particle->initialPosition.y * c - particle->initialPosition.x * s;
+        trail->position.z = 0;
+        return;
+    }
+    
+    if (customPathModule.customPath == ParticleSystem::CustomPathModule::HelixPath) {
+        float radialTheta = t * DEG2RAD(customPathModule.radialSpeed);
+        float s, c;
+        Math::SinCos(radialTheta, s, c);
+
+        trail->position.x = particle->initialPosition.x * c + particle->initialPosition.y * s;
+        trail->position.y = particle->initialPosition.y * c - particle->initialPosition.x * s;
+        trail->position.z = particle->initialPosition.z + t * particle->direction.z;
+        return;
+    }
+
+    if (customPathModule.customPath == ParticleSystem::CustomPathModule::SphericalPath) {
+        float radialTheta = t * DEG2RAD(customPathModule.radialSpeed);
+        float axialTheta = t * customPathModule.axialSpeed;
+        float s, c;
+        Math::SinCos(radialTheta, s, c);
+
+        Vec3 tmp = particle->initialPosition;
+        tmp.Normalize();
+        Vec3 rotDir = Vec3::unitZ.Cross(tmp);
+        Rotation rotation(Vec3::origin, rotDir, axialTheta);
+        Vec3 vec = rotation.RotatePoint(particle->initialPosition);
+
+        trail->position.x = vec.x * c + vec.y * s;
+        trail->position.y = vec.y * c - vec.x * s;
+        trail->position.z = vec.z;
+        return;
+    }
+
+    assert(0);
+}
+
+void ComParticleSystem::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+    if (selected) {
+        UpdateSimulation(currentTime); // FIXME
     }
 }
 
@@ -544,12 +564,12 @@ void ComParticleSystem::PauseSimulation() {
 
 void ComParticleSystem::RestartSimulation() {
     simulationStarted = true;
-    simulationTime = 0;
+    currentTime = 0;
 }
 
 void ComParticleSystem::StopSimulation() {
     simulationStarted = false;
-    simulationTime = 0;
+    currentTime = 0;
 }
 
 void ComParticleSystem::ParticleSystemReloaded() {

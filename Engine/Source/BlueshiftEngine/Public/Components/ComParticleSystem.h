@@ -35,7 +35,9 @@ public:
 
     virtual void            Update() override;
 
-    void                    UpdateSimulation(int simulationTime);
+    virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
+
+    void                    UpdateSimulation(int currentTime);
 
     void                    StartSimulation();
     void                    PauseSimulation();
@@ -47,8 +49,9 @@ public:
 protected:
     void                    ChangeParticleSystem(const Guid &particleSystemGuid);
     void                    ResetParticles();
-    void                    InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFraction);
+    void                    InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFraction) const;
     void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float genTimeDelta);
+    void                    ComputeTrailPositionFromCustomPath(const ParticleSystem::CustomPathModule &customPathModule, const Particle *particle, float t, Particle::Trail *trail) const;
     void                    ParticleSystemReloaded();
     void                    PropertyChanged(const char *classname, const char *propName);
 
@@ -58,7 +61,7 @@ protected:
     ParticleSystemAsset *   particleSystemAsset;
     Array<float>            startDelay;
     bool                    simulationStarted;
-    int                     simulationTime;
+    int                     currentTime;
 };
 
 BE_NAMESPACE_END

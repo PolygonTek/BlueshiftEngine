@@ -48,7 +48,7 @@ public:
 protected:
     void                    UpdateVisuals();
 
-    SceneLight::Type       GetLightType() const;
+    SceneLight::Type        GetLightType() const;
     void                    SetLightType(SceneLight::Type type);
 
     bool                    IsMainLight() const;

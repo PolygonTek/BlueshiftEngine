@@ -86,7 +86,7 @@ public:
     Entity *                    FindEntity(const char *name) const;
     Entity *                    FindEntityByGuid(const Guid &guid) const;
     Entity *                    FindEntityByTag(const char *tag) const;
-    const EntityPtrArray         FindEntitiesByTag(const char *tag) const;
+    const EntityPtrArray        FindEntitiesByTag(const char *tag) const;
     Entity *                    FindEntityByRenderEntity(int renderEntityHandle) const;
 
     void                        OnEntityNameChanged(Entity *ent);

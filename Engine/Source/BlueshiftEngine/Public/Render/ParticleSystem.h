@@ -29,7 +29,6 @@ BE_NAMESPACE_BEGIN
 
 class ParticleMesh;
 
-// Definition of the each particles
 struct Particle {
     enum { MaxTrails = 32 };
 
@@ -80,6 +79,10 @@ public:
         LTSizeModuleBit         = 7,
         LTAspectRatioModuleBit  = 8,
         TrailsModuleBit         = 9,
+        //CollisionModuleBit    = 10,
+        //NoiseModuleBit        = 11,
+        //SubEmittersModuleBit  = 12,
+        //LightModuleBit        = 13,
         MaxModules
     };    
 
