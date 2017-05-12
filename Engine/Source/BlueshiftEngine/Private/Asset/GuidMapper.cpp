@@ -53,12 +53,14 @@ Guid        GuidMapper::sphereMeshGuid(0, 0, 0, 404);
 Guid        GuidMapper::geoSphereMeshGuid(0, 0, 0, 405);
 Guid        GuidMapper::cylinderMeshGuid(0, 0, 0, 406);
 Guid        GuidMapper::capsuleMeshGuid(0, 0, 0, 407);
+// predefined particle system GUID
+Guid        GuidMapper::defaultParticleSystemGuid(0, 0, 0, 500);
 // predefined skeleton GUID
-Guid        GuidMapper::defaultSkeletonGuid(0, 0, 0, 500);
+Guid        GuidMapper::defaultSkeletonGuid(0, 0, 0, 600);
 // predefined anim controller GUID
-Guid        GuidMapper::defaultAnimControllerGuid(0, 0, 0, 600);
+Guid        GuidMapper::defaultAnimControllerGuid(0, 0, 0, 700);
 // predefined sound GUID
-Guid        GuidMapper::defaultSoundGuid(0, 0, 0, 700);
+Guid        GuidMapper::defaultSoundGuid(0, 0, 0, 800);
 
 bool GuidMapper::Read(const char *filename) {
     File *file = fileSystem.OpenFileRead(filename, false);

@@ -51,7 +51,7 @@ void RenderSystem::Init(const Renderer::Settings *settings) {
 
     textureManager.Init();
 
-    shaderManager.Init();	
+    shaderManager.Init();
 
     materialManager.Init();
 
@@ -66,6 +66,8 @@ void RenderSystem::Init(const Renderer::Settings *settings) {
     skeletonManager.Init();
 
     meshManager.Init();
+
+    particleSystemManager.Init();
 
     animManager.Init();
 
@@ -94,6 +96,8 @@ void RenderSystem::Shutdown() {
     RB_Shutdown();
 
     animManager.Shutdown();
+
+    particleSystemManager.Shutdown();
 
     meshManager.Shutdown();
 
