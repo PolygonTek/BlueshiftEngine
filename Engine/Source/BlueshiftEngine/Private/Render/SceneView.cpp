@@ -318,7 +318,7 @@ bool SceneView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) c
     AABB bounds;
 
     // CHECK: is valid AABB ?
-    if (!frustum.ProjectionBounds(frustum, bounds)) {
+    if (!this->frustum.ProjectionBounds(frustum, bounds)) {
         return false;
     }
 

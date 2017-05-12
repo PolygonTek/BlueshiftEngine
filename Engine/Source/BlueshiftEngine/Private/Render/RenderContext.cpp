@@ -85,6 +85,7 @@ void RenderContext::Init(Renderer::WindowHandle hwnd, int renderWidth, int rende
     this->renderHeight = renderHeight;
     
     this->guiMesh.Clear();
+    this->guiMesh.SetCoordFrame(GuiMesh::CoordFrame2D);
     this->guiMesh.SetClipRect(Rect(0, 0, renderWidth, renderHeight));
     
     glr.SetContextDisplayFunc(contextHandle, displayFunc, displayFuncDataPtr, (flags & OnDemandDrawing) ? true : false);

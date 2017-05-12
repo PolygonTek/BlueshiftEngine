@@ -465,15 +465,15 @@ static void RB_ClearView() {
     
     if (backEnd.view->def->parms.clearMethod == SceneView::DepthOnlyClear) {
         clearBits = Renderer::DepthBit | Renderer::StencilBit;
+
+        glr.SetStateBits(glr.GetStateBits() | Renderer::DepthWrite);
+        glr.Clear(clearBits, Color4::black, 1.0f, 0);
     } else if (backEnd.view->def->parms.clearMethod == SceneView::ColorClear) {
         clearBits = Renderer::DepthBit | Renderer::StencilBit | Renderer::ColorBit;
         Color4 clearColor = backEnd.view->def->parms.clearColor;
 
         glr.SetStateBits(glr.GetStateBits() | Renderer::DepthWrite | Renderer::ColorWrite | Renderer::AlphaWrite);
         glr.Clear(clearBits, clearColor, 1.0f, 0);
-    } else {
-        glr.SetStateBits(glr.GetStateBits() | Renderer::DepthWrite);
-        glr.Clear(clearBits, Color4::black, 1.0f, 0);
     }
 }
 
