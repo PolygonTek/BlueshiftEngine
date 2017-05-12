@@ -321,6 +321,8 @@ public:
     static float                Floor(float f);
                                 /// Returns the smallest integer that is greater than or equal to the given value
     static float                Ceil(float f);
+                                /// Returns the fraction component (part after the decimal)
+    static float                Fract(float f);
                                 /// Returns the nearest integer
     static float                Rint(float f);
                                 /// Float to int conversion
@@ -913,6 +915,10 @@ BE_INLINE float Math::Floor(float f) {
 
 BE_INLINE float Math::Ceil(float f) {
     return ceilf(f);
+}
+
+BE_INLINE float Math::Fract(float f) {
+    return f - floorf(f);
 }
 
 BE_INLINE float Math::Rint(float f) {
