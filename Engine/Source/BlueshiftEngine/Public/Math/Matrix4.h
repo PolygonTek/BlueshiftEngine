@@ -208,6 +208,12 @@ public:
     Mat4                EuclideanInverse() const;
     bool                EuclideanInverseSelf();
 
+                        /// LU decomposition, in-place
+    bool                DecompLU();
+
+                        /// Solve Ax = b with LU decomposition
+    Vec4                SolveLU(const Vec4 &b) const;
+
                         /// Translates by the given offset, in-place
     void                Translate(const Vec3 &t) { Translate(t.x, t.y, t.z); }
     void                Translate(float tx, float ty, float tz);

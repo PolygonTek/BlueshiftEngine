@@ -398,6 +398,55 @@ bool Mat4::EuclideanInverseSelf() {
     return true;
 }
 
+// Doolittle Algorithm
+// Doolittle uses unit diagonals for the lower triangle
+bool Mat4::DecompLU() {
+    float sum;
+
+    for (int i = 0; i < Rows; i++) {
+        // Compute a line of U
+        for (int j = i; j < Cols; j++) {
+            sum = 0;
+            for (int k = 0; k < i; k++) {
+                sum += mat[i][k] * mat[k][j];
+            }
+            mat[i][j] = mat[i][j] - sum; // not dividing by diagonals
+        }
+        // Compute a line of L
+        for (int j = 0; j < i; j++) {
+            sum = 0;
+            for (int k = 0; k < j; k++) {
+                sum += mat[i][k] * mat[k][j];
+            }
+            mat[i][j] = (mat[i][j] - sum) / mat[j][j];
+        }        
+    }
+    return true;
+}
+
+Vec4 Mat4::SolveLU(const Vec4 &b) const {
+    Vec4 x, y;
+    float sum;
+
+    // Solve Ly = b
+    for (int i = 0; i < Rows; i++) {
+        sum = 0;
+        for (int j = 0; j < i; j++) {
+            sum += mat[i][j] * y[j];
+        }
+        y[i] = b[i] - sum; // not dividing by diagonals
+    }
+    // Solve Ux = y
+    for (int i = Rows - 1; i >= 0; i--) {
+        sum = 0;
+        for (int j = i; j < Cols; j++) {
+            sum += mat[i][j] * x[j];
+        }
+        x[i] = (y[i] - sum) / mat[i][i];
+    }
+    return x;
+}
+
 void Mat4::Translate(float tx, float ty, float tz) {
     mat[0][3] = mat[0][0] * tx + mat[0][1] * ty + mat[0][2] * tz + mat[0][3];
     mat[1][3] = mat[1][0] * tx + mat[1][1] * ty + mat[1][2] * tz + mat[1][3];
