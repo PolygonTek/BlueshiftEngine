@@ -74,7 +74,6 @@ void ComMeshRenderer::Init() {
     ChangeMesh(props->Get("mesh").As<Guid>());
 
     // Set SceneEntity parameters
-    sceneEntity.layer           = GetEntity()->GetLayer();
     sceneEntity.mesh            = nullptr;
     sceneEntity.aabb            = referenceMesh->GetAABB();
     sceneEntity.customSkin      = nullptr;
@@ -240,7 +239,7 @@ bool ComMeshRenderer::GetClosestVertex(const SceneView *view, const Point &mouse
 
     for (int surfaceIndex = 0; surfaceIndex < sceneEntity.mesh->NumSurfaces(); surfaceIndex++) {
         const SubMesh *subMesh = sceneEntity.mesh->GetSurface(surfaceIndex)->subMesh;
-        const VertexLightingGeneric *v = subMesh->Verts();
+        const VertexGenericLit *v = subMesh->Verts();
 
         for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++, v++) {
             Vec3 localPosition = v->GetPosition();

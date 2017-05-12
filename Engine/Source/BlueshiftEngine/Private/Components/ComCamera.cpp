@@ -131,7 +131,7 @@ void ComCamera::Init() {
 
     viewParms.flags = SceneView::Flag::NoSubViews;
     if (!(viewParms.layerMask & BIT(TagLayerSettings::DefaultLayer))) {
-        viewParms.flags |= SceneView::Flag::NoShadows | SceneView::Flag::NoSubViews;
+        viewParms.flags |= SceneView::Flag::NoShadows | SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess;
     }
 
     viewParms.clearMethod = (SceneView::ClearMethod)props->Get("clear").As<int>();
