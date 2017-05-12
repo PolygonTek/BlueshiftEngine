@@ -22,6 +22,6 @@ if ANDROID
     In the file `%USERPROFILE%\Documents\BasicGameAnd\Project\Android\AndroidPlayer\assets\Config\config.cfg`,
     change to `set lua_server "192.168.0.10"` (ip address of ZeroBraneStudio Server),
     and change to `set lua_path "C:\Users\sjpark\Documents\BasicGame"`.
-    Execute int the command shell, `xcopy BlueshiftEngine\Engine\Scripts %USERPROFILE%\Documents\BasicGameAnd\Project\Android\AndroidPlayer\assets\Scripts /I /e /y`
+    Execute in the command shell, `xcopy BlueshiftEngine\Engine\Scripts %USERPROFILE%\Documents\BasicGameAnd\Project\Android\AndroidPlayer\assets\Scripts /I /e /y`
 endif
 
