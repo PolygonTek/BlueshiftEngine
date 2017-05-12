@@ -22,6 +22,30 @@ set(ENGINE_FILES
   Public/Core/Variant.h
   Public/Core/Guid.h
   Public/Core/WStr.h
+  Public/Core/ByteOrder.h
+  Public/Core/CmdArgs.h
+  Public/Core/Cmds.h
+  Public/Core/CVars.h
+  Public/Core/Timespan.h
+  Public/Core/DateTime.h
+  Public/Core/TimedMinMaxVar.h
+  Public/Core/Dict.h
+  Public/Core/Expr.h
+  Public/Core/Lexer.h
+  Public/Core/WLexer.h
+  Public/Core/Task.h
+  Public/Core/Event.h
+  Public/Core/Object.h
+  Public/Core/Property.h
+  Public/Core/Serializable.h
+  Public/Core/Signal.h
+  Public/Core/SignalObject.h
+  Public/Core/DynamicAABBTree.h
+  Public/Core/JointPose.h
+  Public/Core/StrColor.h
+  Public/Core/Vec4Color.h
+  Public/Core/Vertex.h 
+
   Public/Containers/StaticArray.h
   Public/Containers/BinSearch.h
   Public/Containers/HashIndex.h
@@ -36,10 +60,13 @@ set(ENGINE_FILES
   Public/Containers/StrArray.h
   Public/Containers/StrPool.h
   Public/Containers/LinkedList.h
+
   Public/Image/Image.h
+  
   Public/DXT/DxtCodec.h
   Public/DXT/DxtDecoder.h
   Public/DXT/DxtEncoder.h
+
   Public/Math/AABB.h
   Public/Math/Angles.h
   Public/Math/Complex.h
@@ -48,6 +75,7 @@ set(ENGINE_FILES
   Public/Math/Color4.h
   Public/Math/CQuaternion.h
   Public/Math/Curve.h
+  Public/Math/Hermite.h
   Public/Math/Cylinder.h
   Public/Math/Frustum.h
   Public/Math/Half.h
@@ -71,7 +99,8 @@ set(ENGINE_FILES
   Public/Math/Vector.h
   Public/Math/Vector2.h
   Public/Math/Vector3.h
-  Public/Math/Vector4.h  
+  Public/Math/Vector4.h
+
   Public/SIMD/Simd.h
   Public/SIMD/Simd_AVX.h
   Public/SIMD/Simd_Generic.h
@@ -86,6 +115,7 @@ set(ENGINE_FILES
   Public/SIMD/SSE/sseb.h
   Public/SIMD/SSE/ssef.h
   Public/SIMD/SSE/ssei.h
+
   Public/Platform/cpuid.h
   Public/Platform/Intrinsics.h
   Public/Platform/PlatformAtomic.h
@@ -93,22 +123,12 @@ set(ENGINE_FILES
   Public/Platform/PlatformFile.h
   Public/Platform/PlatformThread.h
   Public/Platform/PlatformTime.h
+
   Public/File/File.h
   Public/File/FileSystem.h
   Public/File/FileMapping.h
   Public/File/ZipArchiver.h
-  Public/Core/ByteOrder.h
-  Public/Core/CmdArgs.h
-  Public/Core/Cmds.h
-  Public/Core/CVars.h
-  Public/Core/Timespan.h
-  Public/Core/DateTime.h
-  Public/Core/Dict.h
-  Public/Core/Expr.h
-  Public/Core/Lexer.h
-  Public/Core/WLexer.h
-  Public/Core/Task.h
-
+  
   Public/Renderer/Renderer.h
   Public/Renderer/RendererInterface.h
   Public/Renderer/RendererGL.h
@@ -170,14 +190,7 @@ set(ENGINE_FILES
   Public/Game/GameSettings/GameSettings.h
   Public/Game/GameSettings/TagLayerSettings.h
   Public/Game/GameSettings/PhysicsSettings.h
-  
-  Public/Core/Event.h
-  Public/Core/Object.h
-  Public/Core/Property.h
-  Public/Core/Serializable.h
-  Public/Core/Signal.h
-  Public/Core/SignalObject.h
-  
+    
   Public/Physics/Collider.h
   Public/Physics/Physics.h
   Public/Physics/PhysicsCollidable.h
@@ -198,6 +211,7 @@ set(ENGINE_FILES
   Public/Render/Anim.h
   Public/Render/BufferCache.h
   Public/Render/Font.h
+  Public/Render/ParticleMesh.h
   Public/Render/GuiMesh.h
   Public/Render/Material.h
   Public/Render/Mesh.h
@@ -222,12 +236,6 @@ set(ENGINE_FILES
   Public/Input/KeyCodes.h
 
   Public/Script/LuaVM.h
-
-  Public/Core/DynamicAABBTree.h
-  Public/Core/JointPose.h
-  Public/Core/StrColor.h
-  Public/Core/Vec4Color.h
-  Public/Core/Vertex.h 
 
   Private/BlueshiftEngine.cpp
   Private/Core/Checksum_CRC32.cpp
@@ -332,6 +340,7 @@ set(ENGINE_FILES
   Private/Asset/MaterialAsset.cpp
   Private/Asset/FontAsset.cpp
   Private/Asset/MeshAsset.cpp
+  Private/Asset/ParticleSystemAsset.cpp
   Private/Asset/SkeletonAsset.cpp
   Private/Asset/AnimAsset.cpp
   Private/Asset/JointMaskAsset.cpp
@@ -432,6 +441,7 @@ set(ENGINE_FILES
   Private/Render/Anim_optimize.cpp
   Private/Render/AnimManager.cpp
   Private/Render/BufferCache.cpp
+  Private/Render/ParticleMesh.cpp
   Private/Render/GuiMesh.cpp
   Private/Render/Material.cpp
   Private/Render/MaterialManager.cpp
@@ -443,6 +453,7 @@ set(ENGINE_FILES
   Private/Render/RenderSystem.cpp
   Private/Render/RenderContext.cpp
   Private/Render/ParticleSystem.cpp
+  Private/Render/ParticleSystemManager.cpp
   Private/Render/SceneEntity.cpp
   Private/Render/SceneLight.cpp
   Private/Render/SceneView.cpp
