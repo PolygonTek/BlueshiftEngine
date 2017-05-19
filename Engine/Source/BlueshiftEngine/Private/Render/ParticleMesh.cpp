@@ -158,12 +158,12 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             // number of indices for the quad that consist of two triangles
             int numIndexes = numVerts * 3 / 2;
 
-            if (stage.standardModule.material != currentSurf->material) {
+            //if (stage.standardModule.material != currentSurf->material) { // FIXME
                 if (currentSurf->numVerts > 0) {
                     PrepareNextSurf();
                 }
                 currentSurf->material = stage.standardModule.material;
-            }
+            //}
 
             totalVerts += numVerts;
             totalIndexes += numIndexes;
