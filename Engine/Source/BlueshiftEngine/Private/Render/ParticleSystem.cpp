@@ -380,6 +380,8 @@ bool ParticleSystem::ParseMinMaxVar(Lexer &lexer, MinMaxVar *var) const {
 bool ParticleSystem::ParseTimedVar(Lexer &lexer, TimedVar *var) const {
     Str token;
 
+    var->curve.Clear();
+
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(timedVarTypeNames); i++) {
             if (!token.Icmp(timedVarTypeNames[i])) {
@@ -391,20 +393,16 @@ bool ParticleSystem::ParseTimedVar(Lexer &lexer, TimedVar *var) const {
 
                 if (var->type == TimedVar::ConstantType) {
                     lexer.ExpectTokenString("constant");
-                    var->constant = lexer.ParseFloat();
+                    var->curve.AddPoint(0, lexer.ParseFloat());
                 } else if (var->type == TimedVar::CurveType) {
-                    lexer.ExpectTokenString("minTime");
-                    float minTime = lexer.ParseFloat();
+                    lexer.ExpectTokenString("wrapMode");
+                    
                     Hermite<float>::TimeWrapMode minTimeWrapMode;
                     ParseTimeWrapMode(lexer, &minTimeWrapMode);
-                    var->curve.SetMinTime(minTime);
                     var->curve.SetMinTimeWrapMode(minTimeWrapMode);
 
-                    lexer.ExpectTokenString("maxTime");
-                    float maxTime = lexer.ParseFloat();
                     Hermite<float>::TimeWrapMode maxTimeWrapMode;
                     ParseTimeWrapMode(lexer, &maxTimeWrapMode);
-                    var->curve.SetMaxTime(maxTime);
                     var->curve.SetMaxTimeWrapMode(maxTimeWrapMode);
 
                     lexer.ExpectTokenString("curve");
@@ -449,6 +447,9 @@ bool ParticleSystem::ParseTimedVar(Lexer &lexer, TimedVar *var) const {
 bool ParticleSystem::ParseTimedMinMaxVar(Lexer &lexer, TimedMinMaxVar *var) const {
     Str token;
 
+    var->curves[0].Clear();
+    var->curves[1].Clear();
+
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(timedMinMaxVarTypeNames); i++) {
             if (!token.Icmp(timedMinMaxVarTypeNames[i])) {
@@ -460,31 +461,25 @@ bool ParticleSystem::ParseTimedMinMaxVar(Lexer &lexer, TimedMinMaxVar *var) cons
 
                 if (var->type == TimedMinMaxVar::ConstantType) {
                     lexer.ExpectTokenString("constant");
-                    var->constants[1] = lexer.ParseFloat();
+                    var->curves[0].AddPoint(0, 0);
+                    var->curves[1].AddPoint(0, lexer.ParseFloat());
                 } else if (var->type == TimedMinMaxVar::RandomBetweenTwoConstantsType) {
                     lexer.ExpectTokenString("constants");
-                    var->constants[0] = lexer.ParseFloat();
-                    var->constants[1] = lexer.ParseFloat();
+                    var->curves[0].AddPoint(0, lexer.ParseFloat());
+                    var->curves[1].AddPoint(1, lexer.ParseFloat());
                 } else if (var->type == TimedMinMaxVar::CurveType) {
-                    lexer.ExpectTokenString("minTime");
-                    float minTime = lexer.ParseFloat();
+                    lexer.ExpectTokenString("wrapMode");
+
                     Hermite<float>::TimeWrapMode minTimeWrapMode;
                     ParseTimeWrapMode(lexer, &minTimeWrapMode);
-                    var->curves[1].SetMinTime(minTime);
                     var->curves[1].SetMinTimeWrapMode(minTimeWrapMode);
 
-                    lexer.ExpectTokenString("maxTime");
-                    float maxTime = lexer.ParseFloat();
                     Hermite<float>::TimeWrapMode maxTimeWrapMode;
                     ParseTimeWrapMode(lexer, &maxTimeWrapMode);
-                    var->curves[1].SetMaxTime(maxTime);
                     var->curves[1].SetMaxTimeWrapMode(maxTimeWrapMode);
 
                     lexer.ExpectTokenString("curve");
                     lexer.ExpectTokenString("{");
-
-                    lexer.ExpectTokenString("scaler");
-                    var->constants[1] = lexer.ParseFloat();
                     
                     lexer.ExpectTokenString("numPoints");
                     int numPoints = lexer.ParseInt();
@@ -503,25 +498,21 @@ bool ParticleSystem::ParseTimedMinMaxVar(Lexer &lexer, TimedMinMaxVar *var) cons
                         var->curves[1].SetIncomingTangent(pointIndex, incomingTangent);
                     }
 
+                    var->curves[0].AddPoint(0, 0);
+
                     lexer.ExpectTokenString("}");
 
                     lexer.ExpectTokenString("}");
                 } else if (var->type == TimedMinMaxVar::RandomBetweenTwoCurvesType) {
-                    lexer.ExpectTokenString("minTime");
-                    float minTime = lexer.ParseFloat();
+                    lexer.ExpectTokenString("wrapMode");
+
                     Hermite<float>::TimeWrapMode minTimeWrapMode;
                     ParseTimeWrapMode(lexer, &minTimeWrapMode);
-                    var->curves[0].SetMinTime(minTime);
-                    var->curves[1].SetMinTime(minTime);
                     var->curves[0].SetMinTimeWrapMode(minTimeWrapMode);
                     var->curves[1].SetMinTimeWrapMode(minTimeWrapMode);
 
-                    lexer.ExpectTokenString("maxTime");
-                    float maxTime = lexer.ParseFloat();
                     Hermite<float>::TimeWrapMode maxTimeWrapMode;
                     ParseTimeWrapMode(lexer, &maxTimeWrapMode);
-                    var->curves[0].SetMaxTime(maxTime);
-                    var->curves[1].SetMaxTime(maxTime);
                     var->curves[0].SetMaxTimeWrapMode(maxTimeWrapMode);
                     var->curves[1].SetMaxTimeWrapMode(maxTimeWrapMode);
 
@@ -529,9 +520,6 @@ bool ParticleSystem::ParseTimedMinMaxVar(Lexer &lexer, TimedMinMaxVar *var) cons
                         lexer.ExpectTokenString("curve");
                         lexer.ParseInt();
                         lexer.ExpectTokenString("{");
-
-                        lexer.ExpectTokenString("scaler");
-                        var->constants[curveIndex] = lexer.ParseFloat();
 
                         lexer.ExpectTokenString("numPoints");
                         int numPoints = lexer.ParseInt();
@@ -990,14 +978,13 @@ static void WriteTimedVar(File *fp, const Str &name, const TimedVar &var, Str &i
     indentSpace += "  ";
 
     if (var.type == TimedVar::ConstantType) {
-        fp->Printf("%sconstant %.3f\n", indentSpace.c_str(), var.constant);
+        fp->Printf("%sconstant %.3f\n", indentSpace.c_str(), var.curve.GetPoint(0));
     } else if (var.type == TimedVar::CurveType) {
         const auto &curve = var.curve;
 
-        fp->Printf("%sminTime %.3f \"%s\"\n", indentSpace.c_str(),
-            curve.GetMinTime(), timeWrapModeNames[curve.GetMinTimeWrapMode()]);
-        fp->Printf("%smaxTime %.3f \"%s\"\n", indentSpace.c_str(),
-            curve.GetMaxTime(), timeWrapModeNames[curve.GetMaxTimeWrapMode()]);
+        fp->Printf("%swrapMode \"%s\" \"%s\"\n", indentSpace.c_str(), 
+            timeWrapModeNames[curve.GetMinTimeWrapMode()], 
+            timeWrapModeNames[curve.GetMaxTimeWrapMode()]);
 
         fp->Printf("%scurve {\n", indentSpace.c_str());
         indentSpace += "  ";
@@ -1032,21 +1019,18 @@ static void WriteTimedMinMaxVar(File *fp, const Str &name, const TimedMinMaxVar 
     indentSpace += "  ";
 
     if (var.type == TimedMinMaxVar::ConstantType) {
-        fp->Printf("%sconstant %.3f\n", indentSpace.c_str(), var.constants[1]);
+        fp->Printf("%sconstant %.3f\n", indentSpace.c_str(), var.curves[1].GetPoint(0));
     } else if (var.type == TimedMinMaxVar::RandomBetweenTwoConstantsType) {
-        fp->Printf("%sconstants %.3f %.3f\n", indentSpace.c_str(), var.constants[0], var.constants[1]);
+        fp->Printf("%sconstants %.3f %.3f\n", indentSpace.c_str(), var.curves[0].GetPoint(0), var.curves[1].GetPoint(0));
     } else if (var.type == TimedMinMaxVar::CurveType) {
         const auto &curve = var.curves[1];
 
-        fp->Printf("%sminTime %.3f \"%s\"\n", indentSpace.c_str(),
-            curve.GetMinTime(), timeWrapModeNames[curve.GetMinTimeWrapMode()]);
-        fp->Printf("%smaxTime %.3f \"%s\"\n", indentSpace.c_str(),
-            curve.GetMaxTime(), timeWrapModeNames[curve.GetMaxTimeWrapMode()]);
+        fp->Printf("%swrapMode \"%s\" \"%s\"\n", indentSpace.c_str(), 
+            timeWrapModeNames[curve.GetMinTimeWrapMode()], 
+            timeWrapModeNames[curve.GetMaxTimeWrapMode()]);
 
         fp->Printf("%scurve {\n", indentSpace.c_str());
         indentSpace += "  ";
-
-        fp->Printf("%sscaler %.3f\n", indentSpace.c_str(), var.constants[1]);
 
         fp->Printf("%snumPoints %i\n", indentSpace.c_str(), curve.NumPoints());
         fp->Printf("%spoints {\n", indentSpace.c_str());
@@ -1066,23 +1050,18 @@ static void WriteTimedMinMaxVar(File *fp, const Str &name, const TimedMinMaxVar 
         indentSpace.Truncate(indentSpace.Length() - 2);
         fp->Printf("%s}\n", indentSpace.c_str());
     } else if (var.type == TimedMinMaxVar::RandomBetweenTwoCurvesType) {
-        assert(var.curves[0].GetMinTime() == var.curves[1].GetMinTime());
-        assert(var.curves[0].GetMaxTime() == var.curves[1].GetMaxTime());
         assert(var.curves[0].GetMinTimeWrapMode() == var.curves[1].GetMinTimeWrapMode());
         assert(var.curves[0].GetMaxTimeWrapMode() == var.curves[1].GetMaxTimeWrapMode());
 
-        fp->Printf("%sminTime %.3f \"%s\"\n", indentSpace.c_str(),
-            var.curves[0].GetMinTime(), timeWrapModeNames[var.curves[0].GetMinTimeWrapMode()]);
-        fp->Printf("%smaxTime %.3f \"%s\"\n", indentSpace.c_str(),
-            var.curves[0].GetMaxTime(), timeWrapModeNames[var.curves[0].GetMaxTimeWrapMode()]);
+        fp->Printf("%swrapMode \"%s\" \"%s\"\n", indentSpace.c_str(),
+            timeWrapModeNames[var.curves[1].GetMinTimeWrapMode()], 
+            timeWrapModeNames[var.curves[1].GetMaxTimeWrapMode()]);
 
         for (int curveIndex = 0; curveIndex < 2; curveIndex++) {
             const auto &curve = var.curves[curveIndex];
 
             fp->Printf("%scurve %i {\n", indentSpace.c_str(), curveIndex);
             indentSpace += "  ";
-
-            fp->Printf("%sscaler %.3f\n", indentSpace.c_str(), var.constants[curveIndex]);
 
             fp->Printf("%snumPoints %i\n", indentSpace.c_str(), curve.NumPoints());
             fp->Printf("%spoints {\n", indentSpace.c_str());

@@ -54,19 +54,23 @@ public:
     bool                RemoveIndex(int index);
 
                         /// Returns number of points
-    int                 NumPoints() const { return points.Count(); }
+    int                 NumPoints() const { return keys.Count(); }
 
                         /// Sets time of the point with the given index index
-    void                SetTime(int index, float t) { times[index] = t; changed = true; }
+                        /// If point index changed, returns new index
+    int                 SetTime(int index, float t);
 
                         /// Gets time of the point with the given index index
-    float               GetTime(int index) const { return times[index]; }
+    float               GetTime(int index) const { return keys[index].time; }
 
                         /// Sets point value with the given index index
-    void                SetPoint(int index, const T &value) { points[index] = value; changed = true; }
+    void                SetPoint(int index, const T &value) { keys[index].point = value; changed = true; }
+
+                        /// Moves all points with the given translation value
+    void                MovePoints(const T &translation);
 
                         /// Gets point value with the given index index
-    T                   GetPoint(int index) const { return points[index]; }
+    T                   GetPoint(int index) const { return keys[index].point; }
 
                         /// Gets minimum value of all points
     T                   GetMinPoint() const;
@@ -75,22 +79,16 @@ public:
     T                   GetMaxPoint() const;
 
                         /// Sets outgoing tangent of the point with the given index index
-    void                SetOutgoingTangent(int index, const T &tangent) { outgoingTangents[index] = tangent; changed = true; }
+    void                SetOutgoingTangent(int index, const T &tangent) { keys[index].outgoingTangent = tangent; changed = true; }
 
                         /// Gets outgoing tangent of the point with the given index index
-    T                   GetOutgoingTangent(int index) const { return outgoingTangents[index]; }
+    T                   GetOutgoingTangent(int index) const { return keys[index].outgoingTangent; }
 
                         /// Sets incoming tangent of the point with the given index index
-    void                SetIncomingTangent(int index, const T &tangent) { incomingTangents[index] = tangent; changed = true; }
+    void                SetIncomingTangent(int index, const T &tangent) { keys[index].incomingTangent = tangent; changed = true; }
 
                         /// Gets incoming tangent of the point with the given index index
-    T                   GetIncomingTangent(int index) const { return incomingTangents[index]; }
-
-    float               GetMinTime() const { return timeMinMax[0]; }
-    void                SetMinTime(float time) { timeMinMax[0] = time; }
-        
-    float               GetMaxTime() const { return timeMinMax[1]; }
-    void                SetMaxTime(float time) { timeMinMax[1] = time; }
+    T                   GetIncomingTangent(int index) const { return keys[index].incomingTangent; }
 
     TimeWrapMode        GetMinTimeWrapMode() const { return timeWrapModes[0]; }
     void                SetMinTimeWrapMode(TimeWrapMode timeWrapMode) { timeWrapModes[0] = timeWrapMode; }
@@ -120,17 +118,20 @@ public:
     int                 IndexForTime(float t) const;
     
 private:
+    struct Key {
+        float           time;               // times to arrive at each point
+        T               point;              // geometry sample point
+        T               outgoingTangent;    // outgoing tangents on each segment (last one should be ignored)
+        T               incomingTangent;    // incoming tangents on each segment (first one should be ignored)
+    };
+
     float               WrapTime(float t) const;
     T                   IntegrateSegment(float t) const;
     void                UpdateIntegrals() const;
 
-    Array<float>        times;              // k + 1 times to arrive at each point
-    Array<T>            points;             // k + 1 points
-    Array<T>            outgoingTangents;   // k + 1 outgoing tangents on each segment (last one should be ignored)
-    Array<T>            incomingTangents;   // k + 1 incoming tangents on each segment (first one should be ignored)
+    Array<Key>          keys;
     mutable Array<T>    integrals;
     TimeWrapMode        timeWrapModes[2];
-    float               timeMinMax[2];
     mutable int         currentIndex;       // cached index for fast lookup
     mutable bool        changed;
 };
@@ -141,63 +142,83 @@ BE_INLINE Hermite<T>::Hermite() {
     changed = false;
     timeWrapModes[0] = TimeWrapMode::Clamp;
     timeWrapModes[1] = TimeWrapMode::Clamp;
-    timeMinMax[0] = 0.0f;
-    timeMinMax[1] = 1.0f;
 }
 
 template <typename T>
 BE_INLINE void Hermite<T>::Clear() {
     timeWrapModes[0] = TimeWrapMode::Clamp;
     timeWrapModes[1] = TimeWrapMode::Clamp;
-    timeMinMax[0] = 0.0f;
-    timeMinMax[1] = 1.0f;
-    times.Clear();
-    points.Clear();
-    outgoingTangents.Clear();
-    incomingTangents.Clear();
+    keys.Clear();
     integrals.Clear();
     currentIndex = -1;
     changed = true;
 }
 
 template <typename T>
-BE_INLINE int Hermite<T>::AddPoint(float t, const T &p) {
-    int index = IndexForTime(t);
-    T d = (index > 0 && index < times.Count() ? EvaluateDerivative(t) : T(0));
-    times.Insert(t, index);
-    points.Insert(p, index);
-    outgoingTangents.Insert(d, index);
-    incomingTangents.Insert(d, index);
-    if (t < timeMinMax[0]) {
-        timeMinMax[0] = t;
-    } else if (t > timeMinMax[1]) {
-        timeMinMax[1] = t;
+BE_INLINE int Hermite<T>::AddPoint(float time, const T &point) {
+    int index = IndexForTime(time);
+    T tangent = T(0);
+    if (index > 0 && index < keys.Count()) {
+        tangent = EvaluateDerivative(time);
     }
+    Key key;
+    key.time = time;
+    key.point = point;
+    key.outgoingTangent = tangent;
+    key.incomingTangent = tangent;
+    keys.Insert(key, index);
     changed = true;
     return index;
 }
 
 template <typename T>
 BE_INLINE bool Hermite<T>::RemoveIndex(int index) {
-    if (index < 0 || index >= times.Count()) {
+    if (index < 0 || index >= keys.Count()) {
         return false;
     }
-    times.RemoveIndex(index);
-    points.RemoveIndex(index);
-    outgoingTangents.RemoveIndex(index);
-    incomingTangents.RemoveIndex(index);
+    keys.RemoveIndex(index);
     changed = true;
     return true;
 }
 
 template <typename T>
+BE_INLINE int Hermite<T>::SetTime(int index, float t) { 
+    if ((index > 0 && t <= keys[index - 1].time) || (index < keys.Count() - 1 && t > keys[index + 1].time)) {
+        Key key;
+        key = keys[index];
+        key.time = t;
+
+        RemoveIndex(index);
+
+        int newIndex = IndexForTime(t);
+        keys.Insert(key, newIndex);
+        changed = true;
+        return newIndex;
+    }
+
+    keys[index].time = t;
+    changed = true;
+    return index;
+}
+
+template <typename T>
+BE_INLINE void Hermite<T>::MovePoints(const T &translation) {
+    Key *key = &keys[0];
+
+    for (int keyIndex = 0; keyIndex < keys.Count(); keyIndex++, key++) {
+        key->point += translation;
+    }
+    changed = true;
+}
+
+template <typename T>
 BE_INLINE T Hermite<T>::GetMinPoint() const {
     T minPoint = T(FLT_MAX);
-    const T *p = &points[0];
+    const Key *key = &keys[0];
 
-    for (int pointIndex = 0; pointIndex < points.Count(); pointIndex++, p++) {
-        if (*p < minPoint) {
-            minPoint = *p;
+    for (int keyIndex = 0; keyIndex < keys.Count(); keyIndex++, key++) {
+        if (key->point < minPoint) {
+            minPoint = key->point;
         }
     }
     return minPoint;
@@ -205,12 +226,12 @@ BE_INLINE T Hermite<T>::GetMinPoint() const {
 
 template <typename T>
 BE_INLINE T Hermite<T>::GetMaxPoint() const {
-    T maxPoint = T(FLT_MIN);
-    const T *p = &points[0];
+    T maxPoint = T(-FLT_MAX);
+    const Key *key = &keys[0];
 
-    for (int pointIndex = 0; pointIndex < points.Count(); pointIndex++, p++) {
-        if (*p > maxPoint) {
-            maxPoint = *p;
+    for (int keyIndex = 0; keyIndex < keys.Count(); keyIndex++, key++) {
+        if (key->point > maxPoint) {
+            maxPoint = key->point;
         }
     }
     return maxPoint;
@@ -223,34 +244,37 @@ BE_INLINE bool Hermite<T>::Initialize(BoundaryCondition boundaryCondition) {
 
 template <typename T>
 BE_INLINE float Hermite<T>::WrapTime(float t) const {
-    if (t < times.First()) {
+    const Key &k0 = keys.First();
+    const Key &kn = keys.Last();
+
+    if (t < k0.time) {
         if (timeWrapModes[0] == TimeWrapMode::Clamp) {
-            return times.First();
+            return k0.time;
         } else {
-            float l = times.Last() - times.First();
-            float s = Math::Ceil(times.First() / l) * l - times.First();
+            float l = kn.time - k0.time;
+            float s = Math::Ceil(k0.time / l) * l - k0.time;
 
             if (timeWrapModes[0] == TimeWrapMode::Loop) {
                 float a = (s + t) / l;
-                return times.First() + t - (Math::Floor(a) * l - s);
+                return k0.time + t - (Math::Floor(a) * l - s);
             } else {
-                float b = (times.First() - t) / l;
+                float b = (k0.time - t) / l;
                 float fb = Math::Floor(b);
-                return times.First() + ((int)fb % 2 == 0 ? (b - fb) * l : (Math::Ceil(b) - b) * l);
+                return k0.time + ((int)fb % 2 == 0 ? (b - fb) * l : (Math::Ceil(b) - b) * l);
             }
         }
-    } else if (t > times.Last()) {
+    } else if (t > kn.time) {
         if (timeWrapModes[1] == TimeWrapMode::Clamp) {
-            return times.Last();
+            return kn.time;
         } else {
-            float l = times.Last() - times.First();
-            float b = (t - times.Last()) / l;
+            float l = kn.time - k0.time;
+            float b = (t - kn.time) / l;
 
             if (timeWrapModes[1] == TimeWrapMode::Loop) {
-                return times.First() + (t - times.Last()) - Math::Floor(b) * l;
+                return k0.time + (t - kn.time) - Math::Floor(b) * l;
             } else {
                 float fb = Math::Floor(b);
-                return times.First() + ((int)fb % 2 == 0 ? Math::Ceil(b) * l - (t - times.Last()) : (t - times.Last()) - fb * l);
+                return k0.time + ((int)fb % 2 == 0 ? Math::Ceil(b) * l - (t - kn.time) : (t - kn.time) - fb * l);
             }
         }
     }
@@ -261,32 +285,35 @@ BE_INLINE float Hermite<T>::WrapTime(float t) const {
 
 template <typename T>
 BE_INLINE T Hermite<T>::Evaluate(float t) const {
-    if (points.Count() <= 0) {
+    if (keys.Count() <= 0) {
         return T(0);
     }
 
-    if (points.Count() == 1) {
-        return points[0];
+    if (keys.Count() == 1) {
+        return keys[0].point;
     }
 
     t = WrapTime(t);
 
     // find segment and parameter
     int index = Max(IndexForTime(t), 1) - 1;
-    float t0 = times[index];
-    float t1 = times[index + 1];
+    const Key &k0 = keys[index];
+    const Key &k1 = keys[index + 1];
+
+    float t0 = k0.time;
+    float t1 = k1.time;
     float u = (t - t0) / (t1 - t0);
 
     // evaluate
-    T a =  2.0f * points[index] - 2.0f * points[index + 1] + 1.0f * outgoingTangents[index] + 1.0f * incomingTangents[index + 1];
-    T b = -3.0f * points[index] + 3.0f * points[index + 1] - 2.0f * outgoingTangents[index] - 1.0f * incomingTangents[index + 1];
+    T a =  2.0f * k0.point - 2.0f * k1.point + 1.0f * k0.outgoingTangent + 1.0f * k1.incomingTangent;
+    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * k0.outgoingTangent - 1.0f * k1.incomingTangent;
 
-    return points[index] + u * (outgoingTangents[index] + u * (b + u * a));
+    return k0.point + u * (k0.outgoingTangent + u * (b + u * a));
 }
 
 template <typename T>
 BE_INLINE T Hermite<T>::EvaluateDerivative(float t) const {
-    if (points.Count() < 2) {
+    if (keys.Count() < 2) {
         return T(0);
     }
 
@@ -294,20 +321,23 @@ BE_INLINE T Hermite<T>::EvaluateDerivative(float t) const {
 
     // find segment and parameter
     int index = Max(IndexForTime(t), 1) - 1;
-    float t0 = times[index];
-    float t1 = times[index + 1];
+    const Key &k0 = keys[index];
+    const Key &k1 = keys[index + 1];
+
+    float t0 = k0.time;
+    float t1 = k1.time;
     float u = (t - t0) / (t1 - t0);
 
     // evaluate
-    T a =  2.0f * points[index] - 2.0f * points[index + 1] + 1.0f * outgoingTangents[index] + 1.0f * incomingTangents[index + 1];
-    T b = -3.0f * points[index] + 3.0f * points[index + 1] - 2.0f * outgoingTangents[index] - 1.0f * incomingTangents[index + 1];
+    T a =  2.0f * k0.point - 2.0f * k1.point + 1.0f * k0.outgoingTangent + 1.0f * k1.incomingTangent;
+    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * k0.outgoingTangent - 1.0f * k1.incomingTangent;
 
-    return outgoingTangents[index] + u * (2.0f * b + 3.0f * u * a);
+    return k0.outgoingTangent + u * (2.0f * b + 3.0f * u * a);
 }
 
 template <typename T>
 BE_INLINE T Hermite<T>::EvaluateSecondDerivative(float t) const {
-    if (points.Count() < 2) {
+    if (keys.Count() < 2) {
         return T(0);
     }
 
@@ -315,42 +345,48 @@ BE_INLINE T Hermite<T>::EvaluateSecondDerivative(float t) const {
 
     // find segment and parameter
     int index = Max(IndexForTime(t), 1) - 1;
-    float t0 = times[index];
-    float t1 = times[index + 1];
+    const Key &k0 = keys[index];
+    const Key &k1 = keys[index + 1];
+
+    float t0 = k0.time;
+    float t1 = k1.time;
     float u = (t - t0) / (t1 - t0);
 
     // evaluate
-    T a =  2.0f * points[index] - 2.0f * points[index + 1] + 1.0f * outgoingTangents[index] + 1.0f * incomingTangents[index + 1];
-    T b = -3.0f * points[index] + 3.0f * points[index + 1] - 2.0f * outgoingTangents[index] - 1.0f * incomingTangents[index + 1];
+    T a =  2.0f * k0.point - 2.0f * k1.point + 1.0f * k0.outgoingTangent + 1.0f * k1.incomingTangent;
+    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * k0.outgoingTangent - 1.0f * k1.incomingTangent;
 
     return 2.0f * b + 6.0f * u * a;
 }
 
 template <typename T>
 BE_INLINE T Hermite<T>::IntegrateSegment(float t) const {
-    assert(t >= times[0] && t <= times.Last());
+    assert(t >= keys[0].time && t <= keys.Last().time);
 
-    if (t == times[0]) {
+    if (t == keys[0].time) {
         return 0;
     }
 
     // find segment and parameter
     int index = Max(IndexForTime(t), 1) - 1;
-    float t0 = times[index];
-    float t1 = times[index + 1];
+    const Key &k0 = keys[index];
+    const Key &k1 = keys[index + 1];
+
+    float t0 = k0.time;
+    float t1 = k1.time;
     float u = (t - t0) / (t1 - t0);
 
     // evaluate
-    T a =  2.0f * points[index] - 2.0f * points[index + 1] + 1.0f * outgoingTangents[index] + 1.0f * incomingTangents[index + 1];
-    T b = -3.0f * points[index] + 3.0f * points[index + 1] - 2.0f * outgoingTangents[index] - 1.0f * incomingTangents[index + 1];
+    T a =  2.0f * k0.point - 2.0f * k1.point + 1.0f * k0.outgoingTangent + 1.0f * k1.incomingTangent;
+    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * k0.outgoingTangent - 1.0f * k1.incomingTangent;
 
-    return (t1 - t0) * (u * (points[index] + u * (0.5f * outgoingTangents[index] + u * (b / 3.0f + u * 0.25f * a))));
+    return (t1 - t0) * (u * (k0.point + u * (0.5f * k0.outgoingTangent + u * (b / 3.0f + u * 0.25f * a))));
 }
 
 template <typename T>
 BE_INLINE void Hermite<T>::UpdateIntegrals() const {
-    integrals.SetCount(points.Count());
-    if (points.Count() == 0) {
+    integrals.SetCount(keys.Count());
+    if (keys.Count() == 0) {
         return;
     }
 
@@ -358,14 +394,14 @@ BE_INLINE void Hermite<T>::UpdateIntegrals() const {
 
     T sum = T(0);
 
-    for (int i = 1; i < times.Count(); i++) {
-        sum += IntegrateSegment(times[i]);
+    for (int i = 1; i < keys.Count(); i++) {
+        sum += IntegrateSegment(keys[i].time);
         integrals[i] = sum;
     }
 
-    integrals[0] = Integrate(times[0]);
+    integrals[0] = Integrate(keys[0].time);
     
-    for (int i = 1; i < times.Count(); i++) {
+    for (int i = 1; i < keys.Count(); i++) {
         integrals[i] += integrals[0];
     }
 }
@@ -377,38 +413,45 @@ BE_INLINE T Hermite<T>::Integrate(float t) const {
         UpdateIntegrals();
     }
 
-    if (points.Count() <= 0) {
+    if (keys.Count() <= 0) {
         return T(0);
     }
 
-    if (points.Count() == 1) {
-        return t * points[0];
+    if (keys.Count() == 1) {
+        return t * keys[0].point;
     }
 
+    const Key &k0 = keys.First();
+    const Key &kn = keys.Last();
+
     // handle boundary
-    if (t <= times.First()) {
+    if (t <= k0.time) {
         if (timeWrapModes[0] == TimeWrapMode::Clamp) {
-            return t * points[0];
+            return t * k0.point;
         } else {
-            float l = times.Last() - times[0];
-            float s = Math::Ceil(times[0] / l) * l - times[0];
+            float l = kn.time - k0.time;
+            if (l == 0.0f) {
+                return 0.0f;
+            }
+
+            float s = Math::Ceil(k0.time / l) * l - k0.time;
 
             if (timeWrapModes[0] == TimeWrapMode::Loop) {
                 float a = (s + t) / l;
                 float fa = Math::Floor(a);
 
                 // wrap time t, s
-                t = times[0] + t - (fa * l - s);
-                s += times[0];
+                t = k0.time + t - (fa * l - s);
+                s += k0.time;
 
-                T intS = (s <= times[0] ? 0 : IntegrateSegment(s) + integrals[IndexForTime(s) - 1] - integrals[0]);
-                T intT = (t <= times[0] ? 0 : IntegrateSegment(t) + integrals[IndexForTime(t) - 1] - integrals[0]);
+                T intS = (s <= k0.time ? 0 : IntegrateSegment(s) + integrals[IndexForTime(s) - 1] - integrals[0]);
+                T intT = (t <= k0.time ? 0 : IntegrateSegment(t) + integrals[IndexForTime(t) - 1] - integrals[0]);
                 T intSegs = integrals.Last() - integrals[0];
 
                 return fa * intSegs + intT - intS;
             } else { // TimeWrapMode::PingPong
-                float a = times[0] / l;
-                float b = (times[0] - t) / l;
+                float a = k0.time / l;
+                float b = (k0.time - t) / l;
                 float fa = Math::Floor(a);
                 float fb = Math::Floor(b);
                 float cb = Math::Ceil(b);
@@ -416,11 +459,11 @@ BE_INLINE T Hermite<T>::Integrate(float t) const {
                 bool rb = (int)fb % 2 == 0;
 
                 // wrap time t, s
-                t = times[0] + (rb ? (b - fb) * l : (cb - b) * l);
-                s += times[0];
+                t = k0.time + (rb ? (b - fb) * l : (cb - b) * l);
+                s += k0.time;
 
-                T intS = (s <= times[0] ? 0 : IntegrateSegment(s) + integrals[IndexForTime(s) - 1] - integrals[0]);
-                T intT = (t <= times[0] ? 0 : IntegrateSegment(t) + integrals[IndexForTime(t) - 1] - integrals[0]);
+                T intS = (s <= k0.time ? 0 : IntegrateSegment(s) + integrals[IndexForTime(s) - 1] - integrals[0]);
+                T intT = (t <= k0.time ? 0 : IntegrateSegment(t) + integrals[IndexForTime(t) - 1] - integrals[0]);
                 T intSegs = integrals.Last() - integrals[0];
 
                 T intT0 = (ra ? fa * intSegs + intS : Math::Ceil(a) * intSegs - intS);
@@ -429,20 +472,24 @@ BE_INLINE T Hermite<T>::Integrate(float t) const {
                 return intT0 - intTr;
             }
         }
-    } else if (t > times.Last()) {
+    } else if (t > kn.time) {
         if (timeWrapModes[1] == TimeWrapMode::Clamp) {
-            return (t - times.Last()) * points.Last();
+            return (t - kn.time) * kn.point;
         } else {
-            float l = times.Last() - times[0];
-            float b = (t - times.Last()) / l;
+            float l = kn.time - k0.time;
+            if (l == 0.0f) {
+                return 0.0f;
+            }
+
+            float b = (t - kn.time) / l;
 
             if (timeWrapModes[1] == TimeWrapMode::Loop) {
                 float fb = Math::Floor(b);
 
                 // wrap time t
-                t = times[0] + (t - times.Last()) - fb * l;
+                t = k0.time + (t - kn.time) - fb * l;
 
-                T intT = (t <= times[0] ? 0 : IntegrateSegment(t) + integrals[IndexForTime(t) - 1] - integrals[0]);
+                T intT = (t <= k0.time ? 0 : IntegrateSegment(t) + integrals[IndexForTime(t) - 1] - integrals[0]);
                 T intSegs = integrals.Last() - integrals[0];
 
                 return integrals.Last() + fb * intSegs + intT;
@@ -452,9 +499,9 @@ BE_INLINE T Hermite<T>::Integrate(float t) const {
                 bool rb = (int)fb % 2 == 0;
 
                 // wrap time t
-                t = times[0] + (rb ? cb * l - (t - times.Last()) : (t - times.Last()) - fb * l);
+                t = k0.time + (rb ? cb * l - (t - kn.time) : (t - kn.time) - fb * l);
 
-                T intT = (t <= times[0] ? 0 : IntegrateSegment(t) + integrals[IndexForTime(t) - 1] - integrals[0]);
+                T intT = (t <= k0.time ? 0 : IntegrateSegment(t) + integrals[IndexForTime(t) - 1] - integrals[0]);
                 T intSegs = integrals.Last() - integrals[0];
 
                 return integrals.Last() + (rb ? cb * intSegs - intT : fb * intSegs + intT);
@@ -462,24 +509,24 @@ BE_INLINE T Hermite<T>::Integrate(float t) const {
         }
     }
 
-    return IntegrateSegment(t) + (t <= times[0] ? 0 : integrals[IndexForTime(t) - 1]);
+    return IntegrateSegment(t) + (t <= k0.time ? 0 : integrals[IndexForTime(t) - 1]);
 }
 
 template <typename T>
 BE_INLINE int Hermite<T>::IndexForTime(float t) const {
-    if (currentIndex >= 0 && currentIndex <= times.Count()) {
+    if (currentIndex >= 0 && currentIndex <= keys.Count()) {
         // use the cached index if it is still valid
         if (currentIndex == 0) {
-            if (t <= times[currentIndex]) {
+            if (t <= keys[currentIndex].time) {
                 return currentIndex;
             }
-        } else if (currentIndex == times.Count()) {
-            if (t > times[currentIndex - 1]) {
+        } else if (currentIndex == keys.Count()) {
+            if (t > keys[currentIndex - 1].time) {
                 return currentIndex;
             }
-        } else if (t > times[currentIndex - 1] && t <= times[currentIndex]) {
+        } else if (t > keys[currentIndex - 1].time && t <= keys[currentIndex].time) {
             return currentIndex;
-        } else if (t > times[currentIndex] && (currentIndex + 1 == times.Count() || t <= times[currentIndex + 1])) {
+        } else if (t > keys[currentIndex].time && (currentIndex + 1 == keys.Count() || t <= keys[currentIndex + 1].time)) {
             // use the next index
             currentIndex++;
             return currentIndex;
@@ -487,15 +534,15 @@ BE_INLINE int Hermite<T>::IndexForTime(float t) const {
     }
 
     // use binary search to find the index for the given t
-    int len = times.Count();
+    int len = keys.Count();
     int mid = len;
     int offset = 0;
     int res = 0;
     while (mid > 0) {
         mid = len >> 1;
-        if (t == times[offset + mid]) {
+        if (t == keys[offset + mid].time) {
             return offset + mid;
-        } else if (t > times[offset + mid]) {
+        } else if (t > keys[offset + mid].time) {
             offset += mid;
             len -= mid;
             res = 1;

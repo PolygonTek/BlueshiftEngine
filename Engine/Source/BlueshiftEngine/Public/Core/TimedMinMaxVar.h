@@ -63,22 +63,20 @@ struct TimedVar {
     float                   Integrate(float t) const;
 
     Type                    type;
-    float                   constant;
     Hermite<float>          curve;
 };
 
 BE_INLINE void TimedVar::Reset() {
     type = ConstantType;
-    constant = 0.0f;
     curve.Clear();
 }
 
 BE_INLINE float TimedVar::Evaluate(float t) const {
     switch (type) {
     case ConstantType:
-        return constant;
+        return curve.GetPoint(0);
     case CurveType:
-        return constant * curve.Evaluate(t);
+        return curve.Evaluate(t);
     default:
         assert(0);
         return 0;
@@ -88,9 +86,9 @@ BE_INLINE float TimedVar::Evaluate(float t) const {
 BE_INLINE float TimedVar::Integrate(float t) const {
     switch (type) {
     case ConstantType:
-        return constant * t;
+        return curve.GetPoint(0) * t;
     case CurveType:
-        return constant * curve.Integrate(0, t);
+        return curve.Integrate(0, t);
     default:
         assert(0);
         return 0;
@@ -112,14 +110,11 @@ struct TimedMinMaxVar {
     float                   Integrate(float random, float t) const;
 
     Type                    type;
-    float                   constants[2];
     Hermite<float>          curves[2];
 };
 
 BE_INLINE void TimedMinMaxVar::Reset() {
     type = ConstantType;
-    constants[0] = 0.0f;
-    constants[1] = 0.0f;
     curves[0].Clear();
     curves[1].Clear();
 }
@@ -127,13 +122,13 @@ BE_INLINE void TimedMinMaxVar::Reset() {
 BE_INLINE float TimedMinMaxVar::Evaluate(float random, float t) const {
     switch (type) {
     case ConstantType:
-        return constants[1];
+        return curves[1].GetPoint(0);
     case CurveType:
-        return constants[1] * curves[1].Evaluate(t);
+        return curves[1].Evaluate(t);
     case RandomBetweenTwoConstantsType:
-        return Lerp(constants[0], constants[1], random);
+        return Lerp(curves[0].GetPoint(0), curves[1].GetPoint(0), random);
     case RandomBetweenTwoCurvesType:
-        return Lerp(constants[0] * curves[0].Evaluate(t), constants[1] * curves[1].Evaluate(t), random);
+        return Lerp(curves[0].Evaluate(t), curves[1].Evaluate(t), random);
     default:
         assert(0);
         return 0;
@@ -143,13 +138,13 @@ BE_INLINE float TimedMinMaxVar::Evaluate(float random, float t) const {
 BE_INLINE float TimedMinMaxVar::Integrate(float random, float t) const {
     switch (type) {
     case ConstantType:
-        return constants[1] * t;
+        return curves[1].GetPoint(0) * t;
     case CurveType:
-        return constants[1] * curves[1].Integrate(0, t);
+        return curves[1].Integrate(0, t);
     case RandomBetweenTwoConstantsType:
-        return Lerp(constants[0], constants[1], random) * t;
+        return Lerp(curves[0].GetPoint(0), curves[1].GetPoint(0), random) * t;
     case RandomBetweenTwoCurvesType:
-        return Lerp(constants[0] * curves[0].Integrate(0, t), constants[1] * curves[1].Integrate(0, t), random);
+        return Lerp(curves[0].Integrate(0, t), curves[1].Integrate(0, t), random);
     default:
         assert(0);
         return 0;

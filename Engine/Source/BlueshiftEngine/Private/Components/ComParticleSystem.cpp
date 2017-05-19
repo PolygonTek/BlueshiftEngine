@@ -277,7 +277,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
 
     particle->initialSpeed = MeterToUnit(stage->standardModule.startSpeed.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
 
-    particle->initialSize = MeterToUnit(stage->standardModule.startSize.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
+    particle->initialSize = CentiToUnit(stage->standardModule.startSize.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
 
     particle->initialAspectRatio = stage->standardModule.startAspectRatio.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac);
 
@@ -420,7 +420,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
 
         // Compute size
         if (stage->moduleFlags & BIT(ParticleSystem::LTSizeModuleBit)) {
-            trail->size = particle->initialSize * stage->sizeOverLifetimeModule.size.Evaluate(particle->randomSize, trailFrac);
+            trail->size = particle->initialSize * CentiToUnit(stage->sizeOverLifetimeModule.size.Evaluate(particle->randomSize, trailFrac));
         } else {
             trail->size = particle->initialSize;
         }

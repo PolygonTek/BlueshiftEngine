@@ -121,8 +121,8 @@ public:
 
         MinMaxVar               startDelay;             ///< Delay from start for the first particle to emit 
         Color4                  startColor;             ///< Start color (RGBA) of particles
-        TimedMinMaxVar          startSpeed;             ///< Start speed of particles
-        TimedMinMaxVar          startSize;              ///< Start size of particles
+        TimedMinMaxVar          startSpeed;             ///< Start speed of particles in meter
+        TimedMinMaxVar          startSize;              ///< Start size of particles in centimeter
         TimedMinMaxVar          startAspectRatio;       ///< Start aspect ratio of particles
         TimedMinMaxVar          startRotation;          ///< Start angle of particles in degrees
         float                   randomizeRotation;      ///< Bias [0, 1] of randomized angle
@@ -159,10 +159,10 @@ public:
         void                    Reset();
 
         CustomPath              customPath;
-        float                   radialSpeed;            // used in Cone, Helix, Spherical
+        float                   radialSpeed;            // used in Cone, Helix, Spherical 
         float                   axialSpeed;             // used in Spherical
-        float                   innerRadius;
-        float                   outerRadius;
+        float                   innerRadius;            // inner radius in meter
+        float                   outerRadius;            // outer radius in meter
     };    
     
     // color over lifetime module
@@ -175,7 +175,7 @@ public:
 
     // speed over lifetime module
     struct LTSpeedModule {
-        void                    Reset() { speed.Reset(); }
+        void                    Reset() { speed.Reset(); speed.curves[0].AddPoint(0, 0); speed.curves[1].AddPoint(0, 2.0f); }
 
         TimedMinMaxVar          speed;
     };
@@ -189,21 +189,21 @@ public:
 
     // rotation over lifetime module
     struct LTRotationModule {
-        void                    Reset() { rotation.Reset(); }
+        void                    Reset() { rotation.Reset(); rotation.curves[0].AddPoint(0, 0); rotation.curves[1].AddPoint(0, 0); }
 
         TimedMinMaxVar          rotation;               ///< angular velocity
     };
 
     // size over lifetime module
     struct LTSizeModule {
-        void                    Reset() { size.Reset(); size.constants[1] = CentiToUnit(10.0f); }
+        void                    Reset() { size.Reset(); size.curves[0].AddPoint(0, 0); size.curves[1].AddPoint(0, 0.1f); }
 
-        TimedMinMaxVar          size;
+        TimedMinMaxVar          size;                   ///< size in centimeter
     };
 
     // aspect ratio over lifetime module
     struct LTAspectRatioModule {
-        void                    Reset() { aspectRatio.Reset(); aspectRatio.constants[1] = 1.0f; }
+        void                    Reset() { aspectRatio.Reset(); aspectRatio.curves[0].AddPoint(0, 1.0f); aspectRatio.curves[1].AddPoint(0, 1.0f); }
 
         TimedMinMaxVar          aspectRatio;
     };
@@ -312,12 +312,17 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
     startDelay.Reset();
     startColor.Set(1, 1, 1, 1);
     startSpeed.Reset();
-    startSpeed.constants[1] = MeterToUnit(2.0f);
+    startSpeed.curves[0].AddPoint(0, 1.0f);
+    startSpeed.curves[1].AddPoint(0, 1.0f);
     startSize.Reset();
-    startSize.constants[1] = CentiToUnit(10.0f);
+    startSize.curves[0].AddPoint(0, 10.0f);
+    startSize.curves[1].AddPoint(0, 10.0f);
     startAspectRatio.Reset();
-    startAspectRatio.constants[1] = 1.0f;
+    startAspectRatio.curves[0].AddPoint(0, 1.0f);
+    startAspectRatio.curves[1].AddPoint(0, 1.0f);
     startRotation.Reset();
+    startRotation.curves[0].AddPoint(0, 0.0f);
+    startRotation.curves[1].AddPoint(0, 0.0f);
     randomizeRotation = 1.0f;
     gravity = 0.0f;
 }
@@ -325,7 +330,7 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
 BE_INLINE void ParticleSystem::ShapeModule::Reset() {
     shape = Shape::ConeShape;
     extents = Vec3::zero;
-    radius = MeterToUnit(0.1f);
+    radius = 0.1f;
     thickness = 1.0f;
     angle = 30;
     randomizeDir = 0.0f;
@@ -335,8 +340,8 @@ BE_INLINE void ParticleSystem::CustomPathModule::Reset() {
     customPath = CustomPath::ConePath;
     radialSpeed = 180;
     axialSpeed = 90;
-    innerRadius = MeterToUnit(0.1f);
-    outerRadius = MeterToUnit(1.0f);
+    innerRadius = 0.1f;
+    outerRadius = 1.0f;
 }
 
 BE_INLINE void ParticleSystem::Stage::Reset() {
