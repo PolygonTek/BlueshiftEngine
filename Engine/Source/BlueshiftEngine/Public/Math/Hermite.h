@@ -41,6 +41,8 @@ public:
         PingPong
     };
 
+    static constexpr float maxTangent = 100.0f; // valid tangent range is [-100, +100]
+
     Hermite();
     ~Hermite() = default;
 
@@ -300,6 +302,10 @@ BE_INLINE T Hermite<T>::Evaluate(float t) const {
     const Key &k0 = keys[index];
     const Key &k1 = keys[index + 1];
 
+    if (Math::Fabs(k0.outgoingTangent) >= maxTangent || Math::Fabs(k1.incomingTangent) >= maxTangent) {
+        return k0.point;
+    }
+
     float t0 = k0.time;
     float t1 = k1.time;
     float u = (t - t0) / (t1 - t0);
@@ -323,6 +329,10 @@ BE_INLINE T Hermite<T>::EvaluateDerivative(float t) const {
     int index = Max(IndexForTime(t), 1) - 1;
     const Key &k0 = keys[index];
     const Key &k1 = keys[index + 1];
+
+    if (Math::Fabs(k0.outgoingTangent) >= maxTangent || Math::Fabs(k1.incomingTangent) >= maxTangent) {
+        return T(0);
+    }
 
     float t0 = k0.time;
     float t1 = k1.time;
@@ -348,6 +358,10 @@ BE_INLINE T Hermite<T>::EvaluateSecondDerivative(float t) const {
     const Key &k0 = keys[index];
     const Key &k1 = keys[index + 1];
 
+    if (Math::Fabs(k0.outgoingTangent >= maxTangent) || Math::Fabs(k1.incomingTangent) >= maxTangent) {
+        return k0.point;
+    }
+
     float t0 = k0.time;
     float t1 = k1.time;
     float u = (t - t0) / (t1 - t0);
@@ -371,6 +385,10 @@ BE_INLINE T Hermite<T>::IntegrateSegment(float t) const {
     int index = Max(IndexForTime(t), 1) - 1;
     const Key &k0 = keys[index];
     const Key &k1 = keys[index + 1];
+
+    if (Math::Fabs(k0.outgoingTangent) >= maxTangent || Math::Fabs(k1.incomingTangent) >= maxTangent) {
+        return (t - k0.time) * k0.point;
+    }
 
     float t0 = k0.time;
     float t1 = k1.time;
