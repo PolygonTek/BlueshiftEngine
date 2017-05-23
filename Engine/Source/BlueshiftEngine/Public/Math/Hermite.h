@@ -41,7 +41,15 @@ public:
         PingPong
     };
 
-    static constexpr float maxTangent = 100.0f; // valid tangent range is [-100, +100]
+    enum TangentMode {
+        FreeSmooth      = 0,
+        Auto            = 1,
+        Broken          = 2,
+        LeftLinear      = 4,
+        LeftConstant    = 8,
+        RightLinear     = 16,
+        RightConstant   = 32
+    };
 
     Hermite();
     ~Hermite() = default;
@@ -52,26 +60,26 @@ public:
                         /// Adds point with the given time t
     int                 AddPoint(float t, const T &value);
 
-                        /// Removes point with the given index
+                        /// Removes point with the given key index index
     bool                RemoveIndex(int index);
 
                         /// Returns number of points
     int                 NumPoints() const { return keys.Count(); }
 
-                        /// Sets time of the point with the given index index
-                        /// If point index changed, returns new index
+                        /// Sets time of the point with the given key index index
+                        /// If key index changed, returns new index
     int                 SetTime(int index, float t);
 
-                        /// Gets time of the point with the given index index
+                        /// Gets time of the point with the given key index index
     float               GetTime(int index) const { return keys[index].time; }
 
-                        /// Sets point value with the given index index
+                        /// Sets point value with the given key index index
     void                SetPoint(int index, const T &value) { keys[index].point = value; changed = true; }
 
                         /// Moves all points with the given translation value
     void                MovePoints(const T &translation);
 
-                        /// Gets point value with the given index index
+                        /// Gets point value with the given key index index
     T                   GetPoint(int index) const { return keys[index].point; }
 
                         /// Gets minimum value of all points
@@ -80,17 +88,23 @@ public:
                         /// Gets maximum value of all points
     T                   GetMaxPoint() const;
 
-                        /// Sets outgoing tangent of the point with the given index index
-    void                SetOutgoingTangent(int index, const T &tangent) { keys[index].outgoingTangent = tangent; changed = true; }
+                        /// Sets outgoing slope of the point with the given key index index
+    void                SetOutgoingSlope(int index, const T &slope) { keys[index].outSlope = slope; changed = true; }
 
-                        /// Gets outgoing tangent of the point with the given index index
-    T                   GetOutgoingTangent(int index) const { return keys[index].outgoingTangent; }
+                        /// Gets outgoing slope of the point with the given key index index
+    T                   GetOutgoingSlope(int index) const { return keys[index].outSlope; }
 
-                        /// Sets incoming tangent of the point with the given index index
-    void                SetIncomingTangent(int index, const T &tangent) { keys[index].incomingTangent = tangent; changed = true; }
+                        /// Sets incoming slope of the point with the given key index index
+    void                SetIncomingSlope(int index, const T &slope) { keys[index].inSlope = slope; changed = true; }
 
-                        /// Gets incoming tangent of the point with the given index index
-    T                   GetIncomingTangent(int index) const { return keys[index].incomingTangent; }
+                        /// Gets incoming slope of the point with the given key index index
+    T                   GetIncomingSlope(int index) const { return keys[index].inSlope; }
+
+                        /// Sets tangent mode flags with the given key index index
+    void                SetTangentModeFlags(int index, int flags) { keys[index].tangentModeFlags = flags; }
+
+                        /// Gets tangent mode flags with the given key index 
+    int                 GetTangentModeFlags(int index) const { return keys[index].tangentModeFlags; }
 
     TimeWrapMode        GetMinTimeWrapMode() const { return timeWrapModes[0]; }
     void                SetMinTimeWrapMode(TimeWrapMode timeWrapMode) { timeWrapModes[0] = timeWrapMode; }
@@ -123,8 +137,9 @@ private:
     struct Key {
         float           time;               // times to arrive at each point
         T               point;              // geometry sample point
-        T               outgoingTangent;    // outgoing tangents on each segment (last one should be ignored)
-        T               incomingTangent;    // incoming tangents on each segment (first one should be ignored)
+        T               inSlope;            // incoming slope on each segment (first one should be ignored)
+        T               outSlope;           // outgoing slope on each segment (last one should be ignored)
+        int             tangentModeFlags;
     };
 
     float               WrapTime(float t) const;
@@ -159,15 +174,16 @@ BE_INLINE void Hermite<T>::Clear() {
 template <typename T>
 BE_INLINE int Hermite<T>::AddPoint(float time, const T &point) {
     int index = IndexForTime(time);
-    T tangent = T(0);
+    T slope = T(0);
     if (index > 0 && index < keys.Count()) {
-        tangent = EvaluateDerivative(time);
+        slope = EvaluateDerivative(time);
     }
     Key key;
     key.time = time;
     key.point = point;
-    key.outgoingTangent = tangent;
-    key.incomingTangent = tangent;
+    key.outSlope = slope;
+    key.inSlope = slope;
+    key.tangentModeFlags = TangentMode::FreeSmooth;
     keys.Insert(key, index);
     changed = true;
     return index;
@@ -302,19 +318,24 @@ BE_INLINE T Hermite<T>::Evaluate(float t) const {
     const Key &k0 = keys[index];
     const Key &k1 = keys[index + 1];
 
-    if (Math::Fabs(k0.outgoingTangent) >= maxTangent || Math::Fabs(k1.incomingTangent) >= maxTangent) {
+    // early out for constant tangent mode
+    if (Math::Fabs(k0.outSlope) >= 100 || Math::Fabs(k1.inSlope) >= 100) {
         return k0.point;
     }
 
     float t0 = k0.time;
     float t1 = k1.time;
-    float u = (t - t0) / (t1 - t0);
+    float dt = t1 - t0;
+    float u = (t - t0) / dt;
+
+    float outTangent = k0.outSlope * dt;
+    float inTangent = k1.inSlope * dt;
 
     // evaluate
-    T a =  2.0f * k0.point - 2.0f * k1.point + 1.0f * k0.outgoingTangent + 1.0f * k1.incomingTangent;
-    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * k0.outgoingTangent - 1.0f * k1.incomingTangent;
+    T a =  2.0f * k0.point - 2.0f * k1.point + outTangent + inTangent;
+    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * outTangent - inTangent;
 
-    return k0.point + u * (k0.outgoingTangent + u * (b + u * a));
+    return k0.point + u * (outTangent + u * (b + u * a));
 }
 
 template <typename T>
@@ -330,19 +351,25 @@ BE_INLINE T Hermite<T>::EvaluateDerivative(float t) const {
     const Key &k0 = keys[index];
     const Key &k1 = keys[index + 1];
 
-    if (Math::Fabs(k0.outgoingTangent) >= maxTangent || Math::Fabs(k1.incomingTangent) >= maxTangent) {
+    // early out for constant tangent mode
+    if (Math::Fabs(k0.outSlope) >= 100 || Math::Fabs(k1.inSlope) >= 100) {
         return T(0);
     }
 
     float t0 = k0.time;
     float t1 = k1.time;
-    float u = (t - t0) / (t1 - t0);
+    float dt = t1 - t0;
+    float invDt = 1.0f / dt;
+    float u = (t - t0) * invDt;
+
+    float outTangent = k0.outSlope * dt;
+    float inTangent = k1.inSlope * dt;
 
     // evaluate
-    T a =  2.0f * k0.point - 2.0f * k1.point + 1.0f * k0.outgoingTangent + 1.0f * k1.incomingTangent;
-    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * k0.outgoingTangent - 1.0f * k1.incomingTangent;
+    T a =  2.0f * k0.point - 2.0f * k1.point + outTangent + inTangent;
+    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * outTangent - inTangent;
 
-    return k0.outgoingTangent + u * (2.0f * b + 3.0f * u * a);
+    return (outTangent + u * (2.0f * b + 3.0f * u * a)) * invDt;
 }
 
 template <typename T>
@@ -358,19 +385,25 @@ BE_INLINE T Hermite<T>::EvaluateSecondDerivative(float t) const {
     const Key &k0 = keys[index];
     const Key &k1 = keys[index + 1];
 
-    if (Math::Fabs(k0.outgoingTangent >= maxTangent) || Math::Fabs(k1.incomingTangent) >= maxTangent) {
-        return k0.point;
+    // early out for constant tangent mode
+    if (Math::Fabs(k0.outSlope) >= 100 || Math::Fabs(k1.inSlope) >= 100) {
+        return T(0);
     }
 
     float t0 = k0.time;
     float t1 = k1.time;
-    float u = (t - t0) / (t1 - t0);
+    float dt = t1 - t0;
+    float invDt = 1.0f / dt;
+    float u = (t - t0) * invDt;
+
+    float outTangent = k0.outSlope * dt;
+    float inTangent = k1.inSlope * dt;
 
     // evaluate
-    T a =  2.0f * k0.point - 2.0f * k1.point + 1.0f * k0.outgoingTangent + 1.0f * k1.incomingTangent;
-    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * k0.outgoingTangent - 1.0f * k1.incomingTangent;
+    T a =  2.0f * k0.point - 2.0f * k1.point + outTangent + inTangent;
+    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * outTangent - inTangent;
 
-    return 2.0f * b + 6.0f * u * a;
+    return (2.0f * b + 6.0f * u * a) * invDt;
 }
 
 template <typename T>
@@ -386,19 +419,24 @@ BE_INLINE T Hermite<T>::IntegrateSegment(float t) const {
     const Key &k0 = keys[index];
     const Key &k1 = keys[index + 1];
 
-    if (Math::Fabs(k0.outgoingTangent) >= maxTangent || Math::Fabs(k1.incomingTangent) >= maxTangent) {
+    // early out for constant tangent mode
+    if (Math::Fabs(k0.outSlope) >= 100 || Math::Fabs(k1.inSlope) >= 100) {
         return (t - k0.time) * k0.point;
     }
-
+   
     float t0 = k0.time;
     float t1 = k1.time;
-    float u = (t - t0) / (t1 - t0);
+    float dt = t1 - t0;
+    float u = (t - t0) / dt;
+
+    float outTangent = k0.outSlope * dt;
+    float inTangent = k1.inSlope * dt;
 
     // evaluate
-    T a =  2.0f * k0.point - 2.0f * k1.point + 1.0f * k0.outgoingTangent + 1.0f * k1.incomingTangent;
-    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * k0.outgoingTangent - 1.0f * k1.incomingTangent;
+    T a =  2.0f * k0.point - 2.0f * k1.point + outTangent + inTangent;
+    T b = -3.0f * k0.point + 3.0f * k1.point - 2.0f * outTangent - inTangent;
 
-    return (t1 - t0) * (u * (k0.point + u * (0.5f * k0.outgoingTangent + u * (b / 3.0f + u * 0.25f * a))));
+    return (t1 - t0) * (u * (k0.point + u * (0.5f * outTangent + u * (b / 3.0f + u * 0.25f * a))));
 }
 
 template <typename T>

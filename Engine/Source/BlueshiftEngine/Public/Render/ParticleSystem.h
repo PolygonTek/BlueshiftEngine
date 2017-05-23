@@ -22,7 +22,7 @@
 -------------------------------------------------------------------------------
 */
 
-#include "Core/TimedMinMaxVar.h"
+#include "Core/MinMaxCurve.h"
 #include "Material.h"
 
 BE_NAMESPACE_BEGIN
@@ -119,12 +119,12 @@ public:
         Material *              material;
         Orientation             orientation;
 
-        MinMaxVar               startDelay;             ///< Delay from start for the first particle to emit 
+        MinMaxCurve             startDelay;             ///< Delay from start for the first particle to emit 
         Color4                  startColor;             ///< Start color (RGBA) of particles
-        TimedMinMaxVar          startSpeed;             ///< Start speed of particles in meter
-        TimedMinMaxVar          startSize;              ///< Start size of particles in centimeter
-        TimedMinMaxVar          startAspectRatio;       ///< Start aspect ratio of particles
-        TimedMinMaxVar          startRotation;          ///< Start angle of particles in degrees
+        MinMaxCurve             startSpeed;             ///< Start speed of particles in meter
+        MinMaxCurve             startSize;              ///< Start size of particles in centimeter
+        MinMaxCurve             startAspectRatio;       ///< Start aspect ratio of particles
+        MinMaxCurve             startRotation;          ///< Start angle of particles in degrees
         float                   randomizeRotation;      ///< Bias [0, 1] of randomized angle
         float                   gravity;                ///< Can be nagative to float up
     };
@@ -175,37 +175,37 @@ public:
 
     // speed over lifetime module
     struct LTSpeedModule {
-        void                    Reset() { speed.Reset(); speed.curves[0].AddPoint(0, 0); speed.curves[1].AddPoint(0, 2.0f); }
+        void                    Reset() { speed.Reset(2.0f, 0.0f, 1.0f); }
 
-        TimedMinMaxVar          speed;
+        MinMaxCurve             speed;
     };
 
     // force module
     struct LTForceModule {
-        void                    Reset() { force[0].Reset(); force[1].Reset(); force[2].Reset(); }
+        void                    Reset() { force[0].Reset(1.0f, 0.0f, 0.0f); force[1].Reset(1.0f, 0.0f, 0.0f); force[2].Reset(1.0f, 0.0f, 0.0f); }
 
-        MinMaxVar               force[3];               ///< X, Y, Z
+        MinMaxCurve             force[3];               ///< X, Y, Z
     };
 
     // rotation over lifetime module
     struct LTRotationModule {
-        void                    Reset() { rotation.Reset(); rotation.curves[0].AddPoint(0, 0); rotation.curves[1].AddPoint(0, 0); }
+        void                    Reset() { rotation.Reset(180, 0.0f, 0.0f); }
 
-        TimedMinMaxVar          rotation;               ///< angular velocity
+        MinMaxCurve             rotation;               ///< angular velocity
     };
 
     // size over lifetime module
     struct LTSizeModule {
-        void                    Reset() { size.Reset(); size.curves[0].AddPoint(0, 0); size.curves[1].AddPoint(0, 0.1f); }
+        void                    Reset() { size.Reset(1.0f, 1.0f, 0.0f); }
 
-        TimedMinMaxVar          size;                   ///< size in centimeter
+        MinMaxCurve             size;                   ///< size in centimeter
     };
 
     // aspect ratio over lifetime module
     struct LTAspectRatioModule {
-        void                    Reset() { aspectRatio.Reset(); aspectRatio.curves[0].AddPoint(0, 1.0f); aspectRatio.curves[1].AddPoint(0, 1.0f); }
+        void                    Reset() { aspectRatio.Reset(1.0f, 1.0f, 1.0f); }
 
-        TimedMinMaxVar          aspectRatio;
+        MinMaxCurve             aspectRatio;
     };
 
     // trails module
@@ -264,9 +264,7 @@ private:
     bool                        ParseStandardModule(Lexer &lexer, StandardModule &module) const;
     bool                        ParseSimulationSpace(Lexer &lexer, StandardModule::SimulationSpace *simulationSpace) const;
     bool                        ParseOrientation(Lexer &lexer, StandardModule::Orientation *orientation) const;
-    bool                        ParseMinMaxVar(Lexer &lexer, MinMaxVar *var) const;
-    bool                        ParseTimedVar(Lexer &lexer, TimedVar *var) const;
-    bool                        ParseTimedMinMaxVar(Lexer &lexer, TimedMinMaxVar *var) const;
+    bool                        ParseMinMaxCurve(Lexer &lexer, MinMaxCurve *var) const;
     bool                        ParseTimeWrapMode(Lexer &lexer, Hermite<float>::TimeWrapMode *timeWrapMode) const;
     bool                        ParseShapeModule(Lexer &lexer, ShapeModule &module) const;
     bool                        ParseShape(Lexer &lexer, ShapeModule::Shape *shape) const;
@@ -309,20 +307,12 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
     simulationSpace = SimulationSpace::Local;
     material = materialManager.defaultMaterial;
     orientation = Orientation::View;
-    startDelay.Reset();
+    startDelay.Reset(1.0f, 0.0f, 0.0f);
     startColor.Set(1, 1, 1, 1);
-    startSpeed.Reset();
-    startSpeed.curves[0].AddPoint(0, 1.0f);
-    startSpeed.curves[1].AddPoint(0, 1.0f);
-    startSize.Reset();
-    startSize.curves[0].AddPoint(0, 10.0f);
-    startSize.curves[1].AddPoint(0, 10.0f);
-    startAspectRatio.Reset();
-    startAspectRatio.curves[0].AddPoint(0, 1.0f);
-    startAspectRatio.curves[1].AddPoint(0, 1.0f);
-    startRotation.Reset();
-    startRotation.curves[0].AddPoint(0, 0.0f);
-    startRotation.curves[1].AddPoint(0, 0.0f);
+    startSpeed.Reset(1.0f, 1.0f, 1.0f);
+    startSize.Reset(10.0f, 1.0f, 1.0f);
+    startAspectRatio.Reset(1.0f, 1.0f, 1.0f);
+    startRotation.Reset(180.0f, 0.0f, 0.0f);
     randomizeRotation = 1.0f;
     gravity = 0.0f;
 }

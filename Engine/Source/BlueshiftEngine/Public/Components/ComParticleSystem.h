@@ -46,9 +46,10 @@ public:
 
     int                     GetAliveParticleCount() const;
 
+    void                    ResetParticles();
+
 protected:
     void                    ChangeParticleSystem(const Guid &particleSystemGuid);
-    void                    ResetParticles();
     void                    InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFraction) const;
     void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float genTimeDelta);
     void                    ComputeTrailPositionFromCustomPath(const ParticleSystem::CustomPathModule &customPathModule, const Particle *particle, float t, Particle::Trail *trail) const;

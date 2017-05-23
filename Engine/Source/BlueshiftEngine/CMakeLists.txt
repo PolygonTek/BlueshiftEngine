@@ -28,7 +28,7 @@ set(ENGINE_FILES
   Public/Core/CVars.h
   Public/Core/Timespan.h
   Public/Core/DateTime.h
-  Public/Core/TimedMinMaxVar.h
+  Public/Core/MinMaxCurve.h
   Public/Core/Dict.h
   Public/Core/Expr.h
   Public/Core/Lexer.h

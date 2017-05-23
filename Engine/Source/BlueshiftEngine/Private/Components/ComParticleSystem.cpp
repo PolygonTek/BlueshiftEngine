@@ -121,7 +121,7 @@ void ComParticleSystem::ResetParticles() {
     for (int stageIndex = 0; stageIndex < sceneEntity.particleSystem->NumStages(); stageIndex++) {
         const ParticleSystem::Stage *stage = sceneEntity.particleSystem->GetStage(stageIndex);
 
-        startDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1));
+        startDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1), 0);
 
         int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
         int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
@@ -475,9 +475,9 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         // Apply force
         if (stage->moduleFlags & BIT(ParticleSystem::LTForceModuleBit)) {
             Vec3 force(
-                MeterToUnit(stage->forceOverLifetimeModule.force[0].Evaluate(particle->randomForce.x)),
-                MeterToUnit(stage->forceOverLifetimeModule.force[1].Evaluate(particle->randomForce.y)),
-                MeterToUnit(stage->forceOverLifetimeModule.force[2].Evaluate(particle->randomForce.z)));
+                MeterToUnit(stage->forceOverLifetimeModule.force[0].Evaluate(particle->randomForce.x, trailFrac)),
+                MeterToUnit(stage->forceOverLifetimeModule.force[1].Evaluate(particle->randomForce.y, trailFrac)),
+                MeterToUnit(stage->forceOverLifetimeModule.force[2].Evaluate(particle->randomForce.z, trailFrac)));
         
             trail->position += force * 0.5f * trailFrac * trailFrac;
         }
