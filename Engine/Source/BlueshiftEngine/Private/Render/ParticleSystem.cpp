@@ -830,11 +830,11 @@ static void WriteMinMaxCurve(File *fp, const Str &name, const MinMaxCurve &var, 
         fp->Printf("%s%s {\n", indentSpace.c_str(), curveIndex == 0 ? "minCurve" : "maxCurve");
         indentSpace += "  ";
 
-        fp->Printf("%snumKeys %i\n", indentSpace.c_str(), curve.NumPoints());
+        fp->Printf("%snumKeys %i\n", indentSpace.c_str(), curve.NumKeys());
         fp->Printf("%skeys {\n", indentSpace.c_str());
         indentSpace += "  ";
 
-        for (int keyIndex = 0; keyIndex < curve.NumPoints(); keyIndex++) {
+        for (int keyIndex = 0; keyIndex < curve.NumKeys(); keyIndex++) {
             fp->Printf("%s%.3f %.3f %.3f %.3f %i\n", indentSpace.c_str(),
                 curve.GetTime(keyIndex),
                 curve.GetPoint(keyIndex),

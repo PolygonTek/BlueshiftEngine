@@ -64,7 +64,7 @@ public:
     bool                RemoveIndex(int index);
 
                         /// Returns number of points
-    int                 NumPoints() const { return keys.Count(); }
+    int                 NumKeys() const { return keys.Count(); }
 
                         /// Sets time of the point with the given key index index
                         /// If key index changed, returns new index
