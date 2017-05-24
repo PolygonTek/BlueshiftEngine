@@ -22,7 +22,7 @@ class BE_API Variant {
 public:
     Variant();
     Variant(const char *text);
-    template <typename T> Variant(const T &value);
+    template <typename T>   Variant(const T &value);
 
     Variant &               operator=(const Variant &rhs);
     template <typename T>

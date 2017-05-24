@@ -176,7 +176,7 @@ protected:
 
     GameWorld *                 gameWorld;
 
-    ComponentPtrArray            components;     ///< 0'th component is always transform component
+    ComponentPtrArray           components;     ///< 0'th component is always transform component
 };
 
 template <typename T>

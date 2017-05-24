@@ -44,7 +44,7 @@ public:
 
 private:
     Str                         hashName;
-    EntityPtrArray               entities;
+    EntityPtrArray              entities;
     Hierarchy<Entity>           entityHierarchy;
 };
 
