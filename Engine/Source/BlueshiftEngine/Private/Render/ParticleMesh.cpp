@@ -246,8 +246,9 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                         rtv.SetFromCross(cameraDir[quadIndex], tangentDir[quadIndex]);
                         rtv.Normalize();
+                        rtv = entity->parms.axis.TransposedMulVec(rtv);
                         rtv *= particle->trails[quadIndex].size * 0.5f;
-                        
+
                         vertexPointer->xyz = trail[0].position - rtv;
                         vertexPointer->st[0] = hs1;
                         vertexPointer->st[1] = ht1;
@@ -262,6 +263,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                         rtv.SetFromCross(cameraDir[quadIndex + 1], tangentDir[quadIndex + 1]);
                         rtv.Normalize();
+                        rtv = entity->parms.axis.TransposedMulVec(rtv);
                         rtv *= particle->trails[quadIndex + 1].size * 0.5f;
 
                         vertexPointer->xyz = trail[1].position - rtv;
