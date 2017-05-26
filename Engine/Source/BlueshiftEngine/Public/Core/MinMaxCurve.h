@@ -26,8 +26,8 @@ struct MinMaxCurve {
         RandomBetweenTwoCurvesType
     };
 
-    void                    Reset();
-    void                    Reset(float s, float minValue, float maxValue);
+    void                    Reset(Type type);
+    void                    Reset(Type type, float scalar, float minValue, float maxValue);
 
     float                   Evaluate(float random, float t) const;
 
@@ -39,22 +39,22 @@ struct MinMaxCurve {
     Hermite<float>          maxCurve;
 };
 
-BE_INLINE void MinMaxCurve::Reset() {
-    type = ConstantType;
-    scalar = 1.0f;
-    minCurve.Clear();
-    maxCurve.Clear();
+BE_INLINE void MinMaxCurve::Reset(Type type) {
+    this->type = type;
+    this->scalar = 1.0f;
+    this->minCurve.Clear();
+    this->maxCurve.Clear();
 }
 
-BE_INLINE void MinMaxCurve::Reset(float s, float minValue, float maxValue) {
+BE_INLINE void MinMaxCurve::Reset(Type type, float scalar, float minValue, float maxValue) {
     assert(minValue >= -1.0f && minValue <= 1.0f);
     assert(maxValue >= -1.0f && maxValue <= 1.0f);
-    type = ConstantType;
-    scalar = s;
-    minCurve.Clear();
-    minCurve.AddPoint(0, minValue);
-    maxCurve.Clear();
-    maxCurve.AddPoint(0, maxValue);
+    this->type = type;
+    this->scalar = scalar;
+    this->minCurve.Clear();
+    this->minCurve.AddPoint(0, minValue);
+    this->maxCurve.Clear();
+    this->maxCurve.AddPoint(0, maxValue);
 }
 
 BE_INLINE float MinMaxCurve::Evaluate(float random, float t) const {

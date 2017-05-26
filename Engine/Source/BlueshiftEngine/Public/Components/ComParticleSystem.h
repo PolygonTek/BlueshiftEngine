@@ -33,6 +33,10 @@ public:
 
     virtual void            Awake() override;
 
+    virtual void            Enable(bool enable) override;
+
+    virtual bool            HasRenderEntity(int renderEntityHandle) const override;
+
     virtual void            Update() override;
 
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
@@ -49,12 +53,14 @@ public:
     void                    ResetParticles();
 
 protected:
+    void                    UpdateVisuals();
     void                    ChangeParticleSystem(const Guid &particleSystemGuid);
     void                    InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFraction) const;
     void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float genTimeDelta);
     void                    ComputeTrailPositionFromCustomPath(const ParticleSystem::CustomPathModule &customPathModule, const Particle *particle, float t, Particle::Trail *trail) const;
     void                    ParticleSystemReloaded();
     void                    PropertyChanged(const char *classname, const char *propName);
+    void                    TransformUpdated(const ComTransform *transform);
 
     Guid                    GetParticleSystem() const;
     void                    SetParticleSystem(const Guid &guid);
@@ -63,6 +69,10 @@ protected:
     Array<float>            startDelay;
     bool                    simulationStarted;
     int                     currentTime;
+
+    Mesh *                  spriteMesh;
+    SceneEntity::Parms      sprite;
+    int                     spriteHandle;
 };
 
 BE_NAMESPACE_END

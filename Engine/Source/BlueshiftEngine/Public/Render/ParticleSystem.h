@@ -69,20 +69,22 @@ class ParticleSystem {
 
 public:
     enum ModuleBit {
-        StandardModuleBit       = 0,
-        ShapeModuleBit          = 1,
-        CustomPathModuleBit     = 2,
-        LTColorModuleBit        = 3,
-        LTSpeedModuleBit        = 4,
-        LTForceModuleBit        = 5,
-        LTRotationModuleBit     = 6,
-        LTSizeModuleBit         = 7,
-        LTAspectRatioModuleBit  = 8,
-        TrailsModuleBit         = 9,
-        //CollisionModuleBit    = 10,
-        //NoiseModuleBit        = 11,
-        //SubEmittersModuleBit  = 12,
-        //LightModuleBit        = 13,
+        StandardModuleBit           = 0,
+        ShapeModuleBit              = 1,
+        CustomPathModuleBit         = 2,
+        LTColorModuleBit            = 3,
+        LTSpeedModuleBit            = 4,
+        LTForceModuleBit            = 5,
+        LTRotationModuleBit         = 6,
+        RotationBySpeedModuleBit    = 7,
+        LTSizeModuleBit             = 8,
+        SizeBySpeedModuleBit        = 9,
+        LTAspectRatioModuleBit      = 10,
+        TrailsModuleBit             = 11,
+        //CollisionModuleBit        = 12,
+        //NoiseModuleBit            = 13,
+        //SubEmittersModuleBit      = 14,
+        //LightModuleBit            = 15,
         MaxModules
     };    
 
@@ -175,35 +177,51 @@ public:
 
     // speed over lifetime module
     struct LTSpeedModule {
-        void                    Reset() { speed.Reset(2.0f, 0.0f, 1.0f); }
+        void                    Reset() { speed.Reset(MinMaxCurve::ConstantType, 2.0f, 0.0f, 1.0f); }
 
         MinMaxCurve             speed;
     };
 
     // force module
     struct LTForceModule {
-        void                    Reset() { force[0].Reset(1.0f, 0.0f, 0.0f); force[1].Reset(1.0f, 0.0f, 0.0f); force[2].Reset(1.0f, 0.0f, 0.0f); }
+        void                    Reset();
 
         MinMaxCurve             force[3];               ///< X, Y, Z
     };
 
     // rotation over lifetime module
     struct LTRotationModule {
-        void                    Reset() { rotation.Reset(180, 0.0f, 0.0f); }
+        void                    Reset() { rotation.Reset(MinMaxCurve::ConstantType, 180, 0.0f, 0.0f); }
 
         MinMaxCurve             rotation;               ///< angular velocity
     };
 
+    // rotation by speed module
+    struct RotationBySpeedModule {
+        void                    Reset() { rotation.Reset(MinMaxCurve::CurveType, 180.0f, 0.0f, 0.0f); speedRange.Set(0, 1); }
+
+        MinMaxCurve             rotation;               ///< size in centimeter
+        Vec2                    speedRange;
+    };
+
     // size over lifetime module
     struct LTSizeModule {
-        void                    Reset() { size.Reset(1.0f, 1.0f, 0.0f); }
+        void                    Reset() { size.Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 1.0f); }
 
         MinMaxCurve             size;                   ///< size in centimeter
     };
 
+    // size by speed module
+    struct SizeBySpeedModule {
+        void                    Reset() { size.Reset(MinMaxCurve::CurveType, 1.0f, 0.0f, 1.0f); speedRange.Set(0, 1); }
+
+        MinMaxCurve             size;                   ///< size in centimeter
+        Vec2                    speedRange;
+    };
+
     // aspect ratio over lifetime module
     struct LTAspectRatioModule {
-        void                    Reset() { aspectRatio.Reset(1.0f, 1.0f, 1.0f); }
+        void                    Reset() { aspectRatio.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f); }
 
         MinMaxCurve             aspectRatio;
     };
@@ -231,7 +249,9 @@ public:
         LTSpeedModule           speedOverLifetimeModule;
         LTForceModule           forceOverLifetimeModule;
         LTRotationModule        rotationOverLifetimeModule;
+        RotationBySpeedModule   rotationBySpeedModule;
         LTSizeModule            sizeOverLifetimeModule;
+        SizeBySpeedModule       sizeBySpeedModule;
         LTAspectRatioModule     aspectRatioOverLifetimeModule;
         TrailsModule            trailsModule;
     };
@@ -274,7 +294,9 @@ private:
     bool                        ParseLTColorModule(Lexer &lexer, LTColorModule &module) const;
     bool                        ParseLTSpeedModule(Lexer &lexer, LTSpeedModule &module) const;
     bool                        ParseLTRotationModule(Lexer &lexer, LTRotationModule &module) const;
+    bool                        ParseRotationBySpeedModule(Lexer &lexer, RotationBySpeedModule &module) const;
     bool                        ParseLTSizeModule(Lexer &lexer, LTSizeModule &module) const;
+    bool                        ParseSizeBySpeedModule(Lexer &lexer, SizeBySpeedModule &module) const;
     bool                        ParseLTAspectRatioModule(Lexer &lexer, LTAspectRatioModule &module) const;
     bool                        ParseTrailsModule(Lexer &lexer, TrailsModule &module) const;
 
@@ -307,12 +329,12 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
     simulationSpace = SimulationSpace::Local;
     material = materialManager.defaultMaterial;
     orientation = Orientation::View;
-    startDelay.Reset(1.0f, 0.0f, 0.0f);
+    startDelay.Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f);
     startColor.Set(1, 1, 1, 1);
-    startSpeed.Reset(1.0f, 1.0f, 1.0f);
-    startSize.Reset(10.0f, 1.0f, 1.0f);
-    startAspectRatio.Reset(1.0f, 1.0f, 1.0f);
-    startRotation.Reset(180.0f, 0.0f, 0.0f);
+    startSpeed.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f);
+    startSize.Reset(MinMaxCurve::ConstantType, 10.0f, 1.0f, 1.0f);
+    startAspectRatio.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f);
+    startRotation.Reset(MinMaxCurve::ConstantType, 180.0f, 0.0f, 0.0f);
     randomizeRotation = 1.0f;
     gravity = 0.0f;
 }
@@ -334,6 +356,12 @@ BE_INLINE void ParticleSystem::CustomPathModule::Reset() {
     outerRadius = 1.0f;
 }
 
+BE_INLINE void ParticleSystem::LTForceModule::Reset() {
+    force[0].Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f); 
+    force[1].Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f); 
+    force[2].Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f);
+}
+
 BE_INLINE void ParticleSystem::Stage::Reset() {
     moduleFlags = BIT(StandardModuleBit);
     standardModule.Reset();
@@ -343,7 +371,9 @@ BE_INLINE void ParticleSystem::Stage::Reset() {
     colorOverLifetimeModule.Reset();
     speedOverLifetimeModule.Reset();
     rotationOverLifetimeModule.Reset();
+    rotationBySpeedModule.Reset();
     sizeOverLifetimeModule.Reset();
+    sizeBySpeedModule.Reset();
     aspectRatioOverLifetimeModule.Reset();
     trailsModule.Reset();
 }

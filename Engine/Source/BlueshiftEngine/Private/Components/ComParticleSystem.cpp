@@ -13,12 +13,14 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Render/Render.h"
 #include "Components/ComTransform.h"
 #include "Components/ComParticleSystem.h"
 #include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"
+#include "Game/GameSettings/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -32,8 +34,12 @@ END_PROPERTIES
 
 void ComParticleSystem::RegisterProperties() {}
 
-ComParticleSystem::ComParticleSystem() {
+ComParticleSystem::ComParticleSystem() {    
     particleSystemAsset = nullptr;
+
+    spriteHandle = -1;
+    spriteMesh = nullptr;
+    memset(&sprite, 0, sizeof(sprite));
 
     Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComParticleSystem::PropertyChanged);
 }
@@ -56,6 +62,21 @@ void ComParticleSystem::Purge(bool chainPurge) {
         sceneEntity.stageParticles.Clear();
     }
 
+    if (sprite.mesh) {
+        meshManager.ReleaseMesh(sprite.mesh);
+        sprite.mesh = nullptr;
+    }
+
+    if (spriteMesh) {
+        meshManager.ReleaseMesh(spriteMesh);
+        spriteMesh = nullptr;
+    }
+
+    if (spriteHandle != -1) {
+        renderWorld->RemoveEntity(spriteHandle);
+        spriteHandle = -1;
+    }
+
     if (chainPurge) {
         ComRenderable::Purge();
     }
@@ -75,6 +96,33 @@ void ComParticleSystem::Init() {
     currentTime = 0;
 
     simulationStarted = false;
+
+    // 3d sprite
+    spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
+
+    memset(&sprite, 0, sizeof(sprite));
+    sprite.layer = TagLayerSettings::EditorLayer;
+    sprite.maxVisDist = MeterToUnit(50);
+    sprite.billboard = true;
+
+    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/AreaLight.png", Texture::Clamp | Texture::HighQuality);
+    sprite.customMaterials.SetCount(1);
+    sprite.customMaterials[0] = materialManager.GetTextureMaterial(spriteTexture, Material::SpriteHint);
+    textureManager.ReleaseTexture(spriteTexture);
+
+    sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
+    sprite.aabb = spriteMesh->GetAABB();
+    sprite.origin = GetEntity()->GetTransform()->GetOrigin();
+    sprite.scale = Vec3(1, 1, 1);
+    sprite.axis = Mat3::identity;
+    sprite.materialParms[SceneEntity::RedParm] = 1.0f;
+    sprite.materialParms[SceneEntity::GreenParm] = 1.0f;
+    sprite.materialParms[SceneEntity::BlueParm] = 1.0f;
+    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;
+    sprite.materialParms[SceneEntity::TimeOffsetParm] = 0.0f;
+    sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
+
+    GetEntity()->GetTransform()->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
  
     UpdateVisuals();
 }
@@ -136,6 +184,29 @@ void ComParticleSystem::Awake() {
     if (props->Get("playOnAwake").As<bool>()) {
         simulationStarted = true;
     }
+}
+
+void ComParticleSystem::Enable(bool enable) {
+    if (enable) {
+        if (!IsEnabled()) {
+            UpdateVisuals();
+            Component::Enable(true);
+        }
+    } else {
+        if (IsEnabled()) {
+            renderWorld->RemoveEntity(spriteHandle);
+            spriteHandle = -1;
+            Component::Enable(false);
+        }
+    }
+}
+
+bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
+    if (this->spriteHandle == renderEntityHandle) {
+        return true;
+    }
+
+    return false;
 }
 
 int ComParticleSystem::GetAliveParticleCount() const {
@@ -286,7 +357,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
 
     particle->initialColor = stage->standardModule.startColor; //
 
-    if (stage->moduleFlags & BIT(ParticleSystem::LTSizeModuleBit)) {
+    if (stage->moduleFlags & (BIT(ParticleSystem::LTSizeModuleBit) | BIT(ParticleSystem::SizeBySpeedModuleBit))) {
         particle->randomSize = RANDOM_FLOAT(0, 1);
     }
 
@@ -294,7 +365,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
         particle->randomAspectRatio = RANDOM_FLOAT(0, 1);
     }
 
-    if (stage->moduleFlags & BIT(ParticleSystem::LTRotationModuleBit)) {
+    if (stage->moduleFlags & (BIT(ParticleSystem::LTRotationModuleBit) | BIT(ParticleSystem::RotationBySpeedModuleBit))) {
         particle->randomAngularVelocity = RANDOM_FLOAT(0, 1);
     }
 
@@ -418,9 +489,25 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
 
         float trailFrac = trailAge / stage->standardModule.lifeTime;
 
+        float trailSpeed;
+        
+        if (stage->moduleFlags & (BIT(ParticleSystem::SizeBySpeedModuleBit) | BIT(ParticleSystem::RotationBySpeedModuleBit))) {
+            if (stage->moduleFlags & BIT(ParticleSystem::CustomPathModuleBit)) {
+                trailSpeed = 0;
+            } else if (stage->moduleFlags & BIT(ParticleSystem::LTSpeedModuleBit)) {
+                trailSpeed = particle->initialSpeed + MeterToUnit(stage->speedOverLifetimeModule.speed.Evaluate(particle->randomSpeed, trailFrac));
+            } else {
+                trailSpeed = particle->initialSpeed;
+            }
+        }
+
         // Compute size
         if (stage->moduleFlags & BIT(ParticleSystem::LTSizeModuleBit)) {
             trail->size = particle->initialSize * CentiToUnit(stage->sizeOverLifetimeModule.size.Evaluate(particle->randomSize, trailFrac));
+        } else if (stage->moduleFlags & BIT(ParticleSystem::SizeBySpeedModuleBit)) {
+            float l = Math::Fabs(stage->sizeBySpeedModule.speedRange[1] - stage->sizeBySpeedModule.speedRange[0]);
+            float speedFrac = (UnitToMeter(trailSpeed) - stage->sizeBySpeedModule.speedRange[0]) / l;
+            trail->size = particle->initialSize * CentiToUnit(stage->sizeBySpeedModule.size.Evaluate(particle->randomSize, speedFrac));
         } else {
             trail->size = particle->initialSize;
         }
@@ -440,6 +527,11 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         if (stage->moduleFlags & BIT(ParticleSystem::LTRotationModuleBit)) {
             float angularVelocity = stage->rotationOverLifetimeModule.rotation.Evaluate(particle->randomAngularVelocity, trailFrac);
             trail->angle = particle->initialAngle + trailAge * angularVelocity;
+        } else if (stage->moduleFlags & BIT(ParticleSystem::RotationBySpeedModuleBit)) {
+            float l = Math::Fabs(stage->rotationBySpeedModule.speedRange[1] - stage->rotationBySpeedModule.speedRange[0]);
+            float speedFrac = (UnitToMeter(trailSpeed) - stage->rotationBySpeedModule.speedRange[0]) / l;
+            float angularVelocity = stage->rotationBySpeedModule.rotation.Evaluate(particle->randomSize, speedFrac);
+            trail->angle = particle->initialAngle + trailAge * angularVelocity; 
         } else {
             trail->angle = particle->initialAngle;
         }
@@ -570,6 +662,22 @@ void ComParticleSystem::RestartSimulation() {
 void ComParticleSystem::StopSimulation() {
     simulationStarted = false;
     currentTime = 0;
+}
+
+void ComParticleSystem::UpdateVisuals() {
+    if (spriteHandle == -1) {
+        spriteHandle = renderWorld->AddEntity(&sprite);
+    } else {
+        renderWorld->UpdateEntity(spriteHandle, &sprite);
+    }
+
+    ComRenderable::UpdateVisuals();
+}
+
+void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
+    sprite.origin = transform->GetOrigin();
+
+    UpdateVisuals();
 }
 
 void ComParticleSystem::ParticleSystemReloaded() {
