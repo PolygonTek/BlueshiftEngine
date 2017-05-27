@@ -24,7 +24,7 @@ CVAR(r_multiSamples, L"0", CVar::Integer | CVar::Archive, L"number of antialiasi
 
 CVAR(r_gamma, L"1.0", CVar::Float | CVar::Archive, L"changes gamma tables");
 CVAR(r_swapInterval, L"0", CVar::Integer | CVar::Archive, L"");
-CVAR(r_dynamicCacheVertexBytes, L"0x200000", CVar::Integer | CVar::Archive, L"size of dynamic vertex buffer");
+CVAR(r_dynamicCacheVertexBytes, L"0x600000", CVar::Integer | CVar::Archive, L"size of dynamic vertex buffer");
 CVAR(r_dynamicCacheIndexBytes, L"0x200000", CVar::Integer | CVar::Archive, L"size of dynamic index buffer");
 
 CVAR(r_fastSkinning, L"3", CVar::Integer | CVar::Archive, L"matrix skinning calculation, 0 = CPU skinning, 1 = VS skinning, 2 = VTF skinning, 3 = VTF skinning with instancing");

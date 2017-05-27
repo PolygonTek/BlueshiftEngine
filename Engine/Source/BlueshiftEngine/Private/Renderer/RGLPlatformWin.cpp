@@ -31,10 +31,10 @@ static int          deviceBpp = 0;
 static int          deviceHz = 0;
 static HGLRC        hrcMain;
 
-static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool);
-static CVar         gl_debugLevel(L"gl_debugLevel", L"1", CVar::Integer);
-static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool);
-static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool);
+static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
+static CVar         gl_debugLevel(L"gl_debugLevel", L"1", CVar::Integer, L"");
+static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"");
+static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
 
 static LRESULT CALLBACK FakeWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProc(hwnd, uMsg, wParam, lParam);

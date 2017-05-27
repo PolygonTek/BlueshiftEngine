@@ -31,15 +31,15 @@ BE_NAMESPACE_BEGIN
 CVar *      CVar::staticVars = nullptr;
 
 void CVar::Init(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description, float valueMin, float valueMax) {
-    this->name			= name;
-    this->defaultValue	= value;
-    this->desc			= description;
-    this->flags			= flags;
-    this->valueMin		= valueMin;
-    this->valueMax		= valueMax;
-    this->valueString	= nullptr;
-    this->valueFloat	= 0.0f;
-    this->valueInteger	= 0;
+    this->name          = name;
+    this->defaultValue  = value;
+    this->desc          = description;
+    this->flags         = flags;
+    this->valueMin      = valueMin;
+    this->valueMax      = valueMax;
+    this->valueString   = nullptr;
+    this->valueFloat    = 0.0f;
+    this->valueInteger  = 0;
 
     if (CVar::staticVars != (CVar *)(-1)) {
         this->flags |= Static;

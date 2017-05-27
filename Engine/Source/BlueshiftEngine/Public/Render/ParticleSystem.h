@@ -363,7 +363,7 @@ BE_INLINE void ParticleSystem::LTForceModule::Reset() {
 }
 
 BE_INLINE void ParticleSystem::Stage::Reset() {
-    moduleFlags = BIT(StandardModuleBit);
+    moduleFlags = BIT(StandardModuleBit) | BIT(ShapeModuleBit);
     standardModule.Reset();
     shapeModule.Reset();
     customPathModule.Reset();

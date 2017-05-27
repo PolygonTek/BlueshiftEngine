@@ -174,7 +174,7 @@ void ComCamera::Init() {
     sprite.materialParms[SceneEntity::RedParm] = 1.0f;
     sprite.materialParms[SceneEntity::GreenParm] = 1.0f;
     sprite.materialParms[SceneEntity::BlueParm] = 1.0f;
-    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;	
+    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;
     sprite.materialParms[SceneEntity::TimeOffsetParm] = 0.0f;
     sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
