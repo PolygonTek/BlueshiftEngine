@@ -24,7 +24,7 @@ BE_NAMESPACE_BEGIN
 #define BYTE_TO_SIGNED_FLOAT(x)         ((x) * (2.0f / 255.0f) - 1.0f)
 #define SIGNED_FLOAT_TO_BYTE(x)         Math::Ftob(((x) + 1.0f) * (255.0f / 2.0f) + 0.5f)
 
-#if 0
+#if 1
 typedef uint32_t TriIndex;
 #else
 typedef uint16_t TriIndex;
