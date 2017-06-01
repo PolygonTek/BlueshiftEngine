@@ -22,7 +22,7 @@ BE_NAMESPACE_BEGIN
 void LuaVM::RegisterCameraComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComCamera = module["ComCamera"];
 
-    _ComCamera.SetClass<ComCamera>();
+    _ComCamera.SetClass<ComCamera>(module["Component"]);
     _ComCamera.AddClassMembers<ComCamera>(
         "world_to_screen", &ComCamera::WorldToScreen,
         "screen_to_ray", &ComCamera::ScreenToRay);
