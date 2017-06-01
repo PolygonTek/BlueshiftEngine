@@ -105,7 +105,7 @@ void ComParticleSystem::Init() {
     sprite.maxVisDist = MeterToUnit(50);
     sprite.billboard = true;
 
-    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/AreaLight.png", Texture::Clamp | Texture::HighQuality);
+    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ParticleSystem.png", Texture::Clamp | Texture::HighQuality);
     sprite.customMaterials.SetCount(1);
     sprite.customMaterials[0] = materialManager.GetTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
