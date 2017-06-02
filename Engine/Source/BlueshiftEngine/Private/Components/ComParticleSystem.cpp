@@ -190,13 +190,13 @@ void ComParticleSystem::Enable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             UpdateVisuals();
-            Component::Enable(true);
+            ComRenderable::Enable(true);
         }
     } else {
         if (IsEnabled()) {
             renderWorld->RemoveEntity(spriteHandle);
             spriteHandle = -1;
-            Component::Enable(false);
+            ComRenderable::Enable(false);
         }
     }
 }
