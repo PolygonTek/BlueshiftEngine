@@ -22,6 +22,8 @@ void LuaVM::RegisterMeshRendererComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComMeshRenderer = module["ComMeshRenderer"];
 
     _ComMeshRenderer.SetClass<ComMeshRenderer>(module["ComRenderable"]);
+    _ComMeshRenderer.AddClassMembers<ComMeshRenderer>(
+        "aabb", &ComMeshRenderer::GetAABB);
 
     _ComMeshRenderer["meta_object"] = ComMeshRenderer::metaObject;
 }
