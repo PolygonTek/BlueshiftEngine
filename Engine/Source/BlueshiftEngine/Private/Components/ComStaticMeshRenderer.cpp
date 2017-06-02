@@ -32,7 +32,7 @@ void ComStaticMeshRenderer::RegisterProperties() {
 }
 
 ComStaticMeshRenderer::ComStaticMeshRenderer() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComStaticMeshRenderer::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComStaticMeshRenderer::PropertyChanged);
 }
 
 ComStaticMeshRenderer::~ComStaticMeshRenderer() {

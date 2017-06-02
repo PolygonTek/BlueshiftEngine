@@ -38,7 +38,7 @@ void ComCylinderCollider::RegisterProperties() {
 }
 
 ComCylinderCollider::ComCylinderCollider() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComCylinderCollider::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCylinderCollider::PropertyChanged);
 }
 
 ComCylinderCollider::~ComCylinderCollider() {

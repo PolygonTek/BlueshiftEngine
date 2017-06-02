@@ -23,9 +23,9 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef     SIG_ComponentInserted("componentInserted", "ai");
-const SignalDef     SIG_ComponentRemoved("componentRemoved", "a");
-const SignalDef     SIG_LayerChanged("layerChanged", "a");
+const SignalDef Entity::SIG_ComponentInserted("componentInserted", "ai");
+const SignalDef Entity::SIG_ComponentRemoved("componentRemoved", "a");
+const SignalDef Entity::SIG_LayerChanged("layerChanged", "a");
 
 OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
@@ -48,7 +48,7 @@ Entity::Entity() {
     frozen = false;
     initialized = false;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&Entity::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&Entity::PropertyChanged);
 }
 
 Entity::~Entity() {

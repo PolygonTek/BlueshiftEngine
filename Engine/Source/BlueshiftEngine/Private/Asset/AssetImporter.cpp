@@ -29,7 +29,7 @@ END_PROPERTIES
 
 AssetImporter::AssetImporter() {
     asset = nullptr;
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&AssetImporter::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&AssetImporter::PropertyChanged);
 }
 
 AssetImporter::~AssetImporter() {

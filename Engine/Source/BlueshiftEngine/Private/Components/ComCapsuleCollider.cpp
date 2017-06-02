@@ -38,7 +38,7 @@ void ComCapsuleCollider::RegisterProperties() {
 }
 
 ComCapsuleCollider::ComCapsuleCollider() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComCapsuleCollider::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCapsuleCollider::PropertyChanged);
 }
 
 ComCapsuleCollider::~ComCapsuleCollider() {

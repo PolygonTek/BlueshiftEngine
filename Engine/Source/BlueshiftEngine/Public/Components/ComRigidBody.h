@@ -124,6 +124,8 @@ public:
 
     PhysRigidBody *         GetBody() const { return body; }
 
+    static const SignalDef  SIG_PhysicsUpdated;
+
 protected:
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
@@ -134,7 +136,5 @@ protected:
     Array<Collision>        collisionArray;
     Array<Collision>        oldCollisionArray;
 };
-
-extern const SignalDef      SIG_PhysicsUpdated;
 
 BE_NAMESPACE_END

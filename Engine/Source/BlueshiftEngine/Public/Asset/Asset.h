@@ -67,6 +67,9 @@ public:
                                 // Gets .meta filename associated with an asset
     static const Str            GetMetaFilenameFromAssetPath(const char *assetPath);
 
+    static const SignalDef      SIG_Reloaded;
+    static const SignalDef      SIG_Modified;
+
 protected:
     AssetImporter *             assetImporter;
     Str                         name;
@@ -327,8 +330,5 @@ public:
 
     virtual void                Save() override {}
 };
-
-extern const SignalDef          SIG_Reloaded;
-extern const SignalDef          SIG_Modified;
 
 BE_NAMESPACE_END

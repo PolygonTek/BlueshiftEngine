@@ -28,8 +28,8 @@ BEGIN_PROPERTIES(Asset)
     PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertySpec::ReadWrite | PropertySpec::Hidden),
 END_PROPERTIES
 
-const SignalDef SIG_Reloaded("reloaded");
-const SignalDef SIG_Modified("modified", "i");
+const SignalDef Asset::SIG_Reloaded("reloaded");
+const SignalDef Asset::SIG_Modified("modified", "i");
 
 Asset::Asset() {
     node.SetOwner(this);

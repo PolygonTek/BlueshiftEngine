@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef     SIG_TransformUpdated("transformUpdated", "a");
+const SignalDef ComTransform::SIG_TransformUpdated("transformUpdated", "a");
 
 OBJECT_DECLARATION("Transform", ComTransform, Component)
 BEGIN_EVENTS(ComTransform)
@@ -37,7 +37,7 @@ void ComTransform::RegisterProperties() {
 }
 
 ComTransform::ComTransform() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComTransform::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComTransform::PropertyChanged);
 }
 
 ComTransform::~ComTransform() {
@@ -67,7 +67,7 @@ void ComTransform::Init() {
 
     ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     if (rigidBody) {
-        rigidBody->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComTransform::PhysicsUpdated, SignalObject::Unique);
+        rigidBody->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComTransform::PhysicsUpdated, SignalObject::Unique);
     }
 
     RecalcWorldMatrix();
@@ -213,7 +213,7 @@ void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
 void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
     worldMatrix.SetLinearTransform(body->GetAxis(), GetScale(), body->GetOrigin());
 
-    EmitSignal(&SIG_PhysicsUpdated, body);
+    EmitSignal(&ComRigidBody::SIG_PhysicsUpdated, body);
 
     UpdateChildren(true);
 }

@@ -40,7 +40,7 @@ void ComTextRenderer::RegisterProperties() {
 }
 
 ComTextRenderer::ComTextRenderer() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComTextRenderer::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComTextRenderer::PropertyChanged);
 }
 
 ComTextRenderer::~ComTextRenderer() {

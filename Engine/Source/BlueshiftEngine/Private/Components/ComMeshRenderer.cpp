@@ -45,7 +45,7 @@ ComMeshRenderer::ComMeshRenderer() {
     meshAsset = nullptr;
     referenceMesh = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComMeshRenderer::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComMeshRenderer::PropertyChanged);
 }
 
 ComMeshRenderer::~ComMeshRenderer() {
@@ -84,7 +84,7 @@ void ComMeshRenderer::Init() {
 void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     // Disconnect from old mesh asset
     if (meshAsset) {
-        meshAsset->Disconnect(&SIG_Reloaded, this);
+        meshAsset->Disconnect(&Asset::SIG_Reloaded, this);
     }
 
     // Release the previous used instantiated mesh
@@ -134,7 +134,7 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     // Need to mesh asset to be reloaded in Editor
     meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
     if (meshAsset) {
-        meshAsset->Connect(&SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
+        meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
     }
 }
 

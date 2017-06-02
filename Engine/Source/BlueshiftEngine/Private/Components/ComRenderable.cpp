@@ -103,10 +103,10 @@ void ComRenderable::Init() {
     sceneEntity.scale = transform->GetScale();
     sceneEntity.axis = transform->GetAxis();
 
-    GetEntity()->Connect(&SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
+    GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
 
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComRenderable::PhysicsUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComRenderable::PhysicsUpdated, SignalObject::Unique);
 }
 
 void ComRenderable::Enable(bool enable) {

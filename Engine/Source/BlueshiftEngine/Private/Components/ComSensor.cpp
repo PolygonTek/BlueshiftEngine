@@ -35,7 +35,7 @@ void ComSensor::RegisterProperties() {
 ComSensor::ComSensor() {
     sensor = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComSensor::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSensor::PropertyChanged);
 }
 
 ComSensor::~ComSensor() {
@@ -123,11 +123,11 @@ void ComSensor::Awake() {
             sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
 
-        transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
+        transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
 
         ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
         if (rigidBody) {
-            rigidBody->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComSensor::PhysicsUpdated, SignalObject::Unique);
+            rigidBody->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComSensor::PhysicsUpdated, SignalObject::Unique);
         }
     }
 

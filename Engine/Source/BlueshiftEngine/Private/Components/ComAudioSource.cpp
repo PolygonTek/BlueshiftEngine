@@ -48,7 +48,7 @@ void ComAudioSource::RegisterProperties() {
 ComAudioSource::ComAudioSource() {
     referenceSound = nullptr;
     sound = nullptr;
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComAudioSource::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAudioSource::PropertyChanged);
 }
 
 ComAudioSource::~ComAudioSource() {
@@ -99,8 +99,8 @@ void ComAudioSource::Awake() {
     }
 
     ComTransform *transform = GetEntity()->GetTransform();
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComAudioSource::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComAudioSource::PhysicsUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComAudioSource::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComAudioSource::PhysicsUpdated, SignalObject::Unique);
 }
 
 void ComAudioSource::Update() {

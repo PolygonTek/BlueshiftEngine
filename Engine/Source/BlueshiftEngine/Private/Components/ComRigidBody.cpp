@@ -24,7 +24,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef     SIG_PhysicsUpdated("physicsUpdated", "a");
+const SignalDef ComRigidBody::SIG_PhysicsUpdated("physicsUpdated", "a");
 
 OBJECT_DECLARATION("Rigid Body", ComRigidBody, Component)
 BEGIN_EVENTS(ComRigidBody)
@@ -54,7 +54,7 @@ void ComRigidBody::RegisterProperties() {
 ComRigidBody::ComRigidBody() {
     body = nullptr;
     collisionListener = nullptr;
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComRigidBody::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComRigidBody::PropertyChanged);
 }
 
 ComRigidBody::~ComRigidBody() {
@@ -158,7 +158,7 @@ void ComRigidBody::Awake() {
             body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
 
-        transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComRigidBody::TransformUpdated, SignalObject::Unique);
+        transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRigidBody::TransformUpdated, SignalObject::Unique);
     }
 
     collisionArray.Clear();

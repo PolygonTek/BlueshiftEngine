@@ -34,7 +34,7 @@ void ComSocketJoint::RegisterProperties() {
 }
 
 ComSocketJoint::ComSocketJoint() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComSocketJoint::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSocketJoint::PropertyChanged);
 }
 
 ComSocketJoint::~ComSocketJoint() {

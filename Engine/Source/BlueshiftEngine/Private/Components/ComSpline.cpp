@@ -36,7 +36,7 @@ ComSpline::ComSpline() {
     anglesCurve = nullptr;
     curveUpdated = false;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComSpline::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSpline::PropertyChanged);
 }
 
 ComSpline::~ComSpline() {
@@ -100,7 +100,7 @@ void ComSpline::UpdateCurve() {
             continue;
         }
 
-        pointTransform->Disconnect(&SIG_TransformUpdated, this);
+        pointTransform->Disconnect(&ComTransform::SIG_TransformUpdated, this);
     }
 
     int numPoints = props->NumElements("points");
@@ -126,7 +126,7 @@ void ComSpline::UpdateCurve() {
                 continue;
             }
 
-            pointTransform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComSpline::PointTransformUpdated, SignalObject::Unique);
+            pointTransform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSpline::PointTransformUpdated, SignalObject::Unique);
 
             const Vec3 origin = pointTransform->GetLocalOrigin();
             originCurve->AddValue(t, origin);

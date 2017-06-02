@@ -49,7 +49,7 @@ ComCharacterController::ComCharacterController() {
     body = nullptr;
     correctionSensor = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComCharacterController::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCharacterController::PropertyChanged);
 }
 
 ComCharacterController::~ComCharacterController() {
@@ -102,8 +102,8 @@ void ComCharacterController::Init() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComCharacterController::PhysicsUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComCharacterController::PhysicsUpdated, SignalObject::Unique);
 }
 
 void ComCharacterController::Awake() {

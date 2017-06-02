@@ -73,7 +73,7 @@ ComLight::ComLight() {
     spriteMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComLight::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComLight::PropertyChanged);
 }
 
 ComLight::~ComLight() {
@@ -201,10 +201,10 @@ void ComLight::Init() {
     sprite.materialParms[SceneEntity::TimeOffsetParm] = props->Get("timeOffset").As<float>();
     sprite.materialParms[SceneEntity::TimeScaleParm] = props->Get("timeScale").As<float>();
 
-    GetEntity()->Connect(&SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
+    GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
 
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComLight::PhysicsUpdated, SignalObject::Unique);	
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComLight::PhysicsUpdated, SignalObject::Unique);
     
     UpdateVisuals();
 }

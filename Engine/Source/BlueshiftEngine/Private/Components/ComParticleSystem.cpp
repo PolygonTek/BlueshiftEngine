@@ -41,7 +41,7 @@ ComParticleSystem::ComParticleSystem() {
     spriteMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComParticleSystem::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComParticleSystem::PropertyChanged);
 }
 
 ComParticleSystem::~ComParticleSystem() {
@@ -122,7 +122,7 @@ void ComParticleSystem::Init() {
     sprite.materialParms[SceneEntity::TimeOffsetParm] = 0.0f;
     sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
-    GetEntity()->GetTransform()->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
+    GetEntity()->GetTransform()->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
  
     UpdateVisuals();
 }
@@ -130,7 +130,7 @@ void ComParticleSystem::Init() {
 void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
     // Disconnect from old particleSystem asset
     if (particleSystemAsset) {
-        particleSystemAsset->Disconnect(&SIG_Reloaded, this);
+        particleSystemAsset->Disconnect(&Asset::SIG_Reloaded, this);
     }
 
     // Release the previous used particleSystem
@@ -148,7 +148,7 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
     // Need to particleSystem asset to be reloaded in Editor
     particleSystemAsset = (ParticleSystemAsset *)ParticleSystemAsset::FindInstance(particleSystemGuid);
     if (particleSystemAsset) {
-        particleSystemAsset->Connect(&SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::Queued);
+        particleSystemAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::Queued);
     }
 }
 

@@ -67,6 +67,8 @@ public:
     void                    Translate(const Vec3 &translation);
     void                    Rotate(const Vec3 axis, float angle);
 
+    static const SignalDef  SIG_TransformUpdated;
+
 protected:
     void                    RecalcWorldMatrix();
     void                    RecalcLocalMatrix();
@@ -81,7 +83,5 @@ protected:
     Mat4                    localMatrix;
     Mat4                    worldMatrix;
 };
-
-extern const SignalDef      SIG_TransformUpdated;
 
 BE_NAMESPACE_END

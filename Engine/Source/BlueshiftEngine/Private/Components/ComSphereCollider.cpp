@@ -36,7 +36,7 @@ void ComSphereCollider::RegisterProperties() {
 }
 
 ComSphereCollider::ComSphereCollider() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComSphereCollider::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSphereCollider::PropertyChanged);
 }
 
 ComSphereCollider::~ComSphereCollider() {

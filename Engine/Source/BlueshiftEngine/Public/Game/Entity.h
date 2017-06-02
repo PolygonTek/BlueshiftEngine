@@ -29,10 +29,6 @@
 
 BE_NAMESPACE_BEGIN
 
-extern const SignalDef          SIG_ComponentInserted;
-extern const SignalDef          SIG_ComponentRemoved;
-extern const SignalDef          SIG_LayerChanged;
-
 class Component;
 class ComTransform;
 class GameWorld;
@@ -157,7 +153,11 @@ public:
 
     virtual void                DrawGizmos(const SceneView::Parms &sceneView, bool selected);
 
-    virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;	
+    virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
+
+    static const SignalDef      SIG_ComponentInserted;
+    static const SignalDef      SIG_ComponentRemoved;
+    static const SignalDef      SIG_LayerChanged;
         
 protected:
     virtual void                Event_ImmediateDestroy() override;

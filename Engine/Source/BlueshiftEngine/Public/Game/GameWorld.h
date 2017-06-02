@@ -26,9 +26,6 @@
 
 BE_NAMESPACE_BEGIN
 
-extern const SignalDef          SIG_EntityRegistered;
-extern const SignalDef          SIG_EntityUnregistered;
-
 class RenderContext;
 class RenderWorld;
 class PhysicsWorld;
@@ -131,6 +128,9 @@ public:
 
     bool                        LoadMap(const char *filename);
     void                        SaveMap(const char *filename);
+
+    static const SignalDef      SIG_EntityRegistered;
+    static const SignalDef      SIG_EntityUnregistered;
     
 private:
     void                        Event_RestartGame(const char *mapName);

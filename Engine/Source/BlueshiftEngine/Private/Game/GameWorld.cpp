@@ -33,10 +33,10 @@
 
 BE_NAMESPACE_BEGIN
 
-const EventDef      EV_RestartGame("restartGame", false, "s");
+const EventDef EV_RestartGame("restartGame", false, "s");
 
-const SignalDef     SIG_EntityRegistered("entityRegistered", "a");
-const SignalDef     SIG_EntityUnregistered("entityUnregistered", "a");
+const SignalDef GameWorld::SIG_EntityRegistered("entityRegistered", "a");
+const SignalDef GameWorld::SIG_EntityUnregistered("entityUnregistered", "a");
 
 OBJECT_DECLARATION("Game World", GameWorld, Object)
 BEGIN_EVENTS(GameWorld)

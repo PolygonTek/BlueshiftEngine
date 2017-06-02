@@ -70,7 +70,7 @@ ComCamera::ComCamera() {
     memset(&sprite, 0, sizeof(sprite));
     view = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComCamera::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCamera::PropertyChanged);
 }
 
 ComCamera::~ComCamera() {
@@ -178,8 +178,8 @@ void ComCamera::Init() {
     sprite.materialParms[SceneEntity::TimeOffsetParm] = 0.0f;
     sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComCamera::PhysicsUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComCamera::PhysicsUpdated, SignalObject::Unique);
 
     UpdateVisuals();
 }

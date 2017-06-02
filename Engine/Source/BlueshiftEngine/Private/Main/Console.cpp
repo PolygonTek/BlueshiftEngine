@@ -21,9 +21,9 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef     SIG_ConsoleOutputTextAdded("consoleOutputTextAdded", "w");
+Console console;
 
-Console             console;
+const SignalDef Console::SIG_ConsoleOutputTextAdded("consoleOutputTextAdded", "w");
 
 void Console::Init() {
     cmdSystem.AddCommand(L"clear", Cmd_ConClear);
@@ -31,7 +31,7 @@ void Console::Init() {
 
     CheckResize(0);
 
-    ClearNotify();	
+    ClearNotify();
 
     cursorPos = 0;
 

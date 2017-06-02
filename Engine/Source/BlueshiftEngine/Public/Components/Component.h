@@ -106,8 +106,4 @@ protected:
     bool                    initialized;
 };
 
-extern const SignalDef      SIG_UpdateUI;
-
 BE_NAMESPACE_END
-
-

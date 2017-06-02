@@ -39,7 +39,7 @@ void ComScript::RegisterProperties() {
 ComScript::ComScript() {
     scriptAsset = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComScript::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComScript::PropertyChanged);
 }
 
 ComScript::~ComScript() {
@@ -205,7 +205,7 @@ void ComScript::Init() {
 void ComScript::ChangeScript(const Guid &scriptGuid) {
     // Disconnect from old script asset
     if (scriptAsset) {
-        scriptAsset->Disconnect(&SIG_Reloaded, this);
+        scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
     }
 
     LuaVM::State().SetToNil(sandboxName.c_str());
@@ -225,7 +225,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         scriptAsset = scriptObject->Cast<ScriptAsset>();
         
         if (scriptAsset) {
-            scriptAsset->Connect(&SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::Queued);
+            scriptAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::Queued);
         }
     }
 
@@ -440,7 +440,7 @@ void ComScript::SetScript(const Guid &guid) {
 
     ChangeScript(guid);
 
-    EmitSignal(&SIG_UpdateUI);
+    EmitSignal(&Properties::SIG_UpdateUI);
 }
 
 BE_NAMESPACE_END
