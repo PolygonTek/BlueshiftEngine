@@ -149,6 +149,8 @@ void ComTransform::SetOrigin(const Vec3 &origin) {
 
     RecalcLocalMatrix();
 
+    localOrigin = localMatrix.ToTranslationVec3();
+
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren();
@@ -158,6 +160,9 @@ void ComTransform::SetAxis(const Mat3 &axis) {
     worldMatrix.SetLinearTransform(axis, GetScale(), GetOrigin());
 
     RecalcLocalMatrix();
+
+    localAxis = localMatrix.ToMat3();
+    localAxis.OrthoNormalizeSelf();
 
     EmitSignal(&SIG_TransformUpdated, this);
 
