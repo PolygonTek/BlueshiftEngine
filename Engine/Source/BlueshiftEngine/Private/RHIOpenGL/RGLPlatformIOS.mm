@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 #define USE_DISPLAY_LINK            1
@@ -234,7 +234,7 @@ static void GetGLVersion(int *major, int *minor) {
 	}
 }
 
-void RendererGL::InitMainContext(const Settings *settings) {
+void OpenGLRHI::InitMainContext(const Settings *settings) {
 	mainContext = new GLContext;
 	mainContext->state = new GLState;
     
@@ -264,7 +264,7 @@ void RendererGL::InitMainContext(const Settings *settings) {
     gglGenVertexArrays(1, &mainContext->defaultVAO);
 }
 
-void RendererGL::FreeMainContext() {
+void OpenGLRHI::FreeMainContext() {
 	// Delete default VAO for main context
 	gglDeleteVertexArrays(1, &mainContext->defaultVAO);
 
@@ -279,7 +279,7 @@ void RendererGL::FreeMainContext() {
 	SAFE_DELETE(mainContext);
 }
 
-Renderer::Handle RendererGL::CreateContext(Renderer::WindowHandle windowHandle, bool useSharedContext) {
+RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
 	GLContext *ctx = new GLContext;
 
 	int handle = contextList.FindNull();
@@ -330,7 +330,7 @@ Renderer::Handle RendererGL::CreateContext(Renderer::WindowHandle windowHandle, 
 	return (Handle)handle;
 }
 
-void RendererGL::DestroyContext(Handle ctxHandle) {
+void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
 
     [ctx->eaglView stopDisplayLink];
@@ -357,7 +357,7 @@ void RendererGL::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = NULL;	
 }
 
-void RendererGL::SetContext(Handle ctxHandle) {
+void OpenGLRHI::SetContext(Handle ctxHandle) {
     EAGLContext *currentContext = [EAGLContext currentContext];
 	GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
@@ -371,7 +371,7 @@ void RendererGL::SetContext(Handle ctxHandle) {
 	this->currentContext = ctx;
 }
 
-void RendererGL::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
+void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
     ctx->displayFunc = displayFunc;
@@ -383,19 +383,19 @@ void RendererGL::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc disp
 #endif
 }
 
-void RendererGL::DisplayContext(Handle ctxHandle) {
+void OpenGLRHI::DisplayContext(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     [ctx->eaglView drawView:nil];
 }
 
-Renderer::WindowHandle RendererGL::GetWindowHandleFromContext(Handle ctxHandle) {
+RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
 	const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
 	return (__bridge WindowHandle)ctx->rootView;
 }
 
-void RendererGL::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
+void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
     GLContext *ctx = contextList[ctxHandle];
     
     if (windowWidth || windowHeight) {
@@ -411,26 +411,26 @@ void RendererGL::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowH
     }
 }
 
-bool RendererGL::IsFullscreen() const {
+bool OpenGLRHI::IsFullscreen() const {
     return true;
 }
 
-bool RendererGL::SetFullscreen(Handle ctxHandle, int width, int height) {
+bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     return true;
 }
 
-void RendererGL::ResetFullscreen(Handle ctxHandle) {
+void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
 }
 
-void RendererGL::GetGammaRamp(unsigned short ramp[768]) const {
+void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
 }
 
-void RendererGL::SetGammaRamp(unsigned short ramp[768]) const {
+void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
-void RendererGL::SwapBuffers() const {
+void OpenGLRHI::SwapBuffers() const {
 	if (!gl_ignoreGLError.GetBool()) {
-		CheckError("RendererGL::SwapBuffers");
+		CheckError("OpenGLRHI::SwapBuffers");
 	}
 
 	if (gl_finish.GetBool()) {
@@ -445,7 +445,7 @@ void RendererGL::SwapBuffers() const {
 	}
 }
 
-void RendererGL::SwapInterval(int interval) const {
+void OpenGLRHI::SwapInterval(int interval) const {
     [currentContext->eaglView setAnimationFrameInterval:interval];
 }
 

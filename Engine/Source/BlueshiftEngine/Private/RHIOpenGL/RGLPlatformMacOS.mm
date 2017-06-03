@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 #import <QuartzCore/CVDisplayLink.h>
@@ -515,7 +515,7 @@ static void GetGLVersion(int *major, int *minor) {
 #endif
 }
 
-void RendererGL::InitMainContext(const Settings *settings) {
+void OpenGLRHI::InitMainContext(const Settings *settings) {
     availVRAM = MacOS_QueryVideoMemory();
 
 	mainContext = new GLContext;
@@ -583,7 +583,7 @@ void RendererGL::InitMainContext(const Settings *settings) {
     gglGenVertexArrays(1, &mainContext->defaultVAO);
 }
 
-void RendererGL::FreeMainContext() {
+void OpenGLRHI::FreeMainContext() {
 	// Delete default VAO for main context
 	gglDeleteVertexArrays(1, &mainContext->defaultVAO);
 
@@ -604,7 +604,7 @@ void RendererGL::FreeMainContext() {
 	SAFE_DELETE(mainContext);
 }
 
-Renderer::Handle RendererGL::CreateContext(Renderer::WindowHandle windowHandle, bool useSharedContext) {
+RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
 	GLContext *ctx = new GLContext;
 
 	int handle = contextList.FindNull();
@@ -695,7 +695,7 @@ Renderer::Handle RendererGL::CreateContext(Renderer::WindowHandle windowHandle, 
 	return (Handle)handle;
 }
 
-void RendererGL::DestroyContext(Handle ctxHandle) {
+void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
     
     if (ctx->nsglContext != mainContext->nsglContext) {
@@ -721,7 +721,7 @@ void RendererGL::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = NULL;	
 }
 
-void RendererGL::SetContext(Handle ctxHandle) {
+void OpenGLRHI::SetContext(Handle ctxHandle) {
     NSOpenGLContext *currentContext = [NSOpenGLContext currentContext];
 	GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
@@ -737,7 +737,7 @@ void RendererGL::SetContext(Handle ctxHandle) {
 	this->currentContext = ctx;
 }
 
-void RendererGL::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
+void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
     ctx->displayFunc = displayFunc;
@@ -749,19 +749,19 @@ void RendererGL::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc disp
 #endif
 }
 
-void RendererGL::DisplayContext(Handle ctxHandle) {
+void OpenGLRHI::DisplayContext(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     [ctx->glView drawView];
 }
 
-Renderer::WindowHandle RendererGL::GetWindowHandleFromContext(Handle ctxHandle) {
+RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
 	const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
 	return (__bridge WindowHandle)ctx->contentView;
 }
 
-void RendererGL::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
+void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
     GLContext *ctx = contextList[ctxHandle];
     
     if (windowWidth || windowHeight) {
@@ -777,11 +777,11 @@ void RendererGL::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowH
     }
 }
 
-bool RendererGL::IsFullscreen() const {
+bool OpenGLRHI::IsFullscreen() const {
     return desktopDisplayMode != NULL ? true : false;
 }
 
-bool RendererGL::SetFullscreen(Handle ctxHandle, int width, int height) {
+bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     GLint dim[2] = { width, height };
@@ -801,7 +801,7 @@ bool RendererGL::SetFullscreen(Handle ctxHandle, int width, int height) {
     return true;
 }
 
-void RendererGL::ResetFullscreen(Handle ctxHandle) {
+void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     CGLDisable(ctx->cglContext, kCGLCESurfaceBackingSize);
@@ -823,7 +823,7 @@ void RendererGL::ResetFullscreen(Handle ctxHandle) {
     [window setFrameOrigin:newPos];*/
 }
 
-void RendererGL::GetGammaRamp(unsigned short ramp[768]) const {
+void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
     uint32_t tableSize = 256;
     CGGammaValue *values = (CGGammaValue *)calloc(tableSize * 3, sizeof(CGGammaValue));
     
@@ -838,7 +838,7 @@ void RendererGL::GetGammaRamp(unsigned short ramp[768]) const {
     free(values);
 }
 
-void RendererGL::SetGammaRamp(unsigned short ramp[768]) const {
+void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     CGGammaValue *values = (CGGammaValue *)calloc(768, sizeof(CGGammaValue));
     
     for (int i = 0; i < 256;  i++) {
@@ -852,7 +852,7 @@ void RendererGL::SetGammaRamp(unsigned short ramp[768]) const {
     free(values);
 }
 
-void RendererGL::SwapBuffers() const {
+void OpenGLRHI::SwapBuffers() const {
 	if (!gl_ignoreGLError.GetBool()) {
 		CheckError("GLRenderer::SwapBuffers");
 	}
@@ -882,7 +882,7 @@ void RendererGL::SwapBuffers() const {
 	}
 }
 
-void RendererGL::SwapInterval(int interval) const {
+void OpenGLRHI::SwapInterval(int interval) const {
 	[currentContext->nsglContext setValues: &interval forParameter: NSOpenGLCPSwapInterval];
 }
 

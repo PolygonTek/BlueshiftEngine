@@ -15878,7 +15878,7 @@ void compressFile(char *srcfile,char *dstfile)
 	uint8 *srcimg;
 	int width,height;
 	int extendedwidth, extendedheight;
-	struct _timeb tstruct;
+	struct timeb tstruct;
 	int tstart;
 	int tstop;
 	// 0: compress from .any to .pkm with SPEED_FAST, METRIC_NONPERCEPTUAL, ETC 
@@ -15956,11 +15956,11 @@ void compressFile(char *srcfile,char *dstfile)
 			printf("Compressing...\n");
 
 			tstart=time(NULL);
-			_ftime( &tstruct );
+			ftime( &tstruct );
 			tstart=tstart*1000+tstruct.millitm;
 			compressImageFile(srcimg,alphaimg,width,height,dstfile,extendedwidth, extendedheight);			
 			tstop = time(NULL);
-			_ftime( &tstruct );
+			ftime( &tstruct );
 			tstop = tstop*1000+tstruct.millitm;
 			printf( "It took %u milliseconds to compress:\n", tstop - tstart);
 			calculatePSNRfile(dstfile,srcimg,alphaimg);
