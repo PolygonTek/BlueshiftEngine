@@ -13,8 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Math/Math.h"
 #include "File/FileSystem.h"
 #include "Image/Image.h"

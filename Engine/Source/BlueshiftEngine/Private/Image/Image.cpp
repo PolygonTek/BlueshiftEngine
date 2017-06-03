@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/Str.h"
 #include "Core/Heap.h"
 #include "Simd/Simd.h"
 #include "Math/Math.h"

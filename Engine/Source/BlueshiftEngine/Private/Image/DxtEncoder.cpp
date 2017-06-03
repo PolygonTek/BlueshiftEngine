@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/Str.h"
 #include "Core/Task.h"
 #include "Math/Math.h"
 #include "Image/DxtEncoder.h"
