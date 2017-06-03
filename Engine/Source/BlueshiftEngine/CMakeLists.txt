@@ -247,6 +247,9 @@ set(ENGINE_FILES
   Private/Image/Image.cpp
   Private/Image/ImageColorSpace.cpp
   Private/Image/ImageConvert.cpp
+  Private/Image/ImageCompressDXT.cpp
+  Private/Image/ImageCompressETC.cpp
+  Private/Image/ImageDecompressDXT.cpp
   Private/Image/ImageDecompressPVRTC.cpp
   Private/Image/ImageDecompressETC.cpp
   Private/Image/ImageFile.cpp
@@ -814,7 +817,7 @@ elseif (APPLE)
 endif ()
 
 target_link_libraries(${PROJECT_NAME}
-  zlib minizip libjpeg libpng libpvrt libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
+  zlib minizip libjpeg libpng libpvrt EtcLib libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
 
 if (ANDROID)
 	target_link_libraries(${PROJECT_NAME} nvidia)
