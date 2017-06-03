@@ -159,10 +159,8 @@ static uint8 table58H[8] = {3,6,11,16,23,32,41,64};  // 3-bit table for the 58 b
 uint8 weight[3] = {1,1,1};			// Color weight
 
 // Enums
-static enum{PATTERN_H = 0, 
-			PATTERN_T = 1};
-
-static enum{MODE_ETC1, MODE_THUMB_T, MODE_THUMB_H, MODE_PLANAR};
+enum {PATTERN_H = 0, PATTERN_T = 1};
+enum {MODE_ETC1, MODE_THUMB_T, MODE_THUMB_H, MODE_PLANAR};
 // The ETC2 package of codecs includes the following codecs:
 //
 // codec                                             enum
@@ -202,11 +200,11 @@ static enum{MODE_ETC1, MODE_THUMB_T, MODE_THUMB_H, MODE_PLANAR};
 // (GL_COMPRESSED_R11_EAC) and signed (GL_COMPRESSED_SIGNED_R11_EAC) version of 
 // the codec.
 // 
-static enum{ETC1_RGB_NO_MIPMAPS,ETC2PACKAGE_RGB_NO_MIPMAPS,ETC2PACKAGE_RGBA_NO_MIPMAPS_OLD,ETC2PACKAGE_RGBA_NO_MIPMAPS,ETC2PACKAGE_RGBA1_NO_MIPMAPS,ETC2PACKAGE_R_NO_MIPMAPS,ETC2PACKAGE_RG_NO_MIPMAPS,ETC2PACKAGE_R_SIGNED_NO_MIPMAPS,ETC2PACKAGE_RG_SIGNED_NO_MIPMAPS,ETC2PACKAGE_sRGB_NO_MIPMAPS,ETC2PACKAGE_sRGBA_NO_MIPMAPS,ETC2PACKAGE_sRGBA1_NO_MIPMAPS};
-static enum {MODE_COMPRESS, MODE_UNCOMPRESS, MODE_PSNR};
-static enum {SPEED_SLOW, SPEED_FAST, SPEED_MEDIUM};
-static enum {METRIC_PERCEPTUAL, METRIC_NONPERCEPTUAL};
-static enum {CODEC_ETC, CODEC_ETC2};
+enum {ETC1_RGB_NO_MIPMAPS,ETC2PACKAGE_RGB_NO_MIPMAPS,ETC2PACKAGE_RGBA_NO_MIPMAPS_OLD,ETC2PACKAGE_RGBA_NO_MIPMAPS,ETC2PACKAGE_RGBA1_NO_MIPMAPS,ETC2PACKAGE_R_NO_MIPMAPS,ETC2PACKAGE_RG_NO_MIPMAPS,ETC2PACKAGE_R_SIGNED_NO_MIPMAPS,ETC2PACKAGE_RG_SIGNED_NO_MIPMAPS,ETC2PACKAGE_sRGB_NO_MIPMAPS,ETC2PACKAGE_sRGBA_NO_MIPMAPS,ETC2PACKAGE_sRGBA1_NO_MIPMAPS};
+enum {MODE_COMPRESS, MODE_UNCOMPRESS, MODE_PSNR};
+enum {SPEED_SLOW, SPEED_FAST, SPEED_MEDIUM};
+enum {METRIC_PERCEPTUAL, METRIC_NONPERCEPTUAL};
+enum {CODEC_ETC, CODEC_ETC2};
 
 int mode = MODE_COMPRESS;
 int speed = SPEED_FAST;
@@ -244,7 +242,7 @@ KTX_header;
 #define KTX_ENDIAN_REF      (0x04030201)
 #define KTX_ENDIAN_REF_REV  (0x01020304)
 
-static enum {GL_R=0x1903,GL_RG=0x8227,GL_RGB=0x1907,GL_RGBA=0x1908};
+enum {GL_R=0x1903,GL_RG=0x8227,GL_RGB=0x1907,GL_RGBA=0x1908};
 #define GL_SRGB                                          0x8C40
 #define GL_SRGB8                                         0x8C41
 #define GL_SRGB8_ALPHA8                                  0x8C43
@@ -470,7 +468,7 @@ bool readSrcFile(char *filename,uint8 *&img,int &width,int &height, int &expande
 	{
 		// Already a .ppm file. Just copy. 
 		sprintf(str,"copy %s tmp.ppm \n", filename);
-		printf("Copying source file to tmp.ppm\n", filename);
+		printf("Copying source file from %s to tmp.ppm\n", filename);
 	}
 	else
 	{
@@ -569,7 +567,7 @@ bool readSrcFileNoExpand(char *filename,uint8 *&img,int &width,int &height)
 	{
 		// Already a .ppm file. Just copy. 
 		sprintf(str,"copy %s tmp.ppm \n", filename);
-		printf("Copying source file to tmp.ppm\n", filename);
+		printf("Copying source file from %s to tmp.ppm\n", filename);
 	}
 	else
 	{
@@ -614,7 +612,7 @@ void readArguments(int argc,char *argv[],char* src,char *dst)
 		{
 			if(i==argc-1) 
 			{
-				printf("flag missing argument: %s!\n");
+				printf("flag missing argument\n");
 				exit(1);
 			}
 			//handle speed flag
@@ -809,37 +807,35 @@ void readArguments(int argc,char *argv[],char* src,char *dst)
 		format=ETC1_RGB_NO_MIPMAPS;
 }
 
-static int compressParams[16][4];
-const int compressParamsFast[32] = {  -8,  -2,  2,   8,
-									 -17,  -5,  5,  17,
-									 -29,  -9,  9,  29,
-									 -42, -13, 13,  42,
- 									 -60, -18, 18,  60,
-									 -80, -24, 24,  80,
-									-106, -33, 33, 106,
-									-183, -47, 47, 183};
+static int compressParams[16][4] = {
+    {  -8,   -2,  2,   8 },
+    {  -8,   -2,  2,   8 },
+    {  -17,  -5,  5,  17 },
+    {  -17,  -5,  5,  17 },
+    {  -29,  -9,  9,  29 },
+    {  -29,  -9,  9,  29 },
+    {  -42, -13, 13,  42 },
+    {  -42, -13, 13,  42 },
+    {  -60, -18, 18,  60 },
+    {  -60, -18, 18,  60 },
+    {  -80, -24, 24,  80 },
+    {  -80, -24, 24,  80 },
+    { -106, -33, 33, 106 },
+    { -106, -33, 33, 106 },
+    { -183, -47, 47, 183 },
+    { -183, -47, 47, 183 }
+};
 
-bool readCompressParams(void)
-{
-	compressParams[0][0]  =  -8; compressParams[0][1]  =  -2; compressParams[0][2]  =  2; compressParams[0][3]  =   8;
-	compressParams[1][0]  =  -8; compressParams[1][1]  =  -2; compressParams[1][2]  =  2; compressParams[1][3]  =   8;
-	compressParams[2][0]  = -17; compressParams[2][1]  =  -5; compressParams[2][2]  =  5; compressParams[2][3]  =  17;
-	compressParams[3][0]  = -17; compressParams[3][1]  =  -5; compressParams[3][2]  =  5; compressParams[3][3]  =  17;
-	compressParams[4][0]  = -29; compressParams[4][1]  =  -9; compressParams[4][2]  =  9; compressParams[4][3]  =  29;
-	compressParams[5][0]  = -29; compressParams[5][1]  =  -9; compressParams[5][2]  =  9; compressParams[5][3]  =  29;
-	compressParams[6][0]  = -42; compressParams[6][1]  = -13; compressParams[6][2]  = 13; compressParams[6][3]  =  42;
-	compressParams[7][0]  = -42; compressParams[7][1]  = -13; compressParams[7][2]  = 13; compressParams[7][3]  =  42;
- 	compressParams[8][0]  = -60; compressParams[8][1]  = -18; compressParams[8][2]  = 18; compressParams[8][3]  =  60;
- 	compressParams[9][0]  = -60; compressParams[9][1]  = -18; compressParams[9][2]  = 18; compressParams[9][3]  =  60;
-	compressParams[10][0] = -80; compressParams[10][1] = -24; compressParams[10][2] = 24; compressParams[10][3] =  80;
-	compressParams[11][0] = -80; compressParams[11][1] = -24; compressParams[11][2] = 24; compressParams[11][3] =  80;
-	compressParams[12][0] =-106; compressParams[12][1] = -33; compressParams[12][2] = 33; compressParams[12][3] = 106;
-	compressParams[13][0] =-106; compressParams[13][1] = -33; compressParams[13][2] = 33; compressParams[13][3] = 106;
-	compressParams[14][0] =-183; compressParams[14][1] = -47; compressParams[14][2] = 47; compressParams[14][3] = 183;
-	compressParams[15][0] =-183; compressParams[15][1] = -47; compressParams[15][2] = 47; compressParams[15][3] = 183;
-	
-	return true;
-}
+const int compressParamsFast[32] = {  
+      -8,  -2,  2,   8,
+     -17,  -5,  5,  17,
+     -29,  -9,  9,  29,
+     -42, -13, 13,  42,
+     -60, -18, 18,  60,
+     -80, -24, 24,  80,
+    -106, -33, 33, 106,
+-    183, -47, 47, 183
+};
 
 // Computes the average color in a 2x4 area and returns the average color as a float.
 // NO WARRANTY --- SEE STATEMENT IN TOP OF FILE (C) Ericsson AB 2005-2013. All Rights Reserved.
@@ -9114,7 +9110,7 @@ void uncompressFile(char *srcfile, uint8* &img, uint8 *&alphaimg, int& active_wi
 	if(f=fopen(srcfile,"rb"))
 	{
 		// Load table
-		readCompressParams();
+		//readCompressParams();
 		if(ktxFile) 
 		{
 			//read ktx header..
@@ -9208,7 +9204,7 @@ void uncompressFile(char *srcfile, uint8* &img, uint8 *&alphaimg, int& active_wi
 				if(!(texture_type == ETC1_RGB_NO_MIPMAPS))
 				{
 					printf("\n\n The file %s (of version %c.%c) does not contain a texture of known format.\n", srcfile, version[0],version[1]);
-					printf("Known formats: ETC1_RGB_NO_MIPMAPS.\n", srcfile);
+					printf("Known formats: ETC1_RGB_NO_MIPMAPS.\n");
 					exit(1);
 				}
 			}
@@ -9252,7 +9248,7 @@ void uncompressFile(char *srcfile, uint8* &img, uint8 *&alphaimg, int& active_wi
 				if(!(texture_type==ETC2PACKAGE_RGB_NO_MIPMAPS||texture_type==ETC2PACKAGE_sRGB_NO_MIPMAPS||texture_type==ETC2PACKAGE_RGBA_NO_MIPMAPS||texture_type==ETC2PACKAGE_sRGBA_NO_MIPMAPS||texture_type==ETC2PACKAGE_R_NO_MIPMAPS||texture_type==ETC2PACKAGE_RG_NO_MIPMAPS||texture_type==ETC2PACKAGE_RGBA1_NO_MIPMAPS||texture_type==ETC2PACKAGE_sRGBA1_NO_MIPMAPS))
 				{
 					printf("\n\n The file %s does not contain a texture of known format.\n", srcfile);
-					printf("Known formats: ETC2PACKAGE_RGB_NO_MIPMAPS.\n", srcfile);
+					printf("Known formats: ETC2PACKAGE_RGB_NO_MIPMAPS.\n");
 					exit(1);
 				}
 			}
@@ -15932,7 +15928,7 @@ void compressFile(char *srcfile,char *dstfile)
 	else
 		printf("in OTHER format");
 	printf("\n");
-	if(readCompressParams())
+	if(1)//readCompressParams())
 	{
 		if(format==ETC2PACKAGE_R_NO_MIPMAPS||readSrcFile(srcfile,srcimg,width,height,extendedwidth, extendedheight))
 		{
