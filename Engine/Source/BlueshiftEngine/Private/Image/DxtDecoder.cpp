@@ -114,8 +114,8 @@ void DXTDecoder::DecodeAlphaBlock(const DXTBlock::AlphaBlock *block, byte *out) 
 
 // Decode 64 bits alpha block (4 bits per pixel) to 8-bit alphas
 void DXTDecoder::DecodeAlphaExplicitBlock(const DXTBlock::AlphaExplicitBlock *block, byte *out) {
-    uint16_t	bits;
-    byte		alpha;
+    uint16_t    bits;
+    byte        alpha;
 
     for (int y = 0; y < 4; y++) {
         bits = block->row[y];
@@ -139,7 +139,7 @@ void DXTDecoder::DecompressImageDXT1(const DXTBlock *dxtBlock, const int width, 
 
             int dstBlockHeight = Min(4, height - y);
 
-            for (int x = 0; x < width; x += 4) {
+            for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
                 DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, true);
                 dxtBlock++;
 
@@ -147,13 +147,9 @@ void DXTDecoder::DecompressImageDXT1(const DXTBlock *dxtBlock, const int width, 
 
                 int dstBlockWidth = Min(4, width - x);
 
-                for (int i = 0; i < dstBlockHeight; i++) {
+                for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
                     memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);
-
-                    srcPtr += 4 * 4;
                 }
-
-                dstPtr += 4 * 4;
             }
         }
     }
@@ -170,7 +166,7 @@ void DXTDecoder::DecompressImageDXT3(const DXTBlock *dxtBlock, const int width, 
 
             int dstBlockHeight = Min(4, height - y);
 
-            for (int x = 0; x < width; x += 4) {
+            for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
                 DXTDecoder::DecodeAlphaExplicitBlock(&dxtBlock->alphaExplicitBlock, unpackedBlock + 3);
                 dxtBlock++;
                 DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, false);
@@ -180,13 +176,9 @@ void DXTDecoder::DecompressImageDXT3(const DXTBlock *dxtBlock, const int width, 
 
                 int dstBlockWidth = Min(4, width - x);
 
-                for (int i = 0; i < dstBlockHeight; i++) {
+                for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
                     memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);
-
-                    srcPtr += 4 * 4;
                 }
-
-                dstPtr += 4 * 4;
             }
         }
     }
@@ -203,7 +195,7 @@ void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, 
 
             int dstBlockHeight = Min(4, height - y);
 
-            for (int x = 0; x < width; x += 4) {
+            for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
                 DXTDecoder::DecodeAlphaBlock(&dxtBlock->alphaBlock, unpackedBlock + 3);
                 dxtBlock++;
                 DXTDecoder::DecodeColorBlock(&dxtBlock->colorBlock, unpackedBlock, false);
@@ -213,13 +205,9 @@ void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, 
 
                 int dstBlockWidth = Min(4, width - x);
 
-                for (int i = 0; i < dstBlockHeight; i++) {
-                    memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);
-
-                    srcPtr += 4 * 4;
+                for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
+                    memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);                    
                 }
-
-                dstPtr += 4 * 4;
             }
         }
     }
@@ -236,7 +224,7 @@ void DXTDecoder::DecompressImageDXN2(const DXTBlock *dxtBlock, const int width, 
 
             int dstBlockHeight = Min(4, height - y);
 
-            for (int x = 0; x < width; x += 4) {
+            for (int x = 0; x < width; x += 4, dstPtr += 4 * 4) {
                 DXTDecoder::DecodeAlphaBlock(&dxtBlock->alphaBlock, unpackedBlock);
                 dxtBlock++;
                 DXTDecoder::DecodeAlphaBlock(&dxtBlock->alphaBlock, unpackedBlock + 1);
@@ -267,13 +255,9 @@ void DXTDecoder::DecompressImageDXN2(const DXTBlock *dxtBlock, const int width, 
 
                 int dstBlockWidth = Min(4, width - x); 
 
-                for (int i = 0; i < dstBlockHeight; i++) {
+                for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
                     memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);
-
-                    srcPtr += 4 * 4;
                 }
-
-                dstPtr += 4 * 4;
             }
         }
     }

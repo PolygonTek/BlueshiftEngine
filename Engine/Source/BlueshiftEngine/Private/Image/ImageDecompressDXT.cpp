@@ -15,11 +15,11 @@ void DecompressDXT1(const Image &srcImage, Image &dstImage) {
         int d = srcImage.GetDepth(mipLevel);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
+            const DXTBlock *srcDxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
 
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DXTDecoder::DecompressImageDXT1(dxtBlock, w, h, d, dst);
+            DXTDecoder::DecompressImageDXT1(srcDxtBlock, w, h, d, dst);
         }
     }
 }
@@ -34,11 +34,11 @@ void DecompressDXT3(const Image &srcImage, Image &dstImage) {
         int d = srcImage.GetDepth(mipLevel);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
+            const DXTBlock *srcDxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
 
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DXTDecoder::DecompressImageDXT3(dxtBlock, w, h, d, dst);
+            DXTDecoder::DecompressImageDXT3(srcDxtBlock, w, h, d, dst);
         }
     }
 }
@@ -53,11 +53,11 @@ void DecompressDXT5(const Image &srcImage, Image &dstImage) {
         int d = srcImage.GetDepth(mipLevel);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
+            const DXTBlock *srcDxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
 
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DXTDecoder::DecompressImageDXT5(dxtBlock, w, h, d, dst);
+            DXTDecoder::DecompressImageDXT5(srcDxtBlock, w, h, d, dst);
         }
     }
 }
@@ -72,11 +72,11 @@ void DecompressDXN2(const Image &srcImage, Image &dstImage) {
         int d = srcImage.GetDepth(mipLevel);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
+            const DXTBlock *srcDxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
 
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DXTDecoder::DecompressImageDXN2(dxtBlock, w, h, d, dst);
+            DXTDecoder::DecompressImageDXN2(srcDxtBlock, w, h, d, dst);
         }
     }
 }
