@@ -817,7 +817,7 @@ elseif (APPLE)
 endif ()
 
 target_link_libraries(${PROJECT_NAME}
-  zlib minizip libjpeg libpng libpvrt EtcLib libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
+  zlib minizip libjpeg libpng libpvrt etcpack_lib EtcLib libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
 
 if (ANDROID)
 	target_link_libraries(${PROJECT_NAME} nvidia)
