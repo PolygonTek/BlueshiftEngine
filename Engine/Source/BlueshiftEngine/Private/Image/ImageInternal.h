@@ -35,9 +35,24 @@ struct ImageFormatInfo {
     RGBA8888ToUserFormatFunc packFunc;
 };
 
+void DecompressDXT1(const Image &srcImage, Image &dstImage);
+void DecompressDXT3(const Image &srcImage, Image &dstImage);
+void DecompressDXT5(const Image &srcImage, Image &dstImage);
+void DecompressDXN2(const Image &srcImage, Image &dstImage);
+
 void DecompressPVRTC(const Image &srcImage, Image &dstImage, int do2BitMode);
 
 void DecompressETC(const Image &srcImage, Image &dstImage, int nMode);
+
+void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+
+void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
 
 bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth, int &blockHeight);
 bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int &minHeight);

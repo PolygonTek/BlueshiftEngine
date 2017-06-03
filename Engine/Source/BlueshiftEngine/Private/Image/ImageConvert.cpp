@@ -17,87 +17,9 @@
 #include "Core/Heap.h"
 #include "Math/Math.h"
 #include "Image/Image.h"
-#include "Image/DxtDecoder.h"
-#include "Image/DxtEncoder.h"
 #include "ImageInternal.h"
 
 BE_NAMESPACE_BEGIN
-
-static void DecompressDXT1(const Image &srcImage, Image &dstImage) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
-
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            DXTDecoder::DecompressImageDXT1(dxtBlock, w, h, d, dst);
-        }
-    }
-}
-
-static void DecompressDXT3(const Image &srcImage, Image &dstImage) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
-
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            DXTDecoder::DecompressImageDXT3(dxtBlock, w, h, d, dst);
-        }
-    }
-}
-
-static void DecompressDXT5(const Image &srcImage, Image &dstImage) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
-
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            DXTDecoder::DecompressImageDXT5(dxtBlock, w, h, d, dst);
-        }
-    }
-}
-
-static void DecompressDXN2(const Image &srcImage, Image &dstImage) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
-
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            DXTDecoder::DecompressImageDXN2(dxtBlock, w, h, d, dst);
-        }
-    }
-}
 
 static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::RGBA_8_8_8_8);
@@ -146,94 +68,6 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     return true;
 }
 
-static void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            if (compressoinQuality == Image::HighQuality) {
-                DXTEncoder::CompressImageDXT1HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT1Fast(src, w, h, d, dst);
-            }
-        }
-    }
-}
-
-static void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            if (compressoinQuality == Image::HighQuality) {
-                DXTEncoder::CompressImageDXT3HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT3Fast(src, w, h, d, dst);
-            }
-        }
-    }
-}
-
-static void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            if (compressoinQuality == Image::HighQuality) {
-                DXTEncoder::CompressImageDXT5HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT5Fast(src, w, h, d, dst);
-            }
-        }
-    }
-}
-
-static void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            if (compressoinQuality == Image::HighQuality) {
-                DXTEncoder::CompressImageDXN2HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXN2Fast(src, w, h, d, dst);
-            }
-        }
-    }
-}
-
 static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
     assert(srcImage.GetFormat() == Image::RGBA_8_8_8_8);
     assert(srcImage.GetPixels());
@@ -252,6 +86,18 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
         break;
     case Image::DXN2:
         CompressDXN2(srcImage, dstImage, compressoinQuality);
+        break;
+    case Image::RGB_8_ETC1:
+        CompressETC1(srcImage, dstImage, compressoinQuality);
+        break;
+    case Image::RGB_8_ETC2:
+        CompressETC2_RGB8(srcImage, dstImage, compressoinQuality);
+        break;
+    case Image::RGBA_8_8_ETC2:
+        CompressETC2_RGBA8(srcImage, dstImage, compressoinQuality);
+        break;
+    case Image::RGBA_8_1_ETC2:
+        CompressETC2_RGBA1(srcImage, dstImage, compressoinQuality);
         break;
     default:
         BE_WARNLOG(L"CompressImage: unsupported format %hs\n", dstImage.FormatName());
