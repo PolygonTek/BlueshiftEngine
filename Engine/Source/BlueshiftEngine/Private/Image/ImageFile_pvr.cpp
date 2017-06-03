@@ -247,8 +247,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     this->width = header->u32Width;
     this->height = header->u32Height;
     this->depth = header->u32Depth;
-    this->flags |= header->u32ColourSpace == ePVRTCSpacesRGB ? SRGBFlag : 0;
-    this->flags |= header->u32ColourSpace == ePVRTCSpacelRGB ? LinearFlag : 0;
+    this->flags = header->u32ColourSpace == ePVRTCSpacesRGB ? LinearFlag : SRGBFlag;
     this->numMipmaps = Max(1, (int)header->u32MIPMapCount);
     this->numSlices = Max(1, (int)header->u32NumFaces);
 
@@ -275,8 +274,94 @@ bool Image::LoadPVRFromMemory(const char *name, const byte *data, size_t size) {
 }
 
 bool Image::WritePVR(const char *filename) const {
-    // TODO: IMPLEMENT THIS!
-    return false;
+    const Image *srcImage = this;
+    Image convertedImage;
+
+    if (format != RGB_8_ETC1 && format != RGB_8_ETC2 && format != RGBA_8_8_ETC2 && format != RGBA_8_1_ETC2) {
+        Image::Format convertFormat;
+        int alphaBits;
+        GetBits(nullptr, nullptr, nullptr, &alphaBits);
+
+        if (alphaBits >= 8) {
+            convertFormat = RGBA_8_8_ETC2;
+        } else if (alphaBits == 1) {
+            convertFormat = RGBA_8_1_ETC2;
+        } else {
+            convertFormat = RGB_8_ETC2;
+        }
+
+        if (convertFormat != format) {
+            ConvertFormat(convertFormat, convertedImage);
+            srcImage = &convertedImage;
+        }
+    }
+
+    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    if (!fp) {
+        BE_WARNLOG(L"Image::WritePVR: file open error\n");
+        return false;
+    }
+
+    PVRTextureHeaderV3 header;
+    header.u32Version = PVRTEX3_IDENT;
+    header.u32Flags = 0;
+    header.u32ColourSpace = (flags & LinearFlag) ? ePVRTCSpacesRGB : ePVRTCSpacelRGB;
+    header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
+    header.u32Height = height;
+    header.u32Width = width;
+    header.u32Depth = 1;
+    header.u32NumSurfaces = 1;
+    header.u32NumFaces = 1;
+    header.u32MIPMapCount = numMipmaps;
+
+    switch (srcImage->format) {
+    case RGB_8_ETC1:
+        header.u64PixelFormat = ePVRTPF_ETC1;
+        break;
+    case RGB_8_ETC2:
+        header.u64PixelFormat = ePVRTPF_ETC2_RGB;
+        break;
+    case RGBA_8_8_ETC2:
+        header.u64PixelFormat = ePVRTPF_ETC2_RGBA;
+        break;
+    case RGBA_8_1_ETC2:
+        header.u64PixelFormat = ePVRTPF_ETC2_RGB_A1;
+        break;
+    }
+
+#if 0
+    MetaDataBlock metaDataBlock;
+    metaDataBlock.DevFOURCC = PVRTEX3_IDENT;
+    metaDataBlock.u32Key = ePVRTMetaDataTextureOrientation;
+    metaDataBlock.u32DataSize = 3;
+    metaDataBlock.Data = new PVRTuint8[metaDataBlock.u32DataSize];
+    metaDataBlock.Data[0] = ePVRTOrientRight;
+    metaDataBlock.Data[1] = ePVRTOrientUp;
+    metaDataBlock.Data[2] = ePVRTOrientIn;
+
+    header.u32MetaDataSize = metaDataBlock.SizeOfBlock();
+
+    fp->Write(&header, sizeof(header));
+
+    fp->Write(&metaDataBlock.DevFOURCC, sizeof(metaDataBlock.DevFOURCC));
+    fp->Write(&metaDataBlock.u32Key, sizeof(metaDataBlock.u32Key));
+    fp->Write(&metaDataBlock.u32DataSize, sizeof(metaDataBlock.u32DataSize));
+
+    for (int i = 0; i < metaDataBlock.u32DataSize; i++) {
+        fp->Write(&metaDataBlock.Data[i], sizeof(metaDataBlock.Data[0]));
+    }
+
+#else
+    header.u32MetaDataSize = 0;
+
+    fp->Write(&header, sizeof(header));
+#endif
+    
+    fp->Write(srcImage->pic, srcImage->GetSize(0, numMipmaps));
+
+    fileSystem.CloseFile(fp);
+
+    return true;
 }
 
 BE_NAMESPACE_END
