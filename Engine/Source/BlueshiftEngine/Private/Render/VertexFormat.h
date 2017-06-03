@@ -67,7 +67,7 @@ public:
 
     VertexFormat();
 
-    void                    Append(int stream, int offset, Renderer::VertexElement::Usage usage, int components, Renderer::VertexElement::Type type, bool normalize);
+    void                    Append(int stream, int offset, RHI::VertexElement::Usage usage, int components, RHI::VertexElement::Type type, bool normalize);
     void                    CopyFrom(const VertexFormat &other);
 
     void                    Create();
@@ -77,8 +77,8 @@ public:
     static void             Free();
     static void             CreateSkinningVertexFormats(int originalIndex, int skinning1Index, int skinning4Index, int skinning8Index);
 
-    Array<Renderer::VertexElement> elements;
-    Renderer::Handle        vertexFormatHandle;
+    Array<RHI::VertexElement> elements;
+    RHI::Handle             vertexFormatHandle;
 };
 
 extern VertexFormat         vertexFormats[VertexFormat::MaxVertexFormats];

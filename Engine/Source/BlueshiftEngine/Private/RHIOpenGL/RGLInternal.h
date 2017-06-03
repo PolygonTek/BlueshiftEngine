@@ -31,7 +31,7 @@
 #if defined(__XAMARIN__) && !defined(__WIN32__)
 
 #include "OpenGL/XamarinOpenGL.h"
-#include "Renderer/EGLUtil.h"
+#include "RHI/EGLUtil.h"
 
 #else // __XAMARIN__
 
@@ -75,14 +75,14 @@ BE_NAMESPACE_BEGIN
 
 struct GLState {
     int                 tmu; // current texture map unit
-    Renderer::Handle    textureHandles[Renderer::MaxTMU];
-    Renderer::Handle    shaderHandle;
-    Renderer::Handle    bufferHandles[Renderer::MaxBufferTypes];
-    Renderer::Handle    vertexFormatHandle;
-    Renderer::Handle    renderTargetHandle;
-    Renderer::Handle    renderTargetHandleStack[16];
+    RHI::Handle         textureHandles[RHI::MaxTMU];
+    RHI::Handle         shaderHandle;
+    RHI::Handle         bufferHandles[RHI::MaxBufferTypes];
+    RHI::Handle         vertexFormatHandle;
+    RHI::Handle         renderTargetHandle;
+    RHI::Handle         renderTargetHandleStack[16];
     int                 renderTargetHandleStackDepth;
-    Renderer::Handle    stencilStateHandle;
+    RHI::Handle         stencilStateHandle;
 
     unsigned int        renderState;
     float               alphaRef;
@@ -95,8 +95,8 @@ struct GLState {
 };
 
 struct GLContext {
-    Renderer::Handle    handle;
-    Renderer::DisplayContextFunc displayFunc;
+    RHI::Handle         handle;
+    RHI::DisplayContextFunc displayFunc;
     void *              displayFuncDataPtr;
     bool                onDemandDrawing;
 #if defined __XAMARIN__ && !defined __WIN32__
@@ -200,16 +200,16 @@ struct GLVertexElementInternal {
 };
 
 struct GLVertexFormat {
-    int                 vertexSize[Renderer::MaxVertexStream];
-    GLVertexElementInternal vertexElements[Renderer::VertexElement::MaxUsages];
+    int                 vertexSize[RHI::MaxVertexStream];
+    GLVertexElementInternal vertexElements[RHI::VertexElement::MaxUsages];
 };
 
 struct GLRenderTarget {
     int                 type;
     int                 flags;
     int                 numColorTextures;
-    Renderer::Handle    colorTextureHandles[16];
-    Renderer::Handle    depthTextureHandle;
+    RHI::Handle         colorTextureHandles[16];
+    RHI::Handle         depthTextureHandle;
     bool                sRGB;
     GLuint              fbo;
     GLuint              depthRenderBuffer;      // depth render buffer or depth/stencil render buffer

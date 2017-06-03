@@ -66,9 +66,9 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -87,7 +87,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     
     // restore depthHack
     if (prevDepthHack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -142,9 +142,9 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -163,7 +163,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // restore depthHack
     if (prevDepthHack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -217,9 +217,9 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
             
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -238,7 +238,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     
     // restore depthHack
     if (prevDepthHack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -286,9 +286,9 @@ void RB_AmbientPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -307,7 +307,7 @@ void RB_AmbientPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // restore depthHack
     if (prevDepthHack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -351,9 +351,9 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -372,7 +372,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // restore depthHack
     if (prevDepthHack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -439,9 +439,9 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
             backEnd.ctx->ppRTs[PP_RT_VEL]->Begin();
 
-            glr.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
-            glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite | Renderer::DepthWrite);
-            glr.Clear(Renderer::ColorBit | Renderer::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
+            rhi.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
+            rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite | RHI::DepthWrite);
+            rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
         }
 
         backEnd.rbsurf.DrawSubMesh(surf->subMesh);
@@ -452,21 +452,21 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         backEnd.ctx->ppRTs[PP_RT_VEL]->End();
         
-        glr.SetViewport(backEnd.renderRect);
-        glr.SetScissor(backEnd.renderRect);
+        rhi.SetViewport(backEnd.renderRect);
+        rhi.SetScissor(backEnd.renderRect);
     } else {
         firstDraw = false;
 
         backEnd.ctx->ppRTs[PP_RT_VEL]->Begin();
 
-        glr.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite | Renderer::DepthWrite);
-        glr.Clear(Renderer::ColorBit | Renderer::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
+        rhi.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
+        rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite | RHI::DepthWrite);
+        rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
     
         backEnd.ctx->ppRTs[PP_RT_VEL]->End();
 
-        glr.SetViewport(backEnd.renderRect);
-        glr.SetScissor(backEnd.renderRect);
+        rhi.SetViewport(backEnd.renderRect);
+        rhi.SetScissor(backEnd.renderRect);
     }
 }
 
@@ -519,9 +519,9 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -540,7 +540,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // restore depthHack
     if (prevDepthHack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -576,9 +576,9 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -597,7 +597,7 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     // restore depthHack
     if (prevDepthHack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 

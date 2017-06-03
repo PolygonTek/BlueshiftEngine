@@ -73,9 +73,9 @@ bool Material::Create(const char *text) {
                 return false;
             }
 
-            if (pass->stateBits & Renderer::MaskBF) {
+            if (pass->stateBits & RHI::MaskBF) {
                 coverage |= TranslucentCoverage;
-            } else if (pass->stateBits & Renderer::MaskAF) {
+            } else if (pass->stateBits & RHI::MaskAF) {
                 coverage |= PerforatedCoverage;
             } else {
                 coverage |= OpaqueCoverage;
@@ -83,11 +83,11 @@ bool Material::Create(const char *text) {
         } else if (!token.Icmp("cull")) {
             if (lexer.ReadToken(&token, false)) {
                 if (!token.Icmp("none") || !token.Icmp("disable") || !token.Icmp("twoSided")) {
-                    cullType = Renderer::NoCull;
+                    cullType = RHI::NoCull;
                 } else if (!token.Icmp("backSided") || !token.Icmp("backSide") || !token.Icmp("back")) {
-                    cullType = Renderer::BackCull;
+                    cullType = RHI::BackCull;
                 } else if (!token.Icmp("frontSided") || !token.Icmp("frontSide") || !token.Icmp("front")) {
-                    cullType = Renderer::FrontCull;
+                    cullType = RHI::FrontCull;
                 } else {
                     BE_WARNLOG(L"invalid cull parm '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
                 }
@@ -123,9 +123,9 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
     int blendSrc = 0;
     int blendDst = 0;
     int alphaFunc = 0;
-    int depthFunc = Renderer::DF_LEqual;
-    int colorWrite = Renderer::RedWrite | Renderer::GreenWrite | Renderer::BlueWrite;
-    int depthWrite = Renderer::DepthWrite;
+    int depthFunc = RHI::DF_LEqual;
+    int colorWrite = RHI::RedWrite | RHI::GreenWrite | RHI::BlueWrite;
+    int depthWrite = RHI::DepthWrite;
     Dict propDict;
     Str token;
 
@@ -238,16 +238,16 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
                 for (int i = 0; i < token.Length(); i++) {
                     switch (token[i]) {
                     case 'R':
-                        colorWrite |= Renderer::RedWrite;
+                        colorWrite |= RHI::RedWrite;
                         break;
                     case 'G':
-                        colorWrite |= Renderer::GreenWrite;
+                        colorWrite |= RHI::GreenWrite;
                         break;
                     case 'B':
-                        colorWrite |= Renderer::BlueWrite;
+                        colorWrite |= RHI::BlueWrite;
                         break;
                     case 'A':
-                        colorWrite |= Renderer::AlphaWrite;
+                        colorWrite |= RHI::AlphaWrite;
                         break;
                     }
                 }
@@ -317,12 +317,12 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
     }
 
     // TEMP: DST_ALPHA 는 안쓴다
-    if (blendSrc == Renderer::BS_OneMinusDstAlpha) {
-        blendSrc = Renderer::BS_Zero;
+    if (blendSrc == RHI::BS_OneMinusDstAlpha) {
+        blendSrc = RHI::BS_Zero;
     }
 
-    if (blendDst == Renderer::BD_OneMinusDstAlpha) {
-        blendDst = Renderer::BD_Zero;
+    if (blendDst == RHI::BD_OneMinusDstAlpha) {
+        blendDst = RHI::BD_Zero;
     }
 
     pass->stateBits = blendSrc | blendDst | alphaFunc | depthFunc | colorWrite | depthWrite;
@@ -484,13 +484,13 @@ bool Material::ParseAlphaFunc(Lexer &lexer, int *alphaFunc, Pass *pass) const {
 
     if (lexer.ReadToken(&token, false)) {
         if (!token.Icmp("GT")) {
-            *alphaFunc = Renderer::AF_Greater;
+            *alphaFunc = RHI::AF_Greater;
         } else if (!token.Icmp("GE")) {
-            *alphaFunc = Renderer::AF_GEqual;
+            *alphaFunc = RHI::AF_GEqual;
         } else if (!token.Icmp("LT")) {
-            *alphaFunc = Renderer::AF_Less;
+            *alphaFunc = RHI::AF_Less;
         } else if (!token.Icmp("LE")) {
-            *alphaFunc = Renderer::AF_LEqual;
+            *alphaFunc = RHI::AF_LEqual;
         } else {
             BE_WARNLOG(L"unknown alphaFunc name '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
         }
@@ -509,15 +509,15 @@ bool Material::ParseDepthFunc(Lexer &lexer, int *depthFunc) const {
 
     if (lexer.ReadToken(&token, false)) {
         if (!token.Icmp("LE")) {
-            *depthFunc = Renderer::DF_LEqual;
+            *depthFunc = RHI::DF_LEqual;
         } else if (!token.Icmp("EQ")) {
-            *depthFunc = Renderer::DF_Equal;
+            *depthFunc = RHI::DF_Equal;
         } else if (!token.Icmp("LT")) {
-            *depthFunc = Renderer::DF_Less;
+            *depthFunc = RHI::DF_Less;
         } else if (!token.Icmp("GE")) {
-            *depthFunc = Renderer::DF_GEqual;
+            *depthFunc = RHI::DF_GEqual;
         } else if (!token.Icmp("GT")) {
-            *depthFunc = Renderer::DF_Greater;
+            *depthFunc = RHI::DF_Greater;
         } else {
             BE_WARNLOG(L"unknown depthFunc '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
         }
@@ -534,63 +534,63 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
 
     if (lexer.ReadToken(&token, false)) {
         if (!token.Icmp("add")) {
-            *blendSrc = Renderer::BS_One;
-            *blendDst = Renderer::BD_One;
+            *blendSrc = RHI::BS_One;
+            *blendDst = RHI::BD_One;
         } else if (!token.Icmp("addBlended")) {
-            *blendSrc = Renderer::BS_SrcAlpha;
-            *blendDst = Renderer::BD_One;
+            *blendSrc = RHI::BS_SrcAlpha;
+            *blendDst = RHI::BD_One;
         } else if (!token.Icmp("blend")) {
-            *blendSrc = Renderer::BS_SrcAlpha;
-            *blendDst = Renderer::BD_OneMinusSrcAlpha;
+            *blendSrc = RHI::BS_SrcAlpha;
+            *blendDst = RHI::BD_OneMinusSrcAlpha;
         } else if (!token.Icmp("filter") || !token.Icmp("modulate")) {
-            *blendSrc = Renderer::BS_DstColor;
-            *blendDst = Renderer::BD_Zero;
+            *blendSrc = RHI::BS_DstColor;
+            *blendDst = RHI::BD_Zero;
         } else if (!token.Icmp("modulate2x")) {
-            *blendSrc = Renderer::BS_DstColor;
-            *blendDst = Renderer::BD_SrcColor;
+            *blendSrc = RHI::BS_DstColor;
+            *blendDst = RHI::BD_SrcColor;
         } else {
             if (!token.Icmp("ZERO") || !token.Icmp("GL_ZERO")) {
-                *blendSrc = Renderer::BS_Zero;
+                *blendSrc = RHI::BS_Zero;
             } else if (!token.Icmp("ONE") || !token.Icmp("GL_ONE")) {
-                *blendSrc = Renderer::BS_One;
+                *blendSrc = RHI::BS_One;
             } else if (!token.Icmp("DST_COLOR") || !token.Icmp("GL_DST_COLOR")) {
-                *blendSrc = Renderer::BS_DstColor;
+                *blendSrc = RHI::BS_DstColor;
             } else if (!token.Icmp("ONE_MINUS_DST_COLOR") || !token.Icmp("GL_ONE_MINUS_DST_COLOR")) {
-                *blendSrc = Renderer::BS_OneMinusDstColor;
+                *blendSrc = RHI::BS_OneMinusDstColor;
             } else if (!token.Icmp("SRC_ALPHA") || !token.Icmp("GL_SRC_ALPHA")) {
-                *blendSrc = Renderer::BS_SrcAlpha;
+                *blendSrc = RHI::BS_SrcAlpha;
             } else if (!token.Icmp("ONE_MINUS_SRC_ALPHA") || !token.Icmp("GL_ONE_MINUS_SRC_ALPHA")) {
-                *blendSrc = Renderer::BS_OneMinusSrcAlpha;
+                *blendSrc = RHI::BS_OneMinusSrcAlpha;
             } else if (!token.Icmp("DST_ALPHA") || !token.Icmp("GL_DST_ALPHA")) {
-                *blendSrc = Renderer::BS_DstAlpha;
+                *blendSrc = RHI::BS_DstAlpha;
             } else if (!token.Icmp("ONE_MINUS_DST_ALPHA") || !token.Icmp("GL_ONE_MINUS_DST_ALPHA")) {
-                *blendSrc = Renderer::BS_OneMinusDstAlpha;
+                *blendSrc = RHI::BS_OneMinusDstAlpha;
             } else if (!token.Icmp("SRC_ALPHA_SATURATE") || !token.Icmp("GL_SRC_ALPHA_SATURATE")) {
-                *blendSrc = Renderer::BS_SrcAlphaSaturate;
+                *blendSrc = RHI::BS_SrcAlphaSaturate;
             } else {
-                *blendSrc = Renderer::BS_One;
+                *blendSrc = RHI::BS_One;
                 BE_WARNLOG(L"unknown blend mode '%hs' in material '%hs', \nsubstituting GL_ONE\n", token.c_str(), hashName.c_str());
             }
 
             if (lexer.ReadToken(&token, false)) {
                 if (!token.Icmp("ZERO") || !token.Icmp("GL_ZERO")) {
-                    *blendDst = Renderer::BD_Zero;
+                    *blendDst = RHI::BD_Zero;
                 } else if (!token.Icmp("ONE") || !token.Icmp("GL_ONE")) {
-                    *blendDst = Renderer::BD_One;
+                    *blendDst = RHI::BD_One;
                 } else if (!token.Icmp("SRC_COLOR") || !token.Icmp("GL_SRC_COLOR")) {
-                    *blendDst = Renderer::BD_SrcColor;
+                    *blendDst = RHI::BD_SrcColor;
                 } else if (!token.Icmp("ONE_MINUS_SRC_COLOR") || !token.Icmp("GL_ONE_MINUS_SRC_COLOR")) {
-                    *blendDst = Renderer::BD_OneMinusSrcColor;
+                    *blendDst = RHI::BD_OneMinusSrcColor;
                 } else if (!token.Icmp("SRC_ALPHA") || !token.Icmp("GL_SRC_ALPHA")) {
-                    *blendDst = Renderer::BD_SrcAlpha;
+                    *blendDst = RHI::BD_SrcAlpha;
                 } else if (!token.Icmp("ONE_MINUS_SRC_ALPHA") || !token.Icmp("GL_ONE_MINUS_SRC_ALPHA")) {
-                    *blendDst = Renderer::BD_OneMinusSrcAlpha;
+                    *blendDst = RHI::BD_OneMinusSrcAlpha;
                 } else if (!token.Icmp("DST_ALPHA") || !token.Icmp("GL_DST_ALPHA")) {
-                    *blendDst = Renderer::BD_DstAlpha;
+                    *blendDst = RHI::BD_DstAlpha;
                 } else if (!token.Icmp("ONE_MINUS_DST_ALPHA") || !token.Icmp("GL_ONE_MINUS_DST_ALPHA")) {
-                    *blendDst = Renderer::BD_OneMinusDstAlpha;
+                    *blendDst = RHI::BD_OneMinusDstAlpha;
                 } else {
-                    *blendDst = Renderer::BD_One;
+                    *blendDst = RHI::BD_One;
                     BE_WARNLOG(L"unknown blend mode '%hs' in material '%hs', substituting GL_ONE\n", token.c_str(), hashName.c_str());
                 }
             } else {
@@ -671,9 +671,9 @@ void Material::Finish() {
     }
 
     if (sort == BadSort) {
-        if (pass->stateBits & Renderer::MaskBF) {
+        if (pass->stateBits & RHI::MaskBF) {
             sort = BlendSort;
-        } /*else if (pass.stateBits & Renderer::MaskAF) {
+        } /*else if (pass.stateBits & RHI::MaskAF) {
           sort = AlphaTestSort;
         } */else {
               sort = OpaqueSort;
@@ -681,7 +681,7 @@ void Material::Finish() {
     }		
 
     if (!cullType) {
-        cullType = Renderer::BackCull;
+        cullType = RHI::BackCull;
     }
 }
 
@@ -721,9 +721,9 @@ void Material::Write(const char *filename) {
 
     Str cullStr;
     switch (cullType) {
-    case Renderer::BackCull: cullStr = "back"; break;
-    case Renderer::FrontCull: cullStr = "front"; break;
-    case Renderer::NoCull: default: cullStr = "none"; break;
+    case RHI::BackCull: cullStr = "back"; break;
+    case RHI::FrontCull: cullStr = "front"; break;
+    case RHI::NoCull: default: cullStr = "none"; break;
     }
     fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
 
@@ -810,77 +810,77 @@ void Material::Write(const char *filename) {
 
     fp->Printf("%stc (%.3f %.3f) (%.3f %.3f)\n", indentSpace.c_str(), pass->tcScale[0], pass->tcScale[1], pass->tcTranslation[0], pass->tcTranslation[1]);     
 
-    int colorMask = pass->stateBits & Renderer::MaskColor;
+    int colorMask = pass->stateBits & RHI::MaskColor;
     if (colorMask) {
         Str colorMaskStr;
-        if (colorMask & Renderer::RedWrite) {
+        if (colorMask & RHI::RedWrite) {
             colorMaskStr += "R";
         }
-        if (colorMask & Renderer::GreenWrite) {
+        if (colorMask & RHI::GreenWrite) {
             colorMaskStr += "G";
         }
-        if (colorMask & Renderer::BlueWrite) {
+        if (colorMask & RHI::BlueWrite) {
             colorMaskStr += "B";
         }
-        if (colorMask & Renderer::AlphaWrite) {
+        if (colorMask & RHI::AlphaWrite) {
             colorMaskStr += "A";
         }        
         fp->Printf("%scolorMask %s\n", indentSpace.c_str(), colorMaskStr.c_str());
     }
 
-    int alphaFuncMask = pass->stateBits & Renderer::MaskAF;
+    int alphaFuncMask = pass->stateBits & RHI::MaskAF;
     if (alphaFuncMask) {
         Str alphaFuncStr;
         switch (alphaFuncMask) {
-        case Renderer::AF_LEqual: alphaFuncStr = "LE"; break;
-        case Renderer::AF_Less: alphaFuncStr = "LT"; break;
-        case Renderer::AF_GEqual: alphaFuncStr = "GE"; break;
-        case Renderer::AF_Greater: alphaFuncStr = "GT"; break;
+        case RHI::AF_LEqual: alphaFuncStr = "LE"; break;
+        case RHI::AF_Less: alphaFuncStr = "LT"; break;
+        case RHI::AF_GEqual: alphaFuncStr = "GE"; break;
+        case RHI::AF_Greater: alphaFuncStr = "GT"; break;
         }
         fp->Printf("%salphaFunc %s %.3f\n", indentSpace.c_str(), alphaFuncStr.c_str(), pass->alphaRef);
     }
 
-    int depthFuncMask = pass->stateBits & Renderer::MaskDF;
+    int depthFuncMask = pass->stateBits & RHI::MaskDF;
     if (depthFuncMask) {
         Str depthFuncStr;
         switch (depthFuncMask) {
-        case Renderer::DF_Equal: depthFuncStr = "EQ"; break;
-        case Renderer::DF_LEqual: depthFuncStr = "LE"; break;
-        case Renderer::DF_Less: depthFuncStr = "LT"; break;
-        case Renderer::DF_GEqual: depthFuncStr = "GE"; break;
-        case Renderer::DF_Greater: depthFuncStr = "GT"; break;
+        case RHI::DF_Equal: depthFuncStr = "EQ"; break;
+        case RHI::DF_LEqual: depthFuncStr = "LE"; break;
+        case RHI::DF_Less: depthFuncStr = "LT"; break;
+        case RHI::DF_GEqual: depthFuncStr = "GE"; break;
+        case RHI::DF_Greater: depthFuncStr = "GT"; break;
         }
         fp->Printf("%sdepthFunc %s\n", indentSpace.c_str(), depthFuncStr.c_str());
     }
 
-    int blendFuncMask = pass->stateBits & Renderer::MaskBF;
+    int blendFuncMask = pass->stateBits & RHI::MaskBF;
     if (blendFuncMask) {
-        int blendSrc = blendFuncMask & Renderer::MaskBS;        
-        int blendDst = blendFuncMask & Renderer::MaskBD;
+        int blendSrc = blendFuncMask & RHI::MaskBS;        
+        int blendDst = blendFuncMask & RHI::MaskBD;
 
         Str blendSrcStr;
         switch (blendSrc) {
-        case Renderer::BS_Zero: blendSrcStr = "ZERO"; break;
-        case Renderer::BS_One: blendSrcStr = "ONE"; break;
-        case Renderer::BS_DstColor: blendSrcStr = "DST_COLOR"; break;
-        case Renderer::BS_OneMinusDstColor: blendSrcStr = "ONE_MINUS_DST_COLOR"; break;
-        case Renderer::BS_SrcAlpha: blendSrcStr = "SRC_ALPHA"; break;
-        case Renderer::BS_OneMinusSrcAlpha: blendSrcStr = "ONE_MINUS_SRC_ALPHA"; break;
-        case Renderer::BS_DstAlpha: blendSrcStr = "DST_ALPHA"; break;
-        case Renderer::BS_OneMinusDstAlpha: blendSrcStr = "ONE_MINUS_DST_ALPHA"; break;
-        case Renderer::BS_SrcAlphaSaturate: blendSrcStr = "SRC_ALPHA_SATURATE"; break;
+        case RHI::BS_Zero: blendSrcStr = "ZERO"; break;
+        case RHI::BS_One: blendSrcStr = "ONE"; break;
+        case RHI::BS_DstColor: blendSrcStr = "DST_COLOR"; break;
+        case RHI::BS_OneMinusDstColor: blendSrcStr = "ONE_MINUS_DST_COLOR"; break;
+        case RHI::BS_SrcAlpha: blendSrcStr = "SRC_ALPHA"; break;
+        case RHI::BS_OneMinusSrcAlpha: blendSrcStr = "ONE_MINUS_SRC_ALPHA"; break;
+        case RHI::BS_DstAlpha: blendSrcStr = "DST_ALPHA"; break;
+        case RHI::BS_OneMinusDstAlpha: blendSrcStr = "ONE_MINUS_DST_ALPHA"; break;
+        case RHI::BS_SrcAlphaSaturate: blendSrcStr = "SRC_ALPHA_SATURATE"; break;
         }
 
         Str blendDstStr;
         switch (blendDst) {
-        case Renderer::BD_Zero: blendDstStr = "ZERO"; break;
-        case Renderer::BD_One: blendDstStr = "ONE"; break;
-        case Renderer::BD_SrcColor: blendDstStr = "SRC_COLOR"; break;
-        case Renderer::BD_OneMinusSrcColor: blendDstStr = "ONE_MINUS_SRC_COLOR"; break;
-        case Renderer::BD_SrcAlpha: blendDstStr = "SRC_ALPHA"; break;
-        case Renderer::BD_OneMinusSrcAlpha: blendDstStr = "ONE_MINUS_SRC_ALPHA"; break;
-        case Renderer::BD_DstAlpha: blendDstStr = "DST_ALPHA"; break;
-        case Renderer::BD_OneMinusDstAlpha: blendDstStr = "ONE_MINUS_DST_ALPHA"; break;
+        case RHI::BD_Zero: blendDstStr = "ZERO"; break;
+        case RHI::BD_One: blendDstStr = "ONE"; break;
+        case RHI::BD_SrcColor: blendDstStr = "SRC_COLOR"; break;
+        case RHI::BD_OneMinusSrcColor: blendDstStr = "ONE_MINUS_SRC_COLOR"; break;
+        case RHI::BD_SrcAlpha: blendDstStr = "SRC_ALPHA"; break;
+        case RHI::BD_OneMinusSrcAlpha: blendDstStr = "ONE_MINUS_SRC_ALPHA"; break;
+        case RHI::BD_DstAlpha: blendDstStr = "DST_ALPHA"; break;
+        case RHI::BD_OneMinusDstAlpha: blendDstStr = "ONE_MINUS_DST_ALPHA"; break;
         }
 
         fp->Printf("%sblendFunc %s %s\n", indentSpace.c_str(), blendSrcStr.c_str(), blendDstStr.c_str());
@@ -924,7 +924,7 @@ bool Material::IsShadowCaster() const {
         return false;
     }
 
-    if (pass->stateBits & Renderer::MaskBF) {
+    if (pass->stateBits & RHI::MaskBF) {
         return false;
     }
 

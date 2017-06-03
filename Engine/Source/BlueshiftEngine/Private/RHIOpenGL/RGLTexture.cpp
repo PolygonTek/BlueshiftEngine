@@ -13,27 +13,27 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
 
-const GLenum ToGLTextureTarget(Renderer::TextureType type) {
+const GLenum ToGLTextureTarget(RHI::TextureType type) {
     switch (type) {
-    case Renderer::Texture2D:
+    case RHI::Texture2D:
         return GL_TEXTURE_2D;
-    case Renderer::TextureRectangle:
+    case RHI::TextureRectangle:
         if (OpenGL::SupportsTextureRectangle()) {
             return GL_TEXTURE_RECTANGLE;
         }
         return GL_TEXTURE_2D;
-    case Renderer::Texture3D:
+    case RHI::Texture3D:
         return GL_TEXTURE_3D;
-    case Renderer::TextureCubeMap:
+    case RHI::TextureCubeMap:
         return GL_TEXTURE_CUBE_MAP;
-    case Renderer::Texture2DArray:
+    case RHI::Texture2DArray:
         return GL_TEXTURE_2D_ARRAY;
-    case Renderer::TextureBuffer:
+    case RHI::TextureBuffer:
         return GL_TEXTURE_BUFFER_EXT;
     default:
         assert(0);
@@ -41,19 +41,19 @@ const GLenum ToGLTextureTarget(Renderer::TextureType type) {
     }
 }
 
-const GLenum ToGLTextureMinFilter(Renderer::TextureFilter filter) {
+const GLenum ToGLTextureMinFilter(RHI::TextureFilter filter) {
     switch (filter) {
-    case Renderer::Nearest:
+    case RHI::Nearest:
         return GL_NEAREST;
-    case Renderer::Linear:
+    case RHI::Linear:
         return GL_LINEAR;
-    case Renderer::NearestMipmapNearest:
+    case RHI::NearestMipmapNearest:
         return GL_NEAREST_MIPMAP_NEAREST;
-    case Renderer::LinearMipmapNearest:
+    case RHI::LinearMipmapNearest:
         return GL_LINEAR_MIPMAP_NEAREST;
-    case Renderer::NearestMipmapLinear:
+    case RHI::NearestMipmapLinear:
         return GL_NEAREST_MIPMAP_LINEAR;
-    case Renderer::LinearMipmapLinear:
+    case RHI::LinearMipmapLinear:
         return GL_LINEAR_MIPMAP_LINEAR;
     default:
         assert(0);
@@ -61,19 +61,19 @@ const GLenum ToGLTextureMinFilter(Renderer::TextureFilter filter) {
     }
 }
 
-const GLenum ToGLTextureMagFilter(Renderer::TextureFilter filter) {
+const GLenum ToGLTextureMagFilter(RHI::TextureFilter filter) {
     switch (filter) {
-    case Renderer::Nearest:
+    case RHI::Nearest:
         return GL_NEAREST;
-    case Renderer::Linear:
+    case RHI::Linear:
         return GL_LINEAR;
-    case Renderer::NearestMipmapNearest:
+    case RHI::NearestMipmapNearest:
         return GL_NEAREST;
-    case Renderer::LinearMipmapNearest:
+    case RHI::LinearMipmapNearest:
         return GL_LINEAR;
-    case Renderer::NearestMipmapLinear:
+    case RHI::NearestMipmapLinear:
         return GL_NEAREST;
-    case Renderer::LinearMipmapLinear:
+    case RHI::LinearMipmapLinear:
         return GL_LINEAR;
     default:
         assert(0);
@@ -81,15 +81,15 @@ const GLenum ToGLTextureMagFilter(Renderer::TextureFilter filter) {
     }
 }
 
-const GLint ToGLAddressMode(Renderer::AddressMode mode) {
+const GLint ToGLAddressMode(RHI::AddressMode mode) {
     switch (mode) {
-    case Renderer::Repeat:
+    case RHI::Repeat:
         return GL_REPEAT;
-    case Renderer::MirroredRepeat:
+    case RHI::MirroredRepeat:
         return GL_MIRRORED_REPEAT;
-    case Renderer::Clamp:
+    case RHI::Clamp:
         return GL_CLAMP_TO_EDGE;
-    case Renderer::ClampToBorder:
+    case RHI::ClampToBorder:
         if (OpenGL::SupportsTextureBorderColor()) {
             return GL_CLAMP_TO_BORDER;
         }
@@ -100,7 +100,7 @@ const GLint ToGLAddressMode(Renderer::AddressMode mode) {
     }
 }
 
-Renderer::Handle RendererGL::CreateTexture(TextureType type) {
+RHI::Handle OpenGLRHI::CreateTexture(TextureType type) {
     GLuint object;
     gglGenTextures(1, &object);
 
@@ -119,7 +119,7 @@ Renderer::Handle RendererGL::CreateTexture(TextureType type) {
     return (Handle)handle;
 }
 
-void RendererGL::DeleteTexture(Handle textureHandle) {
+void OpenGLRHI::DeleteTexture(Handle textureHandle) {
     GLTexture *texture = textureList[textureHandle];
     assert(texture);
 
@@ -139,7 +139,7 @@ void RendererGL::DeleteTexture(Handle textureHandle) {
     SelectTextureUnit(currentTmu);
 }
 
-void RendererGL::SelectTextureUnit(unsigned int unit) {
+void OpenGLRHI::SelectTextureUnit(unsigned int unit) {
     assert(unit >= 0 && unit < MaxTMU);
 
     if (currentContext->state->tmu != unit) {
@@ -148,7 +148,7 @@ void RendererGL::SelectTextureUnit(unsigned int unit) {
     }
 }
 
-void RendererGL::BindTexture(Handle textureHandle) {
+void OpenGLRHI::BindTexture(Handle textureHandle) {
     Handle oldTextureHandle = currentContext->state->textureHandles[currentContext->state->tmu];
     if (oldTextureHandle != textureHandle) {
         const GLTexture *texture = textureList[textureHandle];
@@ -161,7 +161,7 @@ void RendererGL::BindTexture(Handle textureHandle) {
     }
 }
 
-void RendererGL::SetTextureAddressMode(AddressMode addressMode) {
+void OpenGLRHI::SetTextureAddressMode(AddressMode addressMode) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -184,7 +184,7 @@ void RendererGL::SetTextureAddressMode(AddressMode addressMode) {
     }
 }
 
-void RendererGL::SetTextureFilter(TextureFilter filter) {
+void OpenGLRHI::SetTextureFilter(TextureFilter filter) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -195,7 +195,7 @@ void RendererGL::SetTextureFilter(TextureFilter filter) {
     gglTexParameterf(texture->target, GL_TEXTURE_MAG_FILTER, magFilter);	 
 }
 
-void RendererGL::SetTextureAnisotropy(int aniso) {
+void OpenGLRHI::SetTextureAnisotropy(int aniso) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -205,7 +205,7 @@ void RendererGL::SetTextureAnisotropy(int aniso) {
     }
 }
 
-void RendererGL::SetTextureBorderColor(const Color4 &rgba) {
+void OpenGLRHI::SetTextureBorderColor(const Color4 &rgba) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -214,7 +214,7 @@ void RendererGL::SetTextureBorderColor(const Color4 &rgba) {
     }
 }
 
-void RendererGL::SetTextureShadowFunc(bool set) {
+void OpenGLRHI::SetTextureShadowFunc(bool set) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -229,7 +229,7 @@ void RendererGL::SetTextureShadowFunc(bool set) {
     }	
 }
 
-void RendererGL::SetTextureLODBias(float bias) {
+void OpenGLRHI::SetTextureLODBias(float bias) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -238,7 +238,7 @@ void RendererGL::SetTextureLODBias(float bias) {
     }
 }
 
-void RendererGL::SetTextureLevel(int baseLevel, int maxLevel) {
+void OpenGLRHI::SetTextureLevel(int baseLevel, int maxLevel) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -246,7 +246,7 @@ void RendererGL::SetTextureLevel(int baseLevel, int maxLevel) {
     gglTexParameteri(texture->target, GL_TEXTURE_MAX_LEVEL, maxLevel);
 }
 
-void RendererGL::GenerateMipmap() {
+void OpenGLRHI::GenerateMipmap() {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -254,7 +254,7 @@ void RendererGL::GenerateMipmap() {
     gglGenerateMipmap(texture->target);
 }
 
-void RendererGL::AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth) {
+void OpenGLRHI::AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth) {
     int w, h, d;
 
     // NOTE: GL_ARB_texture_non_power_of_two 익스텐션 스트링이 없다면,
@@ -306,7 +306,7 @@ void RendererGL::AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, 
     if (outDepth) *outDepth = d;
 }
 
-void RendererGL::AdjustTextureFormat(TextureType type, bool useCompression, bool useNormalMap, Image::Format inFormat, Image::Format *outFormat) {
+void OpenGLRHI::AdjustTextureFormat(TextureType type, bool useCompression, bool useNormalMap, Image::Format inFormat, Image::Format *outFormat) {
     if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;
@@ -324,7 +324,7 @@ void RendererGL::AdjustTextureFormat(TextureType type, bool useCompression, bool
     *outFormat = useCompression ? OpenGL::ToCompressedImageFormat(inFormat, useNormalMap) : inFormat;
 }
 
-void RendererGL::BeginUnpackAlignment(int pitch) {
+void OpenGLRHI::BeginUnpackAlignment(int pitch) {
     int mask = pitch & 3;
     currentContext->state->newUnpackAlignment = mask & 1 ? 1 : (mask & 2 ? 2 : 4);
 
@@ -334,13 +334,13 @@ void RendererGL::BeginUnpackAlignment(int pitch) {
     }
 }
 
-void RendererGL::EndUnpackAlignment() {
+void OpenGLRHI::EndUnpackAlignment() {
     if (currentContext->state->oldUnpackAlignment != currentContext->state->newUnpackAlignment) {
         gglPixelStorei(GL_UNPACK_ALIGNMENT, currentContext->state->oldUnpackAlignment);
     }
 }
 
-void RendererGL::SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool useSRGB) {
+void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool useSRGB) {
     GLenum format;
     GLenum type;
     GLenum internalFormat;
@@ -539,7 +539,7 @@ void RendererGL::SetTextureImage(TextureType textureType, const Image *srcImage,
     EndUnpackAlignment();
 }
 
-void RendererGL::SetTextureImageBuffer(Image::Format dstFormat, bool useSRGB, int bufferHandle) {
+void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool useSRGB, int bufferHandle) {
     GLenum internalFormat;
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, useSRGB, nullptr, nullptr, &internalFormat);
@@ -555,7 +555,7 @@ void RendererGL::SetTextureImageBuffer(Image::Format dstFormat, bool useSRGB, in
     OpenGL::SetTextureSwizzling(GL_TEXTURE_BUFFER_EXT, dstFormat);
 }
 
-void RendererGL::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -579,7 +579,7 @@ void RendererGL::SetTextureSubImage2D(int level, int xoffset, int yoffset, int w
     EndUnpackAlignment();
 }
 
-void RendererGL::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -603,7 +603,7 @@ void RendererGL::SetTextureSubImage3D(int level, int xoffset, int yoffset, int z
     EndUnpackAlignment();
 }
 
-void RendererGL::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -627,7 +627,7 @@ void RendererGL::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, 
     EndUnpackAlignment();
 }
 
-void RendererGL::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -651,7 +651,7 @@ void RendererGL::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset
     EndUnpackAlignment();
 }
 
-void RendererGL::SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -675,7 +675,7 @@ void RendererGL::SetTextureSubImageRect(int xoffset, int yoffset, int width, int
     EndUnpackAlignment();
 }
 
-void RendererGL::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, int width, int height) {
+void OpenGLRHI::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, int width, int height) {
     GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -683,7 +683,7 @@ void RendererGL::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, i
     gglCopyTexSubImage2D(texture->target, 0, xoffset, yoffset, x, y, width, height);
 }
 
-void RendererGL::GetTextureImage2D(int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImage2D(int level, Image::Format dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -698,7 +698,7 @@ void RendererGL::GetTextureImage2D(int level, Image::Format dstFormat, void *pix
 #endif
 }
 
-void RendererGL::GetTextureImage3D(int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImage3D(int level, Image::Format dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -713,7 +713,7 @@ void RendererGL::GetTextureImage3D(int level, Image::Format dstFormat, void *pix
 #endif
 }
 
-void RendererGL::GetTextureImageCube(CubeMapFace face, int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImageCube(CubeMapFace face, int level, Image::Format dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -728,7 +728,7 @@ void RendererGL::GetTextureImageCube(CubeMapFace face, int level, Image::Format 
 #endif
 }
 
-void RendererGL::GetTextureImageRect(Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImageRect(Image::Format dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;

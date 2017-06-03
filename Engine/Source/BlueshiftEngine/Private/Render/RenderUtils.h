@@ -31,7 +31,7 @@ enum {
 };
 
 // cube map face to axis
-void    R_CubeMapFaceToAxis(Renderer::CubeMapFace face, Mat3 &axis);
+void    R_CubeMapFaceToAxis(RHI::CubeMapFace face, Mat3 &axis);
 
 // axis 와 origin 으로 뷰 행렬 생성
 void    R_SetViewMatrix(const Mat3 &viewaxis, const Vec3 &vieworg, float *viewMatrix);

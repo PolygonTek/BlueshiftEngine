@@ -20,12 +20,12 @@
 BE_NAMESPACE_BEGIN
 
 void RBSurf::DrawPrimitives() const {
-    glr.BindBuffer(Renderer::IndexBuffer, ibHandle);
+    rhi.BindBuffer(RHI::IndexBuffer, ibHandle);
     
     if (numInstances > 1) {
-        glr.DrawElementsInstanced(Renderer::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0, numInstances);
+        rhi.DrawElementsInstanced(RHI::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0, numInstances);
     } else {
-        glr.DrawElements(Renderer::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0);
+        rhi.DrawElements(RHI::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0);
     }
 
     if (flushType == ShadowFlush) {
@@ -203,7 +203,7 @@ void RBSurf::RenderColor(const Color4 &color) const {
 
 void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id) const {
     const Shader *shader = ShaderManager::selectionIdShader;
-    if (mtrlPass->stateBits & Renderer::MaskAF && shader->perforatedVersion) {
+    if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
         shader = shader->perforatedVersion;
     }
 
@@ -222,7 +222,7 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
+    if (mtrlPass->stateBits & RHI::MaskAF) {
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
@@ -249,7 +249,7 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
 
 void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
     const Shader *shader = ShaderManager::depthShader;
-    if (mtrlPass->stateBits & Renderer::MaskAF && shader->perforatedVersion) {
+    if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
         shader = shader->perforatedVersion;
     }
 
@@ -268,7 +268,7 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
+    if (mtrlPass->stateBits & RHI::MaskAF) {
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
@@ -293,7 +293,7 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
 
 void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
     const Shader *shader = ShaderManager::objectMotionBlurShader;
-    if (mtrlPass->stateBits & Renderer::MaskAF && shader->perforatedVersion) {
+    if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
         shader = shader->perforatedVersion;
     }
 
@@ -318,7 +318,7 @@ void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
 
     shader->SetTexture("depthMap", backEnd.ctx->screenDepthTexture);
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
+    if (mtrlPass->stateBits & RHI::MaskAF) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "diffuseMap") : mtrlPass->texture;
         shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
         
@@ -347,7 +347,7 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
         }
         
         if (!r_useDepthPrePass.GetBool()) {
-            if (mtrlPass->stateBits & Renderer::MaskAF && shader->perforatedVersion) {
+            if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
                 shader = shader->perforatedVersion;
             }
         }
@@ -397,7 +397,7 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
         shader = ShaderManager::amblitNoAmbientCubeMapShader;
         
         if (!r_useDepthPrePass.GetBool()) {
-            if (mtrlPass->stateBits & Renderer::MaskAF && shader->perforatedVersion) {
+            if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
                 shader = shader->perforatedVersion;
             }
         }

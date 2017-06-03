@@ -17,14 +17,14 @@
 /*
 ===============================================================================
 
-    OpenGL Renderer Interface
+    OpenGL Rendering Hardware Interface
 
 ===============================================================================
 */
 
 #include "Containers/Array.h"
 #include "Image/Image.h"
-#include "RendererInterface.h"
+#include "RHI.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -47,9 +47,9 @@ struct GLRenderTarget;
 struct GLQuery;
 struct GLSync;
 
-class RendererGL : public Renderer {
+class OpenGLRHI : public RHI {
 public:
-    RendererGL();
+    OpenGLRHI();
 
     void                    Init(const Settings *settings);
     void                    Shutdown();
@@ -268,7 +268,7 @@ protected:
     int                     stencilBits;
     int                     multiSamples;
 
-    Renderer::HWLimit       hwLimit;
+    RHI::HWLimit            hwLimit;
 
     GLContext *             mainContext;
     Array<GLContext *>      contextList;
@@ -284,6 +284,6 @@ protected:
     Array<GLQuery *>        queryList;
 };
 
-extern RendererGL           glr;
+extern OpenGLRHI            rhi;
 
 BE_NAMESPACE_END

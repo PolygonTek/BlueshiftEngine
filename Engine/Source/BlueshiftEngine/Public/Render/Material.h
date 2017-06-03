@@ -178,7 +178,7 @@ BE_INLINE Material::Material() {
     index                   = -1;
     flags                   = 0;
     type                    = BadType;
-    cullType                = Renderer::BackCull;
+    cullType                = RHI::BackCull;
     coverage                = EmptyCoverage;
     sort                    = BadSort;
     lightSort               = BadLightSort;

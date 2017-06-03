@@ -82,7 +82,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
         commandLines[i][1] = 0;
     }
 
-    Renderer::Settings settings;
+    RHI::Settings settings;
     settings.colorBits      = cvarSystem.GetCVarInteger(L"r_colorBits");
     settings.alphaBits      = settings.colorBits == 32 ? 8 : 0;
     settings.depthBits      = cvarSystem.GetCVarInteger(L"r_depthBits");

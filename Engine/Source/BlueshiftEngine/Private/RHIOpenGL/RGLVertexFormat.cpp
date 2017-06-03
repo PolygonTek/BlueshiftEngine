@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
@@ -25,7 +25,7 @@ const GLenum toGLType[] = {
     GL_HALF_FLOAT,
 };
 
-Renderer::Handle RendererGL::CreateVertexFormat(int numElements, const VertexElement *elements) {
+RHI::Handle OpenGLRHI::CreateVertexFormat(int numElements, const VertexElement *elements) {
     GLVertexFormat *vertexFormat = new GLVertexFormat;
     
     memset(vertexFormat->vertexSize, 0, sizeof(vertexFormat->vertexSize));
@@ -56,7 +56,7 @@ Renderer::Handle RendererGL::CreateVertexFormat(int numElements, const VertexEle
     return (Handle)handle;
 }
 
-void RendererGL::DeleteVertexFormat(Handle vertexFormatHandle) {
+void OpenGLRHI::DeleteVertexFormat(Handle vertexFormatHandle) {
     if (currentContext->state->vertexFormatHandle == vertexFormatHandle) {
         SetVertexFormat(NullVertexFormat);
     }
@@ -65,7 +65,7 @@ void RendererGL::DeleteVertexFormat(Handle vertexFormatHandle) {
     vertexFormatList[vertexFormatHandle] = nullptr;
 }
 
-int RendererGL::GetTypeSize(const VertexElement::Type type) const {
+int OpenGLRHI::GetTypeSize(const VertexElement::Type type) const {
     static int typeSize[] = { sizeof(byte), sizeof(float), sizeof(float16_t) };
     return typeSize[type];
 }
@@ -92,7 +92,7 @@ int RendererGL::GetTypeSize(const VertexElement::Type type) const {
 // vertex.texcoord[7]               vertex.attrib[15]
 // vertex.texcoord[n]               vertex.attrib[8+n]
 
-void RendererGL::SetVertexFormat(Handle vertexFormatHandle) {
+void OpenGLRHI::SetVertexFormat(Handle vertexFormatHandle) {
     if (currentContext->state->vertexFormatHandle == vertexFormatHandle) {
         return;
     }
@@ -172,7 +172,7 @@ void RendererGL::SetVertexFormat(Handle vertexFormatHandle) {
     currentContext->state->vertexFormatHandle = vertexFormatHandle;
 }
 
-void RendererGL::SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride) {
+void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride) {
     const GLVertexFormat *vertexFormat = vertexFormatList[currentContext->state->vertexFormatHandle];
     const GLVertexElementInternal *ve;
 

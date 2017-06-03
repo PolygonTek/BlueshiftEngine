@@ -329,11 +329,11 @@ bool Mesh::CapableGPUJointSkinning(SkinningMethod skinningMethod, int numJoints)
         return true;
     } else if (skinningMethod == VertexShaderSkinning) {
         if (numJoints <= 74) {
-            if (glr.HWLimit().maxVertexUniformComponents >= 256) {
+            if (rhi.HWLimit().maxVertexUniformComponents >= 256) {
                 return true;
             }
         } else if (numJoints <= 256) {
-            if (glr.HWLimit().maxVertexUniformComponents >= 2048) {
+            if (rhi.HWLimit().maxVertexUniformComponents >= 2048) {
                 return true;
             }
         }

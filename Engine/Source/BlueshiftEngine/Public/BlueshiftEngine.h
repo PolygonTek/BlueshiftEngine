@@ -99,8 +99,8 @@
 #include "Sound/Pcm.h"
 #include "Sound/SoundSystem.h"
 
-// Renderer
-#include "Renderer/Renderer.h"
+// RHI
+#include "RHI/RHIOpenGL.h"
 
 // Platform
 #include "Platform/Platform.h"

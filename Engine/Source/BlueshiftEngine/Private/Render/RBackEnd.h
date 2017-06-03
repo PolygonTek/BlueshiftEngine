@@ -99,8 +99,8 @@ private:
     const viewEntity_t *surfSpace;
     const viewLight_t * surfLight;
 
-    Renderer::Handle    vbHandle;
-    Renderer::Handle    ibHandle;
+    RHI::Handle         vbHandle;
+    RHI::Handle         ibHandle;
 
     int                 startIndex;
     int                 numVerts;
@@ -118,7 +118,7 @@ private:
 
 struct LightQuery {
     const viewLight_t * light;
-    Renderer::Handle    queryHandle;
+    RHI::Handle         queryHandle;
     unsigned int        resultSamples;
     int                 frameCount;
 };
@@ -143,12 +143,12 @@ struct BackEnd {
     };
 
     bool                initialized;
-    Renderer::Handle    stencilStates[MaxPredefinedStencilStates];
+    RHI::Handle         stencilStates[MaxPredefinedStencilStates];
     //LightQuery        lightQueries[MAX_LIGHTS];
 
     float               time;
 
-    RenderContext *      ctx;
+    RenderContext *     ctx;
 
     viewLight_t *       mainLight;
 

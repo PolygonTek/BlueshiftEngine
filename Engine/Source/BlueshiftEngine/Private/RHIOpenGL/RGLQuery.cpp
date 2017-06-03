@@ -13,12 +13,12 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
 
-Renderer::Handle RendererGL::CreateQuery() {
+RHI::Handle OpenGLRHI::CreateQuery() {
     GLuint id;
     gglGenQueries(1, &id);
 
@@ -35,7 +35,7 @@ Renderer::Handle RendererGL::CreateQuery() {
     return (Handle)handle;
 }
 
-void RendererGL::DeleteQuery(Handle queryHandle) {
+void OpenGLRHI::DeleteQuery(Handle queryHandle) {
     GLQuery *query = queryList[queryHandle];
     gglDeleteQueries(1, &query->id);
 
@@ -43,23 +43,23 @@ void RendererGL::DeleteQuery(Handle queryHandle) {
     queryList[queryHandle] = nullptr;
 }
 
-void RendererGL::BeginQuery(Handle queryHandle) {
+void OpenGLRHI::BeginQuery(Handle queryHandle) {
     GLQuery *query = queryList[queryHandle];
     gglBeginQuery(GL_ANY_SAMPLES_PASSED, query->id);
 }
 
-void RendererGL::EndQuery() {
+void OpenGLRHI::EndQuery() {
     gglEndQuery(GL_ANY_SAMPLES_PASSED);
 }
 
-bool RendererGL::QueryResultAvailable(Handle queryHandle) const {
+bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
     GLuint available;
     gglGetQueryObjectuiv(query->id, GL_QUERY_RESULT_AVAILABLE, &available);
     return available ? true : false;
 }
 
-unsigned int RendererGL::QueryResult(Handle queryHandle) const {
+unsigned int OpenGLRHI::QueryResult(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
     GLuint samples;
     gglGetQueryObjectuiv(query->id, GL_QUERY_RESULT, &samples);

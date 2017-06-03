@@ -128,9 +128,8 @@ set(ENGINE_FILES
   Public/File/FileMapping.h
   Public/File/ZipArchiver.h
   
-  Public/Renderer/Renderer.h
-  Public/Renderer/RendererInterface.h
-  Public/Renderer/RendererGL.h
+  Public/RHI/RHI.h
+  Public/RHI/RHIOpenGL.h
 
   Public/Main/Common.h
   Public/Main/GameClient.h
@@ -314,18 +313,18 @@ set(ENGINE_FILES
   Private/Core/WLexer.cpp
   Private/Core/Task.cpp
 
-  Private/Renderer/OpenGL/OpenGL.h
-  Private/Renderer/OpenGL/OpenGL.cpp
-  Private/Renderer/RGLInternal.h
-  Private/Renderer/RGLBuffer.cpp
-  Private/Renderer/RGLCommon.cpp
-  Private/Renderer/RGLQuery.cpp
-  Private/Renderer/RGLRenderTarget.cpp
-  Private/Renderer/RGLShader.cpp
-  Private/Renderer/RGLState.cpp
-  Private/Renderer/RGLSync.cpp
-  Private/Renderer/RGLTexture.cpp
-  Private/Renderer/RGLVertexFormat.cpp
+  Private/RHIOpenGL/OpenGL/OpenGL.h
+  Private/RHIOpenGL/OpenGL/OpenGL.cpp
+  Private/RHIOpenGL/RGLInternal.h
+  Private/RHIOpenGL/RGLBuffer.cpp
+  Private/RHIOpenGL/RGLCommon.cpp
+  Private/RHIOpenGL/RGLQuery.cpp
+  Private/RHIOpenGL/RGLRenderTarget.cpp
+  Private/RHIOpenGL/RGLShader.cpp
+  Private/RHIOpenGL/RGLState.cpp
+  Private/RHIOpenGL/RGLSync.cpp
+  Private/RHIOpenGL/RGLTexture.cpp
+  Private/RHIOpenGL/RGLVertexFormat.cpp
 
   Private/Main/Common.cpp
   Private/Main/GameClient.cpp
@@ -673,61 +672,61 @@ endif ()
 
 if (XAMARIN AND NOT WIN32)
   list(APPEND RENDERER_FILES
-    Private/Renderer/OpenGL/OpenGLES3.h
-    Private/Renderer/OpenGL/OpenGLES3.cpp
-    Private/Renderer/OpenGL/XamarinOpenGL.h
-    Private/Renderer/OpenGL/XamarinOpenGL.cpp
-    Private/Renderer/RGLPlatformXamarin.cpp)
+    Private/RHIOpenGL/OpenGL/OpenGLES3.h
+    Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+    Private/RHIOpenGL/OpenGL/XamarinOpenGL.h
+    Private/RHIOpenGL/OpenGL/XamarinOpenGL.cpp
+    Private/RHIOpenGL/RGLPlatformXamarin.cpp)
 elseif (ANDROID)
   list(APPEND RENDERER_FILES
-    Private/Renderer/OpenGL/OpenGLES3.h
-    Private/Renderer/OpenGL/OpenGLES3.cpp
-    Private/Renderer/OpenGL/AndroidOpenGL.h
-    Private/Renderer/OpenGL/AndroidOpenGL.cpp
-    Private/Renderer/RGLPlatformAndroid.cpp)
+    Private/RHIOpenGL/OpenGL/OpenGLES3.h
+    Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+    Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
+    Private/RHIOpenGL/OpenGL/AndroidOpenGL.cpp
+    Private/RHIOpenGL/RGLPlatformAndroid.cpp)
 elseif (WIN32)
   list(APPEND RENDERER_FILES
-    Private/Renderer/OpenGL/OpenGL3.h
-    Private/Renderer/OpenGL/OpenGL3.cpp
-    Private/Renderer/OpenGL/WinOpenGL.h
-    Private/Renderer/RGLPlatformWin.cpp)
+    Private/RHIOpenGL/OpenGL/OpenGL3.h
+    Private/RHIOpenGL/OpenGL/OpenGL3.cpp
+    Private/RHIOpenGL/OpenGL/WinOpenGL.h
+    Private/RHIOpenGL/RGLPlatformWin.cpp)
 elseif (APPLE)
   if (IOS)
     list(APPEND RENDERER_FILES
-      Private/Renderer/OpenGL/OpenGLES3.h
-      Private/Renderer/OpenGL/OpenGLES3.cpp
-      Private/Renderer/OpenGL/IOSOpenGL.h
-      Private/Renderer/OpenGL/IOSOpenGL.mm
-      Private/Renderer/RGLPlatformIOS.mm)
+      Private/RHIOpenGL/OpenGL/OpenGLES3.h
+      Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+      Private/RHIOpenGL/OpenGL/IOSOpenGL.h
+      Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
+      Private/RHIOpenGL/RGLPlatformIOS.mm)
   else ()
     list(APPEND RENDERER_FILES
-      Private/Renderer/OpenGL/OpenGL3.h
-      Private/Renderer/OpenGL/OpenGL3.cpp
-      Private/Renderer/OpenGL/MacOSOpenGL.h
-      Private/Renderer/RGLPlatformMacOS.mm)
+      Private/RHIOpenGL/OpenGL/OpenGL3.h
+      Private/RHIOpenGL/OpenGL/OpenGL3.cpp
+      Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
+      Private/RHIOpenGL/RGLPlatformMacOS.mm)
   endif ()
 endif ()
 
 if (IOS)
   set(GGL_FILES
-    Private/Renderer/OpenGL/GGL/ggles3.c
-    Private/Renderer/OpenGL/GGL/ggles3.h
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
   )
 elseif (ANDROID)
   set(GGL_FILES
-    Private/Renderer/OpenGL/GGL/ggles3.c
-    Private/Renderer/OpenGL/GGL/ggles3.h
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
   )
 else ()
   set(GGL_FILES
-    Private/Renderer/OpenGL/GGL/gglcore32.c
-    Private/Renderer/OpenGL/GGL/gglcore32.h
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
   )
 
   if (WIN32)
     list(APPEND GGL_FILES
-      Private/Renderer/OpenGL/GGL/gwgl.c
-      Private/Renderer/OpenGL/GGL/gwgl.h
+      Private/RHIOpenGL/OpenGL/GGL/gwgl.c
+      Private/RHIOpenGL/OpenGL/GGL/gwgl.h
     )
   endif ()
 endif ()

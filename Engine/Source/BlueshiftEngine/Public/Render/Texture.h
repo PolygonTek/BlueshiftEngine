@@ -26,7 +26,7 @@
 #include "Containers/HashMap.h"
 #include "Core/CVars.h"
 #include "Image/Image.h"
-#include "Renderer/RendererInterface.h"
+#include "RHI/RHI.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -73,9 +73,9 @@ public:
 
     int                     MemRequired(bool includingMipmaps) const;
 
-    void                    Create(Renderer::TextureType type, const Image &srcImage, int flags);
-    void                    CreateEmpty(Renderer::TextureType type, int width, int height, int depth, int numSlices, Image::Format format, int flags);
-    void                    CreateFromBuffer(Image::Format format, Renderer::Handle bufferHandle);
+    void                    Create(RHI::TextureType type, const Image &srcImage, int flags);
+    void                    CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, Image::Format format, int flags);
+    void                    CreateFromBuffer(Image::Format format, RHI::Handle bufferHandle);
 
                             /// Create indirection cubemap
                             /// @param size size of indirection cubemap
@@ -125,9 +125,9 @@ private:
     int                     frameCount;
     int                     flags;                      // texture load flags
 
-    Renderer::Handle        textureHandle;              // texture handle
-    Renderer::TextureType   type;
-    Renderer::AddressMode   addressMode;
+    RHI::Handle             textureHandle;              // texture handle
+    RHI::TextureType        type;
+    RHI::AddressMode        addressMode;
 
     Image::Format           format;                     // internal image format
 
@@ -147,9 +147,9 @@ BE_INLINE Texture::Texture() {
     refCount                = 0;
     permanence              = false;
     flags                   = 0;
-    textureHandle           = Renderer::Handle::NullTexture;
-    type                    = Renderer::TextureType::Texture2D;
-    addressMode             = Renderer::AddressMode::Repeat;
+    textureHandle           = RHI::Handle::NullTexture;
+    type                    = RHI::TextureType::Texture2D;
+    addressMode             = RHI::AddressMode::Repeat;
     format                  = Image::Format::UnknownFormat;
     srcWidth                = 0;
     srcHeight               = 0;
@@ -240,7 +240,7 @@ private:
 
     StrIHashMap<Texture *>  textureHashMap;
 
-    Renderer::TextureFilter textureFilter;
+    RHI::TextureFilter      textureFilter;
     int                     textureAnisotropy;
 };
 

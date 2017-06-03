@@ -20,8 +20,8 @@
 
 @interface MyWindow : NSWindow
 
-@property (nonatomic, assign) BE1::Renderer::Handle context;
-@property (nonatomic, assign) BE1::Renderer::Handle renderTarget;
+@property (nonatomic, assign) BE1::RHI::Handle context;
+@property (nonatomic, assign) BE1::RHI::Handle renderTarget;
 
 @end
 
@@ -84,7 +84,7 @@ __strong MyWindow *subWindow;
     [NSApp sendEvent: event];
 }
 
-- (MyWindow *)createGLWindow:(NSSize)size title:(NSString *)title sharedContext:(bool)shared displayFunc:(BE1::Renderer::DisplayContextFunc)displayFunc {
+- (MyWindow *)createGLWindow:(NSSize)size title:(NSString *)title sharedContext:(bool)shared displayFunc:(BE1::RHI::DisplayContextFunc)displayFunc {
     NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask;
     
     NSRect contentRect = NSMakeRect(0, 0, size.width, size.height);
@@ -105,7 +105,7 @@ __strong MyWindow *subWindow;
     
     NSView *contentView = [window contentView];
     
-    window.context = BE1::glr.CreateContext((__bridge BE1::Renderer::WindowHandle)contentView, shared);
+    window.context = BE1::glr.CreateContext((__bridge BE1::RHI::WindowHandle)contentView, shared);
     
     BE1::glr.SetContextDisplayFunc(window.context, displayFunc, NULL, true);
     
@@ -135,7 +135,7 @@ static void SystemError(int errLevel, const wchar_t *msg) {
     }
 }
 
-static void DisplayMainContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
     static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
     float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
     
@@ -143,7 +143,7 @@ static void DisplayMainContext(BE1::Renderer::Handle context, void *dataPtr) {
 }
 
 #ifdef CREATE_SUB_WINDOW
-static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
     float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
     
@@ -181,14 +181,14 @@ static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
     if (mainWindow.context) {
         BE1::glr.DeleteRenderTarget(mainWindow.renderTarget);
         BE1::glr.DestroyContext(mainWindow.context);
-        mainWindow.context = BE1::Renderer::NullContext;
+        mainWindow.context = BE1::RHI::NullContext;
     }
    
 #ifdef CREATE_SUB_WINDOW
     if (subWindow.context) {
         BE1::glr.DeleteRenderTarget(subWindow.renderTarget);
         BE1::glr.DestroyContext(subWindow.context);
-        subWindow.context = BE1::Renderer::NullContext;
+        subWindow.context = BE1::RHI::NullContext;
     }
 #endif
     
@@ -203,7 +203,7 @@ static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
     if (window.context) {
         BE1::glr.DeleteRenderTarget(window.renderTarget);
         BE1::glr.DestroyContext(window.context);
-        window.context = BE1::Renderer::NullContext;
+        window.context = BE1::RHI::NullContext;
     }
 }
 

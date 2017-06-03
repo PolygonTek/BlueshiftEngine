@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
@@ -425,7 +425,7 @@ static void InitGLFunctions() {
     DestroyWindow(hwndFake);
 }
 
-void RendererGL::InitMainContext(const Settings *settings) {
+void OpenGLRHI::InitMainContext(const Settings *settings) {
     InitGLFunctions();
     
     // Create main context
@@ -475,7 +475,7 @@ void RendererGL::InitMainContext(const Settings *settings) {
     gglGenVertexArrays(1, &mainContext->defaultVAO);
 }
 
-void RendererGL::FreeMainContext() {
+void OpenGLRHI::FreeMainContext() {
     // Delete default VAO for main context
     gglDeleteVertexArrays(1, &mainContext->defaultVAO);
 
@@ -506,7 +506,7 @@ static LRESULT CALLBACK NewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
     case WM_PAINT:
         hdc = BeginPaint(hwnd, &ps);
         if (ctx->onDemandDrawing) {
-            BE1::glr.DisplayContext(ctx->handle);
+            BE1::rhi.DisplayContext(ctx->handle);
         }
         EndPaint(hwnd, &ps);
         break;
@@ -515,7 +515,7 @@ static LRESULT CALLBACK NewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
     return ctx->oldWndProc(hwnd, uMsg, wParam, lParam);
 }
 
-Renderer::Handle RendererGL::CreateContext(Renderer::WindowHandle windowHandle, bool useSharedContext) {
+RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
     GLContext *ctx = new GLContext;
 
     int handle = contextList.FindNull();
@@ -586,7 +586,7 @@ Renderer::Handle RendererGL::CreateContext(Renderer::WindowHandle windowHandle, 
     return (Handle)handle;
 }
 
-void RendererGL::DestroyContext(Handle ctxHandle) {
+void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
 
     if (ctx->hrc != mainContext->hrc) {
@@ -615,7 +615,7 @@ void RendererGL::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = nullptr; 
 }
 
-void RendererGL::SetContext(Handle ctxHandle) {
+void OpenGLRHI::SetContext(Handle ctxHandle) {
     HDC currentDC = wglGetCurrentDC();
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
@@ -627,13 +627,13 @@ void RendererGL::SetContext(Handle ctxHandle) {
     }
 
     if (!wglMakeCurrent(ctx->hdc, ctx->hrc)) {
-        BE_FATALERROR(L"RendererGL::SetContext: Couldn't make current context");
+        BE_FATALERROR(L"OpenGLRHI::SetContext: Couldn't make current context");
     }
 
     this->currentContext = ctx;
 }
 
-void RendererGL::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *displayFuncDataPtr, bool onDemandDrawing) {
+void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *displayFuncDataPtr, bool onDemandDrawing) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
     ctx->displayFunc = displayFunc;
@@ -641,18 +641,18 @@ void RendererGL::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc disp
     ctx->onDemandDrawing = onDemandDrawing;
 }
 
-void RendererGL::DisplayContext(Handle ctxHandle) {
+void OpenGLRHI::DisplayContext(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
     ctx->displayFunc(ctxHandle, ctx->displayFuncDataPtr);
 }
 
-Renderer::WindowHandle RendererGL::GetWindowHandleFromContext(Handle ctxHandle) {
+RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     return (WindowHandle)ctx->hwnd;
 }
 
-void RendererGL::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
+void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
     GLContext *ctx = contextList[ctxHandle];
 
     if (windowWidth || windowHeight || backingWidth || backingHeight) {
@@ -673,11 +673,11 @@ void RendererGL::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowH
     }
 }
 
-bool RendererGL::IsFullscreen() const {
+bool OpenGLRHI::IsFullscreen() const {
     return deviceFullscreen;
 }
 
-bool RendererGL::SetFullscreen(Handle ctxHandle, int width, int height) {
+bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     HDC hdc;
 
     BE_LOG(L"Changing display setting...\n");
@@ -730,7 +730,7 @@ bool RendererGL::SetFullscreen(Handle ctxHandle, int width, int height) {
     return true;
 }
 
-void RendererGL::ResetFullscreen(Handle ctxHandle) {
+void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
     if (!deviceFullscreen) {
         return;
     }
@@ -752,17 +752,17 @@ void RendererGL::ResetFullscreen(Handle ctxHandle) {
     BE_LOG(L"set window mode: ibpp %ihz\n", deviceBpp, deviceHz);
 }
 
-void RendererGL::GetGammaRamp(unsigned short ramp[768]) const {
+void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
     ::GetDeviceGammaRamp(currentContext->hdc, ramp);
 }
 
-void RendererGL::SetGammaRamp(unsigned short ramp[768]) const {
+void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     ::SetDeviceGammaRamp(currentContext->hdc, ramp);
 }
 
-void RendererGL::SwapBuffers() const {
+void OpenGLRHI::SwapBuffers() const {
     if (!gl_ignoreGLError.GetBool()) {
-        CheckError("RendererGL::SwapBuffers");
+        CheckError("OpenGLRHI::SwapBuffers");
     }
 
     if (gl_finish.GetBool()) {
@@ -791,7 +791,7 @@ void RendererGL::SwapBuffers() const {
     }
 }
 
-void RendererGL::SwapInterval(int interval) const {
+void OpenGLRHI::SwapInterval(int interval) const {
     gwglSwapIntervalEXT(interval);
 }
 

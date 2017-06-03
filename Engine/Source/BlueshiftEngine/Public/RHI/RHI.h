@@ -17,7 +17,7 @@
 /*
 ===============================================================================
  
-    RHI (Renderer Hardware Interface)
+    RHI (Rendering Hardware Interface)
  
 ===============================================================================
 */
@@ -26,7 +26,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class Renderer {
+class RHI {
 public:
     enum {
         MaxTMU                              = 16,       // maximum texture map units

@@ -136,12 +136,12 @@ void SubMesh::FreeSubMesh() {
     alloced = false;
 
     if (type == Mesh::ReferenceMesh) {
-        if (vertexCache->buffer != Renderer::NullBuffer) {
-            glr.DeleteBuffer(vertexCache->buffer);
+        if (vertexCache->buffer != RHI::NullBuffer) {
+            rhi.DeleteBuffer(vertexCache->buffer);
         }
 
-        if (indexCache->buffer != Renderer::NullBuffer) {
-            glr.DeleteBuffer(indexCache->buffer);
+        if (indexCache->buffer != RHI::NullBuffer) {
+            rhi.DeleteBuffer(indexCache->buffer);
         }
 
         Mem_AlignedFree(verts);
@@ -175,13 +175,13 @@ void SubMesh::CacheStaticDataToGpu() {
             
             bufferCacheManager.AllocStaticVertex(size, nullptr, vertexCache);
 
-            glr.BindBuffer(Renderer::VertexBuffer, vertexCache->buffer);
-            byte *ptr = (byte *)glr.MapBufferRange(vertexCache->buffer, Renderer::WriteOnly, 0, size);
+            rhi.BindBuffer(RHI::VertexBuffer, vertexCache->buffer);
+            byte *ptr = (byte *)rhi.MapBufferRange(vertexCache->buffer, RHI::WriteOnly, 0, size);
 
             simdProcessor->Memcpy(ptr, verts, sizeof(VertexGenericLit) * numVerts);
             simdProcessor->Memcpy(ptr + sizeof(VertexGenericLit) * numVerts, vertWeights, sizeofVertWeight * numVerts);
 
-            glr.UnmapBuffer(vertexCache->buffer);
+            rhi.UnmapBuffer(vertexCache->buffer);
         } else {
             bufferCacheManager.AllocStaticVertex(numVerts * sizeof(VertexGenericLit), verts, vertexCache);
         }
@@ -235,7 +235,7 @@ void SubMesh::SplitMirroredVerts() {
     Vec3        tangents[2];
     float       handedness;
 
-    static const TriIndex invalidIndex = (1 << (sizeof(TriIndex) << 3)) - 1;
+    static const TriIndex invalidIndex = std::numeric_limits<TriIndex>::max();
     float *vertHandednesses = (float *)_alloca16(sizeof(float) * numVerts);
     TriIndex *mirroredVertsIndexMap = (TriIndex *)_alloca16(sizeof(TriIndex) * numVerts);
     TriIndex *mirroredVertsIndexes = (TriIndex *)_alloca16(sizeof(TriIndex) * numVerts);

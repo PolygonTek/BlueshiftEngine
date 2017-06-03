@@ -26,7 +26,7 @@
 #include "Math/Math.h"
 #include "Core/Property.h"
 #include "Core/CmdArgs.h"
-#include "Renderer/RendererInterface.h"
+#include "RHI/RHI.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -174,8 +174,8 @@ public:
     void                    SetConstantArray3x3f(const char *name, bool rowmajor, int num, const Mat3 *constant) const;
     void                    SetConstantArray4x4f(const char *name, bool rowmajor, int num, const Mat4 *constant) const;	
 
-    void                    SetConstantBuffer(int index, Renderer::Handle bufferHandle) const;
-    void                    SetConstantBuffer(const char *name, Renderer::Handle bufferHandle) const;
+    void                    SetConstantBuffer(int index, RHI::Handle bufferHandle) const;
+    void                    SetConstantBuffer(const char *name, RHI::Handle bufferHandle) const;
 
     int                     GetSamplerUnit(const char *name) const;
 
@@ -213,7 +213,7 @@ private:
     bool                    permanence;
     int                     frameCount;
 
-    Renderer::Handle        shaderHandle;
+    RHI::Handle             shaderHandle;
     Str                     vsText;                 ///< Vertex shader souce code text
     Str                     fsText;                 ///< Fragment shader source code text
     bool                    hasVertexShader;
@@ -242,7 +242,7 @@ BE_INLINE Shader::Shader() {
     refCount                = 0;
     permanence              = false;
     frameCount              = 0; 
-    shaderHandle            = Renderer::NullShader;
+    shaderHandle            = RHI::NullShader;
     hasVertexShader         = false;
     hasFragmentShader       = false;
     perforatedVersion       = nullptr;

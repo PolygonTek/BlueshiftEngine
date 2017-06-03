@@ -13,19 +13,19 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 #include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 
-const GLenum ToGLBufferUsage(Renderer::BufferUsage usage) {
+const GLenum ToGLBufferUsage(RHI::BufferUsage usage) {
     switch (usage) {
-    case Renderer::Static:
+    case RHI::Static:
         return GL_STATIC_DRAW;
-    case Renderer::Dynamic:
+    case RHI::Dynamic:
         return GL_DYNAMIC_DRAW;
-    case Renderer::Stream:
+    case RHI::Stream:
         return GL_STREAM_DRAW;
     default:
         assert(0);
@@ -33,23 +33,23 @@ const GLenum ToGLBufferUsage(Renderer::BufferUsage usage) {
     }
 }
 
-const GLenum ToGLBufferTarget(Renderer::BufferType type) {
+const GLenum ToGLBufferTarget(RHI::BufferType type) {
     switch (type) {
-    case Renderer::VertexBuffer:
+    case RHI::VertexBuffer:
         return GL_ARRAY_BUFFER;
-    case Renderer::IndexBuffer:
+    case RHI::IndexBuffer:
         return GL_ELEMENT_ARRAY_BUFFER;
-    case Renderer::PixelPackBuffer:
+    case RHI::PixelPackBuffer:
         return GL_PIXEL_PACK_BUFFER;
-    case Renderer::PixelUnpackBuffer:
+    case RHI::PixelUnpackBuffer:
         return GL_PIXEL_UNPACK_BUFFER;
-    case Renderer::TexelBuffer:
+    case RHI::TexelBuffer:
         return GL_TEXTURE_BUFFER_EXT;
-    case Renderer::UniformBuffer:
+    case RHI::UniformBuffer:
         return GL_UNIFORM_BUFFER;
-    case Renderer::TransformFeedbackBuffer:
+    case RHI::TransformFeedbackBuffer:
         return GL_TRANSFORM_FEEDBACK_BUFFER;
-    case Renderer::CopyReadBuffer:
+    case RHI::CopyReadBuffer:
         return GL_COPY_READ_BUFFER;
     default:
         assert(0);
@@ -57,7 +57,7 @@ const GLenum ToGLBufferTarget(Renderer::BufferType type) {
     }
 }
 
-Renderer::Handle RendererGL::CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch, const void *data) {
+RHI::Handle OpenGLRHI::CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch, const void *data) {
     GLenum target = ToGLBufferTarget(type);
 
     GLBuffer *buffer    = new GLBuffer;
@@ -91,7 +91,7 @@ Renderer::Handle RendererGL::CreateBuffer(BufferType type, BufferUsage usage, in
     return (Handle)handle;
 }
 
-void RendererGL::DeleteBuffer(Handle bufferHandle) {
+void OpenGLRHI::DeleteBuffer(Handle bufferHandle) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
     for (int i = 0; i < COUNT_OF(currentContext->state->bufferHandles); i++) {
@@ -108,7 +108,7 @@ void RendererGL::DeleteBuffer(Handle bufferHandle) {
     bufferList[bufferHandle] = nullptr;
 }
 
-void RendererGL::BindBuffer(BufferType type, Handle bufferHandle) {
+void OpenGLRHI::BindBuffer(BufferType type, Handle bufferHandle) {
     Handle *bufferHandlePtr = &currentContext->state->bufferHandles[type];
     if (*bufferHandlePtr != bufferHandle) {
         *bufferHandlePtr = bufferHandle;
@@ -117,7 +117,7 @@ void RendererGL::BindBuffer(BufferType type, Handle bufferHandle) {
     }
 }
 
-void *RendererGL::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset, int size) {
+void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset, int size) {
     GLBuffer *buffer = bufferList[bufferHandle];
     
     if (size < 0) {
@@ -159,7 +159,7 @@ void *RendererGL::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, i
     return ptr;
 }
 
-bool RendererGL::UnmapBuffer(Handle bufferHandle) {
+bool OpenGLRHI::UnmapBuffer(Handle bufferHandle) {
     GLBuffer *buffer = bufferList[bufferHandle];
     // glUnmapBuffer returns GL_TRUE unless the data store contents have become corrupt during the time the data
     // store was mapped. This can occur for system-specific reasons that affect the availability of graphics
@@ -168,7 +168,7 @@ bool RendererGL::UnmapBuffer(Handle bufferHandle) {
     return !!gglUnmapBuffer(buffer->target);
 }
 
-void RendererGL::FlushMappedBufferRange(Handle bufferHandle, int offset, int size) {
+void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
     if (size < 0) {
@@ -180,7 +180,7 @@ void RendererGL::FlushMappedBufferRange(Handle bufferHandle, int offset, int siz
     gglFlushMappedBufferRange(buffer->target, offset, size);
 }
 
-int RendererGL::BufferDiscardWrite(Handle bufferHandle, int size, const void *data) {
+int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *data) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
     if (gglMapBufferRange) {
@@ -201,7 +201,7 @@ int RendererGL::BufferDiscardWrite(Handle bufferHandle, int size, const void *da
     return 0;
 }
 
-int RendererGL::BufferWrite(Handle bufferHandle, int alignSize, int size, const void *data) {
+int OpenGLRHI::BufferWrite(Handle bufferHandle, int alignSize, int size, const void *data) {
     GLBuffer *writeBuffer = bufferList[bufferHandle];
 
     if (writeBuffer->pitch > 0 && size > writeBuffer->pitch) {
@@ -242,7 +242,7 @@ int RendererGL::BufferWrite(Handle bufferHandle, int alignSize, int size, const 
     return base;
 }
 
-int	RendererGL::BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int alignSize, int size) {
+int	OpenGLRHI::BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int alignSize, int size) {
     GLBuffer *writeBuffer = bufferList[writeBufferHandle];
     const GLBuffer *readBuffer = bufferList[readBufferHandle];
 
@@ -280,7 +280,7 @@ int	RendererGL::BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, in
     return base;
 }
 
-void RendererGL::BufferRewind(Handle bufferHandle) {
+void OpenGLRHI::BufferRewind(Handle bufferHandle) {
     GLBuffer *buffer = bufferList[bufferHandle];
     
     buffer->writeOffset = 0;

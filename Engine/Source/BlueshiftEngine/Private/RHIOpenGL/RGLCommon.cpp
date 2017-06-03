@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformFile.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
@@ -29,19 +29,19 @@ const GLenum toGLPrim[] = {
     GL_POINTS,
 };
 
-RendererGL      glr;
+OpenGLRHI       rhi;
 
 Str             GLShader::programCacheDir;
 
 CVar            gl_sRGB(L"gl_sRGB", L"1", CVar::Bool | CVar::Archive, L"enable sRGB color calibration");
 
-RendererGL::RendererGL() {
+OpenGLRHI::OpenGLRHI() {
     initialized = false;
     currentContext = nullptr;
     mainContext = nullptr;
 }
 
-void RendererGL::Init(const Settings *settings) {
+void OpenGLRHI::Init(const Settings *settings) {
     BE_LOG(L"Initializing OpenGL Renderer...\n");
 
     InitHandles();
@@ -65,7 +65,7 @@ void RendererGL::Init(const Settings *settings) {
     initialized = true;
 }
 
-void RendererGL::Shutdown() {
+void OpenGLRHI::Shutdown() {
     BE_LOG(L"Shutting down OpenGL Renderer...\n");
 
     initialized = false;
@@ -79,7 +79,7 @@ void RendererGL::Shutdown() {
     FreeHandles();
 }
 
-void RendererGL::InitHandles() {
+void OpenGLRHI::InitHandles() {
     contextList.SetGranularity(16);
     GLContext *zeroContext = new GLContext;
     memset(zeroContext, 0, sizeof(*zeroContext));
@@ -126,7 +126,7 @@ void RendererGL::InitHandles() {
     queryList.Append(zeroQuery);
 }
 
-void RendererGL::FreeHandles() {
+void OpenGLRHI::FreeHandles() {
     contextList.DeleteContents(true);
     stencilStateList.DeleteContents(true);
     bufferList.DeleteContents(true);
@@ -138,7 +138,7 @@ void RendererGL::FreeHandles() {
     queryList.DeleteContents(true);
 }
 
-void RendererGL::InitGL() {
+void OpenGLRHI::InitGL() {
     OpenGL::Init();
 
     vendorString = (const char *)gglGetString(GL_VENDOR);
@@ -305,47 +305,47 @@ void RendererGL::InitGL() {
     }
 }
 
-bool RendererGL::SupportsPackedFloat() const {
+bool OpenGLRHI::SupportsPackedFloat() const {
     return OpenGL::SupportsPackedFloat();
 }
 
-bool RendererGL::SupportsDepthBufferFloat() const {
+bool OpenGLRHI::SupportsDepthBufferFloat() const {
     return OpenGL::SupportsDepthBufferFloat();
 }
 
-bool RendererGL::SupportsPixelBufferObject() const {
+bool OpenGLRHI::SupportsPixelBufferObject() const {
     return OpenGL::SupportsPixelBufferObject();
 }
 
-bool RendererGL::SupportsTextureRectangle() const {
+bool OpenGLRHI::SupportsTextureRectangle() const {
     return OpenGL::SupportsTextureRectangle();
 }
 
-bool RendererGL::SupportsTextureArray() const {
+bool OpenGLRHI::SupportsTextureArray() const {
     return OpenGL::SupportsTextureArray();
 }
 
-bool RendererGL::SupportsTextureBufferObject() const {
+bool OpenGLRHI::SupportsTextureBufferObject() const {
     return OpenGL::SupportsTextureBufferObject();
 }
 
-bool RendererGL::SupportsTextureCompressionS3TC() const {
+bool OpenGLRHI::SupportsTextureCompressionS3TC() const {
     return OpenGL::SupportsTextureCompressionS3TC();
 }
 
-bool RendererGL::SupportsTextureCompressionLATC() const {
+bool OpenGLRHI::SupportsTextureCompressionLATC() const {
     return OpenGL::SupportsTextureCompressionLATC();
 }
 
-bool RendererGL::SupportsTextureCompressionETC2() const {
+bool OpenGLRHI::SupportsTextureCompressionETC2() const {
     return OpenGL::SupportsTextureCompressionETC2();
 }
 
-bool RendererGL::SupportsDebugLabel() const {
+bool OpenGLRHI::SupportsDebugLabel() const {
     return OpenGL::SupportsDebugLabel();
 }
 
-void RendererGL::Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil) {
+void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil) {
 #if 1
     if (clearBits & ColorBit) {
         if (gl_sRGB.GetBool()) {
@@ -401,12 +401,12 @@ void RendererGL::Clear(int clearBits, const Color4 &color, float depth, unsigned
 #endif
 }
 
-void RendererGL::ReadPixels(int x, int y, int width, int height, Image::Format imageFormat, byte *data) {
+void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format imageFormat, byte *data) {
     GLenum	format;
     GLenum	type;
     
     if (!OpenGL::ImageFormatToGLFormat(imageFormat, false, &format, &type, nullptr)) {
-        BE_WARNLOG(L"RendererGL::ReadPixels: Unsupported image format %hs\n", Image::FormatName(imageFormat));
+        BE_WARNLOG(L"OpenGLRHI::ReadPixels: Unsupported image format %hs\n", Image::FormatName(imageFormat));
         return;
     }
     
@@ -419,22 +419,22 @@ void RendererGL::ReadPixels(int x, int y, int width, int height, Image::Format i
     gglPixelStorei(GL_PACK_ALIGNMENT, oldPackAlignment);
 }
 
-void RendererGL::DrawArrays(Primitive primitives, const int startVertex, const int numVerts) const {
+void OpenGLRHI::DrawArrays(Primitive primitives, const int startVertex, const int numVerts) const {
     gglDrawArrays(toGLPrim[primitives], startVertex, numVerts);
 }
 
-void RendererGL::DrawArraysInstanced(Primitive primitives, const int startVertex, const int numVerts, const int primCount) const {
+void OpenGLRHI::DrawArraysInstanced(Primitive primitives, const int startVertex, const int numVerts, const int primCount) const {
     gglDrawArraysInstanced(toGLPrim[primitives], startVertex, numVerts, primCount);
 }
 
-void RendererGL::DrawElements(Primitive primitives, const int startIndex, const int numIndices, const int indexSize, const void *ptr) const {
+void OpenGLRHI::DrawElements(Primitive primitives, const int startIndex, const int numIndices, const int indexSize, const void *ptr) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
     int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
     gglDrawElements(toGLPrim[primitives], numIndices, indexType, indices);
 }
 
-void RendererGL::DrawElementsInstanced(Primitive primitives, const int startIndex, const int numIndices, const int indexSize, const void *ptr, const int primCount) const {
+void OpenGLRHI::DrawElementsInstanced(Primitive primitives, const int startIndex, const int numIndices, const int indexSize, const void *ptr, const int primCount) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
     int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
@@ -443,7 +443,7 @@ void RendererGL::DrawElementsInstanced(Primitive primitives, const int startInde
 
 extern "C" void CheckGLError(const char *msg);
 
-void RendererGL::CheckError(const char *fmt, ...) const {
+void OpenGLRHI::CheckError(const char *fmt, ...) const {
     char buffer[16384];
     va_list args;
 

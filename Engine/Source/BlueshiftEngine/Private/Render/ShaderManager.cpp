@@ -169,11 +169,11 @@ void ShaderManager::InitShaders() {
 
 void ShaderManager::InitGlobalDefines() {
     if (textureManager.texture_useNormalCompression.GetBool()) {
-        if (glr.SupportsTextureCompressionLATC()) {
+        if (rhi.SupportsTextureCompressionLATC()) {
             shaderManager.AddGlobalHeader("#define LATC_NORMAL\n");
-        } else if (glr.SupportsTextureCompressionETC2()) {
+        } else if (rhi.SupportsTextureCompressionETC2()) {
             //shaderManager.AddGlobalHeader("#define ETC2_NORMAL\n");
-        } else if (glr.SupportsTextureCompressionS3TC()) {
+        } else if (rhi.SupportsTextureCompressionS3TC()) {
             shaderManager.AddGlobalHeader("#define DXT5_XGBR_NORMAL\n");
         }
     }
@@ -206,7 +206,7 @@ void ShaderManager::InitGlobalDefines() {
 
     shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
     
-    int maxShaderJoints = (glr.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);
+    int maxShaderJoints = (rhi.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);
     shaderManager.AddGlobalHeader(va("#define MAX_SHADER_JOINTSX3 %i\n", maxShaderJoints * 3));
 
     shaderManager.AddGlobalHeader(va("#define CSM_COUNT %i\n", r_CSM_count.GetInteger()));

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
@@ -40,7 +40,7 @@ const GLenum toGLStencilOp[] = {
     GL_INVERT
 };
 
-void RendererGL::SetDefaultState() {
+void OpenGLRHI::SetDefaultState() {
     memset(currentContext->state, 0, sizeof(GLState));
     
     renderTargetList[0]->fbo = currentContext->defaultFramebuffer;
@@ -94,7 +94,7 @@ void RendererGL::SetDefaultState() {
     gglUseProgram(0);
 }
 
-void RendererGL::SetStateBits(unsigned int stateBits) {
+void OpenGLRHI::SetStateBits(unsigned int stateBits) {
     unsigned int	state_delta;
     unsigned int	bits;
     GLenum			blend_src;
@@ -119,7 +119,7 @@ void RendererGL::SetStateBits(unsigned int stateBits) {
                     OpenGL::PolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                     break;
                 default:
-                    BE_FATALERROR(L"RendererGL::SetStateBits: invalid polygon mode state bits");
+                    BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid polygon mode state bits");
                     break;
             }
         }
@@ -154,7 +154,7 @@ void RendererGL::SetStateBits(unsigned int stateBits) {
                         gglDepthFunc(GL_NEVER);
                         break;
                     default:
-                        BE_FATALERROR(L"RendererGL::SetStateBits: invalid depth func state bits");
+                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid depth func state bits");
                         break;
                 }
                 
@@ -198,7 +198,7 @@ void RendererGL::SetStateBits(unsigned int stateBits) {
                         break;
                     default:
                         blend_src = GL_ONE;
-                        BE_FATALERROR(L"RendererGL::SetStateBits: invalid src blend state bits");
+                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid src blend state bits");
                         break;
                 }
                 
@@ -230,7 +230,7 @@ void RendererGL::SetStateBits(unsigned int stateBits) {
                         break;
                     default:
                         blend_dst = GL_ONE;
-                        BE_FATALERROR(L"RendererGL::SetStateBits: invalid dst blend state bits");
+                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid dst blend state bits");
                         break;
                 }
                 
@@ -289,14 +289,14 @@ void RendererGL::SetStateBits(unsigned int stateBits) {
     }
 }
 
-void RendererGL::SetAlphaRef(float alphaRef) {
+void OpenGLRHI::SetAlphaRef(float alphaRef) {
     if (currentContext->state->alphaRef != alphaRef) {
         currentContext->state->alphaRef = alphaRef;
         currentContext->state->alphaRefChanged = true;
     }
 }
 
-void RendererGL::SetCullFace(int cull) {
+void OpenGLRHI::SetCullFace(int cull) {
     if (cull != currentContext->state->cull) {
         currentContext->state->cull = cull;
         if (cull == NoCull) {
@@ -312,7 +312,7 @@ void RendererGL::SetCullFace(int cull) {
     }
 }
 
-void RendererGL::SetDepthBias(float slopeScaleBias, float constantBias) {
+void OpenGLRHI::SetDepthBias(float slopeScaleBias, float constantBias) {
     if (slopeScaleBias != 0.0f || constantBias != 0.0f) {
         if (OpenGL::SupportsPolygonMode()) {
             gglEnable(GL_POLYGON_OFFSET_POINT);
@@ -329,11 +329,11 @@ void RendererGL::SetDepthBias(float slopeScaleBias, float constantBias) {
     }
 }
 
-void RendererGL::SetDepthRange(float znear, float zfar) {
+void OpenGLRHI::SetDepthRange(float znear, float zfar) {
     OpenGL::DepthRange(znear, zfar);
 }
 
-void RendererGL::SetDepthClamp(bool enable) {
+void OpenGLRHI::SetDepthClamp(bool enable) {
     if (OpenGL::SupportsDepthClamp()) {
         if (enable) {
             gglEnable(GL_DEPTH_CLAMP);
@@ -343,7 +343,7 @@ void RendererGL::SetDepthClamp(bool enable) {
     }
 }
 
-void RendererGL::SetDepthBounds(float zmin, float zmax) {
+void OpenGLRHI::SetDepthBounds(float zmin, float zmax) {
 #ifdef GL_EXT_depth_bounds_test
     if (OpenGL::SupportsDepthBoundsTest()) {
         if (zmin > 0.0f || zmax < 1.0f) {
@@ -356,13 +356,13 @@ void RendererGL::SetDepthBounds(float zmin, float zmax) {
 #endif
 }
 
-void RendererGL::SetViewport(const Rect &viewportRect) {
+void OpenGLRHI::SetViewport(const Rect &viewportRect) {
     currentContext->state->viewportRect = viewportRect;
     gglViewport(viewportRect.x, viewportRect.y, viewportRect.w, viewportRect.h);
 }
 
 // scissorRect 의 x, y 는 lower left corner
-void RendererGL::SetScissor(const Rect &scissorRect) {
+void OpenGLRHI::SetScissor(const Rect &scissorRect) {
     if (!scissorRect.IsEmpty()) {
         currentContext->state->scissorRect = scissorRect;
         gglScissor(scissorRect.x, scissorRect.y, scissorRect.w, scissorRect.h);
@@ -373,7 +373,7 @@ void RendererGL::SetScissor(const Rect &scissorRect) {
     }
 }
 
-void RendererGL::SetSRGBWrite(bool enable) {
+void OpenGLRHI::SetSRGBWrite(bool enable) {
     if (OpenGL::SupportsFrameBufferSRGB()) {
         // This extension adds a framebuffer capability for sRGB framebuffer update and blending. When
         // blending is disabled but the new sRGB updated mode is enabled (assume the framebuffer supports
@@ -391,7 +391,7 @@ void RendererGL::SetSRGBWrite(bool enable) {
     }
 };
 
-void RendererGL::EnableLineSmooth(bool enable) {
+void OpenGLRHI::EnableLineSmooth(bool enable) {
     if (OpenGL::SupportsLineSmooth()) {
         if (enable) {
             gglEnable(GL_LINE_SMOOTH);
@@ -401,17 +401,17 @@ void RendererGL::EnableLineSmooth(bool enable) {
     }
 }
 
-float RendererGL::GetLineWidth() const {
+float OpenGLRHI::GetLineWidth() const {
     float width;
     gglGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, &width);
     return width;
 }
 
-void RendererGL::SetLineWidth(float width) {
+void OpenGLRHI::SetLineWidth(float width) {
     //gglLineWidth(Max(width, 0.0f));
 }
 
-Renderer::Handle RendererGL::CreateStencilState(int readMask, int writeMask, StencilFunc funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc funcFront, int failFront, int zfailFront, int zpassFront) {
+RHI::Handle OpenGLRHI::CreateStencilState(int readMask, int writeMask, StencilFunc funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc funcFront, int failFront, int zfailFront, int zpassFront) {
     GLStencilState *stencilState = new GLStencilState;
     stencilState->readMask	= readMask;
     stencilState->writeMask	= writeMask;
@@ -434,12 +434,12 @@ Renderer::Handle RendererGL::CreateStencilState(int readMask, int writeMask, Ste
     return (Handle)handle;
 }
 
-void RendererGL::DeleteStencilState(Handle stencilStateHandle) {
+void OpenGLRHI::DeleteStencilState(Handle stencilStateHandle) {
     delete stencilStateList[stencilStateHandle];
     stencilStateList[stencilStateHandle] = nullptr;
 }
 
-void RendererGL::SetStencilState(Handle stencilStateHandle, int ref) {
+void OpenGLRHI::SetStencilState(Handle stencilStateHandle, int ref) {
     if (currentContext->state->stencilStateHandle == stencilStateHandle) {
         return;
     }
@@ -462,19 +462,19 @@ void RendererGL::SetStencilState(Handle stencilStateHandle, int ref) {
     }
 }
 
-unsigned int RendererGL::GetStateBits() const { 
+unsigned int OpenGLRHI::GetStateBits() const { 
     return currentContext->state->renderState; 
 }
 
-const Rect &RendererGL::GetViewport() const { 
+const Rect &OpenGLRHI::GetViewport() const { 
     return currentContext->state->viewportRect; 
 }
 
-int RendererGL::GetCullFace() const { 
+int OpenGLRHI::GetCullFace() const { 
     return currentContext->state->cull; 
 }
 
-const Rect &RendererGL::GetScissor() const { 
+const Rect &OpenGLRHI::GetScissor() const { 
     return currentContext->state->scissorRect; 
 }
 

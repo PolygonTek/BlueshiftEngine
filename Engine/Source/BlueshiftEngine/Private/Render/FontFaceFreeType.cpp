@@ -70,7 +70,7 @@ void FontFaceFreeType::Init() {
         // 대략 8x8 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
         atlas->chunks.Resize(GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE / 64);
         atlas->texture = textureManager.AllocTexture(va("_glyph_cache_%i", i));
-        atlas->texture->Create(Renderer::Texture2D, image, Texture::Clamp | Texture::HighQuality | Texture::NoMipmaps);
+        atlas->texture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::HighQuality | Texture::NoMipmaps);
     }
 }
 
@@ -358,7 +358,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(int charCode) {
 
     DrawGlyphBufferFromFTBitmap(bitmap);
 
-    glr.SelectTextureUnit(0);
+    rhi.SelectTextureUnit(0);
 
     texture->Bind();
     texture->Update2D(x, y, width + GLYPH_BORDER_PIXELS * 2, bitmap->rows + GLYPH_BORDER_PIXELS * 2, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);

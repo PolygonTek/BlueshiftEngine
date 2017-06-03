@@ -96,10 +96,10 @@ public:
 
     RenderContext();
 
-    void                    Init(Renderer::WindowHandle hwnd, int renderWidth, int renderHeight, Renderer::DisplayContextFunc displayFunc, void *displayFuncDataPtr, int flags = 0);
+    void                    Init(RHI::WindowHandle hwnd, int renderWidth, int renderHeight, RHI::DisplayContextFunc displayFunc, void *displayFuncDataPtr, int flags = 0);
     void                    Shutdown();
 
-    Renderer::Handle        GetContextHandle() const { return contextHandle; }
+    RHI::Handle             GetContextHandle() const { return contextHandle; }
     
                             // logical screen resolution
     int                     GetScreenWidth() const { return windowWidth; }
@@ -163,7 +163,7 @@ public:
     void                    InitShadowMapRT();
     void                    FreeShadowMapRT();
 
-    Renderer::Handle        contextHandle;
+    RHI::Handle             contextHandle;
 
     int                     flags;
     int                     windowWidth;

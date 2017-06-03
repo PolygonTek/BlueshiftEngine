@@ -16,39 +16,39 @@
 
 class Application {
 public:
-    void                    Init();
-    void                    Shutdown();
+    void                Init();
+    void                Shutdown();
 
-    void                    LoadResources();
-    void                    FreeResources();
+    void                LoadResources();
+    void                FreeResources();
 
-    BE1::Renderer::Handle   CreateRenderTarget(const BE1::Renderer::Handle contextHandle);
+    BE1::RHI::Handle    CreateRenderTarget(const BE1::RHI::Handle contextHandle);
 
-    void                    Draw(const BE1::Renderer::Handle contextHandle, const BE1::Renderer::Handle renderTargetHandle, float t);
+    void                Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Handle renderTargetHandle, float t);
 
-    void                    RunFrame();
+    void                RunFrame();
 
 private:
-    void                    DrawClipRect(float s, float t, float s2, float t2);
-    void                    DrawToRenderTarget(const BE1::Renderer::Handle renderTargetHandle, float t);
+    void                DrawClipRect(float s, float t, float s2, float t2);
+    void                DrawToRenderTarget(const BE1::RHI::Handle renderTargetHandle, float t);
 
-    void                    InitVertexFormats();
-    void                    InitShaders();
-    
-    int                     screenWidth;
-    int                     screenHeight;
+    void                InitVertexFormats();
+    void                InitShaders();
 
-    BE1::Renderer::Handle   streamBuffer;
-    BE1::Renderer::Handle   defaultVertexBuffer;
-    BE1::Renderer::Handle   vertex2DFormat;
-    BE1::Renderer::Handle   vertex3DFormat;
-    BE1::Renderer::Handle   defaultShader;
-    BE1::Renderer::Handle   clipRectShader;
-    BE1::Renderer::Handle   defaultTexture;
-    
-    BE1::Renderer::Handle   renderTargetTexture;
+    int                 screenWidth;
+    int                 screenHeight;
 
-    BE1::Mat4               modelViewProjMatrix;
+    BE1::RHI::Handle    streamBuffer;
+    BE1::RHI::Handle    defaultVertexBuffer;
+    BE1::RHI::Handle    vertex2DFormat;
+    BE1::RHI::Handle    vertex3DFormat;
+    BE1::RHI::Handle    defaultShader;
+    BE1::RHI::Handle    clipRectShader;
+    BE1::RHI::Handle    defaultTexture;
+
+    BE1::RHI::Handle    renderTargetTexture;
+
+    BE1::Mat4           modelViewProjMatrix;
 };
 
-extern Application          app;
+extern Application      app;

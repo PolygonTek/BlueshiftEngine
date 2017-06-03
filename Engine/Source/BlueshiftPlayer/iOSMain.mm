@@ -186,7 +186,7 @@ static IOSDevice GetIOSDeviceType() {
 
 @implementation RootViewController
 
-static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     static int t0 = 0;
     
     if (t0 == 0) {
@@ -362,7 +362,7 @@ static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
     
     [mainWindow makeKeyAndVisible];
 
-    BE1::gameClient.Init((__bridge BE1::Renderer::WindowHandle)mainWindow, true);
+    BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
         
     float retinaScale = [[UIScreen mainScreen] scale];
     int renderWidth = screenBounds.size.width * retinaScale;
@@ -383,7 +383,7 @@ static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
     renderHeight = renderHeight * screenScaleFactor.y;
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-    app.mainRenderContext->Init((__bridge BE1::Renderer::WindowHandle)[rootViewController view],
+    app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[rootViewController view],
                                  renderWidth, renderHeight, DisplayContext, NULL);    
     
     app.Init();

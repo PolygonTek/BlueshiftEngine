@@ -13,12 +13,12 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Renderer/RendererGL.h"
+#include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
 BE_NAMESPACE_BEGIN
 
-Renderer::Handle RendererGL::FenceSync() {
+RHI::Handle OpenGLRHI::FenceSync() {
     GLSync *sync = new GLSync;
 
     int handle = syncList.FindNull();
@@ -32,7 +32,7 @@ Renderer::Handle RendererGL::FenceSync() {
     return (Handle)handle;
 }
 
-void RendererGL::DeleteSync(Handle syncHandle) {
+void OpenGLRHI::DeleteSync(Handle syncHandle) {
     GLSync *sync = syncList[syncHandle];
 
     gglDeleteSync(sync->sync);
@@ -41,7 +41,7 @@ void RendererGL::DeleteSync(Handle syncHandle) {
     syncList[syncHandle] = nullptr;
 }
 
-void RendererGL::WaitSync(Handle syncHandle) {
+void OpenGLRHI::WaitSync(Handle syncHandle) {
     if (syncHandle == NullSync) {
         return;
     }

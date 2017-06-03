@@ -18,34 +18,34 @@
 
 BE_NAMESPACE_BEGIN
 
-void R_CubeMapFaceToAxis(Renderer::CubeMapFace face, Mat3 &axis) {
+void R_CubeMapFaceToAxis(RHI::CubeMapFace face, Mat3 &axis) {
     switch (face) {
-    case Renderer::PositiveX:
+    case RHI::PositiveX:
         axis[0] = Vec3(1, 0, 0);
         axis[1] = Vec3(0, 0, 1);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case Renderer::NegativeX:
+    case RHI::NegativeX:
         axis[0] = Vec3(-1, 0, 0);
         axis[1] = Vec3(0, 0, -1);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case Renderer::PositiveY:
+    case RHI::PositiveY:
         axis[0] = Vec3(0, 1, 0);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, 0, 1);
         break;
-    case Renderer::NegativeY:
+    case RHI::NegativeY:
         axis[0] = Vec3(0, -1, 0);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, 0, -1);
         break;
-    case Renderer::PositiveZ:
+    case RHI::PositiveZ:
         axis[0] = Vec3(0, 0, 1);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case Renderer::NegativeZ:
+    case RHI::NegativeZ:
         axis[0] = Vec3(0, 0, -1);
         axis[1] = Vec3(1, 0, 0);
         axis[2] = Vec3(0, -1, 0);

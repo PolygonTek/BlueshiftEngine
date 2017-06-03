@@ -24,16 +24,16 @@ BE_NAMESPACE_BEGIN
 renderGlobal_t      renderGlobal;
 RenderSystem        renderSystem;
 
-void RenderSystem::Init(const Renderer::Settings *settings) {
+void RenderSystem::Init(const RHI::Settings *settings) {
     cmdSystem.AddCommand(L"screenshot", Cmd_ScreenShot);
 
     // Initialize OpenGL renderer
-    glr.Init(settings);
+    rhi.Init(settings);
 
     // Save current gamma ramp table
-    glr.GetGammaRamp(savedGammaRamp);
+    rhi.GetGammaRamp(savedGammaRamp);
 
-    if ((r_fastSkinning.GetInteger() == 2 || r_fastSkinning.GetInteger() == 3) && glr.HWLimit().maxVertexTextureImageUnits > 0) {
+    if ((r_fastSkinning.GetInteger() == 2 || r_fastSkinning.GetInteger() == 3) && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
         renderGlobal.skinningMethod = Mesh::VtfSkinning;
     } else if (r_fastSkinning.GetInteger() == 1) {
         renderGlobal.skinningMethod = Mesh::VertexShaderSkinning;
@@ -41,9 +41,9 @@ void RenderSystem::Init(const Renderer::Settings *settings) {
         renderGlobal.skinningMethod = Mesh::CpuSkinning;
     }
 
-    if (r_vertexTextureUpdate.GetInteger() == 2 && glr.SupportsTextureBufferObject()) {
+    if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBufferObject()) {
         renderGlobal.vtUpdateMethod = Mesh::TboUpdate;
-    } else if (r_vertexTextureUpdate.GetInteger() == 1 && glr.SupportsPixelBufferObject()) {
+    } else if (r_vertexTextureUpdate.GetInteger() == 1 && rhi.SupportsPixelBufferObject()) {
         renderGlobal.vtUpdateMethod = Mesh::PboUpdate;
     } else {
         renderGlobal.vtUpdateMethod = Mesh::DirectCopyUpdate;
@@ -115,13 +115,13 @@ void RenderSystem::Shutdown() {
 
     textureManager.Shutdown();
 
-    glr.Shutdown();
+    rhi.Shutdown();
 
     initialized = false;
 }
 
 bool RenderSystem::IsFullscreen() const {
-    return glr.IsFullscreen();
+    return rhi.IsFullscreen();
 }
 
 void RenderSystem::SetGamma(double gamma) {
@@ -139,11 +139,11 @@ void RenderSystem::SetGamma(double gamma) {
         ramp[i] = ramp[i + 256] = ramp[i + 512] = (unsigned short)value;
     }
 
-    glr.SetGammaRamp(ramp);
+    rhi.SetGammaRamp(ramp);
 }
 
 void RenderSystem::RestoreGamma() {
-    glr.SetGammaRamp(savedGammaRamp);
+    rhi.SetGammaRamp(savedGammaRamp);
 }
 
 RenderContext *RenderSystem::AllocRenderContext(bool isMainContext) {
@@ -282,7 +282,7 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_swapInterval.IsModified()) {
         r_swapInterval.ClearModified();
 
-        glr.SwapInterval(r_swapInterval.GetInteger());
+        rhi.SwapInterval(r_swapInterval.GetInteger());
     }
 
     if (r_useDeferredLighting.IsModified()) {

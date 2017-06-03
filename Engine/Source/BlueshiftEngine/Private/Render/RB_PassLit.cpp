@@ -221,9 +221,9 @@ static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool s
                 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthHack;
@@ -242,7 +242,7 @@ static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool s
 
     // restore depthHack
     if (prevDepthHack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }	
 }
 
@@ -326,12 +326,12 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
             faceRect.w = vscmFaceWidth;
             faceRect.h = vscmFaceHeight;
 
-            glr.SetViewport(faceRect);
-            glr.SetScissor(faceRect);
+            rhi.SetViewport(faceRect);
+            rhi.SetScissor(faceRect);
 
             if (!backEnd.ctx->vscmCleared[cubeMapFace]) {
-                glr.SetStateBits(Renderer::DepthWrite);
-                glr.Clear(Renderer::DepthBit, Color4::black, 1.0f, 0);
+                rhi.SetStateBits(RHI::DepthWrite);
+                rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
             } else {
                 backEnd.ctx->vscmCleared[cubeMapFace] = false;
             }
@@ -365,11 +365,11 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
         faceRect.w = vscmFaceWidth;
         faceRect.h = vscmFaceHeight;
 
-        glr.SetViewport(faceRect);
-        glr.SetScissor(faceRect);
+        rhi.SetViewport(faceRect);
+        rhi.SetScissor(faceRect);
                 
-        glr.SetStateBits(Renderer::DepthWrite);
-        glr.Clear(Renderer::DepthBit, Color4::black, 1.0f, 0);
+        rhi.SetStateBits(RHI::DepthWrite);
+        rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
 
         backEnd.ctx->vscmRT->End();
 
@@ -400,12 +400,12 @@ static int RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &vie
 
     Mat3 axis;
 
-    Rect prevScissorRect = glr.GetScissor();
+    Rect prevScissorRect = rhi.GetScissor();
     Mat4 prevProjMatrix = backEnd.projMatrix;
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
 
-    for (int i = Renderer::PositiveX; i <= Renderer::NegativeZ; i++) {
-        R_CubeMapFaceToAxis((Renderer::CubeMapFace)i, axis);
+    for (int i = RHI::PositiveX; i <= RHI::NegativeZ; i++) {
+        R_CubeMapFaceToAxis((RHI::CubeMapFace)i, axis);
 
         lightFrustum.SetAxis(axis);
 
@@ -419,19 +419,19 @@ static int RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &vie
         backEnd.shadowMapOffsetFactor = viewLight->def->parms.shadowOffsetFactor;
         backEnd.shadowMapOffsetUnits = viewLight->def->parms.shadowOffsetUnits;
 
-        glr.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
+        rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
         if (RB_ShadowCubeMapFacePass(viewLight, lightViewMatrix, lightFrustum, viewFrustum, true, i)) {
             shadowMapDraw++;
         }
 
-        glr.SetDepthBias(0.0f, 0.0f);
+        rhi.SetDepthBias(0.0f, 0.0f);
     }
 
     backEnd.projMatrix = prevProjMatrix;
 
-    glr.SetScissor(prevScissorRect);
-    glr.SetViewport(backEnd.renderRect);
+    rhi.SetScissor(prevScissorRect);
+    rhi.SetViewport(backEnd.renderRect);
 
     return shadowMapDraw;
 }
@@ -442,22 +442,22 @@ static void RB_ShadowCubeMapAndLitPass(const viewLight_t *viewLight) {
     backEnd.ctx->renderCounter.numShadowMapDraw += RB_ShadowCubeMapPass(viewLight, backEnd.view->def->frustum);
 
     if (r_useLightScissors.GetBool()) {
-        prevScissorRect = glr.GetScissor();
-        glr.SetScissor(viewLight->scissorRect);
+        prevScissorRect = rhi.GetScissor();
+        rhi.SetScissor(viewLight->scissorRect);
     }
 
     if (r_useDepthBoundTest.GetBool()) {
-        glr.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
+        rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
     RB_LitPass(viewLight, false, false);
 
     if (r_useDepthBoundTest.GetBool()) {
-        glr.SetDepthBounds(0.0f, 1.0f);
+        rhi.SetDepthBounds(0.0f, 1.0f);
     }
 
     if (r_useLightScissors.GetBool()) {
-        glr.SetScissor(prevScissorRect);
+        rhi.SetScissor(prevScissorRect);
     }
 }
 
@@ -473,10 +473,10 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
     Mat4                prevProjMatrix;
 
     if (r_CSM_pancaking.GetBool()) {
-        glr.SetDepthClamp(true);
+        rhi.SetDepthClamp(true);
     }
 
-    glr.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
+    rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
     
     for (drawSurfNode_t *shadowCasterSurfNode = viewLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
         const DrawSurf *surf = shadowCasterSurfNode->drawSurf;
@@ -529,12 +529,12 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
 
             backEnd.ctx->shadowMapRT->Begin(0, cascadeIndex);
 
-            glr.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
+            rhi.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
             
-            prevScissorRect = glr.GetScissor();
-            glr.SetScissor(Rect::empty);
-            glr.SetStateBits(Renderer::DepthWrite);
-            glr.Clear(Renderer::DepthBit, Color4::black, 1.0f, 0);
+            prevScissorRect = rhi.GetScissor();
+            rhi.SetScissor(Rect::empty);
+            rhi.SetStateBits(RHI::DepthWrite);
+            rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
 
             prevProjMatrix = backEnd.projMatrix;
             backEnd.projMatrix = backEnd.shadowProjectionMatrix;
@@ -556,31 +556,31 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
         backEnd.ctx->shadowMapRT->End();
 
         backEnd.projMatrix = prevProjMatrix;
-        glr.SetScissor(prevScissorRect);
-        glr.SetViewport(backEnd.renderRect);
+        rhi.SetScissor(prevScissorRect);
+        rhi.SetViewport(backEnd.renderRect);
     } else if (forceClear) {
         firstDraw = false;
 
         backEnd.ctx->shadowMapRT->Begin(0, cascadeIndex);
 
-        glr.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
-        prevScissorRect = glr.GetScissor();
-        glr.SetScissor(Rect::empty);
+        rhi.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
+        prevScissorRect = rhi.GetScissor();
+        rhi.SetScissor(Rect::empty);
         
-        glr.SetStateBits(Renderer::DepthWrite);
-        glr.Clear(Renderer::DepthBit, Color4::black, 1.0f, 0);
+        rhi.SetStateBits(RHI::DepthWrite);
+        rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
 
         backEnd.ctx->shadowMapRT->End();
 
         backEnd.projMatrix = prevProjMatrix;
-        glr.SetScissor(prevScissorRect);
-        glr.SetViewport(backEnd.renderRect);
+        rhi.SetScissor(prevScissorRect);
+        rhi.SetViewport(backEnd.renderRect);
     }
 
-    glr.SetDepthBias(0.0f, 0.0f);
+    rhi.SetDepthBias(0.0f, 0.0f);
 
     if (r_CSM_pancaking.GetBool()) {
-        glr.SetDepthClamp(false);
+        rhi.SetDepthClamp(false);
     }
 
     return !firstDraw;
@@ -631,22 +631,22 @@ static void RB_OrthogonalShadowMapAndLitPass(const viewLight_t *viewLight) {
 
     Rect prevScissorRect;
     if (r_useLightScissors.GetBool()) {
-        prevScissorRect = glr.GetScissor();
-        glr.SetScissor(viewLight->scissorRect);
+        prevScissorRect = rhi.GetScissor();
+        rhi.SetScissor(viewLight->scissorRect);
     }
 
     if (r_useDepthBoundTest.GetBool()) {
-        glr.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
+        rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
     RB_LitPass(viewLight, false, false);
 
     if (r_useDepthBoundTest.GetBool()) {
-        glr.SetDepthBounds(0.0f, 1.0f);
+        rhi.SetDepthBounds(0.0f, 1.0f);
     }
 
     if (r_useLightScissors.GetBool()) {
-        glr.SetScissor(prevScissorRect);
+        rhi.SetScissor(prevScissorRect);
     }
 }
 
@@ -700,22 +700,22 @@ static void RB_ProjectedShadowMapAndLitPass(const viewLight_t *viewLight) {
 
     Rect prevScissorRect;
     if (r_useLightScissors.GetBool()) {
-        prevScissorRect = glr.GetScissor();
-        glr.SetScissor(viewLight->scissorRect);
+        prevScissorRect = rhi.GetScissor();
+        rhi.SetScissor(viewLight->scissorRect);
     }
 
     if (r_useDepthBoundTest.GetBool()) {
-        glr.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
+        rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
     RB_LitPass(viewLight, false, false);
 
     if (r_useDepthBoundTest.GetBool()) {
-        glr.SetDepthBounds(0.0f, 1.0f);
+        rhi.SetDepthBounds(0.0f, 1.0f);
     }
 
     if (r_useLightScissors.GetBool()) {
-        glr.SetScissor(prevScissorRect);
+        rhi.SetScissor(prevScissorRect);
     }
 }
 
@@ -814,22 +814,22 @@ static void RB_CascadedShadowMapAndLitPass(const viewLight_t *viewLight) {
 
     Rect prevScissorRect;
     if (r_useLightScissors.GetBool()) {
-        prevScissorRect = glr.GetScissor();
-        glr.SetScissor(viewLight->scissorRect);
+        prevScissorRect = rhi.GetScissor();
+        rhi.SetScissor(viewLight->scissorRect);
     }
 
     if (r_useDepthBoundTest.GetBool()) {
-        glr.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
+        rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
     RB_LitPass(viewLight, false, false);
 
     if (r_useDepthBoundTest.GetBool()) {
-        glr.SetDepthBounds(0.0f, 1.0f);
+        rhi.SetDepthBounds(0.0f, 1.0f);
     }
 
     if (r_useLightScissors.GetBool()) {
-        glr.SetScissor(prevScissorRect);
+        rhi.SetScissor(prevScissorRect);
     }
 }
 
@@ -966,22 +966,22 @@ void RB_AllShadowAndLitPass(viewLight_t *viewLights) {
             RB_ShadowMapAndLitPass(viewLight);
         } else {
             if (r_useLightScissors.GetBool()) {
-                prevScissorRect = glr.GetScissor();
-                glr.SetScissor(viewLight->scissorRect);
+                prevScissorRect = rhi.GetScissor();
+                rhi.SetScissor(viewLight->scissorRect);
             }
 
             if (r_useDepthBoundTest.GetBool()) {
-                glr.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
+                rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
             }
 
             RB_LitPass(viewLight, false, false);
 
             if (r_useDepthBoundTest.GetBool()) {
-                glr.SetDepthBounds(0.0f, 1.0f);
+                rhi.SetDepthBounds(0.0f, 1.0f);
             }
 
             if (r_useLightScissors.GetBool()) {
-                glr.SetScissor(prevScissorRect);
+                rhi.SetScissor(prevScissorRect);
             }
         }
     }

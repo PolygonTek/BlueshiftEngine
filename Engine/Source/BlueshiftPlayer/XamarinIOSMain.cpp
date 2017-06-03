@@ -20,7 +20,7 @@ EGLUtil mEgl;
 
 bool	Initialized;
 
-static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     static int t0 = 0;
     
     if (t0 == 0) {
@@ -79,7 +79,7 @@ extern "C" void XamarinInit_(int w, int h, int windowWidth, int windowHeight)
         
         //[mainWindow makeKeyAndVisible];
         
-        //BE1::gameClient.Init((__bridge BE1::Renderer::WindowHandle)mainWindow, true);
+        //BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
         BE1::gameClient.Init(0 /*&mEgl*/, true);
         
         //float retinaScale = [[UIScreen mainScreen] scale];
@@ -89,7 +89,7 @@ extern "C" void XamarinInit_(int w, int h, int windowWidth, int windowHeight)
         
         //app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
         app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-        //app.mainRenderContext->Init((__bridge BE1::Renderer::WindowHandle)[rootViewController view],
+        //app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[rootViewController view],
         //	renderWidth, renderHeight, DisplayContext, NULL);
         {
             //int w = mEgl.getWidth();
@@ -129,7 +129,7 @@ extern "C" void XamarinDeinit_()
 
 extern "C" void XamarinRender_()
 {
-    DisplayContext(BE1::Renderer::NullContext, 0);
+    DisplayContext(BE1::RHI::NullContext, 0);
 }
 
 extern "C" void XamarinTouchesBegan_(uint64_t touchId, int x, int y)

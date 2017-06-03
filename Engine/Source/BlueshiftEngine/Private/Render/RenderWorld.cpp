@@ -369,7 +369,7 @@ void RenderWorld::ClearDebugPrimitives(int time) {
 
 void RenderWorld::DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth, bool depthTest, int lifeTime) {
     if (lineWidth > 0 && debugLineColor[3] > 0) {
-        Vec3 *v = RB_ReserveDebugPrimsVerts(Renderer::LinesPrim, 2, debugLineColor, lineWidth, false, depthTest, lifeTime);
+        Vec3 *v = RB_ReserveDebugPrimsVerts(RHI::LinesPrim, 2, debugLineColor, lineWidth, false, depthTest, lifeTime);
         if (v) {
             v[0] = start;
             v[1] = end;
@@ -379,7 +379,7 @@ void RenderWorld::DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth,
 
 void RenderWorld::DebugTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
     if (debugFillColor[3] > 0) {
-        Vec3 *v = RB_ReserveDebugPrimsVerts(Renderer::TrianglesPrim, 3, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *v = RB_ReserveDebugPrimsVerts(RHI::TrianglesPrim, 3, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (v) {
             v[0] = a;
             v[1] = b;
@@ -405,7 +405,7 @@ void RenderWorld::DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &u
     v[3] = origin + sr + su;
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fv = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, 4, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fv = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, 4, debugFillColor, 0, twoSided, depthTest, lifeTime);
         fv[0] = v[0];
         fv[1] = v[1];
         fv[2] = v[2];
@@ -429,7 +429,7 @@ void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float r
     up *= radius;
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = origin;
 
         for (int i = 0; i <= numSteps; i++) {
@@ -466,7 +466,7 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
     Vec3 ry = radius * up;
 
     if (drawSector && debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = origin;
 
         for (int i = 0; i <= numSteps; i++) {
@@ -503,7 +503,7 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
     Vec3 ry = up * radius2;
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = origin;
 
         for (int i = 0; i <= numSteps; i++) {
@@ -532,7 +532,7 @@ void RenderWorld::DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float ra
     Vec3 *lastArray = (Vec3 *)_alloca16(num * sizeof(Vec3));
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, (num + 1) * 2 * (num / 4), debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (num + 1) * 2 * (num / 4), debugFillColor, 0, twoSided, depthTest, lifeTime);
 
         lastArray[0] = origin + axis[2] * radius;
         for (int n = 1; n < num; n++) {
@@ -601,7 +601,7 @@ void RenderWorld::DebugSphere(const Vec3 &origin, const Mat3 &axis, float radius
     Vec3 *lastArray = (Vec3 *)_alloca16(num * sizeof(Vec3));
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, (num + 1) * 2 * (num / 2), debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (num + 1) * 2 * (num / 2), debugFillColor, 0, twoSided, depthTest, lifeTime);
 
         lastArray[0] = origin + axis[2] * radius;
         for (int n = 1; n < num; n++) {
@@ -678,7 +678,7 @@ void RenderWorld::DebugAABB(const AABB &aabb, float lineWidth, bool twoSided, bo
     }*/
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = v[7];
         *fvptr++ = v[4];
         *fvptr++ = v[6];
@@ -713,7 +713,7 @@ void RenderWorld::DebugOBB(const OBB &obb, float lineWidth, bool depthTest, bool
     obb.ToPoints(v);
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = v[7];
         *fvptr++ = v[4];
         *fvptr++ = v[6];
@@ -748,7 +748,7 @@ void RenderWorld::DebugFrustum(const Frustum &frustum, const bool showFromOrigin
     frustum.ToPoints(v);
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, 24, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 24, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = v[7];
         *fvptr++ = v[4];
         *fvptr++ = v[6];
@@ -799,7 +799,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
 
     if (radius1 == 0.0f) {
         if (debugFillColor[3] > 0) {
-            fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+            fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
             *fvptr++ = apex;
 
             for (int i = 0; i <= 360; i += 15) {
@@ -808,7 +808,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
             }
 
             if (drawCap) {
-                fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
+                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
                 *fvptr++ = origin;
 
                 for (int i = 0; i <= 360; i += 15) {
@@ -833,7 +833,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
         Vec3 lastp1 = apex + radius1 * axis[0];
 
         if (debugFillColor[3] > 0) {
-            fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, (360 / 15) * 2 + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+            fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (360 / 15) * 2 + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
             *fvptr++ = lastp1;
             *fvptr++ = lastp2;
 
@@ -844,7 +844,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
             }
 
             if (drawCap) {
-                fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
+                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
                 *fvptr++ = apex;
 
                 for (int i = 0; i <= 360; i += 15) {
@@ -852,7 +852,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                     *fvptr++ = apex + d * radius1;
                 }
 
-                fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
+                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
                 *fvptr++ = origin;			
 
                 for (int i = 0; i <= 360; i += 15) {

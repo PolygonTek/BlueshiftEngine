@@ -26,35 +26,35 @@ BackEnd	backEnd;
 
 static void RB_InitStencilStates() {
     backEnd.stencilStates[BackEnd::VolumeIntersectionZPass] = 
-        glr.CreateStencilState(~0, ~0, 
-        Renderer::AlwaysFunc, Renderer::KeepOp, Renderer::KeepOp, Renderer::DecrWrapOp, 
-        Renderer::AlwaysFunc, Renderer::KeepOp, Renderer::KeepOp, Renderer::IncrWrapOp);
+        rhi.CreateStencilState(~0, ~0, 
+        RHI::AlwaysFunc, RHI::KeepOp, RHI::KeepOp, RHI::DecrWrapOp, 
+        RHI::AlwaysFunc, RHI::KeepOp, RHI::KeepOp, RHI::IncrWrapOp);
 
     backEnd.stencilStates[BackEnd::VolumeIntersectionZFail] = 
-        glr.CreateStencilState(~0, ~0, 
-        Renderer::AlwaysFunc, Renderer::KeepOp, Renderer::IncrWrapOp, Renderer::KeepOp, 
-        Renderer::AlwaysFunc, Renderer::KeepOp, Renderer::DecrWrapOp, Renderer::KeepOp);
+        rhi.CreateStencilState(~0, ~0, 
+        RHI::AlwaysFunc, RHI::KeepOp, RHI::IncrWrapOp, RHI::KeepOp, 
+        RHI::AlwaysFunc, RHI::KeepOp, RHI::DecrWrapOp, RHI::KeepOp);
 
     backEnd.stencilStates[BackEnd::VolumeIntersectionInsideZFail] = 
-        glr.CreateStencilState(~0, ~0, 
-        Renderer::AlwaysFunc, Renderer::KeepOp, Renderer::IncrWrapOp, Renderer::KeepOp, 
-        Renderer::NeverFunc, Renderer::KeepOp, Renderer::KeepOp, Renderer::KeepOp);
+        rhi.CreateStencilState(~0, ~0, 
+        RHI::AlwaysFunc, RHI::KeepOp, RHI::IncrWrapOp, RHI::KeepOp, 
+        RHI::NeverFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp);
 
     backEnd.stencilStates[BackEnd::VolumeIntersectionTest] = 
-        glr.CreateStencilState(~0, 0, 
-        Renderer::EqualFunc, Renderer::KeepOp, Renderer::KeepOp, Renderer::KeepOp, 
-        Renderer::NeverFunc, Renderer::KeepOp, Renderer::KeepOp, Renderer::KeepOp);
+        rhi.CreateStencilState(~0, 0, 
+        RHI::EqualFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp, 
+        RHI::NeverFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp);
 }
 
 static void RB_FreeStencilStates() {
     for (int i = 0; i < BackEnd::MaxPredefinedStencilStates; i++) {
-        glr.DeleteStencilState(backEnd.stencilStates[i]);
+        rhi.DeleteStencilState(backEnd.stencilStates[i]);
     }
 }
 
 static void RB_InitLightQueries() {
     /*for (int i = 0; i < MAX_LIGHTS; i++) {
-        backEnd.lightQueries[i].queryHandle = glr.CreateQuery();
+        backEnd.lightQueries[i].queryHandle = rhi.CreateQuery();
         backEnd.lightQueries[i].light = nullptr;
         backEnd.lightQueries[i].frameCount = 0;
         backEnd.lightQueries[i].resultSamples = 0;
@@ -63,7 +63,7 @@ static void RB_InitLightQueries() {
 
 static void RB_FreeLightQueries() {
     /*for (int i = 0; i < MAX_LIGHTS; i++) {
-        glr.DeleteQuery(backEnd.lightQueries[i].queryHandle);
+        rhi.DeleteQuery(backEnd.lightQueries[i].queryHandle);
     }*/
 }
 
@@ -85,7 +85,7 @@ void RB_Init() {
     if (r_HOM.GetBool()) {
         // TODO: create one for each context
         backEnd.homCullingOutputTexture = textureManager.AllocTexture("_homCullingOutput");
-        backEnd.homCullingOutputTexture->CreateEmpty(Renderer::Texture2D, HOM_CULL_TEXTURE_WIDTH, HOM_CULL_TEXTURE_HEIGHT, 1, 1,
+        backEnd.homCullingOutputTexture->CreateEmpty(RHI::Texture2D, HOM_CULL_TEXTURE_WIDTH, HOM_CULL_TEXTURE_HEIGHT, 1, 1,
             Image::RGBA_8_8_8_8, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
         backEnd.homCullingOutputRT = RenderTarget::Create(backEnd.homCullingOutputTexture, nullptr, 0);
     }
@@ -137,19 +137,19 @@ void RB_DrawLightVolume(const SceneLight *light) {
 }
 
 static void RB_DrawStencilLightVolume(const viewLight_t *light, bool insideLightVolume) {
-    glr.SetStateBits(Renderer::DF_LEqual);
+    rhi.SetStateBits(RHI::DF_LEqual);
 
     if (insideLightVolume) {
-        glr.SetCullFace(Renderer::NoCull);
-        glr.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionInsideZFail], 0);
+        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionInsideZFail], 0);
     } else {
-        glr.SetCullFace(Renderer::NoCull);
-        glr.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionZPass], 0);		
+        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionZPass], 0);		
     }
 
     RB_DrawLightVolume(light->def);
 
-    glr.SetStencilState(Renderer::NullStencilState, 0);
+    rhi.SetStencilState(RHI::NullStencilState, 0);
 }
 
 // NOTE: ambient pass 이후에 실행되므로 화면에 깊이값은 채워져있다
@@ -161,7 +161,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
     int     numVisLights = 0;
 
     if (r_useLightScissors.GetBool()) {
-        prevScissorRect = glr.GetScissor();
+        prevScissorRect = rhi.GetScissor();
     }	
 
     for (int i = 0; i < numLights; i++) {
@@ -175,7 +175,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
         // light 가 query 중이었다면..
         if (lightQuery->light) {
             // 아직 query result 를 사용할 수 없고, query wait frame 한도를 넘지 않았다면..
-            if (!glr.QueryResultAvailable(lightQuery->queryHandle) && renderConfig.frameCount - lightQuery->frameCount < r_queryWaitFrames.GetInteger()) {
+            if (!rhi.QueryResultAvailable(lightQuery->queryHandle) && renderConfig.frameCount - lightQuery->frameCount < r_queryWaitFrames.GetInteger()) {
                 // 이전 result sample 로 visibility 를 판단한다
                 if (lightQuery->resultSamples >= 10) {
                     light->occlusionVisible = true;
@@ -189,7 +189,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
             }
 
             // query result 를 가져온다. unavailable 일 경우 blocking 상태가 된다.
-            lightQuery->resultSamples = glr.QueryResult(lightQuery->queryHandle);
+            lightQuery->resultSamples = rhi.QueryResult(lightQuery->queryHandle);
             numQueryResult++;
         } else {
             lightQuery->light = light;
@@ -203,10 +203,10 @@ static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
         
         lightQuery->frameCount = renderConfig.frameCount;
 
-        glr.Clear(ClearStencil, Vec4::zero, 0.0f, 0);
+        rhi.Clear(ClearStencil, Vec4::zero, 0.0f, 0);
 
         if (r_useLightScissors.GetBool()) {
-            glr.SetScissor(light->scissorRect);
+            rhi.SetScissor(light->scissorRect);
         }
 
         // 카메라가 light volume 안에 있는지 체크
@@ -229,19 +229,19 @@ static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
         
         RB_DrawStencilLightVolume(light, insideLightVolume);
 
-        glr.SetStateBits(0);
-        glr.SetCullFace(BackCull);
-        glr.SetStencilState(backEnd.stencilStates[VolumeIntersectionTest], 1);
+        rhi.SetStateBits(0);
+        rhi.SetCullFace(BackCull);
+        rhi.SetStencilState(backEnd.stencilStates[VolumeIntersectionTest], 1);
                 
-        glr.BeginQuery(lightQuery->queryHandle);
+        rhi.BeginQuery(lightQuery->queryHandle);
         RB_DrawLightVolume(light->def);
-        glr.EndQuery();
+        rhi.EndQuery();
     }
 
-    glr.SetStencilState(NullStencilState, 0);
+    rhi.SetStencilState(NullStencilState, 0);
 
     if (r_useLightScissors.GetBool()) {
-        glr.SetScissor(prevScissorRect);
+        rhi.SetScissor(prevScissorRect);
     }
 
     if (r_showLights.GetInteger() > 0) {
@@ -250,22 +250,22 @@ static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
 }
 
 static void RB_RenderOcclusionMap(int numDrawSurfs, DrawSurf **drawSurfs) {
-    Rect prevViewportRect = glr.GetViewport();
+    Rect prevViewportRect = rhi.GetViewport();
 
     backEnd.ctx->homRT->Begin();
     backEnd.ctx->homRT->Clear(Color4::red, 1.0f, 0);
-    glr.SetViewport(Rect(0, 0, backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight()));
+    rhi.SetViewport(Rect(0, 0, backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight()));
 
     RB_OccluderPass(numDrawSurfs, drawSurfs);
 
     backEnd.ctx->homRT->End();
-    glr.SetViewport(prevViewportRect);
+    rhi.SetViewport(prevViewportRect);
 }
 
 static void RB_GenerateOcclusionMapHierarchy() {
     int startTime = PlatformTime::Milliseconds();
 
-    Rect prevViewportRect = glr.GetViewport();
+    Rect prevViewportRect = rhi.GetViewport();
 
     int w = backEnd.ctx->homRT->GetWidth();
     int h = backEnd.ctx->homRT->GetHeight();
@@ -290,13 +290,13 @@ static void RB_GenerateOcclusionMapHierarchy() {
         h = h == 0 ? 1 : h;
 
         backEnd.ctx->homTexture->Bind();
-        glr.SetTextureLevel(lastMipLevel, lastMipLevel);
+        rhi.SetTextureLevel(lastMipLevel, lastMipLevel);
 
         backEnd.ctx->homRT->Begin(i);
 
-        glr.SetViewport(Rect(0, 0, w, h));
-        glr.SetStateBits(Renderer::DepthWrite | Renderer::DF_Always);
-        glr.SetCullFace(Renderer::NoCull);
+        rhi.SetViewport(Rect(0, 0, w, h));
+        rhi.SetStateBits(RHI::DepthWrite | RHI::DF_Always);
+        rhi.SetCullFace(RHI::NoCull);
 
         shader->SetTexture("lastMip", backEnd.ctx->homTexture);
         shader->SetConstant2f("texelSize", texelSize);
@@ -307,9 +307,9 @@ static void RB_GenerateOcclusionMapHierarchy() {
     }
 
     backEnd.ctx->homTexture->Bind();
-    glr.SetTextureLevel(0, numLevels);
+    rhi.SetTextureLevel(0, numLevels);
 
-    glr.SetViewport(prevViewportRect);
+    rhi.SetViewport(prevViewportRect);
 
     backEnd.ctx->renderCounter.homGenMsec = PlatformTime::Milliseconds() - startTime;
 }
@@ -340,7 +340,7 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
         }
     }
 
-    Rect prevViewportRect = glr.GetViewport();
+    Rect prevViewportRect = rhi.GetViewport();
 
     // Query HOM culling for each occludees
     backEnd.homCullingOutputRT->Begin();
@@ -355,20 +355,20 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
     int maxLevel = Math::Log(2, size) - 1;
     shader->SetConstant1i("maxLevel", maxLevel);
 
-    glr.SetViewport(Rect(0, 0, backEnd.homCullingOutputRT->GetWidth(), backEnd.homCullingOutputRT->GetHeight()));
-    glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
-    glr.SetCullFace(Renderer::NoCull);
+    rhi.SetViewport(Rect(0, 0, backEnd.homCullingOutputRT->GetWidth(), backEnd.homCullingOutputRT->GetHeight()));
+    rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
+    rhi.SetCullFace(RHI::NoCull);
 
-    glr.BindBuffer(Renderer::VertexBuffer, bufferCacheManager.streamVertexBuffer);
-    glr.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, numAmbientOccludees * sizeof(occludeeBuffer[0]), occludeeBuffer);
+    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, numAmbientOccludees * sizeof(occludeeBuffer[0]), occludeeBuffer);
 
-    glr.SetVertexFormat(vertexFormats[VertexFormat::Occludee].vertexFormatHandle);
-    glr.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(occludeeBuffer[0]));
-    glr.DrawArrays(Renderer::PointsPrim, 0, numAmbientOccludees);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Occludee].vertexFormatHandle);
+    rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(occludeeBuffer[0]));
+    rhi.DrawArrays(RHI::PointsPrim, 0, numAmbientOccludees);
 
     backEnd.homCullingOutputRT->End();
 
-    glr.SetViewport(prevViewportRect);
+    rhi.SetViewport(prevViewportRect);
 
     backEnd.ctx->renderCounter.homQueryMsec = PlatformTime::Milliseconds() - startTime;
 }
@@ -464,16 +464,16 @@ static void RB_ClearView() {
     int clearBits = 0;
     
     if (backEnd.view->def->parms.clearMethod == SceneView::DepthOnlyClear) {
-        clearBits = Renderer::DepthBit | Renderer::StencilBit;
+        clearBits = RHI::DepthBit | RHI::StencilBit;
 
-        glr.SetStateBits(glr.GetStateBits() | Renderer::DepthWrite);
-        glr.Clear(clearBits, Color4::black, 1.0f, 0);
+        rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);
+        rhi.Clear(clearBits, Color4::black, 1.0f, 0);
     } else if (backEnd.view->def->parms.clearMethod == SceneView::ColorClear) {
-        clearBits = Renderer::DepthBit | Renderer::StencilBit | Renderer::ColorBit;
+        clearBits = RHI::DepthBit | RHI::StencilBit | RHI::ColorBit;
         Color4 clearColor = backEnd.view->def->parms.clearColor;
 
-        glr.SetStateBits(glr.GetStateBits() | Renderer::DepthWrite | Renderer::ColorWrite | Renderer::AlphaWrite);
-        glr.Clear(clearBits, clearColor, 1.0f, 0);
+        rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
+        rhi.Clear(clearBits, clearColor, 1.0f, 0);
     }
 }
 
@@ -491,11 +491,11 @@ static void RB_DrawView() {
         renderRect.w = backEnd.renderRect.w * scaleX;
         renderRect.h = backEnd.renderRect.h * scaleY;
 
-        glr.SetViewport(renderRect);
-        glr.SetScissor(renderRect);
-        glr.SetDepthRange(0, 1);
-        glr.SetStateBits(Renderer::DepthWrite | Renderer::ColorWrite | Renderer::AlphaWrite);
-        glr.Clear(Renderer::ColorBit | Renderer::DepthBit, Color4::white, 1.0f, 0);
+        rhi.SetViewport(renderRect);
+        rhi.SetScissor(renderRect);
+        rhi.SetDepthRange(0, 1);
+        rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
+        rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4::white, 1.0f, 0);
 
         RB_SelectionPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
 
@@ -504,9 +504,9 @@ static void RB_DrawView() {
 
     backEnd.ctx->screenRT->Begin();
 
-    glr.SetViewport(backEnd.renderRect);
-    glr.SetScissor(backEnd.renderRect);
-    glr.SetDepthRange(0, 1);
+    rhi.SetViewport(backEnd.renderRect);
+    rhi.SetScissor(backEnd.renderRect);
+    rhi.SetDepthRange(0, 1);
 
     RB_ClearView();
 
@@ -582,14 +582,14 @@ static void RB_DrawView() {
     upscaleRect.w = Math::Rint(upscaleRect.w * backEnd.upscaleFactor.x);
     upscaleRect.h = Math::Rint(upscaleRect.h * backEnd.upscaleFactor.y);
 
-    glr.SetViewport(upscaleRect);
-    glr.SetScissor(upscaleRect);
+    rhi.SetViewport(upscaleRect);
+    rhi.SetScissor(upscaleRect);
 
     if (!(backEnd.view->def->parms.flags & SceneView::SkipPostProcess) && r_usePostProcessing.GetBool()) {
         RB_PostProcess();
     } else {
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
-        glr.SetCullFace(Renderer::NoCull);
+        rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
+        rhi.SetCullFace(RHI::NoCull);
 
         const Shader *shader = ShaderManager::postPassThruShader;
 
@@ -607,7 +607,7 @@ static void RB_DrawView() {
 
     backEnd.viewMatrixPrev = backEnd.view->def->viewMatrix;
 
-    glr.SetScissor(Rect::empty);
+    rhi.SetScissor(Rect::empty);
 }
 
 static void RB_Draw2DView() {
@@ -615,13 +615,13 @@ static void RB_Draw2DView() {
         return;
     }
     
-    glr.SetViewport(backEnd.screenRect);
-    glr.SetScissor(backEnd.screenRect);
-    glr.SetDepthRange(0, 0);
+    rhi.SetViewport(backEnd.screenRect);
+    rhi.SetScissor(backEnd.screenRect);
+    rhi.SetDepthRange(0, 0);
     
     RB_GuiPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
 
-    glr.SetScissor(Rect::empty);
+    rhi.SetScissor(Rect::empty);
 }
 
 static const void *RB_ExecuteDrawView(const void *data) {
@@ -662,13 +662,13 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     
     Image screenImage;
     screenImage.Create2D(cmd->width, cmd->height, 1, Image::BGR_8_8_8, nullptr, Image::SRGBFlag);
-    glr.ReadPixels(cmd->x, cmd->y, cmd->width, cmd->height, Image::BGR_8_8_8, screenImage.GetPixels());
+    rhi.ReadPixels(cmd->x, cmd->y, cmd->width, cmd->height, Image::BGR_8_8_8, screenImage.GetPixels());
     screenImage.FlipY();
 
     // apply gamma ramp table
     if (r_gamma.GetBool() != 1.0f) {
         unsigned short ramp[768];
-        glr.GetGammaRamp(ramp);
+        rhi.GetGammaRamp(ramp);
         screenImage.GammaCorrectRGB888(ramp);
     }
 
@@ -722,7 +722,7 @@ void RB_DrawDebugTextures() {
     int x = 0;
     int y = 0;
 
-    glr.SetStateBits(Renderer::ColorWrite | Renderer::BS_SrcAlpha | Renderer::BD_OneMinusSrcAlpha);	
+    rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);	
     
     for (int i = start; i < end; i++) {
         const auto *entry = textureManager.textureHashMap.GetByIndex(i);
@@ -732,7 +732,7 @@ void RB_DrawDebugTextures() {
             continue;
         }
 
-        if (texture->GetType() == Renderer::TextureBuffer || texture->GetType() == Renderer::Texture2DArray) {
+        if (texture->GetType() == RHI::TextureBuffer || texture->GetType() == RHI::Texture2DArray) {
             // do nothing
         } else {
             const Shader *shader = ShaderManager::postPassThruShader;
@@ -742,17 +742,17 @@ void RB_DrawDebugTextures() {
 
             if (texture->GetFlags() & Texture::Shadow) {
                 texture->Bind();
-                glr.SetTextureShadowFunc(false);
+                rhi.SetTextureShadowFunc(false);
             }
 
-            if (texture->GetType() == Renderer::TextureRectangle) {
+            if (texture->GetType() == RHI::TextureRectangle) {
                 RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, texture->GetWidth(), texture->GetHeight());
             } else {
                 RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
             }
 
             if (texture->GetFlags() & Texture::Shadow) {
-                glr.SetTextureShadowFunc(true);
+                rhi.SetTextureShadowFunc(true);
             }
         }
 
@@ -770,7 +770,7 @@ void RB_DrawDebugTextures() {
 }
 
 static void RB_DrawDebugShadowMap() {
-    glr.SetStateBits(Renderer::ColorWrite);
+    rhi.SetStateBits(RHI::ColorWrite);
 
     if (r_showShadows.GetInteger() == 1) {
         float w = 100.0f;
@@ -785,7 +785,7 @@ static void RB_DrawDebugShadowMap() {
         const Texture *shadowTexture = backEnd.ctx->shadowMapRT->DepthStencilTexture();
 
         shadowTexture->Bind();
-        glr.SetTextureShadowFunc(false);
+        rhi.SetTextureShadowFunc(false);
 
         const Shader *shader = ShaderManager::drawArrayTextureShader;
 
@@ -797,7 +797,7 @@ static void RB_DrawDebugShadowMap() {
             x += w + space;
         }
 
-        glr.SetTextureShadowFunc(true);
+        rhi.SetTextureShadowFunc(true);
 
         x = space;
         y += h + space;
@@ -814,7 +814,7 @@ static void RB_DrawDebugShadowMap() {
         const Texture *shadowTexture = backEnd.ctx->vscmRT->DepthStencilTexture();
 
         shadowTexture->Bind();
-        glr.SetTextureShadowFunc(false);
+        rhi.SetTextureShadowFunc(false);
 
         const Shader *shader = ShaderManager::postPassThruShader;
         
@@ -823,7 +823,7 @@ static void RB_DrawDebugShadowMap() {
 
         RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
 
-        glr.SetTextureShadowFunc(true);
+        rhi.SetTextureShadowFunc(true);
 
         x += w + space;
 
@@ -851,7 +851,7 @@ void RB_DrawRenderTargetTexture() {
         h = backEnd.ctx->GetDeviceHeight() / 4;
     }
 
-    glr.SetStateBits(Renderer::ColorWrite);
+    rhi.SetStateBits(RHI::ColorWrite);
     
     int index = r_showRenderTarget.GetInteger() - 1;
     if (index < RenderTarget::rts.Count()) {
@@ -876,7 +876,7 @@ void RB_DrawDebugHdrMap() {
     float w = 100.0f;
     float h = 100.0f;
 
-    glr.SetStateBits(Renderer::ColorWrite);
+    rhi.SetStateBits(RHI::ColorWrite);
 
     const Shader *shader = ShaderManager::postPassThruShader;
 
@@ -934,11 +934,11 @@ static void RB_DrawDebugHOMap() {
     float size = Max(backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight());
     int numLevels = Math::Log(2, size);
 
-    glr.SetStateBits(Renderer::ColorWrite);
+    rhi.SetStateBits(RHI::ColorWrite);
 
     for (int i = 0; i < numLevels; i++) {
         backEnd.ctx->homRT->DepthStencilTexture()->Bind();
-        glr.SetTextureLevel(i, i);
+        rhi.SetTextureLevel(i, i);
 
         const Shader *shader = ShaderManager::postPassThruShader;
         
@@ -952,7 +952,7 @@ static void RB_DrawDebugHOMap() {
     }
 
     backEnd.ctx->homRT->DepthStencilTexture()->Bind();
-    glr.SetTextureLevel(0, numLevels);
+    rhi.SetTextureLevel(0, numLevels);
 }
 
 static const void *RB_ExecuteSwapBuffers(const void *data) {
@@ -963,10 +963,10 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
 
     backEnd.rbsurf.EndFrame();    
 
-    glr.SetViewport(backEnd.screenRect);
-    glr.SetScissor(backEnd.screenRect);
-    glr.SetDepthRange(0, 0);
-    glr.SetCullFace(Renderer::NoCull);
+    rhi.SetViewport(backEnd.screenRect);
+    rhi.SetScissor(backEnd.screenRect);
+    rhi.SetDepthRange(0, 0);
+    rhi.SetCullFace(RHI::NoCull);
 
     if (r_showTextures.GetInteger() > 0) {
         RB_DrawDebugTextures();
@@ -988,7 +988,7 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
         RB_DrawDebugHOMap();
     }
 
-    glr.SwapBuffers();
+    rhi.SwapBuffers();
     
     return (const void *)(cmd + 1);
 }

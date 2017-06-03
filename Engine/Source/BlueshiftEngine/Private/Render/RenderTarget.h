@@ -52,7 +52,7 @@ public:
 private:
     friend void             RB_DrawRenderTargetTexture();
 
-    Renderer::Handle        rtHandle;
+    RHI::Handle             rtHandle;
     const Texture *         colorTextures[MaxMultipleColorTextures];
     const Texture *         depthStencilTexture;
     int                     flags;

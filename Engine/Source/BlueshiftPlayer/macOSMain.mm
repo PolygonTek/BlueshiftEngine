@@ -409,7 +409,7 @@ static const struct {
     [window close];
 }
 
-static void DisplayContext(BE1::Renderer::Handle contextHandle, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     app.Draw();
 }
 
@@ -440,10 +440,10 @@ static void DisplayContext(BE1::Renderer::Handle contextHandle, void *dataPtr) {
     
     mainWindow = [self createGLWindow:NSMakeSize(1280, 720) title:nstitle];
 
-    BE1::gameClient.Init((__bridge BE1::Renderer::WindowHandle)mainWindow, true);
+    BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-    app.mainRenderContext->Init((__bridge BE1::Renderer::WindowHandle)[mainWindow contentView], 1280, 720, DisplayContext, NULL);
+    app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[mainWindow contentView], 1280, 720, DisplayContext, NULL);
     
     [mainWindow makeKeyAndOrderFront:nil];
     
