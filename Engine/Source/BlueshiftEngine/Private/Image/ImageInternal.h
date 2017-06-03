@@ -42,7 +42,10 @@ void DecompressDXN2(const Image &srcImage, Image &dstImage);
 
 void DecompressPVRTC(const Image &srcImage, Image &dstImage, int do2BitMode);
 
-void DecompressETC(const Image &srcImage, Image &dstImage, int nMode);
+void DecompressETC1(const Image &srcImage, Image &dstImage);
+void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage);
+void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage);
+void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage);
 
 void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
 void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);

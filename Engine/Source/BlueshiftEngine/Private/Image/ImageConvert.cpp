@@ -53,12 +53,16 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
         DecompressPVRTC(srcImage, dstImage, 0);
         break;
     case Image::RGB_8_ETC1:
-        DecompressETC(srcImage, dstImage, 0);
+        DecompressETC1(srcImage, dstImage);
         break;
     case Image::RGB_8_ETC2:
+        DecompressETC2_RGB8(srcImage, dstImage);
+        break;
     case Image::RGBA_8_8_ETC2:
+        DecompressETC2_RGBA8(srcImage, dstImage);
+        break;
     case Image::RGBA_8_1_ETC2:
-        DecompressETC(srcImage, dstImage, 1);
+        DecompressETC2_RGB8A1(srcImage, dstImage);
         break;
     default:
         BE_WARNLOG(L"DecompressImage: unsupported format %hs\n", srcImage.FormatName());
