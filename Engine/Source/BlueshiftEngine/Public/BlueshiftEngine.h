@@ -90,12 +90,10 @@
 // SIMD
 #include "Simd/Simd.h"
 
-// DXT encoder/decoder
-#include "Dxt/DxtEncoder.h"
-#include "Dxt/DxtDecoder.h"
-
 // Image
 #include "Image/Image.h"
+#include "Image/DxtEncoder.h"
+#include "Image/DxtDecoder.h"
 
 // Sound
 #include "Sound/Pcm.h"

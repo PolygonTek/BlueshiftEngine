@@ -17,8 +17,8 @@
 #include "Core/Heap.h"
 #include "Math/Math.h"
 #include "Image/Image.h"
-#include "Dxt/DxtDecoder.h"
-#include "Dxt/DxtEncoder.h"
+#include "Image/DxtDecoder.h"
+#include "Image/DxtEncoder.h"
 #include "ImageInternal.h"
 
 BE_NAMESPACE_BEGIN

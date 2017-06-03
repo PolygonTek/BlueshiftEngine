@@ -61,11 +61,10 @@ set(ENGINE_FILES
   Public/Containers/StrPool.h
   Public/Containers/LinkedList.h
 
-  Public/Image/Image.h
-  
-  Public/DXT/DxtCodec.h
-  Public/DXT/DxtDecoder.h
-  Public/DXT/DxtEncoder.h
+  Public/Image/Image.h 
+  Public/Image/DxtCodec.h
+  Public/Image/DxtDecoder.h
+  Public/Image/DxtEncoder.h
 
   Public/Math/AABB.h
   Public/Math/Angles.h
@@ -263,8 +262,8 @@ set(ENGINE_FILES
   Private/Image/ImageFormat.cpp
   Private/Image/ImageProcess.cpp
   Private/Image/ImageResize.cpp
-  Private/DXT/DxtDecoder.cpp
-  Private/DXT/DxtEncoder.cpp
+  Private/Image/DxtDecoder.cpp
+  Private/Image/DxtEncoder.cpp
   Private/Math/Vector3.cpp
   Private/Math/Vector4.cpp
   Private/Math/Color3.cpp
