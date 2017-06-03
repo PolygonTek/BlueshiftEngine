@@ -36,7 +36,12 @@ public:
     };
 
     SignalObject();
+    /// Prevents copy constructor
+    SignalObject(const SignalObject &rhs) = delete;
     virtual ~SignalObject();
+
+                                /// Prevents assignment operator
+    SignalObject &              operator=(const SignalObject &rhs) = delete; 
 
                                 /// Checks if a signal is already connected to the receiver object with given callback function
     bool                        IsConnected(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function) const;

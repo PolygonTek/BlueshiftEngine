@@ -26,7 +26,12 @@ public:
     static const int MaxSignals = 4096;
     
     explicit SignalDef(const char *command, const char *formatSpec = nullptr, char returnType = 0);
-    
+    /// Prevents copy constructor
+    SignalDef(const SignalDef &rhs) = delete;
+
+                                /// Prevents assignment operator
+    SignalDef &                 operator=(const SignalDef &rhs) = delete;
+
     const char *                GetName() const { return name; }
     const char *                GetArgFormat() const { return formatSpec; }
     char                        GetReturnType() const { return returnType; }
