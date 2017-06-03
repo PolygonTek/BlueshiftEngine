@@ -328,11 +328,18 @@ struct is_assignable_all : static_all_of<std::is_assignable<T, Ts>::value...> {}
 
 #include <SDKDDKVer.h>
 
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#ifndef _CRT_NON_CONFORMING_SWPRINTFS
 #define _CRT_NON_CONFORMING_SWPRINTFS
+#endif
 
 // Exclude rarely-used stuff from Windows headers
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 
 // NOMINMAX makes sure that windef.h doesn't add macros min and max
 #define NOMINMAX
