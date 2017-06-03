@@ -207,18 +207,18 @@ bool Image::WriteBMP(const char *filename) const {
     bmfh.ofsBits        = sizeof(bmfh) + sizeof(bmih);
     fp->Write(&bmfh, sizeof(bmfh));
     
-    bmih.size			= sizeof(bmih);
-    bmih.width			= width;
-    bmih.height			= height;
-    bmih.planes			= 1;
-    bmih.bpp			= 24;
-    bmih.compression	= 0;
-    bmih.imageSize		= 0;
-    bmih.temp1			= 0;
-    bmih.temp2			= 0;
-    bmih.colorUsed		= 0;
-    bmih.colorImportant	= 0;
-    fp->Write(&bmih, sizeof(bmih));	
+    bmih.size           = sizeof(bmih);
+    bmih.width          = width;
+    bmih.height         = height;
+    bmih.planes         = 1;
+    bmih.bpp            = 24;
+    bmih.compression    = 0;
+    bmih.imageSize      = 0;
+    bmih.temp1          = 0;
+    bmih.temp2          = 0;
+    bmih.colorUsed      = 0;
+    bmih.colorImportant = 0;
+    fp->Write(&bmih, sizeof(bmih));
 
     byte temp[4] = { 0, };
     

@@ -49,7 +49,7 @@ Image &Image::Create(int width, int height, int depth, int numSlices, int numMip
     this->format = format;
     this->flags = flags;
     
-    int size = GetSize(0, numMipmaps);	
+    int size = GetSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(size);
     this->alloced = true;
     
@@ -60,7 +60,7 @@ Image &Image::Create(int width, int height, int depth, int numSlices, int numMip
     return *this;
 }
 
-Image &Image::CreateCubeFromMultipleImages(const Image *images) {	
+Image &Image::CreateCubeFromMultipleImages(const Image *images) {
     Clear();
 
     this->width = images[0].width;
