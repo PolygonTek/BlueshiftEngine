@@ -483,7 +483,7 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     
     NSSize size = [[window contentView] frame].size;
     
-    BE1::glr.SetFullscreen(app.mainRenderContext->GetContextHandle(), size.width, size.height);
+    BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), size.width, size.height);
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification {
@@ -493,7 +493,7 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     NSInteger oldStyleMask = [window styleMask];
     [window setStyleMask:oldStyleMask & ~NSResizableWindowMask];
     
-    BE1::glr.ResetFullscreen(app.mainRenderContext->GetContextHandle());
+    BE1::rhi.ResetFullscreen(app.mainRenderContext->GetContextHandle());
 }
 
 - (void)windowWillClose:(NSNotification *)notification {
