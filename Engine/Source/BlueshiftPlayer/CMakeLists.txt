@@ -110,7 +110,7 @@ if (XAMARIN)
         libpng
         libpvrt
         etcpack_lib
-        EtcLib
+        Etc2CompLib
         libogg
         libvorbis
         freetype
@@ -232,7 +232,7 @@ else ()
           USES_TERMINAL)
       endif ()
     elseif (BUILD_PLAYER)
-      set(LIB_FILES zlib minizip libjpeg libpng libpvrt etcpack_lib EtcLib libogg libvorbis freetype jsoncpp Bullet HACD lua LuaCpp luasocket BlueshiftEngine)
+      set(LIB_FILES zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis freetype jsoncpp Bullet HACD lua LuaCpp luasocket BlueshiftEngine)
 
       if (ANDROID)
         list(APPEND LIB_FILES nvidia android GLESv3 EGL OpenSLES)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-project(EtcLib)
+project(Etc2CompLib)
 
 include_directories(./Etc)
 include_directories(./EtcCodec)
