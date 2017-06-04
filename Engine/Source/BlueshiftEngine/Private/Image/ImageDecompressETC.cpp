@@ -263,6 +263,7 @@ static void DecompressImageETC2_RGB8(const byte *src, const int width, const int
         int dstBlockHeight = Min(4, height - y);
 
         for (int x = 0; x < width; x += 4) {
+            // ETC2 RGB block
             ReadColorBlockETC2(src, block1, block2);
             src += 8;
             etcpack_decompressBlockETC2c(block1, block2, unpackedBlock, 4, 4, 0, 0, 4);
