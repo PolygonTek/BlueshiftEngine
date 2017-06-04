@@ -239,11 +239,11 @@ void DecompressETC1(const Image &srcImage, Image &dstImage) {
 
 // read color block from data stream
 static void ReadColorBlockETC2(const byte *data, uint32_t &block1, uint32_t &block2) {
-    block1 = 0;           block1 |= data[0];
+    block1 = data[0];
     block1 = block1 << 8; block1 |= data[1];
     block1 = block1 << 8; block1 |= data[2];
     block1 = block1 << 8; block1 |= data[3];
-    block2 = 0;           block2 |= data[4];
+    block2 = data[4];
     block2 = block2 << 8; block2 |= data[5];
     block2 = block2 << 8; block2 |= data[6];
     block2 = block2 << 8; block2 |= data[7];
@@ -254,6 +254,9 @@ static void DecompressImageETC2_RGB8(const byte *src, const int width, const int
     uint32_t block1;
     uint32_t block2;
 
+    // Fill alpha channel first
+    memset(unpackedBlock, 255, sizeof(unpackedBlock));
+
     for (int y = 0; y < height; y += 4) {
         byte *dstPtr = out + 4 * width * y;
 
@@ -261,7 +264,7 @@ static void DecompressImageETC2_RGB8(const byte *src, const int width, const int
 
         for (int x = 0; x < width; x += 4) {
             ReadColorBlockETC2(src, block1, block2);
-            src += 8;            
+            src += 8;
             etcpack_decompressBlockETC2c(block1, block2, unpackedBlock, 4, 4, 0, 0, 4);
 
             int dstBlockWidth = Min(4, width - x);
@@ -272,7 +275,7 @@ static void DecompressImageETC2_RGB8(const byte *src, const int width, const int
                 memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
             }
 
-            dstPtr += 4 * 4;
+            dstPtr += 4 * dstBlockWidth;
         }
     }
 }
@@ -303,7 +306,7 @@ static void DecompressImageETC2_RGBA8(const byte *src, const int width, const in
                 memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
             }
 
-            dstPtr += 4 * 4;
+            dstPtr += 4 * dstBlockWidth;
         }
     }
 }
@@ -332,7 +335,7 @@ static void DecompressImageETC2_RGB8A1(const byte *src, const int width, const i
                 memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
             }
 
-            dstPtr += 4 * 4;
+            dstPtr += 4 * dstBlockWidth;
         }
     }
 }
