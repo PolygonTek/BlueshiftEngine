@@ -209,4 +209,40 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
     return true;
 }
 
+bool Image::WriteHDR(const char *filename) const {
+#if 0
+    if (format != FORMAT_RGBE8 && format != FORMAT_RGB32F) {
+        return false;
+    }
+
+    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    if (!fp) {
+        BE_WARNLOG(L"Image::WriteHDR: file open error\n");
+        return false;
+    }
+
+    fp->Printf("#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y %d +X %d\n", height, width);
+
+    int nPixels = width * height;
+
+    if (format == FORMAT_RGBE8) {
+        fp->Write(pic, sizeof(uint32_t) * nPixels);
+    } else {
+        Color3 *src = (Color3 *)pic;
+        uint32_t *dst = new uint32_t[nPixels];
+
+        for (int i = 0; i < nPixels; i++) {
+            Float2RGBE(src[i].r, src[i].g, src[i].b, &dst[i]);
+        }
+
+        fp->Write(dst, sizeof(uint32_t) * nPixels);
+
+        delete[] dst;
+    }
+
+    fileSystem.CloseFile(fp);
+#endif
+    return true;
+}
+
 BE_NAMESPACE_END

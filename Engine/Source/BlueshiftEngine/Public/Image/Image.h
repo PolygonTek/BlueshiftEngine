@@ -245,6 +245,7 @@ public:
                         /// @param quality value has the range [0, 100]
     bool                WriteJPG(const char *filename, int quality = 100) const; 
     bool                WritePNG(const char *filename) const;
+    bool                WriteHDR(const char *filename) const;
     
                         // static helper functions for image information
     static const char * FormatName(Image::Format imageFormat);
