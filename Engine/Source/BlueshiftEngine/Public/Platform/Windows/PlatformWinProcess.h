@@ -54,11 +54,11 @@ struct ProcessHandle {
 class BE_API PlatformWinProcess : public PlatformBaseProcess {
 public:
     static const wchar_t *      ExecutableFileName();
-    static const wchar_t *		ComputerName();
-    static const wchar_t *		UserName();
+    static const wchar_t *      ComputerName();
+    static const wchar_t *      UserName();
     static int                  NumberOfLogicalProcessors();
 
-    static WStr					GetLastErrorText();
+    static WStr                 GetLastErrorText();
 
     static ProcessHandle        CreateProccess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath);
     static bool                 IsProccessRunning(ProcessHandle &processHandle);
