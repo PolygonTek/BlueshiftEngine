@@ -25,9 +25,9 @@ BE_NAMESPACE_BEGIN
 static float QualityToEffort(Image::CompressionQuality compressoinQuality) {   
     switch (compressoinQuality) {
     case Image::HighQuality:
-        return 2; // speed is important than quality
+        return 70;
     case Image::Normal:
-        return 1;
+        return 40;
     case Image::Fast:
         return 0;
     }
