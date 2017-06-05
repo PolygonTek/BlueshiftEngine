@@ -41,13 +41,14 @@ public:
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
 protected:
+    void                    ProcessScriptCallback();
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
     void                    PhysicsUpdated(const PhysRigidBody *body);
 
     PhysSensor *            sensor;
-    Array<PhysCollidable *> oldColliderArray;
     PhysCollidableDesc      physicsDesc;
+    Array<Guid>             oldColliders;
 };
 
 BE_NAMESPACE_END
