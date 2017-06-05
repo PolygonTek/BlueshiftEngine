@@ -40,6 +40,46 @@ BEGIN_PROPERTIES(ComRigidBody)
     PROPERTY_BOOL("ccd", "CCD", "continuous collision detection", "false", PropertySpec::ReadWrite),
 END_PROPERTIES
 
+class ComRigidBody::CollisionListener : public PhysCollisionListener {
+public:
+    CollisionListener(ComRigidBody *body) { this->body = body; }
+    virtual ~CollisionListener() {}
+
+    virtual void Collide(const PhysCollidable *objectA, const PhysCollidable *objectB, const Vec3 &point, const Vec3 &normal, float distance, float impulse) override;
+
+    ComRigidBody *body;
+};
+
+void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, const PhysCollidable *objectB, const Vec3 &point, const Vec3 &normal, float distance, float impulse) {
+    Component *collisionComponent = reinterpret_cast<Component *>(objectB->GetUserPointer());
+    if (!collisionComponent) {
+        return;
+    }
+
+    ComRigidBody *collisionRigidBody = collisionComponent->Cast<ComRigidBody>();
+    ComCharacterController *collisionController = collisionComponent->Cast<ComCharacterController>();
+
+    if (collisionRigidBody || collisionController) {
+        Collision collision;
+        collision.entityGuid = collisionComponent->GetEntity()->GetGuid();
+        collision.entity = collisionComponent->GetEntity();
+        collision.body = collisionRigidBody;
+        collision.controller = collisionController;
+        collision.point = point;
+        collision.normal = normal;
+        collision.distance = distance;
+        collision.impulse = impulse;
+
+        Collision *existingCollision = body->collisions.Find(collision);
+        if (!existingCollision) {
+            body->collisions.Append(collision);
+        } else if (impulse > existingCollision->impulse) {
+            existingCollision->impulse = impulse;
+            //BE_LOG(L"Collide with %hs, n = (%.2f %.2f %.2f), impulse = %.2f\n", collision.entity->GetName(), normal.x, normal.y, normal.z, impulse);
+        }
+    }
+}
+
 void ComRigidBody::RegisterProperties() {
     //REGISTER_ACCESSOR_PROPERTY("Mass", float, GetMass, SetMass, "1", PropertySpec::ReadWrite).SetRange(0, 200, 0.01f);
     //REGISTER_ACCESSOR_PROPERTY("Restitution", float, GetRestitution, SetRestitution, "0", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
@@ -161,38 +201,8 @@ void ComRigidBody::Awake() {
         transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRigidBody::TransformUpdated, SignalObject::Unique);
     }
 
-    collisionArray.Clear();
-    oldCollisionArray.Clear();
-}
-
-void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, const PhysCollidable *objectB, const Vec3 &point, const Vec3 &normal, float distance, float impulse) {
-    Component *collisionComponent = reinterpret_cast<Component *>(objectB->GetUserPointer());
-    if (!collisionComponent) {
-        return;
-    }
-
-    ComRigidBody *collisionRigidBody = collisionComponent->Cast<ComRigidBody>();
-    ComCharacterController *collisionController = collisionComponent->Cast<ComCharacterController>();
-
-    if (collisionRigidBody || collisionController) {
-        Collision collision;
-        collision.entity = collisionComponent->GetEntity();
-        collision.body = collisionRigidBody;
-        collision.controller = collisionController;
-        collision.point = point;
-        collision.normal = normal;
-        collision.distance = distance;
-        collision.impulse = impulse;
-
-        Collision *existingCollision = body->collisionArray.Find(collision);
-        if (!existingCollision) {
-            body->collisionArray.Append(collision);
-        } else if (impulse > existingCollision->impulse) {
-            existingCollision->impulse = impulse;
-            //BE_LOG(L"Collide with %hs, n = (%.2f %.2f %.2f), impulse = %.2f\n", collision.entity->GetName(), normal.x, normal.y, normal.z, impulse);
-        }
-
-    }
+    collisions.Clear();
+    oldCollisions.Clear();
 }
 
 void ComRigidBody::Update() {
@@ -204,19 +214,27 @@ void ComRigidBody::Update() {
         EmitSignal(&SIG_PhysicsUpdated, body);
     }
 
-    for (int newIndex = 0; newIndex < collisionArray.Count(); newIndex++) {
-        const Collision &collision = collisionArray[newIndex];
+    ProcessScriptCallback();
+}
+
+void ComRigidBody::ProcessScriptCallback() {
+    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
+    if (scriptComponents.Count() == 0) {
+        return;
+    }
+
+    for (int newIndex = 0; newIndex < collisions.Count(); newIndex++) {
+        const Collision &collision = collisions[newIndex];
 
         bool stay = false;
-        for (int oldIndex = 0; oldIndex < oldCollisionArray.Count(); oldIndex++) {
-            if (oldCollisionArray[oldIndex] == collision) {
-                oldCollisionArray.RemoveIndexFast(oldIndex);
+        for (int oldIndex = 0; oldIndex < oldCollisions.Count(); oldIndex++) {
+            if (oldCollisions[oldIndex] == collision) {
+                oldCollisions.RemoveIndexFast(oldIndex);
                 stay = true;
                 break;
             }
         }
 
-        ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
@@ -228,10 +246,14 @@ void ComRigidBody::Update() {
         }
     }
 
-    for (int oldIndex = 0; oldIndex < oldCollisionArray.Count(); oldIndex++) {
-        const Collision &collision = oldCollisionArray[oldIndex];
+    for (int oldIndex = 0; oldIndex < oldCollisions.Count(); oldIndex++) {
+        const Collision &collision = oldCollisions[oldIndex];
 
-        ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
+        const Entity *entity = (Entity *)Entity::FindInstance(collision.entityGuid);
+        if (!entity) {
+            continue;
+        }
+
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
@@ -239,8 +261,8 @@ void ComRigidBody::Update() {
         }
     }
 
-    oldCollisionArray = collisionArray;
-    collisionArray.Clear();
+    oldCollisions = collisions;
+    collisions.Clear();
 }
 
 void ComRigidBody::Enable(bool enable) {
