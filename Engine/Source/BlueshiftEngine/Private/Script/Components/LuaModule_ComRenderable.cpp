@@ -28,7 +28,8 @@ void LuaVM::RegisterRenderableComponent(LuaCpp::Module &module) {
         "color", &ComRenderable::GetColor,
         "set_color", &ComRenderable::SetColor,
         "alpha", &ComRenderable::GetAlpha,
-        "set_alpha", &ComRenderable::SetAlpha);
+        "set_alpha", &ComRenderable::SetAlpha,
+        "aabb", &ComRenderable::GetAABB);
 
     _ComRenderable["meta_object"] = ComRenderable::metaObject;
 }
