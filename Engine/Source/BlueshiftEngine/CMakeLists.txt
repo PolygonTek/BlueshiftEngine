@@ -253,19 +253,19 @@ set(ENGINE_FILES
   Private/Image/ImageDecompressPVRTC.cpp
   Private/Image/ImageDecompressETC.cpp
   Private/Image/ImageFile.cpp
-  Private/Image/ImageFile_bmp.cpp
-  Private/Image/ImageFile_dds.cpp
-  Private/Image/ImageFile_pvr.cpp
-  Private/Image/ImageFile_hdr.cpp
-  Private/Image/ImageFile_jpg.cpp
-  Private/Image/ImageFile_pcx.cpp
-  Private/Image/ImageFile_png.cpp
-  Private/Image/ImageFile_tga.cpp
+  Private/Image/ImageFileBMP.cpp
+  Private/Image/ImageFileDDS.cpp
+  Private/Image/ImageFilePVR.cpp
+  Private/Image/ImageFileHDR.cpp
+  Private/Image/ImageFileJPG.cpp
+  Private/Image/ImageFilePCX.cpp
+  Private/Image/ImageFilePNG.cpp
+  Private/Image/ImageFileTGA.cpp
   Private/Image/ImageFormat.cpp
   Private/Image/ImageProcess.cpp
   Private/Image/ImageResize.cpp
-  Private/Image/DxtDecoder.cpp
-  Private/Image/DxtEncoder.cpp
+  Private/Image/DXTDecoder.cpp
+  Private/Image/DXTEncoder.cpp
   Private/Math/Vector3.cpp
   Private/Math/Vector4.cpp
   Private/Math/Color3.cpp
