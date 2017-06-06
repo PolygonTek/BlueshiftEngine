@@ -272,7 +272,6 @@ Entity *Entity::FindChild(const char *name) const {
             return child;
         }
     }
-
     return nullptr;
 }
 
@@ -285,7 +284,6 @@ bool Entity::HasRenderEntity(int renderEntityHandle) const {
             }
         }
     }
-
     return false;
 }
 

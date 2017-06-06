@@ -86,7 +86,7 @@ public:
 
                                 /// Get the children by depth first order
     void                        GetChildren(EntityPtrArray &children) const;
-        
+    
                                 /// Find a child by name
     Entity *                    FindChild(const char *name) const;
     
