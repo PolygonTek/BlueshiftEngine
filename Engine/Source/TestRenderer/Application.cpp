@@ -51,48 +51,48 @@ void Application::InitVertexFormats() {
 }
 
 void Application::InitShaders() {
-    const char *defaultVSText =
-        "in vec4 in_position : POSITION;\n"
-        "in vec2 in_texCoord : TEXCOORD;\n"
-        "in vec4 in_color : COLOR;\n"
-        "out vec4 v2f_color;\n"
-        "out vec2 v2f_texCoord;\n"
-        "uniform mat4 modelViewProjMatrix;\n"
-        "void main() {\n"
-        "   v2f_color = in_color;\n"
-        "   v2f_texCoord = in_texCoord;\n"
-        "   gl_Position = modelViewProjMatrix * in_position;\n"
-        "}";
+    const char *defaultVSText = R"(
+in vec4 in_position : POSITION;
+in vec2 in_texCoord : TEXCOORD;
+in vec4 in_color : COLOR;
+out vec4 v2f_color;
+out vec2 v2f_texCoord;
+uniform mat4 modelViewProjMatrix;
+void main() {
+    v2f_color = in_color;
+    v2f_texCoord = in_texCoord;
+    gl_Position = modelViewProjMatrix * in_position;
+})";
 
-    const char *defaultFSText =
-        //"precision highp float;\n"
-        "in vec4 v2f_color;\n"
-        "in vec2 v2f_texCoord;\n"
-        "out vec4 o_fragColor : FRAG_COLOR;\n"
-        "uniform sampler2D baseMap;\n"
-        "void main() {\n"
-        "   o_fragColor = tex2D(baseMap, v2f_texCoord) * v2f_color;\n"
-        "}";
+    const char *defaultFSText = R"(
+//precision highp float;
+in vec4 v2f_color;
+in vec2 v2f_texCoord;
+out vec4 o_fragColor : FRAG_COLOR;
+uniform sampler2D baseMap;
+void main() {
+    o_fragColor = tex2D(baseMap, v2f_texCoord) * v2f_color;
+})";
 
     defaultShader = BE1::rhi.CreateShader("default_shader", defaultVSText, defaultFSText);
 
-    const char *clipRectVSText = 
-        "in vec4 in_position : POSITION;\n"
-        "in vec2 in_texCoord : TEXCOORD;\n"
-        "out vec2 v2f_texCoord;\n"
-        "void main() {\n"
-        "   v2f_texCoord = in_texCoord;\n"
-        "   gl_Position = in_position;\n"
-        "}";
+    const char *clipRectVSText = R"(
+in vec4 in_position : POSITION;
+in vec2 in_texCoord : TEXCOORD;
+out vec2 v2f_texCoord;
+void main() {
+    v2f_texCoord = in_texCoord;
+    gl_Position = in_position;
+})";
 
-    const char *clipRectFSText =
-        //"precision highp float;\n"
-        "in vec2 v2f_texCoord;\n"
-        "out vec4 o_fragColor : FRAG_COLOR;\n"
-        "uniform sampler2D baseMap;\n"
-        "void main() {\n"
-        "   o_fragColor = tex2D(baseMap, v2f_texCoord);\n"
-        "}";
+    const char *clipRectFSText = R"(
+//precision highp float;
+in vec2 v2f_texCoord;
+out vec4 o_fragColor : FRAG_COLOR;
+uniform sampler2D baseMap;
+void main() {
+    o_fragColor = tex2D(baseMap, v2f_texCoord);
+})";
     
     clipRectShader = BE1::rhi.CreateShader("cliprect_shader", clipRectVSText, clipRectFSText);
 }

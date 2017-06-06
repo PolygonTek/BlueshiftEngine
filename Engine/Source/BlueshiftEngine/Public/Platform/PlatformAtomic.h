@@ -20,8 +20,8 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformAtomic {
 protected:
-    PlatformAtomic(const PlatformAtomic &); // don't implement
-    PlatformAtomic &operator=(const PlatformAtomic &); // don't implement
+    PlatformAtomic(const PlatformAtomic &) = delete;
+    PlatformAtomic &operator=(const PlatformAtomic &) = delete;
 
 public:
     BE_FORCE_INLINE PlatformAtomic() : data(0) {}

@@ -18,8 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
-#define VENDOR_INTEL		"GenuineIntel"
-#define VENDOR_AMD			"AuthenticAMD"
+#define VENDOR_INTEL    "GenuineIntel"
+#define VENDOR_AMD      "AuthenticAMD"
 
 // Reference: http://msdn.microsoft.com/en-us/library/hskdteyh(v=vs.100).aspx
 static CpuInfo cpuInfo;
@@ -151,7 +151,7 @@ void DetectCpu() {
 
         if (cpuInfo.family <= 4) {
             // unsupported 386/486 processor
-            cpuInfo.cpuid |= CPUID_UNSUPPORTED;			
+            cpuInfo.cpuid |= CPUID_UNSUPPORTED;
         }
     } else {
         cpuInfo.cpuid |= CPUID_GENERIC;
