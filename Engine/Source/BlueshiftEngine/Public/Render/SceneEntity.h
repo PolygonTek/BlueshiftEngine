@@ -134,7 +134,6 @@ public:
     int                     index;
     Parms                   parms;
     bool                    firstUpdate;
-    Vec3                    origin;
     OBB                     worldOBB;
     Mat4                    modelMatrix;
     Mat4                    motionBlurModelMatrix[2];
