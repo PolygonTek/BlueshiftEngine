@@ -21,6 +21,7 @@
 #include "Sound/SoundSystem.h"
 #include "AnimController/AnimController.h"
 #include "Components/Component.h"
+#include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComSensor.h"
@@ -317,11 +318,6 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
         
         Json::Value clonedEntityValue = Entity::CloneEntityValue(originalEntityValue, guidMap);
 
-        // root entity name
-        if (i == 0) {
-            clonedEntityValue["name"] = originalEntity->GetName();
-        }        
-
         Entity *clonedEntity = Entity::CreateEntity(clonedEntityValue);
         clonedEntities.Append(clonedEntity);
     }
@@ -344,11 +340,43 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
 
         clonedEntity->InitHierarchy();
         clonedEntity->Init();
-
-        RegisterEntity(clonedEntity);
     }
 
     return clonedEntities[0];
+}
+
+Entity *GameWorld::InstantiateEntity(const Entity *originalEntity) {
+    Entity *clonedEntity = CloneEntity(originalEntity);
+
+    RegisterEntity(clonedEntity);
+
+    EntityPtrArray children;
+    clonedEntity->GetChildren(children);
+
+    for (int i = 0; i < children.Count(); i++) {
+        RegisterEntity(children[i]);
+    }
+
+    return clonedEntity;
+}
+
+Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Angles &angles) {
+    Entity *clonedEntity = CloneEntity(originalEntity);
+    
+    ComTransform *transform = clonedEntity->GetTransform();
+    transform->SetLocalOrigin(origin);
+    transform->SetLocalAngles(angles);
+
+    RegisterEntity(clonedEntity);
+
+    EntityPtrArray children;
+    clonedEntity->GetChildren(children);
+
+    for (int i = 0; i < children.Count(); i++) {
+        RegisterEntity(children[i]);
+    }
+
+    return clonedEntity;
 }
 
 bool GameWorld::SpawnEntityFromJson(Json::Value &entityValue, Entity **ent) {

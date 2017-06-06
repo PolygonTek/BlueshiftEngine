@@ -93,8 +93,9 @@ public:
     void                        RegisterEntity(Entity *ent, int spawn_entnum = -1);
     void                        UnregisterEntity(Entity *ent);
 
-    Entity *                    CloneEntity(const Entity *originalEntity);
-    
+    Entity *                    InstantiateEntity(const Entity *originalEntity);
+    Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Angles &angles);
+
     bool                        SpawnEntityFromJson(Json::Value &entityValue, Entity **ent = nullptr);
     void                        SpawnEntitiesFromJson(Json::Value &entitiesValue);
     void                        SpawnEntitiesFromString(const char *entityString);
@@ -135,6 +136,7 @@ public:
 private:
     void                        Event_RestartGame(const char *mapName);
 
+    Entity *                    CloneEntity(const Entity *originalEntity);
     void                        SaveObject(const char *filename, const Object *object) const;
     void                        ClearAllEntities();
     void                        UpdateEntities();   

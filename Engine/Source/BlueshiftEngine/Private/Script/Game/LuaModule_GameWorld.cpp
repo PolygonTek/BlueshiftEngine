@@ -33,7 +33,8 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "find_entity_by_guid", &GameWorld::FindEntityByGuid,
         "find_entity_by_tag", &GameWorld::FindEntityByTag,
         "find_entities_by_tag", &GameWorld::FindEntitiesByTag,
-        "clone_entity", &GameWorld::CloneEntity,
+        "instantiate_entity", &GameWorld::InstantiateEntity,
+        "instantiate_entity_with_transform", &GameWorld::InstantiateEntityWithTransform,
         "loded_map_name", &GameWorld::MapName,
         "restart_game", &GameWorld::RestartGame);
 
