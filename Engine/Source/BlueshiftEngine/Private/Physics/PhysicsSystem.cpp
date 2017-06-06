@@ -142,8 +142,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
 
     if (desc->type == PhysCollidable::Type::RigidBody) {
         btDefaultMotionState *motionState = new btDefaultMotionState(initialTransform);
-        btRigidBody::btRigidBodyConstructionInfo rbInfo(desc->mass, motionState, shape, inertia);
-        btRigidBody *rigidBody = new btRigidBody(rbInfo);
+        btRigidBody *rigidBody = new btRigidBody(desc->mass, motionState, shape, inertia);
 
         if (desc->mass == 0) {
             rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
