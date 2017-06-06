@@ -36,26 +36,25 @@ const btRigidBody *PhysRigidBody::GetRigidBody() const {
 const Vec3 PhysRigidBody::GetOrigin() const {
     const btRigidBody *rigidBody = GetRigidBody();
     
-    Vec3 transformedCentroid = GetAxis() * centroid;
-
     btTransform transform;
     rigidBody->getMotionState()->getWorldTransform(transform);
 
-    btVector3 origin = transform.getOrigin() - btVector3(transformedCentroid.x, transformedCentroid.y, transformedCentroid.z);
-    return Vec3(origin.x(), origin.y(), origin.z());
+    Vec3 transformedCentroid = GetAxis() * centroid;
+    const btVector3 &origin = transform.getOrigin();
+    return Vec3(origin.x(), origin.y(), origin.z()) - transformedCentroid;   
 }
 
 void PhysRigidBody::SetOrigin(const Vec3 &origin) {
     btRigidBody *rigidBody = GetRigidBody();
     
-    Vec3 centroidOrigin = origin + GetAxis() * centroid;
-
     btTransform transform;
     rigidBody->getMotionState()->getWorldTransform(transform);
 
+    Vec3 centroidOrigin = origin + GetAxis() * centroid;
     transform.setOrigin(btVector3(centroidOrigin.x, centroidOrigin.y, centroidOrigin.z));
-    rigidBody->getMotionState()->setWorldTransform(transform);
+
     rigidBody->setWorldTransform(transform);
+    rigidBody->getMotionState()->setWorldTransform(transform);
 }
 
 const Mat3 PhysRigidBody::GetAxis() const {
