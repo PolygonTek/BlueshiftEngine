@@ -35,55 +35,88 @@ const btRigidBody *PhysRigidBody::GetRigidBody() const {
 
 const Vec3 PhysRigidBody::GetOrigin() const {
     const btRigidBody *rigidBody = GetRigidBody();
-    
-    btTransform transform;
-    rigidBody->getMotionState()->getWorldTransform(transform);
 
     Vec3 transformedCentroid = GetAxis() * centroid;
-    const btVector3 &origin = transform.getOrigin();
-    return Vec3(origin.x(), origin.y(), origin.z()) - transformedCentroid;   
+    Vec3 origin;
+
+    if (!IsActive() || IsStatic()) {
+        // Query transform directly using rigidBody->getWorldTransform()
+        const btVector3 &centroidOrigin = rigidBody->getWorldTransform().getOrigin();
+
+        origin = Vec3(centroidOrigin.x(), centroidOrigin.y(), centroidOrigin.z()) - transformedCentroid;
+    } else {
+        // Query transform using motion state for interpolation
+        btTransform transform;
+        rigidBody->getMotionState()->getWorldTransform(transform);
+
+        const btVector3 &centroidOrigin = transform.getOrigin();
+        origin = Vec3(centroidOrigin.x(), centroidOrigin.y(), centroidOrigin.z()) - transformedCentroid;
+    }
+    return origin;
 }
 
 void PhysRigidBody::SetOrigin(const Vec3 &origin) {
     btRigidBody *rigidBody = GetRigidBody();
     
-    btTransform transform;
-    rigidBody->getMotionState()->getWorldTransform(transform);
-
     Vec3 centroidOrigin = origin + GetAxis() * centroid;
-    transform.setOrigin(btVector3(centroidOrigin.x, centroidOrigin.y, centroidOrigin.z));
 
-    rigidBody->setWorldTransform(transform);
-    rigidBody->getMotionState()->setWorldTransform(transform);
+    if (!IsActive() || IsStatic()) {
+        rigidBody->getWorldTransform().setOrigin(btVector3(centroidOrigin.x, centroidOrigin.y, centroidOrigin.z));
+    } else {
+        btTransform transform;
+        rigidBody->getMotionState()->getWorldTransform(transform);
+
+        transform.setOrigin(btVector3(centroidOrigin.x, centroidOrigin.y, centroidOrigin.z));
+
+        rigidBody->getMotionState()->setWorldTransform(transform);
+    }
 }
 
 const Mat3 PhysRigidBody::GetAxis() const {
     const btRigidBody *rigidBody = GetRigidBody();
+    Mat3 axis;
 
-    btTransform transform;
-    rigidBody->getMotionState()->getWorldTransform(transform);
+    if (!IsActive() || IsStatic()) {
+        const btMatrix3x3 &basis = rigidBody->getWorldTransform().getBasis();
 
-    const btMatrix3x3 &basis = transform.getBasis();
+        axis = Mat3(
+            basis[0][0], basis[1][0], basis[2][0],
+            basis[0][1], basis[1][1], basis[2][1],
+            basis[0][2], basis[1][2], basis[2][2]);
+    } else {
+        btTransform transform;
+        rigidBody->getMotionState()->getWorldTransform(transform);
 
-    return Mat3(
-        basis[0][0], basis[1][0], basis[2][0],
-        basis[0][1], basis[1][1], basis[2][1],
-        basis[0][2], basis[1][2], basis[2][2]);
+        const btMatrix3x3 &basis = transform.getBasis();
+        axis = Mat3(
+            basis[0][0], basis[1][0], basis[2][0],
+            basis[0][1], basis[1][1], basis[2][1],
+            basis[0][2], basis[1][2], basis[2][2]);
+    }
+
+    return axis;
 }
 
 void PhysRigidBody::SetAxis(const Mat3 &axis) {
     btRigidBody *rigidBody = GetRigidBody();
 
-    btTransform transform;
-    rigidBody->getMotionState()->getWorldTransform(transform);
+    if (!IsActive() || IsStatic()) {
+        rigidBody->getWorldTransform().setBasis(btMatrix3x3(
+            axis[0][0], axis[1][0], axis[2][0],
+            axis[0][1], axis[1][1], axis[2][1],
+            axis[0][2], axis[1][2], axis[2][2]));
+    } else {
+        btTransform transform;
+        rigidBody->getMotionState()->getWorldTransform(transform);
 
-    transform.setBasis(btMatrix3x3(
-        axis[0][0], axis[1][0], axis[2][0],
-        axis[0][1], axis[1][1], axis[2][1],
-        axis[0][2], axis[1][2], axis[2][2]));
+        transform.setBasis(btMatrix3x3(
+            axis[0][0], axis[1][0], axis[2][0],
+            axis[0][1], axis[1][1], axis[2][1],
+            axis[0][2], axis[1][2], axis[2][2]));
 
-    rigidBody->getMotionState()->setWorldTransform(transform);
-    rigidBody->setWorldTransform(transform);
+        rigidBody->getMotionState()->setWorldTransform(transform);
+        rigidBody->setWorldTransform(transform);
+    }
 }
 
 float PhysRigidBody::GetMass() const {
