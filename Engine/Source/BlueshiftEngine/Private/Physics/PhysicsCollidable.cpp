@@ -135,6 +135,13 @@ void PhysCollidable::SetCollisionFilterMask(short mask) {
     }
 }
 
+bool PhysCollidable::IsActive() const {
+    if (IsInWorld()) {
+        return collisionObject->isActive();
+    }
+    return false;
+}
+
 bool PhysCollidable::IsInWorld() const {
     if (physicsWorld) {
         btCollisionObjectArray &collisionObjectArray = physicsWorld->dynamicsWorld->getCollisionObjectArray();
@@ -143,7 +150,6 @@ bool PhysCollidable::IsInWorld() const {
             return true;
         }
     }
-
     return false;
 }
 

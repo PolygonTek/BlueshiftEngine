@@ -98,6 +98,8 @@ public:
     short                   GetCollisionFilterMask() const { return filterMask; }
     void                    SetCollisionFilterMask(short mask);
 
+    bool                    IsActive() const;
+
     bool                    IsInWorld() const;
     void                    AddToWorld(PhysicsWorld *physicsWorld);
     void                    RemoveFromWorld();
