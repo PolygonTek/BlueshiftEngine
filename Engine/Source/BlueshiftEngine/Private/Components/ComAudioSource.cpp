@@ -100,7 +100,6 @@ void ComAudioSource::Awake() {
 
     ComTransform *transform = GetEntity()->GetTransform();
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComAudioSource::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComAudioSource::PhysicsUpdated, SignalObject::Unique);
 }
 
 void ComAudioSource::Update() {
@@ -145,12 +144,6 @@ void ComAudioSource::Stop() {
 void ComAudioSource::TransformUpdated(const ComTransform *transform) {
     if (sound) {
         sound->UpdatePosition(transform->GetOrigin());
-    }
-}
-
-void ComAudioSource::PhysicsUpdated(const PhysRigidBody *body) {
-    if (sound) {
-        sound->UpdatePosition(body->GetOrigin());
     }
 }
 

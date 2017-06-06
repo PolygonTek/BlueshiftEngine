@@ -79,7 +79,7 @@ void ComTransform::SetLocalOrigin(const Vec3 &origin) {
     localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
     RecalcWorldMatrix();
-    
+
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren();
@@ -213,7 +213,7 @@ void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
 void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
     worldMatrix.SetLinearTransform(body->GetAxis(), GetScale(), body->GetOrigin());
 
-    EmitSignal(&ComRigidBody::SIG_PhysicsUpdated, body);
+    EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren(true);
 }

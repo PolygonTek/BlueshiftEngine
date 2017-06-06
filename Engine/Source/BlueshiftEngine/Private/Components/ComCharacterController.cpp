@@ -103,7 +103,6 @@ void ComCharacterController::Init() {
     ComTransform *transform = GetEntity()->GetTransform();
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComCharacterController::PhysicsUpdated, SignalObject::Unique);
 }
 
 void ComCharacterController::Awake() {
@@ -437,13 +436,6 @@ void ComCharacterController::TransformUpdated(const ComTransform *transform) {
     if (body) {
         body->SetOrigin(transform->GetOrigin());
         body->SetAxis(transform->GetAxis());
-    }
-}
-
-void ComCharacterController::PhysicsUpdated(const PhysRigidBody *body) {
-    if (this->body) {
-        this->body->SetOrigin(body->GetOrigin());
-        this->body->SetAxis(body->GetAxis());
     }
 }
 

@@ -124,11 +124,6 @@ void ComSensor::Awake() {
         }
 
         transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
-
-        ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
-        if (rigidBody) {
-            rigidBody->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComSensor::PhysicsUpdated, SignalObject::Unique);
-        }
     }
 
     oldColliders.Clear();
@@ -239,14 +234,6 @@ void ComSensor::TransformUpdated(const ComTransform *transform) {
     if (sensor) {
         sensor->SetOrigin(transform->GetOrigin());
         sensor->SetAxis(transform->GetAxis());
-        sensor->Activate();
-    }
-}
-
-void ComSensor::PhysicsUpdated(const PhysRigidBody *body) {
-    if (sensor) {
-        sensor->SetOrigin(body->GetOrigin());
-        sensor->SetAxis(body->GetAxis());
         sensor->Activate();
     }
 }

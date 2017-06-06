@@ -106,7 +106,6 @@ void ComRenderable::Init() {
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComRenderable::PhysicsUpdated, SignalObject::Unique);
 }
 
 void ComRenderable::Enable(bool enable) {
@@ -198,12 +197,6 @@ void ComRenderable::TransformUpdated(const ComTransform *transform) {
     sceneEntity.origin = transform->GetOrigin();
     sceneEntity.axis = transform->GetAxis();
     sceneEntity.scale = transform->GetScale();
-    UpdateVisuals();
-}
-
-void ComRenderable::PhysicsUpdated(const PhysRigidBody *body) {
-    sceneEntity.origin = body->GetOrigin();
-    sceneEntity.axis = body->GetAxis();
     UpdateVisuals();
 }
 

@@ -129,6 +129,7 @@ protected:
     CollisionListener *     collisionListener;
     Array<Collision>        collisions;
     Array<Collision>        oldCollisions;
+    bool                    physicsUpdating;
 };
 
 BE_NAMESPACE_END

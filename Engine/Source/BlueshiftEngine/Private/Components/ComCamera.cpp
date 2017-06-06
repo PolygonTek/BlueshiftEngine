@@ -179,7 +179,6 @@ void ComCamera::Init() {
     sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComCamera::PhysicsUpdated, SignalObject::Unique);
 
     UpdateVisuals();
 }
@@ -412,15 +411,6 @@ void ComCamera::UpdateVisuals() {
 void ComCamera::TransformUpdated(const ComTransform *transform) {
     viewParms.origin = transform->GetOrigin();
     viewParms.axis = transform->GetAxis();
-
-    sprite.origin = viewParms.origin;
-    
-    UpdateVisuals();
-}
-
-void ComCamera::PhysicsUpdated(const PhysRigidBody *body) {
-    viewParms.origin = body->GetOrigin();
-    viewParms.axis = body->GetAxis();
 
     sprite.origin = viewParms.origin;
     

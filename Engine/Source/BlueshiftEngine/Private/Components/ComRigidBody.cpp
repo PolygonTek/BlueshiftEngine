@@ -94,6 +94,7 @@ void ComRigidBody::RegisterProperties() {
 ComRigidBody::ComRigidBody() {
     body = nullptr;
     collisionListener = nullptr;
+    physicsUpdating = false;
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComRigidBody::PropertyChanged);
 }
 
@@ -210,11 +211,16 @@ void ComRigidBody::Update() {
         return;
     }
 
-    if (body) {
-        EmitSignal(&SIG_PhysicsUpdated, body);
-    }
+    if (!body->IsStatic() && body->IsActive()) {
+        // Block SIG_TransformUpdated during SIG_PhysicsUpdated
+        physicsUpdating = true;
 
-    ProcessScriptCallback();
+        EmitSignal(&SIG_PhysicsUpdated, body);
+        
+        physicsUpdating = false;
+
+        ProcessScriptCallback();
+    }
 }
 
 void ComRigidBody::ProcessScriptCallback() {
@@ -249,6 +255,7 @@ void ComRigidBody::ProcessScriptCallback() {
     for (int oldIndex = 0; oldIndex < oldCollisions.Count(); oldIndex++) {
         const Collision &collision = oldCollisions[oldIndex];
 
+        // Check if old collision entity is removed
         const Entity *entity = (Entity *)Entity::FindInstance(collision.entityGuid);
         if (!entity) {
             continue;
@@ -284,6 +291,10 @@ void ComRigidBody::Enable(bool enable) {
 }
 
 void ComRigidBody::TransformUpdated(const ComTransform *transform) {
+    if (physicsUpdating) {
+        return;
+    }
+
     if (body) {
         body->SetOrigin(transform->GetOrigin());
         body->SetAxis(transform->GetAxis());

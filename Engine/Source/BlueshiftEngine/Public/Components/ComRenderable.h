@@ -72,7 +72,6 @@ protected:
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    LayerChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
-    void                    PhysicsUpdated(const PhysRigidBody *body);
 
     SceneEntity::Parms      sceneEntity;
     int                     sceneEntityHandle;

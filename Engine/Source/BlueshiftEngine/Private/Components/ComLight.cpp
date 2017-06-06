@@ -204,7 +204,6 @@ void ComLight::Init() {
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComLight::PhysicsUpdated, SignalObject::Unique);
     
     UpdateVisuals();
 }
@@ -319,15 +318,6 @@ void ComLight::TransformUpdated(const ComTransform *transform) {
     sceneLight.origin = transform->GetOrigin();
     sceneLight.axis = transform->GetAxis();
     
-    sprite.origin = sceneLight.origin;
-    
-    UpdateVisuals();
-}
-
-void ComLight::PhysicsUpdated(const PhysRigidBody *body) {
-    sceneLight.origin = body->GetOrigin();
-    sceneLight.axis = body->GetAxis();
-
     sprite.origin = sceneLight.origin;
     
     UpdateVisuals();
