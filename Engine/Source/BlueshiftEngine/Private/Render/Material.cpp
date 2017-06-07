@@ -21,6 +21,8 @@
 
 BE_NAMESPACE_BEGIN
 
+#define MATERIAL_VERSION 1
+
 void Material::Purge() {
     if (pass) {
         if (pass->shader) {
@@ -55,15 +57,8 @@ bool Material::Create(const char *text) {
     lexer.Init(LexerFlag::LEXFL_NOERRORS);
     lexer.Load(text, Str::Length(text), hashName.c_str());
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
-        return false;
-    }
-
     while (lexer.ReadToken(&token)) {
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no concluding '}' in material %hs\n", hashName.c_str());
-            break;
-        } else if (token[0] == '}') {
             break;
         } else if (!token.Icmp("pass")) {
             pass = new Pass;
@@ -694,8 +689,7 @@ void Material::Write(const char *filename) {
 
     Str indentSpace;
 
-    fp->Printf("material \"%s\" {\n", name.c_str());
-    indentSpace += "  ";
+    fp->Printf("material %i\n", MATERIAL_VERSION);
 
     Str sortStr;
     switch (sort) {
@@ -900,9 +894,6 @@ void Material::Write(const char *filename) {
     indentSpace.Truncate(indentSpace.Length() - 2);
 
     fp->Printf("%s}\n", indentSpace.c_str());
-    //indentSpace.Truncate(indentSpace.Length() - 2);
-
-    fp->Printf("}\n");
 
     fileSystem.CloseFile(fp);
 }
@@ -1028,8 +1019,9 @@ bool Material::Load(const char *hashName) {
         return false;
     }
 
-    Str name;
-    if (!lexer.ReadToken(&name)) {
+    int version = lexer.ParseInt();
+    if (version != MATERIAL_VERSION) {
+        lexer.Error("Invalid version %d. Should be version %d\n", version, MATERIAL_VERSION);
         fileSystem.FreeFile(data);
         return false;
     }

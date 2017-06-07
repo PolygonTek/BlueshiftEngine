@@ -35,23 +35,23 @@ void MaterialManager::Init() {
     materialHashMap.Init(1024, 65536, 1024);
     
     defaultMaterial = AllocMaterial("_defaultMaterial");
-    defaultMaterial->Create(va("{ pass { map \"%s\"\n } }", GuidMapper::defaultTextureGuid.ToString()));
+    defaultMaterial->Create(va("pass { map \"%s\"\n }", GuidMapper::defaultTextureGuid.ToString()));
     defaultMaterial->permanence = true;
 
     whiteMaterial = AllocMaterial("_whiteMaterial");
-    whiteMaterial->Create(va("{ pass { map \"%s\"\n useOwnerColor\n } }", GuidMapper::whiteTextureGuid.ToString()));
+    whiteMaterial->Create(va("pass { map \"%s\"\n useOwnerColor\n }", GuidMapper::whiteTextureGuid.ToString()));
     whiteMaterial->permanence = true;    
 
     blendMaterial = AllocMaterial("_blendMaterial");
-    blendMaterial->Create(va("{ pass { map \"%s\"\nblendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA } }", GuidMapper::whiteTextureGuid.ToString()));
+    blendMaterial->Create(va("pass { map \"%s\"\nblendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA }", GuidMapper::whiteTextureGuid.ToString()));
     blendMaterial->permanence = true;
 
     whiteLightMaterial = AllocMaterial("_whiteLightMaterial");
-    whiteLightMaterial->Create(va("{ lightSort light pass { map \"%s\"\n useOwnerColor\n } }", GuidMapper::whiteTextureGuid.ToString()));
+    whiteLightMaterial->Create(va("lightSort light pass { map \"%s\"\n useOwnerColor\n }", GuidMapper::whiteTextureGuid.ToString()));
     whiteLightMaterial->permanence = true;
 
     zeroClampLightMaterial = AllocMaterial("_zeroClampLightMaterial");
-    zeroClampLightMaterial->Create(va("{ lightSort light pass { map \"%s\"\n useOwnerColor\n } }", GuidMapper::zeroClampTextureGuid.ToString()));
+    zeroClampLightMaterial->Create(va("lightSort light pass { map \"%s\"\n useOwnerColor\n }", GuidMapper::zeroClampTextureGuid.ToString()));
     zeroClampLightMaterial->permanence = true;
 }
 
@@ -175,7 +175,7 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
     }
 
     Str materialName = texture->GetHashName();
-    materialName += HintName(hint);
+    materialName += Str("_") + HintName(hint);
 
     Material *material = FindMaterial(materialName.c_str());
     if (material) {
@@ -187,43 +187,35 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
     switch (hint) {
     case Material::SpriteHint:
         Str::snPrintf(buffer, sizeof(buffer), 
-            "{\n"
-            "   noShadow\n"
-            "   pass {\n" 
-            "       mapPath \"%hs\"\n"
-            "       blendFunc blend\n" 
-            "   }\n"
-            "}", texture->GetHashName()); 
+            "noShadow\n"
+            "pass {\n" 
+            "   mapPath \"%hs\"\n"
+            "   blendFunc blend\n" 
+            "}\n", texture->GetHashName()); 
         break;
     case Material::LightHint:
         Str::snPrintf(buffer, sizeof(buffer),
-            "{\n"
-            "   lightSort light\n"
-            "   pass {\n" 
-            "       mapPath \"%hs\"\n"
-            "       useOwnerColor\n" 
-            "   }\n" 
-            "}", texture->GetHashName());
+            "lightSort light\n"
+            "pass {\n" 
+            "   mapPath \"%hs\"\n"
+            "   useOwnerColor\n" 
+            "}\n", texture->GetHashName());
         break;
     case Material::OverlayHint:
         Str::snPrintf(buffer, sizeof(buffer),
-            "{\n" 
-            "   overlay\n" 
-            "   cull twoSided\n"
-            "   pass {\n" 
-            "       vertexColor\n"
-            "       mapPath \"%hs\"\n"
-            "       blendFunc blend\n" 
-            "   }\n"
-            "}", texture->GetHashName());
+            "overlay\n" 
+            "cull twoSided\n"
+            "pass {\n" 
+            "   vertexColor\n"
+            "   mapPath \"%hs\"\n"
+            "   blendFunc blend\n" 
+            "}\n", texture->GetHashName());
         break;
     default:
         Str::snPrintf(buffer, sizeof(buffer),
-            "{\n" 
-            "   pass {\n"
-            "       mapPath \"%hs\"\n" 
-            "   }\n" 
-            "}", texture->GetHashName());
+            "pass {\n"
+            "   mapPath \"%hs\"\n" 
+            "}\n", texture->GetHashName());
         break;
     }
 
