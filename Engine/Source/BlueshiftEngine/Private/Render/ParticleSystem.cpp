@@ -20,6 +20,8 @@
 
 BE_NAMESPACE_BEGIN
 
+#define PRTS_VERSION 1
+
 static const char *moduleNames[] = {
     "Standard",
     "Shape",
@@ -103,10 +105,6 @@ bool ParticleSystem::Create(const char *text) {
     lexer.Init(LexerFlag::LEXFL_NOERRORS);
     lexer.Load(text, Str::Length(text), hashName.c_str());
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
-        return false;
-    }
-
     lexer.ExpectTokenString("numStages");
     int numStages = lexer.ParseInt();
     stages.SetCount(numStages);
@@ -115,10 +113,6 @@ bool ParticleSystem::Create(const char *text) {
         if (!ParseStage(lexer, stages[stageIndex])) {
             return false;
         }
-    }
-
-    if (!lexer.ExpectPunctuation(P_BRACECLOSE)) {
-        return false;
     }
 
     return true;
@@ -871,8 +865,9 @@ bool ParticleSystem::Load(const char *filename) {
         return false;
     }
 
-    Str name;
-    if (!lexer.ReadToken(&name)) {
+    int version = lexer.ParseInt();
+    if (version != PRTS_VERSION) {
+        lexer.Error("Invalid version %d. Should be version %d\n", version, PRTS_VERSION);
         fileSystem.FreeFile(data);
         return false;
     }
@@ -933,9 +928,7 @@ void ParticleSystem::Write(const char *filename) {
 
     Str indentSpace;
 
-    fp->Printf("particleSystem \"%s\" {\n", name.c_str());
-    indentSpace += "  ";
-
+    fp->Printf("particleSystem %i\n", PRTS_VERSION);
     fp->Printf("%snumStages %i\n", indentSpace.c_str(), stages.Count());
 
     for (int stageIndex = 0; stageIndex < stages.Count(); stageIndex++) {
@@ -1148,8 +1141,6 @@ void ParticleSystem::Write(const char *filename) {
         indentSpace.Truncate(indentSpace.Length() - 2);
         fp->Printf("%s}\n", indentSpace.c_str());
     }
-
-    fp->Printf("}\n");
 
     fileSystem.CloseFile(fp);
 }
