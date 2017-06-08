@@ -49,6 +49,8 @@ public:
     Quat() {}
     /// Constructs a Quat with the value (x, y, z, w).
     Quat(float x, float y, float z, float w);
+    /// Assignment operator
+    Quat &operator=(const Quat &rhs);
     
                         /// Casts this Quat to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -80,7 +82,6 @@ public:
     Quat                operator*(float rhs) const;
     friend Quat         operator*(const float lhs, const Quat &rhs);
 
-    Quat &              operator=(const Quat &rhs);
     Quat &              operator+=(const Quat &rhs);
     Quat &              operator-=(const Quat &rhs);
     Quat &              operator*=(const Quat &rhs);

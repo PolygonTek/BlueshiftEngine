@@ -27,6 +27,7 @@ struct ssei {
 
     BE_FORCE_INLINE ssei() {}
     BE_FORCE_INLINE ssei(const ssei &other) { m128 = other.m128; }
+    BE_FORCE_INLINE ssei &operator=(const ssei &other) { m128 = other.m128; return *this; }
     BE_FORCE_INLINE ssei(const __m128i a) { m128 = a; }
     BE_FORCE_INLINE explicit ssei(const __m128 a) { m128 = _mm_cvtps_epi32(a); }
     BE_FORCE_INLINE explicit ssei(const int32_t *a) { m128 = _mm_loadu_si128((__m128i *)a); }
@@ -36,7 +37,6 @@ struct ssei {
     BE_FORCE_INLINE void setZero() { m128 = _mm_setzero_si128(); }
     BE_FORCE_INLINE void setOne() { m128 = _mm_set1_epi32(1); }
 
-    BE_FORCE_INLINE ssei &operator=(const ssei &other) { m128 = other.m128; return *this; }
     BE_FORCE_INLINE operator const __m128i &() const { return m128; }
     BE_FORCE_INLINE operator __m128i &() { return m128; }
 

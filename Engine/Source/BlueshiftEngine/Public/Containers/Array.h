@@ -48,6 +48,8 @@ public:
     Array(int newGranularity = DefaultGranularity);
     /// Constructs from another array.
     Array(const Array<T> &array);
+    /// Assigns from another array, replacing its current contents.
+    Array<T> &operator=(const Array<T> &rhs);
     /// Aggregates initialization constructor.
     Array(const std::initializer_list<T> &array);
     /// Destructs.
@@ -107,9 +109,6 @@ public:
 
                     /// Compares with another array.
     bool            operator==(const Array<T> &rhs) const;
-
-                    /// Assigns from another array, replacing its current contents.
-    Array<T> &      operator=(const Array<T> &rhs);
 
                     /// Removes all the elements from the array.
                     /// This also released the memory used by the array.
@@ -269,6 +268,24 @@ BE_INLINE Array<T>::Array(const Array<T> &array) {
 }
 
 template <typename T>
+BE_INLINE Array<T> &Array<T>::operator=(const Array<T> &rhs) {
+    Clear();
+
+    count = rhs.count;
+    capacity = rhs.capacity;
+    granularity = rhs.granularity;
+
+    if (capacity) {
+        elements = new T[capacity];
+        for (int i = 0; i < count; i++) {
+            elements[i] = rhs.elements[i];
+        }
+    }
+
+    return *this;
+}
+
+template <typename T>
 BE_INLINE Array<T>::Array(const std::initializer_list<T> &array) : Array() {
     Reserve(array.size());
 
@@ -423,24 +440,6 @@ BE_INLINE void Array<T>::Resize(int newCapacity, int newGranularity) {
     if (temp) {
         delete [] temp;
     }
-}
-
-template <typename T>
-BE_INLINE Array<T> &Array<T>::operator=(const Array<T> &rhs) {
-    Clear();
-
-    count       = rhs.count;
-    capacity    = rhs.capacity;
-    granularity = rhs.granularity;
-
-    if (capacity) {
-        elements = new T[capacity];
-        for (int i = 0; i < count; i++) {
-            elements[i] = rhs.elements[i];
-        }
-    }
-
-    return *this;
 }
 
 template <typename T>

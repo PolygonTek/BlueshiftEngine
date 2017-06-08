@@ -44,8 +44,8 @@ public:
         Blend3DBarycentric  // TO BE IMPLEMENTED
     };
 
-    explicit                AnimBlendTree(AnimLayer *animLayer, int32_t nodeNum);
-    explicit                AnimBlendTree(AnimLayer *animLayer, const AnimBlendTree *blendTree);
+    AnimBlendTree(AnimLayer *animLayer, int32_t nodeNum);
+    AnimBlendTree(AnimLayer *animLayer, const AnimBlendTree *blendTree);
 
     const AnimLayer *       GetAnimLayer() const { return animLayer; }
     AnimLayer *             GetAnimLayer() { return animLayer; }

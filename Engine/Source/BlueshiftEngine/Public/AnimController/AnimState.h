@@ -51,8 +51,8 @@ class AnimState {
     friend class AnimStateBlender;
 
 public:
-    explicit                AnimState(AnimLayer *animLayer);
-    explicit                AnimState(AnimLayer *animLayer, const AnimState *animState);
+    AnimState(AnimLayer *animLayer);
+    AnimState(AnimLayer *animLayer, const AnimState *animState);
 
     AnimLayer *             GetAnimLayer() { return animLayer; }
 

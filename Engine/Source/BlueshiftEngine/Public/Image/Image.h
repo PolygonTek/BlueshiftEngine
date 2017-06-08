@@ -144,10 +144,20 @@ public:
         HighQuality
     };
 
+    /// Default constructor
     Image();
+    /// Constructs image with the given data.
+    /// If data is not nullptr, the image data is initialized with given data
     Image(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, byte *data, int flags);
+    /// Copy constructor
     Image(const Image &other);
+    /// Assignment operator
+    Image &operator=(const Image &other);
+    /// Move constructor
     Image(Image &&other);
+    /// Move operator
+    Image &operator=(Image &&other);
+    /// Destructor
     ~Image();
 
     bool                IsEmpty() const { return pic == nullptr; }
@@ -194,7 +204,8 @@ public:
     void                Clear();
 
     Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, byte *data, int flags);
-                        /// Creates an image. If data is nullptr, just allocate the memory.
+                        /// Creates an image.
+                        /// If data is nullptr, just allocate the memory.
     Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags);
     Image &             Create2D(int width, int height, int numMipmaps, Image::Format format, const byte *data, int flags);
     Image &             Create3D(int width, int height, int depth, int numMipmaps, Image::Format format, const byte *data, int flags);
@@ -204,17 +215,21 @@ public:
                         /// Creates an cubic image from the six square images
     Image &             CreateCubeFromMultipleImages(const Image *images);
 
+                        /// Copy image data from another.
+                        /// Nothing happen if source image dimensions are not match with this image
     Image &             CopyFrom(const Image &srcImage, int firstLevel = 0, int numLevels = 1);
-
-    Image &             operator=(const Image &other);
-    Image &             operator=(Image &&other);
     
+                        /// Generates full mipmaps if this image has
     Image &             GenerateMipmaps();
 
+                        /// Converts this image to the given targetimage.
     bool                ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regenerateMipmaps = false, CompressionQuality compressionQuality = Normal) const;
+                        /// Converts this image in-place.
     bool                ConvertFormatSelf(Image::Format dstFormat, bool regenerateMipmaps = false, CompressionQuality compressionQuality = Normal);
 
+                        /// Resizes this image to the given target image.
     bool                Resize(int width, int height, Image::ResampleFilter resampleFilter, Image &dstImage) const;
+                        /// Resizes this image in-places.
     bool                ResizeSelf(int width, int height, Image::ResampleFilter resampleFilter);
 
                         /// Flips vertically

@@ -22,11 +22,9 @@ class BE_API Variant {
 public:
     Variant();
     Variant(const char *text);
-    template <typename T>   Variant(const T &value);
-
-    Variant &               operator=(const Variant &rhs);
-    template <typename T>
-    Variant &               operator=(const T &rhs);
+    template <typename T> Variant(const T &value);
+    template <typename T> Variant &operator=(const T &rhs);
+    Variant &operator=(const Variant &rhs);
 
     bool                    operator==(const Variant &rhs) const;
     bool                    operator!=(const Variant &rhs) const { return !(*this == rhs); }

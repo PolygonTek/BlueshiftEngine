@@ -41,8 +41,11 @@ public:
     Angles() {}
     /// Constructs a Angles with the value (yaw, pitch, roll).
     Angles(float yaw, float pitch, float roll);
+    /// Copy constructor
     explicit Angles(const Vec3 &v);
-    
+    /// Assignment operator
+    Angles &operator=(const Angles &rhs);
+
                         /// Casts this Angles to a C array.
                         /// This function simply returns a C pointer view to this data structure.
     const float *       Ptr() const { return (const float *)&yaw; }
@@ -59,7 +62,6 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
-    Angles &            operator=(const Angles &rhs);
     Angles &            operator+=(const Angles &rhs);
     Angles &            operator-=(const Angles &rhs);
     Angles &            operator*=(const float rhs);
@@ -123,21 +125,28 @@ public:
 };
 
 BE_INLINE Angles::Angles(float yaw, float pitch, float roll) {
-    this->yaw   = yaw;
+    this->yaw = yaw;
     this->pitch = pitch;
-    this->roll  = roll;
+    this->roll = roll;
 }
 
 BE_INLINE Angles::Angles(const Vec3 &v) {
-    this->yaw   = v[0];
+    this->yaw = v[0];
     this->pitch = v[1];
-    this->roll  = v[2];
+    this->roll = v[2];
+}
+
+BE_INLINE Angles &Angles::operator=(const Angles &a) {
+    yaw = a.yaw;
+    pitch = a.pitch;
+    roll = a.roll;
+    return *this;
 }
 
 BE_INLINE void Angles::Set(float yaw, float pitch, float roll) {
-    this->yaw   = yaw;
+    this->yaw = yaw;
     this->pitch = pitch;
-    this->roll  = roll;
+    this->roll = roll;
 }
 
 BE_INLINE Angles &Angles::SetZero() {
@@ -157,13 +166,6 @@ BE_INLINE float Angles::operator[](int index) const {
 BE_INLINE float &Angles::operator[](int index) {
     assert((index >= 0) && (index < Size));
     return (&yaw)[index];
-}
-
-BE_INLINE Angles &Angles::operator=(const Angles &a) {
-    yaw = a.yaw;
-    pitch = a.pitch;
-    roll = a.roll;
-    return *this;
 }
 
 BE_INLINE Angles &Angles::operator+=(const Angles &a) {

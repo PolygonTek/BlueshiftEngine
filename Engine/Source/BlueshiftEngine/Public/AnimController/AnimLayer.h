@@ -92,9 +92,9 @@ public:
         Array<Condition>        conditions;         ///< Here we decide when transition get triggered
     };
 
-    explicit                    AnimLayer(AnimController *animController);
-    explicit                    AnimLayer(AnimController *animController, const AnimLayer *animLayer);
-                                ~AnimLayer();
+    AnimLayer(AnimController *animController);
+    AnimLayer(AnimController *animController, const AnimLayer *animLayer);
+    ~AnimLayer();
                                 
                                 /// Returns total size of allocated memory
     int                         Allocated() const;

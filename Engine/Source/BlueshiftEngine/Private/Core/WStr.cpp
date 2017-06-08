@@ -63,17 +63,17 @@ void WStr::FreeData() {
     }
 }
 
-void WStr::operator=(const wchar_t *text) {
+WStr &WStr::operator=(const wchar_t *text) {
     if (!text) {
         // safe behaviour if nullptr
         EnsureAlloced(1, false);
         data[0] = L'\0';
         len = 0;
-        return;
+        return *this;
     }
 
     if (text == data) {
-        return; // copying same thing
+        return *this; // copying same thing
     }
 
     // check if we're aliasing
@@ -91,13 +91,15 @@ void WStr::operator=(const wchar_t *text) {
 
         len -= diff;
 
-        return;
+        return *this;
     }
 
     int l = (int)wcslen(text);
     EnsureAlloced(l + 1, false);
     wcscpy(data, text);
     len = l;
+
+    return *this;
 }
 
 const wchar_t *WStr::Mid(int start, int len, WStr &result) const {

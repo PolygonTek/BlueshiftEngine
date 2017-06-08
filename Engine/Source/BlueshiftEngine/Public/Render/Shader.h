@@ -78,8 +78,7 @@ public:
     struct Define {
         Define() {}
         Define(const char *name, int value) { this->name = name; this->value = value; }
-
-        Define &            operator=(const Define &rhs) { this->name = rhs.name; this->value = rhs.value; return *this;  }
+        Define &operator=(const Define &rhs) { this->name = rhs.name; this->value = rhs.value; return *this;  }
 
         Str                 name;
         int                 value;

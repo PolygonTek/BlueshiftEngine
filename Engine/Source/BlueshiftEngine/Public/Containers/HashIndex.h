@@ -42,6 +42,8 @@ public:
     static constexpr int DefaultIndexGranularity = 1 << 10;
 
     HashIndex(const int initialHashSize = DefaultHashSize, const int initialIndexSize = DefaultHashSize);
+    /// Copy from another hash index.
+    HashIndex &operator=(const HashIndex &rhs);
     ~HashIndex();
 
                     /// Returns size of hash table.
@@ -61,9 +63,6 @@ public:
 
                     /// Returns total size of allocated memory including size of this type.
     size_t          Size() const { return Allocated() + sizeof(*this); }
-
-                    /// Copy from another hash index.
-    HashIndex &     operator=(const HashIndex &rhs);
 
                     /// Clears hash table (no memory free)
     void            Clear();
@@ -133,40 +132,6 @@ BE_INLINE HashIndex::~HashIndex() {
 BE_INLINE void HashIndex::SetGranularity(const int newGranularity) {
     assert(newGranularity > 0);
     granularity = newGranularity;
-}
-
-BE_INLINE HashIndex &HashIndex::operator=(const HashIndex &rhs) {
-    granularity = rhs.granularity;
-    hashMask = rhs.hashMask;
-    lookUpMask = rhs.lookUpMask;
-
-    if (rhs.lookUpMask == 0) {
-        hashSize = rhs.hashSize;
-        indexSize = rhs.indexSize;
-        Free();
-    } else {
-        if (rhs.hashSize != hashSize || hashTable == EmptyTable) {
-            if (hashTable != EmptyTable) {
-                delete [] hashTable;
-            }
-            
-            hashSize = rhs.hashSize;
-            hashTable = new int[hashSize];
-        }
-
-        if (rhs.indexSize != indexSize || indexChain == EmptyTable) {
-            if (indexChain != EmptyTable) {
-                delete [] indexChain;
-            }
-
-            indexSize = rhs.indexSize;
-            indexChain = new int[indexSize];
-        }
-        memcpy(hashTable, rhs.hashTable, hashSize * sizeof(hashTable[0]));
-        memcpy(indexChain, rhs.indexChain, indexSize * sizeof(indexChain[0]));
-    }
-
-    return *this;
 }
 
 BE_INLINE void HashIndex::Clear() {

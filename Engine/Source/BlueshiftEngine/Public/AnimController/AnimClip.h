@@ -36,9 +36,9 @@ class AnimClip {
     friend class AnimController;
 
 public:
-    explicit            AnimClip();
-    explicit            AnimClip(const AnimClip *animClip);
-                        ~AnimClip();
+    AnimClip();
+    AnimClip(const AnimClip *animClip);
+    ~AnimClip();
 
     void                Purge();
 

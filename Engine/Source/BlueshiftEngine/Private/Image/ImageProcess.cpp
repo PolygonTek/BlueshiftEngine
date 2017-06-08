@@ -89,6 +89,10 @@ Image &Image::FlipX() {
 }
 
 Image &Image::AdjustBrightness(float factor) {
+    if (IsPacked() || IsCompressed() || IsFloatFormat()) {
+        return *this;
+    }
+
     if (factor > 0) {
         int bpp = Image::BytesPerPixel(format);
         byte *src = pic;

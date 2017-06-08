@@ -25,6 +25,7 @@ struct ssef {
 
     BE_FORCE_INLINE ssef() {}
     BE_FORCE_INLINE ssef(const ssef &other) { m128 = other.m128; }
+    BE_FORCE_INLINE ssef &operator=(const ssef &other) { m128 = other.m128; return *this; }
     BE_FORCE_INLINE ssef(const __m128 a) { m128 = a; }
     BE_FORCE_INLINE explicit ssef(const __m128i a) { m128 = _mm_cvtepi32_ps(a); }
     BE_FORCE_INLINE explicit ssef(const float *a) { m128 = _mm_loadu_ps(a); }
@@ -34,7 +35,6 @@ struct ssef {
     BE_FORCE_INLINE void setZero() { m128 = _mm_setzero_ps(); }
     BE_FORCE_INLINE void setOne() { m128 = _mm_set1_ps(1.0f); }
 
-    BE_FORCE_INLINE ssef &operator=(const ssef &other) { m128 = other.m128; return *this; }
     BE_FORCE_INLINE operator const __m128 &() const { return m128; };
     BE_FORCE_INLINE operator __m128 &() { return m128; };
 
