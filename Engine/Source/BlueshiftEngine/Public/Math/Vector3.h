@@ -250,6 +250,9 @@ public:
                         /// Sets this vector on the unit hemisphere has cosine weighted distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromCosineSampleHemisphere(float u1, float u2);
 
+                        /// Sets this vector on the unit hemisphere has powered cosine weighted distribution with the given random variables u1, u2 [0, 1].
+    static Vec3         FromPowerCosineSampleHemisphere(float u1, float u2, float power);
+
                         /// Compute yaw angle in degree looking from the viewpoint of 2D view in x-y plane.
     float               ComputeYaw() const;
                         /// Compute pitch angle in degree looking from the viewpoint of 2D view in x-y plane.

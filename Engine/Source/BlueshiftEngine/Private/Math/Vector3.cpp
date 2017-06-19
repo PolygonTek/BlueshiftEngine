@@ -187,6 +187,15 @@ Vec3 Vec3::FromCosineSampleHemisphere(float u1, float u2) {
 #endif
 }
 
+// Mapping unit square to the point on unit hemisphere that has powered cosine weighted distribution
+Vec3 Vec3::FromPowerCosineSampleHemisphere(float u1, float u2, float power) {
+    float z = Math::Pow(u1, 1.0f / (power + 1.0f));
+    float r = Math::Sqrt(1 - z * z);
+    float s, c;
+    Math::SinCos(Math::TwoPi * u2, s, c);
+    return Vec3(r * c, r * s, z);
+}
+
 float Vec3::ComputeYaw() const {
     float yaw;
     
