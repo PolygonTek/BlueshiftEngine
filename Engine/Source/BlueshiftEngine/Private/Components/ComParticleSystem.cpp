@@ -390,7 +390,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
             if (shapeModule.randomizeDir == 0) {
                 particle->direction = Vec3::unitZ;
             } else {
-                Vec3 randomDir = Vec3::FromUnitSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
+                Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
                 particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
@@ -400,13 +400,13 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
                 r = RANDOM_FLOAT(r * (1.0f - shapeModule.thickness), r);
             }
 
-            particle->initialPosition = Vec3::FromUnitSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
+            particle->initialPosition = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
             particle->initialPosition *= r;
 
             if (shapeModule.randomizeDir == 0) {
                 particle->direction = Vec3::unitZ;
             } else {
-                Vec3 randomDir = Vec3::FromUnitSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
+                Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
                 particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
@@ -416,14 +416,14 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
                 r = RANDOM_FLOAT(r * (1.0f - shapeModule.thickness), r);
             }
 
-            particle->initialPosition.ToVec2() = Vec2::FromUnitCircle(RANDOM_FLOAT(0, 1));
+            particle->initialPosition.ToVec2() = Vec2::FromUniformSampleCircle(RANDOM_FLOAT(0, 1));
             particle->initialPosition.z = 0;
             particle->initialPosition *= r;
 
             if (shapeModule.randomizeDir == 0) {
                 particle->direction = Vec3::unitZ;
             } else {
-                Vec3 randomDir = Vec3::FromUnitSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
+                Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
                 particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
@@ -433,7 +433,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
                 r = RANDOM_FLOAT(r * (1.0f - shapeModule.thickness), r);
             }
 
-            Vec2 p = Vec2::FromUnitCircle(RANDOM_FLOAT(0, 1));
+            Vec2 p = Vec2::FromUniformSampleCircle(RANDOM_FLOAT(0, 1));
             particle->initialPosition.ToVec2() = p;
             particle->initialPosition.z = 0;
             particle->initialPosition *= r;

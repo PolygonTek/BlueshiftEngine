@@ -217,8 +217,15 @@ public:
                         /// Sets from linear interpolation between vector v1 and the vector v2.
     void                SetFromLerp(const Vec2 &v1, const Vec2 &v2, float l);
 
-                        /// Sets this vector on unit circle.
-    static Vec2         FromUnitCircle(float u);
+                        /// Sets this vector on unit circle has uniform distribution with the given random variable u [0, 1].
+    static Vec2         FromUniformSampleCircle(float u);
+
+                        /// Sets this vector on unit disk (filled circle) has uniform distribution with the given random variable u1, u2 [0, 1].
+    static Vec2         FromUniformSampleDisk(float u1, float u2);
+
+                        /// Sets this vector on unit disk (filled circle) has uniform distribution with the given random variable u1, u2 [0, 1].
+                        /// Less distorted mapping than FromUniformSampleDisk()
+    static Vec2         FromConcentricSampleDisk(float u1, float u2);
 
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
@@ -415,7 +422,7 @@ BE_INLINE void Vec2::SetFromLerp(const Vec2 &v1, const Vec2 &v2, const float l) 
     }
 }
 
-BE_INLINE Vec2 Vec2::FromUnitCircle(float u) {
+BE_INLINE Vec2 Vec2::FromUniformSampleCircle(float u) {
     float s, c;
     Math::SinCos(Math::TwoPi * u, s, c);
     return Vec2(c, s);

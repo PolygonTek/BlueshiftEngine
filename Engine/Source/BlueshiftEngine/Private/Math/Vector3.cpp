@@ -121,7 +121,23 @@ void Vec3::SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
     (*this) = (v1 * scale0 + v2 * scale1);
 }
 
-Vec3 Vec3::FromUnitSphere(float u1, float u2) {
+// Mapping unit square to the point on unit sphere 
+// Spherical uniform PDF = 1/4pi
+// pdf(theta, phi) = sin(theta) / 4pi
+//
+// pdf(theta) = Int_0^2pi pdf(theta, phi) dphi = sin(theta) / 2
+// pdf(phi|theta) = pdf(theta, phi) / pdf(theta) = 1/2pi
+//
+// cdf(theta) = Int_0^theta pdf(theta') dtheta' = 1/2 - cos(theta)/2
+// cdf(phi|theta) = Int_0^phi 1 / 2pi dphi' = phi/2pi
+//
+// theta = cos^{-1}(1 - 2*u1)
+// phi = 2pi * u2
+//
+// x = sin(theta) * cos(phi) = sqrt(1 - (1 - 2*u1)^2) * cos(2pi * u2)
+// y = sin(theta) * sin(phi) = sqrt(1 - (1 - 2*u1)^2) * sin(2pi * u2)
+// z = cos(theta) = 1 - 2*u1
+Vec3 Vec3::FromUniformSampleSphere(float u1, float u2) {
     float z = 1.0f - 2.0f * u1;
     float r = Math::Sqrt(1.0f - z * z);
     float s, c;
@@ -129,11 +145,44 @@ Vec3 Vec3::FromUnitSphere(float u1, float u2) {
     return Vec3(r * c, r * s, z);
 }
 
-Vec3 Vec3::FromUnitHemisphere(float u1, float u2) {
+// Mapping unit square to the point on unit hemisphere 
+// Hemishpere uniform PDF = 1/2pi
+// pdf(theta, phi) = sin(theta) / 2pi
+//
+// pdf(theta) = Int_0^2pi pdf(theta, phi) dphi = sin(theta)
+// pdf(phi|theta) = pdf(theta, phi) / pdf(theta) = 1/2pi
+//
+// cdf(theta) = Int_0^theta pdf(theta') dtheta' = 1 - cos(theta)
+// cdf(phi|theta) = Int_0^phi 1 / 2pi dphi' = phi/2pi
+//
+// theta = cos^{-1}(u1)
+// phi = 2pi * u2
+//
+// x = sin(theta) * cos(phi) = sqrt(1 - u1*u1) * cos(2pi * u2)
+// y = sin(theta) * sin(phi) = sqrt(1 - u1*u1) * sin(2pi * u2)
+// z = cos(theta) = u1
+Vec3 Vec3::FromUniformSampleHemisphere(float u1, float u2) {
     float r = Math::Sqrt(1.0f - u1 * u1);
     float s, c;
     Math::SinCos(Math::TwoPi * u2, s, c);
     return Vec3(r * c, r * s, u1);
+}
+
+// Mapping unit square to the point on unit hemisphere that has cosine weighted distribution
+//
+// Malley's method: projecting points up to the hemishpere from uniformly distributed disk
+// result in distribution of directions a cosine distribution
+Vec3 Vec3::FromCosineSampleHemisphere(float u1, float u2) {
+#if 0
+    p.ToVec2() = Vec2::FromUniformSampleDisk(u1, u2);
+    p.z = Math::Sqrt(Max(0.0f, 1.0f - u1));
+    return p;
+#else
+    Vec3 p;
+    p.ToVec2() = Vec2::FromConcentricSampleDisk(u1, u2);
+    p.z = Math::Sqrt(Max(0.0f, 1.0f - p.x * p.x - p.y * p.y));
+    return p;
+#endif
 }
 
 float Vec3::ComputeYaw() const {
