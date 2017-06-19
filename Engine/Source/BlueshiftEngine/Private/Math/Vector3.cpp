@@ -171,15 +171,15 @@ Vec3 Vec3::FromUniformSampleHemisphere(float u1, float u2) {
 }
 
 // Mapping unit square to the point on unit hemisphere that has cosine weighted distribution
-//
-// Malley's method: projecting points up to the hemishpere from uniformly distributed disk
-// result in distribution of directions a cosine distribution
 Vec3 Vec3::FromCosineSampleHemisphere(float u1, float u2) {
 #if 0
-    p.ToVec2() = Vec2::FromUniformSampleDisk(u1, u2);
-    p.z = Math::Sqrt(Max(0.0f, 1.0f - u1));
-    return p;
+    float r = Math::Sqrt(u1);
+    float s, c;
+    Math::SinCos(Math::TwoPi * u2, s, c);
+    return Vec3(r * c, r * s, Math::Sqrt(1.0f - u1);
 #else
+    // Malley's method: projecting points up to the hemishpere from uniformly distributed disk
+    // result in distribution of directions a cosine distribution
     Vec3 p;
     p.ToVec2() = Vec2::FromConcentricSampleDisk(u1, u2);
     p.z = Math::Sqrt(Max(0.0f, 1.0f - p.x * p.x - p.y * p.y));
