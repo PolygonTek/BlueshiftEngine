@@ -122,6 +122,7 @@ void Vec3::SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
 }
 
 // Mapping unit square to the point on unit sphere 
+//
 // Spherical uniform PDF = 1/4pi
 // pdf(theta, phi) = sin(theta) / 4pi
 //
@@ -145,7 +146,8 @@ Vec3 Vec3::FromUniformSampleSphere(float u1, float u2) {
     return Vec3(r * c, r * s, z);
 }
 
-// Mapping unit square to the point on unit hemisphere 
+// Mapping unit square to the point on unit hemisphere
+//
 // Hemishpere uniform PDF = 1/2pi
 // pdf(theta, phi) = sin(theta) / 2pi
 //

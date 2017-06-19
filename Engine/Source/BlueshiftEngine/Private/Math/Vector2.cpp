@@ -23,6 +23,7 @@ const Vec2 Vec2::one(1.0f, 1.0f);
 const Vec2 Vec2::unitX(1.0f, 0.0f);
 const Vec2 Vec2::unitY(0.0f, 1.0f);
 
+// Mapping unit square to the point on unit disk (filled circle)
 Vec2 Vec2::FromUniformSampleDisk(float u1, float u2) {
     float r = Math::Sqrt(u1);
     float s, c;
@@ -30,7 +31,8 @@ Vec2 Vec2::FromUniformSampleDisk(float u1, float u2) {
     return Vec2(r * c, r * s);
 }
 
-// Peter Shirley (1997): Concentric mapping from the unit square to the unit disk 
+// Mapping unit square to the point on unit disk (filled circle) 
+// Peter Shirley (1997): Concentric mapping gives less distortion than above function
 Vec2 Vec2::FromConcentricSampleDisk(float u1, float u2) {
     // Map uniform random numbers to [-1, 1]
     float ox = 2.0f * u1 - 1.0f;
