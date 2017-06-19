@@ -129,18 +129,18 @@ public:
     void                    SetConstant4f(int index, const Vec4 &constant) const;
     void                    SetConstant1f(const char *name, const float constant) const;
     void                    SetConstant2f(const char *name, const float *constant) const;
-    void                    SetConstant3f(const char *name, const float *constant) const;	
+    void                    SetConstant3f(const char *name, const float *constant) const;
     void                    SetConstant4f(const char *name, const float *constant) const;
     void                    SetConstant2f(const char *name, const Vec2 &constant) const;
     void                    SetConstant3f(const char *name, const Vec3 &constant) const;
     void                    SetConstant4f(const char *name, const Vec4 &constant) const;
 
-    void                    SetConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const;	
-    void                    SetConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const;	
-    void                    SetConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const;	
-    void                    SetConstant2x2f(const char *name, bool rowmajor, const Mat2 &constant) const;	
-    void                    SetConstant3x3f(const char *name, bool rowmajor, const Mat3 &constant) const;	
-    void                    SetConstant4x4f(const char *name, bool rowmajor, const Mat4 &constant) const;	
+    void                    SetConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const;
+    void                    SetConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const;
+    void                    SetConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const;
+    void                    SetConstant2x2f(const char *name, bool rowmajor, const Mat2 &constant) const;
+    void                    SetConstant3x3f(const char *name, bool rowmajor, const Mat3 &constant) const;
+    void                    SetConstant4x4f(const char *name, bool rowmajor, const Mat4 &constant) const;
 
     void                    SetConstantArray1i(int index, int num, const int *constant) const;
     void                    SetConstantArray2i(int index, int num, const int *constant) const;
@@ -154,24 +154,24 @@ public:
     void                    SetConstantArray1f(int index, int num, const float *constant) const;
     void                    SetConstantArray2f(int index, int num, const float *constant) const;
     void                    SetConstantArray3f(int index, int num, const float *constant) const;
-    void                    SetConstantArray4f(int index, int num, const float *constant) const;	
-    void                    SetConstantArray2f(int index, int num, const Vec2 *constant) const;	
-    void                    SetConstantArray3f(int index, int num, const Vec3 *constant) const;	
+    void                    SetConstantArray4f(int index, int num, const float *constant) const;
+    void                    SetConstantArray2f(int index, int num, const Vec2 *constant) const;
+    void                    SetConstantArray3f(int index, int num, const Vec3 *constant) const;
     void                    SetConstantArray4f(int index, int num, const Vec4 *constant) const;
     void                    SetConstantArray1f(const char *name, int num, const float *constant) const;
     void                    SetConstantArray2f(const char *name, int num, const float *constant) const;
     void                    SetConstantArray3f(const char *name, int num, const float *constant) const;
-    void                    SetConstantArray4f(const char *name, int num, const float *constant) const;	
-    void                    SetConstantArray2f(const char *name, int num, const Vec2 *constant) const;	
-    void                    SetConstantArray3f(const char *name, int num, const Vec3 *constant) const;	
+    void                    SetConstantArray4f(const char *name, int num, const float *constant) const;
+    void                    SetConstantArray2f(const char *name, int num, const Vec2 *constant) const;
+    void                    SetConstantArray3f(const char *name, int num, const Vec3 *constant) const;
     void                    SetConstantArray4f(const char *name, int num, const Vec4 *constant) const;
 
     void                    SetConstantArray2x2f(int index, bool rowmajor, int num, const Mat2 *constant) const;
     void                    SetConstantArray3x3f(int index, bool rowmajor, int num, const Mat3 *constant) const;
-    void                    SetConstantArray4x4f(int index, bool rowmajor, int num, const Mat4 *constant) const;			
+    void                    SetConstantArray4x4f(int index, bool rowmajor, int num, const Mat4 *constant) const;
     void                    SetConstantArray2x2f(const char *name, bool rowmajor, int num, const Mat2 *constant) const;
     void                    SetConstantArray3x3f(const char *name, bool rowmajor, int num, const Mat3 *constant) const;
-    void                    SetConstantArray4x4f(const char *name, bool rowmajor, int num, const Mat4 *constant) const;	
+    void                    SetConstantArray4x4f(const char *name, bool rowmajor, int num, const Mat4 *constant) const;
 
     void                    SetConstantBuffer(int index, RHI::Handle bufferHandle) const;
     void                    SetConstantBuffer(const char *name, RHI::Handle bufferHandle) const;
@@ -221,7 +221,7 @@ private:
     int                     builtInConstantLocations[MaxBuiltInConstants];
     int                     builtInSamplerUnits[MaxBuiltInSamplers];
 
-    Array<Define>           defineArray;             ///< Define list for instantiated shader
+    Array<Define>           defineArray;            ///< Define list for instantiated shader
 
     Shader *                originalShader;         ///< Original shader pointer. Instantiated shader has a pointer to the original shader
     Array<Shader *>         instantiatedShaders;
@@ -274,13 +274,13 @@ public:
         ObjectMotionBlurShader,
         LightingGenericShader,
         FogLightShader,
-        BlendLightShader,	
+        BlendLightShader,
         //SHProjectionShader,
         //SHEvalIrradianceCubeMapShader,
         PostObjectMotionBlurShader,
         PostCameraMotionBlurShader,
-        PostPassThruShader,	
-        PostPassThruColorShader,	
+        PostPassThruShader,
+        PostPassThruColorShader,
         Downscale2x2Shader,
         Downscale4x4Shader,
         Downscale4x4LogLumShader,
@@ -294,8 +294,8 @@ public:
         BlurAlphaMaskedBilinear8xShader,
         KawaseBlurShader,
         RadialBlurShader,
-        AoBlurShader,		
-        PostColorTransformShader,	
+        AoBlurShader,
+        PostColorTransformShader,
         PostGammaCorrectionShader,
         LinearizeDepthShader,
         CopyDownscaledCocToAlphaShader,

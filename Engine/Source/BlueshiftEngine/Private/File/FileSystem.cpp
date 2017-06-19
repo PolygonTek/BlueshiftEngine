@@ -408,7 +408,7 @@ bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, Prog
     size_t srcFileSize;
     File *srcFile = OpenFileRead(srcFilename, false, &srcFileSize);
     if (!srcFile /*|| srcFileSize < 1 */) {
-            BE_WARNLOG(L"CopyFile: Failed to open src file '%hs'\n", srcFilename);
+        BE_WARNLOG(L"CopyFile: Failed to open src file '%hs'\n", srcFilename);
         return false;
     }
     

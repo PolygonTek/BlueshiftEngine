@@ -90,6 +90,7 @@ Image &Image::FlipX() {
 
 Image &Image::AdjustBrightness(float factor) {
     if (IsPacked() || IsCompressed() || IsFloatFormat()) {
+        assert(0);
         return *this;
     }
 

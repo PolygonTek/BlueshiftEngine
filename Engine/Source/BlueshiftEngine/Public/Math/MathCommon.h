@@ -14,15 +14,15 @@
 
 #pragma once
 
-#define INT8_SIGN_BIT       7
-#define INT16_SIGN_BIT      15
-#define INT32_SIGN_BIT      31
-#define INT64_SIGN_BIT      63
+#define INT8_SIGN_BIT               7
+#define INT16_SIGN_BIT              15
+#define INT32_SIGN_BIT              31
+#define INT64_SIGN_BIT              63
 
-#define INT8_SIGN_MASK      (1 << INT8_SIGN_BIT)
-#define INT16_SIGN_MASK     (1 << INT16_SIGN_BIT)
-#define INT32_SIGN_MASK     (1UL << INT32_SIGN_BIT)
-#define INT64_SIGN_MASK     (1ULL << INT64_SIGN_BIT)
+#define INT8_SIGN_MASK              (1 << INT8_SIGN_BIT)
+#define INT16_SIGN_MASK             (1 << INT16_SIGN_BIT)
+#define INT32_SIGN_MASK             (1UL << INT32_SIGN_BIT)
+#define INT64_SIGN_MASK             (1ULL << INT64_SIGN_BIT)
 
 // int 비트 검출
 #define INT64_SIGNBITSET(i)         (((const uint64_t)(i)) >> INT64_SIGN_BIT)
