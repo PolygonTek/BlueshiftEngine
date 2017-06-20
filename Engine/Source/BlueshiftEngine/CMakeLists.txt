@@ -78,6 +78,7 @@ set(ENGINE_FILES
   Public/Math/Cylinder.h
   Public/Math/Frustum.h
   Public/Math/Half.h
+  Public/Math/Hammersley.h
   Public/Math/Math.h
   Public/Math/MathCommon.h
   Public/Math/Matrix.h

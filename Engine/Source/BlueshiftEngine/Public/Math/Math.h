@@ -37,3 +37,4 @@
 #include "Math/Curve.h"
 #include "Math/Hermite.h"
 #include "Math/Random.h"
+#include "Math/Hammersley.h"
