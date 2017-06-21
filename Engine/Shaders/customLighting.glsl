@@ -104,7 +104,7 @@ void litSpecularGGX(in vec3 N, in vec3 L, in vec3 V, in float roughness, in floa
     float k = alpha * 0.5f;
     float k2 = k * k;
     float invK2 = 1.0 - k2;
-    float G = 1.0 / (dotLH * dotLH * invK2 + k2);
+    float G = 1.0 / (LdotH * LdotH * invK2 + k2);
     
     // Fresnel (Schlick's approximation)
     float LdotH5 = pow(1.0 - LdotH, 5.0);
