@@ -110,19 +110,17 @@ void main() {
 #endif
 
 #if _SPECULAR_SOURCE == 0
-	vec4 S = vec4(0.0, 0.0, 0.0, 0.0);
+	vec4 specular = vec4(0.0, 0.0, 0.0, 0.0);
 #elif _SPECULAR_SOURCE == 1
-	vec4 S = specularColor;
+	vec4 specular = specularColor;
 #elif (_SPECULAR_SOURCE == 2 || _SPECULAR_SOURCE == 3)
-	vec4 S = tex2D(specularMap, v2f_tcSpecular);
+	vec4 specular = tex2D(specularMap, v2f_tcSpecular);
 #elif _SPECULAR_SOURCE == 4
-	vec4 S = tex2D(diffuseMap, v2f_tcSpecular).aaaa;
+	vec4 specular = tex2D(diffuseMap, v2f_tcSpecular).aaaa;
 #endif
 
-	vec3 Cd, Cs;
-	customLighting(N, L, V, S, Cd, Cs);
-
-	Cd *= diffuse.xyz;
+    vec3 Cd, Cs;
+    litPhong(N, L, V, diffuse, specular, Cd, Cs);
 
 #ifdef _BUMPENV
 	vec3 tangentToWorldMatrixS = normalize(v2f_tangentToWorldMatrixS.xyz);
