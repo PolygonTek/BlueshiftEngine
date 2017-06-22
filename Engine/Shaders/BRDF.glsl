@@ -1,7 +1,3 @@
-uniform float specularExponent;
-uniform float specularReflectance;
-const float specularExponentMapScale = 64.0;
-
 #define PBR_DIFFUSE 0
 #define PBR_SPEC_D 2
 #define PBR_SPEC_G 3
@@ -36,127 +32,6 @@ void litDiffuseOrenNayar(in float NdotL, in float NdotV, in float LdotV, in floa
     float t = mix(1.0, max(NdotL, NdotV), step(0.0, s));    
     
     Cd = Kd.rgb * NdotL * (A + B * s / t) / 3.14159265;
-}
-
-void litPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
-#if defined(_HALF_LAMBERT_DIFFUSE)
-    float NdotL = dot(N, L);
-    float halfLambert = NdotL * 0.5 + 0.5;
-    halfLambert *= halfLambert;
-    Cd = Kd.rgb * halfLambert;
-#else // Lambertian
-    float NdotL = dot(N, L);
-    Cd = Kd.rgb * max(NdotL, 0.0);
-#endif
-
-#if _SPECULAR_SOURCE == 0
-    Cs = vec3(0.0, 0.0, 0.0);
-#else
-    vec3 R = reflect(-L, N);
-    float RdotV = max(dot(R, V), 0.0);
-
-    #if _SPECULAR_SOURCE == 3
-        float specExp = max(Ks.a * specularExponentMapScale, 1.0);
-        Cs = Ks.rgb * pow((NdotL > 0.0 ? RdotV : 0.0), specExp);
-    #else
-        Cs = Ks.rgb * pow((NdotL > 0.0 ? RdotV : 0.0), specularExponent);
-    #endif
-#endif
-}
-
-// Phong lighting that satisfy energy conservation
-void litPhongEC(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
-#if defined(_HALF_LAMBERT_DIFFUSE)
-    float NdotL = dot(N, L);
-    float halfLambert = NdotL * 0.5 + 0.5;
-    halfLambert *= halfLambert;
-    Cd = Kd.rgb * halfLambert;
-#else // Lambertian
-    float NdotL = dot(N, L);
-    Cd = Kd.rgb * max(NdotL / 3.14159265, 0.0);
-#endif
-
-#if _SPECULAR_SOURCE == 0
-    Cs = vec3(0.0, 0.0, 0.0);
-#else
-    vec3 R = reflect(-L, N);     
-    float RdotV = max(dot(R, V), 0.0);
-
-    #if _SPECULAR_SOURCE == 3
-        float specExp = max(Ks.a * specularExponentMapScale, 1.0);
-        float normFactor = (specExp + 2.0) / 6.2831853;
-        Cs = Ks.rgb * normFactor * NdotL * pow((NdotL > 0.0 ? RdotV : 0.0), specExp);
-    #else
-        float normFactor = (specularExponent + 2.0) / 6.2831853;
-        Cs = Ks.rgb * normFactor * NdotL * pow((NdotL > 0.0 ? RdotV : 0.0), specularExponent);
-    #endif
-#endif
-
-#if _SPECULAR_SOURCE != 0
-    Cs *= specularReflectance;
-    Cd *= (1.0f - specularReflectance);
-#endif
-}
-
-// Blinn-Phong lighting
-void litBlinnPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
-#if defined(_HALF_LAMBERT_DIFFUSE)
-    float NdotL = dot(N, L);
-    float halfLambert = NdotL * 0.5 + 0.5;
-    halfLambert *= halfLambert;
-    Cd = Kd.rgb * halfLambert;
-#else // Lambertian
-    float NdotL = dot(N, L);
-    Cd = Kd.rgb * max(NdotL, 0.0);
-#endif
-
-#if _SPECULAR_SOURCE == 0
-    Cs = vec3(0.0, 0.0, 0.0);
-#else
-    vec3 H = normalize(L + V);
-    float NdotH = max(dot(N, H), 0.0);
-
-    #if _SPECULAR_SOURCE == 3
-        float specExp = max(Ks.a * specularExponentMapScale, 1.0);
-        Cs = Ks.rgb * pow((NdotL > 0.0 ? NdotH : 0.0), specExp);
-    #else
-        Cs = Ks.rgb * pow((NdotL > 0.0 ? NdotH : 0.0), specularExponent);
-    #endif
-#endif
-}
-
-// Blinn-Phong lighting that satisfy energy conservation
-void litBlinnPhongEC(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
-#if defined(_HALF_LAMBERT_DIFFUSE)
-    float NdotL = dot(N, L);
-    float halfLambert = NdotL * 0.5 + 0.5;
-    halfLambert *= halfLambert;
-    Cd = Kd.rgb * halfLambert;
-#else // Lambertian
-    float NdotL = dot(N, L);
-    Cd = Kd.rgb * max(NdotL / 3.14159265, 0.0);
-#endif
-
-#if _SPECULAR_SOURCE == 0
-    Cs = vec3(0.0, 0.0, 0.0);
-#else
-    vec3 H = normalize(L + V);
-    float NdotH = max(dot(N, H), 0.0);
-
-    #if _SPECULAR_SOURCE == 3
-        float specExp = max(Ks.a * specularExponentMapScale, 1.0);
-        float normFactor = (specExp + 8.0) / 25.13274123;
-        Cs = Ks.rgb * normFactor * NdotL * pow((NdotL > 0.0 ? NdotH : 0.0), specExp);
-    #else
-        float normFactor = (specularExponent + 8.0) / 25.13274123;
-        Cs = Ks.rgb * normFactor * NdotL * pow((NdotL > 0.0 ? NdotH : 0.0), specularExponent);
-    #endif
-#endif
-
-#if _SPECULAR_SOURCE != 0
-    Cs *= specularReflectance;
-    Cd *= (1.0f - specularReflectance);
-#endif
 }
 
 float D_Blinn(float NdotH, float m) {
@@ -208,7 +83,7 @@ vec3 F_Schlick(vec3 F0, float LdotH) {
     return F0 + (vec3(1.0, 1.0, 1.0) - F0) * pow5(1.0 - LdotH);
 }
 
-void litStandard(in vec3 N, in vec3 L, in vec3 V, in float roughness, in vec4 Kd, in vec3 F0, out vec3 Cd, out vec3 Cs) {
+void litStandard(in vec3 N, in vec3 L, in vec3 V, in float roughness, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
     vec3 H = normalize(L + V);
 
     float NdotL = max(dot(N, L), 0);
@@ -261,11 +136,11 @@ void litStandard(in vec3 N, in vec3 L, in vec3 V, in float roughness, in vec4 Kd
 #endif
 
     // Fresnel term (Schlick's approximation)
-    vec3 F = F_Schlick(F0, LdotH); 
+    vec3 F = F_Schlick(Ks.rgb, LdotH); 
 
     // Microfacets BRDF = D * G * F
     // G term is divided by (4 * NdotL * NdotV)
     Cs = NdotL * D * G * F;
 
-    Cd *= (vec3(1.0, 1.0, 1.0) - F_Schlick(F0, NdotL)); // is it correct ??
+    Cd *= (vec3(1.0, 1.0, 1.0) - F_Schlick(Ks.rgb, NdotL)); // is it correct ??
 }

@@ -20,7 +20,7 @@ uniform sampler2D lightProjectionMap;
 uniform samplerCube lightCubeMap;
 
 uniform vec3 specularColor;
-uniform float specularExponent = 32.0;
+uniform float specularPower = 32.0;
 uniform vec4 lightColor;
 uniform float lightFallOffExponent;
 uniform bool useLightCube;
@@ -100,9 +100,9 @@ void main() {
 #if _SPECULAR_SOURCE == 0
 	vec3 Cs = vec3(0.0, 0.0, 0.0);
 #elif _SPECULAR_SOURCE == 1
-	vec3 Cs = specularColor.xyz * (pow((NdotL > 0.0 ? RdotV : 0.0), specularExponent) > 0.9 ? 1.0 : 0.0);
+	vec3 Cs = specularColor.xyz * (pow((NdotL > 0.0 ? RdotV : 0.0), specularPower) > 0.9 ? 1.0 : 0.0);
 #elif _SPECULAR_SOURCE == 2
-	vec3 Cs = tex2D(specularMap, v2f_texCoord).xyz * (pow(NdotL > 0.0 ? RdotV : 0.0, specularExponent) > 0.9 ? 1.0 : 0.0);
+	vec3 Cs = tex2D(specularMap, v2f_texCoord).xyz * (pow(NdotL > 0.0 ? RdotV : 0.0, specularPower) > 0.9 ? 1.0 : 0.0);
 #endif
 
 	vec3 C = Cd + Cs;

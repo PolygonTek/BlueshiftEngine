@@ -49,45 +49,46 @@ uniform float subSurfaceRollOff;
 uniform float subSurfaceShadowDensity;// = 0.5;
 uniform sampler2D subSurfaceColorMap;
 
-$include "customLighting.glsl"
+$include "PhongLighting.glsl"
+$include "BRDF.glsl"
 
 void main() {
-	vec3 L = normalize(v2f_lightVector);
+    vec3 L = normalize(v2f_lightVector);
 
-	float A = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
-	A = pow(A, lightFallOffExponent);
+    float A = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
+    A = pow(A, lightFallOffExponent);
 
-	vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * A;
+    vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * A;
 
 #if !defined(USE_SHADOW_POINT)
-	if (removeBackProjection) {
-		Cl *= min((v2f_lightProjection.z < 0.0 ? 0.0 : 10.0) * v2f_lightProjection.z / v2f_lightProjection.w, 1.0);
-	}
+    if (removeBackProjection) {
+        Cl *= min((v2f_lightProjection.z < 0.0 ? 0.0 : 10.0) * v2f_lightProjection.z / v2f_lightProjection.w, 1.0);
+    }
 #endif
 
-	if (Cl == vec3(0.0)) {
-		discard;
-	}
+    if (Cl == vec3(0.0)) {
+        discard;
+    }
 
-	vec3 shadowLighting = vec3(1.0);
+    vec3 shadowLighting = vec3(1.0);
 
 #if defined(USE_SHADOW_MAP)
 #if defined(USE_SHADOW_SPOT) || defined(USE_SHADOW_POINT) || defined(USE_SHADOW_CASCADE)
-	shadowLighting = ShadowFunc();
-	/*#if !defined(RIM_LIGHT) && !defined(SUB_SURFACE_SCATTERING)
-	if (shadowLighting == 0.0) {
-		discard;
-	}
-	#endif*/
+    shadowLighting = ShadowFunc();
+    /*#if !defined(RIM_LIGHT) && !defined(SUB_SURFACE_SCATTERING)
+    if (shadowLighting == 0.0) {
+        discard;
+    }
+    #endif*/
 #endif
 #endif
 
-	vec3 V = normalize(v2f_viewVector);
+    vec3 V = normalize(v2f_viewVector);
 
 #ifdef _PARALLAX
-	vec2 tc = offsetTexcoord(heightMap, v2f_tcDiffuseNormal, V.xy, 0.0078125);
+    vec2 tc = offsetTexcoord(heightMap, v2f_tcDiffuseNormal, V.xy, 0.0078125);
 #else
-	vec2 tc = v2f_tcDiffuseNormal;
+    vec2 tc = v2f_tcDiffuseNormal;
 #endif
 
 #if _DIFFUSE_SOURCE == 0
@@ -103,13 +104,13 @@ void main() {
 #endif
 
 #if _NORMAL_SOURCE == 0
-	vec3 N = normalize(v2f_normal);
+    vec3 N = normalize(v2f_normal);
 #elif _NORMAL_SOURCE == 1
-	vec3 N = normalize(getNormal(normalMap, tc));
+    vec3 N = normalize(getNormal(normalMap, tc));
 #elif _NORMAL_SOURCE == 2
-	vec3 b1 = normalize(getNormal(normalMap, tc));
-	vec3 b2 = vec3(tex2D(detailNormalMap, tc * detailRepeat).xy * 2.0 - 1.0, 0.0);
-	vec3 N = normalize(b1 + b2);
+    vec3 b1 = normalize(getNormal(normalMap, tc));
+    vec3 b2 = vec3(tex2D(detailNormalMap, tc * detailRepeat).xy * 2.0 - 1.0, 0.0);
+    vec3 N = normalize(b1 + b2);
 #endif
 
 #if _SPECULAR_SOURCE == 0
@@ -123,54 +124,53 @@ void main() {
 #endif
 
     vec3 Cd, Cs;
-    //litPhong(N, L, V, Kd, Ks, Cd, Cs);
-    litBlinnPhong(N, L, V, Kd, Ks, Cd, Cs);
+    litBlinnPhongEC(N, L, V, Kd, Ks, Cd, Cs);
     //litStandard(N, L, V, roughness, Kd, vec3(metalic, metalic, metalic), Cd, Cs);
 
 #ifdef _BUMPENV
-	vec3 tangentToWorldMatrixS = normalize(v2f_tangentToWorldMatrixS.xyz);
-	vec3 tangentToWorldMatrixT = normalize(v2f_tangentToWorldMatrixT.xyz);
-	//vec3 tangentToWorldMatrixR = normalize(v2f_tangentToWorldMatrixR.xyz);
-	vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_tangentToWorldMatrixT.w);
+    vec3 tangentToWorldMatrixS = normalize(v2f_tangentToWorldMatrixS.xyz);
+    vec3 tangentToWorldMatrixT = normalize(v2f_tangentToWorldMatrixT.xyz);
+    //vec3 tangentToWorldMatrixR = normalize(v2f_tangentToWorldMatrixR.xyz);
+    vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_tangentToWorldMatrixT.w);
 
-	vec3 E = reflect(-V, N);
-	vec3 worldE;
-	worldE.x = dot(tangentToWorldMatrixS, E);
-	worldE.y = dot(tangentToWorldMatrixT, E);
-	worldE.z = dot(tangentToWorldMatrixR, E);
+    vec3 E = reflect(-V, N);
+    vec3 worldE;
+    worldE.x = dot(tangentToWorldMatrixS, E);
+    worldE.y = dot(tangentToWorldMatrixT, E);
+    worldE.z = dot(tangentToWorldMatrixR, E);
 
-	vec3 Ce = tex2D(envMaskMap, tc).xyz * texCUBE(envCubeMap, worldE).xyz;
-	vec3 C = Cd + Ce * reflectness;
+    vec3 Ce = tex2D(envMaskMap, tc).xyz * texCUBE(envCubeMap, worldE).xyz;
+    vec3 C = Cd + Ce * reflectness;
 #else
-	vec3 C = Cd;
+    vec3 C = Cd;
 #endif
 
-	C += Cs;
+    C += Cs;
 
 #if defined(_RIM_LIGHT)
-	float NdotV = max(dot(N, V), 0.0);
-	float rimLight = max(pow(1.0 - NdotV, rimLightExponent) * max(dot(V, -L), 0.0), 0.0);
-	C += rimLight * (shadowLighting * (1.0 - rimLightShadowDensity) + rimLightShadowDensity);
+    float NdotV = max(dot(N, V), 0.0);
+    float rimLight = max(pow(1.0 - NdotV, rimLightExponent) * max(dot(V, -L), 0.0), 0.0);
+    C += rimLight * (shadowLighting * (1.0 - rimLightShadowDensity) + rimLightShadowDensity);
 #endif
 
 #if defined(_SUB_SURFACE_SCATTERING)
-	float subLamb = smoothstep(-subSurfaceRollOff, 1.0, NdotL) - smoothstep(0.0, 1.0, NdotL);
-	subLamb = max(subLamb, 0.0);
-	C += subLamb * tex2D(subSurfaceColorMap, tc).xyz * (shadowLighting * (1.0 - subSurfaceShadowDensity) + subSurfaceShadowDensity);
+    float subLamb = smoothstep(-subSurfaceRollOff, 1.0, NdotL) - smoothstep(0.0, 1.0, NdotL);
+    subLamb = max(subLamb, 0.0);
+    C += subLamb * tex2D(subSurfaceColorMap, tc).xyz * (shadowLighting * (1.0 - subSurfaceShadowDensity) + subSurfaceShadowDensity);
 #endif
 
-	C *= shadowLighting;
+    C *= shadowLighting;
 
 #ifdef USE_LIGHT_CUBE_MAP
-	if (useLightCube) {
-		Cl *= texCUBE(lightCubeMap, -L);
-	}
+    if (useLightCube) {
+        Cl *= texCUBE(lightCubeMap, -L);
+    }
 #endif
-	vec4 outputColor = v2f_color * vec4(Cl * C, 1.0);
+    vec4 outputColor = v2f_color * vec4(Cl * C, 1.0);
 
 #ifdef LOGLUV_HDR
-	o_fragColor = encodeLogLuv(outputColor.xyz);
+    o_fragColor = encodeLogLuv(outputColor.xyz);
 #else
-	o_fragColor = outputColor;
+    o_fragColor = outputColor;
 #endif
 }
