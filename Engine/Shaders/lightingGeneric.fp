@@ -36,6 +36,9 @@ uniform bool useLightCube;
 uniform bool useShadowMap;
 uniform bool removeBackProjection;
 
+uniform float roughness;
+uniform float metalic;
+
 uniform float reflectness;
 uniform samplerCube envCubeMap;
 uniform sampler2D envMaskMap;
@@ -88,15 +91,15 @@ void main() {
 #endif
 
 #if _DIFFUSE_SOURCE == 0
-	vec4 diffuse = diffuseColor;
+    vec4 Kd = diffuseColor;
 #elif _DIFFUSE_SOURCE == 1
-	vec4 diffuse = tex2D(diffuseMap, tc);
+    vec4 Kd = tex2D(diffuseMap, tc);
 #endif
 
 #ifdef PERFORATED
-	if (diffuse.w < 0.5) {
-		discard;
-	}
+    if (Kd.w < 0.5) {
+        discard;
+    }
 #endif
 
 #if _NORMAL_SOURCE == 0
@@ -110,17 +113,19 @@ void main() {
 #endif
 
 #if _SPECULAR_SOURCE == 0
-	vec4 specular = vec4(0.0, 0.0, 0.0, 0.0);
+    vec4 Ks = vec4(0.0, 0.0, 0.0, 0.0);
 #elif _SPECULAR_SOURCE == 1
-	vec4 specular = specularColor;
+    vec4 Ks = specularColor;
 #elif (_SPECULAR_SOURCE == 2 || _SPECULAR_SOURCE == 3)
-	vec4 specular = tex2D(specularMap, v2f_tcSpecular);
+    vec4 Ks = tex2D(specularMap, v2f_tcSpecular);
 #elif _SPECULAR_SOURCE == 4
-	vec4 specular = tex2D(diffuseMap, v2f_tcSpecular).aaaa;
+    vec4 Ks = tex2D(diffuseMap, v2f_tcSpecular).aaaa;
 #endif
 
     vec3 Cd, Cs;
-    litPhong(N, L, V, diffuse, specular, Cd, Cs);
+    //litPhong(N, L, V, Kd, Ks, Cd, Cs);
+    litBlinnPhong(N, L, V, Kd, Ks, Cd, Cs);
+    //litStandard(N, L, V, roughness, Kd, vec3(metalic, metalic, metalic), Cd, Cs);
 
 #ifdef _BUMPENV
 	vec3 tangentToWorldMatrixS = normalize(v2f_tangentToWorldMatrixS.xyz);
