@@ -1,3 +1,4 @@
+uniform float wrapped;
 uniform float glossiness;
 uniform float specularReflectance;
 
@@ -6,11 +7,10 @@ float glossinessToSpecularPower(float glossiness) {
 }
 
 void litPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
-#if defined(_HALF_LAMBERT_DIFFUSE)
+#if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
-    float halfLambert = NdotL * 0.5 + 0.5;
-    halfLambert *= halfLambert;
-    Cd = Kd.rgb * halfLambert;
+    float w2 = 1.0 + wrapped;
+    Cd = Kd.rgb * (NdotL + wrapped) / (w2 * w2);
 #else // Lambertian
     float NdotL = dot(N, L);
     Cd = Kd.rgb * max(NdotL, 0.0);
@@ -30,47 +30,12 @@ void litPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 
 #endif
 }
 
-// Phong lighting that satisfy energy conservation
-void litPhongEC(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
-#if defined(_HALF_LAMBERT_DIFFUSE)
-    float NdotL = dot(N, L);
-    float halfLambert = NdotL * 0.5 + 0.5;
-    halfLambert *= halfLambert;
-    Cd = Kd.rgb * halfLambert;
-#else // Lambertian
-    float NdotL = dot(N, L);
-    Cd = Kd.rgb * max(NdotL, 0.0);
-#endif
-
-#if _SPECULAR_SOURCE == 0
-    Cs = vec3(0.0, 0.0, 0.0);
-#else
-    vec3 R = reflect(-L, N);     
-    float RdotV = max(dot(R, V), 0.0);
-
-    #if _SPECULAR_SOURCE == 3
-        float normFactor = Ks.a * 0.5 + 1.0;
-        Cs = Ks.rgb * normFactor * pow((NdotL > 0.0 ? RdotV : 0.0), glossinessToSpecularPower(Ks.a));
-    #else
-        float specularPower = glossinessToSpecularPower(glossiness);
-        float normFactor = specularPower * 0.5 + 1.0;
-        Cs = Ks.rgb * normFactor * pow((NdotL > 0.0 ? RdotV : 0.0), specularPower);
-    #endif
-#endif
-
-#if _SPECULAR_SOURCE != 0
-    Cs *= specularReflectance;
-    Cd *= (1.0f - specularReflectance);
-#endif
-}
-
 // Blinn-Phong lighting
 void litBlinnPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
-#if defined(_HALF_LAMBERT_DIFFUSE)
+#if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
-    float halfLambert = NdotL * 0.5 + 0.5;
-    halfLambert *= halfLambert;
-    Cd = Kd.rgb * halfLambert;
+    float w2 = 1.0 + wrapped;
+    Cd = Kd.rgb * (NdotL + wrapped) / (w2 * w2);
 #else // Lambertian
     float NdotL = dot(N, L);
     Cd = Kd.rgb * max(NdotL, 0.0);
@@ -90,13 +55,45 @@ void litBlinnPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out 
 #endif
 }
 
+// Phong lighting that satisfy energy conservation
+void litPhongEC(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
+#if defined(_WRAPPED_DIFFUSE)
+    float NdotL = dot(N, L);
+    float w2 = 1.0 + wrapped;
+    Cd = Kd.rgb * (NdotL + wrapped) / (w2 * w2);
+#else // Lambertian
+    float NdotL = dot(N, L);
+    Cd = Kd.rgb * max(NdotL, 0.0);
+#endif
+
+#if _SPECULAR_SOURCE == 0
+    Cs = vec3(0.0, 0.0, 0.0);
+#else
+    vec3 R = reflect(-L, N);
+    float RdotV = max(dot(R, V), 0.0);
+
+    #if _SPECULAR_SOURCE == 3
+        float normFactor = Ks.a * 0.5 + 1.0;
+        Cs = Ks.rgb * normFactor * pow((NdotL > 0.0 ? RdotV : 0.0), glossinessToSpecularPower(Ks.a));
+    #else
+        float specularPower = glossinessToSpecularPower(glossiness);
+        float normFactor = specularPower * 0.5 + 1.0;
+        Cs = Ks.rgb * normFactor * pow((NdotL > 0.0 ? RdotV : 0.0), specularPower);
+    #endif
+#endif
+
+#if _SPECULAR_SOURCE != 0
+    Cs *= specularReflectance;
+    Cd *= (1.0f - specularReflectance);
+#endif
+}
+
 // Blinn-Phong lighting that satisfy energy conservation
 void litBlinnPhongEC(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
-#if defined(_HALF_LAMBERT_DIFFUSE)
+#if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
-    float halfLambert = NdotL * 0.5 + 0.5;
-    halfLambert *= halfLambert;
-    Cd = Kd.rgb * halfLambert;
+    float w2 = 1.0 + wrapped;
+    Cd = Kd.rgb * (NdotL + wrapped) / (w2 * w2);
 #else // Lambertian
     float NdotL = dot(N, L);
     Cd = Kd.rgb * max(NdotL, 0.0);
