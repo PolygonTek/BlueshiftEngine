@@ -2,6 +2,14 @@
 $include "logluv.glsl"
 #endif
 
+vec3 toLinear(vec3 v) { 
+    return pow(v, vec3(2.2)); 
+}
+
+vec3 toSRGB(vec3 v) { 
+    return pow(v, vec3(1.0 / 2.2)); 
+}
+
 vec4 tex2D_bilinear(sampler2D tex, in vec2 uv, in float textureSize) {
     float texelSize = 1.0 / textureSize;
     vec2 f = fract(uv.xy * textureSize);

@@ -37,7 +37,7 @@ uniform bool useShadowMap;
 uniform bool removeBackProjection;
 
 uniform float roughness;
-uniform float metalic;
+uniform float metallic;
 
 uniform float reflectness;
 uniform samplerCube envCubeMap;
@@ -125,7 +125,7 @@ void main() {
 
     vec3 Cd, Cs;
     litBlinnPhongEC(N, L, V, Kd, Ks, Cd, Cs);
-    //litStandard(N, L, V, roughness, Kd, vec3(metalic, metalic, metalic), Cd, Cs);
+    //litStandard(N, L, V, roughness, Kd, vec4(metallic, metallic, metallic, metallic), Cd, Cs);
 
 #ifdef _BUMPENV
     vec3 tangentToWorldMatrixS = normalize(v2f_tangentToWorldMatrixS.xyz);
