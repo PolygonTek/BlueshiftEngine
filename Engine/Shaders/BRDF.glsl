@@ -13,11 +13,12 @@ float pow5(float f) {
     return f2 * f2 * f;
 }
 
-vec3 rotateWithUpVector(vec3 localDir, vec3 up) {
-    vec3 axisY = abs(up.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 axisX = normalize(cross(axisY, up));
-    axisY = cross(up, axisX);
-    return axisX * localDir.x + axisY * localDir.y + up * localDir.z;
+// Transform tangent space direction vector to local space direction vector
+vec3 rotateWithUpVector(vec3 tangentDir, vec3 tangentZ) {
+    vec3 tangentY = abs(tangentZ.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangentX = normalize(cross(tangentY, tangentZ));
+    tangentY = cross(tangentZ, tangentX);
+    return mat3(tangentX, tangentY, tangentZ) * tangentDir;
 }
 
 void litDiffuseLambert(in float NdotL, in vec4 Kd, out vec3 Cd) {

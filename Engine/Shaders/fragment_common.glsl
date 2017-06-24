@@ -29,14 +29,13 @@ float getMipmapLevel(vec2 uv, vec2 textureSize) {
     return 0.5 * log2(d);
 }
 
-float fresnel(vec3 eyeVec, vec3 normal, float R0) {
-    float kOneMinusEdotN = 1.0 - abs(dot(eyeVec, normal));    // note: abs() makes 2-sided materials work
-
+float fresnel(vec3 V, vec3 N, float F0) {
+    float kOneMinusVdotN = 1.0 - abs(dot(V, N));    // note: abs() makes 2-sided materials work
     // raise to 5th power
-    float result = kOneMinusEdotN * kOneMinusEdotN;
+    float result = kOneMinusVdotN * kOneMinusVdotN;
     result = result * result;
-    result = result * kOneMinusEdotN;
-    result = R0 + (1.0 - R0) * result;
+    result = result * kOneMinusVdotN;
+    result = F0 + (1.0 - F0) * result;
 
     return max(result, 0.0);
 }
