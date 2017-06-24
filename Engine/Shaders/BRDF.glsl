@@ -13,6 +13,13 @@ float pow5(float f) {
     return f2 * f2 * f;
 }
 
+vec3 rotateWithUpVector(vec3 localDir, vec3 up) {
+    vec3 axisY = abs(up.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 axisX = normalize(cross(axisY, up));
+    axisY = cross(up, axisX);
+    return axisX * localDir.x + axisY * localDir.y + up * localDir.z;
+}
+
 void litDiffuseLambert(in float NdotL, in vec4 Kd, out vec3 Cd) {
     Cd = Kd.rgb * NdotL * INV_PI;
 }
@@ -40,6 +47,10 @@ void litDiffuseOrenNayar(in float NdotL, in float NdotV, in float LdotV, in floa
     Cd = Kd.rgb * NdotL * (A + B * s / t) * INV_PI;
 }
 
+//---------------------------------------------------
+// Normal distribution functions
+//---------------------------------------------------
+
 float D_Blinn(float NdotH, float m) {
     float m2 = m * m;
     float n = 2.0 / m2 - 2.0;
@@ -52,6 +63,7 @@ float D_Beckmann(float NdotH, float m) {
     return exp((NdotH2 - 1.0) / (m2 * NdotH2)) / (PI * m2 * NdotH2 * NdotH2);
 }
 
+// Trowbridge-Reitz aka GGX
 float D_GGX(float NdotH, float m) {
     float m2 = m * m;
     float denom = NdotH * NdotH * (m2 - 1.0) + 1.0;
@@ -62,6 +74,10 @@ float D_GGXAniso(float NdotH, float XdotH, float YdotH, float mx, float my) {
     float denom = XdotH * XdotH / (mx * mx) + YdotH * YdotH / (my * my) + NdotH * NdotH;
     return 1.0 / (PI * mx * my * denom * denom);
 }
+
+//---------------------------------------------------
+// Geometric visibility functions
+//---------------------------------------------------
 
 float G_Neumann(float NdotV, float NdotL) {
     return 1.0 / (4.0 * max(NdotL, NdotV));
@@ -84,15 +100,21 @@ float G_SchlickGGX(float NdotV, float NdotL, float m) {
     return 0.25 / (GL * GV);
 }
 
+//---------------------------------------------------
+// Fresnel functions
+//---------------------------------------------------
+
 // Schlick's approximation
-vec3 F_Schlick(vec3 F0, float LdotH) {
-    return F0 + (vec3(1.0, 1.0, 1.0) - F0) * pow5(1.0 - LdotH);
+vec3 F_Schlick(vec3 F0, float VdotH) {
+    return F0 + (vec3(1.0, 1.0, 1.0) - F0) * pow5(1.0 - VdotH);
 }
 
 // Schlick's approximation with spherical Gaussian approximation
-vec3 F_SchlickSG(vec3 F0, float LdotH) {
-    return F0 + (vec3(1.0, 1.0, 1.0) - F0) * exp2(-5.55473 * LdotH - 6.98316) * LdotH;
+vec3 F_SchlickSG(vec3 F0, float VdotH) {
+    return F0 + (vec3(1.0, 1.0, 1.0) - F0) * exp2(-5.55473 * VdotH - 6.98316) * VdotH;
 }
+
+//---------------------------------------------------
 
 void litStandard(in vec3 N, in vec3 L, in vec3 V, in float roughness, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
     vec3 H = normalize(L + V);
@@ -100,7 +122,7 @@ void litStandard(in vec3 N, in vec3 L, in vec3 V, in float roughness, in vec4 Kd
     float NdotL = max(dot(N, L), 0);
     float NdotH = max(dot(N, H), 0);
     float NdotV = max(dot(N, V), 0);
-    float LdotH = max(dot(L, H), 0);
+    float VdotH = max(dot(V, H), 0);
 
     //----------------------------------
     // Diffuse BRDF
@@ -109,7 +131,7 @@ void litStandard(in vec3 N, in vec3 L, in vec3 V, in float roughness, in vec4 Kd
     litDiffuseLambert(NdotL, Kd, Cd);
 #elif PBR_DIFFUSE == 1
 
-    litDiffuseBurley(NdotL, NdotV, LdotH, roughness, Kd, Cd);
+    litDiffuseBurley(NdotL, NdotV, VdotH, roughness, Kd, Cd);
 #elif PBR_DIFFUSE == 2
     float LdotV = max(dot(L, V), 0);
 
@@ -136,18 +158,64 @@ void litStandard(in vec3 N, in vec3 L, in vec3 V, in float roughness, in vec4 Kd
 #if PBR_SPEC_G == 0
     float G = G_Neumann(NdotV, NdotL);
 #elif PBR_SPEC_G == 1
-    float G = G_Kelemen(LdotH);
+    float G = G_Kelemen(VdotH);
 #elif PBR_SPEC_G == 2
-    float G = G_CookTorrance(NdotV, NdotL, NdotH, LdotH);
+    float G = G_CookTorrance(NdotV, NdotL, NdotH, VdotH);
 #elif PBR_SPEC_G == 3
     float G = G_SchlickGGX(NdotV, NdotL, m);
 #endif
 
     // Fresnel term
-    vec3 F = F_SchlickSG(Ks.rgb, LdotH); 
+    vec3 F = F_SchlickSG(Ks.rgb, VdotH); 
 
     // Microfacets BRDF = D * G * F (G term is divided by (4 * NdotL * NdotV))
     Cs = PI * NdotL * D * G * F;
 
     Cd *= PI * (vec3(1.0, 1.0, 1.0) - F_SchlickSG(Ks.rgb, NdotL)); // is it correct ??
+}
+
+//---------------------------------------------------
+// Importance sampling functions
+//---------------------------------------------------
+
+// Lambertian importance sample direction vector with respect to N
+vec3 importanceSampleCosine(vec2 xi, vec3 N) {
+    float sinTheta = sqrt(xi.x);
+    float phi = TWO_PI * xi.y;
+
+    vec3 sampleDir;
+    sampleDir.x = sinTheta * cos(phi);
+    sampleDir.y = sinTheta * sin(phi);
+    sampleDir.z = sqrt(1.0 - xi.x);
+
+    return rotateWithUpVector(sampleDir, N);
+}
+
+// Phong specular importance sample direction vector with respect to N
+vec3 importanceSamplePowerCosine(vec2 xi, float power, vec3 N) {
+    float cosTheta = pow(1.0 - xi.x, 1.0 / (power + 1));
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float phi = TWO_PI * xi.y;
+    
+    vec3 sampleDir;
+    sampleDir.x = sinTheta * cos(phi);
+    sampleDir.y = sinTheta * sin(phi);
+    sampleDir.z = cosTheta;
+
+    return rotateWithUpVector(sampleDir, N);
+}
+
+// Importance sample direction vector for GGX specular with respect to N
+vec3 importanceSampleGGX(vec2 xi, float roughness, vec3 N) {
+    float alpha = roughness * roughness;
+    float cosTheta = sqrt((1.0 - xi.y) / (1.0 + (alpha * alpha - 1.0) * xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float phi = TWO_PI * xi.y;
+
+    vec3 sampleDir;
+    sampleDir.x = sinTheta * cos(phi);
+    sampleDir.y = sinTheta * sin(phi);
+    sampleDir.z = cosTheta;
+
+    return rotateWithUpVector(sampleDir, N);
 }
