@@ -123,14 +123,14 @@ void Vec3::SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
 
 // Mapping unit square to the point on unit sphere 
 //
-// Spherical uniform PDF = 1/4pi
+// Spherical uniform PDF = pdf(w) = 1/4pi
 // pdf(theta, phi) = sin(theta) / 4pi
 //
 // pdf(theta) = Int_0^2pi pdf(theta, phi) dphi = sin(theta) / 2
 // pdf(phi|theta) = pdf(theta, phi) / pdf(theta) = 1/2pi
 //
 // cdf(theta) = Int_0^theta pdf(theta') dtheta' = 1/2 - cos(theta)/2
-// cdf(phi|theta) = Int_0^phi 1 / 2pi dphi' = phi/2pi
+// cdf(phi|theta) = Int_0^phi pdf(phi'|theta) dphi' = phi/2pi
 //
 // theta = cos^{-1}(1 - 2*u1)
 // phi = 2pi * u2
@@ -148,14 +148,14 @@ Vec3 Vec3::FromUniformSampleSphere(float u1, float u2) {
 
 // Mapping unit square to the point on unit hemisphere
 //
-// Hemishpere uniform PDF = 1/2pi
+// Hemishpere uniform PDF = pdf(w) = 1/2pi
 // pdf(theta, phi) = sin(theta) / 2pi
 //
 // pdf(theta) = Int_0^2pi pdf(theta, phi) dphi = sin(theta)
 // pdf(phi|theta) = pdf(theta, phi) / pdf(theta) = 1/2pi
 //
 // cdf(theta) = Int_0^theta pdf(theta') dtheta' = 1 - cos(theta)
-// cdf(phi|theta) = Int_0^phi 1 / 2pi dphi' = phi/2pi
+// cdf(phi|theta) = Int_0^phi pdf(phi'|theta) dphi' = phi/2pi
 //
 // theta = cos^{-1}(u1)
 // phi = 2pi * u2
