@@ -259,7 +259,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     for (int i = 0; i < 6; i++) {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                R_CubeCoord(size, i, x, y, vec);
+                vec = R_CubeCoord(size, i, x, y);
                 vec.Normalize();
                 dst[3 * (y * size + x) + 0] = (byte)(128 + 127 * vec[0]);
                 dst[3 * (y * size + x) + 1] = (byte)(128 + 127 * vec[1]);

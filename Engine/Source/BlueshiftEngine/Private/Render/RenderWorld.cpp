@@ -853,7 +853,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                 }
 
                 fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
-                *fvptr++ = origin;			
+                *fvptr++ = origin;
 
                 for (int i = 0; i <= 360; i += 15) {
                     d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];

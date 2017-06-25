@@ -889,8 +889,7 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     for (int face = 0; face < 6; face++) {
         for (int y = 0; y < envmapSize; y++) {
             for (int x = 0; x < envmapSize; x++) {
-                Vec3 dir;
-                R_CubeCoord(envmapSize, face, x, y, dir);
+                Vec3 dir = R_CubeCoord(envmapSize, face, x, y);
                 dir.Normalize();
 
                 float basisProj[16];

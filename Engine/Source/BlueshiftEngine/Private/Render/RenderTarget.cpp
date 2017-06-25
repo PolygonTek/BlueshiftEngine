@@ -87,13 +87,13 @@ RenderTarget *RenderTarget::Create(const Texture *colorTexture, const Texture *d
 }
 
 RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTextures, const Texture *depthStencilTexture, int flags) {
-    RHI::Handle            colorTextureHandles[MaxMultipleColorTextures] = { RHI::NullTexture, };
-    RHI::Handle            depthStencilTextureHandle = RHI::NullTexture;
-    RHI::TextureType       textureType;
-    int                         width;
-    int                         height;
-    bool                        sRGB = true;
-    bool                        colorMipmaps = false;
+    RHI::Handle         colorTextureHandles[MaxMultipleColorTextures] = { RHI::NullTexture, };
+    RHI::Handle         depthStencilTextureHandle = RHI::NullTexture;
+    RHI::TextureType    textureType;
+    int                 width;
+    int                 height;
+    bool                sRGB = true;
+    bool                colorMipmaps = false;
 
     if (numColorTextures > 0 && colorTextures[0]) {
         for (int i = 0; i < numColorTextures; i++) {

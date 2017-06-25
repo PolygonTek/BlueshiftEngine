@@ -447,7 +447,7 @@ void TextureManager::Cmd_ReloadTexture(const CmdArgs &args) {
     }
 }
 
-void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {	
+void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
     char path[MaxAbsolutePath];
     
     if (args.Argc() != 3) {
@@ -490,7 +490,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
         }
 
         image2.FlipY();
-        image2.Write(path);		
+        image2.Write(path);
     }	
 
     BE_LOG(L"all done\n");

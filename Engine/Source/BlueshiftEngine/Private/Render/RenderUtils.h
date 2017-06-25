@@ -61,7 +61,7 @@ void    R_ComputeGaussianWeights(int kernelSize, float *weights);
 void    R_Compute1DLinearSamplingWeightsAndOffsets(int numSamples, const float *weights, float *lweights, Vec2 *hoffsets, Vec2 *voffsets);
 
 // 큐브맵 면과 x, y 좌표로 3D 좌표 생성
-void    R_CubeCoord(int cubeMapSize, int face, int x, int y, Vec3 &vec);
+Vec3    R_CubeCoord(int cubeMapSize, int face, int x, int y);
 
 // dir 방향으로 Spherical Harmonics 프로젝션 값 생성
 void    R_SH_EvalDirection(int order, const Vec3 &dir, float *basisProj);
