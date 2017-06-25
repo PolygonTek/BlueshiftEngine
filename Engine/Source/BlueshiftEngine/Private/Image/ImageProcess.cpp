@@ -294,7 +294,7 @@ Image &Image::GenerateMipmaps() {
 
             if (IsFloatFormat()) {
                 if (IsHalfFormat()) {
-                    BuildMipMap((float16_t *)dst, (float16_t *)src, w, h, d, numComponents);
+                    BuildMipMap((half *)dst, (half *)src, w, h, d, numComponents);
                 } else {
                     BuildMipMap((float *)dst, (float *)src, w, h, d, numComponents);
                 }
