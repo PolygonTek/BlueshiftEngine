@@ -78,7 +78,7 @@ public:
         RGBA_32F_32F_32F_32F,
         // DXT (BTC)
         RGBA_DXT1,
-        RGBA_DXT3, 	
+        RGBA_DXT3,
         RGBA_DXT5,
         XGBR_DXT5,
         DXN1,
@@ -115,7 +115,7 @@ public:
     enum FormatType {
         Packed          = BIT(0),
         Float           = BIT(1),
-        Half            = BIT(2),
+        Half            = Float | BIT(2),
         Depth           = BIT(3),
         Stencil         = BIT(4),
         DepthStencil    = Depth | Stencil,
@@ -190,7 +190,7 @@ public:
     byte *              GetPixels(int level) const;
     byte *              GetPixels(int level, int sliceIndex) const;
 
-    Color4              GetColor(int x, int y) const;
+    Color4              GetColor(float x, float y) const;
 
                         /// Returns number of pixels with given mipmap levels
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
@@ -213,7 +213,9 @@ public:
     Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags);
 
                         /// Creates an cubic image from the six square images
-    Image &             CreateCubeFromMultipleImages(const Image *images);
+    Image &             CreateCubeFrom6Faces(const Image *faceImages);
+
+    Image &             CreateCubeFromEquirectangular(const Image *equirectangularImage, int faceSize);
 
                         /// Copy image data from another.
                         /// Nothing happen if source image dimensions are not match with this image
@@ -277,6 +279,12 @@ public:
     static bool         IsDepthStencilFormat(Image::Format imageFormat);
     static int          MemRequired(int width, int height, int depth, int numMipmaps, Image::Format imageFormat);
     static int          MaxMipMapLevels(int width, int height, int depth);
+
+                        /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].
+    static float        GammaToLinear(float value);
+
+                        /// Converts a linear value in the range [0, 1] to an sRGB value in the range [0, 1].
+    static float        LinearToGamma(float value);
 
     static Image *      NewImageFromFile(const char *filename);
 
@@ -380,6 +388,26 @@ BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Image::Format forma
 
 BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags) {
     return Create(width, height, 1, numSlices, numMipmaps, format, data, flags);
+}
+
+BE_INLINE float Image::GammaToLinear(float srgb) {
+    float linear = srgb;
+    if (linear <= 0.4045f) {
+        linear = linear / 12.92f;
+    } else {
+        linear = Math::Pow((linear + 0.055f) / 1.055f, 2.4f);
+    }
+    return linear;
+}
+
+BE_INLINE float Image::LinearToGamma(float linear) {
+    float srgb;
+    if (linear <= 0.0031308f) {
+        srgb = linear * 12.92f;
+    } else {
+        srgb = 1.055f * Math::Pow(linear, 1.0f / 2.4f) - 0.055f;
+    }
+    return srgb;
 }
 
 BE_NAMESPACE_END
