@@ -101,17 +101,17 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 
 BE_NAMESPACE_BEGIN
 
-template <typename T> BE_INLINE T    Sign(const T v) { return (v > 0) ? 1 : ((v < 0) ? -1 : 0 ); }
-template <typename T> BE_INLINE T    Square(const T &v) { return v * v; }
-template <typename T> BE_INLINE T    Cube(const T &v) { return v * v * v; }
+template <typename T> BE_INLINE T   Sign(const T v) { return (v > 0) ? 1 : ((v < 0) ? -1 : 0 ); }
+template <typename T> BE_INLINE T   Square(const T &v) { return v * v; }
+template <typename T> BE_INLINE T   Cube(const T &v) { return v * v * v; }
 
-template <typename T> BE_INLINE T    InchesToMetres(const T value) { return static_cast<T>(value * 0.0254f); }
-template <typename T> BE_INLINE T    MetresToInches(const T value) { return static_cast<T>(value * 39.37f); }
-template <typename T> BE_INLINE T    InchesToFeet(const T value) { return static_cast<T>(value / 12.f); }
-template <typename T> BE_INLINE T    FeetToMiles(const T value) { return static_cast<T>(value / 5280.f); }
-template <typename T> BE_INLINE T    FeetToInches(const T value) { return static_cast<T>(value * 12.f); }
-template <typename T> BE_INLINE T    MetresToFeet(const T value) { return InchesToFeet(MetresToInches(value)); }
-template <typename T> BE_INLINE T    FeetToMetres(const T value) { return FeetToInches(InchesToMetres(value)); }
+template <typename T> BE_INLINE T   InchesToMetres(const T value) { return static_cast<T>(value * 0.0254f); }
+template <typename T> BE_INLINE T   MetresToInches(const T value) { return static_cast<T>(value * 39.37f); }
+template <typename T> BE_INLINE T   InchesToFeet(const T value) { return static_cast<T>(value / 12.f); }
+template <typename T> BE_INLINE T   FeetToMiles(const T value) { return static_cast<T>(value / 5280.f); }
+template <typename T> BE_INLINE T   FeetToInches(const T value) { return static_cast<T>(value * 12.f); }
+template <typename T> BE_INLINE T   MetresToFeet(const T value) { return InchesToFeet(MetresToInches(value)); }
+template <typename T> BE_INLINE T   FeetToMetres(const T value) { return FeetToInches(InchesToMetres(value)); }
 
 template <unsigned int Value>
 struct Factorial {
@@ -226,9 +226,9 @@ public:
     static double               Cos64(float a);
 
                                 /// Sine and cosine with 32 bits precision
-    static void                 SinCos(float a, float &s, float &c);	
+    static void                 SinCos(float a, float &s, float &c);
                                 /// Sine and cosine with 16 bits precision
-    static void                 SinCos16(float a, float &s, float &c);	
+    static void                 SinCos16(float a, float &s, float &c);
                                 /// Sine and cosine with 64 bits precision
     static void                 SinCos64(float a, double &s, double &c);
 

@@ -252,9 +252,9 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
                 return false;
             }
             break;
-            //	case 0x24:
-            //		this->format = FORMAT_RGBA_16_16_16_16;
-            //		break;
+        //case 0x24:
+        //  this->format = FORMAT_RGBA_16_16_16_16;
+        //  break;
         case 0x71:
             this->format = RGBA_16F_16F_16F_16F;
             break;
@@ -274,13 +274,13 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
                 this->format = RGBA_DXT5;
             }
             break;
-        case MAKE_FOURCC('R', 'X', 'G', 'B'):	// doom3 RXGB
+        case MAKE_FOURCC('R', 'X', 'G', 'B'):   // doom3 RXGB
             this->format = XGBR_DXT5;
             break;
         case MAKE_FOURCC('A', 'T', 'I', '1'):
             this->format = DXN1;
             break;
-        case MAKE_FOURCC('A', 'T', 'I', '2'):	// ATI 3DTc
+        case MAKE_FOURCC('A', 'T', 'I', '2'):   // ATI 3DTc
             this->format = DXN2;
             break;
         default:
@@ -318,6 +318,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     return true;
 }
 
+// float format write !!
 bool Image::WriteDDS(const char *filename) const {
     const Image *srcImage = this;
     Image convertedImage;
