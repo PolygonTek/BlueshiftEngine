@@ -107,11 +107,6 @@ Image &Image::CreateCubeFromEquirectangular(const Image *equirectangularImage, i
     byte *dst = this->pic;
 
     for (int i = 0; i < 6; i++) {
-        assert(images[i].width == images[i].height);
-        assert(images[i].width == images[0].width);
-        assert(images[i].format == images[0].format);
-        assert(images[i].numMipmaps == images[0].numMipmaps);
-
         //simdProcessor->Memcpy(dst, images[i].pic, sliceSize);
         dst += sliceSize;
     }
@@ -171,28 +166,62 @@ void Image::Clear() {
 Color4 Image::GetColor(float x, float y) const {
     const ImageFormatInfo *info = GetImageFormatInfo(format);
     int bpp = BytesPerPixel();
+    int pitch = width * bpp;
     int numComponents = NumComponents();
-    int offset = ((height - 1 - y) * width + x) * bpp;
 
-    ALIGN16(Color4 color);
+    int iY0 = (int)y;
+    int iY1 = Min(iY0 + 1, height - 1);
+    int iX0 = (int)x;
+    int iX1 = Min(iX0 + 1, width - 1);
+
+    float fracY = y - (float)iY0;
+    float fracX = x - (float)iX0;
+
+    int offset0 = iX0 * bpp;
+    int offset1 = iX1 * bpp;
+
+    Color4 color;
 
     if (info->type & Float) {
         if (info->type & Half) {
-            const float16_t *hsrc = (const float16_t *)&pic[offset];
+            const float16_t *hsrc0 = (const float16_t *)&pic[iY0 * pitch];
+            const float16_t *hsrc1 = (const float16_t *)&pic[iY1 * pitch];
+
             for (int i = 0; i < numComponents; i++) {
-                color[i] = F16toF32(hsrc[i]);
+                float a = Lerp(F16toF32(hsrc0[offset0 + i]), F16toF32(hsrc0[offset1 + i]), fracX);
+                float b = Lerp(F16toF32(hsrc1[offset0 + i]), F16toF32(hsrc1[offset1 + i]), fracX);
+
+                color[i] = Lerp(a, b, fracY);
             }
         } else {
-            const float *fsrc = (const float *)&pic[offset];
+            const float *fsrc0 = (const float *)&pic[iY0 * pitch];
+            const float *fsrc1 = (const float *)&pic[iY1 * pitch];
+
             for (int i = 0; i < numComponents; i++) {
-                color[i] = fsrc[i];
+                float a = Lerp(fsrc0[offset0 + i], fsrc0[offset1 + i], fracX);
+                float b = Lerp(fsrc1[offset0 + i], fsrc1[offset1 + i], fracX);
+
+                color[i] = Lerp(a, b, fracY);
             }
         }
     } else {
-        byte rgba8888[4];
-        info->unpackFunc(&pic[offset], rgba8888, 1);
+        // [0] [1]
+        // [2] [3]
+        ALIGN16(byte rgba8888[4][4]);
+
+        const byte *src0 = &pic[iY0 * pitch];
+        const byte *src1 = &pic[iY1 * pitch];
+
+        info->unpackFunc(&src0[offset0], rgba8888[0], 1);
+        info->unpackFunc(&src0[offset1], rgba8888[1], 1);
+        info->unpackFunc(&src1[offset0], rgba8888[2], 1);
+        info->unpackFunc(&src1[offset1], rgba8888[3], 1);
+
         for (int i = 0; i < numComponents; i++) {
-            color[i] = rgba8888[i] / 255.0f;
+            float a = Lerp(rgba8888[0][i] / 255.0f, rgba8888[1][i] / 255.0f, fracX);
+            float b = Lerp(rgba8888[2][i] / 255.0f, rgba8888[3][i] / 255.0f, fracX);
+
+            color[i] = Lerp(a, b, fracY);
         }
     }
 
