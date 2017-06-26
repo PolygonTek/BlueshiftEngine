@@ -403,25 +403,6 @@ void R_Compute1DLinearSamplingWeightsAndOffsets(int numSamples, const float *wei
     }
 }
 
-Vec3 R_CubeCoord(int cubeMapSize, int cubeMapFace, int x, int y) {
-    float s = (float)x / (float)(cubeMapSize - 1);
-    float t = (float)y / (float)(cubeMapSize - 1);
-
-    float sv = s * 2.0f - 1.0f;
-    float tv = t * 2.0f - 1.0f;
-
-    Vec3 vec;
-    switch (cubeMapFace) {
-    case 0: vec = Vec3(+1.0f, -tv, -sv); break;
-    case 1: vec = Vec3(-1.0f, -tv, +sv); break;
-    case 2: vec = Vec3(+sv, +1.0f, +tv); break;
-    case 3: vec = Vec3(+sv, -1.0f, -tv); break;
-    case 4: vec = Vec3(+sv, -tv, +1.0f); break;
-    case 5: vec = Vec3(-sv, -tv, -1.0f); break;
-    }
-    return vec;
-}
-
 void R_SH_EvalDirection(int order, const Vec3 &dir, float *basisProj) {
     static const float shConsts[] = { 0.282095f, 0.488603f, 1.092548f, 0.315392f, 0.546274f, -0.590044f, 2.890611f, -0.457046f, 0.373176f };
     

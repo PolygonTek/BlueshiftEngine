@@ -256,10 +256,10 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     int facesize = image.GetSliceSize();
     Vec3 vec;
 
-    for (int i = 0; i < 6; i++) {
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                vec = R_CubeCoord(size, i, x, y);
+                vec = Image::ToCubeMapCoord((Image::CubeMapFace)faceIndex, size, x, y);
                 vec.Normalize();
                 dst[3 * (y * size + x) + 0] = (byte)(128 + 127 * vec[0]);
                 dst[3 * (y * size + x) + 1] = (byte)(128 + 127 * vec[1]);

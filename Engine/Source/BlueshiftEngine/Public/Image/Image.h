@@ -130,6 +130,16 @@ public:
         LinearFlag      = BIT(7)
     };
 
+    /// Cube map face
+    enum CubeMapFace {
+        PositiveX,
+        NegativeX,
+        PositiveY,
+        NegativeY,
+        PositiveZ,
+        NegativeZ
+    };
+
     /// Image resample filter
     enum ResampleFilter {
         Nearest,
@@ -216,7 +226,7 @@ public:
                         /// Creates an cubic image from the six square images
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
 
-    Image &             CreateCubeFromEquirectangular(const Image *equirectangularImage, int faceSize);
+    Image &             CreateCubeFromEquirectangular(const Image &equirectangularImage, int faceSize);
 
                         /// Copy image data from another.
                         /// Nothing happen if source image dimensions are not match with this image
@@ -286,6 +296,8 @@ public:
 
                         /// Converts a linear value in the range [0, 1] to an sRGB value in the range [0, 1].
     static float        LinearToGamma(float value);
+
+    static Vec3         ToCubeMapCoord(CubeMapFace cubeMapFace, int cubeMapSize, int x, int y);
 
     static Image *      NewImageFromFile(const char *filename);
 
@@ -391,24 +403,39 @@ BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int 
     return Create(width, height, 1, numSlices, numMipmaps, format, data, flags);
 }
 
-BE_INLINE float Image::GammaToLinear(float srgb) {
-    float linear;
-    if (srgb <= 0.4045f) {
-        linear = srgb / 12.92f;
+BE_INLINE float Image::GammaToLinear(float f) {
+    if (f <= 0.4045f) {
+        return f / 12.92f;
     } else {
-        linear = Math::Pow((srgb + 0.055f) / 1.055f, 2.4f);
+        return Math::Pow((f + 0.055f) / 1.055f, 2.4f);
     }
-    return linear;
 }
 
-BE_INLINE float Image::LinearToGamma(float linear) {
-    float srgb;
-    if (linear <= 0.0031308f) {
-        srgb = linear * 12.92f;
+BE_INLINE float Image::LinearToGamma(float f) {
+    if (f <= 0.0031308f) {
+        return f * 12.92f;
     } else {
-        srgb = 1.055f * Math::Pow(linear, 1.0f / 2.4f) - 0.055f;
+        return 1.055f * Math::Pow(f, 1.0f / 2.4f) - 0.055f;
     }
-    return srgb;
+}
+
+BE_INLINE Vec3 Image::ToCubeMapCoord(CubeMapFace cubeMapFace, int cubeMapSize, int x, int y) {
+    float s = (float)x / (float)(cubeMapSize - 1);
+    float t = (float)y / (float)(cubeMapSize - 1);
+
+    float sv = s * 2.0f - 1.0f;
+    float tv = t * 2.0f - 1.0f;
+
+    Vec3 vec;
+    switch (cubeMapFace) {
+    case PositiveX: vec = Vec3(+1.0f, -tv, -sv); break;
+    case NegativeX: vec = Vec3(-1.0f, -tv, +sv); break;
+    case PositiveY: vec = Vec3(+sv, +1.0f, +tv); break;
+    case NegativeY: vec = Vec3(+sv, -1.0f, -tv); break;
+    case PositiveZ: vec = Vec3(+sv, -tv, +1.0f); break;
+    case NegativeZ: vec = Vec3(-sv, -tv, -1.0f); break;
+    }
+    return vec;
 }
 
 BE_NAMESPACE_END

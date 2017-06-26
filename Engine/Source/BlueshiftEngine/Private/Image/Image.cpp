@@ -89,7 +89,7 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     return *this;
 }
 
-Image &Image::CreateCubeFromEquirectangular(const Image *equirectangularImage, int faceSize) {
+Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, int faceSize) {
     Clear();
 
     this->width = faceSize;
@@ -97,18 +97,42 @@ Image &Image::CreateCubeFromEquirectangular(const Image *equirectangularImage, i
     this->depth = 1;
     this->numSlices = 6;
     this->numMipmaps = 1;
-    this->format = equirectangularImage->format;
-    this->flags = equirectangularImage->flags;
+    this->format = equirectangularImage.format;
+    this->flags = equirectangularImage.flags;
 
     int sliceSize = GetSliceSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
     this->alloced = true;
 
-    byte *dst = this->pic;
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        Image faceImage;
+        faceImage.Create2D(faceSize, faceSize, 1, Image::RGBA_32F_32F_32F_32F, nullptr, flags);
 
-    for (int i = 0; i < 6; i++) {
-        //simdProcessor->Memcpy(dst, images[i].pic, sliceSize);
-        dst += sliceSize;
+        Color4 *dst = (Color4 *)faceImage.GetPixels();
+
+        for (int dstY = 0; dstY < faceSize; dstY++) {
+            for (int dstX = 0; dstX < faceSize; dstX++) {
+                Vec3 dir = ToCubeMapCoord((Image::CubeMapFace)faceIndex, faceSize, dstX, dstY);
+                dir.Normalize();
+
+                float theta, phi;
+                dir.ToSpherical(theta, phi);
+
+                // Convert range [-1/4 pi, 7/4 pi] to [0.0, 1.0]
+                float fx = Math::Fract((phi + Math::OneFourthPi) * Math::InvTwoPi);
+                // Convert range [0, pi] to [0.0, 1.0]
+                float fy = Math::Fract(theta * Math::InvPi);
+
+                float srcX = fx * equirectangularImage.GetWidth();
+                float srcY = fy * equirectangularImage.GetHeight();
+
+                dst[dstY * faceSize + dstX] = equirectangularImage.GetColor(srcX, srcY);
+            }
+        }
+
+        faceImage.ConvertFormatSelf(format);
+
+        simdProcessor->Memcpy(pic + sliceSize * faceIndex, faceImage.GetPixels(), sliceSize);
     }
 
     return *this;
@@ -177,9 +201,6 @@ Color4 Image::GetColor(float x, float y) const {
     float fracY = y - (float)iY0;
     float fracX = x - (float)iX0;
 
-    int offset0 = iX0 * bpp;
-    int offset1 = iX1 * bpp;
-
     Color4 color;
 
     if (info->type & Float) {
@@ -188,8 +209,8 @@ Color4 Image::GetColor(float x, float y) const {
             const float16_t *hsrc1 = (const float16_t *)&pic[iY1 * pitch];
 
             for (int i = 0; i < numComponents; i++) {
-                float a = Lerp(F16toF32(hsrc0[offset0 + i]), F16toF32(hsrc0[offset1 + i]), fracX);
-                float b = Lerp(F16toF32(hsrc1[offset0 + i]), F16toF32(hsrc1[offset1 + i]), fracX);
+                float a = Lerp(F16toF32(hsrc0[iX0 + i]), F16toF32(hsrc0[iX1 + i]), fracX);
+                float b = Lerp(F16toF32(hsrc1[iX0 + i]), F16toF32(hsrc1[iX1 + i]), fracX);
 
                 color[i] = Lerp(a, b, fracY);
             }
@@ -198,8 +219,8 @@ Color4 Image::GetColor(float x, float y) const {
             const float *fsrc1 = (const float *)&pic[iY1 * pitch];
 
             for (int i = 0; i < numComponents; i++) {
-                float a = Lerp(fsrc0[offset0 + i], fsrc0[offset1 + i], fracX);
-                float b = Lerp(fsrc1[offset0 + i], fsrc1[offset1 + i], fracX);
+                float a = Lerp(fsrc0[iX0 + i], fsrc0[iX1 + i], fracX);
+                float b = Lerp(fsrc1[iX0 + i], fsrc1[iX1 + i], fracX);
 
                 color[i] = Lerp(a, b, fracY);
             }
@@ -212,10 +233,10 @@ Color4 Image::GetColor(float x, float y) const {
         const byte *src0 = &pic[iY0 * pitch];
         const byte *src1 = &pic[iY1 * pitch];
 
-        info->unpackFunc(&src0[offset0], rgba8888[0], 1);
-        info->unpackFunc(&src0[offset1], rgba8888[1], 1);
-        info->unpackFunc(&src1[offset0], rgba8888[2], 1);
-        info->unpackFunc(&src1[offset1], rgba8888[3], 1);
+        info->unpackFunc(&src0[iX0 * bpp], rgba8888[0], 1);
+        info->unpackFunc(&src0[iX1 * bpp], rgba8888[1], 1);
+        info->unpackFunc(&src1[iX0 * bpp], rgba8888[2], 1);
+        info->unpackFunc(&src1[iX1 * bpp], rgba8888[3], 1);
 
         for (int i = 0; i < numComponents; i++) {
             float a = Lerp(rgba8888[0][i] / 255.0f, rgba8888[1][i] / 255.0f, fracX);
