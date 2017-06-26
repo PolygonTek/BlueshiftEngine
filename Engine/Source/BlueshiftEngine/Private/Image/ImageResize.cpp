@@ -103,47 +103,52 @@ static int fix_cerp(int p0, int p1, int p2, int p3, int t) {
 #endif
 }
 
-static void ResampleNearest(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int bytesPerPixel) {
+static void ResampleNearest(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int bpp) {
+    int srcPitch = srcWidth * bpp;
+
     for (int y = 0; y < dstHeight; y++) {
         int sampleY = srcHeight * y / dstHeight;
 
         for (int x = 0; x < dstWidth; x++) {
             int sampleX = srcWidth * x / dstWidth;
         
-            for (int i = 0; i < bytesPerPixel; i++) {
-                *dst++ = src[(sampleY * srcWidth + sampleX) * bytesPerPixel + i];
+            for (int i = 0; i < bpp; i++) {
+                *dst++ = src[sampleY * srcPitch + sampleX * bpp + i];
             }
         }
     }
 }
 
 static void ResampleBilinear(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int bpp) {
-    int a, b;
+    int srcPitch = srcWidth * bpp;
 
     for (int y = 0; y < dstHeight; y++) {
-        int iY = ((y * (srcHeight)) << 8) / (dstHeight);
-        int fracY = iY & 255;
-        iY >>= 8;
+        int iY0 = ((y * srcHeight) << 8) / dstHeight;
+        int fracY = iY0 & 255;
+        iY0 >>= 8;
+
+        int iY1 = Min(iY0 + 1, srcHeight - 1) * srcPitch;
+        iY0 *= srcPitch;
                 
         for (int x = 0; x < dstWidth; x++) {
-            int iX = ((x * (srcWidth)) << 8) / (dstWidth);
-            int fracX = iX & 255;
-            iX >>= 8;
+            int iX0 = ((x * srcWidth) << 8) / dstWidth;
+            int fracX = iX0 & 255;
+            iX0 >>= 8;
+
+            int iX1 = Min(iX0 + 1, srcWidth - 1);
+
+            int offset0 = iX0 * bpp;
+            int offset1 = iX1 * bpp;
             
-            byte *srcPtr = (byte *)(src + (iY * srcWidth + iX) * bpp);
+            const byte *srcPtr[2]; 
+            srcPtr[0] = &src[iY0];
+            srcPtr[1] = &src[iY1];
 
             for (int i = 0; i < bpp; i++) {
-                if (iX < srcWidth - 1) {
-                    a = fix_lerp(srcPtr[0], srcPtr[bpp], fracX);
-                    b = iY < srcHeight - 1 ? fix_lerp(srcPtr[srcWidth * bpp], srcPtr[(srcWidth + 1) * bpp], fracX) : a;
-                } else {
-                    a = srcPtr[0];
-                    b = iY < srcHeight - 1 ? srcPtr[srcWidth * bpp] : a;
-                }
+                int p0 = fix_lerp(srcPtr[0][offset0 + i], srcPtr[0][offset1 + i], fracX);
+                int p1 = fix_lerp(srcPtr[1][offset0 + i], srcPtr[1][offset1 + i], fracX);
 
-                *dst++ = fix_lerp(a, b, fracY);
-                    
-                srcPtr++;
+                *dst++ = fix_lerp(p0, p1, fracY);
             }
         }
     }
@@ -153,16 +158,17 @@ static void ResampleBicubic(const byte *src, int srcWidth, int srcHeight, byte *
     int srcPitch = srcWidth * bpp;
 
     for (int y = 0; y < dstHeight; y++) {
-        int iY1 = ((y * (srcHeight)) << 7) / (dstHeight);
+        int iY1 = ((y * srcHeight) << 7) / dstHeight;
         int fracY = iY1 & 127;
         iY1 >>= 7;
 
-        int iY0 = Max(iY1 - 1, 0);
-        int iY2 = Min(iY1 + 1, srcHeight - 1);
-        int iY3 = Min(iY1 + 2, srcHeight - 1);
+        int iY0 = Max(iY1 - 1, 0) * srcPitch;
+        int iY2 = Min(iY1 + 1, srcHeight - 1) * srcPitch;
+        int iY3 = Min(iY1 + 2, srcHeight - 1) * srcPitch;
+        iY1 *= srcPitch;
 
         for (int x = 0; x < dstWidth; x++) {
-            int iX1 = ((x * (srcWidth)) << 7) / (dstWidth);
+            int iX1 = ((x * srcWidth) << 7) / dstWidth;
             int fracX = iX1 & 127;
             iX1 >>= 7;
 
@@ -176,10 +182,10 @@ static void ResampleBicubic(const byte *src, int srcWidth, int srcHeight, byte *
             int offset3 = iX3 * bpp;
 
             const byte *srcPtr[4];
-            srcPtr[0] = &src[iY0 * srcPitch];
-            srcPtr[1] = &src[iY1 * srcPitch];
-            srcPtr[2] = &src[iY2 * srcPitch];
-            srcPtr[3] = &src[iY3 * srcPitch];
+            srcPtr[0] = &src[iY0];
+            srcPtr[1] = &src[iY1];
+            srcPtr[2] = &src[iY2];
+            srcPtr[3] = &src[iY3];
 
             for (int i = 0; i < bpp; i++) {
                 int p0 = fix_cerp(srcPtr[0][offset0 + i], srcPtr[0][offset1 + i], srcPtr[0][offset2 + i], srcPtr[0][offset3 + i], fracX);
@@ -199,6 +205,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
     assert(dstWidth && dstHeight);
     
     if (IsCompressed() || IsPacked() || IsFloatFormat() || depth != 1) {
+        BE_WARNLOG(L"Cannot be resized format %hs\n", FormatName());
         return false;
     }
 
@@ -221,7 +228,6 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
         ResampleBicubic(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, bpp);
         break;
     }
-
     return true;
 }
 
@@ -230,7 +236,7 @@ bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter
     assert(dstWidth && dstHeight);
     
     if (IsPacked() || IsCompressed() || IsPacked() || IsFloatFormat() || depth != 1) {
-        BE_LOG(L"Cannot be resized format %hs\n", FormatName());
+        BE_WARNLOG(L"Cannot be resized format %hs\n", FormatName());
         return false;
     }
 

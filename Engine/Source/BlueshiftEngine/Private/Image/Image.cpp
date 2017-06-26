@@ -59,7 +59,7 @@ Image &Image::Create(int width, int height, int depth, int numSlices, int numMip
     return *this;
 }
 
-Image &Image::CreateCubeFromMultipleImages(const Image *images) {
+Image &Image::CreateCubeFrom6Faces(const Image *images) {
     Clear();
 
     this->width = images[0].width;
@@ -83,6 +83,36 @@ Image &Image::CreateCubeFromMultipleImages(const Image *images) {
         assert(images[i].numMipmaps == images[0].numMipmaps);
 
         simdProcessor->Memcpy(dst, images[i].pic, sliceSize);
+        dst += sliceSize;
+    }
+
+    return *this;
+}
+
+Image &Image::CreateCubeFromEquirectangular(const Image *equirectangularImage, int faceSize) {
+    Clear();
+
+    this->width = faceSize;
+    this->height = this->width;
+    this->depth = 1;
+    this->numSlices = 6;
+    this->numMipmaps = 1;
+    this->format = equirectangularImage->format;
+    this->flags = equirectangularImage->flags;
+
+    int sliceSize = GetSliceSize(0, numMipmaps);
+    this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
+    this->alloced = true;
+
+    byte *dst = this->pic;
+
+    for (int i = 0; i < 6; i++) {
+        assert(images[i].width == images[i].height);
+        assert(images[i].width == images[0].width);
+        assert(images[i].format == images[0].format);
+        assert(images[i].numMipmaps == images[0].numMipmaps);
+
+        //simdProcessor->Memcpy(dst, images[i].pic, sliceSize);
         dst += sliceSize;
     }
 
@@ -138,35 +168,32 @@ void Image::Clear() {
     }
 }
 
-Color4 Image::GetColor(int x, int y) const {
+Color4 Image::GetColor(float x, float y) const {
     const ImageFormatInfo *info = GetImageFormatInfo(format);
-    // FIXME: Fix for compressed format
     int bpp = BytesPerPixel();
+    int numComponents = NumComponents();
     int offset = ((height - 1 - y) * width + x) * bpp;
 
     ALIGN16(Color4 color);
 
-    if (info->type & (Float | Half)) {
+    if (info->type & Float) {
         if (info->type & Half) {
             const float16_t *hsrc = (const float16_t *)&pic[offset];
-            color.r = F16toF32(hsrc[0]);
-            color.g = F16toF32(hsrc[1]);
-            color.b = F16toF32(hsrc[2]);
-            color.a = 1.0f;
+            for (int i = 0; i < numComponents; i++) {
+                color[i] = F16toF32(hsrc[i]);
+            }
         } else {
             const float *fsrc = (const float *)&pic[offset];
-            color.r = fsrc[0];
-            color.g = fsrc[1];
-            color.b = fsrc[2];
-            color.a = 1.0f;
+            for (int i = 0; i < numComponents; i++) {
+                color[i] = fsrc[i];
+            }
         }
     } else {
         byte rgba8888[4];
         info->unpackFunc(&pic[offset], rgba8888, 1);
-        color.r = rgba8888[0] / 255.0f;
-        color.g = rgba8888[1] / 255.0f;
-        color.b = rgba8888[2] / 255.0f;
-        color.a = rgba8888[3] / 255.0f;
+        for (int i = 0; i < numComponents; i++) {
+            color[i] = rgba8888[i] / 255.0f;
+        }
     }
 
     return color;

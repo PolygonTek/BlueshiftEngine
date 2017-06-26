@@ -190,6 +190,7 @@ public:
     byte *              GetPixels(int level) const;
     byte *              GetPixels(int level, int sliceIndex) const;
 
+                        /// Returns color with the given XY coordinates
     Color4              GetColor(float x, float y) const;
 
                         /// Returns number of pixels with given mipmap levels
@@ -391,11 +392,11 @@ BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int 
 }
 
 BE_INLINE float Image::GammaToLinear(float srgb) {
-    float linear = srgb;
-    if (linear <= 0.4045f) {
-        linear = linear / 12.92f;
+    float linear;
+    if (srgb <= 0.4045f) {
+        linear = srgb / 12.92f;
     } else {
-        linear = Math::Pow((linear + 0.055f) / 1.055f, 2.4f);
+        linear = Math::Pow((srgb + 0.055f) / 1.055f, 2.4f);
     }
     return linear;
 }

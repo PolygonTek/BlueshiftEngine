@@ -660,7 +660,7 @@ bool Texture::Load(const char *filename, int flags) {
         }
 
         Image cubeImage;
-        cubeImage.CreateCubeFromMultipleImages(images);
+        cubeImage.CreateCubeFrom6Faces(images);
         Create(RHI::TextureCubeMap, cubeImage, flags);
     } else {
         BE_LOG(L"Loading texture '%hs'...\n", filename);
