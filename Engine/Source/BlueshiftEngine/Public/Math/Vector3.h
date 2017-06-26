@@ -275,6 +275,12 @@ public:
 
     Angles              ToAngles() const;
 
+                        /// Converts to the spherical coordinates
+    float               ToSpherical(float &theta, float &phi);
+
+                        /// Sets from the spherical coordinates
+    void                SetFromSpherical(float radius, float theta, float phi);
+
     void                NormalVectors(Vec3 &left, Vec3 &down) const;
 
                         /// This function computes two new vectors left and up which are both orthogonal to this vector and to each other.
@@ -579,6 +585,25 @@ BE_INLINE Color3 &Vec3::ToColor3() {
 
 BE_INLINE const char *Vec3::ToString(int precision) const {
     return Str::FloatArrayToString((const float *)(*this), Size, precision);
+}
+
+BE_INLINE void Vec3::SetFromSpherical(float radius, float theta, float phi) {
+    float sinTheta, cosTheta;
+    float sinPhi, cosPhi;
+
+    Math::SinCos(theta, sinTheta, cosTheta);
+    Math::SinCos(phi, sinPhi, cosPhi);
+
+    x = radius * cosTheta * sinPhi;
+    y = radius * sinTheta * sinPhi;
+    z = radius * cosPhi;
+}
+
+BE_INLINE float Vec3::ToSpherical(float &theta, float &phi) {
+    float radius = Math::Sqrt(x * x + y * y + z * z);
+    theta = Math::ATan(y, x);
+    phi = Math::ACos(z / radius);
+    return radius;
 }
     
 BE_INLINE void Vec3::NormalVectors(Vec3 &left, Vec3 &down) const {
