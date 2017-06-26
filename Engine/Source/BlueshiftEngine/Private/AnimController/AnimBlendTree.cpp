@@ -283,8 +283,9 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
         }
     }
 
-    float currentAngle = RAD2DEG(currentPoint.ToAngle());
-    float currentRadius = currentPoint.Length();
+    float currentAngle;
+    float currentRadius = currentPoint.ToPolar(currentAngle);
+    currentAngle = RAD2DEG(currentAngle);
     int originIndex = -1;
 
     // Gets blending sample points

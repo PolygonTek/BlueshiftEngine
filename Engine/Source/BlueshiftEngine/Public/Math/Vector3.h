@@ -275,10 +275,10 @@ public:
 
     Angles              ToAngles() const;
 
-                        /// Converts to the spherical coordinates
-    float               ToSpherical(float &theta, float &phi);
+                        /// Converts to the spherical coordinates.
+    float               ToSpherical(float &theta, float &phi) const;
 
-                        /// Sets from the spherical coordinates
+                        /// Sets from the spherical coordinates.
     void                SetFromSpherical(float radius, float theta, float phi);
 
     void                NormalVectors(Vec3 &left, Vec3 &down) const;
@@ -599,7 +599,7 @@ BE_INLINE void Vec3::SetFromSpherical(float radius, float theta, float phi) {
     z = radius * cosPhi;
 }
 
-BE_INLINE float Vec3::ToSpherical(float &theta, float &phi) {
+BE_INLINE float Vec3::ToSpherical(float &theta, float &phi) const {
     float radius = Math::Sqrt(x * x + y * y + z * z);
     theta = Math::ATan(y, x);
     phi = Math::ACos(z / radius);
