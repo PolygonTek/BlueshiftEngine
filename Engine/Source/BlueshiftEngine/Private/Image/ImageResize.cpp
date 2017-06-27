@@ -204,7 +204,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
     assert(width && height);
     assert(dstWidth && dstHeight);
     
-    if (IsCompressed() || IsPacked() || IsFloatFormat() || depth != 1) {
+    if (IsPacked() || IsCompressed() || IsFloatFormat() || depth != 1) {
         BE_WARNLOG(L"Cannot be resized format %hs\n", FormatName());
         return false;
     }
@@ -235,7 +235,7 @@ bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter
     assert(width && height);
     assert(dstWidth && dstHeight);
     
-    if (IsPacked() || IsCompressed() || IsPacked() || IsFloatFormat() || depth != 1) {
+    if (IsPacked() || IsCompressed() || IsFloatFormat() || depth != 1) {
         BE_WARNLOG(L"Cannot be resized format %hs\n", FormatName());
         return false;
     }
