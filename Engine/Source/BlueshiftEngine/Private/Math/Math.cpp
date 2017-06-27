@@ -97,10 +97,10 @@ int Math::FloatToBits(float f, int exponentBits, int mantissaBits) {
     exponentBits--;
     int32_t i = *reinterpret_cast<int32_t *>(&f);
     int32_t sign = (i >> IEEE_FLT_SIGN_BIT) & 1;
-    int32_t exponent = ((i >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS ) - 1)) - IEEE_FLT_EXPONENT_BIAS;
+    int32_t exponent = ((i >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1)) - IEEE_FLT_EXPONENT_BIAS;
     int32_t mantissa = i & ((1 << IEEE_FLT_MANTISSA_BITS) - 1);
 
-    int32_t value = sign << (1 + exponentBits + mantissaBits );
+    int32_t value = sign << (1 + exponentBits + mantissaBits);
     value |= ((INT32_SIGNBITSET(exponent) << exponentBits) | (abs(exponent) & ((1 << exponentBits) - 1))) << mantissaBits;
     value |= mantissa >> (IEEE_FLT_MANTISSA_BITS - mantissaBits);
     return value;
