@@ -169,16 +169,17 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         return true;
     }
 
-    const UserFormatToRGBA8888Func unpackFunc = srcFormatInfo->unpackRGBA8888;
-    const RGBA8888ToUserFormatFunc packFunc = dstFormatInfo->packRGBA8888;
-
+    bool toFloat = (dstFormatInfo->type & Float) ? true : false;
+    ImageUnpackFunc unpackFunc = toFloat ? srcFormatInfo->unpackRGBA32F : srcFormatInfo->unpackRGBA8888;
+    ImagePackFunc packFunc = toFloat ? dstFormatInfo->packRGBA32F : dstFormatInfo->packRGBA8888;
+    
     if (!unpackFunc || !packFunc) {
         BE_WARNLOG(L"Image::ConvertFormat: unsupported convert type (from %hs to %hs)\n", srcImage->FormatName(), dstImage.FormatName());
         dstImage.Clear();
         return false;
     }
 
-    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4);
+    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (toFloat ? sizeof(float) : 1));
 
     byte *srcPtr = srcImage->GetPixels();
     byte *dstPtr = dstImage.GetPixels();
