@@ -148,9 +148,9 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
             RGBE2Float(ptr, &r, &g, &b);
             ptr += 4;
 
-            *dest++ = F32toF16(r);
-            *dest++ = F32toF16(g);
-            *dest++ = F32toF16(b);
+            *dest++ = F16Converter::FromF32(r);
+            *dest++ = F16Converter::FromF32(g);
+            *dest++ = F16Converter::FromF32(b);
         }
     } else {
         byte *line_buffer = (byte *)_alloca(sizeof(byte) * 4 * headerInfo.width);
@@ -199,9 +199,9 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
 
                 RGBE2Float(rgbe, &r, &g, &b);
 
-                *dest++ = F32toF16(r);
-                *dest++ = F32toF16(g);
-                *dest++ = F32toF16(b);
+                *dest++ = F16Converter::FromF32(r);
+                *dest++ = F16Converter::FromF32(g);
+                *dest++ = F16Converter::FromF32(b);
             }
         }
     }

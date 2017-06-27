@@ -76,6 +76,7 @@ set(ENGINE_FILES
   Public/Math/Curve.h
   Public/Math/Hermite.h
   Public/Math/Cylinder.h
+  Public/Math/FloatConverter.h
   Public/Math/Frustum.h
   Public/Math/Half.h
   Public/Math/Hammersley.h

@@ -27,96 +27,116 @@ BE_NAMESPACE_BEGIN
 //--------------------------------------------------------------------------------------------------
 
 static void L8ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels;
-    for (; src < srcEnd; src += 1, dst += 4) {
-        dst[0] = src[0];
-        dst[1] = src[0];
-        dst[2] = src[0];
-        dst[3] = 255;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[0];
+        dstPtr[2] = srcPtr[0];
+        dstPtr[3] = 255;
     }
 }
 static void A8ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels;
-    for (; src < srcEnd; src += 1, dst += 4) {
-        dst[0] = 255;
-        dst[1] = 255;
-        dst[2] = 255;
-        dst[3] = src[0];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = 255;
+        dstPtr[1] = 255;
+        dstPtr[2] = 255;
+        dstPtr[3] = srcPtr[0];
     }
 }
 static void LA88ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 2;
-    for (; src < srcEnd; src += 2, dst += 4) {
-        dst[0] = src[0];
-        dst[1] = src[0];
-        dst[2] = src[0];
-        dst[3] = src[1];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 2;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[0];
+        dstPtr[2] = srcPtr[0];
+        dstPtr[3] = srcPtr[1];
     }
 }
 static void LA1616ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
     byte l, a;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        l = (*(uint16_t *)(&src[0])) >> 1;
-        a = (*(uint16_t *)(&src[1])) >> 1;
-        dst[0] = l;
-        dst[1] = l;
-        dst[2] = l;
-        dst[3] = a;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        l = (*(uint16_t *)(&srcPtr[0])) >> 1;
+        a = (*(uint16_t *)(&srcPtr[1])) >> 1;
+        dstPtr[0] = l;
+        dstPtr[1] = l;
+        dstPtr[2] = l;
+        dstPtr[3] = a;
     }
 }
 static void R8ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels;
-    for (; src < srcEnd; src += 1, dst += 4) {
-        dst[0] = src[0];
-        dst[1] = 0;
-        dst[2] = 0;
-        dst[3] = 255;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 255;
     }
 }
 static void RG88ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 2;
-    for (; src < srcEnd; src += 2, dst += 4) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = 0;
-        dst[3] = 255;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 2;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = 0;
+        dstPtr[3] = 255;
     }
 }
 static void RGB888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 3;
-    for (; src < srcEnd; src += 3, dst += 4) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-        dst[3] = 255;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 3;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
+        dstPtr[3] = 255;
     }
 }
 static void BGR888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 3;
-    for (; src < srcEnd; src += 3, dst += 4) {
-        dst[0] = src[2];
-        dst[1] = src[1];
-        dst[2] = src[0];
-        dst[3] = 255;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 3;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = srcPtr[2];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[0];
+        dstPtr[3] = 255;
     }
 }
 static void RGBX8888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-        dst[3] = 255;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
+        dstPtr[3] = 255;
     }
 }
 static void BGRX8888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[2];
-        dst[1] = src[1];
-        dst[2] = src[0];
-        dst[3] = 255;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[2];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[0];
+        dstPtr[3] = 255;
     }
 }
 static void RGBA8888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
@@ -124,303 +144,348 @@ static void RGBA8888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     memcpy(dst, src, 4 * numPixels);
 }
 static void BGRA8888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[2];
-        dst[1] = src[1];
-        dst[2] = src[0];
-        dst[3] = src[3];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[2];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[0];
+        dstPtr[3] = srcPtr[3];
     }
 }
 static void ABGR8888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[3];
-        dst[1] = src[2];
-        dst[2] = src[1];
-        dst[3] = src[0];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[3];
+        dstPtr[1] = srcPtr[2];
+        dstPtr[2] = srcPtr[1];
+        dstPtr[3] = srcPtr[0];
     }
 }
 static void ARGB8888ToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[1];
-        dst[1] = src[2];
-        dst[2] = src[3];
-        dst[3] = src[0];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[1];
+        dstPtr[1] = srcPtr[2];
+        dstPtr[2] = srcPtr[3];
+        dstPtr[3] = srcPtr[0];
     }
 }
 static void RGBX4444ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
-        dst[1] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
-        dst[2] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
-        dst[3] = 255;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
+        dstPtr[1] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
+        dstPtr[2] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
+        dstPtr[3] = 255;
     }
 }
 static void BGRX4444ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
-        dst[1] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
-        dst[2] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
-        dst[3] = 255;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
+        dstPtr[1] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
+        dstPtr[2] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
+        dstPtr[3] = 255;
     }
 }
 static void RGBA4444ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
-        dst[1] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
-        dst[2] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
-        dst[3] = ((*srcPtr >> 8) & 0xF0) | ((*srcPtr >> 12) & 0x0F);
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
+        dstPtr[1] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
+        dstPtr[2] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
+        dstPtr[3] = ((*srcPtr >> 8) & 0xF0) | ((*srcPtr >> 12) & 0x0F);
     }
 }
 static void BGRA4444ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
-        dst[1] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
-        dst[2] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
-        dst[3] = ((*srcPtr >> 8) & 0xF0) | ((*srcPtr >> 12) & 0x0F);
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
+        dstPtr[1] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
+        dstPtr[2] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
+        dstPtr[3] = ((*srcPtr >> 8) & 0xF0) | ((*srcPtr >> 12) & 0x0F);
     }
 }
 static void ABGR4444ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr >> 8) & 0xF0) | ((*srcPtr >> 12) & 0x0F);
-        dst[1] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
-        dst[2] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
-        dst[3] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr >> 8) & 0xF0) | ((*srcPtr >> 12) & 0x0F);
+        dstPtr[1] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
+        dstPtr[2] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
+        dstPtr[3] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
     }
 }
 static void ARGB4444ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
-        dst[1] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
-        dst[2] = ((*srcPtr >> 8) & 0xF0) | ((*srcPtr >> 12) & 0x0F);
-        dst[3] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr << 0) & 0xF0) | ((*srcPtr >> 4) & 0x0F);
+        dstPtr[1] = ((*srcPtr >> 4) & 0xF0) | ((*srcPtr >> 8) & 0x0F);
+        dstPtr[2] = ((*srcPtr >> 8) & 0xF0) | ((*srcPtr >> 12) & 0x0F);
+        dstPtr[3] = ((*srcPtr << 4) & 0xF0) | ((*srcPtr >> 0) & 0x0F);
     }
 }
 static void RGBX5551ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
-        dst[1] = ((*srcPtr >> 2) & 0xF8) | ((*srcPtr >> 7) & 0x7);
-        dst[2] = ((*srcPtr >> 7) & 0xF8) | ((*srcPtr >> 12) & 0x7);
-        dst[3] = 255;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
+        dstPtr[1] = ((*srcPtr >> 2) & 0xF8) | ((*srcPtr >> 7) & 0x7);
+        dstPtr[2] = ((*srcPtr >> 7) & 0xF8) | ((*srcPtr >> 12) & 0x7);
+        dstPtr[3] = 255;
     }
 }
 static void BGRX5551ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr >> 7) & 0xF8) | ((*srcPtr >> 12) & 0x7);
-        dst[1] = ((*srcPtr >> 2) & 0xF8) | ((*srcPtr >> 7) & 0x7);
-        dst[2] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
-        dst[3] = 255;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr >> 7) & 0xF8) | ((*srcPtr >> 12) & 0x7);
+        dstPtr[1] = ((*srcPtr >> 2) & 0xF8) | ((*srcPtr >> 7) & 0x7);
+        dstPtr[2] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
+        dstPtr[3] = 255;
     }
 }
 static void RGBA5551ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
-        dst[1] = ((*srcPtr >> 2) & 0xF8) | ((*srcPtr >> 7) & 0x7);
-        dst[2] = ((*srcPtr >> 7) & 0xF8) | ((*srcPtr >> 12) & 0x7);
-        dst[3] = ((int16_t)*srcPtr >> 15) & 0xFF;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
+        dstPtr[1] = ((*srcPtr >> 2) & 0xF8) | ((*srcPtr >> 7) & 0x7);
+        dstPtr[2] = ((*srcPtr >> 7) & 0xF8) | ((*srcPtr >> 12) & 0x7);
+        dstPtr[3] = ((int16_t)*srcPtr >> 15) & 0xFF;
     }
 }
 static void BGRA5551ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr >> 7) & 0xF8) | ((*srcPtr >> 12) & 0x7);
-        dst[1] = ((*srcPtr >> 2) & 0xF8) | ((*srcPtr >> 7) & 0x7);
-        dst[2] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
-        dst[3] = ((int16_t)*srcPtr >> 15) & 0xFF;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr >> 7) & 0xF8) | ((*srcPtr >> 12) & 0x7);
+        dstPtr[1] = ((*srcPtr >> 2) & 0xF8) | ((*srcPtr >> 7) & 0x7);
+        dstPtr[2] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
+        dstPtr[3] = ((int16_t)*srcPtr >> 15) & 0xFF;
     }
 }
 static void ABGR1555ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr >> 8) & 0xF8) | ((*srcPtr >> 13) & 0x7);
-        dst[1] = ((*srcPtr >> 3) & 0xF8) | ((*srcPtr >> 8) & 0x7);
-        dst[2] = ((*srcPtr << 2) & 0xF8) | ((*srcPtr >> 3) & 0x7);
-        dst[3] = (*srcPtr & 1) ? 0xFF : 0;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr >> 8) & 0xF8) | ((*srcPtr >> 13) & 0x7);
+        dstPtr[1] = ((*srcPtr >> 3) & 0xF8) | ((*srcPtr >> 8) & 0x7);
+        dstPtr[2] = ((*srcPtr << 2) & 0xF8) | ((*srcPtr >> 3) & 0x7);
+        dstPtr[3] = (*srcPtr & 1) ? 0xFF : 0;
     }
 }
 static void ARGB1555ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr << 2) & 0xF8) | ((*srcPtr >> 3) & 0x7);
-        dst[1] = ((*srcPtr >> 3) & 0xF8) | ((*srcPtr >> 8) & 0x7);
-        dst[2] = ((*srcPtr >> 8) & 0xF8) | ((*srcPtr >> 13) & 0x7);
-        dst[3] = (*srcPtr & 1) ? 0xFF : 0;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr << 2) & 0xF8) | ((*srcPtr >> 3) & 0x7);
+        dstPtr[1] = ((*srcPtr >> 3) & 0xF8) | ((*srcPtr >> 8) & 0x7);
+        dstPtr[2] = ((*srcPtr >> 8) & 0xF8) | ((*srcPtr >> 13) & 0x7);
+        dstPtr[3] = (*srcPtr & 1) ? 0xFF : 0;
     }
 }
 static void RGB565ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
-        dst[1] = ((*srcPtr >> 3) & 0xFC) | ((*srcPtr >> 9) & 0x3);
-        dst[2] = ((*srcPtr >> 8) & 0xF8) | ((*srcPtr >> 14) & 0x7);
-        dst[3] = 255;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
+        dstPtr[1] = ((*srcPtr >> 3) & 0xFC) | ((*srcPtr >> 9) & 0x3);
+        dstPtr[2] = ((*srcPtr >> 8) & 0xF8) | ((*srcPtr >> 14) & 0x7);
+        dstPtr[3] = 255;
     }
 }
 static void BGR565ToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const uint16_t *srcPtr = (const uint16_t *)src;
     const uint16_t *srcEnd = srcPtr + numPixels;
-    for (; srcPtr < srcEnd; srcPtr++, dst += 4) {
-        dst[0] = ((*srcPtr >> 8) & 0xF8) | ((*srcPtr >> 14) & 0x7);
-        dst[1] = ((*srcPtr >> 3) & 0xFC) | ((*srcPtr >> 9) & 0x3);
-        dst[2] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
-        dst[3] = 255;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        dstPtr[0] = ((*srcPtr >> 8) & 0xF8) | ((*srcPtr >> 14) & 0x7);
+        dstPtr[1] = ((*srcPtr >> 3) & 0xFC) | ((*srcPtr >> 9) & 0x3);
+        dstPtr[2] = ((*srcPtr << 3) & 0xF8) | ((*srcPtr >> 2) & 0x7);
+        dstPtr[3] = 255;
     }
 }
 static void L16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels;
-    for (; hsrc < srcEnd; hsrc += 1, dst += 4) {
-        dst[0] = dst[1] = dst[2] = (byte)(F16toF32(hsrc[0]) * 255.0f);
-        dst[3] = 255;
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = (byte)(F16Converter::ToF32(srcPtr[0]) * 255.0f);
+        dstPtr[3] = 255;
     }
 }
 static void A16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels;
-    for (; hsrc < srcEnd; hsrc += 1, dst += 4) {
-        dst[0] = 255;
-        dst[1] = 255;
-        dst[2] = 255;
-        dst[3] = (byte)(F16toF32(hsrc[0]) * 255.0f);
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = 255;
+        dstPtr[1] = 255;
+        dstPtr[2] = 255;
+        dstPtr[3] = (byte)(F16Converter::ToF32(srcPtr[0]) * 255.0f);
     }
 }
 static void LA16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const float16_t *srcEnd = (const float16_t *)src + numPixels * 2;
-    const float16_t *hsrc = (const float16_t *)src;
-    for (; hsrc < srcEnd; hsrc += 2, dst += 4) {
-        dst[0] = dst[1] = dst[2] = (byte)(F16toF32(hsrc[0]) * 255.0f);
-        dst[3] = (byte)(F16toF32(hsrc[1]) * 255.0f);
+    const float16_t *srcPtr = (const float16_t *)src;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = (byte)(F16Converter::ToF32(srcPtr[0]) * 255.0f);
+        dstPtr[3] = (byte)(F16Converter::ToF32(srcPtr[1]) * 255.0f);
     }
 }
 static void R16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels;
-    for (; hsrc < srcEnd; hsrc += 1, dst += 4) {
-        dst[0] = (byte)(F16toF32(hsrc[0]) * 255.0f);
-        dst[1] = 0;
-        dst[2] = 0;
-        dst[3] = 255;
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = (byte)(F16Converter::ToF32(srcPtr[0]) * 255.0f);
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 255;
     }
 }
 static void RG16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const float16_t *srcEnd = (const float16_t *)src + numPixels * 2;
-    const float16_t *hsrc = (const float16_t *)src;
-    for (; hsrc < srcEnd; hsrc += 2, dst += 4) {
-        dst[0] = (byte)(F16toF32(hsrc[0]) * 255.0f);
-        dst[1] = (byte)(F16toF32(hsrc[1]) * 255.0f);
-        dst[2] = 0;
-        dst[3] = 255;
+    const float16_t *srcPtr = (const float16_t *)src;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = (byte)(F16Converter::ToF32(srcPtr[0]) * 255.0f);
+        dstPtr[1] = (byte)(F16Converter::ToF32(srcPtr[1]) * 255.0f);
+        dstPtr[2] = 0;
+        dstPtr[3] = 255;
     }
 }
 static void RGB16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels * 3;
-    for (; hsrc < srcEnd; hsrc += 3, dst += 4) {
-        dst[0] = (byte)(F16toF32(hsrc[0]) * 255.0f);
-        dst[1] = (byte)(F16toF32(hsrc[1]) * 255.0f);
-        dst[2] = (byte)(F16toF32(hsrc[2]) * 255.0f);
-        dst[3] = 255;
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels * 3;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = (byte)(F16Converter::ToF32(srcPtr[0]) * 255.0f);
+        dstPtr[1] = (byte)(F16Converter::ToF32(srcPtr[1]) * 255.0f);
+        dstPtr[2] = (byte)(F16Converter::ToF32(srcPtr[2]) * 255.0f);
+        dstPtr[3] = 255;
     }
 }
 static void RGBA16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels * 4;
-    for (; hsrc < srcEnd; hsrc += 3, dst += 4) {
-        dst[0] = (byte)(F16toF32(hsrc[0]) * 255.0f);
-        dst[1] = (byte)(F16toF32(hsrc[1]) * 255.0f);
-        dst[2] = (byte)(F16toF32(hsrc[2]) * 255.0f);
-        dst[3] = (byte)(F16toF32(hsrc[3]) * 255.0f);
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = (byte)(F16Converter::ToF32(srcPtr[0]) * 255.0f);
+        dstPtr[1] = (byte)(F16Converter::ToF32(srcPtr[1]) * 255.0f);
+        dstPtr[2] = (byte)(F16Converter::ToF32(srcPtr[2]) * 255.0f);
+        dstPtr[3] = (byte)(F16Converter::ToF32(srcPtr[3]) * 255.0f);
     }
 }
 static void L32FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels;
-    for (; fsrc < srcEnd; fsrc += 1, dst += 4) {
-        dst[0] = dst[1] = dst[2] = (byte)(fsrc[0] * 255.0f);
-        dst[3] = 255;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = (byte)(srcPtr[0] * 255.0f);
+        dstPtr[3] = 255;
     }
 }
 
 static void A32FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels;
-    for (; fsrc < srcEnd; fsrc += 1, dst += 4) {
-        dst[0] = 255;
-        dst[1] = 255;
-        dst[2] = 255;
-        dst[3] = (byte)(fsrc[0] * 255.0f);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = 255;
+        dstPtr[1] = 255;
+        dstPtr[2] = 255;
+        dstPtr[3] = (byte)(srcPtr[0] * 255.0f);
     }
 }
 static void LA32FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 2;
-    for (; fsrc < srcEnd; fsrc += 2, dst += 4) {
-        dst[0] = dst[1] = dst[2] = (byte)(fsrc[0] * 255.0f);
-        dst[3] = (byte)(fsrc[1] * 255.0f);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 2;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = (byte)(srcPtr[0] * 255.0f);
+        dstPtr[3] = (byte)(srcPtr[1] * 255.0f);
     }
 }
 static void R32FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels;
-    for (; fsrc < srcEnd; fsrc += 1, dst += 4) {
-        dst[0] = (byte)(fsrc[0] * 255.0f);
-        dst[1] = 0;
-        dst[2] = 0;
-        dst[3] = 255;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = (byte)(srcPtr[0] * 255.0f);
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 255;
     }
 }
 static void RG32FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 2;
-    for (; fsrc < srcEnd; fsrc += 2, dst += 4) {
-        dst[0] = (byte)(fsrc[0] * 255.0f);
-        dst[1] = (byte)(fsrc[1] * 255.0f);
-        dst[2] = 0;
-        dst[3] = 255;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 2;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = (byte)(srcPtr[0] * 255.0f);
+        dstPtr[1] = (byte)(srcPtr[1] * 255.0f);
+        dstPtr[2] = 0;
+        dstPtr[3] = 255;
     }
 }
 static void RGB32FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 3;
-    for (; fsrc < srcEnd; fsrc += 3, dst += 4) {
-        dst[0] = (byte)(fsrc[0] * 255.0f);
-        dst[1] = (byte)(fsrc[1] * 255.0f);
-        dst[2] = (byte)(fsrc[2] * 255.0f);
-        dst[3] = 255;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 3;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = (byte)(srcPtr[0] * 255.0f);
+        dstPtr[1] = (byte)(srcPtr[1] * 255.0f);
+        dstPtr[2] = (byte)(srcPtr[2] * 255.0f);
+        dstPtr[3] = 255;
     }
 }
 static void RGBA32FToRGBA8888(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    for (; fsrc < srcEnd; fsrc += 3, dst += 4) {
-        dst[0] = (byte)(fsrc[0] * 255.0f);
-        dst[1] = (byte)(fsrc[1] * 255.0f);
-        dst[2] = (byte)(fsrc[2] * 255.0f);
-        dst[3] = (byte)(fsrc[3] * 255.0f);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = (byte)(srcPtr[0] * 255.0f);
+        dstPtr[1] = (byte)(srcPtr[1] * 255.0f);
+        dstPtr[2] = (byte)(srcPtr[2] * 255.0f);
+        dstPtr[3] = (byte)(srcPtr[3] * 255.0f);
+    }
+}
+static void RGB11F11F10FToRGBA8888(const byte *src, byte *dst, int numPixels) {
+    const uint32_t *srcPtr = (const uint32_t *)src;
+    const uint32_t *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = (byte)(F11Converter::ToF32(srcPtr[0] & 0x7FF) * 255.0f);
+        dstPtr[1] = (byte)(F11Converter::ToF32((srcPtr[1] >> 11) & 0x7FF) * 255.0f);
+        dstPtr[2] = (byte)(F10Converter::ToF32((srcPtr[2] >> 22) & 0x3FF) * 255.0f);
+        dstPtr[3] = 255;
     }
 }
 
@@ -431,145 +496,154 @@ static void RGBA32FToRGBA8888(const byte *src, byte *dst, int numPixels) {
 //--------------------------------------------------------------------------------------------------
 
 static void L16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels;
-    float *fdst = (float *)dst;
-    for (; hsrc < srcEnd; hsrc += 1, fdst += 4) {
-        fdst[0] = fdst[1] = fdst[2] = F16toF32(hsrc[0]);
-        fdst[3] = 1.0f;
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = F16Converter::ToF32(srcPtr[0]);
+        dstPtr[3] = 1.0f;
     }
 }
 static void A16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels;
-    float *fdst = (float *)dst;
-    for (; hsrc < srcEnd; hsrc += 1, fdst += 4) {
-        fdst[0] = 1.0f;
-        fdst[1] = 1.0f;
-        fdst[2] = 1.0f;
-        fdst[3] = F16toF32(hsrc[0]);
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = 1.0f;
+        dstPtr[1] = 1.0f;
+        dstPtr[2] = 1.0f;
+        dstPtr[3] = F16Converter::ToF32(srcPtr[0]);
     }
 }
 static void LA16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels * 2;
-    float *fdst = (float *)dst;
-    for (; hsrc < srcEnd; hsrc += 2, fdst += 4) {
-        fdst[0] = fdst[1] = fdst[2] = F16toF32(hsrc[0]);
-        fdst[3] = F16toF32(hsrc[1]);
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels * 2;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = F16Converter::ToF32(srcPtr[0]);
+        dstPtr[3] = F16Converter::ToF32(srcPtr[1]);
     }
 }
 static void R16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels;
-    float *fdst = (float *)dst;
-    for (; hsrc < srcEnd; hsrc += 1, fdst += 4) {
-        fdst[0] = F16toF32(hsrc[0]);
-        fdst[1] = 0;
-        fdst[2] = 0;
-        fdst[3] = 1.0f;
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = F16Converter::ToF32(srcPtr[0]);
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
     }
 }
 static void RG16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels * 2;
-    float *fdst = (float *)dst;
-    for (; hsrc < srcEnd; hsrc += 2, fdst += 4) {
-        fdst[0] = F16toF32(hsrc[0]);
-        fdst[1] = F16toF32(hsrc[1]);
-        fdst[2] = 0;
-        fdst[3] = 1.0f;
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels * 2;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = F16Converter::ToF32(srcPtr[0]);
+        dstPtr[1] = F16Converter::ToF32(srcPtr[1]);
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
     }
 }
 static void RGB16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels * 3;
-    float *fdst = (float *)dst;
-    for (; hsrc < srcEnd; hsrc += 3, fdst += 4) {
-        fdst[0] = F16toF32(hsrc[0]);
-        fdst[1] = F16toF32(hsrc[1]);
-        fdst[2] = F16toF32(hsrc[2]);
-        fdst[3] = 1.0f;
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels * 3;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = F16Converter::ToF32(srcPtr[0]);
+        dstPtr[1] = F16Converter::ToF32(srcPtr[1]);
+        dstPtr[2] = F16Converter::ToF32(srcPtr[2]);
+        dstPtr[3] = 1.0f;
     }
 }
 static void RGBA16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float16_t *hsrc = (const float16_t *)src;
-    const float16_t *srcEnd = hsrc + numPixels * 3;
-    float *fdst = (float *)dst;
-    for (; hsrc < srcEnd; hsrc += 3, fdst += 4) {
-        fdst[0] = F16toF32(hsrc[0]);
-        fdst[1] = F16toF32(hsrc[1]);
-        fdst[2] = F16toF32(hsrc[2]);
-        fdst[3] = F16toF32(hsrc[3]);
+    const float16_t *srcPtr = (const float16_t *)src;
+    const float16_t *srcEnd = srcPtr + numPixels * 3;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = F16Converter::ToF32(srcPtr[0]);
+        dstPtr[1] = F16Converter::ToF32(srcPtr[1]);
+        dstPtr[2] = F16Converter::ToF32(srcPtr[2]);
+        dstPtr[3] = F16Converter::ToF32(srcPtr[3]);
     }
 }
 static void L32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 1, fdst += 4) {
-        fdst[0] = fdst[1] = fdst[2] = fsrc[0];
-        fdst[3] = 1.0f;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = srcPtr[0];
+        dstPtr[3] = 1.0f;
     }
 }
 
 static void A32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 1, fdst += 4) {
-        fdst[0] = 1.0f;
-        fdst[1] = 1.0f;
-        fdst[2] = 1.0f;
-        fdst[3] = fsrc[0];
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = 1.0f;
+        dstPtr[1] = 1.0f;
+        dstPtr[2] = 1.0f;
+        dstPtr[3] = srcPtr[0];
     }
 }
 static void LA32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 2;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 2, fdst += 4) {
-        fdst[0] = fdst[1] = fdst[2] = fsrc[0];
-        fdst[3] = fsrc[1];
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 2;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = dstPtr[1] = dstPtr[2] = srcPtr[0];
+        dstPtr[3] = srcPtr[1];
     }
 }
 static void R32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 1, fdst += 4) {
-        fdst[0] = fsrc[0];
-        fdst[1] = 0;
-        fdst[2] = 0;
-        fdst[3] = 1.0f;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = 0;
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
     }
 }
 static void RG32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 2;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 2, fdst += 4) {
-        fdst[0] = fsrc[0];
-        fdst[1] = fsrc[1];
-        fdst[2] = 0;
-        fdst[3] = 1.0f;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 2;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 2, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = 0;
+        dstPtr[3] = 1.0f;
     }
 }
 static void RGB32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 3;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 3, fdst += 4) {
-        fdst[0] = fsrc[0];
-        fdst[1] = fsrc[1];
-        fdst[2] = fsrc[2];
-        fdst[3] = 1.0f;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 3;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
+        dstPtr[3] = 1.0f;
     }
 }
 static void RGBA32FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     memcpy(dst, src, sizeof(float) * 4 * numPixels);
 }
 static void RGB11F11F10FToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const uint32_t *srcPtr = (const uint32_t *)src;
+    const uint32_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        dstPtr[0] = F11Converter::ToF32(*srcPtr & 0x7FF);
+        dstPtr[1] = F11Converter::ToF32((*srcPtr >> 11) & 0x7FF);
+        dstPtr[2] = F11Converter::ToF32((*srcPtr >> 22) & 0x3FF);
+        dstPtr[3] = 1.0f;
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -579,320 +653,393 @@ static void RGB11F11F10FToRGBA32F(const byte *src, byte *dst, int numPixels) {
 //--------------------------------------------------------------------------------------------------
 
 static void RGBA8888ToL8(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 1) {
-        dst[0] = (byte)(0.299f * src[0] + 0.587f * src[1] + 0.114f * src[2]);	
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = (byte)(0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2]);
     }
 }
 static void RGBA8888ToA8(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 1) {
-        dst[0] = src[3];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = srcPtr[3];
     }
 }
 static void RGBA8888ToLA88(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 2) {
-        dst[0] = (byte)(0.299f * src[0] + 0.587f * src[1] + 0.114f * src[2]);
-        dst[1] = src[3];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = (byte)(0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2]);
+        dstPtr[1] = srcPtr[3];
     }
 }
 static void RGBA8888ToLA1616(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = (((uint16_t)(0.299f * src[0] + 0.587f * src[1] + 0.114f * src[2])) << 1);
-        dst[1] = (((uint16_t)src[3]) << 1);
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = (((uint16_t)(0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2])) << 1);
+        dstPtr[1] = (((uint16_t)srcPtr[3]) << 1);
     }
 }
 static void RGBA8888ToR8(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 1) {
-        dst[0] = (byte)(src[0]);
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = (byte)(srcPtr[0]);
     }
 }
 static void RGBA8888ToRG88(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 2) {
-        dst[0] = src[0];
-        dst[1] = src[1];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
     }
 }
 static void RGBA8888ToRGB888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 3) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
     }
 }
 static void RGBA8888ToBGR888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 3) {
-        dst[0] = src[2];
-        dst[1] = src[1];
-        dst[2] = src[0];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = srcPtr[2];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[0];
     }
 }
 static void RGBA8888ToRGBX8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-        dst[3] = 0;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
+        dstPtr[3] = 0;
     }
 }
 static void RGBA8888ToBGRX8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[2];
-        dst[1] = src[1];
-        dst[2] = src[0];
-        dst[3] = 0;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[2];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[0];
+        dstPtr[3] = 0;
     }
 }
 static void RGBA8888ToBGRA8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[2];
-        dst[1] = src[1];
-        dst[2] = src[0];
-        dst[3] = src[3];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[2];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[0];
+        dstPtr[3] = srcPtr[3];
     }
 }
 static void RGBA8888ToABGR8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[3];
-        dst[1] = src[2];
-        dst[2] = src[1];
-        dst[3] = src[0];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[3];
+        dstPtr[1] = srcPtr[2];
+        dstPtr[2] = srcPtr[1];
+        dstPtr[3] = srcPtr[0];
     }
 }
 static void RGBA8888ToARGB8888(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dst += 4) {
-        dst[0] = src[1];
-        dst[1] = src[2];
-        dst[2] = src[3];
-        dst[3] = src[0];
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    byte *dstPtr = dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = srcPtr[1];
+        dstPtr[1] = srcPtr[2];
+        dstPtr[2] = srcPtr[3];
+        dstPtr[3] = srcPtr[0];
     }
 }
 static void RGBA8888ToRGBX4444(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[0] >> 4) | ((src[1] >> 4) << 4) | ((src[2] >> 4) << 8);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[0] >> 4) | ((srcPtr[1] >> 4) << 4) | ((srcPtr[2] >> 4) << 8);
     }
 }
 static void RGBA8888ToBGRX4444(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[2] >> 4) | ((src[1] >> 4) << 4) | ((src[0] >> 4) << 8);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[2] >> 4) | ((srcPtr[1] >> 4) << 4) | ((srcPtr[0] >> 4) << 8);
     }
 }
 static void RGBA8888ToRGBA4444(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[0] >> 4) | ((src[1] >> 4) << 4) | ((src[2] >> 4) << 8) | ((src[3] >> 4) << 12);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[0] >> 4) | ((srcPtr[1] >> 4) << 4) | ((srcPtr[2] >> 4) << 8) | ((srcPtr[3] >> 4) << 12);
     }
 }
 static void RGBA8888ToBGRA4444(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[2] >> 4) | ((src[1] >> 4) << 4) | ((src[0] >> 4) << 8) | ((src[3] >> 4) << 12);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[2] >> 4) | ((srcPtr[1] >> 4) << 4) | ((srcPtr[0] >> 4) << 8) | ((srcPtr[3] >> 4) << 12);
     }
 }
 static void RGBA8888ToABGR4444(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[3] >> 4) | ((src[2] >> 4) << 4) | ((src[1] >> 4) << 8) | ((src[0] >> 4) << 12);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[3] >> 4) | ((srcPtr[2] >> 4) << 4) | ((srcPtr[1] >> 4) << 8) | ((srcPtr[0] >> 4) << 12);
     }
 }
 static void RGBA8888ToARGB4444(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[1] >> 4) | ((src[2] >> 4) << 4) | ((src[3] >> 4) << 8) | ((src[0] >> 4) << 12);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[1] >> 4) | ((srcPtr[2] >> 4) << 4) | ((srcPtr[3] >> 4) << 8) | ((srcPtr[0] >> 4) << 12);
     }
 }
 static void RGBA8888ToRGBX5551(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[0] >> 3) | ((src[1] >> 3) << 5) | ((src[2] >> 3) << 10);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[0] >> 3) | ((srcPtr[1] >> 3) << 5) | ((srcPtr[2] >> 3) << 10);
     }
 }
 static void RGBA8888ToBGRX5551(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[2] >> 3) | ((src[1] >> 3) << 5) | ((src[0] >> 3) << 10);
+    for (; srcPtr < srcEnd; src += 4, dstPtr++) {
+        *dstPtr = (srcPtr[2] >> 3) | ((srcPtr[1] >> 3) << 5) | ((srcPtr[0] >> 3) << 10);
     }
 }
 static void RGBA8888ToRGBA5551(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[0] >> 3) | ((src[1] >> 3) << 5) | ((src[2] >> 3) << 10) | ((src[3] >> 7) << 15);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[0] >> 3) | ((srcPtr[1] >> 3) << 5) | ((srcPtr[2] >> 3) << 10) | ((srcPtr[3] >> 7) << 15);
     }
 }
 static void RGBA8888ToBGRA5551(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[2] >> 3) | ((src[1] >> 3) << 5) | ((src[0] >> 3) << 10) | ((src[3] >> 7) << 15);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[2] >> 3) | ((srcPtr[1] >> 3) << 5) | ((srcPtr[0] >> 3) << 10) | ((srcPtr[3] >> 7) << 15);
     }
 }
 static void RGBA8888ToABGR1555(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[3] >> 3) | ((src[2] >> 3) << 5) | ((src[1] >> 3) << 10) | ((src[0] >> 7) << 15);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[3] >> 3) | ((srcPtr[2] >> 3) << 5) | ((srcPtr[1] >> 3) << 10) | ((srcPtr[0] >> 7) << 15);
     }
 }
 static void RGBA8888ToARGB1555(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[1] >> 3) | ((src[2] >> 3) << 5) | ((src[3] >> 3) << 10) | ((src[0] >> 7) << 15);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[1] >> 3) | ((srcPtr[2] >> 3) << 5) | ((srcPtr[3] >> 3) << 10) | ((srcPtr[0] >> 7) << 15);
     }
 }
 static void RGBA8888ToRGB565(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[0] >> 3) | ((src[1] >> 2) << 5) | ((src[2] >> 3) << 11);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[0] >> 3) | ((srcPtr[1] >> 2) << 5) | ((srcPtr[2] >> 3) << 11);
     }
 }
 static void RGBA8888ToBGR565(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    const byte *srcEnd = src + numPixels * 4;
-    for (; src < srcEnd; src += 4, dstPtr++) {
-        *dstPtr = (src[2] >> 3) | ((src[1] >> 2) << 5) | ((src[0] >> 3) << 11);
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = (srcPtr[2] >> 3) | ((srcPtr[1] >> 2) << 5) | ((srcPtr[0] >> 3) << 11);
     }
 }
 static void RGBA8888ToL16F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; src < srcEnd; src += 4, hdst += 1) {
-        hdst[0] = F32toF16(0.299f * (src[0] / 255.0f) + 0.587f * (src[1] / 255.0f) + 0.114f * (src[2] / 255.0f));
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = F16Converter::FromF32(0.299f * (srcPtr[0] * invNorm) + 0.587f * (srcPtr[1] * invNorm) + 0.114f * (srcPtr[2] * invNorm));
     }
 }
 static void RGBA8888ToA16F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; src < srcEnd; src += 4, hdst += 1) {
-        hdst[0] = F32toF16(src[3] / 255.0f);
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[3] * invNorm);
     }
 }
 static void RGBA8888ToLA16F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; src < srcEnd; src += 4, hdst += 2) {
-        hdst[0] = F32toF16(0.299f * (src[0] / 255.0f) + 0.587f * (src[1] / 255.0f) + 0.114f * (src[2] / 255.0f));
-        hdst[1] = F32toF16(src[3] / 255.0f);
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = F16Converter::FromF32(0.299f * (srcPtr[0] * invNorm) + 0.587f * (srcPtr[1] * invNorm) + 0.114f * (srcPtr[2] * invNorm));
+        dstPtr[1] = F16Converter::FromF32(srcPtr[3] * invNorm);
     }
 }
 static void RGBA8888ToR16F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; src < srcEnd; src += 4, hdst += 1) {
-        hdst[0] = F32toF16(src[0] / 255.0f);
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[0] * invNorm);
     }
 }
 static void RGBA8888ToRG16F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; src < srcEnd; src += 4, hdst += 2) {
-        hdst[0] = F32toF16(src[0] / 255.0f);
-        hdst[1] = F32toF16(src[1] / 255.0f);
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[0] * invNorm);
+        dstPtr[1] = F16Converter::FromF32(srcPtr[1] * invNorm);
     }
 }
 static void RGBA8888ToRGB16F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 255.0f;
-    const byte *srcEnd = src + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    float16_t hone = F32toF16(1.0f);
-    for (; src < srcEnd; src += 4, hdst += 3) {
-        hdst[0] = F32toF16(src[0] * invNorm);
-        hdst[1] = F32toF16(src[1] * invNorm);
-        hdst[2] = F32toF16(src[2] * invNorm);
-        hdst[3] = hone;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[0] * invNorm);
+        dstPtr[1] = F16Converter::FromF32(srcPtr[1] * invNorm);
+        dstPtr[2] = F16Converter::FromF32(srcPtr[2] * invNorm);
     }
 }
 static void RGBA8888ToRGBA16F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 255.0f;
-    const byte *srcEnd = src + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; src < srcEnd; src += 4, hdst += 3) {
-        hdst[0] = F32toF16(src[0] * invNorm);
-        hdst[1] = F32toF16(src[1] * invNorm);
-        hdst[2] = F32toF16(src[2] * invNorm);
-        hdst[3] = F32toF16(src[3] * invNorm);
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[0] * invNorm);
+        dstPtr[1] = F16Converter::FromF32(srcPtr[1] * invNorm);
+        dstPtr[2] = F16Converter::FromF32(srcPtr[2] * invNorm);
+        dstPtr[3] = F16Converter::FromF32(srcPtr[3] * invNorm);
     }
 }
 static void RGBA8888ToL32F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; src < srcEnd; src += 4, fdst += 1) {
-        fdst[0] = 0.299f * (src[0] / 255.0f) + 0.587f * (src[1] / 255.0f) + 0.114f * (src[2] / 255.0f);
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = 0.299f * (srcPtr[0] * invNorm) + 0.587f * (srcPtr[1] * invNorm) + 0.114f * (srcPtr[2] * invNorm);
     }
 }
 static void RGBA8888ToA32F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; src < srcEnd; src += 4, fdst += 1) {
-        fdst[0] = src[3] / 255.0f;
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = srcPtr[3] * invNorm;
     }
 }
 static void RGBA8888ToLA32F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; src < srcEnd; src += 4, fdst += 2) {
-        fdst[0] = 0.299f * (src[0] / 255.0f) + 0.587f * (src[1] / 255.0f) + 0.114f * (src[2] / 255.0f);
-        fdst[1] = src[3] / 255.0f;
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = 0.299f * (srcPtr[0] * invNorm) + 0.587f * (srcPtr[1] * invNorm) + 0.114f * (srcPtr[2] * invNorm);
+        dstPtr[1] = srcPtr[3] * invNorm;
     }
 }
 static void RGBA8888ToR32F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; src < srcEnd; src += 4, fdst += 1) {
-        fdst[0] = src[0] / 255.0f;
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = srcPtr[0] * invNorm;
     }
 }
 static void RGBA8888ToRG32F(const byte *src, byte *dst, int numPixels) {
-    const byte *srcEnd = src + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; src < srcEnd; src += 4, fdst += 2) {
-        fdst[0] = src[0] / 255.0f;
-        fdst[1] = src[1] / 255.0f;
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = srcPtr[0] * invNorm;
+        dstPtr[1] = srcPtr[1] * invNorm;
     }
 }
 static void RGBA8888ToRGB32F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 255.0f;
-    const byte *srcEnd = src + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; src < srcEnd; src += 4, fdst += 3) {
-        fdst[0] = src[0] * invNorm;
-        fdst[1] = src[1] * invNorm;
-        fdst[2] = src[2] * invNorm;
-        fdst[3] = 1.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = srcPtr[0] * invNorm;
+        dstPtr[1] = srcPtr[1] * invNorm;
+        dstPtr[2] = srcPtr[2] * invNorm;
     }
 }
 static void RGBA8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 255.0f;
-    const byte *srcEnd = src + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; src < srcEnd; src += 4, fdst += 3) {
-        fdst[0] = src[0] * invNorm;
-        fdst[1] = src[1] * invNorm;
-        fdst[2] = src[2] * invNorm;
-        fdst[3] = src[3] * invNorm;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = srcPtr[0] * invNorm;
+        dstPtr[1] = srcPtr[1] * invNorm;
+        dstPtr[2] = srcPtr[2] * invNorm;
+        dstPtr[3] = srcPtr[3] * invNorm;
+    }
+}
+static void RGBA8888ToRGB11F11F10F(const byte *src, byte *dst, int numPixels) {
+    const float invNorm = 1.0f / 255.0f;
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    uint32_t *dstPtr = (uint32_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        uint32_t r = F11Converter::FromF32(srcPtr[0] * invNorm);
+        uint32_t g = F11Converter::FromF32(srcPtr[1] * invNorm);
+        uint32_t b = F10Converter::FromF32(srcPtr[2] * invNorm);
+        *dstPtr = r | (g << 11) | (b << 22);
     }
 }
 
@@ -903,127 +1050,130 @@ static void RGBA8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
 //--------------------------------------------------------------------------------------------------
 
 static void RGBA32FToL16F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, hdst += 1) {
-        hdst[0] = F32toF16(0.299f * fsrc[0] + 0.587f * fsrc[1] + 0.114f * fsrc[2]);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = F16Converter::FromF32(0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2]);
     }
 }
 static void RGBA32FToA16F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, hdst += 1) {
-        hdst[0] = F32toF16(fsrc[3]);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[3]);
     }
 }
 static void RGBA32FToLA16F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, hdst += 2) {
-        hdst[0] = F32toF16(0.299f * fsrc[0] + 0.587f * fsrc[1] + 0.114f * fsrc[2]);
-        hdst[1] = F32toF16(fsrc[3]);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = F16Converter::FromF32(0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2]);
+        dstPtr[1] = F16Converter::FromF32(srcPtr[3]);
     }
 }
 static void RGBA32FToR16F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, hdst += 1) {
-        hdst[0] = F32toF16(fsrc[0]);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[0]);
     }
 }
 static void RGBA32FToRG16F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, hdst += 2) {
-        hdst[0] = F32toF16(fsrc[0]);
-        hdst[1] = F32toF16(fsrc[1]);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[0]);
+        dstPtr[1] = F16Converter::FromF32(srcPtr[1]);
     }
 }
 static void RGBA32FToRGB16F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    float16_t hone = F32toF16(1.0f);
-    for (; fsrc < srcEnd; fsrc += 4, hdst += 3) {
-        hdst[0] = F32toF16(fsrc[0] * invNorm);
-        hdst[1] = F32toF16(fsrc[1] * invNorm);
-        hdst[2] = F32toF16(fsrc[2] * invNorm);
-        hdst[3] = hone;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[0]);
+        dstPtr[1] = F16Converter::FromF32(srcPtr[1]);
+        dstPtr[2] = F16Converter::FromF32(srcPtr[2]);
     }
 }
 static void RGBA32FToRGBA16F(const byte *src, byte *dst, int numPixels) {
-    const float invNorm = 1.0f / 255.0f;
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float16_t *hdst = (float16_t *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, hdst += 3) {
-        hdst[0] = F32toF16(fsrc[0] * invNorm);
-        hdst[1] = F32toF16(fsrc[1] * invNorm);
-        hdst[2] = F32toF16(fsrc[2] * invNorm);
-        hdst[3] = F32toF16(fsrc[3] * invNorm);
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float16_t *dstPtr = (float16_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = F16Converter::FromF32(srcPtr[0]);
+        dstPtr[1] = F16Converter::FromF32(srcPtr[1]);
+        dstPtr[2] = F16Converter::FromF32(srcPtr[2]);
+        dstPtr[3] = F16Converter::FromF32(srcPtr[3]);
     }
 }
 static void RGBA32FToL32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, fdst += 1) {
-        fdst[0] = 0.299f * fsrc[0] + 0.587f * fsrc[1] + 0.114f * fsrc[2];
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = 0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2];
     }
 }
 static void RGBA32FToA32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, fdst += 1) {
-        fdst[0] = fsrc[3];
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = srcPtr[3];
     }
 }
 static void RGBA32FToLA32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, fdst += 2) {
-        fdst[0] = 0.299f * fsrc[0] + 0.587f * fsrc[1] + 0.114f * fsrc[2];
-        fdst[1] = fsrc[3];
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
+        dstPtr[0] = 0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2];
+        dstPtr[1] = srcPtr[3];
     }
 }
 static void RGBA32FToR32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, fdst += 1) {
-        fdst[0] = fsrc[0];
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = srcPtr[0];
     }
 }
 static void RGBA32FToRG32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; src += 4, fdst += 2) {
-        fdst[0] = fsrc[0];
-        fdst[1] = fsrc[1];
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; src += 4, dstPtr += 2) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
     }
 }
 static void RGBA32FToRGB32F(const byte *src, byte *dst, int numPixels) {
-    const float *fsrc = (const float *)src;
-    const float *srcEnd = fsrc + numPixels * 4;
-    float *fdst = (float *)dst;
-    for (; fsrc < srcEnd; fsrc += 4, fdst += 3) {
-        fdst[0] = fsrc[0];
-        fdst[1] = fsrc[1];
-        fdst[2] = fsrc[2];
-        fdst[3] = 1.0f;
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    float *dstPtr = (float *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+        dstPtr[0] = srcPtr[0];
+        dstPtr[1] = srcPtr[1];
+        dstPtr[2] = srcPtr[2];
     }
 }
 static void RGBA32FToRGB11F11F10F(const byte *src, byte *dst, int numPixels) {
-
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint32_t *dstPtr = (uint32_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        uint32_t r = F11Converter::FromF32(srcPtr[0]);
+        uint32_t g = F11Converter::FromF32(srcPtr[1]);
+        uint32_t b = F10Converter::FromF32(srcPtr[2]);
+        *dstPtr = r | (g << 11) | (b << 22);
+    }
 }
 
 // 컬러 채널 표기(RGBALX)는 바이트 주소체계와 선형이다 (D3D식 표기와 반대)
@@ -1080,7 +1230,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "RG_32F_32F",             8,  2,  32, 32, 0,  0,  Image::Float, RG32FToRGBA8888, RGBA8888ToRG32F, RG32FToRGBA32F, RGBA32FToRG32F },
     { "RGB_32F_32F_32F",        12, 3,  32, 32, 32, 0,  Image::Float, RGB32FToRGBA8888, RGBA8888ToRGB32F, RGB32FToRGBA32F, RGBA32FToRGB32F },
     { "RGBA_32F_32F_32F_32F",   16, 4,  32, 32, 32, 32, Image::Float, RGBA32FToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA32F, RGBA32FToRGBA32F },
-    { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::Float | Image::Packed, nullptr, nullptr, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
+    { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::Float | Image::Packed, RGB11F11F10FToRGBA8888, RGBA8888ToRGB11F11F10F, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
     // DXT (BTC) ----------------------------------------------------------------------------------
     { "DXT1",                   8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "DXT3",                   16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },

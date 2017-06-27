@@ -220,10 +220,10 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         localVerts[3].xyz[2] = -y;
     }
 
-    const float16_t hs1 = F32toF16(s1);
-    const float16_t ht1 = F32toF16(t1);
-    const float16_t hs2 = F32toF16(s2);
-    const float16_t ht2 = F32toF16(t2);
+    const float16_t hs1 = F16Converter::FromF32(s1);
+    const float16_t ht1 = F16Converter::FromF32(t1);
+    const float16_t hs2 = F16Converter::FromF32(s2);
+    const float16_t ht2 = F16Converter::FromF32(t2);
 
     localVerts[0].st[0] = hs1;
     localVerts[0].st[1] = ht1;

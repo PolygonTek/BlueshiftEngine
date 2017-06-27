@@ -80,7 +80,7 @@ BE_INLINE void VertexGeneric::Clear() {
 }
 
 BE_INLINE const Vec2 VertexGeneric::GetTexCoord() const {
-    return Vec2(F16toF32(st[0]), F16toF32(st[1]));
+    return Vec2(F16Converter::ToF32(st[0]), F16Converter::ToF32(st[1]));
 }
 
 BE_INLINE void VertexGeneric::SetTexCoord(const Vec2 &st) {
@@ -94,11 +94,11 @@ BE_INLINE void VertexGeneric::SetTexCoord(float s, float t) {
 }
 
 BE_INLINE void VertexGeneric::SetTexCoordS(float s) {
-    st[0] = F32toF16(s);
+    st[0] = F16Converter::FromF32(s);
 }
 
 BE_INLINE void VertexGeneric::SetTexCoordT(float t) {
-    st[1] = F32toF16(t);
+    st[1] = F16Converter::FromF32(t);
 }
 
 BE_INLINE void VertexGeneric::SetColor(uint32_t color) {
@@ -213,7 +213,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetNormal() const {
     n.Normalize();
     return n;
 #else
-    Vec3 n(F16toF32(normal[0]), F16toF32(normal[1]), F16toF32(normal[2]));
+    Vec3 n(F16Converter::ToF32(normal[0]), F16Converter::ToF32(normal[1]), F16Converter::ToF32(normal[2]));
     n.Normalize();
     return n;
 #endif
@@ -224,7 +224,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetNormalRaw() const {
     Vec3 n(BYTE_TO_SIGNED_FLOAT(normal[0]), BYTE_TO_SIGNED_FLOAT(normal[1]), BYTE_TO_SIGNED_FLOAT(normal[2]));
     return n;
 #else
-    Vec3 n(F16toF32(normal[0]), F16toF32(normal[1]), F16toF32(normal[2]));
+    Vec3 n(F16Converter::ToF32(normal[0]), F16Converter::ToF32(normal[1]), F16Converter::ToF32(normal[2]));
     return n;
 #endif
 }
@@ -233,9 +233,9 @@ BE_INLINE void VertexGenericLit::SetNormal(const Vec3 &n) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     ConvertNormalToBytes(n.x, n.y, n.z, normal);
 #else
-    normal[0] = F32toF16(n[0]);
-    normal[1] = F32toF16(n[1]);
-    normal[2] = F32toF16(n[2]);
+    normal[0] = F16Converter::FromF32(n[0]);
+    normal[1] = F16Converter::FromF32(n[1]);
+    normal[2] = F16Converter::FromF32(n[2]);
 #endif
 }
 
@@ -243,9 +243,9 @@ BE_INLINE void VertexGenericLit::SetNormal(float x, float y, float z) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     ConvertNormalToBytes(x, y, z, normal);
 #else
-    normal[0] = F32toF16(x);
-    normal[1] = F32toF16(y);
-    normal[2] = F32toF16(z); 
+    normal[0] = F16Converter::FromF32(x);
+    normal[1] = F16Converter::FromF32(y);
+    normal[2] = F16Converter::FromF32(z); 
 #endif
 }
 
@@ -253,9 +253,9 @@ BE_INLINE void VertexGenericLit::SetTangent(const Vec3 &t) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     ConvertNormalToBytes(t.x, t.y, t.z, tangent);
 #else
-    tangent[0] = F32toF16(t[0]);
-    tangent[1] = F32toF16(t[1]);
-    tangent[2] = F32toF16(t[2]);
+    tangent[0] = F16Converter::FromF32(t[0]);
+    tangent[1] = F16Converter::FromF32(t[1]);
+    tangent[2] = F16Converter::FromF32(t[2]);
 #endif
 }
 
@@ -263,9 +263,9 @@ BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     ConvertNormalToBytes(x, y, z, tangent);
 #else
-    tangent[0] = F32toF16(x);
-    tangent[1] = F32toF16(y);
-    tangent[2] = F32toF16(z);
+    tangent[0] = F16Converter::FromF32(x);
+    tangent[1] = F16Converter::FromF32(y);
+    tangent[2] = F16Converter::FromF32(z);
 #endif
 }
 
@@ -275,7 +275,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
     t.Normalize();
     return t;
 #else
-    Vec3 t(F16toF32(tangent[0]), F16toF32(tangent[1]), F16toF32(tangent[2]));
+    Vec3 t(F16Converter::ToF32(tangent[0]), F16Converter::ToF32(tangent[1]), F16Converter::ToF32(tangent[2]));
     t.Normalize();
     return t;
 #endif
@@ -286,7 +286,7 @@ BE_INLINE const Vec3 VertexGenericLit::GetTangentRaw() const {
     Vec3 t(BYTE_TO_SIGNED_FLOAT(tangent[0]), BYTE_TO_SIGNED_FLOAT(tangent[1]), BYTE_TO_SIGNED_FLOAT(tangent[2]));
     return t;
 #else
-    Vec3 t(F16toF32(tangent[0]), F16toF32(tangent[1]), F16toF32(tangent[2]));
+    Vec3 t(F16Converter::ToF32(tangent[0]), F16Converter::ToF32(tangent[1]), F16Converter::ToF32(tangent[2]));
     return t;
 #endif
 }
@@ -319,7 +319,7 @@ BE_INLINE float VertexGenericLit::GetBiTangentSign() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     return (tangent[3] < 128) ? -1.0f : 1.0f;
 #else
-    return (F16toF32(tangent[3]) < 0.0f) ? -1.0f : 1.0f;
+    return (F16Converter::ToF32(tangent[3]) < 0.0f) ? -1.0f : 1.0f;
 #endif
 }
 
@@ -327,7 +327,7 @@ BE_INLINE void VertexGenericLit::SetBiTangentSign(float sign) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     tangent[3] = (sign < 0.0f) ? 0 : 255;
 #else
-    tangent[3] = F32toF16((sign < 0.0f) ? -1.0f : 1.0f);
+    tangent[3] = F16Converter::FromF32((sign < 0.0f) ? -1.0f : 1.0f);
 #endif
 }
 

@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Math/MathCommon.h"
+#include "Math/FloatConverter.h"
 #include "Math/Half.h"
 #include "Math/Complex.h"
 #include "Math/Vector.h"

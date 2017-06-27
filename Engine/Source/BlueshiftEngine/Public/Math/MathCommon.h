@@ -123,40 +123,6 @@ struct Factorial<0> {
     enum { answer = 1 };
 };
 
-// float16_t
-typedef unsigned short float16_t;
-
-/// Convert a 16 bit half float value to 32bit float value
-BE_INLINE float F16toF32(float16_t x) {
-    // GPU half-float bit patterns
-    int e = (x & 32767) >> 10;
-    int m = (x & 1023);
-    int s = (x & 32768) ? -1 : 1;
-
-    if (e > 0 && e < 31) {
-        return s * powf(2.0f, (e - 15.0f)) * (1 + m / 1024.0f);
-    } else if (m == 0) {
-        return s * 0.0f;
-    }
-    return s * powf(2.0f, -14.0f) * (m / 1024.0f);
-}
-
-/// Convert a 32bit float value to 16 bit half float value
-BE_INLINE float16_t F32toF16(float x) {
-    const uint32_t f = *(uint32_t *)(&x);
-    const int32_t e = ((f & 0x7F800000) >> 23) - 112;
-    const uint32_t s = (f & 0x80000000) >> 16;
-    const uint32_t m = (f & 0x007FFFFF);
-
-    if (e <= 0) {
-        return 0;
-    }
-    if (e > 30) {
-        return (float16_t)(s | 0x7BFF);
-    }
-    return (float16_t)(s | (e << 10) | (m >> 13));
-}
- 
 class BE_API Math {
 public:
     static const float          Pi;                         ///< pi

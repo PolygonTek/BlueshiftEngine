@@ -176,10 +176,10 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             float s2 = 1.0f;
             float t2 = 1.0f;
 
-            float16_t hs1 = F32toF16(s1);
-            float16_t ht1 = F32toF16(t1);
-            float16_t hs2 = F32toF16(s2);
-            float16_t ht2 = F32toF16(t2);
+            float16_t hs1 = F16Converter::FromF32(s1);
+            float16_t ht1 = F16Converter::FromF32(t1);
+            float16_t hs2 = F16Converter::FromF32(s2);
+            float16_t ht2 = F16Converter::FromF32(t2);
 
             if (stage.standardModule.orientation != ParticleSystem::StandardModule::Aimed &&
                 stage.standardModule.orientation != ParticleSystem::StandardModule::AimedZ) {
@@ -241,8 +241,8 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
                     for (int quadIndex = 0; quadIndex < trailCount; quadIndex++) {
                         const Particle::Trail *trail = &particle->trails[quadIndex];
                         
-                        ht1 = F32toF16((float)quadIndex / trailCount);
-                        ht2 = F32toF16((float)(quadIndex + 1) / trailCount);
+                        ht1 = F16Converter::FromF32((float)quadIndex / trailCount);
+                        ht2 = F16Converter::FromF32((float)(quadIndex + 1) / trailCount);
 
                         rtv.SetFromCross(cameraDir[quadIndex], tangentDir[quadIndex]);
                         rtv.Normalize();
