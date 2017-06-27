@@ -195,48 +195,43 @@ Color4 Image::GetColor(float x, float y) const {
 
     int iY0 = (int)y;
     int iY1 = Min(iY0 + 1, height - 1);
+
     int iX0 = (int)x;
     int iX1 = Min(iX0 + 1, width - 1);
 
     float fracY = y - (float)iY0;
     float fracX = x - (float)iX0;
 
+    const byte *src0 = &pic[iY0 * pitch];
+    const byte *src1 = &pic[iY1 * pitch];
+
     Color4 color;
 
     if (info->type & Float) {
-        if (info->type & Half) {
-            const float16_t *hsrc0 = (const float16_t *)&pic[iY0 * pitch];
-            const float16_t *hsrc1 = (const float16_t *)&pic[iY1 * pitch];
+        // [0] [1]
+        // [2] [3]
+        ALIGN16(float rgba32f[4][4]);
 
-            for (int i = 0; i < numComponents; i++) {
-                float a = Lerp(F16toF32(hsrc0[iX0 + i]), F16toF32(hsrc0[iX1 + i]), fracX);
-                float b = Lerp(F16toF32(hsrc1[iX0 + i]), F16toF32(hsrc1[iX1 + i]), fracX);
+        info->unpackRGBA32F(&src0[iX0 * bpp], (byte *)rgba32f[0], 1);
+        info->unpackRGBA32F(&src0[iX1 * bpp], (byte *)rgba32f[1], 1);
+        info->unpackRGBA32F(&src1[iX0 * bpp], (byte *)rgba32f[2], 1);
+        info->unpackRGBA32F(&src1[iX1 * bpp], (byte *)rgba32f[3], 1);
 
-                color[i] = Lerp(a, b, fracY);
-            }
-        } else {
-            const float *fsrc0 = (const float *)&pic[iY0 * pitch];
-            const float *fsrc1 = (const float *)&pic[iY1 * pitch];
+        for (int i = 0; i < numComponents; i++) {
+            float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
+            float b = Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
 
-            for (int i = 0; i < numComponents; i++) {
-                float a = Lerp(fsrc0[iX0 + i], fsrc0[iX1 + i], fracX);
-                float b = Lerp(fsrc1[iX0 + i], fsrc1[iX1 + i], fracX);
-
-                color[i] = Lerp(a, b, fracY);
-            }
+            color[i] = Lerp(a, b, fracY);
         }
     } else {
         // [0] [1]
         // [2] [3]
         ALIGN16(byte rgba8888[4][4]);
 
-        const byte *src0 = &pic[iY0 * pitch];
-        const byte *src1 = &pic[iY1 * pitch];
-
-        info->unpackFunc(&src0[iX0 * bpp], rgba8888[0], 1);
-        info->unpackFunc(&src0[iX1 * bpp], rgba8888[1], 1);
-        info->unpackFunc(&src1[iX0 * bpp], rgba8888[2], 1);
-        info->unpackFunc(&src1[iX1 * bpp], rgba8888[3], 1);
+        info->unpackRGBA8888(&src0[iX0 * bpp], rgba8888[0], 1);
+        info->unpackRGBA8888(&src0[iX1 * bpp], rgba8888[1], 1);
+        info->unpackRGBA8888(&src1[iX0 * bpp], rgba8888[2], 1);
+        info->unpackRGBA8888(&src1[iX1 * bpp], rgba8888[3], 1);
 
         for (int i = 0; i < numComponents; i++) {
             float a = Lerp(rgba8888[0][i] / 255.0f, rgba8888[1][i] / 255.0f, fracX);

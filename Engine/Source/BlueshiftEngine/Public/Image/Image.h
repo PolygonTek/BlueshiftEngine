@@ -25,7 +25,7 @@ public:
     /// Channels (RGBALX) are described by little-endian format (opposed to D3D style)
     enum Format {
         UnknownFormat,
-        // plane bytes format
+        // plain bytes format
         L_8,
         A_8,
         LA_8_8,
@@ -62,20 +62,20 @@ public:
         RGBE_9_9_9_5,
         // float format
         L_16F,
-        L_32F,
         A_16F,
-        A_32F,
         LA_16F_16F,
-        LA_32F_32F,
         R_16F,
-        R_32F,
         RG_16F_16F,
-        RG_32F_32F,
-        RGB_11F_11F_10F,
         RGB_16F_16F_16F,
-        RGB_32F_32F_32F,
         RGBA_16F_16F_16F_16F,
+        L_32F,
+        A_32F,
+        LA_32F_32F,
+        R_32F,
+        RG_32F_32F,
+        RGB_32F_32F_32F,
         RGBA_32F_32F_32F_32F,
+        RGB_11F_11F_10F,
         // DXT (BTC)
         RGBA_DXT1,
         RGBA_DXT3,

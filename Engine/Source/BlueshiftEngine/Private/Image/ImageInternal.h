@@ -21,6 +21,8 @@ BE_NAMESPACE_BEGIN
 //--------------------------------------------------------------------------------------------------
 using UserFormatToRGBA8888Func = void (*)(const byte *src, byte *dst, int numPixels);
 using RGBA8888ToUserFormatFunc = void (*)(const byte *src, byte *dst, int numPixels);
+using UserFormatToRGBA32FFunc = void(*)(const byte *src, byte *dst, int numPixels);
+using RGBA32FToUserFormatFunc = void(*)(const byte *src, byte *dst, int numPixels);
 
 struct ImageFormatInfo {
     const char *name;
@@ -31,8 +33,10 @@ struct ImageFormatInfo {
     int blueBits;
     int alphaBits;
     int type;
-    UserFormatToRGBA8888Func unpackFunc;
-    RGBA8888ToUserFormatFunc packFunc;
+    UserFormatToRGBA8888Func unpackRGBA8888;
+    RGBA8888ToUserFormatFunc packRGBA8888;
+    UserFormatToRGBA32FFunc unpackRGBA32F;
+    RGBA32FToUserFormatFunc packRGBA32F;
 };
 
 void DecompressDXT1(const Image &srcImage, Image &dstImage);

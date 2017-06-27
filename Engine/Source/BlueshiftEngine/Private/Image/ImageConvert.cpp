@@ -169,8 +169,8 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         return true;
     }
 
-    const UserFormatToRGBA8888Func unpackFunc = srcFormatInfo->unpackFunc;
-    const RGBA8888ToUserFormatFunc packFunc = dstFormatInfo->packFunc;
+    const UserFormatToRGBA8888Func unpackFunc = srcFormatInfo->unpackRGBA8888;
+    const RGBA8888ToUserFormatFunc packFunc = dstFormatInfo->packRGBA8888;
 
     if (!unpackFunc || !packFunc) {
         BE_WARNLOG(L"Image::ConvertFormat: unsupported convert type (from %hs to %hs)\n", srcImage->FormatName(), dstImage.FormatName());
