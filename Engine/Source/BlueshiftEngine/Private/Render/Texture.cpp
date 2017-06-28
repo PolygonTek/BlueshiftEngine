@@ -253,13 +253,14 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
     byte *dst = image.GetPixels();
 
-    int facesize = image.GetSliceSize();
+    int sliceSize = image.GetSliceSize();
+    float invSize = 1.0f / (size - 1);
     Vec3 vec;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                vec = Image::ToCubeMapCoord((Image::CubeMapFace)faceIndex, size, x, y);
+                vec = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, x * invSize, y * invSize);
                 vec.Normalize();
                 dst[3 * (y * size + x) + 0] = (byte)(128 + 127 * vec[0]);
                 dst[3 * (y * size + x) + 1] = (byte)(128 + 127 * vec[1]);
@@ -267,7 +268,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
             }
         }
 
-        dst += facesize;
+        dst += sliceSize;
     }
 
     Create(RHI::TextureCubeMap, image, Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);

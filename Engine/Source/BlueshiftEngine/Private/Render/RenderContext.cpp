@@ -885,11 +885,12 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     memset(tile, 0, sizeof(tile));
 
     float *weightData = (float *)Mem_Alloc(envmapSize * 4 * envmapSize * 4 * sizeof(float));
+    float invSize = 1.0f / (envmapSize - 1);
     
     for (int face = 0; face < 6; face++) {
         for (int y = 0; y < envmapSize; y++) {
             for (int x = 0; x < envmapSize; x++) {
-                Vec3 dir = Image::ToCubeMapCoord((Image::CubeMapFace)face, envmapSize, x, y);
+                Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)face, x * invSize, y * invSize);
                 dir.Normalize();
 
                 float basisProj[16];

@@ -601,8 +601,8 @@ BE_INLINE void Vec3::SetFromSpherical(float radius, float theta, float phi) {
 
 BE_INLINE float Vec3::ToSpherical(float &theta, float &phi) const {
     float radius = Math::Sqrt(x * x + y * y + z * z);
-    theta = Math::ATan(y, x);
-    phi = Math::ACos(z / radius);
+    theta = Math::ACos(z / radius);
+    phi = Math::ATan(y, x);
     return radius;
 }
     

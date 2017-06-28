@@ -297,7 +297,8 @@ public:
                         /// Converts a linear value in the range [0, 1] to an sRGB value in the range [0, 1].
     static float        LinearToGamma(float value);
 
-    static Vec3         ToCubeMapCoord(CubeMapFace cubeMapFace, int cubeMapSize, int x, int y);
+    static Vec3         FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t);
+    static CubeMapFace  CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t);
 
     static Image *      NewImageFromFile(const char *filename);
 
@@ -419,23 +420,60 @@ BE_INLINE float Image::LinearToGamma(float f) {
     }
 }
 
-BE_INLINE Vec3 Image::ToCubeMapCoord(CubeMapFace cubeMapFace, int cubeMapSize, int x, int y) {
-    float s = (float)x / (float)(cubeMapSize - 1);
-    float t = (float)y / (float)(cubeMapSize - 1);
-
+BE_INLINE Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
     float sv = s * 2.0f - 1.0f;
     float tv = t * 2.0f - 1.0f;
 
-    Vec3 vec;
+    Vec3 cubeMapCoords;
     switch (cubeMapFace) {
-    case PositiveX: vec = Vec3(+1.0f, -tv, -sv); break;
-    case NegativeX: vec = Vec3(-1.0f, -tv, +sv); break;
-    case PositiveY: vec = Vec3(+sv, +1.0f, +tv); break;
-    case NegativeY: vec = Vec3(+sv, -1.0f, -tv); break;
-    case PositiveZ: vec = Vec3(+sv, -tv, +1.0f); break;
-    case NegativeZ: vec = Vec3(-sv, -tv, -1.0f); break;
+    case PositiveX: cubeMapCoords = Vec3(+1.0f, -tv, -sv); break;
+    case NegativeX: cubeMapCoords = Vec3(-1.0f, -tv, +sv); break;
+    case PositiveY: cubeMapCoords = Vec3(+sv, +1.0f, +tv); break;
+    case NegativeY: cubeMapCoords = Vec3(+sv, -1.0f, -tv); break;
+    case PositiveZ: cubeMapCoords = Vec3(+sv, -tv, +1.0f); break;
+    case NegativeZ: cubeMapCoords = Vec3(-sv, -tv, -1.0f); break;
     }
-    return vec;
+    return cubeMapCoords;
+}
+
+BE_INLINE Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
+    int faceIndex = cubeMapCoords.Abs().MaxComponentIndex();
+    float majorAxis = cubeMapCoords[faceIndex];
+    faceIndex = (faceIndex << 1) + IEEE_FLT_SIGNBITSET(majorAxis);
+    float sc, tc;
+
+    switch (faceIndex) {
+    case PositiveX: 
+        sc = -cubeMapCoords.z; 
+        tc = -cubeMapCoords.y;
+        break;
+    case NegativeX:
+        sc = +cubeMapCoords.z;
+        tc = -cubeMapCoords.y;
+        break;
+    case PositiveY:
+        sc = +cubeMapCoords.x;
+        tc = +cubeMapCoords.z;
+        break;
+    case NegativeY:
+        sc = +cubeMapCoords.x;
+        tc = -cubeMapCoords.z;
+        break;
+    case PositiveZ:
+        sc = +cubeMapCoords.x;
+        tc = -cubeMapCoords.y;
+        break;
+    case NegativeZ:
+        sc = -cubeMapCoords.x;
+        tc = -cubeMapCoords.y;
+        break;
+    }
+
+    float ama = Math::Fabs(majorAxis);
+    s = (sc / ama + 1.0f) * 0.5f;
+    t = (tc / ama + 1.0f) * 0.5f;
+
+    return (CubeMapFace)faceIndex;
 }
 
 BE_NAMESPACE_END

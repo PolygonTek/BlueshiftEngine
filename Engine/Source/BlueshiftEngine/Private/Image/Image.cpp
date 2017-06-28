@@ -104,6 +104,8 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
     this->alloced = true;
 
+    float invSize = 1.0f / (faceSize - 1);
+
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         Image faceImage;
         faceImage.Create2D(faceSize, faceSize, 1, Image::RGBA_32F_32F_32F_32F, nullptr, flags);
@@ -112,7 +114,10 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
 
         for (int dstY = 0; dstY < faceSize; dstY++) {
             for (int dstX = 0; dstX < faceSize; dstX++) {
-                Vec3 dir = ToCubeMapCoord((Image::CubeMapFace)faceIndex, faceSize, dstX, dstY);
+                float s = dstX * invSize;
+                float t = dstY * invSize;
+
+                Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, s, t);
                 dir.Normalize();
 
                 float theta, phi;
@@ -301,10 +306,10 @@ int Image::NumComponents(Image::Format imageFormat) {
 
 void Image::GetBits(Image::Format imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits) {
     const ImageFormatInfo *info = GetImageFormatInfo(imageFormat);
-    if (redBits)	*redBits	= info->redBits;
-    if (greenBits)	*greenBits	= info->greenBits;
-    if (blueBits)	*blueBits	= info->blueBits;
-    if (alphaBits)	*alphaBits	= info->alphaBits;
+    if (redBits)    *redBits    = info->redBits;
+    if (greenBits)  *greenBits  = info->greenBits;
+    if (blueBits)   *blueBits   = info->blueBits;
+    if (alphaBits)  *alphaBits  = info->alphaBits;
 }
 
 bool Image::HasAlpha(Image::Format imageFormat) {
