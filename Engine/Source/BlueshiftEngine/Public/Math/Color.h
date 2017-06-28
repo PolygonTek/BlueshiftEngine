@@ -24,3 +24,4 @@ BE_NAMESPACE_END
 
 #include "Math/Color3.h"
 #include "Math/Color4.h"
+#include "Math/RGBE9995.h"

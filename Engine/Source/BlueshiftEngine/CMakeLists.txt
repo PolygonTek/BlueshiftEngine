@@ -95,6 +95,7 @@ set(ENGINE_FILES
   Public/Math/Random.h
   Public/Math/Ray.h
   Public/Math/Rect.h
+  Public/Math/RGBE9995.h
   Public/Math/Rotation.h
   Public/Math/Sphere.h
   Public/Math/Vector.h
@@ -272,6 +273,7 @@ set(ENGINE_FILES
   Private/Math/Vector4.cpp
   Private/Math/Color3.cpp
   Private/Math/Color4.cpp
+  Private/Math/RGBE9995.cpp
   Private/Math/AABB.cpp
   Private/Math/Frustum.cpp
   Private/Math/Matrix4.cpp

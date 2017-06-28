@@ -330,6 +330,19 @@ static void BGR565ToRGBA8888(const byte *src, byte *dst, int numPixels) {
         dstPtr[3] = 255;
     }
 }
+static void RGBE9995ToRGBA8888(const byte *src, byte *dst, int numPixels) {
+    const uint32_t *srcPtr = (const uint32_t *)src;
+    const uint32_t *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    float m;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        m = Math::Pow(2, ((*srcPtr >> 27) & 0x1F) - 24) * 255.0f;
+        dstPtr[0] = Clamp<int>((*srcPtr & 0x1FF) * m, 0, 255);
+        dstPtr[1] = Clamp<int>(((*srcPtr >> 9) & 0x1FF) * m, 0, 255);
+        dstPtr[2] = Clamp<int>(((*srcPtr >> 18) & 0x1FF) * m, 0, 255);
+        dstPtr[3] = 255;
+    }
+}
 static void L16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const float16_t *srcPtr = (const float16_t *)src;
     const float16_t *srcEnd = srcPtr + numPixels;
@@ -633,6 +646,19 @@ static void ARGB8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
         dstPtr[1] = srcPtr[2] / 256.0f;
         dstPtr[2] = srcPtr[3] / 256.0f;
         dstPtr[3] = srcPtr[0] / 256.0f;
+    }
+}
+static void RGBE9995ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const uint32_t *srcPtr = (const uint32_t *)src;
+    const uint32_t *srcEnd = srcPtr + numPixels;
+    byte *dstPtr = dst;
+    float m;
+    for (; srcPtr < srcEnd; srcPtr++, dstPtr += 4) {
+        m = Math::Pow(2, ((*srcPtr >> 27) & 0x1F) - 24);
+        dstPtr[0] = (*srcPtr & 0x1FF) * m;
+        dstPtr[1] = ((*srcPtr >> 9) & 0x1FF) * m;
+        dstPtr[2] = ((*srcPtr >> 18) & 0x1FF) * m;
+        dstPtr[3] = 255;
     }
 }
 static void L16FToRGBA32F(const byte *src, byte *dst, int numPixels) {
@@ -1030,6 +1056,14 @@ static void RGBA8888ToBGR565(const byte *src, byte *dst, int numPixels) {
         *dstPtr = (srcPtr[2] >> 3) | ((srcPtr[1] >> 2) << 5) | ((srcPtr[0] >> 3) << 11);
     }
 }
+static void RGBA8888ToRGBE9995(const byte *src, byte *dst, int numPixels) {
+    const byte *srcPtr = src;
+    const byte *srcEnd = srcPtr + numPixels * 4;
+    uint32_t *dstPtr = (uint32_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = RGBE9995::FromColor3(srcPtr[0] / 255.0f, srcPtr[1] / 255.0f, srcPtr[2] / 255.0f);
+    }
+}
 static void RGBA8888ToL16F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 255.0f;
     const byte *srcPtr = src;
@@ -1315,6 +1349,14 @@ static void RGBA32FToARGB8888(const byte *src, byte *dst, int numPixels) {
         dstPtr[3] = Clamp<int>(srcPtr[2] * 255.0f, 0, 255);
     }
 }
+static void RGBA32FToRGBE9995(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint32_t *dstPtr = (uint32_t *)dst;
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = RGBE9995::FromColor3(srcPtr[0], srcPtr[1], srcPtr[1]);
+    }
+}
 static void RGBA32FToL16F(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
@@ -1480,7 +1522,6 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "ARGB_1_5_5_5",           2,  4,  5,  5,  5,  1,  Image::Packed, ARGB1555ToRGBA8888, RGBA8888ToARGB1555, nullptr, nullptr },
     { "RGB_5_6_5",              2,  3,  5,  6,  5,  0,  Image::Packed, RGB565ToRGBA8888, RGBA8888ToRGB565, nullptr, nullptr },
     { "BGR_5_6_5",              2,  3,  5,  6,  5,  0,  Image::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, nullptr, nullptr },
-    { "RGBE_9_9_9_5",           4,  4,  9,  9,  9,  0,  Image::Packed, nullptr, nullptr, nullptr, nullptr },
     // float format -------------------------------------------------------------------------------
     { "L_16F",                  2,  1,  0,  0,  0,  0,  Image::Half, L16FToRGBA8888, RGBA8888ToL16F, L16FToRGBA32F, RGBA32FToL16F },
     { "A_16F",                  2,  1,  0,  0,  0,  16, Image::Half, A16FToRGBA8888, RGBA8888ToA16F, A16FToRGBA32F, RGBA32FToA16F },
@@ -1497,6 +1538,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "RGB_32F_32F_32F",        12, 3,  32, 32, 32, 0,  Image::Float, RGB32FToRGBA8888, RGBA8888ToRGB32F, RGB32FToRGBA32F, RGBA32FToRGB32F },
     { "RGBA_32F_32F_32F_32F",   16, 4,  32, 32, 32, 32, Image::Float, RGBA32FToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA32F, RGBA32FToRGBA32F },
     { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::Float | Image::Packed, RGB11F11F10FToRGBA8888, RGBA8888ToRGB11F11F10F, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
+    { "RGBE_9_9_9_5",           4,  3,  9,  9,  9,  0,  Image::Float | Image::Packed, RGBE9995ToRGBA8888, RGBA8888ToRGBE9995, RGBE9995ToRGBA32F, RGBA32FToRGBE9995 },
     // DXT (BTC) ----------------------------------------------------------------------------------
     { "DXT1",                   8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "DXT3",                   16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },

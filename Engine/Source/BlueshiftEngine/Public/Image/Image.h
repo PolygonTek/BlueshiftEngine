@@ -59,7 +59,6 @@ public:
         ARGB_1_5_5_5,
         RGB_5_6_5,
         BGR_5_6_5,
-        RGBE_9_9_9_5,
         // float format
         L_16F,
         A_16F,
@@ -76,6 +75,7 @@ public:
         RGB_32F_32F_32F,
         RGBA_32F_32F_32F_32F,
         RGB_11F_11F_10F,
+        RGBE_9_9_9_5,
         // DXT (BTC)
         RGBA_DXT1,
         RGBA_DXT3,
