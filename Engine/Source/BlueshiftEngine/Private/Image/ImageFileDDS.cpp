@@ -63,130 +63,229 @@ BE_NAMESPACE_BEGIN
 #define DDSCAPS2_CUBEMAP_ALL_FACES  (DDSCAPS2_CUBEMAP_POSITIVEX | DDSCAPS2_CUBEMAP_NEGATIVEX | DDSCAPS2_CUBEMAP_POSITIVEY | DDSCAPS2_CUBEMAP_NEGATIVEY | DDSCAPS2_CUBEMAP_POSITIVEZ | DDSCAPS2_CUBEMAP_NEGATIVEZ)
 #define DDSCAPS2_VOLUME             0x200000
 
-// 
-#define D3D10_RESOURCE_MISC_TEXTURECUBE     0x4
-#define D3D10_RESOURCE_DIMENSION_BUFFER     1
-#define D3D10_RESOURCE_DIMENSION_TEXTURE1D  2
-#define D3D10_RESOURCE_DIMENSION_TEXTURE2D  3
-#define D3D10_RESOURCE_DIMENSION_TEXTURE3D  4
-
+// DDS legacy formats
 enum DDS_FORMAT {
     DDS_FORMAT_UNKNOWN = 0,
-    DDS_FORMAT_R32G32B32A32_TYPELESS = 1,
-    DDS_FORMAT_R32G32B32A32_FLOAT = 2,
-    DDS_FORMAT_R32G32B32A32_UINT = 3,
-    DDS_FORMAT_R32G32B32A32_SINT = 4,
-    DDS_FORMAT_R32G32B32_TYPELESS = 5,
-    DDS_FORMAT_R32G32B32_FLOAT = 6,
-    DDS_FORMAT_R32G32B32_UINT = 7,
-    DDS_FORMAT_R32G32B32_SINT = 8,
-    DDS_FORMAT_R16G16B16A16_TYPELESS = 9,
-    DDS_FORMAT_R16G16B16A16_FLOAT = 10,
-    DDS_FORMAT_R16G16B16A16_UNORM = 11,
-    DDS_FORMAT_R16G16B16A16_UINT = 12,
-    DDS_FORMAT_R16G16B16A16_SNORM = 13,
-    DDS_FORMAT_R16G16B16A16_SINT = 14,
-    DDS_FORMAT_R32G32_TYPELESS = 15,
-    DDS_FORMAT_R32G32_FLOAT = 16,
-    DDS_FORMAT_R32G32_UINT = 17,
-    DDS_FORMAT_R32G32_SINT = 18,
-    DDS_FORMAT_R32G8X24_TYPELESS = 19,
-    DDS_FORMAT_D32_FLOAT_S8X24_UINT = 20,
-    DDS_FORMAT_R32_FLOAT_X8X24_TYPELESS = 21,
-    DDS_FORMAT_X32_TYPELESS_G8X24_UINT = 22,
-    DDS_FORMAT_R10G10B10A2_TYPELESS = 23,
-    DDS_FORMAT_R10G10B10A2_UNORM = 24,
-    DDS_FORMAT_R10G10B10A2_UINT = 25,
-    DDS_FORMAT_R11G11B10_FLOAT = 26,
-    DDS_FORMAT_R8G8B8A8_TYPELESS = 27,
-    DDS_FORMAT_R8G8B8A8_UNORM = 28,
-    DDS_FORMAT_R8G8B8A8_UNORM_SRGB = 29,
-    DDS_FORMAT_R8G8B8A8_UINT = 30,
-    DDS_FORMAT_R8G8B8A8_SNORM = 31,
-    DDS_FORMAT_R8G8B8A8_SINT = 32,
-    DDS_FORMAT_R16G16_TYPELESS = 33,
-    DDS_FORMAT_R16G16_FLOAT = 34,
-    DDS_FORMAT_R16G16_UNORM = 35,
-    DDS_FORMAT_R16G16_UINT = 36,
-    DDS_FORMAT_R16G16_SNORM = 37,
-    DDS_FORMAT_R16G16_SINT = 38,
-    DDS_FORMAT_R32_TYPELESS = 39,
-    DDS_FORMAT_D32_FLOAT = 40,
-    DDS_FORMAT_R32_FLOAT = 41,
-    DDS_FORMAT_R32_UINT = 42,
-    DDS_FORMAT_R32_SINT = 43,
-    DDS_FORMAT_R24G8_TYPELESS = 44,
-    DDS_FORMAT_D24_UNORM_S8_UINT = 45,
-    DDS_FORMAT_R24_UNORM_X8_TYPELESS = 46,
-    DDS_FORMAT_X24_TYPELESS_G8_UINT = 47,
-    DDS_FORMAT_R8G8_TYPELESS = 48,
-    DDS_FORMAT_R8G8_UNORM = 49,
-    DDS_FORMAT_R8G8_UINT = 50,
-    DDS_FORMAT_R8G8_SNORM = 51,
-    DDS_FORMAT_R8G8_SINT = 52,
-    DDS_FORMAT_R16_TYPELESS = 53,
-    DDS_FORMAT_R16_FLOAT = 54,
-    DDS_FORMAT_D16_UNORM = 55,
-    DDS_FORMAT_R16_UNORM = 56,
-    DDS_FORMAT_R16_UINT = 57,
-    DDS_FORMAT_R16_SNORM = 58,
-    DDS_FORMAT_R16_SINT = 59,
-    DDS_FORMAT_R8_TYPELESS = 60,
-    DDS_FORMAT_R8_UNORM = 61,
-    DDS_FORMAT_R8_UINT = 62,
-    DDS_FORMAT_R8_SNORM = 63,
-    DDS_FORMAT_R8_SINT = 64,
-    DDS_FORMAT_A8_UNORM = 65,
-    DDS_FORMAT_R1_UNORM = 66,
-    DDS_FORMAT_R9G9B9E5_SHAREDEXP = 67,
-    DDS_FORMAT_R8G8_B8G8_UNORM = 68,
-    DDS_FORMAT_G8R8_G8B8_UNORM = 69,
-    DDS_FORMAT_BC1_TYPELESS = 70,
-    DDS_FORMAT_BC1_UNORM = 71,
-    DDS_FORMAT_BC1_UNORM_SRGB = 72,
-    DDS_FORMAT_BC2_TYPELESS = 73,
-    DDS_FORMAT_BC2_UNORM = 74,
-    DDS_FORMAT_BC2_UNORM_SRGB = 75,
-    DDS_FORMAT_BC3_TYPELESS = 76,
-    DDS_FORMAT_BC3_UNORM = 77,
-    DDS_FORMAT_BC3_UNORM_SRGB = 78,
-    DDS_FORMAT_BC4_TYPELESS = 79,
-    DDS_FORMAT_BC4_UNORM = 80,
-    DDS_FORMAT_BC4_SNORM = 81,
-    DDS_FORMAT_BC5_TYPELESS = 82,
-    DDS_FORMAT_BC5_UNORM = 83,
-    DDS_FORMAT_BC5_SNORM = 84,
-    DDS_FORMAT_B5G6R5_UNORM = 85,
-    DDS_FORMAT_B5G5R5A1_UNORM = 86,
-    DDS_FORMAT_B8G8R8A8_UNORM = 87,
-    DDS_FORMAT_B8G8R8X8_UNORM = 88,
-    DDS_FORMAT_R10G10B10_XR_BIAS_A2_UNORM = 89,
-    DDS_FORMAT_B8G8R8A8_TYPELESS = 90,
-    DDS_FORMAT_B8G8R8A8_UNORM_SRGB = 91,
-    DDS_FORMAT_B8G8R8X8_TYPELESS = 92,
-    DDS_FORMAT_B8G8R8X8_UNORM_SRGB = 93,
-    DDS_FORMAT_BC6H_TYPELESS = 94,
-    DDS_FORMAT_BC6H_UF16 = 95,
-    DDS_FORMAT_BC6H_SF16 = 96,
-    DDS_FORMAT_BC7_TYPELESS = 97,
-    DDS_FORMAT_BC7_UNORM = 98,
-    DDS_FORMAT_BC7_UNORM_SRGB = 99,
-    DDS_FORMAT_AYUV = 100,
-    DDS_FORMAT_Y410 = 101,
-    DDS_FORMAT_Y416 = 102,
-    DDS_FORMAT_NV12 = 103,
-    DDS_FORMAT_P010 = 104,
-    DDS_FORMAT_P016 = 105,
-    DDS_FORMAT_420_OPAQUE = 106,
-    DDS_FORMAT_YUY2 = 107,
-    DDS_FORMAT_Y210 = 108,
-    DDS_FORMAT_Y216 = 109,
-    DDS_FORMAT_NV11 = 110,
-    DDS_FORMAT_AI44 = 111,
-    DDS_FORMAT_IA44 = 112,
-    DDS_FORMAT_P8 = 113,
-    DDS_FORMAT_A8P8 = 114,
-    DDS_FORMAT_B4G4R4A4_UNORM = 115
+
+    DDS_FORMAT_R8G8B8 = 20,
+    DDS_FORMAT_A8R8G8B8 = 21,
+    DDS_FORMAT_X8R8G8B8 = 22,
+    DDS_FORMAT_R5G6B5 = 23,
+    DDS_FORMAT_X1R5G5B5 = 24,
+    DDS_FORMAT_A1R5G5B5 = 25,
+    DDS_FORMAT_A4R4G4B4 = 26,
+    DDS_FORMAT_R3G3B2 = 27,
+    DDS_FORMAT_A8 = 28,
+    DDS_FORMAT_A8R3G3B2 = 29,
+    DDS_FORMAT_X4R4G4B4 = 30,
+    DDS_FORMAT_A2B10G10R10 = 31,
+    DDS_FORMAT_A8B8G8R8 = 32,
+    DDS_FORMAT_X8B8G8R8 = 33,
+    DDS_FORMAT_G16R16 = 34,
+    DDS_FORMAT_A2R10G10B10 = 35,
+    DDS_FORMAT_A16B16G16R16 = 36,
+
+    DDS_FORMAT_A8P8 = 40,
+    DDS_FORMAT_P8 = 41,
+
+    DDS_FORMAT_L8 = 50,
+    DDS_FORMAT_A8L8 = 51,
+    DDS_FORMAT_A4L4 = 52,
+
+    DDS_FORMAT_V8U8 = 60,
+    DDS_FORMAT_L6V5U5 = 61,
+    DDS_FORMAT_X8L8V8U8 = 62,
+    DDS_FORMAT_Q8W8V8U8 = 63,
+    DDS_FORMAT_V16U16 = 64,
+    DDS_FORMAT_A2W10V10U10 = 67,
+
+    DDS_FORMAT_UYVY = MAKE_FOURCC('U', 'Y', 'V', 'Y'),
+    DDS_FORMAT_R8G8_B8G8 = MAKE_FOURCC('R', 'G', 'B', 'G'),
+    DDS_FORMAT_YUY2 = MAKE_FOURCC('Y', 'U', 'Y', '2'),
+    DDS_FORMAT_G8R8_G8B8 = MAKE_FOURCC('G', 'R', 'G', 'B'),
+    DDS_FORMAT_DXT1 = MAKE_FOURCC('D', 'X', 'T', '1'),
+    DDS_FORMAT_DXT2 = MAKE_FOURCC('D', 'X', 'T', '2'),
+    DDS_FORMAT_DXT3 = MAKE_FOURCC('D', 'X', 'T', '3'),
+    DDS_FORMAT_DXT4 = MAKE_FOURCC('D', 'X', 'T', '4'),
+    DDS_FORMAT_DXT5 = MAKE_FOURCC('D', 'X', 'T', '5'),
+
+    DDS_FORMAT_D16_LOCKABLE = 70,
+    DDS_FORMAT_D32 = 71,
+    DDS_FORMAT_D15S1 = 73,
+    DDS_FORMAT_D24S8 = 75,
+    DDS_FORMAT_D24X8 = 77,
+    DDS_FORMAT_D24X4S4 = 79,
+    DDS_FORMAT_D16 = 80,
+
+    DDS_FORMAT_D32F_LOCKABLE = 82,
+    DDS_FORMAT_D24FS8 = 83,
+
+#if !defined(D3D_DISABLE_9EX)
+    DDS_FORMAT_D32_LOCKABLE = 84,
+    DDS_FORMAT_S8_LOCKABLE = 85,
+#endif // !D3D_DISABLE_9EX
+
+    DDS_FORMAT_L16 = 81,
+
+    DDS_FORMAT_VERTEXDATA = 100,
+    DDS_FORMAT_INDEX16 = 101,
+    DDS_FORMAT_INDEX32 = 102,
+
+    DDS_FORMAT_Q16W16V16U16 = 110,
+
+    DDS_FORMAT_MULTI2_ARGB8 = MAKE_FOURCC('M', 'E', 'T', '1'),
+
+    DDS_FORMAT_R16F = 111,
+    DDS_FORMAT_G16R16F = 112,
+    DDS_FORMAT_A16B16G16R16F = 113,
+
+    DDS_FORMAT_R32F = 114,
+    DDS_FORMAT_G32R32F = 115,
+    DDS_FORMAT_A32B32G32R32F = 116,
+
+    DDS_FORMAT_CxV8U8 = 117,
+
+#if !defined(D3D_DISABLE_9EX)
+    DDS_FORMAT_A1 = 118,
+    DDS_FORMAT_A2B10G10R10_XR_BIAS = 119,
+    DDS_FORMAT_BINARYBUFFER = 199,
+#endif // !D3D_DISABLE_9EX
+
+    DDS_FORMAT_FORCE_DWORD = 0x7fffffff
+};
+
+// DX10
+#define DX10_RESOURCE_DIMENSION_BUFFER      1
+#define DX10_RESOURCE_DIMENSION_TEXTURE1D   2
+#define DX10_RESOURCE_DIMENSION_TEXTURE2D   3
+#define DX10_RESOURCE_DIMENSION_TEXTURE3D   4
+
+#define DX10_RESOURCE_MISC_TEXTURECUBE      0x4
+
+#define DX10_RESOURCE_MISC2_UNKNOWN         0
+#define DX10_RESOURCE_MISC2_STRAIGHT        1
+#define DX10_RESOURCE_MISC2_PREMULTIPLIED   2
+#define DX10_RESOURCE_MISC2_OPAQUE          3
+#define DX10_RESOURCE_MISC2_CUSTOM          4
+
+// DX10 formats
+enum DX10_FORMAT {
+    DX10_FORMAT_UNKNOWN = 0,
+    DX10_FORMAT_R32G32B32A32_TYPELESS = 1,
+    DX10_FORMAT_R32G32B32A32_FLOAT = 2,
+    DX10_FORMAT_R32G32B32A32_UINT = 3,
+    DX10_FORMAT_R32G32B32A32_SINT = 4,
+    DX10_FORMAT_R32G32B32_TYPELESS = 5,
+    DX10_FORMAT_R32G32B32_FLOAT = 6,
+    DX10_FORMAT_R32G32B32_UINT = 7,
+    DX10_FORMAT_R32G32B32_SINT = 8,
+    DX10_FORMAT_R16G16B16A16_TYPELESS = 9,
+    DX10_FORMAT_R16G16B16A16_FLOAT = 10,
+    DX10_FORMAT_R16G16B16A16_UNORM = 11,
+    DX10_FORMAT_R16G16B16A16_UINT = 12,
+    DX10_FORMAT_R16G16B16A16_SNORM = 13,
+    DX10_FORMAT_R16G16B16A16_SINT = 14,
+    DX10_FORMAT_R32G32_TYPELESS = 15,
+    DX10_FORMAT_R32G32_FLOAT = 16,
+    DX10_FORMAT_R32G32_UINT = 17,
+    DX10_FORMAT_R32G32_SINT = 18,
+    DX10_FORMAT_R32G8X24_TYPELESS = 19,
+    DX10_FORMAT_D32_FLOAT_S8X24_UINT = 20,
+    DX10_FORMAT_R32_FLOAT_X8X24_TYPELESS = 21,
+    DX10_FORMAT_X32_TYPELESS_G8X24_UINT = 22,
+    DX10_FORMAT_R10G10B10A2_TYPELESS = 23,
+    DX10_FORMAT_R10G10B10A2_UNORM = 24,
+    DX10_FORMAT_R10G10B10A2_UINT = 25,
+    DX10_FORMAT_R11G11B10_FLOAT = 26,
+    DX10_FORMAT_R8G8B8A8_TYPELESS = 27,
+    DX10_FORMAT_R8G8B8A8_UNORM = 28,
+    DX10_FORMAT_R8G8B8A8_UNORM_SRGB = 29,
+    DX10_FORMAT_R8G8B8A8_UINT = 30,
+    DX10_FORMAT_R8G8B8A8_SNORM = 31,
+    DX10_FORMAT_R8G8B8A8_SINT = 32,
+    DX10_FORMAT_R16G16_TYPELESS = 33,
+    DX10_FORMAT_R16G16_FLOAT = 34,
+    DX10_FORMAT_R16G16_UNORM = 35,
+    DX10_FORMAT_R16G16_UINT = 36,
+    DX10_FORMAT_R16G16_SNORM = 37,
+    DX10_FORMAT_R16G16_SINT = 38,
+    DX10_FORMAT_R32_TYPELESS = 39,
+    DX10_FORMAT_D32_FLOAT = 40,
+    DX10_FORMAT_R32_FLOAT = 41,
+    DX10_FORMAT_R32_UINT = 42,
+    DX10_FORMAT_R32_SINT = 43,
+    DX10_FORMAT_R24G8_TYPELESS = 44,
+    DX10_FORMAT_D24_UNORM_S8_UINT = 45,
+    DX10_FORMAT_R24_UNORM_X8_TYPELESS = 46,
+    DX10_FORMAT_X24_TYPELESS_G8_UINT = 47,
+    DX10_FORMAT_R8G8_TYPELESS = 48,
+    DX10_FORMAT_R8G8_UNORM = 49,
+    DX10_FORMAT_R8G8_UINT = 50,
+    DX10_FORMAT_R8G8_SNORM = 51,
+    DX10_FORMAT_R8G8_SINT = 52,
+    DX10_FORMAT_R16_TYPELESS = 53,
+    DX10_FORMAT_R16_FLOAT = 54,
+    DX10_FORMAT_D16_UNORM = 55,
+    DX10_FORMAT_R16_UNORM = 56,
+    DX10_FORMAT_R16_UINT = 57,
+    DX10_FORMAT_R16_SNORM = 58,
+    DX10_FORMAT_R16_SINT = 59,
+    DX10_FORMAT_R8_TYPELESS = 60,
+    DX10_FORMAT_R8_UNORM = 61,
+    DX10_FORMAT_R8_UINT = 62,
+    DX10_FORMAT_R8_SNORM = 63,
+    DX10_FORMAT_R8_SINT = 64,
+    DX10_FORMAT_A8_UNORM = 65,
+    DX10_FORMAT_R1_UNORM = 66,
+    DX10_FORMAT_R9G9B9E5_SHAREDEXP = 67,
+    DX10_FORMAT_R8G8_B8G8_UNORM = 68,
+    DX10_FORMAT_G8R8_G8B8_UNORM = 69,
+    DX10_FORMAT_BC1_TYPELESS = 70,
+    DX10_FORMAT_BC1_UNORM = 71,
+    DX10_FORMAT_BC1_UNORM_SRGB = 72,
+    DX10_FORMAT_BC2_TYPELESS = 73,
+    DX10_FORMAT_BC2_UNORM = 74,
+    DX10_FORMAT_BC2_UNORM_SRGB = 75,
+    DX10_FORMAT_BC3_TYPELESS = 76,
+    DX10_FORMAT_BC3_UNORM = 77,
+    DX10_FORMAT_BC3_UNORM_SRGB = 78,
+    DX10_FORMAT_BC4_TYPELESS = 79,
+    DX10_FORMAT_BC4_UNORM = 80,
+    DX10_FORMAT_BC4_SNORM = 81,
+    DX10_FORMAT_BC5_TYPELESS = 82,
+    DX10_FORMAT_BC5_UNORM = 83,
+    DX10_FORMAT_BC5_SNORM = 84,
+    DX10_FORMAT_B5G6R5_UNORM = 85,
+    DX10_FORMAT_B5G5R5A1_UNORM = 86,
+    DX10_FORMAT_B8G8R8A8_UNORM = 87,
+    DX10_FORMAT_B8G8R8X8_UNORM = 88,
+    DX10_FORMAT_R10G10B10_XR_BIAS_A2_UNORM = 89,
+    DX10_FORMAT_B8G8R8A8_TYPELESS = 90,
+    DX10_FORMAT_B8G8R8A8_UNORM_SRGB = 91,
+    DX10_FORMAT_B8G8R8X8_TYPELESS = 92,
+    DX10_FORMAT_B8G8R8X8_UNORM_SRGB = 93,
+    DX10_FORMAT_BC6H_TYPELESS = 94,
+    DX10_FORMAT_BC6H_UF16 = 95,
+    DX10_FORMAT_BC6H_SF16 = 96,
+    DX10_FORMAT_BC7_TYPELESS = 97,
+    DX10_FORMAT_BC7_UNORM = 98,
+    DX10_FORMAT_BC7_UNORM_SRGB = 99,
+    DX10_FORMAT_AYUV = 100,
+    DX10_FORMAT_Y410 = 101,
+    DX10_FORMAT_Y416 = 102,
+    DX10_FORMAT_NV12 = 103,
+    DX10_FORMAT_P010 = 104,
+    DX10_FORMAT_P016 = 105,
+    DX10_FORMAT_420_OPAQUE = 106,
+    DX10_FORMAT_YUY2 = 107,
+    DX10_FORMAT_Y210 = 108,
+    DX10_FORMAT_Y216 = 109,
+    DX10_FORMAT_NV11 = 110,
+    DX10_FORMAT_AI44 = 111,
+    DX10_FORMAT_IA44 = 112,
+    DX10_FORMAT_P8 = 113,
+    DX10_FORMAT_A8P8 = 114,
+    DX10_FORMAT_B4G4R4A4_UNORM = 115
 };
 
 struct DdsFileHeader {
@@ -222,7 +321,7 @@ struct DdsFileHeaderDX10 {
     uint32_t resourceDimension;
     uint32_t miscFlag;
     uint32_t arraySize;
-    uint32_t reserved;
+    uint32_t miscFlag2;
 };
 
 bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
@@ -250,27 +349,27 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         ptr += sizeof(DdsFileHeaderDX10);
 
         switch (dx10Header->dxgiFormat){
-        case DDS_FORMAT_R8_UNORM: format = R_8; break;
-        case DDS_FORMAT_R8G8_UNORM: format = RG_8_8; break;
-        case DDS_FORMAT_R8G8B8A8_UNORM: format = RGBA_8_8_8_8; break;
-        //case DDS_FORMAT_R16_UNORM: format = R_16; break;
-        //case DDS_FORMAT_R16G16_UNORM: format = RG_16_16; break;
-        //case DDS_FORMAT_R16G16B16A16_UNORM: format = RGBA_16_16_16_16; break;
-        case DDS_FORMAT_R16_FLOAT: format = R_16F; break;
-        case DDS_FORMAT_R16G16_FLOAT: format = RG_16F_16F; break;
-        case DDS_FORMAT_R16G16B16A16_FLOAT: format = RGBA_16F_16F_16F_16F; break;
-        case DDS_FORMAT_R32_FLOAT: format = R_32F; break;
-        case DDS_FORMAT_R32G32_FLOAT: format = RG_32F_32F; break;
-        case DDS_FORMAT_R32G32B32_FLOAT: format = RGB_32F_32F_32F; break;
-        case DDS_FORMAT_R32G32B32A32_FLOAT: format = RGBA_32F_32F_32F_32F; break;
-        case DDS_FORMAT_R9G9B9E5_SHAREDEXP: format = RGBE_9_9_9_5; break;
-        case DDS_FORMAT_R11G11B10_FLOAT: format = RGB_11F_11F_10F; break;
-        //case DDS_FORMAT_R10G10B10A2_UNORM: format = RGBA_10_10_10_2; break;
-        case DDS_FORMAT_BC1_UNORM: format = RGBA_DXT1; break;
-        case DDS_FORMAT_BC2_UNORM: format = RGBA_DXT3; break;
-        case DDS_FORMAT_BC3_UNORM: format = RGBA_DXT5; break;
-        case DDS_FORMAT_BC4_UNORM: format = DXN1; break;
-        case DDS_FORMAT_BC5_UNORM: format = DXN2; break;
+        case DX10_FORMAT_R8_UNORM: format = R_8; break;
+        case DX10_FORMAT_R8G8_UNORM: format = RG_8_8; break;
+        case DX10_FORMAT_R8G8B8A8_UNORM: format = RGBA_8_8_8_8; break;
+        //case DX10_FORMAT_R16_UNORM: format = R_16; break;
+        //case DX10_FORMAT_R16G16_UNORM: format = RG_16_16; break;
+        //case DX10_FORMAT_R16G16B16A16_UNORM: format = RGBA_16_16_16_16; break;
+        case DX10_FORMAT_R16_FLOAT: format = R_16F; break;
+        case DX10_FORMAT_R16G16_FLOAT: format = RG_16F_16F; break;
+        case DX10_FORMAT_R16G16B16A16_FLOAT: format = RGBA_16F_16F_16F_16F; break;
+        case DX10_FORMAT_R32_FLOAT: format = R_32F; break;
+        case DX10_FORMAT_R32G32_FLOAT: format = RG_32F_32F; break;
+        case DX10_FORMAT_R32G32B32_FLOAT: format = RGB_32F_32F_32F; break;
+        case DX10_FORMAT_R32G32B32A32_FLOAT: format = RGBA_32F_32F_32F_32F; break;
+        case DX10_FORMAT_R9G9B9E5_SHAREDEXP: format = RGBE_9_9_9_5; break;
+        case DX10_FORMAT_R11G11B10_FLOAT: format = RGB_11F_11F_10F; break;
+        //case DX10_FORMAT_R10G10B10A2_UNORM: format = RGBA_10_10_10_2; break;
+        case DX10_FORMAT_BC1_UNORM: format = RGBA_DXT1; break;
+        case DX10_FORMAT_BC2_UNORM: format = RGBA_DXT3; break;
+        case DX10_FORMAT_BC3_UNORM: format = RGBA_DXT5; break;
+        case DX10_FORMAT_BC4_UNORM: format = DXN1; break;
+        case DX10_FORMAT_BC5_UNORM: format = DXN2; break;
         default:
             BE_WARNLOG(L"Image::LoadDDSFromMemory: Unsupported pixel format %hs\n", name);
             return false;
@@ -371,22 +470,70 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
                 return false;
             }
             break;
-        //case 0x24:
-        //  this->format = FORMAT_RGBA_16_16_16_16;
-        //  break;
-        case 0x71:
+        case DDS_FORMAT_R8G8B8:
+            this->format = BGR_8_8_8;
+            break;
+        case DDS_FORMAT_A8R8G8B8:
+            this->format = BGRA_8_8_8_8;
+            break;
+        case DDS_FORMAT_X8R8G8B8:
+            this->format = BGRX_8_8_8_8;
+            break;
+        case DDS_FORMAT_R5G6B5:
+            this->format = BGR_5_6_5;
+            break;
+        case DDS_FORMAT_X1R5G5B5:
+            this->format = BGRX_5_5_5_1;
+            break;
+        case DDS_FORMAT_A1R5G5B5:
+            this->format = BGRA_5_5_5_1;
+            break;
+        case DDS_FORMAT_A4R4G4B4:
+            this->format = BGRA_4_4_4_4;
+            break;
+        case DDS_FORMAT_X4R4G4B4:
+            this->format = BGRX_4_4_4_4;
+            break;
+        case DDS_FORMAT_A8B8G8R8:
+            this->format = RGBA_8_8_8_8;
+            break;
+        case DDS_FORMAT_X8B8G8R8:
+            this->format = RGBX_8_8_8_8;
+            break;
+        case DDS_FORMAT_L8:
+            this->format = L_8;
+            break;
+        case DDS_FORMAT_A8:
+            this->format = A_8;
+            break;
+        case DDS_FORMAT_A8L8:
+            this->format = LA_8_8;
+            break;
+        case DDS_FORMAT_R16F:
+            this->format = R_16F;
+            break;
+        case DDS_FORMAT_G16R16F:
+            this->format = RG_16F_16F;
+            break;
+        case DDS_FORMAT_A16B16G16R16F:
             this->format = RGBA_16F_16F_16F_16F;
             break;
-        case 0x74:
+        case DDS_FORMAT_R32F:
+            this->format = R_32F;
+            break;
+        case DDS_FORMAT_G32R32F:
+            this->format = RG_32F_32F;
+            break;
+        case DDS_FORMAT_A32B32G32R32F:
             this->format = RGBA_32F_32F_32F_32F;
             break;
-        case MAKE_FOURCC('D', 'X', 'T', '1'):
+        case DDS_FORMAT_DXT1:
             this->format = RGBA_DXT1;
             break;
-        case MAKE_FOURCC('D', 'X', 'T', '3'):
+        case DDS_FORMAT_DXT3:
             this->format = RGBA_DXT3;
             break;
-        case MAKE_FOURCC('D', 'X', 'T', '5'):
+        case DDS_FORMAT_DXT5:
             if (header->ddsPixelFormat.RGBBitCount == MAKE_FOURCC('x', 'G', 'B', 'R')) {
                 this->format = XGBR_DXT5;
             } else {
@@ -449,24 +596,46 @@ bool Image::WriteDDS(const char *filename) const {
     DdsFileHeader header;
     memset(&header, 0, sizeof(header));
     header.size = sizeof(header);
-    header.flags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT | (numMipmaps > 1 ? DDSD_MIPMAPCOUNT : 0) | (depth > 1 ? DDSD_DEPTH : 0);
+    header.flags = DDSD_CAPS | DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT;
     header.height = height;
     header.width = width;
     header.pitchOrLinearSize = 0;
-    header.depth = depth > 1 ? depth : 0;
-    header.mipMapCount = numMipmaps > 1 ? numMipmaps : 0;
+    header.ddsCaps.caps1 = DDSCAPS_TEXTURE;
+
+    if (numMipmaps > 1) {
+        header.flags |= DDSD_MIPMAPCOUNT;
+        header.ddsCaps.caps1 |= DDSCAPS_MIPMAP | DDSCAPS_COMPLEX;
+        header.mipMapCount = numMipmaps;
+    }
+
+    if (depth > 1) {
+        header.flags |= DDSD_DEPTH;
+        header.ddsCaps.caps2 |= DDSCAPS2_VOLUME;
+        header.depth = depth;
+    }
+
+    if (numSlices == 6) {
+        header.ddsCaps.caps1 |= DDSCAPS_COMPLEX;
+        header.ddsCaps.caps2 |= DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES;
+    }
+
+    if (IsCompressed()) {
+        header.flags |= DDSD_LINEARSIZE;
+        header.pitchOrLinearSize = GetSliceSize();
+    } else {
+        header.flags |= DDSD_PITCH;
+        header.pitchOrLinearSize = (width * BytesPerPixel() + 7) / 8;
+    }
 
     header.ddsPixelFormat.size = sizeof(header.ddsPixelFormat);
 
-    header.ddsCaps.caps1 = DDSCAPS_TEXTURE | (numMipmaps > 1 ? DDSCAPS_MIPMAP | DDSCAPS_COMPLEX : 0) | (depth > 1 ? DDSCAPS_COMPLEX : 0);
-    header.ddsCaps.caps2 = (depth > 1) ? DDSCAPS2_VOLUME : (numSlices == 6) ? DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES : 0;
-
     DdsFileHeaderDX10 dx10Header;
     memset(&dx10Header, 0, sizeof(dx10Header));
-    dx10Header.resourceDimension = depth > 1 ? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
-    dx10Header.miscFlag = numSlices == 6 ? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
+    dx10Header.resourceDimension = depth > 1 ? DX10_RESOURCE_DIMENSION_TEXTURE3D : DX10_RESOURCE_DIMENSION_TEXTURE2D;
+    dx10Header.miscFlag = numSlices == 6 ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
     dx10Header.arraySize = numSlices;
-    
+    dx10Header.miscFlag2 = DX10_RESOURCE_MISC2_UNKNOWN;
+
     switch (format) {
     case ABGR_8_8_8_8:
         header.ddsPixelFormat.flags = DDSPF_RGBA;
@@ -721,55 +890,55 @@ bool Image::WriteDDS(const char *filename) const {
     case R_8:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R8_UNORM;
+        dx10Header.dxgiFormat = DX10_FORMAT_R8_UNORM;
         break;
     case RG_8_8:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R8G8_UNORM;
+        dx10Header.dxgiFormat = DX10_FORMAT_R8G8_UNORM;
         break;
     case R_16F:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R16_FLOAT;
+        dx10Header.dxgiFormat = DX10_FORMAT_R16_FLOAT;
         break;
     case RG_16F_16F:
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R16G16_FLOAT;
+        dx10Header.dxgiFormat = DX10_FORMAT_R16G16_FLOAT;
         break;
     case RGBA_16F_16F_16F_16F:
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R16G16B16A16_FLOAT;
+        dx10Header.dxgiFormat = DX10_FORMAT_R16G16B16A16_FLOAT;
         break;
     case R_32F:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R32_FLOAT;
+        dx10Header.dxgiFormat = DX10_FORMAT_R32_FLOAT;
         break;
     case RG_32F_32F:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R32G32_FLOAT;
+        dx10Header.dxgiFormat = DX10_FORMAT_R32G32_FLOAT;
         break;
     case RGB_32F_32F_32F:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R32G32B32_FLOAT;
+        dx10Header.dxgiFormat = DX10_FORMAT_R32G32B32_FLOAT;
         break;
     case RGBA_32F_32F_32F_32F:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R32G32B32A32_FLOAT;
+        dx10Header.dxgiFormat = DX10_FORMAT_R32G32B32A32_FLOAT;
         break;
     case RGBE_9_9_9_5:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R9G9B9E5_SHAREDEXP;
+        dx10Header.dxgiFormat = DX10_FORMAT_R9G9B9E5_SHAREDEXP;
         break;
     case RGB_11F_11F_10F:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dxgiFormat = DDS_FORMAT_R11G11B10_FLOAT;
+        dx10Header.dxgiFormat = DX10_FORMAT_R11G11B10_FLOAT;
         break;
     default:
         fileSystem.CloseFile(fp);
