@@ -47,12 +47,12 @@ BE_NAMESPACE_BEGIN
 #define DDSF_ID_INDEXCOLOR          0x10000000
 #define DDSF_ID_MONOCHROME          0x20000000
 
-// dwCaps
+// caps1
 #define DDSCAPS_COMPLEX             0x8
 #define DDSCAPS_TEXTURE             0x1000
 #define DDSCAPS_MIPMAP              0x400000
 
-// dwCaps2
+// caps2
 #define DDSCAPS2_CUBEMAP            0x200
 #define DDSCAPS2_CUBEMAP_POSITIVEX  0x400
 #define DDSCAPS2_CUBEMAP_NEGATIVEX  0x800
@@ -190,39 +190,39 @@ enum DDS_FORMAT {
 };
 
 struct DdsFileHeader {
-    uint32_t dwSize;
-    uint32_t dwFlags;
-    uint32_t dwHeight;
-    uint32_t dwWidth;
-    uint32_t dwPitchOrLinearSize;
-    uint32_t dwDepth;
-    uint32_t dwMipMapCount;
-    uint32_t dwReserved1[11];
+    uint32_t size;
+    uint32_t flags;
+    uint32_t height;
+    uint32_t width;
+    uint32_t pitchOrLinearSize;
+    uint32_t depth;
+    uint32_t mipMapCount;
+    uint32_t reserved1[11];
     struct {
-        uint32_t dwSize;
-        uint32_t dwFlags;
-        uint32_t dwFourCC;
-        uint32_t dwRGBBitCount;
-        uint32_t dwRBitMask;
-        uint32_t dwGBitMask;
-        uint32_t dwBBitMask;
-        uint32_t dwABitMask;
+        uint32_t size;
+        uint32_t flags;
+        uint32_t fourCC;
+        uint32_t RGBBitCount;
+        uint32_t RBitMask;
+        uint32_t GBitMask;
+        uint32_t BBitMask;
+        uint32_t ABitMask;
     } ddsPixelFormat;    
     struct {
-        uint32_t dwCaps1;
-        uint32_t dwCaps2;
-        uint32_t dwCaps3;
-        uint32_t dwCaps4;
+        uint32_t caps1;
+        uint32_t caps2;
+        uint32_t caps3;
+        uint32_t caps4;
     } ddsCaps;
-    uint32_t dwReserved2;
+    uint32_t reserved2;
 };
 
 struct DdsFileHeaderDX10 {
-    uint32_t dwDxgiFormat;
-    uint32_t dwResourceDimension;
-    uint32_t dwMiscFlag;
-    uint32_t dwArraySize;
-    uint32_t dwReserved;
+    uint32_t dxgiFormat;
+    uint32_t resourceDimension;
+    uint32_t miscFlag;
+    uint32_t arraySize;
+    uint32_t reserved;
 };
 
 bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
@@ -240,16 +240,16 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
 
     int essentialFlags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT;
     
-    if (header->dwSize != sizeof(DdsFileHeader) || (header->dwFlags & essentialFlags) != essentialFlags) {
+    if (header->size != sizeof(DdsFileHeader) || (header->flags & essentialFlags) != essentialFlags) {
         BE_WARNLOG(L"Image::LoadDDSFromMemory: bad DDS format %hs\n", name);
         return false;
     }
 
-    if (header->ddsPixelFormat.dwFourCC == MAKE_FOURCC('D', 'X', '1', '0')) {
+    if (header->ddsPixelFormat.fourCC == MAKE_FOURCC('D', 'X', '1', '0')) {
         DdsFileHeaderDX10 *dx10Header = (DdsFileHeaderDX10 *)ptr;
         ptr += sizeof(DdsFileHeaderDX10);
 
-        switch (dx10Header->dwDxgiFormat){
+        switch (dx10Header->dxgiFormat){
         case DDS_FORMAT_R8_UNORM: format = R_8; break;
         case DDS_FORMAT_R8G8_UNORM: format = RG_8_8; break;
         case DDS_FORMAT_R8G8B8A8_UNORM: format = RGBA_8_8_8_8; break;
@@ -276,24 +276,24 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
             return false;
         }
     } else {
-        switch (header->ddsPixelFormat.dwFourCC) {
+        switch (header->ddsPixelFormat.fourCC) {
         case 0:
-            switch (header->ddsPixelFormat.dwRGBBitCount >> 3) {
+            switch (header->ddsPixelFormat.RGBBitCount >> 3) {
             case 4:
-                if (header->ddsPixelFormat.dwABitMask == 0x000000ff) {
-                    if (header->ddsPixelFormat.dwRBitMask == 0xff000000) {
+                if (header->ddsPixelFormat.ABitMask == 0x000000ff) {
+                    if (header->ddsPixelFormat.RBitMask == 0xff000000) {
                         this->format = ABGR_8_8_8_8;
                     } else {
                         this->format = ARGB_8_8_8_8;
                     }
-                } else if (header->ddsPixelFormat.dwABitMask == 0xff00000) {
-                    if (header->ddsPixelFormat.dwRBitMask == 0x00ff0000) {
+                } else if (header->ddsPixelFormat.ABitMask == 0xff00000) {
+                    if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
                         this->format = BGRA_8_8_8_8;
                     } else {
                         this->format = RGBA_8_8_8_8;
                     }
                 } else {
-                    if (header->ddsPixelFormat.dwRBitMask == 0x00ff0000) {
+                    if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
                         this->format = BGRX_8_8_8_8;
                     } else {
                         this->format = RGBX_8_8_8_8;
@@ -301,54 +301,54 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
                 }
                 break;
             case 3:
-                if (header->ddsPixelFormat.dwRBitMask == 0x00ff0000) {
+                if (header->ddsPixelFormat.RBitMask == 0x00ff0000) {
                     this->format = BGR_8_8_8;
                 } else {
                     this->format = RGB_8_8_8;
                 }
                 break;
             case 2:
-                if (header->ddsPixelFormat.dwABitMask == 0x0000000f) {
-                    if (header->ddsPixelFormat.dwRBitMask == 0x0000f000) {
+                if (header->ddsPixelFormat.ABitMask == 0x0000000f) {
+                    if (header->ddsPixelFormat.RBitMask == 0x0000f000) {
                         this->format = ABGR_4_4_4_4;
                     } else {
                         this->format = ARGB_4_4_4_4;
                     }
-                } else if (header->ddsPixelFormat.dwABitMask == 0x0000f000) {
-                    if (header->ddsPixelFormat.dwRBitMask == 0x00000f00) {
+                } else if (header->ddsPixelFormat.ABitMask == 0x0000f000) {
+                    if (header->ddsPixelFormat.RBitMask == 0x00000f00) {
                         this->format = BGRA_4_4_4_4;
                     } else {
                         this->format = RGBA_4_4_4_4;
                     }
-                } else if (header->ddsPixelFormat.dwABitMask == 0x00008000) {
-                    if (header->ddsPixelFormat.dwRBitMask == 0x00007c00) {
+                } else if (header->ddsPixelFormat.ABitMask == 0x00008000) {
+                    if (header->ddsPixelFormat.RBitMask == 0x00007c00) {
                         this->format = BGRA_5_5_5_1;
                     } else {
                         this->format = RGBA_5_5_5_1;
                     }
-                } else if (header->ddsPixelFormat.dwABitMask == 0x00000001) {
-                    if (header->ddsPixelFormat.dwRBitMask == 0x0000f800) {
+                } else if (header->ddsPixelFormat.ABitMask == 0x00000001) {
+                    if (header->ddsPixelFormat.RBitMask == 0x0000f800) {
                         this->format = ABGR_1_5_5_5;
                     } else {
                         this->format = ARGB_1_5_5_5;
                     }
-                } else if (header->ddsPixelFormat.dwABitMask == 0x0000ff00) {
+                } else if (header->ddsPixelFormat.ABitMask == 0x0000ff00) {
                     this->format = LA_8_8;
                 } else {
-                    if (header->ddsPixelFormat.dwGBitMask == 0x000000f0) {
-                        if (header->ddsPixelFormat.dwRBitMask == 0x00000f00) {
+                    if (header->ddsPixelFormat.GBitMask == 0x000000f0) {
+                        if (header->ddsPixelFormat.RBitMask == 0x00000f00) {
                             this->format = BGRX_4_4_4_4;
                         } else {
                             this->format = RGBX_4_4_4_4;
                         }
-                    } else if (header->ddsPixelFormat.dwGBitMask == 0x000003e0) {
-                        if (header->ddsPixelFormat.dwRBitMask == 0x00007c00) {
+                    } else if (header->ddsPixelFormat.GBitMask == 0x000003e0) {
+                        if (header->ddsPixelFormat.RBitMask == 0x00007c00) {
                             this->format = BGRX_5_5_5_1;
                         } else {
                             this->format = RGBX_5_5_5_1;
                         }
-                    } else if (header->ddsPixelFormat.dwGBitMask == 0x000007e0) {
-                        if (header->ddsPixelFormat.dwRBitMask == 0x0000f800) {
+                    } else if (header->ddsPixelFormat.GBitMask == 0x000007e0) {
+                        if (header->ddsPixelFormat.RBitMask == 0x0000f800) {
                             this->format = BGR_5_6_5;
                         } else {
                             this->format = RGB_5_6_5;
@@ -360,7 +360,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
                 }
                 break;
             case 1:
-                if (header->ddsPixelFormat.dwABitMask == 0x000000ff) {
+                if (header->ddsPixelFormat.ABitMask == 0x000000ff) {
                     this->format = A_8;
                 } else {
                     this->format = L_8;
@@ -387,7 +387,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
             this->format = RGBA_DXT3;
             break;
         case MAKE_FOURCC('D', 'X', 'T', '5'):
-            if (header->ddsPixelFormat.dwRGBBitCount == MAKE_FOURCC('x', 'G', 'B', 'R')) {
+            if (header->ddsPixelFormat.RGBBitCount == MAKE_FOURCC('x', 'G', 'B', 'R')) {
                 this->format = XGBR_DXT5;
             } else {
                 this->format = RGBA_DXT5;
@@ -408,12 +408,12 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         }
     }
 
-    bool isCube = header->ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP ? true : false;
+    bool isCube = header->ddsCaps.caps2 & DDSCAPS2_CUBEMAP ? true : false;
 
-    this->width = header->dwWidth;
-    this->height = header->dwHeight;
-    this->depth = Max((int)header->dwDepth, 1);
-    this->numMipmaps = Max((int)header->dwMipMapCount, 1);
+    this->width = header->width;
+    this->height = header->height;
+    this->depth = Max((int)header->depth, 1);
+    this->numMipmaps = Max((int)header->mipMapCount, 1);
     this->numSlices = isCube ? 6 : 1;
 
     int bufSize = GetSize(0, numMipmaps);
@@ -448,314 +448,328 @@ bool Image::WriteDDS(const char *filename) const {
 
     DdsFileHeader header;
     memset(&header, 0, sizeof(header));
-    header.dwSize = sizeof(header);
-    header.dwFlags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT | (numMipmaps > 1 ? DDSD_MIPMAPCOUNT : 0) | (depth > 1 ? DDSD_DEPTH : 0);
-    header.dwHeight = height;
-    header.dwWidth = width;
-    header.dwPitchOrLinearSize = 0;
-    header.dwDepth = depth > 1 ? depth : 0;
-    header.dwMipMapCount = numMipmaps > 1 ? numMipmaps : 0;
+    header.size = sizeof(header);
+    header.flags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT | (numMipmaps > 1 ? DDSD_MIPMAPCOUNT : 0) | (depth > 1 ? DDSD_DEPTH : 0);
+    header.height = height;
+    header.width = width;
+    header.pitchOrLinearSize = 0;
+    header.depth = depth > 1 ? depth : 0;
+    header.mipMapCount = numMipmaps > 1 ? numMipmaps : 0;
 
-    header.ddsPixelFormat.dwSize = sizeof(header.ddsPixelFormat);
-    header.ddsCaps.dwCaps1 = DDSCAPS_TEXTURE | (numMipmaps > 1 ? DDSCAPS_MIPMAP | DDSCAPS_COMPLEX : 0) | (depth > 1 ? DDSCAPS_COMPLEX : 0);
-    header.ddsCaps.dwCaps2 = (depth > 1) ? DDSCAPS2_VOLUME : (numSlices == 6) ? DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES : 0;
+    header.ddsPixelFormat.size = sizeof(header.ddsPixelFormat);
 
-    header.ddsPixelFormat.dwFlags = DDSPF_FOURCC;
+    header.ddsCaps.caps1 = DDSCAPS_TEXTURE | (numMipmaps > 1 ? DDSCAPS_MIPMAP | DDSCAPS_COMPLEX : 0) | (depth > 1 ? DDSCAPS_COMPLEX : 0);
+    header.ddsCaps.caps2 = (depth > 1) ? DDSCAPS2_VOLUME : (numSlices == 6) ? DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES : 0;
 
     DdsFileHeaderDX10 dx10Header;
     memset(&dx10Header, 0, sizeof(dx10Header));
-    dx10Header.dwResourceDimension = depth > 1 ? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
-    dx10Header.dwMiscFlag = numSlices == 6 ? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
-    dx10Header.dwArraySize = numSlices;
+    dx10Header.resourceDimension = depth > 1 ? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+    dx10Header.miscFlag = numSlices == 6 ? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
+    dx10Header.arraySize = numSlices;
     
     switch (format) {
     case ABGR_8_8_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 32;
-        header.ddsPixelFormat.dwRBitMask = 0xFF000000;
-        header.ddsPixelFormat.dwGBitMask = 0x00FF0000;
-        header.ddsPixelFormat.dwBBitMask = 0x0000FF00;
-        header.ddsPixelFormat.dwABitMask = 0x000000FF;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 32;
+        header.ddsPixelFormat.RBitMask = 0xFF000000;
+        header.ddsPixelFormat.GBitMask = 0x00FF0000;
+        header.ddsPixelFormat.BBitMask = 0x0000FF00;
+        header.ddsPixelFormat.ABitMask = 0x000000FF;
         break;
     case ARGB_8_8_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 32;
-        header.ddsPixelFormat.dwRBitMask = 0x0000FF00;
-        header.ddsPixelFormat.dwGBitMask = 0x00FF0000;
-        header.ddsPixelFormat.dwBBitMask = 0xFF000000;
-        header.ddsPixelFormat.dwABitMask = 0x000000FF;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 32;
+        header.ddsPixelFormat.RBitMask = 0x0000FF00;
+        header.ddsPixelFormat.GBitMask = 0x00FF0000;
+        header.ddsPixelFormat.BBitMask = 0xFF000000;
+        header.ddsPixelFormat.ABitMask = 0x000000FF;
         break;
     case BGRA_8_8_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 32;
-        header.ddsPixelFormat.dwRBitMask = 0x00FF0000;
-        header.ddsPixelFormat.dwGBitMask = 0x0000FF00;
-        header.ddsPixelFormat.dwBBitMask = 0x000000FF;
-        header.ddsPixelFormat.dwABitMask = 0xFF000000;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 32;
+        header.ddsPixelFormat.RBitMask = 0x00FF0000;
+        header.ddsPixelFormat.GBitMask = 0x0000FF00;
+        header.ddsPixelFormat.BBitMask = 0x000000FF;
+        header.ddsPixelFormat.ABitMask = 0xFF000000;
         break;
     case RGBA_8_8_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 32;
-        header.ddsPixelFormat.dwRBitMask = 0x000000FF;
-        header.ddsPixelFormat.dwGBitMask = 0x0000FF00;
-        header.ddsPixelFormat.dwBBitMask = 0x00FF0000;
-        header.ddsPixelFormat.dwABitMask = 0xFF000000;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 32;
+        header.ddsPixelFormat.RBitMask = 0x000000FF;
+        header.ddsPixelFormat.GBitMask = 0x0000FF00;
+        header.ddsPixelFormat.BBitMask = 0x00FF0000;
+        header.ddsPixelFormat.ABitMask = 0xFF000000;
         break;
     case BGRX_8_8_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 32;
-        header.ddsPixelFormat.dwRBitMask = 0x00FF0000;
-        header.ddsPixelFormat.dwGBitMask = 0x0000FF00;
-        header.ddsPixelFormat.dwBBitMask = 0x000000FF;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 32;
+        header.ddsPixelFormat.RBitMask = 0x00FF0000;
+        header.ddsPixelFormat.GBitMask = 0x0000FF00;
+        header.ddsPixelFormat.BBitMask = 0x000000FF;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case RGBX_8_8_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 32;
-        header.ddsPixelFormat.dwRBitMask = 0x000000FF;
-        header.ddsPixelFormat.dwGBitMask = 0x0000FF00;
-        header.ddsPixelFormat.dwBBitMask = 0x00FF0000;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 32;
+        header.ddsPixelFormat.RBitMask = 0x000000FF;
+        header.ddsPixelFormat.GBitMask = 0x0000FF00;
+        header.ddsPixelFormat.BBitMask = 0x00FF0000;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case BGR_8_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 24;
-        header.ddsPixelFormat.dwRBitMask = 0x00FF0000;
-        header.ddsPixelFormat.dwGBitMask = 0x0000FF00;
-        header.ddsPixelFormat.dwBBitMask = 0x000000FF;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 24;
+        header.ddsPixelFormat.RBitMask = 0x00FF0000;
+        header.ddsPixelFormat.GBitMask = 0x0000FF00;
+        header.ddsPixelFormat.BBitMask = 0x000000FF;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case RGB_8_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 24;
-        header.ddsPixelFormat.dwRBitMask = 0x000000FF;
-        header.ddsPixelFormat.dwGBitMask = 0x0000FF00;
-        header.ddsPixelFormat.dwBBitMask = 0x00FF0000;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 24;
+        header.ddsPixelFormat.RBitMask = 0x000000FF;
+        header.ddsPixelFormat.GBitMask = 0x0000FF00;
+        header.ddsPixelFormat.BBitMask = 0x00FF0000;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case ABGR_4_4_4_4:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000F000;
-        header.ddsPixelFormat.dwGBitMask = 0x00000F00;
-        header.ddsPixelFormat.dwBBitMask = 0x000000F0;
-        header.ddsPixelFormat.dwABitMask = 0x0000000F;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000F000;
+        header.ddsPixelFormat.GBitMask = 0x00000F00;
+        header.ddsPixelFormat.BBitMask = 0x000000F0;
+        header.ddsPixelFormat.ABitMask = 0x0000000F;
         break;
     case ARGB_4_4_4_4:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x000000F0;
-        header.ddsPixelFormat.dwGBitMask = 0x00000F00;
-        header.ddsPixelFormat.dwBBitMask = 0x0000F000;
-        header.ddsPixelFormat.dwABitMask = 0x0000000F;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x000000F0;
+        header.ddsPixelFormat.GBitMask = 0x00000F00;
+        header.ddsPixelFormat.BBitMask = 0x0000F000;
+        header.ddsPixelFormat.ABitMask = 0x0000000F;
         break;
     case BGRA_4_4_4_4:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x00000F00;
-        header.ddsPixelFormat.dwGBitMask = 0x000000F0;
-        header.ddsPixelFormat.dwBBitMask = 0x0000000F;
-        header.ddsPixelFormat.dwABitMask = 0x0000F000;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x00000F00;
+        header.ddsPixelFormat.GBitMask = 0x000000F0;
+        header.ddsPixelFormat.BBitMask = 0x0000000F;
+        header.ddsPixelFormat.ABitMask = 0x0000F000;
         break;
     case RGBA_4_4_4_4:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000000F;
-        header.ddsPixelFormat.dwGBitMask = 0x000000F0;
-        header.ddsPixelFormat.dwBBitMask = 0x00000F00;
-        header.ddsPixelFormat.dwABitMask = 0x0000F000;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000000F;
+        header.ddsPixelFormat.GBitMask = 0x000000F0;
+        header.ddsPixelFormat.BBitMask = 0x00000F00;
+        header.ddsPixelFormat.ABitMask = 0x0000F000;
         break;
     case BGRA_5_5_5_1:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x00007C00;
-        header.ddsPixelFormat.dwGBitMask = 0x000003E0;
-        header.ddsPixelFormat.dwBBitMask = 0x0000001F;
-        header.ddsPixelFormat.dwABitMask = 0x00008000;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x00007C00;
+        header.ddsPixelFormat.GBitMask = 0x000003E0;
+        header.ddsPixelFormat.BBitMask = 0x0000001F;
+        header.ddsPixelFormat.ABitMask = 0x00008000;
         break;
     case RGBA_5_5_5_1:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000001F;
-        header.ddsPixelFormat.dwGBitMask = 0x000003E0;
-        header.ddsPixelFormat.dwBBitMask = 0x00007C00;
-        header.ddsPixelFormat.dwABitMask = 0x00008000;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000001F;
+        header.ddsPixelFormat.GBitMask = 0x000003E0;
+        header.ddsPixelFormat.BBitMask = 0x00007C00;
+        header.ddsPixelFormat.ABitMask = 0x00008000;
         break;
     case ABGR_1_5_5_5:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000F800;
-        header.ddsPixelFormat.dwGBitMask = 0x000007C0;
-        header.ddsPixelFormat.dwBBitMask = 0x0000003E;
-        header.ddsPixelFormat.dwABitMask = 0x00000001;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000F800;
+        header.ddsPixelFormat.GBitMask = 0x000007C0;
+        header.ddsPixelFormat.BBitMask = 0x0000003E;
+        header.ddsPixelFormat.ABitMask = 0x00000001;
         break;
     case ARGB_1_5_5_5:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGBA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000003E;
-        header.ddsPixelFormat.dwGBitMask = 0x000007C0;
-        header.ddsPixelFormat.dwBBitMask = 0x0000F800;
-        header.ddsPixelFormat.dwABitMask = 0x00000001;
+        header.ddsPixelFormat.flags = DDSPF_RGBA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000003E;
+        header.ddsPixelFormat.GBitMask = 0x000007C0;
+        header.ddsPixelFormat.BBitMask = 0x0000F800;
+        header.ddsPixelFormat.ABitMask = 0x00000001;
         break;
     case LA_8_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_LUMINANCE | DDSPF_ALPHAPIXELS;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x000000FF;
-        header.ddsPixelFormat.dwGBitMask = 0x00000000;
-        header.ddsPixelFormat.dwBBitMask = 0x00000000;
-        header.ddsPixelFormat.dwABitMask = 0x0000FF00;
+        header.ddsPixelFormat.flags = DDSPF_LUMINANCE | DDSPF_ALPHAPIXELS;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x000000FF;
+        header.ddsPixelFormat.GBitMask = 0x00000000;
+        header.ddsPixelFormat.BBitMask = 0x00000000;
+        header.ddsPixelFormat.ABitMask = 0x0000FF00;
         break;
     case BGRX_4_4_4_4:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x00000F00;
-        header.ddsPixelFormat.dwGBitMask = 0x000000F0;
-        header.ddsPixelFormat.dwBBitMask = 0x0000000F;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x00000F00;
+        header.ddsPixelFormat.GBitMask = 0x000000F0;
+        header.ddsPixelFormat.BBitMask = 0x0000000F;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case RGBX_4_4_4_4:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000000F;
-        header.ddsPixelFormat.dwGBitMask = 0x000000F0;
-        header.ddsPixelFormat.dwBBitMask = 0x00000F00;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000000F;
+        header.ddsPixelFormat.GBitMask = 0x000000F0;
+        header.ddsPixelFormat.BBitMask = 0x00000F00;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case BGRX_5_5_5_1:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x00007C00;
-        header.ddsPixelFormat.dwGBitMask = 0x000003E0;
-        header.ddsPixelFormat.dwBBitMask = 0x0000001F;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x00007C00;
+        header.ddsPixelFormat.GBitMask = 0x000003E0;
+        header.ddsPixelFormat.BBitMask = 0x0000001F;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case RGBX_5_5_5_1:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000001F;
-        header.ddsPixelFormat.dwGBitMask = 0x000003E0;
-        header.ddsPixelFormat.dwBBitMask = 0x00007C00;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000001F;
+        header.ddsPixelFormat.GBitMask = 0x000003E0;
+        header.ddsPixelFormat.BBitMask = 0x00007C00;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case BGR_5_6_5:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000F800;
-        header.ddsPixelFormat.dwGBitMask = 0x000007E0;
-        header.ddsPixelFormat.dwBBitMask = 0x0000001F;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000F800;
+        header.ddsPixelFormat.GBitMask = 0x000007E0;
+        header.ddsPixelFormat.BBitMask = 0x0000001F;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case RGB_5_6_5:
-        header.ddsPixelFormat.dwFlags = DDSPF_RGB;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 16;
-        header.ddsPixelFormat.dwRBitMask = 0x0000001F;
-        header.ddsPixelFormat.dwGBitMask = 0x000007E0;
-        header.ddsPixelFormat.dwBBitMask = 0x0000F800;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_RGB;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 16;
+        header.ddsPixelFormat.RBitMask = 0x0000001F;
+        header.ddsPixelFormat.GBitMask = 0x000007E0;
+        header.ddsPixelFormat.BBitMask = 0x0000F800;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case L_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_LUMINANCE;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 8;
-        header.ddsPixelFormat.dwRBitMask = 0x000000FF;
-        header.ddsPixelFormat.dwGBitMask = 0x00000000;
-        header.ddsPixelFormat.dwBBitMask = 0x00000000;
-        header.ddsPixelFormat.dwABitMask = 0x00000000;
+        header.ddsPixelFormat.flags = DDSPF_LUMINANCE;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 8;
+        header.ddsPixelFormat.RBitMask = 0x000000FF;
+        header.ddsPixelFormat.GBitMask = 0x00000000;
+        header.ddsPixelFormat.BBitMask = 0x00000000;
+        header.ddsPixelFormat.ABitMask = 0x00000000;
         break;
     case A_8:
-        header.ddsPixelFormat.dwFlags = DDSPF_ALPHA;
-        header.ddsPixelFormat.dwFourCC = 0;
-        header.ddsPixelFormat.dwRGBBitCount = 8;
-        header.ddsPixelFormat.dwRBitMask = 0x00000000;
-        header.ddsPixelFormat.dwGBitMask = 0x00000000;
-        header.ddsPixelFormat.dwBBitMask = 0x00000000;
-        header.ddsPixelFormat.dwABitMask = 0x000000FF;
+        header.ddsPixelFormat.flags = DDSPF_ALPHA;
+        header.ddsPixelFormat.fourCC = 0;
+        header.ddsPixelFormat.RGBBitCount = 8;
+        header.ddsPixelFormat.RBitMask = 0x00000000;
+        header.ddsPixelFormat.GBitMask = 0x00000000;
+        header.ddsPixelFormat.BBitMask = 0x00000000;
+        header.ddsPixelFormat.ABitMask = 0x000000FF;
         break;
     case RGBA_DXT1:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', 'T', '1');
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '1');
         break;
     case RGBA_DXT3:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', 'T', '3');
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '3');
         break;
     case RGBA_DXT5:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', 'T', '5');
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '5');
         break;
     case XGBR_DXT5:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', 'T', '5');
-        header.ddsPixelFormat.dwRGBBitCount = MAKE_FOURCC('x', 'G', 'B', 'R');
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '5');
+        header.ddsPixelFormat.RGBBitCount = MAKE_FOURCC('x', 'G', 'B', 'R');
         break;
     case DXN1:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('A', 'T', 'I', '1');
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('A', 'T', 'I', '1');
         break;
     case DXN2:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('A', 'T', 'I', '2'); // ATI 3DTc
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('A', 'T', 'I', '2'); // ATI 3DTc
         break;
     case R_8:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R8_UNORM;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R8_UNORM;
         break;
     case RG_8_8:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R8G8_UNORM;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R8G8_UNORM;
         break;
     case R_16F:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R16_FLOAT;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R16_FLOAT;
         break;
     case RG_16F_16F:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R16G16_FLOAT;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R16G16_FLOAT;
         break;
     case RGBA_16F_16F_16F_16F:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R16G16B16A16_FLOAT;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R16G16B16A16_FLOAT;
         break;
     case R_32F:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R32_FLOAT;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R32_FLOAT;
         break;
     case RG_32F_32F:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R32G32_FLOAT;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R32G32_FLOAT;
         break;
     case RGB_32F_32F_32F:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R32G32B32_FLOAT;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R32G32B32_FLOAT;
         break;
     case RGBA_32F_32F_32F_32F:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R32G32B32A32_FLOAT;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R32G32B32A32_FLOAT;
         break;
     case RGBE_9_9_9_5:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R9G9B9E5_SHAREDEXP;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R9G9B9E5_SHAREDEXP;
         break;
     case RGB_11F_11F_10F:
-        header.ddsPixelFormat.dwFourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        dx10Header.dwDxgiFormat = DDS_FORMAT_R11G11B10_FLOAT;
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DDS_FORMAT_R11G11B10_FLOAT;
         break;
     default:
         fileSystem.CloseFile(fp);
@@ -765,7 +779,7 @@ bool Image::WriteDDS(const char *filename) const {
 
     fp->Write(&header, sizeof(header));
 
-    if (header.ddsPixelFormat.dwFourCC == MAKE_FOURCC('D', 'X', '1', '0')) {
+    if (header.ddsPixelFormat.fourCC == MAKE_FOURCC('D', 'X', '1', '0')) {
         fp->Write(&dx10Header, sizeof(dx10Header));
     }
 

@@ -99,7 +99,7 @@ public:
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();
 
-                        /// Convert color packed to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
+                        /// Convert color to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 
                         /// Convert RGB to HSL
