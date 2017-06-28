@@ -98,7 +98,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->numSlices = 6;
     this->numMipmaps = 1;
     this->format = equirectangularImage.format;
-    this->flags = equirectangularImage.flags;
+    this->flags = equirectangularImage.flags | CubeMapFlag;
 
     int sliceSize = GetSliceSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
@@ -108,7 +108,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         Image faceImage;
-        faceImage.Create2D(faceSize, faceSize, 1, Image::RGBA_32F_32F_32F_32F, nullptr, flags);
+        faceImage.Create2D(faceSize, faceSize, 1, Image::RGBA_32F_32F_32F_32F, nullptr, equirectangularImage.flags);
 
         Color4 *dst = (Color4 *)faceImage.GetPixels();
 

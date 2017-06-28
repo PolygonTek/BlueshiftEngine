@@ -125,6 +125,7 @@ public:
     /// Image flags
     enum Flag {
         ClampFlag       = BIT(0),
+        CubeMapFlag     = BIT(1),
         NormalMapFlag   = BIT(5),
         SRGBFlag        = BIT(6),
         LinearFlag      = BIT(7)
@@ -185,6 +186,7 @@ public:
     bool                IsHalfFormat() const { return Image::IsHalfFormat(format); }
     bool                IsDepthFormat() const { return Image::IsDepthFormat(format); }
     bool                IsDepthStencilFormat() const { return Image::IsDepthStencilFormat(format); }
+    bool                IsCubeMap() const { return !!(flags & CubeMapFlag) && numSlices == 6; }
 
     int                 GetWidth() const { return width; }
     int                 GetWidth(int mipMapLevel) const;
@@ -397,7 +399,7 @@ BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmap
 }
 
 BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Image::Format format, const byte *data, int flags) {
-    return Create(size, size, 1, 6, numMipmaps, format, data, flags);
+    return Create(size, size, 1, 6, numMipmaps, format, data, flags | CubeMapFlag);
 }
 
 BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags) {

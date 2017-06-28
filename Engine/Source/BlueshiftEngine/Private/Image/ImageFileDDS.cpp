@@ -633,7 +633,7 @@ bool Image::WriteDDS(const char *filename) const {
     memset(&dx10Header, 0, sizeof(dx10Header));
     dx10Header.resourceDimension = depth > 1 ? DX10_RESOURCE_DIMENSION_TEXTURE3D : DX10_RESOURCE_DIMENSION_TEXTURE2D;
     dx10Header.miscFlag = numSlices == 6 ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
-    dx10Header.arraySize = numSlices;
+    dx10Header.arraySize = 1;
     dx10Header.miscFlag2 = DX10_RESOURCE_MISC2_UNKNOWN;
 
     switch (format) {
@@ -903,10 +903,12 @@ bool Image::WriteDDS(const char *filename) const {
         dx10Header.dxgiFormat = DX10_FORMAT_R16_FLOAT;
         break;
     case RG_16F_16F:
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R16G16_FLOAT;
         break;
     case RGBA_16F_16F_16F_16F:
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
         dx10Header.dxgiFormat = DX10_FORMAT_R16G16B16A16_FLOAT;
         break;
