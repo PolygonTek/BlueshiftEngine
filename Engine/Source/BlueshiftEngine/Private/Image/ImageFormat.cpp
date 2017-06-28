@@ -396,7 +396,7 @@ static void RGBA16FToRGBA8888(const byte *src, byte *dst, int numPixels) {
     const float16_t *srcPtr = (const float16_t *)src;
     const float16_t *srcEnd = srcPtr + numPixels * 4;
     byte *dstPtr = dst;
-    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
         dstPtr[0] = (byte)(F16Converter::ToF32(srcPtr[0]) * 255.0f);
         dstPtr[1] = (byte)(F16Converter::ToF32(srcPtr[1]) * 255.0f);
         dstPtr[2] = (byte)(F16Converter::ToF32(srcPtr[2]) * 255.0f);
@@ -1371,7 +1371,7 @@ static void RGBA32FToRGBA16F(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
     float16_t *dstPtr = (float16_t *)dst;
-    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
         dstPtr[0] = F16Converter::FromF32(srcPtr[0]);
         dstPtr[1] = F16Converter::FromF32(srcPtr[1]);
         dstPtr[2] = F16Converter::FromF32(srcPtr[2]);

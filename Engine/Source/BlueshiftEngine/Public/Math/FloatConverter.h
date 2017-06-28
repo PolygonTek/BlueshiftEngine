@@ -31,7 +31,7 @@ public:
                 i = s << IEEE_FLT_SIGN_BIT;
                 return reinterpret_cast<float &>(i);
             } else { // denormal
-                return (s ? 1.0f : -1.0f) * (m / (float)(1 << MBits)) * powf(2.0f, -(EBias - 1));
+                return (s ? -1.0f : 1.0f) * (m / (float)(1 << MBits)) * powf(2.0f, -(EBias - 1));
             }
         } else if (e == (1 << EBits) - 1) {
             if (m == 0) { // INF
@@ -41,7 +41,7 @@ public:
             }
             return reinterpret_cast<float &>(i);
         } else { // normal number
-            return (s ? 1.0f : -1.0f) * (1.0f + m / (float)(1 << MBits)) * powf(2.0f, (float)(e - EBias));
+            return (s ? -1.0f : 1.0f) * (1.0f + m / (float)(1 << MBits)) * powf(2.0f, (float)(e - EBias));
         }
     }
 
