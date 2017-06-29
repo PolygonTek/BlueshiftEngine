@@ -33,14 +33,14 @@ void litDiffuseBurley(in float NdotL, in float NdotV, in float VdotH, in float r
 }
 
 void litDiffuseOrenNayar(in float NdotL, in float NdotV, in float LdotV, in float roughness, in vec4 Kd, out vec3 Cd) { 
-    //float sigma2 = roughness * roughness;
-    //float A = 1.0 - sigma2 * (0.5 / (sigma2 + 0.33) + 0.17 / (sigma2 + 0.13));
-    //float B = 0.45 * sigma2 / (sigma2  + 0.09);
+    float sigma2 = roughness * roughness;
+    float A = 1.0 - sigma2 * (0.5 / (sigma2 + 0.33) + 0.17 / (sigma2 + 0.13));
+    float B = 0.45 * sigma2 / (sigma2  + 0.09);
 
     // A tiny improvement of Oren-Nayar [Yasuhiro Fujii]
     // http://mimosa-pudica.net/improved-oren-nayar.html
-    float A = 1.0 / (PI + 0.90412966 * roughness);
-    float B = roughness / (PI + 0.90412966 * roughness);
+    //float A = 1.0 / (PI + 0.90412966 * roughness);
+    //float B = roughness / (PI + 0.90412966 * roughness);
 
     float s = LdotV - NdotL * NdotV;
     float t = mix(1.0, max(NdotL, NdotV), step(0.0, s));
@@ -131,11 +131,9 @@ void litStandard(in vec3 N, in vec3 L, in vec3 V, in float roughness, in vec4 Kd
 #if PBR_DIFFUSE == 0
     litDiffuseLambert(NdotL, Kd, Cd);
 #elif PBR_DIFFUSE == 1
-
     litDiffuseBurley(NdotL, NdotV, VdotH, roughness, Kd, Cd);
 #elif PBR_DIFFUSE == 2
     float LdotV = max(dot(L, V), 0);
-
     litDiffuseOrenNayar(NdotL, NdotV, LdotV, roughness, Kd, Cd);
 #endif
 
