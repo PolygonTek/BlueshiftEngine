@@ -594,9 +594,9 @@ BE_INLINE void Vec3::SetFromSpherical(float radius, float theta, float phi) {
     Math::SinCos(theta, sinTheta, cosTheta);
     Math::SinCos(phi, sinPhi, cosPhi);
 
-    x = radius * cosTheta * sinPhi;
+    x = radius * sinTheta * cosPhi;
     y = radius * sinTheta * sinPhi;
-    z = radius * cosPhi;
+    z = radius * cosTheta;
 }
 
 BE_INLINE float Vec3::ToSpherical(float &theta, float &phi) const {

@@ -807,7 +807,7 @@ static void RGB11F11F10FToRGBA32F(const byte *src, byte *dst, int numPixels) {
     for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
         dstPtr[0] = F11Converter::ToF32(*srcPtr & 0x7FF);
         dstPtr[1] = F11Converter::ToF32((*srcPtr >> 11) & 0x7FF);
-        dstPtr[2] = F11Converter::ToF32((*srcPtr >> 22) & 0x3FF);
+        dstPtr[2] = F10Converter::ToF32((*srcPtr >> 22) & 0x3FF);
         dstPtr[3] = 1.0f;
     }
 }
