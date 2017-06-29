@@ -141,6 +141,13 @@ public:
         NegativeZ
     };
 
+    /// Sample wrap mode
+    enum SampleWrapMode {
+        Clamp,
+        Repeat,
+        MirroredRepeat
+    };
+
     /// Image resample filter
     enum ResampleFilter {
         Nearest,
@@ -202,8 +209,11 @@ public:
     byte *              GetPixels(int level) const;
     byte *              GetPixels(int level, int sliceIndex) const;
 
-                        /// Returns color with the given XY coordinates
-    Color4              GetColor(float x, float y) const;
+                        /// Returns Color4 sample with the given 2D coordinates
+    Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = Clamp, SampleWrapMode wrapModeT = Clamp, int level = 0) const;
+
+                        /// Returns Color4 sample with the given cubemap coordinates
+    Color4              SampleCube(const Vec3 &str, int level = 0) const;
 
                         /// Returns number of pixels with given mipmap levels
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
@@ -225,10 +235,14 @@ public:
     Image &             CreateCube(int size, int numMipmaps, Image::Format format, const byte *data, int flags);
     Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags);
 
-                        /// Creates an cubic image from the six square images
+                        /// Creates an cubic image from six square images
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
 
+                        /// Creates an cubic image from single equirectangular spherical image
     Image &             CreateCubeFromEquirectangular(const Image &equirectangularImage, int faceSize);
+
+                        /// Creates an equirectangular spherical image from cubic image
+    Image &             CreateEquirectangularFromCube(const Image &cubeImage);
 
                         /// Copy image data from another.
                         /// Nothing happen if source image dimensions are not match with this image
@@ -423,51 +437,54 @@ BE_INLINE float Image::LinearToGamma(float f) {
 }
 
 BE_INLINE Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
-    float sv = s * 2.0f - 1.0f;
-    float tv = t * 2.0f - 1.0f;
+    float sc = s * 2.0f - 1.0f;
+    float tc = t * 2.0f - 1.0f;
 
     Vec3 cubeMapCoords;
     switch (cubeMapFace) {
-    case PositiveX: cubeMapCoords = Vec3(+1.0f, -tv, -sv); break;
-    case NegativeX: cubeMapCoords = Vec3(-1.0f, -tv, +sv); break;
-    case PositiveY: cubeMapCoords = Vec3(+sv, +1.0f, +tv); break;
-    case NegativeY: cubeMapCoords = Vec3(+sv, -1.0f, -tv); break;
-    case PositiveZ: cubeMapCoords = Vec3(+sv, -tv, +1.0f); break;
-    case NegativeZ: cubeMapCoords = Vec3(-sv, -tv, -1.0f); break;
+    case PositiveX: cubeMapCoords = Vec3(+1.0f, -tc, -sc); break;
+    case NegativeX: cubeMapCoords = Vec3(-1.0f, -tc, +sc); break;
+    case PositiveY: cubeMapCoords = Vec3(+sc, +1.0f, +tc); break;
+    case NegativeY: cubeMapCoords = Vec3(+sc, -1.0f, -tc); break;
+    case PositiveZ: cubeMapCoords = Vec3(+sc, -tc, +1.0f); break;
+    case NegativeZ: cubeMapCoords = Vec3(-sc, -tc, -1.0f); break;
     }
-    return cubeMapCoords;
+    // Convert cubemap coordinates from GL axis to z-up axis
+    return Vec3(cubeMapCoords.z, cubeMapCoords.x, cubeMapCoords.y);
 }
 
 BE_INLINE Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
-    int faceIndex = cubeMapCoords.Abs().MaxComponentIndex();
-    float majorAxis = cubeMapCoords[faceIndex];
+    // Convert cubemap coordinates from z-up axis to GL axis
+    Vec3 dir = Vec3(cubeMapCoords.y, cubeMapCoords.z, cubeMapCoords.x);
+    int faceIndex = dir.Abs().MaxComponentIndex();
+    float majorAxis = dir[faceIndex];
     faceIndex = (faceIndex << 1) + IEEE_FLT_SIGNBITSET(majorAxis);
     float sc, tc;
 
     switch (faceIndex) {
     case PositiveX: 
-        sc = -cubeMapCoords.z; 
-        tc = -cubeMapCoords.y;
+        sc = -dir.z;
+        tc = -dir.y;
         break;
     case NegativeX:
-        sc = +cubeMapCoords.z;
-        tc = -cubeMapCoords.y;
+        sc = +dir.z;
+        tc = -dir.y;
         break;
     case PositiveY:
-        sc = +cubeMapCoords.x;
-        tc = +cubeMapCoords.z;
+        sc = +dir.x;
+        tc = +dir.z;
         break;
     case NegativeY:
-        sc = +cubeMapCoords.x;
-        tc = -cubeMapCoords.z;
+        sc = +dir.x;
+        tc = -dir.z;
         break;
     case PositiveZ:
-        sc = +cubeMapCoords.x;
-        tc = -cubeMapCoords.y;
+        sc = +dir.x;
+        tc = -dir.y;
         break;
     case NegativeZ:
-        sc = -cubeMapCoords.x;
-        tc = -cubeMapCoords.y;
+        sc = -dir.x;
+        tc = -dir.y;
         break;
     }
 

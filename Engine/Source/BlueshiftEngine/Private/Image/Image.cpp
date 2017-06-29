@@ -104,40 +104,72 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
     this->alloced = true;
 
+    const ImageFormatInfo *info = GetImageFormatInfo(format);
+
     float invSize = 1.0f / (faceSize - 1);
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        Image faceImage;
-        faceImage.Create2D(faceSize, faceSize, 1, Image::RGBA_32F_32F_32F_32F, nullptr, equirectangularImage.flags);
-
-        Color4 *dst = (Color4 *)faceImage.GetPixels();
+        byte *dst = GetPixels(0, faceIndex);
 
         for (int dstY = 0; dstY < faceSize; dstY++) {
             for (int dstX = 0; dstX < faceSize; dstX++) {
-                float s = dstX * invSize;
-                float t = dstY * invSize;
+                float dstS = dstX * invSize;
+                float dstT = dstY * invSize;
 
-                Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, s, t);
-                dir.Normalize();
+                Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, dstS, dstT);
 
                 float theta, phi;
                 dir.ToSpherical(theta, phi);
 
                 // Convert range [-1/4 pi, 7/4 pi] to [0.0, 1.0]
-                float fx = Math::Fract((phi + Math::OneFourthPi) * Math::InvTwoPi);
+                float srcS = Math::Fract((phi + Math::OneFourthPi) * Math::InvTwoPi);
                 // Convert range [0, pi] to [0.0, 1.0]
-                float fy = Math::Fract(theta * Math::InvPi);
+                float srcT = Math::Fract(theta * Math::InvPi);
 
-                float srcX = fx * equirectangularImage.GetWidth();
-                float srcY = fy * equirectangularImage.GetHeight();
-
-                dst[dstY * faceSize + dstX] = equirectangularImage.GetColor(srcX, srcY);
+                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Repeat);
+                info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
             }
         }
+    }
 
-        faceImage.ConvertFormatSelf(format);
+    return *this;
+}
 
-        simdProcessor->Memcpy(pic + sliceSize * faceIndex, faceImage.GetPixels(), sliceSize);
+Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
+    Clear();
+
+    this->width = cubeImage.width * 2;
+    this->height = cubeImage.width;
+    this->depth = 1;
+    this->numSlices = 1;
+    this->numMipmaps = 1;
+    this->format = cubeImage.format;
+    this->flags = cubeImage.flags & ~CubeMapFlag;
+
+    int size = GetSize(0, numMipmaps);
+    this->pic = (byte *)Mem_Alloc16(size);
+    this->alloced = true;
+
+    const ImageFormatInfo *info = GetImageFormatInfo(format);
+
+    byte *dst = GetPixels(0);
+
+    for (int dstY = 0; dstY < height; dstY++) {
+        for (int dstX = 0; dstX < width; dstX++) {
+            float dstS = (float)dstX / (width - 1);
+            float dstT = (float)dstY / (height - 1);
+
+            // Convert range [0.0, 1.0] to [0, pi]
+            float theta = dstT * Math::Pi;
+            // Convert range [0.0, 1.0] to [-1/4 pi, 7/4 pi]
+            float phi = dstS * Math::TwoPi - Math::OneFourthPi;
+
+            Vec3 dir;
+            dir.SetFromSpherical(1.0f, theta, phi);
+
+            Color4 color = cubeImage.SampleCube(dir);
+            info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
+        }
     }
 
     return *this;
@@ -192,35 +224,42 @@ void Image::Clear() {
     }
 }
 
-Color4 Image::GetColor(float x, float y) const {
+Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT, int level) const {
+    if (IsCompressed()) {
+        assert(0);
+        return Color4::zero;
+    }
+
     const ImageFormatInfo *info = GetImageFormatInfo(format);
+    int numComponents = NumComponents();
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
-    int numComponents = NumComponents();
 
-    int iY0 = (int)y;
-    int iY1 = Min(iY0 + 1, height - 1);
-
+    float x = st[0] * width;
     int iX0 = (int)x;
     int iX1 = Min(iX0 + 1, width - 1);
-
-    float fracY = y - (float)iY0;
     float fracX = x - (float)iX0;
 
-    const byte *src0 = &pic[iY0 * pitch];
-    const byte *src1 = &pic[iY1 * pitch];
+    float y = st[1] * height;
+    int iY0 = (int)y;
+    int iY1 = Min(iY0 + 1, height - 1);
+    float fracY = y - (float)iY0;
 
-    Color4 color;
+    const byte *src = GetPixels(level);
+    const byte *srcY0 = &src[iY0 * pitch];
+    const byte *srcY1 = &src[iY1 * pitch];
+
+    Color4 color = Color4(0, 0, 0, 1);
 
     if (info->type & Float) {
         // [0] [1]
         // [2] [3]
         ALIGN16(float rgba32f[4][4]);
 
-        info->unpackRGBA32F(&src0[iX0 * bpp], (byte *)rgba32f[0], 1);
-        info->unpackRGBA32F(&src0[iX1 * bpp], (byte *)rgba32f[1], 1);
-        info->unpackRGBA32F(&src1[iX0 * bpp], (byte *)rgba32f[2], 1);
-        info->unpackRGBA32F(&src1[iX1 * bpp], (byte *)rgba32f[3], 1);
+        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
+        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
+        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
+        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
 
         for (int i = 0; i < numComponents; i++) {
             float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
@@ -233,16 +272,83 @@ Color4 Image::GetColor(float x, float y) const {
         // [2] [3]
         ALIGN16(byte rgba8888[4][4]);
 
-        info->unpackRGBA8888(&src0[iX0 * bpp], rgba8888[0], 1);
-        info->unpackRGBA8888(&src0[iX1 * bpp], rgba8888[1], 1);
-        info->unpackRGBA8888(&src1[iX0 * bpp], rgba8888[2], 1);
-        info->unpackRGBA8888(&src1[iX1 * bpp], rgba8888[3], 1);
+        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
+        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
+        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
+        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
 
         for (int i = 0; i < numComponents; i++) {
-            float a = Lerp(rgba8888[0][i] / 255.0f, rgba8888[1][i] / 255.0f, fracX);
-            float b = Lerp(rgba8888[2][i] / 255.0f, rgba8888[3][i] / 255.0f, fracX);
+            byte a = Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
+            byte b = Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
+
+            color[i] = Lerp(a, b, fracY) / 255.0f;
+        }
+    }
+
+    return color;
+}
+
+Color4 Image::SampleCube(const Vec3 &str, int level) const {
+    if (IsCompressed()) {
+        assert(0);
+        return Color4::zero;
+    }
+    
+    const ImageFormatInfo *info = GetImageFormatInfo(format);
+    int numComponents = NumComponents();
+    int bpp = BytesPerPixel();
+    int pitch = width * bpp;
+
+    float x, y;
+    CubeMapFace cubeMapFace = CubeMapToFaceCoords(str, x, y);
+    x *= width;
+    y *= height;
+
+    int iX0 = (int)x;
+    int iX1 = Min(iX0 + 1, width - 1);
+    float fracX = x - (float)iX0;
+
+    int iY0 = (int)y;
+    int iY1 = Min(iY0 + 1, height - 1);
+    float fracY = y - (float)iY0;
+
+    const byte *src = GetPixels(level, cubeMapFace);
+    const byte *srcY0 = &src[iY0 * pitch];
+    const byte *srcY1 = &src[iY1 * pitch];
+
+    Color4 color = Color4(0, 0, 0, 1);
+
+    if (info->type & Float) {
+        // [0] [1]
+        // [2] [3]
+        ALIGN16(float rgba32f[4][4]);
+
+        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
+        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
+        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
+        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
+
+        for (int i = 0; i < numComponents; i++) {
+            float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
+            float b = Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
 
             color[i] = Lerp(a, b, fracY);
+        }
+    } else {
+        // [0] [1]
+        // [2] [3]
+        ALIGN16(byte rgba8888[4][4]);
+
+        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
+        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
+        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
+        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
+
+        for (int i = 0; i < numComponents; i++) {
+            byte a = Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
+            byte b = Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
+
+            color[i] = Lerp(a, b, fracY) / 255.0f;
         }
     }
 
