@@ -255,16 +255,17 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
 
     int sliceSize = image.GetSliceSize();
     float invSize = 1.0f / (size - 1);
-    Vec3 vec;
+    Vec3 dir;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                vec = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, x * invSize, y * invSize);
-                vec.Normalize();
-                dst[3 * (y * size + x) + 0] = (byte)(128 + 127 * vec[0]);
-                dst[3 * (y * size + x) + 1] = (byte)(128 + 127 * vec[1]);
-                dst[3 * (y * size + x) + 2] = (byte)(128 + 127 * vec[2]);
+                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, x * invSize, y * invSize);
+                dir.Normalize();
+
+                dst[3 * (y * size + x) + 0] = Math::Ftob(dir.x * 127.5f + 128.0f);
+                dst[3 * (y * size + x) + 1] = Math::Ftob(dir.y * 127.5f + 128.0f);
+                dst[3 * (y * size + x) + 2] = Math::Ftob(dir.z * 127.5f + 128.0f);
             }
         }
 
@@ -363,29 +364,6 @@ void Texture::CreateAttenuationTexture(int size, int flags) {
     }
 
     Create(RHI::Texture2D, image, Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
-}
-
-/*
--------------------------------------------------------------------------------
-
-    Exponent map 
-
--------------------------------------------------------------------------------
-*/
-
-void Texture::CreateExponentTexture(int flags) {
-    Image image;
-    image.Create2D(256, 256, 1, Image::L_8, nullptr, Image::LinearFlag);
-    byte *dst = image.GetPixels();
-
-    for (int t = 0; t < 256; t++) {
-        for (int s = 0; s < 256; s++) {
-            int c = Math::Pow(s/255.0, t+1) * 255;
-            dst[t*256 + s] = c;
-        }
-    }
-
-    Create(RHI::Texture2D, image, Texture::Nearest | Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality | flags);
 }
 
 /*

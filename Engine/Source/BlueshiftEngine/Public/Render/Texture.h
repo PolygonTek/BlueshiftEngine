@@ -90,7 +90,6 @@ public:
     void                    CreateNormalizationCubeMapTexture(int size, int flags = 0);
     void                    CreateCubicNormalCubeMapTexture(int size, int flags = 0);
     void                    CreateAttenuationTexture(int size, int flags = 0);
-    void                    CreateExponentTexture(int flags = 0);
     void                    CreateFogTexture(int flags = 0);
     void                    CreateFogEnterTexture(int flags = 0);
     void                    CreateRandomRotMatTexture(int size, int flags = 0);

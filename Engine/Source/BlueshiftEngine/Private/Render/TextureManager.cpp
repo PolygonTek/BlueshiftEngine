@@ -96,25 +96,21 @@ void TextureManager::Init() {
     greyTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
 
     // _linear
-    image.Create2D(256, 1, 1, Image::L_8, nullptr, Image::LinearFlag);
+    /*image.Create2D(256, 1, 1, Image::L_8, nullptr, Image::LinearFlag);
     data = image.GetPixels();
     for (int i = 0; i < 256; i++) {
         data[i] = i;
     }
     linearTexture = AllocTexture("_linearTexture");
-    linearTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality);
-
-    // _exponent
-    exponentTexture = AllocTexture("_exponentTexture");
-    exponentTexture->CreateExponentTexture(Texture::Permanence);
+    linearTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality);*/
 
     // _flatNormal
     flatNormalTexture = AllocTexture("_flatNormalTexture");
     flatNormalTexture->CreateFlatNormalTexture(16, Texture::Permanence);
 
     // _normalCube
-    normalCubeMapTexture = AllocTexture("_normalCubeTexture");
-    normalCubeMapTexture->CreateNormalizationCubeMapTexture(32, Texture::Permanence);
+    /*normalCubeMapTexture = AllocTexture("_normalCubeTexture");
+    normalCubeMapTexture->CreateNormalizationCubeMapTexture(32, Texture::Permanence);*/
 
     // _cubicNormalCube
     cubicNormalCubeMapTexture = AllocTexture("_cubicNormalCubeTexture");
