@@ -143,9 +143,8 @@ public:
 
     /// Sample wrap mode
     enum SampleWrapMode {
-        Clamp,
-        Repeat,
-        MirroredRepeat
+        ClampMode,
+        RepeatMode
     };
 
     /// Image resample filter
@@ -210,7 +209,7 @@ public:
     byte *              GetPixels(int level, int sliceIndex) const;
 
                         /// Returns Color4 sample with the given 2D coordinates
-    Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = Clamp, SampleWrapMode wrapModeT = Clamp, int level = 0) const;
+    Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = ClampMode, SampleWrapMode wrapModeT = ClampMode, int level = 0) const;
 
                         /// Returns Color4 sample with the given cubemap coordinates
     Color4              SampleCube(const Vec3 &str, int level = 0) const;
@@ -319,6 +318,9 @@ public:
     static Image *      NewImageFromFile(const char *filename);
 
 private:
+    template <typename T>
+    T                   WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const;
+
     bool                LoadDDSFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPVRFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPVR2FromMemory(const char *name, const byte *data, size_t size);
@@ -434,6 +436,16 @@ BE_INLINE float Image::LinearToGamma(float f) {
     } else {
         return 1.055f * Math::Pow(f, 1.0f / 2.4f) - 0.055f;
     }
+}
+
+template <typename T>
+BE_INLINE T Image::WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const {
+    if (wrapMode == SampleWrapMode::ClampMode) {
+        Clamp<T>(coord, 0, maxCoord);
+    } else if (wrapMode == SampleWrapMode::RepeatMode) {
+        Wrap<T>(coord, 0, maxCoord);
+    }
+    return coord;
 }
 
 BE_INLINE Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {

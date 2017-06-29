@@ -465,52 +465,76 @@ BE_FORCE_INLINE constexpr bool BE_API       IsPowerOf2(int x) { return x && ((x 
 
 /// Tests if the value is aligned.
 template <typename T>
-BE_FORCE_INLINE constexpr bool  IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }
+BE_FORCE_INLINE constexpr bool IsAligned(const T &x, int n) { return IsPowerOf2(n) ? ((x & (n - 1)) == 0) : ((x % n) == 0); }
+
 /// Returns aligned up value by n.
 template <typename T>
-BE_FORCE_INLINE constexpr T     AlignUp(const T &x, int n) { return IsPowerOf2(n) ? ((x + n - 1) & (~(n - 1))) : ((x + n - 1) - (x + n - 1) % n); }
+BE_FORCE_INLINE constexpr T AlignUp(const T &x, int n) { return IsPowerOf2(n) ? ((x + n - 1) & (~(n - 1))) : ((x + n - 1) - (x + n - 1) % n); }
+
 /// Returns aligned down value by n. 
 template <typename T>
-BE_FORCE_INLINE constexpr T     AlignDown(const T &x, int n) { return IsPowerOf2(n) ? (x & (~(n - 1))) : (x - x % n); }
+BE_FORCE_INLINE constexpr T AlignDown(const T &x, int n) { return IsPowerOf2(n) ? (x & (~(n - 1))) : (x - x % n); }
 
 /// Returns the smaller of two values.
 template <typename T>
-BE_FORCE_INLINE constexpr T     Min(const T &x, const T &y) { return (x < y) ? x : y; }
+BE_FORCE_INLINE constexpr T Min(const T &x, const T &y) { return (x < y) ? x : y; }
 /// Returns the larger of two values.
 template <typename T>
-BE_FORCE_INLINE constexpr T     Max(const T &x, const T &y) { return (x > y) ? x : y; }
+BE_FORCE_INLINE constexpr T Max(const T &x, const T &y) { return (x > y) ? x : y; }
+
 /// Returns the smaller index of two values. 
 template <typename T>
-BE_FORCE_INLINE constexpr int   MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
+BE_FORCE_INLINE constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
 /// Returns the larger index of two values.
 template <typename T>
-BE_FORCE_INLINE constexpr int   MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
+BE_FORCE_INLINE constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
 
 /// Returns the smaller of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr T     Min3(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? x : z) : ((y < z) ? y : z); }
+BE_FORCE_INLINE constexpr T Min3(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? x : z) : ((y < z) ? y : z); }
 /// Returns the larger of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr T     Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? x : z) : ((y > z) ? y : z); }
+BE_FORCE_INLINE constexpr T Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? x : z) : ((y > z) ? y : z); }
+
 /// Returns the smaller index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int   Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
+BE_FORCE_INLINE constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
 /// Returns the larger index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int   Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
+BE_FORCE_INLINE constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
 
 /// Swaps two values.
 template <typename T> 
-BE_FORCE_INLINE void            Swap(T &a, T &b) { T c = std::move(a); a = std::move(b); b = std::move(c); }
+BE_FORCE_INLINE void Swap(T &a, T &b) { T c = std::move(a); a = std::move(b); b = std::move(c); }
+
+/// Clamps a number to a range.
+template <typename T>
+BE_FORCE_INLINE void Clamp(T &v, const T &min, const T &max) { v = (v > max) ? max : (v < min ? min : v); }
+
+/// Returns the clamped number to a range.
+template <typename T>
+BE_FORCE_INLINE T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
+
+/// Returns remainder of the division operation x / y.
+template <typename T>
+BE_FORCE_INLINE T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
+template <>
+BE_FORCE_INLINE int Mod(const int &x, const int &y) { return x % y; }
+
 /// Wraps a number to a range.
 template <typename T>
-BE_FORCE_INLINE void            Wrap(T &v, const T &min, const T &max) { T size = max - min; while (v < min) v += size; while (v > max) v -= size; }
-/// Clamps a number to a range.
+BE_FORCE_INLINE void Wrap(T &v, const T &min, const T &max) {
+    if (v > max) v = min + Mod(v - min, max - min + 1);
+    if (v < min) v = max - Mod(min - v, max - min + 1);
+}
+
+/// Returns the wrapped number to a range.
 template <typename T>
-BE_FORCE_INLINE void            Clamp(T &v, const T &min, const T &max) { v = (v > max) ? max : (v < min ? min : v); }
-/// Clamps a number to a range.
-template <typename T>
-BE_FORCE_INLINE T               Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
+BE_FORCE_INLINE T Wrap(const T &v, const T &min, const T &max) {
+    if (v > max) return min + Mod(v - min, max - min + 1);
+    if (v < min) return max - Mod(min - v, max - min + 1);
+    return v;
+}
 
 BE_FORCE_INLINE signed char BE_API ClampChar(int i) {
     if (i < -128) return -128;
@@ -542,10 +566,10 @@ BE_FORCE_INLINE float BE_API ClampFloat(float min, float max, float value) {
     return value;
 }
 
-BE_FORCE_INLINE constexpr float BE_API      UnitToCenti(float x) { return x * 1.0f; }
-BE_FORCE_INLINE constexpr float BE_API      UnitToMeter(float x) { return UnitToCenti(x) * 0.01f; }
-BE_FORCE_INLINE constexpr float BE_API      CentiToUnit(float x) { return x / UnitToCenti(1.0f); }
-BE_FORCE_INLINE constexpr float BE_API      MeterToUnit(float x) { return CentiToUnit(x * 100.0f); }
+BE_FORCE_INLINE constexpr float BE_API  UnitToCenti(float x) { return x * 1.0f; }
+BE_FORCE_INLINE constexpr float BE_API  UnitToMeter(float x) { return UnitToCenti(x) * 0.01f; }
+BE_FORCE_INLINE constexpr float BE_API  CentiToUnit(float x) { return x / UnitToCenti(1.0f); }
+BE_FORCE_INLINE constexpr float BE_API  MeterToUnit(float x) { return CentiToUnit(x * 100.0f); }
 
 void BE_CDECL Log(int logLevel, const wchar_t *msg, ...);
 void BE_CDECL Error(int errLevel, const wchar_t *msg, ...);

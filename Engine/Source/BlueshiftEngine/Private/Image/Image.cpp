@@ -126,7 +126,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 // Convert range [0, pi] to [0.0, 1.0]
                 float srcT = Math::Fract(theta * Math::InvPi);
 
-                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Repeat);
+                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::RepeatMode, Image::SampleWrapMode::RepeatMode);
                 info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
             }
         }
@@ -235,14 +235,14 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
 
-    float x = st[0] * width;
+    float x = WrapCoord(st[0] * width, (float)(width - 1), wrapModeS);
     int iX0 = (int)x;
-    int iX1 = Min(iX0 + 1, width - 1);
+    int iX1 = WrapCoord(iX0 + 1, width - 1, wrapModeS);
     float fracX = x - (float)iX0;
 
-    float y = st[1] * height;
+    float y = WrapCoord(st[1] * height, (float)(height - 1), wrapModeT);
     int iY0 = (int)y;
-    int iY1 = Min(iY0 + 1, height - 1);
+    int iY1 = WrapCoord(iY0 + 1, height - 1, wrapModeT);
     float fracY = y - (float)iY0;
 
     const byte *src = GetPixels(level);
