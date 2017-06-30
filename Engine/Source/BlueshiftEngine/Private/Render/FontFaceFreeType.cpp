@@ -61,7 +61,7 @@ void FontFaceFreeType::Init() {
     atlasArray.Resize(GLYPH_CACHE_TEXTURE_COUNT);
 
     Image image;
-    image.Create2D(GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE, 1, GLYPH_CACHE_TEXTURE_FORMAT, nullptr, Image::SRGBFlag);
+    image.Create2D(GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE, 1, GLYPH_CACHE_TEXTURE_FORMAT, nullptr, 0);
     memset(image.GetPixels(), 0, image.GetSize());
 
     for (int i = 0; i < GLYPH_CACHE_TEXTURE_COUNT; i++) {

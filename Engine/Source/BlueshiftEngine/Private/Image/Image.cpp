@@ -126,7 +126,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 // Convert range [0, pi] to [0.0, 1.0]
                 float srcT = Math::Fract(theta * Math::InvPi);
 
-                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::RepeatMode, Image::SampleWrapMode::RepeatMode);
+                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::RepeatMode, Image::SampleWrapMode::ClampMode);
                 info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
             }
         }

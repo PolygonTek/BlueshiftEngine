@@ -562,6 +562,11 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->depth = Max((int)header->depth, 1);
     this->numMipmaps = Max((int)header->mipMapCount, 1);
     this->numSlices = isCube ? 6 : 1;
+    this->flags = isCube ? CubeMapFlag : 0;
+
+    if (IsFloatFormat() || format == DXN1 || format == DXN2) {
+        this->flags |= LinearSpaceFlag;
+    }
 
     int bufSize = GetSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(bufSize);
@@ -614,7 +619,7 @@ bool Image::WriteDDS(const char *filename) const {
         header.depth = depth;
     }
 
-    if (numSlices == 6) {
+    if ((flags & CubeMapFlag) && numSlices == 6) {
         header.ddsCaps.caps1 |= DDSCAPS_COMPLEX;
         header.ddsCaps.caps2 |= DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES;
     }

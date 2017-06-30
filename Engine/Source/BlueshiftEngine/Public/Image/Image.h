@@ -127,8 +127,7 @@ public:
         ClampFlag       = BIT(0),
         CubeMapFlag     = BIT(1),
         NormalMapFlag   = BIT(5),
-        SRGBFlag        = BIT(6),
-        LinearFlag      = BIT(7)
+        LinearSpaceFlag = BIT(7)
     };
 
     /// Cube map face
@@ -184,8 +183,7 @@ public:
     int                 NumComponents() const { return Image::NumComponents(format); }
     void                GetBits(int *redBits, int *greenBits, int *blueBits, int *alphaBits) const { Image::GetBits(format, redBits, greenBits, blueBits, alphaBits); }
     bool                HasAlpha() const { return Image::HasAlpha(format); }
-    bool                IsSRGB() const { return (flags & SRGBFlag) ? true : false; }
-    bool                IsLinear() const { return (flags & LinearFlag) ? true : false; }
+    bool                IsLinearSpace() const { return (flags & LinearSpaceFlag) ? true : false; }
     bool                IsPacked() const { return Image::IsPacked(format); }
     bool                IsCompressed() const { return Image::IsCompressed(format); }
     bool                IsFloatFormat() const { return Image::IsFloatFormat(format); }

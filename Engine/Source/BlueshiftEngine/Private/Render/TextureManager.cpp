@@ -75,28 +75,28 @@ void TextureManager::Init() {
     blackCubeMapTexture->CreateBlackCubeMapTexture(8, Texture::Permanence);
 
     // _white
-    image.Create2D(8, 8, 1, Image::L_8, nullptr, Image::SRGBFlag);
+    image.Create2D(8, 8, 1, Image::L_8, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0xFF, 8 * 8);
     whiteTexture = AllocTexture("_whiteTexture");
     whiteTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
 
     // _black
-    image.Create2D(8, 8, 1, Image::L_8, nullptr, Image::SRGBFlag);
+    image.Create2D(8, 8, 1, Image::L_8, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0, 8 * 8);
     blackTexture = AllocTexture("_blackTexture");
     blackTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
 
     // _grey
-    image.Create2D(8, 8, 1, Image::L_8, nullptr, Image::SRGBFlag);
+    image.Create2D(8, 8, 1, Image::L_8, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0x80, 8 * 8);
     greyTexture = AllocTexture("_greyTexture");
     greyTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
 
     // _linear
-    /*image.Create2D(256, 1, 1, Image::L_8, nullptr, Image::LinearFlag);
+    /*image.Create2D(256, 1, 1, Image::L_8, nullptr, Image::LinearSpaceFlag);
     data = image.GetPixels();
     for (int i = 0; i < 256; i++) {
         data[i] = i;
@@ -473,7 +473,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
             image1.ConvertFormatSelf(Image::RGBA_8_8_8_8);
         }
 
-        image2.Create2D(image1.GetWidth(), image1.GetHeight(), 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
+        image2.Create2D(image1.GetWidth(), image1.GetHeight(), 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
         byte *data2Ptr = image2.GetPixels();
         byte *data1Ptr = image1.GetPixels();
         byte *endData1 = data1Ptr + image1.GetWidth() * image1.GetHeight() * 4;

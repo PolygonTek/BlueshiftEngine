@@ -332,7 +332,7 @@ void RenderContext::InitHdrMapRT() {
    
     Image::Format screenImageFormat = GetScreenImageFormat();
     Image hdrBloomImage;
-    hdrBloomImage.Create2D(renderWidth >> 2, renderHeight >> 2, 1, screenImageFormat, nullptr, Image::LinearFlag);
+    hdrBloomImage.Create2D(renderWidth >> 2, renderHeight >> 2, 1, screenImageFormat, nullptr, Image::LinearSpaceFlag);
 
     for (int i = 0; i < COUNT_OF(hdrBloomRT); i++) {
         hdrBloomTexture[i] = textureManager.AllocTexture(va("_%i_hdrBloom%i", (int)contextHandle, i));
@@ -911,7 +911,7 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
         }
 
         weightTextures[face] = new Texture;
-        weightTextures[face]->Create(RHI::Texture2D, Image(envmapSize * 4, envmapSize * 4, 1, 1, 1, Image::L_32F, (byte *)weightData, Image::LinearFlag),
+        weightTextures[face]->Create(RHI::Texture2D, Image(envmapSize * 4, envmapSize * 4, 1, 1, 1, Image::L_32F, (byte *)weightData, Image::LinearSpaceFlag),
             Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
     }
 
@@ -921,7 +921,7 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     // SH projection
     //-------------------------------------------------------------------------------
     Image image;
-    image.Create2D(4, 4, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearFlag);
+    image.Create2D(4, 4, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
     Texture *shCoefficientTexture = new Texture;
     shCoefficientTexture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
     RenderTarget *shCoefficientRT = RenderTarget::Create(shCoefficientTexture, nullptr, 0);
@@ -985,7 +985,7 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
         irradianceCubeRT->End();
 
         Image faceImage;
-        faceImage.Create2D(irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight(), 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
+        faceImage.Create2D(irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight(), 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
         
         irradianceCubeRT->ColorTexture()->Bind();
         irradianceCubeRT->ColorTexture()->GetTexelsCubemap((RHI::CubeMapFace)i, Image::RGB_8_8_8, faceImage.GetPixels());

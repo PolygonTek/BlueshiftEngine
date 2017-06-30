@@ -75,7 +75,7 @@ void Texture::CreateFromBuffer(Image::Format format, RHI::Handle bufferHandle) {
 // Indirection Cube map : cubic coord -> VCM coord
 void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags) {
     Image cubeImage;
-    cubeImage.CreateCube(size, 1, Image::LA_16_16, nullptr, Image::LinearFlag);
+    cubeImage.CreateCube(size, 1, Image::LA_16_16, nullptr, Image::LinearSpaceFlag);
 
     word *dstPtr = (word *)cubeImage.GetPixels();
 
@@ -121,7 +121,7 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, in
 
 void Texture::CreateDefaultTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::RGB_8_8_8, nullptr, Image::SRGBFlag);
+    image.Create2D(size, size, 1, Image::RGB_8_8_8, nullptr, 0);
     byte *dst = image.GetPixels();
 
     for (int y = 0; y < size; y++) {
@@ -151,7 +151,7 @@ void Texture::CreateDefaultTexture(int size, int flags) {
 
 void Texture::CreateZeroClampTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::LA_8_8, nullptr, Image::LinearFlag);
+    image.Create2D(size, size, 1, Image::LA_8_8, nullptr, Image::LinearSpaceFlag);
     byte *dst = image.GetPixels();
 
     for (int y = 0; y < size; y++) {
@@ -175,7 +175,7 @@ void Texture::CreateZeroClampTexture(int size, int flags) {
 
 void Texture::CreateFlatNormalTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
+    image.Create2D(size, size, 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
     byte *dst = image.GetPixels();
         
     for (int y = 0; y < size; y++) {
@@ -199,7 +199,7 @@ void Texture::CreateFlatNormalTexture(int size, int flags) {
 
 void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::L_8, nullptr, Image::SRGBFlag);
+    image.CreateCube(size, 1, Image::L_8, nullptr, 0);
     byte *dst = image.GetPixels();
 
     int faceSize = image.GetSliceSize();
@@ -227,7 +227,7 @@ void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
 
 void Texture::CreateBlackCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::L_8, nullptr, Image::SRGBFlag);
+    image.CreateCube(size, 1, Image::L_8, nullptr, 0);
     byte *dst = image.GetPixels();
 
     int facesize = image.GetSliceSize();
@@ -250,7 +250,7 @@ void Texture::CreateBlackCubeMapTexture(int size, int flags) {
 
 void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
+    image.CreateCube(size, 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
     byte *dst = image.GetPixels();
 
     int sliceSize = image.GetSliceSize();
@@ -311,7 +311,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
     faceNormal[5][2] = -128;
 
     Image image;
-    image.CreateCube(size, 1, Image::RGB_SNORM_8_8_8, nullptr, Image::LinearFlag);
+    image.CreateCube(size, 1, Image::RGB_SNORM_8_8_8, nullptr, Image::LinearSpaceFlag);
     char *dst = (char *)image.GetPixels();
 
     int facesize = image.GetSliceSize();
@@ -341,7 +341,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
 
 void Texture::CreateAttenuationTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::LA_8_8, nullptr, Image::LinearFlag);
+    image.Create2D(size, size, 1, Image::LA_8_8, nullptr, Image::LinearSpaceFlag);
     byte *dst = image.GetPixels();
 
     float centerx = size / 2.0;
@@ -376,7 +376,7 @@ void Texture::CreateAttenuationTexture(int size, int flags) {
 
 void Texture::CreateFogTexture(int flags) {
     Image image;
-    image.Create2D(256, 1, 1, Image::A_8, nullptr, Image::LinearFlag);
+    image.Create2D(256, 1, 1, Image::A_8, nullptr, Image::LinearSpaceFlag);
     byte *dst = image.GetPixels();
 
     for (int s = 0; s < 256; s++) {
@@ -397,7 +397,7 @@ void Texture::CreateFogTexture(int flags) {
 
 void Texture::CreateFogEnterTexture(int flags) {
     Image image;
-    image.Create2D(256, 1, 1, Image::A_8, nullptr, Image::LinearFlag);
+    image.Create2D(256, 1, 1, Image::A_8, nullptr, Image::LinearSpaceFlag);
     byte *dst = image.GetPixels();
 
     for (int s = 0; s < 256; s++) {
@@ -418,7 +418,7 @@ void Texture::CreateFogEnterTexture(int flags) {
 
 void Texture::CreateRandomRotMatTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::RGBA_8_8_8_8, nullptr, Image::LinearFlag);
+    image.Create2D(size, size, 1, Image::RGBA_8_8_8_8, nullptr, Image::LinearSpaceFlag);
     byte *dst = image.GetPixels();
     float s, c;
 
@@ -450,7 +450,7 @@ void Texture::CreateRandomRotMatTexture(int size, int flags) {
 
 void Texture::CreateRandomDir4x4Texture(int flags) {
     Image image;
-    image.Create2D(4, 4, 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
+    image.Create2D(4, 4, 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
     byte *dst = image.GetPixels();
     Vec3 dir;
 

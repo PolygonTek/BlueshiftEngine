@@ -167,7 +167,7 @@ Image &Image::SwapRedAlphaRGBA8888() {
 
 Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
     Image image;
-    image.Create2D(width, height, 1, Image::RGBA_8_8_8_8, nullptr, LinearFlag);
+    image.Create2D(width, height, 1, Image::RGBA_8_8_8_8, nullptr, LinearSpaceFlag);
 
     byte *dst_ptr = image.pic;
 
