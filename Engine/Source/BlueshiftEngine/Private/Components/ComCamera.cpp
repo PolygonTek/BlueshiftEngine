@@ -41,7 +41,7 @@ BEGIN_PROPERTIES(ComCamera)
     PROPERTY_RANGED_FLOAT("w", "W", "normalized screen width", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("h", "H", "normalized screen height", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
     PROPERTY_INT("layerMask", "Layer Mask", "", Str(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), PropertySpec::ReadWrite),
-    PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color", "1", PropertySpec::ReadWrite),
+    PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color;Sky Box", "1", PropertySpec::ReadWrite),
     PROPERTY_COLOR3("clearColor", "Clear Color", "", "0 0 0", PropertySpec::ReadWrite),
     PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", "0", PropertySpec::ReadWrite),
     PROPERTY_INT("order", "Order", "", "0", PropertySpec::ReadWrite),

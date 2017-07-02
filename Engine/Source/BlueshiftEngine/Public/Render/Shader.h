@@ -273,6 +273,7 @@ public:
         AmblitShader,
         ObjectMotionBlurShader,
         LightingGenericShader,
+        SkyboxCubemapShader,
         FogLightShader,
         BlendLightShader,
         //SHProjectionShader,
@@ -344,6 +345,7 @@ public:
     static Shader *         amblitNoBumpShader;
     static Shader *         objectMotionBlurShader;
     static Shader *         lightingDefaultShader;
+    static Shader *         skyboxCubemapShader;
     static Shader *         fogLightShader;
     static Shader *         blendLightShader;
     static Shader *         shProjectionShader;

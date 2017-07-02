@@ -106,6 +106,7 @@ private:
     void                        AddSkinnedMeshes(view_t *view);
     void                        AddParticleMeshes(view_t *view);
     void                        AddTextMeshes(view_t *view);
+    void                        AddSkyBoxMeshes(view_t *view);
     void                        AddStaticMeshesForLights(view_t *view);
     void                        AddSkinnedMeshesForLights(view_t *view);
     void                        OptimizeLights(view_t *view);

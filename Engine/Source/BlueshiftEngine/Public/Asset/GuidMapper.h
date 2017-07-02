@@ -61,6 +61,7 @@ public:
     static Guid             currentRenderTextureGuid;
 
     static Guid             genericLightingShaderGuid;
+    static Guid             skyboxCubemapShaderGuid;
 
     static Guid             defaultMaterialGuid;
     static Guid             whiteMaterialGuid;

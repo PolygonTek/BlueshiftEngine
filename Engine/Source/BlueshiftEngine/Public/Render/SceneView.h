@@ -41,7 +41,8 @@ public:
     enum ClearMethod {
         NoClear,
         DepthOnlyClear,
-        ColorClear
+        ColorClear,
+        SkyBoxClear
     };
 
     struct Parms {

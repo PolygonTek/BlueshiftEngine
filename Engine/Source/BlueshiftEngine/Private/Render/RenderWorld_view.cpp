@@ -302,7 +302,7 @@ void RenderWorld::AddParticleMeshes(view_t *view) {
                 break;
             }
 
-            // Copy this SubMesh to the temporary frame data for use in back end
+            // Copy this SubMesh to the temporary frame data for use in backend
             SubMesh *subMesh        = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             subMesh->alloced        = false;
             subMesh->type           = Mesh::DynamicMesh;
@@ -364,6 +364,15 @@ void RenderWorld::AddTextMeshes(view_t *view) {
             AddDrawSurf(view, viewEntity, guiMeshSurf->material, subMesh, flags);
         }
     }
+}
+
+void RenderWorld::AddSkyBoxMeshes(view_t *view) {
+    if (view->def->parms.clearMethod != SceneView::SkyBoxClear) {
+        return;
+    }
+
+    //MeshSurf *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
+    //AddDrawSurf(view, skyBoxViewEntity, skyBoxMaterial, meshSurf->subMesh, DrawSurf::AmbientVisible);
 }
 
 // static mesh 들을 viewLight 의 litSurfs/shadowCasterSurfs 리스트에 담는다.
@@ -654,6 +663,8 @@ void RenderWorld::RenderView(view_t *view) {
     AddParticleMeshes(view);
 
     AddTextMeshes(view);
+
+    AddSkyBoxMeshes(view);
 
     // 등록된 모든 ambient visible 한 drawSurfs 들을 sorting
     SortDrawSurfs(view);
