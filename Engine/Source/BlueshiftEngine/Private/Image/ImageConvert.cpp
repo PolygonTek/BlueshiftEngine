@@ -195,6 +195,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         for (int sliceIndex = 0; sliceIndex < srcImage->numSlices; sliceIndex++) {
             for (int y = 0; y < h * d; y++) {
                 unpackFunc(srcPtr, unpackedBuffer, w);
+                // TODO: convert sRGB to linear color space or vice versa
                 packFunc(unpackedBuffer, dstPtr, w);
 
                 srcPtr += srcPitch;

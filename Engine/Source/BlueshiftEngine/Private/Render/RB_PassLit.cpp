@@ -187,7 +187,7 @@ static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool s
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
-    for (drawSurfNode_t *litSurfNode = viewLight->litSurfs; litSurfNode; litSurfNode = litSurfNode->next) {	
+    for (drawSurfNode_t *litSurfNode = viewLight->litSurfs; litSurfNode; litSurfNode = litSurfNode->next) {
         const DrawSurf *surf = litSurfNode->drawSurf;
 
         if (!(surf->flags & DrawSurf::AmbientVisible)) {

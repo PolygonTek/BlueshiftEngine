@@ -278,6 +278,11 @@ Image &Image::GenerateMipmaps() {
         return *this;
     }
 
+    if (IsPacked()) {
+        BE_WARNLOG(L"Couldn't generate mipmaps for a image has packed format.");
+        return *this;
+    }
+
     int numComponents = NumComponents();
 
     for (int mipLevel = 1; mipLevel < numMipmaps; mipLevel++) {

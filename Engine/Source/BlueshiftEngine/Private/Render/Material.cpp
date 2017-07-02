@@ -226,7 +226,7 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
             ParseDepthFunc(lexer, &depthFunc);
         } else if (!token.Icmp("blendFunc")) {
             if (ParseBlendFunc(lexer, &blendSrc, &blendDst)) {
-                depthWrite = 0;	// depth write off when blendFunc is valid
+                depthWrite = 0; // depth write off when blendFunc is valid
             }
         } else if (!token.Icmp("colorMask")) {
             if (lexer.ReadToken(&token, false)) {
@@ -478,13 +478,13 @@ bool Material::ParseAlphaFunc(Lexer &lexer, int *alphaFunc, Pass *pass) const {
     Str	token;
 
     if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("GT")) {
+        if (!token.Icmp("Greater") || !token.Icmp("GT")) {
             *alphaFunc = RHI::AF_Greater;
-        } else if (!token.Icmp("GE")) {
+        } else if (!token.Icmp("GreaterEqual") || !token.Icmp("GE")) {
             *alphaFunc = RHI::AF_GEqual;
-        } else if (!token.Icmp("LT")) {
+        } else if (!token.Icmp("Less") || !token.Icmp("LT")) {
             *alphaFunc = RHI::AF_Less;
-        } else if (!token.Icmp("LE")) {
+        } else if (!token.Icmp("LessEqual") || !token.Icmp("LE")) {
             *alphaFunc = RHI::AF_LEqual;
         } else {
             BE_WARNLOG(L"unknown alphaFunc name '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
@@ -503,15 +503,17 @@ bool Material::ParseDepthFunc(Lexer &lexer, int *depthFunc) const {
     Str	token;
 
     if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("LE")) {
+        if (!token.Icmp("Always")) {
+            *depthFunc = RHI::DF_Always;
+        } else if (!token.Icmp("LessEqual") || !token.Icmp("LE")) {
             *depthFunc = RHI::DF_LEqual;
-        } else if (!token.Icmp("EQ")) {
+        } else if (!token.Icmp("Equal") || !token.Icmp("EQ")) {
             *depthFunc = RHI::DF_Equal;
-        } else if (!token.Icmp("LT")) {
+        } else if (!token.Icmp("Less") || !token.Icmp("LT")) {
             *depthFunc = RHI::DF_Less;
-        } else if (!token.Icmp("GE")) {
+        } else if (!token.Icmp("GreaterEqual") || !token.Icmp("GE")) {
             *depthFunc = RHI::DF_GEqual;
-        } else if (!token.Icmp("GT")) {
+        } else if (!token.Icmp("Greater") || !token.Icmp("GT")) {
             *depthFunc = RHI::DF_Greater;
         } else {
             BE_WARNLOG(L"unknown depthFunc '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());

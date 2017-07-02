@@ -31,12 +31,6 @@ public:
     const Material *        material;           ///< material of this surface
     const float *           materialRegisters;
     SubMesh *               subMesh;
-    //GuiSubMesh *            guiSubMesh;
-    //int                     numVerts;
-    //int                     numIndexes;
-    //BufferCache *           vertexCache;
-    //BufferCache *           indexCache;
-    //SkinningJointCache *    skinningJointCache;
 };
 
 // sortKey:
