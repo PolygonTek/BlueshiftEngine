@@ -1486,8 +1486,19 @@ static void RGBA32FToRGB11F11F10F(const byte *src, byte *dst, int numPixels) {
 
 // 컬러 채널 표기(RGBALX)는 바이트 주소체계와 선형이다 (D3D식 표기와 반대)
 static const ImageFormatInfo imageFormatInfo[] = {
-    // name                     size, numComponents, redBits, greenBits, blueBits, alphaBits, compressed, depthFormat, depthStencilFormat, floatFormat
-    // plain format -------------------------------------------------------------------------------
+    // +----------------------------------------------------------------------------------- name
+    // |                        +---------------------------------------------------------- size (bytes per pixel or bytes per block)
+    // |                        |   +------------------------------------------------------ number of components
+    // |                        |   |   +-------------------------------------------------- r bits
+    // |                        |   |   |   +---------------------------------------------- g bits
+    // |                        |   |   |   |   +------------------------------------------ b bits
+    // |                        |   |   |   |   |   +-------------------------------------- a bits
+    // |                        |   |   |   |   |   |   +---------------------------------- type
+    // |                        |   |   |   |   |   |   |  +------------------------------- unpackRGBA8888
+    // |                        |   |   |   |   |   |   |  |        +---------------------- packRGBA8888
+    // |                        |   |   |   |   |   |   |  |        |        +------------- unpackRGBA32F
+    // |                        |   |   |   |   |   |   |  |        |        |        +---- packRGBA32F
+    // |                        |   |   |   |   |   |   |  |        |        |        |
     { "NULL",                   0,  0,  0,  0,  0,  0,  0, nullptr, nullptr, nullptr, nullptr },
     { "L_8",                    1,  1,  0,  0,  0,  0,  0, L8ToRGBA8888, RGBA8888ToL8, L8ToRGBA32F, RGBA32FToL8 },
     { "A_8",                    1,  1,  0,  0,  0,  8,  0, A8ToRGBA8888, RGBA8888ToA8, A8ToRGBA32F, RGBA32FToA8 },
