@@ -368,13 +368,16 @@ static void TextToLineList(const char *text, Array<Str> &lines) {
     const char separator = '\n';
 
     Str source(text);
+    int ofs = 0;
 
-    lines.Clear();
-    lines.Append(source);
+    for (int lineIndex = 0; ofs < source.Length(); lineIndex++) {
+        int start = ofs;
+        int last = source.Find(separator, ofs);
+        int n = last >= 0 ? last - start : source.Length() - start;
 
-    for (int index = 0, ofs = lines[index].Find(separator); ofs != -1; index++, ofs = lines[index].Find(separator)) {
-        lines.Append(lines[index].c_str() + ofs + 1);
-        lines[index].Truncate(ofs);
+        lines.Append(source.Mid(start, n));
+
+        ofs = start + n + 1;
     }
 }
 
