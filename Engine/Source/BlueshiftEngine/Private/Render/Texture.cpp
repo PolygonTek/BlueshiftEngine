@@ -652,7 +652,17 @@ bool Texture::Load(const char *filename, int flags) {
             return false;
         }
 
-        Create(RHI::Texture2D, image, flags);
+        RHI::TextureType textureType;
+
+        if (image.GetDepth() > 1) {
+            textureType = RHI::Texture3D;
+        } else if (image.IsCubeMap()) {
+            textureType = RHI::TextureCubeMap;
+        } else {
+            textureType = RHI::Texture2D;
+        }
+
+        Create(textureType, image, flags);
     }
 
     return true;
