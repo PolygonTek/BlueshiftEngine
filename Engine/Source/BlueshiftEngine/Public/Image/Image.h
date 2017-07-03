@@ -162,48 +162,108 @@ public:
 
     /// Default constructor
     Image();
+
     /// Constructs image with the given data.
     /// If data is not nullptr, the image data is initialized with given data
     Image(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, byte *data, int flags);
+    
     /// Copy constructor
     Image(const Image &other);
+    
     /// Assignment operator
     Image &operator=(const Image &other);
+    
     /// Move constructor
     Image(Image &&other);
+    
     /// Move operator
     Image &operator=(Image &&other);
+    
     /// Destructor
     ~Image();
 
+                        /// Returns true if image has no pixel data
     bool                IsEmpty() const { return pic == nullptr; }
+
+                        /// Returns image format name.
     const char *        FormatName() const { return Image::FormatName(format); }
+
+                        /// Returns bytes per pixel
     int                 BytesPerPixel() const { return Image::BytesPerPixel(format); }
+
+                        /// Returns bytes per block.
     int                 BytesPerBlock() const { return Image::BytesPerBlock(format); }
+
+                        /// Returns number of components.
     int                 NumComponents() const { return Image::NumComponents(format); }
+
+                        /// Returns bits per pixel.
     void                GetBits(int *redBits, int *greenBits, int *blueBits, int *alphaBits) const { Image::GetBits(format, redBits, greenBits, blueBits, alphaBits); }
+
+                        /// Returns true if image format has alpha channel.
     bool                HasAlpha() const { return Image::HasAlpha(format); }
+
+                        /// Returns true if image is in the linear space.
     bool                IsLinearSpace() const { return (flags & LinearSpaceFlag) ? true : false; }
+
+                        /// Returns true if image format is packed.
     bool                IsPacked() const { return Image::IsPacked(format); }
+
+                        /// Returns true if image format is compressed.
     bool                IsCompressed() const { return Image::IsCompressed(format); }
+
+                        /// Returns true if image format is float.
     bool                IsFloatFormat() const { return Image::IsFloatFormat(format); }
+
+                        /// Returns true if image format is half float.
     bool                IsHalfFormat() const { return Image::IsHalfFormat(format); }
+
+                        /// Returns true if image format is depth.
     bool                IsDepthFormat() const { return Image::IsDepthFormat(format); }
+
+                        /// Returns true if image format is depth & stencil.
     bool                IsDepthStencilFormat() const { return Image::IsDepthStencilFormat(format); }
+
+                        /// Returns true if image is cube map.
     bool                IsCubeMap() const { return !!(flags & CubeMapFlag) && numSlices == 6; }
 
+                        /// Returns image width.
     int                 GetWidth() const { return width; }
+
+                        /// Returns image width with the given mip level.
     int                 GetWidth(int mipMapLevel) const;
+
+                        /// Returns image height.
     int                 GetHeight() const { return height; }
+
+                        /// Returns image height with the given mip level.
     int                 GetHeight(int mipMapLevel) const;
+
+                        /// Returns image depth.
     int                 GetDepth() const { return depth; }
+
+                        /// Returns image depth with the given mip level.
     int                 GetDepth(int mipMapLevel) const;
+
+                        /// Returns number of mip levels.
     int                 NumMipmaps() const { return numMipmaps; }
+
+                        /// Returns number of slices.
     int                 NumSlices() const { return numSlices; }
+
+                        /// Returns image flags.
     int                 GetFlags() const { return flags; }
+
+                        /// Returns image format.
     Image::Format       GetFormat() const { return format; }
+
+                        /// Returns pixel data pointer.
     byte *              GetPixels() const { return pic; }
+
+                        /// Returns pixel data pointer with the given mip level.
     byte *              GetPixels(int level) const;
+
+                        /// Returns pixel data pointer with the given mip level and slice index.
     byte *              GetPixels(int level, int sliceIndex) const;
 
                         /// Returns Color4 sample with the given 2D coordinates
@@ -214,8 +274,10 @@ public:
 
                         /// Returns number of pixels with given mipmap levels
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
+
                         /// Returns number of bytes with given mipmap levels
     int                 GetSize(int firstLevel = 0, int numLevels = 1) const;
+
                         /// Returns number of bytes of a slice with given mipmap levels
                         /// A slice means single cubemap face or single texture of an array texture 
     int                 GetSliceSize(int firstLevel = 0, int numLevels = 1) const;
@@ -224,6 +286,7 @@ public:
     void                Clear();
 
     Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, byte *data, int flags);
+
                         /// Creates an image.
                         /// If data is nullptr, just allocate the memory.
     Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags);
@@ -250,16 +313,19 @@ public:
 
                         /// Converts this image to the given targetimage.
     bool                ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regenerateMipmaps = false, CompressionQuality compressionQuality = Normal) const;
+
                         /// Converts this image in-place.
     bool                ConvertFormatSelf(Image::Format dstFormat, bool regenerateMipmaps = false, CompressionQuality compressionQuality = Normal);
 
                         /// Resizes this image to the given target image.
     bool                Resize(int width, int height, Image::ResampleFilter resampleFilter, Image &dstImage) const;
+
                         /// Resizes this image in-places.
     bool                ResizeSelf(int width, int height, Image::ResampleFilter resampleFilter);
 
                         /// Flips vertically
     Image &             FlipX();
+
                         /// Flips horizontally
     Image &             FlipY();
 
@@ -275,9 +341,12 @@ public:
                         /// Adds normal map to another normal map
     Image &             AddNormalMapRGBA8888(const Image &normalMap);
 
+                        /// Loads image from the file.
     bool                Load(const char *filename);
 
+                        /// Writes image to the file.
     bool                Write(const char *filename) const;
+
     bool                WriteDDS(const char *filename) const;
     bool                WritePVR(const char *filename) const;
     bool                WriteBMP(const char *filename) const;
@@ -310,7 +379,10 @@ public:
                         /// Converts a linear value in the range [0, 1] to an sRGB value in the range [0, 1].
     static float        LinearToGamma(float value);
 
+                        /// Converts 2D face coordinates to cubemap coordinates.
     static Vec3         FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t);
+
+                        /// Converts cubemap coordinates to 2D face coordinates.
     static CubeMapFace  CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t);
 
     static Image *      NewImageFromFile(const char *filename);
