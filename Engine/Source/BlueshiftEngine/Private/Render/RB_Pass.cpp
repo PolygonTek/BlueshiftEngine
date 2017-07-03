@@ -31,7 +31,8 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (surf->material->GetCoverage() == Material::EmptyCoverage) {
+            if (surf->material->GetCoverage() == Material::EmptyCoverage ||
+                surf->material->GetCoverage() & Material::BackgroundCoverage) {
                 continue;
             }
 
@@ -180,7 +181,8 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (!(surf->material->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage))) {
+            if (!(surf->material->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage)) ||
+                (surf->material->GetCoverage() & Material::BackgroundCoverage)) {
                 continue;
             }
 
@@ -271,7 +273,12 @@ void RB_AmbientPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 if (prevMaterial) {
                     backEnd.rbsurf.Flush();
                 }
-                backEnd.rbsurf.Begin(RBSurf::AmbientFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
+
+                int flushType = RBSurf::AmbientFlush;
+                if (surf->material->GetSort() == Material::SkySort) {
+                    flushType = RBSurf::BackgroundFlush;
+                }
+                backEnd.rbsurf.Begin(flushType, surf->material, surf->materialRegisters, surf->space, nullptr);
 
                 prevMaterial = surf->material;
             }
@@ -394,7 +401,8 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 continue;
             }
 
-            if (surf->material->GetCoverage() == Material::EmptyCoverage || surf->material->GetCoverage() == Material::TranslucentCoverage) {
+            if (surf->material->GetCoverage() == Material::EmptyCoverage || 
+                surf->material->GetCoverage() == Material::TranslucentCoverage) {
                 continue;
             }
 

@@ -32,6 +32,7 @@ class PhysicsWorld;
 class Prefab;
 class TagLayerSettings;
 class PhysicsSettings;
+class MapRenderSettings;
 
 class GameWorld : public Object {
     friend class GameEdit;
@@ -98,7 +99,6 @@ public:
 
     bool                        SpawnEntityFromJson(Json::Value &entityValue, Entity **ent = nullptr);
     void                        SpawnEntitiesFromJson(Json::Value &entitiesValue);
-    void                        SpawnEntitiesFromString(const char *entityString);
 
     static void                 SerializeEntityHierarchy(const Hierarchy<Entity> &entityHierarchy, Json::Value &entitiesValue);
 
@@ -127,6 +127,7 @@ public:
 
     const char *                MapName() const { return mapName.c_str(); }
 
+    void                        NewMap();
     bool                        LoadMap(const char *filename);
     void                        SaveMap(const char *filename);
 
@@ -153,6 +154,7 @@ private:
 
     Str                         mapName;
 
+    MapRenderSettings *         mapRenderSettings;
     TagLayerSettings *          tagLayerSettings; 
     PhysicsSettings *           physicsSettings;
         

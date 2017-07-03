@@ -51,7 +51,9 @@ void RBSurf::Begin(int flushType, const Material *material, const float *materia
 }
 
 void RBSurf::DrawSubMesh(SubMesh *subMesh) {
-    if (subMesh->GetType() == Mesh::StaticMesh || subMesh->GetType() == Mesh::SkinnedMesh) {
+    if (subMesh->GetType() == Mesh::ReferenceMesh || 
+        subMesh->GetType() == Mesh::StaticMesh || 
+        subMesh->GetType() == Mesh::SkinnedMesh) {
         DrawStaticSubMesh(subMesh);
     } else {
         DrawDynamicSubMesh(subMesh);
@@ -126,7 +128,7 @@ void RBSurf::Flush() {
 
     bool polygonOffset = false;
 
-    if (flushType != ShadowFlush && material->flags & Material::PolygonOffset) {
+    if (flushType != ShadowFlush && (material->flags & Material::PolygonOffset)) {
         rhi.SetDepthBias(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
         polygonOffset = true;
     }
@@ -134,6 +136,9 @@ void RBSurf::Flush() {
     switch (flushType) {
     case SelectionFlush:
         Flush_SelectionPass();
+        break;
+    case BackgroundFlush:
+        Flush_BackgroundPass();
         break;
     case DepthFlush:
     case OccluderFlush:
@@ -236,6 +241,24 @@ void RBSurf::Flush_SelectionPass() {
     if (backEnd.view->def->parms.flags & SceneView::WireFrameMode) {
         rhi.SetLineWidth(1);
     }
+}
+
+void RBSurf::Flush_BackgroundPass() {
+    const Material::Pass *mtrlPass = material->GetPass();
+
+    rhi.SetCullFace(material->cullType);
+
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+
+    SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzSt);
+
+    if (mtrlPass->stateBits & RHI::MaskAF) {
+        rhi.SetAlphaRef(mtrlPass->alphaRef);
+    }
+
+    rhi.SetStateBits(mtrlPass->stateBits);
+
+    RenderGeneric(mtrlPass);
 }
 
 void RBSurf::Flush_DepthPass() {

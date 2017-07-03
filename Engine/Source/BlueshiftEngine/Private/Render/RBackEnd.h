@@ -31,6 +31,7 @@ public:
     enum FlushType {
         BadFlush,
         SelectionFlush,
+        BackgroundFlush,
         DepthFlush,
         ShadowFlush,
         OccluderFlush,
@@ -58,6 +59,7 @@ private:
     void                DrawStaticSubMesh(SubMesh *subMesh);
 
     void                Flush_SelectionPass();
+    void                Flush_BackgroundPass();
     void                Flush_DepthPass();
     void                Flush_AmbientPass();
     void                Flush_ShadowDepthPass();

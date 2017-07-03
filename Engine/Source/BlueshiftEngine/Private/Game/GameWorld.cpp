@@ -26,6 +26,7 @@
 #include "Components/ComRigidBody.h"
 #include "Components/ComSensor.h"
 #include "Game/Entity.h"
+#include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 #include "Game/GameSettings/TagLayerSettings.h"
 #include "Game/GameSettings/PhysicsSettings.h"
@@ -52,6 +53,10 @@ GameWorld::GameWorld() {
     tagLayerSettings = nullptr;
     physicsSettings = nullptr;
 
+    // Create render settings
+    mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
+    mapRenderSettings->gameWorld = this;
+
     // Create render world
     renderWorld = renderSystem.AllocRenderWorld();
 
@@ -74,6 +79,10 @@ GameWorld::~GameWorld() {
 
     if (physicsSettings) {
         PhysicsSettings::DestroyInstanceImmediate(physicsSettings);
+    }
+
+    if (mapRenderSettings) {
+        MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
     }
 
     // Free render world
@@ -417,18 +426,6 @@ void GameWorld::SpawnEntitiesFromJson(Json::Value &entitiesValue) {
     }
 }
 
-void GameWorld::SpawnEntitiesFromString(const char *jsonText) {
-    Json::Value entitiesValue;
-    Json::Reader jsonReader;
-
-    if (!jsonReader.parse(jsonText, entitiesValue)) {
-        BE_WARNLOG(L"Failed to parse JSON text\n");
-        return;
-    }
-
-    SpawnEntitiesFromJson(entitiesValue);    
-}
-
 void GameWorld::BeginMapLoading() {
     isMapLoading = true;
 
@@ -521,7 +518,7 @@ void GameWorld::LoadTagLayerSettings(const char *filename) {
     }
 
     if (failedToParse) {
-        jsonNode["classname"] = "TagLayerSettings";
+        jsonNode["classname"] = TagLayerSettings::metaObject.ClassName();
 
         // default tags
         jsonNode["tag"][0] = "Untagged";
@@ -565,7 +562,7 @@ void GameWorld::LoadPhysicsSettings(const char *filename) {
     }
 
     if (failedToParse) {
-        jsonNode["classname"] = "PhysicsSettings";
+        jsonNode["classname"] = PhysicsSettings::metaObject.ClassName();
     }
 
     const char *classname = jsonNode["classname"].asCString();
@@ -595,6 +592,15 @@ void GameWorld::SaveObject(const char *filename, const Object *object) const {
     fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }
 
+void GameWorld::NewMap() {
+    Json::Value defaultMapRenderSettingsValue;
+    defaultMapRenderSettingsValue["classname"] = MapRenderSettings::metaObject.ClassName();
+
+    mapRenderSettings->props->Init(defaultMapRenderSettingsValue);
+
+    Reset();
+}
+
 bool GameWorld::LoadMap(const char *filename) {
     BE_LOG(L"Loading map '%hs'...\n", filename);
 
@@ -610,10 +616,23 @@ bool GameWorld::LoadMap(const char *filename) {
 
     mapName = filename;
 
-    // TODO: load settings
-    
-    SpawnEntitiesFromString(text);
+    Json::Value map;
+    Json::Reader jsonReader;
+    if (!jsonReader.parse(text, map)) {
+        BE_WARNLOG(L"Failed to parse JSON text\n");
+        return false;
+    }
 
+    // Read map version
+    int mapVersion = map["version"].asInt();
+
+    // Read map render settings
+    mapRenderSettings->props->Init(map["renderSettings"]);
+    mapRenderSettings->Init();
+
+    // Read entities
+    SpawnEntitiesFromJson(map["entities"]);
+    
     fileSystem.FreeFile(text);
     
     FinishMapLoading();    
@@ -637,13 +656,21 @@ void GameWorld::SerializeEntityHierarchy(const Hierarchy<Entity> &entityHierarch
 void GameWorld::SaveMap(const char *filename) {
     BE_LOG(L"Saving map '%hs'...\n", filename);
 
-    Json::Value entitiesValue;
+    Json::Value map;
+
+    // Write map version
+    map["version"] = 1;
+
+    // Write map render settings
+    mapRenderSettings->Serialize(map["renderSettings"]);
+
+    // Write entities
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), entitiesValue);
+        GameWorld::SerializeEntityHierarchy(child->GetNode(), map["entities"]);
     }
 
     Json::StyledWriter jsonWriter;
-    Str jsonText = jsonWriter.write(entitiesValue).c_str();
+    Str jsonText = jsonWriter.write(map).c_str();
 
     fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }

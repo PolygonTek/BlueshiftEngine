@@ -144,7 +144,7 @@ static void RB_DrawStencilLightVolume(const viewLight_t *light, bool insideLight
         rhi.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionInsideZFail], 0);
     } else {
         rhi.SetCullFace(RHI::NoCull);
-        rhi.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionZPass], 0);		
+        rhi.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionZPass], 0);
     }
 
     RB_DrawLightVolume(light->def);
@@ -463,7 +463,8 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
 static void RB_ClearView() {
     int clearBits = 0;
     
-    if (backEnd.view->def->parms.clearMethod == SceneView::DepthOnlyClear) {
+    if (backEnd.view->def->parms.clearMethod == SceneView::DepthOnlyClear || 
+        backEnd.view->def->parms.clearMethod == SceneView::SkyBoxClear) {
         clearBits = RHI::DepthBit | RHI::StencilBit;
 
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);

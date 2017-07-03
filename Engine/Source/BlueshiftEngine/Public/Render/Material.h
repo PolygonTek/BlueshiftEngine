@@ -55,8 +55,8 @@ public:
     enum Sort {
         BadSort                 = 0,
         SubViewSort             = 1,
-        OpaqueSort              = 2,    //
-        SkySort                 = 3,
+        SkySort                 = 2,
+        OpaqueSort              = 3,    //
         AlphaTestSort           = 4,    //
         DecalSort               = 8,    //
         RefractionSort          = 9,
@@ -74,9 +74,10 @@ public:
 
     enum Coverage {
         EmptyCoverage           = 0,
-        PerforatedCoverage      = BIT(0),   // may have alpha tested holes
-        TranslucentCoverage     = BIT(1),   // blended with background
-        OpaqueCoverage          = BIT(2)    // completely fills the triangle
+        BackgroundCoverage      = BIT(0),
+        OpaqueCoverage          = BIT(1),   // completely fills the triangle
+        PerforatedCoverage      = BIT(2),   // may have alpha tested holes
+        TranslucentCoverage     = BIT(3)    // blended with background
     };
 
     enum VertexColorMode {
@@ -214,6 +215,7 @@ public:
     static Material *       blendMaterial;
     static Material *       whiteLightMaterial;
     static Material *       zeroClampLightMaterial;
+    static Material *       defaultSkyboxMaterial;
 
 private:
     static void             Cmd_ListMaterials(const CmdArgs &args);

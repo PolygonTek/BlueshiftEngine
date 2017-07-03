@@ -28,6 +28,8 @@ RenderWorld::RenderWorld() {
 
     textMesh.SetCoordFrame(GuiMesh::CoordFrame3D);
 
+    skyboxMaterial = materialManager.defaultSkyboxMaterial;
+
     debugLineColor.Set(0, 0, 0, 0);
     debugFillColor.Set(0, 0, 0, 0);
 }
@@ -251,6 +253,10 @@ void RenderWorld::RemoveLight(int lightHandle) {
 
     delete sceneLights[lightHandle];
     sceneLights[lightHandle] = nullptr;
+}
+
+void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
+    this->skyboxMaterial = skyboxMaterial;
 }
 
 void RenderWorld::FinishMapLoading() {

@@ -68,6 +68,7 @@ public:
     static Guid             blendMaterialGuid;
     static Guid             whiteLightMaterialGuid;
     static Guid             zeroClampLightMaterialGuid;
+    static Guid             defaultSkyboxMaterialGuid;
 
     static Guid             defaultFontGuid;
 

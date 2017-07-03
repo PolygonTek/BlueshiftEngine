@@ -43,8 +43,9 @@ uniform float rotation;
 void main() {
     vec3 v = in_position.xyz + modelViewMatrix[3].xyz * mat3(modelViewMatrix);
 
-    float s = sin(rotation);
-    float c = cos(rotation);
+    float radian = rotation * 0.01745329251; // degree to radian
+    float s = sin(radian);
+    float c = cos(radian);
 
     vec3 dir;
     dir.x = c * v.x - s * v.y;

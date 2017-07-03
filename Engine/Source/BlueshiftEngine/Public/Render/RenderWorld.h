@@ -60,6 +60,8 @@ public:
     void                        UpdateLight(int handle, const SceneLight::Parms *parms);
     void                        RemoveLight(int handle);
 
+    void                        SetSkyboxMaterial(Material *skyboxMaterial);
+
     const AABB &                GetStaticAABB() const { return staticDbvt.GetRootFatAABB(); }
 
     const GuiMesh &             GetTextMesh() const { return textMesh; }
@@ -127,6 +129,8 @@ private:
 
     view_t *                    currentView;
     int                         viewCount;
+
+    Material *                  skyboxMaterial;
 
     ParticleMesh                particleMesh;   ///< particle mesh
     GuiMesh                     textMesh;       ///< 3D text mesh

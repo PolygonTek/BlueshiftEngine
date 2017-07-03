@@ -25,6 +25,7 @@ Material *          MaterialManager::whiteMaterial;
 Material *          MaterialManager::blendMaterial;
 Material *          MaterialManager::whiteLightMaterial;
 Material *          MaterialManager::zeroClampLightMaterial;
+Material *          MaterialManager::defaultSkyboxMaterial;
 
 MaterialManager     materialManager;
 
@@ -33,26 +34,49 @@ void MaterialManager::Init() {
     cmdSystem.AddCommand(L"reloadMaterial", Cmd_ReloadMaterial);
 
     materialHashMap.Init(1024, 65536, 1024);
-    
+
     defaultMaterial = AllocMaterial("_defaultMaterial");
-    defaultMaterial->Create(va("pass { map \"%s\"\n }", GuidMapper::defaultTextureGuid.ToString()));
+    defaultMaterial->Create(va("pass {\n"
+        "map \"%s\"\n"
+    "}", GuidMapper::defaultTextureGuid.ToString()));
     defaultMaterial->permanence = true;
 
     whiteMaterial = AllocMaterial("_whiteMaterial");
-    whiteMaterial->Create(va("pass { map \"%s\"\n useOwnerColor\n }", GuidMapper::whiteTextureGuid.ToString()));
-    whiteMaterial->permanence = true;    
+    whiteMaterial->Create(va("pass {\n"
+        "map \"%s\"\n"
+        "useOwnerColor\n"
+    "}", GuidMapper::whiteTextureGuid.ToString()));
+    whiteMaterial->permanence = true;
 
     blendMaterial = AllocMaterial("_blendMaterial");
-    blendMaterial->Create(va("pass { map \"%s\"\nblendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA }", GuidMapper::whiteTextureGuid.ToString()));
+    blendMaterial->Create(va("pass {\n"
+        "map \"%s\"\n"
+        "blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
+    "}", GuidMapper::whiteTextureGuid.ToString()));
     blendMaterial->permanence = true;
 
     whiteLightMaterial = AllocMaterial("_whiteLightMaterial");
-    whiteLightMaterial->Create(va("lightSort light pass { map \"%s\"\n useOwnerColor\n }", GuidMapper::whiteTextureGuid.ToString()));
+    whiteLightMaterial->Create(va("lightSort light\npass {\n"
+        "map \"%s\"\n"
+        "useOwnerColor\n"
+    "}", GuidMapper::whiteTextureGuid.ToString()));
     whiteLightMaterial->permanence = true;
 
     zeroClampLightMaterial = AllocMaterial("_zeroClampLightMaterial");
-    zeroClampLightMaterial->Create(va("lightSort light pass { map \"%s\"\n useOwnerColor\n }", GuidMapper::zeroClampTextureGuid.ToString()));
+    zeroClampLightMaterial->Create(va("lightSort light\npass {\n"
+        "map \"%s\"\n"
+        "useOwnerColor\n"
+    "}", GuidMapper::zeroClampTextureGuid.ToString()));
     zeroClampLightMaterial->permanence = true;
+
+    defaultSkyboxMaterial = AllocMaterial("_defaultSkyboxMaterial");
+    defaultSkyboxMaterial->Create(va("sort sky\ncull twoSided\npass {\n"
+        "noDepthWrite\n"
+        "shader \"%s\" {\n"
+            "skyCubeMap \"%s\"\n"
+        "}\n"
+    "}", GuidMapper::skyboxCubemapShaderGuid.ToString(), GuidMapper::defaultCubeTextureGuid.ToString()));
+    defaultSkyboxMaterial->permanence = true;
 }
 
 void MaterialManager::Shutdown() {

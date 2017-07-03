@@ -79,9 +79,9 @@ bool Material::Create(const char *text) {
             if (lexer.ReadToken(&token, false)) {
                 if (!token.Icmp("none") || !token.Icmp("disable") || !token.Icmp("twoSided")) {
                     cullType = RHI::NoCull;
-                } else if (!token.Icmp("backSided") || !token.Icmp("backSide") || !token.Icmp("back")) {
+                } else if (!token.Icmp("back") || !token.Icmp("backSide") || !token.Icmp("backSided")) {
                     cullType = RHI::BackCull;
-                } else if (!token.Icmp("frontSided") || !token.Icmp("frontSide") || !token.Icmp("front")) {
+                } else if (!token.Icmp("front") || !token.Icmp("frontSide") || !token.Icmp("frontSided")) {
                     cullType = RHI::FrontCull;
                 } else {
                     BE_WARNLOG(L"invalid cull parm '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
@@ -228,6 +228,8 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
             if (ParseBlendFunc(lexer, &blendSrc, &blendDst)) {
                 depthWrite = 0; // depth write off when blendFunc is valid
             }
+        } else if (!token.Icmp("noDepthWrite")) {
+            depthWrite = 0;
         } else if (!token.Icmp("colorMask")) {
             if (lexer.ReadToken(&token, false)) {
                 for (int i = 0; i < token.Length(); i++) {
@@ -610,6 +612,7 @@ bool Material::ParseSort(Lexer &lexer) {
             sort = SubViewSort;
         } else if (!token.Icmp("sky")) {
             sort = SkySort;
+            coverage |= BackgroundCoverage;
         } else if (!token.Icmp("opaque")) {
             sort = OpaqueSort;
         } else if (!token.Icmp("decal")) {
@@ -880,6 +883,10 @@ void Material::Write(const char *filename) {
         }
 
         fp->Printf("%sblendFunc %s %s\n", indentSpace.c_str(), blendSrcStr.c_str(), blendDstStr.c_str());
+    }
+
+    if (!(pass->stateBits & RHI::DepthWrite)) {
+        fp->Printf("%snoDepthWrite\n", indentSpace.c_str());
     }
 
     if (pass->vertexColorMode != IgnoreVertexColor) {

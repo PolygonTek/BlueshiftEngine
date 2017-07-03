@@ -139,6 +139,7 @@ void GameClient::InitDefaultGuids() {
     resourceGuidMapper.Set(GuidMapper::blendMaterialGuid, "_blendMaterial");
     resourceGuidMapper.Set(GuidMapper::whiteLightMaterialGuid, "_whiteLightMaterial");
     resourceGuidMapper.Set(GuidMapper::zeroClampLightMaterialGuid, "_zeroClampLightMaterial");
+    resourceGuidMapper.Set(GuidMapper::defaultSkyboxMaterialGuid, "_defaultSkyboxMaterial");
     resourceGuidMapper.Set(GuidMapper::defaultFontGuid, FontManager::defaultFontFilename);
     resourceGuidMapper.Set(GuidMapper::defaultSkeletonGuid, "_defaultSkeleton");
     resourceGuidMapper.Set(GuidMapper::defaultMeshGuid, "_defaultMesh");

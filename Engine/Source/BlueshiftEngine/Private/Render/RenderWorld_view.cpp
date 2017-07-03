@@ -371,8 +371,25 @@ void RenderWorld::AddSkyBoxMeshes(view_t *view) {
         return;
     }
 
-    //MeshSurf *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
-    //AddDrawSurf(view, skyBoxViewEntity, skyBoxMaterial, meshSurf->subMesh, DrawSurf::AmbientVisible);
+    // skybox entity parameters
+    SceneEntity::Parms entityParms;
+    memset(&entityParms, 0, sizeof(entityParms));
+    entityParms.origin = view->def->parms.origin;
+    entityParms.scale = Vec3::one;
+    entityParms.axis = Mat3::identity;
+    entityParms.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
+
+    static SceneEntity sceneEntity;
+    new (&sceneEntity) SceneEntity();
+    sceneEntity.Update(&entityParms);
+
+    // skybox view entity
+    viewEntity_t *viewEntity = RegisterViewEntity(view, &sceneEntity);
+    viewEntity->modelViewMatrix = view->def->viewMatrix * sceneEntity.GetModelMatrix();
+    viewEntity->modelViewProjMatrix = view->def->viewProjMatrix * sceneEntity.GetModelMatrix();
+
+    MeshSurf *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
+    AddDrawSurf(view, viewEntity, skyboxMaterial, meshSurf->subMesh, DrawSurf::AmbientVisible);
 }
 
 // static mesh 들을 viewLight 의 litSurfs/shadowCasterSurfs 리스트에 담는다.
@@ -733,7 +750,9 @@ void RenderWorld::AddDrawSurf(view_t *view, viewEntity_t *viewEntity, const Mate
     realMaterial->GetExprChunk()->Evaluate(localParms, outputValues);*/
 
     if (!bufferCacheManager.IsCached(subMesh->vertexCache)) {
-        if (subMesh->GetType() == Mesh::StaticMesh || subMesh->GetType() == Mesh::SkinnedMesh) {
+        if (subMesh->GetType() == Mesh::ReferenceMesh || 
+            subMesh->GetType() == Mesh::StaticMesh || 
+            subMesh->GetType() == Mesh::SkinnedMesh) {
             subMesh->CacheStaticDataToGpu();
         } else {
             subMesh->CacheDynamicDataToGpu(viewEntity->def->parms.joints, realMaterial);

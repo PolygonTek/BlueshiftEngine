@@ -282,7 +282,7 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
 
     int32_t *dataPtr = data;
     int version = *dataPtr++;
-    if (version == 1) {
+    if (version >= 1) {
         int textureType = *dataPtr++;
         switch (textureType) {
             case 1:
@@ -319,6 +319,13 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
         int sRGB = *dataPtr++;
         if (sRGB) {
             flags |= Texture::SRGB;
+        }
+
+        if (version >= 2) {
+            int generateMipmaps = *dataPtr++;
+            if (!generateMipmaps) {
+                flags |= Texture::NoMipmaps;
+            }
         }
 
         if (flags & Texture::NormalMap) {

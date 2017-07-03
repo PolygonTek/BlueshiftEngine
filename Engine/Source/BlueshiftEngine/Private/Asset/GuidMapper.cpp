@@ -43,6 +43,7 @@ Guid        GuidMapper::whiteMaterialGuid(0, 0, 0, 301);
 Guid        GuidMapper::blendMaterialGuid(0, 0, 0, 302);
 Guid        GuidMapper::whiteLightMaterialGuid(0, 0, 0, 303);
 Guid        GuidMapper::zeroClampLightMaterialGuid(0, 0, 0, 304);
+Guid        GuidMapper::defaultSkyboxMaterialGuid(0, 0, 0, 305);
 // predefined font GUID
 Guid        GuidMapper::defaultFontGuid(0, 0, 0, 350);
 // predefined mesh GUID

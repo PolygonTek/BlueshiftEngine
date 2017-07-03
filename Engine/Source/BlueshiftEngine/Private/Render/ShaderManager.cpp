@@ -34,7 +34,7 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/objectMotionBlur" },
 
     { "Shaders/lightingGeneric" },
-    { "Shaders/SkyboxCubemap" },
+    { "Shaders/skyboxCubemap" },
 
     { "Shaders/fogLight" },
     { "Shaders/blendLight" },
@@ -271,7 +271,7 @@ void ShaderManager::InstantiateEngineShaders() {
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
     lightingDefaultShader = originalShaders[LightingGenericShader]->InstantiateShader(defineArray);
 
-    skyboxCubemapShader = originalShaders[SkyboxCubemapShader]->InstantiateShader(defineArray);
+    skyboxCubemapShader = originalShaders[SkyboxCubemapShader]->InstantiateShader(Array<Shader::Define>());
 
     fogLightShader = originalShaders[FogLightShader]->InstantiateShader(Array<Shader::Define>());
     blendLightShader = originalShaders[BlendLightShader]->InstantiateShader(Array<Shader::Define>());

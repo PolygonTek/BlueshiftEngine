@@ -186,6 +186,7 @@ set(ENGINE_FILES
 
   Public/Game/Entity.h
   Public/Game/Prefab.h
+  Public/Game/MapRenderSettings.h
   Public/Game/GameWorld.h
   Public/Game/CastResult.h
   Public/Game/GameSettings/GameSettings.h
@@ -402,6 +403,7 @@ set(ENGINE_FILES
   Private/Game/Entity.cpp
   Private/Game/Prefab.cpp
   Private/Game/PrefabManager.cpp
+  Private/Game/MapRenderSettings.cpp
   Private/Game/GameWorld.cpp
   Private/Game/CastResult.cpp
   Private/Game/GameSettings/GameSettings.cpp

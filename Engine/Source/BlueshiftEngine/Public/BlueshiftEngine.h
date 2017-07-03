@@ -171,6 +171,7 @@
 // GameWorld
 #include "Game/Entity.h"
 #include "Game/Prefab.h"
+#include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 
 #include "Main/Common.h"
