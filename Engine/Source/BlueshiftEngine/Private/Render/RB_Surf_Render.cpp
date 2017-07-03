@@ -66,9 +66,11 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
             shader->SetConstant2f(key, prop.data.As<Vec2>());
             break;
         case PropertySpec::Vec3Type:
+        case PropertySpec::Color3Type:
             shader->SetConstant3f(key, prop.data.As<Vec3>());
             break;
         case PropertySpec::Vec4Type:
+        case PropertySpec::Color4Type:
             shader->SetConstant4f(key, prop.data.As<Vec4>());
             break;
         case PropertySpec::PointType:
