@@ -274,12 +274,12 @@ void BuildMipMap(T *dst, const T *src, const int width, const int height, const 
 
 Image &Image::GenerateMipmaps() {
     if (IsCompressed()) {
-        BE_WARNLOG(L"Couldn't generate mipmaps for a compressed image.");
+        BE_WARNLOG(L"Couldn't generate mipmaps for a compressed image.\n");
         return *this;
     }
 
     if (IsPacked()) {
-        BE_WARNLOG(L"Couldn't generate mipmaps for a image has packed format.");
+        BE_WARNLOG(L"Couldn't generate mipmaps for a packed format image.\n");
         return *this;
     }
 

@@ -181,7 +181,7 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const Frustu
     return true;
 }
 
-static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool skipNoSelfShadow) {
+static void RB_LitPass(const viewLight_t *viewLight) {
     int                 prevSortkey = -1;
     const viewEntity_t *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
@@ -238,12 +238,12 @@ static void RB_LitPass(const viewLight_t *viewLight, bool skipSelfShadow, bool s
 
     if (prevMaterial) {
         backEnd.rbsurf.Flush();
-    }	
+    }
 
     // restore depthHack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
-    }	
+    }
 }
 
 static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &lightViewMatrix, const Frustum &lightFrustum, const Frustum &viewFrustum, bool forceClear, int cubeMapFace) {
@@ -450,7 +450,7 @@ static void RB_ShadowCubeMapAndLitPass(const viewLight_t *viewLight) {
         rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
-    RB_LitPass(viewLight, false, false);
+    RB_LitPass(viewLight);
 
     if (r_useDepthBoundTest.GetBool()) {
         rhi.SetDepthBounds(0.0f, 1.0f);
@@ -639,7 +639,7 @@ static void RB_OrthogonalShadowMapAndLitPass(const viewLight_t *viewLight) {
         rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
-    RB_LitPass(viewLight, false, false);
+    RB_LitPass(viewLight);
 
     if (r_useDepthBoundTest.GetBool()) {
         rhi.SetDepthBounds(0.0f, 1.0f);
@@ -708,7 +708,7 @@ static void RB_ProjectedShadowMapAndLitPass(const viewLight_t *viewLight) {
         rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
-    RB_LitPass(viewLight, false, false);
+    RB_LitPass(viewLight);
 
     if (r_useDepthBoundTest.GetBool()) {
         rhi.SetDepthBounds(0.0f, 1.0f);
@@ -822,7 +822,7 @@ static void RB_CascadedShadowMapAndLitPass(const viewLight_t *viewLight) {
         rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
-    RB_LitPass(viewLight, false, false);
+    RB_LitPass(viewLight);
 
     if (r_useDepthBoundTest.GetBool()) {
         rhi.SetDepthBounds(0.0f, 1.0f);
@@ -974,7 +974,7 @@ void RB_AllShadowAndLitPass(viewLight_t *viewLights) {
                 rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
             }
 
-            RB_LitPass(viewLight, false, false);
+            RB_LitPass(viewLight);
 
             if (r_useDepthBoundTest.GetBool()) {
                 rhi.SetDepthBounds(0.0f, 1.0f);

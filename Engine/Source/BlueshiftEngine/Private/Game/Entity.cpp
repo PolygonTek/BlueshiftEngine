@@ -63,8 +63,6 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
 
     entityGuid = Guid::ParseString(entityValue["guid"].asCString());
 
-    //BE_LOG(L"CreateEntity: %hs \n", entityGuid.ToString());
-
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
     entity->props->Init(entityValue);
 
