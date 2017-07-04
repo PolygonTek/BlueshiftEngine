@@ -770,15 +770,20 @@ void GameWorld::RenderCamera() {
 void GameWorld::SaveSnapshot() {
     snapshotValues.clear();
 
+    mapRenderSettings->Serialize(snapshotValues["renderSettings"]);
+
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), snapshotValues);
+        GameWorld::SerializeEntityHierarchy(child->GetNode(), snapshotValues["entities"]);
     }
 }
 
 void GameWorld::RestoreSnapshot() {
     BeginMapLoading();
 
-    SpawnEntitiesFromJson(snapshotValues);
+    mapRenderSettings->props->Init(snapshotValues["renderSettings"]);
+    mapRenderSettings->Init();
+
+    SpawnEntitiesFromJson(snapshotValues["entities"]);
 
     FinishMapLoading();
 }
