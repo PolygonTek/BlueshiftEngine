@@ -14,23 +14,18 @@
 
 #pragma once
 
-#include "RHI/RHIOpenGL.h"
-#include "Render/BufferCache.h"
-#include "Render/Texture.h"
-#include "Render/Shader.h"
-#include "Render/Material.h"
-#include "Render/Skin.h"
-#include "Render/Font.h"
-#include "Render/Skeleton.h"
-#include "Render/SubMesh.h"
-#include "Render/Mesh.h"
-#include "Render/ParticleMesh.h"
-#include "Render/GuiMesh.h"
-#include "Render/Anim.h"
-#include "Render/SceneEntity.h"
-#include "Render/SceneLight.h"
-#include "Render/ReflectionProbe.h"
-#include "Render/SceneView.h"
-#include "Render/RenderWorld.h"
-#include "Render/RenderContext.h"
-#include "Render/RenderSystem.h"
+/*
+-------------------------------------------------------------------------------
+
+    Reflection Probe
+
+-------------------------------------------------------------------------------
+*/
+
+BE_NAMESPACE_BEGIN
+
+class ReflectionProbe {
+public:
+};
+
+BE_NAMESPACE_END
