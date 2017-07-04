@@ -9,7 +9,7 @@ uniform float exposure;
 uniform samplerCube skyCubeMap;
 
 void main() {
-    vec3 color = tint.rgb * texCUBE(skyCubeMap, v2f_texCoord).xyz;
-    color *= exposure;
+    vec3 color = texCUBE(skyCubeMap, v2f_texCoord).rgb;
+    color *= tint.rgb * exposure;
     o_fragColor = v2f_color * vec4(color, 1.0);
 }

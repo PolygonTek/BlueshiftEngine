@@ -44,11 +44,6 @@ void Mesh::Purge() {
             originalMesh->instantiatedMeshes.Remove(this);
             originalMesh = nullptr;
         }
-
-        if (originalMesh) {
-            originalMesh->instantiatedMeshes.Remove(this);
-            originalMesh = nullptr;
-        }
     } else {
         SAFE_DELETE_ARRAY(joints);
     }
