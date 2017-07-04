@@ -464,7 +464,7 @@ static void RB_ClearView() {
     int clearBits = 0;
     
     if (backEnd.view->def->parms.clearMethod == SceneView::DepthOnlyClear || 
-        backEnd.view->def->parms.clearMethod == SceneView::SkyBoxClear) {
+        backEnd.view->def->parms.clearMethod == SceneView::SkyboxClear) {
         clearBits = RHI::DepthBit | RHI::StencilBit;
 
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);

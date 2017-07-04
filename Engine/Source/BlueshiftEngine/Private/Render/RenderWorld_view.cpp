@@ -72,103 +72,118 @@ void RenderWorld::FindViewLightsAndEntities(view_t *view) {
     view->viewLights = nullptr;
     view->viewEntities = nullptr;
 
-    // Called for each entities and lights intersecting with view frustum 
+    // Called for each lights intersecting with view frustum 
     // Returns true if it want to proceed next query
-    auto addViewLightsAndEntities = [this, view](int32_t proxyId) -> bool {
-        DbvtProxy *proxy = (DbvtProxy *)dynamicDbvt.GetUserData(proxyId);
-        if (proxy->sceneLight) {
-            SceneLight *sceneLight = proxy->sceneLight;
+    auto addViewLights = [this, view](int32_t proxyId) -> bool {
+        DbvtProxy *proxy = (DbvtProxy *)lightDbvt.GetUserData(proxyId);
+        SceneLight *sceneLight = proxy->sceneLight;
 
-            if (!(BIT(sceneLight->parms.layer) & view->def->parms.layerMask)) {
-                return true;
-            }
+        if (!sceneLight) {
+            return true;
+        }
 
-            if (!sceneLight->parms.turnOn) {
-                return true;
-            }
+        if (!(BIT(sceneLight->parms.layer) & view->def->parms.layerMask)) {
+            return true;
+        }
 
-            // Skip if a light is farther than maximum visible distance
-            if (sceneLight->parms.origin.DistanceSqr(view->def->parms.origin) > sceneLight->parms.maxVisDist * sceneLight->parms.maxVisDist) {
-                return true;
-            }
+        if (!sceneLight->parms.turnOn) {
+            return true;
+        }
 
-            // Cull exact light bounding volume
-            if (sceneLight->Cull(view->def->frustum)) {
-                return true;
-            }
+        // Skip if a light is farther than maximum visible distance
+        if (sceneLight->parms.origin.DistanceSqr(view->def->parms.origin) > sceneLight->parms.maxVisDist * sceneLight->parms.maxVisDist) {
+            return true;
+        }
 
-            // light scissorRect 계산
-            Rect screenClipRect;
-            if (!sceneLight->ComputeScreenClipRect(view->def, screenClipRect)) {
-                return true;
-            }
+        // Cull exact light bounding volume
+        if (sceneLight->Cull(view->def->frustum)) {
+            return true;
+        }
 
-            viewLight_t *viewLight = RegisterViewLight(view, sceneLight);
-            viewLight->scissorRect = screenClipRect;
-            // glScissor 의 x, y 좌표는 lower left corner 이므로 y 좌표를 밑에서 증가되도록 뒤집는다.
-            viewLight->scissorRect.y = renderSystem.currentContext->GetRenderHeight() - (screenClipRect.y + screenClipRect.h);
+        // light scissorRect 계산
+        Rect screenClipRect;
+        if (!sceneLight->ComputeScreenClipRect(view->def, screenClipRect)) {
+            return true;
+        }
 
-            viewLight->litAABB.Clear();
-            viewLight->shadowCasterAABB.Clear();
-        } else if (proxy->sceneEntity) {
-            SceneEntity *sceneEntity = proxy->sceneEntity;
+        viewLight_t *viewLight = RegisterViewLight(view, sceneLight);
+        viewLight->scissorRect = screenClipRect;
+        // glScissor 의 x, y 좌표는 lower left corner 이므로 y 좌표를 밑에서 증가되도록 뒤집는다.
+        viewLight->scissorRect.y = renderSystem.currentContext->GetRenderHeight() - (screenClipRect.y + screenClipRect.h);
 
-            if (!(BIT(sceneEntity->parms.layer) & view->def->parms.layerMask)) {
-                return true;
-            }
+        viewLight->litAABB.Clear();
+        viewLight->shadowCasterAABB.Clear();
 
-            // Skip first person view only entity in subView 
-            if (sceneEntity->parms.firstPersonOnly && view->isSubview) {
-                return true;
-            }
+        return true;
+    };
 
-            // Skip 3rd person view only entity in subView
-            if (sceneEntity->parms.thirdPersonOnly && !view->isSubview) {
-                return true;
-            }
+    // Called for each entities intersecting with view frustum 
+    // Returns true if it want to proceed next query
+    auto addViewEntities = [this, view](int32_t proxyId) -> bool {
+        DbvtProxy *proxy = (DbvtProxy *)entityDbvt.GetUserData(proxyId);
+        SceneEntity *sceneEntity = proxy->sceneEntity;
 
-            // Skip if a entity is farther than maximum visible distance
-            if (sceneEntity->parms.origin.DistanceSqr(view->def->parms.origin) > sceneEntity->parms.maxVisDist * sceneEntity->parms.maxVisDist) {
-                return true;
-            }
+        if (!sceneEntity) {
+            return true;
+        }
 
-            viewEntity_t *viewEntity = RegisterViewEntity(view, sceneEntity);
+        if (!(BIT(sceneEntity->parms.layer) & view->def->parms.layerMask)) {
+            return true;
+        }
+
+        // Skip first person view only entity in subView 
+        if (sceneEntity->parms.firstPersonOnly && view->isSubview) {
+            return true;
+        }
+
+        // Skip 3rd person view only entity in subView
+        if (sceneEntity->parms.thirdPersonOnly && !view->isSubview) {
+            return true;
+        }
+
+        // Skip if a entity is farther than maximum visible distance
+        if (sceneEntity->parms.origin.DistanceSqr(view->def->parms.origin) > sceneEntity->parms.maxVisDist * sceneEntity->parms.maxVisDist) {
+            return true;
+        }
+
+        viewEntity_t *viewEntity = RegisterViewEntity(view, sceneEntity);
             
-            viewEntity->ambientVisible = true;
+        viewEntity->ambientVisible = true;
 
-            viewEntity->modelViewMatrix = view->def->viewMatrix * sceneEntity->GetModelMatrix();
-            viewEntity->modelViewProjMatrix = view->def->viewProjMatrix * sceneEntity->GetModelMatrix();
+        viewEntity->modelViewMatrix = view->def->viewMatrix * sceneEntity->GetModelMatrix();
+        viewEntity->modelViewProjMatrix = view->def->viewProjMatrix * sceneEntity->GetModelMatrix();
 
-            if (sceneEntity->parms.billboard) {
-                Mat3 inverse = (view->def->viewMatrix.ToMat3() * sceneEntity->GetModelMatrix().ToMat3()).Inverse();
-                //inverse = inverse * Mat3(0, 0, 1, 1, 0, 0, 0, 1, 0);
-                Swap(inverse[0], inverse[2]);
-                Swap(inverse[1], inverse[2]);
+        if (sceneEntity->parms.billboard) {
+            Mat3 inverse = (view->def->viewMatrix.ToMat3() * sceneEntity->GetModelMatrix().ToMat3()).Inverse();
+            //inverse = inverse * Mat3(0, 0, 1, 1, 0, 0, 0, 1, 0);
+            Swap(inverse[0], inverse[2]);
+            Swap(inverse[1], inverse[2]);
 
-                Mat4 billboardMatrix = inverse.Scale(sceneEntity->parms.scale).ToMat4();
-                viewEntity->modelViewMatrix *= billboardMatrix;
-                viewEntity->modelViewProjMatrix *= billboardMatrix;
-            }
+            Mat4 billboardMatrix = inverse.Scale(sceneEntity->parms.scale).ToMat4();
+            viewEntity->modelViewMatrix *= billboardMatrix;
+            viewEntity->modelViewProjMatrix *= billboardMatrix;
+        }
 
-            view->aabb.AddAABB(proxy->aabb);
+        view->aabb.AddAABB(proxy->aabb);
 
-            if (r_showAABB.GetInteger() > 0) {
-                SetDebugColor(Color4::blue, Color4::zero);
-                DebugAABB(proxy->aabb, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
-            }
+        if (r_showAABB.GetInteger() > 0) {
+            SetDebugColor(Color4::blue, Color4::zero);
+            DebugAABB(proxy->aabb, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
+        }
 
-            if (viewEntity->def->parms.numJoints > 0 && r_showSkeleton.GetInteger() > 0) {
-                DebugJoints(viewEntity->def, r_showSkeleton.GetInteger() == 2, view->def->frustum.GetAxis());
-            }
+        if (viewEntity->def->parms.numJoints > 0 && r_showSkeleton.GetInteger() > 0) {
+            DebugJoints(viewEntity->def, r_showSkeleton.GetInteger() == 2, view->def->frustum.GetAxis());
         }
 
         return true;
     };
 
     if (view->def->parms.orthogonal) {
-        dynamicDbvt.Query(view->def->box, addViewLightsAndEntities);
+        lightDbvt.Query(view->def->box, addViewLights);
+        entityDbvt.Query(view->def->box, addViewEntities);
     } else {
-        dynamicDbvt.Query(view->def->frustum, addViewLightsAndEntities);
+        lightDbvt.Query(view->def->frustum, addViewLights);
+        entityDbvt.Query(view->def->frustum, addViewEntities);
     }
 }
 
@@ -177,7 +192,7 @@ void RenderWorld::AddStaticMeshes(view_t *view) {
     // Called for each static mesh surfaces intersecting with view frustum 
     // Returns true if it want to proceed next query
     auto addStaticMeshSurfs = [this, view](int32_t proxyId) -> bool {
-        DbvtProxy *proxy = (DbvtProxy *)staticDbvt.GetUserData(proxyId);
+        DbvtProxy *proxy = (DbvtProxy *)staticMeshDbvt.GetUserData(proxyId);
         MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
 
         // surf 가 없다면 static mesh 가 아님
@@ -227,9 +242,9 @@ void RenderWorld::AddStaticMeshes(view_t *view) {
     };
 
     if (view->def->parms.orthogonal) {
-        staticDbvt.Query(view->def->box, addStaticMeshSurfs);
+        staticMeshDbvt.Query(view->def->box, addStaticMeshSurfs);
     } else {
-        staticDbvt.Query(view->def->frustum, addStaticMeshSurfs);
+        staticMeshDbvt.Query(view->def->frustum, addStaticMeshSurfs);
     }
 }
 
@@ -367,7 +382,7 @@ void RenderWorld::AddTextMeshes(view_t *view) {
 }
 
 void RenderWorld::AddSkyBoxMeshes(view_t *view) {
-    if (view->def->parms.clearMethod != SceneView::SkyBoxClear) {
+    if (view->def->parms.clearMethod != SceneView::SkyboxClear) {
         return;
     }
 
@@ -399,7 +414,7 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
     // Called for static mesh surfaces intersecting with each light volume
     // Returns true if it want to proceed next query
     auto addStaticMeshSurfsForLights = [this, view, &viewLight](int32_t proxyId) -> bool {
-        const DbvtProxy *proxy = (const DbvtProxy *)staticDbvt.GetUserData(proxyId);
+        const DbvtProxy *proxy = (const DbvtProxy *)staticMeshDbvt.GetUserData(proxyId);
         const SceneEntity *proxyEntity = proxy->sceneEntity;
 
         MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
@@ -471,17 +486,17 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
 
         switch (sceneLight->parms.type) {
         case SceneLight::DirectionalLight:
-            staticDbvt.Query(sceneLight->obb, addStaticMeshSurfsForLights);
+            staticMeshDbvt.Query(sceneLight->obb, addStaticMeshSurfsForLights);
             break;
         case SceneLight::PointLight:
             if (sceneLight->IsRadiusUniform()) {
-                staticDbvt.Query(Sphere(sceneLight->GetOrigin(), sceneLight->GetRadius()[0]), addStaticMeshSurfsForLights);
+                staticMeshDbvt.Query(Sphere(sceneLight->GetOrigin(), sceneLight->GetRadius()[0]), addStaticMeshSurfsForLights);
             } else {
-                staticDbvt.Query(sceneLight->obb, addStaticMeshSurfsForLights);
+                staticMeshDbvt.Query(sceneLight->obb, addStaticMeshSurfsForLights);
             }
             break;
         case SceneLight::SpotLight:
-            staticDbvt.Query(sceneLight->frustum, addStaticMeshSurfsForLights);
+            staticMeshDbvt.Query(sceneLight->frustum, addStaticMeshSurfsForLights);
             break;
         default:
             break;
@@ -498,7 +513,7 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
     // Called for entities intersecting with each light volume
     // Returns true if it want to proceed next query
     auto addShadowCasterEntities = [this, view, &viewLight](int32_t proxyId) -> bool {
-        const DbvtProxy *proxy = (const DbvtProxy *)this->dynamicDbvt.GetUserData(proxyId);
+        const DbvtProxy *proxy = (const DbvtProxy *)this->entityDbvt.GetUserData(proxyId);
         const SceneEntity *proxyEntity = proxy->sceneEntity;
             
         // sceneEntity 가 없다면 mesh 가 아님
@@ -592,17 +607,17 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
 
         switch (sceneLight->parms.type) {
         case SceneLight::DirectionalLight:
-            dynamicDbvt.Query(sceneLight->obb, addShadowCasterEntities);
+            entityDbvt.Query(sceneLight->obb, addShadowCasterEntities);
             break;
         case SceneLight::PointLight:
             if (sceneLight->IsRadiusUniform()) {
-                dynamicDbvt.Query(Sphere(sceneLight->GetOrigin(), sceneLight->GetRadius()[0]), addShadowCasterEntities);
+                entityDbvt.Query(Sphere(sceneLight->GetOrigin(), sceneLight->GetRadius()[0]), addShadowCasterEntities);
             } else {
-                dynamicDbvt.Query(sceneLight->obb, addShadowCasterEntities);
+                entityDbvt.Query(sceneLight->obb, addShadowCasterEntities);
             }
             break;
         case SceneLight::SpotLight:
-            dynamicDbvt.Query(sceneLight->frustum, addShadowCasterEntities);
+            entityDbvt.Query(sceneLight->frustum, addShadowCasterEntities);
             break;
         default:
             break;

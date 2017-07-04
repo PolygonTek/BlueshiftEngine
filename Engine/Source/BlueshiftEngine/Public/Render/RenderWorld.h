@@ -35,6 +35,7 @@ struct DbvtProxy {
     AABB                        aabb;           // bounding volume for this node
     SceneEntity *               sceneEntity;
     SceneLight *                sceneLight;
+    //ReflectionProbe *         reflectionProbe;
     Mesh *                      mesh;           // static mesh
     int32_t                     meshSurfIndex;  // sub mesh index
 };
@@ -62,7 +63,7 @@ public:
 
     void                        SetSkyboxMaterial(Material *skyboxMaterial);
 
-    const AABB &                GetStaticAABB() const { return staticDbvt.GetRootFatAABB(); }
+    const AABB &                GetStaticAABB() const { return staticMeshDbvt.GetRootFatAABB(); }
 
     const GuiMesh &             GetTextMesh() const { return textMesh; }
 
@@ -132,14 +133,18 @@ private:
 
     Material *                  skyboxMaterial;
 
-    ParticleMesh                particleMesh;   ///< particle mesh
-    GuiMesh                     textMesh;       ///< 3D text mesh
+    ParticleMesh                particleMesh;       ///< particle mesh
+    GuiMesh                     textMesh;           ///< 3D text mesh
 
-    Array<SceneEntity *>        sceneEntities;  ///< Array of scene entities
-    Array<SceneLight *>         sceneLights;    ///< Array of scene lights
+    Array<SceneEntity *>        sceneEntities;      ///< Array of scene entities
+    Array<SceneLight *>         sceneLights;        ///< Array of scene lights
+    //Array<SceneReflectionProbe *>sceneReflectionProbes;
 
-    DynamicAABBTree             dynamicDbvt;    ///< Dynamic bounding volume tree for entities and lights
-    DynamicAABBTree             staticDbvt;     ///< Dynamic bounding volume tree for static meshes
+    //SceneReflectionProbe *      defaultReflectionProbe;
+
+    DynamicAABBTree             entityDbvt;         ///< Dynamic bounding volume tree for entities
+    DynamicAABBTree             staticMeshDbvt;     ///< Dynamic bounding volume tree for static meshes
+    DynamicAABBTree             lightDbvt;          ///< Dynamic bounding volume tree for lights and reflection probes
 };
 
 BE_NAMESPACE_END

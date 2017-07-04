@@ -29,7 +29,8 @@ BE_NAMESPACE_BEGIN
 
 class ParticleMesh;
 
-struct Particle {
+class Particle {
+public:
     enum { MaxTrails = 32 };
 
     struct Trail {

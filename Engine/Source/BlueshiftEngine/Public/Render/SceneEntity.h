@@ -37,6 +37,8 @@ class Material;
 class Skin;
 class Mesh;
 class Font;
+class ParticleSystem;
+class Particle;
 
 class SceneEntity {
     friend class RenderWorld;

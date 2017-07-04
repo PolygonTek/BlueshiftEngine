@@ -42,7 +42,7 @@ public:
         NoClear,
         DepthOnlyClear,
         ColorClear,
-        SkyBoxClear
+        SkyboxClear
     };
 
     struct Parms {

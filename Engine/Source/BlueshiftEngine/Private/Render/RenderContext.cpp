@@ -799,7 +799,8 @@ void RenderContext::TakeEnvShot(const char *filename, const Vec3 &origin, int si
     SceneView view;
     SceneView::Parms viewParms;
     memset(&viewParms, 0, sizeof(viewParms));
-    viewParms.flags = SceneView::NoSubViews;// | NoUpscale | SkipPostProcess;
+    viewParms.flags = SceneView::NoSubViews | SceneView::SkipPostProcess;// | SceneView::NoUpscale
+    viewParms.clearMethod = SceneView::SkyboxClear;
     viewParms.layerMask = BIT(0);
     viewParms.renderRect.Set(0, 0, size, size);
     viewParms.fovX = 90;

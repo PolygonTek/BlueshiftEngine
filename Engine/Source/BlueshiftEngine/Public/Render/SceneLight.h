@@ -40,8 +40,7 @@ public:
     enum Type {
         PointLight,
         SpotLight,
-        DirectionalLight,
-        AmbientLight
+        DirectionalLight
     };
 
     struct Parms {
@@ -77,13 +76,13 @@ public:
 
     void                    Update(const Parms *parms);
 
-                            // 라이트의 타입 (Spot, Point, Directional)
+                            /// Returns light type (Point, Spot, Directional)
     Type                    GetType() const { return parms.type; }
 
-                            // 라이트의 material
+                            /// Returns light material
     const Material *        GetMaterial() const { return parms.material; }
 
-                            // 라이트의 위치
+                            /// Returns light origin
     const Vec3 &            GetOrigin() const { return parms.origin; }
 
                             // directional OBB 라이트의 extents
@@ -102,7 +101,7 @@ public:
     const Frustum &         GetFrustum() const { return frustum; }
 
                             // OBB - Directional/Point 라이트인 경우에만
-    const OBB &             GetOBB() const { return obb; }	
+    const OBB &             GetOBB() const { return obb; }
 
                             // AABB - 개략적인 bounding volume
     const AABB              GetAABB() const;

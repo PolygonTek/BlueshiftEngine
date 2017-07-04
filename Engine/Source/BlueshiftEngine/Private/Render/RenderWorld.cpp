@@ -39,8 +39,9 @@ RenderWorld::~RenderWorld() {
 }
 
 void RenderWorld::ClearScene() {
-    dynamicDbvt.Purge();
-    staticDbvt.Purge();
+    entityDbvt.Purge();
+    lightDbvt.Purge();
+    staticMeshDbvt.Purge();
 
     for (int i = 0; i < sceneEntities.Count(); i++) {
         SAFE_DELETE(sceneEntities[i]);
@@ -93,7 +94,7 @@ void RenderWorld::UpdateEntity(int entityHandle, const SceneEntity::Parms *parms
         sceneEntity->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         sceneEntity->proxy->sceneEntity = sceneEntity;
         sceneEntity->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
-        sceneEntity->proxy->id = dynamicDbvt.CreateProxy(sceneEntity->proxy->aabb, MeterToUnit(0.5f), sceneEntity->proxy);
+        sceneEntity->proxy->id = entityDbvt.CreateProxy(sceneEntity->proxy->aabb, MeterToUnit(0.5f), sceneEntity->proxy);
 
         // If this entity is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
         if (parms->mesh && !parms->joints) {
@@ -108,7 +109,7 @@ void RenderWorld::UpdateEntity(int entityHandle, const SceneEntity::Parms *parms
                 meshSurfProxy->mesh = parms->mesh;
                 meshSurfProxy->meshSurfIndex = surfaceIndex;
                 meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                meshSurfProxy->id = staticDbvt.CreateProxy(sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneEntity->meshSurfProxies[surfaceIndex]);
+                meshSurfProxy->id = staticMeshDbvt.CreateProxy(sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneEntity->meshSurfProxies[surfaceIndex]);
             }
         }
     } else {
@@ -122,7 +123,7 @@ void RenderWorld::UpdateEntity(int entityHandle, const SceneEntity::Parms *parms
         if (proxyMoved || !meshMatch) {
             if (proxyMoved) {
                 sceneEntity->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
-                dynamicDbvt.MoveProxy(sceneEntity->proxy->id, sceneEntity->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneEntity->parms.origin);
+                entityDbvt.MoveProxy(sceneEntity->proxy->id, sceneEntity->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneEntity->parms.origin);
             }
 
             // If this entity is a static mesh
@@ -137,19 +138,19 @@ void RenderWorld::UpdateEntity(int entityHandle, const SceneEntity::Parms *parms
                     for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
                         const MeshSurf *meshSurf = parms->mesh->GetSurface(surfaceIndex);
 
-                        staticDbvt.DestroyProxy(sceneEntity->meshSurfProxies[surfaceIndex].id);
+                        staticMeshDbvt.DestroyProxy(sceneEntity->meshSurfProxies[surfaceIndex].id);
 
                         DbvtProxy *meshSurfProxy = &sceneEntity->meshSurfProxies[surfaceIndex];
                         meshSurfProxy->sceneEntity = sceneEntity;
                         meshSurfProxy->mesh = parms->mesh;
                         meshSurfProxy->meshSurfIndex = surfaceIndex;
                         meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                        meshSurfProxy->id = staticDbvt.CreateProxy(sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneEntity->meshSurfProxies[surfaceIndex]);
+                        meshSurfProxy->id = staticMeshDbvt.CreateProxy(sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneEntity->meshSurfProxies[surfaceIndex]);
                     }
                 } else {
                     for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
                         sceneEntity->meshSurfProxies[surfaceIndex].aabb.SetFromTransformedAABB(parms->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                        staticDbvt.MoveProxy(sceneEntity->meshSurfProxies[surfaceIndex].id, sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), parms->origin - sceneEntity->parms.origin);
+                        staticMeshDbvt.MoveProxy(sceneEntity->meshSurfProxies[surfaceIndex].id, sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), parms->origin - sceneEntity->parms.origin);
                     }
                 }
             }
@@ -171,9 +172,9 @@ void RenderWorld::RemoveEntity(int entityHandle) {
         return;
     }
 
-    dynamicDbvt.DestroyProxy(sceneEntity->proxy->id);
+    entityDbvt.DestroyProxy(sceneEntity->proxy->id);
     for (int i = 0; i < sceneEntity->numMeshSurfProxies; i++) {
-        staticDbvt.DestroyProxy(sceneEntity->meshSurfProxies[i].id);
+        staticMeshDbvt.DestroyProxy(sceneEntity->meshSurfProxies[i].id);
     }
 
     delete sceneEntities[entityHandle];
@@ -222,7 +223,7 @@ void RenderWorld::UpdateLight(int lightHandle, const SceneLight::Parms *parms) {
         sceneLight->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         sceneLight->proxy->sceneLight = sceneLight;
         sceneLight->proxy->aabb = sceneLight->GetAABB();
-        sceneLight->proxy->id = dynamicDbvt.CreateProxy(sceneLight->proxy->aabb, MeterToUnit(0.0f), sceneLight->proxy);
+        sceneLight->proxy->id = lightDbvt.CreateProxy(sceneLight->proxy->aabb, MeterToUnit(0.0f), sceneLight->proxy);
     } else {
         bool originMatch    = (parms->origin == sceneLight->parms.origin);
         bool axisMatch      = (parms->axis == sceneLight->parms.axis);
@@ -230,7 +231,7 @@ void RenderWorld::UpdateLight(int lightHandle, const SceneLight::Parms *parms) {
 
         if (!originMatch || !axisMatch || !valueMatch) {
             sceneLight->proxy->aabb = sceneLight->proxy->sceneLight->GetAABB();
-            dynamicDbvt.MoveProxy(sceneLight->proxy->id, sceneLight->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneLight->parms.origin);
+            lightDbvt.MoveProxy(sceneLight->proxy->id, sceneLight->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneLight->parms.origin);
         }
 
         sceneLight->Update(parms);
@@ -249,7 +250,7 @@ void RenderWorld::RemoveLight(int lightHandle) {
         return;
     }
 
-    dynamicDbvt.DestroyProxy(sceneLight->proxy->id);
+    lightDbvt.DestroyProxy(sceneLight->proxy->id);
 
     delete sceneLights[lightHandle];
     sceneLights[lightHandle] = nullptr;
@@ -263,8 +264,9 @@ void RenderWorld::FinishMapLoading() {
 //#ifndef _DEBUG
 //    int startTime = PlatformTime::Milliseconds();
 //
-//    dynamicDbvt.RebuildBottomUp();
-//    staticDbvt.RebuildBottomUp();
+//    entityDbvt.RebuildBottomUp();
+//    staticMeshDbvt.RebuildBottomUp();
+//    lightDbvt.RebuildBottomUp();
 //
 //    int elapsedTime = PlatformTime::Milliseconds() - startTime;
 //    BE_LOG(L"%i msec to build dynamic AABB tree\n", elapsedTime);
