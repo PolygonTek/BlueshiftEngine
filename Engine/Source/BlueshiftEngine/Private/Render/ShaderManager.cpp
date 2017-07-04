@@ -35,6 +35,7 @@ static const engineShader_t originalShaderList[] = {
 
     { "Shaders/lightingGeneric" },
     { "Shaders/skyboxCubemap" },
+    { "Shaders/skyboxSixSided" },
 
     { "Shaders/fogLight" },
     { "Shaders/blendLight" },
@@ -93,6 +94,7 @@ Shader *            ShaderManager::amblitNoBumpShader;
 Shader *            ShaderManager::objectMotionBlurShader;
 Shader *            ShaderManager::lightingDefaultShader;
 Shader *            ShaderManager::skyboxCubemapShader;
+Shader *            ShaderManager::skyboxSixSidedShader;
 Shader *            ShaderManager::fogLightShader;
 Shader *            ShaderManager::blendLightShader;
 Shader *            ShaderManager::shProjectionShader;
@@ -272,6 +274,8 @@ void ShaderManager::InstantiateEngineShaders() {
     lightingDefaultShader = originalShaders[LightingGenericShader]->InstantiateShader(defineArray);
 
     skyboxCubemapShader = originalShaders[SkyboxCubemapShader]->InstantiateShader(Array<Shader::Define>());
+
+    skyboxSixSidedShader = originalShaders[SkyboxSixSidedShader]->InstantiateShader(Array<Shader::Define>());
 
     fogLightShader = originalShaders[FogLightShader]->InstantiateShader(Array<Shader::Define>());
     blendLightShader = originalShaders[BlendLightShader]->InstantiateShader(Array<Shader::Define>());

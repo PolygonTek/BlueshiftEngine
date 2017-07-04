@@ -274,6 +274,7 @@ public:
         ObjectMotionBlurShader,
         LightingGenericShader,
         SkyboxCubemapShader,
+        SkyboxSixSidedShader,
         FogLightShader,
         BlendLightShader,
         //SHProjectionShader,
@@ -346,6 +347,7 @@ public:
     static Shader *         objectMotionBlurShader;
     static Shader *         lightingDefaultShader;
     static Shader *         skyboxCubemapShader;
+    static Shader *         skyboxSixSidedShader;
     static Shader *         fogLightShader;
     static Shader *         blendLightShader;
     static Shader *         shProjectionShader;

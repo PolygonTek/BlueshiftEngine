@@ -134,6 +134,7 @@ void GameClient::InitDefaultGuids() {
     resourceGuidMapper.Set(GuidMapper::cubicNormalCubeTextureGuid, "_cubicNormalCubeTexture");
     resourceGuidMapper.Set(GuidMapper::genericLightingShaderGuid, "Shaders/lightingGeneric.shader");
     resourceGuidMapper.Set(GuidMapper::skyboxCubemapShaderGuid, "Shaders/skyboxCubemap.shader");
+    resourceGuidMapper.Set(GuidMapper::skyboxSixSidedShaderGuid, "Shaders/skyboxSixSided.shader");
     resourceGuidMapper.Set(GuidMapper::defaultMaterialGuid, "_defaultMaterial");
     resourceGuidMapper.Set(GuidMapper::whiteMaterialGuid, "_whiteMaterial");
     resourceGuidMapper.Set(GuidMapper::blendMaterialGuid, "_blendMaterial");
