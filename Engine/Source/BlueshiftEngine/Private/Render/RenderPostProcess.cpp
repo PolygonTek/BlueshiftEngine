@@ -128,7 +128,7 @@ void PP_Downscale2x2(const Texture *srcTexture, RenderTarget *dstRT) {
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
 
-        s = 0;		
+        s = 0;
         t = 0;
         s2 = 1.0f;
         t2 = 1.0f;

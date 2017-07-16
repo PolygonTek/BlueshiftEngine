@@ -276,6 +276,7 @@ public:
     Angles              ToAngles() const;
 
                         /// Converts to the spherical coordinates.
+                        /// @return Length of this vector
     float               ToSpherical(float &theta, float &phi) const;
 
                         /// Sets from the spherical coordinates.

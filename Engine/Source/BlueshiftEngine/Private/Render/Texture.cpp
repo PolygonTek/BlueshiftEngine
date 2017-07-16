@@ -263,6 +263,9 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
                 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, x * invSize, y * invSize);
                 dir.Normalize();
 
+                // Convert cubemap coordinates from z-up to GL axis
+                dir = Vec3(dir.y, dir.z, dir.x);
+
                 dst[3 * (y * size + x) + 0] = Math::Ftob(dir.x * 127.5f + 128.0f);
                 dst[3 * (y * size + x) + 1] = Math::Ftob(dir.y * 127.5f + 128.0f);
                 dst[3 * (y * size + x) + 2] = Math::Ftob(dir.z * 127.5f + 128.0f);
