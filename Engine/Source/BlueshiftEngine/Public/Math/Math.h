@@ -25,6 +25,7 @@
 #include "Math/CQuaternion.h"
 #include "Math/Angles.h"
 #include "Math/Rotation.h"
+#include "Math/SphericalHarmonics.h"
 #include "Math/Plane.h"
 #include "Math/Sphere.h"
 #include "Math/Cylinder.h"

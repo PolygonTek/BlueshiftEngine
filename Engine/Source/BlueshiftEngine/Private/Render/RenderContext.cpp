@@ -873,17 +873,10 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     radianceCubeMap->Load(filename, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     //-------------------------------------------------------------------------------
-    // create 4x4 tiled weight cubemap
+    // Create 4-by-4 envmap sized block weight map for each faces
     //-------------------------------------------------------------------------------	
     
     Texture *weightTextures[6];
-
-    // NOTE: 단순하게 4pi / 6 * envmapSize * envmapSize 로 했다. (문제가 있을지도 모르지만 GPU gems2 의 소스는 이상하다)
-    // 정확하게 cubemap 텍셀당 solid angle 을 구하는 방법을 생각해봐야함
-    float d_omega = 4.0 * Math::Pi / (6.0 * envmapSize * envmapSize);
-
-    float tile[16];
-    memset(tile, 0, sizeof(tile));
 
     float *weightData = (float *)Mem_Alloc(envmapSize * 4 * envmapSize * 4 * sizeof(float));
     float invSize = 1.0f / (envmapSize - 1);
@@ -891,21 +884,24 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     for (int face = 0; face < 6; face++) {
         for (int y = 0; y < envmapSize; y++) {
             for (int x = 0; x < envmapSize; x++) {
+                // Gets sample direction for each faces 
                 Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)face, x * invSize, y * invSize);
                 dir.Normalize();
 
-                float basisProj[16];
-                // compute the N^2 spherical harmonic basis functions
-                R_SH_EvalDirection(2, dir, basisProj);
-                
-                for (int i = 0; i < 9; i++) {
-                    tile[i] = basisProj[i] * d_omega;
-                }
+                // 9 terms are required for order 3 SH basis functions
+                float basisEval[16] = { 0, };
+                // Evaluates the 9 SH basis functions Ylm with the given direction
+                SphericalHarmonics::EvalBasis(3, dir, basisEval);
 
+                // Solid angle of the cubemap texel
+                float dw = Image::CubeMapTexelSolidAngle(x, y, envmapSize);
+
+                // Precalculates 9 terms (basisEval * dw) for each envmap pixel in the 4-by-4 envmap sized block texture for each faces  
                 for (int j = 0; j < 4; j++) {
                     for (int i = 0; i < 4; i++) {
                         int offset = (((j * envmapSize + y) * envmapSize) << 2) + i * envmapSize + x;
-                        weightData[offset] = tile[(j << 2) + i];
+
+                        weightData[offset] = basisEval[(j << 2) + i] * dw;
                     }
                 }
             }
@@ -919,17 +915,17 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     Mem_Free(weightData);
     
     //-------------------------------------------------------------------------------
-    // SH projection
+    // SH projection of (Li * dw) and create 9 coefficents in a single 4x4 texture
     //-------------------------------------------------------------------------------
     Image image;
     image.Create2D(4, 4, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
-    Texture *shCoefficientTexture = new Texture;
-    shCoefficientTexture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
-    RenderTarget *shCoefficientRT = RenderTarget::Create(shCoefficientTexture, nullptr, 0);
+    Texture *incidentCoeffTexture = new Texture;
+    incidentCoeffTexture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *incidentCoeffRT = RenderTarget::Create(incidentCoeffTexture, nullptr, 0);
     
-    shCoefficientRT->Begin();
+    incidentCoeffRT->Begin();
     Rect prevViewportRect = rhi.GetViewport();
-    rhi.SetViewport(Rect(0, 0, shCoefficientRT->GetWidth(), shCoefficientRT->GetHeight()));
+    rhi.SetViewport(Rect(0, 0, incidentCoeffRT->GetWidth(), incidentCoeffRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite);
     rhi.SetCullFace(RHI::NoCull);
@@ -939,12 +935,12 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     shader->Bind();
     shader->SetTextureArray("weightMap", 6, (const Texture **)weightTextures);
     shader->SetTexture("radianceCubeMap", radianceCubeMap);
-    shader->SetConstant1i("radianceCubeMapSize", radianceCubeMap->GetWidth());	
-    shader->SetConstant1f("radianceScale", 0.5f);	
+    shader->SetConstant1i("radianceCubeMapSize", radianceCubeMap->GetWidth());
+    shader->SetConstant1f("radianceScale", 1.0f);
     RB_DrawClipRect(0, 0, 1.0f, 1.0f);
     
     rhi.SetViewport(prevViewportRect);
-    shCoefficientRT->End();
+    incidentCoeffRT->End();
     
     delete radianceCubeMap;
 
@@ -953,20 +949,22 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     }
     
     //-------------------------------------------------------------------------------
-    // SH evaluation
+    // SH convolution
     //-------------------------------------------------------------------------------
     Texture *irradianceTexture;
     irradianceTexture = textureManager.AllocTexture("_irradiance");
-    irradianceTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, Image::RGB_8_8_8, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    irradianceTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, Image::RGB_16F_16F_16F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
     RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceTexture, nullptr, 0);
 
+    // Precompute ZH coefficients * sqrt(4PI/(2l + 1)) of Lambert diffuse spherical function cos(theta) / PI
+    // which function is rotationally symmetric so only 3 terms are needed
     float al[3];
-    al[0] = R_Lambert_Al_Evaluator(0);
-    al[1] = R_Lambert_Al_Evaluator(1);
-    al[2] = R_Lambert_Al_Evaluator(2);	
+    al[0] = SphericalHarmonics::Lambert_Al_Evaluator(0); // 1
+    al[1] = SphericalHarmonics::Lambert_Al_Evaluator(1); // 2/3
+    al[2] = SphericalHarmonics::Lambert_Al_Evaluator(2); // 1/4
     
-    for (int i = RHI::PositiveX; i <= RHI::NegativeZ; i++) {
-        irradianceCubeRT->Begin(0, i);
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        irradianceCubeRT->Begin(0, faceIndex);
         Rect prevViewportRect = rhi.GetViewport();
         rhi.SetViewport(Rect(0, 0, irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight()));
 
@@ -976,24 +974,24 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
         const Shader *shader = ShaderManager::shEvalIrradianceCubeMapShader;
 
         shader->Bind();
-        shader->SetTexture("shCoefficientMap", shCoefficientRT->ColorTexture());
+        shader->SetTexture("incidentCoeffMap", incidentCoeffRT->ColorTexture());
         shader->SetConstant1i("cubeMapSize", irradianceCubeRT->GetWidth());
-        shader->SetConstant1i("cubeMapFace", i);
-        shader->SetConstantArray1f("reflectanceTable", COUNT_OF(al), al);
+        shader->SetConstant1i("cubeMapFace", faceIndex);
+        shader->SetConstantArray1f("lambertCoeff", COUNT_OF(al), al);
         RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
         rhi.SetViewport(prevViewportRect);
         irradianceCubeRT->End();
 
         Image faceImage;
-        faceImage.Create2D(irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight(), 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
+        faceImage.Create2D(irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight(), 1, Image::RGB_16F_16F_16F, nullptr, Image::LinearSpaceFlag);
         
         irradianceCubeRT->ColorTexture()->Bind();
-        irradianceCubeRT->ColorTexture()->GetTexelsCubemap((RHI::CubeMapFace)i, Image::RGB_8_8_8, faceImage.GetPixels());
+        irradianceCubeRT->ColorTexture()->GetTexelsCubemap((RHI::CubeMapFace)faceIndex, Image::RGB_16F_16F_16F, faceImage.GetPixels());
 
         faceImage.FlipY();
         
-        Str::snPrintf(path, sizeof(path), "%s_irr_%s.png", filename, cubemap_postfix[i]);
+        Str::snPrintf(path, sizeof(path), "%s_irr_%s.png", filename, cubemap_postfix[faceIndex]);
         faceImage.Write(path);
 
         BE_LOG(L"irrshot saved to \"%hs\"\n", path);
@@ -1002,8 +1000,8 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     textureManager.ReleaseTexture(irradianceTexture, true);
     RenderTarget::Delete(irradianceCubeRT);
     
-    SAFE_DELETE(shCoefficientTexture);
-    RenderTarget::Delete(shCoefficientRT);
+    SAFE_DELETE(incidentCoeffTexture);
+    RenderTarget::Delete(incidentCoeffRT);
 }
 
 BE_NAMESPACE_END

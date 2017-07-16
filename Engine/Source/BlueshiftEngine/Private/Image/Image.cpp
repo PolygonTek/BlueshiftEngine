@@ -355,6 +355,87 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
     return color;
 }
 
+Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
+    float sc = s * 2.0f - 1.0f;
+    float tc = t * 2.0f - 1.0f;
+
+    Vec3 glCubeMapCoords;
+    switch (cubeMapFace) {
+    case PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break;
+    case NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break;
+    case PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break;
+    case NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break;
+    case PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break;
+    case NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break;
+    }
+    // Convert cubemap coordinates from GL axis to z-up axis
+    return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);
+}
+
+Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
+    // Convert cubemap coordinates from z-up axis to GL axis
+    Vec3 glCubeMapCoords = Vec3(cubeMapCoords.y, cubeMapCoords.z, cubeMapCoords.x);
+
+    int faceIndex = glCubeMapCoords.Abs().MaxComponentIndex();
+    float majorAxis = glCubeMapCoords[faceIndex];
+    faceIndex = (faceIndex << 1) + IEEE_FLT_SIGNBITSET(majorAxis);
+    float sc, tc;
+
+    switch (faceIndex) {
+    case PositiveX: 
+        sc = -glCubeMapCoords.z;
+        tc = -glCubeMapCoords.y;
+        break;
+    case NegativeX:
+        sc = +glCubeMapCoords.z;
+        tc = -glCubeMapCoords.y;
+        break;
+    case PositiveY:
+        sc = +glCubeMapCoords.x;
+        tc = +glCubeMapCoords.z;
+        break;
+    case NegativeY:
+        sc = +glCubeMapCoords.x;
+        tc = -glCubeMapCoords.z;
+        break;
+    case PositiveZ:
+        sc = +glCubeMapCoords.x;
+        tc = -glCubeMapCoords.y;
+        break;
+    case NegativeZ:
+        sc = -glCubeMapCoords.x;
+        tc = -glCubeMapCoords.y;
+        break;
+    }
+
+    float ama = Math::Fabs(majorAxis);
+    s = (sc / ama + 1.0f) * 0.5f;
+    t = (tc / ama + 1.0f) * 0.5f;
+
+    return (CubeMapFace)faceIndex;
+}
+
+static float AreaElement(float x, float y) {
+    return Math::ATan(x * y, Math::Sqrt(x * x + y * y + 1));
+}
+
+float Image::CubeMapTexelSolidAngle(float x, float y, int size) {
+    // Scale up to [-1, 1] range (inclusive), offset by 0.5 to point to texel center.
+    // CHECK: is half pixel correct ?
+    float s = (2.0f * ((float)x + 0.5f) / (float)size) - 1.0f;
+    float t = (2.0f * ((float)y + 0.5f) / (float)size) - 1.0f;
+
+    float invSize = 1.0f / size;
+
+    // s and t are the -1..1 texture coordinate on the current face.
+    // Get projected area for this texel
+    float x0 = s - invSize;
+    float y0 = t - invSize;
+    float x1 = s + invSize;
+    float y1 = t + invSize;
+    return AreaElement(x0, y0) - AreaElement(x0, y1) - AreaElement(x1, y0) + AreaElement(x1, y1);
+}
+
 int Image::NumPixels(int firstLevel, int numLevels) const {
     int w = GetWidth(firstLevel);
     int h = GetHeight(firstLevel);

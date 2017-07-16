@@ -88,7 +88,7 @@ void R_SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *viewMa
 
     viewMatrix[12] = 0.0f;
     viewMatrix[13] = 0.0f;
-    viewMatrix[14] = 0.0f;		
+    viewMatrix[14] = 0.0f;
     viewMatrix[15] = 1.0f;
 }
 
@@ -341,7 +341,7 @@ bool R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBo
         pv++;
     }
 
-    return cullBits ? true : false;	
+    return cullBits ? true : false;
 }
 
 // Practical split scheme:
@@ -403,76 +403,17 @@ void R_Compute1DLinearSamplingWeightsAndOffsets(int numSamples, const float *wei
     }
 }
 
-void R_SH_EvalDirection(int order, const Vec3 &dir, float *basisProj) {
-    static const float shConsts[] = { 0.282095f, 0.488603f, 1.092548f, 0.315392f, 0.546274f, -0.590044f, 2.890611f, -0.457046f, 0.373176f };
-    
-    basisProj[0] = shConsts[0];
-    if (order == 0) {
-        return;
-    }
-    
-    basisProj[1] = shConsts[1] * dir.x;
-    basisProj[2] = shConsts[1] * dir.z;
-    basisProj[3] = shConsts[1] * dir.y;
-    if (order == 1) {
-        return;
-    }
-    
-    basisProj[4] = shConsts[2] * dir.x * dir.y;
-    basisProj[5] = shConsts[2] * dir.y * dir.z;
-    basisProj[6] = shConsts[3] * (3.0f * dir.z * dir.z - 1.0f);
-    basisProj[7] = shConsts[2] * dir.x * dir.z;
-    basisProj[8] = shConsts[4] * (dir.x * dir.x - dir.y * dir.y);
-    if (order == 2) {
-        return;
-    }
-
-    basisProj[9] = shConsts[5] * dir.y * (3.0f * dir.x * dir.x - dir.y * dir.y);
-    basisProj[10] = shConsts[6] * dir.y * dir.x * dir.z;
-    basisProj[11] = shConsts[7] * dir.y * (-1.0f + 5.0f * dir.z * dir.z);
-    basisProj[12] = shConsts[8] * dir.z * (5.0f * dir.z * dir.z - 3.0f);
-    basisProj[13] = shConsts[7] * dir.x * (-1.0f + 5.0f * dir.z * dir.z);
-    basisProj[14] = shConsts[6] * (dir.x * dir.x - dir.y * dir.y) * dir.z;
-    basisProj[15] = shConsts[5] * dir.x * (dir.x * dir.x - 3.0f * dir.y * dir.y);
-    if (order == 3) {
-        return;
-    }
-
-    assert(0);
-}
-
-double R_Lambert_Al_Evaluator(int l) {
-    if (l < 0) { // bogus case
-        return 0.0;
-    }
-
-    if ((l & 1) == 1) {
-        if (l == 1) {
-            return 2.0 * Math::Pi / 3.0;
-        } else {
-            return 0.0;
-        }
-    } else { // l is even
-        double l_fac = Math::Factorial((unsigned int)l);
-        double l_over2_fac = Math::Factorial((unsigned int)(l >> 1));
-        double denominator = (l + 2) * (l - 1);
-        double sign = ((l >> 1) & 1) ? 1.0f : -1.0f;  // -1^(l/2 - 1) = -1 when l is a multiple of 4, 1 for other multiples of 2
-        double exp2_l = (1 << (unsigned int)l);
-        return (sign * 2.0 * Math::Pi * l_fac) / (denominator * exp2_l * l_over2_fac);
-    }
-}
-
 void R_GenerateSphereTriangleStripVerts(const Sphere &sphere, int lats, int longs, Vec3 *verts) {
     Vec3 *vptr = verts;
 
     for (int i = 0; i < lats; i++) {
-        float lat0	= Math::Pi * (0.5f + (float)(i) / lats);
-        float z0	= Math::Sin(lat0) * sphere.radius;
-        float r0	= Math::Cos(lat0) * sphere.radius;
+        float lat0  = Math::Pi * (0.5f + (float)(i) / lats);
+        float z0    = Math::Sin(lat0) * sphere.radius;
+        float r0    = Math::Cos(lat0) * sphere.radius;
 
-        float lat1	= Math::Pi * (0.5f + (float)(i+1) / lats);
-        float z1	= Math::Sin(lat1) * sphere.radius;
-        float r1	= Math::Cos(lat1) * sphere.radius;
+        float lat1  = Math::Pi * (0.5f + (float)(i+1) / lats);
+        float z1    = Math::Sin(lat1) * sphere.radius;
+        float r1    = Math::Cos(lat1) * sphere.radius;
 
         for (int j = 0; j < longs; j++) {
             float lng = Math::TwoPi * (float)j / longs;

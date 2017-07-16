@@ -385,6 +385,8 @@ public:
                         /// Converts cubemap coordinates to 2D face coordinates.
     static CubeMapFace  CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t);
 
+    static float        CubeMapTexelSolidAngle(float x, float y, int size);
+
     static Image *      NewImageFromFile(const char *filename);
 
 private:
@@ -516,65 +518,6 @@ BE_INLINE T Image::WrapCoord(T coord, T maxCoord, SampleWrapMode wrapMode) const
         Wrap<T>(coord, 0, maxCoord);
     }
     return coord;
-}
-
-BE_INLINE Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
-    float sc = s * 2.0f - 1.0f;
-    float tc = t * 2.0f - 1.0f;
-
-    Vec3 cubeMapCoords;
-    switch (cubeMapFace) {
-    case PositiveX: cubeMapCoords = Vec3(+1.0f, -tc, -sc); break;
-    case NegativeX: cubeMapCoords = Vec3(-1.0f, -tc, +sc); break;
-    case PositiveY: cubeMapCoords = Vec3(+sc, +1.0f, +tc); break;
-    case NegativeY: cubeMapCoords = Vec3(+sc, -1.0f, -tc); break;
-    case PositiveZ: cubeMapCoords = Vec3(+sc, -tc, +1.0f); break;
-    case NegativeZ: cubeMapCoords = Vec3(-sc, -tc, -1.0f); break;
-    }
-    // Convert cubemap coordinates from GL axis to z-up axis
-    return Vec3(cubeMapCoords.z, cubeMapCoords.x, cubeMapCoords.y);
-}
-
-BE_INLINE Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
-    // Convert cubemap coordinates from z-up axis to GL axis
-    Vec3 dir = Vec3(cubeMapCoords.y, cubeMapCoords.z, cubeMapCoords.x);
-    int faceIndex = dir.Abs().MaxComponentIndex();
-    float majorAxis = dir[faceIndex];
-    faceIndex = (faceIndex << 1) + IEEE_FLT_SIGNBITSET(majorAxis);
-    float sc, tc;
-
-    switch (faceIndex) {
-    case PositiveX: 
-        sc = -dir.z;
-        tc = -dir.y;
-        break;
-    case NegativeX:
-        sc = +dir.z;
-        tc = -dir.y;
-        break;
-    case PositiveY:
-        sc = +dir.x;
-        tc = +dir.z;
-        break;
-    case NegativeY:
-        sc = +dir.x;
-        tc = -dir.z;
-        break;
-    case PositiveZ:
-        sc = +dir.x;
-        tc = -dir.y;
-        break;
-    case NegativeZ:
-        sc = -dir.x;
-        tc = -dir.y;
-        break;
-    }
-
-    float ama = Math::Fabs(majorAxis);
-    s = (sc / ama + 1.0f) * 0.5f;
-    t = (tc / ama + 1.0f) * 0.5f;
-
-    return (CubeMapFace)faceIndex;
 }
 
 BE_NAMESPACE_END

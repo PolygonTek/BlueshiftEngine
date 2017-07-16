@@ -60,12 +60,6 @@ void    R_ComputeGaussianWeights(int kernelSize, float *weights);
 // 1D 리니어 샘플링 weight, offset 생성
 void    R_Compute1DLinearSamplingWeightsAndOffsets(int numSamples, const float *weights, float *lweights, Vec2 *hoffsets, Vec2 *voffsets);
 
-// dir 방향으로 Spherical Harmonics 프로젝션 값 생성
-void    R_SH_EvalDirection(int order, const Vec3 &dir, float *basisProj);
-
-//
-double  R_Lambert_Al_Evaluator(int l);
-
 // sphere 의 triangle strip verts 를 생성한다
 void    R_GenerateSphereTriangleStripVerts(const Sphere &sphere, int lats, int longs, Vec3 *verts);
 

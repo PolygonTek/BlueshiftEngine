@@ -98,6 +98,7 @@ set(ENGINE_FILES
   Public/Math/RGBE9995.h
   Public/Math/Rotation.h
   Public/Math/Sphere.h
+  Public/Math/SphericalHarmonics.h
   Public/Math/Vector.h
   Public/Math/Vector2.h
   Public/Math/Vector3.h
@@ -286,6 +287,7 @@ set(ENGINE_FILES
   Private/Math/OBB.cpp
   Private/Math/Rect.cpp
   Private/Math/CQuaternion.cpp
+  Private/Math/SphericalHarmonics.cpp
   Private/Math/Math.cpp
   Private/Math/Plane.cpp
   Private/Math/Rotation.cpp
