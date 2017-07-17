@@ -350,8 +350,9 @@ void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRe
     gglBindFramebuffer(GL_READ_FRAMEBUFFER, srcRenderTarget->fbo);
     gglBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstRenderTarget->fbo);
 
-    gglBlitFramebuffer(srcRect.x, srcRect.y, srcRect.w - srcRect.x, srcRect.h - srcRect.y,
-        dstRect.x, dstRect.y, dstRect.w - dstRect.x, dstRect.h - dstRect.y,
+    gglBlitFramebuffer(
+        srcRect.x, srcRect.y, srcRect.X2(), srcRect.Y2(),
+        dstRect.x, dstRect.y, dstRect.X2(), dstRect.Y2(),
         glmask, filter == NearestBlitFilter ? GL_NEAREST : GL_LINEAR);
 
     gglBindFramebuffer(GL_READ_FRAMEBUFFER, 0);

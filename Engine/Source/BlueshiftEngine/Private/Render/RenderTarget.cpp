@@ -78,6 +78,10 @@ void RenderTarget::Clear(const Color4 &clearColor, float clearDepth, int clearSt
     End();
 }
 
+void RenderTarget::Blit(const Rect &srcRect, const Rect &dstRect, RenderTarget *target, int mask, int filter) const {
+    rhi.BlitRenderTarget(rtHandle, srcRect, target->rtHandle, dstRect, mask, filter);
+}
+
 RenderTarget *RenderTarget::Create(const Texture *colorTexture, const Texture *depthStencilTexture, int flags) {
     if (colorTexture) {
         return Create(1, (const Texture **)&colorTexture, depthStencilTexture, flags);

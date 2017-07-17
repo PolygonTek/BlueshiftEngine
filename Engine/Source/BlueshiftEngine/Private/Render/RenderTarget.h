@@ -45,6 +45,8 @@ public:
 
     void                    Clear(const Color4 &clearColor, float clearDepth, int clearStencil) const;
 
+    void                    Blit(const Rect &srcRect, const Rect &dstRect, RenderTarget *target, int mask, int filter) const;
+
     static RenderTarget *   Create(int numColorTextures, const Texture **colorTextures, const Texture *depthStencilTexture, int hasDepthStencilBuffer);
     static RenderTarget *   Create(const Texture *colorTexture, const Texture *depthStencilTexture, int flags);
     static void             Delete(RenderTarget *renderTarget);
