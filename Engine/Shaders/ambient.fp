@@ -45,8 +45,8 @@ void main() {
 	}
 #endif
 
-#if !defined(NO_LIT) || defined(_BUMPENV)
-	#if _NORMAL_SOURCE != 0 || defined(_BUMPENV)
+#if !defined(NO_LIT)
+	#if _NORMAL_SOURCE != 0
 		#if _NORMAL_SOURCE == 2
 			vec3 b1 = normalize(getNormal(normalMap, tc));
 			vec3 b2 = vec3(tex2D(detailNormalMap, tc * detailRepeat).xy * 2.0 - 1.0, 0.0);
@@ -79,21 +79,7 @@ void main() {
 	ambient += tex2D(selfIllumMap, tc);
 #endif
 
-#if defined(_BUMPENV)
-	vec3 V = normalize(v2f_viewVector);
-	vec3 R = reflect(-V, N);
-
-	vec3 worldR;
-	worldR.x = dot(tangentToWorldMatrixS, R);
-	worldR.y = dot(tangentToWorldMatrixT, R);
-	worldR.z = dot(tangentToWorldMatrixR, R);
-	vec3 envColor = tex2D(envMaskMap, tc).xyz * texCUBE(envCubeMap, worldR).xyz;
-
-	float RF = fresnel(-V, N, fresnelConstant);
-	ambient *= mix(diffuse.xyz, envColor, RF);
-#else
 	ambient *= diffuse.xyz;
-#endif
 
 	vec4 outputColor = v2f_color * vec4(ambient, diffuse.w);
 

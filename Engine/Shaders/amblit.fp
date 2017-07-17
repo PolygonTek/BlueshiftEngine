@@ -40,7 +40,7 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 uniform sampler2D subSurfaceColorMap;
 
 void main() {
-#if defined(_PARALLAX) || defined(_RIM_LIGHT) || defined(_BUMPENV)
+#if defined(_PARALLAX) || defined(_RIM_LIGHT)
 	vec3 V = normalize(v2f_viewVector);
 #endif
 
@@ -81,9 +81,10 @@ void main() {
 	//vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_tangentToWorldMatrixT.w);
 
 	vec3 worldN;
-	worldN.x = dot(tangentToWorldMatrixS, N);
-	worldN.y = dot(tangentToWorldMatrixT, N);
-	worldN.z = dot(tangentToWorldMatrixR, N);
+    // Convert coordinates from z-up to GL axis
+	worldN.z = dot(tangentToWorldMatrixS, N);
+	worldN.x = dot(tangentToWorldMatrixT, N);
+	worldN.y = dot(tangentToWorldMatrixR, N);
 
 	vec3 a1 = texCUBE(ambientCubeMap0, worldN).xyz;
 	vec3 a2 = texCUBE(ambientCubeMap1, worldN).xyz;
@@ -91,21 +92,7 @@ void main() {
 	ambient = mix(a1, a2, ambientLerp);
 #endif
 
-#ifdef _BUMPENV
-	vec3 worldE;
-	vec3 E = reflect(-V, N);
-	worldE.x = dot(tangentToWorldMatrixS, E);
-	worldE.y = dot(tangentToWorldMatrixT, E);
-	worldE.z = dot(tangentToWorldMatrixR, E);
-
-	float reflectionRatio = fresnel(-V, N, fresnelConstant);
-
-	vec3 Ce = tex2D(envMaskMap, tc).xyz * texCUBE(envCubeMap, worldE).xyz;
 	ambient *= diffuse.xyz;
-	ambient += Ce * reflectionRatio;
-#else
-	ambient *= diffuse.xyz;
-#endif
 
 #ifdef SELF_ILLUM
 	ambient += tex2D(selfIllumMap, tc);

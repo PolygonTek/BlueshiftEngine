@@ -64,8 +64,8 @@ void main() {
 	localBiTangent = normalize(cross(vNormal.xyz, vTangent.xyz) * vTangent.w);
 #endif
 
-#if !defined(NO_LIT) || defined(_BUMPENV)
-	#if _NORMAL_SOURCE != 0 || defined(_BUMPENV)
+#if !defined(NO_LIT)
+	#if _NORMAL_SOURCE != 0
 		mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
 
 		// world normal for irradiance cubemap
@@ -79,7 +79,7 @@ void main() {
 	#endif
 #endif
 
-#if defined(_PARALLAX) || defined(_BUMPENV)
+#if defined(_PARALLAX)
 	vec3 V = localViewOrigin.xyz - localVertex.xyz;
 	v2f_viewVector = V * TBN;
 #endif

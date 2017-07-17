@@ -92,7 +92,7 @@ void main() {
 
 	vec3 V = localViewOrigin.xyz - localVertex.xyz;
 
-	#if !defined(V2F_VIEW_VECTOR) && (defined(_PARALLAX) || defined(_BUMPENV))
+	#if !defined(V2F_VIEW_VECTOR) && defined(_PARALLAX)
 		v2f_viewVector = V * TBN;
 	#endif
 
@@ -107,7 +107,7 @@ void main() {
 
 	v2f_normal = localNormal;
 
-	#if !defined(V2F_VIEW_VECTOR) && (defined(_PARALLAX) || defined(_BUMPENV))
+	#if !defined(V2F_VIEW_VECTOR) && defined(_PARALLAX)
 		v2f_viewVector = V;
 	#endif
 

@@ -126,14 +126,6 @@ void main() {
 	mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
 	v2f_lightVector = L * TBN;
 	v2f_viewVector = V * TBN;
-
-	#ifdef _BUMPENV
-		v2f_tangentToWorldMatrixS.xyz = worldMatrixS.xyz * TBN;
-		v2f_tangentToWorldMatrixT.xyz = worldMatrixT.xyz * TBN;
-		//v2f_tangentToWorldMatrixR.xyz = worldMatrixR.xyz * TBN;
-
-		v2f_tangentToWorldMatrixT.w = in_tangent.w;
-	#endif
 #endif
 
 	v2f_tcDiffuseNormal.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));

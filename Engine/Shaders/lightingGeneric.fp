@@ -4,6 +4,9 @@ $include "fragment_common.glsl"
 $include "shadow.fp"
 #endif
 
+$include "PhongLighting.glsl"
+$include "BRDF.glsl"
+
 in vec4 v2f_color;
 in vec2 v2f_tcDiffuseNormal;
 in vec2 v2f_tcSpecular;
@@ -48,9 +51,6 @@ uniform float rimLightShadowDensity;// = 0.5;
 uniform float subSurfaceRollOff;
 uniform float subSurfaceShadowDensity;// = 0.5;
 uniform sampler2D subSurfaceColorMap;
-
-$include "PhongLighting.glsl"
-$include "BRDF.glsl"
 
 void main() {
     vec3 L = normalize(v2f_lightVector);
@@ -127,23 +127,7 @@ void main() {
     litBlinnPhongEC(L, N, V, Kd, Ks, Cd, Cs);
     //litStandard(L, N, V, Kd.rgb, roughness, metalness, Cd, Cs);
 
-#ifdef _BUMPENV
-    vec3 tangentToWorldMatrixS = normalize(v2f_tangentToWorldMatrixS.xyz);
-    vec3 tangentToWorldMatrixT = normalize(v2f_tangentToWorldMatrixT.xyz);
-    //vec3 tangentToWorldMatrixR = normalize(v2f_tangentToWorldMatrixR.xyz);
-    vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_tangentToWorldMatrixT.w);
-
-    vec3 E = reflect(-V, N);
-    vec3 worldE;
-    worldE.x = dot(tangentToWorldMatrixS, E);
-    worldE.y = dot(tangentToWorldMatrixT, E);
-    worldE.z = dot(tangentToWorldMatrixR, E);
-
-    vec3 Ce = tex2D(envMaskMap, tc).xyz * texCUBE(envCubeMap, worldE).xyz;
-    vec3 C = Cd + Ce * reflectness;
-#else
     vec3 C = Cd;
-#endif
 
     C += Cs;
 
