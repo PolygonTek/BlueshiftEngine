@@ -350,8 +350,6 @@ public:
     static Shader *         skyboxSixSidedShader;
     static Shader *         fogLightShader;
     static Shader *         blendLightShader;
-    static Shader *         shProjectionShader;
-    static Shader *         shEvalIrradianceCubeMapShader;
     static Shader *         postObjectMotionBlurShader;
     static Shader *         postCameraMotionBlurShader;
     static Shader *         postPassThruShader;	

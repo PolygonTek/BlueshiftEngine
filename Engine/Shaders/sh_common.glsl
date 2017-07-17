@@ -20,7 +20,7 @@ vec3 faceToGLCubeMapCoords(int faceIndex, int x, int y, int cubeMapSize) {
 	vec3 vec;
 	
 	if (faceIndex == 0) {
-		vec = vec3(1.0, -tc, -sc);	
+		vec = vec3(1.0, -tc, -sc);
 	} else if (faceIndex == 1) {
 		vec = vec3(-1.0, -tc, sc);
 	} else if (faceIndex == 2) {

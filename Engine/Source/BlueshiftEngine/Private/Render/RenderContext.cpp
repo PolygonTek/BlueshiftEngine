@@ -765,8 +765,8 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     SceneView view;
     SceneView::Parms viewParms;
     memset(&viewParms, 0, sizeof(viewParms));
-    viewParms.flags = SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess;// | SceneView::Flag::NoUpscale;
-    viewParms.clearMethod = SceneView::ColorClear;
+    viewParms.flags = SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess | SceneView::Flag::SkipDebugDraw;
+    viewParms.clearMethod = SceneView::SkyboxClear;
     viewParms.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
     viewParms.layerMask = BIT(0);
     viewParms.renderRect.Set(0, 0, width, height);
@@ -791,15 +791,14 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     BE_LOG(L"screenshot saved to \"%hs\"\n", path);
 }
 
-// environment cubemap shot
-void RenderContext::TakeEnvShot(const char *filename, const Vec3 &origin, int size) {
+void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage) {
     static const char cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
     char path[256];
 
     SceneView view;
     SceneView::Parms viewParms;
     memset(&viewParms, 0, sizeof(viewParms));
-    viewParms.flags = SceneView::NoSubViews | SceneView::SkipPostProcess;// | SceneView::NoUpscale
+    viewParms.flags = SceneView::NoSubViews | SceneView::SkipPostProcess | SceneView::Flag::SkipDebugDraw;
     viewParms.clearMethod = SceneView::SkyboxClear;
     viewParms.layerMask = BIT(0);
     viewParms.renderRect.Set(0, 0, size, size);
@@ -810,82 +809,69 @@ void RenderContext::TakeEnvShot(const char *filename, const Vec3 &origin, int si
     viewParms.origin = origin;
 
     Mat3 axis[6];
-    axis[0]	= Angles(  0,   0, -90).ToMat3();
-    axis[1] = Angles(180,   0,  90).ToMat3();
-    axis[2] = Angles( 90,   0, 180).ToMat3();
-    axis[3] = Angles(-90,   0,   0).ToMat3();
-    axis[4] = Angles(-90, -90,   0).ToMat3();
-    axis[5] = Angles( 90,  90,   0).ToMat3();
+    axis[0] = Angles(-90, 0, 0).ToMat3();
+    axis[1] = Angles(90, 0, 0).ToMat3();
+    axis[2] = Angles(0, -90, 0).ToMat3();
+    axis[3] = Angles(0, 90, 0).ToMat3();
+    axis[4] = Angles(0, 0, 0).ToMat3();
+    axis[5] = Angles(180, 0, 0).ToMat3();
 
-    for (int i = 0; i < 6; i++) {
-        viewParms.axis = axis[i];
+    Image faceImages[6];
+
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        viewParms.axis = axis[faceIndex];
 
         view.Update(&viewParms);
 
         BeginFrame();
-        renderSystem.primaryWorld->RenderScene(&view);
-        Str::snPrintf(path, sizeof(path), "%s_%s.png", filename, cubemap_postfix[i]);
+        renderWorld->RenderScene(&view);
+        Str::snPrintf(path, sizeof(path), "Cache/Environment/env_%s.png", cubemap_postfix[faceIndex]);
         renderSystem.CmdScreenshot(0, 0, size, size, path);
         EndFrame();
 
-        BE_LOG(L"envshot saved to \"%hs\"\n", path);
+        faceImages[faceIndex].Load(path);
     }
+
+    envCubeImage.CreateCubeFrom6Faces(faceImages);
 }
 
-// irradiance cubemap shot
-void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin, int size) {
-    static const char cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
+void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size) {
+    Image envCubeImage;
+    CaptureEnvCubeImage(renderWorld, origin, size, envCubeImage);
+
     char path[256];
-    int envmapSize = 256;
+    Str::snPrintf(path, sizeof(path), "%s_env.dds", filename);
+    envCubeImage.ConvertFormatSelf(Image::RGBA_DXT1, false, Image::HighQuality);
+    envCubeImage.WriteDDS(path);
 
-    SceneView view;
-    SceneView::Parms viewParms;
-    memset(&viewParms, 0, sizeof(viewParms));
-    viewParms.flags = SceneView::NoSubViews;// | NoUpscale | SceneView::SkipPostProcess;
-    viewParms.layerMask = BIT(0);
-    viewParms.renderRect.Set(0, 0, envmapSize, envmapSize);
-    viewParms.fovX = 90;
-    viewParms.fovY = 90;
-    viewParms.zNear = 4.0f;
-    viewParms.zFar = 8192.0f;
-    viewParms.origin = origin;
+    BE_LOG(L"envshot saved to \"%hs\"\n", path);
+}
 
-    Mat3 axis[6];
-    axis[0]	= Angles(  0,   0, -90).ToMat3();
-    axis[1] = Angles(180,   0,  90).ToMat3();
-    axis[2] = Angles( 90,   0, 180).ToMat3();
-    axis[3] = Angles(-90,   0,   0).ToMat3();
-    axis[4] = Angles(-90, -90,   0).ToMat3();
-    axis[5] = Angles( 90,  90,   0).ToMat3();
+void RenderContext::TakeIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size) {
+    //-------------------------------------------------------------------------------
+    // Capture environment cubemap
+    //-------------------------------------------------------------------------------
+    int envMapSize = 256;
 
-    for (int i = 0; i < 6; i++) {
-        viewParms.axis = axis[i];
-        view.Update(&viewParms);
-
-        BeginFrame();
-        renderSystem.primaryWorld->RenderScene(&view);
-        Str::snPrintf(path, sizeof(path), "%s_%s.png", filename, cubemap_postfix[i]);
-        renderSystem.CmdScreenshot(0, 0, envmapSize, envmapSize, path);
-        EndFrame();
-    }
+    Image envCubeImage;
+    CaptureEnvCubeImage(renderWorld, origin, envMapSize, envCubeImage);
     
     Texture *radianceCubeMap = new Texture;
-    radianceCubeMap->Load(filename, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    radianceCubeMap->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     //-------------------------------------------------------------------------------
     // Create 4-by-4 envmap sized block weight map for each faces
-    //-------------------------------------------------------------------------------	
-    
+    //------------------------------------------------------------------------------- 
     Texture *weightTextures[6];
 
-    float *weightData = (float *)Mem_Alloc(envmapSize * 4 * envmapSize * 4 * sizeof(float));
-    float invSize = 1.0f / (envmapSize - 1);
+    float *weightData = (float *)Mem_Alloc(envMapSize * 4 * envMapSize * 4 * sizeof(float));
+    float invSize = 1.0f / (envMapSize - 1);
     
-    for (int face = 0; face < 6; face++) {
-        for (int y = 0; y < envmapSize; y++) {
-            for (int x = 0; x < envmapSize; x++) {
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        for (int y = 0; y < envMapSize; y++) {
+            for (int x = 0; x < envMapSize; x++) {
                 // Gets sample direction for each faces 
-                Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)face, x * invSize, y * invSize);
+                Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, x * invSize, y * invSize);
                 dir.Normalize();
 
                 // 9 terms are required for order 3 SH basis functions
@@ -894,12 +880,12 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
                 SphericalHarmonics::EvalBasis(3, dir, basisEval);
 
                 // Solid angle of the cubemap texel
-                float dw = Image::CubeMapTexelSolidAngle(x, y, envmapSize);
+                float dw = Image::CubeMapTexelSolidAngle(x, y, envMapSize);
 
                 // Precalculates 9 terms (basisEval * dw) for each envmap pixel in the 4-by-4 envmap sized block texture for each faces  
                 for (int j = 0; j < 4; j++) {
                     for (int i = 0; i < 4; i++) {
-                        int offset = (((j * envmapSize + y) * envmapSize) << 2) + i * envmapSize + x;
+                        int offset = (((j * envMapSize + y) * envMapSize) << 2) + i * envMapSize + x;
 
                         weightData[offset] = basisEval[(j << 2) + i] * dw;
                     }
@@ -907,8 +893,8 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
             }
         }
 
-        weightTextures[face] = new Texture;
-        weightTextures[face]->Create(RHI::Texture2D, Image(envmapSize * 4, envmapSize * 4, 1, 1, 1, Image::L_32F, (byte *)weightData, Image::LinearSpaceFlag),
+        weightTextures[faceIndex] = new Texture;
+        weightTextures[faceIndex]->Create(RHI::Texture2D, Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::L_32F, (byte *)weightData, Image::LinearSpaceFlag),
             Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
     }
 
@@ -917,20 +903,20 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     //-------------------------------------------------------------------------------
     // SH projection of (Li * dw) and create 9 coefficents in a single 4x4 texture
     //-------------------------------------------------------------------------------
+    Shader *shProjectionShader = shaderManager.GetShader("Shaders/SH_projection.shader");
+    Shader *shader = shProjectionShader->InstantiateShader(Array<Shader::Define>());
+
     Image image;
     image.Create2D(4, 4, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
     Texture *incidentCoeffTexture = new Texture;
     incidentCoeffTexture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
     RenderTarget *incidentCoeffRT = RenderTarget::Create(incidentCoeffTexture, nullptr, 0);
-    
+
     incidentCoeffRT->Begin();
     Rect prevViewportRect = rhi.GetViewport();
     rhi.SetViewport(Rect(0, 0, incidentCoeffRT->GetWidth(), incidentCoeffRT->GetHeight()));
-
     rhi.SetStateBits(RHI::ColorWrite);
     rhi.SetCullFace(RHI::NoCull);
-
-    const Shader *shader = ShaderManager::shProjectionShader;
 
     shader->Bind();
     shader->SetTextureArray("weightMap", 6, (const Texture **)weightTextures);
@@ -941,20 +927,28 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
     
     rhi.SetViewport(prevViewportRect);
     incidentCoeffRT->End();
+
+    shaderManager.ReleaseShader(shader);
+    shaderManager.ReleaseShader(shProjectionShader);
     
     delete radianceCubeMap;
 
-    for (int i = 0; i < 6; i++) {
-        delete weightTextures[i];
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        delete weightTextures[faceIndex];
     }
     
     //-------------------------------------------------------------------------------
     // SH convolution
     //-------------------------------------------------------------------------------
+    Image faceImages[6];
+
     Texture *irradianceTexture;
     irradianceTexture = textureManager.AllocTexture("_irradiance");
-    irradianceTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, Image::RGB_16F_16F_16F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    irradianceTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, Image::RGB_11F_11F_10F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
     RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceTexture, nullptr, 0);
+
+    Shader *shEvalIrradianceCubeMapShader = shaderManager.GetShader("Shaders/SH_evalIrradianceCubeMap.shader");
+    shader = shEvalIrradianceCubeMapShader->InstantiateShader(Array<Shader::Define>());
 
     // Precompute ZH coefficients * sqrt(4PI/(2l + 1)) of Lambert diffuse spherical function cos(theta) / PI
     // which function is rotationally symmetric so only 3 terms are needed
@@ -967,12 +961,9 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
         irradianceCubeRT->Begin(0, faceIndex);
         Rect prevViewportRect = rhi.GetViewport();
         rhi.SetViewport(Rect(0, 0, irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight()));
-
         rhi.SetStateBits(RHI::ColorWrite);
         rhi.SetCullFace(RHI::NoCull);
-
-        const Shader *shader = ShaderManager::shEvalIrradianceCubeMapShader;
-
+        
         shader->Bind();
         shader->SetTexture("incidentCoeffMap", incidentCoeffRT->ColorTexture());
         shader->SetConstant1i("cubeMapSize", irradianceCubeRT->GetWidth());
@@ -983,19 +974,24 @@ void RenderContext::TakeIrradianceShot(const char *filename, const Vec3 &origin,
         rhi.SetViewport(prevViewportRect);
         irradianceCubeRT->End();
 
-        Image faceImage;
-        faceImage.Create2D(irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight(), 1, Image::RGB_16F_16F_16F, nullptr, Image::LinearSpaceFlag);
+        faceImages[faceIndex].Create2D(irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight(), 1, Image::RGB_11F_11F_10F, nullptr, Image::LinearSpaceFlag);
         
         irradianceCubeRT->ColorTexture()->Bind();
-        irradianceCubeRT->ColorTexture()->GetTexelsCubemap((RHI::CubeMapFace)faceIndex, Image::RGB_16F_16F_16F, faceImage.GetPixels());
-
-        faceImage.FlipY();
-        
-        Str::snPrintf(path, sizeof(path), "%s_irr_%s.png", filename, cubemap_postfix[faceIndex]);
-        faceImage.Write(path);
-
-        BE_LOG(L"irrshot saved to \"%hs\"\n", path);
+        irradianceCubeRT->ColorTexture()->GetTexelsCubemap((RHI::CubeMapFace)faceIndex, Image::RGB_11F_11F_10F, faceImages[faceIndex].GetPixels());
     }
+
+    shaderManager.ReleaseShader(shader);
+    shaderManager.ReleaseShader(shEvalIrradianceCubeMapShader);
+
+    Image irradianceCubeImage;
+    irradianceCubeImage.CreateCubeFrom6Faces(faceImages);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s_irr.dds", filename);
+    irradianceCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    irradianceCubeImage.Write(path);
+
+    BE_LOG(L"irrshot saved to \"%hs\"\n", path);
     
     textureManager.ReleaseTexture(irradianceTexture, true);
     RenderTarget::Delete(irradianceCubeRT);

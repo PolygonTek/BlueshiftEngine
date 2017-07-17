@@ -29,8 +29,7 @@ public:
                     // Evaluates n'th order SH basis function with the given z-up direction
     static void     EvalBasis(int n, const Vec3 &dir, float *basisProj);
 
-                    // Projects spherical function cos(theta)
-                    // Same for each band
+                    // Returns sqrt(4PI/(2l + 1)) * projected ZH Lambert function cos(theta) / Pi 
     static double   Lambert_Al_Evaluator(int l);
 };
 

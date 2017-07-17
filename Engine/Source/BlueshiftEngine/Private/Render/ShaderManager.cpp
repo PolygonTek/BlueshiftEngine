@@ -40,9 +40,6 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/fogLight" },
     { "Shaders/blendLight" },
     
-    //{ "Shaders/SH_projection" },
-    //{ "Shaders/SH_evalIrradianceCubeMap" },
-
     { "Shaders/postObjectMotionBlur" },
     { "Shaders/postCameraMotionBlur" },
     { "Shaders/passThru" },
@@ -97,8 +94,6 @@ Shader *            ShaderManager::skyboxCubemapShader;
 Shader *            ShaderManager::skyboxSixSidedShader;
 Shader *            ShaderManager::fogLightShader;
 Shader *            ShaderManager::blendLightShader;
-Shader *            ShaderManager::shProjectionShader;
-Shader *            ShaderManager::shEvalIrradianceCubeMapShader;
 Shader *            ShaderManager::postObjectMotionBlurShader;
 Shader *            ShaderManager::postCameraMotionBlurShader;
 Shader *            ShaderManager::postPassThruShader;
@@ -279,9 +274,6 @@ void ShaderManager::InstantiateEngineShaders() {
 
     fogLightShader = originalShaders[FogLightShader]->InstantiateShader(Array<Shader::Define>());
     blendLightShader = originalShaders[BlendLightShader]->InstantiateShader(Array<Shader::Define>());
-
-    //shProjectionShader = originalShaders[SHProjectionShader]->InstantiateShader(Array<Shader::Define>());
-    //shEvalIrradianceCubeMapShader = originalShaders[SHEvalIrradianceCubeMapShader]->InstantiateShader(Array<Shader::Define>());
 
     postObjectMotionBlurShader = originalShaders[PostObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
     postCameraMotionBlurShader = originalShaders[PostCameraMotionBlurShader]->InstantiateShader(Array<Shader::Define>());

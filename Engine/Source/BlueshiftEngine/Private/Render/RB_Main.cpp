@@ -657,13 +657,16 @@ static const void *RB_ExecuteDrawView(const void *data) {
 static const void *RB_ExecuteScreenshot(const void *data) {
     ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)data;
 
-    if (cmd->x + cmd->width > backEnd.ctx->GetDeviceWidth() || cmd->y + cmd->height > backEnd.ctx->GetDeviceHeight()) {
+    Rect captureRect(cmd->x, cmd->y, cmd->width, cmd->height);
+    captureRect.y = backEnd.ctx->GetDeviceHeight() - captureRect.Y2();
+
+    if (captureRect.X2() > backEnd.ctx->GetDeviceWidth() || captureRect.Y2() > backEnd.ctx->GetDeviceHeight()) {
         BE_WARNLOG(L"larger than screen size: %i, %i, %i, %i\n", cmd->x, cmd->y, cmd->width, cmd->height);
     }
     
     Image screenImage;
-    screenImage.Create2D(cmd->width, cmd->height, 1, Image::BGR_8_8_8, nullptr, 0);
-    rhi.ReadPixels(cmd->x, cmd->y, cmd->width, cmd->height, Image::BGR_8_8_8, screenImage.GetPixels());
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::BGR_8_8_8, nullptr, 0);
+    rhi.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::BGR_8_8_8, screenImage.GetPixels());
     screenImage.FlipY();
 
     // apply gamma ramp table

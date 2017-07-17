@@ -68,7 +68,7 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     this->numSlices = 6;
     this->numMipmaps = images[0].numMipmaps;
     this->format = images[0].format;
-    this->flags = images[0].flags;
+    this->flags = images[0].flags | Flag::CubeMapFlag;
     
     int sliceSize = GetSliceSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
@@ -98,7 +98,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->numSlices = 6;
     this->numMipmaps = 1;
     this->format = equirectangularImage.format;
-    this->flags = equirectangularImage.flags | CubeMapFlag;
+    this->flags = equirectangularImage.flags | Flag::CubeMapFlag;
 
     int sliceSize = GetSliceSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
@@ -361,12 +361,12 @@ Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
 
     Vec3 glCubeMapCoords;
     switch (cubeMapFace) {
-    case PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break;
-    case NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break;
-    case PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break;
-    case NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break;
-    case PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break;
-    case NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break;
+    case PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break; // +Y in z-up axis
+    case NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break; // -Y in z-up axis
+    case PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break; // +Z in z-up axis
+    case NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z in z-up axis
+    case PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X in z-up axis
+    case NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X in z-up axis
     }
     // Convert cubemap coordinates from GL axis to z-up axis
     return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);

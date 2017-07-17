@@ -76,7 +76,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
     gglGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFBO);
 
     gglGenFramebuffers(1, &fbo);
-    gglBindFramebuffer(GL_FRAMEBUFFER, fbo);		
+    gglBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
     GLenum target = 0;
     switch (type) {
@@ -84,7 +84,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
         target = GL_TEXTURE_2D;
         break;
     case RenderTargetCubeMap:
-        target = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+        target = GL_TEXTURE_CUBE_MAP;
         break;
     case RenderTarget2DArray:
         target = GL_TEXTURE_2D_ARRAY;

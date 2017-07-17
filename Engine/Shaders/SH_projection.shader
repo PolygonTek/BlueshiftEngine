@@ -31,11 +31,9 @@ shader "SH_projection" {
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int y = 0; y < radianceCubeMapSize; y++) {
                     for (int x = 0; x < radianceCubeMapSize; x++) {
-                        int blockS = int(min(floor(v2f_texCoord.s * 4.0), 3.0));
-                        int blockT = int(min(floor(v2f_texCoord.t * 4.0), 3.0));
-                        //ivec2 blockCoords = ivec2(min(floor(v2f_texCoord * 4.0), vec2(3.0, 3.0)));
+                        ivec2 blockCoords = ivec2(min(floor(v2f_texCoord * 4.0), vec2(3.0)));
 
-                        vec2 weightCoords = vec2(float(blockS * radianceCubeMapSize + x), float(blockT * radianceCubeMapSize + y)) * weightMapInvSize;
+                        vec2 weightCoords = vec2(float(blockCoords.s * radianceCubeMapSize + x), float(blockCoords.t * radianceCubeMapSize + y)) * weightMapInvSize;
                         float weight = tex2D(weightMap[faceIndex], weightCoords).x;
 
                         vec3 radianceDir = faceToGLCubeMapCoords(faceIndex, x, y, radianceCubeMapSize);
@@ -44,7 +42,7 @@ shader "SH_projection" {
                         shCoeff += radianceColor * weight;
                     }
                 }
-            }
+            }            
 
             o_fragColor = vec4(shCoeff, 1.0);
         }

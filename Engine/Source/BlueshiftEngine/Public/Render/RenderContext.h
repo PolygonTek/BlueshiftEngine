@@ -71,6 +71,7 @@ struct RenderCounter {
     unsigned int            numSkinningEntities;
 };
 
+class Image;
 class Texture;
 class RenderTarget;
 class Material;
@@ -152,8 +153,10 @@ public:
     bool                    QuerySelection(const Rect &rect, Inclusion inclusion, Array<int> &indexes);
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
-    void                    TakeEnvShot(const char *filename, const Vec3 &origin, int size = 256);
-    void                    TakeIrradianceShot(const char *filename, const Vec3 &origin, int size = 16);
+    void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size = 256);
+    void                    TakeIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size = 16);
+
+    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage);
 
 //private:
     void                    InitScreenMapRT();
