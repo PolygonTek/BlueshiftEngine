@@ -664,8 +664,6 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
                         tempSamplers[numSamplers].name = Mem_AllocString(uniformName);
                         tempSamplers[numSamplers].unit = numSamplers; // TMU
 
-                        *bracket = '\0';
-
                         numSamplers++;
                     }
                 }

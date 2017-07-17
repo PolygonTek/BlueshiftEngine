@@ -404,8 +404,8 @@ static int RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &vie
     Mat4 prevProjMatrix = backEnd.projMatrix;
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
 
-    for (int i = RHI::PositiveX; i <= RHI::NegativeZ; i++) {
-        R_CubeMapFaceToAxis((RHI::CubeMapFace)i, axis);
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        R_CubeMapFaceToAxis((RHI::CubeMapFace)faceIndex, axis);
 
         lightFrustum.SetAxis(axis);
 
@@ -421,7 +421,7 @@ static int RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &vie
 
         rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
-        if (RB_ShadowCubeMapFacePass(viewLight, lightViewMatrix, lightFrustum, viewFrustum, true, i)) {
+        if (RB_ShadowCubeMapFacePass(viewLight, lightViewMatrix, lightFrustum, viewFrustum, true, faceIndex)) {
             shadowMapDraw++;
         }
 

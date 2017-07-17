@@ -499,14 +499,14 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
     case TextureCubeMap:
         gglTexStorage2D(GL_TEXTURE_CUBE_MAP, maxLevelAlloc, internalFormat, srcImage->GetWidth(), srcImage->GetWidth());
         if (pic) {
-            for (int face = 0; face < 6; face++) {
+            for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int level = 0; level < maxLevel; level++) {
                     int w = srcImage->GetWidth(level);
                     int size = srcImage->GetSliceSize(level);
                     if (srcCompressed) {
-                        gglCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, 0, 0, w, w, format, size, pic);
+                        gglCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIndex, level, 0, 0, w, w, format, size, pic);
                     } else {
-                        gglTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, 0, 0, w, w, format, type, pic);
+                        gglTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIndex, level, 0, 0, w, w, format, type, pic);
                     }
                     pic += size;
                 }
