@@ -478,9 +478,9 @@ void RenderSystem::CheckModifiedCVars() {
 //--------------------------------------------------------------------------------------------------
 
 void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
-    char	path[1024];
-    char	picname[16];
-    int		i;
+    char    path[1024];
+    char    picname[16];
+    int     i;
 
     const char *homePath = PlatformFile::HomePath();
     

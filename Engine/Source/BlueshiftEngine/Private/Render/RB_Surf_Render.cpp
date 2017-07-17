@@ -394,7 +394,7 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
         const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
         shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
         shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);			
+        shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
     } else {
         shader = ShaderManager::amblitNoAmbientCubeMapShader;
         

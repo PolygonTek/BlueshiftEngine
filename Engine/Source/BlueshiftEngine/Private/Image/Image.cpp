@@ -361,12 +361,12 @@ Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
 
     Vec3 glCubeMapCoords;
     switch (cubeMapFace) {
-    case PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break; // +Y in z-up axis
-    case NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break; // -Y in z-up axis
-    case PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break; // +Z in z-up axis
-    case NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z in z-up axis
-    case PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X in z-up axis
-    case NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X in z-up axis
+    case PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break; // +Y direction in z-up axis
+    case NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break; // -Y direction in z-up axis
+    case PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break; // +Z direction in z-up axis
+    case NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z direction in z-up axis
+    case PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X direction in z-up axis
+    case NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X direction in z-up axis
     }
     // Convert cubemap coordinates from GL axis to z-up axis
     return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);
