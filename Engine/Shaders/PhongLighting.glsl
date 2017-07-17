@@ -6,7 +6,7 @@ float glossinessToSpecularPower(float glossiness) {
     return exp2(10.0 * glossiness + 1.0); 
 }
 
-void litPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
+void litPhong(in vec3 L, in vec3 N, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
     float w2 = 1.0 + wrapped;
@@ -31,7 +31,7 @@ void litPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 
 }
 
 // Blinn-Phong lighting
-void litBlinnPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
+void litBlinnPhong(in vec3 L, in vec3 N, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
     float w2 = 1.0 + wrapped;
@@ -56,7 +56,7 @@ void litBlinnPhong(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out 
 }
 
 // Phong lighting that satisfy energy conservation
-void litPhongEC(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
+void litPhongEC(in vec3 L, in vec3 N, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
     float w2 = 1.0 + wrapped;
@@ -89,7 +89,7 @@ void litPhongEC(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec
 }
 
 // Blinn-Phong lighting that satisfy energy conservation
-void litBlinnPhongEC(in vec3 N, in vec3 L, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
+void litBlinnPhongEC(in vec3 L, in vec3 N, in vec3 V, in vec4 Kd, in vec4 Ks, out vec3 Cd, out vec3 Cs) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
     float w2 = 1.0 + wrapped;

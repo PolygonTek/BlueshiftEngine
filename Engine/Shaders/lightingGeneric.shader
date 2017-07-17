@@ -15,7 +15,7 @@ shader "Lighting/Generic" {
         specularMap("Specular Map") : object TextureAsset = "_whiteTexture"
         glossiness("Glossiness") : float range 0 1 0.01 = "0.3"
         specularReflectance("Specular Reflectance") : float range 0 1 0.01 = "0.1"
-        //metallic("Metallic") : float range 0 1 0.02 = "0.0"
+        //metalness("Metalness") : float range 0 1 0.02 = "0.0"
         //roughness("Roughness") : float range 0 1 0.02 = "0.5"
     }
 
