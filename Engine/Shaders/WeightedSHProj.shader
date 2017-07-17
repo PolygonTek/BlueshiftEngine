@@ -1,4 +1,4 @@
-shader "SH_projection" {
+shader "WeightedSHProj" {
     glsl_vp {
         in vec4 in_position : POSITION;
         in vec2 in_st : TEXCOORD0;
@@ -13,6 +13,7 @@ shader "SH_projection" {
 
     glsl_fp {
         $include "sh_common.glsl"
+        $include "fragment_common.glsl"
 
         in vec2 v2f_texCoord;
 
@@ -36,7 +37,7 @@ shader "SH_projection" {
                         vec2 weightCoords = vec2(float(blockCoords.s * radianceCubeMapSize + x), float(blockCoords.t * radianceCubeMapSize + y)) * weightMapInvSize;
                         float weight = tex2D(weightMap[faceIndex], weightCoords).x;
 
-                        vec3 radianceDir = faceToGLCubeMapCoords(faceIndex, x, y, radianceCubeMapSize);
+                        vec3 radianceDir = faceToGLCubeMapCoords(faceIndex, x, y, radianceCubeMapSize).xyz;
                         vec3 radianceColor = texCUBE(radianceCubeMap, radianceDir).xyz * radianceScale;
 
                         shCoeff += radianceColor * weight;

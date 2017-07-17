@@ -793,7 +793,6 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
 
 void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage) {
     static const char cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
-    char path[256];
 
     SceneView view;
     SceneView::Parms viewParms;
@@ -808,40 +807,62 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
     viewParms.zFar = 8192.0f;
     viewParms.origin = origin;
 
-    Mat3 axis[6];
-    axis[0] = Angles(-90, 0, 0).ToMat3();
-    axis[1] = Angles(90, 0, 0).ToMat3();
-    axis[2] = Angles(0, -90, 0).ToMat3();
-    axis[3] = Angles(0, 90, 0).ToMat3();
-    axis[4] = Angles(0, 0, 0).ToMat3();
-    axis[5] = Angles(180, 0, 0).ToMat3();
+    Mat3 viewAxis[6];
+    viewAxis[0] = Angles(-90,   0, 0).ToMat3();
+    viewAxis[1] = Angles( 90,   0, 0).ToMat3();
+    viewAxis[2] = Angles(  0, -90, 0).ToMat3();
+    viewAxis[3] = Angles(  0,  90, 0).ToMat3();
+    viewAxis[4] = Angles(  0,   0, 0).ToMat3();
+    viewAxis[5] = Angles(180,   0, 0).ToMat3();
+
+    Image image;
+    image.Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
+    Texture *targetTexture = new Texture;
+    targetTexture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *targetRT = RenderTarget::Create(targetTexture, nullptr, 0);
+
+    Rect srcRect = Rect(0, 0, size, size);
+    Rect dstRect = Rect(0, 0, size, size);
+
+    srcRect.y = screenRT->GetHeight() - (srcRect.y + srcRect.h);
 
     Image faceImages[6];
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        viewParms.axis = axis[faceIndex];
-
+        viewParms.axis = viewAxis[faceIndex];
         view.Update(&viewParms);
 
         BeginFrame();
+        
         renderWorld->RenderScene(&view);
-        Str::snPrintf(path, sizeof(path), "Cache/Environment/env_%s.png", cubemap_postfix[faceIndex]);
-        renderSystem.CmdScreenshot(0, 0, size, size, path);
+        
         EndFrame();
 
-        faceImages[faceIndex].Load(path);
+        screenRT->Blit(srcRect, dstRect, targetRT, RHI::ColorBlitMask, RHI::NearestBlitFilter);
+
+        faceImages[faceIndex].Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, 0);
+
+        targetRT->ColorTexture()->Bind();
+        targetRT->ColorTexture()->GetTexels2D(Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
+
+        faceImages[faceIndex].FlipY();
     }
 
     envCubeImage.CreateCubeFrom6Faces(faceImages);
+
+    SAFE_DELETE(targetTexture);
+
+    RenderTarget::Delete(targetRT);
 }
 
 void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size) {
     Image envCubeImage;
     CaptureEnvCubeImage(renderWorld, origin, size, envCubeImage);
 
+    //envCubeImage.ConvertFormatSelf(Image::RGBA_DXT1, false, Image::HighQuality);
+
     char path[256];
-    Str::snPrintf(path, sizeof(path), "%s_env.dds", filename);
-    envCubeImage.ConvertFormatSelf(Image::RGBA_DXT1, false, Image::HighQuality);
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
     envCubeImage.WriteDDS(path);
 
     BE_LOG(L"envshot saved to \"%hs\"\n", path);
@@ -856,8 +877,10 @@ void RenderContext::TakeIrradianceShot(const char *filename, RenderWorld *render
     Image envCubeImage;
     CaptureEnvCubeImage(renderWorld, origin, envMapSize, envCubeImage);
     
-    Texture *radianceCubeMap = new Texture;
-    radianceCubeMap->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+#if 1
+    // Use SH convolution method for diffuse irradiance cubemap computation
+    Texture *radianceCubeTexture = new Texture;
+    radianceCubeTexture->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     //-------------------------------------------------------------------------------
     // Create 4-by-4 envmap sized block weight map for each faces
@@ -903,8 +926,8 @@ void RenderContext::TakeIrradianceShot(const char *filename, RenderWorld *render
     //-------------------------------------------------------------------------------
     // SH projection of (Li * dw) and create 9 coefficents in a single 4x4 texture
     //-------------------------------------------------------------------------------
-    Shader *shProjectionShader = shaderManager.GetShader("Shaders/SH_projection.shader");
-    Shader *shader = shProjectionShader->InstantiateShader(Array<Shader::Define>());
+    Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj.shader");
+    Shader *shader = weightedSHProjShader->InstantiateShader(Array<Shader::Define>());
 
     Image image;
     image.Create2D(4, 4, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
@@ -920,8 +943,8 @@ void RenderContext::TakeIrradianceShot(const char *filename, RenderWorld *render
 
     shader->Bind();
     shader->SetTextureArray("weightMap", 6, (const Texture **)weightTextures);
-    shader->SetTexture("radianceCubeMap", radianceCubeMap);
-    shader->SetConstant1i("radianceCubeMapSize", radianceCubeMap->GetWidth());
+    shader->SetTexture("radianceCubeMap", radianceCubeTexture);
+    shader->SetConstant1i("radianceCubeMapSize", radianceCubeTexture->GetWidth());
     shader->SetConstant1f("radianceScale", 1.0f);
     RB_DrawClipRect(0, 0, 1.0f, 1.0f);
     
@@ -929,12 +952,12 @@ void RenderContext::TakeIrradianceShot(const char *filename, RenderWorld *render
     incidentCoeffRT->End();
 
     shaderManager.ReleaseShader(shader);
-    shaderManager.ReleaseShader(shProjectionShader);
+    shaderManager.ReleaseShader(weightedSHProjShader);
     
-    delete radianceCubeMap;
+    SAFE_DELETE(radianceCubeTexture);
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        delete weightTextures[faceIndex];
+        SAFE_DELETE(weightTextures[faceIndex]);
     }
     
     //-------------------------------------------------------------------------------
@@ -942,13 +965,12 @@ void RenderContext::TakeIrradianceShot(const char *filename, RenderWorld *render
     //-------------------------------------------------------------------------------
     Image faceImages[6];
 
-    Texture *irradianceTexture;
-    irradianceTexture = textureManager.AllocTexture("_irradiance");
-    irradianceTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, Image::RGB_11F_11F_10F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
-    RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceTexture, nullptr, 0);
+    Texture *irradianceCubeTexture = new Texture;
+    irradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, Image::RGB_11F_11F_10F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceCubeTexture, nullptr, 0);
 
-    Shader *shEvalIrradianceCubeMapShader = shaderManager.GetShader("Shaders/SH_evalIrradianceCubeMap.shader");
-    shader = shEvalIrradianceCubeMapShader->InstantiateShader(Array<Shader::Define>());
+    Shader *genDiffuseCubeMapSHConvolv = shaderManager.GetShader("Shaders/GenDiffuseCubeMapSHConvolv.shader");
+    shader = genDiffuseCubeMapSHConvolv->InstantiateShader(Array<Shader::Define>());
 
     // Precompute ZH coefficients * sqrt(4PI/(2l + 1)) of Lambert diffuse spherical function cos(theta) / PI
     // which function is rotationally symmetric so only 3 terms are needed
@@ -981,23 +1003,77 @@ void RenderContext::TakeIrradianceShot(const char *filename, RenderWorld *render
     }
 
     shaderManager.ReleaseShader(shader);
-    shaderManager.ReleaseShader(shEvalIrradianceCubeMapShader);
+    shaderManager.ReleaseShader(genDiffuseCubeMapSHConvolv);
 
     Image irradianceCubeImage;
     irradianceCubeImage.CreateCubeFrom6Faces(faceImages);
+    irradianceCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
 
     char path[256];
-    Str::snPrintf(path, sizeof(path), "%s_irr.dds", filename);
-    irradianceCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
-    irradianceCubeImage.Write(path);
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    irradianceCubeImage.WriteDDS(path);
 
     BE_LOG(L"irrshot saved to \"%hs\"\n", path);
     
-    textureManager.ReleaseTexture(irradianceTexture, true);
+    SAFE_DELETE(irradianceCubeTexture);
     RenderTarget::Delete(irradianceCubeRT);
     
     SAFE_DELETE(incidentCoeffTexture);
     RenderTarget::Delete(incidentCoeffRT);
+#else
+    // Use brute force method for diffuse irradiance cubemap computation
+    Texture *radianceCubeTexture = new Texture;
+    radianceCubeTexture->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
+    Image faceImages[6];
+
+    Texture *irradianceCubeTexture = new Texture;
+    irradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, Image::RGB_11F_11F_10F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceCubeTexture, nullptr, 0);
+
+    Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenDiffuseCubeMap.shader");
+    Shader *shader = genDiffuseCubeMapShader->InstantiateShader(Array<Shader::Define>());
+
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        irradianceCubeRT->Begin(0, faceIndex);
+        Rect prevViewportRect = rhi.GetViewport();
+        rhi.SetViewport(Rect(0, 0, irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight()));
+        rhi.SetStateBits(RHI::ColorWrite);
+        rhi.SetCullFace(RHI::NoCull);
+
+        shader->Bind();
+        shader->SetTexture("radianceCubeMap", radianceCubeTexture);
+        shader->SetConstant1i("cubeMapSize", irradianceCubeRT->GetWidth());
+        shader->SetConstant1i("cubeMapFace", faceIndex);
+        RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+        rhi.SetViewport(prevViewportRect);
+        irradianceCubeRT->End();
+
+        faceImages[faceIndex].Create2D(irradianceCubeRT->GetWidth(), irradianceCubeRT->GetHeight(), 1, Image::RGB_11F_11F_10F, nullptr, Image::LinearSpaceFlag);
+
+        irradianceCubeRT->ColorTexture()->Bind();
+        irradianceCubeRT->ColorTexture()->GetTexelsCubemap((RHI::CubeMapFace)faceIndex, Image::RGB_11F_11F_10F, faceImages[faceIndex].GetPixels());
+    }
+
+    shaderManager.ReleaseShader(shader);
+    shaderManager.ReleaseShader(genDiffuseCubeMapShader);
+
+    Image irradianceCubeImage;
+    irradianceCubeImage.CreateCubeFrom6Faces(faceImages);
+    irradianceCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    irradianceCubeImage.WriteDDS(path);
+
+    BE_LOG(L"irrshot saved to \"%hs\"\n", path);
+
+    SAFE_DELETE(irradianceCubeTexture);
+    RenderTarget::Delete(irradianceCubeRT);
+
+    SAFE_DELETE(radianceCubeTexture);
+#endif
 }
 
 BE_NAMESPACE_END

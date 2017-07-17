@@ -1,4 +1,4 @@
-shader "SH_evalIrradianceCubeMap" {
+shader "GenDiffuseCubeMapSHConvolv" {
     glsl_vp {
         in vec4 in_position : POSITION;
         in vec2 in_st : TEXCOORD0;
@@ -13,6 +13,7 @@ shader "SH_evalIrradianceCubeMap" {
 
     glsl_fp {
         $include "sh_common.glsl"
+        $include "fragment_common.glsl"
 
         in vec2 v2f_texCoord;
 
@@ -39,7 +40,7 @@ shader "SH_evalIrradianceCubeMap" {
             int x = int(min(floor(v2f_texCoord.x * float(cubeMapSize)), float(cubeMapSize) - 1.0));
             int y = int(min(floor(v2f_texCoord.y * float(cubeMapSize)), float(cubeMapSize) - 1.0));
 
-            // normal dir
+            // z-up world normal direction
             vec3 dir = faceToGLCubeMapCoords(cubeMapFace, x, y, cubeMapSize).zxy;
             vec3 dirSq = dir * dir;
 
