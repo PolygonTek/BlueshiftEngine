@@ -13,10 +13,7 @@ shader "GenDiffuseIrradianceCubeMap" {
 
     glsl_fp {
         $include "fragment_common.glsl"
-
-        #define PI 3.1415926535897932384626433832795
-        #define TWO_PI 6.283185307179586476925286766559
-        #define HALF_PI 1.5707963267948966192313216916398
+        $include "BRDF.glsl"
 
         in vec2 v2f_texCoord;
 
@@ -25,14 +22,6 @@ shader "GenDiffuseIrradianceCubeMap" {
         uniform samplerCube radianceCubeMap;
         uniform int targetCubeMapSize;
         uniform int targetCubeMapFace;
-
-        // Transform tangent space direction vector to local space direction vector
-        vec3 rotateWithUpVector(vec3 tangentDir, vec3 tangentZ) {
-            vec3 tangentY = abs(tangentZ.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-            vec3 tangentX = normalize(cross(tangentY, tangentZ));
-            tangentY = cross(tangentZ, tangentX);
-            return mat3(tangentX, tangentY, tangentZ) * tangentDir;
-        }
         
         void main() {
             int targetFaceX = int(min(floor(v2f_texCoord.x * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
@@ -42,25 +31,32 @@ shader "GenDiffuseIrradianceCubeMap" {
 
             vec3 color = vec3(0.0);
 #if 1
-            float index = 0.0;
+            float numSamples = 0.0;
 
-            for (float phi = 0.0; phi < TWO_PI; phi += 0.0125) {
-                for (float theta = 0.0; theta < HALF_PI; theta += 0.05) {
-                    float cosTheta = cos(theta);
-                    float sinTheta = sin(theta);
+            for (float y = 0.0; y < 1.0; y += 0.01) {
+                for (float x = 0.0; x < 1.0; x += 0.01) {
+                    float cosTheta = sqrt(1.0 - x);
+                    float sinTheta = sqrt(x);
+                    float phi = TWO_PI * y;
 
-                    vec3 L;
-                    L.x = sinTheta * cos(phi);
-                    L.y = sinTheta * sin(phi);
-                    L.z = cosTheta;
+                    vec3 sampleDir;
+                    sampleDir.x = sinTheta * cos(phi);
+                    sampleDir.y = sinTheta * sin(phi);
+                    sampleDir.z = cosTheta;
 
-                    color += texCUBE(radianceCubeMap, rotateWithUpVector(L, N)).rgb * cosTheta * sinTheta;
+                    sampleDir = rotateWithUpVector(sampleDir, N);
 
-                    index += 1.0;
+                    // BRDF = 1 / PI
+                    // PDF = NdotL / PI
+                    // BRDF * NdotL / PDF = 1
+
+                    color += texCUBE(radianceCubeMap, sampleDir).rgb;
+
+                    numSamples += 1.0;
                 }
             }
 
-            o_fragColor = vec4(PI * color / index, 1.0);
+            o_fragColor = vec4(color / numSamples, 1.0);
 #else
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int y = 0; y < radianceCubeMapSize; y++) {

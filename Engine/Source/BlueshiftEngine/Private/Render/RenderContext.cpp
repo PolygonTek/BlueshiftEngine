@@ -859,10 +859,9 @@ void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, 
     Image envCubeImage;
     CaptureEnvCubeImage(renderWorld, origin, size, envCubeImage);
 
-    //envCubeImage.ConvertFormatSelf(Image::RGBA_DXT1, false, Image::HighQuality);
-
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    envCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
     envCubeImage.WriteDDS(path);
 
     BE_LOG(L"envshot saved to \"%hs\"\n", path);
@@ -873,8 +872,8 @@ void RenderContext::TakeDiffuseIrradianceShot(const char *filename, RenderWorld 
     CaptureEnvCubeImage(renderWorld, origin, 256, envCubeImage);
 
     Image irradianceCubeImage;
-#if 0
-    GenerateDiffuseIrradianceBruteForce(envCubeImage, 64, irradianceCubeImage);
+#if 1
+    GenerateDiffuseIrradiance(envCubeImage, 64, irradianceCubeImage);
 #else
     GenerateDiffuseIrradianceSHConvolv(envCubeImage, 64, irradianceCubeImage);
 #endif
@@ -892,10 +891,11 @@ void RenderContext::TakeSpecularIrradianceShot(const char *filename, RenderWorld
     CaptureEnvCubeImage(renderWorld, origin, 256, envCubeImage);
 
     Image irradianceCubeImage;
-    GenerateSpecularIrradianceBruteForce(envCubeImage, 128, irradianceCubeImage);
+    GenerateSpecularIrradiance(envCubeImage, 256, irradianceCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    irradianceCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
     irradianceCubeImage.WriteDDS(path);
 
     BE_LOG(L"Generated specular irradiance cubemap to \"%hs\"\n", path);
@@ -1044,7 +1044,7 @@ void RenderContext::GenerateDiffuseIrradianceSHConvolv(const Image &envCubeImage
     shaderManager.ReleaseShader(genDiffuseCubeMapSHConvolv);
 }
 
-void RenderContext::GenerateDiffuseIrradianceBruteForce(const Image &envCubeImage, int size, Image &irradianceCubeImage) const {
+void RenderContext::GenerateDiffuseIrradiance(const Image &envCubeImage, int size, Image &irradianceCubeImage) const {
     Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenDiffuseIrradianceCubeMap.shader");
     Shader *shader = genDiffuseCubeMapShader->InstantiateShader(Array<Shader::Define>());
 
@@ -1093,7 +1093,7 @@ void RenderContext::GenerateDiffuseIrradianceBruteForce(const Image &envCubeImag
     shaderManager.ReleaseShader(genDiffuseCubeMapShader);
 }
 
-void RenderContext::GenerateSpecularIrradianceBruteForce(const Image &envCubeImage, int size, Image &irradianceCubeImage) const {
+void RenderContext::GenerateSpecularIrradiance(const Image &envCubeImage, int size, Image &irradianceCubeImage) const {
     Shader *genSpecularCubeMapShader = shaderManager.GetShader("Shaders/GenSpecularIrradianceCubeMap.shader");
     Shader *shader = genSpecularCubeMapShader->InstantiateShader(Array<Shader::Define>());
 

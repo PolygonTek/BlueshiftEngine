@@ -13,10 +13,7 @@ shader "GenSpecularIrradianceCubeMap" {
 
     glsl_fp {
         $include "fragment_common.glsl"
-
-        #define PI 3.1415926535897932384626433832795
-        #define TWO_PI 6.283185307179586476925286766559
-        #define HALF_PI 1.5707963267948966192313216916398
+        $include "BRDF.glsl"
 
         in vec2 v2f_texCoord;
 
@@ -27,14 +24,6 @@ shader "GenSpecularIrradianceCubeMap" {
         uniform int targetCubeMapSize;
         uniform int targetCubeMapFace;
         uniform float specularPower;
-
-        // Transform tangent space direction vector to local space direction vector
-        vec3 rotateWithUpVector(vec3 tangentDir, vec3 tangentZ) {
-            vec3 tangentY = abs(tangentZ.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-            vec3 tangentX = normalize(cross(tangentY, tangentZ));
-            tangentY = cross(tangentZ, tangentX);
-            return mat3(tangentX, tangentY, tangentZ) * tangentDir;
-        }
         
         void main() {
             int targetFaceX = int(min(floor(v2f_texCoord.x * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
@@ -43,28 +32,33 @@ shader "GenSpecularIrradianceCubeMap" {
             vec3 S = faceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
 
             vec3 color = vec3(0.0);
-#if 0
-            float index = 0.0;
+#if 1
+            float numSamples = 0.0;
 
-            for (float phi = 0.0; phi < TWO_PI; phi += 0.0125) {
-                for (float theta = 0.0; theta < HALF_PI; theta += 0.05) {
-                    float cosTheta = cos(theta);
-                    float sinTheta = sin(theta);
+            for (float y = 0.0; y < 1.0; y += 0.01) {
+                for (float x = 0.0; x < 1.0; x += 0.01) {
+                    float cosTheta = pow(1.0 - x, 1.0 / (specularPower + 1.0));
+                    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+                    float phi = TWO_PI * y;
+    
+                    vec3 sampleDir;
+                    sampleDir.x = sinTheta * cos(phi);
+                    sampleDir.y = sinTheta * sin(phi);
+                    sampleDir.z = cosTheta;
 
-                    vec3 L;
-                    L.x = sinTheta * cos(phi);
-                    L.y = sinTheta * sin(phi);
-                    L.z = cosTheta;
+                    sampleDir = rotateWithUpVector(sampleDir, S);
 
-                    color += texCUBE(radianceCubeMap, rotateWithUpVector(L, S)).rgb * pow(cosTheta, specularPower) * sinTheta;
+                    // BRDF = (power + 2) * pow(LdotS, power) / (NdotL * TWO_PI)
+                    // PDF = (power + 1) * pow(LdotS, power) / TWO_PI
+                    // BRDF * NdotL / PDF = (power + 2) / (power + 1)
 
-                    index += 1.0;
+                    color += texCUBE(radianceCubeMap, sampleDir).rgb;
+
+                    numSamples += 1.0;
                 }
             }
 
-            float normFactor = (specularPower + 1.0) / TWO_PI;
-
-            o_fragColor = vec4(PI * PI * normFactor * color / index, 1.0);
+            o_fragColor = vec4((specularPower + 2.0) / (specularPower + 1.0) * color / numSamples, 1.0);
 #else
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int y = 0; y < radianceCubeMapSize; y++) {
@@ -82,7 +76,7 @@ shader "GenSpecularIrradianceCubeMap" {
                 }
             }
 
-            float normFactor = (specularPower + 1.0) / TWO_PI;
+            float normFactor = (specularPower + 2.0) / TWO_PI;
 
             o_fragColor = vec4(normFactor * color, 1.0);
 #endif

@@ -412,12 +412,11 @@ void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format im
     
     GLint oldPackAlignment;
     gglGetIntegerv(GL_PACK_ALIGNMENT, &oldPackAlignment);
-    gglPixelStorei(GL_PACK_ALIGNMENT, 1);7
+    gglPixelStorei(GL_PACK_ALIGNMENT, 1);
 
     gglFlush();
-
     gglReadPixels(x, y, width, height, format, type, data);
-    
+
     gglPixelStorei(GL_PACK_ALIGNMENT, oldPackAlignment);
 }
 

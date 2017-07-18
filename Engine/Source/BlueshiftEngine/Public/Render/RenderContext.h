@@ -162,11 +162,11 @@ public:
                             // Generate diffuse irradiance cubemap using SH convolution method
     void                    GenerateDiffuseIrradianceSHConvolv(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
 
-                            // Generate diffuse irradiance cubemap using brute force method
-    void                    GenerateDiffuseIrradianceBruteForce(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+                            // Generate diffuse irradiance cubemap
+    void                    GenerateDiffuseIrradiance(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
 
-                            // Generate specular irradiance cubemap using brute force method
-    void                    GenerateSpecularIrradianceBruteForce(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+                            // Generate specular irradiance cubemap
+    void                    GenerateSpecularIrradiance(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
 
 //private:
     void                    InitScreenMapRT();
