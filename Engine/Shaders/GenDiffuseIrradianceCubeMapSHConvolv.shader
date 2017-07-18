@@ -1,4 +1,4 @@
-shader "GenDiffuseCubeMapSHConvolv" {
+shader "GenDiffuseIrradianceCubeMapSHConvolv" {
     glsl_vp {
         in vec4 in_position : POSITION;
         in vec2 in_st : TEXCOORD0;
@@ -20,8 +20,8 @@ shader "GenDiffuseCubeMapSHConvolv" {
         out vec4 o_fragColor : FRAG_COLOR;
 
         uniform sampler2D incidentCoeffMap;
-        uniform int cubeMapSize;
-        uniform int cubeMapFace;
+        uniform int targetCubeMapSize;
+        uniform int targetCubeMapFace;
         uniform float lambertCoeff[4];
 
         void main() {
@@ -37,11 +37,11 @@ shader "GenDiffuseCubeMapSHConvolv" {
                 t += 1.0 / 4.0;
             }
 
-            int x = int(min(floor(v2f_texCoord.x * float(cubeMapSize)), float(cubeMapSize) - 1.0));
-            int y = int(min(floor(v2f_texCoord.y * float(cubeMapSize)), float(cubeMapSize) - 1.0));
+            int x = int(min(floor(v2f_texCoord.x * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
+            int y = int(min(floor(v2f_texCoord.y * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
 
             // z-up world normal direction
-            vec3 dir = faceToGLCubeMapCoords(cubeMapFace, x, y, cubeMapSize).zxy;
+            vec3 dir = faceToGLCubeMapCoords(targetCubeMapFace, x, y, targetCubeMapSize).zxy;
             vec3 dirSq = dir * dir;
 
             vec3 color;

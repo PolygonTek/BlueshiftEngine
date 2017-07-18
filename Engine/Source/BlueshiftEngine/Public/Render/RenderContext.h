@@ -154,9 +154,19 @@ public:
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
     void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size = 256);
-    void                    TakeIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size = 16);
+    void                    TakeDiffuseIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
+    void                    TakeSpecularIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
 
     void                    CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage);
+
+                            // Generate diffuse irradiance cubemap using SH convolution method
+    void                    GenerateDiffuseIrradianceSHConvolv(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+
+                            // Generate diffuse irradiance cubemap using brute force method
+    void                    GenerateDiffuseIrradianceBruteForce(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+
+                            // Generate specular irradiance cubemap using brute force method
+    void                    GenerateSpecularIrradianceBruteForce(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
 
 //private:
     void                    InitScreenMapRT();

@@ -80,7 +80,7 @@ void RB_Init() {
 
     // FIXME: TEMPORARY CODE
     backEnd.irradianceCubeMapTexture = textureManager.AllocTexture("irradianceCubeMap");
-    backEnd.irradianceCubeMapTexture->Load("irr.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    backEnd.irradianceCubeMapTexture->Load("irr_diffuse.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     if (r_HOM.GetBool()) {
         // TODO: create one for each context

@@ -135,3 +135,22 @@ vec3 faceToGLCubeMapCoords(int faceIndex, int x, int y, int cubeMapSize) {
     vec = normalize(vec);
     return vec;
 }
+
+float areaElement(float x, float y) {
+    return atan(x * y, sqrt(x * x + y * y + 1.0));
+}
+
+float cubeMapTexelSolidAngle(float x, float y, int size) {
+    float invSize = 1.0 / size;
+
+    float s = (2.0 * (float(x) + 0.5) * invSize) - 1.0;
+    float t = (2.0 * (float(y) + 0.5) * invSize) - 1.0;
+
+    // s and t are the -1..1 texture coordinate on the current face.
+    // Get projected area for this texel
+    float x0 = s - invSize;
+    float y0 = t - invSize;
+    float x1 = s + invSize;
+    float y1 = t + invSize;
+    return areaElement(x0, y0) - areaElement(x0, y1) - areaElement(x1, y0) + areaElement(x1, y1);
+}
