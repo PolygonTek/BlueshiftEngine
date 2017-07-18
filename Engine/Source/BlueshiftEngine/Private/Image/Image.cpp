@@ -416,16 +416,16 @@ Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &
 }
 
 static float AreaElement(float x, float y) {
-    return Math::ATan(x * y, Math::Sqrt(x * x + y * y + 1));
+    return Math::ATan(x * y, Math::Sqrt(x * x + y * y + 1.0f));
 }
 
 float Image::CubeMapTexelSolidAngle(float x, float y, int size) {
+    float invSize = 1.0f / size;
+
     // Scale up to [-1, 1] range (inclusive), offset by 0.5 to point to texel center.
     // CHECK: is half pixel correct ?
-    float s = (2.0f * ((float)x + 0.5f) / (float)size) - 1.0f;
-    float t = (2.0f * ((float)y + 0.5f) / (float)size) - 1.0f;
-
-    float invSize = 1.0f / size;
+    float s = (2.0f * ((float)x + 0.5f) * invSize) - 1.0f;
+    float t = (2.0f * ((float)y + 0.5f) * invSize) - 1.0f;
 
     // s and t are the -1..1 texture coordinate on the current face.
     // Get projected area for this texel

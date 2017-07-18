@@ -670,7 +670,7 @@ void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int 
         gglCompressedTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, xoffset, yoffset, width, height, format, size, pixels);
     } else {
         gglTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, xoffset, yoffset, width, height, format, type, pixels);
-    }	
+    }
 
     EndUnpackAlignment();
 }
@@ -694,6 +694,7 @@ void OpenGLRHI::GetTextureImage2D(int level, Image::Format dstFormat, void *pixe
         return;
     }
     
+    gglFlush();
     gglGetTexImage(GL_TEXTURE_2D, level, format, type, pixels);
 #endif
 }
@@ -709,6 +710,7 @@ void OpenGLRHI::GetTextureImage3D(int level, Image::Format dstFormat, void *pixe
         return;
     }
     
+    gglFlush();
     gglGetTexImage(GL_TEXTURE_3D, level, format, type, pixels);
 #endif
 }
@@ -724,6 +726,7 @@ void OpenGLRHI::GetTextureImageCube(CubeMapFace face, int level, Image::Format d
         return;
     }
     
+    gglFlush();
     gglGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, format, type, pixels);
 #endif
 }
@@ -739,6 +742,7 @@ void OpenGLRHI::GetTextureImageRect(Image::Format dstFormat, void *pixels) {
         return;
     }
     
+    gglFlush();
     gglGetTexImage(GL_TEXTURE_RECTANGLE, 0, format, type, pixels);
 #endif
 }

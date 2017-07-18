@@ -402,8 +402,8 @@ void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned 
 }
 
 void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format imageFormat, byte *data) {
-    GLenum	format;
-    GLenum	type;
+    GLenum  format;
+    GLenum  type;
     
     if (!OpenGL::ImageFormatToGLFormat(imageFormat, false, &format, &type, nullptr)) {
         BE_WARNLOG(L"OpenGLRHI::ReadPixels: Unsupported image format %hs\n", Image::FormatName(imageFormat));
@@ -412,8 +412,10 @@ void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format im
     
     GLint oldPackAlignment;
     gglGetIntegerv(GL_PACK_ALIGNMENT, &oldPackAlignment);
-    gglPixelStorei(GL_PACK_ALIGNMENT, 1);
-    
+    gglPixelStorei(GL_PACK_ALIGNMENT, 1);7
+
+    gglFlush();
+
     gglReadPixels(x, y, width, height, format, type, data);
     
     gglPixelStorei(GL_PACK_ALIGNMENT, oldPackAlignment);
