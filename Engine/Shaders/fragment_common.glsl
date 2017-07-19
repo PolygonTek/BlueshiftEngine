@@ -108,14 +108,11 @@ void YCoCg2RGB(vec3 ycocg) {
 */
 
 vec3 faceToGLCubeMapCoords(int faceIndex, int x, int y, int cubeMapSize) {
-    float s, t, sc, tc;
+    float invSize = 1.0 / cubeMapSize;
 
-    s = float(x) / float(cubeMapSize - 1);
-    t = float(y) / float(cubeMapSize - 1);
-    
-    sc = s * 2.0 - 1.0;
-    tc = t * 2.0 - 1.0;
-    
+    float sc = (2.0 * (float(x) + 0.5) * invSize) - 1.0;
+    float tc = (2.0 * (float(y) + 0.5) * invSize) - 1.0;
+        
     vec3 vec;
     
     if (faceIndex == 0) {
