@@ -166,7 +166,7 @@ public:
     void                    GenerateDiffuseIrradiance(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
 
                             // Generate specular irradiance cubemap
-    void                    GenerateSpecularIrradiance(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+    void                    GenerateSpecularIrradiance(const Image &envCubeImage, int size, int maxSpecularPower, Image &irradianceCubeImage) const;
 
 //private:
     void                    InitScreenMapRT();
