@@ -573,8 +573,8 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->alloced = true;
 
     if (isCube) {
-        for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+        for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+            for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 int faceSize = GetSliceSize(mipLevel);
                 byte *dest = GetPixels(mipLevel) + faceIndex * faceSize;
 
