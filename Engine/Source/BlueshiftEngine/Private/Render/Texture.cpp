@@ -43,7 +43,7 @@ void Texture::Create(RHI::TextureType type, const Image &srcImage, int flags) {
     Upload(&srcImage);
 }
 
-void Texture::CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, Image::Format format, int flags) {
+void Texture::CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags) {
     Purge();
 
     this->type = type;
@@ -51,7 +51,7 @@ void Texture::CreateEmpty(RHI::TextureType type, int width, int height, int dept
     this->flags = flags;
 
     Image image;
-    image.InitFromMemory(width, height, depth, type == RHI::TextureCubeMap ? 6 : numSlices, 1, format, nullptr, 0);
+    image.InitFromMemory(width, height, depth, type == RHI::TextureCubeMap ? 6 : numSlices, numMipmaps, format, nullptr, 0);
     Upload(&image);
 }
 
@@ -260,7 +260,10 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, x * invSize, y * invSize);
+                float s = (x + 0.5f) * invSize;
+                float t = (y + 0.5f) * invSize;
+
+                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, s, t);
                 dir.Normalize();
 
                 // Convert cubemap coordinates from z-up to GL axis

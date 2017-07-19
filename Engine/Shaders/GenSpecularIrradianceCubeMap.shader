@@ -37,21 +37,11 @@ shader "GenSpecularIrradianceCubeMap" {
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
-                    float cosTheta = pow(1.0 - x, 1.0 / (specularPower + 1.0));
-                    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
-                    float phi = TWO_PI * y;
-    
-                    vec3 sampleDir;
-                    sampleDir.x = sinTheta * cos(phi);
-                    sampleDir.y = sinTheta * sin(phi);
-                    sampleDir.z = cosTheta;
-
-                    sampleDir = rotateWithUpVector(sampleDir, S);
+                    vec3 sampleDir = importanceSamplePhongSpecular(vec2(x, y), specularPower, S);
 
                     // BRDF = (power + 2) * pow(LdotS, power) / (NdotL * TWO_PI)
                     // PDF = (power + 1) * pow(LdotS, power) / TWO_PI
                     // BRDF * NdotL / PDF = (power + 2) / (power + 1)
-
                     color += texCUBE(radianceCubeMap, sampleDir).rgb;
 
                     numSamples += 1.0;

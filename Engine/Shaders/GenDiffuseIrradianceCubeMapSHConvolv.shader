@@ -44,15 +44,18 @@ shader "GenDiffuseIrradianceCubeMapSHConvolv" {
             vec3 dir = faceToGLCubeMapCoords(targetCubeMapFace, x, y, targetCubeMapSize).zxy;
             vec3 dirSq = dir * dir;
 
+            vec3 p1 = lambertCoeff[1] * SH_CONST2 * dir.yzx;
+            vec3 p2 = lambertCoeff[2] * SH_CONST3 * dir.xyz * dir.yzx;
+
             vec3 color;
             color  = incidentCoeff[0] * lambertCoeff[0] * SH_CONST1;
-            color -= incidentCoeff[1] * lambertCoeff[1] * SH_CONST2 * dir.y;
-            color += incidentCoeff[2] * lambertCoeff[1] * SH_CONST2 * dir.z;
-            color -= incidentCoeff[3] * lambertCoeff[1] * SH_CONST2 * dir.x;
-            color += incidentCoeff[4] * lambertCoeff[2] * SH_CONST3 * (dir.x * dir.y);
-            color -= incidentCoeff[5] * lambertCoeff[2] * SH_CONST3 * (dir.y * dir.z);
+            color -= incidentCoeff[1] * p1.x;
+            color += incidentCoeff[2] * p1.y;
+            color -= incidentCoeff[3] * p1.z;
+            color += incidentCoeff[4] * p2.x;
+            color -= incidentCoeff[5] * p2.y;
             color += incidentCoeff[6] * lambertCoeff[2] * SH_CONST4 * (3.0 * dirSq.z - 1.0);
-            color -= incidentCoeff[7] * lambertCoeff[2] * SH_CONST3 * (dir.x * dir.z);
+            color -= incidentCoeff[7] * p2.z;
             color += incidentCoeff[8] * lambertCoeff[2] * SH_CONST5 * (dirSq.x - dirSq.y);
 
             o_fragColor = vec4(color, 1.0);

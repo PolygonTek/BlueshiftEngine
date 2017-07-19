@@ -203,20 +203,21 @@ void litStandard(in vec3 L, in vec3 N, in vec3 V, in vec3 albedo, in float rough
 
 // Returns importance sampled incident direction for Lambert diffuse reflectance with respect to N
 vec3 importanceSampleLambert(vec2 xi, vec3 N) {
+    float cosTheta = sqrt(1.0 - xi.x);
     float sinTheta = sqrt(xi.x);
     float phi = TWO_PI * xi.y;
 
     vec3 sampleDir;
     sampleDir.x = sinTheta * cos(phi);
     sampleDir.y = sinTheta * sin(phi);
-    sampleDir.z = sqrt(1.0 - xi.x);
+    sampleDir.z = cosTheta;
 
     return rotateWithUpVector(sampleDir, N);
 }
 
 // Returns importance sampled incident direction for Phong specular reflectance with respect to S
 vec3 importanceSamplePhongSpecular(vec2 xi, float power, vec3 S) {
-    float cosTheta = pow(xi.x, 1.0 / (power + 1));
+    float cosTheta = pow(xi.x, 1.0 / (power + 1.0));
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
     float phi = TWO_PI * xi.y;
     

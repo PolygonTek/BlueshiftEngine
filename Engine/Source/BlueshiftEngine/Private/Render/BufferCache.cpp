@@ -56,7 +56,7 @@ void BufferCacheManager::Init() {
             bufferSet->texelBuffer = rhi.CreateBuffer(bufferSet->texelBufferType, RHI::Dynamic, TB_BYTES, TB_PITCH, nullptr);
             if (i == 0) {
                 bufferSet->texture = textureManager.AllocTexture("_tbTexture");
-                bufferSet->texture->CreateEmpty(RHI::Texture2D, TB_WIDTH, TB_HEIGHT, 1, 1,
+                bufferSet->texture->CreateEmpty(RHI::Texture2D, TB_WIDTH, TB_HEIGHT, 1, 1, 1,
                     Image::RGBA_32F_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality | Texture::HighPriority);
             }
         }

@@ -113,8 +113,8 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
 
         for (int dstY = 0; dstY < faceSize; dstY++) {
             for (int dstX = 0; dstX < faceSize; dstX++) {
-                float dstS = dstX * invSize;
-                float dstT = dstY * invSize;
+                float dstS = (dstX + 0.5f) * invSize;
+                float dstT = (dstY + 0.5f) * invSize;
 
                 Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, dstS, dstT);
 

@@ -74,7 +74,7 @@ public:
     int                     MemRequired(bool includingMipmaps) const;
 
     void                    Create(RHI::TextureType type, const Image &srcImage, int flags);
-    void                    CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, Image::Format format, int flags);
+    void                    CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags);
     void                    CreateFromBuffer(Image::Format format, RHI::Handle bufferHandle);
 
                             /// Create indirection cubemap

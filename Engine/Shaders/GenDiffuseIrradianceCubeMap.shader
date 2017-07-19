@@ -35,21 +35,11 @@ shader "GenDiffuseIrradianceCubeMap" {
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
-                    float cosTheta = sqrt(1.0 - x);
-                    float sinTheta = sqrt(x);
-                    float phi = TWO_PI * y;
-
-                    vec3 sampleDir;
-                    sampleDir.x = sinTheta * cos(phi);
-                    sampleDir.y = sinTheta * sin(phi);
-                    sampleDir.z = cosTheta;
-
-                    sampleDir = rotateWithUpVector(sampleDir, N);
+                    vec3 sampleDir = importanceSampleLambert(vec2(x, y), N);
 
                     // BRDF = 1 / PI
                     // PDF = NdotL / PI
                     // BRDF * NdotL / PDF = 1
-
                     color += texCUBE(radianceCubeMap, sampleDir).rgb;
 
                     numSamples += 1.0;
