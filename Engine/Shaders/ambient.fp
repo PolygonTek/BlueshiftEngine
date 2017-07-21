@@ -17,8 +17,8 @@ uniform samplerCube envCubeMap;
 uniform sampler2D envMaskMap;
 uniform sampler2D heightMap;
 uniform sampler2D selfIllumMap;
-uniform samplerCube ambientCubeMap0;
-uniform samplerCube ambientCubeMap1;
+uniform samplerCube diffuseIrradianceCubeMap0;
+uniform samplerCube diffuseIrradianceCubeMap1;
 
 uniform vec4 diffuseColor;
 uniform float ambientLerp;
@@ -33,9 +33,9 @@ void main() {
 	vec2 tc = v2f_texCoord;
 #endif
 
-#if _DIFFUSE_SOURCE == 0
+#if _ALBEDO_SOURCE == 0
 	vec4 diffuse = diffuseColor;
-#elif _DIFFUSE_SOURCE == 1
+#elif _ALBEDO_SOURCE == 1
 	vec4 diffuse = tex2D(diffuseMap, tc);
 #endif
 
@@ -67,8 +67,8 @@ void main() {
 		vec3 worldN = normalize(v2f_normal);
 	#endif
 
-	vec3 a1 = texCUBE(ambientCubeMap0, worldN).xyz;
-	vec3 a2 = texCUBE(ambientCubeMap1, worldN).xyz;
+	vec3 a1 = texCUBE(diffuseIrradianceCubeMap0, worldN).xyz;
+	vec3 a2 = texCUBE(diffuseIrradianceCubeMap1, worldN).xyz;
 
 	vec3 ambient = mix(a1, a2, ambientLerp);
 #else

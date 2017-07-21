@@ -13,7 +13,7 @@ shader "GenSpecularIrradianceCubeMap" {
 
     glsl_fp {
         $include "fragment_common.glsl"
-        $include "BRDF.glsl"
+        $include "IBL.glsl"
 
         in vec2 v2f_texCoord;
 

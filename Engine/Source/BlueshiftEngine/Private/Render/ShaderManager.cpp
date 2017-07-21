@@ -251,19 +251,19 @@ void ShaderManager::InstantiateEngineShaders() {
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("NO_AMBIENT_CUBE_MAP", 1));
-    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     amblitNoAmbientCubeMapShader = originalShaders[AmblitShader]->InstantiateShader(defineArray);
 
     defineArray.Clear();
-    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     amblitNoBumpShader = originalShaders[AmblitShader]->InstantiateShader(defineArray);
 
     objectMotionBlurShader = originalShaders[ObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
 
     defineArray.Clear();
-    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
     lightingDefaultShader = originalShaders[LightingGenericShader]->InstantiateShader(defineArray);

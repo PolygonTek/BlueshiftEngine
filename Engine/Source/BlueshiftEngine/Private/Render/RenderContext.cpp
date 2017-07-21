@@ -874,9 +874,9 @@ void RenderContext::TakeDiffuseIrradianceShot(const char *filename, RenderWorld 
 
     Image irradianceCubeImage;
 #if 1
-    GenerateDiffuseIrradiance(envCubeImage, 64, irradianceCubeImage);
+    GenerateDiffuseIrradianceCubeImage(envCubeImage, 64, irradianceCubeImage);
 #else
-    GenerateDiffuseIrradianceSHConvolv(envCubeImage, 64, irradianceCubeImage);
+    GenerateDiffuseIrradianceCubeImageSHConvolv(envCubeImage, 64, irradianceCubeImage);
 #endif
 
     char path[256];
@@ -892,7 +892,7 @@ void RenderContext::TakeSpecularIrradianceShot(const char *filename, RenderWorld
     CaptureEnvCubeImage(renderWorld, origin, 256, envCubeImage);
 
     Image irradianceCubeImage;
-    GenerateSpecularIrradiance(envCubeImage, 128, 2048, irradianceCubeImage);
+    GenerateSpecularIrradianceCubeImage(envCubeImage, 128, 2048, irradianceCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
@@ -902,7 +902,7 @@ void RenderContext::TakeSpecularIrradianceShot(const char *filename, RenderWorld
     BE_LOG(L"Generated specular irradiance cubemap to \"%hs\"\n", path);
 }
 
-void RenderContext::GenerateDiffuseIrradianceSHConvolv(const Image &envCubeImage, int size, Image &irradianceCubeImage) const {
+void RenderContext::GenerateDiffuseIrradianceCubeImageSHConvolv(const Image &envCubeImage, int size, Image &irradianceCubeImage) const {
     Texture *radianceCubeTexture = new Texture;
     radianceCubeTexture->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
@@ -994,9 +994,9 @@ void RenderContext::GenerateDiffuseIrradianceSHConvolv(const Image &envCubeImage
     //-------------------------------------------------------------------------------
     // SH convolution
     //-------------------------------------------------------------------------------
-    Texture *irradianceCubeTexture = new Texture;
-    irradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
-    RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceCubeTexture, nullptr, 0);
+    Texture *diffuseIrradianceCubeTexture = new Texture;
+    diffuseIrradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *irradianceCubeRT = RenderTarget::Create(diffuseIrradianceCubeTexture, nullptr, 0);
 
     Shader *genDiffuseCubeMapSHConvolv = shaderManager.GetShader("Shaders/GenDiffuseIrradianceCubeMapSHConvolv.shader");
     shader = genDiffuseCubeMapSHConvolv->InstantiateShader(Array<Shader::Define>());
@@ -1038,7 +1038,7 @@ void RenderContext::GenerateDiffuseIrradianceSHConvolv(const Image &envCubeImage
 
     irradianceCubeImage.CreateCubeFrom6Faces(faceImages);
 
-    SAFE_DELETE(irradianceCubeTexture);
+    SAFE_DELETE(diffuseIrradianceCubeTexture);
     RenderTarget::Delete(irradianceCubeRT);
 
     SAFE_DELETE(incidentCoeffTexture);
@@ -1048,16 +1048,16 @@ void RenderContext::GenerateDiffuseIrradianceSHConvolv(const Image &envCubeImage
     shaderManager.ReleaseShader(genDiffuseCubeMapSHConvolv);
 }
 
-void RenderContext::GenerateDiffuseIrradiance(const Image &envCubeImage, int size, Image &irradianceCubeImage) const {
+void RenderContext::GenerateDiffuseIrradianceCubeImage(const Image &envCubeImage, int size, Image &irradianceCubeImage) const {
     Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenDiffuseIrradianceCubeMap.shader");
     Shader *shader = genDiffuseCubeMapShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *radianceCubeTexture = new Texture;
     radianceCubeTexture->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
-    Texture *irradianceCubeTexture = new Texture;
-    irradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
-    RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceCubeTexture, nullptr, 0);
+    Texture *diffuseIrradianceCubeTexture = new Texture;
+    diffuseIrradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *irradianceCubeRT = RenderTarget::Create(diffuseIrradianceCubeTexture, nullptr, 0);
 
     Image faceImages[6];
 
@@ -1089,7 +1089,7 @@ void RenderContext::GenerateDiffuseIrradiance(const Image &envCubeImage, int siz
 
     irradianceCubeImage.CreateCubeFrom6Faces(faceImages);
 
-    SAFE_DELETE(irradianceCubeTexture);
+    SAFE_DELETE(diffuseIrradianceCubeTexture);
     SAFE_DELETE(radianceCubeTexture);
     RenderTarget::Delete(irradianceCubeRT);
 
@@ -1097,7 +1097,7 @@ void RenderContext::GenerateDiffuseIrradiance(const Image &envCubeImage, int siz
     shaderManager.ReleaseShader(genDiffuseCubeMapShader);
 }
 
-void RenderContext::GenerateSpecularIrradiance(const Image &envCubeImage, int size, int maxSpecularPower, Image &irradianceCubeImage) const {
+void RenderContext::GenerateSpecularIrradianceCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &irradianceCubeImage) const {
     Shader *genSpecularCubeMapShader = shaderManager.GetShader("Shaders/GenSpecularIrradianceCubeMap.shader");
     Shader *shader = genSpecularCubeMapShader->InstantiateShader(Array<Shader::Define>());
 
@@ -1107,9 +1107,9 @@ void RenderContext::GenerateSpecularIrradiance(const Image &envCubeImage, int si
     int numMipLevels = Math::Log(2, size) + 1;
     float powerDropOnMip = Math::Pow(maxSpecularPower, -1.0f / (numMipLevels - 1));
 
-    Texture *irradianceCubeTexture = new Texture;
-    irradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
-    RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceCubeTexture, nullptr, 0);
+    Texture *diffuseIrradianceCubeTexture = new Texture;
+    diffuseIrradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *irradianceCubeRT = RenderTarget::Create(diffuseIrradianceCubeTexture, nullptr, 0);
 
     Image faceImages[6];
 
@@ -1151,7 +1151,7 @@ void RenderContext::GenerateSpecularIrradiance(const Image &envCubeImage, int si
     irradianceCubeImage.CreateCubeFrom6Faces(faceImages);
 
     SAFE_DELETE(radianceCubeTexture);
-    SAFE_DELETE(irradianceCubeTexture);
+    SAFE_DELETE(diffuseIrradianceCubeTexture);
     RenderTarget::Delete(irradianceCubeRT);
 
     shaderManager.ReleaseShader(shader);

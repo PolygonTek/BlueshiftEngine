@@ -6,6 +6,7 @@ in vec4 in_tangent : TEXCOORD1;
 
 out vec4 v2f_color;
 out vec2 v2f_tcDiffuseBump;
+out vec2 v2f_tcSpecular;
 out vec2 v2f_tcLightmap;
 out vec3 v2f_viewVector;
 out vec3 v2f_lightVector;
@@ -92,7 +93,7 @@ void main() {
 
 	vec3 V = localViewOrigin.xyz - localVertex.xyz;
 
-	#if !defined(V2F_VIEW_VECTOR) && defined(_PARALLAX)
+	#if defined(_PARALLAX) || !defined(NO_AMBIENT_CUBE_MAP)
 		v2f_viewVector = V * TBN;
 	#endif
 
@@ -107,7 +108,7 @@ void main() {
 
 	v2f_normal = localNormal;
 
-	#if !defined(V2F_VIEW_VECTOR) && defined(_PARALLAX)
+	#if defined(_PARALLAX) || !defined(NO_AMBIENT_CUBE_MAP)
 		v2f_viewVector = V;
 	#endif
 
@@ -120,6 +121,10 @@ void main() {
 
 	v2f_tcDiffuseBump.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
 	v2f_tcDiffuseBump.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+
+#if (_SPECULAR_SOURCE == 2 || _SPECULAR_SOURCE == 3 || _SPECULAR_SOURCE == 4)
+	v2f_tcSpecular = in_st.xy;
+#endif
 
 #ifdef LIGHTMAP
 	v2f_tcLightmap = in_st2.xy;

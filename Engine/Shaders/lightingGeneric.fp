@@ -4,8 +4,8 @@ $include "fragment_common.glsl"
 $include "shadow.fp"
 #endif
 
-$include "PhongLighting.glsl"
-$include "BRDF.glsl"
+$include "LightingPhong.glsl"
+$include "LightingStandard.glsl"
 
 in vec4 v2f_color;
 in vec2 v2f_tcDiffuseNormal;
@@ -91,9 +91,9 @@ void main() {
     vec2 tc = v2f_tcDiffuseNormal;
 #endif
 
-#if _DIFFUSE_SOURCE == 0
+#if _ALBEDO_SOURCE == 0
     vec4 Kd = diffuseColor;
-#elif _DIFFUSE_SOURCE == 1
+#elif _ALBEDO_SOURCE == 1
     vec4 Kd = tex2D(diffuseMap, tc);
 #endif
 
@@ -123,13 +123,8 @@ void main() {
     vec4 Ks = tex2D(diffuseMap, v2f_tcSpecular).aaaa;
 #endif
 
-    vec3 Cd, Cs;
-    litBlinnPhongEC(L, N, V, Kd, Ks, Cd, Cs);
-    //litStandard(L, N, V, Kd.rgb, roughness, metalness, Cd, Cs);
-
-    vec3 C = Cd;
-
-    C += Cs;
+    vec3 C = litBlinnPhongEC(L, N, V, Kd, Ks);
+    //vec3 C = litStandard(L, N, V, Kd.rgb, roughness, metalness);
 
 #if defined(_RIM_LIGHT)
     float NdotV = max(dot(N, V), 0.0);

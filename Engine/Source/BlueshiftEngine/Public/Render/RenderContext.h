@@ -160,13 +160,13 @@ public:
     void                    CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage);
 
                             // Generate diffuse irradiance cubemap using SH convolution method
-    void                    GenerateDiffuseIrradianceSHConvolv(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+    void                    GenerateDiffuseIrradianceCubeImageSHConvolv(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
 
                             // Generate diffuse irradiance cubemap
-    void                    GenerateDiffuseIrradiance(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+    void                    GenerateDiffuseIrradianceCubeImage(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
 
                             // Generate specular irradiance cubemap
-    void                    GenerateSpecularIrradiance(const Image &envCubeImage, int size, int maxSpecularPower, Image &irradianceCubeImage) const;
+    void                    GenerateSpecularIrradianceCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &irradianceCubeImage) const;
 
 //private:
     void                    InitScreenMapRT();

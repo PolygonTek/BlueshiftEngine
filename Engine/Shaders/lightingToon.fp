@@ -77,9 +77,9 @@ void main() {
 #endif
 #endif
 
-#if _DIFFUSE_SOURCE == 0
+#if _ALBEDO_SOURCE == 0
 	vec4 diffuse = diffuseColor;
-#elif _DIFFUSE_SOURCE == 1
+#elif _ALBEDO_SOURCE == 1
 	vec4 diffuse = tex2D(diffuseMap, v2f_texCoord);
 #endif
 
