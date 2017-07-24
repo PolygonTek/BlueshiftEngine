@@ -160,9 +160,12 @@ void Mesh::Reinstantiate() {
 void Mesh::FinishSurfaces(int flags) {
     if (flags & SortAndMergeFlag) {
         SortAndMerge();
+        ComputeAABB();
     }
 
-    ComputeAABB();
+    if (flags & ComputeAABBFlag) {
+        ComputeAABB();
+    }
 
     //SplitMirroredVerts();
 
@@ -243,7 +246,7 @@ bool Mesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull
 void Mesh::SplitMirroredVerts() {
     for (int i = 0; i < surfaces.Count(); i++) {
         surfaces[i]->subMesh->SplitMirroredVerts();
-    }	
+    }
 }
 
 void Mesh::ComputeAABB() {

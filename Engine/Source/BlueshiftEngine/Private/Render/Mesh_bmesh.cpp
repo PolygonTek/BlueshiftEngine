@@ -51,6 +51,8 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
         }
     }
 
+    aabb = AABB(bMeshHeader->aabbMin, bMeshHeader->aabbMax);
+
     // --- surfaces ---
     for (int surfaceIndex = 0; surfaceIndex < bMeshHeader->numSurfs; surfaceIndex++) {
         const BMeshSurf *bMeshSurf = (const BMeshSurf *)ptr;
@@ -59,6 +61,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
         MeshSurf *meshSurf = AllocSurface(bMeshSurf->numVerts, bMeshSurf->numIndexes);
         surfaces.Append(meshSurf);
         SubMesh *subMesh = meshSurf->subMesh;
+        subMesh->aabb = AABB(bMeshSurf->aabbMin, bMeshSurf->aabbMax);
 
         meshSurf->materialIndex = bMeshSurf->materialIndex;
 
@@ -155,7 +158,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 
     fileSystem.FreeFile(data);
 
-    FinishSurfaces(0);
+    FinishSurfaces();
 
     return true;
 }
@@ -172,6 +175,8 @@ void Mesh::WriteBinaryMesh(const char *filename) {
     bMeshHeader.version = BMESH_VERSION;
     bMeshHeader.numJoints = NumJoints();
     bMeshHeader.numSurfs = NumSurfaces();
+    bMeshHeader.aabbMin = GetAABB()[0];
+    bMeshHeader.aabbMax = GetAABB()[1];
     fp->Write(&bMeshHeader, sizeof(bMeshHeader));
 
     if (bMeshHeader.numJoints > 0) {
@@ -197,6 +202,8 @@ void Mesh::WriteBinaryMesh(const char *filename) {
         bMeshSurf.numIndexes        = subMesh->numIndexes;
         bMeshSurf.indexSize         = subMesh->numIndexes < BIT(16) ? sizeof(uint16_t) : sizeof(uint32_t);
         bMeshSurf.maxWeights        = subMesh->MaxVertexWeights();
+        bMeshSurf.aabbMin           = subMesh->GetAABB()[0];
+        bMeshSurf.aabbMax           = subMesh->GetAABB()[1];
         fp->Write(&bMeshSurf, sizeof(bMeshSurf));
 
         // --- vertexes ---
