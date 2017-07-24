@@ -67,7 +67,7 @@ public:
 
         bool                turnOn;
         bool                castShadows;
-        bool                isMainLight;
+        bool                isPrimaryLight;
         bool                isStaticLight;
     };
 

@@ -501,8 +501,10 @@ set(ENGINE_FILES
   Private/Render/RB_DebugTools.cpp
   Private/Render/RB_DrawSimple.cpp
   Private/Render/RB_Main.cpp
-  Private/Render/RB_Pass.cpp
-  Private/Render/RB_PassLit.cpp
+  Private/Render/RB_GenericPass.cpp
+  Private/Render/RB_ShadowPass.cpp
+  Private/Render/RB_ForwardBasePass.cpp
+  Private/Render/RB_ForwardAdditivePass.cpp
   Private/Render/RB_PostProcess.cpp
   Private/Render/RB_Surf.cpp
   Private/Render/RB_Surf_Render.cpp

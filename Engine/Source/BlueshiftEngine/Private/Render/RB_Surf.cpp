@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-#define MAX_DYNAMIC_VERTS	(VCACHE_SIZE / sizeof(VertexGenericLit))
+#define MAX_DYNAMIC_VERTS   (VCACHE_SIZE / sizeof(VertexGenericLit))
 
 void RBSurf::Init() {
     startIndex = -1;
@@ -318,13 +318,8 @@ void RBSurf::Flush_AmbientPass() {
 
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex;
-    if (r_ambientLit.GetBool()) {
-        vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
-    } else {
-        vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? VertexFormat::GenericXyzStColor : VertexFormat::GenericXyzSt;
-    }
-
+    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
+    
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
     
     int stateBits = mtrlPass->stateBits;
@@ -340,7 +335,7 @@ void RBSurf::Flush_AmbientPass() {
 
     rhi.SetStateBits(stateBits);
 
-    RenderAmbient(mtrlPass, r_ambientScale.GetFloat());
+    RenderBase(mtrlPass, r_ambientScale.GetFloat());
 }
 
 void RBSurf::Flush_LitPass() {

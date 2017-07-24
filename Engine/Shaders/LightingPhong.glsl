@@ -2,31 +2,29 @@
 #define LIGHTING_PHONG_INCLUDED
 
 uniform float wrapped;
-uniform float glossiness;
-uniform float specularReflectance;
 
 float glossinessToSpecularPower(float glossiness) {
     return exp2(10.0 * glossiness + 1.0); 
 }
 
-vec3 litPhong(vec3 L, vec3 N, vec3 V, vec4 Kd, vec4 Ks) {
+vec3 litPhong(vec3 L, vec3 N, vec3 V, vec4 albedo, vec4 specular, float glossiness) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
     float w2 = 1.0 + wrapped;
-    vec3 Cd = Kd.rgb * (NdotL + wrapped) / (w2 * w2);
+    vec3 Cd = albedo.rgb * (NdotL + wrapped) / (w2 * w2);
 #else // Lambertian
     float NdotL = dot(N, L);
-    vec3 Cd = Kd.rgb * max(NdotL, 0.0);
+    vec3 Cd = albedo.rgb * max(NdotL, 0.0);
 #endif
 
 #if _SPECULAR_SOURCE != 0
     vec3 R = reflect(-L, N);
     float RdotV = max(dot(R, V), 0.0);
 
-    #if _SPECULAR_SOURCE == 3
-        vec3 Cs = Ks.rgb * pow((NdotL > 0.0 ? RdotV : 0.0), glossinessToSpecularPower(Ks.a));
+    #if _SPECULAR_SOURCE == 3 && _SPECULAR_SOURCE == 4
+        vec3 Cs = specular.rgb * pow(RdotV, glossinessToSpecularPower(specular.a));
     #else
-        vec3 Cs = Ks.rgb * pow((NdotL > 0.0 ? RdotV : 0.0), glossinessToSpecularPower(glossiness));
+        vec3 Cs = specular.rgb * pow(RdotV, glossinessToSpecularPower(glossiness));
     #endif
 
     return Cd + Cs;
@@ -36,24 +34,24 @@ vec3 litPhong(vec3 L, vec3 N, vec3 V, vec4 Kd, vec4 Ks) {
 }
 
 // Blinn-Phong lighting
-vec3 litBlinnPhong(vec3 L, vec3 N, vec3 V, vec4 Kd, vec4 Ks) {
+vec3 litBlinnPhong(vec3 L, vec3 N, vec3 V, vec4 albedo, vec4 specular, float glossiness) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
     float w2 = 1.0 + wrapped;
-    vec3 Cd = Kd.rgb * (NdotL + wrapped) / (w2 * w2);
+    vec3 Cd = albedo.rgb * (NdotL + wrapped) / (w2 * w2);
 #else // Lambertian
     float NdotL = dot(N, L);
-    vec3 Cd = Kd.rgb * max(NdotL, 0.0);
+    vec3 Cd = albedo.rgb * max(NdotL, 0.0);
 #endif
 
 #if _SPECULAR_SOURCE != 0
     vec3 H = normalize(L + V);
     float NdotH = max(dot(N, H), 0.0);
 
-    #if _SPECULAR_SOURCE == 3
-        vec3 Cs = Ks.rgb * pow((NdotL > 0.0 ? NdotH : 0.0), glossinessToSpecularPower(Ks.a));
+    #if _SPECULAR_SOURCE == 3 || _SPECULAR_SOURCE == 4
+        vec3 Cs = specular.rgb * pow(NdotH, glossinessToSpecularPower(specular.a));
     #else
-        vec3 Cs = Ks.rgb * pow((NdotL > 0.0 ? NdotH : 0.0), glossinessToSpecularPower(glossiness));
+        vec3 Cs = specular.rgb * pow(NdotH, glossinessToSpecularPower(glossiness));
     #endif
 
     return Cd + Cs;
@@ -63,28 +61,28 @@ vec3 litBlinnPhong(vec3 L, vec3 N, vec3 V, vec4 Kd, vec4 Ks) {
 }
 
 // Phong lighting that satisfy energy conservation
-vec3 litPhongEC(vec3 L, vec3 N, vec3 V, vec4 Kd, vec4 Ks) {
+vec3 litPhongEC(vec3 L, vec3 N, vec3 V, vec4 albedo, vec4 specular, float glossiness) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
     float w2 = 1.0 + wrapped;
-    vec3 Cd = Kd.rgb * (vec3(1.0) - Ks.rgb) * (NdotL + wrapped) / (w2 * w2);
+    vec3 Cd = albedo.rgb * (vec3(1.0) - specular.rgb) * (NdotL + wrapped) / (w2 * w2);
 #else // Lambertian
     float NdotL = dot(N, L);
-    vec3 Cd = Kd.rgb * (vec3(1.0) - Ks.rgb) * max(NdotL, 0.0);
+    vec3 Cd = albedo.rgb * (vec3(1.0) - specular.rgb) * max(NdotL, 0.0);
 #endif
 
 #if _SPECULAR_SOURCE != 0
     vec3 R = reflect(-L, N);
     float RdotV = max(dot(R, V), 0.0);
 
-    #if _SPECULAR_SOURCE == 3
-        float specularPower = glossinessToSpecularPower(Ks.a);
+    #if _SPECULAR_SOURCE == 3 || _SPECULAR_SOURCE == 4
+        float specularPower = glossinessToSpecularPower(specular.a);
     #else
         float specularPower = glossinessToSpecularPower(glossiness);
     #endif
 
     float normFactor = specularPower * 0.5 + 1.0;
-    vec3 Cs = Ks.rgb * normFactor * pow((NdotL > 0.0 ? RdotV : 0.0), specularPower);
+    vec3 Cs = specular.rgb * normFactor * pow(RdotV, specularPower);
 
     return Cd + Cs;
 #else
@@ -93,28 +91,28 @@ vec3 litPhongEC(vec3 L, vec3 N, vec3 V, vec4 Kd, vec4 Ks) {
 }
 
 // Blinn-Phong lighting that satisfy energy conservation
-vec3 litBlinnPhongEC(vec3 L, vec3 N, vec3 V, vec4 Kd, vec4 Ks) {
+vec3 litBlinnPhongEC(vec3 L, vec3 N, vec3 V, vec4 albedo, vec4 specular, float glossiness) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
     float w2 = 1.0 + wrapped;
-    vec3 Cd = Kd.rgb * (vec3(1.0) - Ks.rgb) * (NdotL + wrapped) / (w2 * w2);
+    vec3 Cd = albedo.rgb * (vec3(1.0) - specular.rgb) * (NdotL + wrapped) / (w2 * w2);
 #else // Lambertian
     float NdotL = dot(N, L);
-    vec3 Cd = Kd.rgb * (vec3(1.0) - Ks.rgb) * max(NdotL, 0.0);
+    vec3 Cd = albedo.rgb * (vec3(1.0) - specular.rgb) * max(NdotL, 0.0);
 #endif
 
 #if _SPECULAR_SOURCE != 0
     vec3 H = normalize(L + V);
     float NdotH = max(dot(N, H), 0.0);
 
-    #if _SPECULAR_SOURCE == 3
-        float specularPower = glossinessToSpecularPower(Ks.a);
+    #if _SPECULAR_SOURCE == 3 || _SPECULAR_SOURCE == 4
+        float specularPower = glossinessToSpecularPower(specular.a);
     #else
         float specularPower = glossinessToSpecularPower(glossiness);
     #endif
 
     float normFactor = specularPower * 0.125 + 1.0;
-    vec3 Cs = Ks.rgb * normFactor * pow((NdotL > 0.0 ? NdotH : 0.0), specularPower);
+    vec3 Cs = specular.rgb * normFactor * pow(NdotH, specularPower);
 
     return Cd + Cs;
 #else

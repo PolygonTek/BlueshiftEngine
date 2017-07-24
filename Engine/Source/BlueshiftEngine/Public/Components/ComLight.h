@@ -51,8 +51,8 @@ protected:
     SceneLight::Type        GetLightType() const;
     void                    SetLightType(SceneLight::Type type);
 
-    bool                    IsMainLight() const;
-    void                    SetMainLight(bool isMainLight);
+    bool                    IsPrimaryLight() const;
+    void                    SetPrimaryLight(bool isPrimaryLight);
 
     bool                    IsTurnOn() const;
     void                    SetTurnOn(bool turnOn);

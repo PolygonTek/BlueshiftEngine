@@ -80,12 +80,19 @@ private:
     void                SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const;
     void                SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const;
 
+    void                SetupLightingShader(const Material::Pass *mtrlPass, const Shader *shader, bool useShadowMap) const;
+
     void                RenderColor(const Color4 &color) const;
     void                RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id) const;
     void                RenderDepth(const Material::Pass *mtrlPass) const;
     void                RenderVelocity(const Material::Pass *mtrlPass) const;
+    void                RenderBase(const Material::Pass *mtrlPass, float ambientScale) const;
     void                RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) const;
+    void                RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale) const;
+    void                RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambientScale) const;
+    void                RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float ambientScale) const;
     void                RenderGeneric(const Material::Pass *mtrlPass) const;
+
     void                RenderLightInteraction(const Material::Pass *mtrlPass) const;
     void                RenderFogLightInteraction(const Material::Pass *mtrlPass) const;
     void                RenderBlendLightInteraction(const Material::Pass *mtrlPass) const;
@@ -152,13 +159,12 @@ struct BackEnd {
 
     RenderContext *     ctx;
 
-    viewLight_t *       mainLight;
-
     RBSurf              rbsurf;
     int                 numDrawSurfs;
     DrawSurf **         drawSurfs;
     viewEntity_t *      viewEntities;
     viewLight_t *       viewLights;
+    viewLight_t *       primaryLight;
     view_t *            view;
 
     Rect                renderRect;
@@ -178,12 +184,12 @@ struct BackEnd {
     float               shadowMapOffsetFactor;
     float               shadowMapOffsetUnits;
 
-    int                 csmCount;
     float               csmDistances[9];
     float               csmUpdateRatio[8];
     float               csmUpdate[8];
 
-    Texture *           irradianceCubeMapTexture;
+    Texture *           diffuseIrradianceCubeTexture;
+    Texture *           specularIrradianceCubeTexture;
 
     Texture *           homCullingOutputTexture;
     RenderTarget *      homCullingOutputRT;
@@ -194,10 +200,11 @@ void    RB_Shutdown();
 
 void    RB_Execute(const void *data);
 
+void    RB_SetupLight(viewLight_t *viewLight);
+
 void    RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_AmbientPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs);
@@ -205,7 +212,9 @@ void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);
 void    RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs);
 
-void    RB_AllShadowAndLitPass(viewLight_t *viewLights);
+void    RB_ShadowPass(const viewLight_t *viewLight);
+void    RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs);
+void    RB_ForwardAdditivePass(viewLight_t *viewLights);
 
 void    RB_PostProcessDepth();
 void    RB_PostProcess();

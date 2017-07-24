@@ -44,7 +44,6 @@ struct viewLight_t {
     Rect                    scissorRect;        // y 좌표는 밑에서 부터 증가
     bool                    occlusionVisible;
 
-    OBB                     mainLightOBB;
     Mat4                    viewProjTexMatrix;
 
     Color4                  lightColor;
@@ -74,6 +73,7 @@ struct view_t {
 
     viewEntity_t *          viewEntities;
     viewLight_t *           viewLights;
+    viewLight_t *           primaryLight;
 };
 
 struct renderGlobal_t {

@@ -1,4 +1,4 @@
-shader "Lighting/Generic" {
+shader "ForwardAmbientLit" {
     lighting
     properties {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
@@ -10,25 +10,23 @@ shader "Lighting/Generic" {
         detailRepeat("Detail Repeat") : float = "8"
         _WRAPPED_DIFFUSE("Wrapped Diffuse") : bool = "false" (shaderDefine)
         wrapped("Wrapped") : float range 0 1 0.01 = "0.5"
-        _SPECULAR_SOURCE("Specular") : enum "None;Color;Texture(RGB);Texture(RGB) + Gloss(A);Diffuse Texture(A)" = "0" (shaderDefine)
+        _SPECULAR_SOURCE("Specular") : enum "None;Color;Texture(RGB);Texture(RGB) + Gloss(A);Color + Gloss(R)" = "0" (shaderDefine)
         specularColor("Specular Color") : vec4 = "1 1 1 1"
         specularMap("Specular Map") : object TextureAsset = "_whiteTexture"
         glossiness("Glossiness") : float range 0 1 0.01 = "0.3"
         //metalness("Metalness") : float range 0 1 0.02 = "0.0"
         //roughness("Roughness") : float range 0 1 0.02 = "0.5"
     }
-
+    
     generatePerforatedVersion
     generateGpuSkinningVersion
-    generateParallelShadowVersion
-    generateSpotShadowVersion
-    generatePointShadowVersion
-    ambientLitVersion "amblit.shader"
 
     glsl_vp {
-        $include "lightingGeneric.vp"
+        #define AMBIENT_LIGHTING 1
+        $include "ForwardCore.vp"
     }
     glsl_fp {
-        $include "lightingGeneric.fp"
+        #define AMBIENT_LIGHTING 1
+        $include "ForwardCore.fp"
     }
 }

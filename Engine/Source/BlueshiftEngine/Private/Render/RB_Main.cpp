@@ -79,8 +79,11 @@ void RB_Init() {
     memset(backEnd.csmUpdate, 0, sizeof(backEnd.csmUpdate));
 
     // FIXME: TEMPORARY CODE
-    backEnd.irradianceCubeMapTexture = textureManager.AllocTexture("irradianceCubeMap");
-    backEnd.irradianceCubeMapTexture->Load("irr_diffuse.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    backEnd.diffuseIrradianceCubeTexture = textureManager.AllocTexture("diffuseIrradianceCubeMap");
+    backEnd.diffuseIrradianceCubeTexture->Load("irr_diffuse.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
+    backEnd.specularIrradianceCubeTexture = textureManager.AllocTexture("specularIrradianceCubeMap");
+    backEnd.specularIrradianceCubeTexture->Load("irr_specular.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
 
     if (r_HOM.GetBool()) {
         // TODO: create one for each context
@@ -96,7 +99,7 @@ void RB_Init() {
 void RB_Shutdown() {
     backEnd.initialized = false;
 
-    //Texture::DestroyInstanceImmediate(backEnd.irradianceCubeMapTexture);
+    //Texture::DestroyInstanceImmediate(backEnd.diffuseIrradianceCubeTexture);
 
     PP_Free();
 
@@ -113,6 +116,67 @@ static const void *RB_ExecuteBeginContext(const void *data) {
     backEnd.ctx = cmd->renderContext;
 
     return (const void *)(cmd + 1);
+}
+
+void RB_SetupLight(viewLight_t *viewLight) {
+    const SceneLight *sceneLight = viewLight->def;
+
+    const Material *lightMaterial = sceneLight->parms.material;
+
+    /*float *outputValues = (float *)frameData.Alloc(lightMaterial->GetExprChunk()->NumRegisters() * sizeof(float));
+    float localParms[MAX_EXPR_LOCALPARMS];
+    localParms[0] = backEnd.ctx->elapsedTime;
+    memcpy(&localParms[1], sceneLight->parms.materialParms, sizeof(sceneLight->parms.materialParms));
+    lightMaterial->GetExprChunk()->Evaluate(localParms, outputValues);*/
+
+    viewLight->materialRegisters = nullptr;//outputValues;
+
+    const Material::Pass *lightPass = lightMaterial->GetPass();
+
+    if (lightPass->useOwnerColor) {
+        viewLight->lightColor = Color4(&sceneLight->parms.materialParms[SceneEntity::RedParm]);
+    } else {
+        viewLight->lightColor = Color4(lightPass->constantColor);
+    }
+
+    if (cvarSystem.GetCVarBool(L"gl_sRGB")) {
+        // Linearize viewLight color
+        viewLight->lightColor.ToColor3() = viewLight->lightColor.ToColor3().SRGBtoLinear();
+    }
+
+    // viewLight texture transform matrix
+    const Mat4 &viewProjScaleBiasMat = viewLight->def->GetViewProjScaleBiasMatrix();
+
+    float lightTexMat[2][4];
+    lightTexMat[0][0] = lightPass->tcScale[0];
+    lightTexMat[0][1] = 0.0f;
+    lightTexMat[0][2] = 0.0f;
+    lightTexMat[0][3] = lightPass->tcTranslation[0];
+
+    lightTexMat[1][0] = 0.0f;
+    lightTexMat[1][1] = lightPass->tcScale[1];
+    lightTexMat[1][2] = 0.0f;
+    lightTexMat[1][3] = lightPass->tcTranslation[1];
+
+    viewLight->viewProjTexMatrix[0][0] = lightTexMat[0][0] * viewProjScaleBiasMat[0][0] + lightTexMat[0][1] * viewProjScaleBiasMat[1][0] + lightTexMat[0][3] * viewProjScaleBiasMat[3][0];
+    viewLight->viewProjTexMatrix[0][1] = lightTexMat[0][0] * viewProjScaleBiasMat[0][1] + lightTexMat[0][1] * viewProjScaleBiasMat[1][1] + lightTexMat[0][3] * viewProjScaleBiasMat[3][1];
+    viewLight->viewProjTexMatrix[0][2] = lightTexMat[0][0] * viewProjScaleBiasMat[0][2] + lightTexMat[0][1] * viewProjScaleBiasMat[1][2] + lightTexMat[0][3] * viewProjScaleBiasMat[3][2];
+    viewLight->viewProjTexMatrix[0][3] = lightTexMat[0][0] * viewProjScaleBiasMat[0][3] + lightTexMat[0][1] * viewProjScaleBiasMat[1][3] + lightTexMat[0][3] * viewProjScaleBiasMat[3][3];
+
+    viewLight->viewProjTexMatrix[1][0] = lightTexMat[1][0] * viewProjScaleBiasMat[0][0] + lightTexMat[1][1] * viewProjScaleBiasMat[1][0] + lightTexMat[1][3] * viewProjScaleBiasMat[3][0];
+    viewLight->viewProjTexMatrix[1][1] = lightTexMat[1][0] * viewProjScaleBiasMat[0][1] + lightTexMat[1][1] * viewProjScaleBiasMat[1][1] + lightTexMat[1][3] * viewProjScaleBiasMat[3][1];
+    viewLight->viewProjTexMatrix[1][2] = lightTexMat[1][0] * viewProjScaleBiasMat[0][2] + lightTexMat[1][1] * viewProjScaleBiasMat[1][2] + lightTexMat[1][3] * viewProjScaleBiasMat[3][2];
+    viewLight->viewProjTexMatrix[1][3] = lightTexMat[1][0] * viewProjScaleBiasMat[0][3] + lightTexMat[1][1] * viewProjScaleBiasMat[1][3] + lightTexMat[1][3] * viewProjScaleBiasMat[3][3];
+
+    viewLight->viewProjTexMatrix[2][0] = viewProjScaleBiasMat[2][0];
+    viewLight->viewProjTexMatrix[2][1] = viewProjScaleBiasMat[2][1];
+    viewLight->viewProjTexMatrix[2][2] = viewProjScaleBiasMat[2][2];
+    viewLight->viewProjTexMatrix[2][3] = viewProjScaleBiasMat[2][3];
+
+    viewLight->viewProjTexMatrix[3][0] = viewProjScaleBiasMat[3][0];
+    viewLight->viewProjTexMatrix[3][1] = viewProjScaleBiasMat[3][1];
+    viewLight->viewProjTexMatrix[3][2] = viewProjScaleBiasMat[3][2];
+    viewLight->viewProjTexMatrix[3][3] = viewProjScaleBiasMat[3][3];
 }
 
 void RB_DrawLightVolume(const SceneLight *light) {
@@ -166,7 +230,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
 
     for (int i = 0; i < numLights; i++) {
         viewLight_t *light = lights[i];
-        if (light->def->parms.isMainLight) {
+        if (light->def->parms.isPrimaryLight) {
             continue;
         }
 
@@ -535,9 +599,9 @@ static void RB_DrawView() {
             RB_DepthPrePass(backEnd.numDrawSurfs, backEnd.drawSurfs);
         }
 
-        // Render all solid (non-translucent) geometry (ambient + [velocity] + depth)
+        // Render all solid (non-translucent) geometry (depth + ambient + [primary lit])
         if (!r_skipAmbientPass.GetBool()) {
-            RB_AmbientPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_ForwardBasePass(backEnd.numDrawSurfs, backEnd.drawSurfs);
         }
 
         // depth buffer 와 관련된 post processing 을 먼저 한다
@@ -547,7 +611,7 @@ static void RB_DrawView() {
 
         // Render all shadow and light interaction
         if (!r_skipShadowAndLitPass.GetBool()) {
-            RB_AllShadowAndLitPass(backEnd.viewLights);
+            RB_ForwardAdditivePass(backEnd.viewLights);
         }
 
         // Render wireframe for option
@@ -632,12 +696,12 @@ static const void *RB_ExecuteDrawView(const void *data) {
     backEnd.time            = MS2SEC(cmd->view.def->parms.time);
     backEnd.viewEntities    = cmd->view.viewEntities;
     backEnd.viewLights      = cmd->view.viewLights;
+    backEnd.primaryLight    = cmd->view.primaryLight;
     backEnd.numDrawSurfs    = cmd->view.numDrawSurfs;
     backEnd.drawSurfs       = cmd->view.drawSurfs;
     backEnd.projMatrix      = cmd->view.def->projMatrix;
     backEnd.renderRect      = cmd->view.def->parms.renderRect;
     backEnd.upscaleFactor   = Vec2(backEnd.ctx->GetUpscaleFactorX(), backEnd.ctx->GetUpscaleFactorY());
-    backEnd.mainLight       = nullptr;
 
     backEnd.screenRect.Set(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());
 

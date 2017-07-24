@@ -11,14 +11,15 @@ $include "shadow.vp"
 out vec4 v2f_color;
 out vec2 v2f_tcDiffuseNormal;
 out vec2 v2f_tcSpecular;
+//out vec2 v2f_tcLightmap;
 out vec3 v2f_viewVector;
 out vec3 v2f_lightVector;
 out vec3 v2f_lightFallOff;
 out vec4 v2f_lightProjection;
 out vec3 v2f_normal;
-out vec3 v2f_tangentToWorldMatrixS;
-out vec4 v2f_tangentToWorldMatrixT;
-//out vec3 v2f_tangentToWorldMatrixR;
+out vec3 v2f_toWorldS;
+out vec3 v2f_toWorldT;
+out vec3 v2f_toWorldR;
 
 #ifdef INSTANCED_DRAW
 	struct entityData_t {
@@ -26,8 +27,7 @@ out vec4 v2f_tangentToWorldMatrixT;
 		vec4 worldMatrixT;
 		vec4 worldMatrixR;
 		vec3 localViewOrigin;
-		mat3 localLightAxis;
-		vec4 localLightOrigin;
+		vec3 localLightDir;
 		vec4 textureMatrixS;
 		vec4 textureMatrixT;
 		vec4 vertexColorScale;
@@ -58,7 +58,7 @@ uniform bool useShadowMap;
 
 void main() {
 #if _NORMAL_SOURCE == 0
-	vec4 localVertex;
+    vec4 localVertex;
 	vec3 localNormal;
 
 	#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
@@ -66,7 +66,7 @@ void main() {
 	#else
 		vec3 vNormal = in_normal.xyz;
 	#endif
-
+	
 	#ifdef GPU_SKINNING
 		skinningMatrix(in_position, localVertex, vNormal, localNormal);
 	#else
@@ -94,38 +94,64 @@ void main() {
 		localNormal = vNormal;
 		localTangent = vTangent.xyz;
 		localBiTangent = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
-	#endif	
+	#endif
 #endif
 
-	vec4 worldVertex;
+#if DIRECT_LIGHTING
+    vec4 worldVertex;
 	worldVertex.x = dot(worldMatrixS, localVertex);
 	worldVertex.y = dot(worldMatrixT, localVertex);
 	worldVertex.z = dot(worldMatrixR, localVertex);
 	worldVertex.w = 1.0;
 
-#ifdef USE_SHADOW_MAP
-	#ifdef USE_SHADOW_POINT
-		ShadowCubeTransform(localVertex, localLightOrigin.xyz, worldMatrixS.xyz, worldMatrixT.xyz, worldMatrixR.xyz);
-	#elif defined(USE_SHADOW_SPOT) || defined(USE_SHADOW_CASCADE)
-		ShadowTransform(worldVertex);
-	#endif
-#endif
-
-	v2f_lightProjection = lightTextureMatrix * worldVertex;
+    #ifdef USE_SHADOW_MAP
+	    #ifdef USE_SHADOW_POINT
+		    ShadowCubeTransform(localVertex, localLightOrigin.xyz, worldMatrixS.xyz, worldMatrixT.xyz, worldMatrixR.xyz);
+	    #elif defined(USE_SHADOW_SPOT) || defined(USE_SHADOW_CASCADE)
+		    ShadowTransform(worldVertex);
+	    #endif
+    #endif
+	
+    v2f_lightProjection = lightTextureMatrix * worldVertex;
 
 	vec3 L = localLightOrigin.xyz + (localLightOrigin.w - 1.0) * localVertex.xyz;
-	vec3 V = localViewOrigin.xyz - localVertex.xyz;
 
 	v2f_lightFallOff = (L * localLightAxis) * lightInvRadius;
+#endif
 
 #if _NORMAL_SOURCE == 0
 	v2f_normal = localNormal;
-	v2f_lightVector = L;
-	v2f_viewVector = V;
+
+    #if DIRECT_LIGHTING || AMBIENT_LIGHTING || _PARALLAX
+	    v2f_viewVector = localViewOrigin.xyz - localVertex.xyz;
+    #endif
+
+    #if DIRECT_LIGHTING
+        v2f_lightVector = L;
+    #endif
+	
+	#if AMBIENT_LIGHTING
+		v2f_toWorldS.xyz = worldMatrixS.xyz;
+		v2f_toWorldT.xyz = worldMatrixT.xyz;
+		v2f_toWorldR.xyz = worldMatrixR.xyz;
+	#endif
 #else
 	mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
-	v2f_lightVector = L * TBN;
-	v2f_viewVector = V * TBN;
+
+    #if DIRECT_LIGHTING || AMBIENT_LIGHTING || _PARALLAX
+	    v2f_viewVector = (localViewOrigin.xyz - localVertex.xyz) * TBN;
+    #endif
+
+    #if DIRECT_LIGHTING
+        v2f_lightVector = L * TBN;
+    #endif
+	
+	#if AMBIENT_LIGHTING
+		v2f_toWorldS.xyz = worldMatrixS.xyz * TBN;
+		v2f_toWorldT.xyz = worldMatrixT.xyz * TBN;
+		v2f_toWorldR.xyz = worldMatrixR.xyz * TBN;
+		//v2f_toWorldT.w = in_tangent.w;
+	#endif
 #endif
 
 	v2f_tcDiffuseNormal.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
@@ -133,6 +159,10 @@ void main() {
 
 #if (_SPECULAR_SOURCE == 2 || _SPECULAR_SOURCE == 3 || _SPECULAR_SOURCE == 4)
 	v2f_tcSpecular = in_st.xy;
+#endif
+
+#ifdef LIGHTMAP
+	v2f_tcLightmap = in_st2.xy;
 #endif
 
 	v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;

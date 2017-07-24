@@ -66,8 +66,8 @@ void RB_PostProcess() {
         linearizeDepth = true;
     }
 
-    if (r_sunShafts.GetBool() && backEnd.mainLight) {
-        const SceneLight *sunLight = backEnd.mainLight->def;
+    if (r_sunShafts.GetBool() && backEnd.primaryLight) {
+        const SceneLight *sunLight = backEnd.primaryLight->def;
         if (sunLight->parms.axis[0].Dot(backEnd.view->def->parms.axis[0]) < 0.0f) {
             if (!linearizeDepth) {
                 linearizeDepth = true;
@@ -201,7 +201,7 @@ void RB_PostProcess() {
         //shader->SetTexture("randomDir4x4Map", textureManager.randomDir4x4Texture);
         shader->SetTexture("colorMap", bc->screenRT->ColorTexture());
         shader->SetTexture("bloomMap0", bc->hdrBloomRT[0]->ColorTexture());
-        shader->SetTexture("luminanceMap", luminanceRT->ColorTexture());		        
+        shader->SetTexture("luminanceMap", luminanceRT->ColorTexture());
         shader->SetConstant1f("middleGray", r_HDR_middleGray.GetFloat());
         shader->SetConstant1f("bloomScale", bloomScale);
         shader->SetConstant1f("colorScale", r_showBloom.GetBool() ? 0.0f : 1.0f);

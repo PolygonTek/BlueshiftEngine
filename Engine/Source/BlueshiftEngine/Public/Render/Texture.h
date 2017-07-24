@@ -52,6 +52,7 @@ public:
         HighPriority        = BIT(12),
         LowPriority         = BIT(13),
         SRGB                = BIT(14),      ///< generally color image is encoded in sRGB
+        Trilinear           = BIT(15),
         HighQuality         = NoScaleDown | NoCompression,
         CubeMap             = BIT(28),      ///< cube map
         CameraCubeMap       = BIT(29),

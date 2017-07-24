@@ -64,14 +64,24 @@ void Shader::Purge() {
         shaderHandle = RHI::NullShader;
     }
 
-    if (perforatedVersion) {
-        shaderManager.ReleaseShader(perforatedVersion);
-        perforatedVersion = nullptr;
-    }
-
     if (ambientLitVersion) {
         shaderManager.ReleaseShader(ambientLitVersion);
         ambientLitVersion = nullptr;
+    }
+
+    if (directLitVersion) {
+        shaderManager.ReleaseShader(directLitVersion);
+        directLitVersion = nullptr;
+    }
+
+    if (ambientLitDirectLitVersion) {
+        shaderManager.ReleaseShader(ambientLitDirectLitVersion);
+        ambientLitDirectLitVersion = nullptr;
+    }
+
+    if (perforatedVersion) {
+        shaderManager.ReleaseShader(perforatedVersion);
+        perforatedVersion = nullptr;
     }
 
     if (parallelShadowVersion) {
@@ -130,15 +140,6 @@ bool Shader::Create(const char *text, const char *baseDir) {
             flags |= Lighting;
         } else if (!token.Icmp("properties")) {
             ParseProperties(lexer);
-        } else if (!token.Icmp("perforatedVersion")) {
-            if (lexer.ReadToken(&token)) {
-                Str path = baseDir;
-                path.AppendPath(token, '/');
-
-                perforatedVersion = shaderManager.GetShader(path);
-            } else {
-                BE_WARNLOG(L"missing perforatedVersion name in shader '%hs'\n", hashName.c_str());
-            }
         } else if (!token.Icmp("ambientLitVersion")) {
             if (lexer.ReadToken(&token)) {
                 Str path = baseDir;
@@ -147,6 +148,33 @@ bool Shader::Create(const char *text, const char *baseDir) {
                 ambientLitVersion = shaderManager.GetShader(path);
             } else {
                 BE_WARNLOG(L"missing ambientLitVersion name in shader '%hs'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("directLitVersion")) {
+            if (lexer.ReadToken(&token)) {
+                Str path = baseDir;
+                path.AppendPath(token, '/');
+
+                directLitVersion = shaderManager.GetShader(path);
+            } else {
+                BE_WARNLOG(L"missing directLitVersion name in shader '%hs'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("ambientLitDirectLitVersion")) {
+            if (lexer.ReadToken(&token)) {
+                Str path = baseDir;
+                path.AppendPath(token, '/');
+
+                ambientLitDirectLitVersion = shaderManager.GetShader(path);
+            } else {
+                BE_WARNLOG(L"missing ambientLitDirectLitVersion name in shader '%hs'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("perforatedVersion")) {
+            if (lexer.ReadToken(&token)) {
+                Str path = baseDir;
+                path.AppendPath(token, '/');
+
+                perforatedVersion = shaderManager.GetShader(path);
+            } else {
+                BE_WARNLOG(L"missing perforatedVersion name in shader '%hs'\n", hashName.c_str());
             }
         } else if (!token.Icmp("parallelShadowVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -187,7 +215,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
                     path.AppendPath(token, '/');
 
                     gpuSkinningVersion[1] = shaderManager.GetShader(path);
-                    
+
                     if (lexer.ReadToken(&token)) {
                         Str path = baseDir;
                         path.AppendPath(token, '/');
@@ -326,7 +354,6 @@ bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePos
 
     return true;
 }
-
 
 bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion) {
     if (!shader->perforatedVersion) {
@@ -479,12 +506,20 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     
     shader->Instantiate(defineArray);
 
-    if (perforatedVersion) {
-        shader->perforatedVersion = perforatedVersion->InstantiateShader(defineArray);
-    }
-    
     if (ambientLitVersion) {
         shader->ambientLitVersion = ambientLitVersion->InstantiateShader(defineArray);
+    }
+
+    if (directLitVersion) {
+        shader->directLitVersion = directLitVersion->InstantiateShader(defineArray);
+    }
+
+    if (ambientLitDirectLitVersion) {
+        shader->ambientLitDirectLitVersion = ambientLitDirectLitVersion->InstantiateShader(defineArray);
+    }
+
+    if (perforatedVersion) {
+        shader->perforatedVersion = perforatedVersion->InstantiateShader(defineArray);
     }
 
     if (parallelShadowVersion) {
@@ -512,20 +547,6 @@ void Shader::Reinstantiate() {
     assert(originalShader);
     Instantiate(defineArray);
 
-    if (originalShader->perforatedVersion) {
-        if (perforatedVersion) {
-            perforatedVersion->originalShader = originalShader->perforatedVersion;
-            perforatedVersion->Reinstantiate();
-        } else {
-            perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
-        }
-    } else {
-        if (perforatedVersion) {
-            shaderManager.ReleaseShader(perforatedVersion);
-            perforatedVersion = nullptr;
-        }
-    }
-
     if (originalShader->ambientLitVersion) {
         if (ambientLitVersion) {
             ambientLitVersion->originalShader = originalShader->ambientLitVersion;
@@ -537,6 +558,48 @@ void Shader::Reinstantiate() {
         if (ambientLitVersion) {
             shaderManager.ReleaseShader(ambientLitVersion);
             ambientLitVersion = nullptr;
+        }
+    }
+
+    if (originalShader->directLitVersion) {
+        if (directLitVersion) {
+            directLitVersion->originalShader = originalShader->directLitVersion;
+            directLitVersion->Reinstantiate();
+        } else {
+            directLitVersion = originalShader->directLitVersion->InstantiateShader(defineArray);
+        }
+    } else {
+        if (directLitVersion) {
+            shaderManager.ReleaseShader(directLitVersion);
+            directLitVersion = nullptr;
+        }
+    }
+
+    if (originalShader->ambientLitDirectLitVersion) {
+        if (ambientLitDirectLitVersion) {
+            ambientLitDirectLitVersion->originalShader = originalShader->ambientLitDirectLitVersion;
+            ambientLitDirectLitVersion->Reinstantiate();
+        } else {
+            ambientLitDirectLitVersion = originalShader->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+        }
+    } else {
+        if (ambientLitDirectLitVersion) {
+            shaderManager.ReleaseShader(ambientLitDirectLitVersion);
+            ambientLitDirectLitVersion = nullptr;
+        }
+    }
+
+    if (originalShader->perforatedVersion) {
+        if (perforatedVersion) {
+            perforatedVersion->originalShader = originalShader->perforatedVersion;
+            perforatedVersion->Reinstantiate();
+        } else {
+            perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
+        }
+    } else {
+        if (perforatedVersion) {
+            shaderManager.ReleaseShader(perforatedVersion);
+            perforatedVersion = nullptr;
         }
     }
 
@@ -599,9 +662,7 @@ void Shader::Reinstantiate() {
     }
 }
 
-
-bool Shader::Instantiate(const Array<Define> &defineArray) {
-    
+bool Shader::Instantiate(const Array<Define> &defineArray) {   
 #if defined __ANDROID__ && ! defined __XAMARIN__
     static int progress = 0;
 

@@ -639,7 +639,8 @@ void RenderWorld::OptimizeLights(view_t *view) {
         light->shadowCasterAABB.IntersectSelf(lightAABB);
         // 결과적으로 필요한 AABB 만 남는다.
 
-        if (light->def->parms.isMainLight) {
+        if (light->def->parms.isPrimaryLight) {
+            view->primaryLight = light;
             continue;
         }
 

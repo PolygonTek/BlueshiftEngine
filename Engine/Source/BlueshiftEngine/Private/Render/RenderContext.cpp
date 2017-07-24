@@ -1105,7 +1105,9 @@ void RenderContext::GenerateSpecularIrradianceCubeImage(const Image &envCubeImag
     radianceCubeTexture->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     int numMipLevels = Math::Log(2, size) + 1;
-    float powerDropOnMip = Math::Pow(maxSpecularPower, -1.0f / (numMipLevels - 1));
+
+    // power drop range [maxSpecularPower, 2]
+    float powerDropOnMip = Math::Pow(maxSpecularPower, -1.0f / numMipLevels);
 
     Texture *diffuseIrradianceCubeTexture = new Texture;
     diffuseIrradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);

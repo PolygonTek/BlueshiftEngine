@@ -4,9 +4,9 @@ in vec4 v2f_color;
 in vec2 v2f_texCoord;
 in vec3 v2f_eyeVector;
 in vec2 v2f_distortion;
-in vec3 v2f_tangentToWorldMatrixS;
-in vec3 v2f_tangentToWorldMatrixT;
-in vec3 v2f_tangentToWorldMatrixR;
+in vec3 v2f_toWorldS;
+in vec3 v2f_toWorldT;
+in vec3 v2f_toWorldR;
 
 out vec4 o_fragColor : FRAG_COLOR;
 
@@ -45,9 +45,9 @@ void main() {
 	vec3 E = normalize(v2f_eyeVector.xyz);
 	vec3 R = reflect(E, N);
 	vec3 worldR;
-	worldR.x = dot(v2f_tangentToWorldMatrixS, R);
-	worldR.y = dot(v2f_tangentToWorldMatrixT, R);
-	worldR.z = dot(v2f_tangentToWorldMatrixR, R);
+	worldR.x = dot(v2f_toWorldS, R);
+	worldR.y = dot(v2f_toWorldT, R);
+	worldR.z = dot(v2f_toWorldR, R);
 	worldR = normalize(worldR);
 
 #ifdef SUN

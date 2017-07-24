@@ -52,7 +52,7 @@ public:
         ModelViewMatrixTransposeConst,
         ProjectionMatrixConst,
         ProjectionMatrixTransposeConst,
-        ModelViewProjectionMatrixConst,	
+        ModelViewProjectionMatrixConst,
         ModelViewProjectionMatrixTransposeConst,
         WorldMatrixSConst,
         WorldMatrixTConst,
@@ -228,6 +228,8 @@ private:
 
     Shader *                perforatedVersion;
     Shader *                ambientLitVersion;
+    Shader *                directLitVersion;
+    Shader *                ambientLitDirectLitVersion;
     Shader *                parallelShadowVersion;
     Shader *                spotShadowVersion;
     Shader *                pointShadowVersion;
@@ -246,6 +248,8 @@ BE_INLINE Shader::Shader() {
     hasFragmentShader       = false;
     perforatedVersion       = nullptr;
     ambientLitVersion       = nullptr;
+    directLitVersion        = nullptr;
+    ambientLitDirectLitVersion = nullptr;
     parallelShadowVersion   = nullptr;
     spotShadowVersion       = nullptr;
     pointShadowVersion      = nullptr;
@@ -270,15 +274,12 @@ public:
         DepthShader,
         ConstantColorShader,
         VertexColorShader,
-        AmblitShader,
         ObjectMotionBlurShader,
-        LightingGenericShader,
+        ForwardShader,
         SkyboxCubemapShader,
         SkyboxSixSidedShader,
         FogLightShader,
         BlendLightShader,
-        //SHProjectionShader,
-        //SHEvalIrradianceCubeMapShader,
         PostObjectMotionBlurShader,
         PostCameraMotionBlurShader,
         PostPassThruShader,
@@ -342,10 +343,11 @@ public:
     static Shader *         depthShader;
     static Shader *         constantColorShader;
     static Shader *         vertexColorShader;
-    static Shader *         amblitNoAmbientCubeMapShader;
-    static Shader *         amblitNoBumpShader;
     static Shader *         objectMotionBlurShader;
-    static Shader *         lightingDefaultShader;
+    static Shader *         forwardAlbedoShader;
+    static Shader *         forwardAlbedoAmbientLitShader;
+    static Shader *         forwardAlbedoDirectLitShader;
+    static Shader *         forwardAlbedoAmbientLitDirectLitShader;
     static Shader *         skyboxCubemapShader;
     static Shader *         skyboxSixSidedShader;
     static Shader *         fogLightShader;

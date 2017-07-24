@@ -574,7 +574,7 @@ void Texture::Upload(const Image *srcImage) {
     rhi.SetTextureAddressMode(addressMode);
 
     if (hasMipmaps) {
-        rhi.SetTextureFilter((flags & Nearest) ? RHI::NearestMipmapNearest : textureManager.textureFilter);	
+        rhi.SetTextureFilter((flags & Nearest) ? RHI::NearestMipmapNearest : ((flags & Trilinear) ? RHI::LinearMipmapLinear : textureManager.textureFilter));
     } else {
         rhi.SetTextureFilter((flags & Nearest) ? RHI::Nearest : RHI::Linear);
     }

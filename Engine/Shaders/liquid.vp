@@ -8,9 +8,9 @@ out vec3 v2f_color;
 out vec2 v2f_texCoord;
 out vec3 v2f_eyeVector;
 out vec2 v2f_distortion;
-out vec3 v2f_tangentToWorldMatrixS;
-out vec3 v2f_tangentToWorldMatrixT;
-out vec3 v2f_tangentToWorldMatrixR;
+out vec3 v2f_toWorldS;
+out vec3 v2f_toWorldT;
+out vec3 v2f_toWorldR;
 
 #ifdef INSTANCED_DRAW
 	struct entityData_t {
@@ -60,9 +60,9 @@ void main() {
 
 	v2f_eyeVector.xyz = E * TBN;
 
-	v2f_tangentToWorldMatrixS = worldMatrixS.xyz * TBN;
-	v2f_tangentToWorldMatrixT = worldMatrixT.xyz * TBN;
-	v2f_tangentToWorldMatrixR = worldMatrixR.xyz * TBN;
+	v2f_toWorldS = worldMatrixS.xyz * TBN;
+	v2f_toWorldT = worldMatrixT.xyz * TBN;
+	v2f_toWorldR = worldMatrixR.xyz * TBN;
 
 	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
 	v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));

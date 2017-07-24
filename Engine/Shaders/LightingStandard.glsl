@@ -101,7 +101,7 @@ vec3 F_Schlick(vec3 F0, float VdotH) {
 
 // Fresnel using Schlick's approximation with spherical Gaussian approximation
 vec3 F_SchlickSG(vec3 F0, float VdotH) {
-    return F0 + (vec3(1.0) - F0) * exp2(-5.55473 * VdotH - 6.98316) * VdotH;
+    return F0 + (vec3(1.0) - F0) * exp2((-5.55473 * VdotH - 6.98316) * VdotH);
 }
 
 // Fresnel injected roughness term
@@ -111,7 +111,7 @@ vec3 F_SchlickRoughness(vec3 F0, float roughness, float VdotH) {
 
 //---------------------------------------------------
 
-void litStandard(in vec3 L, in vec3 N, in vec3 V, in vec3 albedo, in float roughness, in float metalness, out vec3 color) {
+vec3 litStandard(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float metalness) {
     vec3 H = normalize(L + V);
 
     float NdotL = max(dot(N, L), 0.0);
@@ -172,7 +172,7 @@ void litStandard(in vec3 L, in vec3 N, in vec3 V, in vec3 albedo, in float rough
     Cd *= (vec3(1.0) - F) * (1.0 - metalness);
     //Cd *= (vec3(1.0) - F_SchlickSG(F0, NdotL));
 
-    color = Cd + Cs;
+    return Cd + Cs;
 }
 
 #endif

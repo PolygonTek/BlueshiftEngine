@@ -37,7 +37,7 @@ BEGIN_PROPERTIES(ComLight)
     PROPERTY_BOOL("castShadows", "Cast Shadows", "", "false", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("shadowOffsetFactor", "Shadow Offset Factor", "scale value for shadow map drawing", Rangef(0, 16, 0.01f), "3", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("shadowOffsetUnits", "Shadow Offset Unit", "bias value added to depth test for shadow map drawing", Rangef(0, 1000, 1), "200", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("mainLight", "Is Main Light", "", "false", PropertySpec::ReadWrite),
+    PROPERTY_BOOL("primaryLight", "Is Primary Light", "", "false", PropertySpec::ReadWrite),
     PROPERTY_VEC3("lightSize", "Size", "", "200 200 200", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("fallOffExponent", "Fall Off Exponent", "", Rangef(0.01f, 100, 0.1f), "1.25", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("intensity", "Intensity", "", Rangef(0, 8, 0.01f), "2.0", PropertySpec::ReadWrite),
@@ -55,7 +55,7 @@ void ComLight::RegisterProperties() {
     //REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "false", PropertySpec::ReadWrite);
     //REGISTER_ACCESSOR_PROPERTY("Shadow Offset Factor", bool, GetShadowOffsetFactor, SetShadowOffsetFactor, "3", PropertySpec::ReadWrite).SetRange(0, 16, 0.01f);
     //REGISTER_ACCESSOR_PROPERTY("Shadow Offset Units", bool, GetShadowOffsetUnits, SetShadowOffsetUnits, "200", PropertySpec::ReadWrite).SetRange(0, 1000, 1);
-    //REGISTER_ACCESSOR_PROPERTY("Is Main Light", bool, IsMainLight, SetMainLight, "false", PropertySpec::ReadWrite);
+    //REGISTER_ACCESSOR_PROPERTY("Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, "false", PropertySpec::ReadWrite);
     //REGISTER_ACCESSOR_PROPERTY("Light Size", Vec3, GetLightSize, SetLightSize, "200 200 200", PropertySpec::ReadWrite);
     //REGISTER_ACCESSOR_PROPERTY("Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, "1.25", PropertySpec::ReadWrite).SetRange(0.01f, 100, 0.1f);
     //REGISTER_ACCESSOR_PROPERTY("Intensity", float, GetIntensity, SetIntensity, "2.0", PropertySpec::ReadWrite).SetRange(0, 8, 0.01f);
@@ -150,7 +150,7 @@ void ComLight::Init() {
     const Str materialPath = resourceGuidMapper.Get(materialGuid);
     sceneLight.material = materialManager.GetMaterial(materialPath);
 
-    sceneLight.isMainLight = props->Get("mainLight").As<bool>();
+    sceneLight.isPrimaryLight = props->Get("primaryLight").As<bool>();
     sceneLight.zNear = props->Get("lightZNear").As<float>();
     sceneLight.fallOffExponent = props->Get("fallOffExponent").As<float>();
 
@@ -333,8 +333,8 @@ void ComLight::PropertyChanged(const char *classname, const char *propName) {
         return;
     }
 
-    if (!Str::Cmp(propName, "mainLight")) {
-        SetMainLight(props->Get("mainLight").As<bool>());
+    if (!Str::Cmp(propName, "primaryLight")) {
+        SetPrimaryLight(props->Get("primaryLight").As<bool>());
         return;
     }
 
@@ -424,12 +424,12 @@ void ComLight::SetLightType(const SceneLight::Type type) {
     UpdateVisuals();
 }
 
-bool ComLight::IsMainLight() const {
-    return sceneLight.isMainLight;
+bool ComLight::IsPrimaryLight() const {
+    return sceneLight.isPrimaryLight;
 }
 
-void ComLight::SetMainLight(bool isMainLight) {
-    sceneLight.isMainLight = isMainLight;
+void ComLight::SetPrimaryLight(bool isPrimaryLight) {
+    sceneLight.isPrimaryLight = isPrimaryLight;
     UpdateVisuals();
 }
 

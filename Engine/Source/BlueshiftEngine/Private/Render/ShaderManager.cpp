@@ -30,10 +30,10 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/depth" },
     { "Shaders/constantColor" },
     { "Shaders/vertexColor" },
-    { "Shaders/amblit" },
     { "Shaders/objectMotionBlur" },
 
-    { "Shaders/lightingGeneric" },
+    { "Shaders/Forward" },
+
     { "Shaders/skyboxCubemap" },
     { "Shaders/skyboxSixSided" },
 
@@ -86,10 +86,11 @@ Shader *            ShaderManager::selectionIdShader;
 Shader *            ShaderManager::depthShader;
 Shader *            ShaderManager::constantColorShader;
 Shader *            ShaderManager::vertexColorShader;
-Shader *            ShaderManager::amblitNoAmbientCubeMapShader;
-Shader *            ShaderManager::amblitNoBumpShader;
 Shader *            ShaderManager::objectMotionBlurShader;
-Shader *            ShaderManager::lightingDefaultShader;
+Shader *            ShaderManager::forwardAlbedoShader;
+Shader *            ShaderManager::forwardAlbedoAmbientLitShader;
+Shader *            ShaderManager::forwardAlbedoDirectLitShader;
+Shader *            ShaderManager::forwardAlbedoAmbientLitDirectLitShader;
 Shader *            ShaderManager::skyboxCubemapShader;
 Shader *            ShaderManager::skyboxSixSidedShader;
 Shader *            ShaderManager::fogLightShader;
@@ -250,23 +251,30 @@ void ShaderManager::InstantiateEngineShaders() {
     vertexColorShader = originalShaders[VertexColorShader]->InstantiateShader(Array<Shader::Define>());
 
     defineArray.Clear();
-    defineArray.Append(Shader::Define("NO_AMBIENT_CUBE_MAP", 1));
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
-    amblitNoAmbientCubeMapShader = originalShaders[AmblitShader]->InstantiateShader(defineArray);
-
-    defineArray.Clear();
-    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
-    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
-    amblitNoBumpShader = originalShaders[AmblitShader]->InstantiateShader(defineArray);
-
-    objectMotionBlurShader = originalShaders[ObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
+    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
+    forwardAlbedoShader = originalShaders[ForwardShader]->InstantiateShader(defineArray);
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    lightingDefaultShader = originalShaders[LightingGenericShader]->InstantiateShader(defineArray);
+    forwardAlbedoAmbientLitShader = originalShaders[ForwardShader]->ambientLitVersion->InstantiateShader(defineArray);
+
+    defineArray.Clear();
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
+    forwardAlbedoDirectLitShader = originalShaders[ForwardShader]->directLitVersion->InstantiateShader(defineArray);
+
+    defineArray.Clear();
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
+    forwardAlbedoAmbientLitDirectLitShader = originalShaders[ForwardShader]->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+
+    objectMotionBlurShader = originalShaders[ObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
 
     skyboxCubemapShader = originalShaders[SkyboxCubemapShader]->InstantiateShader(Array<Shader::Define>());
 
