@@ -28,7 +28,8 @@ uniform sampler2D detailNormalMap;
 uniform sampler2D specularMap;
 uniform sampler2D heightMap;
 uniform sampler2D lightProjectionMap;
-uniform sampler2D selfIllumMap;
+uniform sampler2D occlusionMap;
+uniform sampler2D emissionMap;
 uniform samplerCube lightCubeMap;
 
 uniform vec4 diffuseColor;
@@ -37,6 +38,9 @@ uniform vec4 lightColor;
 uniform float detailRepeat;
 uniform float lightFallOffExponent;
 uniform float ambientScale;
+uniform float occlusionScale;
+uniform vec3 emissionColor;
+uniform float emissionScale;
 uniform bool useLightCube;
 uniform bool useShadowMap;
 uniform float glossiness;
@@ -110,11 +114,25 @@ void main() {
     #elif _SPECULAR_SOURCE == 4
         vec4 Ks = vec4(specularColor.rgb, tex2D(specularMap, v2f_tcSpecular).r);
     #endif
+
+    #if _SPECULAR_SOURCE != 0
+        #if _SPECULAR_SOURCE == 3 || _SPECULAR_SOURCE == 4
+            float Kg = Ks.a;
+        #else
+            float Kg = glossiness;
+        #endif
+
+        float specularPower = glossinessToSpecularPower(Kg);
+    #endif
 #endif
 
-	vec3 C;
+	vec3 C = vec3(0.0);
 
 #if AMBIENT_LIGHTING
+    #if _EMISSION_SOURCE == 1
+	    C += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
+    #endif
+
 	vec3 tangentToWorldMatrixS = normalize(v2f_toWorldS.xyz);
 	vec3 tangentToWorldMatrixT = normalize(v2f_toWorldT.xyz);
 	vec3 tangentToWorldMatrixR = normalize(v2f_toWorldR.xyz);
@@ -132,14 +150,6 @@ void main() {
 	vec3 Cd = Kd.rgb * mix(d1, d2, ambientLerp);
 
     #if _SPECULAR_SOURCE != 0
-        #if _SPECULAR_SOURCE == 3 || _SPECULAR_SOURCE == 4
-            float Kg = Ks.a;
-        #else
-            float Kg = glossiness;
-        #endif
-
-        float specularPower = glossinessToSpecularPower(Kg);
-
         // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
         // (log2(specularPower) - 11) / (-11/8)
         float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
@@ -157,18 +167,16 @@ void main() {
 
         float NdotV = max(dot(N, V), 0.0);
 
-        vec3 Fs = F_SchlickRoughness(Ks.rgb, 1.0 - Kg, NdotV); 
-        vec3 Cs = Fs * s1;
+        vec3 AFs = F_SchlickRoughness(Ks.rgb, 1.0 - Kg, NdotV);
+        vec3 Cs = AFs * s1;
 
-        C = Cd * (vec3(1.0) - Fs) + Cs;
+        C += Cd * (vec3(1.0) - AFs) + Cs;
     #else
-        C = Cd;
+        C += Cd;
     #endif
 #else
-    C = Kd.rgb;
+    C += Kd.rgb * ambientScale;
 #endif
-
-    C *= ambientScale;
 
 #if DIRECT_LIGHTING
     #ifdef USE_SHADOW_MAP
@@ -185,7 +193,17 @@ void main() {
         }
     #endif
 
-    vec3 lightingColor = litBlinnPhongEC(L, N, V, Kd, Ks, glossiness);
+    #if _SPECULAR_SOURCE != 0
+        vec3 H = normalize(L + V);
+        float LdotH = max(dot(L, H), 0.0);
+
+        vec3 DFs = F_SchlickSG(Ks.rgb, LdotH);
+
+        vec3 lightingColor = litBlinnPhongEC(L, N, V, Kd.rgb, DFs, specularPower);
+    #else
+        vec3 lightingColor = litBlinnPhongEC(L, N, V, Kd.rgb, vec3(0.0), 0.0);
+    #endif
+
     //vec3 lightingColor = litStandard(L, N, V, Kd.rgb, roughness, metalness);
 
     #if defined(_SUB_SURFACE_SCATTERING)
@@ -197,8 +215,9 @@ void main() {
     C += Cl * lightingColor * shadowLighting;
 #endif
 
-#ifdef SELF_ILLUM
-	C += tex2D(selfIllumMap, baseTc).rgb;
+#if _OCCLUSION_SOURCE == 1
+    float occ = tex2D(occlusionMap, baseTc).r;
+    C *= 1.0 - occlusionScale + occ * occlusionScale;
 #endif
 
 	vec4 outputColor = v2f_color * vec4(C, Kd.w);
