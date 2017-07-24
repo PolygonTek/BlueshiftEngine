@@ -58,7 +58,7 @@ void MeshManager::Init() {
     // Create default sphere mesh
     defaultSphereMesh = AllocMesh("_defaultSphereMesh");
     defaultSphereMesh->permanence = true;
-    defaultSphereMesh->CreateSphere(Vec3::origin, MeterToUnit(0.5), 12);
+    defaultSphereMesh->CreateCapsule(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(0), 24);
 
     // Create default geosphere mesh
     defaultGeoSphereMesh = AllocMesh("_defaultGeoSphereMesh");

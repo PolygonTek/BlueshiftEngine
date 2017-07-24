@@ -201,7 +201,7 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     }
 }
 
-void Mesh::CreateSphere(const Vec3 &origin, float radius, int numSegments) {
+void Mesh::CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int numSegments) {
     assert(numSegments > 2);
 
     Purge();
@@ -222,15 +222,15 @@ void Mesh::CreateSphere(const Vec3 &origin, float radius, int numSegments) {
 
     for (int i = 0; i < numLat; i++) {
         float phi = Math::Pi * i / (numLat - 1); // 0 ~ pi
-        float cp = Math::Cos(phi);
-        float sp = Math::Sin(phi);
+        float sp, cp;
+        Math::SinCos(phi, sp, cp);
         float z = cp * radius;
         float zr = sp * radius; 
 
         for (int j = 0; j < numLng; j++) {
             float theta = Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
-            float ct = Math::Cos(theta - Math::HalfPi);
-            float st = Math::Sin(theta - Math::HalfPi);
+            float st, ct;
+            Math::SinCos(theta + Math::HalfPi, st, ct);
             float x = ct * zr;
             float y = st * zr;
             float s = theta * Math::InvPi;
@@ -261,7 +261,7 @@ void Mesh::CreateSphere(const Vec3 &origin, float radius, int numSegments) {
 
             if (i < numLat - 2) {
                 int b = a + (j + 1) % numLng;
-                *idx++ = b;			
+                *idx++ = b;
                 *idx++ = a + numLng + j;
                 *idx++ = numLng + b;
             }
@@ -358,8 +358,8 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
 
         for (int j = 0; j < numSegments; j++) {
             float theta = Math::TwoPi * j / numSegments; // 0 ~ 2pi
-            float ct = Math::Cos(theta);
-            float st = Math::Sin(theta);
+            float st, ct;
+            Math::SinCos(theta, st, ct);
             float x = ct * radius;
             float y = st * radius;
             float s = st * 0.5f + 0.5f;
@@ -376,8 +376,8 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
     // sides verts
     for (int i = 0; i < numSideSegments; i++) {
         float theta = Math::TwoPi * i / (numSideSegments - 1); // 0 ~ 2pi
-        float ct = Math::Cos(theta + Math::HalfPi);
-        float st = Math::Sin(theta + Math::HalfPi);
+        float st, ct;
+        Math::SinCos(theta + Math::HalfPi, st, ct);
         float x = ct * radius;
         float y = st * radius;
         float s = theta * Math::InvPi;
@@ -446,7 +446,6 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
     float half_height = height * 0.5f;
     float invR = 1.0f / radius;
     float real_height = 2.0f * radius + height;
-    float f = radius / real_height;
     
     int numLat = numSegments / 2 + 1;   // hemisphere 위도 verts
     int numLng = numSegments + 1;       // hemisphere 경도 verts
@@ -462,16 +461,16 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
 
     for (int i = 0; i < numLat; i++) {
         float phi = Math::HalfPi * i / (numLat - 1); // 0 ~ pi/2
-        float cp = Math::Cos(phi);
-        float sp = Math::Sin(phi);
+        float sp, cp;
+        Math::SinCos(phi, sp, cp);
         float z = cp * radius;
         float zr = sp * radius;
         float t = 1.0f - (z + radius + height) / real_height;
 
         for (int j = 0; j < numLng; j++) {
             float theta = Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
-            float ct = Math::Cos(theta + Math::HalfPi);
-            float st = Math::Sin(theta + Math::HalfPi);
+            float st, ct;
+            Math::SinCos(theta - Math::HalfPi, st, ct);
             float x = ct * zr;
             float y = st * zr;
             float s = theta * Math::InvPi;
@@ -488,16 +487,16 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
 
     for (int i = 0; i < numLat; i++) {
         float phi = Math::HalfPi + Math::HalfPi * i / (numLat - 1); // pi/2 ~ pi
-        float cp = Math::Cos(phi);
-        float sp = Math::Sin(phi);
+        float sp, cp;
+        Math::SinCos(phi, sp, cp);
         float z = cp * radius;
         float zr = sp * radius;
         float t = 1.0f - (z + radius) / real_height;
 
         for (int j = 0; j < numLng; j++) {
             float theta = Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
-            float ct = Math::Cos(theta + Math::HalfPi);
-            float st = Math::Sin(theta + Math::HalfPi);
+            float st, ct;
+            Math::SinCos(theta - Math::HalfPi, st, ct);
             float x = ct * zr;
             float y = st * zr;
             float s = theta * Math::InvPi;

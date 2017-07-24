@@ -129,7 +129,7 @@ public:
     void                    CreateDefaultBox();
     void                    CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int numSegments);
     void                    CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents);
-    void                    CreateSphere(const Vec3 &origin, float radius, int numSegments);
+    void                    CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int numSegments);
     void                    CreateGeosphere(const Vec3 &origin, float radius, int numTess);
     void                    CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
     void                    CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
