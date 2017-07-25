@@ -72,11 +72,12 @@ public:
     };    
 
     enum FinishFlag {
-        ComputeNormalsFlag  = BIT(0),
-        ComputeTangentsFlag = BIT(1),
-        UseUnsmoothedTangentsFlag = BIT(2),
-        SortAndMergeFlag    = BIT(3),
-        OptimizeIndicesFlag = BIT(4)
+        ComputeAABBFlag     = BIT(0),
+        ComputeNormalsFlag  = BIT(1),
+        ComputeTangentsFlag = BIT(2),
+        UseUnsmoothedTangentsFlag = BIT(3),
+        SortAndMergeFlag    = BIT(4),
+        OptimizeIndicesFlag = BIT(5)
     };
 
     Mesh();
