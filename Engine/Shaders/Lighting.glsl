@@ -1,5 +1,5 @@
-#ifndef LIGHTING_STANDARD_INCLUDED
-#define LIGHTING_STANDARD_INCLUDED
+#ifndef LIGHTING_INCLUDED
+#define LIGHTING_INCLUDED
 
 #define PBR_DIFFUSE 1
 #define PBR_SPEC_D 2
@@ -8,6 +8,10 @@
 float pow5(float f) {
     float f2 = f * f;
     return f2 * f2 * f;
+}
+
+float glossinessToSpecularPower(float glossiness) {
+    return exp2(10.0 * glossiness + 1.0); 
 }
 
 float litDiffuseLambert(in float NdotL) {
@@ -173,6 +177,88 @@ vec3 litStandard(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float met
     //Cd *= (vec3(1.0) - F_SchlickSG(F0, NdotL));
 
     return Cd + Cs;
+}
+
+uniform float wrappedDiffuse;
+
+#define USE_BLINN_PHONG
+
+// Phong/Blinn-Phong lighting
+vec3 litPhong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
+#if defined(_WRAPPED_DIFFUSE)
+    float NdotL = dot(N, L);
+
+    float w2 = 1.0 + wrappedDiffuse;
+    vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (w2 * w2);
+#else // Lambertian
+    float NdotL = dot(N, L);
+
+    vec3 Cd = albedo.rgb * max(NdotL, 0.0);
+#endif
+
+#if _SPECULAR_SOURCE != 0
+    #ifdef USE_BLINN_PHONG
+        vec3 H = normalize(L + V);
+
+        float NdotH = max(dot(N, H), 0.0);
+
+        vec3 Cs = specular.rgb * pow(NdotH, specularPower);
+    #else
+        vec3 R = reflect(-L, N);
+
+        float RdotV = max(dot(R, V), 0.0);
+
+        vec3 Cs = specular.rgb * pow(RdotV, specularPower);
+    #endif
+    
+    return Cd + Cs;
+#else
+    return Cd;
+#endif
+}
+
+// Phong/Blinn-Phong lighting that satisfy energy conservation
+vec3 litPhongEC(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
+#if defined(_WRAPPED_DIFFUSE)
+    float NdotL = dot(N, L);
+
+    float w2 = 1.0 + wrappedDiffuse;
+    vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (w2 * w2);
+#else // Lambertian
+    float NdotL = dot(N, L);
+
+    vec3 Cd = albedo.rgb * max(NdotL, 0.0);
+#endif
+
+#if _SPECULAR_SOURCE != 0
+    #ifdef USE_BLINN_PHONG
+        vec3 H = normalize(L + V);
+    
+        float NdotH = max(dot(N, H), 0.0);
+        float VdotH = max(dot(V, H), 0.0);
+    
+        vec3 F = F_SchlickSG(specular.rgb, VdotH);
+
+        float normFactor = specularPower * 0.125 + 1.0;
+
+        vec3 Cs = F.rgb * normFactor * pow(NdotH, specularPower);
+    #else
+        vec3 R = reflect(-L, N);
+
+        float RdotV = max(dot(R, V), 0.0);
+        float NdotV = max(dot(N, V), 0.0);
+
+        vec3 F = F_SchlickSG(specular.rgb, NdotV);
+
+        float normFactor = specularPower * 0.5 + 1.0;
+
+        vec3 Cs = F.rgb * normFactor * pow(RdotV, specularPower);
+    #endif
+
+    return Cd * (vec3(1.0) - F.rgb) + Cs;
+#else
+    return Cd;
+#endif
 }
 
 #endif

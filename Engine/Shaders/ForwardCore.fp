@@ -1,62 +1,81 @@
 $include "fragment_common.glsl"
-$include "LightingPhong.glsl"
-$include "LightingStandard.glsl"
+$include "Lighting.glsl"
 
 #ifdef USE_SHADOW_MAP
 $include "shadow.fp"
 #endif
 
 in vec4 v2f_color;
-in vec2 v2f_tcDiffuseNormal;
-in vec2 v2f_tcSpecular;
-//in vec2 v2f_tcLightmap;
-in vec3 v2f_viewVector;
-in vec3 v2f_lightVector;
-in vec3 v2f_lightFallOff;
-in vec4 v2f_lightProjection;
-// local vertex normal
-in vec3 v2f_normal;
-in vec3 v2f_toWorldS;
-in vec3 v2f_toWorldT;
-in vec3 v2f_toWorldR;
+in vec2 v2f_tex;
+
+#if _NORMAL_SOURCE == 0
+    in vec3 v2f_normal;
+#endif
+
+#if DIRECT_LIGHTING
+    in vec3 v2f_lightVector;
+    in vec3 v2f_lightFallOff;
+    in vec4 v2f_lightProjection;
+#endif
+
+#if AMBIENT_LIGHTING
+    in vec4 v2f_toWorldAndPackedWorldPosS;
+    in vec4 v2f_toWorldAndPackedWorldPosT;
+    in vec4 v2f_toWorldAndPackedWorldPosR;
+#endif
+
+#if AMBIENT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE == 1
+    in vec3 v2f_viewVector;
+#endif
 
 out vec4 o_fragColor : FRAG_COLOR;
 
 uniform sampler2D diffuseMap;
+uniform vec4 diffuseColor;
+
 uniform sampler2D normalMap;
 uniform sampler2D detailNormalMap;
-uniform sampler2D specularMap;
-uniform sampler2D heightMap;
-uniform sampler2D lightProjectionMap;
-uniform sampler2D occlusionMap;
-uniform sampler2D emissionMap;
-uniform samplerCube lightCubeMap;
-
-uniform vec4 diffuseColor;
-uniform vec4 specularColor;
-uniform vec4 lightColor;
 uniform float detailRepeat;
-uniform float lightFallOffExponent;
-uniform float ambientScale;
-uniform float occlusionScale;
-uniform vec3 emissionColor;
-uniform float emissionScale;
-uniform bool useLightCube;
-uniform bool useShadowMap;
+
+uniform sampler2D specularMap;
+uniform vec4 specularColor;
+
+uniform sampler2D glossMap;
 uniform float glossiness;
+
 uniform float roughness;
 uniform float metalness;
+
+uniform sampler2D heightMap;
+uniform float heightScale;
+
+uniform sampler2D occlusionMap;
+uniform float occlusionScale;
+
+uniform sampler2D emissionMap;
+uniform vec3 emissionColor;
+uniform float emissionScale;
+
 uniform float rimLightExponent;
 uniform float rimLightShadowDensity;// = 0.5;
+
+uniform sampler2D subSurfaceColorMap;
 uniform float subSurfaceRollOff;
 uniform float subSurfaceShadowDensity;// = 0.5;
-uniform sampler2D subSurfaceColorMap;
 
-uniform float ambientLerp;
+uniform sampler2D lightProjectionMap;
+uniform vec4 lightColor;
+uniform float lightFallOffExponent;
+uniform samplerCube lightCubeMap;
+uniform bool useLightCube;
+uniform bool useShadowMap;
+
 uniform samplerCube diffuseIrradianceCubeMap0;
 uniform samplerCube diffuseIrradianceCubeMap1;
 uniform samplerCube specularIrradianceCubeMap0;
 uniform samplerCube specularIrradianceCubeMap1;
+uniform float ambientLerp;
+uniform float ambientScale;
 
 void main() {
 #if DIRECT_LIGHTING
@@ -70,107 +89,118 @@ void main() {
     }
 #endif
 
-#if AMBIENT_LIGHTING || DIRECT_LIGHTING || _PARALLAX
-	vec3 V = normalize(v2f_viewVector);
+#if AMBIENT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE == 1
+    vec3 V = normalize(v2f_viewVector);
 #endif
 
-#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0
-    #if _PARALLAX
-	    vec2 baseTc = offsetTexcoord(heightMap, v2f_tcDiffuseNormal, V.xy, 0.0078125);
+#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0
+    #if _PARALLAX_SOURCE == 1
+        vec2 baseTc = offsetTexcoord(heightMap, v2f_tex, V, heightScale * 0.1);
     #else
-	    vec2 baseTc = v2f_tcDiffuseNormal;
+        vec2 baseTc = v2f_tex;
     #endif
 #endif
 
 #if _ALBEDO_SOURCE == 0
-	vec4 Kd = diffuseColor;
+    vec4 Kd = diffuseColor;
 #elif _ALBEDO_SOURCE == 1
-	vec4 Kd = tex2D(diffuseMap, baseTc);
+    vec4 Kd = tex2D(diffuseMap, baseTc);
 #endif
 
 #ifdef PERFORATED
-	if (Kd.w < 0.5) {
-		discard;
-	}
+    if (Kd.w < 0.5) {
+        discard;
+    }
 #endif
 
 #if AMBIENT_LIGHTING || DIRECT_LIGHTING
     #if _NORMAL_SOURCE == 0
-	    vec3 N = normalize(v2f_normal);
+        vec3 N = normalize(v2f_normal);
     #elif _NORMAL_SOURCE == 1
-	    vec3 N = normalize(getNormal(normalMap, baseTc));
+        vec3 N = normalize(getNormal(normalMap, baseTc));
     #elif _NORMAL_SOURCE == 2
-	    vec3 b1 = normalize(getNormal(normalMap, baseTc));
-	    vec3 b2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
-	    vec3 N = normalize(b1 + b2);
+        vec3 b1 = normalize(getNormal(normalMap, baseTc));
+        vec3 b2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
+        vec3 N = normalize(b1 + b2);
     #endif
 
     #if _SPECULAR_SOURCE == 0
-        vec4 Ks = vec4(0.0, 0.0, 0.0, 0.0);
+        vec4 Ks = vec4(0.0);
     #elif _SPECULAR_SOURCE == 1
         vec4 Ks = specularColor;
-    #elif (_SPECULAR_SOURCE == 2 || _SPECULAR_SOURCE == 3)
-        vec4 Ks = tex2D(specularMap, v2f_tcSpecular);
-    #elif _SPECULAR_SOURCE == 4
-        vec4 Ks = vec4(specularColor.rgb, tex2D(specularMap, v2f_tcSpecular).r);
+    #elif _SPECULAR_SOURCE == 2
+        vec4 Ks = tex2D(specularMap, baseTc);
     #endif
 
     #if _SPECULAR_SOURCE != 0
-        #if _SPECULAR_SOURCE == 3 || _SPECULAR_SOURCE == 4
-            float Kg = Ks.a;
-        #else
+        #if _GLOSS_SOURCE == 0
             float Kg = glossiness;
+        #elif _GLOSS_SOURCE == 1
+            float Kg = Kd.a * glossiness;
+        #elif _GLOSS_SOURCE == 2
+            float Kg = Ks.a * glossiness;
+        #elif _GLOSS_SOURCE == 3
+            float Kg = tex2D(glossMap, baseTc).r * glossiness;
         #endif
 
         float specularPower = glossinessToSpecularPower(Kg);
     #endif
 #endif
 
-	vec3 C = vec3(0.0);
+    vec3 C = vec3(0.0);
 
 #if AMBIENT_LIGHTING
     #if _EMISSION_SOURCE == 1
-	    C += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
+        C += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
     #endif
 
-	vec3 tangentToWorldMatrixS = normalize(v2f_toWorldS.xyz);
-	vec3 tangentToWorldMatrixT = normalize(v2f_toWorldT.xyz);
-	vec3 tangentToWorldMatrixR = normalize(v2f_toWorldR.xyz);
-	//vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_toWorldT.w);
+    vec3 tangentToWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
+    vec3 tangentToWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
+    vec3 tangentToWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
+    //vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_toWorldT.w);
 
-	vec3 worldN;
+    vec3 worldN;
     // Convert coordinates from z-up to GL axis
-	worldN.z = dot(tangentToWorldMatrixS, N);
-	worldN.x = dot(tangentToWorldMatrixT, N);
-	worldN.y = dot(tangentToWorldMatrixR, N);
+    worldN.z = dot(tangentToWorldMatrixS, N);
+    worldN.x = dot(tangentToWorldMatrixT, N);
+    worldN.y = dot(tangentToWorldMatrixR, N);
 
-	vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
-	vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
+    vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
+    vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
 
-	vec3 Cd = Kd.rgb * mix(d1, d2, ambientLerp);
+    vec3 Cd = Kd.rgb * mix(d1, d2, ambientLerp);
 
     #if _SPECULAR_SOURCE != 0
-        // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
-        // (log2(specularPower) - 11) / (-11/8)
-        float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
+        // Convert coordinates from z-up to GL axis
+        vec3 worldPos;
+        worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
+        worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
+        worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
 
         vec3 S = reflect(-V, N);
-	    vec4 worldS;
+        vec3 worldS;
         // Convert coordinates from z-up to GL axis
-	    worldS.z = dot(tangentToWorldMatrixS, S);
-	    worldS.x = dot(tangentToWorldMatrixT, S);
-	    worldS.y = dot(tangentToWorldMatrixR, S);
-        worldS.w = specularMipLevel;
+        worldS.z = dot(tangentToWorldMatrixS, S);
+        worldS.x = dot(tangentToWorldMatrixT, S);
+        worldS.y = dot(tangentToWorldMatrixR, S);
 
-	    vec3 s1 = texCUBElod(specularIrradianceCubeMap0, worldS).rgb;
-	    vec3 s2 = texCUBElod(specularIrradianceCubeMap1, worldS).rgb;
+        // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
+        // (log2(specularPower) - 12) / (-12/9)
+        float specularMipLevel = -(9.0 / 12.0) * log2(specularPower) + 9.0;
+
+        vec4 sampleVec;
+        sampleVec.xyz = worldS;//boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 200, 0, 1.0), vec3(-8000, -1000, -8000), vec3(8000, 1000, 8000));
+        sampleVec.w = specularMipLevel;
+
+        vec3 s1 = texCUBElod(specularIrradianceCubeMap0, sampleVec).rgb;
+        vec3 s2 = texCUBElod(specularIrradianceCubeMap1, sampleVec).rgb;
 
         float NdotV = max(dot(N, V), 0.0);
 
-        vec3 AFs = F_SchlickRoughness(Ks.rgb, 1.0 - Kg, NdotV);
-        vec3 Cs = AFs * s1;
+        vec3 F = F_SchlickRoughness(Ks.rgb, 1.0 - Kg, NdotV);
+        vec3 Cs = F * s1;
 
-        C += Cd * (vec3(1.0) - AFs) + Cs;
+        C += Cd * (vec3(1.0) - F) + Cs;
     #else
         C += Cd;
     #endif
@@ -194,14 +224,9 @@ void main() {
     #endif
 
     #if _SPECULAR_SOURCE != 0
-        vec3 H = normalize(L + V);
-        float LdotH = max(dot(L, H), 0.0);
-
-        vec3 DFs = F_SchlickSG(Ks.rgb, LdotH);
-
-        vec3 lightingColor = litBlinnPhongEC(L, N, V, Kd.rgb, DFs, specularPower);
+        vec3 lightingColor = litPhongEC(L, N, V, Kd.rgb, Ks.rgb, specularPower);
     #else
-        vec3 lightingColor = litBlinnPhongEC(L, N, V, Kd.rgb, vec3(0.0), 0.0);
+        vec3 lightingColor = litPhongEC(L, N, V, Kd.rgb, vec3(0.0), 0.0);
     #endif
 
     //vec3 lightingColor = litStandard(L, N, V, Kd.rgb, roughness, metalness);
@@ -220,11 +245,11 @@ void main() {
     C *= 1.0 - occlusionScale + occ * occlusionScale;
 #endif
 
-	vec4 outputColor = v2f_color * vec4(C, Kd.w);
+    vec4 outputColor = v2f_color * vec4(C, Kd.w);
 
 #ifdef LOGLUV_HDR
-	o_fragColor = encodeLogLuv(outputColor.xyz);
+    o_fragColor = encodeLogLuv(outputColor.xyz);
 #else
-	o_fragColor = outputColor;
+    o_fragColor = outputColor;
 #endif
 }

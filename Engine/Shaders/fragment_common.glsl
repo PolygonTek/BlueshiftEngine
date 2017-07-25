@@ -63,18 +63,10 @@ vec3 getNormal(sampler2D normalMap, in vec2 tc) {
     return n;
 }
 
-//#ifdef _PARALLAX
-vec2 offsetTexcoord(sampler2D heightMap, in vec2 st, in vec2 viewDir, in float parallaxOffset) {
-    vec2 ost = st;
-    float z = tex2D(heightMap, ost).x * 2.0 - 1.0;
-    ost = st + viewDir * z * parallaxOffset;
-
-    z += tex2D(heightMap, ost).x * 2.0 - 1.0;
-    ost = st + viewDir * z * parallaxOffset;
-
-    return ost;
+vec2 offsetTexcoord(sampler2D heightMap, in vec2 st, in vec3 viewDir, in float heightScale) {
+    float h = tex2D(heightMap, st).x * 2.0 - 1.0;
+    return st + h * heightScale * (viewDir.xy / (viewDir.z));
 }
-//#endif
 
 vec4 encodeFloatRGBA(float v) {
     vec4 enc = vec4(1.0, 255.0, 65025.0, 160581375.0) * v;
@@ -156,4 +148,19 @@ float cubeMapTexelSolidAngle(float x, float y, int size) {
     float x1 = s + invSize;
     float y1 = t + invSize;
     return areaElement(x0, y0) - areaElement(x0, y1) - areaElement(x1, y0) + areaElement(x1, y1);
+}
+
+vec3 boxProjectedCubemapDirection(vec3 worldS, vec3 worldPos, vec4 cubemapCenter, vec3 boxMin, vec3 boxMax) {
+    if (cubemapCenter.w > 0.0) {
+        vec3 rbmax = (boxMax - worldPos) / worldS;
+        vec3 rbmin = (boxMin - worldPos) / worldS;
+        vec3 rbminmax = mix(rbmin, rbmax, greaterThan(worldS, vec3(0.0)));
+
+        float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+
+        worldPos -= cubemapCenter.xyz;
+        worldS = worldPos + worldS * fa;
+    }
+
+    return worldS;
 }
