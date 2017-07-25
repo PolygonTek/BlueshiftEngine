@@ -285,17 +285,17 @@ Image &Image::GenerateMipmaps() {
 
     int numComponents = NumComponents();
 
-    for (int mipLevel = 1; mipLevel < numMipmaps; mipLevel++) {
-        int w = GetWidth(mipLevel - 1);
-        int h = GetHeight(mipLevel - 1);
-        int d = GetDepth(mipLevel - 1);
+    for (int mipLevel = 0; mipLevel < numMipmaps - 1; mipLevel++) {
+        int w = GetWidth(mipLevel);
+        int h = GetHeight(mipLevel);
+        int d = GetDepth(mipLevel);
 
-        int srcSize = GetSliceSize(mipLevel - 1, 1);
-        int dstSize = GetSliceSize(mipLevel, 1);
+        int srcSize = GetSliceSize(mipLevel, 1);
+        int dstSize = GetSliceSize(mipLevel + 1, 1);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = GetPixels(mipLevel - 1, sliceIndex);
-            byte *dst = GetPixels(mipLevel, sliceIndex);
+            byte *src = GetPixels(mipLevel, sliceIndex);
+            byte *dst = GetPixels(mipLevel + 1, sliceIndex);
 
             if (IsFloatFormat()) {
                 if (IsHalfFormat()) {

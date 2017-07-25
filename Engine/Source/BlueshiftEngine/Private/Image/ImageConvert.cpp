@@ -146,7 +146,6 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         if (regenerateMipmaps) {
             decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, nullptr, srcImage->flags);
             decompressedImage.CopyFrom(*srcImage, 0, 1);
-
             decompressedImage.GenerateMipmaps();
 
             srcImage = &decompressedImage;
