@@ -21,182 +21,146 @@
 
 BE_NAMESPACE_BEGIN
 
-// Fixed point linear interpolation
-// f(x) = ax + b
-// p0: f(0)
-// p1: f(1)
-// t: interpolater in range [0, 255]
-static int fix_lerp(int p0, int p1, int t) {
-    // p0 : f(0) = b
-    // p1 : f(1) = a + b
-    //
-    // a = p1 - p0
-    // b = p0
-    return ((p0 << 8) + (p1 - p0) * t) >> 8;
-}
+template <typename T>
+void ResizeImageNearest(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents) {
+    int srcPitch = srcWidth * numComponents;
 
-// Fixed point cubic interpolation
-// f(x) = ax^3 + bx^2 + cx + d
-// p0: f(-1)
-// p1: f(0)
-// p2: f(1)
-// p3: f(2)
-// t: interpolater in range [0, 127]
-static int fix_cerp(int p0, int p1, int p2, int p3, int t) {
-#if 0
-    // Hermite cubic spline with 4 points
-    // f'(x) = 3ax^2 + 2bx + c
-    //
-    // p1 : f(0) = d
-    // p2 : f(1) = a + b + c + d 
-    // p2 - p0 : f'(0) = c
-    // p3 - p1 : f'(1) = 3a + 2b + c
-    //
-    // |  0  0  0  1 | | a |   | p1      |
-    // |  1  1  1  1 | | b | = | p2      |
-    // |  0  0  1  0 | | c |   | p2 - p0 |
-    // |  3  2  1  0 | | d |   | p3 - p1 |
-    //
-    // |  2 -2  1  1 | | p1      |   | a | 
-    // | -3  3 -2 -1 | | p2      | = | b |
-    // |  0  0  1  0 | | p2 - p0 |   | c |
-    // |  1  0  0  0 | | p3 - p1 |   | d |
-    //
-    // a = 2*p1 - 2*p2 + (p2 - p0) + (p3 - p1) = p3 - p2 + p1 - p0
-    // b = -3*p1 + 3*p2 - 2*(p2 - p0) - (p3 - p1) = -p3 + p2 - 2*p1 + 2*p0
-    // c = p2 - p0
-    // d = p1
-    int p01 = p0 - p1;
-    int a = (p3 - p2) - p01;
-    int b = p01 - a;
-    int c = p2 - p0;
-    int d = p1;
-    return (t * (t * (t * a + (b << 7)) + (c << 14)) + (d << 21)) >> 21;
-#else
-    // Catmull-Rom cubic spline with 4 points
-    // f'(x) = 3ax^2 + 2bx + c
-    //
-    // p1 : f(0) = d
-    // p2 : f(1) = a + b + c + d
-    // (p2 - p0)/2 : f'(0) = c
-    // (p3 - p1)/2 : f'(1) = 3a + 2b + c
-    //
-    // |  0  0  0  1 | | a |   | p1      |
-    // |  1  1  1  1 | | b | = | p2      |
-    // |  0  0  2  0 | | c |   | p2 - p0 |
-    // |  6  4  2  0 | | d |   | p3 - p1 |
-    //
-    //    |  4 -4  1  1 | | p1      |   | a | 
-    // 1/2| -6  6 -2 -1 | | p2      | = | b |
-    //    |  0  0  1  0 | | p2 - p0 |   | c |
-    //    |  2  0  0  0 | | p3 - p1 |   | d |
-    //
-    // a = 4*p1 - 4*p2 + (p2 - p0) + (p3 - p1) = (p3 - 3*p2 + 3*p1 - p0) / 2
-    // b = -6*p1 + 6*p2 - 2*(p2 - p0) - (p3 - p1) = (-p3 + 4*p2 - 5p1 + 2*p0) / 2
-    // c = (p2 - p0) / 2
-    // d = p1
-    int a = p3 - 3 * p2 + 3 * p1 - p0;
-    int b = p2 - 2 * p1 + p0 - a;
-    int c = p2 - p0;
-    int d = 2 * p1;
-    return (t * (t * (t * a + (b << 7)) + (c << 14)) + (d << 21)) >> 22;
-#endif
-}
-
-static void ResampleNearest(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int bpp) {
-    int srcPitch = srcWidth * bpp;
+    float ratioX = (float)srcWidth / dstWidth;
+    float ratioY = (float)srcHeight / dstHeight;
 
     for (int y = 0; y < dstHeight; y++) {
-        int sampleY = srcHeight * y / dstHeight;
+        int iY = y * ratioY;
+
+        int offsetY = iY * srcPitch;
 
         for (int x = 0; x < dstWidth; x++) {
-            int sampleX = srcWidth * x / dstWidth;
+            int iX = x * ratioX;
+
+            int offsetX = iX * numComponents;
         
-            for (int i = 0; i < bpp; i++) {
-                *dst++ = src[sampleY * srcPitch + sampleX * bpp + i];
+            const T *srcPtrY = &src[offsetY];
+
+            for (int i = 0; i < numComponents; i++) {
+                *dst++ = srcPtrY[offsetX + i];
             }
         }
     }
 }
 
-static void ResampleBilinear(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int bpp) {
-    int srcPitch = srcWidth * bpp;
+template <typename T>
+static void ResizeImageBilinear(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents) {
+    int srcPitch = srcWidth * numComponents;
+
+    float ratioX = (float)srcWidth / dstWidth;
+    float ratioY = (float)srcHeight / dstHeight;
 
     for (int y = 0; y < dstHeight; y++) {
-        int iY0 = ((y * srcHeight) << 8) / dstHeight;
-        int fracY = iY0 & 255;
-        iY0 >>= 8;
+        float fY0 = y * ratioY;
+        float fracY = Math::Fract(fY0);
 
-        int iY1 = Min(iY0 + 1, srcHeight - 1) * srcPitch;
-        iY0 *= srcPitch;
-                
+        int iY0 = fY0 - fracY;
+        int iY1 = Min(iY0 + 1, srcHeight - 1);
+
+        int offsetY0 = iY0 * srcPitch;
+        int offsetY1 = iY1 * srcPitch;
+
         for (int x = 0; x < dstWidth; x++) {
-            int iX0 = ((x * srcWidth) << 8) / dstWidth;
-            int fracX = iX0 & 255;
-            iX0 >>= 8;
+            float fX0 = x * ratioX;
+            float fracX = Math::Fract(fX0);
 
+            int iX0 = fX0 - fracX;
             int iX1 = Min(iX0 + 1, srcWidth - 1);
 
-            int offset0 = iX0 * bpp;
-            int offset1 = iX1 * bpp;
-            
-            const byte *srcPtr[2]; 
-            srcPtr[0] = &src[iY0];
-            srcPtr[1] = &src[iY1];
+            int offsetX0 = iX0 * numComponents;
+            int offsetX1 = iX1 * numComponents;
 
-            for (int i = 0; i < bpp; i++) {
-                int p0 = fix_lerp(srcPtr[0][offset0 + i], srcPtr[0][offset1 + i], fracX);
-                int p1 = fix_lerp(srcPtr[1][offset0 + i], srcPtr[1][offset1 + i], fracX);
+            const T *srcPtrY[2];
+            srcPtrY[0] = &src[offsetY0];
+            srcPtrY[1] = &src[offsetY1];
 
-                *dst++ = fix_lerp(p0, p1, fracY);
+            for (int i = 0; i < numComponents; i++) {
+                int index0 = offsetX0 + i;
+                int index1 = offsetX1 + i;
+
+                T p0 = Lerp(srcPtrY[0][index0], srcPtrY[0][index1], fracX);
+                T p1 = Lerp(srcPtrY[1][index0], srcPtrY[1][index1], fracX);
+
+                *dst++ = Lerp(p0, p1, fracY);
             }
         }
     }
 }
 
-static void ResampleBicubic(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int bpp) {
-    int srcPitch = srcWidth * bpp;
+template <typename T>
+static void ResizeImageBicubic(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents) {
+    int srcPitch = srcWidth * numComponents;
+
+    float ratioX = (float)srcWidth / dstWidth;
+    float ratioY = (float)srcHeight / dstHeight;
 
     for (int y = 0; y < dstHeight; y++) {
-        int iY1 = ((y * srcHeight) << 7) / dstHeight;
-        int fracY = iY1 & 127;
-        iY1 >>= 7;
+        float fY1 = y * ratioY;
+        float fracY = Math::Fract(fY1);
 
-        int iY0 = Max(iY1 - 1, 0) * srcPitch;
-        int iY2 = Min(iY1 + 1, srcHeight - 1) * srcPitch;
-        int iY3 = Min(iY1 + 2, srcHeight - 1) * srcPitch;
-        iY1 *= srcPitch;
+        int iY1 = fY1 - fracY;
+        int iY0 = Max(iY1 - 1, 0);
+        int iY2 = Min(iY1 + 1, srcHeight - 1);
+        int iY3 = Min(iY1 + 2, srcHeight - 1);
+
+        int offsetY0 = iY0 * srcPitch;
+        int offsetY1 = iY1 * srcPitch;
+        int offsetY2 = iY2 * srcPitch;
+        int offsetY3 = iY3 * srcPitch;
 
         for (int x = 0; x < dstWidth; x++) {
-            int iX1 = ((x * srcWidth) << 7) / dstWidth;
-            int fracX = iX1 & 127;
-            iX1 >>= 7;
+            float fX1 = x * ratioX;
+            float fracX = Math::Fract(fX1);
 
+            int iX1 = fX1 - fracX;
             int iX0 = Max(iX1 - 1, 0);
             int iX2 = Min(iX1 + 1, srcWidth - 1);
             int iX3 = Min(iX1 + 2, srcWidth - 1);
 
-            int offset0 = iX0 * bpp;
-            int offset1 = iX1 * bpp;
-            int offset2 = iX2 * bpp;
-            int offset3 = iX3 * bpp;
+            int offsetX0 = iX0 * numComponents;
+            int offsetX1 = iX1 * numComponents;
+            int offsetX2 = iX2 * numComponents;
+            int offsetX3 = iX3 * numComponents;
 
-            const byte *srcPtr[4];
-            srcPtr[0] = &src[iY0];
-            srcPtr[1] = &src[iY1];
-            srcPtr[2] = &src[iY2];
-            srcPtr[3] = &src[iY3];
+            const T *srcPtrY[4];
+            srcPtrY[0] = &src[offsetY0];
+            srcPtrY[1] = &src[offsetY1];
+            srcPtrY[2] = &src[offsetY2];
+            srcPtrY[3] = &src[offsetY3];
 
-            for (int i = 0; i < bpp; i++) {
-                int p0 = fix_cerp(srcPtr[0][offset0 + i], srcPtr[0][offset1 + i], srcPtr[0][offset2 + i], srcPtr[0][offset3 + i], fracX);
-                int p1 = fix_cerp(srcPtr[1][offset0 + i], srcPtr[1][offset1 + i], srcPtr[1][offset2 + i], srcPtr[1][offset3 + i], fracX);
-                int p2 = fix_cerp(srcPtr[2][offset0 + i], srcPtr[2][offset1 + i], srcPtr[2][offset2 + i], srcPtr[2][offset3 + i], fracX);
-                int p3 = fix_cerp(srcPtr[3][offset0 + i], srcPtr[3][offset1 + i], srcPtr[3][offset2 + i], srcPtr[3][offset3 + i], fracX);
+            for (int i = 0; i < numComponents; i++) {
+                int index0 = offsetX0 + i;
+                int index1 = offsetX1 + i;
+                int index2 = offsetX2 + i;
+                int index3 = offsetX3 + i;
 
-                int res = fix_cerp(p0, p1, p2, p3, fracY);
-                *dst++ = Clamp((const int &)res, 0, 255);
+                T p0 = Cerp(srcPtrY[0][index0], srcPtrY[0][index1], srcPtrY[0][index2], srcPtrY[0][index3], fracX);
+                T p1 = Cerp(srcPtrY[1][index0], srcPtrY[1][index1], srcPtrY[1][index2], srcPtrY[1][index3], fracX);
+                T p2 = Cerp(srcPtrY[2][index0], srcPtrY[2][index1], srcPtrY[2][index2], srcPtrY[2][index3], fracX);
+                T p3 = Cerp(srcPtrY[3][index0], srcPtrY[3][index1], srcPtrY[3][index2], srcPtrY[3][index3], fracX);
+
+                *dst++ = Cerp(p0, p1, p2, p3, fracY);
             }
         }
+    }
+}
+
+template <typename T>
+static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter filter) {
+    switch (filter) {
+    case Image::ResampleFilter::Nearest:
+        ResizeImageNearest(src, srcWidth, srcHeight, dst, dstWidth, dstHeight, numComponents);
+        break;
+    case Image::ResampleFilter::Bilinear:
+        ResizeImageBilinear(src, srcWidth, srcHeight, dst, dstWidth, dstHeight, numComponents);
+        break;
+    case Image::ResampleFilter::Bicubic:
+        ResizeImageBicubic(src, srcWidth, srcHeight, dst, dstWidth, dstHeight, numComponents);
+        break;
     }
 }
 
@@ -204,7 +168,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
     assert(width && height);
     assert(dstWidth && dstHeight);
     
-    if (IsPacked() || IsCompressed() || IsFloatFormat() || depth != 1) {
+    if (IsPacked() || IsCompressed() || depth != 1) {
         BE_WARNLOG(L"Cannot be resized format %hs\n", FormatName());
         return false;
     }
@@ -215,19 +179,18 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
 
     dstImage.Create2D(dstWidth, dstHeight, 1, format, nullptr, flags);
 
-    int bpp = Image::BytesPerPixel(format);
+    int numComponents = NumComponents();
 
-    switch (filter) {
-    case Nearest:
-        ResampleNearest(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, bpp);
-        break;
-    case Bilinear:
-        ResampleBilinear(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, bpp);
-        break;
-    case Bicubic:
-        ResampleBicubic(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, bpp);
-        break;
+    if (IsFloatFormat()) {
+        if (IsHalfFormat()) {
+            ResizeImage((half *)this->pic, this->width, this->height, (half *)dstImage.pic, dstWidth, dstHeight, numComponents, filter);
+        } else {
+            ResizeImage((float *)this->pic, this->width, this->height, (float *)dstImage.pic, dstWidth, dstHeight, numComponents, filter);
+        }
+    } else {
+        ResizeImage(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, numComponents, filter);
     }
+
     return true;
 }
 
@@ -235,29 +198,27 @@ bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter
     assert(width && height);
     assert(dstWidth && dstHeight);
     
-    if (IsPacked() || IsCompressed() || IsFloatFormat() || depth != 1) {
-        BE_WARNLOG(L"Cannot be resized format %hs\n", FormatName());
+    if (IsPacked() || IsCompressed() || depth != 1) {
+        BE_WARNLOG(L"Couldn't resize with format %hs\n", FormatName());
         return false;
     }
 
     if (width == dstWidth && height == dstHeight) {
         return true;
     }
-    
-    int bpp = Image::BytesPerPixel(format);
-    
-    byte *dst = (byte *)Mem_Alloc16(dstWidth * dstHeight * bpp);
+        
+    byte *dst = (byte *)Mem_Alloc16(dstWidth * dstHeight * Image::BytesPerPixel(format));
 
-    switch (filter) {
-    case Nearest:
-        ResampleNearest(this->pic, this->width, this->height, dst, dstWidth, dstHeight, bpp);
-        break;
-    case Bilinear:
-        ResampleBilinear(this->pic, this->width, this->height, dst, dstWidth, dstHeight, bpp);
-        break;
-    case Bicubic:
-        ResampleBicubic(this->pic, this->width, this->height, dst, dstWidth, dstHeight, bpp);
-        break;
+    int numComponents = NumComponents();
+
+    if (IsFloatFormat()) {
+        if (IsHalfFormat()) {
+            ResizeImage((half *)this->pic, this->width, this->height, (half *)dst, dstWidth, dstHeight, numComponents, filter);
+        } else {
+            ResizeImage((float *)this->pic, this->width, this->height, (float *)dst, dstWidth, dstHeight, numComponents, filter);
+        }
+    } else {
+        ResizeImage(this->pic, this->width, this->height, dst, dstWidth, dstHeight, numComponents, filter);
     }
 
     if (this->alloced) {
