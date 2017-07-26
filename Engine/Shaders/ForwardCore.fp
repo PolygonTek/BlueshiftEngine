@@ -132,19 +132,17 @@ void main() {
         vec4 Ks = tex2D(specularMap, baseTc);
     #endif
 
-    #if _SPECULAR_SOURCE != 0
-        #if _GLOSS_SOURCE == 0
-            float Kg = glossiness;
-        #elif _GLOSS_SOURCE == 1
-            float Kg = Kd.a * glossiness;
-        #elif _GLOSS_SOURCE == 2
-            float Kg = Ks.a * glossiness;
-        #elif _GLOSS_SOURCE == 3
-            float Kg = tex2D(glossMap, baseTc).r * glossiness;
-        #endif
-
-        float specularPower = glossinessToSpecularPower(Kg);
+    #if _GLOSS_SOURCE == 0
+        float Kg = glossiness;
+    #elif _GLOSS_SOURCE == 1
+        float Kg = Kd.a * glossiness;
+    #elif _GLOSS_SOURCE == 2
+        float Kg = Ks.a * glossiness;
+    #elif _GLOSS_SOURCE == 3
+        float Kg = tex2D(glossMap, baseTc).r * glossiness;
     #endif
+
+    float specularPower = glossinessToSpecularPower(Kg);
 #endif
 
     vec3 C = vec3(0.0);
@@ -172,40 +170,36 @@ void main() {
 
     vec3 Cd = Kd.rgb * mix(d1, d2, ambientLerp);
 
-    #if _SPECULAR_SOURCE != 0
-        // Convert coordinates from z-up to GL axis
-        vec3 worldPos;
-        worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
-        worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
-        worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
+    // Convert coordinates from z-up to GL axis
+    vec3 worldPos;
+    worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
+    worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
+    worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
 
-        vec3 S = reflect(-V, N);
-        vec3 worldS;
-        // Convert coordinates from z-up to GL axis
-        worldS.z = dot(tangentToWorldMatrixS, S);
-        worldS.x = dot(tangentToWorldMatrixT, S);
-        worldS.y = dot(tangentToWorldMatrixR, S);
+    vec3 S = reflect(-V, N);
+    vec3 worldS;
+    // Convert coordinates from z-up to GL axis
+    worldS.z = dot(tangentToWorldMatrixS, S);
+    worldS.x = dot(tangentToWorldMatrixT, S);
+    worldS.y = dot(tangentToWorldMatrixR, S);
 
-        // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
-        // (log2(specularPower) - 12) / (-12/9)
-        float specularMipLevel = -(9.0 / 12.0) * log2(specularPower) + 9.0;
+    // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
+    // (log2(specularPower) - 12) / (-12/8)
+    float specularMipLevel = -(8.0 / 12.0) * log2(specularPower) + 8.0;
 
-        vec4 sampleVec;
-        sampleVec.xyz = worldS;//boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 200, 0, 1.0), vec3(-8000, 0, -8000), vec3(8000, 1000, 8000));
-        sampleVec.w = specularMipLevel;
+    vec4 sampleVec;
+    sampleVec.xyz = worldS;//boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 200, 0, 1.0), vec3(-8000, 0, -8000), vec3(8000, 1000, 8000));
+    sampleVec.w = specularMipLevel;
 
-        vec3 s1 = texCUBElod(specularIrradianceCubeMap0, sampleVec).rgb;
-        vec3 s2 = texCUBElod(specularIrradianceCubeMap1, sampleVec).rgb;
+    vec3 s1 = texCUBElod(specularIrradianceCubeMap0, sampleVec).rgb;
+    vec3 s2 = texCUBElod(specularIrradianceCubeMap1, sampleVec).rgb;
 
-        float NdotV = max(dot(N, V), 0.0);
+    float NdotV = max(dot(N, V), 0.0);
 
-        vec3 F = F_SchlickRoughness(Ks.rgb, 1.0 - Kg, NdotV);
-        vec3 Cs = F * s1;
+    vec3 F = F_SchlickRoughness(Ks.rgb, 1.0 - Kg, NdotV);
+    vec3 Cs = F * s1;
 
-        C += Cd * (vec3(1.0) - F) + Cs;
-    #else
-        C += Cd;
-    #endif
+    C += Cd * (vec3(1.0) - F) + Cs;
 #else
     C += Kd.rgb * ambientScale;
 #endif
@@ -225,12 +219,7 @@ void main() {
         }
     #endif
 
-    #if _SPECULAR_SOURCE != 0
-        vec3 lightingColor = litPhongEC(L, N, V, Kd.rgb, Ks.rgb, specularPower);
-    #else
-        vec3 lightingColor = litPhongEC(L, N, V, Kd.rgb, vec3(0.0), 0.0);
-    #endif
-
+    vec3 lightingColor = litPhongEC(L, N, V, Kd.rgb, Ks.rgb, specularPower);    
     //vec3 lightingColor = litStandard(L, N, V, Kd.rgb, roughness, metalness);
 
     #if defined(_SUB_SURFACE_SCATTERING)

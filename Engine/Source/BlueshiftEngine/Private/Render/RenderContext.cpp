@@ -893,7 +893,7 @@ void RenderContext::TakeSpecularIrradianceShot(const char *filename, RenderWorld
     CaptureEnvCubeImage(renderWorld, origin, 512, envCubeImage);
 
     Image irradianceCubeImage;
-    GenerateSpecularIrradianceCubeImage(envCubeImage, 256, 4096, irradianceCubeImage);
+    GenerateSpecularIrradianceCubeImage(envCubeImage, 128, 4096, irradianceCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
