@@ -809,8 +809,8 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
     viewParms.origin = origin;
 
     Mat3 viewAxis[6];
-    viewAxis[0] = Angles(-90,   0, 0).ToMat3();
-    viewAxis[1] = Angles( 90,   0, 0).ToMat3();
+    viewAxis[0] = Angles( 90,   0, 0).ToMat3();
+    viewAxis[1] = Angles(-90,   0, 0).ToMat3();
     viewAxis[2] = Angles(  0, -90, 0).ToMat3();
     viewAxis[3] = Angles(  0,  90, 0).ToMat3();
     viewAxis[4] = Angles(  0,   0, 0).ToMat3();
@@ -846,7 +846,8 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
         targetRT->ColorTexture()->Bind();
         targetRT->ColorTexture()->GetTexels2D(Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
 
-        faceImages[faceIndex].FlipY();
+        faceImages[faceIndex].FlipX(); // Flip for environment image to cubemap face image
+        faceImages[faceIndex].FlipY(); // Flip upside down
     }
 
     envCubeImage.CreateCubeFrom6Faces(faceImages);

@@ -121,6 +121,9 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 float theta, phi;
                 dir.ToSpherical(theta, phi);
 
+                // Environment equirectangluar image has reversed phi
+                phi = Math::TwoPi - phi;
+
                 // Convert range [-1/4 pi, 7/4 pi] to [0.0, 1.0]
                 float srcS = Math::Fract((phi + Math::OneFourthPi) * Math::InvTwoPi);
                 // Convert range [0, pi] to [0.0, 1.0]
