@@ -151,6 +151,8 @@ void main() {
 
 #if AMBIENT_LIGHTING
     #if _EMISSION_SOURCE == 1
+        C += emissionColor * emissionScale;
+    #elif _EMISSION_SOURCE == 2
         C += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
     #endif
 
