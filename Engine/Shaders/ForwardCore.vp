@@ -132,9 +132,9 @@ void main() {
 #endif
 
 #if _NORMAL_SOURCE == 0
-    v2f_normal = localNormal;
-
     #if DIRECT_LIGHTING || AMBIENT_LIGHTING || _PARALLAX_SOURCE == 1
+        v2f_normal = localNormal;
+
         v2f_viewVector = localViewOrigin.xyz - localVertex.xyz;
     #endif
 
@@ -152,9 +152,9 @@ void main() {
         v2f_toWorldAndPackedWorldPosR.w = worldVertex.z;
     #endif
 #else
-    mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
-
     #if DIRECT_LIGHTING || AMBIENT_LIGHTING || _PARALLAX_SOURCE == 1
+        mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
+
         v2f_viewVector = (localViewOrigin.xyz - localVertex.xyz) * TBN;
     #endif
 

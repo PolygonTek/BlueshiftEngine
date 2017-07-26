@@ -189,7 +189,7 @@ void main() {
         float specularMipLevel = -(9.0 / 12.0) * log2(specularPower) + 9.0;
 
         vec4 sampleVec;
-        sampleVec.xyz = worldS;//boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 200, 0, 1.0), vec3(-8000, -1000, -8000), vec3(8000, 1000, 8000));
+        sampleVec.xyz = worldS;//boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 200, 0, 1.0), vec3(-8000, 0, -8000), vec3(8000, 1000, 8000));
         sampleVec.w = specularMipLevel;
 
         vec3 s1 = texCUBElod(specularIrradianceCubeMap0, sampleVec).rgb;

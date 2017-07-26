@@ -41,7 +41,7 @@ uniform mat4 modelViewProjectionMatrix;
 uniform float rotation;
 
 void main() {
-    vec3 v = in_position.xyz + modelViewMatrix[3].xyz * mat3(modelViewMatrix);
+    vec3 v = in_position.xyz;// + modelViewMatrix[3].xyz * mat3(modelViewMatrix);
 
     float radian = rotation * 0.01745329251; // degree to radian
     float s = sin(radian);

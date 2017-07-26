@@ -152,6 +152,8 @@ float cubeMapTexelSolidAngle(float x, float y, int size) {
 
 vec3 boxProjectedCubemapDirection(vec3 worldS, vec3 worldPos, vec4 cubemapCenter, vec3 boxMin, vec3 boxMax) {
     if (cubemapCenter.w > 0.0) {
+        worldS = normalize(worldS);
+
         vec3 rbmax = (boxMax - worldPos) / worldS;
         vec3 rbmin = (boxMin - worldPos) / worldS;
         vec3 rbminmax = mix(rbmin, rbmax, greaterThan(worldS, vec3(0.0)));
