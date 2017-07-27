@@ -30,16 +30,18 @@ shader "GenDiffuseIrradianceCubeMap" {
             vec3 N = faceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
 
             vec3 color = vec3(0.0);
-#if 1
+#if 1 // Quasi Monte Carlo integration
             float numSamples = 0.0;
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
                     vec3 sampleDir = importanceSampleLambert(vec2(x, y), N);
 
+                    // Integrate { Li * BRDF * NdotL }
+                    // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
                     // BRDF = 1 / PI
                     // PDF = NdotL / PI
-                    // BRDF * NdotL / PDF = 1
+                    // F_N = 1/N * Sigma^N { Li }
                     color += texCUBE(radianceCubeMap, sampleDir).rgb;
 
                     numSamples += 1.0;

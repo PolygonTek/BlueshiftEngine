@@ -32,16 +32,18 @@ shader "GenSpecularIrradianceCubeMap" {
             vec3 S = faceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
 
             vec3 color = vec3(0.0);
-#if 1
+#if 1 // Quasi Monte Carlo integration
             float numSamples = 0.0;
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
                     vec3 sampleDir = importanceSamplePhongSpecular(vec2(x, y), specularPower, S);
 
+                    // Integrate { Li * BRDF * NdotL }
+                    // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
                     // BRDF = (power + 2) * pow(LdotS, power) / (NdotL * TWO_PI)
                     // PDF = (power + 1) * pow(LdotS, power) / TWO_PI
-                    // BRDF * NdotL / PDF = (power + 2) / (power + 1)
+                    // F_N = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
                     color += texCUBE(radianceCubeMap, sampleDir).rgb;
 
                     numSamples += 1.0;
