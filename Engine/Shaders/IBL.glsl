@@ -1,6 +1,8 @@
 #ifndef IBL_INCLUDED
 #define IBL_INCLUDED
 
+$include "Lighting.glsl"
+
 float radicalInverse_VdC(uint bits) {
     bits = (bits << 16u) | (bits >> 16u);
     bits = ((bits & uint(0x55555555)) << 1u) | ((bits & uint(0xAAAAAAAA)) >> 1u);
@@ -84,8 +86,8 @@ vec3 importanceSampleGGX(vec2 xi, float roughness, vec3 N) {
     return rotateWithUpVector(sampleDir, N);
 }
 
-vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec4 diffuseColor) {
-    const int numSamples = 64;
+vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec3 diffuseColor) {
+    const int numSamples = 100;
 
     vec3 diffuseLighting = vec3(0.0);
 
@@ -96,48 +98,49 @@ vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec4 diffuseColor) {
 
         float NdotL = max(dot(N, L), 0.0);
 
-        if (NdotL > 0) {
-            vec3 radiance = texCUBE(radMap, L).rgb;
-
-            diffuseLighting += radiance * diffuseColor.rgb * INV_PI * NdotL;
-        }
+        diffuseLighting += texCUBE(radMap, L).rgb;
     }
 
-    return diffuseLighting / numSamples;
+    return diffuseLighting * diffuseColor / numSamples;
 }
 
-vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, float specularPower, vec4 specularColor) {
-    const int numSamples = 64;
+vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float specularPower) {
+    const int numSamples = 100;
+
+    vec3 S = reflect(-V, N);
 
     vec3 specularLighting = vec3(0.0);
 
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = hammersley(i, numSamples);
 
-        vec3 S = reflect(-V, N);
-
         vec3 L = importanceSamplePhongSpecular(xi, specularPower, S);
 
-        float NdotL = max(dot(N, L), 0.0);
+        float LdotS = max(dot(L, S), 0.0);
 
-        if (NdotL > 0) {
-            vec3 radiance = texCUBE(radMap, L).rgb;
-
-            float LdotS = max(dot(L, S), 0.0);
-
-            float normFactor = specularPower * 0.5 + 1.0;
-
-            specularLighting += radiance * specularColor.rgb * normFactor * pow(LdotS, specularPower);
-        }
+        specularLighting += texCUBE(radMap, L).rgb;
     }
 
-    return specularLighting / numSamples;
+    return specularLighting * specularColor * (specularPower + 2.0) / (specularPower + 1.0) / numSamples;
+}
+
+vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, vec3 specularColor, float glossiness) {
+    float specularPower = glossinessToSpecularPower(glossiness);
+
+    float NdotV = max(dot(N, V), 0.0);
+
+    vec3 F = F_SchlickRoughness(specularColor, sqrt(1.0 - glossiness), NdotV);
+
+    vec3 Cs = F * IBLSpecularPhong(radMap, N, V, specularColor, specularPower);
+    vec3 Cd = (vec3(1.0) - F) * IBLDiffuseLambert(radMap, N, diffuseColor);
+
+    return Cd + Cs;
 }
 
 #ifdef LIGHTING_STANDARD_INCLUDED
 
-vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, float roughness, vec4 specularColor) {
-    const int numSamples = 64;
+vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float roughness) {
+    const int numSamples = 100;
 
     vec3 specularLighting = vec3(0.0);
 
@@ -162,7 +165,7 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, float roughness, vec4 sp
 
             float G = G_SchlickGGX(NdotV, NdotL, m);
 
-            vec3 F = F_SchlickSG(specularColor.rgb, VdotH); 
+            vec3 F = F_SchlickSG(specularColor, VdotH); 
 
             // Microfacets specular BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
             //

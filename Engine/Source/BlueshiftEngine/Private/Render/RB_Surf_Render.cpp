@@ -633,6 +633,7 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float am
     shader->SetConstant1f("ambientScale", ambientScale);
 
     // TODO:
+    //shader->SetTexture("envCubeTexture", backEnd.envCubeTexture);
     shader->SetTexture("diffuseIrradianceCubeMap0", backEnd.diffuseIrradianceCubeTexture);
     shader->SetTexture("diffuseIrradianceCubeMap1", backEnd.diffuseIrradianceCubeTexture);
     shader->SetTexture("specularIrradianceCubeMap0", backEnd.specularIrradianceCubeTexture);

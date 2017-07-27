@@ -188,6 +188,7 @@ struct BackEnd {
     float               csmUpdateRatio[8];
     float               csmUpdate[8];
 
+    Texture *           envCubeTexture;
     Texture *           diffuseIrradianceCubeTexture;
     Texture *           specularIrradianceCubeTexture;
 

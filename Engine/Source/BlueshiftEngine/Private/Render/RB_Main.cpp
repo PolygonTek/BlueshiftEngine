@@ -79,6 +79,9 @@ void RB_Init() {
     memset(backEnd.csmUpdate, 0, sizeof(backEnd.csmUpdate));
 
     // FIXME: TEMPORARY CODE
+    //backEnd.envCubeTexture = textureManager.AllocTexture("envCubeMap");
+    //backEnd.envCubeTexture->Load("env.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
     backEnd.diffuseIrradianceCubeTexture = textureManager.AllocTexture("diffuseIrradianceCubeMap");
     backEnd.diffuseIrradianceCubeTexture->Load("irr_diffuse.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 

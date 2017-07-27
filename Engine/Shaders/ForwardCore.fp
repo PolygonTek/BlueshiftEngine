@@ -1,5 +1,6 @@
 $include "fragment_common.glsl"
 $include "Lighting.glsl"
+$include "IBL.glsl"
 
 #ifdef USE_SHADOW_MAP
 $include "shadow.fp"
@@ -70,6 +71,7 @@ uniform samplerCube lightCubeMap;
 uniform bool useLightCube;
 uniform bool useShadowMap;
 
+uniform samplerCube radianceCubeMap;
 uniform samplerCube diffuseIrradianceCubeMap0;
 uniform samplerCube diffuseIrradianceCubeMap1;
 uniform samplerCube specularIrradianceCubeMap0;
@@ -141,11 +143,13 @@ void main() {
     #elif _GLOSS_SOURCE == 3
         float Kg = tex2D(glossMap, baseTc).r * glossiness;
     #endif
-
-    float specularPower = glossinessToSpecularPower(Kg);
 #endif
 
     vec3 C = vec3(0.0);
+
+#if AMBIENT_LIGHTING || DIRECT_LIGHTING
+    float specularPower = glossinessToSpecularPower(Kg);
+#endif
 
 #if AMBIENT_LIGHTING
     #if _EMISSION_SOURCE == 1
@@ -154,52 +158,79 @@ void main() {
         C += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
     #endif
 
-    vec3 tangentToWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
-    vec3 tangentToWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
-    vec3 tangentToWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
-    //vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_toWorldT.w);
+    #if IBL
+        vec3 tangentToWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
+        vec3 tangentToWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
+        vec3 tangentToWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
+        //vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_toWorldT.w);
 
-    vec3 worldN;
-    // Convert coordinates from z-up to GL axis
-    worldN.z = dot(tangentToWorldMatrixS, N);
-    worldN.x = dot(tangentToWorldMatrixT, N);
-    worldN.y = dot(tangentToWorldMatrixR, N);
+        vec3 worldN;
+        // Convert coordinates from z-up to GL axis
+        worldN.z = dot(tangentToWorldMatrixS, N);
+        worldN.x = dot(tangentToWorldMatrixT, N);
+        worldN.y = dot(tangentToWorldMatrixR, N);
 
-    vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
-    vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
+        vec3 worldV;
+        // Convert coordinates from z-up to GL axis
+        worldV.z = dot(tangentToWorldMatrixS, V);
+        worldV.x = dot(tangentToWorldMatrixT, V);
+        worldV.y = dot(tangentToWorldMatrixR, V);
 
-    vec3 Cd = Kd.rgb * mix(d1, d2, ambientLerp);
+        C += IBLPhongWithFresnel(radianceCubeMap, worldN, worldV, Kd.rgb, Ks.rgb, Kg);
+    #else
+        vec3 tangentToWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
+        vec3 tangentToWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
+        vec3 tangentToWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
+        //vec3 tangentToWorldMatrixR = normalize(cross(tangentToWorldMatrixS, tangentToWorldMatrixT) * v2f_toWorldT.w);
 
-    // Convert coordinates from z-up to GL axis
-    vec3 worldPos;
-    worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
-    worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
-    worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
+        vec3 worldN;
+        // Convert coordinates from z-up to GL axis
+        worldN.z = dot(tangentToWorldMatrixS, N);
+        worldN.x = dot(tangentToWorldMatrixT, N);
+        worldN.y = dot(tangentToWorldMatrixR, N);
 
-    vec3 S = reflect(-V, N);
-    vec3 worldS;
-    // Convert coordinates from z-up to GL axis
-    worldS.z = dot(tangentToWorldMatrixS, S);
-    worldS.x = dot(tangentToWorldMatrixT, S);
-    worldS.y = dot(tangentToWorldMatrixR, S);
+        vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
+        vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
 
-    // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
-    // (log2(specularPower) - 11) / (-11/8)
-    float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
+        vec3 Cd = Kd.rgb * mix(d1, d2, ambientLerp);    
 
-    vec4 sampleVec;
-    sampleVec.xyz = worldS;//boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 0, 1.0), vec3(-4000, -4000, -4000), vec3(4000, 4000, 4000));
-    sampleVec.w = specularMipLevel;
+        vec3 S = reflect(-V, N);
+        vec3 worldS;
+        // Convert coordinates from z-up to GL axis
+        worldS.z = dot(tangentToWorldMatrixS, S);
+        worldS.x = dot(tangentToWorldMatrixT, S);
+        worldS.y = dot(tangentToWorldMatrixR, S);
 
-    vec3 s1 = texCUBElod(specularIrradianceCubeMap0, sampleVec).rgb;
-    vec3 s2 = texCUBElod(specularIrradianceCubeMap1, sampleVec).rgb;
+        #if PARALLAX_CORRECTED_AMBIENT_LIGHTING
+            // Convert coordinates from z-up to GL axis
+            vec3 worldPos;
+            worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
+            worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
+            worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
 
-    float NdotV = max(dot(N, V), 0.0);
+            vec4 sampleVec;
+            sampleVec.xyz = boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 0, 1.0), vec3(-4000, -4000, -4000), vec3(4000, 4000, 4000)); // FIXME
+        #else
+            vec4 sampleVec;
+            sampleVec.xyz = worldS;
+        #endif
 
-    vec3 F = F_SchlickRoughness(Ks.rgb, (1.0 - Kg), NdotV);
-    vec3 Cs = F * s1;
+        // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
+        // (log2(specularPower) - 11) / (-11/8)
+        float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
 
-    C += Cd * (vec3(1.0) - F) + Cs;
+        sampleVec.w = specularMipLevel;
+
+        vec3 s1 = texCUBElod(specularIrradianceCubeMap0, sampleVec).rgb;
+        vec3 s2 = texCUBElod(specularIrradianceCubeMap1, sampleVec).rgb;
+
+        float NdotV = max(dot(N, V), 0.0);
+
+        vec3 F = F_SchlickRoughness(Ks.rgb, sqrt(1.0 - Kg), NdotV);
+        vec3 Cs = F * s1;
+
+        C += Cd * (vec3(1.0) - F) + Cs;
+    #endif
 #else
     C += Kd.rgb * ambientScale;
 #endif
