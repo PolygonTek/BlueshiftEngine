@@ -1,4 +1,4 @@
-shader "ForwardAmbientLit" {
+shader "StandardAmbientLitDirectLit" {
     lighting
     properties {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
@@ -32,13 +32,18 @@ shader "ForwardAmbientLit" {
     
     generatePerforatedVersion
     generateGpuSkinningVersion
+    generateParallelShadowVersion
+    generateSpotShadowVersion
+    generatePointShadowVersion
 
     glsl_vp {
         #define AMBIENT_LIGHTING 1
+        #define DIRECT_LIGHTING 1
         $include "ForwardCore.vp"
     }
     glsl_fp {
         #define AMBIENT_LIGHTING 1
+        #define DIRECT_LIGHTING 1
         $include "ForwardCore.fp"
     }
 }

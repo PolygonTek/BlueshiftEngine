@@ -44,8 +44,11 @@ uniform vec4 specularColor;
 uniform sampler2D glossMap;
 uniform float glossiness;
 
+uniform sampler2D metallicMap;
+uniform float metallic;
+
+uniform sampler2D roughnessMap;
 uniform float roughness;
-uniform float metalness;
 
 uniform sampler2D heightMap;
 uniform float heightScale;
@@ -142,6 +145,21 @@ void main() {
         float Kg = Ks.a * glossiness;
     #elif _GLOSS_SOURCE == 3
         float Kg = tex2D(glossMap, baseTc).r * glossiness;
+    #endif
+
+    #if _METALLIC_SOURCE == 0
+        vec2 Km = vec2(metallic, 0.0);
+    #elif _METALLIC_SOURCE == 1
+        vec2 Km = tex2D(metallicMap, baseTc).rg;
+        Km.r *= metallic;
+    #endif
+
+    #if _ROUGHNESS_SOURCE == 0
+        float Kr = roughness;
+    #elif _ROUGHNESS_SOURCE == 1
+        float Kr = Km.g * roughness;
+    #elif _ROUGHNESS_SOURCE == 2
+        float Kr = tex2D(roughnessMap, baseTc).r * roughness;
     #endif
 #endif
 
@@ -250,7 +268,7 @@ void main() {
         }
     #endif
 
-    vec3 lightingColor = litPhongEC(L, N, V, Kd.rgb, Ks.rgb, specularPower);    
+    vec3 lightingColor = litPhongWithFresnel(L, N, V, Kd.rgb, Ks.rgb, specularPower);
     //vec3 lightingColor = litStandard(L, N, V, Kd.rgb, roughness, metalness);
 
     #if defined(_SUB_SURFACE_SCATTERING)

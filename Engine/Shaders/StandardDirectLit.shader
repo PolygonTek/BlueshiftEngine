@@ -1,4 +1,4 @@
-shader "ForwardDirectLit" {
+shader "StandardDirectLit" {
     lighting
     properties {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)

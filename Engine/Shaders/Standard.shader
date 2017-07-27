@@ -1,4 +1,4 @@
-shader "Forward" {
+shader "Standard" {
     properties {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
         diffuseColor("Albedo Color") : color3 = "1 1 1"
@@ -11,8 +11,8 @@ shader "Forward" {
         _GLOSS_SOURCE("Gloss") : enum "Glossiness;From Albedo Alpha;From Specular Alpha;Texture(R)" = "0" (shaderDefine)
         glossiness("Glossiness") : float range 0 1 0.001 = "0.2"
         glossMap("Gloss Map") : object TextureAsset = "_whiteTexture"
-        //metalness("Metalness") : float range 0 1 0.02 = "0.0"
-        //roughness("Roughness") : float range 0 1 0.02 = "0.5"        
+        //metallic("Metallic") : float range 0 1 0.01 = "0.0"
+        //roughness("Roughness") : float range 0 1 0.01 = "0.5"        
         _NORMAL_SOURCE("Normal") : enum "Vertex;Texture;Texture + Detail Texture" = "0" (shaderDefine)
         normalMap("Normal Map") : object TextureAsset = "_flatNormalTexture"
         detailNormalMap("Detail Normal Map") : object TextureAsset = "_flatNormalTexture"
@@ -32,9 +32,9 @@ shader "Forward" {
     generatePerforatedVersion
     generateGpuSkinningVersion
 
-    ambientLitVersion "ForwardAmbientLit.shader"
-    directLitVersion "ForwardDirectLit.shader"
-    ambientLitDirectLitVersion "ForwardAmbientLitDirectLit.shader"
+    ambientLitVersion "StandardAmbientLit.shader"
+    directLitVersion "StandardDirectLit.shader"
+    ambientLitDirectLitVersion "StandardAmbientLitDirectLit.shader"
     
     glsl_vp {
         $include "ForwardCore.vp"

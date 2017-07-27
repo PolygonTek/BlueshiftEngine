@@ -32,7 +32,7 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/vertexColor" },
     { "Shaders/objectMotionBlur" },
 
-    { "Shaders/Forward" },
+    { "Shaders/Standard" },
 
     { "Shaders/skyboxCubemap" },
     { "Shaders/skyboxSixSided" },
