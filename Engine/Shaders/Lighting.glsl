@@ -164,6 +164,7 @@ vec3 litStandard(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float met
 
     // Specular Fresnel term
     vec3 F0 = mix(vec3(0.04), albedo, metalness);
+
     vec3 F = F_SchlickSG(F0, VdotH); 
 
     // Microfacets specular BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
@@ -202,13 +203,17 @@ vec3 litPhong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specular
 
         float NdotH = max(dot(N, H), 0.0);
 
-        vec3 Cs = specular.rgb * pow(NdotH, specularPower);
+        float normFactor = specularPower * 0.125 + 1.0;
+
+        vec3 Cs = specular.rgb * normFactor * pow(NdotH, specularPower);
     #else
         vec3 R = reflect(-L, N);
 
         float RdotV = max(dot(R, V), 0.0);
 
-        vec3 Cs = specular.rgb * pow(RdotV, specularPower);
+        float normFactor = specularPower * 0.5 + 1.0;
+
+        vec3 Cs = specular.rgb * normFactor * pow(RdotV, specularPower);
     #endif
     
     return Cd + Cs;
@@ -217,8 +222,8 @@ vec3 litPhong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specular
 #endif
 }
 
-// Phong/Blinn-Phong lighting that satisfy energy conservation
-vec3 litPhongEC(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
+// Phong/Blinn-Phong lighting with Fresnel
+vec3 litPhongWithFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
 
