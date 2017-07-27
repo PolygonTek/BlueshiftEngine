@@ -96,8 +96,11 @@ vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec3 diffuseColor) {
 
         vec3 L = importanceSampleLambert(xi, N);
 
-        float NdotL = max(dot(N, L), 0.0);
-
+        // Integrate { Li * BRDF * NdotL }
+        // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
+        // BRDF = 1 / PI
+        // PDF = NdotL / PI
+        // F_N = 1/N * Sigma^N { Li }
         diffuseLighting += texCUBE(radMap, L).rgb;
     }
 
@@ -116,8 +119,11 @@ vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, fl
 
         vec3 L = importanceSamplePhongSpecular(xi, specularPower, S);
 
-        float LdotS = max(dot(L, S), 0.0);
-
+        // Integrate { Li * BRDF * NdotL }
+        // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
+        // BRDF = (power + 2) * pow(LdotS, power) / (NdotL * TWO_PI)
+        // PDF = (power + 1) * pow(LdotS, power) / TWO_PI
+        // F_N = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
         specularLighting += texCUBE(radMap, L).rgb;
     }
 
@@ -136,8 +142,6 @@ vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, 
 
     return Cd + Cs;
 }
-
-#ifdef LIGHTING_STANDARD_INCLUDED
 
 vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float roughness) {
     const int numSamples = 100;
@@ -181,7 +185,5 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
 
     return specularLighting / numSamples;
 }
-
-#endif
 
 #endif

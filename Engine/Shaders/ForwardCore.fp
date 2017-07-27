@@ -71,7 +71,7 @@ uniform samplerCube lightCubeMap;
 uniform bool useLightCube;
 uniform bool useShadowMap;
 
-uniform samplerCube radianceCubeMap;
+uniform samplerCube envCubeMap;
 uniform samplerCube diffuseIrradianceCubeMap0;
 uniform samplerCube diffuseIrradianceCubeMap1;
 uniform samplerCube specularIrradianceCubeMap0;
@@ -176,7 +176,7 @@ void main() {
         worldV.x = dot(tangentToWorldMatrixT, V);
         worldV.y = dot(tangentToWorldMatrixR, V);
 
-        C += IBLPhongWithFresnel(radianceCubeMap, worldN, worldV, Kd.rgb, Ks.rgb, Kg);
+        C += IBLPhongWithFresnel(envCubeMap, worldN, worldV, Kd.rgb, Ks.rgb, Kg);
     #else
         vec3 tangentToWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
         vec3 tangentToWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
