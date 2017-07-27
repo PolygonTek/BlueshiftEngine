@@ -61,7 +61,7 @@ CVAR(r_HOM, L"0", CVar::Bool, L"use hierarchical occlusion map culling");
 CVAR(r_HOM_debug, L"0", CVar::Bool, L"");
 
 CVAR(r_ambientLit, L"1", CVar::Bool | CVar::Archive, L"use ambient lighting");
-CVAR(r_ambientScale, L"1.0", CVar::Float | CVar::Archive, L"ambient light intensities are mutipled by this");
+CVAR(r_ambientScale, L"0.5", CVar::Float | CVar::Archive, L"ambient light intensities are mutipled by this");
 CVAR(r_lightScale, L"1.0", CVar::Float | CVar::Archive, L"all light intensities are multiplied by this");
 CVAR(r_offsetFactor, L"1", CVar::Float, L"polygon offset parameter");
 CVAR(r_offsetUnits, L"2", CVar::Float, L"polygon offset parameter");
