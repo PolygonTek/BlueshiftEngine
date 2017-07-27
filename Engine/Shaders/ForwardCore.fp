@@ -184,11 +184,11 @@ void main() {
     worldS.y = dot(tangentToWorldMatrixR, S);
 
     // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
-    // (log2(specularPower) - 12) / (-12/8)
-    float specularMipLevel = -(8.0 / 12.0) * log2(specularPower) + 8.0;
+    // (log2(specularPower) - 11) / (-11/8)
+    float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
 
     vec4 sampleVec;
-    sampleVec.xyz = worldS;//boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 200, 0, 1.0), vec3(-8000, 0, -8000), vec3(8000, 1000, 8000));
+    sampleVec.xyz = worldS;//boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 0, 1.0), vec3(-4000, -4000, -4000), vec3(4000, 4000, 4000));
     sampleVec.w = specularMipLevel;
 
     vec3 s1 = texCUBElod(specularIrradianceCubeMap0, sampleVec).rgb;
@@ -196,7 +196,7 @@ void main() {
 
     float NdotV = max(dot(N, V), 0.0);
 
-    vec3 F = F_SchlickRoughness(Ks.rgb, 1.0 - Kg, NdotV);
+    vec3 F = F_SchlickRoughness(Ks.rgb, (1.0 - Kg), NdotV);
     vec3 Cs = F * s1;
 
     C += Cd * (vec3(1.0) - F) + Cs;

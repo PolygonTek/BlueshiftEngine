@@ -123,13 +123,11 @@ vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, float specularPower, v
         if (NdotL > 0) {
             vec3 radiance = texCUBE(radMap, L).rgb;
 
-            vec3 R = reflect(-L, N);
-            
-            float RdotV = max(dot(R, V), 0.0);
+            float LdotS = max(dot(L, S), 0.0);
 
             float normFactor = specularPower * 0.5 + 1.0;
 
-            specularLighting += radiance * specularColor.rgb * normFactor * pow(RdotV, specularPower);
+            specularLighting += radiance * specularColor.rgb * normFactor * pow(LdotS, specularPower);
         }
     }
 

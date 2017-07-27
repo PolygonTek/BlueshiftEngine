@@ -890,10 +890,10 @@ void RenderContext::TakeDiffuseIrradianceShot(const char *filename, RenderWorld 
 
 void RenderContext::TakeSpecularIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin) {
     Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, origin, 512, envCubeImage);
+    CaptureEnvCubeImage(renderWorld, origin, 256, envCubeImage);
 
     Image irradianceCubeImage;
-    GenerateSpecularIrradianceCubeImage(envCubeImage, 128, 4096, irradianceCubeImage);
+    GenerateSpecularIrradianceCubeImage(envCubeImage, 128, 2048, irradianceCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);

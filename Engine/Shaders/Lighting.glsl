@@ -241,7 +241,7 @@ vec3 litPhongEC(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specul
 
         float normFactor = specularPower * 0.125 + 1.0;
 
-        vec3 Cs = F.rgb * normFactor * pow(NdotH, specularPower);
+        vec3 Cs = F * normFactor * pow(NdotH, specularPower);
     #else
         vec3 R = reflect(-L, N);
 
@@ -252,10 +252,10 @@ vec3 litPhongEC(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specul
 
         float normFactor = specularPower * 0.5 + 1.0;
 
-        vec3 Cs = F.rgb * normFactor * pow(RdotV, specularPower);
+        vec3 Cs = F * normFactor * pow(RdotV, specularPower);
     #endif
 
-    return Cd * (vec3(1.0) - F.rgb) + Cs;
+    return Cd * (vec3(1.0) - F) + Cs;
 #else
     return Cd;
 #endif
