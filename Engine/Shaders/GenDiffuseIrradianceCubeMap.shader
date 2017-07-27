@@ -37,11 +37,12 @@ shader "GenDiffuseIrradianceCubeMap" {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
                     vec3 sampleDir = importanceSampleLambert(vec2(x, y), N);
 
-                    // Integrate { Li * BRDF * NdotL }
-                    // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
                     // BRDF = 1 / PI
                     // PDF = NdotL / PI
-                    // F_N = 1/N * Sigma^N { Li }
+                    //
+                    // Integrate { Li * BRDF * NdotL }
+                    // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
+                    // = 1/N * Sigma^N { Li }
                     color += texCUBE(radianceCubeMap, sampleDir).rgb;
 
                     numSamples += 1.0;

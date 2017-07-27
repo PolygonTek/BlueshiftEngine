@@ -39,11 +39,12 @@ shader "GenSpecularIrradianceCubeMap" {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
                     vec3 sampleDir = importanceSamplePhongSpecular(vec2(x, y), specularPower, S);
 
-                    // Integrate { Li * BRDF * NdotL }
-                    // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
                     // BRDF = (power + 2) * pow(LdotS, power) / (NdotL * TWO_PI)
                     // PDF = (power + 1) * pow(LdotS, power) / TWO_PI
-                    // F_N = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
+                    //
+                    // Integrate { Li * BRDF * NdotL }
+                    // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
+                    // = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
                     color += texCUBE(radianceCubeMap, sampleDir).rgb;
 
                     numSamples += 1.0;

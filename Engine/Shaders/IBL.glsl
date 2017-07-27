@@ -87,7 +87,7 @@ vec3 importanceSampleGGX(vec2 xi, float roughness, vec3 N) {
 }
 
 vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec3 diffuseColor) {
-    const int numSamples = 100;
+    const int numSamples = 64;
 
     vec3 diffuseLighting = vec3(0.0);
 
@@ -96,11 +96,12 @@ vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec3 diffuseColor) {
 
         vec3 L = importanceSampleLambert(xi, N);
 
-        // Integrate { Li * BRDF * NdotL }
-        // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
         // BRDF = 1 / PI
-        // PDF = NdotL / PI
-        // F_N = 1/N * Sigma^N { Li }
+        // PDF(L) = NdotL / PI
+        //
+        // Integrate { Li * BRDF * NdotL }
+        // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF(L) }
+        // = 1/N * Sigma^N { Li }
         diffuseLighting += texCUBE(radMap, L).rgb;
     }
 
@@ -108,7 +109,7 @@ vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec3 diffuseColor) {
 }
 
 vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float specularPower) {
-    const int numSamples = 100;
+    const int numSamples = 64;
 
     vec3 S = reflect(-V, N);
 
@@ -119,11 +120,12 @@ vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, fl
 
         vec3 L = importanceSamplePhongSpecular(xi, specularPower, S);
 
-        // Integrate { Li * BRDF * NdotL }
-        // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
         // BRDF = (power + 2) * pow(LdotS, power) / (NdotL * TWO_PI)
-        // PDF = (power + 1) * pow(LdotS, power) / TWO_PI
-        // F_N = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
+        // PDF(L) = (power + 1) * pow(LdotS, power) / TWO_PI
+        //
+        // Integrate { Li * BRDF * NdotL }
+        // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF(L) }
+        // = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
         specularLighting += texCUBE(radMap, L).rgb;
     }
 
@@ -144,7 +146,7 @@ vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, 
 }
 
 vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float roughness) {
-    const int numSamples = 100;
+    const int numSamples = 64;
 
     vec3 specularLighting = vec3(0.0);
 
@@ -171,14 +173,14 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
 
             vec3 F = F_SchlickSG(specularColor, VdotH); 
 
-            // Microfacets specular BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
-            //
+            // BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
             // PDF(H) = D * NdotH
             // PDF(L) = PDF(H) * dH / dL = D * NdotH / (4 * VdotH) (ref. PBRT 2nd Edition p698)
             //
-            // Monte Carlo summation term = radiance * BRDF * NdotL / PDF(L) 
-            // = (radiance * D * G * F * NdotL / 4) / (D * NdotH / (4 * VdotH))
-            // = radiance * G * F * NdotL * VdotH / NdotH
+            // Integrate { Li * BRDF * NdotL }
+            // F_N = 1/N Sigma^N { Li * BRDF * NdotL / PDF(L)  }
+            // = 1/N Sigma^N { (Li * D * G * F * NdotL / 4) / (D * NdotH / (4 * VdotH)) }
+            // = 1/N Sigma^N { Li * G * F * NdotL * VdotH / NdotH }
             specularLighting += radiance * G * F * NdotL * VdotH / NdotH;
         }
     }
