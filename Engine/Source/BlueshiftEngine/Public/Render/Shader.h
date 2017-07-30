@@ -106,6 +106,15 @@ public:
                             /// Reinstantiate itself
     void                    Reinstantiate();
 
+    Shader *                GetPerforatedVersion();
+    Shader *                GetAmbientLitVersion();
+    Shader *                GetDirectLitVersion();
+    Shader *                GetAmbientLitDirectLitVersion();
+    Shader *                GetParallelShadowVersion();
+    Shader *                GetSpotShadowVersion();
+    Shader *                GetPointShadowVersion();
+    Shader *                GetGPUSkinningVersion(int index);
+
     void                    Bind() const;
 
     int                     GetConstantLocation(const char *name) const;

@@ -505,6 +505,8 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     
     shader->Instantiate(defineArray);
 
+    // Do deferred instantiation
+#if 0
     if (ambientLitVersion) {
         shader->ambientLitVersion = ambientLitVersion->InstantiateShader(defineArray);
     }
@@ -538,8 +540,129 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
             shader->gpuSkinningVersion[i] = gpuSkinningVersion[i]->InstantiateShader(defineArray);
         }
     }
+#endif
 
     return shader;
+}
+
+Shader *Shader::GetPerforatedVersion() {
+    if (perforatedVersion) {
+        return perforatedVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->perforatedVersion) {
+            perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
+            return perforatedVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetAmbientLitVersion() {
+    if (ambientLitVersion) {
+        return ambientLitVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->ambientLitVersion) {
+            ambientLitVersion = originalShader->ambientLitVersion->InstantiateShader(defineArray);
+            return ambientLitVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetDirectLitVersion() {
+    if (directLitVersion) {
+        return directLitVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->directLitVersion) {
+            directLitVersion = originalShader->directLitVersion->InstantiateShader(defineArray);
+            return directLitVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetAmbientLitDirectLitVersion() {
+    if (ambientLitDirectLitVersion) {
+        return ambientLitDirectLitVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->ambientLitDirectLitVersion) {
+            ambientLitDirectLitVersion = originalShader->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+            return ambientLitDirectLitVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetParallelShadowVersion() {
+    if (parallelShadowVersion) {
+        return parallelShadowVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->parallelShadowVersion) {
+            parallelShadowVersion = originalShader->parallelShadowVersion->InstantiateShader(defineArray);
+            return parallelShadowVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetSpotShadowVersion() {
+    if (spotShadowVersion) {
+        return spotShadowVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->spotShadowVersion) {
+            spotShadowVersion = originalShader->spotShadowVersion->InstantiateShader(defineArray);
+            return spotShadowVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetPointShadowVersion() {
+    if (pointShadowVersion) {
+        return pointShadowVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->pointShadowVersion) {
+            pointShadowVersion = originalShader->pointShadowVersion->InstantiateShader(defineArray);
+            return pointShadowVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetGPUSkinningVersion(int index) {
+    if (gpuSkinningVersion[index]) {
+        return gpuSkinningVersion[index];
+    }
+
+    if (originalShader) {
+        if (originalShader->gpuSkinningVersion[index]) {
+            gpuSkinningVersion[index] = originalShader->gpuSkinningVersion[index]->InstantiateShader(defineArray);
+            return gpuSkinningVersion[index];
+        }
+    }
+
+    return nullptr;
 }
 
 void Shader::Reinstantiate() {
@@ -661,7 +784,7 @@ void Shader::Reinstantiate() {
     }
 }
 
-bool Shader::Instantiate(const Array<Define> &defineArray) {   
+bool Shader::Instantiate(const Array<Define> &defineArray) {
 #if defined __ANDROID__ && ! defined __XAMARIN__
     static int progress = 0;
 

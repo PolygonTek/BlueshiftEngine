@@ -181,11 +181,11 @@ void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache
 }
 
 void RBSurf::RenderColor(const Color4 &color) const {
-    const Shader *shader = ShaderManager::constantColorShader;
+    Shader *shader = ShaderManager::constantColorShader;
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
@@ -204,14 +204,15 @@ void RBSurf::RenderColor(const Color4 &color) const {
 }
 
 void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id) const {
-    const Shader *shader = ShaderManager::selectionIdShader;
-    if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
-        shader = shader->perforatedVersion;
+    Shader *shader = ShaderManager::selectionIdShader;
+    
+    if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+        shader = shader->GetPerforatedVersion();
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
@@ -252,14 +253,15 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
 }
 
 void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
-    const Shader *shader = ShaderManager::depthShader;
-    if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
-        shader = shader->perforatedVersion;
+    Shader *shader = ShaderManager::depthShader;
+
+    if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+        shader = shader->GetPerforatedVersion();
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
@@ -298,9 +300,10 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
 }
 
 void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
-    const Shader *shader = ShaderManager::objectMotionBlurShader;
-    if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
-        shader = shader->perforatedVersion;
+    Shader *shader = ShaderManager::objectMotionBlurShader;
+
+    if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+        shader = shader->GetPerforatedVersion();
     }
 
     if (subMesh->useGpuSkinning) {
@@ -346,14 +349,14 @@ void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
 }
 
 void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
-    const Shader *shader;
+    Shader *shader;
 
     if (mtrlPass->shader) {
         shader = mtrlPass->shader;
 
         if (subMesh->useGpuSkinning) {
-            if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-                shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+            if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+                shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
             }
         }
 
@@ -363,8 +366,8 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
         shader = ShaderManager::forwardAlbedoShader;
 
         if (subMesh->useGpuSkinning) {
-            if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-                shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+            if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+                shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
             }
         }
 
@@ -410,17 +413,17 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
 }
 
 void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) const {
-    const Shader *shader = ShaderManager::forwardAlbedoShader;
+    Shader *shader = ShaderManager::forwardAlbedoShader;
 
     if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
-            shader = shader->perforatedVersion;
+        if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+            shader = shader->GetPerforatedVersion();
         }
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
@@ -462,29 +465,30 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
 }
 
 void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale) const {
-    const Shader *shader = shader = mtrlPass->shader;
-    if (shader && shader->ambientLitVersion) {
-        shader = shader->ambientLitVersion;
+    Shader *shader = shader = mtrlPass->shader;
+
+    if (shader && shader->GetAmbientLitVersion()) {
+        shader = shader->GetAmbientLitVersion();
     } else {
         shader = ShaderManager::forwardAlbedoAmbientLitShader;
     }
 
     if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
-            shader = shader->perforatedVersion;
+        if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+            shader = shader->GetPerforatedVersion();
         }
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
     shader->Bind();
 
     if (mtrlPass->shader) {
-        if (mtrlPass->shader->ambientLitVersion) {
+        if (mtrlPass->shader->GetAmbientLitVersion()) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
@@ -546,9 +550,10 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
 }
 
 void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambientScale) const {
-    const Shader *shader = shader = mtrlPass->shader;
-    if (shader && shader->directLitVersion) {
-        shader = shader->directLitVersion;
+    Shader *shader = shader = mtrlPass->shader;
+    
+    if (shader && shader->GetDirectLitVersion()) {
+        shader = shader->GetDirectLitVersion();
     } else {
         shader = ShaderManager::forwardAlbedoDirectLitShader;
     }
@@ -556,30 +561,30 @@ void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambie
     bool useShadowMap = (r_shadows.GetInteger() == 0) || (!surfLight->def->parms.castShadows || !surfSpace->def->parms.receiveShadows) ? false : true;
     if (useShadowMap) {
         if (surfLight->def->parms.type == SceneLight::PointLight) {
-            shader = shader->pointShadowVersion;
+            shader = shader->GetPointShadowVersion();
         } else if (surfLight->def->parms.type == SceneLight::SpotLight) {
-            shader = shader->spotShadowVersion;
+            shader = shader->GetSpotShadowVersion();
         } else if (surfLight->def->parms.type == SceneLight::DirectionalLight) {
-            shader = shader->parallelShadowVersion;
+            shader = shader->GetParallelShadowVersion();
         }
     }
 
     if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
-            shader = shader->perforatedVersion;
+        if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+            shader = shader->GetPerforatedVersion();
         }
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
     shader->Bind();
     
     if (mtrlPass->shader) {
-        if (mtrlPass->shader->directLitVersion) {
+        if (mtrlPass->shader->GetDirectLitVersion()) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
@@ -603,9 +608,10 @@ void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambie
 }
 
 void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float ambientScale) const {
-    const Shader *shader = shader = mtrlPass->shader;
-    if (shader && shader->ambientLitDirectLitVersion) {
-        shader = shader->ambientLitDirectLitVersion;
+    Shader *shader = shader = mtrlPass->shader;
+
+    if (shader && shader->GetAmbientLitDirectLitVersion()) {
+        shader = shader->GetAmbientLitDirectLitVersion();
     } else {
         shader = ShaderManager::forwardAlbedoAmbientLitDirectLitShader;
     }
@@ -613,30 +619,30 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float am
     bool useShadowMap = (r_shadows.GetInteger() == 0) || (!surfLight->def->parms.castShadows || !surfSpace->def->parms.receiveShadows) ? false : true;
     if (useShadowMap) {
         if (surfLight->def->parms.type == SceneLight::PointLight) {
-            shader = shader->pointShadowVersion;
+            shader = shader->GetPointShadowVersion();
         } else if (surfLight->def->parms.type == SceneLight::SpotLight) {
-            shader = shader->spotShadowVersion;
+            shader = shader->GetSpotShadowVersion();
         } else if (surfLight->def->parms.type == SceneLight::DirectionalLight) {
-            shader = shader->parallelShadowVersion;
+            shader = shader->GetParallelShadowVersion();
         }
     }
 
     if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->stateBits & RHI::MaskAF && shader->perforatedVersion) {
-            shader = shader->perforatedVersion;
+        if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+            shader = shader->GetPerforatedVersion();
         }
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
     shader->Bind();
 
     if (mtrlPass->shader) {
-        if (mtrlPass->shader->ambientLitDirectLitVersion) {
+        if (mtrlPass->shader->GetAmbientLitDirectLitVersion()) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
@@ -814,9 +820,10 @@ void RBSurf::SetupLightingShader(const Material::Pass *mtrlPass, const Shader *s
 }
 
 void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {    
-    const Shader *shader = mtrlPass->shader;
-    if (shader && shader->directLitVersion) {
-        shader = shader->directLitVersion;
+    Shader *shader = mtrlPass->shader;
+
+    if (shader && shader->GetDirectLitVersion()) {
+        shader = shader->GetDirectLitVersion();
     } else {
         shader = ShaderManager::forwardAlbedoDirectLitShader;
     }
@@ -824,24 +831,24 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
     bool useShadowMap = (r_shadows.GetInteger() == 0) || (!surfLight->def->parms.castShadows || !surfSpace->def->parms.receiveShadows) ? false : true;
     if (useShadowMap) {
         if (surfLight->def->parms.type == SceneLight::PointLight) {
-            shader = shader->pointShadowVersion;
+            shader = shader->GetPointShadowVersion();
         } else if (surfLight->def->parms.type == SceneLight::SpotLight) {
-            shader = shader->spotShadowVersion;
+            shader = shader->GetSpotShadowVersion();
         } else if (surfLight->def->parms.type == SceneLight::DirectionalLight) {
-            shader = shader->parallelShadowVersion;
+            shader = shader->GetParallelShadowVersion();
         }
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
     shader->Bind();
 
     if (mtrlPass->shader) {
-        if (mtrlPass->shader->directLitVersion) {
+        if (mtrlPass->shader->GetDirectLitVersion()) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
@@ -861,11 +868,11 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
 }
 
 void RBSurf::RenderFogLightInteraction(const Material::Pass *mtrlPass) const {	
-    const Shader *shader = ShaderManager::fogLightShader;
+    Shader *shader = ShaderManager::fogLightShader;
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
@@ -894,11 +901,11 @@ void RBSurf::RenderFogLightInteraction(const Material::Pass *mtrlPass) const {
 }
 
 void RBSurf::RenderBlendLightInteraction(const Material::Pass *mtrlPass) const {
-    const Shader *shader = ShaderManager::blendLightShader;
+    Shader *shader = ShaderManager::blendLightShader;
 
     if (subMesh->useGpuSkinning) {
-        if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
-            shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
+        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
+            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         }
     }
 
