@@ -10,9 +10,9 @@ in vec3 v2f_toWorldR;
 
 out vec4 o_fragColor : FRAG_COLOR;
 
-uniform sampler2D bumpMap;
-uniform sampler2D bumpMapNext;
-uniform sampler2D diffuseMap;
+uniform sampler2D normalMap;
+uniform sampler2D normalMapNext;
+uniform sampler2D albedoMap;
 uniform samplerCube envCubeMap;
 uniform sampler2D sunSpecularMap;
 uniform sampler2DRect currentRenderMap;
@@ -30,13 +30,13 @@ uniform vec3 sunColor;
 
 void main() {
 #ifdef INTERPOLATE
-	vec3 b1 = getNormal(bumpMap, v2f_texCoord);
-	vec3 b2 = getNormal(bumpMapNext, v2f_texCoord);
+	vec3 b1 = getNormal(normalMap, v2f_texCoord);
+	vec3 b2 = getNormal(normalMapNext, v2f_texCoord);
 	vec3 N = mix(b1, b2, lerpFactor);
 	//N = smoothstep(b1, b2, N);
 	//N = N * b1 + (1.0 - N) * b2;
 #else
-	vec3 N = getNormal(bumpMap, v2f_texCoord);
+	vec3 N = getNormal(normalMap, v2f_texCoord);
 #endif
 
 	N.xy *= liquidDistortion.z;
@@ -67,7 +67,7 @@ void main() {
 
 	vec3 refraction = texRect(currentRenderMap, screenST).xyz * liquidTint;
 	vec3 reflection = texCUBE(envCubeMap, worldR).xyz;
-	vec4 diffuseColor = tex2D(diffuseMap, v2f_texCoord);
+	vec4 diffuseColor = tex2D(albedoMap, v2f_texCoord);
 
 	float RF = pow(fresnel(-E, N, fresnelConstant) * reflectness, 2.2);
 	vec3 Cd = mix(refraction, reflection, RF);

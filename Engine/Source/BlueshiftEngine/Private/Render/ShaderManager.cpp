@@ -32,6 +32,7 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/vertexColor" },
     { "Shaders/objectMotionBlur" },
 
+    { "Shaders/StandardSpec" },
     { "Shaders/Standard" },
 
     { "Shaders/skyboxCubemap" },
@@ -254,25 +255,25 @@ void ShaderManager::InstantiateEngineShaders() {
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    forwardAlbedoShader = originalShaders[ForwardShader]->InstantiateShader(defineArray);
+    forwardAlbedoShader = originalShaders[StandardSpecShader]->InstantiateShader(defineArray);
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    forwardAlbedoAmbientLitShader = originalShaders[ForwardShader]->ambientLitVersion->InstantiateShader(defineArray);
+    forwardAlbedoAmbientLitShader = originalShaders[StandardSpecShader]->ambientLitVersion->InstantiateShader(defineArray);
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    forwardAlbedoDirectLitShader = originalShaders[ForwardShader]->directLitVersion->InstantiateShader(defineArray);
+    forwardAlbedoDirectLitShader = originalShaders[StandardSpecShader]->directLitVersion->InstantiateShader(defineArray);
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    forwardAlbedoAmbientLitDirectLitShader = originalShaders[ForwardShader]->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+    forwardAlbedoAmbientLitDirectLitShader = originalShaders[StandardSpecShader]->ambientLitDirectLitVersion->InstantiateShader(defineArray);
 
     objectMotionBlurShader = originalShaders[ObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
 

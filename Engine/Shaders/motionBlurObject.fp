@@ -7,7 +7,7 @@ out vec4 o_fragColor : FRAG_COLOR;
 
 uniform float shutterSpeed;
 //uniform float motionBlurID;
-uniform sampler2D diffuseMap;
+uniform sampler2D albedoMap;
 uniform sampler2D depthMap;
 
 void main() {
@@ -23,7 +23,7 @@ void main() {
 	velocity = dot(velocity.xy, velocity.xy) > 0.000001 ? velocity : vec2(0.0, 0.0);
 
 #ifdef PERFORATED
-	float alpha = tex2D(diffuseMap, v2f_texCoord).a;
+	float alpha = tex2D(albedoMap, v2f_texCoord).a;
 	if (alpha < 0.5) {
 		discard;
 	}

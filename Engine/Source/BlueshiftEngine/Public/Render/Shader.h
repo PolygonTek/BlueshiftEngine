@@ -69,9 +69,8 @@ public:
     };
 
     enum BuiltInSampler {
-        DiffuseMapSampler,
-        SpecularMapSampler,
-        BumpMapSampler,
+        AlbedoMapSampler,
+        NormalMapSampler,
         MaxBuiltInSamplers
     };
 
@@ -275,7 +274,8 @@ public:
         ConstantColorShader,
         VertexColorShader,
         ObjectMotionBlurShader,
-        ForwardShader,
+        StandardSpecShader,
+        StandardShader,
         SkyboxCubemapShader,
         SkyboxSixSidedShader,
         FogLightShader,

@@ -1,4 +1,4 @@
-shader "StandardAmbientLit" {
+shader "StandardSpecAmbientLit" {
     lighting
     properties {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
@@ -6,12 +6,12 @@ shader "StandardAmbientLit" {
         albedoMap("Albedo Map") : object TextureAsset = "_whiteTexture"
         _WRAPPED_DIFFUSE("Wrapped Diffuse") : bool = "false" (shaderDefine)
         wrappedDiffuse("Wrapped") : float range 0 1.0 0.001 = "0.5"
-        _METALLIC_SOURCE("Metallic") : enum "Scale;Texture (R)" = "0" (shaderDefine)
-        metallicMap("Metallic Map") : object TextureAsset = "_whiteTexture"
-        metallicScale("Metallic Scale") : float range 0 1.0 0.01 = "1.0"
-        _ROUGHNESS_SOURCE("Roughness") : enum "Scale;From Metallic Map (G);Texture (R)" = "0" (shaderDefine)
-        roughnessMap("Roughness Map") : object TextureAsset = "_whiteTexture"
-        roughnessScale("Roughness Scale") : float range 0 1.0 0.01 = "1.5"
+        _SPECULAR_SOURCE("Specular") : enum "None;Color;Texture" = "0" (shaderDefine)
+        specularColor("Specular Color") : color3 = "1 1 1"
+        specularMap("Specular Map") : object TextureAsset = "_whiteTexture"
+        _GLOSS_SOURCE("Gloss") : enum "Scale;From Albedo Alpha;From Specular Alpha;Texture(R)" = "0" (shaderDefine)
+        glossMap("Gloss Map") : object TextureAsset = "_whiteTexture"
+        glossScale("Gloss Scale") : float range 0 1.0 0.001 = "1.0"
         _NORMAL_SOURCE("Normal") : enum "Vertex;Texture;Texture + Detail Texture" = "0" (shaderDefine)
         normalMap("Normal Map") : object TextureAsset = "_flatNormalTexture"
         detailNormalMap("Detail Normal Map") : object TextureAsset = "_flatNormalTexture"
@@ -32,12 +32,12 @@ shader "StandardAmbientLit" {
     generateGpuSkinningVersion
 
     glsl_vp {
-        #define STANDARD_METALLIC_LIGHTING
+        #define STANDARD_SPECULAR_LIGHTING
         #define AMBIENT_LIGHTING 1
         $include "ForwardCore.vp"
     }
     glsl_fp {
-        #define STANDARD_METALLIC_LIGHTING
+        #define STANDARD_SPECULAR_LIGHTING
         #define AMBIENT_LIGHTING 1
         $include "ForwardCore.fp"
     }

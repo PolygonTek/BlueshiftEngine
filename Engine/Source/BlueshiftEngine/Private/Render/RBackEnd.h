@@ -189,8 +189,9 @@ struct BackEnd {
     float               csmUpdate[8];
 
     Texture *           envCubeTexture;
+    Texture *           integrationLUTTexture;
     Texture *           diffuseIrradianceCubeTexture;
-    Texture *           specularIrradianceCubeTexture;
+    Texture *           specularPrefilteredCubeTexture;
 
     Texture *           homCullingOutputTexture;
     RenderTarget *      homCullingOutputRT;

@@ -78,15 +78,18 @@ void RB_Init() {
 
     memset(backEnd.csmUpdate, 0, sizeof(backEnd.csmUpdate));
 
+    backEnd.integrationLUTTexture = textureManager.AllocTexture("integrationLUT");
+    backEnd.integrationLUTTexture->Load("Data/EngineTextures/IntegrationLUT_GGX.dds", Image::LinearSpaceFlag | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
     // FIXME: TEMPORARY CODE
-    //backEnd.envCubeTexture = textureManager.AllocTexture("envCubeMap");
-    //backEnd.envCubeTexture->Load("env.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    backEnd.envCubeTexture = textureManager.AllocTexture("envCubeMap");
+    backEnd.envCubeTexture->Load("env.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     backEnd.diffuseIrradianceCubeTexture = textureManager.AllocTexture("diffuseIrradianceCubeMap");
     backEnd.diffuseIrradianceCubeTexture->Load("irr_diffuse.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
-    backEnd.specularIrradianceCubeTexture = textureManager.AllocTexture("specularIrradianceCubeMap");
-    backEnd.specularIrradianceCubeTexture->Load("irr_specular.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
+    backEnd.specularPrefilteredCubeTexture = textureManager.AllocTexture("specularPrefilteredCubeMap");
+    backEnd.specularPrefilteredCubeTexture->Load("irr_specular.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
 
     if (r_HOM.GetBool()) {
         // TODO: create one for each context

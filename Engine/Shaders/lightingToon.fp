@@ -14,7 +14,7 @@ in vec4 v2f_lightProjection;
 
 out vec4 o_fragColor : FRAG_COLOR;
 
-uniform sampler2D diffuseMap;
+uniform sampler2D albedoMap;
 uniform sampler2D specularMap;
 uniform sampler2D lightProjectionMap;
 uniform samplerCube lightCubeMap;
@@ -78,9 +78,9 @@ void main() {
 #endif
 
 #if _ALBEDO_SOURCE == 0
-	vec4 diffuse = diffuseColor;
+	vec4 diffuse = albedoColor;
 #elif _ALBEDO_SOURCE == 1
-	vec4 diffuse = tex2D(diffuseMap, v2f_texCoord);
+	vec4 diffuse = tex2D(albedoMap, v2f_texCoord);
 #endif
 
 #ifdef PERFORATED

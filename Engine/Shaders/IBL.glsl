@@ -3,6 +3,8 @@
 
 $include "Lighting.glsl"
 
+// http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
+// efficient VanDerCorpus calculation.
 float radicalInverse_VdC(uint bits) {
     bits = (bits << 16u) | (bits >> 16u);
     bits = ((bits & uint(0x55555555)) << 1u) | ((bits & uint(0xAAAAAAAA)) >> 1u);
@@ -132,17 +134,36 @@ vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, fl
     return specularLighting * specularColor * (specularPower + 2.0) / (specularPower + 1.0) / numSamples;
 }
 
-vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, vec3 specularColor, float glossiness) {
-    float specularPower = glossinessToSpecularPower(glossiness);
+vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, vec3 specularColor, float specularPower, float roughness) {
+    const int numSamples = 64;
+
+    vec3 diffuseLighting = vec3(0.0);
+
+    vec3 specularLighting = vec3(0.0);
+
+    vec3 S = reflect(-V, N);
+
+    for (int i = 0; i < numSamples; i++) {
+        vec2 xi = hammersley(i, numSamples);
+
+        vec3 Ld = importanceSampleLambert(xi, N);
+
+        vec3 Ls = importanceSamplePhongSpecular(xi, specularPower, S);
+        
+        diffuseLighting += texCUBE(radMap, Ld).rgb;
+
+        specularLighting += texCUBE(radMap, Ls).rgb;
+    }
 
     float NdotV = max(dot(N, V), 0.0);
 
-    vec3 F = F_SchlickRoughness(specularColor, sqrt(1.0 - glossiness), NdotV);
+    vec3 F = F_SchlickRoughness(specularColor, roughness, NdotV);
 
-    vec3 Cs = F * IBLSpecularPhong(radMap, N, V, specularColor, specularPower);
-    vec3 Cd = (vec3(1.0) - F) * IBLDiffuseLambert(radMap, N, diffuseColor);
+    specularLighting *= F * specularColor * ((specularPower + 2.0) / (specularPower + 1.0));
 
-    return Cd + Cs;
+    diffuseLighting *= (vec3(1.0) - F) * diffuseColor;
+
+    return (diffuseLighting + specularLighting) / numSamples;
 }
 
 vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float roughness) {
@@ -150,7 +171,7 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
 
     vec3 specularLighting = vec3(0.0);
 
-    float m = roughness * roughness;
+    float k = roughness * roughness * 0.5; // k for IBL
 
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = hammersley(i, numSamples);
@@ -167,9 +188,7 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
             float NdotV = max(dot(N, V), 0.0);
             float VdotH = max(dot(V, H), 0.0);
 
-            float D = D_GGX(NdotH, m);
-
-            float G = G_SchlickGGX(NdotV, NdotL, m);
+            float G = G_SchlickGGX(NdotV, NdotL, k);
 
             vec3 F = F_SchlickSG(specularColor, VdotH); 
 
@@ -186,6 +205,46 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
     }
 
     return specularLighting / numSamples;
+}
+
+vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roughness) {
+    const int numSamples = 64;
+
+    vec3 diffuseLighting = vec3(0.0);
+
+    vec3 specularLighting = vec3(0.0);
+
+    for (int i = 0; i < numSamples; i++) {
+        vec2 xi = hammersley(i, numSamples);
+
+        vec3 Ld = importanceSampleLambert(xi, N);
+
+        vec3 H = importanceSampleGGX(xi, roughness, N); 
+
+        float VdotH = max(dot(V, H), 0.0);
+
+        vec3 F = F_SchlickSG(F0, VdotH);
+
+        diffuseLighting += (vec3(1.0) - F) * texCUBE(radMap, Ld).rgb;
+
+        vec3 Ls = 2.0 * dot(V, H) * H - V;
+
+        float NdotL = max(dot(N, Ls), 0.0);
+
+        if (NdotL > 0.0) {
+            float NdotH = max(dot(N, H), 0.0);
+            float NdotV = max(dot(N, V), 0.0);
+
+            float k = roughness * roughness * 0.5; // k for IBL
+            float G = G_SchlickGGX(NdotV, NdotL, k);
+
+            specularLighting += texCUBE(radMap, Ls).rgb * G * F * NdotL * VdotH / NdotH;
+        }
+    }
+
+    diffuseLighting *= albedo;
+
+    return (diffuseLighting + specularLighting) / numSamples;
 }
 
 #endif

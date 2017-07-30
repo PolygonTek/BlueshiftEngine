@@ -225,6 +225,8 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
     }
 
     if (mtrlPass->stateBits & RHI::MaskAF) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
@@ -240,8 +242,8 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
 
         shader->SetConstant4f("constantColor", color);
 
-        const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "diffuseMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
+        const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
     }
 
     shader->SetConstant3f("id", vec3_id);
@@ -271,6 +273,8 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
     }
 
     if (mtrlPass->stateBits & RHI::MaskAF) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
@@ -286,8 +290,8 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
 
         shader->SetConstant4f("constantColor", color);
 
-        const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "diffuseMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
+        const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
     }
 
     DrawPrimitives();
@@ -321,8 +325,10 @@ void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
     shader->SetTexture("depthMap", backEnd.ctx->screenDepthTexture);
 
     if (mtrlPass->stateBits & RHI::MaskAF) {
-        const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "diffuseMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+
+        const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
         
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -363,7 +369,7 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
         }
 
         shader->Bind();
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
     }
     
     SetMatrixConstants(shader);
@@ -427,10 +433,12 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
-    const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "diffuseMap") : mtrlPass->texture;
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
+    const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
+    shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
 
-    ambientScale *= 0.5f;
+    if (mtrlPass->stateBits & RHI::MaskAF) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    }
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -479,11 +487,11 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
         if (mtrlPass->shader->ambientLitVersion) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
-            const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "diffuseMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
+            const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);
@@ -494,10 +502,12 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
     }
 
     // TODO:
+    shader->SetTexture("envCubeMap", backEnd.envCubeTexture);
+    shader->SetTexture("integrationLUTMap", backEnd.integrationLUTTexture);
     shader->SetTexture("diffuseIrradianceCubeMap0", backEnd.diffuseIrradianceCubeTexture);
     shader->SetTexture("diffuseIrradianceCubeMap1", backEnd.diffuseIrradianceCubeTexture);
-    shader->SetTexture("specularIrradianceCubeMap0", backEnd.specularIrradianceCubeTexture);
-    shader->SetTexture("specularIrradianceCubeMap1", backEnd.specularIrradianceCubeTexture);
+    shader->SetTexture("specularPrefilteredCubeMap0", backEnd.specularPrefilteredCubeTexture);
+    shader->SetTexture("specularPrefilteredCubeMap1", backEnd.specularPrefilteredCubeTexture);
     shader->SetConstant1f("ambientLerp", 0.0f);
 
     // view vector: world -> to mesh coordinates
@@ -509,6 +519,10 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
+
+    if (mtrlPass->stateBits & RHI::MaskAF) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    }
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -568,14 +582,18 @@ void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambie
         if (mtrlPass->shader->directLitVersion) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
-            const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "diffuseMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
+            const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);
+
+    if (mtrlPass->stateBits & RHI::MaskAF) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    }
 
     shader->SetConstant1f("ambientScale", ambientScale);
 
@@ -621,23 +639,28 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float am
         if (mtrlPass->shader->ambientLitDirectLitVersion) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
-            const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "diffuseMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
+            const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);
 
+    if (mtrlPass->stateBits & RHI::MaskAF) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    }
+
     shader->SetConstant1f("ambientScale", ambientScale);
 
     // TODO:
-    //shader->SetTexture("envCubeTexture", backEnd.envCubeTexture);
+    shader->SetTexture("envCubeMap", backEnd.envCubeTexture);
+    shader->SetTexture("integrationLUTMap", backEnd.integrationLUTTexture);
     shader->SetTexture("diffuseIrradianceCubeMap0", backEnd.diffuseIrradianceCubeTexture);
     shader->SetTexture("diffuseIrradianceCubeMap1", backEnd.diffuseIrradianceCubeTexture);
-    shader->SetTexture("specularIrradianceCubeMap0", backEnd.specularIrradianceCubeTexture);
-    shader->SetTexture("specularIrradianceCubeMap1", backEnd.specularIrradianceCubeTexture);
+    shader->SetTexture("specularPrefilteredCubeMap0", backEnd.specularPrefilteredCubeTexture);
+    shader->SetTexture("specularPrefilteredCubeMap1", backEnd.specularPrefilteredCubeTexture);
     shader->SetConstant1f("ambientLerp", 0.0f);
 
     SetupLightingShader(mtrlPass, shader, useShadowMap);
@@ -821,11 +844,11 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
         if (mtrlPass->shader->directLitVersion) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
-            const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "diffuseMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], baseTexture);
+            const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
         }
     } else {        
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::DiffuseMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);

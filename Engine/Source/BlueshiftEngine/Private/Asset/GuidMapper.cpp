@@ -35,9 +35,10 @@ Guid        GuidMapper::normalCubeTextureGuid(0, 0, 0, 110);
 Guid        GuidMapper::cubicNormalCubeTextureGuid(0, 0, 0, 111);
 Guid        GuidMapper::currentRenderTextureGuid(0, 0, 0, 112);
 // predefined shader GUID
-Guid        GuidMapper::standardLightingShaderGuid(0, 0, 0, 200);
+Guid        GuidMapper::standardSpecLightingShaderGuid(0, 0, 0, 200);
 Guid        GuidMapper::skyboxCubemapShaderGuid(0, 0, 0, 201);
 Guid        GuidMapper::skyboxSixSidedShaderGuid(0, 0, 0, 202);
+Guid        GuidMapper::standardLightingShaderGuid(0, 0, 0, 203);
 // predefined material GUID
 Guid        GuidMapper::defaultMaterialGuid(0, 0, 0, 300);
 Guid        GuidMapper::whiteMaterialGuid(0, 0, 0, 301);

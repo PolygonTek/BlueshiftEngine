@@ -46,9 +46,8 @@ static const char *builtInConstantNames[] = {
 
 // NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함
 static const char *builtInSamplerNames[] = {
-    "diffuseMap",
-    "specularMap",
-    "bumpMap"
+    "albedoMap",
+    "normalMap"
 };
 
 const StrHashMap<PropertySpec> &Shader::GetSpecHashMap() const { 

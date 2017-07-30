@@ -155,7 +155,9 @@ public:
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
     void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size = 256);
     void                    TakeDiffuseIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
-    void                    TakeSpecularIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
+    void                    TakeSpecularPrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
+
+    void                    WriteGGXIntegrationLUT(const char *filename, int size) const;
 
     void                    CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage);
 
@@ -165,8 +167,14 @@ public:
                             // Generate diffuse irradiance cubemap
     void                    GenerateDiffuseIrradianceCubeImage(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
 
-                            // Generate specular irradiance cubemap
-    void                    GenerateSpecularIrradianceCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &irradianceCubeImage) const;
+                            // Generate Phong specular prefiltered cubemap
+    void                    GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const;
+
+                            // Generate GGX specular prefiltered cubemap
+    void                    GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const;
+
+                            // Generate GGX BRDF integration 2D LUT
+    void                    GenerateGGXIntegrationLUTImage(int size, Image &integrationImage) const;
 
 //private:
     void                    InitScreenMapRT();

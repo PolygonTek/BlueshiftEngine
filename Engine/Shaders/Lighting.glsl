@@ -5,6 +5,11 @@
 #define PBR_SPEC_D 2
 #define PBR_SPEC_G 3
 
+float pow4(float f) {
+    float f2 = f * f;
+    return f2 * f2;
+}
+
 float pow5(float f) {
     float f2 = f * f;
     return f2 * f2 * f;
@@ -70,7 +75,7 @@ float D_GGXAniso(float NdotH, float XdotH, float YdotH, float mx, float my) {
 }
 
 //---------------------------------------------------
-// Geometric visibility functions
+// Geometric visibility functions - divided by (NdotL * NdotV)
 //---------------------------------------------------
 
 float G_Neumann(float NdotV, float NdotL) {
@@ -86,11 +91,10 @@ float G_CookTorrance(float NdotV, float NdotL, float NdotH, float VdotH) {
     return G / (NdotL * NdotV);
 }
 
-float G_SchlickGGX(float NdotV, float NdotL, float m) {
-    float k = m * 0.5f;
-    float invK = 1.0 - k;
-    float GV = NdotV * invK + k;
-    float GL = NdotL * invK + k;
+float G_SchlickGGX(float NdotV, float NdotL, float k) {
+    float oneMinusK = 1.0 - k;
+    float GV = NdotV * oneMinusK + k;
+    float GL = NdotL * oneMinusK + k;
     return 1.0 / (GL * GV);
 }
 
@@ -115,7 +119,7 @@ vec3 F_SchlickRoughness(vec3 F0, float roughness, float VdotH) {
 
 //---------------------------------------------------
 
-vec3 litStandard(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float metalness) {
+vec3 litStandard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roughness) {
     vec3 H = normalize(L + V);
 
     float NdotL = max(dot(N, L), 0.0);
@@ -159,12 +163,11 @@ vec3 litStandard(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float met
 #elif PBR_SPEC_G == 2
     float G = G_CookTorrance(NdotV, NdotL, NdotH, VdotH);
 #elif PBR_SPEC_G == 3
-    float G = G_SchlickGGX(NdotV, NdotL, m);
+    float k = roughness + 1.0; // k for direct lighting
+    float G = G_SchlickGGX(NdotV, NdotL, (k * k) * 0.125);
 #endif
 
     // Specular Fresnel term
-    vec3 F0 = mix(vec3(0.04), albedo, metalness);
-
     vec3 F = F_SchlickSG(F0, VdotH); 
 
     // Microfacets specular BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
@@ -174,8 +177,7 @@ vec3 litStandard(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float met
     vec3 Cs = PI * NdotL * BRDFspec;
 
     // Final diffuse lighting with fresnel
-    Cd *= (vec3(1.0) - F) * (1.0 - metalness);
-    //Cd *= (vec3(1.0) - F_SchlickSG(F0, NdotL));
+    Cd *= (vec3(1.0) - F);
 
     return Cd + Cs;
 }
