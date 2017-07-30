@@ -47,10 +47,10 @@ CVAR(r_CSM_selectionMethod, L"1", CVar::Integer, L"cascade selection method, 0 =
 CVAR(r_CSM_splitLamda, L"0.9", CVar::Float, L"");
 CVAR(r_CSM_blend, L"1", CVar::Bool, L"");
 CVAR(r_CSM_blendSize, L"0.09375", CVar::Float, L"");
-CVAR(r_CSM_offsetFactor0, L"2.0", CVar::Float, L"scale value for CSM0 drawing");
-CVAR(r_CSM_offsetFactor1, L"1.0", CVar::Float, L"scale value for CSM1 drawing");
-CVAR(r_CSM_offsetFactor2, L"0.5", CVar::Float, L"scale value for CSM2 drawing");
-CVAR(r_CSM_offsetFactor3, L"0.25", CVar::Float, L"scale value for CSM3 drawing");
+CVAR(r_CSM_offsetFactor0, L"3.0", CVar::Float, L"scale value for CSM0 drawing");
+CVAR(r_CSM_offsetFactor1, L"2.5", CVar::Float, L"scale value for CSM1 drawing");
+CVAR(r_CSM_offsetFactor2, L"2.0", CVar::Float, L"scale value for CSM2 drawing");
+CVAR(r_CSM_offsetFactor3, L"1.5", CVar::Float, L"scale value for CSM3 drawing");
 CVAR(r_CSM_offsetUnits0, L"16", CVar::Float, L"bias value added to depth test for CSM0 drawing");
 CVAR(r_CSM_offsetUnits1, L"32", CVar::Float, L"bias value added to depth test for CSM1 drawing");
 CVAR(r_CSM_offsetUnits2, L"64", CVar::Float, L"bias value added to depth test for CSM2 drawing");

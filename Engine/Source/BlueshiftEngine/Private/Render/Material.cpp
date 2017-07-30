@@ -382,8 +382,6 @@ void Material::ChangeShader(Shader *shader) {
 
     pass->shaderProperties.Swap(newShaderProperties);
 
-    const Texture *tt = pass->shaderProperties.Get("diffuseMap")->second.texture;
-
     // Instantiate shader with changed define properites 
     EndShaderPropertiesChanged();
 }
