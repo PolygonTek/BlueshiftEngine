@@ -513,6 +513,7 @@ void RenderContext::BeginFrame() {
 
     rhi.SetContext(GetContextHandle());
 
+    // Window size have changed since last call of BeginFrame()
     if (renderWidth != screenRT->GetWidth() || renderHeight != screenRT->GetHeight()) {
         FreeScreenMapRT();
         FreeHdrMapRT();
@@ -789,10 +790,10 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     renderSystem.CmdScreenshot(0, 0, width, height, path);
     EndFrame();
 
-    BE_LOG(L"screenshot saved to \"%hs\"\n", path);
+    BE_LOG(L"Screenshot saved to \"%hs\"\n", path);
 }
 
-void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage) {
+void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage) {    
     static const char cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
 
     SceneView view;
@@ -816,6 +817,7 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
     viewAxis[4] = Angles(  0,   0, 0).ToMat3();
     viewAxis[5] = Angles(180,   0, 0).ToMat3();
 
+#if 1
     Image image;
     image.Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
     Texture *targetTexture = new Texture;
@@ -834,9 +836,9 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
         view.Update(&viewParms);
 
         BeginFrame();
-        
+
         renderWorld->RenderScene(&view);
-        
+
         EndFrame();
 
         screenRT->Blit(srcRect, dstRect, targetRT, RHI::ColorBlitMask, RHI::NearestBlitFilter);
@@ -855,6 +857,52 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
     SAFE_DELETE(targetTexture);
 
     RenderTarget::Delete(targetRT);
+#else
+    Texture *targetCubeTexture = new Texture;
+    targetCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    
+    RenderTarget *targetCubeRT = RenderTarget::Create(targetCubeTexture, nullptr, 0);
+
+    //Rect srcRect = Rect(0, 0, size, size);
+    //Rect dstRect = Rect(0, 0, size, size);
+
+    //srcRect.y = screenRT->GetHeight() - (srcRect.y + srcRect.h);
+
+    Image faceImages[6];
+
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        faceImages[faceIndex].Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
+
+        targetCubeRT->Begin(0, 0);
+
+        viewParms.axis = viewAxis[faceIndex];
+        view.Update(&viewParms);
+
+        BeginFrame();
+        
+        renderWorld->RenderScene(&view);
+        
+        EndFrame();
+
+        //screenRT->Blit(srcRect, dstRect, targetRT, RHI::ColorBlitMask, RHI::NearestBlitFilter);
+
+        rhi.ReadPixels(0, 0, size, size, Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
+
+        targetCubeRT->End();
+
+        //targetRT->ColorTexture()->Bind();
+        //targetRT->ColorTexture()->GetTexels2D(Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
+
+        faceImages[faceIndex].FlipX(); // Flip for environment image to cubemap face image
+        faceImages[faceIndex].FlipY(); // Flip upside down
+    }
+
+    envCubeImage.CreateCubeFrom6Faces(faceImages);
+
+    SAFE_DELETE(targetCubeTexture);
+
+    RenderTarget::Delete(targetCubeRT);
+#endif
 }
 
 void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size) {
@@ -866,7 +914,7 @@ void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, 
     envCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
     envCubeImage.WriteDDS(path);
 
-    BE_LOG(L"envshot saved to \"%hs\"\n", path);
+    BE_LOG(L"Environment cubemap snapshot saved to \"%hs\"\n", path);
 }
 
 void RenderContext::TakeDiffuseIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin) {
@@ -977,9 +1025,11 @@ void RenderContext::GenerateDiffuseIrradianceCubeImageSHConvolv(const Image &env
     image.Create2D(4, 4, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
     Texture *incidentCoeffTexture = new Texture;
     incidentCoeffTexture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    
     RenderTarget *incidentCoeffRT = RenderTarget::Create(incidentCoeffTexture, nullptr, 0);
 
     incidentCoeffRT->Begin();
+
     Rect prevViewportRect = rhi.GetViewport();
     rhi.SetViewport(Rect(0, 0, 4, 4));
     rhi.SetStateBits(RHI::ColorWrite);
@@ -1012,6 +1062,7 @@ void RenderContext::GenerateDiffuseIrradianceCubeImageSHConvolv(const Image &env
     //-------------------------------------------------------------------------------
     Texture *diffuseIrradianceCubeTexture = new Texture;
     diffuseIrradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    
     RenderTarget *irradianceCubeRT = RenderTarget::Create(diffuseIrradianceCubeTexture, nullptr, 0);
 
     Shader *genDiffuseCubeMapSHConvolv = shaderManager.GetShader("Shaders/GenDiffuseIrradianceCubeMapSHConvolv.shader");
@@ -1046,6 +1097,7 @@ void RenderContext::GenerateDiffuseIrradianceCubeImageSHConvolv(const Image &env
         rhi.ReadPixels(0, 0, size, size, Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
 
         rhi.SetViewport(prevViewportRect);
+
         irradianceCubeRT->End();
 
         //irradianceCubeRT->ColorTexture()->Bind();
@@ -1055,9 +1107,11 @@ void RenderContext::GenerateDiffuseIrradianceCubeImageSHConvolv(const Image &env
     irradianceCubeImage.CreateCubeFrom6Faces(faceImages);
 
     SAFE_DELETE(diffuseIrradianceCubeTexture);
+
     RenderTarget::Delete(irradianceCubeRT);
 
     SAFE_DELETE(incidentCoeffTexture);
+    
     RenderTarget::Delete(incidentCoeffRT);
 
     shaderManager.ReleaseShader(shader);
@@ -1073,6 +1127,7 @@ void RenderContext::GenerateDiffuseIrradianceCubeImage(const Image &envCubeImage
 
     Texture *irradianceCubeTexture = new Texture;
     irradianceCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    
     RenderTarget *irradianceCubeRT = RenderTarget::Create(irradianceCubeTexture, nullptr, 0);
 
     Image faceImages[6];
@@ -1081,6 +1136,7 @@ void RenderContext::GenerateDiffuseIrradianceCubeImage(const Image &envCubeImage
         faceImages[faceIndex].Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
 
         irradianceCubeRT->Begin(0, faceIndex);
+
         Rect prevViewportRect = rhi.GetViewport();
         rhi.SetViewport(Rect(0, 0, size, size));
         rhi.SetStateBits(RHI::ColorWrite);
@@ -1097,6 +1153,7 @@ void RenderContext::GenerateDiffuseIrradianceCubeImage(const Image &envCubeImage
         rhi.ReadPixels(0, 0, size, size, Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
 
         rhi.SetViewport(prevViewportRect);
+
         irradianceCubeRT->End();
 
         //irradianceCubeRT->ColorTexture()->Bind();
@@ -1107,6 +1164,7 @@ void RenderContext::GenerateDiffuseIrradianceCubeImage(const Image &envCubeImage
 
     SAFE_DELETE(irradianceCubeTexture);
     SAFE_DELETE(radianceCubeTexture);
+
     RenderTarget::Delete(irradianceCubeRT);
 
     shaderManager.ReleaseShader(shader);
@@ -1140,6 +1198,7 @@ void RenderContext::GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &en
             int mipSize = size >> mipLevel;
 
             prefilteredCubeRT->Begin(mipLevel, faceIndex);
+
             Rect prevViewportRect = rhi.GetViewport();
             rhi.SetViewport(Rect(0, 0, mipSize, mipSize));
             rhi.SetStateBits(RHI::ColorWrite);
@@ -1157,6 +1216,7 @@ void RenderContext::GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &en
             rhi.ReadPixels(0, 0, mipSize, mipSize, Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels(mipLevel));
 
             rhi.SetViewport(prevViewportRect);
+
             prefilteredCubeRT->End();
 
             //prefilteredCubeRT->ColorTexture()->Bind();
@@ -1170,6 +1230,7 @@ void RenderContext::GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &en
 
     SAFE_DELETE(radianceCubeTexture);
     SAFE_DELETE(prefilteredCubeTexture);
+
     RenderTarget::Delete(prefilteredCubeRT);
 
     shaderManager.ReleaseShader(shader);
@@ -1187,6 +1248,7 @@ void RenderContext::GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage
 
     Texture *prefilteredCubeTexture = new Texture;
     prefilteredCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    
     RenderTarget *prefilteredCubeRT = RenderTarget::Create(prefilteredCubeTexture, nullptr, 0);
 
     Image faceImages[6];
@@ -1200,6 +1262,7 @@ void RenderContext::GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage
             float roughness = (float)mipLevel / (numMipLevels - 1);
             
             prefilteredCubeRT->Begin(mipLevel, faceIndex);
+
             Rect prevViewportRect = rhi.GetViewport();
             rhi.SetViewport(Rect(0, 0, mipSize, mipSize));
             rhi.SetStateBits(RHI::ColorWrite);
@@ -1217,6 +1280,7 @@ void RenderContext::GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage
             rhi.ReadPixels(0, 0, mipSize, mipSize, Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels(mipLevel));
 
             rhi.SetViewport(prevViewportRect);
+
             prefilteredCubeRT->End();
 
             //prefilteredCubeRT->ColorTexture()->Bind();
@@ -1228,6 +1292,7 @@ void RenderContext::GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage
 
     SAFE_DELETE(radianceCubeTexture);
     SAFE_DELETE(prefilteredCubeTexture);
+
     RenderTarget::Delete(prefilteredCubeRT);
 
     shaderManager.ReleaseShader(shader);
@@ -1239,10 +1304,12 @@ void RenderContext::GenerateGGXIntegrationLUTImage(int size, Image &integrationI
     Shader *shader = genGGXIntegrationLUTShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *integrationLutTexture = new Texture;
-    integrationLutTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RG_16F_16F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    integrationLutTexture->CreateEmpty(RHI::Texture2D, size, size, 1, 1, 1, Image::RG_16F_16F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    
     RenderTarget *integrationLutRT = RenderTarget::Create(integrationLutTexture, nullptr, 0);
 
     integrationLutRT->Begin(0, 0);
+
     Rect prevViewportRect = rhi.GetViewport();
     rhi.SetViewport(Rect(0, 0, size, size));
     rhi.SetStateBits(RHI::ColorWrite);
@@ -1257,9 +1324,11 @@ void RenderContext::GenerateGGXIntegrationLUTImage(int size, Image &integrationI
     rhi.ReadPixels(0, 0, size, size, Image::RG_16F_16F, integrationImage.GetPixels());
 
     rhi.SetViewport(prevViewportRect);
+
     integrationLutRT->End();
 
     SAFE_DELETE(integrationLutTexture);
+
     RenderTarget::Delete(integrationLutRT);
 
     shaderManager.ReleaseShader(shader);

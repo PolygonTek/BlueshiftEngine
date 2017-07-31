@@ -1032,10 +1032,10 @@ static void RB_DrawDebugHOMap() {
 static const void *RB_ExecuteSwapBuffers(const void *data) {
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
 
-    // 남아있는 폴리곤들을 마저 그린다
+    // Draw redundant surfaces
     backEnd.rbsurf.Flush();
 
-    backEnd.rbsurf.EndFrame();    
+    backEnd.rbsurf.EndFrame();
 
     rhi.SetViewport(backEnd.screenRect);
     rhi.SetScissor(backEnd.screenRect);
