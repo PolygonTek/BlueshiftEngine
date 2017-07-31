@@ -19,13 +19,13 @@ in vec2 v2f_tex;
     in vec4 v2f_lightProjection;
 #endif
 
-#if AMBIENT_LIGHTING
+#if INDIRECT_LIGHTING
     in vec4 v2f_toWorldAndPackedWorldPosS;
     in vec4 v2f_toWorldAndPackedWorldPosT;
     in vec4 v2f_toWorldAndPackedWorldPosR;
 #endif
 
-#if AMBIENT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE == 1
+#if INDIRECT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE != 0
     in vec3 v2f_viewVector;
 #endif
 
@@ -55,7 +55,7 @@ uniform sampler2D heightMap;
 uniform float heightScale;
 
 uniform sampler2D occlusionMap;
-uniform float occlusionScale;
+uniform float occlusionStrength;
 
 uniform sampler2D emissionMap;
 uniform vec3 emissionColor;
@@ -76,12 +76,6 @@ uniform bool useLightCube;
 uniform bool useShadowMap;
 
 uniform samplerCube envCubeMap;
-uniform samplerCube diffuseIrradianceCubeMap0;
-uniform samplerCube diffuseIrradianceCubeMap1;
-uniform samplerCube specularPrefilteredCubeMap0;
-uniform samplerCube specularPrefilteredCubeMap1;
-uniform sampler2D integrationLUTMap;
-uniform float ambientLerp;
 uniform float ambientScale;
 
 void main() {
@@ -90,19 +84,19 @@ void main() {
     A = pow(A, lightFallOffExponent);
 
     vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * A;
-    
     if (Cl == vec3(0.0)) {
         discard;
     }
 #endif
 
-#if AMBIENT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE == 1
+#if DIRECT_LIGHTING || INDIRECT_LIGHTING || _PARALLAX_SOURCE != 0
     vec3 V = normalize(v2f_viewVector);
 #endif
 
 #if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0
-    #if _PARALLAX_SOURCE == 1
-        vec2 baseTc = offsetTexcoord(heightMap, v2f_tex, V, heightScale * 0.1);
+    #if _PARALLAX_SOURCE != 0
+        float h = tex2D(heightMap, v2f_tex).x * 2.0 - 1.0;
+        vec2 baseTc = offsetTexcoord(h, v2f_tex, V, heightScale * 0.1);
     #else
         vec2 baseTc = v2f_tex;
     #endif
@@ -120,7 +114,7 @@ void main() {
     }
 #endif
 
-#if AMBIENT_LIGHTING || DIRECT_LIGHTING
+#if DIRECT_LIGHTING || INDIRECT_LIGHTING
     #if _NORMAL_SOURCE == 0
         vec3 N = normalize(v2f_normal);
     #elif _NORMAL_SOURCE == 1
@@ -175,7 +169,7 @@ void main() {
 
     vec3 C = vec3(0.0);
 
-#if (AMBIENT_LIGHTING && DIRECT_LIGHTING) || DIRECT_LIGHTING == 0
+#if (DIRECT_LIGHTING || INDIRECT_LIGHTING) || DIRECT_LIGHTING == 0
     #if _EMISSION_SOURCE == 1
         C += emissionColor * emissionScale;
     #elif _EMISSION_SOURCE == 2
@@ -183,13 +177,13 @@ void main() {
     #endif
 #endif
 
-#if AMBIENT_LIGHTING
+#if INDIRECT_LIGHTING
     vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
     vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
     vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
     //vec3 toWorldMatrixR = normalize(cross(toWorldMatrixS, toWorldMatrixT) * v2f_toWorldT.w);
 
-    #ifdef IBL
+    #ifdef BRUTE_FORCE_IBL
         vec3 worldN;
         // Convert coordinates from z-up to GL axis
         worldN.z = dot(toWorldMatrixS, N);
@@ -216,11 +210,6 @@ void main() {
         worldN.x = dot(toWorldMatrixT, N);
         worldN.y = dot(toWorldMatrixR, N);
 
-        vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
-        //vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
-
-        vec3 Cd = albedo.rgb * d1;//mix(d1, d2, ambientLerp);
-
         vec3 S = reflect(-V, N);
         vec3 worldS;
         // Convert coordinates from z-up to GL axis
@@ -245,47 +234,12 @@ void main() {
         float NdotV = max(dot(N, V), 0.0);
 
         #ifdef STANDARD_METALLIC_LIGHTING
-            sampleVec.w = roughness * 7.0; // FIXME: 7.0 == maximum mip level
-
-            vec3 s1 = texCUBElod(specularPrefilteredCubeMap0, sampleVec).rgb;
-            //vec3 s2 = texCUBElod(specularPrefilteredCubeMap1, sampleVec).rgb;
-
-            vec2 envBRDF = tex2D(integrationLUTMap, vec2(NdotV, roughness)).xy;
-
-            vec3 F0 = mix(vec3(0.04), albedo.rgb, metallic.r);
-            vec3 F = F_SchlickRoughness(F0, roughness, NdotV);
-            vec3 Cs = s1 * (F * envBRDF.x + envBRDF.y);
-
-            vec3 diffuseScale = (vec3(1.0) - F) * (1.0 - metallic.r);
+            C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, albedo.rgb * (1.0 - metallic.r), mix(vec3(0.04), albedo.rgb, metallic.r), roughness);
         #elif defined(STANDARD_SPECULAR_LIGHTING)
-            sampleVec.w = roughness * 7.0; // max mip levels = 7
-
-            vec3 s1 = texCUBElod(specularPrefilteredCubeMap0, sampleVec).rgb;
-            //vec3 s2 = texCUBElod(specularPrefilteredCubeMap1, sampleVec).rgb;
-
-            vec2 envBRDF = tex2D(integrationLUTMap, vec2(NdotV, roughness)).xy;
-
-            vec3 F = F_SchlickRoughness(specular.rgb, roughness, NdotV);
-            vec3 Cs = s1 * (F * envBRDF.x + envBRDF.y);
-
-            vec3 diffuseScale = (vec3(1.0) - F);
+            C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, albedo.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
-            // (log2(specularPower) - 11) / (-11/8)
-            float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
-
-            sampleVec.w = specularMipLevel;
-
-            vec3 s1 = texCUBElod(specularPrefilteredCubeMap0, sampleVec).rgb;
-            //vec3 s2 = texCUBElod(specularPrefilteredCubeMap1, sampleVec).rgb;
-
-            vec3 F = F_SchlickRoughness(specular.rgb, sqrt(1.0 - glossiness), NdotV);
-            vec3 Cs = F * s1;
-
-            vec3 diffuseScale = (vec3(1.0) - F);
-        #endif 
-
-        C += Cd * diffuseScale + Cs;
+            C += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, albedo.rgb, specular.rgb, roughness);
+        #endif
     #endif
 #else
     C += albedo.rgb * ambientScale;
@@ -307,11 +261,11 @@ void main() {
     #endif
 
     #ifdef STANDARD_METALLIC_LIGHTING
-        vec3 lightingColor = litStandard(L, N, V, albedo.rgb * (1.0 - metallic.r), mix(vec3(0.04), albedo.rgb, metallic.r), roughness);
+        vec3 lightingColor = DirectLit_Standard(L, N, V, albedo.rgb * (1.0 - metallic.r), mix(vec3(0.04), albedo.rgb, metallic.r), roughness);
     #elif defined(STANDARD_SPECULAR_LIGHTING)
-        vec3 lightingColor = litStandard(L, N, V, albedo.rgb, specular.rgb, roughness);
+        vec3 lightingColor = DirectLit_Standard(L, N, V, albedo.rgb, specular.rgb, roughness);
     #elif defined(LEGACY_PHONG_LIGHTING)
-        vec3 lightingColor = litPhongWithFresnel(L, N, V, albedo.rgb, specular.rgb, specularPower);
+        vec3 lightingColor = DirectLit_PhongFresnel(L, N, V, albedo.rgb, specular.rgb, specularPower);
     #endif
 
     #if defined(_SUB_SURFACE_SCATTERING)
@@ -323,9 +277,14 @@ void main() {
     C += Cl * lightingColor * shadowLighting;
 #endif
 
-#if _OCCLUSION_SOURCE == 1
-    float occ = tex2D(occlusionMap, baseTc).r;
-    C *= 1.0 - occlusionScale + occ * occlusionScale;
+#if _OCCLUSION_SOURCE != 0
+    #if _OCCLUSION_SOURCE == 1
+        float occ = tex2D(occlusionMap, baseTc).r;
+    #elif _OCCLUSION_SOURCE == 2
+        float occ = metallic.b;
+    #endif
+
+    C *= (1.0 - occlusionStrength) + occ * occlusionStrength;
 #endif
 
     vec4 outputColor = v2f_color * vec4(C, albedo.w);

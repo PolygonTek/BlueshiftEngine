@@ -21,13 +21,13 @@ out vec2 v2f_tex;
     out vec4 v2f_lightProjection;
 #endif
 
-#if AMBIENT_LIGHTING
+#if INDIRECT_LIGHTING
     out vec4 v2f_toWorldAndPackedWorldPosS;
     out vec4 v2f_toWorldAndPackedWorldPosT;
     out vec4 v2f_toWorldAndPackedWorldPosR;
 #endif
 
-#if AMBIENT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE == 1
+#if INDIRECT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE != 0
     out vec3 v2f_viewVector;
 #endif
 
@@ -107,7 +107,7 @@ void main() {
     #endif
 #endif
 
-#if AMBIENT_LIGHTING || DIRECT_LIGHTING
+#if INDIRECT_LIGHTING || DIRECT_LIGHTING
     vec4 worldVertex;
     worldVertex.x = dot(worldMatrixS, localVertex);
     worldVertex.y = dot(worldMatrixT, localVertex);
@@ -132,7 +132,7 @@ void main() {
 #endif
 
 #if _NORMAL_SOURCE == 0
-    #if DIRECT_LIGHTING || AMBIENT_LIGHTING || _PARALLAX_SOURCE == 1
+    #if DIRECT_LIGHTING || INDIRECT_LIGHTING || _PARALLAX_SOURCE != 0
         v2f_normal = localNormal;
 
         v2f_viewVector = localViewOrigin.xyz - localVertex.xyz;
@@ -142,7 +142,7 @@ void main() {
         v2f_lightVector = L;
     #endif
     
-    #if AMBIENT_LIGHTING
+    #if INDIRECT_LIGHTING
         v2f_toWorldAndPackedWorldPosS.xyz = worldMatrixS.xyz;
         v2f_toWorldAndPackedWorldPosT.xyz = worldMatrixT.xyz;
         v2f_toWorldAndPackedWorldPosR.xyz = worldMatrixR.xyz;
@@ -152,7 +152,7 @@ void main() {
         v2f_toWorldAndPackedWorldPosR.w = worldVertex.z;
     #endif
 #else
-    #if DIRECT_LIGHTING || AMBIENT_LIGHTING || _PARALLAX_SOURCE == 1
+    #if DIRECT_LIGHTING || INDIRECT_LIGHTING || _PARALLAX_SOURCE != 0
         mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
 
         v2f_viewVector = (localViewOrigin.xyz - localVertex.xyz) * TBN;
@@ -162,7 +162,7 @@ void main() {
         v2f_lightVector = L * TBN;
     #endif
     
-    #if AMBIENT_LIGHTING
+    #if INDIRECT_LIGHTING
         v2f_toWorldAndPackedWorldPosS.xyz = worldMatrixS.xyz * TBN;
         v2f_toWorldAndPackedWorldPosT.xyz = worldMatrixT.xyz * TBN;
         v2f_toWorldAndPackedWorldPosR.xyz = worldMatrixR.xyz * TBN;

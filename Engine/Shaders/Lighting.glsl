@@ -103,23 +103,23 @@ float G_SchlickGGX(float NdotV, float NdotL, float k) {
 //---------------------------------------------------
 
 // Fresnel using Schlick's approximation
-vec3 F_Schlick(vec3 F0, float VdotH) {
-    return F0 + (vec3(1.0) - F0) * pow5(1.0 - VdotH);
+vec3 F_Schlick(vec3 F0, float NdotV) {
+    return F0 + (vec3(1.0) - F0) * pow5(1.0 - NdotV);
 }
 
 // Fresnel using Schlick's approximation with spherical Gaussian approximation
-vec3 F_SchlickSG(vec3 F0, float VdotH) {
-    return F0 + (vec3(1.0) - F0) * exp2((-5.55473 * VdotH - 6.98316) * VdotH);
+vec3 F_SchlickSG(vec3 F0, float NdotV) {
+    return F0 + (vec3(1.0) - F0) * exp2((-5.55473 * NdotV - 6.98316) * NdotV);
 }
 
 // Fresnel injected roughness term
-vec3 F_SchlickRoughness(vec3 F0, float roughness, float VdotH) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - VdotH);
+vec3 F_SchlickRoughness(vec3 F0, float roughness, float NdotV) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - NdotV);
 }
 
 //---------------------------------------------------
 
-vec3 litStandard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roughness) {
+vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roughness) {
     vec3 H = normalize(L + V);
 
     float NdotL = max(dot(N, L), 0.0);
@@ -187,7 +187,7 @@ uniform float wrappedDiffuse;
 #define USE_BLINN_PHONG
 
 // Phong/Blinn-Phong lighting
-vec3 litPhong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
+vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
 
@@ -225,7 +225,7 @@ vec3 litPhong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specular
 }
 
 // Phong/Blinn-Phong lighting with Fresnel
-vec3 litPhongWithFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
+vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
 #if defined(_WRAPPED_DIFFUSE)
     float NdotL = dot(N, L);
 
@@ -266,6 +266,57 @@ vec3 litPhongWithFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, flo
 #else
     return Cd;
 #endif
+}
+
+uniform samplerCube diffuseIrradianceCubeMap0;
+uniform samplerCube diffuseIrradianceCubeMap1;
+uniform samplerCube specularPrefilteredCubeMap0;
+uniform samplerCube specularPrefilteredCubeMap1;
+uniform sampler2D integrationLUTMap;
+uniform float ambientLerp;
+
+vec3 IndirectLit_Standard(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 F0, float roughness) {
+    vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
+    //vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
+
+    vec3 Cd = albedo * d1;//mix(d1, d2, ambientLerp);
+
+    vec4 sampleVec;
+    sampleVec.xyz = worldS;
+    sampleVec.w = roughness * 7.0; // FIXME: 7.0 == maximum mip level
+
+    vec3 s1 = texCUBElod(specularPrefilteredCubeMap0, sampleVec).rgb;
+    //vec3 s2 = texCUBElod(specularPrefilteredCubeMap1, sampleVec).rgb;
+
+    vec2 envBRDF = tex2D(integrationLUTMap, vec2(NdotV, roughness)).xy;
+
+    vec3 F = F_SchlickRoughness(F0, roughness, NdotV);
+    vec3 Cs = (F * envBRDF.x + envBRDF.y) * s1;
+
+    return Cd * (vec3(1.0) - F) + Cs;
+}
+
+vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 specular, float specularPower, float roughness) {
+    vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
+    //vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
+
+    vec3 Cd = albedo * d1;//mix(d1, d2, ambientLerp);
+
+    // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
+    // (log2(specularPower) - 11) / (-11/8)
+    float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
+
+    vec4 sampleVec;
+    sampleVec.xyz = worldS;
+    sampleVec.w = specularMipLevel;
+
+    vec3 s1 = texCUBElod(specularPrefilteredCubeMap0, sampleVec).rgb;
+    //vec3 s2 = texCUBElod(specularPrefilteredCubeMap1, sampleVec).rgb;
+
+    vec3 F = F_SchlickRoughness(specular, roughness, NdotV);
+    vec3 Cs = F * s1;
+
+    return Cd * (vec3(1.0) - F) + Cs;
 }
 
 #endif

@@ -63,8 +63,7 @@ vec3 getNormal(sampler2D normalMap, in vec2 tc) {
     return n;
 }
 
-vec2 offsetTexcoord(sampler2D heightMap, in vec2 st, in vec3 viewDir, in float heightScale) {
-    float h = tex2D(heightMap, st).x * 2.0 - 1.0;
+vec2 offsetTexcoord(in float h, in vec2 st, in vec3 viewDir, in float heightScale) {
     return st + h * heightScale * (viewDir.xy / (viewDir.z));
 }
 

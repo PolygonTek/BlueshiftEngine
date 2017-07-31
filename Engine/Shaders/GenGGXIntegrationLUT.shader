@@ -37,6 +37,7 @@ shader "GenGGXIntegrationLUT" {
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
                     vec3 H = importanceSampleGGX(vec2(x, y), roughness, N);
+                    //vec3 H = importanceSampleBeckmann(vec2(x, y), roughness, N);
                     vec3 L = normalize(2.0 * dot(V, H) * H - V);
 
                     float NdotL = max(L.z, 0.0);
