@@ -9,7 +9,7 @@ shader "StandardSpecDirectLit" {
         _SPECULAR_SOURCE("Specular") : enum "None;Color;Texture" = "0" (shaderDefine)
         specularColor("Specular Color") : color3 = "1 1 1"
         specularMap("Specular Map") : object TextureAsset = "_whiteTexture"
-        _GLOSS_SOURCE("Gloss") : enum "Scale;From Albedo Alpha;From Specular Alpha;Texture(R)" = "0" (shaderDefine)
+        _GLOSS_SOURCE("Gloss") : enum "Scale;From Albedo Alpha;From Specular Alpha;Texture (R)" = "0" (shaderDefine)
         glossMap("Gloss Map") : object TextureAsset = "_whiteTexture"
         glossScale("Gloss Scale") : float range 0 1.0 0.001 = "1.0"
         _NORMAL_SOURCE("Normal") : enum "Vertex;Texture;Texture + Detail Texture" = "0" (shaderDefine)

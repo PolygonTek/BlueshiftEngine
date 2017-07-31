@@ -5,7 +5,7 @@ shader "Standard" {
         albedoMap("Albedo Map") : object TextureAsset = "_whiteTexture"
         _WRAPPED_DIFFUSE("Wrapped Diffuse") : bool = "false" (shaderDefine)
         wrappedDiffuse("Wrapped") : float range 0 1.0 0.001 = "0.5"
-        _METALLIC_SOURCE("Metallic") : enum "Scale;Texture(R)" = "0" (shaderDefine)
+        _METALLIC_SOURCE("Metallic") : enum "Scale;Texture (R)" = "0" (shaderDefine)
         metallicMap("Metallic Map") : object TextureAsset = "_whiteTexture"
         metallicScale("Metallic Scale") : float range 0 1.0 0.01 = "1.0"
         _ROUGHNESS_SOURCE("Roughness") : enum "Scale;From Metallic Map (G);Texture (R)" = "0" (shaderDefine)
