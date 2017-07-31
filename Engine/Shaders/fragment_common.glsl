@@ -8,7 +8,7 @@ $include "logluv.glsl"
 #define INV_PI 0.31830988618379067153776752674503
 #define INV_TWO_PI 0.15915494309189533576888376337251
 
-vec3 toLinear(vec3 v) { 
+vec3 toLinear(vec3 v) {
     return pow(v, vec3(2.2)); 
 }
 

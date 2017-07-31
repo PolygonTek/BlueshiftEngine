@@ -53,25 +53,26 @@ float litDiffuseOrenNayar(in float NdotL, in float NdotV, in float LdotV, in flo
 float D_Blinn(float NdotH, float m) {
     float m2 = m * m;
     float n = 2.0 / m2 - 2.0;
+    n = max(n, 1e-4); // prevent possible zero
     return pow(NdotH, n) * (n + 2.0) * INV_TWO_PI;
 }
 
 float D_Beckmann(float NdotH, float m) {
     float m2 = m * m;
     float NdotH2 = NdotH * NdotH;
-    return exp((NdotH2 - 1.0) / (m2 * NdotH2)) / (PI * m2 * NdotH2 * NdotH2);
+    return exp((NdotH2 - 1.0) / (m2 * NdotH2)) * INV_PI / (m2 * NdotH2 * NdotH2);
 }
 
 // Trowbridge-Reitz aka GGX
 float D_GGX(float NdotH, float m) {
     float m2 = m * m;
     float denom = NdotH * NdotH * (m2 - 1.0) + 1.0;
-    return m2 / (PI * denom * denom);
+    return m2 * INV_PI / (denom * denom + 1e-7);
 }
 
 float D_GGXAniso(float NdotH, float XdotH, float YdotH, float mx, float my) {
     float denom = XdotH * XdotH / (mx * mx) + YdotH * YdotH / (my * my) + NdotH * NdotH;
-    return 1.0 / (PI * mx * my * denom * denom);
+    return INV_PI * mx * my * denom * denom;
 }
 
 //---------------------------------------------------
@@ -133,7 +134,7 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
 #if PBR_DIFFUSE == 0
     vec3 Cd = albedo * litDiffuseLambert(NdotL);
 #elif PBR_DIFFUSE == 1
-    vec3 Cd = albedo * litDiffuseBurley(NdotL, NdotV, VdotH, roughness);
+    vec3 Cd = albedo * litDiffuseBurley(NdotL, NdotV, VdotH, sqrt(roughness));
 #elif PBR_DIFFUSE == 2
     float LdotV = max(dot(L, V), 0);
     vec3 Cd = albedo * litDiffuseOrenNayar(NdotL, NdotV, LdotV, roughness);
@@ -168,7 +169,7 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
 #endif
 
     // Specular Fresnel term
-    vec3 F = F_SchlickSG(F0, VdotH); 
+    vec3 F = F_SchlickSG(F0, VdotH);
 
     // Microfacets specular BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
     vec3 BRDFspec = D * G * F * 0.25;

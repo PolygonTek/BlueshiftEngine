@@ -3,8 +3,6 @@ shader "Standard" {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
         albedoColor("Albedo Color") : color3 = "1 1 1"
         albedoMap("Albedo Map") : object TextureAsset = "_whiteTexture"
-        _WRAPPED_DIFFUSE("Wrapped Diffuse") : bool = "false" (shaderDefine)
-        wrappedDiffuse("Wrapped") : float range 0 1.0 0.001 = "0.5"
         _METALLIC_SOURCE("Metallic") : enum "Scale;Texture (R)" = "0" (shaderDefine)
         metallicMap("Metallic Map") : object TextureAsset = "_whiteTexture"
         metallicScale("Metallic Scale") : float range 0 1.0 0.01 = "1.0"

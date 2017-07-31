@@ -4,8 +4,6 @@ shader "StandardSpecAmbientLitDirectLit" {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
         albedoColor("Albedo Color") : color3 = "1 1 1"
         albedoMap("Albedo Map") : object TextureAsset = "_whiteTexture"
-        _WRAPPED_DIFFUSE("Wrapped Diffuse") : bool = "false" (shaderDefine)
-        wrappedDiffuse("Wrapped") : float range 0 1.0 0.001 = "0.5"
         _SPECULAR_SOURCE("Specular") : enum "None;Color;Texture" = "0" (shaderDefine)
         specularColor("Specular Color") : color3 = "1 1 1"
         specularMap("Specular Map") : object TextureAsset = "_whiteTexture"
