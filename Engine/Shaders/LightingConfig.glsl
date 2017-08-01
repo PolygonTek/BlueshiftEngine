@@ -1,0 +1,10 @@
+#ifndef LIGHTING_CONFIG_INCLUDED
+#define LIGHTING_CONFIG_INCLUDED
+
+#define PBR_DIFFUSE 1
+#define PBR_SPEC_D 2
+#define PBR_SPEC_G 3
+
+#define USE_BLINN_PHONG
+
+#endif

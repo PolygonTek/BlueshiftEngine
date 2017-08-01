@@ -1,9 +1,7 @@
 #ifndef LIGHTING_INCLUDED
 #define LIGHTING_INCLUDED
 
-#define PBR_DIFFUSE 1
-#define PBR_SPEC_D 2
-#define PBR_SPEC_G 3
+$include "LightingConfig.glsl"
 
 float pow4(float f) {
     float f2 = f * f;
@@ -184,8 +182,6 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
 }
 
 uniform float wrappedDiffuse;
-
-#define USE_BLINN_PHONG
 
 // Phong/Blinn-Phong lighting
 vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
