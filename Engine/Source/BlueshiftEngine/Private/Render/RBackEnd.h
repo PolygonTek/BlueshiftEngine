@@ -190,8 +190,8 @@ struct BackEnd {
 
     Texture *           envCubeTexture;
     Texture *           integrationLUTTexture;
-    Texture *           diffuseIrradianceCubeTexture;
-    Texture *           specularPrefilteredCubeTexture;
+    Texture *           irradianceEnvCubeTexture;
+    Texture *           prefilteredEnvCubeTexture;
 
     Texture *           homCullingOutputTexture;
     RenderTarget *      homCullingOutputRT;

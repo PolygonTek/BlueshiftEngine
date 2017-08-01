@@ -1,4 +1,4 @@
-shader "GenGGXSpecularPrefilteredCubeMap" {
+shader "GenGGXSpecularPrefilteredEnvCubeMap" {
     glsl_vp {
         in vec4 in_position : POSITION;
         in vec2 in_st : TEXCOORD0;

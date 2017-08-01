@@ -154,23 +154,23 @@ public:
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
     void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size = 256);
-    void                    TakeDiffuseIrradianceShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
-    void                    TakeSpecularPrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
+    void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
+    void                    TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
 
-    void                    WriteGGXIntegrationLUT(const char *filename, int size) const;
+    void                    WriteBRDFIntegrationLUT(const char *filename, int size) const;
 
     void                    CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage);
 
-                            // Generate diffuse irradiance cubemap using SH convolution method
-    void                    GenerateDiffuseIrradianceCubeImageSHConvolv(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+                            // Generate irradiance environment cubemap using SH convolution method
+    void                    GenerateIrradianceEnvCubeImageSHConvolv(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const;
 
-                            // Generate diffuse irradiance cubemap
-    void                    GenerateDiffuseIrradianceCubeImage(const Image &envCubeImage, int size, Image &irradianceCubeImage) const;
+                            // Generate irradiance environment cubemap
+    void                    GenerateIrradianceEnvCubeImage(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const;
 
-                            // Generate Phong specular prefiltered cubemap
+                            // Generate Phong specular prefiltered environment cubemap
     void                    GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const;
 
-                            // Generate GGX specular prefiltered cubemap
+                            // Generate GGX specular prefiltered environment cubemap
     void                    GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const;
 
                             // Generate GGX BRDF integration 2D LUT

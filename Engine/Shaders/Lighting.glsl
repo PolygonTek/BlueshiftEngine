@@ -185,14 +185,12 @@ uniform float wrappedDiffuse;
 
 // Phong/Blinn-Phong lighting
 vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
+    float NdotL = dot(N, L);
+
 #if defined(_WRAPPED_DIFFUSE)
-    float NdotL = dot(N, L);
-
-    float w2 = 1.0 + wrappedDiffuse;
-    vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (w2 * w2);
+    float oneMinusW = 1.0 + wrappedDiffuse;
+    vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (oneMinusW * oneMinusW);
 #else // Lambertian
-    float NdotL = dot(N, L);
-
     vec3 Cd = albedo.rgb * max(NdotL, 0.0);
 #endif
 
@@ -223,14 +221,12 @@ vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float s
 
 // Phong/Blinn-Phong lighting with Fresnel
 vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
+    float NdotL = dot(N, L);
+
 #if defined(_WRAPPED_DIFFUSE)
-    float NdotL = dot(N, L);
-
-    float w2 = 1.0 + wrappedDiffuse;
-    vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (w2 * w2);
+    float oneMinusW = 1.0 + wrappedDiffuse;
+    vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (oneMinusW * oneMinusW);
 #else // Lambertian
-    float NdotL = dot(N, L);
-
     vec3 Cd = albedo.rgb * max(NdotL, 0.0);
 #endif
 
@@ -265,16 +261,24 @@ vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, 
 #endif
 }
 
-uniform samplerCube diffuseIrradianceCubeMap0;
-uniform samplerCube diffuseIrradianceCubeMap1;
-uniform samplerCube specularPrefilteredCubeMap0;
-uniform samplerCube specularPrefilteredCubeMap1;
+uniform samplerCube irradianceEnvCubeMap0;
+uniform samplerCube prefilteredEnvCubeMap0;
+uniform vec3 probePosition0;
+uniform vec3 probeMins0;
+uniform vec3 probeMaxs0;
+
+uniform samplerCube irradianceEnvCubeMap1;
+uniform samplerCube prefilteredEnvCubeMap1;
+uniform vec3 probePosition1;
+uniform vec3 probeMins1;
+uniform vec3 probeMaxs1;
+
 uniform sampler2D integrationLUTMap;
 uniform float ambientLerp;
 
 vec3 IndirectLit_Standard(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 F0, float roughness) {
-    vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
-    //vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
+    vec3 d1 = texCUBE(irradianceEnvCubeMap0, worldN).rgb;
+    //vec3 d2 = texCUBE(irradianceEnvCubeMap1, worldN).rgb;
 
     vec3 Cd = albedo * d1;//mix(d1, d2, ambientLerp);
 
@@ -282,8 +286,8 @@ vec3 IndirectLit_Standard(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, ve
     sampleVec.xyz = worldS;
     sampleVec.w = roughness * 7.0; // FIXME: 7.0 == maximum mip level
 
-    vec3 s1 = texCUBElod(specularPrefilteredCubeMap0, sampleVec).rgb;
-    //vec3 s2 = texCUBElod(specularPrefilteredCubeMap1, sampleVec).rgb;
+    vec3 s1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
+    //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
 
     vec2 envBRDF = tex2D(integrationLUTMap, vec2(NdotV, roughness)).xy;
 
@@ -294,8 +298,8 @@ vec3 IndirectLit_Standard(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, ve
 }
 
 vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 specular, float specularPower, float roughness) {
-    vec3 d1 = texCUBE(diffuseIrradianceCubeMap0, worldN).rgb;
-    //vec3 d2 = texCUBE(diffuseIrradianceCubeMap1, worldN).rgb;
+    vec3 d1 = texCUBE(irradianceEnvCubeMap0, worldN).rgb;
+    //vec3 d2 = texCUBE(irradianceEnvCubeMap1, worldN).rgb;
 
     vec3 Cd = albedo * d1;//mix(d1, d2, ambientLerp);
 
@@ -307,8 +311,8 @@ vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo
     sampleVec.xyz = worldS;
     sampleVec.w = specularMipLevel;
 
-    vec3 s1 = texCUBElod(specularPrefilteredCubeMap0, sampleVec).rgb;
-    //vec3 s2 = texCUBElod(specularPrefilteredCubeMap1, sampleVec).rgb;
+    vec3 s1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
+    //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
 
     vec3 F = F_SchlickRoughness(specular, roughness, NdotV);
     vec3 Cs = F * s1;

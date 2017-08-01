@@ -508,10 +508,10 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
     // TODO:
     shader->SetTexture("envCubeMap", backEnd.envCubeTexture);
     shader->SetTexture("integrationLUTMap", backEnd.integrationLUTTexture);
-    shader->SetTexture("diffuseIrradianceCubeMap0", backEnd.diffuseIrradianceCubeTexture);
-    shader->SetTexture("diffuseIrradianceCubeMap1", backEnd.diffuseIrradianceCubeTexture);
-    shader->SetTexture("specularPrefilteredCubeMap0", backEnd.specularPrefilteredCubeTexture);
-    shader->SetTexture("specularPrefilteredCubeMap1", backEnd.specularPrefilteredCubeTexture);
+    shader->SetTexture("irradianceEnvCubeMap0", backEnd.irradianceEnvCubeTexture);
+    shader->SetTexture("irradianceEnvCubeMap1", backEnd.irradianceEnvCubeTexture);
+    shader->SetTexture("prefilteredEnvCubeMap0", backEnd.prefilteredEnvCubeTexture);
+    shader->SetTexture("prefilteredEnvCubeMap1", backEnd.prefilteredEnvCubeTexture);
     shader->SetConstant1f("ambientLerp", 0.0f);
 
     // view vector: world -> to mesh coordinates
@@ -663,10 +663,10 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float am
     // TODO:
     shader->SetTexture("envCubeMap", backEnd.envCubeTexture);
     shader->SetTexture("integrationLUTMap", backEnd.integrationLUTTexture);
-    shader->SetTexture("diffuseIrradianceCubeMap0", backEnd.diffuseIrradianceCubeTexture);
-    shader->SetTexture("diffuseIrradianceCubeMap1", backEnd.diffuseIrradianceCubeTexture);
-    shader->SetTexture("specularPrefilteredCubeMap0", backEnd.specularPrefilteredCubeTexture);
-    shader->SetTexture("specularPrefilteredCubeMap1", backEnd.specularPrefilteredCubeTexture);
+    shader->SetTexture("irradianceEnvCubeMap0", backEnd.irradianceEnvCubeTexture);
+    shader->SetTexture("irradianceEnvCubeMap1", backEnd.irradianceEnvCubeTexture);
+    shader->SetTexture("prefilteredEnvCubeMap0", backEnd.prefilteredEnvCubeTexture);
+    shader->SetTexture("prefilteredEnvCubeMap1", backEnd.prefilteredEnvCubeTexture);
     shader->SetConstant1f("ambientLerp", 0.0f);
 
     SetupLightingShader(mtrlPass, shader, useShadowMap);

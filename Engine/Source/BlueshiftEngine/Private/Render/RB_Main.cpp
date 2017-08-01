@@ -85,11 +85,11 @@ void RB_Init() {
     backEnd.envCubeTexture = textureManager.AllocTexture("envCubeMap");
     backEnd.envCubeTexture->Load("env.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
-    backEnd.diffuseIrradianceCubeTexture = textureManager.AllocTexture("diffuseIrradianceCubeMap");
-    backEnd.diffuseIrradianceCubeTexture->Load("irr_diffuse.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    backEnd.irradianceEnvCubeTexture = textureManager.AllocTexture("irradianceEnvCubeMap");
+    backEnd.irradianceEnvCubeTexture->Load("iem.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
-    backEnd.specularPrefilteredCubeTexture = textureManager.AllocTexture("specularPrefilteredCubeMap");
-    backEnd.specularPrefilteredCubeTexture->Load("irr_specular.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
+    backEnd.prefilteredEnvCubeTexture = textureManager.AllocTexture("prefilteredEnvCubeMap");
+    backEnd.prefilteredEnvCubeTexture->Load("pem.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
 
     if (r_HOM.GetBool()) {
         // TODO: create one for each context
@@ -105,7 +105,7 @@ void RB_Init() {
 void RB_Shutdown() {
     backEnd.initialized = false;
 
-    //Texture::DestroyInstanceImmediate(backEnd.diffuseIrradianceCubeTexture);
+    //Texture::DestroyInstanceImmediate(backEnd.irradianceEnvCubeTexture);
 
     PP_Free();
 

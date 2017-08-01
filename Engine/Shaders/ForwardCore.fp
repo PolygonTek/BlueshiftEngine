@@ -31,6 +31,7 @@ in vec2 v2f_tex;
 
 out vec4 o_fragColor : FRAG_COLOR;
 
+// Material parameters
 uniform sampler2D albedoMap;
 uniform vec4 albedoColor;
 uniform float perforatedAlpha;
@@ -68,15 +69,17 @@ uniform sampler2D subSurfaceColorMap;
 uniform float subSurfaceRollOff;
 uniform float subSurfaceShadowDensity;// = 0.5;
 
+// Light parameters
 uniform sampler2D lightProjectionMap;
 uniform vec4 lightColor;
 uniform float lightFallOffExponent;
 uniform samplerCube lightCubeMap;
 uniform bool useLightCube;
 uniform bool useShadowMap;
-
-uniform samplerCube envCubeMap;
 uniform float ambientScale;
+
+// IBL
+uniform samplerCube envCubeMap;
 
 void main() {
 #if DIRECT_LIGHTING
@@ -125,45 +128,45 @@ void main() {
         vec3 N = normalize(b1 + b2);
     #endif
 
-    #if _SPECULAR_SOURCE == 0
-        vec4 specular = vec4(0.0);
-    #elif _SPECULAR_SOURCE == 1
-        vec4 specular = specularColor;
-    #elif _SPECULAR_SOURCE == 2
-        vec4 specular = tex2D(specularMap, baseTc);
-    #endif
+    #if defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
+        #if _SPECULAR_SOURCE == 0
+            vec4 specular = vec4(0.0);
+        #elif _SPECULAR_SOURCE == 1
+            vec4 specular = specularColor;
+        #elif _SPECULAR_SOURCE == 2
+            vec4 specular = tex2D(specularMap, baseTc);
+        #endif
 
-    #if _GLOSS_SOURCE == 0
-        float glossiness = glossScale;
-    #elif _GLOSS_SOURCE == 1
-        float glossiness = albedo.a * glossScale;
-    #elif _GLOSS_SOURCE == 2
-        float glossiness = specular.a * glossScale;
-    #elif _GLOSS_SOURCE == 3
-        float glossiness = tex2D(glossMap, baseTc).r * glossScale;
-    #endif
+        #if _GLOSS_SOURCE == 0
+            float glossiness = glossScale;
+        #elif _GLOSS_SOURCE == 1
+            float glossiness = albedo.a * glossScale;
+        #elif _GLOSS_SOURCE == 2
+            float glossiness = specular.a * glossScale;
+        #elif _GLOSS_SOURCE == 3
+            float glossiness = tex2D(glossMap, baseTc).r * glossScale;
+        #endif
 
-    #if _METALLIC_SOURCE == 0
-        vec4 metallic = vec4(metallicScale, 0.0, 0.0, 0.0);
-    #elif _METALLIC_SOURCE == 1
-        vec4 metallic = tex2D(metallicMap, baseTc);
-        metallic.r *= metallicScale;
-    #endif
+        float roughness = 1.0 - glossiness;
 
-    #if _ROUGHNESS_SOURCE == 0
-        float roughness = roughnessScale;
-    #elif _ROUGHNESS_SOURCE == 1
-        float roughness = metallic.g * roughnessScale;
-    #elif _ROUGHNESS_SOURCE == 2
-        float roughness = tex2D(roughnessMap, baseTc).r * roughnessScale;
-    #endif
+        #ifdef LEGACY_PHONG_LIGHTING
+            float specularPower = glossinessToSpecularPower(glossiness);
+        #endif
+    #elif defined(STANDARD_METALLIC_LIGHTING)
+        #if _METALLIC_SOURCE == 0
+            vec4 metallic = vec4(metallicScale, 0.0, 0.0, 0.0);
+        #elif _METALLIC_SOURCE == 1
+            vec4 metallic = tex2D(metallicMap, baseTc);
+            metallic.r *= metallicScale;
+        #endif
 
-    #ifdef STANDARD_SPECULAR_LIGHTING
-        roughness = 1.0 - glossiness;
-    #endif
-
-    #ifdef LEGACY_PHONG_LIGHTING
-        float specularPower = glossinessToSpecularPower(glossiness);
+        #if _ROUGHNESS_SOURCE == 0
+            float roughness = roughnessScale;
+        #elif _ROUGHNESS_SOURCE == 1
+            float roughness = metallic.g * roughnessScale;
+        #elif _ROUGHNESS_SOURCE == 2
+            float roughness = tex2D(roughnessMap, baseTc).r * roughnessScale;
+        #endif
     #endif
 #endif
 
@@ -199,9 +202,9 @@ void main() {
         #ifdef STANDARD_METALLIC_LIGHTING
             C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, albedo.rgb * (1.0 - metallic.r), mix(vec3(0.04), albedo.rgb, metallic.r), roughness);
         #elif defined(STANDARD_SPECULAR_LIGHTING)
-            C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, albedo.rgb, specular.rgb, 1.0 - glossiness);
+            C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, albedo.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            C += IBLPhongWithFresnel(envCubeMap, worldN, worldV, albedo.rgb, specular.rgb, specularPower, 1.0 - glossiness);
+            C += IBLPhongWithFresnel(envCubeMap, worldN, worldV, albedo.rgb, specular.rgb, specularPower, roughness);
         #endif
     #else
         vec3 worldN;
@@ -217,7 +220,7 @@ void main() {
         worldS.x = dot(toWorldMatrixT, S);
         worldS.y = dot(toWorldMatrixR, S);
 
-        #if PARALLAX_CORRECTED_AMBIENT_LIGHTING
+        #ifdef PARALLAX_CORRECTED_INDIRECT_LIGHTING
             // Convert coordinates from z-up to GL axis
             vec3 worldPos;
             worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
@@ -225,7 +228,7 @@ void main() {
             worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
 
             vec4 sampleVec;
-            sampleVec.xyz = boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 0, 1.0), vec3(-4000, -4000, -4000), vec3(4000, 4000, 4000)); // FIXME
+            sampleVec.xyz = boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 250, 1.0), vec3(-2500, -250, -2500), vec3(2500, 250, 2500)); // FIXME
         #else
             vec4 sampleVec;
             sampleVec.xyz = worldS;
