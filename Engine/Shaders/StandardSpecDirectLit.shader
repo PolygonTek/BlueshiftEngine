@@ -35,11 +35,11 @@ shader "StandardSpecDirectLit" {
     glsl_vp {
         #define STANDARD_SPECULAR_LIGHTING
         #define DIRECT_LIGHTING 1
-        $include "ForwardCore.vp"
+        $include "StandardCore.vp"
     }
     glsl_fp {
         #define STANDARD_SPECULAR_LIGHTING
         #define DIRECT_LIGHTING 1
-        $include "ForwardCore.fp"
+        $include "StandardCore.fp"
     }
 }

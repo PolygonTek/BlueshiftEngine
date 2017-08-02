@@ -33,11 +33,9 @@ shader "StandardSpec" {
     ambientLitDirectLitVersion "StandardSpecAmbientLitDirectLit.shader"
     
     glsl_vp {
-        #define STANDARD_SPECULAR_LIGHTING
-        $include "ForwardCore.vp"
+        $include "StandardCore.vp"
     }
     glsl_fp {
-        #define STANDARD_SPECULAR_LIGHTING
-        $include "ForwardCore.fp"
+        $include "StandardCore.fp"
     }
 }

@@ -24,6 +24,77 @@ shader "Standard" {
         emissionColor("Emission Color") : color3 = "1 1 1"
         emissionScale("Emission Scale") : float range 0 16 0.001 = "1"
     }
+
+    /*subShader "Depth" {
+        supportGpuSkinning
+
+        glsl_vp {
+            $include "Depth.vp"
+        }
+        glsl_fp {
+            $include "Depth.fp"
+        }
+    }
+
+    subShader "Base" {
+        supportGpuSkinning
+
+        glsl_vp {
+            $include "StandardCore.vp"
+        }
+        glsl_fp {
+            $include "StandardCore.fp"
+        }
+    }
+
+    subShader "DirectLit" {
+        supportGpuSkinning
+        supportShadows
+
+        glsl_vp {
+            #define DIRECT_LIGHTING 1
+            #define STANDARD_METALLIC_LIGHTING
+            $include "StandardCore.vp"
+        }
+        glsl_fp {
+            #define STANDARD_METALLIC_LIGHTING
+            #define DIRECT_LIGHTING 1
+            $include "StandardCore.fp"
+        }
+    }
+
+    subShader "AmbientLit" {
+        supportGpuSkinning
+
+        glsl_vp {
+            #define INDIRECT_LIGHTING 1
+            #define STANDARD_METALLIC_LIGHTING
+            $include "StandardCore.vp"
+        }
+        glsl_fp {
+            #define INDIRECT_LIGHTING 1
+            #define STANDARD_METALLIC_LIGHTING
+            $include "StandardCore.fp"
+        }
+    }
+
+    subShader "DirectLitAmbientLit" {
+        supportGpuSkinning
+        supportShadows
+
+        glsl_vp {
+            #define DIRECT_LIGHTING 1
+            #define INDIRECT_LIGHTING 1
+            #define STANDARD_METALLIC_LIGHTING
+            $include "StandardCore.vp"
+        }
+        glsl_fp {
+            #define DIRECT_LIGHTING 1
+            #define INDIRECT_LIGHTING 1
+            #define STANDARD_METALLIC_LIGHTING
+            $include "StandardCore.fp"
+        }
+    }*/
     
     generatePerforatedVersion
     generateGpuSkinningVersion
@@ -33,11 +104,9 @@ shader "Standard" {
     ambientLitDirectLitVersion "StandardAmbientLitDirectLit.shader"
     
     glsl_vp {
-        #define STANDARD_METALLIC_LIGHTING
-        $include "ForwardCore.vp"
+        $include "StandardCore.vp"
     }
     glsl_fp {
-        #define STANDARD_METALLIC_LIGHTING
-        $include "ForwardCore.fp"
+        $include "StandardCore.fp"
     }
 }
