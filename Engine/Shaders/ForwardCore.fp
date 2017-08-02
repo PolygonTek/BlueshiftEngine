@@ -166,6 +166,8 @@ void main() {
             float roughness = metallic.g * roughnessScale;
         #elif _ROUGHNESS_SOURCE == 2
             float roughness = tex2D(roughnessMap, baseTc).r * roughnessScale;
+        #elif _ROUGHNESS_SOURCE == 3
+            float roughness = (1.0 - tex2D(roughnessMap, baseTc).r) * roughnessScale;
         #endif
     #endif
 #endif

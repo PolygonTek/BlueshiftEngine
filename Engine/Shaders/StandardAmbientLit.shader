@@ -7,7 +7,7 @@ shader "StandardAmbientLit" {
         _METALLIC_SOURCE("Metallic") : enum "Scale;Texture (R)" = "0" (shaderDefine)
         metallicMap("Metallic Map") : object TextureAsset = "_whiteTexture"
         metallicScale("Metallic Scale") : float range 0 1.0 0.01 = "1.0"
-        _ROUGHNESS_SOURCE("Roughness") : enum "Scale;From Metallic Map (G);Texture (R)" = "0" (shaderDefine)
+        _ROUGHNESS_SOURCE("Roughness") : enum "Scale;From Metallic Map (G);Texture (R);Inverted Texture (R)" = "0" (shaderDefine)
         roughnessMap("Roughness Map") : object TextureAsset = "_whiteTexture"
         roughnessScale("Roughness Scale") : float range 0 1.0 0.01 = "1.5"
         _NORMAL_SOURCE("Normal") : enum "Vertex;Texture;Texture + Detail Texture" = "0" (shaderDefine)
