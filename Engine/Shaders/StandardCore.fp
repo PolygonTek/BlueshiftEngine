@@ -112,7 +112,7 @@ void main() {
 #endif
 
 #ifdef PERFORATED
-    if (albedo.w < 0.5) {
+    if (albedo.w < perforatedAlpha) {
         discard;
     }
 #endif

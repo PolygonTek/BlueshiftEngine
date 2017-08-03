@@ -8,6 +8,7 @@ out vec4 o_fragColor : FRAG_COLOR;
 uniform float shutterSpeed;
 //uniform float motionBlurID;
 uniform sampler2D albedoMap;
+uniform float perforatedAlpha;
 uniform sampler2D depthMap;
 
 void main() {
@@ -24,7 +25,7 @@ void main() {
 
 #ifdef PERFORATED
 	float alpha = tex2D(albedoMap, v2f_texCoord).a;
-	if (alpha < 0.5) {
+	if (alpha < perforatedAlpha) {
 		discard;
 	}
 #endif
