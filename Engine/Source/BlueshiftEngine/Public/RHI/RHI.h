@@ -140,7 +140,7 @@ public:
     };
     
     enum CullType {
-        BackCull                            = 1,
+        BackCull,
         FrontCull,
         NoCull
     };

@@ -676,10 +676,6 @@ void Material::Finish() {
         } */else {
               sort = OpaqueSort;
         }
-    }		
-
-    if (!cullType) {
-        cullType = RHI::BackCull;
     }
 }
 

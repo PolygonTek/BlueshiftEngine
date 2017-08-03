@@ -25,6 +25,8 @@
 #include "Containers/HashMap.h"
 #include "Shader.h"
 
+class MaterialEditor;
+
 BE_NAMESPACE_BEGIN
 
 class Dict;
@@ -33,6 +35,7 @@ class Shader;
 
 class Material {
     friend class MaterialManager;
+    friend class ::MaterialEditor;
     friend class RBSurf;
 
 public:
