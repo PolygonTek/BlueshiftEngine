@@ -42,15 +42,18 @@ void RBSurf::DrawPrimitives() const {
 void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
     const auto &specHashMap = shader->GetSpecHashMap();
 
+    // Iterate over all shader property specs
     for (int i = 0; i < specHashMap.Count(); i++) {
         const auto *entry = specHashMap.GetByIndex(i);
         const auto &key = entry->first;
         const auto &spec = entry->second;
 
+        // Skip if it is a shader define
         if (spec.GetFlags() & PropertySpec::ShaderDefine) {
             continue;
         }
 
+        // Skip if not exist in shader properties
         const auto *propEntry = shaderProperties.Get(key);
         if (!propEntry) {
             continue;

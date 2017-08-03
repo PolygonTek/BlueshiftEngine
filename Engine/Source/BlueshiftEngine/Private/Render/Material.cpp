@@ -852,7 +852,7 @@ void Material::Write(const char *filename) {
 
     int blendFuncMask = pass->stateBits & RHI::MaskBF;
     if (blendFuncMask) {
-        int blendSrc = blendFuncMask & RHI::MaskBS;        
+        int blendSrc = blendFuncMask & RHI::MaskBS;
         int blendDst = blendFuncMask & RHI::MaskBD;
 
         Str blendSrcStr;

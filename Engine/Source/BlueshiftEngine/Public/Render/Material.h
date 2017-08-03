@@ -105,8 +105,8 @@ public:
         bool                useOwnerColor;
         Color4              constantColor;
         Texture *           texture;
-        float               tcScale[2];
-        float               tcTranslation[2];
+        Vec2                tcScale;
+        Vec2                tcTranslation;
         Shader *            shader;
         Shader *            referenceShader;
         StrHashMap<Shader::Property> shaderProperties;          // define prop 이 바뀌면 reinstantiate 해야 할듯
