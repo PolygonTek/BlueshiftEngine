@@ -133,7 +133,7 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
    * with the stdio data source.
    */
 
-  if (cinfo.output_components != 3 && cinfo.output_components != 4) {
+  if (cinfo.output_components != 1 && cinfo.output_components != 2 && cinfo.output_components != 3 && cinfo.output_components != 4) {
       BE_WARNLOG(L"Image::LoadJPGFromMemory: bad JPG format %hs (channels %i)\n", name, cinfo.out_color_components);
       jpeg_destroy_decompress(&cinfo);
       return false;
@@ -152,7 +152,23 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
   /* Make a one-row-high sample array that will go away when done with image */
   buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1); 
 
-  Create2D(cinfo.output_width, cinfo.output_height, 1, cinfo.output_components == 3 ? RGB_8_8_8 : RGBX_8_8_8_8, nullptr, 0);
+  Image::Format imageFormat;
+  switch (cinfo.output_components) {
+  case 1:
+    imageFormat = L_8;
+    break;
+  case 2:
+    imageFormat = RG_8_8;
+    break;
+  case 3:
+    imageFormat = RGB_8_8_8;
+    break;
+  case 4:
+    imageFormat = RGBX_8_8_8_8;
+    break;
+  }
+
+  Create2D(cinfo.output_width, cinfo.output_height, 1, imageFormat, nullptr, 0);
   
   byte *ptr = this->pic;
 
