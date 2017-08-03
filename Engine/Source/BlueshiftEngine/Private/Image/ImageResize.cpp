@@ -82,10 +82,10 @@ static void ResizeImageBilinear(const T *src, int srcWidth, int srcHeight, T *ds
                 int index0 = offsetX0 + i;
                 int index1 = offsetX1 + i;
 
-                T p0 = Lerp(srcPtrY[0][index0], srcPtrY[0][index1], fracX);
-                T p1 = Lerp(srcPtrY[1][index0], srcPtrY[1][index1], fracX);
+                float p0 = Lerp<float>(srcPtrY[0][index0], srcPtrY[0][index1], fracX);
+                float p1 = Lerp<float>(srcPtrY[1][index0], srcPtrY[1][index1], fracX);
 
-                *dst++ = Lerp(p0, p1, fracY);
+                *dst++ = Lerp<float>(p0, p1, fracY);
             }
         }
     }
@@ -138,12 +138,12 @@ static void ResizeImageBicubic(const T *src, int srcWidth, int srcHeight, T *dst
                 int index2 = offsetX2 + i;
                 int index3 = offsetX3 + i;
 
-                T p0 = Cerp(srcPtrY[0][index0], srcPtrY[0][index1], srcPtrY[0][index2], srcPtrY[0][index3], fracX);
-                T p1 = Cerp(srcPtrY[1][index0], srcPtrY[1][index1], srcPtrY[1][index2], srcPtrY[1][index3], fracX);
-                T p2 = Cerp(srcPtrY[2][index0], srcPtrY[2][index1], srcPtrY[2][index2], srcPtrY[2][index3], fracX);
-                T p3 = Cerp(srcPtrY[3][index0], srcPtrY[3][index1], srcPtrY[3][index2], srcPtrY[3][index3], fracX);
+                float p0 = Cerp<float>(srcPtrY[0][index0], srcPtrY[0][index1], srcPtrY[0][index2], srcPtrY[0][index3], fracX);
+                float p1 = Cerp<float>(srcPtrY[1][index0], srcPtrY[1][index1], srcPtrY[1][index2], srcPtrY[1][index3], fracX);
+                float p2 = Cerp<float>(srcPtrY[2][index0], srcPtrY[2][index1], srcPtrY[2][index2], srcPtrY[2][index3], fracX);
+                float p3 = Cerp<float>(srcPtrY[3][index0], srcPtrY[3][index1], srcPtrY[3][index2], srcPtrY[3][index3], fracX);
 
-                *dst++ = Cerp(p0, p1, p2, p3, fracY);
+                *dst++ = Cerp<float>(p0, p1, p2, p3, fracY);
             }
         }
     }
@@ -188,7 +188,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
             ResizeImage((float *)this->pic, this->width, this->height, (float *)dstImage.pic, dstWidth, dstHeight, numComponents, filter);
         }
     } else {
-        ResizeImage(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, numComponents, filter);
+        ResizeImage((byte *)this->pic, this->width, this->height, (byte *)dstImage.pic, dstWidth, dstHeight, numComponents, filter);
     }
 
     return true;
