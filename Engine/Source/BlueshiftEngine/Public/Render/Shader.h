@@ -353,10 +353,10 @@ public:
     static Shader *         constantColorShader;
     static Shader *         vertexColorShader;
     static Shader *         objectMotionBlurShader;
-    static Shader *         forwardAlbedoShader;
-    static Shader *         forwardAlbedoAmbientLitShader;
-    static Shader *         forwardAlbedoDirectLitShader;
-    static Shader *         forwardAlbedoAmbientLitDirectLitShader;
+    static Shader *         standardDefaultShader;
+    static Shader *         standardDefaultAmbientLitShader;
+    static Shader *         standardDefaultDirectLitShader;
+    static Shader *         standardDefaultAmbientLitDirectLitShader;
     static Shader *         skyboxCubemapShader;
     static Shader *         skyboxSixSidedShader;
     static Shader *         fogLightShader;

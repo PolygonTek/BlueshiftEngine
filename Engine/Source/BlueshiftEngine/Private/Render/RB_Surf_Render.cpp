@@ -366,7 +366,7 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
         shader->Bind();
         SetShaderProperties(shader, mtrlPass->shaderProperties);
     } else {
-        shader = ShaderManager::forwardAlbedoShader;
+        shader = ShaderManager::standardDefaultShader;
 
         if (subMesh->useGpuSkinning) {
             if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
@@ -416,7 +416,7 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
 }
 
 void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) const {
-    Shader *shader = ShaderManager::forwardAlbedoShader;
+    Shader *shader = ShaderManager::standardDefaultShader;
 
     if (!r_useDepthPrePass.GetBool()) {
         if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
@@ -473,7 +473,7 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
     if (shader && shader->GetAmbientLitVersion()) {
         shader = shader->GetAmbientLitVersion();
     } else {
-        shader = ShaderManager::forwardAlbedoAmbientLitShader;
+        shader = ShaderManager::standardDefaultAmbientLitShader;
     }
 
     if (!r_useDepthPrePass.GetBool()) {
@@ -558,7 +558,7 @@ void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambie
     if (shader && shader->GetDirectLitVersion()) {
         shader = shader->GetDirectLitVersion();
     } else {
-        shader = ShaderManager::forwardAlbedoDirectLitShader;
+        shader = ShaderManager::standardDefaultDirectLitShader;
     }
 
     bool useShadowMap = (r_shadows.GetInteger() == 0) || (!surfLight->def->parms.castShadows || !surfSpace->def->parms.receiveShadows) ? false : true;
@@ -616,7 +616,7 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float am
     if (shader && shader->GetAmbientLitDirectLitVersion()) {
         shader = shader->GetAmbientLitDirectLitVersion();
     } else {
-        shader = ShaderManager::forwardAlbedoAmbientLitDirectLitShader;
+        shader = ShaderManager::standardDefaultAmbientLitDirectLitShader;
     }
 
     bool useShadowMap = (r_shadows.GetInteger() == 0) || (!surfLight->def->parms.castShadows || !surfSpace->def->parms.receiveShadows) ? false : true;
@@ -828,7 +828,7 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
     if (shader && shader->GetDirectLitVersion()) {
         shader = shader->GetDirectLitVersion();
     } else {
-        shader = ShaderManager::forwardAlbedoDirectLitShader;
+        shader = ShaderManager::standardDefaultDirectLitShader;
     }
 
     bool useShadowMap = (r_shadows.GetInteger() == 0) || (!surfLight->def->parms.castShadows || !surfSpace->def->parms.receiveShadows) ? false : true;

@@ -88,10 +88,10 @@ Shader *            ShaderManager::depthShader;
 Shader *            ShaderManager::constantColorShader;
 Shader *            ShaderManager::vertexColorShader;
 Shader *            ShaderManager::objectMotionBlurShader;
-Shader *            ShaderManager::forwardAlbedoShader;
-Shader *            ShaderManager::forwardAlbedoAmbientLitShader;
-Shader *            ShaderManager::forwardAlbedoDirectLitShader;
-Shader *            ShaderManager::forwardAlbedoAmbientLitDirectLitShader;
+Shader *            ShaderManager::standardDefaultShader;
+Shader *            ShaderManager::standardDefaultAmbientLitShader;
+Shader *            ShaderManager::standardDefaultDirectLitShader;
+Shader *            ShaderManager::standardDefaultAmbientLitDirectLitShader;
 Shader *            ShaderManager::skyboxCubemapShader;
 Shader *            ShaderManager::skyboxSixSidedShader;
 Shader *            ShaderManager::fogLightShader;
@@ -253,27 +253,43 @@ void ShaderManager::InstantiateEngineShaders() {
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
-    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    forwardAlbedoShader = originalShaders[StandardSpecShader]->InstantiateShader(defineArray);
+    defineArray.Append(Shader::Define("_GLOSS_SOURCE", 0));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_PARALLAX_SOURCE", 0));
+    defineArray.Append(Shader::Define("_OCCLUSION_SOURCE", 0));
+    defineArray.Append(Shader::Define("_EMISSION_SOURCE", 0));
+    standardDefaultShader = originalShaders[StandardSpecShader]->InstantiateShader(defineArray);
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
-    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    forwardAlbedoAmbientLitShader = originalShaders[StandardSpecShader]->ambientLitVersion->InstantiateShader(defineArray);
+    defineArray.Append(Shader::Define("_GLOSS_SOURCE", 0));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_PARALLAX_SOURCE", 0));
+    defineArray.Append(Shader::Define("_OCCLUSION_SOURCE", 0));
+    defineArray.Append(Shader::Define("_EMISSION_SOURCE", 0));
+    standardDefaultAmbientLitShader = originalShaders[StandardSpecShader]->ambientLitVersion->InstantiateShader(defineArray);
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
-    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    forwardAlbedoDirectLitShader = originalShaders[StandardSpecShader]->directLitVersion->InstantiateShader(defineArray);
+    defineArray.Append(Shader::Define("_GLOSS_SOURCE", 0));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_PARALLAX_SOURCE", 0));
+    defineArray.Append(Shader::Define("_OCCLUSION_SOURCE", 0));
+    defineArray.Append(Shader::Define("_EMISSION_SOURCE", 0));
+    standardDefaultDirectLitShader = originalShaders[StandardSpecShader]->directLitVersion->InstantiateShader(defineArray);
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
-    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
     defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    forwardAlbedoAmbientLitDirectLitShader = originalShaders[StandardSpecShader]->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+    defineArray.Append(Shader::Define("_GLOSS_SOURCE", 0));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_PARALLAX_SOURCE", 0));
+    defineArray.Append(Shader::Define("_OCCLUSION_SOURCE", 0));
+    defineArray.Append(Shader::Define("_EMISSION_SOURCE", 0));
+    standardDefaultAmbientLitDirectLitShader = originalShaders[StandardSpecShader]->ambientLitDirectLitVersion->InstantiateShader(defineArray);
 
     objectMotionBlurShader = originalShaders[ObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
 
