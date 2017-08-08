@@ -33,7 +33,8 @@ out vec4 o_fragColor : FRAG_COLOR;
 
 // Material parameters
 uniform sampler2D albedoMap;
-uniform vec4 albedoColor;
+uniform vec3 albedoColor;
+uniform float albedoAlpha;
 uniform float perforatedAlpha;
 
 uniform sampler2D normalMap;
@@ -106,13 +107,13 @@ void main() {
 #endif
 
 #if _ALBEDO_SOURCE == 0
-    vec4 albedo = albedoColor;
+    vec4 albedo = vec4(albedoColor, albedoAlpha);
 #elif _ALBEDO_SOURCE == 1
     vec4 albedo = tex2D(albedoMap, baseTc);
 #endif
 
 #ifdef PERFORATED
-    if (albedo.w < perforatedAlpha) {
+    if (albedo.a < perforatedAlpha) {
         discard;
     }
 #endif
@@ -129,6 +130,8 @@ void main() {
     #endif
 
     #if defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
+        vec4 diffuse = albedo;
+
         #if _SPECULAR_SOURCE == 0
             vec4 specular = vec4(0.0);
         #elif _SPECULAR_SOURCE == 1
@@ -169,6 +172,12 @@ void main() {
         #elif _ROUGHNESS_SOURCE == 3
             float roughness = (1.0 - tex2D(roughnessMap, baseTc).r) * roughnessScale;
         #endif
+
+        vec4 specular = vec4(mix(vec3(0.04), albedo.rgb, metallic.r), 1.0);
+        
+        vec4 diffuse = vec4(albedo.rgb * ((1.0 - 0.04) - metallic.r), albedo.a);
+
+        
     #endif
 #endif
 
@@ -201,12 +210,10 @@ void main() {
         worldV.x = dot(toWorldMatrixT, V);
         worldV.y = dot(toWorldMatrixR, V);
 
-        #ifdef STANDARD_METALLIC_LIGHTING
-            C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, albedo.rgb * (1.0 - metallic.r), mix(vec3(0.04), albedo.rgb, metallic.r), roughness);
-        #elif defined(STANDARD_SPECULAR_LIGHTING)
-            C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, albedo.rgb, specular.rgb, roughness);
+        #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
+            C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            C += IBLPhongWithFresnel(envCubeMap, worldN, worldV, albedo.rgb, specular.rgb, specularPower, roughness);
+            C += IBLPhongWithFresnel(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, specularPower, roughness);
         #endif
     #else
         vec3 worldN;
@@ -238,12 +245,10 @@ void main() {
 
         float NdotV = max(dot(N, V), 0.0);
 
-        #ifdef STANDARD_METALLIC_LIGHTING
-            C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, albedo.rgb * (1.0 - metallic.r), mix(vec3(0.04), albedo.rgb, metallic.r), roughness);
-        #elif defined(STANDARD_SPECULAR_LIGHTING)
-            C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, albedo.rgb, specular.rgb, roughness);
+        #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
+            C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            C += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, albedo.rgb, specular.rgb, roughness);
+            C += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
         #endif
     #endif
 #else
@@ -265,12 +270,10 @@ void main() {
         }
     #endif
 
-    #ifdef STANDARD_METALLIC_LIGHTING
-        vec3 lightingColor = DirectLit_Standard(L, N, V, albedo.rgb * (1.0 - metallic.r), mix(vec3(0.04), albedo.rgb, metallic.r), roughness);
-    #elif defined(STANDARD_SPECULAR_LIGHTING)
-        vec3 lightingColor = DirectLit_Standard(L, N, V, albedo.rgb, specular.rgb, roughness);
+    #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
+        vec3 lightingColor = DirectLit_Standard(L, N, V, diffuse.rgb, specular.rgb, roughness);
     #elif defined(LEGACY_PHONG_LIGHTING)
-        vec3 lightingColor = DirectLit_PhongFresnel(L, N, V, albedo.rgb, specular.rgb, specularPower);
+        vec3 lightingColor = DirectLit_PhongFresnel(L, N, V, diffuse.rgb, specular.rgb, specularPower);
     #endif
 
     #if defined(_SUB_SURFACE_SCATTERING)
@@ -292,7 +295,7 @@ void main() {
     C *= (1.0 - occlusionStrength) + occ * occlusionStrength;
 #endif
 
-    vec4 outputColor = v2f_color * vec4(C, albedo.w);
+    vec4 outputColor = v2f_color * vec4(C, albedo.a);
 
 #ifdef LOGLUV_HDR
     o_fragColor = encodeLogLuv(outputColor.xyz);

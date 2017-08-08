@@ -2,6 +2,7 @@ shader "Standard" {
     properties {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
         albedoColor("Albedo Color") : color3 = "1 1 1"
+        albedoAlpha("Albedo Alpha") : float range 0 1.0 0.001 = "1"
         albedoMap("Albedo Map") : object TextureAsset = "_whiteTexture"
         _METALLIC_SOURCE("Metallic") : enum "Scale;Texture (R)" = "0" (shaderDefine)
         metallicMap("Metallic Map") : object TextureAsset = "_whiteTexture"
@@ -25,17 +26,7 @@ shader "Standard" {
         emissionScale("Emission Scale") : float range 0 16 0.001 = "1"
     }
 
-    /*subShader "Depth" {
-        supportGpuSkinning
-
-        glsl_vp {
-            $include "Depth.vp"
-        }
-        glsl_fp {
-            $include "Depth.fp"
-        }
-    }
-
+    /*
     subShader "Base" {
         supportGpuSkinning
 
@@ -44,6 +35,17 @@ shader "Standard" {
         }
         glsl_fp {
             $include "StandardCore.fp"
+        }
+    }
+
+    subShader "Depth" {
+        supportGpuSkinning
+
+        glsl_vp {
+            $include "Depth.vp"
+        }
+        glsl_fp {
+            $include "Depth.fp"
         }
     }
 
