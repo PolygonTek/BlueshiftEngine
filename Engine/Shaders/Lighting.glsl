@@ -213,7 +213,7 @@ vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float s
         vec3 Cs = specular.rgb * normFactor * pow(RdotV, specularPower);
     #endif
     
-    return Cd + Cs;
+    return Cd * (vec3(1.0) - specular.rgb) + Cs;
 #else
     return Cd;
 #endif
