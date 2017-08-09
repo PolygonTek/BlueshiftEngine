@@ -657,12 +657,19 @@ void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHe
 
     if (windowWidth || windowHeight || backingWidth || backingHeight) {
         RECT rc;
+
+        int dpiX = GetDeviceCaps(ctx->hdc, LOGPIXELSX);
+        int dpiY = GetDeviceCaps(ctx->hdc, LOGPIXELSY);
+        
+        float dpiScaleX = dpiX / 96.0f;
+        float dpiScaleY = dpiY / 96.0f;
+
         GetClientRect(ctx->hwnd, &rc);
         if (windowWidth) {
-            *windowWidth = rc.right;
+            *windowWidth = rc.right / dpiScaleX;
         }
         if (windowHeight) {
-            *windowHeight = rc.bottom;
+            *windowHeight = rc.bottom / dpiScaleY;
         }
         if (backingWidth) {
             *backingWidth = rc.right;
