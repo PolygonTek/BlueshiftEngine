@@ -83,6 +83,11 @@ void Shader::Purge() {
         perforatedVersion = nullptr;
     }
 
+    if (premulAlphaVersion) {
+        shaderManager.ReleaseShader(premulAlphaVersion);
+        premulAlphaVersion = nullptr;
+    }
+
     if (parallelShadowVersion) {
         shaderManager.ReleaseShader(parallelShadowVersion);
         parallelShadowVersion = nullptr;
@@ -111,6 +116,7 @@ void Shader::Purge() {
 
 bool Shader::Create(const char *text, const char *baseDir) {
     bool generatePerforatedVersion = false;
+    bool generatePremulAlphaVersion = false;
     bool generateGpuSkinningVersion = false;
     bool generateParallelShadowVersion = false;
     bool generatePointShadowVersion = false;
@@ -231,6 +237,8 @@ bool Shader::Create(const char *text, const char *baseDir) {
             }
         } else if (!token.Icmp("generatePerforatedVersion")) {
             generatePerforatedVersion = true;
+        } else if (!token.Icmp("generatePremulAlphaVersion")) {
+            generatePremulAlphaVersion = true;
         } else if (!token.Icmp("generateGpuSkinningVersion")) {
             generateGpuSkinningVersion = true;
         } else if (!token.Icmp("generateParallelShadowVersion")) {
@@ -248,7 +256,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
         }
     }
 
-    return Finish(generatePerforatedVersion, generateGpuSkinningVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion, baseDir);
+    return Finish(generatePerforatedVersion, generatePremulAlphaVersion, generateGpuSkinningVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion, baseDir);
 }
 
 bool Shader::ParseProperties(Lexer &lexer) {
@@ -373,7 +381,26 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
     return true;
 }
 
-bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir) {
+bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion) {
+    if (!shader->premulAlphaVersion) {
+        shader->premulAlphaVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
+            vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0);
+        if (!shader->premulAlphaVersion) {
+            return false;
+        }
+    }
+
+    if (genereateGpuSkinningVersion) {
+        if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion,
+            shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n")) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir) {
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(this, "", "", "")) {
             return false;
@@ -382,6 +409,12 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
 
     if (generatePerforatedVersion) {
         if (!GeneratePerforatedVersion(this, "", "", "", genereateGpuSkinningVersion)) {
+            return false;
+        }
+    }
+
+    if (generatePremulAlphaVersion) {
+        if (!GeneratePremulAlphaVersion(this, "", "", "", genereateGpuSkinningVersion)) {
             return false;
         }
     }
@@ -505,43 +538,6 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     
     shader->Instantiate(defineArray);
 
-    // Do deferred instantiation
-#if 0
-    if (ambientLitVersion) {
-        shader->ambientLitVersion = ambientLitVersion->InstantiateShader(defineArray);
-    }
-
-    if (directLitVersion) {
-        shader->directLitVersion = directLitVersion->InstantiateShader(defineArray);
-    }
-
-    if (ambientLitDirectLitVersion) {
-        shader->ambientLitDirectLitVersion = ambientLitDirectLitVersion->InstantiateShader(defineArray);
-    }
-
-    if (perforatedVersion) {
-        shader->perforatedVersion = perforatedVersion->InstantiateShader(defineArray);
-    }
-
-    if (parallelShadowVersion) {
-        shader->parallelShadowVersion = parallelShadowVersion->InstantiateShader(defineArray);
-    }
-
-    if (spotShadowVersion) {
-        shader->spotShadowVersion = spotShadowVersion->InstantiateShader(defineArray);
-    }
-
-    if (pointShadowVersion) {
-        shader->pointShadowVersion = pointShadowVersion->InstantiateShader(defineArray);
-    }
-
-    for (int i = 0; i < COUNT_OF(gpuSkinningVersion); i++) {
-        if (gpuSkinningVersion[i]) {
-            shader->gpuSkinningVersion[i] = gpuSkinningVersion[i]->InstantiateShader(defineArray);
-        }
-    }
-#endif
-
     return shader;
 }
 
@@ -554,6 +550,21 @@ Shader *Shader::GetPerforatedVersion() {
         if (originalShader->perforatedVersion) {
             perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
             return perforatedVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetPremulAlphaVersion() {
+    if (premulAlphaVersion) {
+        return premulAlphaVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->premulAlphaVersion) {
+            premulAlphaVersion = originalShader->premulAlphaVersion->InstantiateShader(defineArray);
+            return premulAlphaVersion;
         }
     }
 
@@ -722,6 +733,20 @@ void Shader::Reinstantiate() {
         if (perforatedVersion) {
             shaderManager.ReleaseShader(perforatedVersion);
             perforatedVersion = nullptr;
+        }
+    }
+
+    if (originalShader->premulAlphaVersion) {
+        if (premulAlphaVersion) {
+            premulAlphaVersion->originalShader = originalShader->premulAlphaVersion;
+            premulAlphaVersion->Reinstantiate();
+        } else {
+            premulAlphaVersion = originalShader->premulAlphaVersion->InstantiateShader(defineArray);
+        }
+    } else {
+        if (premulAlphaVersion) {
+            shaderManager.ReleaseShader(premulAlphaVersion);
+            premulAlphaVersion = nullptr;
         }
     }
 

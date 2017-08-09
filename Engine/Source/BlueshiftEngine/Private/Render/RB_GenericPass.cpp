@@ -31,8 +31,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (surf->material->GetCoverage() == Material::EmptyCoverage ||
-                surf->material->GetCoverage() & Material::BackgroundCoverage) {
+            if (surf->material->GetSort() == Material::Sort::SkySort) {
                 continue;
             }
 
@@ -48,7 +47,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     backEnd.rbsurf.Begin(RBSurf::SelectionFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
                 } else {
                     if (isDifferentEntity || prevMaterial->GetCullType() != surf->material->GetCullType() ||
-                        (prevMaterial->GetCoverage() & Material::PerforatedCoverage) || (surf->material->GetCoverage() & Material::PerforatedCoverage)) {
+                        (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
                         backEnd.rbsurf.Flush();
                         backEnd.rbsurf.Begin(RBSurf::SelectionFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
                     }
@@ -105,7 +104,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (!(surf->material->GetCoverage() & Material::OpaqueCoverage)) {
+            if (surf->material->GetSort() != Material::Sort::OpaqueSort) {
                 continue;
             }
 
@@ -181,8 +180,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (!(surf->material->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage)) ||
-                (surf->material->GetCoverage() & Material::BackgroundCoverage)) {
+            if (surf->material->GetSort() != Material::Sort::OpaqueSort) {
                 continue;
             }
 
@@ -198,9 +196,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 if (!prevMaterial) {
                     backEnd.rbsurf.Begin(RBSurf::DepthFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
                 } else {
-                    // NOTE: alpha test 가 early-z culling 을 disable 하지 않는지 테스트 필요
-                    if (isDifferentEntity || prevMaterial->GetCullType() != surf->material->GetCullType() ||
-                        (prevMaterial->GetCoverage() & Material::PerforatedCoverage) || (surf->material->GetCoverage() & Material::PerforatedCoverage)) {
+                    if (isDifferentEntity || prevMaterial->GetCullType() != surf->material->GetCullType()) {
                         backEnd.rbsurf.Flush();
                         backEnd.rbsurf.Begin(RBSurf::DepthFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
                     }
@@ -257,7 +253,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (!(surf->material->GetCoverage() & Material::TranslucentCoverage)) {
+            if (surf->material->GetType() != Material::Type::UnlitSurface) {
                 continue;
             }
 
@@ -327,8 +323,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 continue;
             }
 
-            if (surf->material->GetCoverage() == Material::EmptyCoverage || 
-                surf->material->GetCoverage() == Material::TranslucentCoverage) {
+            if (surf->material->GetSort() == Material::Sort::SkySort) {
                 continue;
             }
 
@@ -340,7 +335,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     backEnd.rbsurf.Begin(RBSurf::VelocityFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
                 } else {
                     if (isDifferentEntity || prevMaterial->GetCullType() != surf->material->GetCullType() || 
-                        (prevMaterial->GetCoverage() & Material::PerforatedCoverage) || (surf->material->GetCoverage() & Material::PerforatedCoverage)) {
+                        (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
                         backEnd.rbsurf.Flush();
                         backEnd.rbsurf.Begin(RBSurf::VelocityFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
                     }
@@ -422,7 +417,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
         
         if (surf->sortKey != prevSortkey) {
-            if (surf->material->GetCoverage() == Material::EmptyCoverage) {
+            if (surf->material->GetSort() == Material::Sort::SkySort) {
                 continue;
             }
 

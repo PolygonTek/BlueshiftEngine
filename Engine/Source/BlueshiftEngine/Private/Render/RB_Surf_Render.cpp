@@ -98,7 +98,7 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
     //shader->SetConstant1f("currentRenderHeightRatio", (float)GL_GetVidHeight() /g_rsd.screenHeight);
 }
 
-const Texture *RBSurf::TextureFromShaderProperties(const Material::Pass *mtrlPass, const Str &textureName) const {
+const Texture *RBSurf::TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const {
     const auto *entry = mtrlPass->shader->GetSpecHashMap().Get(textureName);
     if (!entry) {
         return nullptr;
@@ -206,10 +206,10 @@ void RBSurf::RenderColor(const Color4 &color) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id) const {
+void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &vec3_id) const {
     Shader *shader = ShaderManager::selectionIdShader;
     
-    if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
         shader = shader->GetPerforatedVersion();
     }
 
@@ -228,8 +228,8 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
-    if (mtrlPass->stateBits & RHI::MaskAF) {
-        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
 
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -255,10 +255,10 @@ void RBSurf::RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id
     DrawPrimitives();
 }
 
-void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
+void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::depthShader;
 
-    if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
         shader = shader->GetPerforatedVersion();
     }
 
@@ -277,8 +277,8 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
-    if (mtrlPass->stateBits & RHI::MaskAF) {
-        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
 
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -302,10 +302,10 @@ void RBSurf::RenderDepth(const Material::Pass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
+void RBSurf::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::objectMotionBlurShader;
 
-    if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
         shader = shader->GetPerforatedVersion();
     }
 
@@ -330,8 +330,8 @@ void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
 
     shader->SetTexture("depthMap", backEnd.ctx->screenDepthTexture);
 
-    if (mtrlPass->stateBits & RHI::MaskAF) {
-        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
 
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
         shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
@@ -351,7 +351,7 @@ void RBSurf::RenderVelocity(const Material::Pass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
+void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
     Shader *shader;
 
     if (mtrlPass->shader) {
@@ -415,11 +415,11 @@ void RBSurf::RenderGeneric(const Material::Pass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) const {
+void RBSurf::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = ShaderManager::standardDefaultShader;
 
     if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
             shader = shader->GetPerforatedVersion();
         }
     }
@@ -442,8 +442,8 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
     const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
     shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
 
-    if (mtrlPass->stateBits & RHI::MaskAF) {
-        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
     }
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
@@ -467,7 +467,7 @@ void RBSurf::RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) c
     DrawPrimitives();
 }
 
-void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale) const {
+void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = shader = mtrlPass->shader;
 
     if (shader && shader->GetAmbientLitVersion()) {
@@ -477,7 +477,7 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
     }
 
     if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
             shader = shader->GetPerforatedVersion();
         }
     }
@@ -527,8 +527,8 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
 
-    if (mtrlPass->stateBits & RHI::MaskAF) {
-        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
     }
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
@@ -552,7 +552,7 @@ void RBSurf::RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale
     DrawPrimitives();
 }
 
-void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambientScale) const {
+void RBSurf::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = shader = mtrlPass->shader;
     
     if (shader && shader->GetDirectLitVersion()) {
@@ -573,7 +573,7 @@ void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambie
     }
 
     if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
             shader = shader->GetPerforatedVersion();
         }
     }
@@ -599,8 +599,8 @@ void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambie
 
     SetMatrixConstants(shader);
 
-    if (mtrlPass->stateBits & RHI::MaskAF) {
-        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
     }
 
     shader->SetConstant1f("ambientScale", ambientScale);
@@ -610,7 +610,7 @@ void RBSurf::RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambie
     DrawPrimitives();
 }
 
-void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float ambientScale) const {
+void RBSurf::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = shader = mtrlPass->shader;
 
     if (shader && shader->GetAmbientLitDirectLitVersion()) {
@@ -631,7 +631,7 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float am
     }
 
     if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->stateBits & RHI::MaskAF && shader->GetPerforatedVersion()) {
+        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
             shader = shader->GetPerforatedVersion();
         }
     }
@@ -657,8 +657,8 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float am
 
     SetMatrixConstants(shader);
 
-    if (mtrlPass->stateBits & RHI::MaskAF) {
-        shader->SetConstant1f("perforatedAlpha", mtrlPass->alphaRef);
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
     }
 
     shader->SetConstant1f("ambientScale", ambientScale);
@@ -677,7 +677,7 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float am
     DrawPrimitives();
 }
 
-void RBSurf::RenderBase(const Material::Pass *mtrlPass, float ambientScale) const {
+void RBSurf::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     if (r_ambientLit.GetBool()) {
         if (surfLight) {
             RenderAmbientLit_DirectLit(mtrlPass, ambientScale);
@@ -693,7 +693,7 @@ void RBSurf::RenderBase(const Material::Pass *mtrlPass, float ambientScale) cons
     }
 }
 
-void RBSurf::SetupLightingShader(const Material::Pass *mtrlPass, const Shader *shader, bool useShadowMap) const {
+void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const {
     // Set local to world matrix
     const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
@@ -822,7 +822,7 @@ void RBSurf::SetupLightingShader(const Material::Pass *mtrlPass, const Shader *s
     }*/
 }
 
-void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {    
+void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {    
     Shader *shader = mtrlPass->shader;
 
     if (shader && shader->GetDirectLitVersion()) {
@@ -870,7 +870,7 @@ void RBSurf::RenderLightInteraction(const Material::Pass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderFogLightInteraction(const Material::Pass *mtrlPass) const {	
+void RBSurf::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) const {	
     Shader *shader = ShaderManager::fogLightShader;
 
     if (subMesh->useGpuSkinning) {
@@ -903,7 +903,7 @@ void RBSurf::RenderFogLightInteraction(const Material::Pass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderBlendLightInteraction(const Material::Pass *mtrlPass) const {
+void RBSurf::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::blendLightShader;
 
     if (subMesh->useGpuSkinning) {
@@ -931,7 +931,7 @@ void RBSurf::RenderBlendLightInteraction(const Material::Pass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderGui(const Material::Pass *mtrlPass) const {
+void RBSurf::RenderGui(const Material::ShaderPass *mtrlPass) const {
     const Shader *shader;
 
     if (mtrlPass->shader) {

@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Asset/Asset.h"
-#include "Asset/GuidMapper.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "Asset/Asset.h"
+#include "Asset/GuidMapper.h"
 #include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
@@ -51,7 +51,6 @@ bool Material::Create(const char *text) {
     Purge();
 
     flags = 0;
-    coverage = EmptyCoverage;
 
     Lexer lexer; 
     lexer.Init(LexerFlag::LEXFL_NOERRORS);
@@ -60,37 +59,22 @@ bool Material::Create(const char *text) {
     while (lexer.ReadToken(&token)) {
         if (token.IsEmpty()) {
             break;
-        } else if (!token.Icmp("pass")) {
-            pass = new Pass;
-            if (!ParsePass(lexer, pass)) {
-                delete pass;
-                pass = nullptr;
-                return false;
-            }
-
-            if (pass->stateBits & RHI::MaskBF) {
-                coverage |= TranslucentCoverage;
-            } else if (pass->stateBits & RHI::MaskAF) {
-                coverage |= PerforatedCoverage;
-            } else {
-                coverage |= OpaqueCoverage;
-            }
-        } else if (!token.Icmp("cull")) {
+        } else if (!token.Icmp("type")) {
             if (lexer.ReadToken(&token, false)) {
-                if (!token.Icmp("none") || !token.Icmp("disable") || !token.Icmp("twoSided")) {
-                    cullType = RHI::NoCull;
-                } else if (!token.Icmp("back") || !token.Icmp("backSide") || !token.Icmp("backSided")) {
-                    cullType = RHI::BackCull;
-                } else if (!token.Icmp("front") || !token.Icmp("frontSide") || !token.Icmp("frontSided")) {
-                    cullType = RHI::FrontCull;
+                if (!token.Icmp("litSurface")) {
+                    type = Type::LitSurface;
+                } else if (!token.Icmp("unlitSurface")) {
+                    type = Type::UnlitSurface;
+                } else if (!token.Icmp("skySurface")) {
+                    type = Type::SkySurface;
+                } else if (!token.Icmp("light")) {
+                    type = Type::Light;
                 } else {
-                    BE_WARNLOG(L"invalid cull parm '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+                    BE_WARNLOG(L"invalid type parm '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
                 }
             } else {
-                BE_WARNLOG(L"missing parameter cull keyword in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG(L"missing parameter type keyword in material '%hs'\n", hashName.c_str());
             }
-        } else if (!token.Icmp("overlay")) {
-            flags |= (Overlay | NoShadow);
         } else if (!token.Icmp("noShadow")) {
             flags |= NoShadow;
         } else if (!token.Icmp("forceShadow")) {
@@ -99,10 +83,15 @@ bool Material::Create(const char *text) {
             flags |= UnsmoothTangents;
         } else if (!token.Icmp("polygonOffset")) {
             flags |= PolygonOffset;
-        } else if (!token.Icmp("sort")) {
-            ParseSort(lexer);
-        } else if (!token.Icmp("lightSort")) {
-            ParseLightSort(lexer);
+        } else if (!token.Icmp("lightMaterialType")) {
+            ParseLightMaterialType(lexer);
+        } else if (!token.Icmp("pass")) {
+            pass = new ShaderPass;
+            if (!ParsePass(lexer, pass)) {
+                delete pass;
+                pass = nullptr;
+                return false;
+            }
         } else {
             BE_WARNLOG(L"unknown general material parameter '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
@@ -114,35 +103,31 @@ bool Material::Create(const char *text) {
     return true;
 }
 
-bool Material::ParsePass(Lexer &lexer, Pass *pass) {
+bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     int blendSrc = 0;
     int blendDst = 0;
-    int alphaFunc = 0;
     int depthFunc = RHI::DF_LEqual;
     int colorWrite = RHI::RedWrite | RHI::GreenWrite | RHI::BlueWrite;
     int depthWrite = RHI::DepthWrite;
-    Dict propDict;
-    Str token;
 
+    pass->renderingMode     = RenderingMode::Opaque;
+    pass->cullType          = RHI::BackCull;
     pass->stateBits         = 0;
-    pass->alphaRef          = 0;
-    pass->vertexColorMode   = IgnoreVertexColor;
+    pass->cutoffAlpha       = 0.004f;
+    pass->vertexColorMode   = VertexColorMode::IgnoreVertexColor;
     pass->useOwnerColor     = false;
-    pass->constantColor[0]  = 1.0f;
-    pass->constantColor[1]  = 1.0f;
-    pass->constantColor[2]  = 1.0f;
-    pass->constantColor[3]  = 1.0f;
     pass->texture           = nullptr;
-    pass->tcScale[0]        = 1.0f;
-    pass->tcScale[1]        = 1.0f;
-    pass->tcTranslation[0]  = 0.0f;
-    pass->tcTranslation[1]  = 0.0f;
     pass->shader            = nullptr;
     pass->referenceShader   = nullptr;
+    pass->constantColor.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    pass->tcScale.Set(1.0f, 1.0f);
+    pass->tcTranslation.Set(0.0f, 0.0f);
 
     if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
         return false;
     }
+
+    Str token;
 
     while (1) {
         lexer.ReadToken(&token);
@@ -152,12 +137,29 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
             return false;
         } else if (token[0] == '}') {
             break;
+        } else if (!token.Icmp("renderingMode")) {
+            ParseRenderingMode(lexer, &pass->renderingMode);
+        } else if (!token.Icmp("cull")) {
+            if (lexer.ReadToken(&token, false)) {
+                if (!token.Icmp("none") || !token.Icmp("disable") || !token.Icmp("twoSided")) {
+                    pass->cullType = RHI::NoCull;
+                } else if (!token.Icmp("back") || !token.Icmp("backSide") || !token.Icmp("backSided")) {
+                    pass->cullType = RHI::BackCull;
+                } else if (!token.Icmp("front") || !token.Icmp("frontSide") || !token.Icmp("frontSided")) {
+                    pass->cullType = RHI::FrontCull;
+                } else {
+                    BE_WARNLOG(L"invalid cull parm '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+                }
+            } else {
+                BE_WARNLOG(L"missing parameter cull keyword in material '%hs'\n", hashName.c_str());
+            }
         } else if (!token.Icmp("shader")) {
             if (lexer.ReadToken(&token, false)) {
                 const Guid shaderGuid = Guid::ParseString(token);
                 const Str shaderPath = resourceGuidMapper.Get(shaderGuid);
                 pass->referenceShader = shaderManager.GetShader(shaderPath);
 
+                Dict propDict;
                 if (!ParseShaderProperties(lexer, propDict)) {
                     if (pass->referenceShader) {
                         shaderManager.ReleaseShader(pass->referenceShader);
@@ -220,16 +222,14 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
         } else if (!token.Icmp("tc")) {
             lexer.ParseVec(2, pass->tcScale);
             lexer.ParseVec(2, pass->tcTranslation);
-        } else if (!token.Icmp("alphaFunc")) {
-            ParseAlphaFunc(lexer, &alphaFunc, pass);
+        } else if (!token.Icmp("cutoffAlpha")) {
+            pass->cutoffAlpha = lexer.ParseFloat(); 
         } else if (!token.Icmp("depthFunc")) {
             ParseDepthFunc(lexer, &depthFunc);
         } else if (!token.Icmp("blendFunc")) {
             if (ParseBlendFunc(lexer, &blendSrc, &blendDst)) {
                 depthWrite = 0; // depth write off when blendFunc is valid
             }
-        } else if (!token.Icmp("noDepthWrite")) {
-            depthWrite = 0;
         } else if (!token.Icmp("colorMask")) {
             if (lexer.ReadToken(&token, false)) {
                 for (int i = 0; i < token.Length(); i++) {
@@ -322,7 +322,7 @@ bool Material::ParsePass(Lexer &lexer, Pass *pass) {
         blendDst = RHI::BD_Zero;
     }
 
-    pass->stateBits = blendSrc | blendDst | alphaFunc | depthFunc | colorWrite | depthWrite;
+    pass->stateBits = blendSrc | blendDst | depthFunc | colorWrite | depthWrite;
 
     return true;
 }
@@ -474,28 +474,24 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
     return true;
 }
 
-bool Material::ParseAlphaFunc(Lexer &lexer, int *alphaFunc, Pass *pass) const {
+bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) const {
     Str	token;
 
     if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("Greater") || !token.Icmp("GT")) {
-            *alphaFunc = RHI::AF_Greater;
-        } else if (!token.Icmp("GreaterEqual") || !token.Icmp("GE")) {
-            *alphaFunc = RHI::AF_GEqual;
-        } else if (!token.Icmp("Less") || !token.Icmp("LT")) {
-            *alphaFunc = RHI::AF_Less;
-        } else if (!token.Icmp("LessEqual") || !token.Icmp("LE")) {
-            *alphaFunc = RHI::AF_LEqual;
+        if (!token.Icmp("Opaque")) {
+            *renderingMode = RenderingMode::Opaque;
+        } else if (!token.Icmp("AlphaCutoff")) {
+            *renderingMode = RenderingMode::AlphaCutoff;
+        } else if (!token.Icmp("AlphaBlend")) {
+            *renderingMode = RenderingMode::AlphaBlend;
         } else {
-            BE_WARNLOG(L"unknown alphaFunc name '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG(L"unknown renderingMode '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
         }
-
-        pass->alphaRef = lexer.ParseFloat();
 
         return true;
     }
 
-    BE_WARNLOG(L"missing parameter for alphaFunc keyword in material '%hs'\n", hashName.c_str());
+    BE_WARNLOG(L"missing parameter for renderingMode keyword in material '%hs\n", hashName.c_str());
     return false;
 }
 
@@ -602,49 +598,21 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
     return false;
 }
 
-bool Material::ParseSort(Lexer &lexer) {
-    Str	token;
-
-    if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("subview")) {
-            sort = SubViewSort;
-        } else if (!token.Icmp("sky")) {
-            sort = SkySort;
-            coverage |= BackgroundCoverage;
-        } else if (!token.Icmp("opaque")) {
-            sort = OpaqueSort;
-        } else if (!token.Icmp("decal")) {
-            sort = DecalSort;
-        } else if (!token.Icmp("additiveLighting")) {
-            sort = AdditiveLightingSort;
-        } else if (!token.Icmp("blend")) {
-            sort = BlendSort;
-        } else if (!token.Icmp("nearest")) {
-            sort = NearestSort;
-        } else {
-            sort = (Sort)atoi(token.c_str());
-        }
-    } else {
-        BE_WARNLOG(L"missing parameter sort keyword in material '%hs'\n", hashName.c_str());
-        return false;
-    }
-
-    return true;
-}
-
-bool Material::ParseLightSort(Lexer &lexer) {
+bool Material::ParseLightMaterialType(Lexer &lexer) {
     Str	token;
 
     if (lexer.ReadToken(&token, false)) {
         if (!token.Icmp("light")) {
-            lightSort = NormalLightSort;
+            lightMaterialType = LightMaterial;
         } else if (!token.Icmp("blendLight")) {
-            lightSort = BlendLightSort;
+            lightMaterialType = BlendLightMaterial;
         } else if (!token.Icmp("fogLight")) {
-            lightSort = FogLightSort;
+            lightMaterialType = FogLightMaterial;
+        } else {
+            BE_WARNLOG(L"unknown lightMaterialType '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
         }
     } else {
-        BE_WARNLOG(L"missing parameter lightSort keyword in material '%hs'\n", hashName.c_str());
+        BE_WARNLOG(L"missing parameter lightMaterialType keyword in material '%hs'\n", hashName.c_str());
         return false;
     }
 
@@ -652,30 +620,24 @@ bool Material::ParseLightSort(Lexer &lexer) {
 }
 
 void Material::Finish() {
-    if (lightSort != BadLightSort) {
-        type = LightType;
-    } else if (pass->shader) {
-        type = LitSurfaceType;
-    } else if (pass->texture) {
-        type = StandardType;
-    } else {
-        type = BadType;
-    }
-
-    if (flags & PolygonOffset) {
-        if (!sort) {
-            sort = DecalSort;
+    if (type == Type::UnlitSurface) {
+        if (pass->renderingMode == RenderingMode::AlphaBlend) {
+            sort = UnlitBlendSort;
+        } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
+            sort = AlphaTestSort;
+        } else {
+            sort = OpaqueSort;
         }
-    }
-
-    if (sort == BadSort) {
-        if (pass->stateBits & RHI::MaskBF) {
-            sort = BlendSort;
-        } /*else if (pass.stateBits & RHI::MaskAF) {
-          sort = AlphaTestSort;
-        } */else {
-              sort = OpaqueSort;
+    } else if (type == Type::LitSurface) {
+        if (pass->renderingMode == RenderingMode::AlphaBlend) {
+            sort = TranslucentSort;
+        } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
+            sort = AlphaTestSort;
+        } else {
+            sort = OpaqueSort;
         }
+    } else if (type == Type::SkySurface) {
+        sort = SkySort;
     }
 }
 
@@ -690,39 +652,23 @@ void Material::Write(const char *filename) {
 
     fp->Printf("material %i\n", MATERIAL_VERSION);
 
-    Str sortStr;
-    switch (sort) {
-    case SubViewSort: sortStr = "subView"; break;
-    case SkySort: sortStr = "sky"; break;
-    case OpaqueSort: sortStr = "opaque"; break;
-    case DecalSort: sortStr = "decal"; break;
-    case AdditiveLightingSort: sortStr = "additiveLighting"; break;
-    case BlendSort: sortStr = "blend"; break;
-    case NearestSort: sortStr = "nearest"; break;
-    default: sortStr = Str((int)sort); break;
+    Str typeStr;
+    switch (type) {
+    case Type::Light: typeStr = "light"; break;
+    case Type::SkySurface: typeStr = "skySurface"; break;
+    case Type::UnlitSurface: typeStr = "unlitSurface"; break;
+    case Type::LitSurface: default: typeStr = "litSurface"; break;
     }
-    fp->Printf("%ssort %s\n", indentSpace.c_str(), sortStr.c_str());
+    fp->Printf("%stype %s\n", indentSpace.c_str(), typeStr.c_str());
 
-    Str lightSortStr;
-    switch (lightSort) {
-    case NormalLightSort: lightSortStr = "light"; break;
-    case BlendLightSort: lightSortStr = "blendLight"; break;
-    case FogLightSort: lightSortStr = "fogLight"; break;
-    default: lightSortStr = Str((int)sort); break;
+    Str lightMaterialTypeStr;
+    switch (lightMaterialType) {
+    case LightMaterial: lightMaterialTypeStr = "light"; break;
+    case BlendLightMaterial: lightMaterialTypeStr = "blendLight"; break;
+    case FogLightMaterial: lightMaterialTypeStr = "fogLight"; break;
+    default: lightMaterialTypeStr = Str((int)sort); break;
     }
-    fp->Printf("%slightSort %s\n", indentSpace.c_str(), lightSortStr.c_str());
-
-    Str cullStr;
-    switch (cullType) {
-    case RHI::BackCull: cullStr = "back"; break;
-    case RHI::FrontCull: cullStr = "front"; break;
-    case RHI::NoCull: default: cullStr = "none"; break;
-    }
-    fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
-
-    if (flags & Overlay) {
-        fp->Printf("%soverlay\n", indentSpace.c_str());
-    }
+    fp->Printf("%slightMaterialType %s\n", indentSpace.c_str(), lightMaterialTypeStr.c_str());    
 
     if (flags & NoShadow) {
         fp->Printf("%snoShadow\n", indentSpace.c_str());
@@ -742,6 +688,22 @@ void Material::Write(const char *filename) {
 
     fp->Printf("%spass {\n", indentSpace.c_str());
     indentSpace += "  ";
+
+    Str renderingModeStr;
+    switch (pass->renderingMode) {
+    case RenderingMode::Opaque: renderingModeStr = "Opaque"; break;
+    case RenderingMode::AlphaCutoff: renderingModeStr = "AlphaCutoff"; break;
+    case RenderingMode::AlphaBlend: renderingModeStr = "AlphaBlend"; break;
+    }
+    fp->Printf("%srenderingMode %s\n", indentSpace.c_str(), renderingModeStr.c_str());
+
+    Str cullStr;
+    switch (pass->cullType) {
+    case RHI::BackCull: cullStr = "back"; break;
+    case RHI::FrontCull: cullStr = "front"; break;
+    case RHI::NoCull: default: cullStr = "none"; break;
+    }
+    fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
 
     if (pass->referenceShader) {
         const Guid shaderGuid = resourceGuidMapper.Get(pass->referenceShader->GetHashName());
@@ -821,16 +783,8 @@ void Material::Write(const char *filename) {
         fp->Printf("%scolorMask %s\n", indentSpace.c_str(), colorMaskStr.c_str());
     }
 
-    int alphaFuncMask = pass->stateBits & RHI::MaskAF;
-    if (alphaFuncMask) {
-        Str alphaFuncStr;
-        switch (alphaFuncMask) {
-        case RHI::AF_LEqual: alphaFuncStr = "LE"; break;
-        case RHI::AF_Less: alphaFuncStr = "LT"; break;
-        case RHI::AF_GEqual: alphaFuncStr = "GE"; break;
-        case RHI::AF_Greater: alphaFuncStr = "GT"; break;
-        }
-        fp->Printf("%salphaFunc %s %.3f\n", indentSpace.c_str(), alphaFuncStr.c_str(), pass->alphaRef);
+    if (pass->renderingMode == RenderingMode::AlphaCutoff) {
+        fp->Printf("%scutoffAlpha %.3f\n", indentSpace.c_str(), pass->cutoffAlpha);
     }
 
     int depthFuncMask = pass->stateBits & RHI::MaskDF;
@@ -879,10 +833,6 @@ void Material::Write(const char *filename) {
         fp->Printf("%sblendFunc %s %s\n", indentSpace.c_str(), blendSrcStr.c_str(), blendDstStr.c_str());
     }
 
-    if (!(pass->stateBits & RHI::DepthWrite)) {
-        fp->Printf("%snoDepthWrite\n", indentSpace.c_str());
-    }
-
     if (pass->vertexColorMode != IgnoreVertexColor) {
         Str vertexColorModeStr;
         switch (pass->vertexColorMode) {
@@ -901,12 +851,24 @@ void Material::Write(const char *filename) {
     fileSystem.CloseFile(fp);
 }
 
+void Material::SetType(Type type) {
+    this->type = type;
+
+    Finish();
+}
+
+void Material::SetRenderingMode(RenderingMode mode) {
+    pass->renderingMode = mode;
+
+    Finish();
+}
+
 bool Material::IsLitSurface() const {
-    if (type != StandardType && type != LitSurfaceType) {
-        return false;
+    if (type == Type::LitSurface) {
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 bool Material::IsShadowCaster() const {
@@ -914,11 +876,11 @@ bool Material::IsShadowCaster() const {
         return false;
     }
 
-    if (type != StandardType && type != LitSurfaceType) {
+    if (type == Type::UnlitSurface || type == Type::SkySurface) {
         return false;
     }
 
-    if (pass->stateBits & RHI::MaskBF) {
+    if (pass->renderingMode == RenderingMode::AlphaBlend) {
         return false;
     }
 
@@ -975,7 +937,7 @@ void Material::MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]) {
 //                  |  0   0   0   1  |
 //    
 //--------------------------------------------------------------------------------------------------
-bool Material::Pass::GetTextureMatrix(const float *evalShaderRegisters, float outMatrix[2][4]) const {
+bool Material::ShaderPass::GetTextureMatrix(const float *evalShaderRegisters, float outMatrix[2][4]) const {
     if (!this->hasTextureMatrix) {
         outMatrix[0][0] = 1.0f;
         outMatrix[0][1] = 0.0f;

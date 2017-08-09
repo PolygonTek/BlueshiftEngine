@@ -75,28 +75,28 @@ private:
     void                SetSubMeshVertexFormat(const SubMesh *mesh, int vertexFormatIndex) const;
 
     void                SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const;
-    const Texture *     TextureFromShaderProperties(const Material::Pass *mtrlPass, const Str &textureName) const;
+    const Texture *     TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const;
     void                SetMatrixConstants(const Shader *shader) const;
     void                SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const;
     void                SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const;
 
-    void                SetupLightingShader(const Material::Pass *mtrlPass, const Shader *shader, bool useShadowMap) const;
+    void                SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const;
 
     void                RenderColor(const Color4 &color) const;
-    void                RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id) const;
-    void                RenderDepth(const Material::Pass *mtrlPass) const;
-    void                RenderVelocity(const Material::Pass *mtrlPass) const;
-    void                RenderBase(const Material::Pass *mtrlPass, float ambientScale) const;
-    void                RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) const;
-    void                RenderAmbientLit(const Material::Pass *mtrlPass, float ambientScale) const;
-    void                RenderAmbient_DirectLit(const Material::Pass *mtrlPass, float ambientScale) const;
-    void                RenderAmbientLit_DirectLit(const Material::Pass *mtrlPass, float ambientScale) const;
-    void                RenderGeneric(const Material::Pass *mtrlPass) const;
+    void                RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &vec3_id) const;
+    void                RenderDepth(const Material::ShaderPass *mtrlPass) const;
+    void                RenderVelocity(const Material::ShaderPass *mtrlPass) const;
+    void                RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderGeneric(const Material::ShaderPass *mtrlPass) const;
 
-    void                RenderLightInteraction(const Material::Pass *mtrlPass) const;
-    void                RenderFogLightInteraction(const Material::Pass *mtrlPass) const;
-    void                RenderBlendLightInteraction(const Material::Pass *mtrlPass) const;
-    void                RenderGui(const Material::Pass *mtrlPass) const;
+    void                RenderLightInteraction(const Material::ShaderPass *mtrlPass) const;
+    void                RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) const;
+    void                RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) const;
+    void                RenderGui(const Material::ShaderPass *mtrlPass) const;
 
     void                DrawPrimitives() const;
 

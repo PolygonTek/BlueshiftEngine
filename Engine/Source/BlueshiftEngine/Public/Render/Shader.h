@@ -107,6 +107,7 @@ public:
     void                    Reinstantiate();
 
     Shader *                GetPerforatedVersion();
+    Shader *                GetPremulAlphaVersion();
     Shader *                GetAmbientLitVersion();
     Shader *                GetDirectLitVersion();
     Shader *                GetAmbientLitDirectLitVersion();
@@ -202,13 +203,13 @@ public:
 
 private:
     bool                    ParseProperties(Lexer &lexer);
-    void                    Finish();
     Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinning);
     bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText);
     bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion);
+    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion);
     bool                    Instantiate(const Array<Define> &defineArray);	// internal function of instantiate
 
-    bool                    Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir);
+    bool                    Finish(bool generatePerforatedVersion, bool genereatePremulAlphaVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir);
     bool                    ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
     bool                    ProcessIncludeRecursive(const char *baseDir, Str &text) const;
 
@@ -235,6 +236,7 @@ private:
     Array<Shader *>         instantiatedShaders;
 
     Shader *                perforatedVersion;
+    Shader *                premulAlphaVersion;
     Shader *                ambientLitVersion;
     Shader *                directLitVersion;
     Shader *                ambientLitDirectLitVersion;
@@ -255,6 +257,7 @@ BE_INLINE Shader::Shader() {
     hasVertexShader         = false;
     hasFragmentShader       = false;
     perforatedVersion       = nullptr;
+    premulAlphaVersion      = nullptr;
     ambientLitVersion       = nullptr;
     directLitVersion        = nullptr;
     ambientLitDirectLitVersion = nullptr;

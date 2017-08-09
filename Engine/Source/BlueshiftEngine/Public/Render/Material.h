@@ -44,43 +44,31 @@ public:
         NoShadow                = BIT(1),
         ForceShadow             = BIT(2),
         UnsmoothTangents        = BIT(4),
-        Overlay                 = BIT(5),
         LoadedFromFile          = BIT(9)
     };
 
     enum Type {
-        BadType,
-        StandardType,
-        LightType,
-        LitSurfaceType
+        LitSurface,
+        UnlitSurface,
+        SkySurface,
+        Light,
+    };
+
+    enum LightMaterialType {
+        LightMaterial,
+        BlendLightMaterial,
+        FogLightMaterial
     };
 
     enum Sort {
         BadSort                 = 0,
         SubViewSort             = 1,
-        SkySort                 = 2,
-        OpaqueSort              = 3,    //
+        OpaqueSort              = 2,    //
+        SkySort                 = 3,
         AlphaTestSort           = 4,    //
-        DecalSort               = 8,    //
-        RefractionSort          = 9,
-        AdditiveLightingSort    = 10,   //
-        BlendSort               = 11,
+        TranslucentSort         = 10,   //
+        UnlitBlendSort          = 11,
         NearestSort             = 15
-    };
-
-    enum LightSort {
-        BadLightSort            = 0,
-        NormalLightSort         = 1,
-        BlendLightSort          = 2,
-        FogLightSort            = 3
-    };
-
-    enum Coverage {
-        EmptyCoverage           = 0,
-        BackgroundCoverage      = BIT(0),
-        OpaqueCoverage          = BIT(1),   // completely fills the triangle
-        PerforatedCoverage      = BIT(2),   // may have alpha tested holes
-        TranslucentCoverage     = BIT(3)    // blended with background
     };
 
     enum VertexColorMode {
@@ -101,9 +89,17 @@ public:
         OverlayHint
     };
 
-    struct Pass {
+    enum RenderingMode {
+        Opaque,
+        AlphaCutoff,
+        AlphaBlend
+    };
+
+    struct ShaderPass {
+        RenderingMode       renderingMode;
+        int                 cullType;
         int                 stateBits;
-        float               alphaRef;
+        float               cutoffAlpha;
         VertexColorMode     vertexColorMode;
         bool                useOwnerColor;
         Color4              constantColor;
@@ -122,16 +118,18 @@ public:
     const char *            GetHashName() const { return hashName; }
     int                     GetFlags() const { return flags; }
     Type                    GetType() const { return type; }
-    int                     GetCullType() const { return cullType; }
+    void                    SetType(Type type);
+    int                     GetLightMaterialType() const { return lightMaterialType; }
+    RenderingMode           GetRenderingMode() const { return pass->renderingMode; }
+    void                    SetRenderingMode(RenderingMode mode);
+    int                     GetCullType() const { return pass->cullType; }
     int                     GetSort() const { return sort; }
-    int                     GetLightSort() const { return lightSort; }
-    int                     GetCoverage() const { return coverage; }
 
     bool                    IsLitSurface() const;
     bool                    IsShadowCaster() const;
 
-    const Pass *            GetPass() const { return pass; }
-    Pass *                  GetPass() { return pass; }
+    const ShaderPass *      GetPass() const { return pass; }
+    ShaderPass *            GetPass() { return pass; }
 
     void                    SetName(const char *name) { this->name = name; }
 
@@ -150,15 +148,14 @@ public:
     void                    EndShaderPropertiesChanged();
 
 private:
-    bool                    ParsePass(Lexer &lexer, Pass *pass);
-    bool                    ParseAlphaFunc(Lexer &lexer, int *alphaFunc, Pass *pass) const;
-    bool                    ParseDepthFunc(Lexer &lexer, int *depthFunc) const;
-    bool                    ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
-    bool                    ParseSort(Lexer &lexer);
-    bool                    ParseLightSort(Lexer &lexer);
-    //void                    MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);    
-    bool                    ParseShaderProperties(Lexer &lexer, Dict &properties);
     void                    Finish();
+    bool                    ParsePass(Lexer &lexer, ShaderPass *pass);
+    bool                    ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) const;
+    bool                    ParseDepthFunc(Lexer &lexer, int *depthFunc) const; // to be removed
+    bool                    ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
+    bool                    ParseLightMaterialType(Lexer &lexer);
+    //void                  MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);    
+    bool                    ParseShaderProperties(Lexer &lexer, Dict &properties);
 
     Str                     hashName;
     Str                     name;
@@ -168,12 +165,10 @@ private:
 
     int                     flags;
     Type                    type;
-    int                     coverage;
-    int                     cullType;
+    LightMaterialType       lightMaterialType;
     Sort                    sort;
-    LightSort               lightSort;
-    
-    Pass *                  pass;
+
+    ShaderPass *            pass;
 };
 
 BE_INLINE Material::Material() {
@@ -181,11 +176,9 @@ BE_INLINE Material::Material() {
     permanence              = false;
     index                   = -1;
     flags                   = 0;
-    type                    = BadType;
-    cullType                = RHI::BackCull;
-    coverage                = EmptyCoverage;
+    type                    = LitSurface;
+    lightMaterialType       = LightMaterial;
     sort                    = BadSort;
-    lightSort               = BadLightSort;
     pass                    = nullptr;
 }
 

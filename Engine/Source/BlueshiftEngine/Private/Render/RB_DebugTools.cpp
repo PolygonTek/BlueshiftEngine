@@ -564,7 +564,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
         }
         
         if (surf->sortKey != prevSortkey) {
-            if (surf->material->GetCoverage() == Material::EmptyCoverage) {
+            if (surf->material->GetSort() == Material::Sort::SkySort) {
                 continue;
             }
 

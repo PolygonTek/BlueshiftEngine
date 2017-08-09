@@ -104,7 +104,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
     state_delta = currentContext->state->renderState ^ stateBits;
     //state_delta = ~0;
     
-    if (state_delta || currentContext->state->alphaRefChanged) {
+    if (state_delta) {
         // polygon mode
         if (OpenGL::SupportsPolygonMode() && (state_delta & MaskPM)) {
             bits = (stateBits & MaskPM);
@@ -242,35 +242,6 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
             }
         }
         
-        // alpha func
-        /*if (state_delta & MaskAF || currentContext->state->alphaRefChanged) {
-         if (stateBits & MaskAF) {
-         bits = stateBits & MaskAF;
-         switch (bits) {
-         case AF_Greater:
-         gglAlphaFunc(GL_GREATER, currentContext->state->alphaRef);
-         gglEnable(GL_ALPHA_TEST);
-         break;
-         case AF_GEqual:
-         gglAlphaFunc(GL_GEQUAL, currentContext->state->alphaRef);
-         gglEnable(GL_ALPHA_TEST);
-         break;
-         case AF_Less:
-         gglAlphaFunc(GL_LESS, currentContext->state->alphaRef);
-         gglEnable(GL_ALPHA_TEST);
-         break;
-         case AF_LEqual:
-         gglAlphaFunc(GL_LEQUAL, currentContext->state->alphaRef);
-         gglEnable(GL_ALPHA_TEST);
-         break;
-         }
-         } else {
-         gglDisable(GL_ALPHA_TEST);
-         }
-         
-         currentContext->state->alphaRefChanged = false;
-         }*/
-        
         // color mask
         if (state_delta & (ColorWrite | AlphaWrite)) {
             redWrite	= stateBits & RedWrite ? true : false;
@@ -286,13 +257,6 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
         }
         
         currentContext->state->renderState = stateBits;
-    }
-}
-
-void OpenGLRHI::SetAlphaRef(float alphaRef) {
-    if (currentContext->state->alphaRef != alphaRef) {
-        currentContext->state->alphaRef = alphaRef;
-        currentContext->state->alphaRefChanged = true;
     }
 }
 

@@ -28,6 +28,7 @@ shader "StandardSpecAmbientLit" {
     }
     
     generatePerforatedVersion
+    generatePremulAlphaVersion
     generateGpuSkinningVersion
 
     glsl_vp {

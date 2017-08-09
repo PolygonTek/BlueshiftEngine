@@ -49,29 +49,35 @@ void MaterialManager::Init() {
     whiteMaterial->permanence = true;
 
     blendMaterial = AllocMaterial("_blendMaterial");
-    blendMaterial->Create(va("pass {\n"
+    blendMaterial->Create(va("type unlitSurface\n"
+        "pass {\n"
         "map \"%s\"\n"
         "blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
     "}", GuidMapper::whiteTextureGuid.ToString()));
     blendMaterial->permanence = true;
 
     whiteLightMaterial = AllocMaterial("_whiteLightMaterial");
-    whiteLightMaterial->Create(va("lightSort light\npass {\n"
+    whiteLightMaterial->Create(va("lightMaterialType light\n"
+        "pass {\n"
         "map \"%s\"\n"
         "useOwnerColor\n"
     "}", GuidMapper::whiteTextureGuid.ToString()));
     whiteLightMaterial->permanence = true;
 
     zeroClampLightMaterial = AllocMaterial("_zeroClampLightMaterial");
-    zeroClampLightMaterial->Create(va("lightSort light\npass {\n"
+    zeroClampLightMaterial->Create(va("lightMaterialType light\n"
+        "pass {\n"
         "map \"%s\"\n"
         "useOwnerColor\n"
     "}", GuidMapper::zeroClampTextureGuid.ToString()));
     zeroClampLightMaterial->permanence = true;
 
     defaultSkyboxMaterial = AllocMaterial("_defaultSkyboxMaterial");
-    defaultSkyboxMaterial->Create(va("sort sky\ncull twoSided\npass {\n"
+    defaultSkyboxMaterial->Create(va("type skySurface\n"
+        "pass {\n"
+        "cull front"
         "noDepthWrite\n"
+        "depthFunc EQ\n"
         "shader \"%s\" {\n"
             "skyCubeMap \"%s\"\n"
         "}\n"
@@ -211,6 +217,7 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
     switch (hint) {
     case Material::SpriteHint:
         Str::snPrintf(buffer, sizeof(buffer), 
+            "type unlitSurface\n"
             "noShadow\n"
             "pass {\n" 
             "   mapPath \"%hs\"\n"
@@ -219,7 +226,8 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
         break;
     case Material::LightHint:
         Str::snPrintf(buffer, sizeof(buffer),
-            "lightSort light\n"
+            "type light\n"
+            "lightMaterialType light\n"
             "pass {\n" 
             "   mapPath \"%hs\"\n"
             "   useOwnerColor\n" 
@@ -227,9 +235,10 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
         break;
     case Material::OverlayHint:
         Str::snPrintf(buffer, sizeof(buffer),
-            "overlay\n" 
-            "cull twoSided\n"
+            "type unlitSurface\n"
+            "noShadow\n" 
             "pass {\n" 
+            "   cull twoSided\n"
             "   vertexColor\n"
             "   mapPath \"%hs\"\n"
             "   blendFunc blend\n" 
@@ -237,6 +246,7 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
         break;
     default:
         Str::snPrintf(buffer, sizeof(buffer),
+            "type litSurface\n"
             "pass {\n"
             "   mapPath \"%hs\"\n" 
             "}\n", texture->GetHashName());

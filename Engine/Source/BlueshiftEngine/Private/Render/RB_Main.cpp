@@ -137,7 +137,7 @@ void RB_SetupLight(viewLight_t *viewLight) {
 
     viewLight->materialRegisters = nullptr;//outputValues;
 
-    const Material::Pass *lightPass = lightMaterial->GetPass();
+    const Material::ShaderPass *lightPass = lightMaterial->GetPass();
 
     if (lightPass->useOwnerColor) {
         viewLight->lightColor = Color4(&sceneLight->parms.materialParms[SceneEntity::RedParm]);

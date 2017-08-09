@@ -96,7 +96,6 @@ public:
 
     void                    SetDefaultState();
     void                    SetStateBits(unsigned int state);
-    void                    SetAlphaRef(float alphaRef);
     void                    SetCullFace(int cull);
     void                    SetDepthBias(float slopeScaleBias, float constantBias);
     void                    SetDepthRange(float znear, float zfar);

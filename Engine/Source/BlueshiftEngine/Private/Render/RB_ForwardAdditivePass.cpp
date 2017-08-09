@@ -42,9 +42,7 @@ static void RB_LitPass(const viewLight_t *viewLight) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (surf->material->GetSort() != Material::OpaqueSort &&
-                surf->material->GetSort() != Material::AlphaTestSort &&
-                surf->material->GetSort() != Material::AdditiveLightingSort) {
+            if (surf->material->GetType() != Material::Type::LitSurface) {
                 continue;
             }
 

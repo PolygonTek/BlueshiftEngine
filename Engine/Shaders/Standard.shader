@@ -99,6 +99,7 @@ shader "Standard" {
     }*/
     
     generatePerforatedVersion
+    generatePremulAlphaVersion
     generateGpuSkinningVersion
 
     ambientLitVersion "StandardAmbientLit.shader"

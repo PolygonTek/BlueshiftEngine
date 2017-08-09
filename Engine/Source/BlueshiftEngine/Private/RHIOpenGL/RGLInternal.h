@@ -85,8 +85,6 @@ struct GLState {
     RHI::Handle         stencilStateHandle;
 
     unsigned int        renderState;
-    float               alphaRef;
-    bool                alphaRefChanged;
     int                 cull;
     Rect                viewportRect;
     Rect                scissorRect;

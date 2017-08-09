@@ -31,7 +31,8 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (!(surf->material->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage))) {
+            if (surf->material->GetType() != Material::Type::LitSurface &&
+                surf->material->GetType() != Material::Type::SkySurface) {
                 continue;
             }
 
@@ -49,9 +50,10 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 }
 
                 int flushType = RBSurf::AmbientFlush;
-                if (surf->material->GetSort() == Material::SkySort) {
+                if (surf->material->GetType() == Material::Type::SkySurface) {
                     flushType = RBSurf::BackgroundFlush;
                 }
+
                 backEnd.rbsurf.Begin(flushType, surf->material, surf->materialRegisters, surf->space, backEnd.primaryLight);
 
                 prevMaterial = surf->material;

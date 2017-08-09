@@ -204,7 +204,7 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
                 continue;
             }
 
-            if (!(surf->material->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage)) && 
+            if (!(surf->material->GetSort() == Material::Sort::OpaqueSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) &&
                 !(surf->material->GetFlags() & Material::ForceShadow)) {
                 continue;
             }
@@ -214,8 +214,7 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
                     backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
                 } else {
                     if (surf->space != prevSpace ||
-                        (prevMaterial->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage)) == Material::PerforatedCoverage || 
-                        (surf->material->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage)) == Material::PerforatedCoverage) {
+                        (prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
                         backEnd.rbsurf.Flush();
                         backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
                     }
@@ -403,7 +402,7 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
                 continue;
             }
 
-            if (!(surf->material->GetCoverage() & (Material::OpaqueCoverage | Material::PerforatedCoverage)) && 
+            if (!(surf->material->GetSort() == Material::Sort::OpaqueSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) && 
                 !(surf->material->GetFlags() & Material::ForceShadow)) {
                 continue;
             }
@@ -413,7 +412,7 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
                     backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
                 } else {
                     if (surf->space != prevSpace ||
-                        (prevMaterial->GetCoverage() & Material::PerforatedCoverage) || (surf->material->GetCoverage() & Material::PerforatedCoverage) ||
+                        (prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) ||
                         (surf->material->GetCullType() != prevMaterial->GetCullType())) {
                         backEnd.rbsurf.Flush();
                         backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);

@@ -28,6 +28,7 @@ shader "StandardAmbientLitDirectLit" {
     }
     
     generatePerforatedVersion
+    generatePremulAlphaVersion
     generateGpuSkinningVersion
     generateParallelShadowVersion
     generateSpotShadowVersion
