@@ -634,8 +634,8 @@ bool GameWorld::LoadMap(const char *filename) {
     SpawnEntitiesFromJson(map["entities"]);
     
     fileSystem.FreeFile(text);
-    
-    FinishMapLoading();    
+
+    FinishMapLoading();
 
     return true;
 }

@@ -668,7 +668,7 @@ void Material::Write(const char *filename) {
     case FogLightMaterial: lightMaterialTypeStr = "fogLight"; break;
     default: lightMaterialTypeStr = Str((int)sort); break;
     }
-    fp->Printf("%slightMaterialType %s\n", indentSpace.c_str(), lightMaterialTypeStr.c_str());    
+    fp->Printf("%slightMaterialType %s\n", indentSpace.c_str(), lightMaterialTypeStr.c_str());
 
     if (flags & NoShadow) {
         fp->Printf("%snoShadow\n", indentSpace.c_str());
