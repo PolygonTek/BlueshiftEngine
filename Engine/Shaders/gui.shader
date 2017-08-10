@@ -1,8 +1,8 @@
 shader "gui" {
 	glsl_vp {
-		$include "gui.vp"
+		$include "Simple.vp"
 	}
 	glsl_fp {
-		$include "gui.fp"
+		$include "Simple.fp"
 	}
 }

@@ -3,7 +3,7 @@ $include "Lighting.glsl"
 $include "IBL.glsl"
 
 #ifdef USE_SHADOW_MAP
-$include "shadow.fp"
+$include "ShadowLibrary.fp"
 #endif
 
 in vec4 v2f_color;
@@ -97,7 +97,7 @@ void main() {
     vec3 V = normalize(v2f_viewVector);
 #endif
 
-#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0
+#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 2 || _GLOSS_SOURCE == 3 || _METALLIC_SOURCE == 1 || (_ROUGHNESS_SOURCE == 2 || _ROUGHNESS_SOURCE == 3) || _EMISSION_SOURCE == 2
     #if _PARALLAX_SOURCE != 0
         float h = tex2D(heightMap, v2f_tex).x * 2.0 - 1.0;
         vec2 baseTc = offsetTexcoord(h, v2f_tex, V, heightScale * 0.1);

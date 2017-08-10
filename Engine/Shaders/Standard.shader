@@ -1,4 +1,5 @@
-shader "Standard" {
+shader "Lit/Standard" {
+    litSurface
     properties {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
         albedoColor("Albedo Color") : color3 = "1 1 1"
@@ -25,78 +26,6 @@ shader "Standard" {
         emissionColor("Emission Color") : color3 = "1 1 1"
         emissionScale("Emission Scale") : float range 0 16 0.001 = "1"
     }
-
-    /*
-    subShader "Base" {
-        supportGpuSkinning
-
-        glsl_vp {
-            $include "StandardCore.vp"
-        }
-        glsl_fp {
-            $include "StandardCore.fp"
-        }
-    }
-
-    subShader "Depth" {
-        supportGpuSkinning
-
-        glsl_vp {
-            $include "Depth.vp"
-        }
-        glsl_fp {
-            $include "Depth.fp"
-        }
-    }
-
-    subShader "DirectLit" {
-        supportGpuSkinning
-        supportShadows
-
-        glsl_vp {
-            #define DIRECT_LIGHTING 1
-            #define STANDARD_METALLIC_LIGHTING
-            $include "StandardCore.vp"
-        }
-        glsl_fp {
-            #define STANDARD_METALLIC_LIGHTING
-            #define DIRECT_LIGHTING 1
-            $include "StandardCore.fp"
-        }
-    }
-
-    subShader "AmbientLit" {
-        supportGpuSkinning
-
-        glsl_vp {
-            #define INDIRECT_LIGHTING 1
-            #define STANDARD_METALLIC_LIGHTING
-            $include "StandardCore.vp"
-        }
-        glsl_fp {
-            #define INDIRECT_LIGHTING 1
-            #define STANDARD_METALLIC_LIGHTING
-            $include "StandardCore.fp"
-        }
-    }
-
-    subShader "DirectLitAmbientLit" {
-        supportGpuSkinning
-        supportShadows
-
-        glsl_vp {
-            #define DIRECT_LIGHTING 1
-            #define INDIRECT_LIGHTING 1
-            #define STANDARD_METALLIC_LIGHTING
-            $include "StandardCore.vp"
-        }
-        glsl_fp {
-            #define DIRECT_LIGHTING 1
-            #define INDIRECT_LIGHTING 1
-            #define STANDARD_METALLIC_LIGHTING
-            $include "StandardCore.fp"
-        }
-    }*/
     
     generatePerforatedVersion
     generatePremulAlphaVersion

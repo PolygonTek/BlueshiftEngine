@@ -395,14 +395,14 @@ void RenderSystem::CheckModifiedCVars() {
         if (r_shadows.GetInteger() == 1) {
             if (!shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n")) {
                 shaderManager.AddGlobalHeader("#define USE_SHADOW_MAP\n");
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
 
                 RecreateShadowMapRT();
             }
         } else {
             if (shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n")) {
                 shaderManager.RemoveGlobalHeader("#define USE_SHADOW_MAP\n");
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         }
     }
@@ -414,13 +414,13 @@ void RenderSystem::CheckModifiedCVars() {
             if (!shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n")) {
                 shaderManager.AddGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
 
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
             if (shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n")) {
                 shaderManager.RemoveGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
 
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         }
     }
@@ -431,7 +431,7 @@ void RenderSystem::CheckModifiedCVars() {
         shaderManager.RemoveGlobalHeader(va("#define CSM_COUNT "));
         
         shaderManager.AddGlobalHeader(va("#define CSM_COUNT %i\n", r_CSM_count.GetInteger()));
-        shaderManager.ReloadLightingShaders();
+        shaderManager.ReloadLitSurfaceShaders();
 
         RecreateShadowMapRT();
     }
@@ -442,7 +442,7 @@ void RenderSystem::CheckModifiedCVars() {
         shaderManager.RemoveGlobalHeader(va("#define CASCADE_SELECTION_METHOD "));
         
         shaderManager.AddGlobalHeader(va("#define CASCADE_SELECTION_METHOD %i\n", r_CSM_selectionMethod.GetInteger()));
-        shaderManager.ReloadLightingShaders();
+        shaderManager.ReloadLitSurfaceShaders();
 
         RecreateShadowMapRT();
     }
@@ -453,12 +453,12 @@ void RenderSystem::CheckModifiedCVars() {
         if (r_CSM_blend.GetBool()) {
             if (!shaderManager.FindGlobalHeader("#define BLEND_CASCADE\n")) {
                 shaderManager.AddGlobalHeader("#define BLEND_CASCADE\n");
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
             if (shaderManager.FindGlobalHeader("#define BLEND_CASCADE\n")) {
                 shaderManager.RemoveGlobalHeader("#define BLEND_CASCADE\n");
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         }
     }
@@ -470,7 +470,7 @@ void RenderSystem::CheckModifiedCVars() {
         
         if (r_shadowMapQuality.GetInteger() >= 0) {
             shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
-            shaderManager.ReloadLightingShaders();
+            shaderManager.ReloadLitSurfaceShaders();
         }
     }
 }

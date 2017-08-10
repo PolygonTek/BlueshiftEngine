@@ -25,23 +25,23 @@ static const char *directiveInclude = "$include";
 // NOTE: BuiltInConstant enum 과 반드시 순서가 같아야 함
 // NOTE2: 나중에 자동으로 모든 shader 에 추가되는 구조로 바꾸면 편할 듯
 static const char *builtInConstantNames[] = {
-    "modelViewMatrix",
-    "modelViewMatrixTranspose",
-    "projectionMatrix",
-    "projectionMatrixTranspose",
-    "modelViewProjectionMatrix",
-    "modelViewProjectionMatrixTranspose",
-    "worldMatrixS",
-    "worldMatrixT",
-    "worldMatrixR",
-    "textureMatrixS",
-    "textureMatrixT",
-    "constantColor",
-    "vertexColorScale",
-    "vertexColorAdd",
-    "localViewOrigin",
-    "localLightOrigin",
-    "localLightAxis"
+    "modelViewMatrix",                      // ModelViewMatrixConst
+    "modelViewMatrixTranspose",             // ModelViewMatrixTransposeConst
+    "projectionMatrix",                     // ProjectionMatrixConst
+    "projectionMatrixTranspose",            // ProjectionMatrixTransposeConst
+    "modelViewProjectionMatrix",            // ModelViewProjectionMatrixConst
+    "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTransposeConst
+    "worldMatrixS",                         // WorldMatrixSConst
+    "worldMatrixT",                         // WorldMatrixTConst
+    "worldMatrixR",                         // WorldMatrixRConst
+    "textureMatrixS",                       // TextureMatrixSConst
+    "textureMatrixT",                       // TextureMatrixTConst
+    "constantColor",                        // ConstantColorConst
+    "vertexColorScale",                     // VertexColorScaleConst
+    "vertexColorAdd",                       // VertexColorAddConst
+    "localViewOrigin",                      // LocalViewOriginConst
+    "localLightOrigin",                     // LocalLightOriginConst
+    "localLightAxis"                        // LocalLightAxisConst
 };
 
 // NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함
@@ -141,10 +141,24 @@ bool Shader::Create(const char *text, const char *baseDir) {
             break;
         } else if (token[0] == '}') {
             break;
-        } else if (!token.Icmp("lighting")) {
-            flags |= Lighting;
+        } else if (!token.Icmp("litSurface")) {
+            flags |= LitSurface;
+        } else if (!token.Icmp("skySurface")) {
+            flags |= SkySurface;
         } else if (!token.Icmp("properties")) {
             ParseProperties(lexer);
+        } else if (!token.Icmp("inheritProperties")) {
+            if (lexer.ReadToken(&token)) {
+                Str path = baseDir;
+                path.AppendPath(token, '/');
+
+                Shader *shader = shaderManager.FindShader(path);
+                if (shader) {
+                    specHashMap = shader->specHashMap;
+                }
+            } else {
+                BE_WARNLOG(L"missing inheritProperties name in shader '%hs'\n", hashName.c_str());
+            }
         } else if (!token.Icmp("ambientLitVersion")) {
             if (lexer.ReadToken(&token)) {
                 Str path = baseDir;

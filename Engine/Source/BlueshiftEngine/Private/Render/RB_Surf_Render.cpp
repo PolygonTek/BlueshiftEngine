@@ -943,7 +943,7 @@ void RBSurf::RenderGui(const Material::ShaderPass *mtrlPass) const {
         shader = ShaderManager::guiShader;
         shader->Bind();
 
-        shader->SetTexture("map", mtrlPass->texture);
+        shader->SetTexture("mainMap", mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);

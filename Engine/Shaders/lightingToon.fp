@@ -1,7 +1,7 @@
 $include "fragment_common.glsl"
 
 #ifdef USE_SHADOW_MAP
-$include "shadow.fp"
+$include "ShadowLibrary.fp"
 #endif
 
 in vec4 v2f_color;

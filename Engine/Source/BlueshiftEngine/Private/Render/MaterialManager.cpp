@@ -75,8 +75,7 @@ void MaterialManager::Init() {
     defaultSkyboxMaterial = AllocMaterial("_defaultSkyboxMaterial");
     defaultSkyboxMaterial->Create(va("type skySurface\n"
         "pass {\n"
-        "cull front"
-        "noDepthWrite\n"
+        "cull twoSided\n"
         "depthFunc EQ\n"
         "shader \"%s\" {\n"
             "skyCubeMap \"%s\"\n"

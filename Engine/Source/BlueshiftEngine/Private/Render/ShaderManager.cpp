@@ -358,13 +358,13 @@ void ShaderManager::ReloadShaders() {
     }
 }
 
-void ShaderManager::ReloadLightingShaders() {
+void ShaderManager::ReloadLitSurfaceShaders() {
     for (int i = 0; i < shaderHashMap.Count(); i++) {
         const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
         Shader *shader = entry->second;
 
         if (shader->IsOriginalShader()) {
-            if (shader->flags & Shader::Lighting) {
+            if (shader->flags & Shader::LitSurface) {
                 shader->Reload();
             }
         }

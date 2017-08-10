@@ -1,4 +1,5 @@
-shader "StandardSpec" {
+shader "Lit/StandardSpec" {
+    litSurface
     properties {
         _ALBEDO_SOURCE("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
         albedoColor("Albedo Color") : color3 = "1 1 1"

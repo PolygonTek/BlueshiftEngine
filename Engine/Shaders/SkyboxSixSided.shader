@@ -1,4 +1,5 @@
 shader "Skybox/SixSided" {
+    skySurface
     properties {
         tint("Tint") : color3 = "1 1 1"
         exposure("Exposure") : float range 0 8 0.1 = "1.0"

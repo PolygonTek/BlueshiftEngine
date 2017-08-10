@@ -3,8 +3,8 @@ in vec4 v2f_color;
 
 out vec4 o_fragColor : FRAG_COLOR;
 
-uniform sampler2D map;
+uniform sampler2D mainMap;
 
 void main() {
-	o_fragColor = v2f_color * tex2D(map, v2f_texCoord);
+	o_fragColor = v2f_color * tex2D(mainMap, v2f_texCoord);
 }

@@ -38,7 +38,8 @@ class Shader {
 
 public:
     enum Flag {
-        Lighting                = BIT(0),
+        LitSurface              = BIT(0),
+        SkySurface              = BIT(1),
         LoadedFromFile          = BIT(8)
     };
 
@@ -341,7 +342,7 @@ public:
     void                    DestroyUnusedShaders();
 
     void                    ReloadShaders();
-    void                    ReloadLightingShaders();
+    void                    ReloadLitSurfaceShaders();
 
     bool                    FindGlobalHeader(const char *text) const;
     void                    AddGlobalHeader(const char *text);
