@@ -72,6 +72,7 @@ private:
     
     Array<GuiMeshSurf>      surfaces;
     GuiMeshSurf *           currentSurf;
+    uint32_t                currentColor;
 
     int                     totalVerts;         ///< Total number of the vertices
     int                     totalIndexes;       ///< Total number of the indices

@@ -34,7 +34,8 @@ void GuiMesh::Clear() {
 
     surfaces.SetCount(0, false);
 
-    PrepareNextSurf();
+    currentColor = 0xFFFFFFFF;
+    currentSurf = nullptr;
 }
 
 void GuiMesh::PrepareNextSurf() {
@@ -47,10 +48,10 @@ void GuiMesh::PrepareNextSurf() {
     memset(&newSurf.indexCache, 0, sizeof(newSurf.indexCache));
 
     if (surfaces.Count() > 0) {
-        newSurf.color = currentSurf->color;
+        newSurf.color = currentColor;
         newSurf.material = currentSurf->material;
     } else {
-        newSurf.color = 0xFFFFFFFF;
+        newSurf.color = currentColor;
         newSurf.material = materialManager.defaultMaterial;
     }
 
@@ -59,7 +60,7 @@ void GuiMesh::PrepareNextSurf() {
 }
 
 void GuiMesh::SetColor(const Color4 &rgba) {
-    currentSurf->color = rgba.ToUInt32();
+    currentColor = rgba.ToUInt32();
 }
 
 void GuiMesh::SetClipRect(const Rect &clipRect) {
@@ -71,10 +72,9 @@ void GuiMesh::DrawQuad(const VertexGeneric *verts, const Material *material) {
         return;
     }
 
-    if (material != currentSurf->material) {
-        if (currentSurf->numVerts > 0) {
-            PrepareNextSurf();
-        }
+    if (!currentSurf || material != currentSurf->material) {
+        PrepareNextSurf();
+
         currentSurf->material = material;
     }
 
@@ -227,19 +227,19 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
 
     localVerts[0].st[0] = hs1;
     localVerts[0].st[1] = ht1;
-    *reinterpret_cast<uint32_t *>(localVerts[0].color) = currentSurf->color;
+    *reinterpret_cast<uint32_t *>(localVerts[0].color) = currentColor;
 
     localVerts[1].st[0] = hs1;
     localVerts[1].st[1] = ht2;
-    *reinterpret_cast<uint32_t *>(localVerts[1].color) = currentSurf->color;
+    *reinterpret_cast<uint32_t *>(localVerts[1].color) = currentColor;
 
     localVerts[2].st[0] = hs2;
     localVerts[2].st[1] = ht2;
-    *reinterpret_cast<uint32_t *>(localVerts[2].color) = currentSurf->color;
+    *reinterpret_cast<uint32_t *>(localVerts[2].color) = currentColor;
 
     localVerts[3].st[0] = hs2;
     localVerts[3].st[1] = ht1;
-    *reinterpret_cast<uint32_t *>(localVerts[3].color) = currentSurf->color;
+    *reinterpret_cast<uint32_t *>(localVerts[3].color) = currentColor;
 
     DrawQuad(localVerts, material);
 }
