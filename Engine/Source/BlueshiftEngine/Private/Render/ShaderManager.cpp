@@ -25,7 +25,7 @@ struct engineShader_t {
 
 static const engineShader_t originalShaderList[] = {
     { "Shaders/drawArrayTexture" },
-    { "Shaders/gui" },
+    { "Shaders/Simple" },
     { "Shaders/selectionId" },
     { "Shaders/depth" },
     { "Shaders/constantColor" },
@@ -82,7 +82,7 @@ ShaderManager       shaderManager;
 Shader *            ShaderManager::originalShaders[MaxPredefinedOriginalShaders];
 
 Shader *            ShaderManager::drawArrayTextureShader;
-Shader *            ShaderManager::guiShader;
+Shader *            ShaderManager::simpleShader;
 Shader *            ShaderManager::selectionIdShader;
 Shader *            ShaderManager::depthShader;
 Shader *            ShaderManager::constantColorShader;
@@ -242,7 +242,7 @@ void ShaderManager::InstantiateEngineShaders() {
 
     drawArrayTextureShader = originalShaders[DrawArrayTextureShader]->InstantiateShader(Array<Shader::Define>());
 
-    guiShader = originalShaders[GuiShader]->InstantiateShader(Array<Shader::Define>());
+    simpleShader = originalShaders[SimpleShader]->InstantiateShader(Array<Shader::Define>());
 
     selectionIdShader = originalShaders[SelectionIdShader]->InstantiateShader(Array<Shader::Define>());
 

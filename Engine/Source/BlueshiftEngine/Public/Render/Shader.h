@@ -101,6 +101,8 @@ public:
     bool                    IsOriginalShader() const { return !originalShader; }
     bool                    IsInstantiatedShader() const { return !!originalShader; }
 
+    int                     GetFlags() const;
+
                             /// Create instantiated shader
     Shader *                InstantiateShader(const Array<Define> &defineArray);
 
@@ -281,7 +283,7 @@ class ShaderManager {
 public:
     enum PredefinedOriginalShader {
         DrawArrayTextureShader,
-        GuiShader,
+        SimpleShader,
         SelectionIdShader,
         DepthShader,
         ConstantColorShader,
@@ -351,7 +353,7 @@ public:
     static Shader *         originalShaders[MaxPredefinedOriginalShaders];
 
     static Shader *         drawArrayTextureShader;    
-    static Shader *         guiShader;
+    static Shader *         simpleShader;
     static Shader *         selectionIdShader;
     static Shader *         depthShader;
     static Shader *         constantColorShader;
