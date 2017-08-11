@@ -19,7 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    int                 prevSortkey = -1;
+    uint64_t            prevSortkey = -1;
     const viewEntity_t *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
@@ -31,8 +31,13 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (surf->material->GetType() != Material::Type::LitSurface &&
-                surf->material->GetType() != Material::Type::SkySurface) {
+            const Shader *shader = surf->material->GetPass()->shader;
+
+            if (!shader) { 
+                continue;
+            }
+
+            if (!(shader->GetFlags() & (Shader::LitSurface | Shader::SkySurface))) {
                 continue;
             }
 
@@ -50,7 +55,8 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 }
 
                 int flushType = RBSurf::AmbientFlush;
-                if (surf->material->GetType() == Material::Type::SkySurface) {
+                const Shader *shader = surf->material->GetPass()->shader;
+                if (shader && (shader->GetFlags() & Shader::SkySurface)) {
                     flushType = RBSurf::BackgroundFlush;
                 }
 

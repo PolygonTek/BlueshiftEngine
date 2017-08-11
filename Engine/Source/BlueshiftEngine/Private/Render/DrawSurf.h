@@ -25,7 +25,7 @@ public:
 
     void                    MakeSortKey(int entityIdx, const Material *material);
 
-    uint32_t                sortKey;
+    uint64_t                sortKey;
     uint32_t                flags;
     const viewEntity_t *    space;              ///< entity of this surface
     const Material *        material;           ///< material of this surface
@@ -33,12 +33,14 @@ public:
     SubMesh *               subMesh;
 };
 
-// sortKey:
-// 0xF0000000 (0~15)    : material sort
-// 0x0FFF0000 (0~4095)  : entity index
-// 0x0000FFFF (0~65535) : material index
+//---------------------------------------------------
+// sortKey bits:
+// 0x0000FFFF00000000 (0~65535) : material sort
+// 0x00000000FFFF0000 (0~65535) : entity index
+// 0x000000000000FFFF (0~65535) : material index
+//---------------------------------------------------
 BE_INLINE void DrawSurf::MakeSortKey(int entityIdx, const Material *material) {
-    sortKey = ((material->GetSort() << 28) | (entityIdx << 16) | materialManager.GetIndexByMaterial(material));
+    sortKey = (((uint64_t)material->GetSort() << 32) | ((uint64_t)entityIdx << 16) | (uint64_t)materialManager.GetIndexByMaterial(material));
 }
 
 BE_NAMESPACE_END

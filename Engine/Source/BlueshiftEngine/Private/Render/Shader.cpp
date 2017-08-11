@@ -50,6 +50,13 @@ static const char *builtInSamplerNames[] = {
     "normalMap"
 };
 
+int Shader::GetFlags() const {
+    if (originalShader) {
+        return originalShader->flags;
+    }
+    return flags;
+}
+
 const StrHashMap<PropertySpec> &Shader::GetSpecHashMap() const { 
     if (originalShader) {
         return originalShader->specHashMap; 
@@ -545,6 +552,7 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     // allocate new instantiated shader
     shader = shaderManager.AllocShader(mangledName);
     shader->originalShader = this;
+    shader->flags = flags;
     shader->defineArray = defineArray;
     shader->baseDir = baseDir;
 

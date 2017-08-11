@@ -19,7 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 static void RB_LitPass(const viewLight_t *viewLight) {
-    int                 prevSortkey = -1;
+    uint64_t            prevSortkey = -1;
     const viewEntity_t *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
@@ -42,8 +42,14 @@ static void RB_LitPass(const viewLight_t *viewLight) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (surf->material->GetType() != Material::Type::LitSurface) {
+            const Shader *shader = surf->material->GetPass()->shader;
+
+            if (!shader) {
                 continue;
+            }
+
+            if (!(shader->GetFlags() & Shader::LitSurface)) {
+                continue;    
             }
 
             if (surf->material != prevMaterial || surf->space != prevSpace) {

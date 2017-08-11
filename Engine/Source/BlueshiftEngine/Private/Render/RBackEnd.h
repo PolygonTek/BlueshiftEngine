@@ -37,7 +37,7 @@ public:
         OccluderFlush,
         AmbientFlush,
         LitFlush,
-        BlendFlush,
+        UnlitFlush,
         VelocityFlush,
         FinalFlush,
         TriFlush,
@@ -64,7 +64,7 @@ private:
     void                Flush_AmbientPass();
     void                Flush_ShadowDepthPass();
     void                Flush_LitPass();
-    void                Flush_BlendPass();
+    void                Flush_UnlitPass();
     void                Flush_FinalPass();
     void                Flush_TrisPass();
     void                Flush_VelocityMapPass();
@@ -207,7 +207,7 @@ void    RB_SetupLight(viewLight_t *viewLight);
 void    RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs);
+void    RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);

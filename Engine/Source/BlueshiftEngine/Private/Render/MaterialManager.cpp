@@ -36,51 +36,62 @@ void MaterialManager::Init() {
     materialHashMap.Init(1024, 65536, 1024);
 
     defaultMaterial = AllocMaterial("_defaultMaterial");
-    defaultMaterial->Create(va("pass {\n"
-        "map \"%s\"\n"
-    "}", GuidMapper::defaultTextureGuid.ToString()));
+    defaultMaterial->Create(va(
+        "pass {\n"
+        "   shader \"%s\" {\n"
+        "       _ALBEDO_SOURCE \"1\"\n"
+        "       albedoMap \"%s\"\n"
+        "   }\n"
+        "}", GuidMapper::standardSpecularLightingShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
     defaultMaterial->permanence = true;
 
     whiteMaterial = AllocMaterial("_whiteMaterial");
-    whiteMaterial->Create(va("pass {\n"
-        "map \"%s\"\n"
-        "useOwnerColor\n"
-    "}", GuidMapper::whiteTextureGuid.ToString()));
+    whiteMaterial->Create(va(
+        "pass {\n"
+        "   useOwnerColor\n"
+        "   shader \"%s\" {\n"
+        "       _ALBEDO_SOURCE \"1\"\n"
+        "       albedoMap \"%s\"\n"
+        "   }\n"
+        "}", GuidMapper::standardSpecularLightingShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
     whiteMaterial->permanence = true;
 
     blendMaterial = AllocMaterial("_blendMaterial");
-    blendMaterial->Create(va("type unlitSurface\n"
+    blendMaterial->Create(va(
         "pass {\n"
-        "map \"%s\"\n"
-        "blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
-    "}", GuidMapper::whiteTextureGuid.ToString()));
+        "   useOwnerColor\n"
+        "   map \"%s\"\n"
+        "   blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
+        "}", GuidMapper::whiteTextureGuid.ToString()));
     blendMaterial->permanence = true;
 
     whiteLightMaterial = AllocMaterial("_whiteLightMaterial");
-    whiteLightMaterial->Create(va("lightMaterialType light\n"
+    whiteLightMaterial->Create(va(
+        "light\n"
         "pass {\n"
-        "map \"%s\"\n"
-        "useOwnerColor\n"
-    "}", GuidMapper::whiteTextureGuid.ToString()));
+        "   useOwnerColor\n"
+        "   map \"%s\"\n"
+        "}", GuidMapper::whiteTextureGuid.ToString()));
     whiteLightMaterial->permanence = true;
 
     zeroClampLightMaterial = AllocMaterial("_zeroClampLightMaterial");
-    zeroClampLightMaterial->Create(va("lightMaterialType light\n"
+    zeroClampLightMaterial->Create(va(
+        "light\n"
         "pass {\n"
-        "map \"%s\"\n"
-        "useOwnerColor\n"
-    "}", GuidMapper::zeroClampTextureGuid.ToString()));
+        "   useOwnerColor\n"
+        "   map \"%s\"\n"
+        "}", GuidMapper::zeroClampTextureGuid.ToString()));
     zeroClampLightMaterial->permanence = true;
 
     defaultSkyboxMaterial = AllocMaterial("_defaultSkyboxMaterial");
-    defaultSkyboxMaterial->Create(va("type skySurface\n"
+    defaultSkyboxMaterial->Create(va(
         "pass {\n"
-        "cull twoSided\n"
-        "depthFunc EQ\n"
-        "shader \"%s\" {\n"
-            "skyCubeMap \"%s\"\n"
-        "}\n"
-    "}", GuidMapper::skyboxCubemapShaderGuid.ToString(), GuidMapper::defaultCubeTextureGuid.ToString()));
+        "   cull twoSided\n"
+        "   depthFunc EQ\n"
+        "   shader \"%s\" {\n"
+        "       skyCubeMap \"%s\"\n"
+        "   }\n"
+        "}", GuidMapper::skyboxCubemapShaderGuid.ToString(), GuidMapper::defaultCubeTextureGuid.ToString()));
     defaultSkyboxMaterial->permanence = true;
 }
 
@@ -215,39 +226,35 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
     char buffer[1024];
     switch (hint) {
     case Material::SpriteHint:
-        Str::snPrintf(buffer, sizeof(buffer), 
-            "type unlitSurface\n"
+        Str::snPrintf(buffer, sizeof(buffer),
             "noShadow\n"
-            "pass {\n" 
+            "pass {\n"
             "   mapPath \"%hs\"\n"
-            "   blendFunc blend\n" 
-            "}\n", texture->GetHashName()); 
+            "   blendFunc blend\n"
+            "}\n", texture->GetHashName());
         break;
     case Material::LightHint:
         Str::snPrintf(buffer, sizeof(buffer),
-            "type light\n"
-            "lightMaterialType light\n"
-            "pass {\n" 
+            "light\n"
+            "pass {\n"
             "   mapPath \"%hs\"\n"
-            "   useOwnerColor\n" 
+            "   useOwnerColor\n"
             "}\n", texture->GetHashName());
         break;
     case Material::OverlayHint:
         Str::snPrintf(buffer, sizeof(buffer),
-            "type unlitSurface\n"
-            "noShadow\n" 
-            "pass {\n" 
+            "noShadow\n"
+            "pass {\n"
             "   cull twoSided\n"
             "   vertexColor\n"
             "   mapPath \"%hs\"\n"
-            "   blendFunc blend\n" 
+            "   blendFunc blend\n"
             "}\n", texture->GetHashName());
         break;
     default:
         Str::snPrintf(buffer, sizeof(buffer),
-            "type litSurface\n"
             "pass {\n"
-            "   mapPath \"%hs\"\n" 
+            "   mapPath \"%hs\"\n"
             "}\n", texture->GetHashName());
         break;
     }

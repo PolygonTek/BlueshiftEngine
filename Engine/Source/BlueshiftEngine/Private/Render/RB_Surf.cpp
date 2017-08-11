@@ -153,8 +153,8 @@ void RBSurf::Flush() {
     case LitFlush:
         Flush_LitPass();
         break;
-    case BlendFlush:
-        Flush_BlendPass(); 
+    case UnlitFlush:
+        Flush_UnlitPass(); 
         break;
     case VelocityFlush:
         Flush_VelocityMapPass(); 
@@ -332,16 +332,16 @@ void RBSurf::Flush_LitPass() {
     stateBits &= ~(RHI::MaskDF | RHI::DepthWrite);
 
     const Material *lightMaterial = surfLight->def->parms.material;
-    int lightMaterialType = lightMaterial->GetLightMaterialType();
+    int lightMaterialType = lightMaterial->GetType();
     switch (lightMaterialType) {
-    case Material::FogLightMaterial:
+    case Material::FogLightMaterialType:
         rhi.SetStateBits(stateBits | (RHI::DF_Equal | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha));
         RenderFogLightInteraction(mtrlPass);
-    case Material::BlendLightMaterial:
+    case Material::BlendLightMaterialType:
         rhi.SetStateBits(stateBits | (RHI::DF_Equal | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha));
         RenderBlendLightInteraction(mtrlPass);
         break;
-    case Material::LightMaterial:
+    case Material::LightMaterialType:
         stateBits |= (RHI::BS_One | RHI::BD_One);
         stateBits |= material->sort == Material::TranslucentSort ? RHI::DF_LEqual : RHI::DF_Equal;
         rhi.SetStateBits(stateBits);
@@ -350,12 +350,8 @@ void RBSurf::Flush_LitPass() {
     }
 }
 
-void RBSurf::Flush_BlendPass() {
+void RBSurf::Flush_UnlitPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
-
-    if (!(mtrlPass->stateBits & RHI::MaskBF)) {
-        return;
-    }
 
     rhi.SetCullFace(mtrlPass->cullType);
 
@@ -626,7 +622,7 @@ void BackEnd::RenderFogSurface(const volumeFog_t *fog) {
     int				i;
 
     // 포그 면이 아닌 블렌딩 쉐이더는 칼라값에서 빼주므로 여기서는 무시한다.
-    if (!m_material->fog && (m_material->GetSort() >= UnlitBlendSort)) {
+    if (!m_material->fog && (m_material->GetSort() >= OverlaySort)) {
         return;
     }
 

@@ -665,8 +665,8 @@ void RenderWorld::OptimizeLights(view_t *view) {
 }
 
 static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
-    const uint32_t sortKey1 = (*(DrawSurf **)elem1)->sortKey;
-    const uint32_t sortKey2 = (*(DrawSurf **)elem2)->sortKey;
+    const uint64_t sortKey1 = (*(DrawSurf **)elem1)->sortKey;
+    const uint64_t sortKey2 = (*(DrawSurf **)elem2)->sortKey;
 
     if (sortKey1 < sortKey2) {
         return -1;

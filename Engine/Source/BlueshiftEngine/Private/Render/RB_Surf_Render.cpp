@@ -940,10 +940,10 @@ void RBSurf::RenderGui(const Material::ShaderPass *mtrlPass) const {
 
         SetShaderProperties(shader, mtrlPass->shaderProperties);
     } else {
-        shader = ShaderManager::guiShader;
+        shader = ShaderManager::simpleShader;
         shader->Bind();
 
-        shader->SetTexture("mainMap", mtrlPass->texture);
+        shader->SetTexture("albedoMap", mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);

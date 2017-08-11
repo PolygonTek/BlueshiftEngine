@@ -185,7 +185,7 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const Frustu
 }
 
 static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &lightViewMatrix, const Frustum &lightFrustum, const Frustum &viewFrustum, bool forceClear, int cubeMapFace) {
-    int                 prevSortkey = -1;
+    uint64_t            prevSortkey = -1;
     const viewEntity_t *prevSpace = nullptr;
     const viewEntity_t *skipEntity = nullptr;
     const viewEntity_t *entity2 = nullptr;
@@ -375,7 +375,7 @@ static void RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &vi
 
 // TODO: cascade 별로 컬링해야함
 static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFrustum, int cascadeIndex, bool forceClear) {
-    int                 prevSortkey = -1;
+    uint64_t            prevSortkey = -1;
     const viewEntity_t *prevSpace = nullptr;
     const viewEntity_t *skipEntity = nullptr;
     const viewEntity_t *entity2 = nullptr;

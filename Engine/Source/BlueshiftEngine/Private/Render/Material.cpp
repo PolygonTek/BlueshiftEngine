@@ -59,22 +59,6 @@ bool Material::Create(const char *text) {
     while (lexer.ReadToken(&token)) {
         if (token.IsEmpty()) {
             break;
-        } else if (!token.Icmp("type")) {
-            if (lexer.ReadToken(&token, false)) {
-                if (!token.Icmp("litSurface")) {
-                    type = Type::LitSurface;
-                } else if (!token.Icmp("unlitSurface")) {
-                    type = Type::UnlitSurface;
-                } else if (!token.Icmp("skySurface")) {
-                    type = Type::SkySurface;
-                } else if (!token.Icmp("light")) {
-                    type = Type::Light;
-                } else {
-                    BE_WARNLOG(L"invalid type parm '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
-                }
-            } else {
-                BE_WARNLOG(L"missing parameter type keyword in material '%hs'\n", hashName.c_str());
-            }
         } else if (!token.Icmp("noShadow")) {
             flags |= NoShadow;
         } else if (!token.Icmp("forceShadow")) {
@@ -83,8 +67,14 @@ bool Material::Create(const char *text) {
             flags |= UnsmoothTangents;
         } else if (!token.Icmp("polygonOffset")) {
             flags |= PolygonOffset;
-        } else if (!token.Icmp("lightMaterialType")) {
-            ParseLightMaterialType(lexer);
+        } else if (!token.Icmp("decal")) {
+            type = DecalMaterialType;
+        } else if (!token.Icmp("light")) {
+            type = LightMaterialType;
+        } else if (!token.Icmp("blendLight")) {
+            type = BlendLightMaterialType;
+        } else if (!token.Icmp("fogLight")) {
+            type = FogLightMaterialType;
         } else if (!token.Icmp("pass")) {
             pass = new ShaderPass;
             if (!ParsePass(lexer, pass)) {
@@ -384,6 +374,8 @@ void Material::ChangeShader(Shader *shader) {
 
     // Instantiate shader with changed define properites 
     EndShaderPropertiesChanged();
+
+    Finish();
 }
 
 void Material::EndShaderPropertiesChanged() {
@@ -598,46 +590,29 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
     return false;
 }
 
-bool Material::ParseLightMaterialType(Lexer &lexer) {
-    Str	token;
-
-    if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("light")) {
-            lightMaterialType = LightMaterial;
-        } else if (!token.Icmp("blendLight")) {
-            lightMaterialType = BlendLightMaterial;
-        } else if (!token.Icmp("fogLight")) {
-            lightMaterialType = FogLightMaterial;
-        } else {
-            BE_WARNLOG(L"unknown lightMaterialType '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+void Material::Finish() {
+    if (type == SurfaceMaterialType) {
+        if (!pass->shader || !(pass->shader->GetFlags() & Shader::LitSurface)) {
+            if (pass->renderingMode == RenderingMode::AlphaBlend) {
+                sort = OverlaySort;
+            } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
+                sort = AlphaTestSort;
+            } else {
+                sort = OpaqueSort;
+            }
+        } else if (pass->shader->GetFlags() & Shader::LitSurface) {
+            if (pass->renderingMode == RenderingMode::AlphaBlend) {
+                sort = TranslucentSort;
+            } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
+                sort = AlphaTestSort;
+            } else {
+                sort = OpaqueSort;
+            }
+        } else if (pass->shader->GetFlags() & Shader::SkySurface) {
+            sort = SkySort;
         }
     } else {
-        BE_WARNLOG(L"missing parameter lightMaterialType keyword in material '%hs'\n", hashName.c_str());
-        return false;
-    }
-
-    return true;
-}
-
-void Material::Finish() {
-    if (type == Type::UnlitSurface) {
-        if (pass->renderingMode == RenderingMode::AlphaBlend) {
-            sort = UnlitBlendSort;
-        } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
-            sort = AlphaTestSort;
-        } else {
-            sort = OpaqueSort;
-        }
-    } else if (type == Type::LitSurface) {
-        if (pass->renderingMode == RenderingMode::AlphaBlend) {
-            sort = TranslucentSort;
-        } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
-            sort = AlphaTestSort;
-        } else {
-            sort = OpaqueSort;
-        }
-    } else if (type == Type::SkySurface) {
-        sort = SkySort;
+        sort = BadSort;
     }
 }
 
@@ -652,23 +627,17 @@ void Material::Write(const char *filename) {
 
     fp->Printf("material %i\n", MATERIAL_VERSION);
 
-    Str typeStr;
-    switch (type) {
-    case Type::Light: typeStr = "light"; break;
-    case Type::SkySurface: typeStr = "skySurface"; break;
-    case Type::UnlitSurface: typeStr = "unlitSurface"; break;
-    case Type::LitSurface: default: typeStr = "litSurface"; break;
-    }
-    fp->Printf("%stype %s\n", indentSpace.c_str(), typeStr.c_str());
-
     Str lightMaterialTypeStr;
-    switch (lightMaterialType) {
-    case LightMaterial: lightMaterialTypeStr = "light"; break;
-    case BlendLightMaterial: lightMaterialTypeStr = "blendLight"; break;
-    case FogLightMaterial: lightMaterialTypeStr = "fogLight"; break;
-    default: lightMaterialTypeStr = Str((int)sort); break;
+    if (type == SurfaceMaterialType) {
+    } else if (type == DecalMaterialType) {
+        fp->Printf("%sdecal\n", indentSpace.c_str());
+    } else if (type == LightMaterialType) {
+        fp->Printf("%slight\n", indentSpace.c_str());
+    } else if (type == BlendLightMaterialType) {
+        fp->Printf("%sblendLight\n", indentSpace.c_str());
+    } else if (type == FogLightMaterialType) {
+        fp->Printf("%sfogLight\n", indentSpace.c_str());
     }
-    fp->Printf("%slightMaterialType %s\n", indentSpace.c_str(), lightMaterialTypeStr.c_str());
 
     if (flags & NoShadow) {
         fp->Printf("%snoShadow\n", indentSpace.c_str());
@@ -851,12 +820,6 @@ void Material::Write(const char *filename) {
     fileSystem.CloseFile(fp);
 }
 
-void Material::SetType(Type type) {
-    this->type = type;
-
-    Finish();
-}
-
 void Material::SetRenderingMode(RenderingMode mode) {
     pass->renderingMode = mode;
 
@@ -864,7 +827,15 @@ void Material::SetRenderingMode(RenderingMode mode) {
 }
 
 bool Material::IsLitSurface() const {
-    if (type == Type::LitSurface) {
+    if (pass->shader && pass->shader->GetFlags() & Shader::LitSurface) {
+        return true;
+    }
+
+    return false;
+}
+
+bool Material::IsSkySurface() const {
+    if (pass->shader && pass->shader->GetFlags() & Shader::SkySurface) {
         return true;
     }
 
@@ -876,7 +847,11 @@ bool Material::IsShadowCaster() const {
         return false;
     }
 
-    if (type == Type::UnlitSurface || type == Type::SkySurface) {
+    if (!pass->shader) {
+        return false;
+    }
+
+    if (!(pass->shader->GetFlags() & Shader::LitSurface) || (pass->shader->GetFlags() & Shader::SkySurface)) {
         return false;
     }
 

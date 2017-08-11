@@ -546,7 +546,7 @@ static void RB_DrawDebugText() {
 }
 
 void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
-    int                 prevSortkey = -1;
+    uint64_t            prevSortkey = -1;
     const Material *    prevMaterial = nullptr;
     const viewEntity_t *prevSpace = nullptr;
     bool                depthhack = false;

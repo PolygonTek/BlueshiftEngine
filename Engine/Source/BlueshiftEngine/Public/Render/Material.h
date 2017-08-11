@@ -48,26 +48,21 @@ public:
     };
 
     enum Type {
-        LitSurface,
-        UnlitSurface,
-        SkySurface,
-        Light,
-    };
-
-    enum LightMaterialType {
-        LightMaterial,
-        BlendLightMaterial,
-        FogLightMaterial
+        SurfaceMaterialType     = 0,
+        DecalMaterialType       = 1,
+        LightMaterialType       = 2,
+        BlendLightMaterialType  = 3,
+        FogLightMaterialType    = 4
     };
 
     enum Sort {
         BadSort                 = 0,
         SubViewSort             = 1,
-        OpaqueSort              = 2,    //
+        OpaqueSort              = 2,
         SkySort                 = 3,
-        AlphaTestSort           = 4,    //
-        TranslucentSort         = 10,   //
-        UnlitBlendSort          = 11,
+        AlphaTestSort           = 4,
+        TranslucentSort         = 10,
+        OverlaySort             = 11,
         NearestSort             = 15
     };
 
@@ -117,15 +112,14 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
     int                     GetFlags() const { return flags; }
-    Type                    GetType() const { return type; }
-    void                    SetType(Type type);
-    int                     GetLightMaterialType() const { return lightMaterialType; }
+    int                     GetType() const { return type; }
     RenderingMode           GetRenderingMode() const { return pass->renderingMode; }
     void                    SetRenderingMode(RenderingMode mode);
     int                     GetCullType() const { return pass->cullType; }
     int                     GetSort() const { return sort; }
 
     bool                    IsLitSurface() const;
+    bool                    IsSkySurface() const;
     bool                    IsShadowCaster() const;
 
     const ShaderPass *      GetPass() const { return pass; }
@@ -153,7 +147,6 @@ private:
     bool                    ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) const;
     bool                    ParseDepthFunc(Lexer &lexer, int *depthFunc) const; // to be removed
     bool                    ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
-    bool                    ParseLightMaterialType(Lexer &lexer);
     //void                  MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);    
     bool                    ParseShaderProperties(Lexer &lexer, Dict &properties);
 
@@ -165,7 +158,6 @@ private:
 
     int                     flags;
     Type                    type;
-    LightMaterialType       lightMaterialType;
     Sort                    sort;
 
     ShaderPass *            pass;
@@ -176,8 +168,7 @@ BE_INLINE Material::Material() {
     permanence              = false;
     index                   = -1;
     flags                   = 0;
-    type                    = LitSurface;
-    lightMaterialType       = LightMaterial;
+    type                    = SurfaceMaterialType;
     sort                    = BadSort;
     pass                    = nullptr;
 }

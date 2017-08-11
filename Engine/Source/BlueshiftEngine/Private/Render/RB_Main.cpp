@@ -628,9 +628,9 @@ static void RB_DrawView() {
             RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
         }
 
-        // Render any stage with blend surface
+        // Render any stage with unlit surfaces
         if (!r_skipBlendPass.GetBool()) {
-            RB_BlendPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_UnlitPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
         }
 
         // Render to velocity map
