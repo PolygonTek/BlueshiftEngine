@@ -60,9 +60,11 @@ void MaterialManager::Init() {
     blendMaterial->Create(va(
         "pass {\n"
         "   useOwnerColor\n"
-        "   map \"%s\"\n"
         "   blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
-        "}", GuidMapper::whiteTextureGuid.ToString()));
+        "   shader \"%s\" {\n"
+        "       albedoMap \"%s\"\n"
+        "   }\n"
+        "}", GuidMapper::simpleShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
     blendMaterial->permanence = true;
 
     whiteLightMaterial = AllocMaterial("_whiteLightMaterial");
