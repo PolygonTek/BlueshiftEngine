@@ -22,8 +22,8 @@ shader "Lit/Standard" {
         occlusionMap("Occlusion Map") : object TextureAsset = "_whiteTexture"
         occlusionStrength("Occlusion Strength") : float range 0 1 0.001 = "1"
         _EMISSION_SOURCE("Emission") : enum "None;Color;Texture" = "0" (shaderDefine)
-        emissionMap("Emission Map") : object TextureAsset = "_blackTexture"
         emissionColor("Emission Color") : color3 = "1 1 1"
+        emissionMap("Emission Map") : object TextureAsset = "_blackTexture"
         emissionScale("Emission Scale") : float range 0 16 0.001 = "1"
     }
     

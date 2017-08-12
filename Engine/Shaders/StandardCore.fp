@@ -97,7 +97,7 @@ void main() {
     vec3 V = normalize(v2f_viewVector);
 #endif
 
-#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 2 || _GLOSS_SOURCE == 3 || _METALLIC_SOURCE == 1 || (_ROUGHNESS_SOURCE == 2 || _ROUGHNESS_SOURCE == 3) || _EMISSION_SOURCE == 2
+#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0 || _GLOSS_SOURCE == 3 || _METALLIC_SOURCE == 1 || (_ROUGHNESS_SOURCE == 2 || _ROUGHNESS_SOURCE == 3) || _EMISSION_SOURCE == 2
     #if _PARALLAX_SOURCE != 0
         float h = tex2D(heightMap, v2f_tex).x * 2.0 - 1.0;
         vec2 baseTc = offsetTexcoord(h, v2f_tex, V, heightScale * 0.1);
@@ -133,10 +133,8 @@ void main() {
         vec4 diffuse = albedo;
 
         #if _SPECULAR_SOURCE == 0
-            vec4 specular = vec4(0.0);
-        #elif _SPECULAR_SOURCE == 1
             vec4 specular = specularColor;
-        #elif _SPECULAR_SOURCE == 2
+        #elif _SPECULAR_SOURCE == 1
             vec4 specular = tex2D(specularMap, baseTc);
         #endif
 
@@ -176,8 +174,6 @@ void main() {
         vec4 specular = vec4(mix(vec3(0.04), albedo.rgb, metallic.r), 1.0);
         
         vec4 diffuse = vec4(albedo.rgb * ((1.0 - 0.04) - metallic.r), albedo.a);
-
-        
     #endif
 #endif
 
@@ -248,7 +244,7 @@ void main() {
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
             C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            C += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
+            C += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, specularPower, roughness);
         #endif
     #endif
 #else

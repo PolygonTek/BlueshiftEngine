@@ -42,7 +42,7 @@ void MaterialManager::Init() {
         "       _ALBEDO_SOURCE \"1\"\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
-        "}", GuidMapper::standardSpecularLightingShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
+        "}", GuidMapper::standardMetallicLightingShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
     defaultMaterial->permanence = true;
 
     whiteMaterial = AllocMaterial("_whiteMaterial");
@@ -53,7 +53,7 @@ void MaterialManager::Init() {
         "       _ALBEDO_SOURCE \"1\"\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
-        "}", GuidMapper::standardSpecularLightingShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::standardMetallicLightingShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
     whiteMaterial->permanence = true;
 
     blendMaterial = AllocMaterial("_blendMaterial");
