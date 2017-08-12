@@ -291,6 +291,7 @@ public:
         ObjectMotionBlurShader,
         StandardSpecShader,
         StandardShader,
+        PhongShader,
         SkyboxCubemapShader,
         SkyboxSixSidedShader,
         FogLightShader,

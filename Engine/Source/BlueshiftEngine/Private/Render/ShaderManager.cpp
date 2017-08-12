@@ -34,6 +34,7 @@ static const engineShader_t originalShaderList[] = {
 
     { "Shaders/StandardSpec" },
     { "Shaders/Standard" },
+    { "Shaders/Phong" },
 
     { "Shaders/skyboxCubemap" },
     { "Shaders/skyboxSixSided" },

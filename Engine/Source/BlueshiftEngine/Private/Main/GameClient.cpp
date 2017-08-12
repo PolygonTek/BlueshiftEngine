@@ -135,6 +135,7 @@ void GameClient::InitDefaultGuids() {
     resourceGuidMapper.Set(GuidMapper::simpleShaderGuid, "Shaders/Simple.shader");
     resourceGuidMapper.Set(GuidMapper::standardSpecularLightingShaderGuid, "Shaders/StandardSpec.shader");
     resourceGuidMapper.Set(GuidMapper::standardMetallicLightingShaderGuid, "Shaders/Standard.shader");
+    resourceGuidMapper.Set(GuidMapper::phongLightingShaderGuid, "Shaders/Phong.shader");
     resourceGuidMapper.Set(GuidMapper::skyboxCubemapShaderGuid, "Shaders/skyboxCubemap.shader");
     resourceGuidMapper.Set(GuidMapper::skyboxSixSidedShaderGuid, "Shaders/skyboxSixSided.shader");
     resourceGuidMapper.Set(GuidMapper::defaultMaterialGuid, "_defaultMaterial");

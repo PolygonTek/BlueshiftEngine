@@ -63,6 +63,7 @@ public:
     static Guid             simpleShaderGuid;
     static Guid             standardSpecularLightingShaderGuid;
     static Guid             standardMetallicLightingShaderGuid;
+    static Guid             phongLightingShaderGuid;
     static Guid             skyboxCubemapShaderGuid;
     static Guid             skyboxSixSidedShaderGuid;
 
