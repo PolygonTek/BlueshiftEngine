@@ -1,7 +1,7 @@
-#ifndef LIGHTING_INCLUDED
-#define LIGHTING_INCLUDED
+#ifndef STANDARD_BRDF_INCLUDED
+#define STANDARD_BRDF_INCLUDED
 
-$include "LightingConfig.glsl"
+$include "StandardConfig.glsl"
 
 float pow4(float f) {
     float f2 = f * f;

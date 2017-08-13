@@ -1,5 +1,5 @@
 $include "fragment_common.glsl"
-$include "Lighting.glsl"
+$include "StandardBRDF.glsl"
 $include "IBL.glsl"
 
 #ifdef USE_SHADOW_MAP
@@ -82,22 +82,36 @@ uniform float ambientScale;
 // IBL
 uniform samplerCube envCubeMap;
 
+#if _NORMAL_SOURCE == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
+#undef _NORMAL_SOURCE
+#define _NORMAL_SOURCE 1
+#endif
+
+#if _PARALLAX_SOURCE == 1 && !defined(ENABLE_PARALLAXMAP)
+#undef _PARALLAX_SOURCE 
+#define _PARALLAX_SOURCE 0
+#endif
+
+#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0 || _GLOSS_SOURCE == 3 || _METALLIC_SOURCE == 1 || (_ROUGHNESS_SOURCE == 2 || _ROUGHNESS_SOURCE == 3) || _EMISSION_SOURCE == 2
+#define NEED_BASE_TC
+#endif
+
 void main() {
 #if DIRECT_LIGHTING
     float A = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
     A = pow(A, lightFallOffExponent);
 
     vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * A;
-    if (Cl == vec3(0.0)) {
+    /*if (Cl == vec3(0.0)) {
         discard;
-    }
+    }*/
 #endif
 
 #if DIRECT_LIGHTING || INDIRECT_LIGHTING || _PARALLAX_SOURCE != 0
     vec3 V = normalize(v2f_viewVector);
 #endif
 
-#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0 || _GLOSS_SOURCE == 3 || _METALLIC_SOURCE == 1 || (_ROUGHNESS_SOURCE == 2 || _ROUGHNESS_SOURCE == 3) || _EMISSION_SOURCE == 2
+#ifdef NEED_BASE_TC
     #if _PARALLAX_SOURCE != 0
         float h = tex2D(heightMap, v2f_tex).x * 2.0 - 1.0;
         vec2 baseTc = offsetTexcoord(h, v2f_tex, V, heightScale * 0.1);
@@ -121,12 +135,13 @@ void main() {
 #if DIRECT_LIGHTING || INDIRECT_LIGHTING
     #if _NORMAL_SOURCE == 0
         vec3 N = normalize(v2f_normal);
-    #elif _NORMAL_SOURCE == 1
+    #elif _NORMAL_SOURCE == 1 || _NORMAL_SOURCE == 2
         vec3 N = normalize(getNormal(normalMap, baseTc));
-    #elif _NORMAL_SOURCE == 2
-        vec3 b1 = normalize(getNormal(normalMap, baseTc));
-        vec3 b2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
-        vec3 N = normalize(b1 + b2);
+
+        #if _NORMAL_SOURCE == 2
+            vec3 DN = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
+            N = normalize(N + DN);
+        #endif
     #endif
 
     #if defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
