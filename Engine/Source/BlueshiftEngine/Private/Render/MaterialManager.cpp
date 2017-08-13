@@ -95,7 +95,6 @@ void MaterialManager::Init() {
     defaultSkyboxMaterial->Create(va(
         "pass {\n"
         "   cull twoSided\n"
-        "   depthFunc EQ\n"
         "   shader \"%s\" {\n"
         "       skyCubeMap \"%s\"\n"
         "   }\n"

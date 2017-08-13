@@ -253,8 +253,10 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         if (surf->sortKey != prevSortkey) {
             const Shader *shader = surf->material->GetPass()->shader;
-            if (shader && shader->GetFlags() & Shader::LitSurface) {
-                continue;
+            if (shader) {
+                if (shader->GetFlags() & (Shader::LitSurface | Shader::SkySurface)) {
+                    continue;
+                }
             }
 
             bool isDifferentEntity = surf->space != prevSpace ? true : false;

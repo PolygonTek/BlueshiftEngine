@@ -96,7 +96,6 @@ bool Material::Create(const char *text) {
 bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     int blendSrc = 0;
     int blendDst = 0;
-    int depthFunc = RHI::DF_LEqual;
     int colorWrite = RHI::RedWrite | RHI::GreenWrite | RHI::BlueWrite;
     int depthWrite = RHI::DepthWrite;
 
@@ -214,8 +213,6 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
             lexer.ParseVec(2, pass->tcTranslation);
         } else if (!token.Icmp("cutoffAlpha")) {
             pass->cutoffAlpha = lexer.ParseFloat(); 
-        } else if (!token.Icmp("depthFunc")) {
-            ParseDepthFunc(lexer, &depthFunc);
         } else if (!token.Icmp("blendFunc")) {
             if (ParseBlendFunc(lexer, &blendSrc, &blendDst)) {
                 depthWrite = 0; // depth write off when blendFunc is valid
@@ -312,7 +309,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         blendDst = RHI::BD_Zero;
     }
 
-    pass->stateBits = blendSrc | blendDst | depthFunc | colorWrite | depthWrite;
+    pass->stateBits = blendSrc | blendDst | colorWrite | depthWrite;
 
     return true;
 }
@@ -484,33 +481,6 @@ bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) co
     }
 
     BE_WARNLOG(L"missing parameter for renderingMode keyword in material '%hs\n", hashName.c_str());
-    return false;
-}
-
-bool Material::ParseDepthFunc(Lexer &lexer, int *depthFunc) const {
-    Str	token;
-
-    if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("Always")) {
-            *depthFunc = RHI::DF_Always;
-        } else if (!token.Icmp("LessEqual") || !token.Icmp("LE")) {
-            *depthFunc = RHI::DF_LEqual;
-        } else if (!token.Icmp("Equal") || !token.Icmp("EQ")) {
-            *depthFunc = RHI::DF_Equal;
-        } else if (!token.Icmp("Less") || !token.Icmp("LT")) {
-            *depthFunc = RHI::DF_Less;
-        } else if (!token.Icmp("GreaterEqual") || !token.Icmp("GE")) {
-            *depthFunc = RHI::DF_GEqual;
-        } else if (!token.Icmp("Greater") || !token.Icmp("GT")) {
-            *depthFunc = RHI::DF_Greater;
-        } else {
-            BE_WARNLOG(L"unknown depthFunc '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
-        }
-
-        return true;
-    }
-
-    BE_WARNLOG(L"missing parameter for depthFunc keyword in material '%hs\n", hashName.c_str());
     return false;
 }
 
@@ -762,19 +732,6 @@ void Material::Write(const char *filename) {
 
     if (pass->renderingMode == RenderingMode::AlphaCutoff) {
         fp->Printf("%scutoffAlpha %.3f\n", indentSpace.c_str(), pass->cutoffAlpha);
-    }
-
-    int depthFuncMask = pass->stateBits & RHI::MaskDF;
-    if (depthFuncMask) {
-        Str depthFuncStr;
-        switch (depthFuncMask) {
-        case RHI::DF_Equal: depthFuncStr = "EQ"; break;
-        case RHI::DF_LEqual: depthFuncStr = "LE"; break;
-        case RHI::DF_Less: depthFuncStr = "LT"; break;
-        case RHI::DF_GEqual: depthFuncStr = "GE"; break;
-        case RHI::DF_Greater: depthFuncStr = "GT"; break;
-        }
-        fp->Printf("%sdepthFunc %s\n", indentSpace.c_str(), depthFuncStr.c_str());
     }
 
     int blendFuncMask = pass->stateBits & RHI::MaskBF;
