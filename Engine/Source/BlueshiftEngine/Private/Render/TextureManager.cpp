@@ -286,7 +286,7 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
         int textureType = *dataPtr++;
         switch (textureType) {
             case 1:
-            flags |= Texture::HighQuality;
+            flags |= Texture::HighQuality | Texture::NonPowerOfTwo;
             break;
         }
 

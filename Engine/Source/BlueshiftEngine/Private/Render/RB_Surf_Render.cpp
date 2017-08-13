@@ -357,6 +357,10 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
     if (mtrlPass->shader) {
         shader = mtrlPass->shader;
 
+        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
+            shader = shader->GetPerforatedVersion();
+        }
+
         if (subMesh->useGpuSkinning) {
             if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
                 shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
@@ -367,6 +371,10 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
         SetShaderProperties(shader, mtrlPass->shaderProperties);
     } else {
         shader = ShaderManager::standardDefaultShader;
+
+        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
+            shader = shader->GetPerforatedVersion();
+        }
 
         if (subMesh->useGpuSkinning) {
             if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
