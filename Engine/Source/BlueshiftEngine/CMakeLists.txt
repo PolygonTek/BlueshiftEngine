@@ -748,18 +748,13 @@ else ()
   endif ()
 endif ()
 
-file(GLOB SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../Shaders/**)
-
 set(ALL_FILES
   ${ENGINE_FILES}
   ${RENDERER_FILES}
   ${GGL_FILES}
-  ${SHADER_FILES}
 )
 
 auto_source_group(${ALL_FILES})
-
-source_group("Shaders" FILES ${SHADER_FILES})
 
 include_directories(
   ${PROJECT_SOURCE_DIR}

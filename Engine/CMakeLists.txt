@@ -195,6 +195,8 @@ if (BUILD_ENGINE)
   add_subdirectory(Source/Dependencies/luasocket)
 
   add_subdirectory(Source/BlueshiftEngine)
+
+  add_subdirectory(Shaders)
 endif ()
 
 if (BUILD_PLAYER)
