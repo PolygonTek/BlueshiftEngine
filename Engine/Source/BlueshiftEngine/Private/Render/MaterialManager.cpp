@@ -35,6 +35,7 @@ void MaterialManager::Init() {
 
     materialHashMap.Init(1024, 65536, 1024);
 
+    // Create default lit surface material
     defaultMaterial = AllocMaterial("_defaultMaterial");
     defaultMaterial->Create(va(
         "pass {\n"
@@ -42,9 +43,10 @@ void MaterialManager::Init() {
         "       _ALBEDO_SOURCE \"1\"\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
-        "}", GuidMapper::standardMetallicLightingShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
+        "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
     defaultMaterial->permanence = true;
 
+    // Create white lit surface material
     whiteMaterial = AllocMaterial("_whiteMaterial");
     whiteMaterial->Create(va(
         "pass {\n"
@@ -53,13 +55,14 @@ void MaterialManager::Init() {
         "       _ALBEDO_SOURCE \"1\"\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
-        "}", GuidMapper::standardMetallicLightingShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
     whiteMaterial->permanence = true;
 
+    // Create blend unlit surface material
     blendMaterial = AllocMaterial("_blendMaterial");
     blendMaterial->Create(va(
         "pass {\n"
-        "   useOwnerColor\n"
+        "   renderingMode alphaBlend\n"
         "   blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
         "   shader \"%s\" {\n"
         "       albedoMap \"%s\"\n"
@@ -67,6 +70,7 @@ void MaterialManager::Init() {
         "}", GuidMapper::simpleShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
     blendMaterial->permanence = true;
 
+    // Create white light material
     whiteLightMaterial = AllocMaterial("_whiteLightMaterial");
     whiteLightMaterial->Create(va(
         "light\n"
@@ -76,6 +80,7 @@ void MaterialManager::Init() {
         "}", GuidMapper::whiteTextureGuid.ToString()));
     whiteLightMaterial->permanence = true;
 
+    // Create zero clamped white light material
     zeroClampLightMaterial = AllocMaterial("_zeroClampLightMaterial");
     zeroClampLightMaterial->Create(va(
         "light\n"
@@ -85,6 +90,7 @@ void MaterialManager::Init() {
         "}", GuidMapper::zeroClampTextureGuid.ToString()));
     zeroClampLightMaterial->permanence = true;
 
+    // Create default skybox material
     defaultSkyboxMaterial = AllocMaterial("_defaultSkyboxMaterial");
     defaultSkyboxMaterial->Create(va(
         "pass {\n"
@@ -231,8 +237,9 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
         Str::snPrintf(buffer, sizeof(buffer),
             "noShadow\n"
             "pass {\n"
-            "   mapPath \"%hs\"\n"
+            "   renderingMode alphaBlend\n"
             "   blendFunc blend\n"
+            "   mapPath \"%hs\"\n"
             "}\n", texture->GetHashName());
         break;
     case Material::LightHint:
@@ -248,9 +255,10 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
             "noShadow\n"
             "pass {\n"
             "   cull twoSided\n"
+            "   renderingMode alphaBlend\n"
+            "   blendFunc blend\n"
             "   vertexColor\n"
             "   mapPath \"%hs\"\n"
-            "   blendFunc blend\n"
             "}\n", texture->GetHashName());
         break;
     default:

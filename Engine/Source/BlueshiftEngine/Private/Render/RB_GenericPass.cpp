@@ -180,14 +180,13 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            if (surf->material->GetSort() != Material::Sort::OpaqueSort) {
+            if (!surf->material->IsLitSurface()) {
                 continue;
             }
 
-            /*if (surf->material->HasRefraction()) {
-                backEnd.ctx->updateCurrentRenderTexture = true;
+            if (surf->material->GetSort() != Material::Sort::OpaqueSort) {
                 continue;
-            }*/
+            }
 
             bool isDifferentEntity = surf->space != prevSpace ? true : false;
             bool isDifferentMaterial = surf->material != prevMaterial ? true : false;

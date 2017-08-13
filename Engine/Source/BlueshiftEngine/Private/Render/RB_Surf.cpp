@@ -218,7 +218,8 @@ void RBSurf::Flush_SelectionPass() {
 
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+        VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
         
     int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite;
@@ -264,7 +265,8 @@ void RBSurf::Flush_DepthPass() {
 
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+        VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
     rhi.SetStateBits(mtrlPass->stateBits & (RHI::DepthWrite | RHI::MaskDF));
@@ -283,7 +285,8 @@ void RBSurf::Flush_ShadowDepthPass() {
     
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+        VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
     rhi.SetStateBits(mtrlPass->stateBits & (RHI::DepthWrite | RHI::MaskDF));
@@ -298,13 +301,14 @@ void RBSurf::Flush_AmbientPass() {
 
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
+    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
+        VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
     
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
     
     int stateBits = mtrlPass->stateBits;
 
-    if (r_useDepthPrePass.GetBool()) {
+    if (r_useDepthPrePass.GetBool() && mtrlPass->renderingMode == Material::RenderingMode::Opaque) {
         stateBits &= ~(RHI::MaskDF | RHI::DepthWrite);
         stateBits |= RHI::DF_Equal;
     }
@@ -325,11 +329,16 @@ void RBSurf::Flush_LitPass() {
         
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
+    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
+        VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
     int stateBits = mtrlPass->stateBits;
     stateBits &= ~(RHI::MaskDF | RHI::DepthWrite);
+
+    if (r_useDepthPrePass.GetBool() && mtrlPass->renderingMode == Material::RenderingMode::Opaque) {
+        stateBits |= RHI::DF_Equal;
+    }
 
     const Material *lightMaterial = surfLight->def->parms.material;
     int lightMaterialType = lightMaterial->GetType();

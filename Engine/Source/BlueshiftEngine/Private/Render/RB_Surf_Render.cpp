@@ -418,10 +418,8 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
 void RBSurf::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = ShaderManager::standardDefaultShader;
 
-    if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
-            shader = shader->GetPerforatedVersion();
-        }
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
+        shader = shader->GetPerforatedVersion();
     }
 
     if (subMesh->useGpuSkinning) {
@@ -476,10 +474,8 @@ void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambien
         shader = ShaderManager::standardDefaultAmbientLitShader;
     }
 
-    if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
-            shader = shader->GetPerforatedVersion();
-        }
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
+        shader = shader->GetPerforatedVersion();
     }
 
     if (subMesh->useGpuSkinning) {
@@ -572,10 +568,8 @@ void RBSurf::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float
         }
     }
 
-    if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
-            shader = shader->GetPerforatedVersion();
-        }
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
+        shader = shader->GetPerforatedVersion();
     }
 
     if (subMesh->useGpuSkinning) {
@@ -630,10 +624,8 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, fl
         }
     }
 
-    if (!r_useDepthPrePass.GetBool()) {
-        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
-            shader = shader->GetPerforatedVersion();
-        }
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
+        shader = shader->GetPerforatedVersion();
     }
 
     if (subMesh->useGpuSkinning) {

@@ -470,11 +470,11 @@ bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) co
     Str	token;
 
     if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("Opaque")) {
+        if (!token.Icmp("opaque")) {
             *renderingMode = RenderingMode::Opaque;
-        } else if (!token.Icmp("AlphaCutoff")) {
+        } else if (!token.Icmp("alphaCutoff")) {
             *renderingMode = RenderingMode::AlphaCutoff;
-        } else if (!token.Icmp("AlphaBlend")) {
+        } else if (!token.Icmp("alphaBlend")) {
             *renderingMode = RenderingMode::AlphaBlend;
         } else {
             BE_WARNLOG(L"unknown renderingMode '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
@@ -592,7 +592,7 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
 
 void Material::Finish() {
     if (type == SurfaceMaterialType) {
-        if (!pass->shader || !(pass->shader->GetFlags() & Shader::LitSurface)) {
+        if (!pass->shader) {
             if (pass->renderingMode == RenderingMode::AlphaBlend) {
                 sort = OverlaySort;
             } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
@@ -600,6 +600,8 @@ void Material::Finish() {
             } else {
                 sort = OpaqueSort;
             }
+        } else if (pass->shader->GetFlags() & Shader::SkySurface) {
+            sort = SkySort;
         } else if (pass->shader->GetFlags() & Shader::LitSurface) {
             if (pass->renderingMode == RenderingMode::AlphaBlend) {
                 sort = TranslucentSort;
@@ -608,8 +610,14 @@ void Material::Finish() {
             } else {
                 sort = OpaqueSort;
             }
-        } else if (pass->shader->GetFlags() & Shader::SkySurface) {
-            sort = SkySort;
+        } else {
+            if (pass->renderingMode == RenderingMode::AlphaBlend) {
+                sort = OverlaySort;
+            } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
+                sort = AlphaTestSort;
+            } else {
+                sort = OpaqueSort;
+            }
         }
     } else {
         sort = BadSort;
@@ -660,9 +668,9 @@ void Material::Write(const char *filename) {
 
     Str renderingModeStr;
     switch (pass->renderingMode) {
-    case RenderingMode::Opaque: renderingModeStr = "Opaque"; break;
-    case RenderingMode::AlphaCutoff: renderingModeStr = "AlphaCutoff"; break;
-    case RenderingMode::AlphaBlend: renderingModeStr = "AlphaBlend"; break;
+    case RenderingMode::Opaque: renderingModeStr = "opaque"; break;
+    case RenderingMode::AlphaCutoff: renderingModeStr = "alphaCutoff"; break;
+    case RenderingMode::AlphaBlend: renderingModeStr = "alphaBlend"; break;
     }
     fp->Printf("%srenderingMode %s\n", indentSpace.c_str(), renderingModeStr.c_str());
 
