@@ -30,10 +30,11 @@ class CollisionMesh {
 
 public:
     int                         numVerts;
-    Vec3 *                      verts;
-
     int                         numIndexes;
+
+    Vec3 *                      verts;
     int *                       indexes;
+
     int	*                       materialIndexes;
 };
 

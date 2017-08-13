@@ -385,7 +385,7 @@ void SubMesh::FixMirroredVerts() {
     for (int i = 0; i < numMirroredVerts; i++, v0++) {
         VertexGenericLit *v1 = &verts[mirroredVerts[i]];
 
-        // NOTE: normalize 해줘야 한다
+        // NOTE: should we normalize this ?
         //v0->normal += v1->normal;
         //v1->normal = v0->normal;
     }
@@ -491,7 +491,7 @@ static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int nu
             c_negative++;
         }
 
-        float inva = (area < 0.0f) ? -1.0f : 1.0f;		// was = 1.0f / area;
+        float inva = (area < 0.0f) ? -1.0f : 1.0f;  // was = 1.0f / area;
 
         Vec3 temp;
         temp[0] = (d0[0] * d1[4] - d0[4] * d1[0]) * inva;
@@ -802,7 +802,7 @@ void SubMesh::ComputeDominantTris() {
         float ds2 = cST[0] - aST[0];
         float dt2 = cST[1] - aST[1];
 
-        // tangents 벡터들은 normalize 해야 하기 때문에 판별식의 부호만 알면 된다.
+        // We just need determinant sign because tangents vectors should be normalized
         float det = ds1 * dt2 - ds2 * dt1;
         unsigned int signBit = (*(unsigned int *)&det) & (1 << 31);
 
@@ -919,7 +919,7 @@ void SubMesh::ComputeEdges() {
             }
 
             // 공유하는 edge 를 못 찾았거나 이미 두개의 edge 가 공유되어 있다면 새로운 edge 를 추가
-            if (edgeNum < 0 || (edgeNum >= 0 && tempEdges[edgeNum].t[order] != -1)) {
+            if (edgeNum < 0 || tempEdges[edgeNum].t[order] != -1) {
                 if (edgeNum >= 0) {
                     numDisjunctiveEdges++;
                 }

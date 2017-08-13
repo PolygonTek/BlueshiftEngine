@@ -107,14 +107,14 @@ const wchar_t *CVarSystem::CompleteVariable(const wchar_t *partial) {
 
     int i;
 
-    // 동일한 것이 있나 먼저 검사
+    // Check full name 
     for (i = 0; i < cvars.Count(); i++) {
         if (!WStr::Icmp(partial, cvars[i]->name)) {
             return cvars[i]->name;
         }
     }
 
-    // 없다면 부분 매치 검색
+    // Check partial name
     for (i = 0; i < cvars.Count(); i++) {
         if (!WStr::Icmpn(partial, cvars[i]->name, len)) {
             return cvars[i]->name;
@@ -150,9 +150,9 @@ void CVarSystem::Register(CVar *cvar) {
     }
     
     if (i == -1) {
-        cvar->valueString	= (wchar_t *)Mem_AllocWideString(cvar->defaultValue);
-        cvar->valueFloat	= (float)wcstof(cvar->valueString, nullptr);
-        cvar->valueInteger	= (int)wcstoul(cvar->valueString, nullptr, 0);
+        cvar->valueString   = (wchar_t *)Mem_AllocWideString(cvar->defaultValue);
+        cvar->valueFloat    = (float)wcstof(cvar->valueString, nullptr);
+        cvar->valueInteger  = (int)wcstoul(cvar->valueString, nullptr, 0);
 
         i = cvars.Append(cvar);
         cvarHash.Add(hash, i);
@@ -273,8 +273,8 @@ bool CVarSystem::Command(const CmdArgs &args) {
         return false;
     }
 
-    if (args.Argc() == 1) {	
-        // 파라미터가 없을 경우 값을 보여준다
+    if (args.Argc() == 1) {
+        // Print cvar information if no parameters are specified
         BE_LOG(L"%ls is: \"%ls\" default: \"%ls\"\ndescription: %ls\n", cvar->name, cvar->valueString, cvar->defaultValue, cvar->desc);
         return true;
     }
@@ -301,7 +301,7 @@ void CVarSystem::ValidateMinMax(CVar *cvar) {
 
 //--------------------------------------------------------------------------------------------------
 //
-//	CVar command
+//  CVar command
 //
 //--------------------------------------------------------------------------------------------------
 
@@ -378,7 +378,7 @@ void CVarSystem::Cmd_Set(const CmdArgs &args) {
     }
 }
 
-void CVarSystem::Cmd_Toggle(const CmdArgs &args) {	
+void CVarSystem::Cmd_Toggle(const CmdArgs &args) {
     if (args.Argc() == 1) {
         BE_LOG(L"usage:\n");
         BE_LOG(L"toggle <variable> - toggles between 0 and 1\n");
@@ -406,7 +406,7 @@ void CVarSystem::Cmd_Toggle(const CmdArgs &args) {
         if (cvar->GetInteger() == wcstoul(arg2, nullptr, 0)) {
             cvarSystem.Set(arg, L"0");
         } else {
-            cvarSystem.Set(arg, arg2);		
+            cvarSystem.Set(arg, arg2);
         }
     } else {
         int i;

@@ -173,7 +173,7 @@ void ComTransform::Translate(const Vec3 &translation) {
     SetOrigin(GetOrigin() + translation);
 }
 
-void ComTransform::Rotate(const Vec3 axis, float angle) {
+void ComTransform::Rotate(const Vec3 &axis, float angle) {
     SetAxis(Rotation(Vec3::zero, axis, angle).ToMat3() * GetAxis());
 }
 

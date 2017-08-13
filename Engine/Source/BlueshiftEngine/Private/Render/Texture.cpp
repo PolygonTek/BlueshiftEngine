@@ -435,7 +435,6 @@ void Texture::CreateRandomRotMatTexture(int size, int flags) {
         for (int x = 0; x < size; x++) {
             Math::SinCos(random.RandomFloat() * Math::TwoPi, s, c);
                 
-            // cos, sin 값만 저장
             dst[4 * (y * 64 + x) + 0] = ClampByte((+c + 1.0f) * 0.5f * 255 + 0.5f);
             dst[4 * (y * 64 + x) + 1] = ClampByte((-s + 1.0f) * 0.5f * 255 + 0.5f);
             dst[4 * (y * 64 + x) + 2] = ClampByte((+s + 1.0f) * 0.5f * 255 + 0.5f);
@@ -527,7 +526,7 @@ void Texture::Upload(const Image *srcImage) {
     int dstWidth, dstHeight, dstDepth;
     rhi.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
 
-    // scale down mip level 적용
+    // Apply scale down mip level
     int mipLevel = !(flags & NoScaleDown) ? TextureManager::texture_mipLevel.GetInteger() : 0;
     if (mipLevel > 0) {
         dstWidth = Max(dstWidth >> mipLevel, 1);
@@ -535,7 +534,7 @@ void Texture::Upload(const Image *srcImage) {
         dstDepth = Max(dstDepth >> mipLevel, 1);
     }
     
-    // depth 텍스쳐는 텍셀을 정의할 수 없다
+    // Can't upload texels for depth texture
     if (!srcImage->IsEmpty() && Image::IsDepthFormat(srcImage->GetFormat())) {
         BE_FATALERROR(L"Texture::Upload: Couldn't upload texel data of depth texture");
     }

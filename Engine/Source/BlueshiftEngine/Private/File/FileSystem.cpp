@@ -720,7 +720,9 @@ bool FileSystem::RemoveDirectory(const char *dirname, bool tree) const {
 size_t FileSystem::LoadFile(const char *path, bool searchDirs, void **buffer) {
     if (!path || !path[0]) {
         BE_ERRLOG(L"FileSystem::LoadFile: empty filename\n");
-        *buffer = nullptr;
+        if (buffer) {
+            *buffer = nullptr;
+        }
         return 0;
     }
 

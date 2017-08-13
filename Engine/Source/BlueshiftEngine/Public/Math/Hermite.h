@@ -258,6 +258,7 @@ BE_INLINE T Hermite<T>::GetMaxPoint() const {
 template <typename T>
 BE_INLINE bool Hermite<T>::Initialize(BoundaryCondition boundaryCondition) {
     // TODO: implement this
+    return false;
 }
 
 template <typename T>

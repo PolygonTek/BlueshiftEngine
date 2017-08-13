@@ -37,6 +37,10 @@ HashIndex::HashIndex(const int initialHashSize, const int initialIndexSize) {
     lookUpMask = 0;
 }
 
+HashIndex::HashIndex(const HashIndex &other) {
+    *this = other;
+}
+
 void HashIndex::Allocate(const int newHashSize, const int newIndexSize) {
     assert(Math::IsPowerOfTwo(newHashSize));
 

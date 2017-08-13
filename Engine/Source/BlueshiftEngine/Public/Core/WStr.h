@@ -386,9 +386,9 @@ private:
     static constexpr int AllocGranularity = 32;
     static constexpr int FileNameHashSize = 1024;
 
-    int                 len;                        ///< String length
     wchar_t *           data;                       ///< String Data pointer
     size_t              alloced;                    ///< Allocated data size
+    int                 len;                        ///< String length
     wchar_t             baseBuffer[BaseLength];     ///< Default base buffer
 };
 

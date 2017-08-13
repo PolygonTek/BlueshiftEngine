@@ -46,7 +46,7 @@ class Rotation;
 class BE_API Quat {
 public:
     /// The default constructor does not initialize any members of this class.
-    Quat() {}
+    Quat() = default;
     /// Constructs a Quat with the value (x, y, z, w).
     Quat(float x, float y, float z, float w);
     /// Assignment operator

@@ -354,8 +354,11 @@ BE_INLINE int StaticArray<T, capacity>::FindIndex(CompatibleT &&value, int from)
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE int StaticArray<T, capacity>::FindIndexIf(Functor &&finder, int from) {
-    T *e = std::find_if(elements + from, elements + count, std::forward<Functor>(finder));
-    if (e) {
+    T *first = elements + from;
+    T *last = elements + count;
+
+    T *e = std::find_if(first, last, std::forward<Functor>(finder));
+    if (e != last) {
         return (e - elements) / sizeof(T);
     }
     return -1;
@@ -375,7 +378,14 @@ BE_INLINE T *StaticArray<T, capacity>::Find(CompatibleT &&value, int from) const
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE T *StaticArray<T, capacity>::FindIf(Functor &&finder, int from) {
-    return std::find_if(elements + from, elements + count, std::forward<Functor>(finder));
+    T *first = elements + from;
+    T *last = elements + count;
+
+    T *e = std::find_if(first, last, std::forward<Functor>(finder));
+    if (e != last) {
+        return e;
+    }
+    return nullptr;
 }
 
 template <typename T, int capacity>
@@ -463,10 +473,6 @@ BE_INLINE void StaticArray<T, capacity>::Sort(Functor &&compare) {
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE void StaticArray<T, capacity>::SortSubSection(int startIndex, int endIndex, Functor &&compare) {
-    if (!elements) {
-        return;
-    }
-
     if (startIndex < 0) {
         startIndex = 0;
     }

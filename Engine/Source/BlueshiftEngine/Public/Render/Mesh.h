@@ -40,10 +40,10 @@ class SubMesh;
 
 class MeshSurf {
 public:
-    int32_t                 materialIndex;
     SubMesh *               subMesh;
-    int32_t                 viewCount;
     DrawSurf *              drawSurf;
+    int32_t                 materialIndex;
+    int32_t                 viewCount;
 };
 
 class Mesh {

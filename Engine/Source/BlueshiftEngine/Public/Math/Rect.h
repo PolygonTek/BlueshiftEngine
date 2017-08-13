@@ -32,7 +32,7 @@ class Point;
 class BE_API Rect {
 public:
     /// The default constructor does not initialize any members of this class.
-    Rect() {}
+    Rect() = default;
     /// Constructs from coordinates.
     Rect(int x, int y, int w, int h);
     /// Constructs from a point.

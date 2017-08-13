@@ -180,7 +180,7 @@ public:
     };
 
     struct Enum {
-        Enum(const char *sequence) { this->sequence = sequence; }
+        Enum(const char *sequence) : sequence(sequence) {}
         Str sequence;
     };
 

@@ -154,6 +154,7 @@ BE_INLINE Texture::Texture() {
     srcWidth                = 0;
     srcHeight               = 0;
     srcDepth                = 0;
+    numSlices               = 0;
     width                   = 0;
     height                  = 0;
     depth                   = 0;

@@ -66,14 +66,14 @@ void	PP_CopyCocToAlpha(const Texture *depthTexture, float zFar, RenderTarget *ds
 void	PP_CopyColorAndCoc(const Texture *colorTexture, const Texture *depthTexture, float zFar, RenderTarget *dstRT);
 void	PP_ApplyDOF(const Texture *tex0, const Texture *tex1, RenderTarget *dstRT);
 
-void	PP_SunShaftsMaskGen(const Texture *colorTexture, const Texture *depthTexture, float s, float t, float s2, float t2, RenderTarget *dstRT);	
+void	PP_SunShaftsMaskGen(const Texture *colorTexture, const Texture *depthTexture, float s, float t, float s2, float t2, RenderTarget *dstRT);
 void	PP_SunShaftsGen(const Texture *srcTexture, const Mat4 &viewProjectionMatrix, const Vec3 &worldSunPos, float shaftScale, RenderTarget *dstRT);
 void	PP_SunShaftsDisplay(const Texture *screenTexture, const Texture *shaftTexture, const Vec4 &sunColor, RenderTarget *dstRT);
 
-void	PP_ObjectMotionBlur(const Texture *srcTexture, const Texture *velocityTexture, float s, float t, float s2, float t2, RenderTarget *dstRT);	
-void	PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture, const Mat4 viewProjectionMatrix[2], Vec3 cameraPos, float blurScale, float frameTime, RenderTarget *dstRT);	
+void	PP_ObjectMotionBlur(const Texture *srcTexture, const Texture *velocityTexture, float s, float t, float s2, float t2, RenderTarget *dstRT);
+void	PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture, const Mat4 viewProjectionMatrix[2], const Vec3 &cameraPos, float blurScale, float frameTime, RenderTarget *dstRT);
 
-void	PP_MeasureLuminance(const Texture *srcTexture, const float *screenTc, RenderTarget *dstRT);	
+void	PP_MeasureLuminance(const Texture *srcTexture, const float *screenTc, RenderTarget *dstRT);
 void	PP_LuminanceAdaptation(const Texture *srcTexture0, const Texture *srcTexture1, float frameTime, RenderTarget *dstRT);
 
 void	PP_BrightFilter(const Texture *srcTexture, const Texture *luminanceTexture, RenderTarget *dstRT);

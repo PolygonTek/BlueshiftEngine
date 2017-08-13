@@ -1004,7 +1004,7 @@ static void RGBA8888ToBGRX5551(const byte *src, byte *dst, int numPixels) {
     const byte *srcPtr = src;
     const byte *srcEnd = srcPtr + numPixels * 4;
     uint16_t *dstPtr = (uint16_t *)dst;
-    for (; srcPtr < srcEnd; src += 4, dstPtr++) {
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
         *dstPtr = (srcPtr[2] >> 3) | ((srcPtr[1] >> 3) << 5) | ((srcPtr[0] >> 3) << 10);
     }
 }
@@ -1457,7 +1457,7 @@ static void RGBA32FToRG32F(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = (float *)dst;
-    for (; srcPtr < srcEnd; src += 4, dstPtr += 2) {
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 2) {
         dstPtr[0] = srcPtr[0];
         dstPtr[1] = srcPtr[1];
     }

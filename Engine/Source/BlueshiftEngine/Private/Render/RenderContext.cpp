@@ -794,8 +794,6 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
 }
 
 void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage) {    
-    static const char cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
-
     SceneView view;
     SceneView::Parms viewParms;
     memset(&viewParms, 0, sizeof(viewParms));

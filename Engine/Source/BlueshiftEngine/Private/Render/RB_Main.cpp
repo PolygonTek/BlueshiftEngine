@@ -740,7 +740,7 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     screenImage.FlipY();
 
     // apply gamma ramp table
-    if (r_gamma.GetBool() != 1.0f) {
+    if (r_gamma.GetFloat() != 1.0) {
         unsigned short ramp[768];
         rhi.GetGammaRamp(ramp);
         screenImage.GammaCorrectRGB888(ramp);

@@ -42,6 +42,8 @@ public:
     static constexpr int DefaultIndexGranularity = 1 << 10;
 
     HashIndex(const int initialHashSize = DefaultHashSize, const int initialIndexSize = DefaultHashSize);
+    /// Copy constructor
+    HashIndex(const HashIndex &rhs);
     /// Copy from another hash index.
     HashIndex &operator=(const HashIndex &rhs);
     ~HashIndex();
@@ -116,10 +118,10 @@ private:
                     /// Clears and allocates memory for use
     void            Allocate(const int newHashSize, const int newIndexSize);
 
-    int             hashSize;           ///< hash size
     int *           hashTable;          ///< hash to index table
-    int             indexSize;          ///< index size
     int *           indexChain;         ///< index to index table
+    int             hashSize;           ///< hash size
+    int             indexSize;          ///< index size
     int             granularity;        ///< index chain allocation granularity
     int             hashMask;           ///< hashSize - 1
     int             lookUpMask;         ///< 0 means initial state, -1 is not

@@ -38,7 +38,7 @@ public:
     };
 
     /// The default constructor does not initialize any members of this class.
-    Angles() {}
+    Angles() = default;
     /// Constructs a Angles with the value (yaw, pitch, roll).
     Angles(float yaw, float pitch, float roll);
     /// Copy constructor

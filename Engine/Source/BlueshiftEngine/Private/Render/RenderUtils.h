@@ -49,7 +49,7 @@ void    R_Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, float 
 void    R_TangentsFromTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, const Vec2 &st0, const Vec2 &st1, const Vec2 &st2, Vec3 &tangent, Vec3 &binormal, float *handedness);
 
 //
-bool    R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBox, const Vec3 lightProjectionOrigin);
+bool    R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBox, const Vec3 &lightProjectionOrigin);
 
 // PSSM 시 split distance 계산 - GPU Gems3 참고
 void    R_ComputeSplitDistances(float dNear, float dFar, float lamda, int numSplits, float *splitDistances);

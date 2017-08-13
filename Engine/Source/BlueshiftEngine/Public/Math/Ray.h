@@ -41,9 +41,8 @@ public:
     Vec3                direction;
 };
 
-BE_INLINE Ray::Ray(const Vec3 &origin, const Vec3 &direction) {
-    this->origin = origin;
-    this->direction = direction;
+BE_INLINE Ray::Ray(const Vec3 &origin, const Vec3 &direction) :
+    origin(origin), direction(direction) {
 }
 
 BE_INLINE void Ray::Set(const Vec3 &origin, const Vec3 &direction) {

@@ -186,11 +186,11 @@ void PlatformWin::GenerateMouseDeltaEvent() {
         rawMouseDeltaOld.x = rawMouseDelta.x;
         rawMouseDeltaOld.y = rawMouseDelta.y;
 
-        if (mouseDelta.x || mouseDelta.y) {
+        if (mouseDelta.x != 0 || mouseDelta.y != 0) {
             QueEvent(Platform::MouseDeltaEvent, mouseDelta.x, mouseDelta.y, 0, nullptr);
         }
 
-        if (rawMouseDelta || rawMouseDelta) {
+        if (rawMouseDelta.x != 0 || rawMouseDelta.y != 0) {
             SetCursorPos(windowCenter.x, windowCenter.y);
         }
     }

@@ -80,7 +80,7 @@ public:
     void                        Init();
     void                        Shutdown();
 
-    Prefab *                    AllocPrefab(const char *hashName, const Guid guid = Guid::zero);
+    Prefab *                    AllocPrefab(const char *hashName, const Guid &guid = Guid::zero);
     Prefab *                    FindPrefab(const char *hashName) const;
     Prefab *                    GetPrefab(const char *filename);
 

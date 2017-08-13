@@ -23,7 +23,7 @@ public:
     enum { Size = 4 };
 
     /// The default constructor does not initialize any members of this class.
-    Color4() {}
+    Color4() = default;
     /// Constructs a Color4 with the value (r, g, b, a).
     Color4(float r, float g, float b, float a);
     /// Constructs a Color4 with the value (rgb.r, rgb.g, rgb.b, a).
@@ -71,7 +71,7 @@ public:
                         /// This function is identical to the member function AddScalar().
     Color4              operator+(float rhs) const { return Color4(r + rhs, g + rhs, b + rhs, a + rhs); }
                         /// Adds the color v to color (s, s, s, s).
-    friend Color4       operator+(float lhs, const Color4 rhs) { return Color4(lhs + rhs.r, lhs + rhs.g, lhs + rhs.b, lhs + rhs.a); }
+    friend Color4       operator+(float lhs, const Color4 &rhs) { return Color4(lhs + rhs.r, lhs + rhs.g, lhs + rhs.b, lhs + rhs.a); }
 
                         /// Subtracts a color from this color.
     Color4              Sub(const Color4 &v) const { return *this - v; }
@@ -84,7 +84,7 @@ public:
                         /// This function is identical to the member function SubScalar()
     Color4              operator-(float rhs) const { return Color4(r - rhs, g - rhs, b - rhs, a - rhs); }
                         /// Subtracts the color v from color (s, s, s, s).
-    friend Color4       operator-(float lhs, const Color4 rhs) { return Color4(lhs - rhs.r, lhs - rhs.g, lhs - rhs.b, lhs - rhs.a); }
+    friend Color4       operator-(float lhs, const Color4 &rhs) { return Color4(lhs - rhs.r, lhs - rhs.g, lhs - rhs.b, lhs - rhs.a); }
 
                         /// Multiplies this color by a scalar.
     Color4              Mul(float s) const { return *this * s; }
@@ -92,7 +92,7 @@ public:
                         /// This function is identical to the member function Mul().
     Color4              operator*(float rhs) const { return Color4(r * rhs, g * rhs, b * rhs, a * rhs); }
                         /// Multiplies color v by a scalar.
-    friend Color4       operator*(float lhs, const Color4 rhs) { return Color4(lhs * rhs.r, lhs * rhs.g, lhs * rhs.b, lhs * rhs.a); }
+    friend Color4       operator*(float lhs, const Color4 &rhs) { return Color4(lhs * rhs.r, lhs * rhs.g, lhs * rhs.b, lhs * rhs.a); }
 
                         /// Divides this color by a scalar.
     Color4              Div(float s) const { return *this / s; }

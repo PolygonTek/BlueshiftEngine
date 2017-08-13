@@ -36,9 +36,12 @@ void *Mem_Alloc(size_t size) {
 }
 
 void *Mem_ClearedAlloc(size_t size) {
-    void *r = malloc(size);
-    memset(r, 0, size);
-    return r;
+    void *ptr = malloc(size);
+    if (!ptr) {
+        return nullptr;
+    }
+    memset(ptr, 0, size);
+    return ptr;
 }
 
 void *Mem_Alloc16(size_t size) {

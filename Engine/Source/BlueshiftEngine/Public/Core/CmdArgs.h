@@ -21,6 +21,7 @@ BE_NAMESPACE_BEGIN
 class BE_API CmdArgs {
 public:
     CmdArgs() { numArgs = 0; }
+    CmdArgs(const CmdArgs &other) { *this = other; }
     CmdArgs(const wchar_t *text, bool keepAsStrings);
 
                         /// Copy from another.

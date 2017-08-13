@@ -35,16 +35,16 @@ public:
     static std::string GetTypeName(lua_State *l, int index);
 
     // Check type at the given index
-    static bool IsType(lua_State *l, TypeID type, int index);
+    static bool IsType(lua_State *l, const TypeID type, int index);
 
-    static void CheckType(lua_State *l, TypeID type, const int index) {
+    static void CheckType(lua_State *l, const TypeID type, const int index) {
         if (!IsType(l, type, index)) {
             throw LuaCpp::detail::GetUserdataParameterFromLuaTypeError{ GetTypeName(l, type), index };
         }
     }
 
 private:
-    static void _create_table_in_registry(lua_State *l, const std::string & name) {
+    static void _create_table_in_registry(lua_State *l, const std::string &name) {
         // push the name key
         lua_pushlstring(l, name.c_str(), name.size());
         // push the value which is new table
@@ -67,12 +67,12 @@ private:
         lua_gettable(l, LUA_REGISTRYINDEX);
     }
 
-    static void _push_typeinfo(lua_State *l, TypeID type) {
+    static void _push_typeinfo(lua_State *l, const TypeID type) {
         // push the type_info address
         lua_pushlightuserdata(l, const_cast<std::type_info *>(&type.get()));
     }
 
-    static void _get_name(lua_State *l, TypeID type) {
+    static void _get_name(lua_State *l, const TypeID type) {
         // push the table
         _push_name_table(l);
         // push the key
@@ -83,7 +83,7 @@ private:
         lua_remove(l, -2);
     }
 
-    static void _get_metatable(lua_State *l, TypeID type) {
+    static void _get_metatable(lua_State *l, const TypeID type) {
         // push the table
         _push_metatable_table(l);
         // push the key

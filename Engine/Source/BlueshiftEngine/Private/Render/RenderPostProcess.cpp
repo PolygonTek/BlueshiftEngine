@@ -916,7 +916,7 @@ void PP_ObjectMotionBlur(const Texture *srcTexture, const Texture *velocityTextu
     rhi.SetViewport(prevViewportRect);
 }
 
-void PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture, const Mat4 viewProjectionMatrix[2], Vec3 cameraPos, float blurScale, float frameTime, RenderTarget *dstRT) {
+void PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture, const Mat4 viewProjectionMatrix[2], const Vec3 &cameraPos, float blurScale, float frameTime, RenderTarget *dstRT) {
     Rect prevViewportRect = rhi.GetViewport();
     dstRT->Begin();
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));

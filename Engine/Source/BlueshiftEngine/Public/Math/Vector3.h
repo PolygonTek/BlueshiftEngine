@@ -33,7 +33,7 @@ public:
     enum { Size = 3 };
 
     /// The default constructor does not initialize any members of this class.
-    Vec3() {}
+    Vec3() = default;
     /// Constructs a Vec3 with the value (x, y, z).
     Vec3(float x, float y, float z);
     /// Constructs a Vec3 from a C array, to the value (data[0], data[1], data[2]).
@@ -79,7 +79,7 @@ public:
                         /// This function is identical to the member function AddScalar().
     Vec3                operator+(float rhs) const { return Vec3(x + rhs, y + rhs, z + rhs); }
                         /// Adds the vector v to vector (s, s, s, s).
-    friend Vec3         operator+(float lhs, const Vec3 rhs) { return Vec3(lhs + rhs.x, lhs + rhs.y, lhs + rhs.z); }
+    friend Vec3         operator+(float lhs, const Vec3 &rhs) { return Vec3(lhs + rhs.x, lhs + rhs.y, lhs + rhs.z); }
 
                         /// Subtracts a vector from this vector.
     Vec3                Sub(const Vec3 &v) const { return *this - v; }
@@ -92,7 +92,7 @@ public:
                         /// This function is identical to the member function SubScalar()
     Vec3                operator-(float rhs) const { return Vec3(x - rhs, y - rhs, z - rhs); }
                         /// Subtracts the vector v from vector (s, s, s, s).
-    friend Vec3         operator-(float lhs, const Vec3 rhs) { return Vec3(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z); }
+    friend Vec3         operator-(float lhs, const Vec3 &rhs) { return Vec3(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z); }
 
                         /// Multiplies this vector by a scalar.
     Vec3                Mul(float s) const { return *this * s; }
@@ -100,7 +100,7 @@ public:
                         /// This function is identical to the member function Mul().
     Vec3                operator*(float rhs) const { return Vec3(x * rhs, y * rhs, z * rhs); }
                         /// Multiplies vector v by a scalar.
-    friend Vec3         operator*(float lhs, const Vec3 rhs) { return Vec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
+    friend Vec3         operator*(float lhs, const Vec3 &rhs) { return Vec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
                         /// Multiplies this vector by a vector, element-wise.
     Vec3                MulComp(const Vec3 &v) const { return *this * v; }
                         /// Multiplies this vector by a vector, element-wise.
@@ -118,7 +118,7 @@ public:
                         /// Divides this vector by a vector, element-wise.
     Vec3                operator/(const Vec3 &rhs) const { return Vec3(x / rhs.x, y / rhs.y, z / rhs.z); }
                         /// Divides vector (s, s, s, s) by a vector v, element-wise.
-    friend Vec3         operator/(float lhs, const Vec3 rhs) { return Vec3(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
+    friend Vec3         operator/(float lhs, const Vec3 &rhs) { return Vec3(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
     
                         /// Adds a vector to this vector, in-place.
     Vec3 &              AddSelf(const Vec3 &v) { *this += v; return *this; }

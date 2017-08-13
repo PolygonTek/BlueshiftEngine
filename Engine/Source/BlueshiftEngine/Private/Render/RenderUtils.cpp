@@ -19,6 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 void R_CubeMapFaceToAxis(RHI::CubeMapFace face, Mat3 &axis) {
+    // FIXME
     switch (face) {
     case RHI::PositiveX:
         axis[0] = Vec3(1, 0, 0);
@@ -304,7 +305,7 @@ void R_TangentsFromTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, cons
     *handedness = t0.Cross(t1).Dot(n) < 0.0 ? -1.0f : 1.0f;
 }
 
-bool R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBox, const Vec3 lightProjectionOrigin) {
+bool R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBox, const Vec3 &lightProjectionOrigin) {
     Vec3	silVerts[6];
     Vec4	projectedSilVerts[6];
     byte	bits;

@@ -88,7 +88,6 @@ size_t PlatformWinFile::Read(void *buffer, size_t bytesToRead) const {
     DWORD readBytes;
     
     while (bytesToRead) {
-        assert(bytesToRead >= 0);
         size_t thisSize = Min(READWRITE_SIZE, bytesToRead);
         if (!ReadFile(fileHandle, ptr, thisSize, &readBytes, nullptr)) {
             return 0;
@@ -110,7 +109,6 @@ bool PlatformWinFile::Write(const void *buffer, size_t bytesToWrite) {
     DWORD writeBytes;
 
     while (bytesToWrite) {
-        assert(bytesToWrite >= 0);
         size_t thisSize = Min(READWRITE_SIZE, bytesToWrite);
         if (!WriteFile(fileHandle, ptr, thisSize, &writeBytes, nullptr) || writeBytes != (DWORD)thisSize) {
             return false;

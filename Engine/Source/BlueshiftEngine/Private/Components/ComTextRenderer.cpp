@@ -88,7 +88,7 @@ void ComTextRenderer::UpdateAABB() {
     sceneEntity.aabb = GetGameWorld()->GetRenderWorld()->GetTextMesh().Compute3DTextAABB(sceneEntity.font, sceneEntity.textAnchor, sceneEntity.lineSpacing, sceneEntity.textScale, sceneEntity.text);
 }
 
-void ComTextRenderer::ChangeFont(const Guid fontGuid, int fontSize) {
+void ComTextRenderer::ChangeFont(const Guid &fontGuid, int fontSize) {
     if (sceneEntity.font) {
         fontManager.ReleaseFont(sceneEntity.font);
     }

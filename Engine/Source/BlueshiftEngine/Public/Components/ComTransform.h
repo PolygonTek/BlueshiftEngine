@@ -65,7 +65,7 @@ public:
     const Mat4 &            GetWorldMatrix() const { return worldMatrix; }
 
     void                    Translate(const Vec3 &translation);
-    void                    Rotate(const Vec3 axis, float angle);
+    void                    Rotate(const Vec3 &axis, float angle);
 
     static const SignalDef  SIG_TransformUpdated;
 

@@ -51,9 +51,8 @@ BE_INLINE Variant::Variant() {
     podSize = 0;
 }
 
-BE_INLINE Variant::Variant(const char *text) {
-    podSize = 0;
-    str = text;
+BE_INLINE Variant::Variant(const char *text) : 
+    podSize(0), str(text) {
 }
 
 template <typename T>
@@ -64,9 +63,8 @@ BE_INLINE Variant::Variant(const T &value) {
 }
 
 template <>
-BE_INLINE Variant::Variant(const Str &value) {
-    podSize = 0;
-    str = value;
+BE_INLINE Variant::Variant(const Str &value) : 
+    podSize(0), str(value) {
 }
 
 BE_INLINE Variant &Variant::operator=(const Variant &rhs) {

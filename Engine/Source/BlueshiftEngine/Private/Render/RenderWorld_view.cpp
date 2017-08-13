@@ -632,7 +632,7 @@ void RenderWorld::OptimizeLights(view_t *view) {
     viewLight_t *prevLight = nullptr;
 
     for (viewLight_t *light = view->viewLights; light; light = light->next) {
-        const AABB lightAABB = light->def->GetAABB();        
+        const AABB lightAABB = light->def->GetAABB();
         // litAABB 와 원래 lightAABB 를 intersect
         light->litAABB.IntersectSelf(lightAABB);
         // shadowCasterAABB 와 원래 lightAABB 를 intersect
@@ -647,6 +647,8 @@ void RenderWorld::OptimizeLights(view_t *view) {
         if (!view->def->GetClipRectFromAABB(light->litAABB, screenClipRect)) {
             if (prevLight) {
                 prevLight->next = light->next;
+            } else {
+                view->viewLights = light->next;
             }
             continue;
         }
@@ -658,9 +660,13 @@ void RenderWorld::OptimizeLights(view_t *view) {
         if (light->scissorRect.IsEmpty()) {
             if (prevLight) {
                 prevLight->next = light->next;
+            } else {
+                view->viewLights = light->next;
             }
             continue;
         }
+
+        prevLight = light;
     }
 }
 

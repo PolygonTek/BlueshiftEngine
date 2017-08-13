@@ -33,7 +33,7 @@ public:
     enum { Size = 2 };
 
     /// The default constructor does not initialize any members of this class.
-    Vec2() {}
+    Vec2() = default;
     /// Constructs a Vec2 with the value (x, y).
     Vec2(float x, float y);
     /// Constructs a Vec2 from a C array, to the value (data[0], data[1]).
@@ -79,7 +79,7 @@ public:
                         /// This function is identical to the member function AddScalar().
     Vec2                operator+(float rhs) const { return Vec2(x + rhs, y + rhs); }
                         /// Adds the vector v to vector (s, s, s, s).
-    friend Vec2         operator+(float lhs, const Vec2 rhs) { return Vec2(lhs + rhs.x, lhs + rhs.y); }
+    friend Vec2         operator+(float lhs, const Vec2 &rhs) { return Vec2(lhs + rhs.x, lhs + rhs.y); }
 
                         /// Subtracts a vector from this vector.
     Vec2                Sub(const Vec2 &v) const { return *this - v; }
@@ -92,7 +92,7 @@ public:
                         /// This function is identical to the member function SubScalar()
     Vec2                operator-(float rhs) const { return Vec2(x - rhs, y - rhs); }
                         /// Subtracts the vector v from vector (s, s, s, s).
-    friend Vec2         operator-(float lhs, const Vec2 rhs) { return Vec2(lhs - rhs.x, lhs - rhs.y); }
+    friend Vec2         operator-(float lhs, const Vec2 &rhs) { return Vec2(lhs - rhs.x, lhs - rhs.y); }
 
                         /// Multiplies this vector by a scalar.
     Vec2                Mul(float s) const { return *this * s; }
@@ -100,7 +100,7 @@ public:
                         /// This function is identical to the member function Mul().
     Vec2                operator*(float rhs) const { return Vec2(x * rhs, y * rhs); }
                         /// Multiplies vector v by a scalar.
-    friend Vec2         operator*(float lhs, const Vec2 rhs) { return Vec2(lhs * rhs.x, lhs * rhs.y); }
+    friend Vec2         operator*(float lhs, const Vec2 &rhs) { return Vec2(lhs * rhs.x, lhs * rhs.y); }
                         /// Multiplies this vector by a vector, element-wise.
     Vec2                MulComp(const Vec2 &v) const { return *this * v; }
                         /// Multiplies this vector by a vector, element-wise.
@@ -118,7 +118,7 @@ public:
                         /// Divides this vector by a vector, element-wise.
     Vec2                operator/(const Vec2 &rhs) const { return Vec2(x / rhs.x, y / rhs.y); }
                         /// Divides vector (s, s, s, s) by a vector v, element-wise.
-    friend Vec2         operator/(float lhs, const Vec2 rhs) { return Vec2(lhs / rhs.x, lhs / rhs.y); }
+    friend Vec2         operator/(float lhs, const Vec2 &rhs) { return Vec2(lhs / rhs.x, lhs / rhs.y); }
     
                         /// Adds a vector to this vector, in-place.
     Vec2 &              AddSelf(const Vec2 &v) { *this += v; return *this; }

@@ -30,7 +30,7 @@ BE_NAMESPACE_BEGIN
 class BE_API Point {
 public:
     /// The default constructor does not initialize any members of this class.
-    Point() {}
+    Point() = default;
     Point(int x, int y);
     explicit Point(const Vec2 &v);
 
