@@ -45,4 +45,4 @@ void accumulateJointMatrices(out vec4 R0, out vec4 R1, out vec4 R2, int jointInd
 #endif
 }
 
-$include "skinning_matrix_common.glsl"
+$include "SkinningMatrixCommon.glsl"
