@@ -40,7 +40,7 @@ RenderContext::RenderContext() {
     screenRT = nullptr;
     screenLitAccRT = nullptr;
     screenSelectionRT = nullptr;
-    screenSelectionScale = 0.5f;
+    screenSelectionScale = 0.25f;
     homRT = nullptr;
     memset(ppRTs, 0, sizeof(ppRTs));
 
@@ -606,7 +606,7 @@ void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1,
 
 void RenderContext::DrawBar(float x, float y, float w, float h) {
     guiMesh.SetColor(color);
-    guiMesh.DrawPic(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, color.a < 1.0f ? materialManager.blendMaterial : materialManager.whiteMaterial);	
+    guiMesh.DrawPic(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, color.a < 1.0f ? materialManager.blendMaterial : materialManager.whiteMaterial);
 }
 
 void RenderContext::DrawRect(float x, float y, float w, float h) {
