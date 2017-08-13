@@ -286,6 +286,17 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
             } else {
                 BE_WARNLOG(L"missing material name in particleSystem '%hs'\n", hashName.c_str());
             }
+        } else if (!token.Icmp("animation")) {
+            if (lexer.ReadToken(&token)) {
+                module.animation = (token == "false" ? false : true);
+            } else {
+                BE_WARNLOG(L"missing boolean value for the animation param in particleSystem '%hs'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("animFrames")) {
+            module.animFrames[0] = lexer.ParseInt();
+            module.animFrames[1] = lexer.ParseInt();
+        } else if (!token.Icmp("animFps")) {
+            module.animFps = lexer.ParseInt();
         } else if (!token.Icmp("startDelay")) {
             ParseMinMaxCurve(lexer, &module.startDelay);
         } else if (!token.Icmp("startColor")) {
@@ -959,6 +970,9 @@ void ParticleSystem::Write(const char *filename) {
 
         const Guid materialGuid = resourceGuidMapper.Get(standardModule.material->GetHashName());
         fp->Printf("%smaterial \"%s\"\n", indentSpace.c_str(), materialGuid.ToString());
+        fp->Printf("%sanimation %s\n", indentSpace.c_str(), standardModule.animation ? "true" : "false");
+        fp->Printf("%sanimFrames %i %i\n", indentSpace.c_str(), standardModule.animFrames[0], standardModule.animFrames[1]);
+        fp->Printf("%sanimFps %i\n", indentSpace.c_str(), standardModule.animFps);
         fp->Printf("%sorientation \"%s\"\n", indentSpace.c_str(), orientationNames[standardModule.orientation]);
 
         WriteMinMaxCurve(fp, "startDelay", standardModule.startDelay, indentSpace);

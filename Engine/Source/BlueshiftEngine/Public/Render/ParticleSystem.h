@@ -120,6 +120,9 @@ public:
         SimulationSpace         simulationSpace;
 
         Material *              material;
+        bool                    animation;
+        int                     animFrames[2];
+        int                     animFps;
         Orientation             orientation;
 
         MinMaxCurve             startDelay;             ///< Delay from start for the first particle to emit 
@@ -329,6 +332,10 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
     simulationSpeed = 1.0f;
     simulationSpace = SimulationSpace::Local;
     material = materialManager.defaultMaterial;
+    animation = false;
+    animFrames[0] = 1;
+    animFrames[1] = 1;
+    animFps = 8;
     orientation = Orientation::View;
     startDelay.Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f);
     startColor.Set(1, 1, 1, 1);

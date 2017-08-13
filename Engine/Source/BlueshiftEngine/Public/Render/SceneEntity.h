@@ -86,6 +86,7 @@ public:
         AABB                aabb;                   // non-scaled AABB (don't use cleared AABB)
         float               maxVisDist;
         int                 layer;
+        int                 time;
 
         Mesh *              mesh;
         const Skeleton *    skeleton;

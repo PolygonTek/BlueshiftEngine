@@ -92,6 +92,7 @@ void ComParticleSystem::Init() {
     sceneEntity.customSkin = nullptr;
     sceneEntity.castShadows = false;
     sceneEntity.receiveShadows = false;
+    sceneEntity.time = 0;
 
     currentTime = 0;
 
@@ -251,6 +252,8 @@ void ComParticleSystem::Update() {
 
 void ComParticleSystem::UpdateSimulation(int currentTime) {
     float time = MS2SEC(currentTime);
+
+    sceneEntity.time = currentTime;
 
     sceneEntity.aabb.SetZero();
 
