@@ -37,6 +37,8 @@ uniform vec3 albedoColor;
 uniform float albedoAlpha;
 uniform float perforatedAlpha;
 
+uniform float wrappedDiffuse;
+
 uniform sampler2D normalMap;
 uniform sampler2D detailNormalMap;
 uniform float detailRepeat;

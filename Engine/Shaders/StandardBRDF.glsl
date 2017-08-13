@@ -181,8 +181,6 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
     return Cd + Cs;
 }
 
-uniform float wrappedDiffuse;
-
 // Phong/Blinn-Phong lighting
 vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
     float NdotL = dot(N, L);
