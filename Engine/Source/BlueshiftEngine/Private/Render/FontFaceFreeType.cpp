@@ -391,7 +391,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(int charCode) {
     glyph->s2           = (float)(x + GLYPH_BORDER_PIXELS + width) / texture->GetWidth();
     glyph->t2           = (float)(y + GLYPH_BORDER_PIXELS + bitmap->rows) / texture->GetHeight();
 
-    glyph->material = materialManager.GetTextureMaterial(texture, Material::OverlayHint);
+    glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::OverlayHint);
                 
     glyphHashMap.Set(charCode, glyph);
                 

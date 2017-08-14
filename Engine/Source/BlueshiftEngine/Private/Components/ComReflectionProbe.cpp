@@ -91,7 +91,7 @@ void ComReflectionProbe::Init() {
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
     sphere.customMaterials.SetCount(1);
-    sphere.customMaterials[0] = materialManager.GetTextureMaterial(spriteTexture, Material::SpriteHint);
+    sphere.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
 
     sphere.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);

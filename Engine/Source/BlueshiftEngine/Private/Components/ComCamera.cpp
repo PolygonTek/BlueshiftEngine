@@ -163,7 +163,7 @@ void ComCamera::Init() {
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
     sprite.customMaterials.SetCount(1);
-    sprite.customMaterials[0] = materialManager.GetTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
     
     sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
