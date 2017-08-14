@@ -117,6 +117,8 @@ BE_INLINE const Guid GuidMapper::Get(const Str &filePath) const {
 }
 
 BE_INLINE void GuidMapper::Set(const Guid &guid, const Str &filePath) {
+    Remove(guid);
+
     guidToFilePathMap.Set(guid, filePath);
     filePathToGuidMap.Set(filePath, guid);
 }

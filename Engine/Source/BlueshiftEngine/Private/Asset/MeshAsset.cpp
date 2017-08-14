@@ -55,10 +55,10 @@ void MeshAsset::Rename(const Str &newName) {
     Mesh *existingMesh = meshManager.FindMesh(GetResourceFilename());
     if (existingMesh) {
         meshManager.RenameMesh(existingMesh, newName);
-
-        name = newName;
-        name.StripPath();
     }
+
+    name = newName;
+    name.StripPath();
 }
 
 void MeshAsset::Reload() {

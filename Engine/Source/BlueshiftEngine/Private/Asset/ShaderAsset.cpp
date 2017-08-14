@@ -55,10 +55,10 @@ void ShaderAsset::Rename(const Str &newName) {
     Shader *existingShader = shaderManager.FindShader(GetResourceFilename());
     if (existingShader) {
         shaderManager.RenameShader(existingShader, newName);
-
-        name = newName;
-        name.StripPath();
     }
+
+    name = newName;
+    name.StripPath();
 }
 
 void ShaderAsset::Reload() {

@@ -55,10 +55,10 @@ void ParticleSystemAsset::Rename(const Str &newName) {
     ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(GetResourceFilename());
     if (existingParticleSystem) {
         particleSystemManager.RenameParticleSystem(existingParticleSystem, newName);
-
-        name = newName;
-        name.StripPath();
     }
+
+    name = newName;
+    name.StripPath();
 }
 
 void ParticleSystemAsset::Reload() {
