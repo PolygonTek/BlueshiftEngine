@@ -29,7 +29,7 @@ void ParticleMesh::Clear() {
 
     surfaces.SetCount(0, false);
 
-    PrepareNextSurf();
+    currentSurf = nullptr;
 }
 
 void ParticleMesh::PrepareNextSurf() {
@@ -56,10 +56,9 @@ void ParticleMesh::DrawQuad(const VertexGeneric *verts, const Material *material
         return;
     }
 
-    if (material != currentSurf->material) {
-        if (currentSurf->numVerts > 0) {
-            PrepareNextSurf();
-        }
+    if (!currentSurf || material != currentSurf->material) {
+        PrepareNextSurf();
+
         currentSurf->material = material;
     }
 
@@ -158,12 +157,11 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             // number of indices for the quad that consist of two triangles
             int numIndexes = numVerts * 3 / 2;
 
-            //if (stage.standardModule.material != currentSurf->material) { // FIXME
-                if (currentSurf->numVerts > 0) {
-                    PrepareNextSurf();
-                }
+            if (!currentSurf || stage.standardModule.material != currentSurf->material) {
+                PrepareNextSurf();
+                
                 currentSurf->material = stage.standardModule.material;
-            //}
+            }
 
             totalVerts += numVerts;
             totalIndexes += numIndexes;
@@ -179,14 +177,15 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             if (stage.standardModule.animation) {
                 int numFrames = stage.standardModule.animFrames[0] * stage.standardModule.animFrames[1];
 
-                int frame = (int)(MS2SEC(entity->parms.time) * stage.standardModule.animFps) % numFrames;
+                int currentFrame = (int)(MS2SEC(entity->parms.time) * stage.standardModule.animFps);
+                currentFrame %= numFrames;
 
                 float invFrameX = 1.0f / stage.standardModule.animFrames[0];
                 float invFrameY = 1.0f / stage.standardModule.animFrames[1];
 
-                s1 = (float)(frame % stage.standardModule.animFrames[0]) * invFrameX;
+                s1 = (float)(currentFrame % stage.standardModule.animFrames[0]) * invFrameX;
                 s2 = s1 + invFrameX;
-                t1 = (float)(frame / stage.standardModule.animFrames[0]) * invFrameY;
+                t1 = (float)(currentFrame / stage.standardModule.animFrames[0]) * invFrameY;
                 t2 = t1 + invFrameY;
             } else {
                 s1 = 0.0f;

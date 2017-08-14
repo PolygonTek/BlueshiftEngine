@@ -287,7 +287,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
             float particleAge = inCycleTime - particleGenTime;
 
             // Wrap elapsed time of this particle if it is needed
-            if (particleAge < 0) {
+            if (particleAge <= 0) {
                 if (standardModule.prewarm || curCycles > 0) {
                     particleAge += cycleDuration;
                 }
