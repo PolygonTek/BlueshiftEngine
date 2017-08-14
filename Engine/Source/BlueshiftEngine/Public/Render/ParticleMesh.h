@@ -54,6 +54,7 @@ private:
     void                    PrepareNextSurf();
     void                    DrawQuad(const VertexGeneric *verts, const Material *material);
     int                     CountDrawingVerts(const ParticleSystem::Stage &stage, const Particle *stageParticles) const;
+    void                    ComputeTextureCoordinates(const ParticleSystem::StandardModule &standardModule, int time, float &s1, float &t1, float &s2, float &t2) const;
 
     Array<PrtMeshSurf>      surfaces;
     PrtMeshSurf *           currentSurf;

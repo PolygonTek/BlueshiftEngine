@@ -138,12 +138,38 @@ static Mat3 ComputeParticleAxis(ParticleSystem::StandardModule::Orientation orie
     return modelAxis.TransposedMul(worldAxis);
 }
 
+void ParticleMesh::ComputeTextureCoordinates(const ParticleSystem::StandardModule &standardModule, int time, float &s1, float &t1, float &s2, float &t2) const {
+    if (standardModule.animation) {
+        int numFrames = standardModule.animFrames[0] * standardModule.animFrames[1];
+
+        int currentFrame = (int)(MS2SEC(time) * standardModule.animFps);
+        currentFrame %= numFrames;
+
+        float invFrameX = 1.0f / standardModule.animFrames[0];
+        float invFrameY = 1.0f / standardModule.animFrames[1];
+
+        s1 = (float)(currentFrame % standardModule.animFrames[0]) * invFrameX;
+        s2 = s1 + invFrameX;
+        t1 = (float)(currentFrame / standardModule.animFrames[0]) * invFrameY;
+        t2 = t1 + invFrameY;
+    } else {
+        s1 = 0.0f;
+        s2 = 1.0f;
+        t1 = 0.0f;
+        t2 = 1.0f;
+    }
+}
+
 void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const SceneEntity *entity, const SceneView *view) {
     Vec3 worldPos[Particle::MaxTrails + 1];
     Vec3 cameraDir[Particle::MaxTrails + 1];
     Vec3 tangentDir[Particle::MaxTrails + 1];
     Mat3 localAxis;
     Vec3 rtv, upv;
+    float s1;
+    float t1;
+    float s2;
+    float t2;
 
     for (int stageIndex = 0; stageIndex < particleSystem->stages.Count(); stageIndex++) {
         const ParticleSystem::Stage &stage = particleSystem->stages[stageIndex];
@@ -169,30 +195,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             currentSurf->numVerts += numVerts;
             currentSurf->numIndexes += numIndexes;
 
-            float s1;
-            float t1;
-            float s2;
-            float t2;
-
-            if (stage.standardModule.animation) {
-                int numFrames = stage.standardModule.animFrames[0] * stage.standardModule.animFrames[1];
-
-                int currentFrame = (int)(MS2SEC(entity->parms.time) * stage.standardModule.animFps);
-                currentFrame %= numFrames;
-
-                float invFrameX = 1.0f / stage.standardModule.animFrames[0];
-                float invFrameY = 1.0f / stage.standardModule.animFrames[1];
-
-                s1 = (float)(currentFrame % stage.standardModule.animFrames[0]) * invFrameX;
-                s2 = s1 + invFrameX;
-                t1 = (float)(currentFrame / stage.standardModule.animFrames[0]) * invFrameY;
-                t2 = t1 + invFrameY;
-            } else {
-                s1 = 0.0f;
-                s2 = 1.0f;
-                t1 = 0.0f;
-                t2 = 1.0f;
-            }
+            ComputeTextureCoordinates(stage.standardModule, entity->parms.time, s1, t1, s2, t2);
 
             float16_t hs1 = F16Converter::FromF32(s1);
             float16_t ht1 = F16Converter::FromF32(t1);
