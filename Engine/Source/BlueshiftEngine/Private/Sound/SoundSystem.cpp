@@ -175,6 +175,20 @@ Sound *SoundSystem::AllocSound(const char *hashName) {
     return sound;
 }
 
+void SoundSystem::RenameSound(Sound *sound, const Str &newName) {
+    const auto *entry = soundHashMap.Get(sound->hashName);
+    if (entry) {
+        soundHashMap.Remove(sound->hashName);
+
+        sound->hashName = newName;
+        sound->name = newName;
+        sound->name.StripPath();
+        sound->name.StripFileExtension();
+
+        soundHashMap.Set(newName, sound);
+    }
+}
+
 void SoundSystem::DestroySound(Sound *sound) {
     if (sound->originalSound) {
         delete sound;

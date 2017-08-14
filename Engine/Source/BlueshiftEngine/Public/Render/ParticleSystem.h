@@ -395,6 +395,8 @@ public:
     ParticleSystem *            FindParticleSystem(const char *name) const;
     ParticleSystem *            GetParticleSystem(const char *name);
 
+    void                        RenameParticleSystem(ParticleSystem *particleSystem, const Str &newName);
+
     void                        ReleaseParticleSystem(ParticleSystem *particleSystem, bool immediateDestroy = false);
     void                        DestroyParticleSystem(ParticleSystem *particleSystem);
     void                        DestroyUnusedParticleSystems();

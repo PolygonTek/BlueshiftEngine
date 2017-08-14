@@ -51,6 +51,16 @@ AnimController *AnimControllerAsset::GetAnimController() {
     return animController;
 }
 
+void AnimControllerAsset::Rename(const Str &newName) {
+    AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
+    if (existingAnimController) {
+        animControllerManager.RenameAnimController(existingAnimController, newName);
+
+        name = newName;
+        name.StripPath();
+    }
+}
+
 void AnimControllerAsset::Reload() {
     AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
     if (existingAnimController) {

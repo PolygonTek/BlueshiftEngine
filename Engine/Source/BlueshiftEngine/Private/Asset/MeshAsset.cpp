@@ -51,6 +51,16 @@ Mesh *MeshAsset::GetMesh() {
     return mesh;
 }
 
+void MeshAsset::Rename(const Str &newName) {
+    Mesh *existingMesh = meshManager.FindMesh(GetResourceFilename());
+    if (existingMesh) {
+        meshManager.RenameMesh(existingMesh, newName);
+
+        name = newName;
+        name.StripPath();
+    }
+}
+
 void MeshAsset::Reload() {
     Mesh *existingMesh = meshManager.FindMesh(GetResourceFilename());
     if (existingMesh) {

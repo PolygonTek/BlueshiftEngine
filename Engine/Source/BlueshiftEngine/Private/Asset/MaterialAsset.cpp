@@ -51,6 +51,16 @@ Material *MaterialAsset::GetMaterial() {
     return material;
 }
 
+void MaterialAsset::Rename(const Str &newName) {
+    Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
+    if (existingMaterial) {
+        materialManager.RenameMaterial(existingMaterial, newName);
+
+        name = newName;
+        name.StripPath();
+    }
+}
+
 void MaterialAsset::Reload() {
     Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
     if (existingMaterial) {

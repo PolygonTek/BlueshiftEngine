@@ -51,6 +51,16 @@ Skeleton *SkeletonAsset::GetSkeleton() {
     return skeleton;
 }
 
+void SkeletonAsset::Rename(const Str &newName) {
+    Skeleton *existingSkeleton = skeletonManager.FindSkeleton(GetResourceFilename());
+    if (existingSkeleton) {
+        skeletonManager.RenameSkeleton(existingSkeleton, newName);
+
+        name = newName;
+        name.StripPath();
+    }
+}
+
 void SkeletonAsset::Reload() {
     Skeleton *existingSkeleton = skeletonManager.FindSkeleton(GetResourceFilename());
     if (existingSkeleton) {

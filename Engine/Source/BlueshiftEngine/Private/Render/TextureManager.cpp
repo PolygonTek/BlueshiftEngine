@@ -354,6 +354,20 @@ Texture *TextureManager::TextureFromGenerator(const char *hashName, const Textur
     return texture;
 }
 
+void TextureManager::RenameTexture(Texture *texture, const Str &newName) {
+    const auto *entry = textureHashMap.Get(texture->hashName);
+    if (entry) {
+        textureHashMap.Remove(texture->hashName);
+
+        texture->hashName = newName;
+        texture->name = newName;
+        texture->name.StripPath();
+        texture->name.StripFileExtension();
+
+        textureHashMap.Set(newName, texture);
+    }
+}
+
 void TextureManager::ReleaseTexture(Texture *texture, bool immediateDestroy) {
     if (texture->permanence) {
         return;

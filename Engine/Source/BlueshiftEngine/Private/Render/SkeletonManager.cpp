@@ -56,6 +56,20 @@ Skeleton *SkeletonManager::AllocSkeleton(const char *hashName) {
     return skeleton;
 }
 
+void SkeletonManager::RenameSkeleton(Skeleton *skeleton, const Str &newName) {
+    const auto *entry = skeletonHashMap.Get(skeleton->hashName);
+    if (entry) {
+        skeletonHashMap.Remove(skeleton->hashName);
+
+        skeleton->hashName = newName;
+        skeleton->name = newName;
+        skeleton->name.StripPath();
+        skeleton->name.StripFileExtension();
+
+        skeletonHashMap.Set(newName, skeleton);
+    }
+}
+
 void SkeletonManager::DestroySkeleton(Skeleton *skeleton) {
     if (skeleton->refCount > 1) {
         BE_WARNLOG(L"SkeletonManager::DestroySkeleton: skeleton '%hs' has %i reference count\n", skeleton->name.c_str(), skeleton->refCount);

@@ -211,6 +211,8 @@ public:
     Mesh *                  FindMesh(const char *name) const;
     Mesh *                  GetMesh(const char *name);
 
+    void                    RenameMesh(Mesh *mesh, const Str &newName);
+
     void                    ReleaseMesh(Mesh *mesh, bool immediateDestroy = false);
     void                    DestroyMesh(Mesh *mesh);
     void                    DestroyUnusedMeshes();

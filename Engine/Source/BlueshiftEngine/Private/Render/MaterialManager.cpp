@@ -216,7 +216,7 @@ static const char *HintName(Material::TextureHint hint) {
     return "NoHint";
 }
 
-Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::TextureHint hint) {
+Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Material::TextureHint hint) {
     if (!texture) {
         return defaultMaterial;
     }
@@ -275,6 +275,20 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
     }
 
     return material;
+}
+
+void MaterialManager::RenameMaterial(Material *material, const Str &newName) {
+    const auto *entry = materialHashMap.Get(material->hashName);
+    if (entry) {
+        materialHashMap.Remove(material->hashName);
+
+        material->hashName = newName;
+        material->name = newName;
+        material->name.StripPath();
+        material->name.StripFileExtension();
+
+        materialHashMap.Set(newName, material);
+    }
 }
 
 void MaterialManager::ReleaseMaterial(Material *material, bool immediateDestroy) {

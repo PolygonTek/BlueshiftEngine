@@ -52,6 +52,16 @@ Sound *SoundAsset::GetSound() {
     return sound;
 }
 
+void SoundAsset::Rename(const Str &newName) {
+    Sound *existingSound = soundSystem.FindSound(GetResourceFilename());
+    if (existingSound) {
+        soundSystem.RenameSound(existingSound, newName);
+
+        name = newName;
+        name.StripPath();
+    }
+}
+
 void SoundAsset::Reload() {
     Sound *sound = soundSystem.FindSound(GetResourceFilename());
     if (sound) {

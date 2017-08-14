@@ -50,6 +50,20 @@ Anim *AnimManager::AllocAnim(const char *hashName) {
     return anim;
 }
 
+void AnimManager::RenameAnim(Anim *anim, const Str &newName) {
+    const auto *entry = animHashMap.Get(anim->hashName);
+    if (entry) {
+        animHashMap.Remove(anim->hashName);
+
+        anim->hashName = newName;
+        anim->name = newName;
+        anim->name.StripPath();
+        anim->name.StripFileExtension();
+
+        animHashMap.Set(newName, anim);
+    }
+}
+
 void AnimManager::ReleaseAnim(Anim *anim, bool immediateDestroy) {
     if (anim->refCount > 0) {
         anim->refCount--;

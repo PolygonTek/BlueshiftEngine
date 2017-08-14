@@ -445,6 +445,40 @@ Shader *ShaderManager::GetShader(const char *hashName) {
     return shader;
 }
 
+void ShaderManager::RenameShader(Shader *shader, const Str &newName) {
+    if (shader->originalShader) {
+        shader = shader->originalShader;
+    }
+
+    const auto *entry = shaderHashMap.Get(shader->hashName);
+    if (entry) {
+        shaderHashMap.Remove(shader->hashName);
+
+        shader->hashName = newName;
+        shader->name = newName;
+        shader->name.StripPath();
+        shader->name.StripFileExtension();
+
+        shaderHashMap.Set(newName, shader);
+
+        for (int i = 0; i < shader->instantiatedShaders.Count(); i++) {
+            Shader *instantiatedShader = shader->instantiatedShaders[i];
+
+            shaderHashMap.Remove(instantiatedShader->hashName);
+
+            Str mangledName;
+            Shader::MangleNameWithDefineList("@" + newName, instantiatedShader->defineArray, mangledName);
+
+            instantiatedShader->hashName = mangledName;
+            instantiatedShader->name = mangledName;
+            instantiatedShader->name.StripPath();
+            instantiatedShader->name.StripFileExtension();
+
+            shaderHashMap.Set(newName, instantiatedShader);
+        }
+    }
+}
+
 void ShaderManager::ReleaseShader(Shader *shader, bool immediateDestroy) {
     if (shader->permanence) {
         return;

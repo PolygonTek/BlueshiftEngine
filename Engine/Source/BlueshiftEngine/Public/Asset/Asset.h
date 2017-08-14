@@ -55,6 +55,8 @@ public:
 
     void                        WriteMetaDataFile() const;
 
+    virtual void                Rename(const Str &newName) = 0;
+
     virtual void                Reload() = 0;
 
     virtual void                Save() = 0;
@@ -96,6 +98,8 @@ public:
     FolderAsset();
     ~FolderAsset();
 
+    virtual void                Rename(const Str &newName) override {}
+
     virtual void                Reload() override {}
 
     virtual void                Save() override {}
@@ -109,6 +113,8 @@ public:
     ~TextureAsset();
 
     Texture *                   GetTexture();
+
+    virtual void                Rename(const Str &newName) override;
 
     virtual void                Reload() override;
 
@@ -127,6 +133,8 @@ public:
 
     Shader *                    GetShader();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override {}
@@ -144,6 +152,8 @@ public:
 
     Material *                  GetMaterial();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override;
@@ -159,6 +169,8 @@ public:
     FontAsset();
     ~FontAsset();
 
+    virtual void                Rename(const Str &newName) override {}
+
     virtual void                Reload() override {}
 
     virtual void                Save() override {}
@@ -172,6 +184,8 @@ public:
     ~SkeletonAsset();
 
     Skeleton *                  GetSkeleton();
+
+    virtual void                Rename(const Str &newName) override;
 
     virtual void                Reload() override;
 
@@ -190,6 +204,8 @@ public:
 
     Mesh *                      GetMesh();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override {}
@@ -206,6 +222,8 @@ public:
     ~ParticleSystemAsset();
 
     ParticleSystem *            GetParticleSystem();
+
+    virtual void                Rename(const Str &newName) override;
 
     virtual void                Reload() override;
 
@@ -224,6 +242,8 @@ public:
 
     Anim *                      GetAnim();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override {}
@@ -239,6 +259,8 @@ public:
     FbxAsset();
     ~FbxAsset();
 
+    virtual void                Rename(const Str &newName) override {}
+
     virtual void                Reload() override {}
 
     virtual void                Save() override {}
@@ -250,6 +272,8 @@ public:
 
     JointMaskAsset();
     ~JointMaskAsset();
+
+    virtual void                Rename(const Str &newName) override {}
 
     virtual void                Reload() override;
 
@@ -264,6 +288,8 @@ public:
     ~AnimControllerAsset();
 
     AnimController *            GetAnimController();
+
+    virtual void                Rename(const Str &newName) override;
 
     virtual void                Reload() override;
 
@@ -282,6 +308,8 @@ public:
 
     Prefab *                    GetPrefab();
 
+    virtual void                Rename(const Str &newName) override {}
+
     virtual void                Reload() override;
 
     virtual void                Save() override;
@@ -299,6 +327,8 @@ public:
 
     Sound *                     GetSound();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override {}
@@ -314,6 +344,8 @@ public:
     MapAsset();
     ~MapAsset();
 
+    virtual void                Rename(const Str &newName) override {}
+
     virtual void                Reload() override {}
 
     virtual void                Save() override {}
@@ -325,6 +357,8 @@ public:
 
     ScriptAsset();
     ~ScriptAsset();
+
+    virtual void                Rename(const Str &newName) override {}
 
     virtual void                Reload() override;
 

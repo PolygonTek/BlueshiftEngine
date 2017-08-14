@@ -181,6 +181,8 @@ public:
     AnimController *            FindAnimController(const char *name) const;
     AnimController *            GetAnimController(const char *name);
 
+    void                        RenameAnimController(AnimController *animController, const Str &newName);
+
     void                        ReleaseAnimController(AnimController *animController, bool immediateDestroy = false);
     void                        DestroyAnimController(AnimController *animController);
 

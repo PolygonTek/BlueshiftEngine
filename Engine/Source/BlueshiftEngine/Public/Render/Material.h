@@ -186,7 +186,9 @@ public:
     Material *              AllocMaterial(const char *name);
     Material *              FindMaterial(const char *name) const;
     Material *              GetMaterial(const char *name);
-    Material *              GetTextureMaterial(const Texture *texture, Material::TextureHint hint = Material::NoHint);
+    Material *              GetSingleTextureMaterial(const Texture *texture, Material::TextureHint hint = Material::NoHint);
+
+    void                    RenameMaterial(Material *material, const Str &newName);
 
     void                    ReleaseMaterial(Material *material, bool immediateDestroy = false);
     void                    DestroyMaterial(Material *material);

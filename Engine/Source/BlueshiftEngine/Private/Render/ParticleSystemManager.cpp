@@ -50,6 +50,20 @@ ParticleSystem *ParticleSystemManager::AllocParticleSystem(const char *hashName)
     return particleSystem;
 }
 
+void ParticleSystemManager::RenameParticleSystem(ParticleSystem *particleSystem, const Str &newName) {
+    const auto *entry = particleSystemHashMap.Get(particleSystem->hashName);
+    if (entry) {
+        particleSystemHashMap.Remove(particleSystem->hashName);
+
+        particleSystem->hashName = newName;
+        particleSystem->name = newName;
+        particleSystem->name.StripPath();
+        particleSystem->name.StripFileExtension();
+
+        particleSystemHashMap.Set(newName, particleSystem);
+    }
+}
+
 void ParticleSystemManager::DestroyParticleSystem(ParticleSystem *particleSystem) {
     if (particleSystem->refCount > 1) {
         BE_WARNLOG(L"ParticleSystemManager::DestroyParticleSystem: particleSystem '%hs' has %i reference count\n", particleSystem->name.c_str(), particleSystem->refCount);

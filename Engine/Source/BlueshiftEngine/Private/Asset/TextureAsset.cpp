@@ -51,6 +51,16 @@ Texture *TextureAsset::GetTexture() {
     return texture;
 }
 
+void TextureAsset::Rename(const Str &newName) {
+    Texture *existingTexture = textureManager.FindTexture(GetResourceFilename());
+    if (existingTexture) {
+        textureManager.RenameTexture(existingTexture, newName);
+
+        name = newName;
+        name.StripPath();
+    }
+}
+
 void TextureAsset::Reload() {
     Texture *existingTexture = textureManager.FindTexture(GetResourceFilename());
     if (existingTexture) {

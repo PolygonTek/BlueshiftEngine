@@ -518,7 +518,7 @@ bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVers
     return true;
 }
 
-const char *MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName) {
+const char *Shader::MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName) {
     mangledName = basename;
     
     if (defineArray.Count() > 0) {

@@ -105,6 +105,20 @@ void AnimControllerManager::DestroyUnusedAnimControllers() {
     }
 }
 
+void AnimControllerManager::RenameAnimController(AnimController *animController, const Str &newName) {
+    const auto *entry = animControllerHashMap.Get(animController->hashName);
+    if (entry) {
+        animControllerHashMap.Remove(animController->hashName);
+
+        animController->hashName = newName;
+        animController->name = newName;
+        animController->name.StripPath();
+        animController->name.StripFileExtension();
+
+        animControllerHashMap.Set(newName, animController);
+    }
+}
+
 AnimController *AnimControllerManager::FindAnimController(const char *hashName) const {
     const auto *entry = animControllerHashMap.Get(hashName);
     if (entry) {

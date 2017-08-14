@@ -185,6 +185,20 @@ void MeshManager::ReleaseMesh(Mesh *mesh, bool immediateDestroy) {
     }
 }
 
+void MeshManager::RenameMesh(Mesh *mesh, const Str &newName) {
+    const auto *entry = meshHashMap.Get(mesh->hashName);
+    if (entry) {
+        meshHashMap.Remove(mesh->hashName);
+
+        mesh->hashName = newName;
+        mesh->name = newName;
+        mesh->name.StripPath();
+        mesh->name.StripFileExtension();
+
+        meshHashMap.Set(newName, mesh);
+    }
+}
+
 Mesh *MeshManager::FindMesh(const char *hashName) const {
     const auto *entry = meshHashMap.Get(Str(hashName));
     if (entry) {

@@ -210,11 +210,13 @@ private:
     bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText);
     bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion);
     bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion);
-    bool                    Instantiate(const Array<Define> &defineArray);	// internal function of instantiate
+    bool                    Instantiate(const Array<Define> &defineArray);  // internal function of instantiate
 
     bool                    Finish(bool generatePerforatedVersion, bool genereatePremulAlphaVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir);
     bool                    ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
     bool                    ProcessIncludeRecursive(const char *baseDir, Str &text) const;
+
+    static const char *     MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName);
 
     Str                     hashName;
     Str                     name;
@@ -339,6 +341,8 @@ public:
     Shader *                AllocShader(const char *name);
     Shader *                FindShader(const char *name) const;
     Shader *                GetShader(const char *name);
+
+    void                    RenameShader(Shader *shader, const Str &newName);
 
     void                    ReleaseShader(Shader *shader, bool immediateDestroy = false);
     void                    DestroyShader(Shader *shader);

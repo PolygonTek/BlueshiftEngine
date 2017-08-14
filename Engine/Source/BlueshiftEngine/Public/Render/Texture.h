@@ -194,6 +194,8 @@ public:
 
     Texture *               TextureFromGenerator(const char *name, const TextureGeneratorBase &generator);
 
+    void                    RenameTexture(Texture *texture, const Str &newName);
+
     void                    ReleaseTexture(Texture *texture, bool immediateDestroy = false);
     void                    DestroyTexture(Texture *texture);
 
