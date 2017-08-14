@@ -623,11 +623,6 @@ static void RB_DrawView() {
         // Render wireframe for option
         RB_DrawTris(backEnd.numDrawSurfs, backEnd.drawSurfs, false);
 
-        // Render debug tools
-        if (!(backEnd.view->def->parms.flags & SceneView::SkipDebugDraw)) {
-            RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
-        }
-
         // Render any stage with unlit surfaces
         if (!r_skipBlendPass.GetBool()) {
             RB_UnlitPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
@@ -636,6 +631,11 @@ static void RB_DrawView() {
         // Render to velocity map
         if (!(backEnd.view->def->parms.flags & SceneView::SkipPostProcess) && r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
             RB_VelocityMapPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+        }
+
+        // Render debug tools
+        if (!(backEnd.view->def->parms.flags & SceneView::SkipDebugDraw)) {
+            RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
         }
 
         // Render no lighting interaction surfaces

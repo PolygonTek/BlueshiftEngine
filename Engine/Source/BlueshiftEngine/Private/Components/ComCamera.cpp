@@ -40,7 +40,7 @@ BEGIN_PROPERTIES(ComCamera)
     PROPERTY_RANGED_FLOAT("y", "Y", "normalized screen y-coordinate", Rangef(0, 1.0f, 0.01f), "0.0", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("w", "W", "normalized screen width", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("h", "H", "normalized screen height", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
-    PROPERTY_INT("layerMask", "Layer Mask", "", Str(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), PropertySpec::ReadWrite),
+    PROPERTY_INT("layerMask", "Layer Mask", "", Str(BIT(TagLayerSettings::DefaultLayer)), PropertySpec::ReadWrite),
     PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color;Skybox", "1", PropertySpec::ReadWrite),
     PROPERTY_COLOR3("clearColor", "Clear Color", "", "0 0 0", PropertySpec::ReadWrite),
     PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", "0", PropertySpec::ReadWrite),
@@ -233,7 +233,7 @@ void ComCamera::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
             cameraBox.SetCenter(this->viewParms.origin + this->viewParms.axis[0] * sizeZ);
             cameraBox.SetExtents(Vec3(sizeZ, this->viewParms.sizeX, this->viewParms.sizeY));
 
-            renderWorld->SetDebugColor(Color4(0.5f, 0.5f, 0.5f, 0.5f), Color4::zero);
+            renderWorld->SetDebugColor(Color4::white, Color4::zero);
             renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);
         } else {
             SceneView::ComputeFov(fov, 1.25f, aspectRatio, &this->viewParms.fovX, &this->viewParms.fovY);
@@ -244,7 +244,7 @@ void ComCamera::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
             cameraFrustum.SetSize(this->viewParms.zNear, this->viewParms.zFar, 
                 this->viewParms.zFar * Math::Tan(DEG2RAD(this->viewParms.fovX * 0.5f)), this->viewParms.zFar * Math::Tan(DEG2RAD(this->viewParms.fovY * 0.5f)));
 
-            renderWorld->SetDebugColor(Color4(0.5f, 0.5f, 0.5f, 0.5f), Color4::zero);
+            renderWorld->SetDebugColor(Color4::white, Color4::zero);
             renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
         }
 
