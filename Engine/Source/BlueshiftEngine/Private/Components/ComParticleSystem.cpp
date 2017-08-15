@@ -207,7 +207,7 @@ bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
         return true;
     }
 
-    return false;
+    return ComRenderable::HasRenderEntity(renderEntityHandle);;
 }
 
 int ComParticleSystem::GetAliveParticleCount() const {
