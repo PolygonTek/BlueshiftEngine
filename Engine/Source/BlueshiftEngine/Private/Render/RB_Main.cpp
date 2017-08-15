@@ -581,14 +581,7 @@ static void RB_DrawView() {
 
     RB_ClearView();
 
-    if (backEnd.view->def->parms.flags & SceneView::WireFrameMode) {
-        RB_DrawTris(backEnd.numDrawSurfs, backEnd.drawSurfs, true);
-
-        // Render debug tools
-        if (!(backEnd.view->def->parms.flags & SceneView::SkipDebugDraw)) {
-            RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
-        }
-    } else {
+    if (backEnd.view->def->parms.flags & SceneView::TexturedMode) {
         if (r_HOM.GetBool()) {
             // Render occluder to HiZ occlusion buffer
             RB_RenderOcclusionMap(backEnd.numDrawSurfs, backEnd.drawSurfs);
@@ -633,15 +626,24 @@ static void RB_DrawView() {
             RB_VelocityMapPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
         }
 
-        // Render debug tools
-        if (!(backEnd.view->def->parms.flags & SceneView::SkipDebugDraw)) {
-            RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
-        }
-
         // Render no lighting interaction surfaces
         if (!r_skipFinalPass.GetBool()) {
             RB_FinalPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
         }
+    }
+
+    if (backEnd.view->def->parms.flags & SceneView::WireFrameMode) {
+        if (!(backEnd.view->def->parms.flags & SceneView::TexturedMode)) {
+            RB_BackgroundPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+        }
+
+        // Render wireframes
+        RB_DrawTris(backEnd.numDrawSurfs, backEnd.drawSurfs, true);
+    }
+
+    // Render debug tools
+    if (!(backEnd.view->def->parms.flags & SceneView::SkipDebugDraw)) {
+        RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
     }
 
     backEnd.ctx->screenRT->End();

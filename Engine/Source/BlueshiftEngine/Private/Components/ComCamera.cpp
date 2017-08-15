@@ -129,7 +129,7 @@ void ComCamera::Init() {
 
     viewParms.layerMask = props->Get("layerMask").As<int>();
 
-    viewParms.flags = SceneView::Flag::NoSubViews;
+    viewParms.flags = SceneView::Flag::TexturedMode | SceneView::Flag::NoSubViews;
     if (!(viewParms.layerMask & BIT(TagLayerSettings::DefaultLayer))) {
         viewParms.flags |= SceneView::Flag::NoShadows | SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess;
     }

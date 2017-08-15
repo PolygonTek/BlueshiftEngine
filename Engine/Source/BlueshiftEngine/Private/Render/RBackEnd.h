@@ -204,6 +204,7 @@ void    RB_Execute(const void *data);
 
 void    RB_SetupLight(viewLight_t *viewLight);
 
+void    RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs);

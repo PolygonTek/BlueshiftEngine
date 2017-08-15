@@ -442,6 +442,10 @@ void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
     if (rgba.a < 1.0f) {
         blendState = RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
     }
+
+    if (mode == SceneEntity::ShowNone) {
+        mode = SceneEntity::ShowVisibleFront;
+    }
     
     switch (mode) {
     case SceneEntity::ShowVisibleFront:
@@ -454,15 +458,14 @@ void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
         rhi.SetCullFace(mtrlPass->cullType);
         break;
     case SceneEntity::ShowAllFrontAndBack:
-    default:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(RHI::NoCull);
-        break;
+        break;  
     }
 
     RenderColor(rgba);
 
-    if (mode == 1) {
+    if (mode == SceneEntity::ShowVisibleFront) {
         rhi.SetDepthBias(0.0f, 0.0f);
     }
 }

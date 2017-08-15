@@ -767,7 +767,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     SceneView view;
     SceneView::Parms viewParms;
     memset(&viewParms, 0, sizeof(viewParms));
-    viewParms.flags = SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess | SceneView::Flag::SkipDebugDraw;
+    viewParms.flags = SceneView::Flag::TexturedMode | SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess | SceneView::Flag::SkipDebugDraw;
     viewParms.clearMethod = SceneView::SkyboxClear;
     viewParms.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
     viewParms.layerMask = BIT(0);
@@ -797,7 +797,7 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
     SceneView view;
     SceneView::Parms viewParms;
     memset(&viewParms, 0, sizeof(viewParms));
-    viewParms.flags = SceneView::NoSubViews | SceneView::SkipPostProcess | SceneView::Flag::SkipDebugDraw;
+    viewParms.flags = SceneView::Flag::TexturedMode | SceneView::NoSubViews | SceneView::SkipPostProcess | SceneView::Flag::SkipDebugDraw;
     viewParms.clearMethod = SceneView::SkyboxClear;
     viewParms.layerMask = BIT(0);
     viewParms.renderRect.Set(0, 0, size, size);

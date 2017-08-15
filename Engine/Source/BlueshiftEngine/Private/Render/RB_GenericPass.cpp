@@ -18,6 +18,60 @@
 
 BE_NAMESPACE_BEGIN
 
+void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
+    uint64_t            prevSortkey = -1;
+    const viewEntity_t *prevSpace = nullptr;
+    const Material *    prevMaterial = nullptr;
+    bool                prevDepthHack = false;
+
+    for (int i = 0; i < numDrawSurfs; i++) {
+        const DrawSurf *surf = drawSurfs[i];
+        if (!(surf->flags & DrawSurf::AmbientVisible)) {
+            continue;
+        }
+
+        if (surf->sortKey != prevSortkey) {
+            const Shader *shader = surf->material->GetPass()->shader;
+
+            if (!shader) {
+                continue;
+            }
+
+            if (!(shader->GetFlags() & Shader::SkySurface)) {
+                continue;
+            }
+
+            bool isDifferentEntity = surf->space != prevSpace ? true : false;
+            bool isDifferentMaterial = surf->material != prevMaterial ? true : false;
+
+            if (isDifferentMaterial || isDifferentEntity) {
+                if (prevMaterial) {
+                    backEnd.rbsurf.Flush();
+                }
+
+                backEnd.rbsurf.Begin(RBSurf::BackgroundFlush, surf->material, surf->materialRegisters, surf->space, backEnd.primaryLight);
+
+                prevMaterial = surf->material;
+            }
+
+            if (isDifferentEntity) {
+                prevSpace = surf->space;
+
+                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+            }
+
+            prevSortkey = surf->sortKey;
+        }
+
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+    }
+
+    if (prevMaterial) {
+        backEnd.rbsurf.Flush();
+    }
+}
+
 void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
     const viewEntity_t *prevSpace = nullptr;

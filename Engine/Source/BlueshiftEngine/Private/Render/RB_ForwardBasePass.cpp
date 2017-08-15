@@ -111,6 +111,8 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
     }
 
+    RB_BackgroundPass(numDrawSurfs, drawSurfs);
+
     RB_BasePass(numDrawSurfs, drawSurfs);
 }
 
