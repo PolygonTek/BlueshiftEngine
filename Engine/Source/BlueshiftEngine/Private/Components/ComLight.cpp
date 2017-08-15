@@ -284,6 +284,11 @@ void ComLight::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
             renderWorld->DebugLine(sceneLight.origin + sceneLight.axis[2] * sceneLight.value[2] * 0.2f, sceneLight.origin + sceneLight.axis[2] * sceneLight.value[2], 1, true);
         }
     }
+
+    // Fade icon alpha in near distance
+    float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
+
+    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComLight::GetAABB() {

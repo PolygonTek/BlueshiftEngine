@@ -647,6 +647,11 @@ void ComParticleSystem::DrawGizmos(const SceneView::Parms &sceneView, bool selec
     if (selected) {
         UpdateSimulation(currentTime); // FIXME
     }
+
+    // Fade icon alpha in near distance
+    float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
+
+    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 void ComParticleSystem::StartSimulation() {

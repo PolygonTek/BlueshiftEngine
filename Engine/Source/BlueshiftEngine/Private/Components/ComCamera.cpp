@@ -214,7 +214,7 @@ bool ComCamera::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFac
     return false;
 }
 
-void ComCamera::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
+void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     if (selected) {
@@ -223,26 +223,26 @@ void ComCamera::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
         float h = ctx->GetRenderHeight() * nh;
         float aspectRatio = w / h;
 
-        if (this->viewParms.orthogonal) {
-            this->viewParms.sizeX = size;
-            this->viewParms.sizeY = size / aspectRatio;
-            float sizeZ = (this->viewParms.zNear + this->viewParms.zFar) * 0.5f;
+        if (viewParms.orthogonal) {
+            viewParms.sizeX = size;
+            viewParms.sizeY = size / aspectRatio;
+            float sizeZ = (viewParms.zNear + viewParms.zFar) * 0.5f;
 
             OBB cameraBox;
-            cameraBox.SetAxis(this->viewParms.axis);
-            cameraBox.SetCenter(this->viewParms.origin + this->viewParms.axis[0] * sizeZ);
-            cameraBox.SetExtents(Vec3(sizeZ, this->viewParms.sizeX, this->viewParms.sizeY));
+            cameraBox.SetAxis(viewParms.axis);
+            cameraBox.SetCenter(viewParms.origin + viewParms.axis[0] * sizeZ);
+            cameraBox.SetExtents(Vec3(sizeZ, viewParms.sizeX, viewParms.sizeY));
 
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
             renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);
         } else {
-            SceneView::ComputeFov(fov, 1.25f, aspectRatio, &this->viewParms.fovX, &this->viewParms.fovY);
+            SceneView::ComputeFov(fov, 1.25f, aspectRatio, &viewParms.fovX, &viewParms.fovY);
 
             Frustum cameraFrustum;
-            cameraFrustum.SetOrigin(this->viewParms.origin);
-            cameraFrustum.SetAxis(this->viewParms.axis);
-            cameraFrustum.SetSize(this->viewParms.zNear, this->viewParms.zFar, 
-                this->viewParms.zFar * Math::Tan(DEG2RAD(this->viewParms.fovX * 0.5f)), this->viewParms.zFar * Math::Tan(DEG2RAD(this->viewParms.fovY * 0.5f)));
+            cameraFrustum.SetOrigin(viewParms.origin);
+            cameraFrustum.SetAxis(viewParms.axis);
+            cameraFrustum.SetSize(viewParms.zNear, viewParms.zFar, 
+                viewParms.zFar * Math::Tan(DEG2RAD(viewParms.fovX * 0.5f)), viewParms.zFar * Math::Tan(DEG2RAD(viewParms.fovY * 0.5f)));
 
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
             renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
@@ -265,6 +265,11 @@ void ComCamera::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
             GetGameWorld()->GetRenderWorld()->RenderScene(&previewView);
         }
     }
+
+    // Fade icon alpha in near distance
+    float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
+
+    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComCamera::GetAABB() {
