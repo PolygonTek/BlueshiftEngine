@@ -57,8 +57,7 @@ void TextureAsset::Rename(const Str &newName) {
         textureManager.RenameTexture(existingTexture, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void TextureAsset::Reload() {

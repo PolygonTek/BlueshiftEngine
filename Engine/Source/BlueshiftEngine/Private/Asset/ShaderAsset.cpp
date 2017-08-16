@@ -57,8 +57,7 @@ void ShaderAsset::Rename(const Str &newName) {
         shaderManager.RenameShader(existingShader, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void ShaderAsset::Reload() {

@@ -57,8 +57,7 @@ void MaterialAsset::Rename(const Str &newName) {
         materialManager.RenameMaterial(existingMaterial, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void MaterialAsset::Reload() {

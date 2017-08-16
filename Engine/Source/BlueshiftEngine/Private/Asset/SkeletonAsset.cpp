@@ -57,8 +57,7 @@ void SkeletonAsset::Rename(const Str &newName) {
         skeletonManager.RenameSkeleton(existingSkeleton, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void SkeletonAsset::Reload() {

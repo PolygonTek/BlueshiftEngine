@@ -57,8 +57,7 @@ void ParticleSystemAsset::Rename(const Str &newName) {
         particleSystemManager.RenameParticleSystem(existingParticleSystem, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void ParticleSystemAsset::Reload() {

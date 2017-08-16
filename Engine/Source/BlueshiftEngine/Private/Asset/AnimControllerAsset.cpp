@@ -57,8 +57,7 @@ void AnimControllerAsset::Rename(const Str &newName) {
         animControllerManager.RenameAnimController(existingAnimController, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void AnimControllerAsset::Reload() {

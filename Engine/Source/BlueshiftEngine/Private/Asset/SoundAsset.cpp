@@ -58,8 +58,7 @@ void SoundAsset::Rename(const Str &newName) {
         soundSystem.RenameSound(existingSound, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void SoundAsset::Reload() {

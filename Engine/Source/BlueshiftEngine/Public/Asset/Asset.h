@@ -55,7 +55,7 @@ public:
 
     void                        WriteMetaDataFile() const;
 
-    virtual void                Rename(const Str &newName) = 0;
+    virtual void                Rename(const Str &newName);
 
     virtual void                Reload() = 0;
 
@@ -97,8 +97,6 @@ public:
 
     FolderAsset();
     ~FolderAsset();
-
-    virtual void                Rename(const Str &newName) override {}
 
     virtual void                Reload() override {}
 
@@ -168,8 +166,6 @@ public:
 
     FontAsset();
     ~FontAsset();
-
-    virtual void                Rename(const Str &newName) override {}
 
     virtual void                Reload() override {}
 
@@ -259,8 +255,6 @@ public:
     FbxAsset();
     ~FbxAsset();
 
-    virtual void                Rename(const Str &newName) override {}
-
     virtual void                Reload() override {}
 
     virtual void                Save() override {}
@@ -272,8 +266,6 @@ public:
 
     JointMaskAsset();
     ~JointMaskAsset();
-
-    virtual void                Rename(const Str &newName) override {}
 
     virtual void                Reload() override;
 
@@ -307,8 +299,6 @@ public:
     ~PrefabAsset();
 
     Prefab *                    GetPrefab();
-
-    virtual void                Rename(const Str &newName) override {}
 
     virtual void                Reload() override;
 
@@ -344,8 +334,6 @@ public:
     MapAsset();
     ~MapAsset();
 
-    virtual void                Rename(const Str &newName) override {}
-
     virtual void                Reload() override {}
 
     virtual void                Save() override {}
@@ -357,8 +345,6 @@ public:
 
     ScriptAsset();
     ~ScriptAsset();
-
-    virtual void                Rename(const Str &newName) override {}
 
     virtual void                Reload() override;
 

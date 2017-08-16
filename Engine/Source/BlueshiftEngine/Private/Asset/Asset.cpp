@@ -96,6 +96,11 @@ const Str Asset::GetResourceFilename() const {
     return name;
 }
 
+void Asset::Rename(const Str &newName) {
+    name = newName;
+    name.StripPath();
+}
+
 void Asset::GetChildren(Array<Asset *> &children) const {
     for (Asset *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
         children.Append(child);

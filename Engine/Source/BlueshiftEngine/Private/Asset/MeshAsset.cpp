@@ -57,8 +57,7 @@ void MeshAsset::Rename(const Str &newName) {
         meshManager.RenameMesh(existingMesh, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void MeshAsset::Reload() {

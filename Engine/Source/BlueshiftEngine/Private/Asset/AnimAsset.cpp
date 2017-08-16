@@ -57,8 +57,7 @@ void AnimAsset::Rename(const Str &newName) {
         animManager.RenameAnim(existingAnim, newName);
     }
 
-    name = newName;
-    name.StripPath();
+    Asset::Rename(newName);
 }
 
 void AnimAsset::Reload() {
