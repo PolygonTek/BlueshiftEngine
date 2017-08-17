@@ -69,7 +69,7 @@ void MaterialAsset::Reload() {
 }
 
 void MaterialAsset::Save() {
-    Material *existingMaterial = materialManager.FindMaterial(GetAssetFilename());
+    Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
     if (existingMaterial) {
         existingMaterial->Write(existingMaterial->GetHashName());
         EmitSignal(&SIG_Modified, 0);

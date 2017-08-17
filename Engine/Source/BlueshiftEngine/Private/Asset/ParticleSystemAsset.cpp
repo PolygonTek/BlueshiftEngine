@@ -69,7 +69,7 @@ void ParticleSystemAsset::Reload() {
 }
 
 void ParticleSystemAsset::Save() {
-    ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(GetAssetFilename());
+    ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(GetResourceFilename());
     if (existingParticleSystem) {
         existingParticleSystem->Write(existingParticleSystem->GetHashName());
         EmitSignal(&SIG_Modified, 0);

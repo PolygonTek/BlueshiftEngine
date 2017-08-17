@@ -52,7 +52,7 @@ Anim *AnimAsset::GetAnim() {
 }
 
 void AnimAsset::Rename(const Str &newName) {
-    Anim *existingAnim = animManager.FindAnim(GetAssetFilename());
+    Anim *existingAnim = animManager.FindAnim(GetResourceFilename());
     if (existingAnim) {
         animManager.RenameAnim(existingAnim, newName);
     }

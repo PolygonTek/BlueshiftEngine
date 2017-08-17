@@ -75,7 +75,7 @@ const Str Asset::GetAssetFilename() const {
     
     while (asset) {
         Str tempPath = asset->name;
-        tempPath.AppendPath(assetPath);
+        tempPath.AppendPath(assetPath, PATHSEPERATOR_CHAR);
         assetPath = tempPath;
 
         asset = asset->node.GetParent();
@@ -88,7 +88,7 @@ const Str Asset::GetResourceFilename() const {
     Str name;
 
     if (assetImporter) {
-        name = assetImporter->GetCacheFilename();
+        name = Asset::NormalizeAssetPath(assetImporter->GetCacheFilename());
     } else {
         name = Asset::NormalizeAssetPath(GetAssetFilename());
     }

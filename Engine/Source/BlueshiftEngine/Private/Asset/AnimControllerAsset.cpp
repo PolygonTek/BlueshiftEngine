@@ -69,7 +69,7 @@ void AnimControllerAsset::Reload() {
 }
 
 void AnimControllerAsset::Save() {
-    AnimController *existingAnimController = animControllerManager.FindAnimController(GetAssetFilename());
+    AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
     if (existingAnimController) {
         existingAnimController->Write(existingAnimController->GetHashName());
         EmitSignal(&SIG_Modified, 0);
