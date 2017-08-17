@@ -60,17 +60,14 @@ Prefab *PrefabManager::AllocPrefab(const char *hashName, const Guid &guid) {
     return prefab;
 }
 
-Prefab *PrefabManager::GetPrefab(const char *filename) {
-    Str normalizedFilename = filename;
-    normalizedFilename.BackSlashesToSlashes();
-
-    Prefab *prefab = FindPrefab(normalizedFilename);
+Prefab *PrefabManager::GetPrefab(const char *hashName) {
+    Prefab *prefab = FindPrefab(hashName);
     if (prefab) {
         return prefab;
     }
 
-    prefab = AllocPrefab(normalizedFilename);
-    if (!prefab->Load(normalizedFilename)) {
+    prefab = AllocPrefab(hashName);
+    if (!prefab->Load(hashName)) {
         prefabHashMap.Remove(prefab->hashName);
         Prefab::DestroyInstanceImmediate(prefab);
         return nullptr;
