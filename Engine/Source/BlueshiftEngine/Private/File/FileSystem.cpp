@@ -16,6 +16,7 @@
 #include "Core/Heap.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
+#include "Platform/PlatformProcess.h"
 #include "File/FileSystem.h"
 #include "minizip/zip.h"
 #include "minizip/unzip.h"
@@ -393,7 +394,25 @@ bool FileSystem::MoveFile(const char *srcFilename, const char *dstFilename) {
     path.StripFileName();
     CreateDirectory(path, true);
 
-    return PlatformFile::MoveFile(srcFilename, dstFilename);
+    if (!PlatformFile::MoveFile(srcFilename, dstFilename)) {
+        bool success = false;
+        int retryCount = 3;
+        
+        while (retryCount--) {
+            PlatformProcess::Sleep(0.5f);
+
+            success = PlatformFile::MoveFile(srcFilename, dstFilename);
+            if (success) {
+                break;
+            }
+        }
+
+        if (!success) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, ProgressCallback *progress) {
