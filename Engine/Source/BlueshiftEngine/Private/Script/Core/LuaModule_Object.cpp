@@ -40,6 +40,7 @@
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
 #include "Components/ComTextRenderer.h"
+#include "Components/ComParticleSystem.h"
 #include "Components/ComLogic.h"
 #include "Components/ComSpline.h"
 #include "Components/ComScript.h"
@@ -90,6 +91,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_static_mesh_renderer", static_cast<ComStaticMeshRenderer*(Object::*)()>(&Object::Cast<ComStaticMeshRenderer>),
         "cast_skinned_mesh_renderer", static_cast<ComSkinnedMeshRenderer*(Object::*)()>(&Object::Cast<ComSkinnedMeshRenderer>),
         "cast_text_renderer", static_cast<ComTextRenderer*(Object::*)()>(&Object::Cast<ComTextRenderer>),
+        "cast_particle_system", static_cast<ComParticleSystem*(Object::*)()>(&Object::Cast<ComParticleSystem>),
         "cast_audio_source", static_cast<ComAudioSource*(Object::*)()>(&Object::Cast<ComAudioSource>),
         "cast_audio_listener", static_cast<ComAudioListener*(Object::*)()>(&Object::Cast<ComAudioListener>),
         "cast_spline", static_cast<ComSpline*(Object::*)()>(&Object::Cast<ComSpline>),

@@ -583,6 +583,7 @@ set(ENGINE_FILES
   Private/Script/Components/LuaModule_ComStaticMeshRenderer.cpp
   Private/Script/Components/LuaModule_ComSkinnedMeshRenderer.cpp
   Private/Script/Components/LuaModule_ComTextRenderer.cpp
+  Private/Script/Components/LuaModule_ComParticleSystem.cpp
   Private/Script/Components/LuaModule_ComLight.cpp
   Private/Script/Components/LuaModule_ComCamera.cpp
   Private/Script/Components/LuaModule_ComAudioListener.cpp
