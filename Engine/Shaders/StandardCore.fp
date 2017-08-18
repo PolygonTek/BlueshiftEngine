@@ -1,10 +1,4 @@
 $include "fragment_common.glsl"
-$include "StandardBRDF.glsl"
-$include "IBL.glsl"
-
-#ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.fp"
-#endif
 
 in vec4 v2f_color;
 in vec2 v2f_tex;
@@ -83,6 +77,29 @@ uniform float ambientScale;
 
 // IBL
 uniform samplerCube envCubeMap;
+
+uniform samplerCube irradianceEnvCubeMap0;
+uniform samplerCube prefilteredEnvCubeMap0;
+uniform vec3 probePosition0;
+uniform vec3 probeMins0;
+uniform vec3 probeMaxs0;
+
+uniform samplerCube irradianceEnvCubeMap1;
+uniform samplerCube prefilteredEnvCubeMap1;
+uniform vec3 probePosition1;
+uniform vec3 probeMins1;
+uniform vec3 probeMaxs1;
+
+uniform sampler2D integrationLUTMap;
+uniform float ambientLerp;
+
+$include "StandardBRDF.glsl"
+$include "PhongBRDF.glsl"
+$include "IBL.glsl"
+
+#ifdef USE_SHADOW_MAP
+$include "ShadowLibrary.fp"
+#endif
 
 #if _NORMAL_SOURCE == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
 #undef _NORMAL_SOURCE
