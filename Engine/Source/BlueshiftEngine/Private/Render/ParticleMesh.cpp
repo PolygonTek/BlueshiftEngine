@@ -138,11 +138,11 @@ static Mat3 ComputeParticleAxis(ParticleSystem::StandardModule::Orientation orie
     return modelAxis.TransposedMul(worldAxis);
 }
 
-void ParticleMesh::ComputeTextureCoordinates(const ParticleSystem::StandardModule &standardModule, int time, float &s1, float &t1, float &s2, float &t2) const {
+void ParticleMesh::ComputeTextureCoordinates(const ParticleSystem::StandardModule &standardModule, float time, float &s1, float &t1, float &s2, float &t2) const {
     if (standardModule.animation) {
         int numFrames = standardModule.animFrames[0] * standardModule.animFrames[1];
 
-        int currentFrame = (int)(MS2SEC(time) * standardModule.animFps);
+        int currentFrame = (int)(time * standardModule.animFps);
         currentFrame %= numFrames;
 
         float invFrameX = 1.0f / standardModule.animFrames[0];
@@ -195,7 +195,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             currentSurf->numVerts += numVerts;
             currentSurf->numIndexes += numIndexes;
 
-            ComputeTextureCoordinates(stage.standardModule, entity->parms.time, s1, t1, s2, t2);
+            ComputeTextureCoordinates(stage.standardModule, MS2SEC(entity->parms.time) - entity->parms.stageStartDelay[stageIndex], s1, t1, s2, t2);
 
             float16_t hs1 = F16Converter::FromF32(s1);
             float16_t ht1 = F16Converter::FromF32(t1);

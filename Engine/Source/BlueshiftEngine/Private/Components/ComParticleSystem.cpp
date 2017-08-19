@@ -95,6 +95,7 @@ void ComParticleSystem::Init() {
     sceneEntity.time = 0;
 
     currentTime = 0;
+    stopTime = 0;
 
     simulationStarted = false;
 
@@ -154,7 +155,7 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
 }
 
 void ComParticleSystem::ResetParticles() {
-    startDelay.SetCount(sceneEntity.particleSystem->NumStages());
+    sceneEntity.stageStartDelay.SetCount(sceneEntity.particleSystem->NumStages());
 
     // Free memory used for particles
     if (sceneEntity.stageParticles.Count() > 0) {
@@ -170,7 +171,7 @@ void ComParticleSystem::ResetParticles() {
     for (int stageIndex = 0; stageIndex < sceneEntity.particleSystem->NumStages(); stageIndex++) {
         const ParticleSystem::Stage *stage = sceneEntity.particleSystem->GetStage(stageIndex);
 
-        startDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1), 0);
+        sceneEntity.stageStartDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1), 0);
 
         int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
         int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
@@ -258,13 +259,19 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
     sceneEntity.aabb.SetZero();
 
     const Mat4 worldMatrix = GetEntity()->GetTransform()->GetWorldMatrix();
+
+    bool simulationEnded = true;
     
     for (int stageIndex = 0; stageIndex < sceneEntity.particleSystem->NumStages(); stageIndex++) {
         const ParticleSystem::Stage *stage = sceneEntity.particleSystem->GetStage(stageIndex);
+
+        // Standard module
         const ParticleSystem::StandardModule &standardModule = stage->standardModule;
 
-        float simulationTime = standardModule.simulationSpeed * time - startDelay[stageIndex];
+        // Is in delay time ?
+        float simulationTime = standardModule.simulationSpeed * time - sceneEntity.stageStartDelay[stageIndex];
         if (simulationTime < 0) {
+            simulationEnded = false;
             continue;
         }
 
@@ -277,6 +284,14 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
                 continue;
             }
         }
+
+        if (stopTime != 0) {
+            if (currentTime > stopTime + cycleDuration) {
+                continue;
+            }
+        }
+
+        simulationEnded = false;
 
         float inCycleTime = simulationTime - curCycles * cycleDuration;
 
@@ -341,6 +356,11 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
                 particle->cycle = 0;
             }
         }
+    }
+
+    if (simulationEnded) {
+        simulationStarted = false;
+        return;
     }
 
     ComRenderable::UpdateVisuals();
@@ -654,22 +674,27 @@ void ComParticleSystem::DrawGizmos(const SceneView::Parms &sceneView, bool selec
     sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
 }
 
-void ComParticleSystem::StartSimulation() {
+bool ComParticleSystem::IsAlive() const {
+    return simulationStarted;
+}
+
+void ComParticleSystem::Start() {
+    simulationStarted = true;
+    currentTime = 0;
+    stopTime = 0;
+}
+
+void ComParticleSystem::Stop() {
+    simulationStarted = false;
+    stopTime = currentTime;
+}
+
+void ComParticleSystem::Resume() {
     simulationStarted = true;
 }
 
-void ComParticleSystem::PauseSimulation() {
+void ComParticleSystem::Pause() {
     simulationStarted = false;
-}
-
-void ComParticleSystem::RestartSimulation() {
-    simulationStarted = true;
-    currentTime = 0;
-}
-
-void ComParticleSystem::StopSimulation() {
-    simulationStarted = false;
-    currentTime = 0;
 }
 
 void ComParticleSystem::UpdateVisuals() {

@@ -43,10 +43,12 @@ public:
 
     void                    UpdateSimulation(int currentTime);
 
-    void                    StartSimulation();
-    void                    PauseSimulation();
-    void                    RestartSimulation();
-    void                    StopSimulation();
+    bool                    IsAlive() const;
+
+    void                    Start();
+    void                    Stop();
+    void                    Resume();
+    void                    Pause();
 
     int                     GetAliveParticleCount() const;
 
@@ -66,9 +68,9 @@ protected:
     void                    SetParticleSystem(const Guid &guid);
 
     ParticleSystemAsset *   particleSystemAsset;
-    Array<float>            startDelay;
     bool                    simulationStarted;
     int                     currentTime;
+    int                     stopTime;
 
     Mesh *                  spriteMesh;
     SceneEntity::Parms      sprite;

@@ -102,6 +102,7 @@ public:
 
         ParticleSystem *    particleSystem;
         Array<Particle *>   stageParticles;
+        Array<float>        stageStartDelay;
         
         Array<Material *>   customMaterials;
         Skin *              customSkin;

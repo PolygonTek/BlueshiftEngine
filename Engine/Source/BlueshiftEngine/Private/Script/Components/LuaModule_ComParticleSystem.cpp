@@ -23,10 +23,11 @@ void LuaVM::RegisterParticleSystemComponent(LuaCpp::Module &module) {
 
     _ComTextRenderer.SetClass<ComParticleSystem>(module["ComRenderable"]);
     _ComTextRenderer.AddClassMembers<ComParticleSystem>(
-        "start", &ComParticleSystem::StartSimulation,
-        "pause", &ComParticleSystem::PauseSimulation,
-        "restart", &ComParticleSystem::RestartSimulation,
-        "stop", &ComParticleSystem::StopSimulation);
+        "is_alive", &ComParticleSystem::IsAlive,
+        "start", &ComParticleSystem::Start,
+        "stop", &ComParticleSystem::Stop,
+        "resume", &ComParticleSystem::Resume,
+        "pause", &ComParticleSystem::Pause);
 
     _ComTextRenderer["meta_object"] = ComParticleSystem::metaObject;
 }
