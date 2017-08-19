@@ -202,77 +202,7 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
 }
 
 void Mesh::CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int numSegments) {
-    assert(numSegments > 2);
-
-    Purge();
-
-    float invR = 1.0f / radius;
-
-    int numLat = numSegments + 1;       // latitude verts
-    int numLng = numSegments * 2 + 1;   // longitude verts
-
-    int numVerts = numLat * numLng;
-    int numIndexes = (6 * (numLat - 1) * (numLng - 1)) - (2 * 3 * (numLng - 1));
-
-    MeshSurf *surf = AllocSurface(numVerts, numIndexes);
-    surf->materialIndex = 0;
-    surfaces.Append(surf);
-
-    VertexGenericLit *v = surf->subMesh->verts;
-
-    for (int i = 0; i < numLat; i++) {
-        float phi = Math::Pi * i / (numLat - 1); // 0 ~ pi
-        float sp, cp;
-        Math::SinCos(phi, sp, cp);
-        float z = cp * radius;
-        float zr = sp * radius; 
-
-        for (int j = 0; j < numLng; j++) {
-            float theta = Math::TwoPi * j / (numLng - 1); // 0 ~ 2pi
-            float st, ct;
-            Math::SinCos(theta + Math::HalfPi, st, ct);
-            float x = ct * zr;
-            float y = st * zr;
-            float s = theta * Math::InvPi;
-            float t = phi * Math::InvPi;
-
-            v->SetPosition(x, y, z);
-            v->SetNormal(x * invR, y * invR, cp);
-            v->SetTangent(st * cp, ct * sp, st);
-            v->SetBiTangent(v->GetNormal().Cross(v->GetTangent()));
-            v->SetTexCoord(s, t);
-            v->SetColor(0xffffffff);
-            v++;
-        }
-    }
-
-    TriIndex *idx = surf->subMesh->indexes;
-    
-    for (int i = 0; i < numLat - 1; i++) {
-        int a = numLng * i;
-
-        for (int j = 0; j < numLng - 1; j++) {
-            if (i > 0) {
-                int b = a + j;
-                *idx++ = a + (j + 1) % numLng;
-                *idx++ = b;
-                *idx++ = b + numLng;
-            }
-
-            if (i < numLat - 2) {
-                int b = a + (j + 1) % numLng;
-                *idx++ = b;
-                *idx++ = a + numLng + j;
-                *idx++ = numLng + b;
-            }
-        }
-    }
-    
-    FinishSurfaces(ComputeAABBFlag);
-
-    if (!origin.IsZero()) {
-        TransformVerts(Mat3::identity, origin);
-    }
+    CreateCapsule(origin, axis, radius, 0, numSegments);
 }
 
 void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
@@ -331,7 +261,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
 }
 
 void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments) {
-    assert(numSegments > 2);
+    assert(numSegments >= 4);
 
     Purge();
 
@@ -438,8 +368,8 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
 }
 
 void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments) {
-    assert(numSegments > 2);
-    assert(numSegments % 2 == 0);
+    assert(numSegments >= 4);
+    assert(numSegments % 4 == 0);
 
     Purge();
 
@@ -447,7 +377,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
     float invR = 1.0f / radius;
     float real_height = 2.0f * radius + height;
     
-    int numLat = numSegments / 2 + 1;   // hemisphere latitude verts
+    int numLat = numSegments / 4 + 1;   // hemisphere latitude verts
     int numLng = numSegments + 1;       // hemisphere longitude verts
 
     int numVerts = numLat * 2 * numLng;

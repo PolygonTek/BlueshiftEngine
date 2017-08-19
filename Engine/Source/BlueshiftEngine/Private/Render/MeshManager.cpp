@@ -58,7 +58,7 @@ void MeshManager::Init() {
     // Create default sphere mesh
     defaultSphereMesh = AllocMesh("_defaultSphereMesh");
     defaultSphereMesh->permanence = true;
-    defaultSphereMesh->CreateCapsule(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(0), 24);
+    defaultSphereMesh->CreateSphere(Vec3::origin, Mat3::identity, MeterToUnit(0.5), 32);
 
     // Create default geosphere mesh
     defaultGeoSphereMesh = AllocMesh("_defaultGeoSphereMesh");
@@ -68,12 +68,12 @@ void MeshManager::Init() {
     // Create default cylinder mesh
     defaultCylinderMesh = AllocMesh("_defaultCylinderMesh");
     defaultCylinderMesh->permanence = true;
-    defaultCylinderMesh->CreateCylinder(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(2), 24);
+    defaultCylinderMesh->CreateCylinder(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(2), 32);
 
     // Create default capsule mesh
     defaultCapsuleMesh = AllocMesh("_defaultCapsuleMesh");
     defaultCapsuleMesh->permanence = true;
-    defaultCapsuleMesh->CreateCapsule(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(1), 24);
+    defaultCapsuleMesh->CreateCapsule(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(1), 32);
 }
 
 void MeshManager::Shutdown() {
