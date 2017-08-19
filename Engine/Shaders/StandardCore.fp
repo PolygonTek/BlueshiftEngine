@@ -111,9 +111,11 @@ $include "ShadowLibrary.fp"
 #define _PARALLAX_SOURCE 0
 #endif
 
-#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0 || _GLOSS_SOURCE == 3 || _METALLIC_SOURCE == 1 || (_ROUGHNESS_SOURCE == 2 || _ROUGHNESS_SOURCE == 3) || _EMISSION_SOURCE == 2
+#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0 || _GLOSS_SOURCE == 3 || _METALLIC_SOURCE == 1 || (_ROUGHNESS_SOURCE == 2 || _ROUGHNESS_SOURCE == 3) || _PARALLAX_SOURCE != 0 || _EMISSION_SOURCE == 2
 #define NEED_BASE_TC
 #endif
+
+//#define PARALLAX_CORRECTED_INDIRECT_LIGHTING
 
 void main() {
 #if DIRECT_LIGHTING
@@ -267,7 +269,7 @@ void main() {
             worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
 
             vec4 sampleVec;
-            sampleVec.xyz = boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 250, 1.0), vec3(-2500, -250, -2500), vec3(2500, 250, 2500)); // FIXME
+            sampleVec.xyz = boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 250, 1.0), vec3(-2500, 0, -2500), vec3(2500, 250, 2500)); // FIXME
         #else
             vec4 sampleVec;
             sampleVec.xyz = worldS;

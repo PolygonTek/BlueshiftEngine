@@ -1,7 +1,7 @@
 #ifndef IBL_INCLUDED
 #define IBL_INCLUDED
 
-$include "StandardBRDF.glsl"
+$include "BRDFLibrary.glsl"
 
 // http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
 // efficient VanDerCorpus calculation.
