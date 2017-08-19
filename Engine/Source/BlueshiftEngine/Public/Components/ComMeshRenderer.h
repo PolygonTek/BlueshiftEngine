@@ -19,6 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 class MeshAsset;
+class MaterialAsset;
 
 class ComMeshRenderer : public ComRenderable {
 public:
@@ -35,14 +36,15 @@ public:
 
     bool                    GetClosestVertex(const SceneView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const;
 
-protected:
-    void                    ChangeMesh(const Guid &meshGuid);
-    void                    ChangeMaterial(const char *materialName);
-
-    virtual void            MeshUpdated() = 0;
-
     Guid                    GetMesh() const;
     void                    SetMesh(const Guid &guid);
+
+    int                     NumMaterials() const;
+    Guid                    GetMaterial(int index) const;
+    void                    SetMaterial(int index, const Guid &materialGuid);
+
+    MaterialAsset *         GetMaterialAsset(int index) const;
+    void                    SetMaterialAsset(int index, const MaterialAsset *materialAsset);
 
     bool                    IsUseLightProbe() const;
     void                    SetUseLightProbe(bool useLightProbe);
@@ -52,6 +54,12 @@ protected:
 
     bool                    IsReceiveShadows() const;
     void                    SetReceiveShadows(bool receiveShadows);
+
+protected:
+    void                    ChangeMesh(const Guid &meshGuid);
+    void                    ChangeMaterial(int index, const Guid &materialGuid);
+
+    virtual void            MeshUpdated() = 0;
 
     void                    MeshReloaded();
     void                    PropertyChanged(const char *classname, const char *propName);
