@@ -29,6 +29,7 @@ public:
     Prefab() {}
     virtual ~Prefab();
 
+    const char *                GetName() const { return name; }
     Str                         GetFilename() const { return hashName; }
 
     Hierarchy<Entity> &         GetEntityHierarchy() { return entityHierarchy; }
@@ -44,6 +45,7 @@ public:
 
 private:
     Str                         hashName;
+    Str                         name;
     EntityPtrArray              entities;
     Hierarchy<Entity>           entityHierarchy;
 };
@@ -83,6 +85,8 @@ public:
     Prefab *                    AllocPrefab(const char *hashName, const Guid &guid = Guid::zero);
     Prefab *                    FindPrefab(const char *hashName) const;
     Prefab *                    GetPrefab(const char *filename);
+
+    void                        RenamePrefab(Prefab *prefab, const Str &newName);
 
     static Json::Value          CreatePrefabValue(const Entity *entity);
 

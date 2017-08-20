@@ -55,6 +55,9 @@ Prefab *PrefabManager::AllocPrefab(const char *hashName, const Guid &guid) {
 
     Prefab *prefab = (Prefab *)Prefab::CreateInstance(guid);
     prefab->hashName = hashName;
+    prefab->name = hashName;
+    prefab->name.StripPath();
+    prefab->name.StripFileExtension();
     prefabHashMap.Set(hashName, prefab);
 
     return prefab;
@@ -74,6 +77,20 @@ Prefab *PrefabManager::GetPrefab(const char *hashName) {
     }
 
     return prefab;
+}
+
+void PrefabManager::RenamePrefab(Prefab *prefab, const Str &newName) {
+    const auto *entry = prefabHashMap.Get(prefab->hashName);
+    if (entry) {
+        prefabHashMap.Remove(prefab->hashName);
+
+        prefab->hashName = newName;
+        prefab->name = newName;
+        prefab->name.StripPath();
+        prefab->name.StripFileExtension();
+
+        prefabHashMap.Set(newName, prefab);
+    }
 }
 
 Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {

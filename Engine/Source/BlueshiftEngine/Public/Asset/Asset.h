@@ -300,6 +300,8 @@ public:
 
     Prefab *                    GetPrefab();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override;
