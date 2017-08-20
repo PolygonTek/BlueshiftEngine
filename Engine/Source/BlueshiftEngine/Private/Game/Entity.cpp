@@ -52,7 +52,7 @@ Entity::Entity() {
 }
 
 Entity::~Entity() {
-    Purge();    
+    Purge();
 }
 
 Entity *Entity::CreateEntity(Json::Value &entityValue) {
@@ -344,7 +344,9 @@ void Entity::InitHierarchy() {
 }
 
 void Entity::Init() {
-    frozen = props->Get("frozen").As<bool>();
+    if (!gameWorld) {
+        return;
+    }
 
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
@@ -352,6 +354,8 @@ void Entity::Init() {
             component->Init();
         }
     }
+
+    frozen = props->Get("frozen").As<bool>();
 
     ComRenderable *renderable = GetComponent<ComRenderable>();
     if (renderable) {
@@ -362,6 +366,10 @@ void Entity::Init() {
 }
 
 void Entity::Awake() {
+    if (!gameWorld) {
+        return;
+    }
+
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component) {
@@ -371,6 +379,10 @@ void Entity::Awake() {
 }
 
 void Entity::Start() {
+    if (!gameWorld) {
+        return;
+    }
+
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component) {
@@ -380,6 +392,10 @@ void Entity::Start() {
 }
 
 void Entity::Update() {
+    if (!gameWorld) {
+        return;
+    }
+
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component && component->IsEnabled()) {
@@ -389,6 +405,10 @@ void Entity::Update() {
 }
 
 void Entity::LateUpdate() {
+    if (!gameWorld) {
+        return;
+    }
+
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component && component->IsEnabled()) {
@@ -528,6 +548,16 @@ bool Entity::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCu
     }
 
     return false;
+}
+
+void Entity::Destroy(Entity *entity) {
+    EntityPtrArray children;
+    entity->GetChildren(children);
+
+    for (int i = children.Count() - 1; i >= 0; i--) {
+        Entity::DestroyInstance(children[i]);
+    }
+    Entity::DestroyInstance(entity);
 }
 
 void Entity::PropertyChanged(const char *classname, const char *propName) {

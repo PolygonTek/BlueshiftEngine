@@ -155,6 +155,8 @@ public:
 
     virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
 
+    static void                 Destroy(Entity *entity);
+
     static const SignalDef      SIG_ComponentInserted;
     static const SignalDef      SIG_ComponentRemoved;
     static const SignalDef      SIG_LayerChanged;

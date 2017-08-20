@@ -346,7 +346,7 @@ Object *Object::CreateInstance(const char *name, const Guid &guid) {
         return nullptr;
     }
 
-    Object *instance = metaObject->CreateInstance(guid);    
+    Object *instance = metaObject->CreateInstance(guid);
     return instance;
 }
 

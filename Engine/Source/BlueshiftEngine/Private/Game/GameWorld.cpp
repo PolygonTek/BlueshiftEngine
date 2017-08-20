@@ -123,7 +123,7 @@ void GameWorld::ClearAllEntities() {
 
     physicsWorld->ClearScene();
 
-    renderWorld->ClearScene();	
+    renderWorld->ClearScene();
 
     firstFreeIndex = 16; // TEMP
     
