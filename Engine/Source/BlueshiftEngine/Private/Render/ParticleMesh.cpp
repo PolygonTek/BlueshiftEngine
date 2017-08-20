@@ -180,14 +180,14 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
         int numVerts = CountDrawingVerts(stage, stageParticles[stageIndex]);
         if (numVerts > 0) {
-            // number of indices for the quad that consist of two triangles
-            int numIndexes = numVerts * 3 / 2;
-
-            if (!currentSurf || stage.standardModule.material != currentSurf->material) {
+            if (!currentSurf || 1) {//stage.standardModule.material != currentSurf->material) { FIXME
                 PrepareNextSurf();
                 
                 currentSurf->material = stage.standardModule.material;
             }
+
+            // number of indices for the quad that consist of two triangles
+            int numIndexes = numVerts * 3 / 2;
 
             totalVerts += numVerts;
             totalIndexes += numIndexes;
@@ -268,7 +268,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
                         rtv.SetFromCross(cameraDir[quadIndex], tangentDir[quadIndex]);
                         rtv.Normalize();
                         rtv = entity->parms.axis.TransposedMulVec(rtv);
-                        rtv *= particle->trails[quadIndex].size * 0.5f;
+                        rtv *= particle->trails[0].size * 0.5f;
 
                         vertexPointer->xyz = trail[0].position - rtv;
                         vertexPointer->st[0] = hs1;
@@ -285,7 +285,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
                         rtv.SetFromCross(cameraDir[quadIndex + 1], tangentDir[quadIndex + 1]);
                         rtv.Normalize();
                         rtv = entity->parms.axis.TransposedMulVec(rtv);
-                        rtv *= particle->trails[quadIndex + 1].size * 0.5f;
+                        rtv *= particle->trails[0].size * 0.5f;
 
                         vertexPointer->xyz = trail[1].position - rtv;
                         vertexPointer->st[0] = hs1;
