@@ -232,14 +232,17 @@ public:
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Returns radian [-PI, PI] as a direction vector.
-    float               ToAngle() const;
-
                         /// Converts to the polar coordinates.
     float               ToPolar(float &theta) const;
 
                         /// Sets from the polar coordinates.
     void                SetFromPolar(float radius, float theta);
+
+                        /// Returns radian [-PI, PI] as a direction vector.
+    float               ToAngle() const;
+
+                        /// Sets from the radian as a direction.
+    void                SetFromAngle(float theta);
 
                         /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
@@ -440,7 +443,7 @@ BE_INLINE const char *Vec2::ToString(int precision) const {
 }
 
 BE_INLINE void Vec2::SetFromPolar(float radius, float theta) {
-    float sinTheta, cosTheta;    
+    float sinTheta, cosTheta;
     Math::SinCos(theta, sinTheta, cosTheta);
 
     x = radius * cosTheta;
@@ -451,6 +454,14 @@ BE_INLINE float Vec2::ToPolar(float &theta) const {
     float radius = Math::Sqrt(x * x + y * y);
     theta = Math::ATan(y, x);
     return radius;
+}
+
+BE_INLINE void Vec2::SetFromAngle(float theta) {
+    float sinTheta, cosTheta;
+    Math::SinCos(theta, sinTheta, cosTheta);
+
+    x = cosTheta;
+    y = sinTheta;
 }
 
 BE_INLINE float Vec2::ToAngle() const {

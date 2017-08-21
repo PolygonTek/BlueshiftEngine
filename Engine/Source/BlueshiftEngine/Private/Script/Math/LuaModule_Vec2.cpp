@@ -54,6 +54,7 @@ void LuaVM::RegisterVec2(LuaCpp::Module &module) {
         "cross", &Vec2::Cross,
         "set_from_lerp", &Vec2::SetFromLerp,
         "to_angle", &Vec2::ToAngle,
+        "set_from_angle", &Vec2::SetFromAngle,
         "to_string", static_cast<const char*(Vec2::*)(void)const>(&Vec2::ToString)
     );
     _Vec2.AddClassMembers<Vec2>(
