@@ -22,6 +22,7 @@ class btCollisionDispatcher;
 class btBroadphaseInterface;
 class btSequentialImpulseConstraintSolver;
 class btGhostPairCallback;
+struct btOverlapFilterCallback;
 class btDiscreteDynamicsWorld;
 
 #include "Containers/HashTable.h"
@@ -83,6 +84,9 @@ public:
     const Vec3              GetGravity() const;
     void                    SetGravity(const Vec3 &gravityAcceleration);
 
+    uint32_t                GetCollisionFilterMask(int index) const;
+    void                    SetCollisionFilterMask(int index, uint32_t mask);
+
     bool                    RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const;
     bool                    RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, Array<CastResult> &traceList) const;
     bool                    ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const;
@@ -99,11 +103,13 @@ private:
 
     float                   time;
     float                   timeDelta;
+    uint32_t                filterMasks[32];
     btDefaultCollisionConfiguration *collisionConfiguration;
     btCollisionDispatcher *  collisionDispatcher;
     btBroadphaseInterface *  broadphase;
     btSequentialImpulseConstraintSolver *solver;
     btGhostPairCallback *    ghostPairCallback;
+    btOverlapFilterCallback *filterCallback;
     btDiscreteDynamicsWorld *dynamicsWorld;
 };
 

@@ -117,7 +117,7 @@ void ComSensor::Awake() {
 
         sensor = static_cast<PhysSensor *>(physicsSystem.CreateCollidable(&physicsDesc));
         sensor->SetUserPointer(this);
-        sensor->SetCollisionFilterMask(PhysCollidable::DefaultGroup | PhysCollidable::CharacterGroup | PhysCollidable::KinematicGroup | PhysCollidable::StaticGroup);
+        sensor->SetCustomCollisionFilterIndex(entity->GetLayer());
 
         if (IsEnabled()) {
             sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());

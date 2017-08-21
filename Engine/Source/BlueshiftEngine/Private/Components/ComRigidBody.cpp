@@ -193,7 +193,8 @@ void ComRigidBody::Awake() {
 
         body = static_cast<PhysRigidBody *>(physicsSystem.CreateCollidable(&physicsDesc));
         body->SetUserPointer(this);
-        body->SetCollisionListener(collisionListener);        
+        body->SetCustomCollisionFilterIndex(entity->GetLayer());
+        body->SetCollisionListener(collisionListener);
 
         if (IsEnabled()) {
             body->AddToWorld(GetGameWorld()->GetPhysicsWorld());

@@ -140,7 +140,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
         shape->calculateLocalInertia(desc->mass, inertia);
     }
 
-    if (desc->type == PhysCollidable::Type::RigidBody) {
+    if (desc->type == PhysCollidable::Type::RigidBody || desc->type == PhysCollidable::Type::Character) {
         btDefaultMotionState *motionState = new btDefaultMotionState(initialTransform);
         btRigidBody *rigidBody = new btRigidBody(desc->mass, motionState, shape, inertia);
 

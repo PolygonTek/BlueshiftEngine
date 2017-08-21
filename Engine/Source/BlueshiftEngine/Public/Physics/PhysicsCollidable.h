@@ -24,6 +24,7 @@ class PhysCollidable;
 class PhysCollisionListener;
 class PhysicsWorld;
 class PhysicsSystem;
+class CollisionFilterCallback;
 
 struct CastResult {
     PhysCollidable *        hitObject;
@@ -45,23 +46,23 @@ struct Contact {
 class PhysCollidable {
     friend class PhysicsSystem;
     friend class PhysicsWorld;
+    friend class CollisionFilterCallback;
 
 public:
     // same order with btCollisionObject::CollisionFilterGroups
     enum CollisionFilterGroup {
-        DefaultGroup            = BIT(0),
-        StaticGroup             = BIT(1),
-        KinematicGroup          = BIT(2),
-        DebrisGroup             = BIT(3),
-        SensorGroup             = BIT(4),
-        CharacterGroup          = BIT(5),
-        AllGroup                = -1
+        DefaultGroup        = BIT(0),
+        StaticGroup         = BIT(1),
+        KinematicGroup      = BIT(2),
+        //DebrisGroup         = BIT(3),
+        SensorGroup         = BIT(4),
+        CharacterGroup      = BIT(5),
+        AllGroup            = -1
     };
 
     enum Type {
         RigidBody,
         Character,
-        Debris,
         Sensor
     };
 
@@ -95,14 +96,16 @@ public:
     void                    SetKinematic(bool kinematic);
     void                    SetCharacter(bool character);
 
-    short                   GetCollisionFilterMask() const { return filterMask; }
-    void                    SetCollisionFilterMask(short mask);
-
     bool                    IsActive() const;
 
     bool                    IsInWorld() const;
     void                    AddToWorld(PhysicsWorld *physicsWorld);
     void                    RemoveFromWorld();
+
+    void                    SetIgnoreCollisionCheck(const PhysCollidable &collidable, bool ignoreCollisionCheck);
+
+    unsigned int            GetCustomCollisionFilterIndex() const { return customFilterIndex; }
+    void                    SetCustomCollisionFilterIndex(unsigned int index);
 
     void                    SetDebugDraw(bool draw);
 
@@ -112,7 +115,7 @@ public:
 protected:
     Type                    type;
     Vec3                    centroid;
-    short                   filterMask;
+    unsigned int            customFilterIndex;
     btCollisionObject *     collisionObject;
     PhysCollisionListener * collisionListener;
     void *                  userPointer;

@@ -118,7 +118,7 @@ void ComCharacterController::Awake() {
         collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight, scaledRadius);
 
         PhysCollidableDesc desc;
-        desc.type = PhysCollidable::Type::RigidBody;
+        desc.type = PhysCollidable::Type::Character;
         desc.kinematic = true;
         desc.ccd = false;
         desc.mass = mass;
@@ -137,6 +137,7 @@ void ComCharacterController::Awake() {
         desc.shapes.Append(shapeDesc);
 
         body = (PhysRigidBody *)physicsSystem.CreateCollidable(&desc);
+        body->SetCustomCollisionFilterIndex(GetEntity()->GetLayer());
         body->SetAngularFactor(Vec3(0, 0, 0));
         body->SetCharacter(true);
         body->SetUserPointer(this);
@@ -153,10 +154,11 @@ void ComCharacterController::Awake() {
         desc.angularDamping = 0.0f;
 
         correctionSensor = (PhysSensor *)physicsSystem.CreateCollidable(&desc);
-        correctionSensor->SetCollisionFilterMask(PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::DefaultGroup);
         correctionSensor->SetDebugDraw(false);
 
         if (IsEnabled()) {
+            body->SetIgnoreCollisionCheck(*correctionSensor, true);
+
             body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
 
             correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
@@ -271,14 +273,14 @@ void ComCharacterController::RecoverFromPenetration() {
                 maxPen = contact.dist;
 
                 // 한번에 밀어내지 않고, 가장 깊이 penetration 된 contact 부터 조금씩 밀어낸다.
-                origin -= contact.normal * contact.dist * 0.25f;	
+                origin -= contact.normal * contact.dist * 0.25f;
             }
         }
 
         // 다 밀어냈다면 종료
         if (maxPen == 0) {
             break;
-        }	
+        }
     }
 }
 
@@ -309,13 +311,13 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
     bumpNormals[numBumpNormals].Normalize();
     numBumpNormals++;
 
-    float f = 1.0f;	
+    float f = 1.0f;
     for (int bumpCount = 0; bumpCount < 4; bumpCount++) {
         Vec3 targetPos = origin + moveVec * f;
 
         // origin 에서 targetPos 로 capsule cast 
         GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, origin, targetPos, 
-            PhysCollidable::CharacterGroup, PhysCollidable::StaticGroup | PhysCollidable::DefaultGroup, trace);
+            PhysCollidable::CharacterGroup, PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup, trace);
 
         // 이동 가능한 fraction 만큼 origin 이동
         if (trace.fraction > 0.0f) {
@@ -331,7 +333,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
         // 이동한 만큼 이동거리를 빼준다.
         f -= f * trace.fraction;
 
-        //BE_LOG(L"%i %f\n", bumpCount, trace.normal.z);	
+        //BE_LOG(L"%i %f\n", bumpCount, trace.normal.z);
         //GetGameWorld()->GetRenderWorld()->SetDebugColor(Vec4Color::cyan, Vec4(0, 0, 0, 0));
         //GetGameWorld()->GetRenderWorld()->DebugLine(trace.point, trace.point + trace.normal * 10, 1, false, 10000);
 
