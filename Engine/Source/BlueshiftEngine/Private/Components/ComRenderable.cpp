@@ -31,7 +31,7 @@ BEGIN_PROPERTIES(ComRenderable)
     PROPERTY_BOOL("billboard", "Billboard", "", "false", PropertySpec::ReadWrite),
     PROPERTY_FLOAT("timeOffset", "Time Offset", "", "0", PropertySpec::ReadWrite),
     PROPERTY_FLOAT("timeScale", "Time Scale", "", "1", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "16384", PropertySpec::ReadWrite),
+    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "25000", PropertySpec::ReadWrite),
     PROPERTY_BOOL("skipSelection", "Skip Selection", "", "false", PropertySpec::ReadWrite | PropertySpec::Hidden | PropertySpec::SkipSerialization),
 END_PROPERTIES
 
