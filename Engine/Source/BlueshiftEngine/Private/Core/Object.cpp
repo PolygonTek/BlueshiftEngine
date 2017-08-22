@@ -449,8 +449,7 @@ bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
     assert(EventArg::MaxArgs == 8);
 
     if (evdef == &EV_ImmediateDestroy) {
-        Event::CancelEvents(this, &EV_Destroy);
-        Event::CancelEvents(this, &EV_ImmediateDestroy);
+        Event::CancelEvents(this);
     }
     
     MetaObject *meta = GetMetaObject();

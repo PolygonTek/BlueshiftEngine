@@ -358,7 +358,7 @@ void Event::CancelEvents(const Object *sender, const EventDef *evdef) {
         return;
     }
 
-    LinkList<Event> &queue = evdef->IsGuiEvent() ? guiEventQueue : eventQueue;
+    LinkList<Event> &queue = eventQueue; // evdef->IsGuiEvent() ? guiEventQueue : eventQueue;
         
     Event *next;
     for (Event *event = queue.Next(); event != nullptr; event = next) {
