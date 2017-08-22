@@ -242,21 +242,23 @@ bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandbo
         return false;
     }
 
-    // NOTE: absolute file path is needed for Lua debugging
-    Str absFilename;
-    
+    Str name;
+#if 1
+    // NOTE: absolute file path is needed for Lua debugging    
     char *path = tombs(lua_path.GetString());
 
     if (path[0]) {
-        absFilename = path;
-        absFilename.AppendPath(filename);
-        absFilename.CleanPath();
+        name = path;
+        name.AppendPath(filename);
+        name.CleanPath();
+    } else {
+        name = fileSystem.ToAbsolutePath(filename);
     }
-    else {
-        absFilename = fileSystem.ToAbsolutePath(filename);
-    }
+#else
+    name = filename;
+#endif
 
-    if (!LuaVM::State().LoadBuffer(absFilename.c_str(), data, size, sandboxName)) {
+    if (!LuaVM::State().LoadBuffer(name.c_str(), data, size, sandboxName)) {
         fileSystem.FreeFile(data);
         return false;
     }
@@ -317,9 +319,13 @@ void ComScript::SetScriptProperties() {
             Object *object = Object::FindInstance(objectGuid);
             if (object) {
                 properties[name]["value"] = object;
-            } else if (spec->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
-                object = spec->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
-                properties[name]["value"] = object;
+            } else {
+                if (spec->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
+                    if (!objectGuid.IsZero()) {
+                        object = spec->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
+                        properties[name]["value"] = object;
+                    }
+                }
             }
             
             if (!object) {
