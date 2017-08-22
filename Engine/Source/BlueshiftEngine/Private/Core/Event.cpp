@@ -342,7 +342,7 @@ void Event::Schedule(Object *sender, int time) {
 
     // event queue 는 시간 순으로 정렬되어 있다.
     Event *event = queue.Next();
-    while ((event != nullptr) && (this->time >= event->time)) {
+    while (event && (this->time >= event->time)) {
         event = event->node.Next();
     }
 
@@ -423,6 +423,7 @@ void Event::ServiceEvent(Event *event) {
     // the event is removed from its list so that if then object
     // is deleted, the event won't be freed twice
     event->node.Remove();
+
     assert(event->sender);
     event->sender->ProcessEventArgPtr(evdef, argPtrs);
 
@@ -432,6 +433,7 @@ void Event::ServiceEvent(Event *event) {
 
 void Event::ServiceEvents() {
     int num = 0;
+
     while (!eventQueue.IsListEmpty()) {
         Event *ev = eventQueue.Next();
         assert(ev);
@@ -453,6 +455,7 @@ void Event::ServiceEvents() {
 
 void Event::ServiceGuiEvents() {
     int num = 0;
+
     while (!guiEventQueue.IsListEmpty()) {
         Event *ev = guiEventQueue.Next();
         assert(ev);
@@ -468,7 +471,7 @@ void Event::ServiceGuiEvents() {
         num++;
         if (num > MaxEventsPerFrame) {
             BE_ERRLOG(L"Event overflow.  Possible infinite loop in script.\n");
-        }	
+        }
     }
 }
 

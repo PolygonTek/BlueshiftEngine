@@ -334,7 +334,7 @@ void Entity::InitHierarchy() {
         Object *parentObj = Entity::FindInstance(parentGuid);
         parent = parentObj ? parentObj->Cast<Entity>() : nullptr;
         if (!parent) {
-            BE_WARNLOG(L"Couldn't find parent entity %hs\n", parentGuid.ToString());
+            BE_WARNLOG(L"Couldn't find parent entity %hs of %hs\n", parentGuid.ToString(), name.c_str());
         }
     }
 
@@ -550,14 +550,14 @@ bool Entity::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCu
     return false;
 }
 
-void Entity::Destroy(Entity *entity) {
+void Entity::DestroyInstance(Entity *entity) {
     EntityPtrArray children;
     entity->GetChildren(children);
 
     for (int i = children.Count() - 1; i >= 0; i--) {
-        Entity::DestroyInstance(children[i]);
+        Object::DestroyInstance(children[i]);
     }
-    Entity::DestroyInstance(entity);
+    Object::DestroyInstance(entity);
 }
 
 void Entity::PropertyChanged(const char *classname, const char *propName) {

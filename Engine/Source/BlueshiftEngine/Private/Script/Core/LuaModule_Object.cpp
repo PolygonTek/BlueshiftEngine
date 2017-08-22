@@ -105,6 +105,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_sound_asset", static_cast<SoundAsset*(Object::*)()>(&Object::Cast<SoundAsset>),
         "cast_prefab_asset", static_cast<PrefabAsset*(Object::*)()>(&Object::Cast<PrefabAsset>));
 
+    _Object["meta_object"] = Object::metaObject;
     _Object["destroy"].SetFunc(&Object::DestroyInstance);
 }
 

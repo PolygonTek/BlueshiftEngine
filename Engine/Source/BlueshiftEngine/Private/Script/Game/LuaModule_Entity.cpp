@@ -102,7 +102,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "insert_component", &Entity::InsertComponent);
 
     _Entity["meta_object"] = Entity::metaObject;
-    _Entity["destroy"].SetFunc(Entity::Destroy);
+    _Entity["destroy"].SetFunc(Entity::DestroyInstance);
 
     using EntityPtr = Entity*;
     using EntityPtrArray = Array<EntityPtr>;
