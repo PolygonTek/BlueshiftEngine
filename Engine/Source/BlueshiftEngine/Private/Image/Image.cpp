@@ -504,7 +504,36 @@ void Image::GetBits(Image::Format imageFormat, int *redBits, int *greenBits, int
 
 bool Image::HasAlpha(Image::Format imageFormat) {
     const ImageFormatInfo *info = GetImageFormatInfo(imageFormat);
+    if (info->type & Compressed) {
+        switch (imageFormat) {
+        case RGBA_DXT3:
+        case RGBA_DXT5:
+        case RGBA_PVRTC_2BPPV1:
+        case RGBA_PVRTC_4BPPV1:
+        case RGBA_PVRTC_2BPPV2:
+        case RGBA_PVRTC_4BPPV2:
+        case RGBA_8_8_ETC2:
+        case RGBA_8_1_ETC2:
+        case RGBA_EA_ATC:
+        case RGBA_IA_ATC:
+            return true;
+        }
+        return false;
+    }
     return info->alphaBits > 0 ? true : false;
+}
+
+bool Image::HasOneBitAlpha(Image::Format imageFormat) {
+    const ImageFormatInfo *info = GetImageFormatInfo(imageFormat);
+    if (info->type & Compressed) {
+        switch (imageFormat) {
+        case RGBA_DXT1: // TODO: check 1-bit-alpha is used
+        case RGBA_8_1_ETC2:
+            return true;
+        }
+        return false;
+    }
+    return info->alphaBits == 1 ? true : false;
 }
 
 bool Image::IsPacked(Image::Format imageFormat) {

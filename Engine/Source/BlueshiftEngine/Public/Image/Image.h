@@ -203,6 +203,9 @@ public:
                         /// Returns true if image format has alpha channel.
     bool                HasAlpha() const { return Image::HasAlpha(format); }
 
+                        /// Returns true if image format has 1 bit alpha channel.
+    bool                HasOneBitAlpha() const { return Image::HasOneBitAlpha(format); }
+
                         /// Returns true if image is in the linear space.
     bool                IsLinearSpace() const { return (flags & LinearSpaceFlag) ? true : false; }
 
@@ -364,6 +367,7 @@ public:
     static int          NumComponents(Image::Format imageFormat);
     static void         GetBits(Image::Format imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits);
     static bool         HasAlpha(Image::Format imageFormat);
+    static bool         HasOneBitAlpha(Image::Format imageFormat);
     static bool         IsPacked(Image::Format imageFormat);
     static bool         IsCompressed(Image::Format imageFormat);
     static bool         IsFloatFormat(Image::Format imageFormat);
