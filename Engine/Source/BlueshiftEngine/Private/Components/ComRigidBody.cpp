@@ -183,12 +183,15 @@ void ComRigidBody::Awake() {
 
                 physicsDesc.shapes.Append(shapeDesc);
             }
-        } else {
-            return;
-        }
+        } 
 
         for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
             AddChildShapeRecursive(childEntity, physicsDesc.shapes);
+        }
+
+        if (physicsDesc.shapes.Count() == 0) {
+            BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName());
+            return;
         }
 
         body = static_cast<PhysRigidBody *>(physicsSystem.CreateCollidable(&physicsDesc));
@@ -209,6 +212,10 @@ void ComRigidBody::Awake() {
 
 void ComRigidBody::Update() {
     if (!IsEnabled()) {
+        return;
+    }
+
+    if (!body) {
         return;
     }
 
