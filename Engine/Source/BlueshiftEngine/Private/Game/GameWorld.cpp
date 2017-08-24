@@ -775,6 +775,8 @@ void GameWorld::SaveSnapshot() {
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
         GameWorld::SerializeEntityHierarchy(child->GetNode(), snapshotValues["entities"]);
     }
+
+    //BE_LOG(L"%i entities snapshot saved\n", snapshotValues["entities"].size());
 }
 
 void GameWorld::RestoreSnapshot() {
@@ -784,6 +786,8 @@ void GameWorld::RestoreSnapshot() {
     mapRenderSettings->Init();
 
     SpawnEntitiesFromJson(snapshotValues["entities"]);
+
+    //BE_LOG(L"%i entities snapshot restored\n", snapshotValues["entities"].size());
 
     FinishMapLoading();
 }
