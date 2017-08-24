@@ -112,6 +112,10 @@ public:
                         /// Inverts this quaternion, in-place.
     Quat &              InverseSelf();
 
+    Quat &              SetFromAngleAxis(float angle, const Vec3 &axis);
+
+    static Quat         FromAngleAxis(float angle, const Vec3 &axis);
+
                         /// Compute a quaternion that rotates unit-length vector "from" to unit-length vector "to"
     Quat &              SetFromTwoVectors(const Vec3 &from, const Vec3 &to);
 
@@ -119,6 +123,9 @@ public:
 
     Quat &              SetFromSlerp(const Quat &from, const Quat &to, float t);
     Quat &              SetFromSlerpFast(const Quat &from, const Quat &to, float t);
+
+    static Quat         FromSlerp(const Quat &from, const Quat &to, float t);
+    static Quat         FromSlerpFast(const Quat &from, const Quat &to, float t);
 
     Angles              ToAngles() const;
     Rotation            ToRotation() const;
@@ -294,10 +301,28 @@ BE_INLINE void Quat::SetIdentity() {
     w = 1.0f;
 }
 
+BE_INLINE Quat Quat::FromAngleAxis(float angle, const Vec3 &axis) {
+    Quat q;
+    q.SetFromAngleAxis(angle, axis);
+    return q;
+}
+
 BE_INLINE Quat Quat::FromTwoVectors(const Vec3 &from, const Vec3 &to) { 
     Quat q;
     q.SetFromTwoVectors(from, to); 
     return q; 
+}
+
+BE_INLINE Quat Quat::FromSlerp(const Quat &from, const Quat &to, float t) {
+    Quat q;
+    q.SetFromSlerp(from, to, t);
+    return q;
+}
+
+BE_INLINE Quat Quat::FromSlerpFast(const Quat &from, const Quat &to, float t) {
+    Quat q;
+    q.SetFromSlerpFast(from, to, t);
+    return q;
 }
 
 BE_INLINE Quat Quat::Inverse() const {
