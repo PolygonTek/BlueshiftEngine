@@ -244,6 +244,9 @@ public:
                         /// Sets from the radian as a direction.
     void                SetFromAngle(float theta);
 
+                        /// Sets this vector from the radian as a direction
+    static Vec2         FromAngle(float theta);
+
                         /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
 
@@ -436,6 +439,12 @@ BE_INLINE Vec2 Vec2::FromUniformSampleCircle(float u) {
     float s, c;
     Math::SinCos(Math::TwoPi * u, s, c);
     return Vec2(c, s);
+}
+
+BE_INLINE Vec2 Vec2::FromAngle(float theta) {
+    Vec2 v;
+    v.SetFromAngle(theta);
+    return v;
 }
 
 BE_INLINE const char *Vec2::ToString(int precision) const {

@@ -70,6 +70,8 @@ void LuaVM::RegisterVec2(LuaCpp::Module &module) {
     _Vec2["one"] = Vec2::one;
     _Vec2["unit_x"] = Vec2::unitX;
     _Vec2["unit_y"] = Vec2::unitY;
+
+    _Vec2["from_angle"].SetFunc(Vec2::FromAngle);
 }
 
 BE_NAMESPACE_END
