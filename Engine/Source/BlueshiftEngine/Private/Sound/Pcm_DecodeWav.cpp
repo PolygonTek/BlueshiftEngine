@@ -242,9 +242,9 @@ static bool FindChunkInFile(File *fp, uint32_t chunkId, uint32_t *chunkSize) {
             return true;
         }
 
-        if (length < 0x10000) {
+        if (length <= 0x10000) {
             if (!tempBuffer) {
-                tempBuffer = (byte *)_alloca16(length);
+                tempBuffer = (byte *)_alloca16(0x10000);
             }
 
             fp->Read(tempBuffer, length);
