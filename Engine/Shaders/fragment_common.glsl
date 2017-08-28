@@ -105,7 +105,7 @@ void YCoCg2RGB(vec3 ycocg) {
 */
 
 vec3 faceToGLCubeMapCoords(int faceIndex, int x, int y, int cubeMapSize) {
-    float invSize = 1.0 / cubeMapSize;
+    float invSize = 1.0 / float(cubeMapSize);
 
     float sc = (2.0 * (float(x) + 0.5) * invSize) - 1.0;
     float tc = (2.0 * (float(y) + 0.5) * invSize) - 1.0;
@@ -135,7 +135,7 @@ float areaElement(float x, float y) {
 }
 
 float cubeMapTexelSolidAngle(float x, float y, int size) {
-    float invSize = 1.0 / size;
+    float invSize = 1.0 / float(size);
 
     float s = (2.0 * (float(x) + 0.5) * invSize) - 1.0;
     float t = (2.0 * (float(y) + 0.5) * invSize) - 1.0;

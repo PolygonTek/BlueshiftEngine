@@ -107,7 +107,7 @@ vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec3 diffuseColor) {
         diffuseLighting += texCUBE(radMap, L).rgb;
     }
 
-    return diffuseLighting * diffuseColor / numSamples;
+    return diffuseLighting * diffuseColor / float(numSamples);
 }
 
 vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float specularPower) {
@@ -131,7 +131,7 @@ vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, fl
         specularLighting += texCUBE(radMap, L).rgb;
     }
 
-    return specularLighting * specularColor * (specularPower + 2.0) / (specularPower + 1.0) / numSamples;
+    return specularLighting * specularColor * (specularPower + 2.0) / (specularPower + 1.0) / float(numSamples);
 }
 
 vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, vec3 specularColor, float specularPower, float roughness) {
@@ -163,7 +163,7 @@ vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, 
 
     diffuseLighting *= (vec3(1.0) - F) * diffuseColor;
 
-    return (diffuseLighting + specularLighting) / numSamples;
+    return (diffuseLighting + specularLighting) / float(numSamples);
 }
 
 vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float roughness) {
@@ -204,7 +204,7 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
         }
     }
 
-    return specularLighting / numSamples;
+    return specularLighting / float(numSamples);
 }
 
 vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roughness) {
@@ -244,7 +244,7 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 a
 
     diffuseLighting *= albedo;
 
-    return (diffuseLighting + specularLighting) / numSamples;
+    return (diffuseLighting + specularLighting) / float(numSamples);
 }
 
 #endif
