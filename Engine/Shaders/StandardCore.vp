@@ -15,19 +15,19 @@ out vec2 v2f_tex;
     out vec3 v2f_normal;
 #endif
 
-#if DIRECT_LIGHTING 
+#ifdef DIRECT_LIGHTING
     out vec3 v2f_lightVector;
     out vec3 v2f_lightFallOff;
     out vec4 v2f_lightProjection;
 #endif
 
-#if INDIRECT_LIGHTING
+#ifdef INDIRECT_LIGHTING
     out vec4 v2f_toWorldAndPackedWorldPosS;
     out vec4 v2f_toWorldAndPackedWorldPosT;
     out vec4 v2f_toWorldAndPackedWorldPosR;
 #endif
 
-#if INDIRECT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE != 0
+#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
     out vec3 v2f_viewVector;
 #endif
 
@@ -107,7 +107,7 @@ void main() {
     #endif
 #endif
 
-#if INDIRECT_LIGHTING || DIRECT_LIGHTING
+#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING)
     vec4 worldVertex;
     worldVertex.x = dot(worldMatrixS, localVertex);
     worldVertex.y = dot(worldMatrixT, localVertex);
@@ -115,7 +115,7 @@ void main() {
     worldVertex.w = 1.0;
 #endif
 
-#if DIRECT_LIGHTING
+#ifdef DIRECT_LIGHTING
     #ifdef USE_SHADOW_MAP
         #ifdef USE_SHADOW_POINT
             ShadowCubeTransform(localVertex, localLightOrigin.xyz, worldMatrixS.xyz, worldMatrixT.xyz, worldMatrixR.xyz);
@@ -132,17 +132,17 @@ void main() {
 #endif
 
 #if _NORMAL_SOURCE == 0
-    #if DIRECT_LIGHTING || INDIRECT_LIGHTING || _PARALLAX_SOURCE != 0
+    #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
         v2f_normal = localNormal;
 
         v2f_viewVector = localViewOrigin.xyz - localVertex.xyz;
     #endif
 
-    #if DIRECT_LIGHTING
+    #ifdef DIRECT_LIGHTING
         v2f_lightVector = L;
     #endif
-    
-    #if INDIRECT_LIGHTING
+   
+    #ifdef INDIRECT_LIGHTING
         v2f_toWorldAndPackedWorldPosS.xyz = worldMatrixS.xyz;
         v2f_toWorldAndPackedWorldPosT.xyz = worldMatrixT.xyz;
         v2f_toWorldAndPackedWorldPosR.xyz = worldMatrixR.xyz;
@@ -152,17 +152,17 @@ void main() {
         v2f_toWorldAndPackedWorldPosR.w = worldVertex.z;
     #endif
 #else
-    #if DIRECT_LIGHTING || INDIRECT_LIGHTING || _PARALLAX_SOURCE != 0
+    #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
         mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
 
         v2f_viewVector = (localViewOrigin.xyz - localVertex.xyz) * TBN;
     #endif
 
-    #if DIRECT_LIGHTING
+    #ifdef DIRECT_LIGHTING
         v2f_lightVector = L * TBN;
     #endif
     
-    #if INDIRECT_LIGHTING
+    #ifdef INDIRECT_LIGHTING
         v2f_toWorldAndPackedWorldPosS.xyz = worldMatrixS.xyz * TBN;
         v2f_toWorldAndPackedWorldPosT.xyz = worldMatrixT.xyz * TBN;
         v2f_toWorldAndPackedWorldPosR.xyz = worldMatrixR.xyz * TBN;

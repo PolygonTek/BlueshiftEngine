@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Script/LuaVM.h"
+#include "Asset/Asset.h"
 #include "Components/ComMeshRenderer.h"
 
 BE_NAMESPACE_BEGIN

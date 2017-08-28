@@ -517,6 +517,8 @@ bool Image::HasAlpha(Image::Format imageFormat) {
         case RGBA_EA_ATC:
         case RGBA_IA_ATC:
             return true;
+        default:
+            return false;
         }
         return false;
     }
@@ -530,8 +532,9 @@ bool Image::HasOneBitAlpha(Image::Format imageFormat) {
         case RGBA_DXT1: // TODO: check 1-bit-alpha is used
         case RGBA_8_1_ETC2:
             return true;
+        default:
+            return false;
         }
-        return false;
     }
     return info->alphaBits == 1 ? true : false;
 }

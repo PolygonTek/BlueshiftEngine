@@ -11,14 +11,14 @@ shader "Lit/StandardAmbientLitDirectLit" {
 
     glsl_vp {
         #define STANDARD_METALLIC_LIGHTING
-        #define INDIRECT_LIGHTING 1
-        #define DIRECT_LIGHTING 1
+        #define INDIRECT_LIGHTING
+        #define DIRECT_LIGHTING
         $include "StandardCore.vp"
     }
     glsl_fp {
         #define STANDARD_METALLIC_LIGHTING
-        #define INDIRECT_LIGHTING 1
-        #define DIRECT_LIGHTING 1
+        #define INDIRECT_LIGHTING
+        #define DIRECT_LIGHTING
         $include "StandardCore.fp"
     }
 }

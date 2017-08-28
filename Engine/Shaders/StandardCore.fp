@@ -1,5 +1,37 @@
 $include "fragment_common.glsl"
 
+#ifndef _ALBEDO_SOURCE
+#define _ALBEDO_SOURCE 0
+#endif
+
+#ifndef _NORMAL_SOURCE
+#define _NORMAL_SOURCE 0
+#endif
+
+#ifndef _SPECULAR_SOURCE
+#define _SPECULAR_SOURCE 0
+#endif
+
+#ifndef _GLOSS_SOURCE
+#define _GLOSS_SOURCE 0
+#endif
+
+#ifndef _METALLIC_SOURCE
+#define _METALLIC_SOURCE 0
+#endif
+
+#ifndef _ROUGHNESS_SOURCE
+#define _ROUGHNESS_SOURCE 0
+#endif
+
+#ifndef _PRALLAX_SOURCE
+#define _PRALLAX_SOURCE 0
+#endif
+
+#ifndef _EMISSION_SOURCE
+#define _EMISSION_SOURCE 0
+#endif
+
 in vec4 v2f_color;
 in vec2 v2f_tex;
 
@@ -7,19 +39,19 @@ in vec2 v2f_tex;
     in vec3 v2f_normal;
 #endif
 
-#if DIRECT_LIGHTING
+#ifdef DIRECT_LIGHTING
     in vec3 v2f_lightVector;
     in vec3 v2f_lightFallOff;
     in vec4 v2f_lightProjection;
 #endif
 
-#if INDIRECT_LIGHTING
+#ifdef INDIRECT_LIGHTING
     in vec4 v2f_toWorldAndPackedWorldPosS;
     in vec4 v2f_toWorldAndPackedWorldPosT;
     in vec4 v2f_toWorldAndPackedWorldPosR;
 #endif
 
-#if INDIRECT_LIGHTING || DIRECT_LIGHTING || _PARALLAX_SOURCE != 0
+#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
     in vec3 v2f_viewVector;
 #endif
 
@@ -118,7 +150,7 @@ $include "ShadowLibrary.fp"
 //#define PARALLAX_CORRECTED_INDIRECT_LIGHTING
 
 void main() {
-#if DIRECT_LIGHTING
+#ifdef DIRECT_LIGHTING
     float A = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
     A = pow(A, lightFallOffExponent);
 
@@ -128,7 +160,7 @@ void main() {
     }*/
 #endif
 
-#if DIRECT_LIGHTING || INDIRECT_LIGHTING || _PARALLAX_SOURCE != 0
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
     vec3 V = normalize(v2f_viewVector);
 #endif
 
@@ -153,7 +185,7 @@ void main() {
     }
 #endif
 
-#if DIRECT_LIGHTING || INDIRECT_LIGHTING
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     #if _NORMAL_SOURCE == 0
         vec3 N = normalize(v2f_normal);
     #elif _NORMAL_SOURCE == 1 || _NORMAL_SOURCE == 2
@@ -215,7 +247,7 @@ void main() {
 
     vec3 C = vec3(0.0);
 
-#if (DIRECT_LIGHTING || INDIRECT_LIGHTING) || DIRECT_LIGHTING == 0
+#if (defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)) || !defined(DIRECT_LIGHTING)
     #if _EMISSION_SOURCE == 1
         C += emissionColor * emissionScale;
     #elif _EMISSION_SOURCE == 2
@@ -223,7 +255,7 @@ void main() {
     #endif
 #endif
 
-#if INDIRECT_LIGHTING
+#ifdef INDIRECT_LIGHTING
     vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
     vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
     vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
@@ -287,7 +319,7 @@ void main() {
     C += albedo.rgb * ambientScale;
 #endif
 
-#if DIRECT_LIGHTING
+#ifdef DIRECT_LIGHTING
     #ifdef USE_SHADOW_MAP
         vec3 shadowLighting = ShadowFunc();
     #else

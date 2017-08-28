@@ -24,27 +24,27 @@ void main() {
     if (absDir.x > absDir.y && absDir.x > absDir.z) {
         if (dir.x > 0.0) {
             st = vec2(-dir.z, -dir.y) / absDir.x * vec2(0.5) + vec2(0.5);
-            color = texture2D(skyRightMap, st).rgb;
+            color = tex2D(skyRightMap, st).rgb;
         } else {
             st = vec2(dir.z, -dir.y) / absDir.x * vec2(0.5) + vec2(0.5);
-            color = texture2D(skyLeftMap, st).rgb;
+            color = tex2D(skyLeftMap, st).rgb;
         }
     } else {
         if (absDir.y > absDir.z) {
             if (dir.y > 0.0) {
                 st = vec2(dir.x, dir.z) / absDir.y * vec2(0.5) + vec2(0.5);
-                color = texture2D(skyTopMap, st).rgb;
+                color = tex2D(skyTopMap, st).rgb;
             } else {
                 st = vec2(dir.x, -dir.z) / absDir.y * vec2(0.5) + vec2(0.5);
-                color = texture2D(skyDownMap, st).rgb;
+                color = tex2D(skyDownMap, st).rgb;
             }
         } else {
             if (dir.z > 0.0) {
                 st = vec2(dir.x, -dir.y) / absDir.z * vec2(0.5) + vec2(0.5);
-                color = texture2D(skyBackMap, st).rgb;
+                color = tex2D(skyBackMap, st).rgb;
             } else {
                 st = vec2(-dir.x, -dir.y) / absDir.z * vec2(0.5) + vec2(0.5);
-                color = texture2D(skyFrontMap, st).rgb;
+                color = tex2D(skyFrontMap, st).rgb;
             }
         }
     }
