@@ -327,10 +327,6 @@ void ComScript::SetScriptProperties() {
                     }
                 }
             }
-            
-            if (!object) {
-                BE_WARNLOG(L"not found object %hs\n", name);
-            }
             break; }
         default:
             assert(0);
