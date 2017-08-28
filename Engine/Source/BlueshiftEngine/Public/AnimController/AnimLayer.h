@@ -97,9 +97,9 @@ public:
     ~AnimLayer();
                                 
                                 /// Returns total size of allocated memory
-    int                         Allocated() const;
+    size_t                      Allocated() const;
                                 /// Returns total size of allocated memory including size of this type
-    int                         Size() const;
+    size_t                      Size() const;
                                 /// Sets name of this layer
     void                        SetName(const char *name) { this->name = name; }
                                 /// Returns name of this layer

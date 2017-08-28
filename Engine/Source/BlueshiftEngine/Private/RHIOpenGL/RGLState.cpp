@@ -72,8 +72,10 @@ void OpenGLRHI::SetDefaultState() {
         gglHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     }
     
+#ifdef GL_VERSION_3_2
     // NVIDIA DRIVER BUG: GL_TEXTURE_CUBE_MAP_SEAMLESS 가 켜진 상태에서 some internal format 의 cubemap 을 read access 할때 crash 된다.
     gglEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+#endif
     gglEnable(GL_DITHER);
     gglDisable(GL_STENCIL_TEST);
     //gglDisable(GL_LIGHTING);

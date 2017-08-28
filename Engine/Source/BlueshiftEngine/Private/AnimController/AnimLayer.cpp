@@ -60,11 +60,11 @@ void AnimLayer::FreeData() {
     defaultStateNum = 0;
 }
 
-int AnimLayer::Allocated() const {
+size_t AnimLayer::Allocated() const {
     return name.Allocated() + maskJoints.Allocated() + stateHashMap.Allocated() + blendTrees.Allocated() + nodes.Allocated() + leafs.Allocated() + transitions.Allocated();
 }
 
-int AnimLayer::Size() const {
+size_t AnimLayer::Size() const {
     return sizeof(*this) + Allocated();
 }
 

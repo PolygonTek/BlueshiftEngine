@@ -58,14 +58,14 @@ bool Skeleton::CheckHierarchy(const Skeleton *otherSkeleton) const {
         
         int	parentIndex;
         if (joint->parent)  {
-            parentIndex = joint->parent - joints;
+            parentIndex = (int)(joint->parent - joints);
         } else {
             parentIndex = -1;
         }
         
         int otherParentIndex;
         if (otherJoint->parent)  {
-            otherParentIndex = otherJoint->parent - otherJoints;
+            otherParentIndex = (int)(otherJoint->parent - otherJoints);
         } else {
             otherParentIndex = -1;
         }

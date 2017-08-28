@@ -99,7 +99,7 @@ int Pcm::DecodeFile_OggVorbis(byte *outBuffer, int len) {
     int currentSection;
 
     do {
-        int length = len - readBytes;
+        int length = (int)(len - readBytes);
         if (!length) {
             break;
         }
