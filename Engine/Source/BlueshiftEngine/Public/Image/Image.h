@@ -288,11 +288,13 @@ public:
                         /// Clears allocated pixel data
     void                Clear();
 
+                        /// Creates an image with the given memory
     Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, byte *data, int flags);
 
                         /// Creates an image.
                         /// If data is nullptr, just allocate the memory.
     Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags);
+
     Image &             Create2D(int width, int height, int numMipmaps, Image::Format format, const byte *data, int flags);
     Image &             Create3D(int width, int height, int depth, int numMipmaps, Image::Format format, const byte *data, int flags);
     Image &             CreateCube(int size, int numMipmaps, Image::Format format, const byte *data, int flags);
@@ -360,7 +362,7 @@ public:
     bool                WritePNG(const char *filename) const;
     bool                WriteHDR(const char *filename) const;
     
-                        // static helper functions for image information
+                        // static helper functions to get image information
     static const char * FormatName(Image::Format imageFormat);
     static int          BytesPerPixel(Image::Format imageFormat);
     static int          BytesPerBlock(Image::Format imageFormat);
@@ -414,7 +416,7 @@ private:
     int                 numSlices;      ///< Number of array images or 6 for cubic image
     int                 numMipmaps;     ///< Number of mipmaps
     Image::Format       format;         ///< Image format
-    int                 flags;
+    int                 flags;          ///< Image flags
     bool                alloced;        ///< Is memory allocated ?
     byte *              pic;            ///< Actual pixel data
 };

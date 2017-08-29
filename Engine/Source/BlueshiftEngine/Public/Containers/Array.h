@@ -46,12 +46,16 @@ public:
 
     /// Constructs empty array with granularity.
     Array(int newGranularity = DefaultGranularity);
+
     /// Constructs from another array.
     Array(const Array<T> &array);
+
     /// Assigns from another array, replacing its current contents.
     Array<T> &operator=(const Array<T> &rhs);
+    
     /// Aggregates initialization constructor.
     Array(const std::initializer_list<T> &array);
+    
     /// Destructs.
     ~Array();
 

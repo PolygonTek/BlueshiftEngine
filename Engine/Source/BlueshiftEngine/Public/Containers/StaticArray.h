@@ -32,10 +32,13 @@ class StaticArray {
 public:
     /// Constructs empty array.
     StaticArray();
+
     /// Constructs from another array.
     StaticArray(const StaticArray<T, capacity> &array);
+    
     /// Aggregates initialization constructor.
     StaticArray(const std::initializer_list<T> &array);
+    
     /// Destructs.
     ~StaticArray() {}
 

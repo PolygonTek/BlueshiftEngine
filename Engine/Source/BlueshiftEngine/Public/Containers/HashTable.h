@@ -184,17 +184,22 @@ class HashTable {
     using THashBucket = HashBucket<KeyT, ValueT>;
 
 public:
+    /// Constructs empty hash table with the given table size.
     HashTable(int newTableSize = 256);
+
+    /// Copy constructs
     HashTable(const HashTable<KeyT, ValueT> &other);
+
+    /// Destructs
     ~HashTable();
 
-                        /// Returns number of hash buckets
+                        /// Returns number of hash buckets.
     int                 Count() const { return numEntries; }
     
-                        /// Returns total size of allocated memory
+                        /// Returns total size of allocated memory.
     size_t              Allocated() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated(); }
 
-                        /// Returns total size of allocated memory including size of this type
+                        /// Returns total size of allocated memory including size of this type.
     size_t              Size() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated() + sizeof(*this); }
 
                         // 전체 hash bucket 을 순서대로 검색해서 주어진 index 와 맞는 entry 의 value pointer 를 리턴
@@ -214,13 +219,13 @@ public:
                         // key 값으로 search 해서 value 참조 리턴. 없다면 새로 bucket 추가 후 참조 리턴
     ValueT &            operator[](const KeyT &key);
 
-                        /// Removes bucket with the given key
+                        /// Removes bucket with the given key.
     bool                Remove(const KeyT &key);
         
-                        /// Clears all hash buckets
+                        /// Clears all hash buckets.
     void                Clear();
 
-                        /// Clears all hash buckets and delete each values
+                        /// Clears all hash buckets and delete each values.
     void                DeleteContents();
 
                         // 분산된 hash bucket 의 표준편차를 구한다.

@@ -31,7 +31,10 @@ BE_NAMESPACE_BEGIN
 template <typename T>
 class Stack {
 public:
+    /// Constructs stack with the given stack size.
     Stack(int size);
+
+    /// Constructs stack with the given stack size and granularity.
     Stack(int size, int granularity);
     
     const T &           operator[](int index) const;

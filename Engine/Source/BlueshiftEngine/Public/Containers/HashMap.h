@@ -88,8 +88,10 @@ public:
 
     /// Constructs empty hash map
     HashMap() {}
+
     /// Constructs from other hash map
     HashMap(const HASH_MAP_TEMPLATE &other);
+    
     /// Destructs
     ~HashMap();
 

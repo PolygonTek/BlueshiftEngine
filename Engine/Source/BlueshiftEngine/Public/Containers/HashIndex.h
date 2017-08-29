@@ -41,11 +41,16 @@ public:
     static constexpr int DefaultHashSize = 1 << 10;
     static constexpr int DefaultIndexGranularity = 1 << 10;
 
+    /// Constructs hash index with initial size.
     HashIndex(const int initialHashSize = DefaultHashSize, const int initialIndexSize = DefaultHashSize);
-    /// Copy constructor
+    
+    /// Copy constructor.
     HashIndex(const HashIndex &rhs);
+
     /// Copy from another hash index.
     HashIndex &operator=(const HashIndex &rhs);
+    
+    /// Destructs.
     ~HashIndex();
 
                     /// Returns size of hash table.
