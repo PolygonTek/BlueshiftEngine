@@ -158,14 +158,18 @@ void SoundSystem::PrecacheSound(const char *filename) {
 }
 
 void SoundSystem::StopAllSounds() {
-    LinkList<Sound> *node;
-    LinkList<Sound> *nextNode;
+    for (int sourceIndex = 0; sourceIndex < sources.Count(); sourceIndex++) {
+        SoundSource *source = sources[sourceIndex];
 
-    for (node = soundPlayLinkList.NextNode(); node; node = nextNode) {
-        nextNode = node->NextNode();
+        if (source->sound) {
+            if (source->Stop()) {
+                source->sound->playNode.Remove();
+                source->sound->soundSource = nullptr;
+                source->sound = nullptr;
 
-        Sound *sound = node->Owner();
-        sound->Stop();
+                freeSources[sourceIndex] = source;
+            }
+        }
     }
 }
 

@@ -171,6 +171,7 @@ bool SoundSource::IsFinished() {
     if (!sound) {
         return true;
     }
+
     DWORD status;
     if (SUCCEEDED(dsBuffer->GetStatus(&status))) {
         if ((status & DSBSTATUS_PLAYING) == DSBSTATUS_PLAYING) {
