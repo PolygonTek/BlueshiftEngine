@@ -227,13 +227,13 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 - (void)viewWillDisappear:(BOOL)animated {
 }
 
-- (NSUInteger)supportedInterfaceOrientations {
+/*- (NSUInteger)supportedInterfaceOrientations {
     return UIInterfaceOrientationMaskLandscape;
 }
 
 - (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
     return UIInterfaceOrientationLandscapeRight;
-}
+}*/
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
