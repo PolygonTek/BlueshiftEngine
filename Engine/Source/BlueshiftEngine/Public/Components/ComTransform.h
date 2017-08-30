@@ -36,9 +36,9 @@ public:
     ComTransform *          GetParent() const;
 
                             // origin/scale/axis in local space 
-    const Vec3 &            GetLocalOrigin() const { return localOrigin; }
-    const Vec3 &            GetLocalScale() const { return localScale; }
-    const Mat3 &            GetLocalAxis() const { return localAxis; }
+    const Vec3              GetLocalOrigin() const { return localOrigin; }
+    const Vec3              GetLocalScale() const { return localScale; }
+    const Mat3              GetLocalAxis() const { return localAxis; }
     const Angles            GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
 
     void                    SetLocalOrigin(const Vec3 &origin);
@@ -61,8 +61,8 @@ public:
     void                    SetAxis(const Mat3 &axis);
     void                    SetAngles(const Angles &angles) { SetAxis(angles.ToMat3()); }
 
-    const Mat4 &            GetLocalMatrix() const { return localMatrix; }
-    const Mat4 &            GetWorldMatrix() const { return worldMatrix; }
+    const Mat4              GetLocalMatrix() const { return localMatrix; }
+    const Mat4              GetWorldMatrix() const { return worldMatrix; }
 
     void                    Translate(const Vec3 &translation);
     void                    Rotate(const Vec3 &axis, float angle);
