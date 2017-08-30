@@ -157,6 +157,18 @@ void SoundSystem::PrecacheSound(const char *filename) {
     ReleaseSound(sound);
 }
 
+void SoundSystem::StopAllSounds() {
+    LinkList<Sound> *node;
+    LinkList<Sound> *nextNode;
+
+    for (node = soundPlayLinkList.NextNode(); node; node = nextNode) {
+        nextNode = node->NextNode();
+
+        Sound *sound = node->Owner();
+        sound->Stop();
+    }
+}
+
 Sound *SoundSystem::AllocSound(const char *hashName) {
     if (soundHashMap.Get(hashName)) {
         BE_FATALERROR(L"'%hs' sound buffer already allocated", hashName);

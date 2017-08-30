@@ -242,6 +242,8 @@ public:
                             /// Precaches static sound buffer
     void                    PrecacheSound(const char *filename);
 
+    void                    StopAllSounds();
+
     Sound *                 defaultSound;
 
     static CVar             s_nosound;

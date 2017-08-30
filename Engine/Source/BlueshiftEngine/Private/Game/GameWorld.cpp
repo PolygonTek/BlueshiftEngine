@@ -467,6 +467,8 @@ void GameWorld::StartGame() {
 
 void GameWorld::StopGame() {
     gameStarted = false;
+
+    soundSystem.StopAllSounds();
 }
 
 void GameWorld::RestartGame(const char *mapName) {
