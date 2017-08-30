@@ -777,6 +777,10 @@ void Material::Write(const char *filename) {
         fp->Printf("%s%s\n", indentSpace.c_str(), vertexColorModeStr.c_str());
     }
 
+    if (pass->useOwnerColor) {
+        fp->Printf("%suseOwnerColor\n", indentSpace.c_str());
+    }
+
     fp->Printf("%scolor (%s)\n", indentSpace.c_str(), pass->constantColor.ToString());
     indentSpace.Truncate(indentSpace.Length() - 2);
 
