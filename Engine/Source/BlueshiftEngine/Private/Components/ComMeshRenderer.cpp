@@ -170,7 +170,7 @@ void ComMeshRenderer::PropertyChanged(const char *classname, const char *propNam
         int index;
         sscanf(propName, "materials[%i]", &index);
         const Guid materialGuid = props->Get(propName).As<Guid>();
-        SetMaterial(index, materialGuid);
+        SetMaterialGuid(index, materialGuid);
         return;
     }
 
@@ -207,7 +207,7 @@ int ComMeshRenderer::NumMaterials() const {
     return sceneEntity.customMaterials.Count();
 }
 
-Guid ComMeshRenderer::GetMaterial(int index) const {
+Guid ComMeshRenderer::GetMaterialGuid(int index) const {
     if (index >= 0 && index < sceneEntity.customMaterials.Count()) {
         const Str materialPath = sceneEntity.customMaterials[index]->GetHashName();
         return resourceGuidMapper.Get(materialPath);
@@ -215,23 +215,25 @@ Guid ComMeshRenderer::GetMaterial(int index) const {
     return Guid();
 }
 
-void ComMeshRenderer::SetMaterial(int index, const Guid &materialGuid) {
+void ComMeshRenderer::SetMaterialGuid(int index, const Guid &materialGuid) {
     ChangeMaterial(index, materialGuid);
 
     UpdateVisuals();
 }
 
-MaterialAsset *ComMeshRenderer::GetMaterialAsset(int index) const {
-    Guid materialGuid = GetMaterial(index);
+Material *ComMeshRenderer::GetMaterial(int index) const {
+    Guid materialGuid = GetMaterialGuid(index);
     if (materialGuid.IsZero()) {
         return nullptr;
     }
- 
-    return (MaterialAsset *)MaterialAsset::FindInstance(materialGuid);
+    
+    const Str materialPath = resourceGuidMapper.Get(materialGuid);
+    return materialManager.GetMaterial(materialPath); // FIXME: release ?
 }
 
-void ComMeshRenderer::SetMaterialAsset(int index, const MaterialAsset *materialAsset) {
-    SetMaterial(index, materialAsset->GetGuid());
+void ComMeshRenderer::SetMaterial(int index, const Material *material) {
+    const Guid materialGuid = resourceGuidMapper.Get(material->GetHashName());
+    SetMaterialGuid(index, materialGuid);
 }
 
 bool ComMeshRenderer::IsUseLightProbe() const {

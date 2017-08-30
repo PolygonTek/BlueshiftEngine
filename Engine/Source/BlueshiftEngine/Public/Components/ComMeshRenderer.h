@@ -19,7 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 class MeshAsset;
-class MaterialAsset;
+class Material;
 
 class ComMeshRenderer : public ComRenderable {
 public:
@@ -40,11 +40,11 @@ public:
     void                    SetMesh(const Guid &guid);
 
     int                     NumMaterials() const;
-    Guid                    GetMaterial(int index) const;
-    void                    SetMaterial(int index, const Guid &materialGuid);
+    Guid                    GetMaterialGuid(int index) const;
+    void                    SetMaterialGuid(int index, const Guid &materialGuid);
 
-    MaterialAsset *         GetMaterialAsset(int index) const;
-    void                    SetMaterialAsset(int index, const MaterialAsset *materialAsset);
+    Material *              GetMaterial(int index) const;
+    void                    SetMaterial(int index, const Material *material);
 
     bool                    IsUseLightProbe() const;
     void                    SetUseLightProbe(bool useLightProbe);
