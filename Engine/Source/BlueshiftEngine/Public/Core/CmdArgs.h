@@ -68,7 +68,7 @@ BE_INLINE CmdArgs &CmdArgs::operator=(const CmdArgs &rhs) {
     numArgs = rhs.numArgs;
     memcpy(tokenized, rhs.tokenized, sizeof(tokenized));
     for (int i = 0; i < numArgs; i++) {
-        int offset = rhs.argPtrs[i] - rhs.tokenized;
+        int offset = (int)(rhs.argPtrs[i] - rhs.tokenized);
         argPtrs[i] = &tokenized[offset];
     }
 

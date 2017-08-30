@@ -321,7 +321,7 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
 
         delete chc;*/
 
-        CollisionMesh *cmesh = AllocCollisionMesh(numPoints, 0);
+        CollisionMesh *cmesh = AllocCollisionMesh((int)numPoints, 0);
         cmeshes.Append(cmesh);
 
         for (int i = 0; i < numPoints; i++) {
