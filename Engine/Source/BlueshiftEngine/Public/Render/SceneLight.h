@@ -121,6 +121,9 @@ public:
                             // light type 별로 bounding volume culling
     bool                    Cull(const Frustum &viewFrustum) const;
 
+                            // light type 별로 bounding volume culling
+    bool                    Cull(const OBB &viewBox) const;
+
                             // shadow caster OBB culling
     bool                    CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const;
 

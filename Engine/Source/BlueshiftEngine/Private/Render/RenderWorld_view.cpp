@@ -96,8 +96,14 @@ void RenderWorld::FindViewLightsAndEntities(view_t *view) {
         }
 
         // Cull exact light bounding volume
-        if (sceneLight->Cull(view->def->frustum)) {
-            return true;
+        if (view->def->parms.orthogonal) {
+            if (sceneLight->Cull(view->def->box)) {
+                return true;
+            }
+        } else {
+            if (sceneLight->Cull(view->def->frustum)) {
+                return true;
+            }
         }
 
         // light scissorRect 계산
@@ -172,7 +178,7 @@ void RenderWorld::FindViewLightsAndEntities(view_t *view) {
         }
 
         if (viewEntity->def->parms.numJoints > 0 && r_showSkeleton.GetInteger() > 0) {
-            DebugJoints(viewEntity->def, r_showSkeleton.GetInteger() == 2, view->def->frustum.GetAxis());
+            DebugJoints(viewEntity->def, r_showSkeleton.GetInteger() == 2, view->def->parms.axis);
         }
 
         return true;
@@ -433,6 +439,10 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
             return true;
         }
 
+        if (!(BIT(viewLight->def->parms.layer) & view->def->parms.layerMask)) {
+            return true;
+        }
+
         // Skip if a entity is farther than maximum visible distance
         if (proxyEntity->parms.origin.DistanceSqr(view->def->parms.origin) > proxyEntity->parms.maxVisDist * proxyEntity->parms.maxVisDist) {
             return true;
@@ -532,6 +542,10 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
 
         // Skip 3rd person view only entity in subView
         if (proxyEntity->parms.thirdPersonOnly && !view->isSubview) {
+            return true;
+        }
+
+        if (!(BIT(viewLight->def->parms.layer) & view->def->parms.layerMask)) {
             return true;
         }
 
