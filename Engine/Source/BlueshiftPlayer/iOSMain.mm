@@ -372,8 +372,8 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     if ((IsIPhone(deviceType) && deviceType >= IOS_IPhone6) ||
         (IsIPod(deviceType) && deviceType >= IOS_IPodTouch6) ||
         (IsIPad(deviceType) && deviceType >= IOS_IPadAir2)) {
-        screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
-        screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
+        screenScaleFactor.x = BE1::Min(1920.0f / renderWidth, 1.0f);
+        screenScaleFactor.y = BE1::Min(1080.0f / renderHeight, 1.0f);
     } else {
         //
         screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
