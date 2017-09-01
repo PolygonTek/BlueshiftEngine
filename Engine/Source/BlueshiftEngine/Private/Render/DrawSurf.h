@@ -14,42 +14,33 @@
 
 #pragma once
 
-/*
--------------------------------------------------------------------------------
-
-    DrawSurf
-
-    sort key:
-
-    0xF0000000 (0~15)    : material sort
-    0x0FFF0000 (0~4095)  : entityNum
-    0x0000FFFF (0~65535) : materialNum
-
--------------------------------------------------------------------------------
-*/
-
 BE_NAMESPACE_BEGIN
 
 class DrawSurf {
 public:
     enum Flag {
-        AmbientVisible  = BIT(0),
-        ShowWires       = BIT(1)
+        AmbientVisible      = BIT(0),           ///< means visible surface (can be invisible for shadow caster surface)
+        ShowWires           = BIT(1)            ///< means to draw wireframes
     };
 
-    void                MakeSortKey(int entityNum, const Material *material);
+    void                    MakeSortKey(int entityIdx, const Material *material);
 
-    uint32_t            sortkey;
-    uint32_t            flags;
-    viewEntity_t *      entity;
-    const Material *    material;
-    const float *       materialRegisters;
-    SubMesh *           subMesh;
-    GuiSubMesh *        guiSubMesh;
+    uint64_t                sortKey;
+    uint32_t                flags;
+    const viewEntity_t *    space;              ///< entity of this surface
+    const Material *        material;           ///< material of this surface
+    const float *           materialRegisters;
+    SubMesh *               subMesh;
 };
 
-BE_INLINE void DrawSurf::MakeSortKey(int entityNum, const Material *material) {
-    sortkey = ((material->GetSort() << 28) | (entityNum << 16) | materialManager.GetIndexByMaterial(material));
+//---------------------------------------------------
+// sortKey bits:
+// 0x0000FFFF00000000 (0~65535) : material sort
+// 0x00000000FFFF0000 (0~65535) : entity index
+// 0x000000000000FFFF (0~65535) : material index
+//---------------------------------------------------
+BE_INLINE void DrawSurf::MakeSortKey(int entityIdx, const Material *material) {
+    sortKey = (((uint64_t)material->GetSort() << 32) | ((uint64_t)entityIdx << 16) | (uint64_t)materialManager.GetIndexByMaterial(material));
 }
 
 BE_NAMESPACE_END

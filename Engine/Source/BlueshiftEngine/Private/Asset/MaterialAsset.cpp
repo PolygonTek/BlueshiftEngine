@@ -51,6 +51,15 @@ Material *MaterialAsset::GetMaterial() {
     return material;
 }
 
+void MaterialAsset::Rename(const Str &newName) {
+    Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
+    if (existingMaterial) {
+        materialManager.RenameMaterial(existingMaterial, newName);
+    }
+
+    Asset::Rename(newName);
+}
+
 void MaterialAsset::Reload() {
     Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
     if (existingMaterial) {
@@ -60,7 +69,7 @@ void MaterialAsset::Reload() {
 }
 
 void MaterialAsset::Save() {
-    Material *existingMaterial = materialManager.FindMaterial(GetAssetFilename());
+    Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
     if (existingMaterial) {
         existingMaterial->Write(existingMaterial->GetHashName());
         EmitSignal(&SIG_Modified, 0);

@@ -89,6 +89,11 @@ Image &Image::FlipX() {
 }
 
 Image &Image::AdjustBrightness(float factor) {
+    if (IsPacked() || IsCompressed() || IsFloatFormat()) {
+        assert(0);
+        return *this;
+    }
+
     if (factor > 0) {
         int bpp = Image::BytesPerPixel(format);
         byte *src = pic;
@@ -162,7 +167,7 @@ Image &Image::SwapRedAlphaRGBA8888() {
 
 Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
     Image image;
-    image.Create2D(width, height, 1, Image::RGBA_8_8_8_8, nullptr, LinearFlag);
+    image.Create2D(width, height, 1, Image::RGBA_8_8_8_8, nullptr, LinearSpaceFlag);
 
     byte *dst_ptr = image.pic;
 
@@ -269,27 +274,32 @@ void BuildMipMap(T *dst, const T *src, const int width, const int height, const 
 
 Image &Image::GenerateMipmaps() {
     if (IsCompressed()) {
-        BE_WARNLOG(L"Couldn't generate mipmaps for a compressed image.");
+        BE_WARNLOG(L"Couldn't generate mipmaps for a compressed image.\n");
+        return *this;
+    }
+
+    if (IsPacked()) {
+        BE_WARNLOG(L"Couldn't generate mipmaps for a packed format image.\n");
         return *this;
     }
 
     int numComponents = NumComponents();
 
-    for (int mipLevel = 1; mipLevel < numMipmaps; mipLevel++) {
-        int w = GetWidth(mipLevel - 1);
-        int h = GetHeight(mipLevel - 1);
-        int d = GetDepth(mipLevel - 1);
+    for (int mipLevel = 0; mipLevel < numMipmaps - 1; mipLevel++) {
+        int w = GetWidth(mipLevel);
+        int h = GetHeight(mipLevel);
+        int d = GetDepth(mipLevel);
 
-        int srcSize = GetSliceSize(mipLevel - 1, 1);
-        int dstSize = GetSliceSize(mipLevel, 1);
+        int srcSize = GetSliceSize(mipLevel, 1);
+        int dstSize = GetSliceSize(mipLevel + 1, 1);
 
         for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = GetPixels(mipLevel - 1, sliceIndex);
-            byte *dst = GetPixels(mipLevel, sliceIndex);
+            byte *src = GetPixels(mipLevel, sliceIndex);
+            byte *dst = GetPixels(mipLevel + 1, sliceIndex);
 
             if (IsFloatFormat()) {
                 if (IsHalfFormat()) {
-                    BuildMipMap((float16_t *)dst, (float16_t *)src, w, h, d, numComponents);
+                    BuildMipMap((half *)dst, (half *)src, w, h, d, numComponents);
                 } else {
                     BuildMipMap((float *)dst, (float *)src, w, h, d, numComponents);
                 }

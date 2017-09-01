@@ -25,22 +25,23 @@ struct engineShader_t {
 
 static const engineShader_t originalShaderList[] = {
     { "Shaders/drawArrayTexture" },
-    { "Shaders/gui" },
+    { "Shaders/Simple" },
     { "Shaders/selectionId" },
     { "Shaders/depth" },
     { "Shaders/constantColor" },
     { "Shaders/vertexColor" },
-    { "Shaders/amblit" },
     { "Shaders/objectMotionBlur" },
 
-    { "Shaders/lightingGeneric" },
+    { "Shaders/StandardSpec" },
+    { "Shaders/Standard" },
+    { "Shaders/Phong" },
+
+    { "Shaders/skyboxCubemap" },
+    { "Shaders/skyboxSixSided" },
 
     { "Shaders/fogLight" },
     { "Shaders/blendLight" },
     
-    //{ "Shaders/SH_projection" },
-    //{ "Shaders/SH_evalIrradianceCubeMap" },
-
     { "Shaders/postObjectMotionBlur" },
     { "Shaders/postCameraMotionBlur" },
     { "Shaders/passThru" },
@@ -65,9 +66,9 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/copyDownscaledCocToAlpha" },
     { "Shaders/copyColorAndCoc" },
     { "Shaders/applyDOF" },
-    { "Shaders/sunShaftsMaskGen" },
-    { "Shaders/sunShaftsGen" },
-    { "Shaders/sunShaftsDisplay" },
+    { "Shaders/SunShaftsMaskGen" },
+    { "Shaders/SunShaftsGen" },
+    { "Shaders/SunShaftsDisplay" },
     { "Shaders/luminanceAdaptation" },
     { "Shaders/brightFilter" },
     { "Shaders/HDRFinal" },
@@ -82,19 +83,20 @@ ShaderManager       shaderManager;
 Shader *            ShaderManager::originalShaders[MaxPredefinedOriginalShaders];
 
 Shader *            ShaderManager::drawArrayTextureShader;
-Shader *            ShaderManager::guiShader;
+Shader *            ShaderManager::simpleShader;
 Shader *            ShaderManager::selectionIdShader;
 Shader *            ShaderManager::depthShader;
 Shader *            ShaderManager::constantColorShader;
 Shader *            ShaderManager::vertexColorShader;
-Shader *            ShaderManager::amblitNoAmbientCubeMapShader;
-Shader *            ShaderManager::amblitNoBumpShader;
 Shader *            ShaderManager::objectMotionBlurShader;
-Shader *            ShaderManager::lightingDefaultShader;
+Shader *            ShaderManager::standardDefaultShader;
+Shader *            ShaderManager::standardDefaultAmbientLitShader;
+Shader *            ShaderManager::standardDefaultDirectLitShader;
+Shader *            ShaderManager::standardDefaultAmbientLitDirectLitShader;
+Shader *            ShaderManager::skyboxCubemapShader;
+Shader *            ShaderManager::skyboxSixSidedShader;
 Shader *            ShaderManager::fogLightShader;
 Shader *            ShaderManager::blendLightShader;
-Shader *            ShaderManager::shProjectionShader;
-Shader *            ShaderManager::shEvalIrradianceCubeMapShader;
 Shader *            ShaderManager::postObjectMotionBlurShader;
 Shader *            ShaderManager::postCameraMotionBlurShader;
 Shader *            ShaderManager::postPassThruShader;
@@ -169,11 +171,11 @@ void ShaderManager::InitShaders() {
 
 void ShaderManager::InitGlobalDefines() {
     if (textureManager.texture_useNormalCompression.GetBool()) {
-        if (glr.SupportsTextureCompressionLATC()) {
+        if (rhi.SupportsTextureCompressionLATC()) {
             shaderManager.AddGlobalHeader("#define LATC_NORMAL\n");
-        } else if (glr.SupportsTextureCompressionETC2()) {
+        } else if (rhi.SupportsTextureCompressionETC2()) {
             //shaderManager.AddGlobalHeader("#define ETC2_NORMAL\n");
-        } else if (glr.SupportsTextureCompressionS3TC()) {
+        } else if (rhi.SupportsTextureCompressionS3TC()) {
             shaderManager.AddGlobalHeader("#define DXT5_XGBR_NORMAL\n");
         }
     }
@@ -206,7 +208,7 @@ void ShaderManager::InitGlobalDefines() {
 
     shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
     
-    int maxShaderJoints = (glr.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);
+    int maxShaderJoints = (rhi.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);
     shaderManager.AddGlobalHeader(va("#define MAX_SHADER_JOINTSX3 %i\n", maxShaderJoints * 3));
 
     shaderManager.AddGlobalHeader(va("#define CSM_COUNT %i\n", r_CSM_count.GetInteger()));
@@ -241,7 +243,7 @@ void ShaderManager::InstantiateEngineShaders() {
 
     drawArrayTextureShader = originalShaders[DrawArrayTextureShader]->InstantiateShader(Array<Shader::Define>());
 
-    guiShader = originalShaders[GuiShader]->InstantiateShader(Array<Shader::Define>());
+    simpleShader = originalShaders[SimpleShader]->InstantiateShader(Array<Shader::Define>());
 
     selectionIdShader = originalShaders[SelectionIdShader]->InstantiateShader(Array<Shader::Define>());
 
@@ -251,29 +253,53 @@ void ShaderManager::InstantiateEngineShaders() {
     vertexColorShader = originalShaders[VertexColorShader]->InstantiateShader(Array<Shader::Define>());
 
     defineArray.Clear();
-    defineArray.Append(Shader::Define("NO_AMBIENT_CUBE_MAP", 1));
-    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
+    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
+    defineArray.Append(Shader::Define("_GLOSS_SOURCE", 0));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
-    amblitNoAmbientCubeMapShader = originalShaders[AmblitShader]->InstantiateShader(defineArray);
+    defineArray.Append(Shader::Define("_PARALLAX_SOURCE", 0));
+    defineArray.Append(Shader::Define("_OCCLUSION_SOURCE", 0));
+    defineArray.Append(Shader::Define("_EMISSION_SOURCE", 0));
+    standardDefaultShader = originalShaders[StandardSpecShader]->InstantiateShader(defineArray);
 
     defineArray.Clear();
-    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
+    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
+    defineArray.Append(Shader::Define("_GLOSS_SOURCE", 0));
     defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
-    amblitNoBumpShader = originalShaders[AmblitShader]->InstantiateShader(defineArray);
+    defineArray.Append(Shader::Define("_PARALLAX_SOURCE", 0));
+    defineArray.Append(Shader::Define("_OCCLUSION_SOURCE", 0));
+    defineArray.Append(Shader::Define("_EMISSION_SOURCE", 0));
+    standardDefaultAmbientLitShader = originalShaders[StandardSpecShader]->ambientLitVersion->InstantiateShader(defineArray);
+
+    defineArray.Clear();
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
+    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
+    defineArray.Append(Shader::Define("_GLOSS_SOURCE", 0));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_PARALLAX_SOURCE", 0));
+    defineArray.Append(Shader::Define("_OCCLUSION_SOURCE", 0));
+    defineArray.Append(Shader::Define("_EMISSION_SOURCE", 0));
+    standardDefaultDirectLitShader = originalShaders[StandardSpecShader]->directLitVersion->InstantiateShader(defineArray);
+
+    defineArray.Clear();
+    defineArray.Append(Shader::Define("_ALBEDO_SOURCE", 1));
+    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
+    defineArray.Append(Shader::Define("_GLOSS_SOURCE", 0));
+    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
+    defineArray.Append(Shader::Define("_PARALLAX_SOURCE", 0));
+    defineArray.Append(Shader::Define("_OCCLUSION_SOURCE", 0));
+    defineArray.Append(Shader::Define("_EMISSION_SOURCE", 0));
+    standardDefaultAmbientLitDirectLitShader = originalShaders[StandardSpecShader]->ambientLitDirectLitVersion->InstantiateShader(defineArray);
 
     objectMotionBlurShader = originalShaders[ObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
 
-    defineArray.Clear();
-    defineArray.Append(Shader::Define("_DIFFUSE_SOURCE", 1));
-    defineArray.Append(Shader::Define("_NORMAL_SOURCE", 0));
-    defineArray.Append(Shader::Define("_SPECULAR_SOURCE", 0));
-    lightingDefaultShader = originalShaders[LightingGenericShader]->InstantiateShader(defineArray);
+    skyboxCubemapShader = originalShaders[SkyboxCubemapShader]->InstantiateShader(Array<Shader::Define>());
+
+    skyboxSixSidedShader = originalShaders[SkyboxSixSidedShader]->InstantiateShader(Array<Shader::Define>());
 
     fogLightShader = originalShaders[FogLightShader]->InstantiateShader(Array<Shader::Define>());
     blendLightShader = originalShaders[BlendLightShader]->InstantiateShader(Array<Shader::Define>());
-
-    //shProjectionShader = originalShaders[SHProjectionShader]->InstantiateShader(Array<Shader::Define>());
-    //shEvalIrradianceCubeMapShader = originalShaders[SHEvalIrradianceCubeMapShader]->InstantiateShader(Array<Shader::Define>());
 
     postObjectMotionBlurShader = originalShaders[PostObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
     postCameraMotionBlurShader = originalShaders[PostCameraMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
@@ -333,13 +359,13 @@ void ShaderManager::ReloadShaders() {
     }
 }
 
-void ShaderManager::ReloadLightingShaders() {
+void ShaderManager::ReloadLitSurfaceShaders() {
     for (int i = 0; i < shaderHashMap.Count(); i++) {
         const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
         Shader *shader = entry->second;
 
         if (shader->IsOriginalShader()) {
-            if (shader->flags & Shader::Lighting) {
+            if (shader->flags & Shader::LitSurface) {
                 shader->Reload();
             }
         }
@@ -419,6 +445,40 @@ Shader *ShaderManager::GetShader(const char *hashName) {
     return shader;
 }
 
+void ShaderManager::RenameShader(Shader *shader, const Str &newName) {
+    if (shader->originalShader) {
+        shader = shader->originalShader;
+    }
+
+    const auto *entry = shaderHashMap.Get(shader->hashName);
+    if (entry) {
+        shaderHashMap.Remove(shader->hashName);
+
+        shader->hashName = newName;
+        shader->name = newName;
+        shader->name.StripPath();
+        shader->name.StripFileExtension();
+
+        shaderHashMap.Set(newName, shader);
+
+        for (int i = 0; i < shader->instantiatedShaders.Count(); i++) {
+            Shader *instantiatedShader = shader->instantiatedShaders[i];
+
+            shaderHashMap.Remove(instantiatedShader->hashName);
+
+            Str mangledName;
+            Shader::MangleNameWithDefineList("@" + newName, instantiatedShader->defineArray, mangledName);
+
+            instantiatedShader->hashName = mangledName;
+            instantiatedShader->name = mangledName;
+            instantiatedShader->name.StripPath();
+            instantiatedShader->name.StripFileExtension();
+
+            shaderHashMap.Set(newName, instantiatedShader);
+        }
+    }
+}
+
 void ShaderManager::ReleaseShader(Shader *shader, bool immediateDestroy) {
     if (shader->permanence) {
         return;
@@ -462,7 +522,7 @@ void ShaderManager::RemoveGlobalHeader(const char *text) {
 }
 
 void ShaderManager::Cmd_ListShaders(const CmdArgs &args) {
-    int count = 0;	
+    int count = 0;
 
     BE_LOG(L"NUM. REF. TYPE NAME\n");
 

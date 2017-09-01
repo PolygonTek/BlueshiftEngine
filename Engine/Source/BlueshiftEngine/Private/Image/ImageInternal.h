@@ -19,8 +19,8 @@ BE_NAMESPACE_BEGIN
 //--------------------------------------------------------------------------------------------------
 // various pack/unpack function type for each color format
 //--------------------------------------------------------------------------------------------------
-using UserFormatToRGBA8888Func = void (*)(const byte *src, byte *dst, int numPixels);
-using RGBA8888ToUserFormatFunc = void (*)(const byte *src, byte *dst, int numPixels);
+using ImageUnpackFunc = void (*)(const byte *src, byte *dst, int numPixels);
+using ImagePackFunc = void (*)(const byte *src, byte *dst, int numPixels);
 
 struct ImageFormatInfo {
     const char *name;
@@ -31,13 +31,33 @@ struct ImageFormatInfo {
     int blueBits;
     int alphaBits;
     int type;
-    UserFormatToRGBA8888Func unpackFunc;
-    RGBA8888ToUserFormatFunc packFunc;
+    ImageUnpackFunc unpackRGBA8888;
+    ImagePackFunc packRGBA8888;
+    ImageUnpackFunc unpackRGBA32F;
+    ImagePackFunc packRGBA32F;
 };
+
+void DecompressDXT1(const Image &srcImage, Image &dstImage);
+void DecompressDXT3(const Image &srcImage, Image &dstImage);
+void DecompressDXT5(const Image &srcImage, Image &dstImage);
+void DecompressDXN2(const Image &srcImage, Image &dstImage);
 
 void DecompressPVRTC(const Image &srcImage, Image &dstImage, int do2BitMode);
 
-void DecompressETC(const Image &srcImage, Image &dstImage, int nMode);
+void DecompressETC1(const Image &srcImage, Image &dstImage);
+void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage);
+void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage);
+void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage);
+
+void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+
+void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
+void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality);
 
 bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth, int &blockHeight);
 bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int &minHeight);

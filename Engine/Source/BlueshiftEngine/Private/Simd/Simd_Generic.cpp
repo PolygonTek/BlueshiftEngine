@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Core/Vertex.h"
 #include "Core/JointPose.h"
-#include "SIMD/Simd.h"
-#include "SIMD/Simd_Generic.h"
+#include "Simd/Simd.h"
+#include "Simd/Simd_Generic.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -227,7 +227,7 @@ void BE_FASTCALL SIMD_Generic::MultiplyJoints(Mat3x4 *result, const Mat3x4 *join
     }
 }
 
-void BE_FASTCALL SIMD_Generic::TransformVerts(VertexLightingGeneric *verts, const int numVerts, const Mat3x4 *joints, const Vec4 *base, const int *index, const int numWeights) {
+void BE_FASTCALL SIMD_Generic::TransformVerts(VertexGenericLit *verts, const int numVerts, const Mat3x4 *joints, const Vec4 *base, const int *index, const int numWeights) {
     const byte *jointsPtr = (byte *)joints;
     Vec3 v;
     int i, j;
@@ -245,9 +245,9 @@ void BE_FASTCALL SIMD_Generic::TransformVerts(VertexLightingGeneric *verts, cons
     }
 }
 
-void BE_FASTCALL SIMD_Generic::DeriveTriPlanes(Plane *planes, const VertexLightingGeneric *verts, const int numVerts, const int *indexes, const int numIndexes) {
+void BE_FASTCALL SIMD_Generic::DeriveTriPlanes(Plane *planes, const VertexGenericLit *verts, const int numVerts, const int *indexes, const int numIndexes) {
     for (int i = 0; i < numIndexes; i += 3) {
-        const VertexLightingGeneric *a, *b, *c;
+        const VertexGenericLit *a, *b, *c;
         float d0[3], d1[3], f;
         Vec3 n;
 

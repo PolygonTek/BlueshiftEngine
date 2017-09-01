@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Math/MathCommon.h"
+#include "Math/FloatConverter.h"
 #include "Math/Half.h"
 #include "Math/Complex.h"
 #include "Math/Vector.h"
@@ -24,6 +25,7 @@
 #include "Math/CQuaternion.h"
 #include "Math/Angles.h"
 #include "Math/Rotation.h"
+#include "Math/SphericalHarmonics.h"
 #include "Math/Plane.h"
 #include "Math/Sphere.h"
 #include "Math/Cylinder.h"
@@ -35,4 +37,6 @@
 #include "Math/Point.h"
 #include "Math/Rect.h"
 #include "Math/Curve.h"
+#include "Math/Hermite.h"
 #include "Math/Random.h"
+#include "Math/Hammersley.h"

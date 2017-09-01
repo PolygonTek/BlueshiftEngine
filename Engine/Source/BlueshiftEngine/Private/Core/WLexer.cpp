@@ -99,7 +99,7 @@ static const WLexer::Punctuation default_punctuations[] = {
 void WLexer::Init(int flags) {
     this->flags = flags;
     this->loaded = false;
-    this->allocated = false;
+    this->alloced = false;
     this->filename[0] = '\0';
     this->size = 0;
     this->line = 0;
@@ -110,10 +110,10 @@ void WLexer::Init(int flags) {
 }
 
 void WLexer::Free() {
-    if (this->allocated) {
+    if (this->alloced) {
         Mem_Free((void *)this->buffer);
         this->buffer = nullptr;
-        this->allocated = false;
+        this->alloced = false;
     }
 
     this->tokenAvailable = false;
@@ -131,7 +131,7 @@ bool WLexer::Load(const wchar_t *text, int size, const char *name, int startLine
     this->endPtr = &this->buffer[size];
     this->line = 1;
     this->loaded = true;
-    this->allocated = false;
+    this->alloced = false;
     this->tokenAvailable = false;
 
     return true;

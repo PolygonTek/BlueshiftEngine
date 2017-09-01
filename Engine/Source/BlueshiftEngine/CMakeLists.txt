@@ -22,6 +22,30 @@ set(ENGINE_FILES
   Public/Core/Variant.h
   Public/Core/Guid.h
   Public/Core/WStr.h
+  Public/Core/ByteOrder.h
+  Public/Core/CmdArgs.h
+  Public/Core/Cmds.h
+  Public/Core/CVars.h
+  Public/Core/Timespan.h
+  Public/Core/DateTime.h
+  Public/Core/MinMaxCurve.h
+  Public/Core/Dict.h
+  Public/Core/Expr.h
+  Public/Core/Lexer.h
+  Public/Core/WLexer.h
+  Public/Core/Task.h
+  Public/Core/Event.h
+  Public/Core/Object.h
+  Public/Core/Property.h
+  Public/Core/Serializable.h
+  Public/Core/Signal.h
+  Public/Core/SignalObject.h
+  Public/Core/DynamicAABBTree.h
+  Public/Core/JointPose.h
+  Public/Core/StrColor.h
+  Public/Core/Vec4Color.h
+  Public/Core/Vertex.h 
+
   Public/Containers/StaticArray.h
   Public/Containers/BinSearch.h
   Public/Containers/HashIndex.h
@@ -36,10 +60,12 @@ set(ENGINE_FILES
   Public/Containers/StrArray.h
   Public/Containers/StrPool.h
   Public/Containers/LinkedList.h
-  Public/Image/Image.h
-  Public/DXT/DxtCodec.h
-  Public/DXT/DxtDecoder.h
-  Public/DXT/DxtEncoder.h
+
+  Public/Image/Image.h 
+  Public/Image/DxtCodec.h
+  Public/Image/DxtDecoder.h
+  Public/Image/DxtEncoder.h
+
   Public/Math/AABB.h
   Public/Math/Angles.h
   Public/Math/Complex.h
@@ -48,9 +74,12 @@ set(ENGINE_FILES
   Public/Math/Color4.h
   Public/Math/CQuaternion.h
   Public/Math/Curve.h
+  Public/Math/Hermite.h
   Public/Math/Cylinder.h
+  Public/Math/FloatConverter.h
   Public/Math/Frustum.h
   Public/Math/Half.h
+  Public/Math/Hammersley.h
   Public/Math/Math.h
   Public/Math/MathCommon.h
   Public/Math/Matrix.h
@@ -66,12 +95,15 @@ set(ENGINE_FILES
   Public/Math/Random.h
   Public/Math/Ray.h
   Public/Math/Rect.h
+  Public/Math/RGBE9995.h
   Public/Math/Rotation.h
   Public/Math/Sphere.h
+  Public/Math/SphericalHarmonics.h
   Public/Math/Vector.h
   Public/Math/Vector2.h
   Public/Math/Vector3.h
-  Public/Math/Vector4.h  
+  Public/Math/Vector4.h
+
   Public/SIMD/Simd.h
   Public/SIMD/Simd_AVX.h
   Public/SIMD/Simd_Generic.h
@@ -86,6 +118,7 @@ set(ENGINE_FILES
   Public/SIMD/SSE/sseb.h
   Public/SIMD/SSE/ssef.h
   Public/SIMD/SSE/ssei.h
+
   Public/Platform/cpuid.h
   Public/Platform/Intrinsics.h
   Public/Platform/PlatformAtomic.h
@@ -93,25 +126,14 @@ set(ENGINE_FILES
   Public/Platform/PlatformFile.h
   Public/Platform/PlatformThread.h
   Public/Platform/PlatformTime.h
+
   Public/File/File.h
   Public/File/FileSystem.h
   Public/File/FileMapping.h
   Public/File/ZipArchiver.h
-  Public/Core/ByteOrder.h
-  Public/Core/CmdArgs.h
-  Public/Core/Cmds.h
-  Public/Core/CVars.h
-  Public/Core/Timespan.h
-  Public/Core/DateTime.h
-  Public/Core/Dict.h
-  Public/Core/Expr.h
-  Public/Core/Lexer.h
-  Public/Core/WLexer.h
-  Public/Core/Task.h
-
-  Public/Renderer/Renderer.h
-  Public/Renderer/RendererInterface.h
-  Public/Renderer/RendererGL.h
+  
+  Public/RHI/RHI.h
+  Public/RHI/RHIOpenGL.h
 
   Public/Main/Common.h
   Public/Main/GameClient.h
@@ -145,12 +167,14 @@ set(ENGINE_FILES
   Public/Components/ComHingeJoint.h
   Public/Components/ComJoint.h
   Public/Components/ComLight.h
+  Public/Components/ComReflectionProbe.h
   Public/Components/ComLogic.h
   Public/Components/ComScript.h
   Public/Components/ComMeshCollider.h
   Public/Components/ComMeshRenderer.h
   Public/Components/ComTextRenderer.h
   Public/Components/Component.h
+  Public/Components/ComParticleSystem.h
   Public/Components/ComRenderable.h
   Public/Components/ComRigidBody.h
   Public/Components/ComSensor.h
@@ -164,19 +188,13 @@ set(ENGINE_FILES
 
   Public/Game/Entity.h
   Public/Game/Prefab.h
+  Public/Game/MapRenderSettings.h
   Public/Game/GameWorld.h
   Public/Game/CastResult.h
   Public/Game/GameSettings/GameSettings.h
   Public/Game/GameSettings/TagLayerSettings.h
   Public/Game/GameSettings/PhysicsSettings.h
-  
-  Public/Core/Event.h
-  Public/Core/Object.h
-  Public/Core/Property.h
-  Public/Core/Serializable.h
-  Public/Core/Signal.h
-  Public/Core/SignalObject.h
-  
+    
   Public/Physics/Collider.h
   Public/Physics/Physics.h
   Public/Physics/PhysicsCollidable.h
@@ -197,12 +215,15 @@ set(ENGINE_FILES
   Public/Render/Anim.h
   Public/Render/BufferCache.h
   Public/Render/Font.h
+  Public/Render/ParticleMesh.h
   Public/Render/GuiMesh.h
   Public/Render/Material.h
   Public/Render/Mesh.h
   Public/Render/Render.h
   Public/Render/RenderSystem.h
   Public/Render/RenderContext.h  
+  Public/Render/ParticleSystem.h
+  Public/Render/ReflectionProbe.h
   Public/Render/SceneEntity.h
   Public/Render/SceneLight.h
   Public/Render/SceneView.h
@@ -221,12 +242,6 @@ set(ENGINE_FILES
 
   Public/Script/LuaVM.h
 
-  Public/Core/DynamicAABBTree.h
-  Public/Core/JointPose.h
-  Public/Core/StrColor.h
-  Public/Core/Vec4Color.h
-  Public/Core/Vertex.h 
-
   Private/BlueshiftEngine.cpp
   Private/Core/Checksum_CRC32.cpp
   Private/Core/Checksum_MD5.cpp
@@ -239,26 +254,30 @@ set(ENGINE_FILES
   Private/Image/Image.cpp
   Private/Image/ImageColorSpace.cpp
   Private/Image/ImageConvert.cpp
+  Private/Image/ImageCompressDXT.cpp
+  Private/Image/ImageCompressETC.cpp
+  Private/Image/ImageDecompressDXT.cpp
   Private/Image/ImageDecompressPVRTC.cpp
   Private/Image/ImageDecompressETC.cpp
   Private/Image/ImageFile.cpp
-  Private/Image/ImageFile_bmp.cpp
-  Private/Image/ImageFile_dds.cpp
-  Private/Image/ImageFile_pvr.cpp
-  Private/Image/ImageFile_hdr.cpp
-  Private/Image/ImageFile_jpg.cpp
-  Private/Image/ImageFile_pcx.cpp
-  Private/Image/ImageFile_png.cpp
-  Private/Image/ImageFile_tga.cpp
+  Private/Image/ImageFileBMP.cpp
+  Private/Image/ImageFileDDS.cpp
+  Private/Image/ImageFilePVR.cpp
+  Private/Image/ImageFileHDR.cpp
+  Private/Image/ImageFileJPG.cpp
+  Private/Image/ImageFilePCX.cpp
+  Private/Image/ImageFilePNG.cpp
+  Private/Image/ImageFileTGA.cpp
   Private/Image/ImageFormat.cpp
   Private/Image/ImageProcess.cpp
   Private/Image/ImageResize.cpp
-  Private/DXT/DxtDecoder.cpp
-  Private/DXT/DxtEncoder.cpp
+  Private/Image/DXTDecoder.cpp
+  Private/Image/DXTEncoder.cpp
   Private/Math/Vector3.cpp
   Private/Math/Vector4.cpp
   Private/Math/Color3.cpp
   Private/Math/Color4.cpp
+  Private/Math/RGBE9995.cpp
   Private/Math/AABB.cpp
   Private/Math/Frustum.cpp
   Private/Math/Matrix4.cpp
@@ -268,6 +287,7 @@ set(ENGINE_FILES
   Private/Math/OBB.cpp
   Private/Math/Rect.cpp
   Private/Math/CQuaternion.cpp
+  Private/Math/SphericalHarmonics.cpp
   Private/Math/Math.cpp
   Private/Math/Plane.cpp
   Private/Math/Rotation.cpp
@@ -305,18 +325,18 @@ set(ENGINE_FILES
   Private/Core/WLexer.cpp
   Private/Core/Task.cpp
 
-  Private/Renderer/OpenGL/OpenGL.h
-  Private/Renderer/OpenGL/OpenGL.cpp
-  Private/Renderer/RGLInternal.h
-  Private/Renderer/RGLBuffer.cpp
-  Private/Renderer/RGLCommon.cpp
-  Private/Renderer/RGLQuery.cpp
-  Private/Renderer/RGLRenderTarget.cpp
-  Private/Renderer/RGLShader.cpp
-  Private/Renderer/RGLState.cpp
-  Private/Renderer/RGLSync.cpp
-  Private/Renderer/RGLTexture.cpp
-  Private/Renderer/RGLVertexFormat.cpp
+  Private/RHIOpenGL/OpenGL/OpenGL.h
+  Private/RHIOpenGL/OpenGL/OpenGL.cpp
+  Private/RHIOpenGL/RGLInternal.h
+  Private/RHIOpenGL/RGLBuffer.cpp
+  Private/RHIOpenGL/RGLCommon.cpp
+  Private/RHIOpenGL/RGLQuery.cpp
+  Private/RHIOpenGL/RGLRenderTarget.cpp
+  Private/RHIOpenGL/RGLShader.cpp
+  Private/RHIOpenGL/RGLState.cpp
+  Private/RHIOpenGL/RGLSync.cpp
+  Private/RHIOpenGL/RGLTexture.cpp
+  Private/RHIOpenGL/RGLVertexFormat.cpp
 
   Private/Main/Common.cpp
   Private/Main/GameClient.cpp
@@ -330,6 +350,7 @@ set(ENGINE_FILES
   Private/Asset/MaterialAsset.cpp
   Private/Asset/FontAsset.cpp
   Private/Asset/MeshAsset.cpp
+  Private/Asset/ParticleSystemAsset.cpp
   Private/Asset/SkeletonAsset.cpp
   Private/Asset/AnimAsset.cpp
   Private/Asset/JointMaskAsset.cpp
@@ -365,12 +386,14 @@ set(ENGINE_FILES
   Private/Components/ComHingeJoint.cpp
   Private/Components/ComJoint.cpp
   Private/Components/ComLight.cpp
+  Private/Components/ComReflectionProbe.cpp
   Private/Components/ComLogic.cpp
   Private/Components/ComScript.cpp
   Private/Components/ComMeshCollider.cpp
   Private/Components/ComMeshRenderer.cpp
   Private/Components/ComTextRenderer.cpp
   Private/Components/Component.cpp
+  Private/Components/ComParticleSystem.cpp
   Private/Components/ComRenderable.cpp
   Private/Components/ComRigidBody.cpp
   Private/Components/ComSensor.cpp
@@ -385,6 +408,7 @@ set(ENGINE_FILES
   Private/Game/Entity.cpp
   Private/Game/Prefab.cpp
   Private/Game/PrefabManager.cpp
+  Private/Game/MapRenderSettings.cpp
   Private/Game/GameWorld.cpp
   Private/Game/CastResult.cpp
   Private/Game/GameSettings/GameSettings.cpp
@@ -429,6 +453,7 @@ set(ENGINE_FILES
   Private/Render/Anim_optimize.cpp
   Private/Render/AnimManager.cpp
   Private/Render/BufferCache.cpp
+  Private/Render/ParticleMesh.cpp
   Private/Render/GuiMesh.cpp
   Private/Render/Material.cpp
   Private/Render/MaterialManager.cpp
@@ -439,6 +464,9 @@ set(ENGINE_FILES
   Private/Render/MeshManager.cpp
   Private/Render/RenderSystem.cpp
   Private/Render/RenderContext.cpp
+  Private/Render/ParticleSystem.cpp
+  Private/Render/ParticleSystemManager.cpp
+  Private/Render/ReflectionProbe.cpp
   Private/Render/SceneEntity.cpp
   Private/Render/SceneLight.cpp
   Private/Render/SceneView.cpp
@@ -473,8 +501,10 @@ set(ENGINE_FILES
   Private/Render/RB_DebugTools.cpp
   Private/Render/RB_DrawSimple.cpp
   Private/Render/RB_Main.cpp
-  Private/Render/RB_Pass.cpp
-  Private/Render/RB_PassLit.cpp
+  Private/Render/RB_GenericPass.cpp
+  Private/Render/RB_ShadowPass.cpp
+  Private/Render/RB_ForwardBasePass.cpp
+  Private/Render/RB_ForwardAdditivePass.cpp
   Private/Render/RB_PostProcess.cpp
   Private/Render/RB_Surf.cpp
   Private/Render/RB_Surf_Render.cpp
@@ -553,6 +583,7 @@ set(ENGINE_FILES
   Private/Script/Components/LuaModule_ComStaticMeshRenderer.cpp
   Private/Script/Components/LuaModule_ComSkinnedMeshRenderer.cpp
   Private/Script/Components/LuaModule_ComTextRenderer.cpp
+  Private/Script/Components/LuaModule_ComParticleSystem.cpp
   Private/Script/Components/LuaModule_ComLight.cpp
   Private/Script/Components/LuaModule_ComCamera.cpp
   Private/Script/Components/LuaModule_ComAudioListener.cpp
@@ -659,77 +690,72 @@ endif ()
 
 if (XAMARIN AND NOT WIN32)
   list(APPEND RENDERER_FILES
-    Private/Renderer/OpenGL/OpenGLES3.h
-    Private/Renderer/OpenGL/OpenGLES3.cpp
-    Private/Renderer/OpenGL/XamarinOpenGL.h
-    Private/Renderer/OpenGL/XamarinOpenGL.cpp
-    Private/Renderer/RGLPlatformXamarin.cpp)
+    Private/RHIOpenGL/OpenGL/OpenGLES3.h
+    Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+    Private/RHIOpenGL/OpenGL/XamarinOpenGL.h
+    Private/RHIOpenGL/OpenGL/XamarinOpenGL.cpp
+    Private/RHIOpenGL/RGLPlatformXamarin.cpp)
 elseif (ANDROID)
   list(APPEND RENDERER_FILES
-    Private/Renderer/OpenGL/OpenGLES3.h
-    Private/Renderer/OpenGL/OpenGLES3.cpp
-    Private/Renderer/OpenGL/AndroidOpenGL.h
-    Private/Renderer/OpenGL/AndroidOpenGL.cpp
-    Private/Renderer/RGLPlatformAndroid.cpp)
+    Private/RHIOpenGL/OpenGL/OpenGLES3.h
+    Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+    Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
+    Private/RHIOpenGL/OpenGL/AndroidOpenGL.cpp
+    Private/RHIOpenGL/RGLPlatformAndroid.cpp)
 elseif (WIN32)
   list(APPEND RENDERER_FILES
-    Private/Renderer/OpenGL/OpenGL3.h
-    Private/Renderer/OpenGL/OpenGL3.cpp
-    Private/Renderer/OpenGL/WinOpenGL.h
-    Private/Renderer/RGLPlatformWin.cpp)
+    Private/RHIOpenGL/OpenGL/OpenGL3.h
+    Private/RHIOpenGL/OpenGL/OpenGL3.cpp
+    Private/RHIOpenGL/OpenGL/WinOpenGL.h
+    Private/RHIOpenGL/RGLPlatformWin.cpp)
 elseif (APPLE)
   if (IOS)
     list(APPEND RENDERER_FILES
-      Private/Renderer/OpenGL/OpenGLES3.h
-      Private/Renderer/OpenGL/OpenGLES3.cpp
-      Private/Renderer/OpenGL/IOSOpenGL.h
-      Private/Renderer/OpenGL/IOSOpenGL.mm
-      Private/Renderer/RGLPlatformIOS.mm)
+      Private/RHIOpenGL/OpenGL/OpenGLES3.h
+      Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+      Private/RHIOpenGL/OpenGL/IOSOpenGL.h
+      Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
+      Private/RHIOpenGL/RGLPlatformIOS.mm)
   else ()
     list(APPEND RENDERER_FILES
-      Private/Renderer/OpenGL/OpenGL3.h
-      Private/Renderer/OpenGL/OpenGL3.cpp
-      Private/Renderer/OpenGL/MacOSOpenGL.h
-      Private/Renderer/RGLPlatformMacOS.mm)
+      Private/RHIOpenGL/OpenGL/OpenGL3.h
+      Private/RHIOpenGL/OpenGL/OpenGL3.cpp
+      Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
+      Private/RHIOpenGL/RGLPlatformMacOS.mm)
   endif ()
 endif ()
 
 if (IOS)
   set(GGL_FILES
-    Private/Renderer/OpenGL/GGL/ggles3.c
-    Private/Renderer/OpenGL/GGL/ggles3.h
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
   )
 elseif (ANDROID)
   set(GGL_FILES
-    Private/Renderer/OpenGL/GGL/ggles3.c
-    Private/Renderer/OpenGL/GGL/ggles3.h
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
   )
 else ()
   set(GGL_FILES
-    Private/Renderer/OpenGL/GGL/gglcore32.c
-    Private/Renderer/OpenGL/GGL/gglcore32.h
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
   )
 
   if (WIN32)
     list(APPEND GGL_FILES
-      Private/Renderer/OpenGL/GGL/gwgl.c
-      Private/Renderer/OpenGL/GGL/gwgl.h
+      Private/RHIOpenGL/OpenGL/GGL/gwgl.c
+      Private/RHIOpenGL/OpenGL/GGL/gwgl.h
     )
   endif ()
 endif ()
-
-file(GLOB SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../Shaders/**)
 
 set(ALL_FILES
   ${ENGINE_FILES}
   ${RENDERER_FILES}
   ${GGL_FILES}
-  ${SHADER_FILES}
 )
 
 auto_source_group(${ALL_FILES})
-
-source_group("Shaders" FILES ${SHADER_FILES})
 
 include_directories(
   ${PROJECT_SOURCE_DIR}
@@ -783,6 +809,9 @@ elseif (APPLE)
   #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES")
 
   if (IOS)
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET 9.0)
+    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
+
     add_framework(${PROJECT_NAME} Foundation)
     add_framework(${PROJECT_NAME} UIKit)
     add_framework(${PROJECT_NAME} OpenGLES)
@@ -801,7 +830,7 @@ elseif (APPLE)
 endif ()
 
 target_link_libraries(${PROJECT_NAME}
-  zlib minizip libjpeg libpng libpvrt libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
+  zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
 
 if (ANDROID)
 	target_link_libraries(${PROJECT_NAME} nvidia)

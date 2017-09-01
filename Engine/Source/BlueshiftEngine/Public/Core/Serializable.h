@@ -118,6 +118,11 @@ public:
                             /// Serialize to JSON node
     void                    Serialize(Json::Value &out) const;
 
+    static const SignalDef  SIG_PropertyChanged;
+    static const SignalDef  SIG_PropertyArrayNumChanged;
+    static const SignalDef  SIG_PropertyFlagsChanged;
+    static const SignalDef  SIG_UpdateUI;
+
 protected:
     Object *                owner;
     StrHashMap<Property>    propertyHashMap; //
@@ -134,9 +139,5 @@ BE_INLINE Variant Properties::Get(const char *name) const {
     Get(name, out);
     return out;
 }
-
-extern const SignalDef      SIG_PropertyChanged;
-extern const SignalDef      SIG_PropertyArrayNumChanged;
-extern const SignalDef      SIG_PropertyFlagsChanged;
 
 BE_NAMESPACE_END

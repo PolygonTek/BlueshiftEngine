@@ -35,6 +35,7 @@ struct DbvtProxy {
     AABB                        aabb;           // bounding volume for this node
     SceneEntity *               sceneEntity;
     SceneLight *                sceneLight;
+    //ReflectionProbe *         reflectionProbe;
     Mesh *                      mesh;           // static mesh
     int32_t                     meshSurfIndex;  // sub mesh index
 };
@@ -60,7 +61,9 @@ public:
     void                        UpdateLight(int handle, const SceneLight::Parms *parms);
     void                        RemoveLight(int handle);
 
-    const AABB &                GetStaticAABB() const { return staticDbvt.GetRootFatAABB(); }
+    void                        SetSkyboxMaterial(Material *skyboxMaterial);
+
+    const AABB &                GetStaticAABB() const { return staticMeshDbvt.GetRootFatAABB(); }
 
     const GuiMesh &             GetTextMesh() const { return textMesh; }
 
@@ -99,16 +102,18 @@ public:
     void                        DebugJoints(const SceneEntity *ent, bool showJointsNames, const Mat3 &viewAxis);
 
 private:
-    viewEntity_t *              AddViewEntity(view_t *view, SceneEntity *sceneEntity);
-    viewLight_t *               AddViewLight(view_t *view, SceneLight *sceneLight);
-    void                        AddViewLightsAndEntities(view_t *view);
+    viewEntity_t *              RegisterViewEntity(view_t *view, SceneEntity *sceneEntity);
+    viewLight_t *               RegisterViewLight(view_t *view, SceneLight *sceneLight);
+    void                        FindViewLightsAndEntities(view_t *view);
     void                        AddStaticMeshes(view_t *view);
     void                        AddSkinnedMeshes(view_t *view);
+    void                        AddParticleMeshes(view_t *view);
     void                        AddTextMeshes(view_t *view);
+    void                        AddSkyBoxMeshes(view_t *view);
     void                        AddStaticMeshesForLights(view_t *view);
     void                        AddSkinnedMeshesForLights(view_t *view);
     void                        OptimizeLights(view_t *view);
-    void                        AddDrawSurf(view_t *view, viewEntity_t *entity, const Material *material, SubMesh *subMesh, GuiSubMesh *guiSubMesh, int flags);
+    void                        AddDrawSurf(view_t *view, viewEntity_t *entity, const Material *material, SubMesh *subMesh, int flags);
     void                        SortDrawSurfs(view_t *view);
 
     void                        RenderView(view_t *view);
@@ -126,13 +131,20 @@ private:
     view_t *                    currentView;
     int                         viewCount;
 
-    GuiMesh                     textMesh;
+    Material *                  skyboxMaterial;
 
-    Array<SceneEntity *>        sceneEntities;  ///< Array of scene entities
-    Array<SceneLight *>         sceneLights;    ///< Array of scene lights
+    ParticleMesh                particleMesh;       ///< particle mesh
+    GuiMesh                     textMesh;           ///< 3D text mesh
 
-    DynamicAABBTree             dynamicDbvt;    ///< Dynamic bounding volume tree for entities and lights
-    DynamicAABBTree             staticDbvt;     ///< Dynamic bounding volume tree for static meshes
+    Array<SceneEntity *>        sceneEntities;      ///< Array of scene entities
+    Array<SceneLight *>         sceneLights;        ///< Array of scene lights
+    //Array<SceneReflectionProbe *>sceneReflectionProbes;
+
+    //SceneReflectionProbe *      defaultReflectionProbe;
+
+    DynamicAABBTree             entityDbvt;         ///< Dynamic bounding volume tree for entities
+    DynamicAABBTree             staticMeshDbvt;     ///< Dynamic bounding volume tree for static meshes
+    DynamicAABBTree             lightDbvt;          ///< Dynamic bounding volume tree for lights and reflection probes
 };
 
 BE_NAMESPACE_END

@@ -20,8 +20,8 @@
 BE_NAMESPACE_BEGIN
 
 GuiMesh::GuiMesh() {
-    numVerts = 0;
-    numIndexes = 0;
+    totalVerts = 0;
+    totalIndexes = 0;
 
     coordFrame = CoordFrame2D;
 
@@ -29,12 +29,13 @@ GuiMesh::GuiMesh() {
 }
 
 void GuiMesh::Clear() {
-    numVerts = 0;
-    numIndexes = 0;
+    totalVerts = 0;
+    totalIndexes = 0;
 
     surfaces.SetCount(0, false);
 
-    PrepareNextSurf();
+    currentColor = 0xFFFFFFFF;
+    currentSurf = nullptr;
 }
 
 void GuiMesh::PrepareNextSurf() {
@@ -47,65 +48,95 @@ void GuiMesh::PrepareNextSurf() {
     memset(&newSurf.indexCache, 0, sizeof(newSurf.indexCache));
 
     if (surfaces.Count() > 0) {
-        newSurf.color = currentSurf->color;
+        newSurf.color = currentColor;
         newSurf.material = currentSurf->material;
     } else {
-        newSurf.color = 0xFFFFFFFF;
+        newSurf.color = currentColor;
         newSurf.material = materialManager.defaultMaterial;
     }
 
     surfaces.Append(newSurf);
-    currentSurf = &surfaces[surfaces.Count() - 1];
+    currentSurf = &surfaces.Last();
 }
 
 void GuiMesh::SetColor(const Color4 &rgba) {
-    currentSurf->color = rgba.ToUInt32();
+    currentColor = rgba.ToUInt32();
 }
 
 void GuiMesh::SetClipRect(const Rect &clipRect) {
     this->clipRect = clipRect;
 }
 
-void GuiMesh::DrawTris(const VertexNoLit *verts, const TriIndex *indexes, int vertCount, int indexCount, const Material *material) {
-    if (!verts || !indexes || !vertCount || !indexCount || !material) {
+void GuiMesh::DrawQuad(const VertexGeneric *verts, const Material *material) {
+    if (!verts || !material) {
         return;
     }
 
-    if (material != currentSurf->material) {
-        if (currentSurf->numVerts > 0) {
-            PrepareNextSurf();
-        }
+    if (!currentSurf || material != currentSurf->material) {
+        PrepareNextSurf();
+
         currentSurf->material = material;
     }
 
-    numVerts += vertCount;
-    numIndexes += indexCount;
+    totalVerts += 4;
+    totalIndexes += 6;
 
-    currentSurf->numVerts += vertCount;
-    currentSurf->numIndexes += indexCount;
+    currentSurf->numVerts += 4;
+    currentSurf->numIndexes += 6;
 
-    // Fills in dynamic vertex buffer
+    // Cache 4 vertices in the dynamic vertex buffer
     BufferCache vertexCache;
-    bufferCacheManager.AllocVertex(vertCount, sizeof(VertexNoLit), verts, &vertexCache);
+    bufferCacheManager.AllocVertex(4, sizeof(VertexGeneric), verts, &vertexCache);
 
-    int filledVertexCount = vertexCache.offset / sizeof(VertexNoLit);
+    // Set/Modify vertex cache info for the current surface
+    if (!bufferCacheManager.IsCached(&currentSurf->vertexCache)) {
+        currentSurf->vertexCache = vertexCache;
+    } else {
+        currentSurf->vertexCache.bytes += vertexCache.bytes;
+    }
+}
 
-    // Fills in dynamic index buffer
+void GuiMesh::CacheIndexes() {
+    if (!totalIndexes) {
+        return;
+    }
+
+    assert(totalIndexes % 6 == 0);
+    static const TriIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
+
+    // Cache all indices in the dynamic index buffer
     BufferCache indexCache;
-    bufferCacheManager.AllocIndex(indexCount, sizeof(TriIndex), nullptr, &indexCache);
-
+    bufferCacheManager.AllocIndex(totalIndexes, sizeof(TriIndex), nullptr, &indexCache);
     TriIndex *indexPointer = (TriIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
-    for (int i = 0; i < indexCount; i++) {
-        indexPointer[i] = filledVertexCount + indexes[i];
+
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        GuiMeshSurf *surf = &surfaces[surfaceIndex];
+
+        int startIndex = surf->vertexCache.offset / sizeof(VertexGeneric);
+
+        for (int index = 0; index < surf->numIndexes; index += 6) {
+            *indexPointer++ = startIndex + quadTrisIndexes[0];
+            *indexPointer++ = startIndex + quadTrisIndexes[1];
+            *indexPointer++ = startIndex + quadTrisIndexes[2];
+            *indexPointer++ = startIndex + quadTrisIndexes[3];
+            *indexPointer++ = startIndex + quadTrisIndexes[4];
+            *indexPointer++ = startIndex + quadTrisIndexes[5];
+
+            startIndex += 4;
+        }
     }
     bufferCacheManager.UnmapIndexBuffer(&indexCache);
 
-    if (!bufferCacheManager.IsCached(&currentSurf->vertexCache)) {
-        currentSurf->vertexCache = vertexCache;
-        currentSurf->indexCache = indexCache;
-    } else {
-        currentSurf->vertexCache.bytes += vertexCache.bytes;
-        currentSurf->indexCache.bytes += indexCache.bytes;
+    // Set index cache info for each surfaces
+    int offset = indexCache.offset;
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        GuiMeshSurf *surf = &surfaces[surfaceIndex];
+    
+        surf->indexCache = indexCache;
+        surf->indexCache.offset = offset;
+        surf->indexCache.bytes = sizeof(TriIndex) * surf->numIndexes;
+        
+        offset += surf->indexCache.bytes;
     }
 }
 
@@ -142,7 +173,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         return; // completely clipped away
     }    
 
-    ALIGN16(VertexNoLit) localVerts[4];
+    ALIGN16(VertexGeneric) localVerts[4];
 
     if (coordFrame == CoordFrame2D) {
         // 2D frame
@@ -156,7 +187,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
 
         localVerts[1].xyz[0] = x;
         localVerts[1].xyz[1] = y + h;
-        localVerts[1].xyz[2] = 0;        
+        localVerts[1].xyz[2] = 0;
 
         localVerts[2].xyz[0] = x + w;
         localVerts[2].xyz[1] = y + h;
@@ -189,30 +220,28 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         localVerts[3].xyz[2] = -y;
     }
 
-    const float16_t hs1 = F32toF16(s1);
-    const float16_t ht1 = F32toF16(t1);
-    const float16_t hs2 = F32toF16(s2);
-    const float16_t ht2 = F32toF16(t2);
+    const float16_t hs1 = F16Converter::FromF32(s1);
+    const float16_t ht1 = F16Converter::FromF32(t1);
+    const float16_t hs2 = F16Converter::FromF32(s2);
+    const float16_t ht2 = F16Converter::FromF32(t2);
 
     localVerts[0].st[0] = hs1;
     localVerts[0].st[1] = ht1;
-    *reinterpret_cast<uint32_t *>(localVerts[0].color) = currentSurf->color;
+    *reinterpret_cast<uint32_t *>(localVerts[0].color) = currentColor;
 
     localVerts[1].st[0] = hs1;
     localVerts[1].st[1] = ht2;
-    *reinterpret_cast<uint32_t *>(localVerts[1].color) = currentSurf->color;
+    *reinterpret_cast<uint32_t *>(localVerts[1].color) = currentColor;
 
     localVerts[2].st[0] = hs2;
     localVerts[2].st[1] = ht2;
-    *reinterpret_cast<uint32_t *>(localVerts[2].color) = currentSurf->color;
+    *reinterpret_cast<uint32_t *>(localVerts[2].color) = currentColor;
 
     localVerts[3].st[0] = hs2;
     localVerts[3].st[1] = ht1;
-    *reinterpret_cast<uint32_t *>(localVerts[3].color) = currentSurf->color;
+    *reinterpret_cast<uint32_t *>(localVerts[3].color) = currentColor;
 
-    static const TriIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
-
-    DrawTris(localVerts, quadTrisIndexes, COUNT_OF(localVerts), COUNT_OF(quadTrisIndexes), material);
+    DrawQuad(localVerts, material);
 }
 
 int GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode) {
@@ -244,7 +273,7 @@ int GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t 
     return pitch;
 }
 
-void GuiMesh::DrawText(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text) {
+void GuiMesh::Draw(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text) {
     static const int MaxTextLines = 256;
     const wchar_t *textLines[MaxTextLines];
     int lineLen[MaxTextLines];

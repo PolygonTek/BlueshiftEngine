@@ -19,6 +19,12 @@ BE_NAMESPACE_BEGIN
 
 const Quat Quat::identity(0.0f, 0.0f, 0.0f, 1.0f);
 
+Quat &Quat::SetFromAngleAxis(float angle, const Vec3 &axis) {
+    Rotation rot(Vec3::origin, axis, angle);
+    *this = rot.ToQuat();
+    return *this;
+}
+
 Quat &Quat::SetFromTwoVectors(const Vec3 &from, const Vec3 &to) {
     float c = from.Dot(to);
 

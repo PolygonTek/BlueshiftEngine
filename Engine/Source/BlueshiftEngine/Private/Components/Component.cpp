@@ -18,8 +18,6 @@
 #include "Game/Entity.h"
 
 BE_NAMESPACE_BEGIN
-
-const SignalDef     SIG_UpdateUI("updateUI");
     
 ABSTRACT_DECLARATION("Component", Component, Object)
 BEGIN_EVENTS(Component)
@@ -55,7 +53,7 @@ void Component::Event_ImmediateDestroy() {
             return;
         }
 
-        entity->EmitSignal(&SIG_ComponentRemoved, this);
+        entity->EmitSignal(&Entity::SIG_ComponentRemoved, this);
     }
 
     Object::Event_ImmediateDestroy();

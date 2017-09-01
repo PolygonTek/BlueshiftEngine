@@ -40,6 +40,7 @@
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
 #include "Components/ComTextRenderer.h"
+#include "Components/ComParticleSystem.h"
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
 #include "Components/ComSpline.h"
@@ -66,6 +67,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "num_components", &Entity::NumComponents,
         "has_component", &Entity::HasComponent,
         "component_index", &Entity::GetComponentIndex,
+        "component_by_index", static_cast<Component*(Entity::*)(int)const>(&Entity::GetComponent),
         "transform", static_cast<ComTransform*(Entity::*)()const>(&Entity::GetComponent<ComTransform>),
         "collider", static_cast<ComCollider*(Entity::*)()const>(&Entity::GetComponent<ComCollider>),
         "box_collider", static_cast<ComBoxCollider*(Entity::*)()const>(&Entity::GetComponent<ComBoxCollider>),
@@ -90,6 +92,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "static_mesh_renderer", static_cast<ComStaticMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComStaticMeshRenderer>),
         "skinned_mesh_renderer", static_cast<ComSkinnedMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComSkinnedMeshRenderer>),
         "text_renderer", static_cast<ComTextRenderer*(Entity::*)()const>(&Entity::GetComponent<ComTextRenderer>),
+        "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),
         "audio_source", static_cast<ComAudioSource*(Entity::*)()const>(&Entity::GetComponent<ComAudioSource>),
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),
@@ -99,9 +102,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "insert_component", &Entity::InsertComponent);
 
     _Entity["meta_object"] = Entity::metaObject;
-    _Entity["destroy"].SetFunc([](Entity *entity) {
-        Entity::DestroyInstance(entity);
-    });
+    _Entity["destroy"].SetFunc(Entity::DestroyInstance);
 
     using EntityPtr = Entity*;
     using EntityPtrArray = Array<EntityPtr>;

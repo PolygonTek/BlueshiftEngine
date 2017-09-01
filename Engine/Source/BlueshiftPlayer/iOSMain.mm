@@ -186,7 +186,7 @@ static IOSDevice GetIOSDeviceType() {
 
 @implementation RootViewController
 
-static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     static int t0 = 0;
     
     if (t0 == 0) {
@@ -227,13 +227,13 @@ static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
 - (void)viewWillDisappear:(BOOL)animated {
 }
 
-- (NSUInteger)supportedInterfaceOrientations {
+/*- (NSUInteger)supportedInterfaceOrientations {
     return UIInterfaceOrientationMaskLandscape;
 }
 
 - (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
     return UIInterfaceOrientationLandscapeRight;
-}
+}*/
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
@@ -362,7 +362,7 @@ static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
     
     [mainWindow makeKeyAndVisible];
 
-    BE1::gameClient.Init((__bridge BE1::Renderer::WindowHandle)mainWindow, true);
+    BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
         
     float retinaScale = [[UIScreen mainScreen] scale];
     int renderWidth = screenBounds.size.width * retinaScale;
@@ -372,8 +372,8 @@ static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
     if ((IsIPhone(deviceType) && deviceType >= IOS_IPhone6) ||
         (IsIPod(deviceType) && deviceType >= IOS_IPodTouch6) ||
         (IsIPad(deviceType) && deviceType >= IOS_IPadAir2)) {
-        screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
-        screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
+        screenScaleFactor.x = BE1::Min(1920.0f / renderWidth, 1.0f);
+        screenScaleFactor.y = BE1::Min(1080.0f / renderHeight, 1.0f);
     } else {
         //
         screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
@@ -383,7 +383,7 @@ static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
     renderHeight = renderHeight * screenScaleFactor.y;
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-    app.mainRenderContext->Init((__bridge BE1::Renderer::WindowHandle)[rootViewController view],
+    app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[rootViewController view],
                                  renderWidth, renderHeight, DisplayContext, NULL);    
     
     app.Init();

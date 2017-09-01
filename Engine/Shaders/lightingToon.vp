@@ -4,7 +4,7 @@ in vec4 in_color : COLOR;
 in vec2 in_st : TEXCOORD0;
 
 #ifdef USE_SHADOW_MAP
-$include "shadow.vp"
+$include "ShadowLibrary.vp"
 #endif
 
 out vec4 v2f_color;

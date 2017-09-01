@@ -26,15 +26,13 @@
 
 BE_NAMESPACE_BEGIN
 
-extern const SignalDef          SIG_EntityRegistered;
-extern const SignalDef          SIG_EntityUnregistered;
-
 class RenderContext;
 class RenderWorld;
 class PhysicsWorld;
 class Prefab;
 class TagLayerSettings;
 class PhysicsSettings;
+class MapRenderSettings;
 
 class GameWorld : public Object {
     friend class GameEdit;
@@ -86,7 +84,7 @@ public:
     Entity *                    FindEntity(const char *name) const;
     Entity *                    FindEntityByGuid(const Guid &guid) const;
     Entity *                    FindEntityByTag(const char *tag) const;
-    const EntityPtrArray         FindEntitiesByTag(const char *tag) const;
+    const EntityPtrArray        FindEntitiesByTag(const char *tag) const;
     Entity *                    FindEntityByRenderEntity(int renderEntityHandle) const;
 
     void                        OnEntityNameChanged(Entity *ent);
@@ -96,11 +94,11 @@ public:
     void                        RegisterEntity(Entity *ent, int spawn_entnum = -1);
     void                        UnregisterEntity(Entity *ent);
 
-    Entity *                    CloneEntity(const Entity *originalEntity);
-    
+    Entity *                    InstantiateEntity(const Entity *originalEntity);
+    Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Angles &angles);
+
     bool                        SpawnEntityFromJson(Json::Value &entityValue, Entity **ent = nullptr);
     void                        SpawnEntitiesFromJson(Json::Value &entitiesValue);
-    void                        SpawnEntitiesFromString(const char *entityString);
 
     static void                 SerializeEntityHierarchy(const Hierarchy<Entity> &entityHierarchy, Json::Value &entitiesValue);
 
@@ -129,12 +127,17 @@ public:
 
     const char *                MapName() const { return mapName.c_str(); }
 
+    void                        NewMap();
     bool                        LoadMap(const char *filename);
     void                        SaveMap(const char *filename);
+
+    static const SignalDef      SIG_EntityRegistered;
+    static const SignalDef      SIG_EntityUnregistered;
     
 private:
     void                        Event_RestartGame(const char *mapName);
 
+    Entity *                    CloneEntity(const Entity *originalEntity);
     void                        SaveObject(const char *filename, const Object *object) const;
     void                        ClearAllEntities();
     void                        UpdateEntities();   
@@ -151,6 +154,7 @@ private:
 
     Str                         mapName;
 
+    MapRenderSettings *         mapRenderSettings;
     TagLayerSettings *          tagLayerSettings; 
     PhysicsSettings *           physicsSettings;
         

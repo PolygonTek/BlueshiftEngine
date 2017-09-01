@@ -43,39 +43,43 @@ int RenderTarget::GetHeight() const {
 }
 
 void RenderTarget::Begin(int level, int sliceIndex, unsigned int mrtBitMask) const {
-    glr.BeginRenderTarget(rtHandle, level, sliceIndex, mrtBitMask);
+    rhi.BeginRenderTarget(rtHandle, level, sliceIndex, mrtBitMask);
 }
 
 void RenderTarget::End() const {
-    glr.EndRenderTarget();
+    rhi.EndRenderTarget();
 }
 
 void RenderTarget::Clear(const Color4 &clearColor, float clearDepth, int clearStencil) const {
     Begin();
 
-    glr.SetViewport(Rect(0, 0, GetWidth(), GetHeight()));
+    rhi.SetViewport(Rect(0, 0, GetWidth(), GetHeight()));
 
     int writeBits = 0;
     int clearBits = 0;
 
     if (colorTextures[0]) {
-        writeBits |= Renderer::ColorWrite | Renderer::AlphaWrite;
-        clearBits |= Renderer::ColorBit;
+        writeBits |= RHI::ColorWrite | RHI::AlphaWrite;
+        clearBits |= RHI::ColorBit;
     }
 
-    if (depthStencilTexture || flags & Renderer::HasDepthBuffer) {
-        writeBits |= Renderer::DepthWrite;
-        clearBits |= Renderer::DepthBit;
+    if (depthStencilTexture || flags & RHI::HasDepthBuffer) {
+        writeBits |= RHI::DepthWrite;
+        clearBits |= RHI::DepthBit;
     }
 
-    if ((depthStencilTexture && Image::IsDepthStencilFormat(depthStencilTexture->GetFormat())) || flags & Renderer::HasStencilBuffer) {		
-        clearBits |= Renderer::StencilBit;
+    if ((depthStencilTexture && Image::IsDepthStencilFormat(depthStencilTexture->GetFormat())) || flags & RHI::HasStencilBuffer) {		
+        clearBits |= RHI::StencilBit;
     }
 
-    glr.SetStateBits(writeBits);
-    glr.Clear(clearBits, clearColor, clearDepth, clearStencil);
+    rhi.SetStateBits(writeBits);
+    rhi.Clear(clearBits, clearColor, clearDepth, clearStencil);
 
     End();
+}
+
+void RenderTarget::Blit(const Rect &srcRect, const Rect &dstRect, RenderTarget *target, int mask, int filter) const {
+    rhi.BlitRenderTarget(rtHandle, srcRect, target->rtHandle, dstRect, mask, filter);
 }
 
 RenderTarget *RenderTarget::Create(const Texture *colorTexture, const Texture *depthStencilTexture, int flags) {
@@ -87,13 +91,13 @@ RenderTarget *RenderTarget::Create(const Texture *colorTexture, const Texture *d
 }
 
 RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTextures, const Texture *depthStencilTexture, int flags) {
-    Renderer::Handle            colorTextureHandles[MaxMultipleColorTextures] = { Renderer::NullTexture, };
-    Renderer::Handle            depthStencilTextureHandle = Renderer::NullTexture;
-    Renderer::TextureType       textureType;
-    int                         width;
-    int                         height;
-    bool                        sRGB = true;
-    bool                        colorMipmaps = false;
+    RHI::Handle         colorTextureHandles[MaxMultipleColorTextures] = { RHI::NullTexture, };
+    RHI::Handle         depthStencilTextureHandle = RHI::NullTexture;
+    RHI::TextureType    textureType;
+    int                 width;
+    int                 height;
+    bool                sRGB = true;
+    bool                colorMipmaps = false;
 
     if (numColorTextures > 0 && colorTextures[0]) {
         for (int i = 0; i < numColorTextures; i++) {
@@ -121,25 +125,25 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
         depthStencilTextureHandle = depthStencilTexture->textureHandle;
     }
 
-    Renderer::RenderTargetType rtType;
+    RHI::RenderTargetType rtType;
     switch (textureType) {
-    case Renderer::Texture2D:
-        rtType = Renderer::RenderTarget2D;
+    case RHI::Texture2D:
+        rtType = RHI::RenderTarget2D;
         break;
-    case Renderer::TextureCubeMap:
-        rtType = Renderer::RenderTargetCubeMap;
+    case RHI::TextureCubeMap:
+        rtType = RHI::RenderTargetCubeMap;
         break;
-    case Renderer::Texture2DArray:
-        rtType = Renderer::RenderTarget2DArray;
+    case RHI::Texture2DArray:
+        rtType = RHI::RenderTarget2DArray;
         break;
     default:
-        rtType = Renderer::RenderTarget2D; // to suppress a warning
+        rtType = RHI::RenderTarget2D; // to suppress a warning
         BE_FATALERROR(L"RenderTarget::Create: invalid texture for render target");
         break;
     }
     
     RenderTarget *rt = new RenderTarget;
-    rt->rtHandle = glr.CreateRenderTarget(rtType, width, height, numColorTextures, colorTextureHandles, depthStencilTextureHandle, sRGB, flags);
+    rt->rtHandle = rhi.CreateRenderTarget(rtType, width, height, numColorTextures, colorTextureHandles, depthStencilTextureHandle, sRGB, flags);
 
     int i = 0;
     for (; i < numColorTextures; i++) {
@@ -158,7 +162,7 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
 }
 
 void RenderTarget::Delete(RenderTarget *renderTarget) {
-    glr.DeleteRenderTarget(renderTarget->rtHandle);
+    rhi.DeleteRenderTarget(renderTarget->rtHandle);
     rts.RemoveIndex(rts.FindIndex(renderTarget));
     delete renderTarget;
 }

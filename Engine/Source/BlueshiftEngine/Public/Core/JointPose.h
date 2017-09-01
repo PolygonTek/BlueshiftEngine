@@ -54,7 +54,6 @@ BE_INLINE bool JointPose::Compare(const JointPose &jointPose, float q_epsilon, f
 } 
 
 BE_INLINE JointPose &JointPose::operator-=(const JointPose &baseJointPose) {
-    JointPose delta;
     // Q2 * Q1 = Q3
     // Q2 = Q3 * Q1^-1
     q = q * baseJointPose.q.Inverse();

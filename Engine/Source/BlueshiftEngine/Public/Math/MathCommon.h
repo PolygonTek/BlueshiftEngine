@@ -14,15 +14,15 @@
 
 #pragma once
 
-#define INT8_SIGN_BIT       7
-#define INT16_SIGN_BIT      15
-#define INT32_SIGN_BIT      31
-#define INT64_SIGN_BIT      63
+#define INT8_SIGN_BIT               7
+#define INT16_SIGN_BIT              15
+#define INT32_SIGN_BIT              31
+#define INT64_SIGN_BIT              63
 
-#define INT8_SIGN_MASK      (1 << INT8_SIGN_BIT)
-#define INT16_SIGN_MASK     (1 << INT16_SIGN_BIT)
-#define INT32_SIGN_MASK     (1UL << INT32_SIGN_BIT)
-#define INT64_SIGN_MASK     (1ULL << INT64_SIGN_BIT)
+#define INT8_SIGN_MASK              (1 << INT8_SIGN_BIT)
+#define INT16_SIGN_MASK             (1 << INT16_SIGN_BIT)
+#define INT32_SIGN_MASK             (1UL << INT32_SIGN_BIT)
+#define INT64_SIGN_MASK             (1ULL << INT64_SIGN_BIT)
 
 // int 비트 검출
 #define INT64_SIGNBITSET(i)         (((const uint64_t)(i)) >> INT64_SIGN_BIT)
@@ -101,17 +101,17 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 
 BE_NAMESPACE_BEGIN
 
-template <typename T> BE_INLINE T    Sign(const T v) { return (v > 0) ? 1 : ((v < 0) ? -1 : 0 ); }
-template <typename T> BE_INLINE T    Square(const T &v) { return v * v; }
-template <typename T> BE_INLINE T    Cube(const T &v) { return v * v * v; }
+template <typename T> BE_INLINE T   Sign(const T v) { return (v > 0) ? 1 : ((v < 0) ? -1 : 0 ); }
+template <typename T> BE_INLINE T   Square(const T &v) { return v * v; }
+template <typename T> BE_INLINE T   Cube(const T &v) { return v * v * v; }
 
-template <typename T> BE_INLINE T    InchesToMetres(const T value) { return static_cast<T>(value * 0.0254f); }
-template <typename T> BE_INLINE T    MetresToInches(const T value) { return static_cast<T>(value * 39.37f); }
-template <typename T> BE_INLINE T    InchesToFeet(const T value) { return static_cast<T>(value / 12.f); }
-template <typename T> BE_INLINE T    FeetToMiles(const T value) { return static_cast<T>(value / 5280.f); }
-template <typename T> BE_INLINE T    FeetToInches(const T value) { return static_cast<T>(value * 12.f); }
-template <typename T> BE_INLINE T    MetresToFeet(const T value) { return InchesToFeet(MetresToInches(value)); }
-template <typename T> BE_INLINE T    FeetToMetres(const T value) { return FeetToInches(InchesToMetres(value)); }
+template <typename T> BE_INLINE T   InchesToMetres(const T value) { return static_cast<T>(value * 0.0254f); }
+template <typename T> BE_INLINE T   MetresToInches(const T value) { return static_cast<T>(value * 39.37f); }
+template <typename T> BE_INLINE T   InchesToFeet(const T value) { return static_cast<T>(value / 12.f); }
+template <typename T> BE_INLINE T   FeetToMiles(const T value) { return static_cast<T>(value / 5280.f); }
+template <typename T> BE_INLINE T   FeetToInches(const T value) { return static_cast<T>(value * 12.f); }
+template <typename T> BE_INLINE T   MetresToFeet(const T value) { return InchesToFeet(MetresToInches(value)); }
+template <typename T> BE_INLINE T   FeetToMetres(const T value) { return FeetToInches(InchesToMetres(value)); }
 
 template <unsigned int Value>
 struct Factorial {
@@ -123,40 +123,6 @@ struct Factorial<0> {
     enum { answer = 1 };
 };
 
-// float16_t
-typedef unsigned short float16_t;
-
-/// Convert a 16 bit half float value to 32bit float value
-BE_INLINE float F16toF32(float16_t x) {
-    // GPU half-float bit patterns
-    int e = (x & 32767) >> 10;
-    int m = (x & 1023);
-    int s = (x & 32768) ? -1 : 1;
-
-    if (e > 0 && e < 31) {
-        return s * powf(2.0f, (e - 15.0f)) * (1 + m / 1024.0f);
-    } else if (m == 0) {
-        return s * 0.0f;
-    }
-    return s * powf(2.0f, -14.0f) * (m / 1024.0f);
-}
-
-/// Convert a 32bit float value to 16 bit half float value
-BE_INLINE float16_t F32toF16(float x) {
-    const uint32_t f = *(uint32_t *)(&x);
-    const int32_t e = ((f & 0x7F800000) >> 23) - 112;
-    const uint32_t s = (f & 0x80000000) >> 16;
-    const uint32_t m = (f & 0x007FFFFF);
-
-    if (e <= 0) {
-        return 0;
-    }
-    if (e > 30) {
-        return (float16_t)(s | 0x7BFF);
-    }
-    return (float16_t)(s | (e << 10) | (m >> 13));
-}
- 
 class BE_API Math {
 public:
     static const float          Pi;                         ///< pi
@@ -226,9 +192,9 @@ public:
     static double               Cos64(float a);
 
                                 /// Sine and cosine with 32 bits precision
-    static void                 SinCos(float a, float &s, float &c);	
+    static void                 SinCos(float a, float &s, float &c);
                                 /// Sine and cosine with 16 bits precision
-    static void                 SinCos16(float a, float &s, float &c);	
+    static void                 SinCos16(float a, float &s, float &c);
                                 /// Sine and cosine with 64 bits precision
     static void                 SinCos64(float a, double &s, double &c);
 
@@ -321,6 +287,8 @@ public:
     static float                Floor(float f);
                                 /// Returns the smallest integer that is greater than or equal to the given value
     static float                Ceil(float f);
+                                /// Returns the fraction component (part after the decimal)
+    static float                Fract(float f);
                                 /// Returns the nearest integer
     static float                Rint(float f);
                                 /// Float to int conversion
@@ -915,6 +883,10 @@ BE_INLINE float Math::Ceil(float f) {
     return ceilf(f);
 }
 
+BE_INLINE float Math::Fract(float f) {
+    return f - floorf(f);
+}
+
 BE_INLINE float Math::Rint(float f) {
     return floorf(f + 0.5f);
 }
@@ -1037,6 +1009,88 @@ BE_INLINE T	Cerp(const T p0, const T p1, const T p2, const T p3, float t) {
     T c = p2 - p0;
     T d = 2 * p1;
     return (t * (t * (t * a + b) + c) + d) * 0.5f;
+}
+
+// Fixed point linear interpolation
+// f(x) = ax + b
+// p0: f(0)
+// p1: f(1)
+// t: interpolater in range [0, 255]
+BE_INLINE int FixedLerp(int p0, int p1, int t) {
+    // p0 : f(0) = b
+    // p1 : f(1) = a + b
+    //
+    // a = p1 - p0
+    // b = p0
+    return ((p0 << 8) + (p1 - p0) * t) >> 8;
+}
+
+// Fixed point cubic interpolation
+// f(x) = ax^3 + bx^2 + cx + d
+// p0: f(-1)
+// p1: f(0)
+// p2: f(1)
+// p3: f(2)
+// t: interpolater in range [0, 127]
+BE_INLINE int FixedCerp(int p0, int p1, int p2, int p3, int t) {
+#if 0
+    // Hermite cubic spline with 4 points
+    // f'(x) = 3ax^2 + 2bx + c
+    //
+    // p1 : f(0) = d
+    // p2 : f(1) = a + b + c + d 
+    // p2 - p0 : f'(0) = c
+    // p3 - p1 : f'(1) = 3a + 2b + c
+    //
+    // |  0  0  0  1 | | a |   | p1      |
+    // |  1  1  1  1 | | b | = | p2      |
+    // |  0  0  1  0 | | c |   | p2 - p0 |
+    // |  3  2  1  0 | | d |   | p3 - p1 |
+    //
+    // |  2 -2  1  1 | | p1      |   | a | 
+    // | -3  3 -2 -1 | | p2      | = | b |
+    // |  0  0  1  0 | | p2 - p0 |   | c |
+    // |  1  0  0  0 | | p3 - p1 |   | d |
+    //
+    // a = 2*p1 - 2*p2 + (p2 - p0) + (p3 - p1) = p3 - p2 + p1 - p0
+    // b = -3*p1 + 3*p2 - 2*(p2 - p0) - (p3 - p1) = -p3 + p2 - 2*p1 + 2*p0
+    // c = p2 - p0
+    // d = p1
+    int p01 = p0 - p1;
+    int a = (p3 - p2) - p01;
+    int b = p01 - a;
+    int c = p2 - p0;
+    int d = p1;
+    return (t * (t * (t * a + (b << 7)) + (c << 14)) + (d << 21)) >> 21;
+#else
+    // Catmull-Rom cubic spline with 4 points
+    // f'(x) = 3ax^2 + 2bx + c
+    //
+    // p1 : f(0) = d
+    // p2 : f(1) = a + b + c + d
+    // (p2 - p0)/2 : f'(0) = c
+    // (p3 - p1)/2 : f'(1) = 3a + 2b + c
+    //
+    // |  0  0  0  1 | | a |   | p1      |
+    // |  1  1  1  1 | | b | = | p2      |
+    // |  0  0  2  0 | | c |   | p2 - p0 |
+    // |  6  4  2  0 | | d |   | p3 - p1 |
+    //
+    //    |  4 -4  1  1 | | p1      |   | a | 
+    // 1/2| -6  6 -2 -1 | | p2      | = | b |
+    //    |  0  0  1  0 | | p2 - p0 |   | c |
+    //    |  2  0  0  0 | | p3 - p1 |   | d |
+    //
+    // a = 4*p1 - 4*p2 + (p2 - p0) + (p3 - p1) = (p3 - 3*p2 + 3*p1 - p0) / 2
+    // b = -6*p1 + 6*p2 - 2*(p2 - p0) - (p3 - p1) = (-p3 + 4*p2 - 5p1 + 2*p0) / 2
+    // c = (p2 - p0) / 2
+    // d = p1
+    int a = p3 - 3 * p2 + 3 * p1 - p0;
+    int b = p2 - 2 * p1 + p0 - a;
+    int c = p2 - p0;
+    int d = 2 * p1;
+    return (t * (t * (t * a + (b << 7)) + (c << 14)) + (d << 21)) >> 22;
+#endif
 }
 
 BE_NAMESPACE_END

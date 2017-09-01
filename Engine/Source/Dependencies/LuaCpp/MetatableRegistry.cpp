@@ -95,7 +95,7 @@ std::string MetatableRegistry::GetTypeName(lua_State *l, int index) {
 }
 
 // Check type at the given index
-bool MetatableRegistry::IsType(lua_State *l, TypeID type, int index) {
+bool MetatableRegistry::IsType(lua_State *l, const TypeID type, int index) {
     bool equal = true;
 
     if (lua_getmetatable(l, index)) {

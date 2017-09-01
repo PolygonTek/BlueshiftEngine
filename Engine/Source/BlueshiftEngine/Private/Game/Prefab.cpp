@@ -39,6 +39,8 @@ void Prefab::Clear() {
 }
 
 bool Prefab::Create(const Json::Value &entitiesValue) {
+    Clear();
+
     for (int i = 0; i < entitiesValue.size(); i++) {
         Json::Value entityValue = entitiesValue[i];
         const char *classname = entityValue["classname"].asCString();

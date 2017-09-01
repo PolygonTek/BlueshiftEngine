@@ -30,7 +30,10 @@ class BE_API Complex {
 public:
     /// The default constructor does not initialize any members of this class.
     Complex() {}
+    /// Set complex number with the given real part and imagenary part.
     Complex(const float re, const float im);
+    /// Assginment operator
+    Complex &operator=(const Complex &rhs);
 
     void                    Set(const float re, const float im);
     void                    SetZero();
@@ -40,7 +43,6 @@ public:
     float                   operator[](int index) const;
     float &                 operator[](int index);
 
-    Complex &               operator=(const Complex &rhs);
     Complex &               operator*=(const Complex &rhs);
     Complex &               operator*=(const float rhs);
     Complex &               operator/=(const Complex &rhs);
@@ -98,6 +100,12 @@ BE_INLINE Complex::Complex(const float re, const float im) {
     this->im = im;
 }
 
+BE_INLINE Complex &Complex::operator=(const Complex &rhs) {
+    re = rhs.re;
+    im = rhs.im;
+    return *this;
+}
+
 BE_INLINE void Complex::Set(const float re, const float im) {
     this->re = re;
     this->im = im;
@@ -123,12 +131,6 @@ BE_INLINE float Complex::operator[](int index) const {
 BE_INLINE float& Complex::operator[](int index) {
     assert(index >= 0 && index < 2);
     return (&re)[index];
-}
-
-BE_INLINE Complex &Complex::operator=(const Complex &rhs) {
-    re = rhs.re;
-    im = rhs.im;
-    return *this;
 }
 
 BE_INLINE Complex &Complex::operator*=(const Complex &rhs) {

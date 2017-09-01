@@ -26,7 +26,7 @@
 #include "Math/Math.h"
 #include "Core/Property.h"
 #include "Core/CmdArgs.h"
-#include "Renderer/RendererInterface.h"
+#include "RHI/RHI.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -38,7 +38,8 @@ class Shader {
 
 public:
     enum Flag {
-        Lighting                = BIT(0),
+        LitSurface              = BIT(0),
+        SkySurface              = BIT(1),
         LoadedFromFile          = BIT(8)
     };
 
@@ -52,7 +53,7 @@ public:
         ModelViewMatrixTransposeConst,
         ProjectionMatrixConst,
         ProjectionMatrixTransposeConst,
-        ModelViewProjectionMatrixConst,	
+        ModelViewProjectionMatrixConst,
         ModelViewProjectionMatrixTransposeConst,
         WorldMatrixSConst,
         WorldMatrixTConst,
@@ -69,17 +70,15 @@ public:
     };
 
     enum BuiltInSampler {
-        DiffuseMapSampler,
-        SpecularMapSampler,
-        BumpMapSampler,
+        AlbedoMapSampler,
+        NormalMapSampler,
         MaxBuiltInSamplers
     };
 
     struct Define {
         Define() {}
-        Define(const char *name, int value) { this->name = name; this->value = value; }
-
-        Define &            operator=(const Define &rhs) { this->name = rhs.name; this->value = rhs.value; return *this;  }
+        Define(const char *name, int value) : name(name), value(value) {}
+        Define &operator=(const Define &rhs) { this->name = rhs.name; this->value = rhs.value; return *this;  }
 
         Str                 name;
         int                 value;
@@ -102,11 +101,23 @@ public:
     bool                    IsOriginalShader() const { return !originalShader; }
     bool                    IsInstantiatedShader() const { return !!originalShader; }
 
+    int                     GetFlags() const;
+
                             /// Create instantiated shader
     Shader *                InstantiateShader(const Array<Define> &defineArray);
 
                             /// Reinstantiate itself
     void                    Reinstantiate();
+
+    Shader *                GetPerforatedVersion();
+    Shader *                GetPremulAlphaVersion();
+    Shader *                GetAmbientLitVersion();
+    Shader *                GetDirectLitVersion();
+    Shader *                GetAmbientLitDirectLitVersion();
+    Shader *                GetParallelShadowVersion();
+    Shader *                GetSpotShadowVersion();
+    Shader *                GetPointShadowVersion();
+    Shader *                GetGPUSkinningVersion(int index);
 
     void                    Bind() const;
 
@@ -130,18 +141,18 @@ public:
     void                    SetConstant4f(int index, const Vec4 &constant) const;
     void                    SetConstant1f(const char *name, const float constant) const;
     void                    SetConstant2f(const char *name, const float *constant) const;
-    void                    SetConstant3f(const char *name, const float *constant) const;	
+    void                    SetConstant3f(const char *name, const float *constant) const;
     void                    SetConstant4f(const char *name, const float *constant) const;
     void                    SetConstant2f(const char *name, const Vec2 &constant) const;
     void                    SetConstant3f(const char *name, const Vec3 &constant) const;
     void                    SetConstant4f(const char *name, const Vec4 &constant) const;
 
-    void                    SetConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const;	
-    void                    SetConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const;	
-    void                    SetConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const;	
-    void                    SetConstant2x2f(const char *name, bool rowmajor, const Mat2 &constant) const;	
-    void                    SetConstant3x3f(const char *name, bool rowmajor, const Mat3 &constant) const;	
-    void                    SetConstant4x4f(const char *name, bool rowmajor, const Mat4 &constant) const;	
+    void                    SetConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const;
+    void                    SetConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const;
+    void                    SetConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const;
+    void                    SetConstant2x2f(const char *name, bool rowmajor, const Mat2 &constant) const;
+    void                    SetConstant3x3f(const char *name, bool rowmajor, const Mat3 &constant) const;
+    void                    SetConstant4x4f(const char *name, bool rowmajor, const Mat4 &constant) const;
 
     void                    SetConstantArray1i(int index, int num, const int *constant) const;
     void                    SetConstantArray2i(int index, int num, const int *constant) const;
@@ -155,27 +166,27 @@ public:
     void                    SetConstantArray1f(int index, int num, const float *constant) const;
     void                    SetConstantArray2f(int index, int num, const float *constant) const;
     void                    SetConstantArray3f(int index, int num, const float *constant) const;
-    void                    SetConstantArray4f(int index, int num, const float *constant) const;	
-    void                    SetConstantArray2f(int index, int num, const Vec2 *constant) const;	
-    void                    SetConstantArray3f(int index, int num, const Vec3 *constant) const;	
+    void                    SetConstantArray4f(int index, int num, const float *constant) const;
+    void                    SetConstantArray2f(int index, int num, const Vec2 *constant) const;
+    void                    SetConstantArray3f(int index, int num, const Vec3 *constant) const;
     void                    SetConstantArray4f(int index, int num, const Vec4 *constant) const;
     void                    SetConstantArray1f(const char *name, int num, const float *constant) const;
     void                    SetConstantArray2f(const char *name, int num, const float *constant) const;
     void                    SetConstantArray3f(const char *name, int num, const float *constant) const;
-    void                    SetConstantArray4f(const char *name, int num, const float *constant) const;	
-    void                    SetConstantArray2f(const char *name, int num, const Vec2 *constant) const;	
-    void                    SetConstantArray3f(const char *name, int num, const Vec3 *constant) const;	
+    void                    SetConstantArray4f(const char *name, int num, const float *constant) const;
+    void                    SetConstantArray2f(const char *name, int num, const Vec2 *constant) const;
+    void                    SetConstantArray3f(const char *name, int num, const Vec3 *constant) const;
     void                    SetConstantArray4f(const char *name, int num, const Vec4 *constant) const;
 
     void                    SetConstantArray2x2f(int index, bool rowmajor, int num, const Mat2 *constant) const;
     void                    SetConstantArray3x3f(int index, bool rowmajor, int num, const Mat3 *constant) const;
-    void                    SetConstantArray4x4f(int index, bool rowmajor, int num, const Mat4 *constant) const;			
+    void                    SetConstantArray4x4f(int index, bool rowmajor, int num, const Mat4 *constant) const;
     void                    SetConstantArray2x2f(const char *name, bool rowmajor, int num, const Mat2 *constant) const;
     void                    SetConstantArray3x3f(const char *name, bool rowmajor, int num, const Mat3 *constant) const;
-    void                    SetConstantArray4x4f(const char *name, bool rowmajor, int num, const Mat4 *constant) const;	
+    void                    SetConstantArray4x4f(const char *name, bool rowmajor, int num, const Mat4 *constant) const;
 
-    void                    SetConstantBuffer(int index, Renderer::Handle bufferHandle) const;
-    void                    SetConstantBuffer(const char *name, Renderer::Handle bufferHandle) const;
+    void                    SetConstantBuffer(int index, RHI::Handle bufferHandle) const;
+    void                    SetConstantBuffer(const char *name, RHI::Handle bufferHandle) const;
 
     int                     GetSamplerUnit(const char *name) const;
 
@@ -195,15 +206,17 @@ public:
 
 private:
     bool                    ParseProperties(Lexer &lexer);
-    void                    Finish();
     Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinning);
     bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText);
     bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion);
-    bool                    Instantiate(const Array<Define> &defineArray);	// internal function of instantiate
+    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion);
+    bool                    Instantiate(const Array<Define> &defineArray);  // internal function of instantiate
 
-    bool                    Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir);
+    bool                    Finish(bool generatePerforatedVersion, bool genereatePremulAlphaVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir);
     bool                    ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
     bool                    ProcessIncludeRecursive(const char *baseDir, Str &text) const;
+
+    static const char *     MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName);
 
     Str                     hashName;
     Str                     name;
@@ -213,7 +226,7 @@ private:
     bool                    permanence;
     int                     frameCount;
 
-    Renderer::Handle        shaderHandle;
+    RHI::Handle             shaderHandle;
     Str                     vsText;                 ///< Vertex shader souce code text
     Str                     fsText;                 ///< Fragment shader source code text
     bool                    hasVertexShader;
@@ -222,13 +235,16 @@ private:
     int                     builtInConstantLocations[MaxBuiltInConstants];
     int                     builtInSamplerUnits[MaxBuiltInSamplers];
 
-    Array<Define>           defineArray;             ///< Define list for instantiated shader
+    Array<Define>           defineArray;            ///< Define list for instantiated shader
 
     Shader *                originalShader;         ///< Original shader pointer. Instantiated shader has a pointer to the original shader
     Array<Shader *>         instantiatedShaders;
 
     Shader *                perforatedVersion;
+    Shader *                premulAlphaVersion;
     Shader *                ambientLitVersion;
+    Shader *                directLitVersion;
+    Shader *                ambientLitDirectLitVersion;
     Shader *                parallelShadowVersion;
     Shader *                spotShadowVersion;
     Shader *                pointShadowVersion;
@@ -242,11 +258,14 @@ BE_INLINE Shader::Shader() {
     refCount                = 0;
     permanence              = false;
     frameCount              = 0; 
-    shaderHandle            = Renderer::NullShader;
+    shaderHandle            = RHI::NullShader;
     hasVertexShader         = false;
     hasFragmentShader       = false;
     perforatedVersion       = nullptr;
+    premulAlphaVersion      = nullptr;
     ambientLitVersion       = nullptr;
+    directLitVersion        = nullptr;
+    ambientLitDirectLitVersion = nullptr;
     parallelShadowVersion   = nullptr;
     spotShadowVersion       = nullptr;
     pointShadowVersion      = nullptr;
@@ -266,22 +285,23 @@ class ShaderManager {
 public:
     enum PredefinedOriginalShader {
         DrawArrayTextureShader,
-        GuiShader,
+        SimpleShader,
         SelectionIdShader,
         DepthShader,
         ConstantColorShader,
         VertexColorShader,
-        AmblitShader,
         ObjectMotionBlurShader,
-        LightingGenericShader,
+        StandardSpecShader,
+        StandardShader,
+        PhongShader,
+        SkyboxCubemapShader,
+        SkyboxSixSidedShader,
         FogLightShader,
-        BlendLightShader,	
-        //SHProjectionShader,
-        //SHEvalIrradianceCubeMapShader,
+        BlendLightShader,
         PostObjectMotionBlurShader,
         PostCameraMotionBlurShader,
-        PostPassThruShader,	
-        PostPassThruColorShader,	
+        PostPassThruShader,
+        PostPassThruColorShader,
         Downscale2x2Shader,
         Downscale4x4Shader,
         Downscale4x4LogLumShader,
@@ -295,8 +315,8 @@ public:
         BlurAlphaMaskedBilinear8xShader,
         KawaseBlurShader,
         RadialBlurShader,
-        AoBlurShader,		
-        PostColorTransformShader,	
+        AoBlurShader,
+        PostColorTransformShader,
         PostGammaCorrectionShader,
         LinearizeDepthShader,
         CopyDownscaledCocToAlphaShader,
@@ -322,12 +342,14 @@ public:
     Shader *                FindShader(const char *name) const;
     Shader *                GetShader(const char *name);
 
+    void                    RenameShader(Shader *shader, const Str &newName);
+
     void                    ReleaseShader(Shader *shader, bool immediateDestroy = false);
     void                    DestroyShader(Shader *shader);
     void                    DestroyUnusedShaders();
 
     void                    ReloadShaders();
-    void                    ReloadLightingShaders();
+    void                    ReloadLitSurfaceShaders();
 
     bool                    FindGlobalHeader(const char *text) const;
     void                    AddGlobalHeader(const char *text);
@@ -336,19 +358,20 @@ public:
     static Shader *         originalShaders[MaxPredefinedOriginalShaders];
 
     static Shader *         drawArrayTextureShader;    
-    static Shader *         guiShader;
+    static Shader *         simpleShader;
     static Shader *         selectionIdShader;
     static Shader *         depthShader;
     static Shader *         constantColorShader;
     static Shader *         vertexColorShader;
-    static Shader *         amblitNoAmbientCubeMapShader;
-    static Shader *         amblitNoBumpShader;
     static Shader *         objectMotionBlurShader;
-    static Shader *         lightingDefaultShader;
+    static Shader *         standardDefaultShader;
+    static Shader *         standardDefaultAmbientLitShader;
+    static Shader *         standardDefaultDirectLitShader;
+    static Shader *         standardDefaultAmbientLitDirectLitShader;
+    static Shader *         skyboxCubemapShader;
+    static Shader *         skyboxSixSidedShader;
     static Shader *         fogLightShader;
     static Shader *         blendLightShader;
-    static Shader *         shProjectionShader;
-    static Shader *         shEvalIrradianceCubeMapShader;
     static Shader *         postObjectMotionBlurShader;
     static Shader *         postCameraMotionBlurShader;
     static Shader *         postPassThruShader;	

@@ -17,11 +17,11 @@
 #include "Render/Render.h"
 #include "BModel.h"
 #include "File/FileSystem.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 
-bool Anim::LoadBAnim(const char *filename) {
+bool Anim::LoadBinaryAnim(const char *filename) {
     byte *data;
     fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
@@ -32,7 +32,7 @@ bool Anim::LoadBAnim(const char *filename) {
     byte *ptr = data + sizeof(BAnimHeader);
     
     if (bAnimHeader->ident != BANIM_IDENT) {
-        BE_WARNLOG(L"Anim::LoadBAnim: bad format %hs\n", filename);
+        BE_WARNLOG(L"Anim::LoadBinaryAnim: bad format %hs\n", filename);
         fileSystem.FreeFile(data);
         return false;
     }
@@ -109,10 +109,10 @@ bool Anim::LoadBAnim(const char *filename) {
     return true;
 }
 
-void Anim::WriteBAnim(const char *filename) {
+void Anim::WriteBinaryAnim(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Anim::WriteBAnim: file open error\n");
+        BE_WARNLOG(L"Anim::WriteBinaryAnim: file open error\n");
         return;
     }
 

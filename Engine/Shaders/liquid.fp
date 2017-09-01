@@ -4,15 +4,15 @@ in vec4 v2f_color;
 in vec2 v2f_texCoord;
 in vec3 v2f_eyeVector;
 in vec2 v2f_distortion;
-in vec3 v2f_tangentToWorldMatrixS;
-in vec3 v2f_tangentToWorldMatrixT;
-in vec3 v2f_tangentToWorldMatrixR;
+in vec3 v2f_toWorldS;
+in vec3 v2f_toWorldT;
+in vec3 v2f_toWorldR;
 
 out vec4 o_fragColor : FRAG_COLOR;
 
-uniform sampler2D bumpMap;
-uniform sampler2D bumpMapNext;
-uniform sampler2D diffuseMap;
+uniform sampler2D normalMap;
+uniform sampler2D normalMapNext;
+uniform sampler2D albedoMap;
 uniform samplerCube envCubeMap;
 uniform sampler2D sunSpecularMap;
 uniform sampler2DRect currentRenderMap;
@@ -30,13 +30,13 @@ uniform vec3 sunColor;
 
 void main() {
 #ifdef INTERPOLATE
-	vec3 b1 = getNormal(bumpMap, v2f_texCoord);
-	vec3 b2 = getNormal(bumpMapNext, v2f_texCoord);
+	vec3 b1 = getNormal(normalMap, v2f_texCoord);
+	vec3 b2 = getNormal(normalMapNext, v2f_texCoord);
 	vec3 N = mix(b1, b2, lerpFactor);
 	//N = smoothstep(b1, b2, N);
 	//N = N * b1 + (1.0 - N) * b2;
 #else
-	vec3 N = getNormal(bumpMap, v2f_texCoord);
+	vec3 N = getNormal(normalMap, v2f_texCoord);
 #endif
 
 	N.xy *= liquidDistortion.z;
@@ -45,9 +45,9 @@ void main() {
 	vec3 E = normalize(v2f_eyeVector.xyz);
 	vec3 R = reflect(E, N);
 	vec3 worldR;
-	worldR.x = dot(v2f_tangentToWorldMatrixS, R);
-	worldR.y = dot(v2f_tangentToWorldMatrixT, R);
-	worldR.z = dot(v2f_tangentToWorldMatrixR, R);
+	worldR.x = dot(v2f_toWorldS, R);
+	worldR.y = dot(v2f_toWorldT, R);
+	worldR.z = dot(v2f_toWorldR, R);
 	worldR = normalize(worldR);
 
 #ifdef SUN
@@ -67,7 +67,7 @@ void main() {
 
 	vec3 refraction = texRect(currentRenderMap, screenST).xyz * liquidTint;
 	vec3 reflection = texCUBE(envCubeMap, worldR).xyz;
-	vec4 diffuseColor = tex2D(diffuseMap, v2f_texCoord);
+	vec4 diffuseColor = tex2D(albedoMap, v2f_texCoord);
 
 	float RF = pow(fresnel(-E, N, fresnelConstant) * reflectness, 2.2);
 	vec3 Cd = mix(refraction, reflection, RF);

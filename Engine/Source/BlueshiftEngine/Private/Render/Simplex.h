@@ -7,7 +7,7 @@
 
     The following array describes each character in a way suitable for a C 
     program. The characters range from space (32) to tidle (126), that is, 95 
-    characters.	
+    characters.
     For each character the first item is the number of vertices needed to 
     describe the character. The second item is the horizontal spacing of the 
     character, the distance from the bottom left to the bottom right. The 

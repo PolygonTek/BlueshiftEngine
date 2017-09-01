@@ -40,10 +40,10 @@ class SubMesh;
 
 class MeshSurf {
 public:
-    int32_t                 materialIndex;
     SubMesh *               subMesh;
-    int32_t                 viewCount;
     DrawSurf *              drawSurf;
+    int32_t                 materialIndex;
+    int32_t                 viewCount;
 };
 
 class Mesh {
@@ -72,11 +72,12 @@ public:
     };    
 
     enum FinishFlag {
-        ComputeNormalsFlag  = BIT(0),
-        ComputeTangentsFlag = BIT(1),
-        UseUnsmoothedTangentsFlag = BIT(2),
-        SortAndMergeFlag    = BIT(3),
-        OptimizeIndicesFlag = BIT(4)
+        ComputeAABBFlag     = BIT(0),
+        ComputeNormalsFlag  = BIT(1),
+        ComputeTangentsFlag = BIT(2),
+        UseUnsmoothedTangentsFlag = BIT(3),
+        SortAndMergeFlag    = BIT(4),
+        OptimizeIndicesFlag = BIT(5)
     };
 
     Mesh();
@@ -110,7 +111,7 @@ public:
     MeshSurf *              AllocSurface(int numVerts, int numIndexes) const;
     void                    FinishSurfaces(int finishFlags = 0);
 
-    void                    TransformVerts(const Mat3 &rotation, const Vec3 &translation);	
+    void                    TransformVerts(const Mat3 &rotation, const Vec3 &translation);
 
     void                    OptimizeIndexedTriangles();
 
@@ -129,7 +130,7 @@ public:
     void                    CreateDefaultBox();
     void                    CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int numSegments);
     void                    CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents);
-    void                    CreateSphere(const Vec3 &origin, float radius, int numSegments);
+    void                    CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int numSegments);
     void                    CreateGeosphere(const Vec3 &origin, float radius, int numTess);
     void                    CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
     void                    CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
@@ -153,10 +154,10 @@ private:
     void                    ComputeTangents(bool includeNormals, bool useUnsmoothedTangents);
     void                    ComputeEdges();
 
-    bool                    CheckGPUJointSkinning(int skinning, int numJoints) const;
+    bool                    CapableGPUJointSkinning(SkinningMethod skinningMethod, int numJoints) const;
 
-    bool                    LoadBMesh(const char *filename);
-    void                    WriteBMesh(const char *filename);
+    bool                    LoadBinaryMesh(const char *filename);
+    void                    WriteBinaryMesh(const char *filename);
 
     Str                     hashName;
     Str                     name;
@@ -209,6 +210,8 @@ public:
     Mesh *                  AllocInstantiatedMesh(Mesh *refMesh);
     Mesh *                  FindMesh(const char *name) const;
     Mesh *                  GetMesh(const char *name);
+
+    void                    RenameMesh(Mesh *mesh, const Str &newName);
 
     void                    ReleaseMesh(Mesh *mesh, bool immediateDestroy = false);
     void                    DestroyMesh(Mesh *mesh);

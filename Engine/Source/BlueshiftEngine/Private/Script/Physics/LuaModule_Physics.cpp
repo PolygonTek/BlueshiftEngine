@@ -34,7 +34,6 @@ void LuaVM::RegisterPhysics(LuaCpp::Module &module) {
     _Physics_FilterGroup["DefaultGroup"] = PhysCollidable::CollisionFilterGroup::DefaultGroup;
     _Physics_FilterGroup["StaticGroup"] = PhysCollidable::CollisionFilterGroup::StaticGroup;
     _Physics_FilterGroup["KinematicGroup"] = PhysCollidable::CollisionFilterGroup::KinematicGroup;
-    _Physics_FilterGroup["DebrisGroup"] = PhysCollidable::CollisionFilterGroup::DebrisGroup;
     _Physics_FilterGroup["SensorGroup"] = PhysCollidable::CollisionFilterGroup::SensorGroup;
     _Physics_FilterGroup["CharacterGroup"] = PhysCollidable::CollisionFilterGroup::CharacterGroup;
     _Physics_FilterGroup["AllGroup"] = PhysCollidable::CollisionFilterGroup::AllGroup;

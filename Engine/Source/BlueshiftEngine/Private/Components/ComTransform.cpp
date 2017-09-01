@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef     SIG_TransformUpdated("transformUpdated", "a");
+const SignalDef ComTransform::SIG_TransformUpdated("transformUpdated", "a");
 
 OBJECT_DECLARATION("Transform", ComTransform, Component)
 BEGIN_EVENTS(ComTransform)
@@ -37,7 +37,7 @@ void ComTransform::RegisterProperties() {
 }
 
 ComTransform::ComTransform() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComTransform::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComTransform::PropertyChanged);
 }
 
 ComTransform::~ComTransform() {
@@ -67,7 +67,7 @@ void ComTransform::Init() {
 
     ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     if (rigidBody) {
-        rigidBody->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComTransform::PhysicsUpdated, SignalObject::Unique);
+        rigidBody->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComTransform::PhysicsUpdated, SignalObject::Unique);
     }
 
     RecalcWorldMatrix();
@@ -79,7 +79,7 @@ void ComTransform::SetLocalOrigin(const Vec3 &origin) {
     localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
     RecalcWorldMatrix();
-    
+
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren();
@@ -149,6 +149,8 @@ void ComTransform::SetOrigin(const Vec3 &origin) {
 
     RecalcLocalMatrix();
 
+    localOrigin = localMatrix.ToTranslationVec3();
+
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren();
@@ -159,6 +161,9 @@ void ComTransform::SetAxis(const Mat3 &axis) {
 
     RecalcLocalMatrix();
 
+    localAxis = localMatrix.ToMat3();
+    localAxis.OrthoNormalizeSelf();
+
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren();
@@ -168,7 +173,7 @@ void ComTransform::Translate(const Vec3 &translation) {
     SetOrigin(GetOrigin() + translation);
 }
 
-void ComTransform::Rotate(const Vec3 axis, float angle) {
+void ComTransform::Rotate(const Vec3 &axis, float angle) {
     SetAxis(Rotation(Vec3::zero, axis, angle).ToMat3() * GetAxis());
 }
 
@@ -208,7 +213,7 @@ void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
 void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
     worldMatrix.SetLinearTransform(body->GetAxis(), GetScale(), body->GetOrigin());
 
-    EmitSignal(&SIG_PhysicsUpdated, body);
+    EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren(true);
 }

@@ -32,10 +32,13 @@ class StaticArray {
 public:
     /// Constructs empty array.
     StaticArray();
+
     /// Constructs from another array.
     StaticArray(const StaticArray<T, capacity> &array);
+    
     /// Aggregates initialization constructor.
     StaticArray(const std::initializer_list<T> &array);
+    
     /// Destructs.
     ~StaticArray() {}
 
@@ -72,6 +75,18 @@ public:
                     /// Returns the item at 'index' position as a modifiable reference.
                     /// 'index' must be a valid index position in the array (i.e., 0 <= index < Count()).
     T &             operator[](int index);
+
+                    /// Returns the first item.
+    const T &       First() const { assert(count > 0); return elements[0]; }
+
+                    /// Returns the first item.
+    T &             First() { assert(count > 0); return elements[0]; }
+
+                    /// Returns the last item.
+    const T &       Last() const { assert(count > 0); return elements[count - 1]; }
+
+                    /// Returns the last item.
+    T &             Last() { assert(count > 0); return elements[count - 1]; }
 
                     /// Compares with another array.
     bool            operator==(const StaticArray<T, capacity> &rhs) const;
@@ -342,8 +357,11 @@ BE_INLINE int StaticArray<T, capacity>::FindIndex(CompatibleT &&value, int from)
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE int StaticArray<T, capacity>::FindIndexIf(Functor &&finder, int from) {
-    T *e = std::find_if(elements + from, elements + count, std::forward<Functor>(finder));
-    if (e) {
+    T *first = elements + from;
+    T *last = elements + count;
+
+    T *e = std::find_if(first, last, std::forward<Functor>(finder));
+    if (e != last) {
         return (e - elements) / sizeof(T);
     }
     return -1;
@@ -363,7 +381,14 @@ BE_INLINE T *StaticArray<T, capacity>::Find(CompatibleT &&value, int from) const
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE T *StaticArray<T, capacity>::FindIf(Functor &&finder, int from) {
-    return std::find_if(elements + from, elements + count, std::forward<Functor>(finder));
+    T *first = elements + from;
+    T *last = elements + count;
+
+    T *e = std::find_if(first, last, std::forward<Functor>(finder));
+    if (e != last) {
+        return e;
+    }
+    return nullptr;
 }
 
 template <typename T, int capacity>
@@ -451,10 +476,6 @@ BE_INLINE void StaticArray<T, capacity>::Sort(Functor &&compare) {
 template <typename T, int capacity>
 template <typename Functor>
 BE_INLINE void StaticArray<T, capacity>::SortSubSection(int startIndex, int endIndex, Functor &&compare) {
-    if (!elements) {
-        return;
-    }
-
     if (startIndex < 0) {
         startIndex = 0;
     }

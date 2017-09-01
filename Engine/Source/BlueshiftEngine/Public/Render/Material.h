@@ -25,6 +25,8 @@
 #include "Containers/HashMap.h"
 #include "Shader.h"
 
+class MaterialEditor;
+
 BE_NAMESPACE_BEGIN
 
 class Dict;
@@ -33,6 +35,7 @@ class Shader;
 
 class Material {
     friend class MaterialManager;
+    friend class ::MaterialEditor;
     friend class RBSurf;
 
 public:
@@ -41,42 +44,26 @@ public:
         NoShadow                = BIT(1),
         ForceShadow             = BIT(2),
         UnsmoothTangents        = BIT(4),
-        Overlay                 = BIT(5),
         LoadedFromFile          = BIT(9)
     };
 
     enum Type {
-        BadType,
-        StandardType,
-        LightType,
-        LitSurfaceType
+        SurfaceMaterialType     = 0,
+        DecalMaterialType       = 1,
+        LightMaterialType       = 2,
+        BlendLightMaterialType  = 3,
+        FogLightMaterialType    = 4
     };
 
     enum Sort {
         BadSort                 = 0,
         SubViewSort             = 1,
-        OpaqueSort              = 2,    //
+        OpaqueSort              = 2,
         SkySort                 = 3,
-        AlphaTestSort           = 4,    //
-        DecalSort               = 8,    //
-        RefractionSort          = 9,
-        AdditiveLightingSort    = 10,   //
-        BlendSort               = 11,
+        AlphaTestSort           = 4,
+        TranslucentSort         = 10,
+        OverlaySort             = 11,
         NearestSort             = 15
-    };
-
-    enum LightSort {
-        BadLightSort            = 0,
-        NormalLightSort         = 1,
-        BlendLightSort          = 2,
-        FogLightSort            = 3
-    };
-
-    enum Coverage {
-        EmptyCoverage           = 0,
-        PerforatedCoverage      = BIT(0),   // may have alpha tested holes
-        TranslucentCoverage     = BIT(1),   // blended with background
-        OpaqueCoverage          = BIT(2)    // completely fills the triangle
     };
 
     enum VertexColorMode {
@@ -97,15 +84,23 @@ public:
         OverlayHint
     };
 
-    struct Pass {
+    enum RenderingMode {
+        Opaque,
+        AlphaCutoff,
+        AlphaBlend
+    };
+
+    struct ShaderPass {
+        RenderingMode       renderingMode;
+        int                 cullType;
         int                 stateBits;
-        float               alphaRef;
+        float               cutoffAlpha;
         VertexColorMode     vertexColorMode;
         bool                useOwnerColor;
         Color4              constantColor;
         Texture *           texture;
-        float               tcScale[2];
-        float               tcTranslation[2];
+        Vec2                tcScale;
+        Vec2                tcTranslation;
         Shader *            shader;
         Shader *            referenceShader;
         StrHashMap<Shader::Property> shaderProperties;          // define prop 이 바뀌면 reinstantiate 해야 할듯
@@ -117,17 +112,18 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
     int                     GetFlags() const { return flags; }
-    Type                    GetType() const { return type; }
-    int                     GetCullType() const { return cullType; }
+    int                     GetType() const { return type; }
+    RenderingMode           GetRenderingMode() const { return pass->renderingMode; }
+    void                    SetRenderingMode(RenderingMode mode);
+    int                     GetCullType() const { return pass->cullType; }
     int                     GetSort() const { return sort; }
-    int                     GetLightSort() const { return lightSort; }
-    int                     GetCoverage() const { return coverage; }
 
     bool                    IsLitSurface() const;
+    bool                    IsSkySurface() const;
     bool                    IsShadowCaster() const;
 
-    const Pass *            GetPass() const { return pass; }
-    Pass *                  GetPass() { return pass; }
+    const ShaderPass *      GetPass() const { return pass; }
+    ShaderPass *            GetPass() { return pass; }
 
     void                    SetName(const char *name) { this->name = name; }
 
@@ -146,15 +142,12 @@ public:
     void                    EndShaderPropertiesChanged();
 
 private:
-    bool                    ParsePass(Lexer &lexer, Pass *pass);
-    bool                    ParseAlphaFunc(Lexer &lexer, int *alphaFunc, Pass *pass) const;
-    bool                    ParseDepthFunc(Lexer &lexer, int *depthFunc) const;
-    bool                    ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
-    bool                    ParseSort(Lexer &lexer);
-    bool                    ParseLightSort(Lexer &lexer);
-    //void                    MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);    
-    bool                    ParseShaderProperties(Lexer &lexer, Dict &properties);
     void                    Finish();
+    bool                    ParsePass(Lexer &lexer, ShaderPass *pass);
+    bool                    ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) const;
+    bool                    ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
+    //void                  MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);    
+    bool                    ParseShaderProperties(Lexer &lexer, Dict &properties);
 
     Str                     hashName;
     Str                     name;
@@ -164,12 +157,9 @@ private:
 
     int                     flags;
     Type                    type;
-    int                     coverage;
-    int                     cullType;
     Sort                    sort;
-    LightSort               lightSort;
-    
-    Pass *                  pass;
+
+    ShaderPass *            pass;
 };
 
 BE_INLINE Material::Material() {
@@ -177,11 +167,8 @@ BE_INLINE Material::Material() {
     permanence              = false;
     index                   = -1;
     flags                   = 0;
-    type                    = BadType;
-    cullType                = Renderer::BackCull;
-    coverage                = EmptyCoverage;
+    type                    = SurfaceMaterialType;
     sort                    = BadSort;
-    lightSort               = BadLightSort;
     pass                    = nullptr;
 }
 
@@ -199,7 +186,9 @@ public:
     Material *              AllocMaterial(const char *name);
     Material *              FindMaterial(const char *name) const;
     Material *              GetMaterial(const char *name);
-    Material *              GetTextureMaterial(const Texture *texture, Material::TextureHint hint = Material::NoHint);
+    Material *              GetSingleTextureMaterial(const Texture *texture, Material::TextureHint hint = Material::NoHint);
+
+    void                    RenameMaterial(Material *material, const Str &newName);
 
     void                    ReleaseMaterial(Material *material, bool immediateDestroy = false);
     void                    DestroyMaterial(Material *material);
@@ -214,6 +203,7 @@ public:
     static Material *       blendMaterial;
     static Material *       whiteLightMaterial;
     static Material *       zeroClampLightMaterial;
+    static Material *       defaultSkyboxMaterial;
 
 private:
     static void             Cmd_ListMaterials(const CmdArgs &args);

@@ -27,7 +27,8 @@
 BE_NAMESPACE_BEGIN
 
 /// Finds the element which is equal to the given value.
-template <typename T> int BinSearch_Equal(const T *arr, const int arraySize, const T &value) {
+template <typename T> 
+int BinSearch_Equal(const T *arr, const int arraySize, const T &value) {
     int len = arraySize;
     int mid = len;
     int offset = 0;
@@ -46,7 +47,8 @@ template <typename T> int BinSearch_Equal(const T *arr, const int arraySize, con
 }
 
 /// Finds the last array element which is smaller than the given value.
-template <typename T> int BinSearch_Less(const T *arr, const int arraySize, const T &value) {
+template <typename T> 
+int BinSearch_Less(const T *arr, const int arraySize, const T &value) {
     int len = arraySize;
     int mid = len;
     int offset = 0;
@@ -63,7 +65,8 @@ template <typename T> int BinSearch_Less(const T *arr, const int arraySize, cons
 }
 
 /// Finds the last array element which is smaller than or equal to the given value.
-template <typename T> int BinSearch_LessEqual(const T *arr, const int arraySize, const T &value) {
+template <typename T> 
+int BinSearch_LessEqual(const T *arr, const int arraySize, const T &value) {
     int len = arraySize;
     int mid = len;
     int offset = 0;
@@ -80,7 +83,8 @@ template <typename T> int BinSearch_LessEqual(const T *arr, const int arraySize,
 }
 
 /// Finds the first array element which is greater than the given value.
-template <typename T> int BinSearch_Greater(const T *arr, const int arraySize, const T &value) {
+template <typename T> 
+int BinSearch_Greater(const T *arr, const int arraySize, const T &value) {
     int len = arraySize;
     int mid = len;
     int offset = 0;
@@ -101,7 +105,8 @@ template <typename T> int BinSearch_Greater(const T *arr, const int arraySize, c
 }
 
 /// Finds the first array element which is greater or equal than the given value.
-template <typename T> int BinSearch_GreaterEqual(const T *arr, const int arraySize, const T &value) {
+template <typename T> 
+int BinSearch_GreaterEqual(const T *arr, const int arraySize, const T &value) {
     int len = arraySize;
     int mid = len;
     int offset = 0;

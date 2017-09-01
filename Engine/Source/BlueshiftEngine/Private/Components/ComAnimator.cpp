@@ -28,7 +28,7 @@ void ComAnimator::RegisterProperties() {
 }
 
 ComAnimator::ComAnimator() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComAnimator::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAnimator::PropertyChanged);
 }
 
 ComAnimator::~ComAnimator() {

@@ -37,6 +37,10 @@ HashIndex::HashIndex(const int initialHashSize, const int initialIndexSize) {
     lookUpMask = 0;
 }
 
+HashIndex::HashIndex(const HashIndex &other) {
+    *this = other;
+}
+
 void HashIndex::Allocate(const int newHashSize, const int newIndexSize) {
     assert(Math::IsPowerOfTwo(newHashSize));
 
@@ -65,6 +69,40 @@ void HashIndex::Free() {
         indexChain = EmptyTable;
     }
     lookUpMask = 0;
+}
+
+HashIndex &HashIndex::operator=(const HashIndex &rhs) {
+    granularity = rhs.granularity;
+    hashMask = rhs.hashMask;
+    lookUpMask = rhs.lookUpMask;
+
+    if (rhs.lookUpMask == 0) {
+        hashSize = rhs.hashSize;
+        indexSize = rhs.indexSize;
+        Free();
+    } else {
+        if (rhs.hashSize != hashSize || hashTable == EmptyTable) {
+            if (hashTable != EmptyTable) {
+                delete[] hashTable;
+            }
+
+            hashSize = rhs.hashSize;
+            hashTable = new int[hashSize];
+        }
+
+        if (rhs.indexSize != indexSize || indexChain == EmptyTable) {
+            if (indexChain != EmptyTable) {
+                delete[] indexChain;
+            }
+
+            indexSize = rhs.indexSize;
+            indexChain = new int[indexSize];
+        }
+        memcpy(hashTable, rhs.hashTable, hashSize * sizeof(hashTable[0]));
+        memcpy(indexChain, rhs.indexChain, indexSize * sizeof(indexChain[0]));
+    }
+
+    return *this;
 }
 
 void HashIndex::ResizeIndex(const int newIndexSize) {

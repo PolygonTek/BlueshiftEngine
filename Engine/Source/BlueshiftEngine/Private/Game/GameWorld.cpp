@@ -21,10 +21,12 @@
 #include "Sound/SoundSystem.h"
 #include "AnimController/AnimController.h"
 #include "Components/Component.h"
+#include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComSensor.h"
 #include "Game/Entity.h"
+#include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 #include "Game/GameSettings/TagLayerSettings.h"
 #include "Game/GameSettings/PhysicsSettings.h"
@@ -33,10 +35,10 @@
 
 BE_NAMESPACE_BEGIN
 
-const EventDef      EV_RestartGame("restartGame", false, "s");
+const EventDef EV_RestartGame("restartGame", false, "s");
 
-const SignalDef     SIG_EntityRegistered("entityRegistered", "a");
-const SignalDef     SIG_EntityUnregistered("entityUnregistered", "a");
+const SignalDef GameWorld::SIG_EntityRegistered("entityRegistered", "a");
+const SignalDef GameWorld::SIG_EntityUnregistered("entityUnregistered", "a");
 
 OBJECT_DECLARATION("Game World", GameWorld, Object)
 BEGIN_EVENTS(GameWorld)
@@ -50,6 +52,10 @@ GameWorld::GameWorld() {
 
     tagLayerSettings = nullptr;
     physicsSettings = nullptr;
+
+    // Create render settings
+    mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
+    mapRenderSettings->gameWorld = this;
 
     // Create render world
     renderWorld = renderSystem.AllocRenderWorld();
@@ -73,6 +79,10 @@ GameWorld::~GameWorld() {
 
     if (physicsSettings) {
         PhysicsSettings::DestroyInstanceImmediate(physicsSettings);
+    }
+
+    if (mapRenderSettings) {
+        MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
     }
 
     // Free render world
@@ -113,7 +123,7 @@ void GameWorld::ClearAllEntities() {
 
     physicsWorld->ClearScene();
 
-    renderWorld->ClearScene();	
+    renderWorld->ClearScene();
 
     firstFreeIndex = 16; // TEMP
     
@@ -317,11 +327,6 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
         
         Json::Value clonedEntityValue = Entity::CloneEntityValue(originalEntityValue, guidMap);
 
-        // root entity name
-        if (i == 0) {
-            clonedEntityValue["name"] = originalEntity->GetName();
-        }        
-
         Entity *clonedEntity = Entity::CreateEntity(clonedEntityValue);
         clonedEntities.Append(clonedEntity);
     }
@@ -344,11 +349,43 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
 
         clonedEntity->InitHierarchy();
         clonedEntity->Init();
-
-        RegisterEntity(clonedEntity);
     }
 
     return clonedEntities[0];
+}
+
+Entity *GameWorld::InstantiateEntity(const Entity *originalEntity) {
+    Entity *clonedEntity = CloneEntity(originalEntity);
+
+    RegisterEntity(clonedEntity);
+
+    EntityPtrArray children;
+    clonedEntity->GetChildren(children);
+
+    for (int i = 0; i < children.Count(); i++) {
+        RegisterEntity(children[i]);
+    }
+
+    return clonedEntity;
+}
+
+Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Angles &angles) {
+    Entity *clonedEntity = CloneEntity(originalEntity);
+    
+    ComTransform *transform = clonedEntity->GetTransform();
+    transform->SetLocalOrigin(origin);
+    transform->SetLocalAngles(angles);
+
+    RegisterEntity(clonedEntity);
+
+    EntityPtrArray children;
+    clonedEntity->GetChildren(children);
+
+    for (int i = 0; i < children.Count(); i++) {
+        RegisterEntity(children[i]);
+    }
+
+    return clonedEntity;
 }
 
 bool GameWorld::SpawnEntityFromJson(Json::Value &entityValue, Entity **ent) {
@@ -389,18 +426,6 @@ void GameWorld::SpawnEntitiesFromJson(Json::Value &entitiesValue) {
     }
 }
 
-void GameWorld::SpawnEntitiesFromString(const char *jsonText) {
-    Json::Value entitiesValue;
-    Json::Reader jsonReader;
-
-    if (!jsonReader.parse(jsonText, entitiesValue)) {
-        BE_WARNLOG(L"Failed to parse JSON text\n");
-        return;
-    }
-
-    SpawnEntitiesFromJson(entitiesValue);    
-}
-
 void GameWorld::BeginMapLoading() {
     isMapLoading = true;
 
@@ -417,6 +442,7 @@ void GameWorld::FinishMapLoading() {
     shaderManager.DestroyUnusedShaders();
     materialManager.DestroyUnusedMaterials();
     meshManager.DestroyUnusedMeshes();
+    particleSystemManager.DestroyUnusedParticleSystems();
     skeletonManager.DestroyUnusedSkeletons();
     animManager.DestroyUnusedAnims();
     skinManager.DestroyUnusedSkins();
@@ -441,6 +467,8 @@ void GameWorld::StartGame() {
 
 void GameWorld::StopGame() {
     gameStarted = false;
+
+    soundSystem.StopAllSounds();
 }
 
 void GameWorld::RestartGame(const char *mapName) {
@@ -492,7 +520,7 @@ void GameWorld::LoadTagLayerSettings(const char *filename) {
     }
 
     if (failedToParse) {
-        jsonNode["classname"] = "TagLayerSettings";
+        jsonNode["classname"] = TagLayerSettings::metaObject.ClassName();
 
         // default tags
         jsonNode["tag"][0] = "Untagged";
@@ -536,7 +564,7 @@ void GameWorld::LoadPhysicsSettings(const char *filename) {
     }
 
     if (failedToParse) {
-        jsonNode["classname"] = "PhysicsSettings";
+        jsonNode["classname"] = PhysicsSettings::metaObject.ClassName();
     }
 
     const char *classname = jsonNode["classname"].asCString();
@@ -566,6 +594,15 @@ void GameWorld::SaveObject(const char *filename, const Object *object) const {
     fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }
 
+void GameWorld::NewMap() {
+    Json::Value defaultMapRenderSettingsValue;
+    defaultMapRenderSettingsValue["classname"] = MapRenderSettings::metaObject.ClassName();
+
+    mapRenderSettings->props->Init(defaultMapRenderSettingsValue);
+
+    Reset();
+}
+
 bool GameWorld::LoadMap(const char *filename) {
     BE_LOG(L"Loading map '%hs'...\n", filename);
 
@@ -581,13 +618,26 @@ bool GameWorld::LoadMap(const char *filename) {
 
     mapName = filename;
 
-    // TODO: load settings
-    
-    SpawnEntitiesFromString(text);
+    Json::Value map;
+    Json::Reader jsonReader;
+    if (!jsonReader.parse(text, map)) {
+        BE_WARNLOG(L"Failed to parse JSON text\n");
+        return false;
+    }
 
-    fileSystem.FreeFile(text);
+    // Read map version
+    int mapVersion = map["version"].asInt();
+
+    // Read map render settings
+    mapRenderSettings->props->Init(map["renderSettings"]);
+    mapRenderSettings->Init();
+
+    // Read entities
+    SpawnEntitiesFromJson(map["entities"]);
     
-    FinishMapLoading();    
+    fileSystem.FreeFile(text);
+
+    FinishMapLoading();
 
     return true;
 }
@@ -608,13 +658,21 @@ void GameWorld::SerializeEntityHierarchy(const Hierarchy<Entity> &entityHierarch
 void GameWorld::SaveMap(const char *filename) {
     BE_LOG(L"Saving map '%hs'...\n", filename);
 
-    Json::Value entitiesValue;
+    Json::Value map;
+
+    // Write map version
+    map["version"] = 1;
+
+    // Write map render settings
+    mapRenderSettings->Serialize(map["renderSettings"]);
+
+    // Write entities
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), entitiesValue);
+        GameWorld::SerializeEntityHierarchy(child->GetNode(), map["entities"]);
     }
 
     Json::StyledWriter jsonWriter;
-    Str jsonText = jsonWriter.write(entitiesValue).c_str();
+    Str jsonText = jsonWriter.write(map).c_str();
 
     fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }
@@ -714,15 +772,24 @@ void GameWorld::RenderCamera() {
 void GameWorld::SaveSnapshot() {
     snapshotValues.clear();
 
+    mapRenderSettings->Serialize(snapshotValues["renderSettings"]);
+
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), snapshotValues);
+        GameWorld::SerializeEntityHierarchy(child->GetNode(), snapshotValues["entities"]);
     }
+
+    //BE_LOG(L"%i entities snapshot saved\n", snapshotValues["entities"].size());
 }
 
 void GameWorld::RestoreSnapshot() {
     BeginMapLoading();
 
-    SpawnEntitiesFromJson(snapshotValues);
+    mapRenderSettings->props->Init(snapshotValues["renderSettings"]);
+    mapRenderSettings->Init();
+
+    SpawnEntitiesFromJson(snapshotValues["entities"]);
+
+    //BE_LOG(L"%i entities snapshot restored\n", snapshotValues["entities"].size());
 
     FinishMapLoading();
 }

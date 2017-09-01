@@ -18,13 +18,13 @@
 
 BE_NAMESPACE_BEGIN
 
-#define MAX_DYNAMIC_VERTS	(VCACHE_SIZE / sizeof(VertexLightingGeneric))
+#define MAX_DYNAMIC_VERTS   (VCACHE_SIZE / sizeof(VertexGenericLit))
 
 void RBSurf::Init() {
     startIndex = -1;
 
-    vbHandle = Renderer::NullBuffer;
-    ibHandle = Renderer::NullBuffer;
+    vbHandle = RHI::NullBuffer;
+    ibHandle = RHI::NullBuffer;
 
     numVerts = 0;
     numIndexes = 0;
@@ -32,7 +32,7 @@ void RBSurf::Init() {
 
     material = nullptr;
     subMesh = nullptr;
-    surfEntity = nullptr;
+    surfSpace = nullptr;
 }
 
 void RBSurf::Shutdown() {
@@ -42,24 +42,21 @@ void RBSurf::EndFrame() {
     startIndex = -1;
 }
 
-void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfEntity, const viewLight_t *surfLight) {
-    this->flushType         = flushType;
-    this->material          = const_cast<Material *>(material);
+void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfSpace, const viewLight_t *surfLight) {
+    this->flushType = flushType;
+    this->material = const_cast<Material *>(material);
     this->materialRegisters = materialRegisters;
-    this->surfEntity        = surfEntity;
-    this->surfLight         = surfLight;
+    this->surfSpace = surfSpace;
+    this->surfLight = surfLight;
 }
 
-void RBSurf::DrawSubMesh(SubMesh *subMesh, GuiSubMesh *guiSubMesh) {
-    if (guiSubMesh) {
-        DrawGuiSubMesh(guiSubMesh);
+void RBSurf::DrawSubMesh(SubMesh *subMesh) {
+    if (subMesh->GetType() == Mesh::ReferenceMesh || 
+        subMesh->GetType() == Mesh::StaticMesh || 
+        subMesh->GetType() == Mesh::SkinnedMesh) {
+        DrawStaticSubMesh(subMesh);
     } else {
-        if (surfEntity->def->parms.joints && !subMesh->useGpuSkinning) {
-            // CPU skinning mesh 일 경우 
-            DrawDynamicSubMesh(subMesh);
-        } else {
-            DrawStaticSubMesh(subMesh);
-        }
+        DrawDynamicSubMesh(subMesh);
     }
 }
 
@@ -71,7 +68,7 @@ void RBSurf::DrawStaticSubMesh(SubMesh *subMesh) {
     
     this->startIndex = 0;
     
-    this->vbHandle = subMesh->ambientCache->buffer;
+    this->vbHandle = subMesh->vertexCache->buffer;
     this->ibHandle = subMesh->indexCache->buffer;
     
     this->numVerts = subMesh->numVerts;
@@ -89,54 +86,38 @@ void RBSurf::DrawDynamicSubMesh(SubMesh *subMesh) {
         startIndex = subMesh->indexCache->offset / sizeof(TriIndex);
     } else {
         // indexCache 가 순차적으로 연결되지 않는다면 한꺼번에 그릴 수 없으므로 Flush
-        if (startIndex + numIndexes != subMesh->indexCache->offset / sizeof(TriIndex)) {
+        if (startIndex + numIndexes != subMesh->indexCache->offset / sizeof(TriIndex) ||
+            vbHandle != subMesh->vertexCache->buffer ||
+            ibHandle != subMesh->indexCache->buffer) {
             Flush();
+
+            startIndex = subMesh->indexCache->offset / sizeof(TriIndex);
         }
     }
 
-    this->vbHandle = subMesh->ambientCache->buffer;
+    this->vbHandle = subMesh->vertexCache->buffer;
     this->ibHandle = subMesh->indexCache->buffer;
 
     this->numVerts += subMesh->numVerts;
     this->numIndexes += subMesh->numIndexes;
-    
+
     this->subMesh = subMesh;
 }
 
-void RBSurf::DrawGuiSubMesh(GuiSubMesh *guiSubMesh) {
-    if (startIndex < 0) {
-        // startIndex 는 Flush 후에 -1 로 세팅된다
-        startIndex = guiSubMesh->indexCache->offset / sizeof(TriIndex);
-    } else {
-        // indexCache 가 순차적으로 연결되지 않는다면 한꺼번에 그릴 수 없으므로 Flush
-        if (startIndex + numIndexes != guiSubMesh->indexCache->offset / sizeof(TriIndex)) {
-            Flush();
-        }
-    }
-
-    this->vbHandle = guiSubMesh->vertexCache->buffer;
-    this->ibHandle = guiSubMesh->indexCache->buffer;
-
-    this->numVerts += guiSubMesh->numVerts;
-    this->numIndexes += guiSubMesh->numIndexes;
-
-    this->subMesh = nullptr;
-}
-
 void RBSurf::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex) const {
-    if (subMesh) {
-        if (subMesh->useGpuSkinning) {
-            glr.SetVertexFormat(vertexFormats[vertexFormatIndex + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
-            glr.SetStreamSource(0, vbHandle, 0, sizeof(VertexLightingGeneric));
-            glr.SetStreamSource(1, vbHandle, sizeof(VertexLightingGeneric) * numVerts, subMesh->VertexWeightSize());
-        } else {
-            glr.SetVertexFormat(vertexFormats[vertexFormatIndex].vertexFormatHandle);
-            glr.SetStreamSource(0, vbHandle, 0, sizeof(VertexLightingGeneric));
-        }
+    // HACK!!
+    // TODO: check vertex type of the subMesh instead of this
+    int vertexSize = subMesh->GetType() != Mesh::DynamicMesh ? sizeof(VertexGenericLit) : sizeof(VertexGeneric);
+
+    if (subMesh->useGpuSkinning) {
+        rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
+
+        rhi.SetStreamSource(0, vbHandle, 0, vertexSize);
+        rhi.SetStreamSource(1, vbHandle, vertexSize * numVerts, subMesh->VertexWeightSize());
     } else {
-        // HACK: subMesh is nullptr for guiSubMesh
-        glr.SetVertexFormat(vertexFormats[VertexFormat::PicXyzStColor].vertexFormatHandle);
-        glr.SetStreamSource(0, vbHandle, 0, sizeof(VertexNoLit));
+        rhi.SetVertexFormat(vertexFormats[vertexFormatIndex].vertexFormatHandle);
+        
+        rhi.SetStreamSource(0, vbHandle, 0, vertexSize);
     }
 }
 
@@ -147,14 +128,17 @@ void RBSurf::Flush() {
 
     bool polygonOffset = false;
 
-    if (flushType != ShadowFlush && material->flags & Material::PolygonOffset) {
-        glr.SetDepthBias(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
+    if (flushType != ShadowFlush && (material->flags & Material::PolygonOffset)) {
+        rhi.SetDepthBias(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
         polygonOffset = true;
     }
 
     switch (flushType) {
     case SelectionFlush:
         Flush_SelectionPass();
+        break;
+    case BackgroundFlush:
+        Flush_BackgroundPass();
         break;
     case DepthFlush:
     case OccluderFlush:
@@ -169,8 +153,8 @@ void RBSurf::Flush() {
     case LitFlush:
         Flush_LitPass();
         break;
-    case BlendFlush:
-        Flush_BlendPass(); 
+    case UnlitFlush:
+        Flush_UnlitPass(); 
         break;
     case VelocityFlush:
         Flush_VelocityMapPass(); 
@@ -187,217 +171,218 @@ void RBSurf::Flush() {
     }
 
     if (polygonOffset) {
-        glr.SetDepthBias(0, 0);
+        rhi.SetDepthBias(0, 0);
     }
 
     startIndex = -1;
     
-    //vbHandle = Renderer::NullBuffer;
-    //ibHandle = Renderer::NullBuffer;
+    //vbHandle = RHI::NullBuffer;
+    //ibHandle = RHI::NullBuffer;
 
     numVerts = 0;
     numIndexes = 0;
     numInstances = 0;
 }
 
+// Converts 24-bit ID to Vec3
+static Vec3 MakeVec3Id(uint32_t id) {
+    assert((id & 0xFF000000) == 0);
+    const uint32_t b = Max<uint32_t>(id >> 16, 0);
+    id -= (b << 16);
+    const uint32_t g = Max<uint32_t>(id >> 8, 0);
+    id -= (g << 8);
+    const uint32_t r = Max<uint32_t>(id, 0);
+    
+    return Vec3((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f);
+}
+
+// Converts 32-bit ID to Vec4
+static Vec4 MakeVec4Id(uint32_t id) {
+    const uint32_t a = Max<uint32_t>(id >> 24, 0);
+    id -= (a << 24);
+    const uint32_t b = Max<uint32_t>(id >> 16, 0);
+    id -= (b << 16);
+    const uint32_t g = Max<uint32_t>(id >> 8, 0);
+    id -= (g << 8);
+    const uint32_t r = Max<uint32_t>(id, 0);
+
+    return Vec4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, (float)a / 255.0f);
+}
+
 void RBSurf::Flush_SelectionPass() {
-    // Convert entity ID to Vec3
-    int id = surfEntity->def->index;
-    int b = Max(id / 65536, 0);
-    int g = Max((id - b * 65536) / 256, 0);
-    int r = Max(id - b * 65536 - g * 256, 0);
-    Vec3 vec3_id = Vec3((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f);
+    const Vec3 id = MakeVec3Id(surfSpace->def->index);
 
-    const Material::Pass *mtrlPass = material->GetPass();
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    glr.SetCullFace(material->cullType);
+    rhi.SetCullFace(mtrlPass->cullType);
 
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = mtrlPass->stateBits & Renderer::MaskAF ? VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+        VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
         
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
-        glr.SetAlphaRef(mtrlPass->alphaRef);
-    }
-
-    int stateBits = mtrlPass->stateBits | Renderer::DepthWrite | Renderer::ColorWrite;
-    stateBits &= ~Renderer::MaskBF;
+    int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite | RHI::DF_LEqual;
+    stateBits &= ~RHI::MaskBF;
 
     if (backEnd.view->def->parms.flags & SceneView::WireFrameMode) {
-        stateBits |= Renderer::PM_Wireframe;
+        stateBits |= RHI::PM_Wireframe;
 
-        glr.SetLineWidth(8);
+        rhi.SetLineWidth(8);
     }
 
-    glr.SetStateBits(stateBits);
+    rhi.SetStateBits(stateBits);
 
-    RenderSelection(mtrlPass, vec3_id);
+    RenderSelection(mtrlPass, id);
 
     if (backEnd.view->def->parms.flags & SceneView::WireFrameMode) {
-        glr.SetLineWidth(1);
+        rhi.SetLineWidth(1);
     }
 }
 
-void RBSurf::Flush_DepthPass() {
-    const Material::Pass *mtrlPass = material->GetPass();
+void RBSurf::Flush_BackgroundPass() {
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    if (!(mtrlPass->stateBits & Renderer::DepthWrite) || mtrlPass->stateBits & Renderer::MaskBF) {
+    rhi.SetCullFace(mtrlPass->cullType);
+
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+
+    SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzSt);
+
+    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_Equal);
+
+    RenderGeneric(mtrlPass);
+}
+
+void RBSurf::Flush_DepthPass() {
+    const Material::ShaderPass *mtrlPass = material->GetPass();
+
+    if (!(mtrlPass->stateBits & RHI::DepthWrite) || mtrlPass->stateBits & RHI::MaskBF) {
         return;
     }
 
-    glr.SetCullFace(material->cullType);
+    rhi.SetCullFace(mtrlPass->cullType);
 
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = (mtrlPass->stateBits & Renderer::MaskAF) ? VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+        VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
-        glr.SetAlphaRef(mtrlPass->alphaRef);
-    }
-
-    glr.SetStateBits(mtrlPass->stateBits & (Renderer::DepthWrite | Renderer::MaskDF | Renderer::MaskAF));
+    rhi.SetStateBits(RHI::DepthWrite | RHI::DF_LEqual);
 
     RenderDepth(mtrlPass);
 }
 
 void RBSurf::Flush_ShadowDepthPass() {
-    const Material::Pass *mtrlPass = material->GetPass();
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    if (!(mtrlPass->stateBits & Renderer::DepthWrite) || mtrlPass->stateBits & Renderer::MaskBF) {
+    if (!(mtrlPass->stateBits & RHI::DepthWrite) || mtrlPass->stateBits & RHI::MaskBF) {
         return;
     }
 
-    glr.SetCullFace(material->cullType);
+    rhi.SetCullFace(mtrlPass->cullType);
     
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = mtrlPass->stateBits & Renderer::MaskAF ? VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+        VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
-        glr.SetAlphaRef(mtrlPass->alphaRef);
-    }
-
-    glr.SetStateBits(mtrlPass->stateBits & (Renderer::DepthWrite | Renderer::MaskDF | Renderer::MaskAF));
+    rhi.SetStateBits(RHI::DepthWrite | RHI::DF_LEqual);
 
     RenderDepth(mtrlPass);
 }
 
 void RBSurf::Flush_AmbientPass() {
-    const Material::Pass *mtrlPass = material->GetPass();
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    if (mtrlPass->stateBits & Renderer::MaskBF) {
-        return;
-    }
+    rhi.SetCullFace(mtrlPass->cullType);
 
-    glr.SetCullFace(material->cullType);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
-
-    int vertexFormatIndex;
-    if (r_ambientLit.GetBool()) {
-        vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? VertexFormat::GenericLitColor : VertexFormat::GenericLit;
-    } else {
-        vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? VertexFormat::GenericXyzStColor : VertexFormat::GenericXyzSt;
-    }
-
+    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
+        VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
+    
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
     
     int stateBits = mtrlPass->stateBits;
 
-    if (r_useDepthPrePass.GetBool()) {
-        stateBits &= ~(Renderer::MaskDF | Renderer::DepthWrite);
-        stateBits |= Renderer::DF_Equal;
+    if (r_useDepthPrePass.GetBool() && mtrlPass->renderingMode == Material::RenderingMode::Opaque) {
+        stateBits &= ~RHI::DepthWrite;
+        stateBits |= RHI::DF_Equal;
     } else {
-        if (mtrlPass->stateBits & Renderer::MaskAF) {
-            glr.SetAlphaRef(mtrlPass->alphaRef);
-        }
+        stateBits |= RHI::DF_LEqual;
     }
 
-    glr.SetStateBits(stateBits);
+    rhi.SetStateBits(stateBits);
 
-    RenderAmbient(mtrlPass, r_ambientScale.GetFloat());
+    RenderBase(mtrlPass, r_ambientScale.GetFloat());
 }
 
 void RBSurf::Flush_LitPass() {
-    const Material::Pass *mtrlPass = material->GetPass();
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
     if (!material->IsLitSurface()) {
         return;
     }
 
-    glr.SetCullFace(material->cullType);
+    rhi.SetCullFace(mtrlPass->cullType);
         
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? VertexFormat::GenericLitColor : VertexFormat::GenericLit;
+    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
+        VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
-        glr.SetAlphaRef(mtrlPass->alphaRef);
-    }
-
     int stateBits = mtrlPass->stateBits;
-    stateBits &= ~(Renderer::MaskDF | Renderer::DepthWrite);
+    stateBits &= ~RHI::DepthWrite;
+    stateBits |= RHI::DF_Equal;
 
     const Material *lightMaterial = surfLight->def->parms.material;
-    int lightSort = lightMaterial->GetLightSort();
-    switch (lightSort) {
-    case Material::FogLightSort:
-        glr.SetStateBits(stateBits | (Renderer::DF_Equal | Renderer::BS_SrcAlpha | Renderer::BD_OneMinusSrcAlpha));
+    int lightMaterialType = lightMaterial->GetType();
+    switch (lightMaterialType) {
+    case Material::FogLightMaterialType:
+        rhi.SetStateBits(stateBits | (RHI::DF_Equal | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha));
         RenderFogLightInteraction(mtrlPass);
-    case Material::BlendLightSort:
-        glr.SetStateBits(stateBits | (Renderer::DF_Equal | Renderer::BS_SrcAlpha | Renderer::BD_OneMinusSrcAlpha));
+    case Material::BlendLightMaterialType:
+        rhi.SetStateBits(stateBits | (RHI::DF_Equal | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha));
         RenderBlendLightInteraction(mtrlPass);
         break;
-    case Material::NormalLightSort:
-        stateBits |= (Renderer::BS_One | Renderer::BD_One);
-        stateBits |= material->sort == Material::AdditiveLightingSort ? Renderer::DF_LEqual : Renderer::DF_Equal;
-        glr.SetStateBits(stateBits);
+    case Material::LightMaterialType:
+        stateBits |= (RHI::BS_One | RHI::BD_One);
+        stateBits |= material->sort == Material::TranslucentSort ? RHI::DF_LEqual : RHI::DF_Equal;
+        rhi.SetStateBits(stateBits);
         RenderLightInteraction(mtrlPass);
         break;
     }
 }
 
-void RBSurf::Flush_BlendPass() {
-    const Material::Pass *mtrlPass = material->GetPass();
+void RBSurf::Flush_UnlitPass() {
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    if (!(mtrlPass->stateBits & Renderer::MaskBF)) {
-        return;
-    }
+    rhi.SetCullFace(mtrlPass->cullType);
 
-    glr.SetCullFace(material->cullType);
-
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
             
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStColor);
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
-        glr.SetAlphaRef(mtrlPass->alphaRef);
-    }
-
-    glr.SetStateBits(mtrlPass->stateBits);
+    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
 
     RenderGeneric(mtrlPass);
 }
 
 void RBSurf::Flush_FinalPass() {
-    const Material::Pass *mtrlPass = material->GetPass();
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    glr.SetCullFace(material->cullType);
+    rhi.SetCullFace(mtrlPass->cullType);
 
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    SetSubMeshVertexFormat(subMesh, VertexFormat::GenericLit);
-        
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
-        glr.SetAlphaRef(mtrlPass->alphaRef);
-    }
+    SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStNT);
 
-    glr.SetStateBits(mtrlPass->stateBits);
-                
+    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+
     RenderGeneric(mtrlPass);
 }
 
@@ -406,82 +391,82 @@ void RBSurf::Flush_TrisPass() {
     if (r_showWireframe.GetInteger() > 0) {
         wireframeMode = r_showWireframe.GetInteger();
     } else {
-        wireframeMode = surfEntity->def->parms.wireframeMode;
+        wireframeMode = surfSpace->def->parms.wireframeMode;
     }
 
-    DrawDebugWireframe(wireframeMode, surfEntity->def->parms.wireframeColor);	
+    DrawDebugWireframe(wireframeMode, surfSpace->def->parms.wireframeColor);
 }
 
 void RBSurf::Flush_VelocityMapPass() {
-    const Material::Pass *mtrlPass = material->GetPass();
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    glr.SetCullFace(material->cullType);
+    rhi.SetCullFace(mtrlPass->cullType);
 
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzNormal);
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
-        glr.SetAlphaRef(mtrlPass->alphaRef);
-    }
+    int stateBits = mtrlPass->stateBits & (RHI::ColorWrite | RHI::AlphaWrite);
+    stateBits |= RHI::DepthWrite;
 
-    int stateBits = mtrlPass->stateBits & (Renderer::ColorWrite | Renderer::AlphaWrite | Renderer::MaskDF | Renderer::MaskAF);
-    stateBits |= Renderer::DepthWrite;
-
-    glr.SetStateBits(stateBits);
+    rhi.SetStateBits(stateBits | RHI::DF_LEqual);
 
     RenderVelocity(mtrlPass);
 }
 
 void RBSurf::Flush_GuiPass() {
-    const Material::Pass *mtrlPass = material->GetPass();
+    const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    glr.SetCullFace(Renderer::NoCull);
+    rhi.SetCullFace(RHI::NoCull);
 
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
-    SetSubMeshVertexFormat(subMesh, VertexFormat::PicXyzStColor);
+    SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStColor);
 
-    if (mtrlPass->stateBits & Renderer::MaskAF) {
-        glr.SetAlphaRef(mtrlPass->alphaRef);
-    }
+    int stateBits = mtrlPass->stateBits;
+    stateBits &= ~RHI::DepthWrite;
 
-    glr.SetStateBits(mtrlPass->stateBits & ~Renderer::DepthWrite);
+    rhi.SetStateBits(stateBits | RHI::DF_LEqual);
 
     RenderGui(mtrlPass);
 }
 
 void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
-    glr.BindBuffer(Renderer::VertexBuffer, vbHandle);
+    const Material::ShaderPass *mtrlPass = material->GetPass();
+
+    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyz);
 
     int blendState = 0;
     if (rgba.a < 1.0f) {
-        blendState = Renderer::BS_SrcAlpha | Renderer::BD_OneMinusSrcAlpha;
+        blendState = RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
+    }
+
+    if (mode == SceneEntity::ShowNone) {
+        mode = SceneEntity::ShowVisibleFront;
     }
     
     switch (mode) {
     case SceneEntity::ShowVisibleFront:
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::DF_LEqual | Renderer::PM_Wireframe | blendState);	
-        glr.SetCullFace(material->cullType);
-        glr.SetDepthBias(-0.5f, -2.0f);
+        rhi.SetStateBits(RHI::ColorWrite | RHI::DF_LEqual | RHI::PM_Wireframe | blendState);
+        rhi.SetCullFace(mtrlPass->cullType);
+        rhi.SetDepthBias(-0.5f, -2.0f);
         break;
     case SceneEntity::ShowAllFront:
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::DF_Always | Renderer::PM_Wireframe | blendState);	
-        glr.SetCullFace(material->cullType);
+        rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
+        rhi.SetCullFace(mtrlPass->cullType);
         break;
     case SceneEntity::ShowAllFrontAndBack:
-    default:
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::DF_Always | Renderer::PM_Wireframe | blendState);	
-        glr.SetCullFace(Renderer::NoCull);
-        break;
+        rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
+        rhi.SetCullFace(RHI::NoCull);
+        break;  
     }
 
     RenderColor(rgba);
 
-    if (mode == 1) {
-        glr.SetDepthBias(0.0f, 0.0f);
+    if (mode == SceneEntity::ShowVisibleFront) {
+        rhi.SetDepthBias(0.0f, 0.0f);
     }
 }
 /*
@@ -493,11 +478,11 @@ void BackEnd::DrawDebugNormals(int mode) const {
     Vec3 end;
     int i;
 
-    glr.SetStateBits(ColorWrite | DF_LEqual | DepthWrite | PM_Wireframe);
+    rhi.SetStateBits(ColorWrite | DF_LEqual | DepthWrite | PM_Wireframe);
 
     switch (mode) {
     case 1:
-        glr.SetDepthBias(0.0f, -500.0f);		
+        rhi.SetDepthBias(0.0f, -500.0f);
         break;
     default:
         bglDepthRange(0.0, 0.0);
@@ -521,14 +506,14 @@ void BackEnd::DrawDebugNormals(int mode) const {
         bglVertex3fv(vptr->xyz);
 
         end = vptr->xyz + drawLength * vptr->normal;
-        bglVertex3fv(end);		
+        bglVertex3fv(end);
     }
 
     bglEnd();
 
     switch (mode) {
     case 1:
-        glr.SetDepthBias(0.0f, 0.0f);		
+        rhi.SetDepthBias(0.0f, 0.0f);
         break;
     default:
         bglDepthRange(0.0, 1.0);
@@ -545,11 +530,11 @@ void BackEnd::DrawDebugTangents(int mode) const {
     Vec3 end;
     int i;
 
-    glr.SetStateBits(ColorWrite | DF_LEqual | DepthWrite | PM_Wireframe);
+    rhi.SetStateBits(ColorWrite | DF_LEqual | DepthWrite | PM_Wireframe);
 
     switch (mode) {
     case 1:
-        glr.SetDepthBias(0.0f, -500.0f);
+        rhi.SetDepthBias(0.0f, -500.0f);
         break;
     default:
         bglDepthRange(0.0, 0.0);
@@ -588,7 +573,7 @@ void BackEnd::DrawDebugTangents(int mode) const {
 
     switch (mode) {
     case 1:
-        glr.SetDepthBias(0.0f, 0.0f);		
+        rhi.SetDepthBias(0.0f, 0.0f);
         break;
     default:
         bglDepthRange(0.0, 1.0);
@@ -601,9 +586,9 @@ void BackEnd::DrawDebugTangentSpace(int tangentIndex) const {
 
     bglColor4ub(255, 255, 255, 255);
 
-    glr.SetStateBits(ColorWrite | DF_LEqual);
+    rhi.SetStateBits(ColorWrite | DF_LEqual);
 
-    glr.SetCullFace((bglCullType_t)m_material->m_cullType);
+    rhi.SetCullFace((bglCullType_t)m_material->m_cullType);
     
     g_rsd.showTangentSpaceProg->Bind();
     g_rsd.showTangentSpaceProg->SetParameter1i("tangentIndex", tangentIndex);
@@ -628,8 +613,8 @@ void BackEnd::DrawDebugBatch(const byte *rgb) const {
 
     bglColor3ubv(rgb);
 
-    glr.SetStateBits(ColorWrite | DF_Equal);
-    glr.SetCullFace((bglCullType_t)m_material->m_cullType);
+    rhi.SetStateBits(ColorWrite | DF_Equal);
+    rhi.SetCullFace((bglCullType_t)m_material->m_cullType);
 
     bglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
@@ -651,7 +636,7 @@ void BackEnd::RenderFogSurface(const volumeFog_t *fog) {
     int				i;
 
     // 포그 면이 아닌 블렌딩 쉐이더는 칼라값에서 빼주므로 여기서는 무시한다.
-    if (!m_material->fog && (m_material->GetSort() >= BlendSort)) {
+    if (!m_material->fog && (m_material->GetSort() >= OverlaySort)) {
         return;
     }
 
@@ -675,7 +660,7 @@ void BackEnd::RenderFogSurface(const volumeFog_t *fog) {
 
         // 월드 버텍스가 포그안이라면
         if (dist2 <= 0) {
-            if (dist < 0) { // 시점자가 포그 안이라면			
+            if (dist < 0) { // 시점자가 포그 안이라면	
                 diff = v - m_view.m_vieworg;
                 c = cVec3_Dot(diff, m_view.m_viewaxis[ForwardAxis]) / fogMaterial->fogDistance;
             } else { // 시점자가 포그 밖이라면
@@ -707,9 +692,9 @@ void BackEnd::RenderFogSurface(const volumeFog_t *fog) {
     g_textureManager.m_fogTexture->Bind();
 
     if (m_material->fog) {
-        glr.SetStateBits(ColorWrite | DF_LEqual | BS_SrcAlpha | BD_OneMinusSrcAlpha);
+        rhi.SetStateBits(ColorWrite | DF_LEqual | BS_SrcAlpha | BD_OneMinusSrcAlpha);
     } else {
-        glr.SetStateBits(ColorWrite | DF_Equal | BS_SrcAlpha | BD_OneMinusSrcAlpha);
+        rhi.SetStateBits(ColorWrite | DF_Equal | BS_SrcAlpha | BD_OneMinusSrcAlpha);
     }
 
     DrawPrimitives();	

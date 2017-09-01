@@ -30,7 +30,7 @@ class AABB;
 class BE_API Sphere {
 public:
     /// The default constructor does not initialize any members of this class.
-    Sphere() {}
+    Sphere() = default;
     /// Constructs a sphere with a given position and radius.
     Sphere(const Vec3 &origin, float radius);
 
@@ -76,9 +76,8 @@ public:
     float           radius;     ///< The radius of this sphere.
 };
 
-BE_INLINE Sphere::Sphere(const Vec3 &origin, float radius) {
-    this->origin = origin;
-    this->radius = radius;
+BE_INLINE Sphere::Sphere(const Vec3 &origin, float radius) :
+    origin(origin), radius(radius) {
 }
 
 BE_INLINE void Sphere::Clear() {

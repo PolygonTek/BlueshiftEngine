@@ -51,6 +51,15 @@ Shader *ShaderAsset::GetShader() {
     return shader;
 }
 
+void ShaderAsset::Rename(const Str &newName) {
+    Shader *existingShader = shaderManager.FindShader(GetResourceFilename());
+    if (existingShader) {
+        shaderManager.RenameShader(existingShader, newName);
+    }
+
+    Asset::Rename(newName);
+}
+
 void ShaderAsset::Reload() {
     Shader *existingShader = shaderManager.FindShader(GetResourceFilename());
     if (existingShader) {

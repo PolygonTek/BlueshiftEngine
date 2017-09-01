@@ -40,8 +40,7 @@ public:
     enum Type {
         PointLight,
         SpotLight,
-        DirectionalLight,
-        AmbientLight
+        DirectionalLight
     };
 
     struct Parms {
@@ -54,11 +53,11 @@ public:
         Vec3                origin;
         Mat3                axis;
 
-                            // Point Light 일 경우 radius 값
-                            // Directional or Spot Light 일 경우 각 xyz axis 별 extent 값
+                            // Point Light 일 경우 radius 값, 또는
+                            // Directional/Spot Light 일 경우 각 xyz axis 별 extent 값
         Vec3                value;
 
-                            // for LT_PROJECTED
+                            // for SpotLight
         float               zNear;
 
         float               fallOffExponent;
@@ -68,7 +67,7 @@ public:
 
         bool                turnOn;
         bool                castShadows;
-        bool                isMainLight;
+        bool                isPrimaryLight;
         bool                isStaticLight;
     };
 
@@ -77,13 +76,13 @@ public:
 
     void                    Update(const Parms *parms);
 
-                            // 라이트의 타입 (Spot, Point, Directional)
+                            /// Returns light type (Point, Spot, Directional)
     Type                    GetType() const { return parms.type; }
 
-                            // 라이트의 material
+                            /// Returns light material
     const Material *        GetMaterial() const { return parms.material; }
 
-                            // 라이트의 위치
+                            /// Returns light origin
     const Vec3 &            GetOrigin() const { return parms.origin; }
 
                             // directional OBB 라이트의 extents
@@ -102,7 +101,7 @@ public:
     const Frustum &         GetFrustum() const { return frustum; }
 
                             // OBB - Directional/Point 라이트인 경우에만
-    const OBB &             GetOBB() const { return obb; }	
+    const OBB &             GetOBB() const { return obb; }
 
                             // AABB - 개략적인 bounding volume
     const AABB              GetAABB() const;
@@ -121,6 +120,9 @@ public:
 
                             // light type 별로 bounding volume culling
     bool                    Cull(const Frustum &viewFrustum) const;
+
+                            // light type 별로 bounding volume culling
+    bool                    Cull(const OBB &viewBox) const;
 
                             // shadow caster OBB culling
     bool                    CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const;

@@ -219,7 +219,7 @@ BEGIN_EVENTS(Object)
 END_EVENTS
 
 bool                Object::initialized = false;
-Array<MetaObject *> Object::types;           // alphabetical order
+Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
 
@@ -346,7 +346,7 @@ Object *Object::CreateInstance(const char *name, const Guid &guid) {
         return nullptr;
     }
 
-    Object *instance = metaObject->CreateInstance(guid);    
+    Object *instance = metaObject->CreateInstance(guid);
     return instance;
 }
 
@@ -397,20 +397,19 @@ void Object::CancelEvents(const EventDef *evdef) {
 }
 
 bool Object::PostEventArgs(const EventDef *evdef, int time, int numArgs, ...) {
-    va_list	args;
-
-    assert(evdef);
-
     if (!Event::initialized) {
         return false;
     }
 
+    assert(evdef);
+
     MetaObject *meta = GetMetaObject();
-    if (!meta->eventCallbacks[evdef->GetEventNum()])	{
+    if (!meta->eventCallbacks[evdef->GetEventNum()]) {
         // we don't respond to this event, so ignore it
         return false;
     }
     
+    va_list args;
     va_start(args, numArgs);
     Event *event = Event::Alloc(evdef, numArgs, args);
     va_end(args);
@@ -421,9 +420,6 @@ bool Object::PostEventArgs(const EventDef *evdef, int time, int numArgs, ...) {
 }
 
 bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
-    va_list	args;
-    intptr_t argPtrs[EventArg::MaxArgs];
-
     assert(evdef);
     assert(Event::initialized);
 
@@ -433,6 +429,9 @@ bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
         // we don't respond to this event, so ignore it
         return false;
     }
+
+    va_list args;
+    intptr_t argPtrs[EventArg::MaxArgs];
     
     // Copy EventArgs to array of intptr_t
     va_start(args, numArgs);
@@ -448,6 +447,10 @@ bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
     assert(evdef);
     assert(Event::initialized);
     assert(EventArg::MaxArgs == 8);
+
+    if (evdef == &EV_ImmediateDestroy) {
+        Event::CancelEvents(this);
+    }
     
     MetaObject *meta = GetMetaObject();
     int num = evdef->GetEventNum();
@@ -503,7 +506,7 @@ bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
 }
 
 void Object::Event_ImmediateDestroy() {
-    instanceHash.Remove(guid); 
+    instanceHash.Remove(guid);
 
     delete this;
 }

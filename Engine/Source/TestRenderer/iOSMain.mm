@@ -23,8 +23,8 @@
         _Pragma("clang diagnostic pop") \
     } while (0)
 
-static BE1::Renderer::Handle mainContext;
-static BE1::Renderer::Handle mainRenderTarget;
+static BE1::RHI::Handle mainContext;
+static BE1::RHI::Handle mainRenderTarget;
 
 @interface RootViewController : UIViewController {
 }
@@ -43,7 +43,7 @@ static BE1::Renderer::Handle mainRenderTarget;
     self.view.clearsContextBeforeDrawing = NO;
 }
 
-static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
     float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
     
@@ -52,16 +52,16 @@ static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
 
 // Notifies that its view was added to a view hierarchy.
 - (void)viewDidAppear:(BOOL)animated {
-    mainContext = BE1::glr.CreateContext((__bridge BE1::Renderer::WindowHandle)self.view, false);
+    mainContext = BE1::rhi.CreateContext((__bridge BE1::RHI::WindowHandle)self.view, false);
     
     _eaglView = [self.view subviews][0]; // EAGLView
     
-    BE1::glr.SetContextDisplayFunc(mainContext, DisplayContext, NULL, false);
+    BE1::rhi.SetContextDisplayFunc(mainContext, DisplayContext, NULL, false);
 }
 
 // Notifies that its view is about to be removed from a view hierarchy.
 - (void)viewWillDisappear:(BOOL)animated {
-    BE1::glr.DestroyContext(mainContext);
+    BE1::rhi.DestroyContext(mainContext);
 }
 
 - (NSUInteger)supportedInterfaceOrientations {
@@ -171,7 +171,7 @@ static void SystemError(int errLevel, const wchar_t *msg) {
 }
 
 - (void)shutdownInstance {
-    BE1::glr.DeleteRenderTarget(mainRenderTarget);
+    BE1::rhi.DeleteRenderTarget(mainRenderTarget);
     
     ::app.FreeResources();
     

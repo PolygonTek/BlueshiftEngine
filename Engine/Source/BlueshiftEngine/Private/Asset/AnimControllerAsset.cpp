@@ -51,6 +51,15 @@ AnimController *AnimControllerAsset::GetAnimController() {
     return animController;
 }
 
+void AnimControllerAsset::Rename(const Str &newName) {
+    AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
+    if (existingAnimController) {
+        animControllerManager.RenameAnimController(existingAnimController, newName);
+    }
+
+    Asset::Rename(newName);
+}
+
 void AnimControllerAsset::Reload() {
     AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
     if (existingAnimController) {
@@ -60,7 +69,7 @@ void AnimControllerAsset::Reload() {
 }
 
 void AnimControllerAsset::Save() {
-    AnimController *existingAnimController = animControllerManager.FindAnimController(GetAssetFilename());
+    AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
     if (existingAnimController) {
         existingAnimController->Write(existingAnimController->GetHashName());
         EmitSignal(&SIG_Modified, 0);

@@ -22,7 +22,7 @@ PhysCollidable::PhysCollidable(PhysCollidable::Type type, btCollisionObject *col
     this->type = type;
     this->collisionObject = collisionObject;
     this->centroid = centroid;
-    this->filterMask = -1;
+    this->customFilterIndex = 0;
     this->collisionListener = nullptr;
     this->userPointer = nullptr;
     this->physicsWorld = nullptr;
@@ -33,6 +33,7 @@ PhysCollidable::~PhysCollidable() {
 
 const Vec3 PhysCollidable::GetOrigin() const {
     Vec3 transformedCentroid = GetAxis() * centroid;
+
     // world transform origin is the center of mass
     btVector3 origin = collisionObject->getWorldTransform().getOrigin() - btVector3(transformedCentroid.x, transformedCentroid.y, transformedCentroid.z);
     return Vec3(origin.x(), origin.y(), origin.z());
@@ -52,7 +53,8 @@ const Mat3 PhysCollidable::GetAxis() const {
 }
 
 void PhysCollidable::SetAxis(const Mat3 &axis) {
-    collisionObject->getWorldTransform().setBasis(btMatrix3x3(axis[0][0], axis[1][0], axis[2][0],
+    collisionObject->getWorldTransform().setBasis(btMatrix3x3(
+        axis[0][0], axis[1][0], axis[2][0],
         axis[0][1], axis[1][1], axis[2][1],
         axis[0][2], axis[1][2], axis[2][2]));
 }
@@ -125,14 +127,32 @@ void PhysCollidable::SetCharacter(bool character) {
     }
 }
 
-void PhysCollidable::SetCollisionFilterMask(short mask) {
-    filterMask = mask;
+void PhysCollidable::SetIgnoreCollisionCheck(const PhysCollidable &collidable, bool ignoreCollisionCheck) {
+    // not working ?
+    collisionObject->setIgnoreCollisionCheck(collidable.collisionObject, ignoreCollisionCheck);
+}
+
+void PhysCollidable::SetCustomCollisionFilterIndex(unsigned int index) {
+    assert(index >= 0 && index < 31);
+
+    customFilterIndex = index;
+}
+
+/*void PhysCollidable::SetCollisionFilterMask(short mask) {
+    this->filterMask = mask;
 
     if (IsInWorld()) {
         PhysicsWorld *_physicsWorld = physicsWorld;
         RemoveFromWorld();
         AddToWorld(_physicsWorld);
     }
+}*/
+
+bool PhysCollidable::IsActive() const {
+    if (IsInWorld()) {
+        return collisionObject->isActive();
+    }
+    return false;
 }
 
 bool PhysCollidable::IsInWorld() const {
@@ -143,7 +163,6 @@ bool PhysCollidable::IsInWorld() const {
             return true;
         }
     }
-
     return false;
 }
 
@@ -156,25 +175,25 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
     switch (type) {
     case Type::RigidBody: {
         btRigidBody *rigidBody = static_cast<btRigidBody *>(collisionObject);
-        bool isDynamic = !rigidBody->isStaticOrKinematicObject();
-        bool isKinematic = rigidBody->isKinematicObject();
 
-        short filterGroup = isDynamic ? btBroadphaseProxy::DefaultFilter : 
-            (isKinematic ? (btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::StaticFilter);
-        if (!isDynamic) {
+        bool isStatic = rigidBody->isStaticObject();
+        bool isKinematic = rigidBody->isKinematicObject();
+        
+        short filterGroup = isStatic ? (isKinematic ? (btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::DefaultFilter; 
+        short filterMask = btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger | btBroadphaseProxy::CharacterFilter;
+        if (isStatic) {
             filterMask = filterMask & ~btBroadphaseProxy::StaticFilter;
         }
 
         physicsWorld->dynamicsWorld->addRigidBody(rigidBody, filterGroup, filterMask);
         break; }
     case Type::Character:
-        physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::CharacterFilter, filterMask);
-        break;
-    case Type::Debris:
-        physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::DebrisFilter, filterMask);
+        physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::CharacterFilter, 
+            btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger | btBroadphaseProxy::CharacterFilter);
         break;
     case Type::Sensor:
-        physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::SensorTrigger, filterMask);
+        physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::SensorTrigger, 
+            btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter /* FIXME: remove? */ | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter);
         break;
     default:
         BE_WARNLOG(L"PhysCollidable::AddToWorld: invalid collidable type %i\n", type);
@@ -195,10 +214,13 @@ void PhysCollidable::RemoveFromWorld() {
         physicsWorld->dynamicsWorld->removeRigidBody(static_cast<btRigidBody *>(collisionObject));
         break;
     case Type::Character:
-    case Type::Debris:
-    case Type::Sensor:
-    default:
         physicsWorld->dynamicsWorld->removeCollisionObject(collisionObject);
+        break;
+    case Type::Sensor:
+        physicsWorld->dynamicsWorld->removeCollisionObject(collisionObject);
+        break;
+    default:
+        BE_WARNLOG(L"PhysCollidable::RemoveFromWorld: invalid collidable type %i\n", type);
         break;
     }
 

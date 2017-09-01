@@ -23,9 +23,9 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef     SIG_ComponentInserted("componentInserted", "ai");
-const SignalDef     SIG_ComponentRemoved("componentRemoved", "a");
-const SignalDef     SIG_LayerChanged("layerChanged", "a");
+const SignalDef Entity::SIG_ComponentInserted("componentInserted", "ai");
+const SignalDef Entity::SIG_ComponentRemoved("componentRemoved", "a");
+const SignalDef Entity::SIG_LayerChanged("layerChanged", "a");
 
 OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
@@ -48,11 +48,11 @@ Entity::Entity() {
     frozen = false;
     initialized = false;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&Entity::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&Entity::PropertyChanged);
 }
 
 Entity::~Entity() {
-    Purge();    
+    Purge();
 }
 
 Entity *Entity::CreateEntity(Json::Value &entityValue) {
@@ -62,8 +62,6 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
     }
 
     entityGuid = Guid::ParseString(entityValue["guid"].asCString());
-
-    //BE_LOG(L"CreateEntity: %hs \n", entityGuid.ToString());
 
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
     entity->props->Init(entityValue);
@@ -189,7 +187,8 @@ bool Entity::IsPrefabInstance() const {
 
 Entity *Entity::GetPrefabParent() const {
     Guid prefabParentGuid = props->Get("prefabParent").As<Guid>();
-    Entity *prefabParent = Entity::FindInstance(prefabParentGuid)->Cast<Entity>();
+    Object *prefabParentObj = Entity::FindInstance(prefabParentGuid);
+    Entity *prefabParent = prefabParentObj ? prefabParentObj->Cast<Entity>() : nullptr;
     return prefabParent;
 }
 
@@ -271,7 +270,6 @@ Entity *Entity::FindChild(const char *name) const {
             return child;
         }
     }
-
     return nullptr;
 }
 
@@ -284,7 +282,6 @@ bool Entity::HasRenderEntity(int renderEntityHandle) const {
             }
         }
     }
-
     return false;
 }
 
@@ -334,9 +331,10 @@ void Entity::InitHierarchy() {
 
     const Guid parentGuid = props->Get("parent").As<Guid>();
     if (!parentGuid.IsZero()) {
-        parent = Entity::FindInstance(parentGuid)->Cast<Entity>();
+        Object *parentObj = Entity::FindInstance(parentGuid);
+        parent = parentObj ? parentObj->Cast<Entity>() : nullptr;
         if (!parent) {
-            BE_WARNLOG(L"Couldn't find parent entity %hs\n", parentGuid.ToString());
+            BE_WARNLOG(L"Couldn't find parent entity %hs of %hs\n", parentGuid.ToString(), name.c_str());
         }
     }
 
@@ -346,7 +344,9 @@ void Entity::InitHierarchy() {
 }
 
 void Entity::Init() {
-    frozen = props->Get("frozen").As<bool>();
+    if (!gameWorld) {
+        return;
+    }
 
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
@@ -354,6 +354,8 @@ void Entity::Init() {
             component->Init();
         }
     }
+
+    frozen = props->Get("frozen").As<bool>();
 
     ComRenderable *renderable = GetComponent<ComRenderable>();
     if (renderable) {
@@ -364,6 +366,10 @@ void Entity::Init() {
 }
 
 void Entity::Awake() {
+    if (!gameWorld) {
+        return;
+    }
+
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component) {
@@ -373,6 +379,10 @@ void Entity::Awake() {
 }
 
 void Entity::Start() {
+    if (!gameWorld) {
+        return;
+    }
+
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component) {
@@ -382,6 +392,10 @@ void Entity::Start() {
 }
 
 void Entity::Update() {
+    if (!gameWorld) {
+        return;
+    }
+
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component && component->IsEnabled()) {
@@ -391,6 +405,10 @@ void Entity::Update() {
 }
 
 void Entity::LateUpdate() {
+    if (!gameWorld) {
+        return;
+    }
+
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component && component->IsEnabled()) {
@@ -532,6 +550,16 @@ bool Entity::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCu
     return false;
 }
 
+void Entity::DestroyInstance(Entity *entity) {
+    EntityPtrArray children;
+    entity->GetChildren(children);
+
+    for (int i = children.Count() - 1; i >= 0; i--) {
+        Object::DestroyInstance(children[i]);
+    }
+    Object::DestroyInstance(entity);
+}
+
 void Entity::PropertyChanged(const char *classname, const char *propName) {
     if (!initialized) {
         return;
@@ -556,7 +584,8 @@ void Entity::PropertyChanged(const char *classname, const char *propName) {
 
     if (!Str::Cmp(propName, "parent")) {
         Guid parentGuid = props->Get("parent").As<Guid>();
-        Entity *parent = Entity::FindInstance(parentGuid)->Cast<Entity>();
+        Object *parentObj = Entity::FindInstance(parentGuid);
+        Entity *parent = parentObj ? parentObj->Cast<Entity>() : nullptr;
         ComTransform *transform = GetTransform();
         Mat4 localMatrix;
 

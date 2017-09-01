@@ -25,8 +25,9 @@ class ComCharacterController;
 
 class Collision {
 public:
-    bool                    operator==(const Collision &rhs) const { return entity == rhs.entity && body == rhs.body && controller == rhs.controller; }
+    bool                    operator==(const Collision &rhs) const { return entityGuid == rhs.entityGuid && body == rhs.body && controller == rhs.controller; }
 
+    Guid                    entityGuid;
     Entity *                entity;
     ComRigidBody *          body;
     ComCharacterController *controller;
@@ -39,16 +40,6 @@ public:
 class ComRigidBody : public Component {
 public:
     OBJECT_PROTOTYPE(ComRigidBody);
-
-    class CollisionListener : public PhysCollisionListener {
-    public:
-        CollisionListener(ComRigidBody *body) { this->body = body; }
-        virtual ~CollisionListener() {}
-
-        virtual void        Collide(const PhysCollidable *objectA, const PhysCollidable *objectB, const Vec3 &point, const Vec3 &normal, float distance, float impulse) override;
-
-        ComRigidBody *      body;
-    };
 
     ComRigidBody();
     virtual ~ComRigidBody();
@@ -124,17 +115,21 @@ public:
 
     PhysRigidBody *         GetBody() const { return body; }
 
+    static const SignalDef  SIG_PhysicsUpdated;
+
 protected:
+    void                    ProcessScriptCallback();
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
+
+    class CollisionListener;
 
     PhysRigidBody *         body;
     PhysCollidableDesc      physicsDesc;
     CollisionListener *     collisionListener;
-    Array<Collision>        collisionArray;
-    Array<Collision>        oldCollisionArray;
+    Array<Collision>        collisions;
+    Array<Collision>        oldCollisions;
+    bool                    physicsUpdating;
 };
-
-extern const SignalDef      SIG_PhysicsUpdated;
 
 BE_NAMESPACE_END

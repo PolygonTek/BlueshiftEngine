@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Core/Heap.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 #include "File/FileSystem.h"
 #include "Sound/Pcm.h"
 #include "vorbis/vorbisfile.h"
@@ -99,7 +99,7 @@ int Pcm::DecodeFile_OggVorbis(byte *outBuffer, int len) {
     int currentSection;
 
     do {
-        int length = len - readBytes;
+        int length = (int)(len - readBytes);
         if (!length) {
             break;
         }

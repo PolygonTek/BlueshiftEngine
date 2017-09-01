@@ -71,7 +71,7 @@ public:
     bool IsValid() const { return _l != nullptr; }
     const std::string Name() const { return _name; }
     const std::string LastName() const {
-        size_t pos = _name.find_last_of(".");
+        size_t pos = _name.find_last_of('.');
         if (pos == std::string::npos) {
             return _name;
         }
@@ -478,7 +478,7 @@ private:
 
     // Pushes key element to the stack
     // ex) table[key]
-    void _get(LuaRef key) const {
+    void _get(const LuaRef &key) const {
         // NOTE: Assume that table is already pushed
         // Push table[key]
         key.Push(_l);

@@ -20,8 +20,8 @@
 
 @interface MyWindow : NSWindow
 
-@property (nonatomic, assign) BE1::Renderer::Handle context;
-@property (nonatomic, assign) BE1::Renderer::Handle renderTarget;
+@property (nonatomic, assign) BE1::RHI::Handle context;
+@property (nonatomic, assign) BE1::RHI::Handle renderTarget;
 
 @end
 
@@ -84,7 +84,7 @@ __strong MyWindow *subWindow;
     [NSApp sendEvent: event];
 }
 
-- (MyWindow *)createGLWindow:(NSSize)size title:(NSString *)title sharedContext:(bool)shared displayFunc:(BE1::Renderer::DisplayContextFunc)displayFunc {
+- (MyWindow *)createGLWindow:(NSSize)size title:(NSString *)title sharedContext:(bool)shared displayFunc:(BE1::RHI::DisplayContextFunc)displayFunc {
     NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask;
     
     NSRect contentRect = NSMakeRect(0, 0, size.width, size.height);
@@ -105,9 +105,9 @@ __strong MyWindow *subWindow;
     
     NSView *contentView = [window contentView];
     
-    window.context = BE1::glr.CreateContext((__bridge BE1::Renderer::WindowHandle)contentView, shared);
+    window.context = BE1::rhi.CreateContext((__bridge BE1::RHI::WindowHandle)contentView, shared);
     
-    BE1::glr.SetContextDisplayFunc(window.context, displayFunc, NULL, true);
+    BE1::rhi.SetContextDisplayFunc(window.context, displayFunc, NULL, true);
     
     [window makeKeyAndOrderFront:nil];
     
@@ -135,7 +135,7 @@ static void SystemError(int errLevel, const wchar_t *msg) {
     }
 }
 
-static void DisplayMainContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
     static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
     float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
     
@@ -143,7 +143,7 @@ static void DisplayMainContext(BE1::Renderer::Handle context, void *dataPtr) {
 }
 
 #ifdef CREATE_SUB_WINDOW
-static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
     float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
     
@@ -179,16 +179,16 @@ static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
     ::app.FreeResources();
     
     if (mainWindow.context) {
-        BE1::glr.DeleteRenderTarget(mainWindow.renderTarget);
-        BE1::glr.DestroyContext(mainWindow.context);
-        mainWindow.context = BE1::Renderer::NullContext;
+        BE1::rhi.DeleteRenderTarget(mainWindow.renderTarget);
+        BE1::rhi.DestroyContext(mainWindow.context);
+        mainWindow.context = BE1::RHI::NullContext;
     }
    
 #ifdef CREATE_SUB_WINDOW
     if (subWindow.context) {
-        BE1::glr.DeleteRenderTarget(subWindow.renderTarget);
-        BE1::glr.DestroyContext(subWindow.context);
-        subWindow.context = BE1::Renderer::NullContext;
+        BE1::rhi.DeleteRenderTarget(subWindow.renderTarget);
+        BE1::rhi.DestroyContext(subWindow.context);
+        subWindow.context = BE1::RHI::NullContext;
     }
 #endif
     
@@ -201,9 +201,9 @@ static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
     MyWindow *window = [notification object];
     
     if (window.context) {
-        BE1::glr.DeleteRenderTarget(window.renderTarget);
-        BE1::glr.DestroyContext(window.context);
-        window.context = BE1::Renderer::NullContext;
+        BE1::rhi.DeleteRenderTarget(window.renderTarget);
+        BE1::rhi.DestroyContext(window.context);
+        window.context = BE1::RHI::NullContext;
     }
 }
 
@@ -216,7 +216,7 @@ static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
     
     NSSize size = [[window contentView] frame].size;
     
-    BE1::glr.SetFullscreen(window.context, size.width, size.height);
+    BE1::rhi.SetFullscreen(window.context, size.width, size.height);
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification {
@@ -226,7 +226,7 @@ static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
     //NSInteger oldStyleMask = [window styleMask];
     //[window setStyleMask:oldStyleMask & ~NSResizableWindowMask];
     
-    BE1::glr.ResetFullscreen(window.context);
+    BE1::rhi.ResetFullscreen(window.context);
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
@@ -245,11 +245,11 @@ static void DisplaySubContext(BE1::Renderer::Handle context, void *dataPtr) {
         ::app.RunFrame();
         
         if (mainWindow.context) {
-            BE1::glr.DisplayContext(mainWindow.context);
+            BE1::rhi.DisplayContext(mainWindow.context);
         }
 #ifdef CREATE_SUB_WINDOW
         if (subWindow.context) {
-            BE1::glr.DisplayContext(subWindow.context);
+            BE1::rhi.DisplayContext(subWindow.context);
         }
 #endif
     }

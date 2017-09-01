@@ -23,10 +23,8 @@ public:
     Variant();
     Variant(const char *text);
     template <typename T> Variant(const T &value);
-
-    Variant &               operator=(const Variant &rhs);
-    template <typename T>
-    Variant &               operator=(const T &rhs);
+    template <typename T> Variant &operator=(const T &rhs);
+    Variant &operator=(const Variant &rhs);
 
     bool                    operator==(const Variant &rhs) const;
     bool                    operator!=(const Variant &rhs) const { return !(*this == rhs); }
@@ -53,9 +51,8 @@ BE_INLINE Variant::Variant() {
     podSize = 0;
 }
 
-BE_INLINE Variant::Variant(const char *text) {
-    podSize = 0;
-    str = text;
+BE_INLINE Variant::Variant(const char *text) : 
+    podSize(0), str(text) {
 }
 
 template <typename T>
@@ -66,9 +63,8 @@ BE_INLINE Variant::Variant(const T &value) {
 }
 
 template <>
-BE_INLINE Variant::Variant(const Str &value) {
-    podSize = 0;
-    str = value;
+BE_INLINE Variant::Variant(const Str &value) : 
+    podSize(0), str(value) {
 }
 
 BE_INLINE Variant &Variant::operator=(const Variant &rhs) {

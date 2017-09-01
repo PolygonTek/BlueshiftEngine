@@ -86,6 +86,12 @@ public:
     explicit WStr(const unsigned u);
     /// Construct from a float.
     explicit WStr(const float f);
+    /// Assign a wide string.
+    WStr &operator=(const WStr &a);
+    /// Move a wide string.
+    WStr &operator=(WStr &&a);
+    /// Assign a null-terminated wide character C string.
+    WStr &operator=(const wchar_t *text);
     /// Destructs.
     ~WStr();
 
@@ -159,13 +165,6 @@ public:
 
                         /// String ranking algorithm that produced a number between 0 and 1 representing the similarity between two strings.
     float               FuzzyScore(const wchar_t *text, float fuzziness = 0.0f) const;
-
-                        /// Assign a wide string.
-    void                operator=(const WStr &a);
-                        /// Move a wide string.
-    void                operator=(WStr &&a);
-                        /// Assign a null-terminated wide character C string.
-    void                operator=(const wchar_t *text);
 
                         /// Add-assign a wide string.
     WStr &              operator+=(const WStr &a);
@@ -387,9 +386,9 @@ private:
     static constexpr int AllocGranularity = 32;
     static constexpr int FileNameHashSize = 1024;
 
-    int                 len;                        ///< String length
     wchar_t *           data;                       ///< String Data pointer
     size_t              alloced;                    ///< Allocated data size
+    int                 len;                        ///< String length
     wchar_t             baseBuffer[BaseLength];     ///< Default base buffer
 };
 
@@ -496,6 +495,29 @@ BE_INLINE WStr::WStr(const float f) : WStr() {
     len = l;
 }
 
+BE_INLINE WStr &WStr::operator=(const WStr &a) {
+    int l = a.Length();
+    EnsureAlloced(l + 1, false);
+    wcsncpy(data, a.data, l);
+    data[l] = L'\0';
+    len = l;
+    return *this;
+}
+
+BE_INLINE WStr &WStr::operator=(WStr &&a) {
+    BE1::Swap(len, a.len);
+    BE1::Swap(alloced, a.alloced);
+    BE1::Swap(data, a.data);
+    if (data == a.baseBuffer) {
+        wcscpy(baseBuffer, a.baseBuffer);
+        data = baseBuffer;
+    }
+    if (a.data == baseBuffer) {
+        a.data = a.baseBuffer;
+    }
+    return *this;
+}
+
 BE_INLINE WStr::~WStr() {
     FreeData();
 }
@@ -512,27 +534,6 @@ BE_INLINE const wchar_t &WStr::operator[](int index) const {
 BE_INLINE wchar_t &WStr::operator[](int index) {
     assert((index >= 0) && (index <= len));
     return data[index];
-}
-
-BE_INLINE void WStr::operator=(const WStr &a) {
-    int l = a.Length();
-    EnsureAlloced(l + 1, false);
-    wcsncpy(data, a.data, l);
-    data[l] = L'\0';
-    len = l;
-}
-
-BE_INLINE void WStr::operator=(WStr &&a) {
-    BE1::Swap(len, a.len);
-    BE1::Swap(alloced, a.alloced);
-    BE1::Swap(data, a.data);
-    if (data == a.baseBuffer) {
-        wcscpy(baseBuffer, a.baseBuffer);
-        data = baseBuffer;
-    }
-    if (a.data == baseBuffer) {
-        a.data = a.baseBuffer;
-    }
 }
 
 BE_INLINE WStr &WStr::operator+=(const WStr &a) {

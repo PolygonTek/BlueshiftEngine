@@ -82,7 +82,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
         commandLines[i][1] = 0;
     }
 
-    Renderer::Settings settings;
+    RHI::Settings settings;
     settings.colorBits      = cvarSystem.GetCVarInteger(L"r_colorBits");
     settings.alphaBits      = settings.colorBits == 32 ? 8 : 0;
     settings.depthBits      = cvarSystem.GetCVarInteger(L"r_depthBits");
@@ -132,12 +132,18 @@ void GameClient::InitDefaultGuids() {
     resourceGuidMapper.Set(GuidMapper::flatNormalTextureGuid, "_flatNormalTexture");
     resourceGuidMapper.Set(GuidMapper::normalCubeTextureGuid, "_normalCubeTexture");
     resourceGuidMapper.Set(GuidMapper::cubicNormalCubeTextureGuid, "_cubicNormalCubeTexture");
-    resourceGuidMapper.Set(GuidMapper::genericLightingShaderGuid, "Shaders/lightingGeneric.shader");
+    resourceGuidMapper.Set(GuidMapper::simpleShaderGuid, "Shaders/Simple.shader");
+    resourceGuidMapper.Set(GuidMapper::standardSpecularShaderGuid, "Shaders/StandardSpec.shader");
+    resourceGuidMapper.Set(GuidMapper::standardShaderGuid, "Shaders/Standard.shader");
+    resourceGuidMapper.Set(GuidMapper::phongLightingShaderGuid, "Shaders/Phong.shader");
+    resourceGuidMapper.Set(GuidMapper::skyboxCubemapShaderGuid, "Shaders/skyboxCubemap.shader");
+    resourceGuidMapper.Set(GuidMapper::skyboxSixSidedShaderGuid, "Shaders/skyboxSixSided.shader");
     resourceGuidMapper.Set(GuidMapper::defaultMaterialGuid, "_defaultMaterial");
     resourceGuidMapper.Set(GuidMapper::whiteMaterialGuid, "_whiteMaterial");
     resourceGuidMapper.Set(GuidMapper::blendMaterialGuid, "_blendMaterial");
     resourceGuidMapper.Set(GuidMapper::whiteLightMaterialGuid, "_whiteLightMaterial");
     resourceGuidMapper.Set(GuidMapper::zeroClampLightMaterialGuid, "_zeroClampLightMaterial");
+    resourceGuidMapper.Set(GuidMapper::defaultSkyboxMaterialGuid, "_defaultSkyboxMaterial");
     resourceGuidMapper.Set(GuidMapper::defaultFontGuid, FontManager::defaultFontFilename);
     resourceGuidMapper.Set(GuidMapper::defaultSkeletonGuid, "_defaultSkeleton");
     resourceGuidMapper.Set(GuidMapper::defaultMeshGuid, "_defaultMesh");
@@ -148,6 +154,7 @@ void GameClient::InitDefaultGuids() {
     resourceGuidMapper.Set(GuidMapper::geoSphereMeshGuid, "_defaultGeoSphereMesh");
     resourceGuidMapper.Set(GuidMapper::cylinderMeshGuid, "_defaultCylinderMesh");
     resourceGuidMapper.Set(GuidMapper::capsuleMeshGuid, "_defaultCapsuleMesh");
+    resourceGuidMapper.Set(GuidMapper::defaultParticleSystemGuid, "_defaultParticleSystem");
     resourceGuidMapper.Set(GuidMapper::defaultAnimControllerGuid, "_defaultAnimController");
     resourceGuidMapper.Set(GuidMapper::defaultSoundGuid, "_defaultSound");
 }

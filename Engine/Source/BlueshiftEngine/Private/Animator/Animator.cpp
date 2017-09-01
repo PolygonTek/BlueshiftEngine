@@ -18,9 +18,8 @@
 #include "Render/Mesh.h"
 #include "AnimController/AnimController.h"
 #include "Animator/Animator.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 #include "Core/JointPose.h"
-#include "SIMD/SIMD.h"
 #include "Game/Entity.h"
 
 BE_NAMESPACE_BEGIN
@@ -62,11 +61,11 @@ void Animator::FreeData() {
     animController = nullptr;
 }
 
-int Animator::Allocated() const {
+size_t Animator::Allocated() const {
     return numJoints * sizeof(jointMats[0]);
 }
 
-int Animator::Size() const {
+size_t Animator::Size() const {
     return sizeof(*this) + Allocated();
 }
 

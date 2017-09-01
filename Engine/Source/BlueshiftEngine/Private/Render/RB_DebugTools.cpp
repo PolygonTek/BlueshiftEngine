@@ -148,11 +148,11 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
         }
     }
 
-    if (prims >= Renderer::LinesPrim && prims <= Renderer::LineLoopPrim) {
+    if (prims >= RHI::LinesPrim && prims <= RHI::LineLoopPrim) {
         if (useSmoothLine) {
-            glr.EnableLineSmooth(true);
+            rhi.EnableLineSmooth(true);
         }
-        glr.SetLineWidth(lineWidth);
+        rhi.SetLineWidth(lineWidth);
     }
 
     const Shader *shader = ShaderManager::vertexColorShader;
@@ -160,34 +160,34 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     shader->Bind();
     shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);	
     
-    glr.BindBuffer(Renderer::VertexBuffer, bufferCacheManager.streamVertexBuffer);
-    glr.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
+    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    glr.SetVertexFormat(vertexFormats[VertexFormat::XyzColor].vertexFormatHandle);
-    glr.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::XyzColor].vertexFormatHandle);
+    rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
 
-    int stateBits = Renderer::PM_Solid | Renderer::ColorWrite;
+    int stateBits = RHI::PM_Solid | RHI::ColorWrite;
     if (depthTest) {
-        stateBits |= Renderer::DF_LEqual;
+        stateBits |= RHI::DF_LEqual;
     }
 
     if (needAlphaBlend || useSmoothLine) {
-        stateBits |= Renderer::BS_SrcAlpha | Renderer::BD_OneMinusSrcAlpha;
+        stateBits |= RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
     } else {
-        stateBits |= Renderer::DepthWrite;
+        stateBits |= RHI::DepthWrite;
     }
 
-    glr.SetStateBits(stateBits);
+    rhi.SetStateBits(stateBits);
 
-    int cullMode = twoSided ? Renderer::NoCull : Renderer::BackCull;
-    glr.SetCullFace(cullMode);
-    glr.DrawArrays((Renderer::Primitive)prims, 0, numVerts);
+    int cullMode = twoSided ? RHI::NoCull : RHI::BackCull;
+    rhi.SetCullFace(cullMode);
+    rhi.DrawArrays((RHI::Primitive)prims, 0, numVerts);
 
-    if (prims >= Renderer::LinesPrim && prims <= Renderer::LineLoopPrim) {
+    if (prims >= RHI::LinesPrim && prims <= RHI::LineLoopPrim) {
         if (useSmoothLine) {
-            glr.EnableLineSmooth(false);
+            rhi.EnableLineSmooth(false);
         }
-        glr.SetLineWidth(1);
+        rhi.SetLineWidth(1);
     }
 }
 
@@ -195,10 +195,10 @@ static int RB_CompareDebugPrims(const void *elem1, const void *elem2) {
     const DebugPrims *p1 = (DebugPrims *)elem1;
     const DebugPrims *p2 = (DebugPrims *)elem2;
 
-    int sortkey1 = (p1->depthTest << 5) | (((p1->color[3] + 1) & 0x100) >> 4) | (p1->prims);
-    int sortkey2 = (p2->depthTest << 5) | (((p2->color[3] + 1) & 0x100) >> 4) | (p2->prims);
+    int sortKey1 = (p1->depthTest << 5) | (((p1->color[3] + 1) & 0x100) >> 4) | (p1->prims);
+    int sortKey2 = (p2->depthTest << 5) | (((p2->color[3] + 1) & 0x100) >> 4) | (p2->prims);
     
-    return sortkey1 - sortkey2;
+    return sortKey1 - sortKey2;
 }
 
 static void RB_DrawDebugPrims() {
@@ -230,10 +230,10 @@ static void RB_DrawDebugPrims() {
             prev_twoSided = debugPrims->twoSided;
             prev_depthTest = debugPrims->depthTest;
         } else {
-            bool mergeablePrims = (prev_prims == debugPrims->prims) && (prev_prims == Renderer::LinesPrim || prev_prims == Renderer::TrianglesPrim);
+            bool mergeablePrims = (prev_prims == debugPrims->prims) && (prev_prims == RHI::LinesPrim || prev_prims == RHI::TrianglesPrim);
 
             if (numVerts + num > maxVerts || !mergeablePrims || prev_alpha != debugPrims->color[3] || 
-                (prev_prims == Renderer::LinesPrim && prev_lineWidth != debugPrims->lineWidth) ||
+                (prev_prims == RHI::LinesPrim && prev_lineWidth != debugPrims->lineWidth) ||
                 prev_twoSided != debugPrims->twoSided || prev_depthTest != debugPrims->depthTest) {
                 RB_DrawDebugPrimsElements(numElements, elements, numVerts, prev_lineWidth, prev_twoSided, prev_depthTest);
 
@@ -455,38 +455,38 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     }
 
     if (useSmoothLine) {
-        glr.EnableLineSmooth(true);
+        rhi.EnableLineSmooth(true);
     }
-    glr.SetLineWidth(lineWidth);
+    rhi.SetLineWidth(lineWidth);
 
     const Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
     shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);	
     
-    glr.BindBuffer(Renderer::VertexBuffer, bufferCacheManager.streamVertexBuffer);
-    glr.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
+    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    glr.SetVertexFormat(vertexFormats[VertexFormat::XyzColor].vertexFormatHandle);
-    glr.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::XyzColor].vertexFormatHandle);
+    rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
 
-    int stateBits = Renderer::PM_Solid | Renderer::ColorWrite;
+    int stateBits = RHI::PM_Solid | RHI::ColorWrite;
     if (depthTest) {
-        stateBits |= Renderer::DF_LEqual;
+        stateBits |= RHI::DF_LEqual;
     }
 
     if (needAlphaBlend || useSmoothLine) {
-        stateBits |= Renderer::BS_SrcAlpha | Renderer::BD_OneMinusSrcAlpha;
+        stateBits |= RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
     } else {
-        stateBits |= Renderer::DepthWrite;
+        stateBits |= RHI::DepthWrite;
     }
 
-    glr.SetStateBits(stateBits);
-    glr.DrawArrays(Renderer::LinesPrim, 0, numVerts);
+    rhi.SetStateBits(stateBits);
+    rhi.DrawArrays(RHI::LinesPrim, 0, numVerts);
 
-    glr.SetLineWidth(1);
+    rhi.SetLineWidth(1);
     if (useSmoothLine) {
-        glr.EnableLineSmooth(false);
+        rhi.EnableLineSmooth(false);
     }
 }
 
@@ -546,14 +546,15 @@ static void RB_DrawDebugText() {
 }
 
 void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
-    int					prevSortkey = -1;
-    const Material *	prevMaterial = nullptr;
-    viewEntity_t *		prevEntity = nullptr;
-    bool				depthhack = false;
-    bool				prevDepthHack = false;
+    uint64_t            prevSortkey = -1;
+    const Material *    prevMaterial = nullptr;
+    const viewEntity_t *prevSpace = nullptr;
+    bool                depthhack = false;
+    bool                prevDepthHack = false;
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
+
         if (!(surf->flags & DrawSurf::AmbientVisible)) {
             continue;
         }
@@ -562,44 +563,44 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             continue;
         }
         
-        if (surf->sortkey != prevSortkey) {
-            if (surf->material->GetCoverage() == Material::EmptyCoverage) {
+        if (surf->sortKey != prevSortkey) {
+            if (surf->material->GetSort() == Material::Sort::SkySort) {
                 continue;
             }
 
-            if (surf->material != prevMaterial || surf->entity != prevEntity) {
+            if (surf->material != prevMaterial || surf->space != prevSpace) {
                 if (prevMaterial) {
                     backEnd.rbsurf.Flush();
                 }
 
-                backEnd.rbsurf.Begin(RBSurf::TriFlush, surf->material, surf->materialRegisters, surf->entity, nullptr);
+                backEnd.rbsurf.Begin(RBSurf::TriFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
 
                 prevMaterial = surf->material;
             }
 
-            if (surf->entity != prevEntity) {
-                prevEntity = surf->entity;
+            if (surf->space != prevSpace) {
+                prevSpace = surf->space;
 
-                backEnd.modelViewMatrix = surf->entity->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->entity->modelViewProjMatrix;
+                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                depthhack = surf->entity->def->parms.depthHack;
+                depthhack = surf->space->def->parms.depthHack;
             
                 if (prevDepthHack != depthhack) {
                     if (depthhack) {
-                        glr.SetDepthRange(0.0f, 0.1f);
+                        rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
-                        glr.SetDepthRange(0.0f, 1.0f);
+                        rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
                     prevDepthHack = depthhack;
                 }
             }
 
-            prevSortkey = surf->sortkey;
+            prevSortkey = surf->sortKey;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh, surf->guiSubMesh);
+        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
@@ -608,13 +609,13 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
 
     // restore depthhack
     if (depthhack) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
 static void RB_DrawDebugLights(int mode) {
     if (mode == 2) {
-        glr.SetDepthRange(0.0f, 0.0f);
+        rhi.SetDepthRange(0.0f, 0.0f);
     }
 
     for (viewLight_t *viewLight = backEnd.viewLights; viewLight; viewLight = viewLight->next) {
@@ -622,8 +623,8 @@ static void RB_DrawDebugLights(int mode) {
             continue;
         }
         
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::BS_SrcAlpha | Renderer::BD_One | Renderer::DF_LEqual);
-        glr.SetCullFace(Renderer::BackCull);
+        rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_LEqual);
+        rhi.SetCullFace(RHI::BackCull);
 
         const Shader *shader = ShaderManager::constantColorShader;
 
@@ -633,16 +634,18 @@ static void RB_DrawDebugLights(int mode) {
         shader->SetConstant4f("color", Color4(Color3(&viewLight->def->parms.materialParms[SceneEntity::RedParm]), 0.25f));
         RB_DrawLightVolume(viewLight->def);
 
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::PM_Wireframe | Renderer::DF_LEqual);
-        glr.SetCullFace(Renderer::NoCull);
+        rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe | RHI::DF_LEqual);
+        rhi.SetCullFace(RHI::NoCull);
 
         shader->SetConstant4f("color", &viewLight->def->parms.materialParms[SceneEntity::RedParm]);
     
         RB_DrawLightVolume(viewLight->def);
+
+        RB_DrawAABB(viewLight->litAABB);
     }
 
     if (mode == 2) {
-        glr.SetDepthRange(0.0f, 1.0f);
+        rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
@@ -652,8 +655,8 @@ static void RB_DrawDebugLightScissorRects() {
             continue;
         }
 
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::PM_Wireframe);
-        glr.SetCullFace(Renderer::NoCull);
+        rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe);
+        rhi.SetCullFace(RHI::NoCull);
         
         const Shader *shader = ShaderManager::postPassThruColorShader;
 
@@ -697,8 +700,8 @@ void RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
             bglColor4ub(255, 255, 0, 127);
 
-            glr.SetStateBits(ColorWrite | DF_LEqual | BS_SrcAlpha | BD_OneMinusSrcAlpha);
-            glr.SetCullFace(NoCull);
+            rhi.SetStateBits(ColorWrite | DF_LEqual | BS_SrcAlpha | BD_OneMinusSrcAlpha);
+            rhi.SetCullFace(NoCull);
 
             bglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 

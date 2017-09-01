@@ -60,13 +60,19 @@ public:
     static Guid             cubicNormalCubeTextureGuid;
     static Guid             currentRenderTextureGuid;
 
-    static Guid             genericLightingShaderGuid;
+    static Guid             simpleShaderGuid;
+    static Guid             standardSpecularShaderGuid;
+    static Guid             standardShaderGuid;
+    static Guid             phongLightingShaderGuid;
+    static Guid             skyboxCubemapShaderGuid;
+    static Guid             skyboxSixSidedShaderGuid;
 
     static Guid             defaultMaterialGuid;
     static Guid             whiteMaterialGuid;
     static Guid             blendMaterialGuid;
     static Guid             whiteLightMaterialGuid;
     static Guid             zeroClampLightMaterialGuid;
+    static Guid             defaultSkyboxMaterialGuid;
 
     static Guid             defaultFontGuid;
 
@@ -78,6 +84,8 @@ public:
     static Guid             geoSphereMeshGuid;
     static Guid             cylinderMeshGuid;
     static Guid             capsuleMeshGuid;
+
+    static Guid             defaultParticleSystemGuid;
 
     static Guid             defaultSkeletonGuid;
 
@@ -109,6 +117,8 @@ BE_INLINE const Guid GuidMapper::Get(const Str &filePath) const {
 }
 
 BE_INLINE void GuidMapper::Set(const Guid &guid, const Str &filePath) {
+    Remove(guid);
+
     guidToFilePathMap.Set(guid, filePath);
     filePathToGuidMap.Set(filePath, guid);
 }

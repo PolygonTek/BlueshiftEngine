@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Core/Heap.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 #include "File/FileSystem.h"
 #include "Sound/Pcm.h"
 
@@ -229,6 +229,9 @@ int Pcm::DecodeFile_ImaAdpcmWave(byte *buffer, int len) {
 
 static bool FindChunkInFile(File *fp, uint32_t chunkId, uint32_t *chunkSize) {
     uint32_t id, length;
+    byte *tempBuffer = nullptr;
+    byte *tempMem = nullptr;
+    int tempMemSize = 0;
 
     while (1) {
         fp->ReadUInt32(id);
@@ -239,14 +242,29 @@ static bool FindChunkInFile(File *fp, uint32_t chunkId, uint32_t *chunkSize) {
             return true;
         }
 
-        if (length < 0x10000) {
-            byte *temp = (byte *)_alloca16(length);
-            fp->Read(temp, length);
+        if (length <= 0x10000) {
+            if (!tempBuffer) {
+                tempBuffer = (byte *)_alloca16(0x10000);
+            }
+
+            fp->Read(tempBuffer, length);
         } else {
-            byte *temp = (byte *)Mem_Alloc16(length);
-            fp->Read(temp, length);
-            Mem_AlignedFree(temp);
+            if (tempMem && length > tempMemSize) {
+                Mem_AlignedFree(tempMem);
+                tempMem = nullptr;
+            }
+
+            if (!tempMem) {
+                tempMemSize = length;
+                tempMem = (byte *)Mem_Alloc16(tempMemSize);
+            }
+
+            fp->Read(tempMem, length);
         }
+    }
+
+    if (tempMem) {
+        Mem_AlignedFree(tempMem);
     }
 
     return false;

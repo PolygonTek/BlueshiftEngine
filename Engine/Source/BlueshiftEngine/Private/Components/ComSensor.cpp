@@ -35,7 +35,7 @@ void ComSensor::RegisterProperties() {
 ComSensor::ComSensor() {
     sensor = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComSensor::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSensor::PropertyChanged);
 }
 
 ComSensor::~ComSensor() {
@@ -117,21 +117,16 @@ void ComSensor::Awake() {
 
         sensor = static_cast<PhysSensor *>(physicsSystem.CreateCollidable(&physicsDesc));
         sensor->SetUserPointer(this);
-        sensor->SetCollisionFilterMask(PhysCollidable::DefaultGroup | PhysCollidable::CharacterGroup | PhysCollidable::KinematicGroup | PhysCollidable::StaticGroup);
+        sensor->SetCustomCollisionFilterIndex(entity->GetLayer());
 
         if (IsEnabled()) {
             sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
 
-        transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
-
-        ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
-        if (rigidBody) {
-            rigidBody->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComSensor::PhysicsUpdated, SignalObject::Unique);
-        }
+        transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
     }
 
-    oldColliderArray.Clear();
+    oldColliders.Clear();
 }
 
 void ComSensor::Update() {
@@ -139,29 +134,45 @@ void ComSensor::Update() {
         return;
     }
 
-    Array<PhysCollidable *> newColliders;
-    sensor->GetOverlaps(newColliders);
+    ProcessScriptCallback();
+}
+
+void ComSensor::ProcessScriptCallback() {
+    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
+    if (scriptComponents.Count() == 0) {
+        return;
+    }
+
+    Array<PhysCollidable *> colliders;
+    sensor->GetOverlaps(colliders);
+
+    Array<Guid> newColliders;
+    newColliders.SetCount(colliders.Count());
+
+    for (int index = 0; index < colliders.Count(); index++) {
+        const Entity *entity = reinterpret_cast<Component *>(colliders[index]->GetUserPointer())->GetEntity();
+
+        newColliders.Append(entity->GetGuid());
+    }
 
     for (int newIndex = 0; newIndex < newColliders.Count(); newIndex++) {
-        const PhysCollidable *collider = newColliders[newIndex];
+        const Guid &collider = newColliders[newIndex];
 
         bool stay = false;
-        for (int oldIndex = 0; oldIndex < oldColliderArray.Count(); oldIndex++) {
-            if (oldColliderArray[oldIndex] == collider) {
-                oldColliderArray.RemoveIndexFast(oldIndex);
+        for (int oldIndex = 0; oldIndex < oldColliders.Count(); oldIndex++) {
+            if (oldColliders[oldIndex] == collider) {
+                oldColliders.RemoveIndexFast(oldIndex);
                 stay = true;
                 break;
             }
         }
 
         // Get the collided entity
-        const Entity *entity = reinterpret_cast<Component *>(collider->GetUserPointer())->GetEntity();
-        if (entity == GetEntity()) {
-            // Ignore self
+        const Entity *entity = (Entity *)Entity::FindInstance(collider);
+        if (!entity || entity == GetEntity()) {
             continue;
         }
 
-        ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
@@ -173,17 +184,15 @@ void ComSensor::Update() {
         }
     }
 
-    for (int oldIndex = 0; oldIndex < oldColliderArray.Count(); oldIndex++) {
-        const PhysCollidable *collider = oldColliderArray[oldIndex];
+    for (int oldIndex = 0; oldIndex < oldColliders.Count(); oldIndex++) {
+        const Guid &collider = oldColliders[oldIndex];
 
         // Get the collided entity in past
-        const Entity *entity = reinterpret_cast<Component *>(collider->GetUserPointer())->GetEntity();
-        if (entity == GetEntity()) {
-            // Ignore self
+        const Entity *entity = (Entity *)Entity::FindInstance(collider);
+        if (!entity || entity == GetEntity()) {
             continue;
         }
 
-        ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
@@ -191,7 +200,7 @@ void ComSensor::Update() {
         }
     }
 
-    oldColliderArray = newColliders;
+    oldColliders.Swap(newColliders);
 }
 
 void ComSensor::Enable(bool enable) {
@@ -225,14 +234,6 @@ void ComSensor::TransformUpdated(const ComTransform *transform) {
     if (sensor) {
         sensor->SetOrigin(transform->GetOrigin());
         sensor->SetAxis(transform->GetAxis());
-        sensor->Activate();
-    }
-}
-
-void ComSensor::PhysicsUpdated(const PhysRigidBody *body) {
-    if (sensor) {
-        sensor->SetOrigin(body->GetOrigin());
-        sensor->SetAxis(body->GetAxis());
         sensor->Activate();
     }
 }

@@ -24,8 +24,8 @@ CVAR(r_multiSamples, L"0", CVar::Integer | CVar::Archive, L"number of antialiasi
 
 CVAR(r_gamma, L"1.0", CVar::Float | CVar::Archive, L"changes gamma tables");
 CVAR(r_swapInterval, L"0", CVar::Integer | CVar::Archive, L"");
-CVAR(r_dynamicCacheVertexBytes, L"0x200000", CVar::Integer | CVar::Archive, L"size of dynamic vertex buffer");
-CVAR(r_dynamicCacheIndexBytes, L"0x200000", CVar::Integer | CVar::Archive, L"size of dynamic index buffer");
+CVAR(r_dynamicCacheVertexBytes, L"0x800000", CVar::Integer, L"size of dynamic vertex buffer");
+CVAR(r_dynamicCacheIndexBytes, L"0x300000", CVar::Integer, L"size of dynamic index buffer");
 
 CVAR(r_fastSkinning, L"3", CVar::Integer | CVar::Archive, L"matrix skinning calculation, 0 = CPU skinning, 1 = VS skinning, 2 = VTF skinning, 3 = VTF skinning with instancing");
 CVAR(r_vertexTextureUpdate, L"2", CVar::Integer | CVar::Archive, L"texel fetch buffer, 0 = direct copy, 1 = PBO, 2 = TBO");
@@ -47,10 +47,10 @@ CVAR(r_CSM_selectionMethod, L"1", CVar::Integer, L"cascade selection method, 0 =
 CVAR(r_CSM_splitLamda, L"0.9", CVar::Float, L"");
 CVAR(r_CSM_blend, L"1", CVar::Bool, L"");
 CVAR(r_CSM_blendSize, L"0.09375", CVar::Float, L"");
-CVAR(r_CSM_offsetFactor0, L"8.0", CVar::Float, L"scale value for CSM0 drawing");
-CVAR(r_CSM_offsetFactor1, L"4.0", CVar::Float, L"scale value for CSM1 drawing");
+CVAR(r_CSM_offsetFactor0, L"3.0", CVar::Float, L"scale value for CSM0 drawing");
+CVAR(r_CSM_offsetFactor1, L"2.5", CVar::Float, L"scale value for CSM1 drawing");
 CVAR(r_CSM_offsetFactor2, L"2.0", CVar::Float, L"scale value for CSM2 drawing");
-CVAR(r_CSM_offsetFactor3, L"2.0", CVar::Float, L"scale value for CSM3 drawing");
+CVAR(r_CSM_offsetFactor3, L"1.5", CVar::Float, L"scale value for CSM3 drawing");
 CVAR(r_CSM_offsetUnits0, L"16", CVar::Float, L"bias value added to depth test for CSM0 drawing");
 CVAR(r_CSM_offsetUnits1, L"32", CVar::Float, L"bias value added to depth test for CSM1 drawing");
 CVAR(r_CSM_offsetUnits2, L"64", CVar::Float, L"bias value added to depth test for CSM2 drawing");
@@ -61,7 +61,7 @@ CVAR(r_HOM, L"0", CVar::Bool, L"use hierarchical occlusion map culling");
 CVAR(r_HOM_debug, L"0", CVar::Bool, L"");
 
 CVAR(r_ambientLit, L"1", CVar::Bool | CVar::Archive, L"use ambient lighting");
-CVAR(r_ambientScale, L"1.0", CVar::Float | CVar::Archive, L"ambient light intensities are mutipled by this");
+CVAR(r_ambientScale, L"0.5", CVar::Float | CVar::Archive, L"ambient light intensities are mutipled by this");
 CVAR(r_lightScale, L"1.0", CVar::Float | CVar::Archive, L"all light intensities are multiplied by this");
 CVAR(r_offsetFactor, L"1", CVar::Float, L"polygon offset parameter");
 CVAR(r_offsetUnits, L"2", CVar::Float, L"polygon offset parameter");

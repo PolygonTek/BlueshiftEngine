@@ -33,7 +33,7 @@ public:
     enum { Size = 4 };
 
     /// The default constructor does not initialize any members of this class.
-    Vec4() {}
+    Vec4() = default;
     /// Constructs a Vec4 with the value (x, y, z, w).
     Vec4(float x, float y, float z, float w);
     /// Constructs a Vec4 with the value (xyz.x, xyz.y, xyz.z, w).
@@ -81,7 +81,7 @@ public:
                         /// This function is identical to the member function AddScalar().
     Vec4                operator+(float rhs) const { return Vec4(x + rhs, y + rhs, z + rhs, w + rhs); }
                         /// Adds the vector v to vector (s, s, s, s).
-    friend Vec4         operator+(float lhs, const Vec4 rhs) { return Vec4(lhs + rhs.x, lhs + rhs.y, lhs + rhs.z, lhs + rhs.w); }
+    friend Vec4         operator+(float lhs, const Vec4 &rhs) { return Vec4(lhs + rhs.x, lhs + rhs.y, lhs + rhs.z, lhs + rhs.w); }
 
                         /// Subtracts a vector from this vector.
     Vec4                Sub(const Vec4 &v) const { return *this - v; }
@@ -94,7 +94,7 @@ public:
                         /// This function is identical to the member function SubScalar()
     Vec4                operator-(float rhs) const { return Vec4(x - rhs, y - rhs, z - rhs, w - rhs); }
                         /// Subtracts the vector v from vector (s, s, s, s).
-    friend Vec4         operator-(float lhs, const Vec4 rhs) { return Vec4(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z, lhs - rhs.w); }
+    friend Vec4         operator-(float lhs, const Vec4 &rhs) { return Vec4(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z, lhs - rhs.w); }
 
                         /// Multiplies this vector by a scalar.
     Vec4                Mul(float s) const { return *this * s; }
@@ -102,7 +102,7 @@ public:
                         /// This function is identical to the member function Mul().
     Vec4                operator*(float rhs) const { return Vec4(x * rhs, y * rhs, z * rhs, w * rhs); }
                         /// Multiplies vector v by a scalar.
-    friend Vec4         operator*(float lhs, const Vec4 rhs) { return Vec4(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w); }
+    friend Vec4         operator*(float lhs, const Vec4 &rhs) { return Vec4(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w); }
                         /// Multiplies this vector by a vector, element-wise.
     Vec4                MulComp(const Vec4 &v) const { return *this * v; }
                         /// Multiplies this vector by a vector, element-wise.
@@ -120,7 +120,7 @@ public:
                         /// Divides this vector by a vector, element-wise.
     Vec4                operator/(const Vec4 &rhs) const { return Vec4(x / rhs.x, y / rhs.y, z / rhs.z, w / rhs.w); }
                         /// Divides vector (s, s, s, s) by a vector v, element-wise.
-    friend Vec4         operator/(float lhs, const Vec4 rhs) { return Vec4(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z, lhs / rhs.w); }
+    friend Vec4         operator/(float lhs, const Vec4 &rhs) { return Vec4(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z, lhs / rhs.w); }
     
                         /// Adds a vector to this vector, in-place.
     Vec4 &              AddSelf(const Vec4 &v) { *this += v; return *this; }

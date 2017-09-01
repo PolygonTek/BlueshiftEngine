@@ -56,7 +56,7 @@ public:
     };
 
     /// The default constructor does not initialize any members of this class.
-    Plane() {}
+    Plane() = default;
     Plane(float a, float b, float c, float d);
     Plane(const Vec3 &n, float d);
 

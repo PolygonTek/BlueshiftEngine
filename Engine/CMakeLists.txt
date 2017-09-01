@@ -175,7 +175,8 @@ if (BUILD_ENGINE)
   add_subdirectory(Source/Dependencies/libjpeg)
   add_subdirectory(Source/Dependencies/libpng)
   add_subdirectory(Source/Dependencies/libpvrt)
-  add_subdirectory(Source/Dependencies/rg_etc1)
+  add_subdirectory(Source/Dependencies/etcpack)
+  add_subdirectory(Source/Dependencies/etc2comp)
   add_subdirectory(Source/Dependencies/freetype)
   add_subdirectory(Source/Dependencies/libogg)
   add_subdirectory(Source/Dependencies/libvorbis)
@@ -194,6 +195,8 @@ if (BUILD_ENGINE)
   add_subdirectory(Source/Dependencies/luasocket)
 
   add_subdirectory(Source/BlueshiftEngine)
+
+  add_subdirectory(Shaders)
 endif ()
 
 if (BUILD_PLAYER)

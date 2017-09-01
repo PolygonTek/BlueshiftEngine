@@ -14,14 +14,6 @@
 
 #pragma once
 
-/*
--------------------------------------------------------------------------------
-
-    Vertex
-
--------------------------------------------------------------------------------
-*/
-
 #include "Math/Math.h"
 
 BE_NAMESPACE_BEGIN
@@ -32,7 +24,7 @@ BE_NAMESPACE_BEGIN
 #define BYTE_TO_SIGNED_FLOAT(x)         ((x) * (2.0f / 255.0f) - 1.0f)
 #define SIGNED_FLOAT_TO_BYTE(x)         Math::Ftob(((x) + 1.0f) * (255.0f / 2.0f) + 0.5f)
 
-#if 0
+#if 1
 typedef uint32_t TriIndex;
 #else
 typedef uint16_t TriIndex;
@@ -47,30 +39,102 @@ struct DominantTri {
 /*
 -------------------------------------------------------------------------------
 
-    VertexNoLit
+    VertexGeneric
 
 -------------------------------------------------------------------------------
 */
 
-struct VertexNoLit {
+struct BE_API VertexGeneric {
     Vec3            xyz;
     float16_t       st[2];
     byte            color[4];
+
+    void            Clear();
+
+    float           operator[](const int index) const { return ((float *)(&xyz))[index]; }
+    float &         operator[](const int index) { return ((float *)(&xyz))[index]; }
+
+    const Vec3      GetPosition() const { return xyz; }
+
+    void            SetPosition(const Vec3 &p) { xyz = p; }
+    void            SetPosition(float x, float y, float z) { xyz.Set(x, y, z); }
+
+    const Vec2      GetTexCoord() const;
+    void            SetTexCoord(const Vec2 &st);
+    void            SetTexCoord(float s, float t);
+    void            SetTexCoordS(float s);
+    void            SetTexCoordT(float t);
+
+    void            SetColor(uint32_t color);
+    uint32_t        GetColor() const;
+
+    void            Lerp(const VertexGeneric &a, const VertexGeneric &b, const float f);
+
+    void            Transform(const Mat3 &rotation, const Vec3 &translation);
 };
+
+BE_INLINE void VertexGeneric::Clear() {
+    SetPosition(0, 0, 0);
+    SetTexCoord(0, 0);
+    SetColor(0);
+}
+
+BE_INLINE const Vec2 VertexGeneric::GetTexCoord() const {
+    return Vec2(F16Converter::ToF32(st[0]), F16Converter::ToF32(st[1]));
+}
+
+BE_INLINE void VertexGeneric::SetTexCoord(const Vec2 &st) {
+    SetTexCoordS(st.x);
+    SetTexCoordT(st.y);
+}
+
+BE_INLINE void VertexGeneric::SetTexCoord(float s, float t) {
+    SetTexCoordS(s);
+    SetTexCoordT(t);
+}
+
+BE_INLINE void VertexGeneric::SetTexCoordS(float s) {
+    st[0] = F16Converter::FromF32(s);
+}
+
+BE_INLINE void VertexGeneric::SetTexCoordT(float t) {
+    st[1] = F16Converter::FromF32(t);
+}
+
+BE_INLINE void VertexGeneric::SetColor(uint32_t color) {
+    *reinterpret_cast<uint32_t *>(this->color) = color;
+}
+
+BE_INLINE uint32_t VertexGeneric::GetColor() const {
+    return *reinterpret_cast<const uint32_t *>(this->color);
+}
+
+BE_INLINE void VertexGeneric::Lerp(const VertexGeneric &a, const VertexGeneric &b, const float f) {
+    xyz = BE1::Lerp(a.xyz, b.xyz, f);
+    SetTexCoord(BE1::Lerp(a.GetTexCoord(), b.GetTexCoord(), f));
+
+    color[0] = (byte)(a.color[0] + f * (b.color[0] - a.color[0]));
+    color[1] = (byte)(a.color[1] + f * (b.color[1] - a.color[1]));
+    color[2] = (byte)(a.color[2] + f * (b.color[2] - a.color[2]));
+    color[3] = (byte)(a.color[3] + f * (b.color[3] - a.color[3]));
+}
+
+BE_INLINE void VertexGeneric::Transform(const Mat3 &rotation, const Vec3 &translation) {
+    Mat4 matrix(rotation, translation);
+    xyz = matrix * xyz;
+}
 
 /*
 -------------------------------------------------------------------------------
 
-    VertexLightingGeneric
+    VertexGenericLit
 
 -------------------------------------------------------------------------------
 */
 
 #define COMPRESSED_VERTEX_NORMAL_TANGENTS
 
-struct BE_API VertexLightingGeneric {
-    Vec3            xyz;
-    float16_t       st[2];
+struct BE_API VertexGenericLit : public VertexGeneric {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     byte            normal[4];
     byte            tangent[4];
@@ -78,18 +142,9 @@ struct BE_API VertexLightingGeneric {
     float16_t       normal[4];
     float16_t       tangent[4];
 #endif
-    byte            color[4];
     
-    float           operator[](const int index) const { return ((float *)(&xyz))[index]; }
-    float &         operator[](const int index) { return ((float *)(&xyz))[index]; }
-
     void            Clear();
     
-    const Vec3      GetPosition() const { return xyz; }
-    
-    void            SetPosition(const Vec3 &p) { xyz = p; }
-    void            SetPosition(float x, float y, float z) { xyz.Set(x, y, z); }
-
     const Vec3      GetNormal() const;
     const Vec3      GetNormalRaw() const;
     
@@ -116,21 +171,9 @@ struct BE_API VertexLightingGeneric {
                     // either 1.0f or -1.0f
     void            SetBiTangentSign(float sign);
 
-    const Vec2      GetTexCoord() const;
-    void            SetTexCoord(const Vec2 &st);
-    void            SetTexCoord(float s, float t);
-    void            SetTexCoordS(float s);
-    void            SetTexCoordT(float t);
+    void            Lerp(const VertexGenericLit &a, const VertexGenericLit &b, const float f);
 
-    void            Transform(const Mat3 &rotation, const Vec3 translation);
-
-    void            Lerp(const VertexLightingGeneric &a, const VertexLightingGeneric &b, const float f);
-    void            LerpAll(const VertexLightingGeneric &a, const VertexLightingGeneric &b, const float f);
-
-    void            Normalize();
-
-    void            SetColor(uint32_t color);
-    uint32_t        GetColor() const;
+    void            Transform(const Mat3 &rotation, const Vec3 &translation);
 };
 
 BE_INLINE void ConvertNormalToBytes(const float &x, const float &y, const float &z, byte *bval) {
@@ -158,106 +201,104 @@ BE_INLINE void ConvertNormalToBytes(const float &x, const float &y, const float 
 #endif
 }
 
-BE_INLINE void VertexLightingGeneric::Clear() {
-    SetPosition(0, 0, 0);
-    SetTexCoord(0, 0);
+BE_INLINE void VertexGenericLit::Clear() {
+    VertexGeneric::Clear();
     SetNormal(0, 0, 1);
     SetTangent(1, 0, 0);
-    SetColor(0);
 }
 
-BE_INLINE const Vec3 VertexLightingGeneric::GetNormal() const {
+BE_INLINE const Vec3 VertexGenericLit::GetNormal() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     Vec3 n(BYTE_TO_SIGNED_FLOAT(normal[0]), BYTE_TO_SIGNED_FLOAT(normal[1]), BYTE_TO_SIGNED_FLOAT(normal[2]));
     n.Normalize();
     return n;
 #else
-    Vec3 n(F16toF32(normal[0]), F16toF32(normal[1]), F16toF32(normal[2]));
+    Vec3 n(F16Converter::ToF32(normal[0]), F16Converter::ToF32(normal[1]), F16Converter::ToF32(normal[2]));
     n.Normalize();
     return n;
 #endif
 }
 
-BE_INLINE const Vec3 VertexLightingGeneric::GetNormalRaw() const {
+BE_INLINE const Vec3 VertexGenericLit::GetNormalRaw() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     Vec3 n(BYTE_TO_SIGNED_FLOAT(normal[0]), BYTE_TO_SIGNED_FLOAT(normal[1]), BYTE_TO_SIGNED_FLOAT(normal[2]));
     return n;
 #else
-    Vec3 n(F16toF32(normal[0]), F16toF32(normal[1]), F16toF32(normal[2]));
+    Vec3 n(F16Converter::ToF32(normal[0]), F16Converter::ToF32(normal[1]), F16Converter::ToF32(normal[2]));
     return n;
 #endif
 }
 
-BE_INLINE void VertexLightingGeneric::SetNormal(const Vec3 &n) {
+BE_INLINE void VertexGenericLit::SetNormal(const Vec3 &n) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     ConvertNormalToBytes(n.x, n.y, n.z, normal);
 #else
-    normal[0] = F32toF16(n[0]);
-    normal[1] = F32toF16(n[1]);
-    normal[2] = F32toF16(n[2]);
+    normal[0] = F16Converter::FromF32(n[0]);
+    normal[1] = F16Converter::FromF32(n[1]);
+    normal[2] = F16Converter::FromF32(n[2]);
 #endif
 }
 
-BE_INLINE void VertexLightingGeneric::SetNormal(float x, float y, float z) {
+BE_INLINE void VertexGenericLit::SetNormal(float x, float y, float z) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     ConvertNormalToBytes(x, y, z, normal);
 #else
-    normal[0] = F32toF16(x);
-    normal[1] = F32toF16(y);
-    normal[2] = F32toF16(z); 
+    normal[0] = F16Converter::FromF32(x);
+    normal[1] = F16Converter::FromF32(y);
+    normal[2] = F16Converter::FromF32(z); 
 #endif
 }
 
-BE_INLINE void VertexLightingGeneric::SetTangent(const Vec3 &t) {
+BE_INLINE void VertexGenericLit::SetTangent(const Vec3 &t) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     ConvertNormalToBytes(t.x, t.y, t.z, tangent);
 #else
-    tangent[0] = F32toF16(t[0]);
-    tangent[1] = F32toF16(t[1]);
-    tangent[2] = F32toF16(t[2]);
+    tangent[0] = F16Converter::FromF32(t[0]);
+    tangent[1] = F16Converter::FromF32(t[1]);
+    tangent[2] = F16Converter::FromF32(t[2]);
 #endif
 }
 
-BE_INLINE void VertexLightingGeneric::SetTangent(float x, float y, float z) {
+BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     ConvertNormalToBytes(x, y, z, tangent);
 #else
-    tangent[0] = F32toF16(x);
-    tangent[1] = F32toF16(y);
-    tangent[2] = F32toF16(z);
+    tangent[0] = F16Converter::FromF32(x);
+    tangent[1] = F16Converter::FromF32(y);
+    tangent[2] = F16Converter::FromF32(z);
 #endif
 }
 
-BE_INLINE const Vec3 VertexLightingGeneric::GetTangent() const {
+BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     Vec3 t(BYTE_TO_SIGNED_FLOAT(tangent[0]), BYTE_TO_SIGNED_FLOAT(tangent[1]), BYTE_TO_SIGNED_FLOAT(tangent[2]));
     t.Normalize();
     return t;
 #else
-    Vec3 t(F16toF32(tangent[0]), F16toF32(tangent[1]), F16toF32(tangent[2]));
+    Vec3 t(F16Converter::ToF32(tangent[0]), F16Converter::ToF32(tangent[1]), F16Converter::ToF32(tangent[2]));
     t.Normalize();
     return t;
 #endif
 }
 
-BE_INLINE const Vec3 VertexLightingGeneric::GetTangentRaw() const {
+BE_INLINE const Vec3 VertexGenericLit::GetTangentRaw() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     Vec3 t(BYTE_TO_SIGNED_FLOAT(tangent[0]), BYTE_TO_SIGNED_FLOAT(tangent[1]), BYTE_TO_SIGNED_FLOAT(tangent[2]));
     return t;
 #else
-    Vec3 t(F16toF32(tangent[0]), F16toF32(tangent[1]), F16toF32(tangent[2]));
+    Vec3 t(F16Converter::ToF32(tangent[0]), F16Converter::ToF32(tangent[1]), F16Converter::ToF32(tangent[2]));
     return t;
 #endif
 }
 
-BE_INLINE const Vec3 VertexLightingGeneric::GetBiTangent() const {
+BE_INLINE const Vec3 VertexGenericLit::GetBiTangent() const {
     // derive from the normal, tangent, and bitangent direction flag
     Vec3 bitangent = Vec3::FromCross(GetNormal(), GetTangent());
     bitangent *= GetBiTangentSign();
     return bitangent;
 }
 
-BE_INLINE const Vec3 VertexLightingGeneric::GetBiTangentRaw() const {
+BE_INLINE const Vec3 VertexGenericLit::GetBiTangentRaw() const {
     // derive from the normal, tangent, and bitangent direction flag
     // don't re-normalize just like we do in the vertex programs
     Vec3 bitangent = Vec3::FromCross(GetNormalRaw(), GetTangentRaw());
@@ -265,68 +306,33 @@ BE_INLINE const Vec3 VertexLightingGeneric::GetBiTangentRaw() const {
     return bitangent;
 }
 
-BE_INLINE void VertexLightingGeneric::SetBiTangent(float x, float y, float z) {
+BE_INLINE void VertexGenericLit::SetBiTangent(float x, float y, float z) {
     SetBiTangent(Vec3(x, y, z));
 }
 
-BE_INLINE void VertexLightingGeneric::SetBiTangent(const Vec3 &t) {
+BE_INLINE void VertexGenericLit::SetBiTangent(const Vec3 &t) {
     Vec3 bitangent = Vec3::FromCross(GetNormal(), GetTangent());
     SetBiTangentSign(bitangent.Dot(t));
 }
 
-BE_INLINE float VertexLightingGeneric::GetBiTangentSign() const {
+BE_INLINE float VertexGenericLit::GetBiTangentSign() const {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     return (tangent[3] < 128) ? -1.0f : 1.0f;
 #else
-    return (F16toF32(tangent[3]) < 0.0f) ? -1.0f : 1.0f;
+    return (F16Converter::ToF32(tangent[3]) < 0.0f) ? -1.0f : 1.0f;
 #endif
 }
 
-BE_INLINE void VertexLightingGeneric::SetBiTangentSign(float sign) {
+BE_INLINE void VertexGenericLit::SetBiTangentSign(float sign) {
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
     tangent[3] = (sign < 0.0f) ? 0 : 255;
 #else
-    tangent[3] = F32toF16((sign < 0.0f) ? -1.0f : 1.0f);
+    tangent[3] = F16Converter::FromF32((sign < 0.0f) ? -1.0f : 1.0f);
 #endif
 }
 
-BE_INLINE const Vec2 VertexLightingGeneric::GetTexCoord() const {
-    return Vec2(F16toF32(st[0]), F16toF32(st[1]));
-}
-
-BE_INLINE void VertexLightingGeneric::SetTexCoord(const Vec2 &st) {
-    SetTexCoordS(st.x);
-    SetTexCoordT(st.y);
-}
-
-BE_INLINE void VertexLightingGeneric::SetTexCoord(float s, float t) {
-    SetTexCoordS(s);
-    SetTexCoordT(t);
-}
-
-BE_INLINE void VertexLightingGeneric::SetTexCoordS(float s) {
-    st[0] = F32toF16(s);
-}
-
-BE_INLINE void VertexLightingGeneric::SetTexCoordT(float t) {
-    st[1] = F32toF16(t);
-}
-
-BE_INLINE void VertexLightingGeneric::Transform(const Mat3 &rotation, const Vec3 translation) {
-    Mat4 matrix(rotation, translation);
-    xyz = matrix * xyz;
-    SetNormal(rotation * GetNormal());
-    SetTangent(rotation * GetTangent());
-}
-
-BE_INLINE void VertexLightingGeneric::Lerp(const VertexLightingGeneric &a, const VertexLightingGeneric &b, const float f) {
-    xyz = a.xyz + f * (b.xyz - a.xyz);
-    SetTexCoord(BE1::Lerp(a.GetTexCoord(), b.GetTexCoord(), f));
-}
-
-BE_INLINE void VertexLightingGeneric::LerpAll(const VertexLightingGeneric &a, const VertexLightingGeneric &b, const float f) {
-    xyz = BE1::Lerp(a.xyz, b.xyz, f);
-    SetTexCoord(BE1::Lerp(a.GetTexCoord(), b.GetTexCoord(), f));
+BE_INLINE void VertexGenericLit::Lerp(const VertexGenericLit &a, const VertexGenericLit &b, const float f) {
+    VertexGeneric::Lerp(a, b, f);
 
     Vec3 normal = BE1::Lerp(a.GetNormal(), b.GetNormal(), f);
     Vec3 tangent = BE1::Lerp(a.GetTangent(), b.GetTangent(), f);
@@ -339,19 +345,13 @@ BE_INLINE void VertexLightingGeneric::LerpAll(const VertexLightingGeneric &a, co
     SetNormal(normal);
     SetTangent(tangent);
     SetBiTangent(bitangent);
-
-    color[0] = (byte)(a.color[0] + f * (b.color[0] - a.color[0]));
-    color[1] = (byte)(a.color[1] + f * (b.color[1] - a.color[1]));
-    color[2] = (byte)(a.color[2] + f * (b.color[2] - a.color[2]));
-    color[3] = (byte)(a.color[3] + f * (b.color[3] - a.color[3]));
 }
 
-BE_INLINE void VertexLightingGeneric::SetColor(uint32_t color) {
-    *reinterpret_cast<uint32_t *>(this->color) = color;
-}
-
-BE_INLINE uint32_t VertexLightingGeneric::GetColor() const {
-    return *reinterpret_cast<const uint32_t *>(this->color);
+BE_INLINE void VertexGenericLit::Transform(const Mat3 &rotation, const Vec3 &translation) {
+    Mat4 matrix(rotation, translation);
+    xyz = matrix * xyz;
+    SetNormal(rotation * GetNormal());
+    SetTangent(rotation * GetTangent());
 }
 
 /*
@@ -363,23 +363,23 @@ BE_INLINE uint32_t VertexLightingGeneric::GetColor() const {
 */
 
 #if 1
-typedef byte VertexWeightValue;
+typedef byte JointWeightType;
 #else
-typedef float VertexWeightValue;
+typedef float JointWeightType;
 #endif
 
 struct VertexWeight1 {
-    uint32_t            index;
+    uint32_t            jointIndex;
 };
  
 struct VertexWeight4 {
-    byte                index[4];
-    VertexWeightValue   weight[4];
+    byte                jointIndexes[4];
+    JointWeightType     jointWeights[4];
 };
 
 struct VertexWeight8 {
-    byte                index[8];
-    VertexWeightValue   weight[8];
+    byte                jointIndexes[8];
+    JointWeightType     jointWeights[8];
 };
 
 BE_NAMESPACE_END

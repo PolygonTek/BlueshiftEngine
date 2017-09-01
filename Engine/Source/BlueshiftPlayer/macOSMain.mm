@@ -409,7 +409,7 @@ static const struct {
     [window close];
 }
 
-static void DisplayContext(BE1::Renderer::Handle contextHandle, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     app.Draw();
 }
 
@@ -440,10 +440,10 @@ static void DisplayContext(BE1::Renderer::Handle contextHandle, void *dataPtr) {
     
     mainWindow = [self createGLWindow:NSMakeSize(1280, 720) title:nstitle];
 
-    BE1::gameClient.Init((__bridge BE1::Renderer::WindowHandle)mainWindow, true);
+    BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-    app.mainRenderContext->Init((__bridge BE1::Renderer::WindowHandle)[mainWindow contentView], 1280, 720, DisplayContext, NULL);
+    app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[mainWindow contentView], 1280, 720, DisplayContext, NULL);
     
     [mainWindow makeKeyAndOrderFront:nil];
     
@@ -483,7 +483,7 @@ static void DisplayContext(BE1::Renderer::Handle contextHandle, void *dataPtr) {
     
     NSSize size = [[window contentView] frame].size;
     
-    BE1::glr.SetFullscreen(app.mainRenderContext->GetContextHandle(), size.width, size.height);
+    BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), size.width, size.height);
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification {
@@ -493,7 +493,7 @@ static void DisplayContext(BE1::Renderer::Handle contextHandle, void *dataPtr) {
     NSInteger oldStyleMask = [window styleMask];
     [window setStyleMask:oldStyleMask & ~NSResizableWindowMask];
     
-    BE1::glr.ResetFullscreen(app.mainRenderContext->GetContextHandle());
+    BE1::rhi.ResetFullscreen(app.mainRenderContext->GetContextHandle());
 }
 
 - (void)windowWillClose:(NSNotification *)notification {

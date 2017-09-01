@@ -1,0 +1,20 @@
+// setup transformations (fix conflict with ATI_Compressonator)
+#define decompressBlockDiffFlip etcpack_decompressBlockDiffFlip
+#define read_big_endian_2byte_word etcpack_read_big_endian_2byte_word
+#define read_big_endian_4byte_word etcpack_read_big_endian_4byte_word
+#define decompressBlockETC2c etcpack_decompressBlockETC2c
+#define decompressBlockETC21BitAlphaC etcpack_decompressBlockETC21BitAlphaC
+#define decompressBlockAlphaC etcpack_decompressBlockAlphaC
+#define decompressBlockAlpha16bitC etcpack_decompressBlockAlpha16bitC
+
+// now include file
+#include "source/etcdec.cxx"
+
+// cleanup
+#undef decompressBlockDiffFlip
+#undef read_big_endian_2byte_word
+#undef read_big_endian_4byte_word
+#undef decompressBlockETC2c
+#undef decompressBlockETC21BitAlphaC
+#undef decompressBlockAlphaC
+#undef decompressBlockAlpha16bitC

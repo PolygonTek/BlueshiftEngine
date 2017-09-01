@@ -25,6 +25,7 @@ BEGIN_EVENTS(PhysicsSettings)
 END_EVENTS
 BEGIN_PROPERTIES(PhysicsSettings)
     PROPERTY_VEC3("gravity", "Gravity", "gravity", "0 0 -9.8", PropertySpec::ReadWrite),
+    PROPERTY_INT("filterMasks", "Filter Mask", "", "-1", PropertySpec::ReadWrite | PropertySpec::IsArray),
 END_PROPERTIES
 
 void PhysicsSettings::Init() {
@@ -32,6 +33,14 @@ void PhysicsSettings::Init() {
 
     Vec3 gravity = props->Get("gravity").As<Vec3>();
     GetGameWorld()->GetPhysicsWorld()->SetGravity(Vec3(MeterToUnit(gravity.x), MeterToUnit(gravity.y), MeterToUnit(gravity.z)));
+
+    int numFilterMasks = props->NumElements("filterMasks");
+    for (int filterIndex = 0; filterIndex < numFilterMasks; filterIndex++) {
+        Str propName = va("filterMasks[%i]", filterIndex);
+
+        int filterMask = props->Get(propName).As<int>();
+        GetGameWorld()->GetPhysicsWorld()->SetCollisionFilterMask(filterIndex, filterMask);
+    }
 }
 
 void PhysicsSettings::PropertyChanged(const char *classname, const char *propName) {

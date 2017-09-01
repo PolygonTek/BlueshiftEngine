@@ -33,7 +33,7 @@ public:
     enum { Size = 2 };
 
     /// The default constructor does not initialize any members of this class.
-    Vec2() {}
+    Vec2() = default;
     /// Constructs a Vec2 with the value (x, y).
     Vec2(float x, float y);
     /// Constructs a Vec2 from a C array, to the value (data[0], data[1]).
@@ -79,7 +79,7 @@ public:
                         /// This function is identical to the member function AddScalar().
     Vec2                operator+(float rhs) const { return Vec2(x + rhs, y + rhs); }
                         /// Adds the vector v to vector (s, s, s, s).
-    friend Vec2         operator+(float lhs, const Vec2 rhs) { return Vec2(lhs + rhs.x, lhs + rhs.y); }
+    friend Vec2         operator+(float lhs, const Vec2 &rhs) { return Vec2(lhs + rhs.x, lhs + rhs.y); }
 
                         /// Subtracts a vector from this vector.
     Vec2                Sub(const Vec2 &v) const { return *this - v; }
@@ -92,7 +92,7 @@ public:
                         /// This function is identical to the member function SubScalar()
     Vec2                operator-(float rhs) const { return Vec2(x - rhs, y - rhs); }
                         /// Subtracts the vector v from vector (s, s, s, s).
-    friend Vec2         operator-(float lhs, const Vec2 rhs) { return Vec2(lhs - rhs.x, lhs - rhs.y); }
+    friend Vec2         operator-(float lhs, const Vec2 &rhs) { return Vec2(lhs - rhs.x, lhs - rhs.y); }
 
                         /// Multiplies this vector by a scalar.
     Vec2                Mul(float s) const { return *this * s; }
@@ -100,7 +100,7 @@ public:
                         /// This function is identical to the member function Mul().
     Vec2                operator*(float rhs) const { return Vec2(x * rhs, y * rhs); }
                         /// Multiplies vector v by a scalar.
-    friend Vec2         operator*(float lhs, const Vec2 rhs) { return Vec2(lhs * rhs.x, lhs * rhs.y); }
+    friend Vec2         operator*(float lhs, const Vec2 &rhs) { return Vec2(lhs * rhs.x, lhs * rhs.y); }
                         /// Multiplies this vector by a vector, element-wise.
     Vec2                MulComp(const Vec2 &v) const { return *this * v; }
                         /// Multiplies this vector by a vector, element-wise.
@@ -118,7 +118,7 @@ public:
                         /// Divides this vector by a vector, element-wise.
     Vec2                operator/(const Vec2 &rhs) const { return Vec2(x / rhs.x, y / rhs.y); }
                         /// Divides vector (s, s, s, s) by a vector v, element-wise.
-    friend Vec2         operator/(float lhs, const Vec2 rhs) { return Vec2(lhs / rhs.x, lhs / rhs.y); }
+    friend Vec2         operator/(float lhs, const Vec2 &rhs) { return Vec2(lhs / rhs.x, lhs / rhs.y); }
     
                         /// Adds a vector to this vector, in-place.
     Vec2 &              AddSelf(const Vec2 &v) { *this += v; return *this; }
@@ -156,19 +156,19 @@ public:
                         /// This function is identical to the member function DivCompSelf().
     Vec2 &              operator/=(const Vec2 &rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Vec2 &a) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Vec2 &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Vec2 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Vec2 &rhs) const { return !Equals(rhs); }
 
                         /// Tests if this is the zero vector, up to the given epsilon.
     bool                IsZero(const float epsilon = 0.0f) const;
 
-                        /// Sets all element of this vector
+                        /// Sets all element of this vector.
     void                Set(float x, float y);
                         /// Sets this Vec2 to (s, s).
     void                SetFromScalar(float s) { x = y = s; }
@@ -176,13 +176,13 @@ public:
                         /// Returns Vec2(s, s).
     static Vec2         FromScalar(float s) { return Vec2(s, s); }
 
-                        /// Get the minimum component of a vector
+                        /// Get the minimum component of a vector.
     float               MinComponent() const { return Min(x, y); }
-                        /// Get the maximum component of a vector
+                        /// Get the maximum component of a vector.
     float               MaxComponent() const { return Max(x, y); }
-                        /// Get the minimum component index of a vector
+                        /// Get the minimum component index of a vector.
     int                 MinComponentIndex() const { return MinIndex(x, y); }
-                        /// Get the maximum component index of a vector
+                        /// Get the maximum component index of a vector.
     int                 MaxComponentIndex() const { return MaxIndex(x, y); }
 
                         /// Computes the length of this vector.
@@ -195,10 +195,10 @@ public:
     float               DistanceSqr(const Vec2 &v) const;
 
                         /// Normalizes this vector.
-                        /// @return Length of this vector
+                        /// @return Length of this vector.
     float               Normalize();
                         /// Normalizes this vector fast but approximately.
-                        /// @return Length of this vector
+                        /// @return Length of this vector.
     float               NormalizeFast();
 
                         /// Scales this vector so that its new length is as given.
@@ -217,17 +217,40 @@ public:
                         /// Sets from linear interpolation between vector v1 and the vector v2.
     void                SetFromLerp(const Vec2 &v1, const Vec2 &v2, float l);
 
-                        /// Returns "x y z"
+                        /// Sets this vector on unit circle has uniform distribution with the given random variable u [0, 1].
+    static Vec2         FromUniformSampleCircle(float u);
+
+                        /// Sets this vector on unit disk (filled circle) has uniform distribution with the given random variable u1, u2 [0, 1].
+    static Vec2         FromUniformSampleDisk(float u1, float u2);
+
+                        /// Sets this vector on unit disk (filled circle) has uniform distribution with the given random variable u1, u2 [0, 1].
+                        /// Less distorted mapping than FromUniformSampleDisk()
+    static Vec2         FromConcentricSampleDisk(float u1, float u2);
+
+                        /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "x y z" with the given precision
+                        /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
-                        /// Returns radian [-PI, PI] as a direction vector
+
+                        /// Converts to the polar coordinates.
+    float               ToPolar(float &theta) const;
+
+                        /// Sets from the polar coordinates.
+    void                SetFromPolar(float radius, float theta);
+
+                        /// Returns radian [-PI, PI] as a direction vector.
     float               ToAngle() const;
 
-                        /// Returns dimension of this type
+                        /// Sets from the radian as a direction.
+    void                SetFromAngle(float theta);
+
+                        /// Sets this vector from the radian as a direction
+    static Vec2         FromAngle(float theta);
+
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
 
-                        /// Compute 2D barycentric coordinates from the point based on 2 simplex vector
+                        /// Compute 2D barycentric coordinates from the point based on 2 simplex vector.
     static const Vec2   Compute2DBarycentricCoords(const float s1, const float s2, const float p);
 
     static const Vec2   origin;     ///< (0, 0)
@@ -408,12 +431,46 @@ BE_INLINE void Vec2::SetFromLerp(const Vec2 &v1, const Vec2 &v2, const float l) 
     } else if (l >= 1.0f) {
         (*this) = v2;
     } else {
-        (*this) = v1 + l * (v2 - v1);	
+        (*this) = v1 + l * (v2 - v1);
     }
+}
+
+BE_INLINE Vec2 Vec2::FromUniformSampleCircle(float u) {
+    float s, c;
+    Math::SinCos(Math::TwoPi * u, s, c);
+    return Vec2(c, s);
+}
+
+BE_INLINE Vec2 Vec2::FromAngle(float theta) {
+    Vec2 v;
+    v.SetFromAngle(theta);
+    return v;
 }
 
 BE_INLINE const char *Vec2::ToString(int precision) const {
     return Str::FloatArrayToString((const float *)(*this), Size, precision);
+}
+
+BE_INLINE void Vec2::SetFromPolar(float radius, float theta) {
+    float sinTheta, cosTheta;
+    Math::SinCos(theta, sinTheta, cosTheta);
+
+    x = radius * cosTheta;
+    y = radius * sinTheta;
+}
+
+BE_INLINE float Vec2::ToPolar(float &theta) const {
+    float radius = Math::Sqrt(x * x + y * y);
+    theta = Math::ATan(y, x);
+    return radius;
+}
+
+BE_INLINE void Vec2::SetFromAngle(float theta) {
+    float sinTheta, cosTheta;
+    Math::SinCos(theta, sinTheta, cosTheta);
+
+    x = cosTheta;
+    y = sinTheta;
 }
 
 BE_INLINE float Vec2::ToAngle() const {

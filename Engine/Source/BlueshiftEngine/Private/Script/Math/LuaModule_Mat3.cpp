@@ -42,7 +42,7 @@ void LuaVM::RegisterMat3(LuaCpp::Module &module) {
         "is_diagonal", &Mat3::IsDiagonal,
         "is_singular", &Mat3::IsSingular,
         "set_zero", &Mat3::SetZero,
-        "set_identity", &Mat3::SetIdentity,        
+        "set_identity", &Mat3::SetIdentity,
         "fix_degeneracies", &Mat3::FixDegeneracies,
         "fix_denormals", &Mat3::FixDenormals,
         "trace", &Mat3::Trace,

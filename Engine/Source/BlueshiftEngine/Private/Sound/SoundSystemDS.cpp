@@ -22,9 +22,9 @@ BE_NAMESPACE_BEGIN
 
 static const int MaxSources = 32;
 
-static CVar     s_khz(L"s_khz", L"44", CVar::Integer | CVar::Archive);
-static CVar     s_doppler(L"s_doppler", L"1.0", CVar::Float | CVar::Archive);
-static CVar     s_rolloff(L"s_rolloff", L"2.0", CVar::Float | CVar::Archive);
+static CVar     s_khz(L"s_khz", L"44", CVar::Integer | CVar::Archive, L"");
+static CVar     s_doppler(L"s_doppler", L"1.0", CVar::Float | CVar::Archive, L"");
+static CVar     s_rolloff(L"s_rolloff", L"2.0", CVar::Float | CVar::Archive, L"");
 
 bool SoundSystem::InitDevice(void *windowHandle) {
     HRESULT hr;
@@ -39,7 +39,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
             if (MessageBox(hwnd,
                 L"The sound hardware is in use by another app.\n\n"
                 L"Select Retry to try to start sound again or Cancel to run with no sound.",
-                L"SoundSource not available",
+                L"Sound system not available",
                 MB_RETRYCANCEL | MB_SETFOREGROUND | MB_ICONEXCLAMATION) != IDRETRY) {
                 BE_LOG(L"failed, hardware already in use\n");
                 return false;

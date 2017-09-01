@@ -26,7 +26,7 @@
 #include "Containers/HashMap.h"
 #include "Core/CVars.h"
 #include "Image/Image.h"
-#include "Renderer/RendererInterface.h"
+#include "RHI/RHI.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -52,6 +52,7 @@ public:
         HighPriority        = BIT(12),
         LowPriority         = BIT(13),
         SRGB                = BIT(14),      ///< generally color image is encoded in sRGB
+        Trilinear           = BIT(15),
         HighQuality         = NoScaleDown | NoCompression,
         CubeMap             = BIT(28),      ///< cube map
         CameraCubeMap       = BIT(29),
@@ -73,9 +74,9 @@ public:
 
     int                     MemRequired(bool includingMipmaps) const;
 
-    void                    Create(Renderer::TextureType type, const Image &srcImage, int flags);
-    void                    CreateEmpty(Renderer::TextureType type, int width, int height, int depth, int numSlices, Image::Format format, int flags);
-    void                    CreateFromBuffer(Image::Format format, Renderer::Handle bufferHandle);
+    void                    Create(RHI::TextureType type, const Image &srcImage, int flags);
+    void                    CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags);
+    void                    CreateFromBuffer(Image::Format format, RHI::Handle bufferHandle);
 
                             /// Create indirection cubemap
                             /// @param size size of indirection cubemap
@@ -90,7 +91,6 @@ public:
     void                    CreateNormalizationCubeMapTexture(int size, int flags = 0);
     void                    CreateCubicNormalCubeMapTexture(int size, int flags = 0);
     void                    CreateAttenuationTexture(int size, int flags = 0);
-    void                    CreateExponentTexture(int flags = 0);
     void                    CreateFogTexture(int flags = 0);
     void                    CreateFogEnterTexture(int flags = 0);
     void                    CreateRandomRotMatTexture(int size, int flags = 0);
@@ -125,9 +125,9 @@ private:
     int                     frameCount;
     int                     flags;                      // texture load flags
 
-    Renderer::Handle        textureHandle;              // texture handle
-    Renderer::TextureType   type;
-    Renderer::AddressMode   addressMode;
+    RHI::Handle             textureHandle;              // texture handle
+    RHI::TextureType        type;
+    RHI::AddressMode        addressMode;
 
     Image::Format           format;                     // internal image format
 
@@ -147,13 +147,14 @@ BE_INLINE Texture::Texture() {
     refCount                = 0;
     permanence              = false;
     flags                   = 0;
-    textureHandle           = Renderer::Handle::NullTexture;
-    type                    = Renderer::TextureType::Texture2D;
-    addressMode             = Renderer::AddressMode::Repeat;
+    textureHandle           = RHI::Handle::NullTexture;
+    type                    = RHI::TextureType::Texture2D;
+    addressMode             = RHI::AddressMode::Repeat;
     format                  = Image::Format::UnknownFormat;
     srcWidth                = 0;
     srcHeight               = 0;
     srcDepth                = 0;
+    numSlices               = 0;
     width                   = 0;
     height                  = 0;
     depth                   = 0;
@@ -192,6 +193,8 @@ public:
     Texture *               GetTexture(const char *name, int creationFlags = 0);
 
     Texture *               TextureFromGenerator(const char *name, const TextureGeneratorBase &generator);
+
+    void                    RenameTexture(Texture *texture, const Str &newName);
 
     void                    ReleaseTexture(Texture *texture, bool immediateDestroy = false);
     void                    DestroyTexture(Texture *texture);
@@ -240,7 +243,7 @@ private:
 
     StrIHashMap<Texture *>  textureHashMap;
 
-    Renderer::TextureFilter textureFilter;
+    RHI::TextureFilter      textureFilter;
     int                     textureAnisotropy;
 };
 

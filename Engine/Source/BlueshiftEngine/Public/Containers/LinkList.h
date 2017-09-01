@@ -31,17 +31,20 @@ BE_NAMESPACE_BEGIN
 template <typename T>
 class LinkList {
 public:
+    /// Constructs emtpy link list.
     LinkList();
+
+    /// Destructs
     ~LinkList();
 
-                    /// Returns true if the list is empty
+                    /// Returns true if the list is empty.
     bool            IsListEmpty() const { return head->next == head; }
 
                     /// Returns true if the node is in a list.
                     /// If called on the head of a list, will always return false.
     bool            InList() const { return head != this; }
 
-                    /// Returns number of nodes
+                    /// Returns number of nodes.
     int             Count() const;
 
                     /// If node is the head of the list, clears the list.
@@ -75,7 +78,7 @@ public:
                     // node 의 owner 객체 설정
     void            SetOwner(T *object) { owner = object; }
 
-                    /// Returns head node pointer
+                    /// Returns head node pointer.
     LinkList *      ListHead() const { return head; }
 
                     // next node 리턴, 끝 node 라면 nullptr 리턴

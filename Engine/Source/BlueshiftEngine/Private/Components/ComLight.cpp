@@ -37,7 +37,7 @@ BEGIN_PROPERTIES(ComLight)
     PROPERTY_BOOL("castShadows", "Cast Shadows", "", "false", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("shadowOffsetFactor", "Shadow Offset Factor", "scale value for shadow map drawing", Rangef(0, 16, 0.01f), "3", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("shadowOffsetUnits", "Shadow Offset Unit", "bias value added to depth test for shadow map drawing", Rangef(0, 1000, 1), "200", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("mainLight", "Is Main Light", "", "false", PropertySpec::ReadWrite),
+    PROPERTY_BOOL("primaryLight", "Is Primary Light", "", "false", PropertySpec::ReadWrite),
     PROPERTY_VEC3("lightSize", "Size", "", "200 200 200", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("fallOffExponent", "Fall Off Exponent", "", Rangef(0.01f, 100, 0.1f), "1.25", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("intensity", "Intensity", "", Rangef(0, 8, 0.01f), "2.0", PropertySpec::ReadWrite),
@@ -55,7 +55,7 @@ void ComLight::RegisterProperties() {
     //REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "false", PropertySpec::ReadWrite);
     //REGISTER_ACCESSOR_PROPERTY("Shadow Offset Factor", bool, GetShadowOffsetFactor, SetShadowOffsetFactor, "3", PropertySpec::ReadWrite).SetRange(0, 16, 0.01f);
     //REGISTER_ACCESSOR_PROPERTY("Shadow Offset Units", bool, GetShadowOffsetUnits, SetShadowOffsetUnits, "200", PropertySpec::ReadWrite).SetRange(0, 1000, 1);
-    //REGISTER_ACCESSOR_PROPERTY("Is Main Light", bool, IsMainLight, SetMainLight, "false", PropertySpec::ReadWrite);
+    //REGISTER_ACCESSOR_PROPERTY("Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, "false", PropertySpec::ReadWrite);
     //REGISTER_ACCESSOR_PROPERTY("Light Size", Vec3, GetLightSize, SetLightSize, "200 200 200", PropertySpec::ReadWrite);
     //REGISTER_ACCESSOR_PROPERTY("Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, "1.25", PropertySpec::ReadWrite).SetRange(0.01f, 100, 0.1f);
     //REGISTER_ACCESSOR_PROPERTY("Intensity", float, GetIntensity, SetIntensity, "2.0", PropertySpec::ReadWrite).SetRange(0, 8, 0.01f);
@@ -73,7 +73,7 @@ ComLight::ComLight() {
     spriteMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComLight::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComLight::PropertyChanged);
 }
 
 ComLight::~ComLight() {
@@ -150,7 +150,7 @@ void ComLight::Init() {
     const Str materialPath = resourceGuidMapper.Get(materialGuid);
     sceneLight.material = materialManager.GetMaterial(materialPath);
 
-    sceneLight.isMainLight = props->Get("mainLight").As<bool>();
+    sceneLight.isPrimaryLight = props->Get("primaryLight").As<bool>();
     sceneLight.zNear = props->Get("lightZNear").As<float>();
     sceneLight.fallOffExponent = props->Get("fallOffExponent").As<float>();
 
@@ -186,7 +186,7 @@ void ComLight::Init() {
 
     Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(sceneLight.type), Texture::Clamp | Texture::HighQuality);
     sprite.customMaterials.SetCount(1);
-    sprite.customMaterials[0] = materialManager.GetTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
     
     sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
@@ -201,10 +201,9 @@ void ComLight::Init() {
     sprite.materialParms[SceneEntity::TimeOffsetParm] = props->Get("timeOffset").As<float>();
     sprite.materialParms[SceneEntity::TimeScaleParm] = props->Get("timeScale").As<float>();
 
-    GetEntity()->Connect(&SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
+    GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
 
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComLight::PhysicsUpdated, SignalObject::Unique);	
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
     
     UpdateVisuals();
 }
@@ -259,8 +258,8 @@ void ComLight::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
                 frustum.SetAxis(sceneLight.axis);
                 frustum.SetSize(sceneLight.zNear, sceneLight.value[0], sceneLight.value[1], sceneLight.value[2]);
                 renderWorld->DebugFrustum(frustum, false, 1.0f, true, true);
-            }			
-        }		
+            }
+        }
     } else if (sceneLight.type == SceneLight::PointLight) {
         if (selected) {
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
@@ -285,6 +284,11 @@ void ComLight::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
             renderWorld->DebugLine(sceneLight.origin + sceneLight.axis[2] * sceneLight.value[2] * 0.2f, sceneLight.origin + sceneLight.axis[2] * sceneLight.value[2], 1, true);
         }
     }
+
+    // Fade icon alpha in near distance
+    float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
+
+    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComLight::GetAABB() {
@@ -324,15 +328,6 @@ void ComLight::TransformUpdated(const ComTransform *transform) {
     UpdateVisuals();
 }
 
-void ComLight::PhysicsUpdated(const PhysRigidBody *body) {
-    sceneLight.origin = body->GetOrigin();
-    sceneLight.axis = body->GetAxis();
-
-    sprite.origin = sceneLight.origin;
-    
-    UpdateVisuals();
-}
-
 void ComLight::PropertyChanged(const char *classname, const char *propName) {
     if (!IsInitalized()) {
         return;
@@ -343,8 +338,8 @@ void ComLight::PropertyChanged(const char *classname, const char *propName) {
         return;
     }
 
-    if (!Str::Cmp(propName, "mainLight")) {
-        SetMainLight(props->Get("mainLight").As<bool>());
+    if (!Str::Cmp(propName, "primaryLight")) {
+        SetPrimaryLight(props->Get("primaryLight").As<bool>());
         return;
     }
 
@@ -429,17 +424,17 @@ void ComLight::SetLightType(const SceneLight::Type type) {
     sceneLight.type = type;
     materialManager.ReleaseMaterial(sprite.customMaterials[0]);
     Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(sceneLight.type), Texture::Clamp | Texture::HighQuality);
-    sprite.customMaterials[0] = materialManager.GetTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
     UpdateVisuals();
 }
 
-bool ComLight::IsMainLight() const {
-    return sceneLight.isMainLight;
+bool ComLight::IsPrimaryLight() const {
+    return sceneLight.isPrimaryLight;
 }
 
-void ComLight::SetMainLight(bool isMainLight) {
-    sceneLight.isMainLight = isMainLight;
+void ComLight::SetPrimaryLight(bool isPrimaryLight) {
+    sceneLight.isPrimaryLight = isPrimaryLight;
     UpdateVisuals();
 }
 

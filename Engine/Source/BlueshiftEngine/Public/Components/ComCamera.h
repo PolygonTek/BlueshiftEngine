@@ -88,11 +88,6 @@ protected:
 
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
-    void                    PhysicsUpdated(const PhysRigidBody *body);
-        
-    Mesh *                  spriteMesh;
-    SceneEntity::Parms      sprite;
-    int                     spriteHandle;
 
     SceneView *             view;
     SceneView::Parms        viewParms;
@@ -102,6 +97,10 @@ protected:
     int                     order;              ///< rendering order
 
     RenderWorld *           renderWorld;
+
+    Mesh *                  spriteMesh;
+    SceneEntity::Parms      sprite;
+    int                     spriteHandle;
 };
 
 BE_NAMESPACE_END

@@ -55,6 +55,8 @@ public:
 
     void                        WriteMetaDataFile() const;
 
+    virtual void                Rename(const Str &newName);
+
     virtual void                Reload() = 0;
 
     virtual void                Save() = 0;
@@ -66,6 +68,9 @@ public:
 
                                 // Gets .meta filename associated with an asset
     static const Str            GetMetaFilenameFromAssetPath(const char *assetPath);
+
+    static const SignalDef      SIG_Reloaded;
+    static const SignalDef      SIG_Modified;
 
 protected:
     AssetImporter *             assetImporter;
@@ -80,6 +85,7 @@ class Shader;
 class Material;
 class Skeleton;
 class Mesh;
+class ParticleSystem;
 class Anim;
 class AnimController;
 class Prefab;
@@ -106,6 +112,8 @@ public:
 
     Texture *                   GetTexture();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override {}
@@ -123,6 +131,8 @@ public:
 
     Shader *                    GetShader();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override {}
@@ -139,6 +149,8 @@ public:
     ~MaterialAsset();
 
     Material *                  GetMaterial();
+
+    virtual void                Rename(const Str &newName) override;
 
     virtual void                Reload() override;
 
@@ -169,6 +181,8 @@ public:
 
     Skeleton *                  GetSkeleton();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override {}
@@ -186,12 +200,33 @@ public:
 
     Mesh *                      GetMesh();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override {}
 
 private:
     Mesh *                      mesh;
+};
+
+class ParticleSystemAsset : public Asset {
+public:
+    OBJECT_PROTOTYPE(ParticleSystemAsset);
+
+    ParticleSystemAsset();
+    ~ParticleSystemAsset();
+
+    ParticleSystem *            GetParticleSystem();
+
+    virtual void                Rename(const Str &newName) override;
+
+    virtual void                Reload() override;
+
+    virtual void                Save() override;
+
+private:
+    ParticleSystem *            particleSystem;
 };
 
 class AnimAsset : public Asset {
@@ -202,6 +237,8 @@ public:
     ~AnimAsset();
 
     Anim *                      GetAnim();
+
+    virtual void                Rename(const Str &newName) override;
 
     virtual void                Reload() override;
 
@@ -244,6 +281,8 @@ public:
 
     AnimController *            GetAnimController();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override;
@@ -261,6 +300,8 @@ public:
 
     Prefab *                    GetPrefab();
 
+    virtual void                Rename(const Str &newName) override;
+
     virtual void                Reload() override;
 
     virtual void                Save() override;
@@ -277,6 +318,8 @@ public:
     ~SoundAsset();
 
     Sound *                     GetSound();
+
+    virtual void                Rename(const Str &newName) override;
 
     virtual void                Reload() override;
 
@@ -309,8 +352,5 @@ public:
 
     virtual void                Save() override {}
 };
-
-extern const SignalDef          SIG_Reloaded;
-extern const SignalDef          SIG_Modified;
 
 BE_NAMESPACE_END

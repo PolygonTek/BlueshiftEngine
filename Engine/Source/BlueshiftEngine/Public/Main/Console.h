@@ -24,8 +24,6 @@ class CmdArgs;
 #define	CONSOLE_TEXT_SIZE       0x40000
 #define CONSOLE_NOTIFY_TIMES    4
 
-extern const SignalDef          SIG_ConsoleOutputTextAdded;
-
 class Console : public SignalObject {
 public:
     Console() { initialized = false; }
@@ -57,6 +55,8 @@ public:
 
     static void         Cmd_ConClear(const CmdArgs &args);
     static void         Cmd_ConDump(const CmdArgs &args);
+
+    static const SignalDef SIG_ConsoleOutputTextAdded;
 };
 
 extern Console          console;

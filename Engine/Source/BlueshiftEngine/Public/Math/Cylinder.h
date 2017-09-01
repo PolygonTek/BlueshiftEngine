@@ -30,7 +30,7 @@ class OBB;
 class BE_API Cylinder {
 public:
     /// The default constructor does not initialize any members of this class.
-    Cylinder() {}
+    Cylinder() = default;
     Cylinder(const Vec3 &p1, const Vec3 &p2, float radius);
 
     void                SetP1(const Vec3 &p1) { p[0] = p1; }

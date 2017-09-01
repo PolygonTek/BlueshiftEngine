@@ -37,7 +37,7 @@ void ComMeshCollider::RegisterProperties() {
 }
 
 ComMeshCollider::ComMeshCollider() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComMeshCollider::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComMeshCollider::PropertyChanged);
 }
 
 ComMeshCollider::~ComMeshCollider() {

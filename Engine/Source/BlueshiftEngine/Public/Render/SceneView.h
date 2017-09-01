@@ -32,6 +32,7 @@ class SceneView {
 public:
     enum Flag {
         WireFrameMode       = BIT(0),
+        TexturedMode        = BIT(1),
         NoShadows           = BIT(2),
         NoSubViews          = BIT(3),
         SkipPostProcess     = BIT(4),
@@ -41,7 +42,8 @@ public:
     enum ClearMethod {
         NoClear,
         DepthOnlyClear,
-        ColorClear
+        ColorClear,
+        SkyboxClear
     };
 
     struct Parms {

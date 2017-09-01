@@ -26,8 +26,8 @@ BE_NAMESPACE_BEGIN
 #define BANIM_VERSION   1
 
 enum BAnimFlag {
-    RootTranslationXY        = BIT(0),
-    RootTranslationZ         = BIT(1),
+    RootTranslationXY   = BIT(0),
+    RootTranslationZ    = BIT(1),
     RootRotation        = BIT(2),
 };
 
@@ -50,6 +50,8 @@ struct BMeshHeader {
     int32_t         version;
     uint32_t        numJoints;
     uint32_t        numSurfs;
+    Vec3            aabbMin;
+    Vec3            aabbMax;
 };
 
 struct BMeshSurf {
@@ -58,6 +60,8 @@ struct BMeshSurf {
     uint32_t        numIndexes;
     uint32_t        indexSize;
     uint32_t        maxWeights;
+    Vec3            aabbMin;
+    Vec3            aabbMax;
 };
 
 struct BMeshVert {

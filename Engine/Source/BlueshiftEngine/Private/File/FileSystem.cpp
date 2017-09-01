@@ -16,6 +16,7 @@
 #include "Core/Heap.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
+#include "Platform/PlatformProcess.h"
 #include "File/FileSystem.h"
 #include "minizip/zip.h"
 #include "minizip/unzip.h"
@@ -393,7 +394,25 @@ bool FileSystem::MoveFile(const char *srcFilename, const char *dstFilename) {
     path.StripFileName();
     CreateDirectory(path, true);
 
-    return PlatformFile::MoveFile(srcFilename, dstFilename);
+    if (!PlatformFile::MoveFile(srcFilename, dstFilename)) {
+        bool success = false;
+        int retryCount = 3;
+        
+        while (retryCount--) {
+            PlatformProcess::Sleep(0.5f);
+
+            success = PlatformFile::MoveFile(srcFilename, dstFilename);
+            if (success) {
+                break;
+            }
+        }
+
+        if (!success) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, ProgressCallback *progress) {
@@ -408,7 +427,7 @@ bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, Prog
     size_t srcFileSize;
     File *srcFile = OpenFileRead(srcFilename, false, &srcFileSize);
     if (!srcFile /*|| srcFileSize < 1 */) {
-            BE_WARNLOG(L"CopyFile: Failed to open src file '%hs'\n", srcFilename);
+        BE_WARNLOG(L"CopyFile: Failed to open src file '%hs'\n", srcFilename);
         return false;
     }
     
@@ -720,7 +739,9 @@ bool FileSystem::RemoveDirectory(const char *dirname, bool tree) const {
 size_t FileSystem::LoadFile(const char *path, bool searchDirs, void **buffer) {
     if (!path || !path[0]) {
         BE_ERRLOG(L"FileSystem::LoadFile: empty filename\n");
-        *buffer = nullptr;
+        if (buffer) {
+            *buffer = nullptr;
+        }
         return 0;
     }
 

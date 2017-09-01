@@ -25,8 +25,8 @@ BE_NAMESPACE_BEGIN
 
 SoundSystem     soundSystem;
 
-CVar            SoundSystem::s_nosound(L"s_nosound", L"0");
-CVar            SoundSystem::s_volume(L"s_volume", L"0.8", CVar::Float | CVar::Archive);
+CVar            SoundSystem::s_nosound(L"s_nosound", L"0", 0, L"");
+CVar            SoundSystem::s_volume(L"s_volume", L"0.8", CVar::Float | CVar::Archive, L"");
 
 void SoundSystem::Init(void *windowHandle) {
     BE_LOG(L"Initializing SoundSystem...\n");
@@ -157,6 +157,22 @@ void SoundSystem::PrecacheSound(const char *filename) {
     ReleaseSound(sound);
 }
 
+void SoundSystem::StopAllSounds() {
+    for (int sourceIndex = 0; sourceIndex < sources.Count(); sourceIndex++) {
+        SoundSource *source = sources[sourceIndex];
+
+        if (source->sound) {
+            if (source->Stop()) {
+                source->sound->playNode.Remove();
+                source->sound->soundSource = nullptr;
+                source->sound = nullptr;
+
+                freeSources[sourceIndex] = source;
+            }
+        }
+    }
+}
+
 Sound *SoundSystem::AllocSound(const char *hashName) {
     if (soundHashMap.Get(hashName)) {
         BE_FATALERROR(L"'%hs' sound buffer already allocated", hashName);
@@ -173,6 +189,20 @@ Sound *SoundSystem::AllocSound(const char *hashName) {
     soundHashMap.Set(sound->hashName, sound);
 
     return sound;
+}
+
+void SoundSystem::RenameSound(Sound *sound, const Str &newName) {
+    const auto *entry = soundHashMap.Get(sound->hashName);
+    if (entry) {
+        soundHashMap.Remove(sound->hashName);
+
+        sound->hashName = newName;
+        sound->name = newName;
+        sound->name.StripPath();
+        sound->name.StripFileExtension();
+
+        soundHashMap.Set(newName, sound);
+    }
 }
 
 void SoundSystem::DestroySound(Sound *sound) {

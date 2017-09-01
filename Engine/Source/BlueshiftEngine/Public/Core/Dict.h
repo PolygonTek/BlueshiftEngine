@@ -51,7 +51,11 @@ private:
 class BE_API Dict {
 public:
     Dict();
+    /// Copy constructor
     Dict(const Dict &other);
+    /// Clears existing key-value pairs and copy all key-value pairs from other
+    Dict &operator=(const Dict &other);
+    /// Destructor
     ~Dict();
 
                         /// Returns total size of allocated memory
@@ -78,9 +82,6 @@ public:
                         // prefix string 으로 match 되는 key-value 를 찾는다. 옵션으로 lastMatch 이후부터 찾을 수 있다.
     const KeyValue *    MatchPrefix(const char *prefix, const KeyValue *lastMatch = nullptr) const;
     
-                        /// Clears existing key-value pairs and copy all key-value pairs from other
-    Dict &              operator=(const Dict &other);
-
                         /// Copys all key-value pairs without removing existing key-value pairs not present in the other dict
     void                Copy(const Dict &other);
 

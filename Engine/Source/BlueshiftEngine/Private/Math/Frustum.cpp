@@ -1216,8 +1216,8 @@ bool Frustum::ConstrainToFrustum(const Frustum &frustum) {
 
 OBB Frustum::ToOBB() const {
     float h = (dFar - dNear) * 0.5f;
-    Vec3 extents(h, dLeft * 0.5f, dUp * 0.5f);
-    OBB obb(origin + axis[0] * h, extents, axis);
+    Vec3 extents(h, dLeft, dUp);
+    OBB obb(origin + axis[0] * (dNear + h), extents, axis);
     return obb;
 }
 

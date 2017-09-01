@@ -35,7 +35,7 @@ class Rotation;
 class BE_API CQuat {
 public:
     /// The default constructor does not initialize any members of this class.
-    CQuat() {}
+    CQuat() = default;
     CQuat(float x, float y, float z);
 
                         /// Casts this Quat to a C array.

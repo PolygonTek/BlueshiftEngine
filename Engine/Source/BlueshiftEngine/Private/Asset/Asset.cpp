@@ -28,8 +28,8 @@ BEGIN_PROPERTIES(Asset)
     PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertySpec::ReadWrite | PropertySpec::Hidden),
 END_PROPERTIES
 
-const SignalDef SIG_Reloaded("reloaded");
-const SignalDef SIG_Modified("modified", "i");
+const SignalDef Asset::SIG_Reloaded("reloaded");
+const SignalDef Asset::SIG_Modified("modified", "i");
 
 Asset::Asset() {
     node.SetOwner(this);
@@ -75,7 +75,7 @@ const Str Asset::GetAssetFilename() const {
     
     while (asset) {
         Str tempPath = asset->name;
-        tempPath.AppendPath(assetPath);
+        tempPath.AppendPath(assetPath, PATHSEPERATOR_CHAR);
         assetPath = tempPath;
 
         asset = asset->node.GetParent();
@@ -88,12 +88,17 @@ const Str Asset::GetResourceFilename() const {
     Str name;
 
     if (assetImporter) {
-        name = assetImporter->GetCacheFilename();
+        name = Asset::NormalizeAssetPath(assetImporter->GetCacheFilename());
     } else {
         name = Asset::NormalizeAssetPath(GetAssetFilename());
     }
 
     return name;
+}
+
+void Asset::Rename(const Str &newName) {
+    name = newName;
+    name.StripPath();
 }
 
 void Asset::GetChildren(Array<Asset *> &children) const {

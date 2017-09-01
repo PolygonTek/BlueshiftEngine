@@ -25,6 +25,7 @@
 #include "Core/WStr.h"
 #include "Math/Math.h"
 #include "Containers/Array.h"
+#include "ParticleSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -36,6 +37,8 @@ class Material;
 class Skin;
 class Mesh;
 class Font;
+class ParticleSystem;
+class Particle;
 
 class SceneEntity {
     friend class RenderWorld;
@@ -77,28 +80,35 @@ public:
     };
 
     struct Parms {
+        Vec3                origin;
+        Vec3                scale;
+        Mat3                axis;
+        AABB                aabb;                   // non-scaled AABB (don't use cleared AABB)
+        float               maxVisDist;
         int                 layer;
+        int                 time;
+
         Mesh *              mesh;
+        const Skeleton *    skeleton;
+        int                 numJoints;
+        Mat3x4 *            joints;
+
         Font *              font;
         WStr                text;
         TextAnchor          textAnchor;
         TextAlignment       textAlignment;
         float               textScale;
         float               lineSpacing;
-        const Skeleton *    skeleton;
+
+        ParticleSystem *    particleSystem;
+        Array<Particle *>   stageParticles;
+        Array<float>        stageStartDelay;
+        
         Array<Material *>   customMaterials;
         Skin *              customSkin;
         float               materialParms[MaxMaterialParms];
-        int                 numJoints;
-        Mat3x4 *            joints;
         WireframeMode       wireframeMode;
         Color4              wireframeColor;
-
-        Vec3                origin;
-        Vec3                scale;
-        Mat3                axis;
-        AABB                aabb;                   // non-scaled AABB 
-        float               maxVisDist;
 
         bool                firstPersonOnly;
         bool                thirdPersonOnly;
@@ -128,7 +138,6 @@ public:
     int                     index;
     Parms                   parms;
     bool                    firstUpdate;
-    Vec3                    origin;
     OBB                     worldOBB;
     Mat4                    modelMatrix;
     Mat4                    motionBlurModelMatrix[2];

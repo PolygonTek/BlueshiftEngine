@@ -92,14 +92,14 @@ public:
         Array<Condition>        conditions;         ///< Here we decide when transition get triggered
     };
 
-    explicit                    AnimLayer(AnimController *animController);
-    explicit                    AnimLayer(AnimController *animController, const AnimLayer *animLayer);
-                                ~AnimLayer();
+    AnimLayer(AnimController *animController);
+    AnimLayer(AnimController *animController, const AnimLayer *animLayer);
+    ~AnimLayer();
                                 
                                 /// Returns total size of allocated memory
-    int                         Allocated() const;
+    size_t                      Allocated() const;
                                 /// Returns total size of allocated memory including size of this type
-    int                         Size() const;
+    size_t                      Size() const;
                                 /// Sets name of this layer
     void                        SetName(const char *name) { this->name = name; }
                                 /// Returns name of this layer

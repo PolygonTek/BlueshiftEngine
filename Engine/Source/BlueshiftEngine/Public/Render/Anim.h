@@ -146,8 +146,8 @@ private:
     void                    CreateDefaultAnim(const Skeleton *skeleton);
     Anim *                  CreateAdditiveAnim(const char *name, const JointPose *firstFrame, int numJointIndexes, const int *jointIndexes);
 
-    bool                    LoadBAnim(const char *filename);
-    void                    WriteBAnim(const char *filename);
+    bool                    LoadBinaryAnim(const char *filename);
+    void                    WriteBinaryAnim(const char *filename);
 
     void                    ComputeTotalDelta();
 
@@ -211,6 +211,8 @@ public:
     Anim *                  FindAnim(const char *name) const;
     Anim *                  GetAnim(const char *name);
     Anim *                  GetDefaultAnim(const char *name, const Skeleton *skeleton);
+
+    void                    RenameAnim(Anim *anim, const Str &newName);
 
     void                    ReleaseAnim(Anim *anim, bool immediateDestroy = false);
     void                    DestroyAnim(Anim *anim);

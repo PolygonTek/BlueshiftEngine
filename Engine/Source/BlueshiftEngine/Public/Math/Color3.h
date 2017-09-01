@@ -53,7 +53,7 @@ public:
                         /// This function is identical to the member function Mul().
     Color3              operator*(float rhs) const { return Color3(r * rhs, g * rhs, b * rhs); }
                         /// Multiplies color v by a scalar.
-    friend Color3       operator*(float lhs, const Color3 rhs) { return Color3(lhs * rhs.r, lhs * rhs.g, lhs * rhs.b); }
+    friend Color3       operator*(float lhs, const Color3 &rhs) { return Color3(lhs * rhs.r, lhs * rhs.g, lhs * rhs.b); }
 
                         /// Divides this color by a scalar.
     Color3              Div(float s) const { return *this / s; }
@@ -99,7 +99,7 @@ public:
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();
 
-                        /// Convert color packed to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
+                        /// Convert color to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 
                         /// Convert RGB to HSL

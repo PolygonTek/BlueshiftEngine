@@ -19,9 +19,10 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef         SIG_PropertyChanged("propertyChanged", "ss");
-const SignalDef         SIG_PropertyArrayNumChanged("propertyArrayNumChanged", "ss");
-const SignalDef         SIG_PropertyFlagsChanged("propertyFlagsChanged", "ss");
+const SignalDef Properties::SIG_PropertyChanged("propertyChanged", "ss");
+const SignalDef Properties::SIG_PropertyArrayNumChanged("propertyArrayNumChanged", "ss");
+const SignalDef Properties::SIG_PropertyFlagsChanged("propertyFlagsChanged", "ss");
+const SignalDef Properties::SIG_UpdateUI("updateUI");
 
 Properties::Properties(Object *owner) {
     this->owner = owner;
@@ -585,7 +586,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
     propertyHashMap.Set(name, Property(newVar, 0));
 
     if (oldVar != newVar) {
-        owner->EmitSignal(&SIG_PropertyChanged, owner->ClassName(), name);
+        owner->EmitSignal(&Properties::SIG_PropertyChanged, owner->ClassName(), name);
     }
 
     return true;

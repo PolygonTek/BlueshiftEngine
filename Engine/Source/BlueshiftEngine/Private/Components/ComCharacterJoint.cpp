@@ -60,7 +60,7 @@ void ComCharacterJoint::RegisterProperties() {
 }
 
 ComCharacterJoint::ComCharacterJoint() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComCharacterJoint::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCharacterJoint::PropertyChanged);
 }
 
 ComCharacterJoint::~ComCharacterJoint() {

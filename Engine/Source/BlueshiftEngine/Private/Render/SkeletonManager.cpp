@@ -27,7 +27,7 @@ void SkeletonManager::Init() {
 
     skeletonHashMap.Init(1024, 64, 64);
 
-    // create default skeleton
+    // Create default skeleton
     defaultSkeleton = AllocSkeleton("_defaultSkeleton");
     defaultSkeleton->permanence = true;
     defaultSkeleton->CreateDefaultSkeleton();
@@ -54,6 +54,20 @@ Skeleton *SkeletonManager::AllocSkeleton(const char *hashName) {
     skeletonHashMap.Set(skeleton->hashName, skeleton);
 
     return skeleton;
+}
+
+void SkeletonManager::RenameSkeleton(Skeleton *skeleton, const Str &newName) {
+    const auto *entry = skeletonHashMap.Get(skeleton->hashName);
+    if (entry) {
+        skeletonHashMap.Remove(skeleton->hashName);
+
+        skeleton->hashName = newName;
+        skeleton->name = newName;
+        skeleton->name.StripPath();
+        skeleton->name.StripFileExtension();
+
+        skeletonHashMap.Set(newName, skeleton);
+    }
 }
 
 void SkeletonManager::DestroySkeleton(Skeleton *skeleton) {

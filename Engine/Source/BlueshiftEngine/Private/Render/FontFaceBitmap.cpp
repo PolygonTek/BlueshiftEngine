@@ -91,7 +91,7 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
         glyph->t2           = gl->t2;
 
         Texture *texture = textureManager.GetTexture(bitmapNames[gl->bitmapIndex], Texture::Clamp | Texture::HighQuality | Texture::NoMipmaps);
-        glyph->material = materialManager.GetTextureMaterial(texture, Material::OverlayHint);
+        glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::OverlayHint);
         textureManager.ReleaseTexture(texture);
 
         if (gl->height > maxHeight) {

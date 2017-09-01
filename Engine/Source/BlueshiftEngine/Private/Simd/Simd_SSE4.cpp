@@ -15,14 +15,12 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
 #include "Core/JointPose.h"
-#include "SIMD/Simd.h"
-#include "SIMD/Simd_Generic.h"
+#include "Simd/Simd.h"
+#include "Simd/Simd_Generic.h"
 
 #if defined(__X86__)
 
-#include "SIMD/Simd_SSE4.h"
-
-#define M_PI    3.14159265358979323846f
+#include "Simd/Simd_SSE4.h"
 
 BE_NAMESPACE_BEGIN
 

@@ -71,6 +71,7 @@ struct RenderCounter {
     unsigned int            numSkinningEntities;
 };
 
+class Image;
 class Texture;
 class RenderTarget;
 class Material;
@@ -96,10 +97,10 @@ public:
 
     RenderContext();
 
-    void                    Init(Renderer::WindowHandle hwnd, int renderWidth, int renderHeight, Renderer::DisplayContextFunc displayFunc, void *displayFuncDataPtr, int flags = 0);
+    void                    Init(RHI::WindowHandle hwnd, int renderWidth, int renderHeight, RHI::DisplayContextFunc displayFunc, void *displayFuncDataPtr, int flags = 0);
     void                    Shutdown();
 
-    Renderer::Handle        GetContextHandle() const { return contextHandle; }
+    RHI::Handle             GetContextHandle() const { return contextHandle; }
     
                             // logical screen resolution
     int                     GetScreenWidth() const { return windowWidth; }
@@ -152,8 +153,28 @@ public:
     bool                    QuerySelection(const Rect &rect, Inclusion inclusion, Array<int> &indexes);
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
-    void                    TakeEnvShot(const char *filename, const Vec3 &origin, int size = 256);
-    void                    TakeIrradianceShot(const char *filename, const Vec3 &origin, int size = 16);
+    void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size = 256);
+    void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
+    void                    TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin);
+
+    void                    WriteBRDFIntegrationLUT(const char *filename, int size) const;
+
+    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage);
+
+                            // Generate irradiance environment cubemap using SH convolution method
+    void                    GenerateIrradianceEnvCubeImageSHConvolv(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const;
+
+                            // Generate irradiance environment cubemap
+    void                    GenerateIrradianceEnvCubeImage(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const;
+
+                            // Generate Phong specular prefiltered environment cubemap
+    void                    GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const;
+
+                            // Generate GGX specular prefiltered environment cubemap
+    void                    GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const;
+
+                            // Generate GGX BRDF integration 2D LUT
+    void                    GenerateGGXIntegrationLUTImage(int size, Image &integrationImage) const;
 
 //private:
     void                    InitScreenMapRT();
@@ -163,7 +184,7 @@ public:
     void                    InitShadowMapRT();
     void                    FreeShadowMapRT();
 
-    Renderer::Handle        contextHandle;
+    RHI::Handle             contextHandle;
 
     int                     flags;
     int                     windowWidth;

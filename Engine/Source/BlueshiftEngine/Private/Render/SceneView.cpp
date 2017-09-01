@@ -236,12 +236,12 @@ bool SceneView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) cons
         }
 
         // planeNormal1 = 위쪽 평면
-        planeNormal1.z = (sphere.radius * localOrigin.z - d) / (z2 + x2);		
+        planeNormal1.z = (sphere.radius * localOrigin.z - d) / (z2 + x2);
         planeNormal1.x = (sphere.radius - planeNormal1.z * localOrigin.z) / -localOrigin.x;
         planeNormal1.y = 0.0f;
 
-        // planeNormal2 = 아래쪽 평면	
-        planeNormal2.z = (sphere.radius * localOrigin.z + d) / (z2 + x2);		
+        // planeNormal2 = 아래쪽 평면
+        planeNormal2.z = (sphere.radius * localOrigin.z + d) / (z2 + x2);
         planeNormal2.x = (sphere.radius - planeNormal2.z * localOrigin.z) / -localOrigin.x;
         planeNormal2.y = 0.0f;
 
@@ -294,8 +294,14 @@ bool SceneView::GetClipRectFromAABB(const AABB &aabb, Rect &clipRect) const {
 bool SceneView::GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
     AABB bounds;
 
-    if (!frustum.ProjectionBounds(obb, bounds)) {
-        return false;
+    if (parms.orthogonal) {
+        if (!box.ProjectionBounds(obb, bounds)) {
+            return false;
+        }
+    } else {
+        if (!frustum.ProjectionBounds(obb, bounds)) {
+            return false;
+        }
     }
 
     if (-bounds[0][1] - -bounds[1][1] <= 0) {
@@ -317,9 +323,15 @@ bool SceneView::GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
 bool SceneView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const {
     AABB bounds;
 
-    // CHECK: is valid AABB ?
-    if (!frustum.ProjectionBounds(frustum, bounds)) {
-        return false;
+    if (parms.orthogonal) {
+        if (!this->box.ProjectionBounds(frustum, bounds)) {
+            return false;
+        }
+    } else {
+        // CHECK: is valid AABB ?
+        if (!this->frustum.ProjectionBounds(frustum, bounds)) {
+            return false;
+        }
     }
 
     if (-bounds[0][1] - -bounds[1][1] <= 0) {
@@ -386,7 +398,7 @@ bool SceneView::GetDepthBoundsFromOBB(const OBB &box, double *depthMin, double *
     float zmin, zmax;
 
     OBB b = box.Translate(-parms.origin);
-    // x 축으로 투영했을때의 view 깊이 좌표값 min, max	
+    // x 축으로 투영했을때의 view 깊이 좌표값 min, max
     b.AxisProjection(-parms.axis[0], zmax, zmin);
 
     double dmin = GetDepthFromViewZ(zmin);
@@ -410,7 +422,7 @@ bool SceneView::GetDepthBoundsFromFrustum(const Frustum &frustum, double *depthM
 
     Frustum f = frustum.Translate(-parms.origin);
     // x 축으로 투영했을때의 view 깊이 좌표값 min, max
-    f.AxisProjection(-parms.axis[0], zmax, zmin);	
+    f.AxisProjection(-parms.axis[0], zmax, zmin);
 
     double dmin = GetDepthFromViewZ(zmin);
     Clamp(dmin, 0.0, 0.999999);

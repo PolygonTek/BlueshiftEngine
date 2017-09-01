@@ -13,12 +13,12 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/Str.h"
 #include "Math/Math.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"
 #include "libpvrt/PVRTTexture.h"
 #include "libpvrt/PVRTGlobal.h"
+#include "ETCPACK/etcpack_lib.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -184,7 +184,7 @@ static int ETCTextureDecompress(const void * const pSrcData, const int &x, const
 @Returns		The number of bytes of ETC data decompressed
 @Description	Decompresses ETC to RGBA 8888
 *************************************************************************/
-void DecompressETC(const Image &srcImage, Image &dstImage, int nMode) {
+void DecompressETC1(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::RGBA_8_8_8_8);
     assert(dstImage.GetPixels());
 
@@ -198,7 +198,7 @@ void DecompressETC(const Image &srcImage, Image &dstImage, int nMode) {
     if (x<ETC_MIN_TEXWIDTH || y<ETC_MIN_TEXHEIGHT) {	
         // decompress into a buffer big enough to take the minimum size
         char* pTempBuffer = (char*)malloc(PVRT_MAX(x, ETC_MIN_TEXWIDTH)*PVRT_MAX(y, ETC_MIN_TEXHEIGHT) * 4);
-        i32read = ETCTextureDecompress(pSrcData, PVRT_MAX(x, ETC_MIN_TEXWIDTH), PVRT_MAX(y, ETC_MIN_TEXHEIGHT), pTempBuffer, nMode);
+        i32read = ETCTextureDecompress(pSrcData, PVRT_MAX(x, ETC_MIN_TEXWIDTH), PVRT_MAX(y, ETC_MIN_TEXHEIGHT), pTempBuffer, 0);
 
         for (unsigned int i = 0; i<y; i++) {	
             // copy from larger temp buffer to output data
@@ -210,7 +210,7 @@ void DecompressETC(const Image &srcImage, Image &dstImage, int nMode) {
         }
     } else {
         // decompress larger MIP levels straight into the output data
-        i32read = ETCTextureDecompress(pSrcData, x, y, pDecompressedData, nMode);
+        i32read = ETCTextureDecompress(pSrcData, x, y, pDecompressedData, 0);
     }
 
     // swap r and b channels
@@ -235,6 +235,164 @@ void DecompressETC(const Image &srcImage, Image &dstImage, int nMode) {
     }
 
     free(pDecompressedData);
+}
+
+// read color block from data stream
+static void ReadColorBlockETC2(const byte *data, uint32_t &block1, uint32_t &block2) {
+    block1 = data[0];
+    block1 = block1 << 8; block1 |= data[1];
+    block1 = block1 << 8; block1 |= data[2];
+    block1 = block1 << 8; block1 |= data[3];
+    block2 = data[4];
+    block2 = block2 << 8; block2 |= data[5];
+    block2 = block2 << 8; block2 |= data[6];
+    block2 = block2 << 8; block2 |= data[7];
+}
+
+static void DecompressImageETC2_RGB8(const byte *src, const int width, const int height, const int depth, byte *out) {
+    ALIGN16(byte unpackedBlock[64]);
+    uint32_t block1;
+    uint32_t block2;
+
+    // Fill alpha channel first
+    memset(unpackedBlock, 255, sizeof(unpackedBlock));
+
+    for (int y = 0; y < height; y += 4) {
+        byte *dstPtr = out + 4 * width * y;
+
+        int dstBlockHeight = Min(4, height - y);
+
+        for (int x = 0; x < width; x += 4) {
+            // ETC2 RGB block
+            ReadColorBlockETC2(src, block1, block2);
+            src += 8;
+            etcpack_decompressBlockETC2c(block1, block2, unpackedBlock, 4, 4, 0, 0, 4);
+
+            int dstBlockWidth = Min(4, width - x);
+
+            const byte *srcPtr = unpackedBlock;
+
+            for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
+                memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
+            }
+
+            dstPtr += 4 * dstBlockWidth;
+        }
+    }
+}
+
+static void DecompressImageETC2_RGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
+    ALIGN16(byte unpackedBlock[64]);
+    uint32_t block1;
+    uint32_t block2;
+
+    for (int y = 0; y < height; y += 4) {
+        byte *dstPtr = out + 4 * width * y;
+
+        int dstBlockHeight = Min(4, height - y);
+
+        for (int x = 0; x < width; x += 4) {
+            // EAC block + ETC2 RGB block
+            etcpack_decompressBlockAlphaC(const_cast<byte *>(src), unpackedBlock + 3, 4, 4, 0, 0, 4);
+            src += 8;
+            ReadColorBlockETC2(src, block1, block2);
+            src += 8;
+            etcpack_decompressBlockETC2c(block1, block2, unpackedBlock, 4, 4, 0, 0, 4);
+
+            int dstBlockWidth = Min(4, width - x);
+
+            const byte *srcPtr = unpackedBlock;
+
+            for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
+                memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
+            }
+
+            dstPtr += 4 * dstBlockWidth;
+        }
+    }
+}
+
+static void DecompressImageETC2_RGB8A1(const byte *src, const int width, const int height, const int depth, byte *out) {
+    ALIGN16(byte unpackedBlock[64]);
+    uint32_t block1;
+    uint32_t block2;
+
+    for (int y = 0; y < height; y += 4) {
+        byte *dstPtr = out + 4 * width * y;
+
+        int dstBlockHeight = Min(4, height - y);
+
+        for (int x = 0; x < width; x += 4) {
+            // ETC2 RGB/punchthrough alpha block 
+            ReadColorBlockETC2(src, block1, block2);
+            src += 8;
+            etcpack_decompressBlockETC21BitAlphaC(block1, block2, unpackedBlock, nullptr, 4, 4, 0, 0, 4);
+
+            int dstBlockWidth = Min(4, width - x);
+
+            const byte *srcPtr = unpackedBlock;
+
+            for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
+                memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
+            }
+
+            dstPtr += 4 * dstBlockWidth;
+        }
+    }
+}
+
+void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage) {
+    int numMipmaps = srcImage.NumMipmaps();
+    int numSlices = srcImage.NumSlices();
+
+    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+        int w = srcImage.GetWidth(mipLevel);
+        int h = srcImage.GetHeight(mipLevel);
+        int d = srcImage.GetDepth(mipLevel);
+
+        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+            const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+
+            DecompressImageETC2_RGB8(src, w, h, d, dst);
+        }
+    }
+}
+
+void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage) {
+    int numMipmaps = srcImage.NumMipmaps();
+    int numSlices = srcImage.NumSlices();
+
+    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+        int w = srcImage.GetWidth(mipLevel);
+        int h = srcImage.GetHeight(mipLevel);
+        int d = srcImage.GetDepth(mipLevel);
+
+        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+            const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+
+            DecompressImageETC2_RGBA8(src, w, h, d, dst);
+        }
+    }
+}
+
+void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage) {
+    int numMipmaps = srcImage.NumMipmaps();
+    int numSlices = srcImage.NumSlices();
+
+    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+        int w = srcImage.GetWidth(mipLevel);
+        int h = srcImage.GetHeight(mipLevel);
+        int d = srcImage.GetDepth(mipLevel);
+
+        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+            const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
+            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+
+            DecompressImageETC2_RGB8A1(src, w, h, d, dst);
+        }
+    }
 }
 
 BE_NAMESPACE_END

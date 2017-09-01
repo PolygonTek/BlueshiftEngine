@@ -54,6 +54,7 @@ void LuaVM::RegisterVec2(LuaCpp::Module &module) {
         "cross", &Vec2::Cross,
         "set_from_lerp", &Vec2::SetFromLerp,
         "to_angle", &Vec2::ToAngle,
+        "set_from_angle", &Vec2::SetFromAngle,
         "to_string", static_cast<const char*(Vec2::*)(void)const>(&Vec2::ToString)
     );
     _Vec2.AddClassMembers<Vec2>(
@@ -69,6 +70,8 @@ void LuaVM::RegisterVec2(LuaCpp::Module &module) {
     _Vec2["one"] = Vec2::one;
     _Vec2["unit_x"] = Vec2::unitX;
     _Vec2["unit_y"] = Vec2::unitY;
+
+    _Vec2["from_angle"].SetFunc(Vec2::FromAngle);
 }
 
 BE_NAMESPACE_END

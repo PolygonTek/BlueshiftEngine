@@ -33,8 +33,8 @@ void RB_PostProcessDepth() {
 
             //backEnd.ctx->screenRT->Begin();
                         
-            glr.SetStateBits(Renderer::ColorWrite | Renderer::BS_DstColor | Renderer::BD_Zero);
-            glr.SetCullFace(Renderer::NoCull);
+            rhi.SetStateBits(RHI::ColorWrite | RHI::BS_DstColor | RHI::BD_Zero);
+            rhi.SetCullFace(RHI::NoCull);
 
             const Shader *shader = ShaderManager::postPassThruShader;
 
@@ -66,8 +66,8 @@ void RB_PostProcess() {
         linearizeDepth = true;
     }
 
-    if (r_sunShafts.GetBool() && backEnd.mainLight) {
-        const SceneLight *sunLight = backEnd.mainLight->def;
+    if (r_sunShafts.GetBool() && backEnd.primaryLight) {
+        const SceneLight *sunLight = backEnd.primaryLight->def;
         if (sunLight->parms.axis[0].Dot(backEnd.view->def->parms.axis[0]) < 0.0f) {
             if (!linearizeDepth) {
                 linearizeDepth = true;
@@ -190,8 +190,8 @@ void RB_PostProcess() {
             bloomScale = 0.0f;
         }
 
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
-        glr.SetCullFace(Renderer::NoCull);
+        rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
+        rhi.SetCullFace(RHI::NoCull);
         
         // HDR combine all = backBufferMap + bloomMap + luminanceMap
 
@@ -201,7 +201,7 @@ void RB_PostProcess() {
         //shader->SetTexture("randomDir4x4Map", textureManager.randomDir4x4Texture);
         shader->SetTexture("colorMap", bc->screenRT->ColorTexture());
         shader->SetTexture("bloomMap0", bc->hdrBloomRT[0]->ColorTexture());
-        shader->SetTexture("luminanceMap", luminanceRT->ColorTexture());		        
+        shader->SetTexture("luminanceMap", luminanceRT->ColorTexture());
         shader->SetConstant1f("middleGray", r_HDR_middleGray.GetFloat());
         shader->SetConstant1f("bloomScale", bloomScale);
         shader->SetConstant1f("colorScale", r_showBloom.GetBool() ? 0.0f : 1.0f);
@@ -209,8 +209,8 @@ void RB_PostProcess() {
 
         RB_DrawClipRect(screenTc[0], screenTc[1], screenTc[2], screenTc[3]);
     } else {
-        glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
-        glr.SetCullFace(Renderer::NoCull);
+        rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
+        rhi.SetCullFace(RHI::NoCull);
 
         const Shader *shader = ShaderManager::postPassThruShader;
 
@@ -220,7 +220,5 @@ void RB_PostProcess() {
         RB_DrawClipRect(screenTc[0], screenTc[1], screenTc[2], screenTc[3]);
     }
 }
-
-
 
 BE_NAMESPACE_END

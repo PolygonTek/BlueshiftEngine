@@ -32,7 +32,7 @@ void ComFixedJoint::RegisterProperties() {
 }
 
 ComFixedJoint::ComFixedJoint() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComFixedJoint::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComFixedJoint::PropertyChanged);
 }
 
 ComFixedJoint::~ComFixedJoint() {

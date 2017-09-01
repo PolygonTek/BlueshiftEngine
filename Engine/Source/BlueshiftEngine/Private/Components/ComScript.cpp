@@ -39,7 +39,7 @@ void ComScript::RegisterProperties() {
 ComScript::ComScript() {
     scriptAsset = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComScript::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComScript::PropertyChanged);
 }
 
 ComScript::~ComScript() {
@@ -205,7 +205,7 @@ void ComScript::Init() {
 void ComScript::ChangeScript(const Guid &scriptGuid) {
     // Disconnect from old script asset
     if (scriptAsset) {
-        scriptAsset->Disconnect(&SIG_Reloaded, this);
+        scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
     }
 
     LuaVM::State().SetToNil(sandboxName.c_str());
@@ -225,7 +225,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         scriptAsset = scriptObject->Cast<ScriptAsset>();
         
         if (scriptAsset) {
-            scriptAsset->Connect(&SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::Queued);
+            scriptAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::Queued);
         }
     }
 
@@ -242,21 +242,23 @@ bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandbo
         return false;
     }
 
-    // NOTE: absolute file path is needed for Lua debugging
-    Str absFilename;
-    
+    Str name;
+#if 1
+    // NOTE: absolute file path is needed for Lua debugging    
     char *path = tombs(lua_path.GetString());
 
     if (path[0]) {
-        absFilename = path;
-        absFilename.AppendPath(filename);
-        absFilename.CleanPath();
+        name = path;
+        name.AppendPath(filename);
+        name.CleanPath();
+    } else {
+        name = fileSystem.ToAbsolutePath(filename);
     }
-    else {
-        absFilename = fileSystem.ToAbsolutePath(filename);
-    }
+#else
+    name = filename;
+#endif
 
-    if (!LuaVM::State().LoadBuffer(absFilename.c_str(), data, size, sandboxName)) {
+    if (!LuaVM::State().LoadBuffer(name.c_str(), data, size, sandboxName)) {
         fileSystem.FreeFile(data);
         return false;
     }
@@ -317,13 +319,13 @@ void ComScript::SetScriptProperties() {
             Object *object = Object::FindInstance(objectGuid);
             if (object) {
                 properties[name]["value"] = object;
-            } else if (spec->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
-                object = spec->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
-                properties[name]["value"] = object;
-            }
-            
-            if (!object) {
-                BE_WARNLOG(L"not found object %hs\n", name);
+            } else {
+                if (spec->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
+                    if (!objectGuid.IsZero()) {
+                        object = spec->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
+                        properties[name]["value"] = object;
+                    }
+                }
             }
             break; }
         default:
@@ -399,6 +401,10 @@ void ComScript::OnSensorStay(const Entity *entity) {
     CallFunc("on_sensor_stay", entity);
 }
 
+void ComScript::OnParticleCollision(const Entity *entity) {
+    CallFunc("on_particle_collision", entity);
+}
+
 void ComScript::OnApplicationTerminate() {
     CallFunc("on_application_terminate");
 }
@@ -436,7 +442,7 @@ void ComScript::SetScript(const Guid &guid) {
 
     ChangeScript(guid);
 
-    EmitSignal(&SIG_UpdateUI);
+    EmitSignal(&Properties::SIG_UpdateUI);
 }
 
 BE_NAMESPACE_END

@@ -44,7 +44,7 @@ void ComSpringJoint::RegisterProperties() {
 }
 
 ComSpringJoint::ComSpringJoint() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComSpringJoint::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSpringJoint::PropertyChanged);
 }
 
 ComSpringJoint::~ComSpringJoint() {

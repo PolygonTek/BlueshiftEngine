@@ -31,7 +31,7 @@ BEGIN_PROPERTIES(ComRenderable)
     PROPERTY_BOOL("billboard", "Billboard", "", "false", PropertySpec::ReadWrite),
     PROPERTY_FLOAT("timeOffset", "Time Offset", "", "0", PropertySpec::ReadWrite),
     PROPERTY_FLOAT("timeScale", "Time Scale", "", "1", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "16384", PropertySpec::ReadWrite),
+    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "25000", PropertySpec::ReadWrite),
     PROPERTY_BOOL("skipSelection", "Skip Selection", "", "false", PropertySpec::ReadWrite | PropertySpec::Hidden | PropertySpec::SkipSerialization),
 END_PROPERTIES
 
@@ -79,7 +79,7 @@ void ComRenderable::Init() {
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    memset(&sceneEntity, 0, sizeof(sceneEntity));	
+    memset(&sceneEntity, 0, sizeof(sceneEntity));
 
     sceneEntity.layer = GetEntity()->GetLayer();
     sceneEntity.maxVisDist = props->Get("maxVisDist").As<float>();
@@ -103,10 +103,9 @@ void ComRenderable::Init() {
     sceneEntity.scale = transform->GetScale();
     sceneEntity.axis = transform->GetAxis();
 
-    GetEntity()->Connect(&SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
+    GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
 
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComRenderable::PhysicsUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
 }
 
 void ComRenderable::Enable(bool enable) {
@@ -198,12 +197,6 @@ void ComRenderable::TransformUpdated(const ComTransform *transform) {
     sceneEntity.origin = transform->GetOrigin();
     sceneEntity.axis = transform->GetAxis();
     sceneEntity.scale = transform->GetScale();
-    UpdateVisuals();
-}
-
-void ComRenderable::PhysicsUpdated(const PhysRigidBody *body) {
-    sceneEntity.origin = body->GetOrigin();
-    sceneEntity.axis = body->GetAxis();
     UpdateVisuals();
 }
 

@@ -70,9 +70,9 @@ public:
     ~Animator();
 
                             /// Returns total size of allocated memory
-    int                     Allocated() const;
+    size_t                  Allocated() const;
                             /// Returns total size of allocated memory including size of this type
-    int                     Size() const;
+    size_t                  Size() const;
 
     int                     GetParameterIndex(const char *parmName) const;
 

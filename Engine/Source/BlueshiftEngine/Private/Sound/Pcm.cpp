@@ -17,7 +17,7 @@
 #include "Core/Str.h"
 #include "File/FileSystem.h"
 #include "Sound/Pcm.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 

@@ -14,7 +14,6 @@
 
 #include "Precompiled.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Math/Math.h"
 #include "File/FileSystem.h"
 #include "Image/Image.h"
@@ -23,8 +22,6 @@
 BE_NAMESPACE_BEGIN
 
 bool Image::Load(const char *filename) {
-    static const char *extensions[] = { ".dds", ".pvr", ".tga", ".jpg", ".png", ".bmp", ".pcx", ".hdr" };
-
     if (!filename || filename[0] == 0) {
         return false;
     }
@@ -63,6 +60,8 @@ bool Image::Load(const char *filename) {
     }
    
 #if 0
+    static const char *extensions[] = { ".dds", ".pvr", ".tga", ".jpg", ".png", ".bmp", ".pcx", ".hdr" };
+
     // 못 읽었다면 확장자를 붙여가면서 읽어본다.
     for (int i = 0; i < COUNT_OF(extensions); i++) {
         Str name2 = name + extensions[i];

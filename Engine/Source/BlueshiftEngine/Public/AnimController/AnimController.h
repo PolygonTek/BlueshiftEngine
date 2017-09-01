@@ -35,7 +35,7 @@ struct JointInfo {
 };
 
 struct AnimParm {
-    AnimParm(const char *name, float defaultValue) { this->name = name; this->defaultValue = defaultValue; }
+    AnimParm(const char *name, float defaultValue) : name(name), defaultValue(defaultValue) { }
     AnimParm(const AnimParm *other) { this->name = other->name; this->defaultValue = other->defaultValue; }
 
     Str                         name;           ///< Parameter name
@@ -180,6 +180,8 @@ public:
     AnimController *            AllocAnimController(const char *name);
     AnimController *            FindAnimController(const char *name) const;
     AnimController *            GetAnimController(const char *name);
+
+    void                        RenameAnimController(AnimController *animController, const Str &newName);
 
     void                        ReleaseAnimController(AnimController *animController, bool immediateDestroy = false);
     void                        DestroyAnimController(AnimController *animController);

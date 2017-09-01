@@ -22,14 +22,14 @@ BE_NAMESPACE_BEGIN
 
 static const struct {
     const char *                name;
-    Renderer::TextureFilter     filter;
+    RHI::TextureFilter     filter;
 } textureFilterNames[] = {
-    { "Nearest",                Renderer::Nearest }, 
-    { "Linear",                 Renderer::Linear }, 
-    { "NearestMipmapNearest",   Renderer::NearestMipmapNearest }, 
-    { "LinearMipmapNearest",    Renderer::LinearMipmapNearest }, 
-    { "NearestMipmapLinear",    Renderer::NearestMipmapLinear }, 
-    { "LinearMipmapLinear",     Renderer::LinearMipmapLinear }, 
+    { "Nearest",                RHI::Nearest }, 
+    { "Linear",                 RHI::Linear }, 
+    { "NearestMipmapNearest",   RHI::NearestMipmapNearest }, 
+    { "LinearMipmapNearest",    RHI::LinearMipmapNearest }, 
+    { "NearestMipmapLinear",    RHI::NearestMipmapLinear }, 
+    { "LinearMipmapLinear",     RHI::LinearMipmapLinear }, 
 };
 
 TextureManager textureManager;
@@ -75,46 +75,42 @@ void TextureManager::Init() {
     blackCubeMapTexture->CreateBlackCubeMapTexture(8, Texture::Permanence);
 
     // _white
-    image.Create2D(8, 8, 1, Image::L_8, nullptr, Image::SRGBFlag);
+    image.Create2D(8, 8, 1, Image::L_8, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0xFF, 8 * 8);
     whiteTexture = AllocTexture("_whiteTexture");
-    whiteTexture->Create(Renderer::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
+    whiteTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
 
     // _black
-    image.Create2D(8, 8, 1, Image::L_8, nullptr, Image::SRGBFlag);
+    image.Create2D(8, 8, 1, Image::L_8, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0, 8 * 8);
     blackTexture = AllocTexture("_blackTexture");
-    blackTexture->Create(Renderer::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
+    blackTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
 
     // _grey
-    image.Create2D(8, 8, 1, Image::L_8, nullptr, Image::SRGBFlag);
+    image.Create2D(8, 8, 1, Image::L_8, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0x80, 8 * 8);
     greyTexture = AllocTexture("_greyTexture");
-    greyTexture->Create(Renderer::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
+    greyTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
 
     // _linear
-    image.Create2D(256, 1, 1, Image::L_8, nullptr, Image::LinearFlag);
+    /*image.Create2D(256, 1, 1, Image::L_8, nullptr, Image::LinearSpaceFlag);
     data = image.GetPixels();
     for (int i = 0; i < 256; i++) {
         data[i] = i;
     }
     linearTexture = AllocTexture("_linearTexture");
-    linearTexture->Create(Renderer::Texture2D, image, Texture::Permanence | Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality);
-
-    // _exponent
-    exponentTexture = AllocTexture("_exponentTexture");
-    exponentTexture->CreateExponentTexture(Texture::Permanence);
+    linearTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality);*/
 
     // _flatNormal
     flatNormalTexture = AllocTexture("_flatNormalTexture");
     flatNormalTexture->CreateFlatNormalTexture(16, Texture::Permanence);
 
     // _normalCube
-    normalCubeMapTexture = AllocTexture("_normalCubeTexture");
-    normalCubeMapTexture->CreateNormalizationCubeMapTexture(32, Texture::Permanence);
+    /*normalCubeMapTexture = AllocTexture("_normalCubeTexture");
+    normalCubeMapTexture->CreateNormalizationCubeMapTexture(32, Texture::Permanence);*/
 
     // _cubicNormalCube
     cubicNormalCubeMapTexture = AllocTexture("_cubicNormalCubeTexture");
@@ -181,8 +177,8 @@ void TextureManager::SetFilter(const char *filterName) {
         Texture *texture = entry->second;
 
         if (texture->hasMipmaps && !(texture->flags & Texture::Nearest)) {
-            glr.BindTexture(texture->textureHandle);
-            glr.SetTextureFilter(textureFilter);
+            rhi.BindTexture(texture->textureHandle);
+            rhi.SetTextureFilter(textureFilter);
         }
     }
 }
@@ -195,16 +191,16 @@ void TextureManager::SetAnisotropy(float degree) {
         Texture *texture = entry->second;
         
         if (texture->hasMipmaps && !(texture->flags & Texture::Nearest)) {
-            glr.BindTexture(texture->textureHandle);
-            glr.SetTextureAnisotropy(degree);
+            rhi.BindTexture(texture->textureHandle);
+            rhi.SetTextureAnisotropy(degree);
         }
     }
 }
 
 void TextureManager::SetLodBias(float lodBias) const {
-    /*for (int i = 0; i < glr.hwLimits.maxTextureImageUnits; i++) {
-        glr.SelectTextureUnit(i);
-        glr.SetTextureLODBias(lodBias);
+    /*for (int i = 0; i < rhi.hwLimits.maxTextureImageUnits; i++) {
+        rhi.SelectTextureUnit(i);
+        rhi.SetTextureLODBias(lodBias);
     }
 
     SelectTextureUnit(0);*/
@@ -286,11 +282,11 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
 
     int32_t *dataPtr = data;
     int version = *dataPtr++;
-    if (version == 1) {
+    if (version >= 1) {
         int textureType = *dataPtr++;
         switch (textureType) {
             case 1:
-            flags |= Texture::HighQuality;
+            flags |= Texture::HighQuality | Texture::NonPowerOfTwo;
             break;
         }
 
@@ -325,6 +321,13 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
             flags |= Texture::SRGB;
         }
 
+        if (version >= 2) {
+            int generateMipmaps = *dataPtr++;
+            if (!generateMipmaps) {
+                flags |= Texture::NoMipmaps;
+            }
+        }
+
         if (flags & Texture::NormalMap) {
             flags &= ~Texture::SRGB;
         }
@@ -349,6 +352,20 @@ Texture *TextureManager::TextureFromGenerator(const char *hashName, const Textur
     generator.Generate(texture);
 
     return texture;
+}
+
+void TextureManager::RenameTexture(Texture *texture, const Str &newName) {
+    const auto *entry = textureHashMap.Get(texture->hashName);
+    if (entry) {
+        textureHashMap.Remove(texture->hashName);
+
+        texture->hashName = newName;
+        texture->name = newName;
+        texture->name.StripPath();
+        texture->name.StripFileExtension();
+
+        textureHashMap.Set(newName, texture);
+    }
 }
 
 void TextureManager::ReleaseTexture(Texture *texture, bool immediateDestroy) {
@@ -381,21 +398,21 @@ void TextureManager::Cmd_ListTextures(const CmdArgs &args) {
         Texture *texture = entry->second;
 
         switch (texture->type) {
-        case Renderer::Texture2D:           type = "2D  "; break;
-        case Renderer::Texture3D:           type = "3D  "; break;
-        case Renderer::TextureCubeMap:      type = "Cube"; break;
-        case Renderer::TextureRectangle:    type = "Rect"; break;
-        case Renderer::Texture2DArray:      type = "2DAr"; break;
-        case Renderer::TextureBuffer:       type = "Buff"; break;
+        case RHI::Texture2D:           type = "2D  "; break;
+        case RHI::Texture3D:           type = "3D  "; break;
+        case RHI::TextureCubeMap:      type = "Cube"; break;
+        case RHI::TextureRectangle:    type = "Rect"; break;
+        case RHI::Texture2DArray:      type = "2DAr"; break;
+        case RHI::TextureBuffer:       type = "Buff"; break;
         }
 
         const char *internalFormatName = Image::FormatName(texture->format);
         
         switch (texture->addressMode) {
-        case Renderer::Repeat:              addr = "R   "; break;
-        case Renderer::Clamp:               addr = "C   "; break;
-        case Renderer::ClampToBorder:       addr = "CB  "; break;
-        case Renderer::MirroredRepeat:      addr = "MR  "; break;
+        case RHI::Repeat:              addr = "R   "; break;
+        case RHI::Clamp:               addr = "C   "; break;
+        case RHI::ClampToBorder:       addr = "CB  "; break;
+        case RHI::MirroredRepeat:      addr = "MR  "; break;
         }
 
         int numMipmaps = texture->hasMipmaps ? Image::MaxMipMapLevels(texture->width, texture->height, texture->depth) : 1;
@@ -447,7 +464,7 @@ void TextureManager::Cmd_ReloadTexture(const CmdArgs &args) {
     }
 }
 
-void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {	
+void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
     char path[MaxAbsolutePath];
     
     if (args.Argc() != 3) {
@@ -477,7 +494,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
             image1.ConvertFormatSelf(Image::RGBA_8_8_8_8);
         }
 
-        image2.Create2D(image1.GetWidth(), image1.GetHeight(), 1, Image::RGB_8_8_8, nullptr, Image::LinearFlag);
+        image2.Create2D(image1.GetWidth(), image1.GetHeight(), 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
         byte *data2Ptr = image2.GetPixels();
         byte *data1Ptr = image1.GetPixels();
         byte *endData1 = data1Ptr + image1.GetWidth() * image1.GetHeight() * 4;
@@ -490,7 +507,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
         }
 
         image2.FlipY();
-        image2.Write(path);		
+        image2.Write(path);
     }	
 
     BE_LOG(L"all done\n");

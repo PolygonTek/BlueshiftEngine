@@ -19,7 +19,7 @@
 #include "Asset/GuidMapper.h"
 #include "Core/Heap.h"
 #include "Core/JointPose.h"
-#include "SIMD/SIMD.h"
+#include "Simd/Simd.h"
 #include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
@@ -102,6 +102,20 @@ void AnimControllerManager::DestroyUnusedAnimControllers() {
 
     for (int i = 0; i < removeArray.Count(); i++) {
         DestroyAnimController(removeArray[i]);
+    }
+}
+
+void AnimControllerManager::RenameAnimController(AnimController *animController, const Str &newName) {
+    const auto *entry = animControllerHashMap.Get(animController->hashName);
+    if (entry) {
+        animControllerHashMap.Remove(animController->hashName);
+
+        animController->hashName = newName;
+        animController->name = newName;
+        animController->name.StripPath();
+        animController->name.StripFileExtension();
+
+        animControllerHashMap.Set(newName, animController);
     }
 }
 

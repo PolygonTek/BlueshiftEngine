@@ -31,7 +31,7 @@ void ComAudioListener::RegisterProperties() {
 }
 
 ComAudioListener::ComAudioListener() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComAudioListener::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAudioListener::PropertyChanged);
 }
 
 ComAudioListener::~ComAudioListener() {
@@ -52,8 +52,7 @@ void ComAudioListener::Init() {
 
 void ComAudioListener::Awake() {
     ComTransform *transform = GetEntity()->GetTransform();
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComAudioListener::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComAudioListener::PhysicsUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComAudioListener::TransformUpdated, SignalObject::Unique);
 
     soundSystem.PlaceListener(transform->GetOrigin(), transform->GetAxis());
 }
@@ -70,10 +69,6 @@ void ComAudioListener::Enable(bool enable) {
 
 void ComAudioListener::TransformUpdated(const ComTransform *transform) {
     soundSystem.PlaceListener(transform->GetOrigin(), transform->GetAxis());
-}
-
-void ComAudioListener::PhysicsUpdated(const PhysRigidBody *body) {
-    soundSystem.PlaceListener(body->GetOrigin(), body->GetAxis());
 }
 
 void ComAudioListener::PropertyChanged(const char *classname, const char *propName) {

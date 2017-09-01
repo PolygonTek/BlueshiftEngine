@@ -30,6 +30,7 @@ class Pair {
 public:
     /// The default constructor.
     Pair();
+
     /// Constructs a pair with two values.
     Pair(const T &first, const U &second);
 

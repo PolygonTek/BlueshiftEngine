@@ -48,35 +48,49 @@ Prefab *PrefabManager::FindPrefab(const char *hashName) const {
     return nullptr;
 }
 
-Prefab *PrefabManager::AllocPrefab(const char *hashName, const Guid guid) {
+Prefab *PrefabManager::AllocPrefab(const char *hashName, const Guid &guid) {
     if (prefabHashMap.Get(hashName)) {
         BE_FATALERROR(L"%hs prefab already allocated", hashName);
     }
 
     Prefab *prefab = (Prefab *)Prefab::CreateInstance(guid);
     prefab->hashName = hashName;
+    prefab->name = hashName;
+    prefab->name.StripPath();
+    prefab->name.StripFileExtension();
     prefabHashMap.Set(hashName, prefab);
 
     return prefab;
 }
 
-Prefab *PrefabManager::GetPrefab(const char *filename) {
-    Str normalizedFilename = filename;
-    normalizedFilename.BackSlashesToSlashes();
-
-    Prefab *prefab = FindPrefab(normalizedFilename);
+Prefab *PrefabManager::GetPrefab(const char *hashName) {
+    Prefab *prefab = FindPrefab(hashName);
     if (prefab) {
         return prefab;
     }
 
-    prefab = AllocPrefab(normalizedFilename);
-    if (!prefab->Load(normalizedFilename)) {
+    prefab = AllocPrefab(hashName);
+    if (!prefab->Load(hashName)) {
         prefabHashMap.Remove(prefab->hashName);
         Prefab::DestroyInstanceImmediate(prefab);
         return nullptr;
     }
 
     return prefab;
+}
+
+void PrefabManager::RenamePrefab(Prefab *prefab, const Str &newName) {
+    const auto *entry = prefabHashMap.Get(prefab->hashName);
+    if (entry) {
+        prefabHashMap.Remove(prefab->hashName);
+
+        prefab->hashName = newName;
+        prefab->name = newName;
+        prefab->name.StripPath();
+        prefab->name.StripFileExtension();
+
+        prefabHashMap.Set(newName, prefab);
+    }
 }
 
 Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {

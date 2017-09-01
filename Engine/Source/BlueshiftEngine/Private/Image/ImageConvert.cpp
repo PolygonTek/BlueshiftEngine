@@ -17,87 +17,9 @@
 #include "Core/Heap.h"
 #include "Math/Math.h"
 #include "Image/Image.h"
-#include "DXT/DxtDecoder.h"
-#include "DXT/DxtEncoder.h"
 #include "ImageInternal.h"
 
 BE_NAMESPACE_BEGIN
-
-static void DecompressDXT1(const Image &srcImage, Image &dstImage) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
-
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            DXTDecoder::DecompressImageDXT1(dxtBlock, w, h, d, dst);
-        }
-    }
-}
-
-static void DecompressDXT3(const Image &srcImage, Image &dstImage) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
-
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            DXTDecoder::DecompressImageDXT3(dxtBlock, w, h, d, dst);
-        }
-    }
-}
-
-static void DecompressDXT5(const Image &srcImage, Image &dstImage) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
-
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            DXTDecoder::DecompressImageDXT5(dxtBlock, w, h, d, dst);
-        }
-    }
-}
-
-static void DecompressDXN2(const Image &srcImage, Image &dstImage) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            const DXTBlock *dxtBlock = (const DXTBlock *)srcImage.GetPixels(mipLevel, sliceIndex);
-
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            DXTDecoder::DecompressImageDXN2(dxtBlock, w, h, d, dst);
-        }
-    }
-}
 
 static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetFormat() == Image::RGBA_8_8_8_8);
@@ -131,12 +53,16 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
         DecompressPVRTC(srcImage, dstImage, 0);
         break;
     case Image::RGB_8_ETC1:
-        DecompressETC(srcImage, dstImage, 0);
+        DecompressETC1(srcImage, dstImage);
         break;
     case Image::RGB_8_ETC2:
+        DecompressETC2_RGB8(srcImage, dstImage);
+        break;
     case Image::RGBA_8_8_ETC2:
+        DecompressETC2_RGBA8(srcImage, dstImage);
+        break;
     case Image::RGBA_8_1_ETC2:
-        DecompressETC(srcImage, dstImage, 1);
+        DecompressETC2_RGB8A1(srcImage, dstImage);
         break;
     default:
         BE_WARNLOG(L"DecompressImage: unsupported format %hs\n", srcImage.FormatName());
@@ -144,94 +70,6 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     }
 
     return true;
-}
-
-static void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            if (compressoinQuality == Image::HighQuality) {
-                DXTEncoder::CompressImageDXT1HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT1Fast(src, w, h, d, dst);
-            }
-        }
-    }
-}
-
-static void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            if (compressoinQuality == Image::HighQuality) {
-                DXTEncoder::CompressImageDXT3HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT3Fast(src, w, h, d, dst);
-            }
-        }
-    }
-}
-
-static void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            if (compressoinQuality == Image::HighQuality) {
-                DXTEncoder::CompressImageDXT5HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT5Fast(src, w, h, d, dst);
-            }
-        }
-    }
-}
-
-static void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    int numMipmaps = srcImage.NumMipmaps();
-    int numSlices = srcImage.NumSlices();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
-
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
-
-            if (compressoinQuality == Image::HighQuality) {
-                DXTEncoder::CompressImageDXN2HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXN2Fast(src, w, h, d, dst);
-            }
-        }
-    }
 }
 
 static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
@@ -252,6 +90,18 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
         break;
     case Image::DXN2:
         CompressDXN2(srcImage, dstImage, compressoinQuality);
+        break;
+    case Image::RGB_8_ETC1:
+        CompressETC1(srcImage, dstImage, compressoinQuality);
+        break;
+    case Image::RGB_8_ETC2:
+        CompressETC2_RGB8(srcImage, dstImage, compressoinQuality);
+        break;
+    case Image::RGBA_8_8_ETC2:
+        CompressETC2_RGBA8(srcImage, dstImage, compressoinQuality);
+        break;
+    case Image::RGBA_8_1_ETC2:
+        CompressETC2_RGBA1(srcImage, dstImage, compressoinQuality);
         break;
     default:
         BE_WARNLOG(L"CompressImage: unsupported format %hs\n", dstImage.FormatName());
@@ -296,7 +146,6 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         if (regenerateMipmaps) {
             decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, nullptr, srcImage->flags);
             decompressedImage.CopyFrom(*srcImage, 0, 1);
-
             decompressedImage.GenerateMipmaps();
 
             srcImage = &decompressedImage;
@@ -319,16 +168,17 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         return true;
     }
 
-    const UserFormatToRGBA8888Func unpackFunc = srcFormatInfo->unpackFunc;
-    const RGBA8888ToUserFormatFunc packFunc = dstFormatInfo->packFunc;
-
+    bool toFloat = (dstFormatInfo->type & Float) ? true : false;
+    ImageUnpackFunc unpackFunc = toFloat ? srcFormatInfo->unpackRGBA32F : srcFormatInfo->unpackRGBA8888;
+    ImagePackFunc packFunc = toFloat ? dstFormatInfo->packRGBA32F : dstFormatInfo->packRGBA8888;
+    
     if (!unpackFunc || !packFunc) {
         BE_WARNLOG(L"Image::ConvertFormat: unsupported convert type (from %hs to %hs)\n", srcImage->FormatName(), dstImage.FormatName());
         dstImage.Clear();
         return false;
     }
 
-    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4);
+    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (toFloat ? sizeof(float) : 1));
 
     byte *srcPtr = srcImage->GetPixels();
     byte *dstPtr = dstImage.GetPixels();
@@ -344,6 +194,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         for (int sliceIndex = 0; sliceIndex < srcImage->numSlices; sliceIndex++) {
             for (int y = 0; y < h * d; y++) {
                 unpackFunc(srcPtr, unpackedBuffer, w);
+                // TODO: convert sRGB to linear color space or vice versa
                 packFunc(unpackedBuffer, dstPtr, w);
 
                 srcPtr += srcPitch;

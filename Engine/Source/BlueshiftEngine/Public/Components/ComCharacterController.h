@@ -75,7 +75,6 @@ protected:
 
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
-    void                    PhysicsUpdated(const PhysRigidBody *body);	
 
     Collider *              collider;
     PhysRigidBody *         body;

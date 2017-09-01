@@ -50,6 +50,7 @@
 
 #include "Core/Timespan.h"
 #include "Core/DateTime.h"
+#include "Core/MinMaxCurve.h"
 
 // Platform
 #include "Platform/Intrinsics.h"
@@ -87,21 +88,19 @@
 #include "Core/Object.h"
 
 // SIMD
-#include "SIMD/Simd.h"
-
-// DXT encoder/decoder
-#include "DXT/DxtEncoder.h"
-#include "DXT/DxtDecoder.h"
+#include "Simd/Simd.h"
 
 // Image
 #include "Image/Image.h"
+#include "Image/DxtEncoder.h"
+#include "Image/DxtDecoder.h"
 
 // Sound
 #include "Sound/Pcm.h"
 #include "Sound/SoundSystem.h"
 
-// Renderer
-#include "Renderer/Renderer.h"
+// RHI
+#include "RHI/RHIOpenGL.h"
 
 // Platform
 #include "Platform/Platform.h"
@@ -151,11 +150,13 @@
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
 #include "Components/ComLight.h"
+#include "Components/ComReflectionProbe.h"
 #include "Components/ComRenderable.h"
 #include "Components/ComMeshRenderer.h"
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
 #include "Components/ComTextRenderer.h"
+#include "Components/ComParticleSystem.h"
 #include "Components/ComSpline.h"
 #include "Components/ComLogic.h"
 #include "Components/ComSpline.h"
@@ -171,6 +172,7 @@
 // GameWorld
 #include "Game/Entity.h"
 #include "Game/Prefab.h"
+#include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 
 #include "Main/Common.h"

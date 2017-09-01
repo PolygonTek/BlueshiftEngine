@@ -133,18 +133,18 @@ static void DestroyRenderWindow(HWND hwnd) {
 }
 
 static void ToggleFullscreen(HWND hwnd) {
-    if (!BE1::glr.IsFullscreen()) {
+    if (!BE1::rhi.IsFullscreen()) {
         ChangeRenderWindow(hwnd, disp_width.GetInteger(), disp_height.GetInteger(), true);
 
-        BE1::glr.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
+        BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
     } else {
-        BE1::glr.ResetFullscreen(app.mainRenderContext->GetContextHandle());
+        BE1::rhi.ResetFullscreen(app.mainRenderContext->GetContextHandle());
         
         ChangeRenderWindow(hwnd, disp_width.GetInteger(), disp_height.GetInteger(), false);
     }
 }
 
-static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     app.Draw();
 }
 
@@ -199,7 +199,7 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     app.mainRenderContext->Init(mainWnd, 1280, 720, DisplayContext, NULL);
 
     if (disp_fullscreen.GetBool()) {
-        BE1::glr.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
+        BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
     }
 
     app.Init();

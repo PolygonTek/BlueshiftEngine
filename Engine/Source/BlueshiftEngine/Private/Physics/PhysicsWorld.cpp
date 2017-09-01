@@ -29,6 +29,22 @@ static void PostTickCallback(btDynamicsWorld *world, btScalar timeStep) {
     pw->ProcessPostTickCallback(timeStep);
 }
 
+class CollisionFilterCallback : public btOverlapFilterCallback {
+public:
+    // return true when pairs need collision
+    virtual bool needBroadphaseCollision(btBroadphaseProxy *proxy0, btBroadphaseProxy *proxy1) const {
+        const btCollisionObject *colObj0 = (const btCollisionObject *)proxy0->m_clientObject;
+        const btCollisionObject *colObj1 = (const btCollisionObject *)proxy1->m_clientObject;
+
+        const PhysCollidable *userColObj0 = (const PhysCollidable *)colObj0->getUserPointer();
+        const PhysCollidable *userColObj1 = (const PhysCollidable *)colObj1->getUserPointer();
+
+        const PhysicsWorld *pw = userColObj0->physicsWorld;
+
+        return !!(pw->GetCollisionFilterMask(userColObj0->customFilterIndex) & BIT(userColObj1->customFilterIndex));
+    }
+};
+
 PhysicsWorld::PhysicsWorld() {
     // collision configuration contains default setup for memory, collision setup
     collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -73,7 +89,12 @@ PhysicsWorld::PhysicsWorld() {
     ghostPairCallback = new btGhostPairCallback();
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(ghostPairCallback);
 
+    filterCallback = new CollisionFilterCallback();
+    dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
+
     dynamicsWorld->setDebugDrawer(&physicsDebugDraw);
+
+    memset(filterMasks, 0xFFFFFFFF, sizeof(filterMasks));
 
     timeDelta = 0;
     time = 0;
@@ -90,6 +111,7 @@ PhysicsWorld::~PhysicsWorld() {
     SAFE_DELETE(solver);
     SAFE_DELETE(dynamicsWorld);
     SAFE_DELETE(ghostPairCallback);
+    SAFE_DELETE(filterCallback);
 }
 
 void PhysicsWorld::ClearScene() {
@@ -169,6 +191,18 @@ void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
     }
 
     dynamicsWorld->setGravity(btVector3(gravityAcceleration.x, gravityAcceleration.y, gravityAcceleration.z));
+}
+
+uint32_t PhysicsWorld::GetCollisionFilterMask(int index) const {
+    assert(index >= 0 && index < COUNT_OF(filterMasks));
+
+    return filterMasks[index];
+}
+
+void PhysicsWorld::SetCollisionFilterMask(int index, uint32_t mask) {
+    assert(index >= 0 && index < COUNT_OF(filterMasks));
+
+    filterMasks[index] = mask;
 }
 
 bool PhysicsWorld::RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const {
@@ -467,8 +501,8 @@ void PhysicsWorld::ProcessPostTickCallback(float timeStep) {
             const PhysCollidable *a = reinterpret_cast<PhysCollidable *>(objA->getUserPointer());
             const PhysCollidable *b = reinterpret_cast<PhysCollidable *>(objB->getUserPointer());
 
-            const short colMaskA = a->GetCollisionFilterMask();
-            const short colMaskB = b->GetCollisionFilterMask();
+            //const short colMaskA = a->GetCollisionFilterMask();
+            //const short colMaskB = b->GetCollisionFilterMask();
 
             PhysCollisionPair pair = PhysCollisionPair(a, b);
 

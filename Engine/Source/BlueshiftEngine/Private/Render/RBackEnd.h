@@ -31,12 +31,13 @@ public:
     enum FlushType {
         BadFlush,
         SelectionFlush,
+        BackgroundFlush,
         DepthFlush,
         ShadowFlush,
         OccluderFlush,
         AmbientFlush,
         LitFlush,
-        BlendFlush,
+        UnlitFlush,
         VelocityFlush,
         FinalFlush,
         TriFlush,
@@ -47,8 +48,8 @@ public:
     void                Init();
     void                Shutdown();
 
-    void                Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfEntity, const viewLight_t *surfLight);
-    void                DrawSubMesh(SubMesh *subMesh, GuiSubMesh *guiSubMesh);
+    void                Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfSpace, const viewLight_t *surfLight);
+    void                DrawSubMesh(SubMesh *subMesh);
     void                Flush();
 
     void                EndFrame();
@@ -56,14 +57,14 @@ public:
 private:                
     void                DrawDynamicSubMesh(SubMesh *subMesh);
     void                DrawStaticSubMesh(SubMesh *subMesh);
-    void                DrawGuiSubMesh(GuiSubMesh *guiSubMesh);
 
     void                Flush_SelectionPass();
+    void                Flush_BackgroundPass();
     void                Flush_DepthPass();
     void                Flush_AmbientPass();
     void                Flush_ShadowDepthPass();
     void                Flush_LitPass();
-    void                Flush_BlendPass();
+    void                Flush_UnlitPass();
     void                Flush_FinalPass();
     void                Flush_TrisPass();
     void                Flush_VelocityMapPass();
@@ -74,21 +75,28 @@ private:
     void                SetSubMeshVertexFormat(const SubMesh *mesh, int vertexFormatIndex) const;
 
     void                SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const;
-    const Texture *     TextureFromShaderProperties(const Material::Pass *mtrlPass, const Str &textureName) const;
+    const Texture *     TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const;
     void                SetMatrixConstants(const Shader *shader) const;
     void                SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const;
     void                SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const;
 
+    void                SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const;
+
     void                RenderColor(const Color4 &color) const;
-    void                RenderSelection(const Material::Pass *mtrlPass, const Vec3 &vec3_id) const;
-    void                RenderDepth(const Material::Pass *mtrlPass) const;
-    void                RenderVelocity(const Material::Pass *mtrlPass) const;
-    void                RenderAmbient(const Material::Pass *mtrlPass, float ambientScale) const;
-    void                RenderGeneric(const Material::Pass *mtrlPass) const;
-    void                RenderLightInteraction(const Material::Pass *mtrlPass) const;
-    void                RenderFogLightInteraction(const Material::Pass *mtrlPass) const;
-    void                RenderBlendLightInteraction(const Material::Pass *mtrlPass) const;
-    void                RenderGui(const Material::Pass *mtrlPass) const;
+    void                RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &vec3_id) const;
+    void                RenderDepth(const Material::ShaderPass *mtrlPass) const;
+    void                RenderVelocity(const Material::ShaderPass *mtrlPass) const;
+    void                RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                RenderGeneric(const Material::ShaderPass *mtrlPass) const;
+
+    void                RenderLightInteraction(const Material::ShaderPass *mtrlPass) const;
+    void                RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) const;
+    void                RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) const;
+    void                RenderGui(const Material::ShaderPass *mtrlPass) const;
 
     void                DrawPrimitives() const;
 
@@ -96,11 +104,12 @@ private:
     Material *          material;
     const float *       materialRegisters;
     SubMesh *           subMesh;
-    const viewEntity_t *surfEntity;
+
+    const viewEntity_t *surfSpace;
     const viewLight_t * surfLight;
 
-    Renderer::Handle    vbHandle;
-    Renderer::Handle    ibHandle;
+    RHI::Handle         vbHandle;
+    RHI::Handle         ibHandle;
 
     int                 startIndex;
     int                 numVerts;
@@ -118,7 +127,7 @@ private:
 
 struct LightQuery {
     const viewLight_t * light;
-    Renderer::Handle    queryHandle;
+    RHI::Handle         queryHandle;
     unsigned int        resultSamples;
     int                 frameCount;
 };
@@ -143,20 +152,19 @@ struct BackEnd {
     };
 
     bool                initialized;
-    Renderer::Handle    stencilStates[MaxPredefinedStencilStates];
+    RHI::Handle         stencilStates[MaxPredefinedStencilStates];
     //LightQuery        lightQueries[MAX_LIGHTS];
 
     float               time;
 
-    RenderContext *      ctx;
-
-    viewLight_t *       mainLight;
+    RenderContext *     ctx;
 
     RBSurf              rbsurf;
     int                 numDrawSurfs;
     DrawSurf **         drawSurfs;
     viewEntity_t *      viewEntities;
     viewLight_t *       viewLights;
+    viewLight_t *       primaryLight;
     view_t *            view;
 
     Rect                renderRect;
@@ -176,12 +184,14 @@ struct BackEnd {
     float               shadowMapOffsetFactor;
     float               shadowMapOffsetUnits;
 
-    int                 csmCount;
     float               csmDistances[9];
     float               csmUpdateRatio[8];
     float               csmUpdate[8];
 
-    Texture *           irradianceCubeMapTexture;
+    Texture *           envCubeTexture;
+    Texture *           integrationLUTTexture;
+    Texture *           irradianceEnvCubeTexture;
+    Texture *           prefilteredEnvCubeTexture;
 
     Texture *           homCullingOutputTexture;
     RenderTarget *      homCullingOutputRT;
@@ -192,18 +202,22 @@ void    RB_Shutdown();
 
 void    RB_Execute(const void *data);
 
+void    RB_SetupLight(viewLight_t *viewLight);
+
+void    RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_AmbientPass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs);	
+void    RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs);
+void    RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);
 void    RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs);
 
-void    RB_AllShadowAndLitPass(viewLight_t *viewLights);
+void    RB_ShadowPass(const viewLight_t *viewLight);
+void    RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs);
+void    RB_ForwardAdditivePass(viewLight_t *viewLights);
 
 void    RB_PostProcessDepth();
 void    RB_PostProcess();

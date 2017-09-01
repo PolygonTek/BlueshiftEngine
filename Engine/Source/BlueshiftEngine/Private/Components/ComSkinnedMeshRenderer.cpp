@@ -24,7 +24,7 @@
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"
 #include "Core/JointPose.h"
-#include "SIMD/SIMD.h"
+#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -53,7 +53,7 @@ ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {
 
     jointMats = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComSkinnedMeshRenderer::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSkinnedMeshRenderer::PropertyChanged);
 }
 
 ComSkinnedMeshRenderer::~ComSkinnedMeshRenderer() {
@@ -159,7 +159,7 @@ void ComSkinnedMeshRenderer::ChangeAnimationType() {
 void ComSkinnedMeshRenderer::ChangeAnimController() {
     // Disconnect from old animation controller asset
     if (animControllerAsset) {
-        animControllerAsset->Disconnect(&SIG_Reloaded, this);
+        animControllerAsset->Disconnect(&Asset::SIG_Reloaded, this);
     }
 
     // Set new animation controller
@@ -173,14 +173,14 @@ void ComSkinnedMeshRenderer::ChangeAnimController() {
     // Need to connect animation controller asset to be reloaded in Editor
     animControllerAsset = (AnimControllerAsset *)AnimControllerAsset::FindInstance(animControllerGuid);
     if (animControllerAsset) {
-        animControllerAsset->Connect(&SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::AnimControllerReloaded, SignalObject::Queued);
+        animControllerAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::AnimControllerReloaded, SignalObject::Queued);
     }
 }
 
 void ComSkinnedMeshRenderer::ChangeSkeleton() {
     // Disconnect from old skeleton asset
     if (skeletonAsset) {
-        skeletonAsset->Disconnect(&SIG_Reloaded, this);
+        skeletonAsset->Disconnect(&Asset::SIG_Reloaded, this);
     }
 
     if (skeleton) {
@@ -226,14 +226,14 @@ void ComSkinnedMeshRenderer::ChangeSkeleton() {
     // Need to connect skeleton asset to be reloaded in Editor
     skeletonAsset = (SkeletonAsset *)SkeletonAsset::FindInstance(skeletonGuid);
     if (skeletonAsset) {
-        skeletonAsset->Connect(&SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::SkeletonReloaded, SignalObject::Queued);
+        skeletonAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::SkeletonReloaded, SignalObject::Queued);
     }
 }
 
 void ComSkinnedMeshRenderer::ChangeAnim() {
     // Disconnect from old anim asset
     if (animAsset) {
-        animAsset->Disconnect(&SIG_Reloaded, this);
+        animAsset->Disconnect(&Asset::SIG_Reloaded, this);
     }
 
     if (anim) {
@@ -266,7 +266,7 @@ void ComSkinnedMeshRenderer::ChangeAnim() {
     // Need to connect anim asset to be reloaded in Editor
     animAsset = (AnimAsset *)AnimAsset::FindInstance(animGuid);
     if (animAsset) {
-        animAsset->Connect(&SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::AnimReloaded, SignalObject::Queued);
+        animAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::AnimReloaded, SignalObject::Queued);
     }
 }
 

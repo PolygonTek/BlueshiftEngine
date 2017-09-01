@@ -29,10 +29,6 @@
 
 BE_NAMESPACE_BEGIN
 
-extern const SignalDef          SIG_ComponentInserted;
-extern const SignalDef          SIG_ComponentRemoved;
-extern const SignalDef          SIG_LayerChanged;
-
 class Component;
 class ComTransform;
 class GameWorld;
@@ -90,7 +86,7 @@ public:
 
                                 /// Get the children by depth first order
     void                        GetChildren(EntityPtrArray &children) const;
-        
+    
                                 /// Find a child by name
     Entity *                    FindChild(const char *name) const;
     
@@ -104,7 +100,7 @@ public:
     Component *                 GetComponent(int index) const { return components[index]; }
     Component *                 GetComponent(const MetaObject &type) const;
     template <typename T> T *   GetComponent() const;
-    ComponentPtrArray            GetComponents(const MetaObject &type) const;
+    ComponentPtrArray           GetComponents(const MetaObject &type) const;
     ComTransform *              GetTransform() const;
 
                                 /// Adds a component to the entity
@@ -157,7 +153,13 @@ public:
 
     virtual void                DrawGizmos(const SceneView::Parms &sceneView, bool selected);
 
-    virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;	
+    virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
+
+    static void                 DestroyInstance(Entity *entity);
+
+    static const SignalDef      SIG_ComponentInserted;
+    static const SignalDef      SIG_ComponentRemoved;
+    static const SignalDef      SIG_LayerChanged;
         
 protected:
     virtual void                Event_ImmediateDestroy() override;
@@ -176,7 +178,7 @@ protected:
 
     GameWorld *                 gameWorld;
 
-    ComponentPtrArray            components;     ///< 0'th component is always transform component
+    ComponentPtrArray           components;     ///< 0'th component is always transform component
 };
 
 template <typename T>

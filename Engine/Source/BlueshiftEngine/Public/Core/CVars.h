@@ -53,7 +53,8 @@ public:
 
     // do not use default ctor
     CVar() = delete;
-    CVar(const wchar_t *name, const wchar_t *value, int flags = 0, const wchar_t *description = nullptr, float valueMin = -999999.0f, float valueMax = 999999.0f);
+    CVar(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description);
+    CVar(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description, float valueMin, float valueMax);
     ~CVar() {}
 
     const wchar_t *         GetName() const { return name; }
@@ -148,6 +149,10 @@ private:
 };
 
 extern CVarSystem           cvarSystem;
+
+BE_INLINE CVar::CVar(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description) {
+    Init(name, value, flags, description, INT_MAX, INT_MIN);
+}
 
 BE_INLINE CVar::CVar(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description, float valueMin, float valueMax) {
     Init(name, value, flags, description, valueMin, valueMax);

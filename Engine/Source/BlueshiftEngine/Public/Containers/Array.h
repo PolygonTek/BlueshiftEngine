@@ -46,10 +46,16 @@ public:
 
     /// Constructs empty array with granularity.
     Array(int newGranularity = DefaultGranularity);
+
     /// Constructs from another array.
     Array(const Array<T> &array);
+
+    /// Assigns from another array, replacing its current contents.
+    Array<T> &operator=(const Array<T> &rhs);
+    
     /// Aggregates initialization constructor.
     Array(const std::initializer_list<T> &array);
+    
     /// Destructs.
     ~Array();
 
@@ -93,11 +99,20 @@ public:
                     /// 'index' must be a valid index position in the array (i.e., 0 <= index < Count()).
     T &             operator[](int index);
 
+                    /// Returns the first item.
+    const T &       First() const { assert(count > 0); return elements[0]; }
+
+                    /// Returns the first item.
+    T &             First() { assert(count > 0); return elements[0]; }
+
+                    /// Returns the last item.
+    const T &       Last() const { assert(count > 0); return elements[count - 1]; }
+
+                    /// Returns the last item.
+    T &             Last() { assert(count > 0); return elements[count - 1]; }
+
                     /// Compares with another array.
     bool            operator==(const Array<T> &rhs) const;
-
-                    /// Assigns from another array, replacing its current contents.
-    Array<T> &      operator=(const Array<T> &rhs);
 
                     /// Removes all the elements from the array.
                     /// This also released the memory used by the array.
@@ -254,6 +269,24 @@ template <typename T>
 BE_INLINE Array<T>::Array(const Array<T> &array) {
     elements = nullptr;
     *this = array;
+}
+
+template <typename T>
+BE_INLINE Array<T> &Array<T>::operator=(const Array<T> &rhs) {
+    Clear();
+
+    count = rhs.count;
+    capacity = rhs.capacity;
+    granularity = rhs.granularity;
+
+    if (capacity) {
+        elements = new T[capacity];
+        for (int i = 0; i < count; i++) {
+            elements[i] = rhs.elements[i];
+        }
+    }
+
+    return *this;
 }
 
 template <typename T>
@@ -414,24 +447,6 @@ BE_INLINE void Array<T>::Resize(int newCapacity, int newGranularity) {
 }
 
 template <typename T>
-BE_INLINE Array<T> &Array<T>::operator=(const Array<T> &rhs) {
-    Clear();
-
-    count       = rhs.count;
-    capacity    = rhs.capacity;
-    granularity = rhs.granularity;
-
-    if (capacity) {
-        elements = new T[capacity];
-        for (int i = 0; i < count; i++) {
-            elements[i] = rhs.elements[i];
-        }
-    }
-
-    return *this;
-}
-
-template <typename T>
 BE_INLINE const T &Array<T>::operator[](int index) const {
     assert(index >= 0);
     assert(index < count);
@@ -570,8 +585,11 @@ BE_INLINE int Array<T>::FindIndex(CompatibleT &&value, int from) const {
 template <typename T>
 template <typename Functor>
 BE_INLINE int Array<T>::FindIndexIf(Functor &&finder, int from) {
-    T *e = std::find_if(elements + from, elements + count, std::forward<Functor>(finder));
-    if (e) {
+    T *first = elements + from;
+    T *last = elements + count;
+
+    T *e = std::find_if(first, last, std::forward<Functor>(finder));
+    if (e != last) {
         return (e - elements) / sizeof(T);
     }
     return -1;
@@ -591,7 +609,14 @@ BE_INLINE T *Array<T>::Find(CompatibleT &&value, int from) const {
 template <typename T>
 template <typename Functor>
 BE_INLINE T *Array<T>::FindIf(Functor &&finder, int from) {
-    return std::find_if(elements + from, elements + count, std::forward<Functor>(finder));
+    T *first = elements + from;
+    T *last = elements + count;
+
+    T *e = std::find_if(first, last, std::forward<Functor>(finder));
+    if (e != last) {
+        return e;
+    }
+    return nullptr;
 }
 
 template <typename T>

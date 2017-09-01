@@ -22,7 +22,7 @@ void LuaVM::RegisterPoint(LuaCpp::Module &module) {
     LuaCpp::Selector _Point = module["Point"];
 
     _Point.SetClass<Point>();
-    _Point.AddClassCtor<Point, float, float>();
+    _Point.AddClassCtor<Point, int, int>();
     _Point.AddClassMembers<Point>(
         "x", &Point::x,
         "y", &Point::y,

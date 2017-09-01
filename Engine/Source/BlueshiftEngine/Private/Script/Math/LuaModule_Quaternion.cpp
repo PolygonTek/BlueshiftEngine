@@ -37,9 +37,13 @@ void LuaVM::RegisterQuaternion(LuaCpp::Module &module) {
         "length", &Quat::Length,
         "normalize", &Quat::Normalize,
         "inverse", &Quat::Inverse,
+        "set_from_angle_axis", &Quat::SetFromAngleAxis,
         "set_from_two_vectors", &Quat::SetFromTwoVectors,
         "set_from_slerp", &Quat::SetFromSlerp,
-        "set_from_slerp_fast", &Quat::SetFromSlerpFast
+        "set_from_slerp_fast", &Quat::SetFromSlerpFast,
+        "to_angles", &Quat::ToAngles,
+        "to_rotation", &Quat::ToRotation,
+        "to_mat3", &Quat::ToMat3
     );
     _Quat.AddClassMembers<Quat>(
         "__tostring", static_cast<const char*(Quat::*)(void)const>(&Quat::ToString),
@@ -48,6 +52,11 @@ void LuaVM::RegisterQuaternion(LuaCpp::Module &module) {
         "__sub", static_cast<Quat(Quat::*)(const Quat&)const>(&Quat::operator-),
         "__mul", static_cast<Quat(Quat::*)(const Quat&)const>(&Quat::operator*)
     );
+
+    _Quat["from_angle_axis"].SetFunc(Quat::FromAngleAxis);
+    _Quat["from_two_vectors"].SetFunc(Quat::FromTwoVectors);
+    _Quat["from_slerp"].SetFunc(Quat::FromSlerp);
+    _Quat["from_slerp_fast"].SetFunc(Quat::FromSlerpFast);
 }
 
 BE_NAMESPACE_END

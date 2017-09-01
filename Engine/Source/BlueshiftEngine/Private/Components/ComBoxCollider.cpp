@@ -36,7 +36,7 @@ void ComBoxCollider::RegisterProperties() {
 }
 
 ComBoxCollider::ComBoxCollider() {
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComBoxCollider::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComBoxCollider::PropertyChanged);
 }
 
 ComBoxCollider::~ComBoxCollider() {

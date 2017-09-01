@@ -30,8 +30,12 @@ BE_NAMESPACE_BEGIN
 class BE_API Point {
 public:
     /// The default constructor does not initialize any members of this class.
-    Point() {}
+    Point() = default;
+    /// Constructs a Point with the value (x, y).
     Point(int x, int y);
+    /// Constructs a Point from a C array, to the value (data[0], data[1]).
+    explicit Point(int data[2]);
+    /// Copy constructor
     explicit Point(const Vec2 &v);
 
                         /// Casts this Point to a C array.
@@ -84,6 +88,11 @@ public:
 BE_INLINE Point::Point(int x, int y) {
     this->x = x;
     this->y = y;
+}
+
+BE_INLINE Point::Point(int data[2]) {
+    this->x = data[0];
+    this->y = data[1];
 }
 
 BE_INLINE Point::Point(const Vec2 &v) {

@@ -29,6 +29,7 @@ BEGIN_PROPERTIES(ComMeshRenderer)
     PROPERTY_OBJECT("mesh", "Mesh", "mesh", GuidMapper::defaultMeshGuid.ToString(), MeshAsset::metaObject, PropertySpec::ReadWrite),
     PROPERTY_OBJECT("materials", "Materials", "List of materials to use when rendering.", GuidMapper::defaultMaterialGuid.ToString(), MaterialAsset::metaObject, PropertySpec::ReadWrite | PropertySpec::IsArray),
     PROPERTY_BOOL("useLightProbe", "Use Light Probe", "", "true", PropertySpec::ReadWrite),
+    PROPERTY_BOOL("useReflectionProbe", "Use Reflection Probe", "", "true", PropertySpec::ReadWrite),
     PROPERTY_BOOL("castShadows", "Cast Shadows", "", "true", PropertySpec::ReadWrite),
     PROPERTY_BOOL("receiveShadows", "Receive Shadows", "", "true", PropertySpec::ReadWrite),
 END_PROPERTIES
@@ -45,7 +46,7 @@ ComMeshRenderer::ComMeshRenderer() {
     meshAsset = nullptr;
     referenceMesh = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComMeshRenderer::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComMeshRenderer::PropertyChanged);
 }
 
 ComMeshRenderer::~ComMeshRenderer() {
@@ -74,18 +75,17 @@ void ComMeshRenderer::Init() {
     ChangeMesh(props->Get("mesh").As<Guid>());
 
     // Set SceneEntity parameters
-    sceneEntity.layer          = GetEntity()->GetLayer();
-    sceneEntity.mesh           = nullptr;
-    sceneEntity.aabb           = referenceMesh->GetAABB();
-    sceneEntity.customSkin     = nullptr;
-    sceneEntity.castShadows    = props->Get("castShadows").As<bool>();
-    sceneEntity.receiveShadows = props->Get("receiveShadows").As<bool>();
+    sceneEntity.mesh            = nullptr;
+    sceneEntity.aabb            = referenceMesh->GetAABB();
+    sceneEntity.customSkin      = nullptr;
+    sceneEntity.castShadows     = props->Get("castShadows").As<bool>();
+    sceneEntity.receiveShadows  = props->Get("receiveShadows").As<bool>();
 }
 
 void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     // Disconnect from old mesh asset
     if (meshAsset) {
-        meshAsset->Disconnect(&SIG_Reloaded, this);
+        meshAsset->Disconnect(&Asset::SIG_Reloaded, this);
     }
 
     // Release the previous used instantiated mesh
@@ -135,23 +135,18 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     // Need to mesh asset to be reloaded in Editor
     meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
     if (meshAsset) {
-        meshAsset->Connect(&SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
+        meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
     }
 }
 
-void ComMeshRenderer::ChangeMaterial(const char *materialName) {
-    int index;
-    sscanf(materialName, "materials[%i]", &index);
-
-    if (index < props->NumElements("materials")) {
+void ComMeshRenderer::ChangeMaterial(int index, const Guid &materialGuid) {
+    if (index >= 0 && index < props->NumElements("materials")) {
         // Release the previous used material
         if (sceneEntity.customMaterials[index]) {
             materialManager.ReleaseMaterial(sceneEntity.customMaterials[index]);
         }
 
         // Get the new material
-        //const MeshSurf *surf = referenceMesh->GetSurface(index);
-        const Guid materialGuid = props->Get(materialName).As<Guid>();
         const Str materialPath = resourceGuidMapper.Get(materialGuid);
         sceneEntity.customMaterials[index] = materialManager.GetMaterial(materialPath);
     }
@@ -172,8 +167,10 @@ void ComMeshRenderer::PropertyChanged(const char *classname, const char *propNam
     }
 
     if (!Str::Cmpn(propName, "materials", 9)) {
-        ChangeMaterial(propName);
-        UpdateVisuals();
+        int index;
+        sscanf(propName, "materials[%i]", &index);
+        const Guid materialGuid = props->Get(propName).As<Guid>();
+        SetMaterialGuid(index, materialGuid);
         return;
     }
 
@@ -204,6 +201,39 @@ void ComMeshRenderer::SetMesh(const Guid &guid) {
     ChangeMesh(guid);
 
     MeshUpdated();
+}
+
+int ComMeshRenderer::NumMaterials() const {
+    return sceneEntity.customMaterials.Count();
+}
+
+Guid ComMeshRenderer::GetMaterialGuid(int index) const {
+    if (index >= 0 && index < sceneEntity.customMaterials.Count()) {
+        const Str materialPath = sceneEntity.customMaterials[index]->GetHashName();
+        return resourceGuidMapper.Get(materialPath);
+    }
+    return Guid();
+}
+
+void ComMeshRenderer::SetMaterialGuid(int index, const Guid &materialGuid) {
+    ChangeMaterial(index, materialGuid);
+
+    UpdateVisuals();
+}
+
+Material *ComMeshRenderer::GetMaterial(int index) const {
+    Guid materialGuid = GetMaterialGuid(index);
+    if (materialGuid.IsZero()) {
+        return nullptr;
+    }
+    
+    const Str materialPath = resourceGuidMapper.Get(materialGuid);
+    return materialManager.GetMaterial(materialPath); // FIXME: release ?
+}
+
+void ComMeshRenderer::SetMaterial(int index, const Material *material) {
+    const Guid materialGuid = resourceGuidMapper.Get(material->GetHashName());
+    SetMaterialGuid(index, materialGuid);
 }
 
 bool ComMeshRenderer::IsUseLightProbe() const {
@@ -240,7 +270,7 @@ bool ComMeshRenderer::GetClosestVertex(const SceneView *view, const Point &mouse
 
     for (int surfaceIndex = 0; surfaceIndex < sceneEntity.mesh->NumSurfaces(); surfaceIndex++) {
         const SubMesh *subMesh = sceneEntity.mesh->GetSurface(surfaceIndex)->subMesh;
-        const VertexLightingGeneric *v = subMesh->Verts();
+        const VertexGenericLit *v = subMesh->Verts();
 
         for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++, v++) {
             Vec3 localPosition = v->GetPosition();

@@ -293,8 +293,7 @@ BE_INLINE bool Mat3x4::Equals(const Mat3x4 &a) const {
 BE_INLINE bool Mat3x4::Equals(const Mat3x4 &a, const float epsilon) const {
     if (mat[0].Equals(a[0], epsilon) &&
         mat[1].Equals(a[1], epsilon) &&
-        mat[2].Equals(a[2], epsilon) &&
-        mat[3].Equals(a[3], epsilon)) {
+        mat[2].Equals(a[2], epsilon)) {
         return true;
     }
     return false;

@@ -99,7 +99,7 @@ public:
 private:
     struct FontHashKey {
         FontHashKey() {}
-        FontHashKey(const Str &name, int fontSize) { this->name = name; this->fontSize = fontSize; }
+        FontHashKey(const Str &name, int fontSize) : name(name), fontSize(fontSize) {}
 
         Str                 name;
         int                 fontSize;

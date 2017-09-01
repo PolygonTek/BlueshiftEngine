@@ -51,12 +51,22 @@ void PlatformIOS::Error(const wchar_t *msg) {
                                                length:wcslen(msg) * sizeof(*msg)
                                              encoding:NSUTF32LittleEndianStringEncoding];
     
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error"
-                                                    message:nsmsg
-                                                   delegate:nil
-                                          cancelButtonTitle:@"OK"
-                                          otherButtonTitles: nil];
-    [alert show];
+    UIAlertController *alert = [UIAlertController
+                                alertControllerWithTitle:@"Error"
+                                message:nsmsg
+                                preferredStyle:UIAlertControllerStyleAlert];
+    
+    UIAlertAction *okButton = [UIAlertAction
+                               actionWithTitle:@"OK"
+                               style:UIAlertActionStyleDefault
+                               handler:^(UIAlertAction * action) {
+                                    // Handle your ok button action here
+                               }];
+    
+    [alert addAction:okButton];
+    
+    UIViewController *viewController = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
+    [viewController presentViewController:alert animated:YES completion:nil];
     
     Quit();
 }

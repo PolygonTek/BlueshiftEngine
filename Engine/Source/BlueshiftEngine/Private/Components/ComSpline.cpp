@@ -36,7 +36,7 @@ ComSpline::ComSpline() {
     anglesCurve = nullptr;
     curveUpdated = false;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComSpline::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSpline::PropertyChanged);
 }
 
 ComSpline::~ComSpline() {
@@ -100,14 +100,14 @@ void ComSpline::UpdateCurve() {
             continue;
         }
 
-        pointTransform->Disconnect(&SIG_TransformUpdated, this);
+        pointTransform->Disconnect(&ComTransform::SIG_TransformUpdated, this);
     }
 
     int numPoints = props->NumElements("points");
 
     pointGuids.SetCount(numPoints);
 
-    if (numPoints > 0) {
+    if (numPoints > 1) {
         // incremental time just used for key ordering
         float t = loop ? 0 : 100;
 
@@ -126,7 +126,7 @@ void ComSpline::UpdateCurve() {
                 continue;
             }
 
-            pointTransform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComSpline::PointTransformUpdated, SignalObject::Unique);
+            pointTransform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSpline::PointTransformUpdated, SignalObject::Unique);
 
             const Vec3 origin = pointTransform->GetLocalOrigin();
             originCurve->AddValue(t, origin);
@@ -141,26 +141,28 @@ void ComSpline::UpdateCurve() {
             anglesCurve->AddValue(t, angles);
         }
 
-        if (!loop) {
-            // duplicate a start point
-            originCurve->AddValue(0, originCurve->GetValue(0));
-            anglesCurve->AddValue(0, anglesCurve->GetValue(0));
+        if (originCurve->GetNumValues() > 1) {
+            if (!loop) {
+                // duplicate a start point
+                originCurve->AddValue(0, originCurve->GetValue(0));
+                anglesCurve->AddValue(0, anglesCurve->GetValue(0));
 
-            // duplicate a end point
-            originCurve->AddValue(t, originCurve->GetValue(originCurve->GetNumValues() - 1));
-            anglesCurve->AddValue(t, anglesCurve->GetValue(anglesCurve->GetNumValues() - 1));
+                // duplicate a end point
+                originCurve->AddValue(t, originCurve->GetValue(originCurve->GetNumValues() - 1));
+                anglesCurve->AddValue(t, anglesCurve->GetValue(anglesCurve->GetNumValues() - 1));
 
-            originCurve->SetBoundaryType(Curve_Spline<Vec3>::ClampedBoundary);
-            anglesCurve->SetBoundaryType(Curve_Spline<Angles>::ClampedBoundary);
-        } else {
-            //originCurve->SetCloseTime(100);
-            //anglesCurve->SetCloseTime(100);
+                originCurve->SetBoundaryType(Curve_Spline<Vec3>::ClampedBoundary);
+                anglesCurve->SetBoundaryType(Curve_Spline<Angles>::ClampedBoundary);
+            } else {
+                //originCurve->SetCloseTime(100);
+                //anglesCurve->SetCloseTime(100);
 
-            originCurve->SetBoundaryType(Curve_Spline<Vec3>::ClosedBoundary);
-            anglesCurve->SetBoundaryType(Curve_Spline<Angles>::ClosedBoundary);
+                originCurve->SetBoundaryType(Curve_Spline<Vec3>::ClosedBoundary);
+                anglesCurve->SetBoundaryType(Curve_Spline<Angles>::ClosedBoundary);
+            }
+
+            originCurve->SetConstantSpeed(1.0f);
         }
-
-        originCurve->SetConstantSpeed(1.0f);
 
         for (int i = 0; i < originCurve->GetNumValues(); i++) {
             anglesCurve->SetTime(i, originCurve->GetTime(i));

@@ -24,16 +24,16 @@ BE_NAMESPACE_BEGIN
 renderGlobal_t      renderGlobal;
 RenderSystem        renderSystem;
 
-void RenderSystem::Init(const Renderer::Settings *settings) {
+void RenderSystem::Init(const RHI::Settings *settings) {
     cmdSystem.AddCommand(L"screenshot", Cmd_ScreenShot);
 
     // Initialize OpenGL renderer
-    glr.Init(settings);
+    rhi.Init(settings);
 
     // Save current gamma ramp table
-    glr.GetGammaRamp(savedGammaRamp);
+    rhi.GetGammaRamp(savedGammaRamp);
 
-    if ((r_fastSkinning.GetInteger() == 2 || r_fastSkinning.GetInteger() == 3) && glr.HWLimit().maxVertexTextureImageUnits > 0) {
+    if ((r_fastSkinning.GetInteger() == 2 || r_fastSkinning.GetInteger() == 3) && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
         renderGlobal.skinningMethod = Mesh::VtfSkinning;
     } else if (r_fastSkinning.GetInteger() == 1) {
         renderGlobal.skinningMethod = Mesh::VertexShaderSkinning;
@@ -41,9 +41,9 @@ void RenderSystem::Init(const Renderer::Settings *settings) {
         renderGlobal.skinningMethod = Mesh::CpuSkinning;
     }
 
-    if (r_vertexTextureUpdate.GetInteger() == 2 && glr.SupportsTextureBufferObject()) {
+    if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBufferObject()) {
         renderGlobal.vtUpdateMethod = Mesh::TboUpdate;
-    } else if (r_vertexTextureUpdate.GetInteger() == 1 && glr.SupportsPixelBufferObject()) {
+    } else if (r_vertexTextureUpdate.GetInteger() == 1 && rhi.SupportsPixelBufferObject()) {
         renderGlobal.vtUpdateMethod = Mesh::PboUpdate;
     } else {
         renderGlobal.vtUpdateMethod = Mesh::DirectCopyUpdate;
@@ -51,7 +51,7 @@ void RenderSystem::Init(const Renderer::Settings *settings) {
 
     textureManager.Init();
 
-    shaderManager.Init();	
+    shaderManager.Init();
 
     materialManager.Init();
 
@@ -66,6 +66,8 @@ void RenderSystem::Init(const Renderer::Settings *settings) {
     skeletonManager.Init();
 
     meshManager.Init();
+
+    particleSystemManager.Init();
 
     animManager.Init();
 
@@ -95,6 +97,8 @@ void RenderSystem::Shutdown() {
 
     animManager.Shutdown();
 
+    particleSystemManager.Shutdown();
+
     meshManager.Shutdown();
 
     skeletonManager.Shutdown();
@@ -111,19 +115,19 @@ void RenderSystem::Shutdown() {
 
     textureManager.Shutdown();
 
-    glr.Shutdown();
+    rhi.Shutdown();
 
     initialized = false;
 }
 
 bool RenderSystem::IsFullscreen() const {
-    return glr.IsFullscreen();
+    return rhi.IsFullscreen();
 }
 
 void RenderSystem::SetGamma(double gamma) {
     unsigned short ramp[768];
 
-    Clamp(gamma, 0.5, 3.0);	
+    Clamp(gamma, 0.5, 3.0);
     double one_gamma = 1.0 / gamma;
 
     double div = (double)(1.0 / 255.0);
@@ -135,11 +139,11 @@ void RenderSystem::SetGamma(double gamma) {
         ramp[i] = ramp[i + 256] = ramp[i + 512] = (unsigned short)value;
     }
 
-    glr.SetGammaRamp(ramp);
+    rhi.SetGammaRamp(ramp);
 }
 
 void RenderSystem::RestoreGamma() {
-    glr.SetGammaRamp(savedGammaRamp);
+    rhi.SetGammaRamp(savedGammaRamp);
 }
 
 RenderContext *RenderSystem::AllocRenderContext(bool isMainContext) {
@@ -195,8 +199,8 @@ void RenderSystem::CmdDrawView(const view_t *view) {
         return;
     }
 
-    cmd->commandId		= DrawViewCommand;
-    cmd->view			= *view;
+    cmd->commandId      = DrawViewCommand;
+    cmd->view           = *view;
 }
 
 void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char *filename) {
@@ -205,11 +209,11 @@ void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char
         return;
     }
 
-    cmd->commandId		= ScreenShotCommand;
-    cmd->x				= x;
-    cmd->y				= y;
-    cmd->width			= width;
-    cmd->height			= height;
+    cmd->commandId      = ScreenShotCommand;
+    cmd->x              = x;
+    cmd->y              = y;
+    cmd->width          = width;
+    cmd->height         = height;
     Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
 }
 
@@ -266,20 +270,20 @@ void RenderSystem::CheckModifiedCVars() {
     if (TextureManager::texture_anisotropy.IsModified()) {
         TextureManager::texture_anisotropy.ClearModified();
 
-        textureManager.SetAnisotropy(TextureManager::texture_anisotropy.GetFloat());		
+        textureManager.SetAnisotropy(TextureManager::texture_anisotropy.GetFloat());
     }
 
     if (TextureManager::texture_lodBias.IsModified()) {
         TextureManager::texture_lodBias.ClearModified();
 
-        textureManager.SetLodBias(TextureManager::texture_lodBias.GetFloat());		
+        textureManager.SetLodBias(TextureManager::texture_lodBias.GetFloat());
     }
 
     if (r_swapInterval.IsModified()) {
         r_swapInterval.ClearModified();
 
-        glr.SwapInterval(r_swapInterval.GetInteger());
-    }   
+        rhi.SwapInterval(r_swapInterval.GetInteger());
+    }
 
     if (r_useDeferredLighting.IsModified()) {
         r_useDeferredLighting.ClearModified();
@@ -298,7 +302,7 @@ void RenderSystem::CheckModifiedCVars() {
 
                 RecreateScreenMapRT();
             }
-        }		
+        }
     }
 
     if (r_usePostProcessing.IsModified()) {
@@ -391,16 +395,16 @@ void RenderSystem::CheckModifiedCVars() {
         if (r_shadows.GetInteger() == 1) {
             if (!shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n")) {
                 shaderManager.AddGlobalHeader("#define USE_SHADOW_MAP\n");
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
 
                 RecreateShadowMapRT();
             }
         } else {
             if (shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n")) {
                 shaderManager.RemoveGlobalHeader("#define USE_SHADOW_MAP\n");
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
-        }		
+        }
     }
 
     if (r_showShadows.IsModified()) {
@@ -410,13 +414,13 @@ void RenderSystem::CheckModifiedCVars() {
             if (!shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n")) {
                 shaderManager.AddGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
 
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
             if (shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n")) {
                 shaderManager.RemoveGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
 
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         }
     }
@@ -427,7 +431,7 @@ void RenderSystem::CheckModifiedCVars() {
         shaderManager.RemoveGlobalHeader(va("#define CSM_COUNT "));
         
         shaderManager.AddGlobalHeader(va("#define CSM_COUNT %i\n", r_CSM_count.GetInteger()));
-        shaderManager.ReloadLightingShaders();
+        shaderManager.ReloadLitSurfaceShaders();
 
         RecreateShadowMapRT();
     }
@@ -438,7 +442,7 @@ void RenderSystem::CheckModifiedCVars() {
         shaderManager.RemoveGlobalHeader(va("#define CASCADE_SELECTION_METHOD "));
         
         shaderManager.AddGlobalHeader(va("#define CASCADE_SELECTION_METHOD %i\n", r_CSM_selectionMethod.GetInteger()));
-        shaderManager.ReloadLightingShaders();
+        shaderManager.ReloadLitSurfaceShaders();
 
         RecreateShadowMapRT();
     }
@@ -449,12 +453,12 @@ void RenderSystem::CheckModifiedCVars() {
         if (r_CSM_blend.GetBool()) {
             if (!shaderManager.FindGlobalHeader("#define BLEND_CASCADE\n")) {
                 shaderManager.AddGlobalHeader("#define BLEND_CASCADE\n");
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
             if (shaderManager.FindGlobalHeader("#define BLEND_CASCADE\n")) {
                 shaderManager.RemoveGlobalHeader("#define BLEND_CASCADE\n");
-                shaderManager.ReloadLightingShaders();
+                shaderManager.ReloadLitSurfaceShaders();
             }
         }
     }
@@ -466,17 +470,17 @@ void RenderSystem::CheckModifiedCVars() {
         
         if (r_shadowMapQuality.GetInteger() >= 0) {
             shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
-            shaderManager.ReloadLightingShaders();
+            shaderManager.ReloadLitSurfaceShaders();
         }
     }
 }
 
 //--------------------------------------------------------------------------------------------------
 
-void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {	
-    char	path[1024];
-    char	picname[16];
-    int		i;
+void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
+    char    path[1024];
+    char    picname[16];
+    int     i;
 
     const char *homePath = PlatformFile::HomePath();
     

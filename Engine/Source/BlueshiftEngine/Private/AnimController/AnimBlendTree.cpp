@@ -17,7 +17,7 @@
 #include "Animator/Animator.h"
 #include "Asset/GuidMapper.h"
 #include "Core/JointPose.h"
-#include "SIMD/SIMD.h"
+#include "Simd/Simd.h"
 #include "File/File.h"
 
 BE_NAMESPACE_BEGIN
@@ -283,8 +283,10 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
         }
     }
 
-    float currentAngle = RAD2DEG(currentPoint.ToAngle());
-    float currentRadius = currentPoint.Length();
+    float currentAngle;
+    float currentRadius = currentPoint.ToPolar(currentAngle);
+    currentAngle = RAD2DEG(currentAngle);
+
     int originIndex = -1;
 
     // Gets blending sample points

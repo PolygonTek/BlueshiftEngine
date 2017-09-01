@@ -83,6 +83,12 @@ public:
     explicit Str(const unsigned u);
     /// Constructs from a float.
     explicit Str(const float f);
+    /// Assign a string.
+    Str &operator=(const Str &rhs);
+    /// Move a string.
+    Str &operator=(Str &&rhs);
+    /// Assign a null-terminated C string.
+    Str &operator=(const char *rhs);
     /// Destructs.
     ~Str();
 
@@ -156,13 +162,6 @@ public:
 
                         /// string ranking algorithm that produced a number between 0 and 1 representing the similarity between two strings.
     float               FuzzyScore(const char *text, float fuzziness = 0.0f) const;
-
-                        /// Assign a string.
-    void                operator=(const Str &rhs);
-                        /// Move a string.
-    void                operator=(Str &&rhs);
-                        /// Assign a null-terminated C string.
-    void                operator=(const char *rhs);
 
                         /// Add-assign a string.
     Str &               operator+=(const Str &rhs);
@@ -399,9 +398,9 @@ private:
     static constexpr int AllocGranularity = 32;
     static constexpr int FileNameHashSize = 1024;
  
-    int                 len;                        ///< String length
     char *              data;                       ///< Data pointer
     size_t              alloced;                    ///< Allocated data size
+    int                 len;                        ///< String length
     char                baseBuffer[BaseLength];     ///< Default base buffer
 };
 
@@ -488,6 +487,28 @@ BE_INLINE Str::Str(const float f) : Str() {
     len = l;
 }
 
+BE_INLINE Str &Str::operator=(const Str &rhs) {
+    int l = rhs.Length();
+    EnsureAlloced(l + 1, false);
+    strcpy(data, rhs.data);
+    len = l;
+    return *this;
+}
+
+BE_INLINE Str &Str::operator=(Str &&rhs) {
+    BE1::Swap(len, rhs.len);
+    BE1::Swap(alloced, rhs.alloced);
+    BE1::Swap(data, rhs.data);
+    if (data == rhs.baseBuffer) {
+        strcpy(baseBuffer, rhs.baseBuffer);
+        data = baseBuffer;
+    }
+    if (rhs.data == baseBuffer) {
+        rhs.data = rhs.baseBuffer;
+    }
+    return *this;
+}
+
 BE_INLINE Str::~Str() {
     FreeData();
 }
@@ -504,26 +525,6 @@ BE_INLINE const char &Str::operator[](int index) const {
 BE_INLINE char &Str::operator[](int index) {
     assert((index >= 0) && (index <= len));
     return data[index];
-}
-
-BE_INLINE void Str::operator=(const Str &rhs) {
-    int l = rhs.Length();
-    EnsureAlloced(l + 1, false);
-    strcpy(data, rhs.data);
-    len = l;
-}
-
-BE_INLINE void Str::operator=(Str &&rhs) {
-    BE1::Swap(len, rhs.len);
-    BE1::Swap(alloced, rhs.alloced);
-    BE1::Swap(data, rhs.data);
-    if (data == rhs.baseBuffer) {
-        strcpy(baseBuffer, rhs.baseBuffer);
-        data = baseBuffer;
-    }
-    if (rhs.data == baseBuffer) {
-        rhs.data = rhs.baseBuffer;
-    }
 }
 
 BE_INLINE Str &Str::operator+=(const Str &rhs) {

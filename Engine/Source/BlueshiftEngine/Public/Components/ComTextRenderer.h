@@ -32,7 +32,7 @@ public:
     void                    SetText(const char *text);
 
 protected:
-    void                    ChangeFont(const Guid fontGuid, int fontSize);
+    void                    ChangeFont(const Guid &fontGuid, int fontSize);
 
     void                    UpdateAABB();
 

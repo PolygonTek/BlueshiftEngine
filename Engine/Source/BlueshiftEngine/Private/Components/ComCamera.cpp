@@ -40,8 +40,8 @@ BEGIN_PROPERTIES(ComCamera)
     PROPERTY_RANGED_FLOAT("y", "Y", "normalized screen y-coordinate", Rangef(0, 1.0f, 0.01f), "0.0", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("w", "W", "normalized screen width", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("h", "H", "normalized screen height", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
-    PROPERTY_INT("layerMask", "Layer Mask", "", Str(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), PropertySpec::ReadWrite),
-    PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color", "1", PropertySpec::ReadWrite),
+    PROPERTY_INT("layerMask", "Layer Mask", "", Str(BIT(TagLayerSettings::DefaultLayer)), PropertySpec::ReadWrite),
+    PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color;Skybox", "1", PropertySpec::ReadWrite),
     PROPERTY_COLOR3("clearColor", "Clear Color", "", "0 0 0", PropertySpec::ReadWrite),
     PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", "0", PropertySpec::ReadWrite),
     PROPERTY_INT("order", "Order", "", "0", PropertySpec::ReadWrite),
@@ -70,7 +70,7 @@ ComCamera::ComCamera() {
     memset(&sprite, 0, sizeof(sprite));
     view = nullptr;
 
-    Connect(&SIG_PropertyChanged, this, (SignalCallback)&ComCamera::PropertyChanged);
+    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCamera::PropertyChanged);
 }
 
 ComCamera::~ComCamera() {
@@ -129,9 +129,9 @@ void ComCamera::Init() {
 
     viewParms.layerMask = props->Get("layerMask").As<int>();
 
-    viewParms.flags = SceneView::Flag::NoSubViews;
+    viewParms.flags = SceneView::Flag::TexturedMode | SceneView::Flag::NoSubViews;
     if (!(viewParms.layerMask & BIT(TagLayerSettings::DefaultLayer))) {
-        viewParms.flags |= SceneView::Flag::NoShadows | SceneView::Flag::NoSubViews;
+        viewParms.flags |= SceneView::Flag::NoShadows | SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess;
     }
 
     viewParms.clearMethod = (SceneView::ClearMethod)props->Get("clear").As<int>();
@@ -163,7 +163,7 @@ void ComCamera::Init() {
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
     sprite.customMaterials.SetCount(1);
-    sprite.customMaterials[0] = materialManager.GetTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
     
     sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
@@ -174,12 +174,11 @@ void ComCamera::Init() {
     sprite.materialParms[SceneEntity::RedParm] = 1.0f;
     sprite.materialParms[SceneEntity::GreenParm] = 1.0f;
     sprite.materialParms[SceneEntity::BlueParm] = 1.0f;
-    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;	
+    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;
     sprite.materialParms[SceneEntity::TimeOffsetParm] = 0.0f;
     sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
-    transform->Connect(&SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
-    transform->Connect(&SIG_PhysicsUpdated, this, (SignalCallback)&ComCamera::PhysicsUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
 
     UpdateVisuals();
 }
@@ -215,7 +214,7 @@ bool ComCamera::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFac
     return false;
 }
 
-void ComCamera::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
+void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     if (selected) {
@@ -224,28 +223,28 @@ void ComCamera::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
         float h = ctx->GetRenderHeight() * nh;
         float aspectRatio = w / h;
 
-        if (this->viewParms.orthogonal) {
-            this->viewParms.sizeX = size;
-            this->viewParms.sizeY = size / aspectRatio;
-            float sizeZ = (this->viewParms.zNear + this->viewParms.zFar) * 0.5f;
+        if (viewParms.orthogonal) {
+            viewParms.sizeX = size;
+            viewParms.sizeY = size / aspectRatio;
+            float sizeZ = (viewParms.zNear + viewParms.zFar) * 0.5f;
 
             OBB cameraBox;
-            cameraBox.SetAxis(this->viewParms.axis);
-            cameraBox.SetCenter(this->viewParms.origin + this->viewParms.axis[0] * sizeZ);
-            cameraBox.SetExtents(Vec3(sizeZ, this->viewParms.sizeX, this->viewParms.sizeY));
+            cameraBox.SetAxis(viewParms.axis);
+            cameraBox.SetCenter(viewParms.origin + viewParms.axis[0] * sizeZ);
+            cameraBox.SetExtents(Vec3(sizeZ, viewParms.sizeX, viewParms.sizeY));
 
-            renderWorld->SetDebugColor(Color4(0.5f, 0.5f, 0.5f, 0.5f), Color4::zero);
+            renderWorld->SetDebugColor(Color4::white, Color4::zero);
             renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);
         } else {
-            SceneView::ComputeFov(fov, 1.25f, aspectRatio, &this->viewParms.fovX, &this->viewParms.fovY);
+            SceneView::ComputeFov(fov, 1.25f, aspectRatio, &viewParms.fovX, &viewParms.fovY);
 
             Frustum cameraFrustum;
-            cameraFrustum.SetOrigin(this->viewParms.origin);
-            cameraFrustum.SetAxis(this->viewParms.axis);
-            cameraFrustum.SetSize(this->viewParms.zNear, this->viewParms.zFar, 
-                this->viewParms.zFar * Math::Tan(DEG2RAD(this->viewParms.fovX * 0.5f)), this->viewParms.zFar * Math::Tan(DEG2RAD(this->viewParms.fovY * 0.5f)));
+            cameraFrustum.SetOrigin(viewParms.origin);
+            cameraFrustum.SetAxis(viewParms.axis);
+            cameraFrustum.SetSize(viewParms.zNear, viewParms.zFar, 
+                viewParms.zFar * Math::Tan(DEG2RAD(viewParms.fovX * 0.5f)), viewParms.zFar * Math::Tan(DEG2RAD(viewParms.fovY * 0.5f)));
 
-            renderWorld->SetDebugColor(Color4(0.5f, 0.5f, 0.5f, 0.5f), Color4::zero);
+            renderWorld->SetDebugColor(Color4::white, Color4::zero);
             renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
         }
 
@@ -266,6 +265,11 @@ void ComCamera::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
             GetGameWorld()->GetRenderWorld()->RenderScene(&previewView);
         }
     }
+
+    // Fade icon alpha in near distance
+    float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
+
+    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComCamera::GetAABB() {
@@ -412,15 +416,6 @@ void ComCamera::UpdateVisuals() {
 void ComCamera::TransformUpdated(const ComTransform *transform) {
     viewParms.origin = transform->GetOrigin();
     viewParms.axis = transform->GetAxis();
-
-    sprite.origin = viewParms.origin;
-    
-    UpdateVisuals();
-}
-
-void ComCamera::PhysicsUpdated(const PhysRigidBody *body) {
-    viewParms.origin = body->GetOrigin();
-    viewParms.axis = body->GetAxis();
 
     sprite.origin = viewParms.origin;
     

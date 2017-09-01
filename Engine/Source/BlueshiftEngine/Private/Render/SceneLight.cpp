@@ -214,6 +214,36 @@ bool SceneLight::Cull(const Frustum &viewFrustum) const {
     return false;
 }
 
+bool SceneLight::Cull(const OBB &viewBox) const {
+    switch (parms.type) {
+    case DirectionalLight:
+        if (!viewBox.IsIntersectOBB(obb)) {
+            return true;
+        }
+        break;
+    case SpotLight:
+        if (frustum.CullOBB(viewBox)) {
+            return true;
+        }
+        break;
+    case PointLight:
+        if (IsRadiusUniform()) {
+            if (!viewBox.IsIntersectSphere(Sphere(parms.origin, parms.value[0]))) {
+                return true;
+            }
+        } else {
+            if (!viewBox.IsIntersectOBB(obb)) {
+                return true;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+
+    return false;
+}
+
 bool SceneLight::CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const {
     if (viewFrustum.CullAABB(visAABB)) {
         return true;

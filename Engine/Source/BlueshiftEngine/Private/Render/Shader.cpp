@@ -25,31 +25,37 @@ static const char *directiveInclude = "$include";
 // NOTE: BuiltInConstant enum 과 반드시 순서가 같아야 함
 // NOTE2: 나중에 자동으로 모든 shader 에 추가되는 구조로 바꾸면 편할 듯
 static const char *builtInConstantNames[] = {
-    "modelViewMatrix",
-    "modelViewMatrixTranspose",
-    "projectionMatrix",
-    "projectionMatrixTranspose",
-    "modelViewProjectionMatrix",
-    "modelViewProjectionMatrixTranspose",
-    "worldMatrixS",
-    "worldMatrixT",
-    "worldMatrixR",
-    "textureMatrixS",
-    "textureMatrixT",
-    "constantColor",
-    "vertexColorScale",
-    "vertexColorAdd",
-    "localViewOrigin",
-    "localLightOrigin",
-    "localLightAxis"
+    "modelViewMatrix",                      // ModelViewMatrixConst
+    "modelViewMatrixTranspose",             // ModelViewMatrixTransposeConst
+    "projectionMatrix",                     // ProjectionMatrixConst
+    "projectionMatrixTranspose",            // ProjectionMatrixTransposeConst
+    "modelViewProjectionMatrix",            // ModelViewProjectionMatrixConst
+    "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTransposeConst
+    "worldMatrixS",                         // WorldMatrixSConst
+    "worldMatrixT",                         // WorldMatrixTConst
+    "worldMatrixR",                         // WorldMatrixRConst
+    "textureMatrixS",                       // TextureMatrixSConst
+    "textureMatrixT",                       // TextureMatrixTConst
+    "constantColor",                        // ConstantColorConst
+    "vertexColorScale",                     // VertexColorScaleConst
+    "vertexColorAdd",                       // VertexColorAddConst
+    "localViewOrigin",                      // LocalViewOriginConst
+    "localLightOrigin",                     // LocalLightOriginConst
+    "localLightAxis"                        // LocalLightAxisConst
 };
 
 // NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함
 static const char *builtInSamplerNames[] = {
-    "diffuseMap",
-    "specularMap",
-    "bumpMap"
+    "albedoMap",
+    "normalMap"
 };
+
+int Shader::GetFlags() const {
+    if (originalShader) {
+        return originalShader->flags;
+    }
+    return flags;
+}
 
 const StrHashMap<PropertySpec> &Shader::GetSpecHashMap() const { 
     if (originalShader) {
@@ -59,9 +65,24 @@ const StrHashMap<PropertySpec> &Shader::GetSpecHashMap() const {
 }
 
 void Shader::Purge() {
-    if (shaderHandle != Renderer::NullShader) {
-        glr.DeleteShader(shaderHandle);
-        shaderHandle = Renderer::NullShader;
+    if (shaderHandle != RHI::NullShader) {
+        rhi.DeleteShader(shaderHandle);
+        shaderHandle = RHI::NullShader;
+    }
+
+    if (ambientLitVersion) {
+        shaderManager.ReleaseShader(ambientLitVersion);
+        ambientLitVersion = nullptr;
+    }
+
+    if (directLitVersion) {
+        shaderManager.ReleaseShader(directLitVersion);
+        directLitVersion = nullptr;
+    }
+
+    if (ambientLitDirectLitVersion) {
+        shaderManager.ReleaseShader(ambientLitDirectLitVersion);
+        ambientLitDirectLitVersion = nullptr;
     }
 
     if (perforatedVersion) {
@@ -69,9 +90,9 @@ void Shader::Purge() {
         perforatedVersion = nullptr;
     }
 
-    if (ambientLitVersion) {
-        shaderManager.ReleaseShader(ambientLitVersion);
-        ambientLitVersion = nullptr;
+    if (premulAlphaVersion) {
+        shaderManager.ReleaseShader(premulAlphaVersion);
+        premulAlphaVersion = nullptr;
     }
 
     if (parallelShadowVersion) {
@@ -102,6 +123,7 @@ void Shader::Purge() {
 
 bool Shader::Create(const char *text, const char *baseDir) {
     bool generatePerforatedVersion = false;
+    bool generatePremulAlphaVersion = false;
     bool generateGpuSkinningVersion = false;
     bool generateParallelShadowVersion = false;
     bool generatePointShadowVersion = false;
@@ -126,18 +148,23 @@ bool Shader::Create(const char *text, const char *baseDir) {
             break;
         } else if (token[0] == '}') {
             break;
-        } else if (!token.Icmp("lighting")) {
-            flags |= Lighting;
+        } else if (!token.Icmp("litSurface")) {
+            flags |= LitSurface;
+        } else if (!token.Icmp("skySurface")) {
+            flags |= SkySurface;
         } else if (!token.Icmp("properties")) {
             ParseProperties(lexer);
-        } else if (!token.Icmp("perforatedVersion")) {
+        } else if (!token.Icmp("inheritProperties")) {
             if (lexer.ReadToken(&token)) {
                 Str path = baseDir;
                 path.AppendPath(token, '/');
 
-                perforatedVersion = shaderManager.GetShader(path);
+                Shader *shader = shaderManager.FindShader(path);
+                if (shader) {
+                    specHashMap = shader->specHashMap;
+                }
             } else {
-                BE_WARNLOG(L"missing perforatedVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG(L"missing inheritProperties name in shader '%hs'\n", hashName.c_str());
             }
         } else if (!token.Icmp("ambientLitVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -147,6 +174,33 @@ bool Shader::Create(const char *text, const char *baseDir) {
                 ambientLitVersion = shaderManager.GetShader(path);
             } else {
                 BE_WARNLOG(L"missing ambientLitVersion name in shader '%hs'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("directLitVersion")) {
+            if (lexer.ReadToken(&token)) {
+                Str path = baseDir;
+                path.AppendPath(token, '/');
+
+                directLitVersion = shaderManager.GetShader(path);
+            } else {
+                BE_WARNLOG(L"missing directLitVersion name in shader '%hs'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("ambientLitDirectLitVersion")) {
+            if (lexer.ReadToken(&token)) {
+                Str path = baseDir;
+                path.AppendPath(token, '/');
+
+                ambientLitDirectLitVersion = shaderManager.GetShader(path);
+            } else {
+                BE_WARNLOG(L"missing ambientLitDirectLitVersion name in shader '%hs'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("perforatedVersion")) {
+            if (lexer.ReadToken(&token)) {
+                Str path = baseDir;
+                path.AppendPath(token, '/');
+
+                perforatedVersion = shaderManager.GetShader(path);
+            } else {
+                BE_WARNLOG(L"missing perforatedVersion name in shader '%hs'\n", hashName.c_str());
             }
         } else if (!token.Icmp("parallelShadowVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -187,7 +241,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
                     path.AppendPath(token, '/');
 
                     gpuSkinningVersion[1] = shaderManager.GetShader(path);
-                    
+
                     if (lexer.ReadToken(&token)) {
                         Str path = baseDir;
                         path.AppendPath(token, '/');
@@ -204,6 +258,8 @@ bool Shader::Create(const char *text, const char *baseDir) {
             }
         } else if (!token.Icmp("generatePerforatedVersion")) {
             generatePerforatedVersion = true;
+        } else if (!token.Icmp("generatePremulAlphaVersion")) {
+            generatePremulAlphaVersion = true;
         } else if (!token.Icmp("generateGpuSkinningVersion")) {
             generateGpuSkinningVersion = true;
         } else if (!token.Icmp("generateParallelShadowVersion")) {
@@ -221,7 +277,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
         }
     }
 
-    return Finish(generatePerforatedVersion, generateGpuSkinningVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion, baseDir);
+    return Finish(generatePerforatedVersion, generatePremulAlphaVersion, generateGpuSkinningVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion, baseDir);
 }
 
 bool Shader::ParseProperties(Lexer &lexer) {
@@ -268,15 +324,15 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         break;
     case 1:
         skinningPostfix = "-skinning1";
-        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"skinning_matrix1.glsl\"\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"SkinningMatrix1.glsl\"\n";
         break;
     case 4:
         skinningPostfix = "-skinning4";
-        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"skinning_matrix4.glsl\"\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"SkinningMatrix4.glsl\"\n";
         break;
     case 8:
         skinningPostfix = "-skinning8";
-        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"skinning_matrix8.glsl\"\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"SkinningMatrix8.glsl\"\n";
         break;
     default:
         assert(0);
@@ -327,7 +383,6 @@ bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePos
     return true;
 }
 
-
 bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion) {
     if (!shader->perforatedVersion) {
         shader->perforatedVersion = GenerateSubShader(shaderNamePostfix + "-perforated",
@@ -347,7 +402,26 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
     return true;
 }
 
-bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir) {
+bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion) {
+    if (!shader->premulAlphaVersion) {
+        shader->premulAlphaVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
+            vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0);
+        if (!shader->premulAlphaVersion) {
+            return false;
+        }
+    }
+
+    if (genereateGpuSkinningVersion) {
+        if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion,
+            shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n")) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir) {
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(this, "", "", "")) {
             return false;
@@ -356,6 +430,12 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
 
     if (generatePerforatedVersion) {
         if (!GeneratePerforatedVersion(this, "", "", "", genereateGpuSkinningVersion)) {
+            return false;
+        }
+    }
+
+    if (generatePremulAlphaVersion) {
+        if (!GeneratePremulAlphaVersion(this, "", "", "", genereateGpuSkinningVersion)) {
             return false;
         }
     }
@@ -438,7 +518,7 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
     return true;
 }
 
-const char *MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName) {
+const char *Shader::MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName) {
     mangledName = basename;
     
     if (defineArray.Count() > 0) {
@@ -472,6 +552,7 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     // allocate new instantiated shader
     shader = shaderManager.AllocShader(mangledName);
     shader->originalShader = this;
+    shader->flags = flags;
     shader->defineArray = defineArray;
     shader->baseDir = baseDir;
 
@@ -479,38 +560,189 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     
     shader->Instantiate(defineArray);
 
+    return shader;
+}
+
+Shader *Shader::GetPerforatedVersion() {
     if (perforatedVersion) {
-        shader->perforatedVersion = perforatedVersion->InstantiateShader(defineArray);
-    }
-    
-    if (ambientLitVersion) {
-        shader->ambientLitVersion = ambientLitVersion->InstantiateShader(defineArray);
+        return perforatedVersion;
     }
 
-    if (parallelShadowVersion) {
-        shader->parallelShadowVersion = parallelShadowVersion->InstantiateShader(defineArray);
-    }
-
-    if (spotShadowVersion) {
-        shader->spotShadowVersion = spotShadowVersion->InstantiateShader(defineArray);
-    }
-
-    if (pointShadowVersion) {
-        shader->pointShadowVersion = pointShadowVersion->InstantiateShader(defineArray);
-    }
-
-    for (int i = 0; i < COUNT_OF(gpuSkinningVersion); i++) {
-        if (gpuSkinningVersion[i]) {
-            shader->gpuSkinningVersion[i] = gpuSkinningVersion[i]->InstantiateShader(defineArray);
+    if (originalShader) {
+        if (originalShader->perforatedVersion) {
+            perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
+            return perforatedVersion;
         }
     }
 
-    return shader;
+    return nullptr;
+}
+
+Shader *Shader::GetPremulAlphaVersion() {
+    if (premulAlphaVersion) {
+        return premulAlphaVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->premulAlphaVersion) {
+            premulAlphaVersion = originalShader->premulAlphaVersion->InstantiateShader(defineArray);
+            return premulAlphaVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetAmbientLitVersion() {
+    if (ambientLitVersion) {
+        return ambientLitVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->ambientLitVersion) {
+            ambientLitVersion = originalShader->ambientLitVersion->InstantiateShader(defineArray);
+            return ambientLitVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetDirectLitVersion() {
+    if (directLitVersion) {
+        return directLitVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->directLitVersion) {
+            directLitVersion = originalShader->directLitVersion->InstantiateShader(defineArray);
+            return directLitVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetAmbientLitDirectLitVersion() {
+    if (ambientLitDirectLitVersion) {
+        return ambientLitDirectLitVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->ambientLitDirectLitVersion) {
+            ambientLitDirectLitVersion = originalShader->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+            return ambientLitDirectLitVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetParallelShadowVersion() {
+    if (parallelShadowVersion) {
+        return parallelShadowVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->parallelShadowVersion) {
+            parallelShadowVersion = originalShader->parallelShadowVersion->InstantiateShader(defineArray);
+            return parallelShadowVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetSpotShadowVersion() {
+    if (spotShadowVersion) {
+        return spotShadowVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->spotShadowVersion) {
+            spotShadowVersion = originalShader->spotShadowVersion->InstantiateShader(defineArray);
+            return spotShadowVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetPointShadowVersion() {
+    if (pointShadowVersion) {
+        return pointShadowVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->pointShadowVersion) {
+            pointShadowVersion = originalShader->pointShadowVersion->InstantiateShader(defineArray);
+            return pointShadowVersion;
+        }
+    }
+
+    return nullptr;
+}
+
+Shader *Shader::GetGPUSkinningVersion(int index) {
+    if (gpuSkinningVersion[index]) {
+        return gpuSkinningVersion[index];
+    }
+
+    if (originalShader) {
+        if (originalShader->gpuSkinningVersion[index]) {
+            gpuSkinningVersion[index] = originalShader->gpuSkinningVersion[index]->InstantiateShader(defineArray);
+            return gpuSkinningVersion[index];
+        }
+    }
+
+    return nullptr;
 }
 
 void Shader::Reinstantiate() {
     assert(originalShader);
     Instantiate(defineArray);
+
+    if (originalShader->ambientLitVersion) {
+        if (ambientLitVersion) {
+            ambientLitVersion->originalShader = originalShader->ambientLitVersion;
+            ambientLitVersion->Reinstantiate();
+        } else {
+            ambientLitVersion = originalShader->ambientLitVersion->InstantiateShader(defineArray);
+        }
+    } else {
+        if (ambientLitVersion) {
+            shaderManager.ReleaseShader(ambientLitVersion);
+            ambientLitVersion = nullptr;
+        }
+    }
+
+    if (originalShader->directLitVersion) {
+        if (directLitVersion) {
+            directLitVersion->originalShader = originalShader->directLitVersion;
+            directLitVersion->Reinstantiate();
+        } else {
+            directLitVersion = originalShader->directLitVersion->InstantiateShader(defineArray);
+        }
+    } else {
+        if (directLitVersion) {
+            shaderManager.ReleaseShader(directLitVersion);
+            directLitVersion = nullptr;
+        }
+    }
+
+    if (originalShader->ambientLitDirectLitVersion) {
+        if (ambientLitDirectLitVersion) {
+            ambientLitDirectLitVersion->originalShader = originalShader->ambientLitDirectLitVersion;
+            ambientLitDirectLitVersion->Reinstantiate();
+        } else {
+            ambientLitDirectLitVersion = originalShader->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+        }
+    } else {
+        if (ambientLitDirectLitVersion) {
+            shaderManager.ReleaseShader(ambientLitDirectLitVersion);
+            ambientLitDirectLitVersion = nullptr;
+        }
+    }
 
     if (originalShader->perforatedVersion) {
         if (perforatedVersion) {
@@ -526,17 +758,17 @@ void Shader::Reinstantiate() {
         }
     }
 
-    if (originalShader->ambientLitVersion) {
-        if (ambientLitVersion) {
-            ambientLitVersion->originalShader = originalShader->ambientLitVersion;
-            ambientLitVersion->Reinstantiate();
+    if (originalShader->premulAlphaVersion) {
+        if (premulAlphaVersion) {
+            premulAlphaVersion->originalShader = originalShader->premulAlphaVersion;
+            premulAlphaVersion->Reinstantiate();
         } else {
-            ambientLitVersion = originalShader->ambientLitVersion->InstantiateShader(defineArray);
+            premulAlphaVersion = originalShader->premulAlphaVersion->InstantiateShader(defineArray);
         }
     } else {
-        if (ambientLitVersion) {
-            shaderManager.ReleaseShader(ambientLitVersion);
-            ambientLitVersion = nullptr;
+        if (premulAlphaVersion) {
+            shaderManager.ReleaseShader(premulAlphaVersion);
+            premulAlphaVersion = nullptr;
         }
     }
 
@@ -599,9 +831,7 @@ void Shader::Reinstantiate() {
     }
 }
 
-
 bool Shader::Instantiate(const Array<Define> &defineArray) {
-    
 #if defined __ANDROID__ && ! defined __XAMARIN__
     static int progress = 0;
 
@@ -613,9 +843,9 @@ bool Shader::Instantiate(const Array<Define> &defineArray) {
     color.b = sinf(f + M_PI * 4.0f / 3.0f)* 0.5f + 0.5f;
     color.a = 1.0f;
 
-    glr.SetStateBits(Renderer::ColorWrite | Renderer::AlphaWrite);
-    glr.Clear(Renderer::ColorBit, color, 0, 0);
-    glr.SwapBuffers();
+    rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
+    rhi.Clear(RHI::ColorBit, color, 0, 0);
+    rhi.SwapBuffers();
 
     //BE_LOG(L"progress %f %f %f %f %d", color.r, color.g, color.b, f, progress);
 #endif
@@ -629,21 +859,21 @@ bool Shader::Instantiate(const Array<Define> &defineArray) {
         return false;
     }
 
-    if (shaderHandle != Renderer::NullShader) {
-        glr.DeleteShader(shaderHandle);
+    if (shaderHandle != RHI::NullShader) {
+        rhi.DeleteShader(shaderHandle);
     }
 
-    shaderHandle = glr.CreateShader(hashName, processedVsText, processedFsText);
+    shaderHandle = rhi.CreateShader(hashName, processedVsText, processedFsText);
 
     assert(MaxBuiltInConstants == COUNT_OF(builtInConstantNames));
     assert(MaxBuiltInSamplers == COUNT_OF(builtInSamplerNames));
 
     for (int i = 0; i < MaxBuiltInConstants; i++) {
-        builtInConstantLocations[i] = glr.GetShaderConstantLocation(shaderHandle, builtInConstantNames[i]);
+        builtInConstantLocations[i] = rhi.GetShaderConstantLocation(shaderHandle, builtInConstantNames[i]);
     }
 
     for (int i = 0; i < MaxBuiltInSamplers; i++) {
-        builtInSamplerUnits[i] = glr.GetSamplerUnit(shaderHandle, builtInSamplerNames[i]);
+        builtInSamplerUnits[i] = rhi.GetSamplerUnit(shaderHandle, builtInSamplerNames[i]);
     }
 
     return true;
@@ -710,379 +940,379 @@ bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
 }
 
 void Shader::Bind() const { 
-    glr.BindShader(shaderHandle);
+    rhi.BindShader(shaderHandle);
 }
 
 int Shader::GetConstantLocation(const char *name) const {
-    return glr.GetShaderConstantLocation(shaderHandle, name); 
+    return rhi.GetShaderConstantLocation(shaderHandle, name); 
 }
 
 void Shader::SetConstant1i(int index, const int constant) const { 
-    glr.SetShaderConstant1i(index, constant);
+    rhi.SetShaderConstant1i(index, constant);
 }
 
 void Shader::SetConstant2i(int index, const int *constant) const { 
-    glr.SetShaderConstant2i(index, constant);
+    rhi.SetShaderConstant2i(index, constant);
 }
 
 void Shader::SetConstant3i(int index, const int *constant) const { 
-    glr.SetShaderConstant3i(index, constant);
+    rhi.SetShaderConstant3i(index, constant);
 }
 
 void Shader::SetConstant4i(int index, const int *constant) const { 
-    glr.SetShaderConstant4i(index, constant);
+    rhi.SetShaderConstant4i(index, constant);
 }
 
 void Shader::SetConstant1f(int index, float x) const { 
-    glr.SetShaderConstant1f(index, x);
+    rhi.SetShaderConstant1f(index, x);
 }
 
 void Shader::SetConstant2f(int index, const float *constant) const { 
-    glr.SetShaderConstant2f(index, constant);
+    rhi.SetShaderConstant2f(index, constant);
 }
 
 void Shader::SetConstant3f(int index, const float *constant) const { 
-    glr.SetShaderConstant3f(index, constant);
+    rhi.SetShaderConstant3f(index, constant);
 }
 
 void Shader::SetConstant4f(int index, const float *constant) const { 
-    glr.SetShaderConstant4f(index, constant);
+    rhi.SetShaderConstant4f(index, constant);
 }
 
 void Shader::SetConstant2f(int index, const Vec2 &constant) const { 
-    glr.SetShaderConstant2f(index, constant);
+    rhi.SetShaderConstant2f(index, constant);
 }
 
 void Shader::SetConstant3f(int index, const Vec3 &constant) const { 
-    glr.SetShaderConstant3f(index, constant);
+    rhi.SetShaderConstant3f(index, constant);
 }
 
 void Shader::SetConstant4f(int index, const Vec4 &constant) const { 
-    glr.SetShaderConstant4f(index, constant);
+    rhi.SetShaderConstant4f(index, constant);
 }
 
 void Shader::SetConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const { 
-    glr.SetShaderConstant2x2f(index, rowmajor, constant);
+    rhi.SetShaderConstant2x2f(index, rowmajor, constant);
 }
 
 void Shader::SetConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const { 
-    glr.SetShaderConstant3x3f(index, rowmajor, constant);
+    rhi.SetShaderConstant3x3f(index, rowmajor, constant);
 }
 
 void Shader::SetConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const { 
-    glr.SetShaderConstant4x4f(index, rowmajor, constant);
+    rhi.SetShaderConstant4x4f(index, rowmajor, constant);
 }
 
 void Shader::SetConstantArray1i(int index, int num, const int *constant) const {
-    glr.SetShaderConstantArray1i(index, num, constant);
+    rhi.SetShaderConstantArray1i(index, num, constant);
 }
 
 void Shader::SetConstantArray2i(int index, int num, const int *constant) const {
-    glr.SetShaderConstantArray2i(index, num, constant);
+    rhi.SetShaderConstantArray2i(index, num, constant);
 }
 
 void Shader::SetConstantArray3i(int index, int num, const int *constant) const {
-    glr.SetShaderConstantArray3i(index, num, constant);
+    rhi.SetShaderConstantArray3i(index, num, constant);
 }
 
 void Shader::SetConstantArray4i(int index, int num, const int *constant) const {
-    glr.SetShaderConstantArray4i(index, num, constant);
+    rhi.SetShaderConstantArray4i(index, num, constant);
 }
 
 void Shader::SetConstantArray1f(int index, int num, const float *constant) const {
-    glr.SetShaderConstantArray1f(index, num, constant);
+    rhi.SetShaderConstantArray1f(index, num, constant);
 }
 
 void Shader::SetConstantArray2f(int index, int num, const float *constant) const {
-    glr.SetShaderConstantArray2f(index, num, constant);
+    rhi.SetShaderConstantArray2f(index, num, constant);
 }
 
 void Shader::SetConstantArray3f(int index, int num, const float *constant) const {
-    glr.SetShaderConstantArray3f(index, num, constant);
+    rhi.SetShaderConstantArray3f(index, num, constant);
 }
 
 void Shader::SetConstantArray4f(int index, int num, const float *constant) const {
-    glr.SetShaderConstantArray4f(index, num, constant);
+    rhi.SetShaderConstantArray4f(index, num, constant);
 }
 
 void Shader::SetConstantArray2f(int index, int num, const Vec2 *constant) const {
-    glr.SetShaderConstantArray2f(index, num, constant);
+    rhi.SetShaderConstantArray2f(index, num, constant);
 }
 
 void Shader::SetConstantArray3f(int index, int num, const Vec3 *constant) const {
-    glr.SetShaderConstantArray3f(index, num, constant);
+    rhi.SetShaderConstantArray3f(index, num, constant);
 }
 
 void Shader::SetConstantArray4f(int index, int num, const Vec4 *constant) const {
-    glr.SetShaderConstantArray4f(index, num, constant);
+    rhi.SetShaderConstantArray4f(index, num, constant);
 }
 
 void Shader::SetConstantArray2x2f(int index, bool rowmajor, int num, const Mat2 *constant) const { 
-    glr.SetShaderConstantArray2x2f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray2x2f(index, rowmajor, num, constant);
 }
 
 void Shader::SetConstantArray3x3f(int index, bool rowmajor, int num, const Mat3 *constant) const { 
-    glr.SetShaderConstantArray3x3f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray3x3f(index, rowmajor, num, constant);
 }
 
 void Shader::SetConstantArray4x4f(int index, bool rowmajor, int num, const Mat4 *constant) const { 
-    glr.SetShaderConstantArray4x4f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray4x4f(index, rowmajor, num, constant);
 }
 
 void Shader::SetConstant1i(const char *name, int x) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant1i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant1i(index, x);
+    rhi.SetShaderConstant1i(index, x);
 }
 
 void Shader::SetConstant2i(const char *name, const int *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant2i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant2i(index, constant);
+    rhi.SetShaderConstant2i(index, constant);
 }
 
 void Shader::SetConstant3i(const char *name, const int *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant3i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant3i(index, constant);
+    rhi.SetShaderConstant3i(index, constant);
 }
 
 void Shader::SetConstant4i(const char *name, const int *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant4i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant4i(index, constant);
+    rhi.SetShaderConstant4i(index, constant);
 }
 
 void Shader::SetConstant1f(const char *name, float x) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant1f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant1f(index, x);
+    rhi.SetShaderConstant1f(index, x);
 }
 
 void Shader::SetConstant2f(const char *name, const float *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant2f(index, constant);
+    rhi.SetShaderConstant2f(index, constant);
 }
 
 void Shader::SetConstant3f(const char *name, const float *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant3f(index, constant);
+    rhi.SetShaderConstant3f(index, constant);
 }
 
 void Shader::SetConstant4f(const char *name, const float *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant4f(index, constant);
+    rhi.SetShaderConstant4f(index, constant);
 }
 
 void Shader::SetConstant2f(const char *name, const Vec2 &constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant2f(index, constant);
+    rhi.SetShaderConstant2f(index, constant);
 }
 
 void Shader::SetConstant3f(const char *name, const Vec3 &constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant3f(index, constant);
+    rhi.SetShaderConstant3f(index, constant);
 }
 
 void Shader::SetConstant4f(const char *name, const Vec4 &constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant4f(index, constant);
+    rhi.SetShaderConstant4f(index, constant);
 }
 
 void Shader::SetConstant2x2f(const char *name, bool rowmajor, const Mat2 &constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant2x2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant2x2f(index, rowmajor, constant);
+    rhi.SetShaderConstant2x2f(index, rowmajor, constant);
 }
 
 void Shader::SetConstant3x3f(const char *name, bool rowmajor, const Mat3 &constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant3x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant3x3f(index, rowmajor, constant);
+    rhi.SetShaderConstant3x3f(index, rowmajor, constant);
 }
 
 void Shader::SetConstant4x4f(const char *name, bool rowmajor, const Mat4 &constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant4x4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstant4x4f(index, rowmajor, constant);
+    rhi.SetShaderConstant4x4f(index, rowmajor, constant);
 }
 
 void Shader::SetConstantArray1i(const char *name, int num, const int *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray1i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray1i(index, num, constant);
+    rhi.SetShaderConstantArray1i(index, num, constant);
 }
 
 void Shader::SetConstantArray2i(const char *name, int num, const int *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray2i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray2i(index, num, constant);
+    rhi.SetShaderConstantArray2i(index, num, constant);
 }
 
 void Shader::SetConstantArray3i(const char *name, int num, const int *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray3i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray3i(index, num, constant);
+    rhi.SetShaderConstantArray3i(index, num, constant);
 }
 
 void Shader::SetConstantArray4i(const char *name, int num, const int *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray4i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray4i(index, num, constant);
+    rhi.SetShaderConstantArray4i(index, num, constant);
 }
 
 void Shader::SetConstantArray1f(const char *name, int num, const float *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray1f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray1f(index, num, constant);
+    rhi.SetShaderConstantArray1f(index, num, constant);
 }
 
 void Shader::SetConstantArray2f(const char *name, int num, const float *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray2f(index, num, constant);
+    rhi.SetShaderConstantArray2f(index, num, constant);
 }
 
 void Shader::SetConstantArray3f(const char *name, int num, const float *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray3f(index, num, constant);
+    rhi.SetShaderConstantArray3f(index, num, constant);
 }
 
 void Shader::SetConstantArray4f(const char *name, int num, const float *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray4f(index, num, constant);
+    rhi.SetShaderConstantArray4f(index, num, constant);
 }
 
 void Shader::SetConstantArray2f(const char *name, int num, const Vec2 *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray2f(index, num, constant);
+    rhi.SetShaderConstantArray2f(index, num, constant);
 }
 
 void Shader::SetConstantArray3f(const char *name, int num, const Vec3 *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray3f(index, num, constant);
+    rhi.SetShaderConstantArray3f(index, num, constant);
 }
 
 void Shader::SetConstantArray4f(const char *name, int num, const Vec4 *constant) const {
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray4f(index, num, constant);
+    rhi.SetShaderConstantArray4f(index, num, constant);
 }
 
 void Shader::SetConstantArray2x2f(const char *name, bool rowmajor, int num, const Mat2 *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray2x2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray2x2f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray2x2f(index, rowmajor, num, constant);
 }
 
 void Shader::SetConstantArray3x3f(const char *name, bool rowmajor, int num, const Mat3 *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray3x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray3x3f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray3x3f(index, rowmajor, num, constant);
 }
 
 void Shader::SetConstantArray4x4f(const char *name, bool rowmajor, int num, const Mat4 *constant) const { 
-    int index = glr.GetShaderConstantLocation(shaderHandle, name);
+    int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray4x4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    glr.SetShaderConstantArray4x4f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray4x4f(index, rowmajor, num, constant);
 }
 
 int Shader::GetSamplerUnit(const char *name) const {
-    return glr.GetSamplerUnit(shaderHandle, name);
+    return rhi.GetSamplerUnit(shaderHandle, name);
 }
 
 void Shader::SetTexture(int unit, const Texture *texture) const {
@@ -1090,17 +1320,17 @@ void Shader::SetTexture(int unit, const Texture *texture) const {
         return;
     }
 
-    glr.SetTexture(unit, texture->textureHandle);
+    rhi.SetTexture(unit, texture->textureHandle);
 }
 
 void Shader::SetTexture(const char *name, const Texture *texture) const {
-    int unit = glr.GetSamplerUnit(shaderHandle, name);
+    int unit = rhi.GetSamplerUnit(shaderHandle, name);
     if (unit < 0) {
         //BE_WARNLOG(L"Shader::SetTexture: invalid texture name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
 
-    glr.SetTexture(unit, texture->textureHandle);
+    rhi.SetTexture(unit, texture->textureHandle);
 }
 
 void Shader::SetTextureArray(const char *name, int num, const Texture **textures) const {
@@ -1113,13 +1343,13 @@ void Shader::SetTextureArray(const char *name, int num, const Texture **textures
     for (int i = 0; i < num; i++) {
         *indexPtr = '0' + i;
 
-        int unit = glr.GetSamplerUnit(shaderHandle, temp);
+        int unit = rhi.GetSamplerUnit(shaderHandle, temp);
         if (unit < 0) {
             //BE_WARNLOG(L"Shader::SetTextureArray: invalid texture name '%hs' in shader '%hs'\n", temp, this->hashName.c_str());
             return;
         }
 
-        glr.SetTexture(unit, textures[i]->textureHandle);
+        rhi.SetTexture(unit, textures[i]->textureHandle);
     }
 }
 

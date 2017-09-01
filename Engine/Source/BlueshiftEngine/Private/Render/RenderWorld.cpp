@@ -28,6 +28,8 @@ RenderWorld::RenderWorld() {
 
     textMesh.SetCoordFrame(GuiMesh::CoordFrame3D);
 
+    skyboxMaterial = materialManager.defaultSkyboxMaterial;
+
     debugLineColor.Set(0, 0, 0, 0);
     debugFillColor.Set(0, 0, 0, 0);
 }
@@ -37,8 +39,9 @@ RenderWorld::~RenderWorld() {
 }
 
 void RenderWorld::ClearScene() {
-    dynamicDbvt.Purge();
-    staticDbvt.Purge();
+    entityDbvt.Purge();
+    lightDbvt.Purge();
+    staticMeshDbvt.Purge();
 
     for (int i = 0; i < sceneEntities.Count(); i++) {
         SAFE_DELETE(sceneEntities[i]);
@@ -91,7 +94,7 @@ void RenderWorld::UpdateEntity(int entityHandle, const SceneEntity::Parms *parms
         sceneEntity->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         sceneEntity->proxy->sceneEntity = sceneEntity;
         sceneEntity->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
-        sceneEntity->proxy->id = dynamicDbvt.CreateProxy(sceneEntity->proxy->aabb, MeterToUnit(0.5f), sceneEntity->proxy);
+        sceneEntity->proxy->id = entityDbvt.CreateProxy(sceneEntity->proxy->aabb, MeterToUnit(0.5f), sceneEntity->proxy);
 
         // If this entity is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
         if (parms->mesh && !parms->joints) {
@@ -106,7 +109,7 @@ void RenderWorld::UpdateEntity(int entityHandle, const SceneEntity::Parms *parms
                 meshSurfProxy->mesh = parms->mesh;
                 meshSurfProxy->meshSurfIndex = surfaceIndex;
                 meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                meshSurfProxy->id = staticDbvt.CreateProxy(sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneEntity->meshSurfProxies[surfaceIndex]);
+                meshSurfProxy->id = staticMeshDbvt.CreateProxy(sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneEntity->meshSurfProxies[surfaceIndex]);
             }
         }
     } else {
@@ -120,7 +123,7 @@ void RenderWorld::UpdateEntity(int entityHandle, const SceneEntity::Parms *parms
         if (proxyMoved || !meshMatch) {
             if (proxyMoved) {
                 sceneEntity->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
-                dynamicDbvt.MoveProxy(sceneEntity->proxy->id, sceneEntity->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneEntity->parms.origin);
+                entityDbvt.MoveProxy(sceneEntity->proxy->id, sceneEntity->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneEntity->parms.origin);
             }
 
             // If this entity is a static mesh
@@ -135,19 +138,19 @@ void RenderWorld::UpdateEntity(int entityHandle, const SceneEntity::Parms *parms
                     for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
                         const MeshSurf *meshSurf = parms->mesh->GetSurface(surfaceIndex);
 
-                        staticDbvt.DestroyProxy(sceneEntity->meshSurfProxies[surfaceIndex].id);
+                        staticMeshDbvt.DestroyProxy(sceneEntity->meshSurfProxies[surfaceIndex].id);
 
                         DbvtProxy *meshSurfProxy = &sceneEntity->meshSurfProxies[surfaceIndex];
                         meshSurfProxy->sceneEntity = sceneEntity;
                         meshSurfProxy->mesh = parms->mesh;
                         meshSurfProxy->meshSurfIndex = surfaceIndex;
                         meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                        meshSurfProxy->id = staticDbvt.CreateProxy(sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneEntity->meshSurfProxies[surfaceIndex]);
+                        meshSurfProxy->id = staticMeshDbvt.CreateProxy(sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneEntity->meshSurfProxies[surfaceIndex]);
                     }
                 } else {
                     for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
                         sceneEntity->meshSurfProxies[surfaceIndex].aabb.SetFromTransformedAABB(parms->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                        staticDbvt.MoveProxy(sceneEntity->meshSurfProxies[surfaceIndex].id, sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), parms->origin - sceneEntity->parms.origin);
+                        staticMeshDbvt.MoveProxy(sceneEntity->meshSurfProxies[surfaceIndex].id, sceneEntity->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), parms->origin - sceneEntity->parms.origin);
                     }
                 }
             }
@@ -169,9 +172,9 @@ void RenderWorld::RemoveEntity(int entityHandle) {
         return;
     }
 
-    dynamicDbvt.DestroyProxy(sceneEntity->proxy->id);
+    entityDbvt.DestroyProxy(sceneEntity->proxy->id);
     for (int i = 0; i < sceneEntity->numMeshSurfProxies; i++) {
-        staticDbvt.DestroyProxy(sceneEntity->meshSurfProxies[i].id);
+        staticMeshDbvt.DestroyProxy(sceneEntity->meshSurfProxies[i].id);
     }
 
     delete sceneEntities[entityHandle];
@@ -220,7 +223,7 @@ void RenderWorld::UpdateLight(int lightHandle, const SceneLight::Parms *parms) {
         sceneLight->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         sceneLight->proxy->sceneLight = sceneLight;
         sceneLight->proxy->aabb = sceneLight->GetAABB();
-        sceneLight->proxy->id = dynamicDbvt.CreateProxy(sceneLight->proxy->aabb, MeterToUnit(0.0f), sceneLight->proxy);
+        sceneLight->proxy->id = lightDbvt.CreateProxy(sceneLight->proxy->aabb, MeterToUnit(0.0f), sceneLight->proxy);
     } else {
         bool originMatch    = (parms->origin == sceneLight->parms.origin);
         bool axisMatch      = (parms->axis == sceneLight->parms.axis);
@@ -228,7 +231,7 @@ void RenderWorld::UpdateLight(int lightHandle, const SceneLight::Parms *parms) {
 
         if (!originMatch || !axisMatch || !valueMatch) {
             sceneLight->proxy->aabb = sceneLight->proxy->sceneLight->GetAABB();
-            dynamicDbvt.MoveProxy(sceneLight->proxy->id, sceneLight->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneLight->parms.origin);
+            lightDbvt.MoveProxy(sceneLight->proxy->id, sceneLight->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneLight->parms.origin);
         }
 
         sceneLight->Update(parms);
@@ -247,18 +250,23 @@ void RenderWorld::RemoveLight(int lightHandle) {
         return;
     }
 
-    dynamicDbvt.DestroyProxy(sceneLight->proxy->id);
+    lightDbvt.DestroyProxy(sceneLight->proxy->id);
 
     delete sceneLights[lightHandle];
     sceneLights[lightHandle] = nullptr;
+}
+
+void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
+    this->skyboxMaterial = skyboxMaterial;
 }
 
 void RenderWorld::FinishMapLoading() {
 //#ifndef _DEBUG
 //    int startTime = PlatformTime::Milliseconds();
 //
-//    dynamicDbvt.RebuildBottomUp();
-//    staticDbvt.RebuildBottomUp();
+//    entityDbvt.RebuildBottomUp();
+//    staticMeshDbvt.RebuildBottomUp();
+//    lightDbvt.RebuildBottomUp();
 //
 //    int elapsedTime = PlatformTime::Milliseconds() - startTime;
 //    BE_LOG(L"%i msec to build dynamic AABB tree\n", elapsedTime);
@@ -285,7 +293,7 @@ void RenderWorld::RenderScene(const SceneView *view) {
 }
 
 void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
-    if (guiMesh.surfaces.Count() == 0) {
+    if (guiMesh.NumSurfaces() == 0) {
         return;
     }
 
@@ -322,38 +330,42 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     view_t *guiView         = (view_t *)frameData.ClearedAlloc(sizeof(*guiView));
     guiView->def            = &sceneView;
     guiView->is2D           = true;
-    guiView->maxDrawSurfs   = guiMesh.surfaces.Count();
+    guiView->maxDrawSurfs   = guiMesh.NumSurfaces();
     guiView->drawSurfs      = (DrawSurf **)frameData.Alloc(guiView->maxDrawSurfs * sizeof(DrawSurf *));
 
     // GUI view entity
     Mat4 projMatrix;
     projMatrix.SetOrtho(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0);
 
-    viewEntity_t *viewEntity = AddViewEntity(guiView, &sceneEntity);
+    viewEntity_t *viewEntity = RegisterViewEntity(guiView, &sceneEntity);
     viewEntity->modelViewMatrix.SetIdentity();
     viewEntity->modelViewMatrix.Scale(renderSystem.currentContext->GetUpscaleFactorX(), renderSystem.currentContext->GetUpscaleFactorY(), 1.0f);
     viewEntity->modelViewProjMatrix = projMatrix * viewEntity->modelViewMatrix;
+
+    guiMesh.CacheIndexes();
     
-    for (int surfaceIndex = 0; surfaceIndex < guiMesh.surfaces.Count(); surfaceIndex++) {
-        GuiMeshSurf *guiSurf = &guiMesh.surfaces[surfaceIndex];
+    for (int surfaceIndex = 0; surfaceIndex < guiMesh.NumSurfaces(); surfaceIndex++) {
+        const GuiMeshSurf *guiSurf = guiMesh.Surface(surfaceIndex);
         if (!guiSurf->numIndexes) {
             break;
         }
 
-        GuiSubMesh *guiSubMesh      = (GuiSubMesh *)frameData.ClearedAlloc(sizeof(GuiSubMesh));
-        guiSubMesh->numIndexes      = guiSurf->numIndexes;
-        guiSubMesh->numVerts        = guiSurf->numVerts;
+        SubMesh *subMesh        = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
+        subMesh->alloced        = false;
+        subMesh->type           = Mesh::DynamicMesh;
+        subMesh->numIndexes     = guiSurf->numIndexes;
+        subMesh->numVerts       = guiSurf->numVerts;
 #if 1
-        guiSubMesh->vertexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
-        *(guiSubMesh->vertexCache)  = guiSurf->vertexCache;
+        subMesh->vertexCache    = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+        *(subMesh->vertexCache) = guiSurf->vertexCache;
 
-        guiSubMesh->indexCache      = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
-        *(guiSubMesh->indexCache)   = guiSurf->indexCache;
+        subMesh->indexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+        *(subMesh->indexCache)  = guiSurf->indexCache;
 #else
-        guiSubMesh->vertexCache     = &guiSurf->vertexCache;
-        guiSubMesh->indexCache      = &guiSurf->indexCache;
+        subMesh->vertexCache    = &guiSurf->vertexCache;
+        subMesh->indexCache     = &guiSurf->indexCache;
 #endif
-        AddDrawSurf(guiView, viewEntity, guiSurf->material, nullptr, guiSubMesh, 0);
+        AddDrawSurf(guiView, viewEntity, guiSurf->material, subMesh, 0);
     }
 
     renderSystem.CmdDrawView(guiView);
@@ -365,7 +377,7 @@ void RenderWorld::ClearDebugPrimitives(int time) {
 
 void RenderWorld::DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth, bool depthTest, int lifeTime) {
     if (lineWidth > 0 && debugLineColor[3] > 0) {
-        Vec3 *v = RB_ReserveDebugPrimsVerts(Renderer::LinesPrim, 2, debugLineColor, lineWidth, false, depthTest, lifeTime);
+        Vec3 *v = RB_ReserveDebugPrimsVerts(RHI::LinesPrim, 2, debugLineColor, lineWidth, false, depthTest, lifeTime);
         if (v) {
             v[0] = start;
             v[1] = end;
@@ -375,7 +387,7 @@ void RenderWorld::DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth,
 
 void RenderWorld::DebugTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
     if (debugFillColor[3] > 0) {
-        Vec3 *v = RB_ReserveDebugPrimsVerts(Renderer::TrianglesPrim, 3, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *v = RB_ReserveDebugPrimsVerts(RHI::TrianglesPrim, 3, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (v) {
             v[0] = a;
             v[1] = b;
@@ -401,7 +413,7 @@ void RenderWorld::DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &u
     v[3] = origin + sr + su;
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fv = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, 4, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fv = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, 4, debugFillColor, 0, twoSided, depthTest, lifeTime);
         fv[0] = v[0];
         fv[1] = v[1];
         fv[2] = v[2];
@@ -425,7 +437,7 @@ void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float r
     up *= radius;
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = origin;
 
         for (int i = 0; i <= numSteps; i++) {
@@ -462,7 +474,7 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
     Vec3 ry = radius * up;
 
     if (drawSector && debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = origin;
 
         for (int i = 0; i <= numSteps; i++) {
@@ -499,7 +511,7 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
     Vec3 ry = up * radius2;
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = origin;
 
         for (int i = 0; i <= numSteps; i++) {
@@ -528,7 +540,7 @@ void RenderWorld::DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float ra
     Vec3 *lastArray = (Vec3 *)_alloca16(num * sizeof(Vec3));
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, (num + 1) * 2 * (num / 4), debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (num + 1) * 2 * (num / 4), debugFillColor, 0, twoSided, depthTest, lifeTime);
 
         lastArray[0] = origin + axis[2] * radius;
         for (int n = 1; n < num; n++) {
@@ -597,7 +609,7 @@ void RenderWorld::DebugSphere(const Vec3 &origin, const Mat3 &axis, float radius
     Vec3 *lastArray = (Vec3 *)_alloca16(num * sizeof(Vec3));
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, (num + 1) * 2 * (num / 2), debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (num + 1) * 2 * (num / 2), debugFillColor, 0, twoSided, depthTest, lifeTime);
 
         lastArray[0] = origin + axis[2] * radius;
         for (int n = 1; n < num; n++) {
@@ -674,7 +686,7 @@ void RenderWorld::DebugAABB(const AABB &aabb, float lineWidth, bool twoSided, bo
     }*/
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = v[7];
         *fvptr++ = v[4];
         *fvptr++ = v[6];
@@ -709,7 +721,7 @@ void RenderWorld::DebugOBB(const OBB &obb, float lineWidth, bool depthTest, bool
     obb.ToPoints(v);
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = v[7];
         *fvptr++ = v[4];
         *fvptr++ = v[6];
@@ -744,7 +756,7 @@ void RenderWorld::DebugFrustum(const Frustum &frustum, const bool showFromOrigin
     frustum.ToPoints(v);
 
     if (debugFillColor[3] > 0) {
-        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, 24, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 24, debugFillColor, 0, twoSided, depthTest, lifeTime);
         *fvptr++ = v[7];
         *fvptr++ = v[4];
         *fvptr++ = v[6];
@@ -795,7 +807,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
 
     if (radius1 == 0.0f) {
         if (debugFillColor[3] > 0) {
-            fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+            fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
             *fvptr++ = apex;
 
             for (int i = 0; i <= 360; i += 15) {
@@ -804,7 +816,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
             }
 
             if (drawCap) {
-                fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
+                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
                 *fvptr++ = origin;
 
                 for (int i = 0; i <= 360; i += 15) {
@@ -829,7 +841,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
         Vec3 lastp1 = apex + radius1 * axis[0];
 
         if (debugFillColor[3] > 0) {
-            fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleStripPrim, (360 / 15) * 2 + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+            fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (360 / 15) * 2 + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
             *fvptr++ = lastp1;
             *fvptr++ = lastp2;
 
@@ -840,7 +852,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
             }
 
             if (drawCap) {
-                fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
+                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
                 *fvptr++ = apex;
 
                 for (int i = 0; i <= 360; i += 15) {
@@ -848,8 +860,8 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                     *fvptr++ = apex + d * radius1;
                 }
 
-                fvptr = RB_ReserveDebugPrimsVerts(Renderer::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
-                *fvptr++ = origin;			
+                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
+                *fvptr++ = origin;
 
                 for (int i = 0; i <= 360; i += 15) {
                     d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];

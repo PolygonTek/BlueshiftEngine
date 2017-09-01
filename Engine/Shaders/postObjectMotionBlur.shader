@@ -9,7 +9,7 @@ shader "postObjectMotionBlur" {
 		out vec4 o_fragColor : FRAG_COLOR;
 
 		#define NUM_SAMPLES 5
-		uniform sampler2D diffuseMap;
+		uniform sampler2D albedoMap;
 		//uniform sampler2D depthMap;
 		uniform sampler2D velocityMap;
 		uniform float motionBlurScale;
@@ -26,7 +26,7 @@ shader "postObjectMotionBlur" {
 		);
 
 		void main() {
-			vec4 origColor = tex2D(diffuseMap, v2f_texCoord.st);
+			vec4 origColor = tex2D(albedoMap, v2f_texCoord.st);
 			//float origDepth = tex2D(depthMap, v2f_texCoord.st).x;
 
 			float numSamples = float(NUM_SAMPLES);
@@ -50,7 +50,7 @@ shader "postObjectMotionBlur" {
 				pixelVelocity.xy /= len;
 				pixelVelocity.xy *= min(len, motionBlurMax);
 
-				accumColor.xyz = tex2D(diffuseMap, v2f_texCoord.st).xyz;
+				accumColor.xyz = tex2D(albedoMap, v2f_texCoord.st).xyz;
 				s = 1.0;
 
 				for (float i = 1.0; i <= numSamples; i += 1.0) {
@@ -62,7 +62,7 @@ shader "postObjectMotionBlur" {
 //						if (currDepth < (currVelocity.z * 0.5 + 0.5))
 //							continue;
 
-					vec4 currColor = tex2D(diffuseMap, lookup);
+					vec4 currColor = tex2D(albedoMap, lookup);
 
 					accumColor.xyz += currColor.xyz;
 

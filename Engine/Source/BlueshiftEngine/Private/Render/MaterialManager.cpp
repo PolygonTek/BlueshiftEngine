@@ -25,6 +25,7 @@ Material *          MaterialManager::whiteMaterial;
 Material *          MaterialManager::blendMaterial;
 Material *          MaterialManager::whiteLightMaterial;
 Material *          MaterialManager::zeroClampLightMaterial;
+Material *          MaterialManager::defaultSkyboxMaterial;
 
 MaterialManager     materialManager;
 
@@ -33,26 +34,72 @@ void MaterialManager::Init() {
     cmdSystem.AddCommand(L"reloadMaterial", Cmd_ReloadMaterial);
 
     materialHashMap.Init(1024, 65536, 1024);
-    
+
+    // Create default lit surface material
     defaultMaterial = AllocMaterial("_defaultMaterial");
-    defaultMaterial->Create(va("{ pass { map \"%s\"\n } }", GuidMapper::defaultTextureGuid.ToString()));
+    defaultMaterial->Create(va(
+        "pass {\n"
+        "   shader \"%s\" {\n"
+        "       _ALBEDO_SOURCE \"1\"\n"
+        "       albedoMap \"%s\"\n"
+        "   }\n"
+        "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
     defaultMaterial->permanence = true;
 
+    // Create white lit surface material
     whiteMaterial = AllocMaterial("_whiteMaterial");
-    whiteMaterial->Create(va("{ pass { map \"%s\"\n useOwnerColor\n } }", GuidMapper::whiteTextureGuid.ToString()));
-    whiteMaterial->permanence = true;    
+    whiteMaterial->Create(va(
+        "pass {\n"
+        "   useOwnerColor\n"
+        "   shader \"%s\" {\n"
+        "       _ALBEDO_SOURCE \"1\"\n"
+        "       albedoMap \"%s\"\n"
+        "   }\n"
+        "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
+    whiteMaterial->permanence = true;
 
+    // Create blend unlit surface material
     blendMaterial = AllocMaterial("_blendMaterial");
-    blendMaterial->Create(va("{ pass { map \"%s\"\nblendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA } }", GuidMapper::whiteTextureGuid.ToString()));
+    blendMaterial->Create(va(
+        "pass {\n"
+        "   renderingMode alphaBlend\n"
+        "   blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
+        "   shader \"%s\" {\n"
+        "       albedoMap \"%s\"\n"
+        "   }\n"
+        "}", GuidMapper::simpleShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
     blendMaterial->permanence = true;
 
+    // Create white light material
     whiteLightMaterial = AllocMaterial("_whiteLightMaterial");
-    whiteLightMaterial->Create(va("{ lightSort light pass { map \"%s\"\n useOwnerColor\n } }", GuidMapper::whiteTextureGuid.ToString()));
+    whiteLightMaterial->Create(va(
+        "light\n"
+        "pass {\n"
+        "   useOwnerColor\n"
+        "   map \"%s\"\n"
+        "}", GuidMapper::whiteTextureGuid.ToString()));
     whiteLightMaterial->permanence = true;
 
+    // Create zero clamped white light material
     zeroClampLightMaterial = AllocMaterial("_zeroClampLightMaterial");
-    zeroClampLightMaterial->Create(va("{ lightSort light pass { map \"%s\"\n useOwnerColor\n } }", GuidMapper::zeroClampTextureGuid.ToString()));
+    zeroClampLightMaterial->Create(va(
+        "light\n"
+        "pass {\n"
+        "   useOwnerColor\n"
+        "   map \"%s\"\n"
+        "}", GuidMapper::zeroClampTextureGuid.ToString()));
     zeroClampLightMaterial->permanence = true;
+
+    // Create default skybox material
+    defaultSkyboxMaterial = AllocMaterial("_defaultSkyboxMaterial");
+    defaultSkyboxMaterial->Create(va(
+        "pass {\n"
+        "   cull twoSided\n"
+        "   shader \"%s\" {\n"
+        "       skyCubeMap \"%s\"\n"
+        "   }\n"
+        "}", GuidMapper::skyboxCubemapShaderGuid.ToString(), GuidMapper::defaultCubeTextureGuid.ToString()));
+    defaultSkyboxMaterial->permanence = true;
 }
 
 void MaterialManager::Shutdown() {
@@ -169,13 +216,13 @@ static const char *HintName(Material::TextureHint hint) {
     return "NoHint";
 }
 
-Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::TextureHint hint) {
+Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Material::TextureHint hint) {
     if (!texture) {
         return defaultMaterial;
     }
 
     Str materialName = texture->GetHashName();
-    materialName += HintName(hint);
+    materialName += Str("_") + HintName(hint);
 
     Material *material = FindMaterial(materialName.c_str());
     if (material) {
@@ -186,44 +233,38 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
     char buffer[1024];
     switch (hint) {
     case Material::SpriteHint:
-        Str::snPrintf(buffer, sizeof(buffer), 
-            "{\n"
-            "   noShadow\n"
-            "   pass {\n" 
-            "       mapPath \"%hs\"\n"
-            "       blendFunc blend\n" 
-            "   }\n"
-            "}", texture->GetHashName()); 
+        Str::snPrintf(buffer, sizeof(buffer),
+            "noShadow\n"
+            "pass {\n"
+            "   renderingMode alphaBlend\n"
+            "   blendFunc blend\n"
+            "   mapPath \"%hs\"\n"
+            "}\n", texture->GetHashName());
         break;
     case Material::LightHint:
         Str::snPrintf(buffer, sizeof(buffer),
-            "{\n"
-            "   lightSort light\n"
-            "   pass {\n" 
-            "       mapPath \"%hs\"\n"
-            "       useOwnerColor\n" 
-            "   }\n" 
-            "}", texture->GetHashName());
+            "light\n"
+            "pass {\n"
+            "   mapPath \"%hs\"\n"
+            "   useOwnerColor\n"
+            "}\n", texture->GetHashName());
         break;
     case Material::OverlayHint:
         Str::snPrintf(buffer, sizeof(buffer),
-            "{\n" 
-            "   overlay\n" 
+            "noShadow\n"
+            "pass {\n"
             "   cull twoSided\n"
-            "   pass {\n" 
-            "       vertexColor\n"
-            "       mapPath \"%hs\"\n"
-            "       blendFunc blend\n" 
-            "   }\n"
-            "}", texture->GetHashName());
+            "   renderingMode alphaBlend\n"
+            "   blendFunc blend\n"
+            "   vertexColor\n"
+            "   mapPath \"%hs\"\n"
+            "}\n", texture->GetHashName());
         break;
     default:
         Str::snPrintf(buffer, sizeof(buffer),
-            "{\n" 
-            "   pass {\n"
-            "       mapPath \"%hs\"\n" 
-            "   }\n" 
-            "}", texture->GetHashName());
+            "pass {\n"
+            "   mapPath \"%hs\"\n"
+            "}\n", texture->GetHashName());
         break;
     }
 
@@ -234,6 +275,20 @@ Material *MaterialManager::GetTextureMaterial(const Texture *texture, Material::
     }
 
     return material;
+}
+
+void MaterialManager::RenameMaterial(Material *material, const Str &newName) {
+    const auto *entry = materialHashMap.Get(material->hashName);
+    if (entry) {
+        materialHashMap.Remove(material->hashName);
+
+        material->hashName = newName;
+        material->name = newName;
+        material->name.StripPath();
+        material->name.StripFileExtension();
+
+        materialHashMap.Set(newName, material);
+    }
 }
 
 void MaterialManager::ReleaseMaterial(Material *material, bool immediateDestroy) {

@@ -202,7 +202,6 @@ char *PropertySpec::ToString() const {
         type == PropertySpec::FloatType || 
         type == PropertySpec::Vec2Type || 
         type == PropertySpec::Vec3Type || 
-        type == PropertySpec::Vec3Type || 
         type == PropertySpec::Vec4Type) {
 
         if (flags & PropertySpec::Ranged) {
@@ -274,7 +273,6 @@ bool PropertySpec::ParseSpec(Lexer &lexer) {
     } else if (type == PropertySpec::IntType || 
         type == PropertySpec::FloatType || 
         type == PropertySpec::Vec2Type || 
-        type == PropertySpec::Vec3Type || 
         type == PropertySpec::Vec3Type || 
         type == PropertySpec::Vec4Type) {
         Str token;

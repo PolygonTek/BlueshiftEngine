@@ -33,7 +33,7 @@ public:
     enum { Size = 3 };
 
     /// The default constructor does not initialize any members of this class.
-    Vec3() {}
+    Vec3() = default;
     /// Constructs a Vec3 with the value (x, y, z).
     Vec3(float x, float y, float z);
     /// Constructs a Vec3 from a C array, to the value (data[0], data[1], data[2]).
@@ -79,7 +79,7 @@ public:
                         /// This function is identical to the member function AddScalar().
     Vec3                operator+(float rhs) const { return Vec3(x + rhs, y + rhs, z + rhs); }
                         /// Adds the vector v to vector (s, s, s, s).
-    friend Vec3         operator+(float lhs, const Vec3 rhs) { return Vec3(lhs + rhs.x, lhs + rhs.y, lhs + rhs.z); }
+    friend Vec3         operator+(float lhs, const Vec3 &rhs) { return Vec3(lhs + rhs.x, lhs + rhs.y, lhs + rhs.z); }
 
                         /// Subtracts a vector from this vector.
     Vec3                Sub(const Vec3 &v) const { return *this - v; }
@@ -92,7 +92,7 @@ public:
                         /// This function is identical to the member function SubScalar()
     Vec3                operator-(float rhs) const { return Vec3(x - rhs, y - rhs, z - rhs); }
                         /// Subtracts the vector v from vector (s, s, s, s).
-    friend Vec3         operator-(float lhs, const Vec3 rhs) { return Vec3(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z); }
+    friend Vec3         operator-(float lhs, const Vec3 &rhs) { return Vec3(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z); }
 
                         /// Multiplies this vector by a scalar.
     Vec3                Mul(float s) const { return *this * s; }
@@ -100,7 +100,7 @@ public:
                         /// This function is identical to the member function Mul().
     Vec3                operator*(float rhs) const { return Vec3(x * rhs, y * rhs, z * rhs); }
                         /// Multiplies vector v by a scalar.
-    friend Vec3         operator*(float lhs, const Vec3 rhs) { return Vec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
+    friend Vec3         operator*(float lhs, const Vec3 &rhs) { return Vec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
                         /// Multiplies this vector by a vector, element-wise.
     Vec3                MulComp(const Vec3 &v) const { return *this * v; }
                         /// Multiplies this vector by a vector, element-wise.
@@ -118,7 +118,7 @@ public:
                         /// Divides this vector by a vector, element-wise.
     Vec3                operator/(const Vec3 &rhs) const { return Vec3(x / rhs.x, y / rhs.y, z / rhs.z); }
                         /// Divides vector (s, s, s, s) by a vector v, element-wise.
-    friend Vec3         operator/(float lhs, const Vec3 rhs) { return Vec3(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
+    friend Vec3         operator/(float lhs, const Vec3 &rhs) { return Vec3(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
     
                         /// Adds a vector to this vector, in-place.
     Vec3 &              AddSelf(const Vec3 &v) { *this += v; return *this; }
@@ -230,7 +230,7 @@ public:
 
                         /// Refracts this vector about a plane with the given normal.
     Vec3                Refract(const Vec3 &normal, float eta) const;
-                        /// Refracts this vector about a plane with the given normal, in-place
+                        /// Refracts this vector about a plane with the given normal, in-place.
     Vec3 &              RefractSelf(const Vec3 &normal, float eta);
 
                         /// Returns this vector slided about a plane with the given normal.
@@ -241,27 +241,46 @@ public:
                         /// Sets from spherical linear interpolation between the vector v1 and the vector v2.
     void                SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t);
 
-                        /// Compute yaw angle in degree looking from the viewpoint of 2D view in x-y plane
+                        /// Sets this vector on the unit sphere has uniform distribution with the given random variables u1, u2 [0, 1].
+    static Vec3         FromUniformSampleSphere(float u1, float u2);
+
+                        /// Sets this vector on the unit hemisphere has uniform distribution with the given random variables u1, u2 [0, 1].
+    static Vec3         FromUniformSampleHemisphere(float u1, float u2);
+
+                        /// Sets this vector on the unit hemisphere has cosine weighted distribution with the given random variables u1, u2 [0, 1].
+    static Vec3         FromCosineSampleHemisphere(float u1, float u2);
+
+                        /// Sets this vector on the unit hemisphere has powered cosine weighted distribution with the given random variables u1, u2 [0, 1].
+    static Vec3         FromPowerCosineSampleHemisphere(float u1, float u2, float power);
+
+                        /// Compute yaw angle in degree looking from the viewpoint of 2D view in x-y plane.
     float               ComputeYaw() const;
-                        /// Compute pitch angle in degree looking from the viewpoint of 2D view in x-y plane
+                        /// Compute pitch angle in degree looking from the viewpoint of 2D view in x-y plane.
     float               ComputePitch() const;
 
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "x y z" with the given precision
+                        /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
         
                         /// Casts this Vec3 to a Vec2.
     const Vec2 &        ToVec2() const;
     Vec2 &              ToVec2();
 
-    /// Casts this Vec3 to a Color3.
+                        /// Casts this Vec3 to a Color3.
     const Color3 &      ToColor3() const;
     Color3 &            ToColor3();
 
     Mat3                ToMat3() const;
 
     Angles              ToAngles() const;
+
+                        /// Converts to the spherical coordinates.
+                        /// @return Length of this vector
+    float               ToSpherical(float &theta, float &phi) const;
+
+                        /// Sets from the spherical coordinates.
+    void                SetFromSpherical(float radius, float theta, float phi);
 
     void                NormalVectors(Vec3 &left, Vec3 &down) const;
 
@@ -271,10 +290,10 @@ public:
                         /// @param up[out] Receives vector up.
     void                OrthogonalBasis(Vec3 &left, Vec3 &up) const;
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
 
-                        /// Compute 3D barycentric coordinates from the point based on 3 simplex vector
+                        /// Compute 3D barycentric coordinates from the point based on 3 simplex vector.
     static const Vec3   Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, const Vec2 &s3, const Vec2 &p);
 
     static float        ComputeBitangentSign(const Vec3 &n, const Vec3 &t0, const Vec3 &t1);
@@ -567,6 +586,25 @@ BE_INLINE Color3 &Vec3::ToColor3() {
 
 BE_INLINE const char *Vec3::ToString(int precision) const {
     return Str::FloatArrayToString((const float *)(*this), Size, precision);
+}
+
+BE_INLINE void Vec3::SetFromSpherical(float radius, float theta, float phi) {
+    float sinTheta, cosTheta;
+    float sinPhi, cosPhi;
+
+    Math::SinCos(theta, sinTheta, cosTheta);
+    Math::SinCos(phi, sinPhi, cosPhi);
+
+    x = radius * sinTheta * cosPhi;
+    y = radius * sinTheta * sinPhi;
+    z = radius * cosTheta;
+}
+
+BE_INLINE float Vec3::ToSpherical(float &theta, float &phi) const {
+    float radius = Math::Sqrt(x * x + y * y + z * z);
+    theta = Math::ACos(z / radius);
+    phi = Math::ATan(y, x);
+    return radius;
 }
     
 BE_INLINE void Vec3::NormalVectors(Vec3 &left, Vec3 &down) const {

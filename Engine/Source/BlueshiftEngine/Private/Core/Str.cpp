@@ -63,17 +63,17 @@ void Str::FreeData() {
     }
 }
 
-void Str::operator=(const char *text) {
+Str &Str::operator=(const char *text) {
     if (!text) {
         // safe behaviour if nullptr
         EnsureAlloced(1, false);
         data[0] = '\0';
         len = 0;
-        return;
+        return *this;
     }
 
     if (text == data) {
-        return; // copying same thing
+        return *this; // copying same thing
     }
 
     // check if we're aliasing
@@ -91,13 +91,15 @@ void Str::operator=(const char *text) {
 
         len -= diff;
 
-        return;
+        return *this;
     }
 
     int l = (int)strlen(text);
     EnsureAlloced(l + 1, false);
     strcpy(data, text);
     len = l;
+
+    return *this;
 }
 
 const char *Str::Mid(int start, int len, Str &result) const {

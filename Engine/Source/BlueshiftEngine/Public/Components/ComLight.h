@@ -48,11 +48,11 @@ public:
 protected:
     void                    UpdateVisuals();
 
-    SceneLight::Type       GetLightType() const;
+    SceneLight::Type        GetLightType() const;
     void                    SetLightType(SceneLight::Type type);
 
-    bool                    IsMainLight() const;
-    void                    SetMainLight(bool isMainLight);
+    bool                    IsPrimaryLight() const;
+    void                    SetPrimaryLight(bool isPrimaryLight);
 
     bool                    IsTurnOn() const;
     void                    SetTurnOn(bool turnOn);
@@ -99,7 +99,6 @@ protected:
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    LayerChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
-    void                    PhysicsUpdated(const PhysRigidBody *body);
 
     SceneLight::Parms       sceneLight;
     int                     sceneLightHandle;

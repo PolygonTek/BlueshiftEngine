@@ -229,6 +229,8 @@ public:
     Sound *                 FindSound(const char *name) const;
     Sound *                 GetSound(const char *name);
 
+    void                    RenameSound(Sound *sound, const Str &newName);
+
     void                    ReleaseSound(Sound *sound, bool immediateDestroy = false);
     void                    DestroySound(Sound *sound);
     void                    DestroyAllSounds();
@@ -239,6 +241,8 @@ public:
 
                             /// Precaches static sound buffer
     void                    PrecacheSound(const char *filename);
+
+    void                    StopAllSounds();
 
     Sound *                 defaultSound;
 
