@@ -26,6 +26,8 @@ BE_NAMESPACE_BEGIN
 
 class ReflectionProbe {
 public:
+    Texture *       diffuseCubeMap;
+    Texture *       specularCubeMap;
 };
 
 BE_NAMESPACE_END
