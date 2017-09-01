@@ -295,6 +295,8 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     //Max(1, (int)header->u32NumSurfaces);
     this->numSlices = Max(1, (int)header->u32NumFaces);
 
+    this->flags |= header->u32NumFaces == 6 ? CubeMapFlag : 0;
+    
     size_t dataSize = fileSize - (ptr - data);
     
     this->pic = (byte *)Mem_Alloc16(dataSize);
