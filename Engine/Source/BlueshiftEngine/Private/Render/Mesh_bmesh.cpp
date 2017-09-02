@@ -55,13 +55,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 
     // --- surfaces ---
     for (int surfaceIndex = 0; surfaceIndex < bMeshHeader->numSurfs; surfaceIndex++) {
-#ifdef __ANDROID__
-		BMeshSurf temp;
-		memcpy(&temp, ptr, sizeof(BMeshSurf));
-		const BMeshSurf *bMeshSurf = &temp;
-#else
         const BMeshSurf *bMeshSurf = (const BMeshSurf *)ptr;
-#endif
         ptr += sizeof(BMeshSurf);
 
         MeshSurf *meshSurf = AllocSurface(bMeshSurf->numVerts, bMeshSurf->numIndexes);
@@ -75,15 +69,14 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
         for (int i = 0; i < bMeshSurf->numVerts; i++) {
             VertexGenericLit *v = &subMesh->verts[i];
             
-            BMeshVert copy;
-            memcpy(&copy, ptr, sizeof(BMeshVert)); // for alignment BUS Error
+            const BMeshVert *bMeshVert = (const BMeshVert *)ptr;
 
-            v->SetPosition(copy.position);
-            v->SetTexCoord(copy.texCoord);
-            v->SetNormal(copy.normal);
-            v->SetTangent(copy.tangent);
-            v->SetBiTangent(copy.bitangent);
-            v->SetColor(*reinterpret_cast<const uint32_t *>(copy.color));
+            v->SetPosition(bMeshVert->position);
+            v->SetTexCoord(bMeshVert->texCoord);
+            v->SetNormal(bMeshVert->normal);
+            v->SetTangent(bMeshVert->tangent);
+            v->SetBiTangent(bMeshVert->bitangent);
+            v->SetColor(bMeshVert->color);
 
             ptr += sizeof(BMeshVert);
         }
@@ -215,18 +208,15 @@ void Mesh::WriteBinaryMesh(const char *filename) {
         // --- vertexes ---
         for (int i = 0; i < subMesh->numVerts; i++) {
             const VertexGenericLit *v = &subMesh->verts[i];
-            const Vec3 position     = v->GetPosition();
-            const Vec2 texCoord     = v->GetTexCoord();
-            const Vec3 normal       = v->GetNormal();
-            const Vec3 tangent      = v->GetTangent();
-            const Vec3 biTangent    = v->GetBiTangent();
-            
-            fp->Write(&position, sizeof(Vec3));
-            fp->Write(&texCoord, sizeof(Vec2));
-            fp->Write(&normal, sizeof(Vec3));
-            fp->Write(&tangent, sizeof(Vec3));
-            fp->Write(&biTangent, sizeof(Vec3));
-            fp->WriteUInt32(subMesh->verts[i].GetColor());
+
+            BMeshVert bMeshVert;
+            bMeshVert.position = v->GetPosition();
+            bMeshVert.texCoord = v->GetTexCoord();
+            bMeshVert.normal = v->GetNormal();
+            bMeshVert.tangent = v->GetTangent();
+            bMeshVert.bitangent = v->GetBiTangent();
+            bMeshVert.color = subMesh->verts[i].GetColor();
+            fp->Write(&bMeshVert, sizeof(bMeshVert));
         }
 
         // --- vertex weights ---
