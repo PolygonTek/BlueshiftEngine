@@ -55,7 +55,13 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 
     // --- surfaces ---
     for (int surfaceIndex = 0; surfaceIndex < bMeshHeader->numSurfs; surfaceIndex++) {
+#ifdef __ANDROID__
+		BMeshSurf temp;
+		memcpy(&temp, ptr, sizeof(BMeshSurf));
+		const BMeshSurf *bMeshSurf = &temp;
+#else
         const BMeshSurf *bMeshSurf = (const BMeshSurf *)ptr;
+#endif
         ptr += sizeof(BMeshSurf);
 
         MeshSurf *meshSurf = AllocSurface(bMeshSurf->numVerts, bMeshSurf->numIndexes);

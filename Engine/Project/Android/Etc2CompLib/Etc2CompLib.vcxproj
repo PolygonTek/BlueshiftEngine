@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="NsightTegraProject">
+    <NsightTegraProjectRevisionNumber>11</NsightTegraProjectRevisionNumber>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Tegra-Android">
+      <Configuration>Debug</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Tegra-Android">
+      <Configuration>Release</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Shipping|Tegra-Android">
+      <Configuration>Shipping</Configuration>
+      <Platform>Tegra-Android</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{48384108-3B89-4CB3-A6AB-1410F9C4F461}</ProjectGuid>
+    <RootNamespace>Etc2CompLib</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-15</AndroidTargetAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-15</AndroidTargetAPI>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <AndroidTargetAPI>android-15</AndroidTargetAPI>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\etc2comp\EtcLib\.\Etc;..\..\..\Source\Dependencies\etc2comp\EtcLib\.\EtcCodec;..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\etc2comp\EtcLib\.\Etc;..\..\..\Source\Dependencies\etc2comp\EtcLib\.\EtcCodec;..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Shipping|Tegra-Android'">
+    <ClCompile>
+      <CppLanguageStandard>gnu++11</CppLanguageStandard>
+      <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\etc2comp\EtcLib\.\Etc;..\..\..\Source\Dependencies\etc2comp\EtcLib\.\EtcCodec;..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\Etc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcColor.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcColorFloatRGBA.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcConfig.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcFilter.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcImage.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcMath.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4EncodingBits.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_ETC1.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_R11.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RG11.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGB8.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGB8A1.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGBA8.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcDifferentialTrys.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcErrorMetric.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcIndividualTrys.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcSortedBlockList.h" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\Etc.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcFilter.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcImage.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcMath.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_ETC1.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_R11.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RG11.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGB8.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGB8A1.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGBA8.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcDifferentialTrys.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcIndividualTrys.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcSortedBlockList.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
