@@ -153,6 +153,10 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
                 ptr += sizeof(uint16_t);
             }
         }
+
+        // guarantee 8 bytes aligned read
+        int offset = (intptr_t)ptr;
+        ptr += AlignUp(offset, 8) - offset;
     }
 
     fileSystem.FreeFile(data);
@@ -215,7 +219,7 @@ void Mesh::WriteBinaryMesh(const char *filename) {
             bMeshVert.normal = v->GetNormal();
             bMeshVert.tangent = v->GetTangent();
             bMeshVert.bitangent = v->GetBiTangent();
-            bMeshVert.color = subMesh->verts[i].GetColor();
+            bMeshVert.color = v->GetColor();
             fp->Write(&bMeshVert, sizeof(bMeshVert));
         }
 
@@ -273,6 +277,12 @@ void Mesh::WriteBinaryMesh(const char *filename) {
                 fp->WriteUInt32(subMesh->indexes[i]);
             }
         }
+
+        // guarantee 8 bytes aligned write
+        byte dummy[8] = { 0, };
+        int offset = fp->Tell();
+        int dummyBytes = AlignUp(offset, 8) - offset;
+        fp->Write(dummy, dummyBytes);
     }
 
     fileSystem.CloseFile(fp);
