@@ -10,7 +10,7 @@ shader "sunShaftsDisplay" {
 
 		uniform sampler2D screenMap;
 		uniform sampler2D sunShaftsMap;
-		uniform vec4 sunColor;
+		uniform LOWP vec4 sunColor;
 
 		void main() {
 			vec4 screen = tex2D(screenMap, v2f_texCoord.st);

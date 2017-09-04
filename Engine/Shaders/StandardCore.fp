@@ -32,11 +32,11 @@ $include "fragment_common.glsl"
 #define _EMISSION_SOURCE 0
 #endif
 
-in vec4 v2f_color;
-in vec2 v2f_tex;
+in LOWP vec4 v2f_color;
+in MEDIUMP vec2 v2f_tex;
 
 #if _NORMAL_SOURCE == 0
-    in vec3 v2f_normal;
+    in LOWP vec3 v2f_normal;
 #endif
 
 #ifdef DIRECT_LIGHTING
@@ -59,40 +59,37 @@ out vec4 o_fragColor : FRAG_COLOR;
 
 // Material parameters
 uniform sampler2D albedoMap;
-uniform vec3 albedoColor;
-uniform float albedoAlpha;
-uniform float perforatedAlpha;
+uniform LOWP vec3 albedoColor;
+uniform LOWP float albedoAlpha;
+uniform LOWP float perforatedAlpha;
 
-uniform float wrappedDiffuse;
+uniform LOWP float wrappedDiffuse;
 
 uniform sampler2D normalMap;
 uniform sampler2D detailNormalMap;
-uniform float detailRepeat;
+uniform MEDIUMP float detailRepeat;
 
 uniform sampler2D specularMap;
-uniform vec4 specularColor;
+uniform LOWP vec4 specularColor;
 
 uniform sampler2D glossMap;
-uniform float glossScale;
+uniform LOWP float glossScale;
 
 uniform sampler2D metallicMap;
-uniform float metallicScale;
+uniform LOWP float metallicScale;
 
 uniform sampler2D roughnessMap;
-uniform float roughnessScale;
+uniform LOWP float roughnessScale;
 
 uniform sampler2D heightMap;
-uniform float heightScale;
+uniform LOWP float heightScale;
 
 uniform sampler2D occlusionMap;
-uniform float occlusionStrength;
+uniform LOWP float occlusionStrength;
 
 uniform sampler2D emissionMap;
-uniform vec3 emissionColor;
-uniform float emissionScale;
-
-uniform float rimLightExponent;
-uniform float rimLightShadowDensity;// = 0.5;
+uniform LOWP vec3 emissionColor;
+uniform MEDIUMP float emissionScale;
 
 uniform sampler2D subSurfaceColorMap;
 uniform float subSurfaceRollOff;
@@ -100,12 +97,12 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 
 // Light parameters
 uniform sampler2D lightProjectionMap;
-uniform vec4 lightColor;
-uniform float lightFallOffExponent;
+uniform MEDIUMP vec4 lightColor;
+uniform MEDIUMP float lightFallOffExponent;
 uniform samplerCube lightCubeMap;
 uniform bool useLightCube;
 uniform bool useShadowMap;
-uniform float ambientScale;
+uniform LOWP float ambientScale;
 
 // IBL
 uniform samplerCube envCubeMap;
@@ -123,7 +120,7 @@ uniform vec3 probeMins1;
 uniform vec3 probeMaxs1;
 
 uniform sampler2D integrationLUTMap;
-uniform float ambientLerp;
+uniform LOWP float ambientLerp;
 
 $include "StandardBRDF.glsl"
 $include "PhongBRDF.glsl"

@@ -1,18 +1,18 @@
-in vec4 v2f_color;
-in vec3 v2f_texCoord;
+in LOWP vec4 v2f_color;
+in MEDIUMP vec3 v2f_texCoord;
 
 out vec4 o_fragColor : FRAG_COLOR;
 out float o_fragDepth : FRAG_DEPTH;
 
-uniform vec4 tint;
-uniform float exposure;
+uniform LOWP vec4 tint;
+uniform MEDIUMP float exposure;
 
-uniform sampler2D skyBackMap;
-uniform sampler2D skyFrontMap;
-uniform sampler2D skyRightMap;
-uniform sampler2D skyLeftMap;
-uniform sampler2D skyTopMap;
-uniform sampler2D skyDownMap;
+uniform HIGHP sampler2D skyBackMap;
+uniform HIGHP sampler2D skyFrontMap;
+uniform HIGHP sampler2D skyRightMap;
+uniform HIGHP sampler2D skyLeftMap;
+uniform HIGHP sampler2D skyTopMap;
+uniform HIGHP sampler2D skyDownMap;
 
 void main() {
     vec3 dir = normalize(v2f_texCoord);

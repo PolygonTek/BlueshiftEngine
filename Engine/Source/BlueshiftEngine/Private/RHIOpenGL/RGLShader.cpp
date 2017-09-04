@@ -158,6 +158,8 @@ static void ParseInOut(Lexer &lexer, bool hasSemantic, InOut &inOut) {
         inOut.precision = token;
 
         lexer.ReadToken(&token); // type
+    } else {
+        inOut.precision = "";
     }
 
     inOut.type = token;
@@ -188,6 +190,8 @@ static void ParseUniform(Lexer &lexer, Uniform &uniform) {
         uniform.precision = token;
 
         lexer.ReadToken(&token); // type
+    } else {
+        uniform.precision = "";
     }
 
     uniform.type = token;

@@ -1,13 +1,13 @@
-in vec4 v2f_color;
-in vec3 v2f_texCoord;
+in LOWP vec4 v2f_color;
+in MEDIUMP vec3 v2f_texCoord;
 
 out vec4 o_fragColor : FRAG_COLOR;
 out float o_fragDepth : FRAG_DEPTH;
 
-uniform vec4 tint;
-uniform float exposure;
+uniform LOWP vec4 tint;
+uniform MEDIUMP float exposure;
 
-uniform samplerCube skyCubeMap;
+uniform HIGHP samplerCube skyCubeMap;
 
 void main() {
     vec3 color = texCUBE(skyCubeMap, v2f_texCoord).rgb;

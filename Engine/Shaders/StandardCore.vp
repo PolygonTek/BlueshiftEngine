@@ -8,11 +8,11 @@ in LOWP vec3 in_normal : NORMAL;
 $include "ShadowLibrary.vp"
 #endif
 
-out vec4 v2f_color;
-out vec2 v2f_tex;
+out LOWP vec4 v2f_color;
+out MEDIUMP vec2 v2f_tex;
 
 #if _NORMAL_SOURCE == 0
-    out vec3 v2f_normal;
+    out LOWP vec3 v2f_normal;
 #endif
 
 #ifdef DIRECT_LIGHTING
@@ -56,9 +56,9 @@ out vec2 v2f_tex;
     uniform vec4 localLightOrigin;
     uniform vec4 textureMatrixS;
     uniform vec4 textureMatrixT;
-    uniform vec4 vertexColorScale;
-    uniform vec4 vertexColorAdd;
-    uniform vec4 constantColor;
+    uniform LOWP vec4 vertexColorScale;
+    uniform LOWP vec4 vertexColorAdd;
+    uniform LOWP vec4 constantColor;
 #endif
 
 uniform mat4 modelViewProjectionMatrix;
