@@ -1,8 +1,8 @@
-in vec4 in_position : POSITION;
-in vec4 in_color : COLOR;
-in vec3 in_normal : NORMAL;
-in vec2 in_st : TEXCOORD0;
-in vec4 in_tangent : TEXCOORD1;
+in HIGHP vec4 in_position : POSITION;
+in MEDIUMP vec2 in_st : TEXCOORD0;
+in LOWP vec4 in_tangent : TEXCOORD1;
+in LOWP vec4 in_color : COLOR;
+in LOWP vec3 in_normal : NORMAL;
 
 #ifdef USE_SHADOW_MAP
 $include "ShadowLibrary.vp"
