@@ -36,7 +36,7 @@ shader "sunShaftsGen" {
 
 			vec2 sunVec = screenSunPos - texCoord;
 
-			float sunDist = clamp(sign, 0.0, 1.0) * (1.0 - clamp(dot(sunVec, sunVec) * 1.0, 0.0, 1.0));
+			float sunDist = saturate(sign) * (1.0 - saturate(dot(sunVec, sunVec) * 1.0));
 
 			sunVec *= shaftScale * sign;
 

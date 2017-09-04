@@ -386,10 +386,13 @@ void ComCamera::ProcessPointerInput(const Point &screenPoint) {
 void ComCamera::Render() {
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
 
-    viewParms.renderRect.x = ctx->GetRenderWidth() * nx;
-    viewParms.renderRect.y = ctx->GetRenderHeight() * ny;
-    viewParms.renderRect.w = ctx->GetRenderWidth() * nw;
-    viewParms.renderRect.h = ctx->GetRenderHeight() * nh;
+    float renderWidth = ctx->GetRenderWidth();
+    float renderHeight = ctx->GetRenderHeight();
+
+    viewParms.renderRect.x = renderWidth * nx;
+    viewParms.renderRect.y = renderHeight * ny;
+    viewParms.renderRect.w = renderWidth * nw;
+    viewParms.renderRect.h = renderHeight * nh;
 
     float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
 
