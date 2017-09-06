@@ -50,7 +50,9 @@
 #include <string.h>
 #include <math.h> 
 #include <time.h>
+#ifndef __ANDROID__
 #include <sys/timeb.h>
+#endif
 #include "image.h"
 
 // Typedefs
@@ -15878,7 +15880,11 @@ void compressFile(char *srcfile,char *dstfile)
 	uint8 *srcimg;
 	int width,height;
 	int extendedwidth, extendedheight;
+#ifdef __ANDROID__
+	struct timeval tvstruct;
+#else
 	struct timeb tstruct;
+#endif
 	int tstart;
 	int tstop;
 	// 0: compress from .any to .pkm with SPEED_FAST, METRIC_NONPERCEPTUAL, ETC 
@@ -15955,13 +15961,28 @@ void compressFile(char *srcfile,char *dstfile)
 			}
 			printf("Compressing...\n");
 
-			tstart=time(NULL);
+#ifdef __ANDROID__
+			tstart = time(NULL);
+			gettimeofday(&tvstruct, NULL);
+			tstart = tstart * 1000 + tvstruct.tv_usec * 1000;
+
+			compressImageFile(srcimg, alphaimg, width, height, dstfile, extendedwidth, extendedheight);
+
+			tstop = time(NULL);
+			gettimeofday(&tvstruct, NULL);
+			tstop = tstop * 1000 + tvstruct.tv_usec * 1000;
+
+#else
+			tstart = time(NULL);
 			ftime( &tstruct );
 			tstart=tstart*1000+tstruct.millitm;
-			compressImageFile(srcimg,alphaimg,width,height,dstfile,extendedwidth, extendedheight);			
+
+			compressImageFile(srcimg, alphaimg, width, height, dstfile, extendedwidth, extendedheight);
 			tstop = time(NULL);
-			ftime( &tstruct );
-			tstop = tstop*1000+tstruct.millitm;
+			
+			ftime(&tstruct);
+			tstop = tstop * 1000 + tstruct.millitm;
+#endif
 			printf( "It took %u milliseconds to compress:\n", tstop - tstart);
 			calculatePSNRfile(dstfile,srcimg,alphaimg);
 		}

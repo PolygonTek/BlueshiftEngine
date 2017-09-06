@@ -59,7 +59,7 @@ extern "C" {
 	__attribute__((weak)) void *__dso_handle;
 }
 
-static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 	static int t0 = 0;
 
 	if (t0 == 0) {
@@ -365,7 +365,7 @@ bool Engine::renderFrame(bool allocateIfNeeded)
 
 #endif // _SAMPLE
 #if _ENGINE
-	DisplayContext(BE1::Renderer::NullContext, 0);
+	DisplayContext(BE1::RHI::NullContext, 0);
 #endif
 
 

@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\Etc.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcFilter.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcImage.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcMath.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_ETC1.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_R11.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RG11.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGB8.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGB8A1.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGBA8.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcDifferentialTrys.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcIndividualTrys.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcSortedBlockList.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\Etc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcColor.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcColorFloatRGBA.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcConfig.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcFilter.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcImage.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\Etc\EtcMath.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4EncodingBits.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_ETC1.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_R11.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RG11.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGB8.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGB8A1.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcBlock4x4Encoding_RGBA8.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcDifferentialTrys.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcErrorMetric.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcIndividualTrys.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec\EtcSortedBlockList.h" />
+  </ItemGroup>
+</Project>

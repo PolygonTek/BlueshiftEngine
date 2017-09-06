@@ -158,7 +158,7 @@
       <PreprocessorDefinitions>DEBUG</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;luasocket;NvTriStrip;android;nvidia;GLESv3;EGL;OpenSLES;m;%(LibraryDependencies)</LibraryDependencies>
+      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;;android;GLESv3;EGL;OpenSLES;m;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalLibraryDirectories>../../../Library/NativeAndroid/$(Platform)/$(Configuration);%(AdditionalLibraryDirectories);$(ToolchainPrebuiltPath)\lib\gcc\$(ToolchainName)\$(ToolchainVersion)\$(PlatformShortName);$(StlLibraryPath)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -173,7 +173,7 @@
       <CppLanguageStandard>c++1y</CppLanguageStandard>
     </ClCompile>
     <Link>
-      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;luasocket;NvTriStrip;android;nvidia;GLESv3;EGL;OpenSLES;m;%(LibraryDependencies)</LibraryDependencies>
+      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;;android;GLESv3;EGL;OpenSLES;m;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalLibraryDirectories>../../../Library/NativeAndroid/$(Platform)/$(Configuration);%(AdditionalLibraryDirectories);$(ToolchainPrebuiltPath)\lib\gcc\$(ToolchainName)\$(ToolchainVersion)\$(PlatformShortName);$(StlLibraryPath)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
