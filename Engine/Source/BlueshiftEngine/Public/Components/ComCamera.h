@@ -60,7 +60,7 @@ private:
 
     void                    ProcessPointerInput(const Point &screenPoint);
 
-    void                    Render();    
+    void                    RenderScene();
 
 protected:
     void                    UpdateVisuals();

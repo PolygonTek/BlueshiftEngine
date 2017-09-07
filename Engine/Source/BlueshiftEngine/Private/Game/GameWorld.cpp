@@ -765,7 +765,7 @@ void GameWorld::RenderCamera() {
     cameraArray.Sort(compareFunc);
 
     for (int i = 0; i < cameraArray.Count(); i++) {
-        cameraArray[i]->Render();
+        cameraArray[i]->RenderScene();
     }
 }
 

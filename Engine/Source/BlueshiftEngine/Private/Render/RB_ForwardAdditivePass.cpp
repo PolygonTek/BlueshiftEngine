@@ -126,7 +126,7 @@ void RB_ForwardAdditivePass(viewLight_t *viewLights) {
 
             double visSurfDepthMin, visSurfDepthMax;
 
-            if (backEnd.view->def->GetDepthBoundsFromAABB(viewLight->litAABB, &visSurfDepthMin, &visSurfDepthMax)) {
+            if (backEnd.view->def->GetDepthBoundsFromAABB(viewLight->litSurfsAABB, &visSurfDepthMin, &visSurfDepthMax)) {
                 // FIXME:
                 visSurfDepthMin = Max(visSurfDepthMin - 0.001, 0.0);
                 visSurfDepthMax = Min(visSurfDepthMax + 0.001, 1.0);

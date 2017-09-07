@@ -115,9 +115,9 @@ void RenderWorld::FindViewLightsAndEntities(view_t *view) {
         viewLight_t *viewLight = RegisterViewLight(view, sceneLight);
         viewLight->scissorRect = screenClipRect;
         // glScissor 의 x, y 좌표는 lower left corner 이므로 y 좌표를 밑에서 증가되도록 뒤집는다.
-        viewLight->scissorRect.y = renderSystem.currentContext->GetRenderHeight() - (screenClipRect.y + screenClipRect.h);
+        viewLight->scissorRect.y = renderSystem.currentContext->GetRenderingHeight() - (screenClipRect.y + screenClipRect.h);
 
-        viewLight->litAABB.Clear();
+        viewLight->litSurfsAABB.Clear();
         viewLight->shadowCasterAABB.Clear();
 
         return true;
@@ -443,7 +443,7 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
             return true;
         }
 
-        // Skip if a entity is farther than maximum visible distance
+        // Skip if the entity is farther than maximum visible distance
         if (proxyEntity->parms.origin.DistanceSqr(view->def->parms.origin) > proxyEntity->parms.maxVisDist * proxyEntity->parms.maxVisDist) {
             return true;
         }
@@ -458,11 +458,11 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
                 drawSurfNode->next = viewLight->litSurfs;
 
                 viewLight->litSurfs = drawSurfNode;
-                viewLight->litAABB.AddAABB(proxy->aabb);
+                viewLight->litSurfsAABB.AddAABB(proxy->aabb);
             }
         }
             
-        if (material->IsShadowCaster()) {
+        if (proxyEntity->parms.castShadows && material->IsShadowCaster()) {
             OBB surfBounds = OBB(surf->subMesh->GetAABB() * proxyEntity->parms.scale, proxyEntity->parms.origin, proxyEntity->parms.axis);
             if (viewLight->def->CullShadowCasterOBB(surfBounds, view->def->frustum, view->aabb)) {
                 return true;
@@ -565,7 +565,7 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
         }
 
         if (proxyEntity->viewEntity && proxyEntity->viewEntity->ambientVisible) {
-            viewLight->litAABB.AddAABB(proxy->aabb);
+            viewLight->litSurfsAABB.AddAABB(proxy->aabb);
         }
 
         if (!proxyEntity->parms.castShadows) {
@@ -642,23 +642,23 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
 }
 
 void RenderWorld::OptimizeLights(view_t *view) {
-    Rect screenClipRect;
     viewLight_t *prevLight = nullptr;
 
+    // Iterate over light linked list in view
     for (viewLight_t *light = view->viewLights; light; light = light->next) {
         const AABB lightAABB = light->def->GetAABB();
-        // litAABB 와 원래 lightAABB 를 intersect
-        light->litAABB.IntersectSelf(lightAABB);
-        // shadowCasterAABB 와 원래 lightAABB 를 intersect
+        
+        // Compute effective AABB
+        light->litSurfsAABB.IntersectSelf(lightAABB);
         light->shadowCasterAABB.IntersectSelf(lightAABB);
-        // 결과적으로 필요한 AABB 만 남는다.
-
+        
         if (light->def->parms.isPrimaryLight) {
             view->primaryLight = light;
             continue;
         }
 
-        if (!view->def->GetClipRectFromAABB(light->litAABB, screenClipRect)) {
+        Rect screenClipRect;
+        if (!view->def->GetClipRectFromAABB(light->litSurfsAABB, screenClipRect)) {
             if (prevLight) {
                 prevLight->next = light->next;
             } else {
@@ -668,7 +668,7 @@ void RenderWorld::OptimizeLights(view_t *view) {
         }
 
         Rect visScissorRect = screenClipRect;
-        visScissorRect.y = view->def->parms.renderRect.h - (screenClipRect.y + screenClipRect.h);
+        visScissorRect.y = renderSystem.currentContext->GetRenderingHeight() - (screenClipRect.y + screenClipRect.h);
         light->scissorRect.IntersectSelf(visScissorRect);
 
         if (light->scissorRect.IsEmpty()) {

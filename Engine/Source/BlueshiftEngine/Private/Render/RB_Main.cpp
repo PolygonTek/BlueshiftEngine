@@ -714,7 +714,7 @@ static const void *RB_ExecuteDrawView(const void *data) {
     backEnd.screenRect.Set(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());
 
     // NOTE: glViewport() 의 y 는 밑에서부터 증가되므로 여기서 뒤집어 준다
-    backEnd.renderRect.y    = backEnd.ctx->GetRenderHeight() - backEnd.renderRect.Y2();
+    backEnd.renderRect.y    = backEnd.ctx->GetRenderingHeight() - backEnd.renderRect.Y2();
     backEnd.screenRect.y    = backEnd.ctx->GetDeviceHeight() - backEnd.screenRect.Y2();
     
     if (backEnd.view->is2D) {

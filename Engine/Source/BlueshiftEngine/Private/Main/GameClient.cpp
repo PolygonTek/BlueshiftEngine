@@ -287,8 +287,8 @@ void GameClient::DrawBar(float x, float y, float w, float h, const Color4 &rgba)
 }
 
 void GameClient::DrawString(int x, int y, const wchar_t *str, int len, int flags) {
-    int w = renderSystem.GetCurrentRenderContext()->GetRenderWidth();
-    int h = renderSystem.GetCurrentRenderContext()->GetRenderHeight();
+    int w = renderSystem.GetCurrentRenderContext()->GetRenderingWidth();
+    int h = renderSystem.GetCurrentRenderContext()->GetRenderingHeight();
     Rect rect(0, 0, w, h);
 
     DrawText(rect, x, y, str, len, flags);
@@ -493,8 +493,8 @@ void GameClient::DrawConsoleScreen() {
 
     // 콘솔창 뒷배경 그리기
     SetColor(Color4(1.0f, 1.0f, 1.0f, 0.8f));
-    DrawPic(0, 0, renderSystem.GetCurrentRenderContext()->GetRenderWidth(), consoleHeight, consoleMaterial);
-    DrawBar(0, consoleHeight, renderSystem.GetCurrentRenderContext()->GetRenderWidth(), 3, Color4::black);
+    DrawPic(0, 0, renderSystem.GetCurrentRenderContext()->GetRenderingWidth(), consoleHeight, consoleMaterial);
+    DrawBar(0, consoleHeight, renderSystem.GetCurrentRenderContext()->GetRenderingWidth(), 3, Color4::black);
 
     // version 표시
     WStr::snPrintf(version, COUNT_OF(version), L"%hs-%hs %i.%i.%i", B_ENGINE_NAME, PlatformProcess::PlatformName(), B_ENGINE_VERSION_MAJOR, B_ENGINE_VERSION_MINOR, B_ENGINE_VERSION_PATCH);
@@ -506,7 +506,7 @@ void GameClient::DrawConsoleScreen() {
 
     // 백스크롤 화살표 그리기
     if (consoleUpScroll > 0) {
-        for (int i = CONSOLE_TEXT_BORDER; i < renderSystem.GetCurrentRenderContext()->GetRenderWidth(); i += 100) {
+        for (int i = CONSOLE_TEXT_BORDER; i < renderSystem.GetCurrentRenderContext()->GetRenderingWidth(); i += 100) {
             DrawString(i, y, L"~");
         }
         y -= CONSOLE_FONT_HEIGHT;

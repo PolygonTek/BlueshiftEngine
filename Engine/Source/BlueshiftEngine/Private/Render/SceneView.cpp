@@ -304,7 +304,7 @@ bool SceneView::GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
         }
     }
 
-    if (-bounds[0][1] - -bounds[1][1] <= 0) {
+    if (bounds[1][1] - bounds[0][1] <= 0) {
         return false;
     }
 
@@ -334,7 +334,7 @@ bool SceneView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) c
         }
     }
 
-    if (-bounds[0][1] - -bounds[1][1] <= 0) {
+    if (bounds[1][1] - bounds[0][1] <= 0) {
         return false;
     }
 

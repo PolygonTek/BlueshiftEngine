@@ -50,7 +50,7 @@ struct viewLight_t {
 
                             // light bounding volume 에 포함되고, view frustum 에 보이는 surfaces
     drawSurfNode_t *        litSurfs;
-    AABB                    litAABB;
+    AABB                    litSurfsAABB;
 
                             // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfs 를 포함한다)
     drawSurfNode_t *        shadowCasterSurfs;

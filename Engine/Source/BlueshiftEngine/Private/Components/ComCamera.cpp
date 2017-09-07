@@ -219,8 +219,8 @@ void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
     
     if (selected) {
         const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
-        float w = ctx->GetRenderWidth() * nw;
-        float h = ctx->GetRenderHeight() * nh;
+        float w = ctx->GetRenderingWidth() * nw;
+        float h = ctx->GetRenderingHeight() * nh;
         float aspectRatio = w / h;
 
         if (viewParms.orthogonal) {
@@ -249,10 +249,10 @@ void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
         }
 
         if (1) {
-            int w = ctx->GetRenderWidth() * 0.25f;
-            int h = ctx->GetRenderHeight() * 0.25f;
-            int x = ctx->GetRenderWidth() - (w + 10 / ctx->GetUpscaleFactorX());
-            int y = ctx->GetRenderHeight() - (h + 10 / ctx->GetUpscaleFactorY());
+            int w = ctx->GetRenderingWidth() * 0.25f;
+            int h = ctx->GetRenderingHeight() * 0.25f;
+            int x = ctx->GetRenderingWidth() - (w + 10 / ctx->GetUpscaleFactorX());
+            int y = ctx->GetRenderingHeight() - (h + 10 / ctx->GetUpscaleFactorY());
 
             SceneView::Parms previewViewParms = this->viewParms;
 
@@ -383,28 +383,36 @@ void ComCamera::ProcessPointerInput(const Point &screenPoint) {
     }
 }
 
-void ComCamera::Render() {
+void ComCamera::RenderScene() {
+    // Get current render context which is unique for each OS-level window
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
 
-    float renderWidth = ctx->GetRenderWidth();
-    float renderHeight = ctx->GetRenderHeight();
+    // Get the actual screen rendering resolution
+    float renderingWidth = ctx->GetRenderingWidth();
+    float renderingHeight = ctx->GetRenderingHeight();
 
-    viewParms.renderRect.x = renderWidth * nx;
-    viewParms.renderRect.y = renderHeight * ny;
-    viewParms.renderRect.w = renderWidth * nw;
-    viewParms.renderRect.h = renderHeight * nh;
+    // Offset and scale with the normalized [0, 1] screen fraction values
+    viewParms.renderRect.x = renderingWidth * nx;
+    viewParms.renderRect.y = renderingHeight * ny;
+    viewParms.renderRect.w = renderingWidth * nw;
+    viewParms.renderRect.h = renderingHeight * nh;
 
+    // Get the aspect ratio from screen size (logical screen size)
     float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
 
     if (viewParms.orthogonal) {
+        // Compute viewport rectangle size in orthogonal projection
         viewParms.sizeX = size;
         viewParms.sizeY = size / aspectRatio;
     } else {
+        // Compute fovX, fovY with the given fov and aspect ratio
         SceneView::ComputeFov(fov, 1.25f, aspectRatio, &viewParms.fovX, &viewParms.fovY);
     }
 
+    // Update scene view with view parameters
     view->Update(&viewParms);
 
+    // Render scene scene view
     GetGameWorld()->GetRenderWorld()->RenderScene(view);
 }
 
