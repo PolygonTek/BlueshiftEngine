@@ -27,7 +27,7 @@
 #include "app.h"
 #if _ENGINE || 1 
 #	include "Precompiled.h"
-#	include "Renderer/EGLUtil.h"
+#	include "RHI/EGLUtil.h"
 #	include <android\asset_manager_jni.h>
 #endif
 

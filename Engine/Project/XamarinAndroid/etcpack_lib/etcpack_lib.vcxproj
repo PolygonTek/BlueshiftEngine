@@ -35,53 +35,53 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{42AAAF21-3054-4A5C-9500-01CB43DA0543}</ProjectGuid>
+    <ProjectGuid>{1f4bc7b4-bbed-44d1-b5a1-bb552f39d9d3}</ProjectGuid>
     <Keyword>Android</Keyword>
-    <RootNamespace>XamarinPlayerLibrary</RootNamespace>
-    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
+    <RootNamespace>etcpack_lib</RootNamespace>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <ApplicationType>Android</ApplicationType>
     <ApplicationTypeRevision>3.0</ApplicationTypeRevision>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>Clang_3_8</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>Clang_3_8</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>Clang_3_8</PlatformToolset>
-    <AndroidAPILevel>android-21</AndroidAPILevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>Clang_3_8</PlatformToolset>
-    <AndroidAPILevel>android-21</AndroidAPILevel>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>Clang_3_8</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>Clang_3_8</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+    <AndroidAPILevel>android-21</AndroidAPILevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+    <AndroidAPILevel>android-21</AndroidAPILevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>Clang_3_8</PlatformToolset>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>Clang_3_8</PlatformToolset>
   </PropertyGroup>
@@ -95,18 +95,20 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <OutDir>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\XamarinAndroid\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <OutDir>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\Build\XamarinAndroid\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <TargetName>libXamarinPlayer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <TargetName>libXamarinPlayer</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -148,57 +150,20 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
-      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-XamarinAndroid\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>Enabled</ExceptionHandling>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <CppLanguageStandard>c++1y</CppLanguageStandard>
     </ClCompile>
-    <Link>
-      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;;android;GLESv3;EGL;OpenSLES;m;$(StlLibraryName);%(LibraryDependencies)</LibraryDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories);$(ToolchainPrebuiltPath)\lib\gcc\$(ToolchainName)\$(ToolchainVersion)\$(PlatformShortName);$(StlLibraryPath)</AdditionalLibraryDirectories>
-      <AdditionalOptions>-v %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-    <PostBuildEvent>
-      <Command>echo copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)
-copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)
-echo copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a
-copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
-      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-XamarinAndroid\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>Enabled</ExceptionHandling>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <CppLanguageStandard>c++1y</CppLanguageStandard>
     </ClCompile>
-    <Link>
-      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;;android;GLESv3;EGL;OpenSLES;m;$(StlLibraryName);%(LibraryDependencies)</LibraryDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories);$(ToolchainPrebuiltPath)\lib\gcc\$(ToolchainName)\$(ToolchainVersion)\$(PlatformShortName);$(StlLibraryPath)</AdditionalLibraryDirectories>
-    </Link>
-    <PostBuildEvent>
-      <Command>echo copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)
-copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)
-echo copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a
-copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Precompiled.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
-    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Precompiled.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp" />
+    <ClCompile Include="etcpack_lib.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="jni\importgl.h" />
-    <ClInclude Include="jni\pch.h" />
-    <ClCompile Include="jni\app-android.cpp" />
-    <ClCompile Include="jni\demo.cpp" />
-    <ClCompile Include="jni\importgl.cpp" />
+    <ClInclude Include="etcpack_lib.h" />
+    <ClInclude Include="pch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
