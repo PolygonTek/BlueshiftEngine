@@ -97,24 +97,20 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <OutDir>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\..\Build\XamarinAndroid\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <OutDir>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\..\Build\XamarinAndroid\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <OutDir>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\..\Build\XamarinAndroid\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <OutDir>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\..\Build\XamarinAndroid\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -166,8 +162,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Dependencies\ETCPACK\etcpack_lib.h" />
-    <ClCompile Include="..\..\..\Source\Dependencies\ETCPACK\etcpackwrap.cpp"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\ETCPACK\etcdecwrap.cpp"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\ETCPACK\etcpackwrap.cpp" />
+    <ClCompile Include="..\..\..\Source\Dependencies\ETCPACK\etcdecwrap.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
