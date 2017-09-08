@@ -46,7 +46,7 @@
 #include <GLES3/gl3.h>
 
 #include <android/log.h>
-#include "Renderer/EGLUtil.h"
+#include "RHI/EGLUtil.h"
 
 EGLUtil mEgl;
 #endif
@@ -55,7 +55,7 @@ EGLUtil mEgl;
 
 bool	Initialized;
 
-static void DisplayContext(BE1::Renderer::Handle context, void *dataPtr) {
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 	static int t0 = 0;
 
 	if (t0 == 0) {
@@ -959,7 +959,7 @@ void appRender(long tick, int width, int height)
     drawFadeQuad();
 #endif
 #if _ENGINE
-	DisplayContext(BE1::Renderer::NullContext, 0);
+	DisplayContext(BE1::RHI::NullContext, 0);
 #endif
 }
 
