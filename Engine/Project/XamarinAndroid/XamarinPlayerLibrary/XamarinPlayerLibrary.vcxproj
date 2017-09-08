@@ -160,8 +160,8 @@
       <AdditionalOptions>-v %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>echo copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)
-copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)
+      <Command>echo copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)\.gdb
+copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)\.gdb
 echo copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a
 copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a</Command>
     </PostBuildEvent>
@@ -181,8 +181,8 @@ copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a</Command
       <AdditionalLibraryDirectories>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories);$(ToolchainPrebuiltPath)\lib\gcc\$(ToolchainName)\$(ToolchainVersion)\$(PlatformShortName);$(StlLibraryPath)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>echo copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)
-copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)
+      <Command>echo copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)\.gdb
+copy $(IntermediateOutputPath)libXamarinPlayer.so ..\XamarinPlayer\bin\$(Configuration)\.gdb
 echo copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a
 copy $(OutputPath)libXamarinPlayer.so ..\XamarinPlayer\libs\armeabi-v7a</Command>
     </PostBuildEvent>
