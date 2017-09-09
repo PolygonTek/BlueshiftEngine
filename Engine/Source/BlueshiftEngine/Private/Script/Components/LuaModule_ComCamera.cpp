@@ -24,6 +24,7 @@ void LuaVM::RegisterCameraComponent(LuaCpp::Module &module) {
 
     _ComCamera.SetClass<ComCamera>(module["Component"]);
     _ComCamera.AddClassMembers<ComCamera>(
+        "aspect_ratio", &ComCamera::GetAspectRatio,
         "world_to_screen", &ComCamera::WorldToScreen,
         "screen_to_ray", &ComCamera::ScreenToRay);
 

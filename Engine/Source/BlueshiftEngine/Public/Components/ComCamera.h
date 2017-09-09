@@ -51,6 +51,8 @@ public:
 
     virtual const AABB      GetAABB() override;
 
+    float                   GetAspectRatio() const;
+
     const Point             WorldToScreen(const Vec3 &position) const;
 
     const Ray               ScreenToRay(const Point &screenPoint);

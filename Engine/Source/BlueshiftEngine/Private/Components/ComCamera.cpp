@@ -221,7 +221,7 @@ void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
         const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
         float w = ctx->GetRenderingWidth() * nw;
         float h = ctx->GetRenderingHeight() * nh;
-        float aspectRatio = w / h;
+        float aspectRatio = 1;//w / h;
 
         if (viewParms.orthogonal) {
             viewParms.sizeX = size;
@@ -274,6 +274,15 @@ void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
 
 const AABB ComCamera::GetAABB() {
     return Sphere(Vec3::origin, MeterToUnit(0.5)).ToAABB();
+}
+
+float ComCamera::GetAspectRatio() const {
+    const BE1::RenderContext *ctx = BE1::renderSystem.GetMainRenderContext();
+
+    const int screenWidth = ctx->GetScreenWidth();
+    const int screenHeight = ctx->GetScreenHeight();
+
+    return (float)screenWidth / screenHeight;
 }
 
 const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
@@ -384,7 +393,7 @@ void ComCamera::ProcessPointerInput(const Point &screenPoint) {
 }
 
 void ComCamera::RenderScene() {
-    // Get current render context which is unique for each OS-level window
+    // Get current render context which is unique for each OS-level window in general
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
 
     // Get the actual screen rendering resolution
