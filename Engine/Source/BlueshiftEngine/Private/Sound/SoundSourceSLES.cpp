@@ -120,7 +120,7 @@ void SoundSource::DestroyAudioPlayer() {
     if (slPlayerObject) {
         (*slPlayerObject)->Destroy(slPlayerObject);
         slPlayerObject = nullptr;
-        slPlay = nullptr;
+		slPlay = nullptr;
         slBufferQueue = nullptr;
         slVolume = nullptr;
         slSeek = nullptr;
@@ -271,7 +271,7 @@ void SoundSource::UpdateStream() {
 }
 
 bool SoundSource::IsFinished() {
-    if (!sound) {
+    if (!sound || !slPlay) {
         return true;
     }
     SLuint32 playState;
