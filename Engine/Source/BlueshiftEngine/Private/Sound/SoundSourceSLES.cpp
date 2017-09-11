@@ -120,7 +120,7 @@ void SoundSource::DestroyAudioPlayer() {
     if (slPlayerObject) {
         (*slPlayerObject)->Destroy(slPlayerObject);
         slPlayerObject = nullptr;
-		slPlay = nullptr;
+        slPlay = nullptr;
         slBufferQueue = nullptr;
         slVolume = nullptr;
         slSeek = nullptr;
@@ -203,7 +203,7 @@ void SoundSource::Update() {
 void SoundSource::UpdateStream() {
     if (!pcm.IsOpened()) {
         pcm.Open(sound->hashName);
-    }    
+    }
 
     if (IsFinished()) {
         pcm.Seek(sound->ByteOffset());
@@ -271,7 +271,7 @@ void SoundSource::UpdateStream() {
 }
 
 bool SoundSource::IsFinished() {
-    if (!sound || !slPlay) {
+    if (!sound) {
         return true;
     }
     SLuint32 playState;
@@ -373,16 +373,28 @@ void SoundSource::SetCurrentOffset(uint32_t offset) {
         return;
     }
 
-    if (!IsFinished()) {
-        Stop();
-        Update();
-        Play();
-    }
+    if (sound->isStream) {
+        if (!IsFinished()) {
+            SLresult result = (*slPlay)->SetPlayState(slPlay, SL_PLAYSTATE_STOPPED);
+            assert(SL_RESULT_SUCCESS == result);
 
+            if (slBufferQueue) {
+                (*slBufferQueue)->Clear(slBufferQueue);
+            }
+
+            lastBufferQueueIndex = 0;
+
+            Update();
+
+            Play();
+        }
+    }
 #if 0
-    if (slSeek) {
-        SLresult result = (*slSeek)->SetPosition(slSeek, (SLmillisecond)(sound->duration * ((float)offset / sound->bytes)), SL_SEEKMODE_FAST);
-        assert(SL_RESULT_SUCCESS == result);
+    else {
+        if (slSeek) {
+            SLresult result = (*slSeek)->SetPosition(slSeek, (SLmillisecond)(sound->duration * ((float)offset / sound->bytes)), SL_SEEKMODE_FAST);
+            assert(SL_RESULT_SUCCESS == result);
+        }
     }
 #endif
 }
