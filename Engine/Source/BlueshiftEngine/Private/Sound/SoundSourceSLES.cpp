@@ -129,14 +129,12 @@ void SoundSource::DestroyAudioPlayer() {
 }
 
 void SoundSource::Init(Sound *sound) {
-    this->sound = sound;
-
+    SLresult result;
+    
     if (!CreateAudioPlayer()) {
         BE_WARNLOG(L"Failed to create OpenSL audio player !\n");
         return;
     }
-
-    SLresult result;
 
     if (sound->isStream) {
         lastBufferQueueIndex = 0;
@@ -168,6 +166,8 @@ void SoundSource::Init(Sound *sound) {
             (*slBufferQueue)->Enqueue(slBufferQueue, sound->soundBuffer->buffers[0], sound->soundBuffer->bufferSize);
         }
     }
+
+    this->sound = sound;    
 
     hasPositionUpdated = false;
 
