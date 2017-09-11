@@ -493,6 +493,11 @@ void ShaderManager::ReleaseShader(Shader *shader, bool immediateDestroy) {
     }
 }
 
+void ShaderManager::PrecacheShader(const char *name) {
+    Shader *shader = GetShader(name);
+    ReleaseShader(shader);
+}
+
 bool ShaderManager::FindGlobalHeader(const char *text) const {
     for (int i = 0; i < globalHeaderList.Count(); i++) {
         if (!globalHeaderList[i].Cmpn(text, Str::Length(text))) {

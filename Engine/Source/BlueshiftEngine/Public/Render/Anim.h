@@ -212,11 +212,13 @@ public:
     Anim *                  GetAnim(const char *name);
     Anim *                  GetDefaultAnim(const char *name, const Skeleton *skeleton);
 
-    void                    RenameAnim(Anim *anim, const Str &newName);
-
     void                    ReleaseAnim(Anim *anim, bool immediateDestroy = false);
     void                    DestroyAnim(Anim *anim);
     void                    DestroyUnusedAnims();
+
+    void                    PrecacheAnim(const char *name);
+
+    void                    RenameAnim(Anim *anim, const Str &newName);
 
     void                    ReloadAnims();
 

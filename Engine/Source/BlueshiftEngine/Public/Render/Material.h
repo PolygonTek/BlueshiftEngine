@@ -188,11 +188,13 @@ public:
     Material *              GetMaterial(const char *name);
     Material *              GetSingleTextureMaterial(const Texture *texture, Material::TextureHint hint = Material::NoHint);
 
-    void                    RenameMaterial(Material *material, const Str &newName);
-
     void                    ReleaseMaterial(Material *material, bool immediateDestroy = false);
     void                    DestroyMaterial(Material *material);
     void                    DestroyUnusedMaterials();
+
+    void                    PrecacheMaterial(const char *filename);
+
+    void                    RenameMaterial(Material *material, const Str &newName);
 
     int                     GetIndexByMaterial(const Material *material) const { return material->index; }
     Material *              GetMaterialByIndex(int index) const;

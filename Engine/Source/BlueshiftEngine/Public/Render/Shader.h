@@ -342,11 +342,13 @@ public:
     Shader *                FindShader(const char *name) const;
     Shader *                GetShader(const char *name);
 
-    void                    RenameShader(Shader *shader, const Str &newName);
-
     void                    ReleaseShader(Shader *shader, bool immediateDestroy = false);
     void                    DestroyShader(Shader *shader);
     void                    DestroyUnusedShaders();
+
+    void                    PrecacheShader(const char *name);
+
+    void                    RenameShader(Shader *shader, const Str &newName);
 
     void                    ReloadShaders();
     void                    ReloadLitSurfaceShaders();

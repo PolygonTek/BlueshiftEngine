@@ -101,6 +101,11 @@ void AnimManager::DestroyUnusedAnims() {
     }
 }
 
+void AnimManager::PrecacheAnim(const char *name) {
+    Anim *anim = GetAnim(name);
+    ReleaseAnim(anim);
+}
+
 int	AnimManager::JointIndexByName(const char *name) {
     int index;
     int hash = jointNameHash.GenerateHash(name);

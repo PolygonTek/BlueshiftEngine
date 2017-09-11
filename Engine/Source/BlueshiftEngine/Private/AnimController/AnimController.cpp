@@ -105,6 +105,11 @@ void AnimControllerManager::DestroyUnusedAnimControllers() {
     }
 }
 
+void AnimControllerManager::PrecacheAnimController(const char *name) {
+    AnimController *ac = GetAnimController(name);
+    ReleaseAnimController(ac);
+}
+
 void AnimControllerManager::RenameAnimController(AnimController *animController, const Str &newName) {
     const auto *entry = animControllerHashMap.Get(animController->hashName);
     if (entry) {

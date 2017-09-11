@@ -194,13 +194,15 @@ public:
 
     Texture *               TextureFromGenerator(const char *name, const TextureGeneratorBase &generator);
 
-    void                    RenameTexture(Texture *texture, const Str &newName);
-
     void                    ReleaseTexture(Texture *texture, bool immediateDestroy = false);
     void                    DestroyTexture(Texture *texture);
 
                             // Destroy textures that zero reference counted
     void                    DestroyUnusedTextures();
+
+    void                    PrecacheTexture(const char *filename);
+
+    void                    RenameTexture(Texture *texture, const Str &newName);
 
     void                    SetFilter(const char *filterName);
     void                    SetAnisotropy(float anisotropy);

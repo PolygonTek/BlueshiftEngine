@@ -229,18 +229,17 @@ public:
     Sound *                 FindSound(const char *name) const;
     Sound *                 GetSound(const char *name);
 
-    void                    RenameSound(Sound *sound, const Str &newName);
-
     void                    ReleaseSound(Sound *sound, bool immediateDestroy = false);
     void                    DestroySound(Sound *sound);
     void                    DestroyAllSounds();
     void                    DestroyUnusedSounds();
-    
+
+    void                    PrecacheSound(const char *filename);
+
+    void                    RenameSound(Sound *sound, const Str &newName);
+
                             /// Sets where the camera is
     void                    PlaceListener(const Vec3 &pos, const Mat3 &axis);
-
-                            /// Precaches static sound buffer
-    void                    PrecacheSound(const char *filename);
 
     void                    StopAllSounds();
 
