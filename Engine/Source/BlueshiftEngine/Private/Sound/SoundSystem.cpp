@@ -351,11 +351,12 @@ void SoundSystem::Update() {
         } else {
             int sourceIndex = freeSources.FindNotNull();
             assert(sourceIndex >= 0);
-            playSound->soundSource = freeSources[sourceIndex];
-            freeSources[sourceIndex] = nullptr;
 
+            playSound->soundSource = freeSources[sourceIndex];
             playSound->soundSource->Init(playSound);
             playSound->soundSource->Play();
+
+            freeSources[sourceIndex] = nullptr;
         }
     }
 

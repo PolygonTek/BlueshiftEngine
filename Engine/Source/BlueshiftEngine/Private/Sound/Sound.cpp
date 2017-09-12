@@ -190,6 +190,7 @@ void Sound::Stop() {
 
         if (soundSource) {
             soundSource->Stop();
+            soundSource = nullptr;
         }
     }
 

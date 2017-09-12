@@ -37,7 +37,7 @@ void SoundSource::OnRequeueBufferCallback(SLAndroidSimpleBufferQueueItf bufferQu
     }
 }
 
-bool SoundSource::CreateAudioPlayer() {
+bool SoundSource::CreateAudioPlayer(const Sound *sound) {
     // Data location
     SLDataLocator_AndroidSimpleBufferQueue loc_bufq;
     loc_bufq.locatorType        = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
@@ -131,7 +131,7 @@ void SoundSource::DestroyAudioPlayer() {
 void SoundSource::Init(Sound *sound) {
     SLresult result;
     
-    if (!CreateAudioPlayer()) {
+    if (!CreateAudioPlayer(sound)) {
         BE_WARNLOG(L"Failed to create OpenSL audio player !\n");
         return;
     }
@@ -167,7 +167,7 @@ void SoundSource::Init(Sound *sound) {
         }
     }
 
-    this->sound = sound;    
+    this->sound = sound;
 
     hasPositionUpdated = false;
 
@@ -274,6 +274,11 @@ bool SoundSource::IsFinished() {
     if (!sound) {
         return true;
     }
+
+    if (!slPlay) {
+        return true;
+    }
+
     SLuint32 playState;
     SLresult result = (*slPlay)->GetPlayState(slPlay, &playState);
     assert(SL_RESULT_SUCCESS == result);
@@ -308,21 +313,24 @@ bool SoundSource::Stop() {
     if (!sound) {
         return false;
     }
-    // set the player's state to stopped
-    SLresult result = (*slPlay)->SetPlayState(slPlay, SL_PLAYSTATE_STOPPED);
-    assert(SL_RESULT_SUCCESS == result);
 
-    if (slBufferQueue) {
-        (*slBufferQueue)->Clear(slBufferQueue);
+    if (slPlay) {
+        // set the player's state to stopped
+        SLresult result = (*slPlay)->SetPlayState(slPlay, SL_PLAYSTATE_STOPPED);
+        assert(SL_RESULT_SUCCESS == result);
+
+        if (slBufferQueue) {
+            (*slBufferQueue)->Clear(slBufferQueue);
+        }
+
+        if (!sound->isStream && sound->looping) {
+            SLresult result = (*slBufferQueue)->RegisterCallback(slBufferQueue, nullptr, nullptr);
+        }
+
+        lastBufferQueueIndex = 0;
+
+        DestroyAudioPlayer();
     }
-
-    if (!sound->isStream && sound->looping) {
-        SLresult result = (*slBufferQueue)->RegisterCallback(slBufferQueue, nullptr, nullptr);
-    }
-
-    lastBufferQueueIndex = 0;
-
-    DestroyAudioPlayer();
 
     if (pcm.IsOpened()) {
         pcm.Close();

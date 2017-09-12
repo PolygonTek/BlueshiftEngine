@@ -119,7 +119,7 @@ public:
     uint32_t                streamWriteOffset;
     bool                    streamEnded;
 #elif defined(__ANDROID__)
-    bool                    CreateAudioPlayer();
+    bool                    CreateAudioPlayer(const Sound *sound);
     void                    DestroyAudioPlayer();
     void                    OnRequeueBufferCallback(SLAndroidSimpleBufferQueueItf bufferQueue);
 
