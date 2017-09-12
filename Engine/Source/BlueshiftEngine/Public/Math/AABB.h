@@ -39,12 +39,12 @@ public:
     AABB(const Vec3 &mins, const Vec3 &maxs);
     explicit AABB(const Vec3 &point);
 
-                        // 바운딩 값을 뒤집는다 (mins > maxs)
+                        /// Resets mins and maxs values. If you invoke this method, IsCleared() shall returns true.
     void                Clear();
-                        // 바운딩 값을 0 (원점) 으로
+                        /// Sets to zero sized AABB
     void                SetZero();
 
-                        // 바운딩 값이 뒤집어져 있다면 true 를 리턴
+                        /// Returns true if this AABB is cleared
     bool                IsCleared() const;
                         /// Returns center point of this AABB
     Vec3                Center() const { return Vec3((b[1][0] + b[0][0]) * 0.5f, (b[1][1] + b[0][1]) * 0.5f, (b[1][2] + b[0][2]) * 0.5f); }
@@ -61,6 +61,8 @@ public:
                         /// Returns volume of the AABB
     float               Volume() const;
 
+                        /// Accesses an element of this AABB using array notation.
+                        /// 0 means mins, 1 means maxs.
     const Vec3 &        operator[](const int index) const;
     Vec3 &              operator[](const int index);
 

@@ -119,17 +119,17 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         for (i = header->colormap_index; i < header->colormap_index + header->colormap_length; i++)	{
             // read appropriate number of bytes, break into rgb & put in map
             switch (header->colormap_bpp) {
-            case 8:		// grey scale, read and triplicate
+            case 8:         // grey scale, read and triplicate
                 r = g = b = *ptr++;
                 break;
-            case 16:	// 5 bits each of red green and blue
-            case 15:	// watch for byte order
+            case 16:        // 5 bits each of red green and blue
+            case 15:        // watch for byte order
                 packed = *(uint16_t *)ptr++;
                 b = ((packed) & 0x1f) << 3;
                 g = ((packed>>5) & 0x1f) << 3;
                 r = ((packed>>10) & 0x1f) << 3;
-                break;			
-            case 24:	// 8 bits each of blue green and red
+                break;
+            case 24:        // 8 bits each of blue green and red
                 b = *ptr++;
                 g = *ptr++;
                 r = *ptr++;
@@ -138,7 +138,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
                 b = *ptr++;
                 g = *ptr++;
                 r = *ptr++;
-                a = *ptr++;	// read alpha byte
+                a = *ptr++; // read alpha byte
                 break;
             }
 

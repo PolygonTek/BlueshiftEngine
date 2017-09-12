@@ -21,8 +21,6 @@
 
 BE_NAMESPACE_BEGIN
 
-#define MAX_REUSABLE_SOUND      5
-
 SoundSystem     soundSystem;
 
 CVar            SoundSystem::s_nosound(L"s_nosound", L"0", 0, L"");

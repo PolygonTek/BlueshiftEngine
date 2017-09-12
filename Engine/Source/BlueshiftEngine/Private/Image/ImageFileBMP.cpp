@@ -81,7 +81,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
     int padbytes = (((bmih->bpp * w + 31) & ~31) - (bmih->bpp * w)) >> 3;
     const byte *palette;
 
-    // 256 컬러 팔레트 비트맵
+    // 8 bits paletted color
     if (bmih->bpp == 8) {
         int paletteSize;
         if (bmih->colorUsed > 0) {

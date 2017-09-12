@@ -22,9 +22,12 @@
 #include "Sound/Pcm.h"
 
 #if defined(__APPLE__)
+
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
+
 #elif defined(__WIN32__)
+
 #define USE_WINDOWS_OPENAL 0
 #if USE_WINDOWS_OPENAL
 #include "al.h"
@@ -32,10 +35,13 @@
 #else
 #include <dsound.h>
 #endif
+
 #elif defined(__ANDROID__)
+
 // Reference: https://googlesamples.github.io/android-audio-high-performance/guides/opensl_es.html
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
+
 #endif
 
 BE_NAMESPACE_BEGIN
