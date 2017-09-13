@@ -157,6 +157,7 @@ Engine::~Engine()
 
 #endif // _SAMPLE
 }
+extern int android_progress;
 
 
 bool Engine::initUI()
@@ -198,6 +199,7 @@ bool Engine::initUI()
 	NVBFTextSetString(m_uiText[1], NVBF_COLORSTR_GREEN "Gameplay mode 1 !");
 #endif
 #if _ENGINE
+	android_progress = 0;
 	//// ----- Core initialization -----
 	//BE1::Engine::InitParms initParms;
 
@@ -256,7 +258,7 @@ bool Engine::initUI()
 	////BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Append, L"exec \"autoexec.cfg\"\n");
 
 
-
+	android_progress = -1;
 
 #endif 
 	m_uiInitialized = true;
