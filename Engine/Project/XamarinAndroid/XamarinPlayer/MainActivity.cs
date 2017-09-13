@@ -59,7 +59,11 @@ using Android.Content.Res;
 
 namespace XamarinPlayer
 {
+#if !PORTRAIT
     [Activity(Label = "XamarinPlayer sample", MainLauncher = true, ScreenOrientation = Android.Content.PM.ScreenOrientation.Landscape)]
+#else
+    [Activity(Label = "XamarinPlayer sample", MainLauncher = true, ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
+#endif
     public class DemoActivity : Activity {
 
         [DllImport("XamarinPlayer")]
@@ -75,7 +79,7 @@ namespace XamarinPlayer
             mGLView = new DemoGLSurfaceView(this);
             SetContentView(mGLView);
 
-#if !DEBUG 
+#if !DEBUG
             SetAssetManager(JNIEnv.Handle, Assets.Handle, FilesDir.AbsolutePath);
 #else
             SetAssetManager(JNIEnv.Handle, Assets.Handle, "/sdcard/blueshift");
