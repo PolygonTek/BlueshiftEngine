@@ -55,7 +55,7 @@ public:
     void                    ResetParticles();
 
 protected:
-    void                    UpdateVisuals();
+    virtual void            UpdateVisuals() override;
     void                    ChangeParticleSystem(const Guid &particleSystemGuid);
     void                    InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFraction) const;
     void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float genTimeDelta);

@@ -67,7 +67,7 @@ public:
     void                    SetSkipSelection(bool skip);
 
 protected:
-    void                    UpdateVisuals();
+    virtual void            UpdateVisuals();
 
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    LayerChanged(const Entity *entity);

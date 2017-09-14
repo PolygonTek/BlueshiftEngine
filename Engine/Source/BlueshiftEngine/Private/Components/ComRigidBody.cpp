@@ -293,6 +293,9 @@ void ComRigidBody::Enable(bool enable) {
             if (body) {
                 body->RemoveFromWorld();
             }
+            collisions.Clear();
+            oldCollisions.Clear();
+
             Component::Enable(false);
         }
     }
