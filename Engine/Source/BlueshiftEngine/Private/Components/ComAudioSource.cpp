@@ -149,6 +149,13 @@ void ComAudioSource::Stop() {
     }
 }
 
+bool ComAudioSource::IsPlaying() const {
+    if (sound) {
+        return sound->IsPlaying();
+    }
+    return false;
+}
+
 void ComAudioSource::TransformUpdated(const ComTransform *transform) {
     if (spatial) {
         if (sound) {

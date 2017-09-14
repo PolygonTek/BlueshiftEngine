@@ -41,6 +41,7 @@ public:
 
     void                    Play();
     void                    Stop();
+    bool                    IsPlaying() const;
 
 protected:
     const Guid              GetAudioClip() const;
