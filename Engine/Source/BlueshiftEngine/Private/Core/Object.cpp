@@ -223,7 +223,7 @@ bool                Object::initialized = false;
 Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
-static PlatformAtomic instanceCounter = 0;
+static PlatformAtomic instanceCounter;
 
 void Object::InitInstance(Guid guid) {
     if (guid.IsZero()) {
