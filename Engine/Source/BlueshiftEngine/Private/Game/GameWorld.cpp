@@ -362,7 +362,16 @@ Entity *GameWorld::CreateEntity(const char *name) {
     value["components"][0]["origin"] = BE1::Vec3::zero.ToString();
     value["components"][0]["angles"] = BE1::Angles::zero.ToString();
 
-    return Entity::CreateEntity(value);
+    Entity *entity = Entity::CreateEntity(value);
+
+    entity->gameWorld = this;
+
+    entity->InitHierarchy();
+    entity->Init();
+
+    RegisterEntity(entity);
+
+    return entity;
 }
 
 Entity *GameWorld::InstantiateEntity(const Entity *originalEntity) {
