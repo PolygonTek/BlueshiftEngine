@@ -524,15 +524,15 @@ BE_FORCE_INLINE int Mod(const int &x, const int &y) { return x % y; }
 /// Wraps a number to a range.
 template <typename T>
 BE_FORCE_INLINE void Wrap(T &v, const T &min, const T &max) {
-    if (v > max) v = min + Mod(v - min, max - min + 1);
-    if (v < min) v = max - Mod(min - v, max - min + 1);
+    if (v > max) v = min + Mod(v - min, max - min);
+    if (v < min) v = max - Mod(min - v, max - min);
 }
 
 /// Returns the wrapped number to a range.
 template <typename T>
 BE_FORCE_INLINE T Wrap(const T &v, const T &min, const T &max) {
-    if (v > max) return min + Mod(v - min, max - min + 1);
-    if (v < min) return max - Mod(min - v, max - min + 1);
+    if (v > max) return min + Mod(v - min, max - min);
+    if (v < min) return max - Mod(min - v, max - min);
     return v;
 }
 
