@@ -56,6 +56,7 @@ protected:
     float                   minDistance;
     float                   maxDistance;
     float                   volume;
+    bool                    spatial;
     bool                    looping;
 };
 

@@ -30,6 +30,7 @@ END_EVENTS
 BEGIN_PROPERTIES(ComAudioSource)
     PROPERTY_OBJECT("audioClip", "Audio Clip", "", GuidMapper::defaultSoundGuid.ToString(), SoundAsset::metaObject, PropertySpec::ReadWrite),
     PROPERTY_BOOL("playOnAwake", "Play On Awake", "Play the sound when the map loaded.", "false", PropertySpec::ReadWrite),
+    PROPERTY_BOOL("spatial", "Spatial", "", "true", PropertySpec::ReadWrite),
     PROPERTY_BOOL("looping", "Looping", "", "false", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("volume", "Volume", "", BE1::Rangef(0, 1, 0.1), "1.0", PropertySpec::ReadWrite),
     PROPERTY_RANGED_FLOAT("minDistance", "Min Distance", "", BE1::Rangef(0, 100, 1), "4", PropertySpec::ReadWrite),
@@ -39,6 +40,7 @@ END_PROPERTIES
 void ComAudioSource::RegisterProperties() {
     //REGISTER_ACCESSOR_PROPERTY("Audio Clip", SoundAsset, GetAudioClip, SetAudioClip, GuidMapper::defaultSoundGuid.ToString(), "", PropertySpec::ReadWrite);
     //REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, "false", "Play the sound when the map loaded.", PropertySpec::ReadWrite);
+    //REGISTER_PROPERTY("Spatial", bool, spatial, "true", "", PropertySpec::ReadWrite);
     //REGISTER_PROPERTY("Looping", bool, looping, "false", "", PropertySpec::ReadWrite);
     //REGISTER_PROPERTY("Min Distance", float, minDistance, "4", PropertySpec::ReadWrite).SetRange(0, 100, 1);
     //REGISTER_PROPERTY("Max Distance", float, maxDistance, "16", PropertySpec::ReadWrite).SetRange(0, 100, 1);
@@ -81,6 +83,7 @@ void ComAudioSource::Init() {
         audioClipPath = resourceGuidMapper.Get(audioClipGuid);
     }
 
+    spatial = props->Get("spatial").As<bool>();
     looping = props->Get("looping").As<bool>();
     playOnAwake = props->Get("playOnAwake").As<bool>();
 
@@ -131,7 +134,12 @@ void ComAudioSource::Play() {
 
     if (referenceSound) {
         sound = referenceSound->Instantiate();
-        sound->Play3D(transform->GetOrigin(), minDistance, maxDistance, volume * (IsEnabled() ? 1.0f : 0.0f), looping);
+
+        if (spatial) {
+            sound->Play3D(transform->GetOrigin(), minDistance, maxDistance, volume * (IsEnabled() ? 1.0f : 0.0f), looping);
+        } else {
+            sound->Play2D(volume, looping);
+        }
     }
 }
 
@@ -142,8 +150,10 @@ void ComAudioSource::Stop() {
 }
 
 void ComAudioSource::TransformUpdated(const ComTransform *transform) {
-    if (sound) {
-        sound->UpdatePosition(transform->GetOrigin());
+    if (spatial) {
+        if (sound) {
+            sound->UpdatePosition(transform->GetOrigin());
+        }
     }
 }
 
