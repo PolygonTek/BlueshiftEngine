@@ -82,7 +82,7 @@ public:
     bool                        IsRoot() const { return GetRoot() == this; }
     Entity *                    GetRoot() const;
     Entity *                    GetParent() const;
-    void                        SetParent(int parentGuid);
+    void                        SetParent(Entity *parentEntity);
 
                                 /// Get the children by depth first order
     void                        GetChildren(EntityPtrArray &children) const;
