@@ -64,6 +64,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
     LuaCpp::Selector _Object = module["Object"];
     _Object.SetClass<Object>();
     _Object.AddClassMembers<Object>(
+        "instance_id", &Object::GetInstanceID,
         "classname", &Object::ClassName,
         "super_classname", &Object::SuperClassName,
         "cast_entity", static_cast<Entity*(Object::*)()>(&Object::Cast<Entity>),

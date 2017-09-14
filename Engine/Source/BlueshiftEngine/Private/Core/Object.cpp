@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/PlatformAtomic.h"
 #include "Core/Object.h"
 #include "Core/Heap.h"
 #include "Containers/HashTable.h"
@@ -222,22 +223,31 @@ bool                Object::initialized = false;
 Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
+static PlatformAtomic instanceCounter = 0;
 
 void Object::InitInstance(Guid guid) {
     if (guid.IsZero()) {
-        guid = Guid::CreateGuid();
-    }
+        Object *sameGuidObject;
 
-    this->guid = guid;
-    this->props = new Properties(this);
+        do {
+            guid = Guid::CreateGuid();
+        } while (!instanceHash.Get(guid, &sameGuidObject));
+    }
 
 #if 1
     Object *sameGuidObject;
     if (instanceHash.Get(guid, &sameGuidObject)) {
-        BE_WARNLOG(L"SAME GUID object type %hs\n", sameGuidObject->ClassName());
+        BE_WARNLOG(L"Conflicts GUID (%hs) for object type '%hs'\n", guid.ToString(), sameGuidObject->ClassName());
         assert(0);
     }
 #endif
+
+    this->guid = guid;
+    this->instanceID = instanceCounter.GetValue();
+    this->props = new Properties(this);
+
+    instanceCounter++;
+
     Object *object = this;
     instanceHash.Set(guid, object);
 }
