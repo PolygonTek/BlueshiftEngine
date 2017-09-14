@@ -29,6 +29,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "delta_time", &GameWorld::GetDeltaTime,
         "time_scale", &GameWorld::GetTimeScale,
         "set_time_scale", &GameWorld::SetTimeScale,
+        "create_entity", &GameWorld::CreateEntity,
         "find_entity", &GameWorld::FindEntity,
         "find_entity_by_guid", &GameWorld::FindEntityByGuid,
         "find_entity_by_tag", &GameWorld::FindEntityByTag,
