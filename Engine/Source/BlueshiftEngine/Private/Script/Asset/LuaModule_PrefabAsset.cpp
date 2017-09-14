@@ -24,6 +24,7 @@ void LuaVM::RegisterPrefabAsset(LuaCpp::Module &module) {
 
     _Prefab.SetClass<Prefab>();
     _Prefab.AddClassMembers<Prefab>(
+        "name", &Prefab::GetName,
         "root_entity", &Prefab::GetRootEntity);
 
     LuaCpp::Selector _PrefabAsset = module["PrefabAsset"];
