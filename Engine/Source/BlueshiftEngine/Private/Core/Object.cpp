@@ -231,7 +231,7 @@ void Object::InitInstance(Guid guid) {
 
         do {
             guid = Guid::CreateGuid();
-        } while (!instanceHash.Get(guid, &sameGuidObject));
+        } while (instanceHash.Get(guid, &sameGuidObject));
     }
 
 #if 1
