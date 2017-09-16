@@ -151,7 +151,7 @@ public:
     int                     BitsWidth() const { return bitsWidth; }
     int                     Duration() const { return duration; }
     int                     Bytes() const { return bytes; }
-    int                     ByteOffset() const { return bytes * ((float)playingTime / duration); }
+    int                     ByteOffset() const;
 
     void                    Purge();
 
@@ -268,6 +268,8 @@ private:
 
     StrIHashMap<Sound *>    soundHashMap;
     LinkList<Sound>         soundPlayLinkList;
+
+    Array<Sound *>          prioritySounds;
 
     Array<SoundSource *>    sources;
     Array<SoundSource *>    freeSources;

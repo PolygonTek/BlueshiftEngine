@@ -39,9 +39,12 @@ void SoundSystem::Init(void *windowHandle) {
  
     if (!InitDevice(windowHandle)) {
         return;
-    }
+    }    
 
     CreateDefaultSound();
+
+    // Sounds to be sorted by priority
+    prioritySounds.Resize(64, 64);
 
     listenerPosition = Vec3::zero;
     listenerForward = Vec3::unitX;
@@ -298,8 +301,7 @@ void SoundSystem::Update() {
         }
     }
 
-    // Sounds to be sorted by priority
-    Array<Sound *> soundPlayArray(64);
+    prioritySounds.SetCount(0);
 
     for (node = soundPlayLinkList.NextNode(); node; node = nextNode) {
         nextNode = node->NextNode();
@@ -307,24 +309,24 @@ void SoundSystem::Update() {
         Sound *sound = node->Owner();
         
         if (sound->localSound) {
-            sound->priority = sound->volume;// * (sound->looping ? 1.0f : (1.0f - (float)sound->playingTime / sound->duration));
+            sound->priority = sound->volume * (sound->looping ? 1.0f : (1.0f - (float)sound->playingTime / sound->duration));
         } else {
             float fallOff = listenerPosition.DistanceSqr(sound->origin) / (sound->maxDistance * sound->maxDistance);
             sound->priority = 1.0f - Min(fallOff, 1.0f);
         }        
 
-        soundPlayArray.Append(sound);
+        prioritySounds.Append(sound);
     }
 
-    // Sort sounds by priority
-    soundPlayArray.Sort([](const Sound *a, const Sound *b) {
+    // Sort sounds by priority decending order
+    prioritySounds.Sort([](const Sound *a, const Sound *b) {
         return a->priority - b->priority > 0;
     });
 
-    // Stop sources
-    int soundIndex = soundPlayArray.Count() - 1;
+    // Stop sources that have lower priority first
+    int soundIndex = prioritySounds.Count() - 1;
     for (; soundIndex >= 0; soundIndex--) {
-        Sound *playSound = soundPlayArray[soundIndex];
+        Sound *playSound = prioritySounds[soundIndex];
 
         if (soundIndex >= sources.Count() || playSound->priority <= 0) {
             if (playSound->soundSource) {
@@ -344,7 +346,7 @@ void SoundSystem::Update() {
 
     // Play sources
     for (; soundIndex >= 0; soundIndex--) {
-        Sound *playSound = soundPlayArray[soundIndex];
+        Sound *playSound = prioritySounds[soundIndex];
 
         if (playSound->soundSource) {
             playSound->soundSource->Update();
@@ -382,8 +384,8 @@ void SoundSystem::Update() {
     if (s_volume.IsModified()) {
         s_volume.ClearModified();
 
-        for (int soundIndex = 0; soundIndex < Min(sources.Count(), soundPlayArray.Count()); soundIndex++) {
-            Sound *playSound = soundPlayArray[soundIndex];
+        for (int soundIndex = 0; soundIndex < Min(sources.Count(), prioritySounds.Count()); soundIndex++) {
+            Sound *playSound = prioritySounds[soundIndex];
 
             playSound->soundSource->SetVolume(playSound->volume * s_volume.GetFloat());
         }
