@@ -35,7 +35,7 @@ shader "postCameraMotionBlur" {
 		uniform float maxBlur;
 
 		const float numSamples = 8.0;
-		const float step = 2.0 / numSamples;
+		const float sampleStep = 2.0 / numSamples;
 
 		void main() {
 			vec2 currVec = v2f_motionVec.xy / v2f_motionVec.w;
@@ -52,7 +52,7 @@ shader "postCameraMotionBlur" {
 
 			vec4 accumColor = vec4(0.0, 0.0, 0.0, 0.0);
 
-			for (float s = -1.0; s < 1.0; s += step) {
+			for (float s = -1.0; s < 1.0; s += sampleStep) {
 				vec2 tc = currVec - velocityVec * s;
 				//float depthMask = tex2D(depthMap, tc).x;
 				//tc += velocityVec * s * (1.0 - depthMask);
