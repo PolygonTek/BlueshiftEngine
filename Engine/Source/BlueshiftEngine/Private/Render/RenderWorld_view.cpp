@@ -406,8 +406,16 @@ void RenderWorld::AddSkyBoxMeshes(view_t *view) {
 
     // skybox view entity
     viewEntity_t *viewEntity = RegisterViewEntity(view, &sceneEntity);
-    viewEntity->modelViewMatrix = view->def->viewMatrix * sceneEntity.GetModelMatrix();
-    viewEntity->modelViewProjMatrix = view->def->viewProjMatrix * sceneEntity.GetModelMatrix();
+
+    if (view->def->parms.orthogonal) {
+        Mat4 projMatrix;
+        R_SetPerspectiveProjectionMatrix(45, 45, 1, 1000, false, projMatrix);
+        viewEntity->modelViewMatrix = view->def->viewMatrix * sceneEntity.GetModelMatrix();
+        viewEntity->modelViewProjMatrix = projMatrix * viewEntity->modelViewMatrix;
+    } else {
+        viewEntity->modelViewMatrix = view->def->viewMatrix * sceneEntity.GetModelMatrix();
+        viewEntity->modelViewProjMatrix = view->def->viewProjMatrix * sceneEntity.GetModelMatrix();
+    }
 
     MeshSurf *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
     AddDrawSurf(view, viewEntity, skyboxMaterial, meshSurf->subMesh, DrawSurf::AmbientVisible);
