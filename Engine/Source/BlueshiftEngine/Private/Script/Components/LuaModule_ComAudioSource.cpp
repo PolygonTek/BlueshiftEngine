@@ -23,6 +23,7 @@ void LuaVM::RegisterAudioSourceComponent(LuaCpp::Module &module) {
 
     _ComAudioSource.SetClass<ComAudioSource>(module["Component"]);
     _ComAudioSource.AddClassMembers<ComAudioSource>(
+        "is_playing", &ComAudioSource::IsPlaying,
         "play", &ComAudioSource::Play,
         "stop", &ComAudioSource::Stop);
     

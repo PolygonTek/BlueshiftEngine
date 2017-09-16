@@ -197,6 +197,11 @@ Material *MaterialManager::GetMaterial(const char *hashName) {
     return material;
 }
 
+void MaterialManager::PrecacheMaterial(const char *filename) {
+    Material *material = GetMaterial(filename);
+    ReleaseMaterial(material);
+}
+
 static const char *HintName(Material::TextureHint hint) {
     switch (hint) {
     case Material::LightHint:

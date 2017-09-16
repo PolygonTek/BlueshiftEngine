@@ -38,8 +38,11 @@ public:
     void                    Set(const float re, const float im);
     void                    SetZero();
 
+                            /// Casts this Complex to a C array.
                             operator const float *() const;
                             operator float *();
+
+                            /// Accesses an element of this complex value using array notation.
     float                   operator[](int index) const;
     float &                 operator[](int index);
 
@@ -77,12 +80,19 @@ public:
                             /// Exact compare, no epsilon
     bool                    operator!=(const Complex &a) const { return !Equals(a); }
 
+                            /// Returns the complex conjugate
     Complex                 Conjugate() const;
+
     Complex                 Reciprocal() const;
+
     Complex                 Sqrt() const;
+    
+                            /// Returns the magnitude of a complex number
     float                   Abs() const;
 
+                            /// Returns "re im".
     const char *            ToString() const { return ToString(4); }
+                            /// Returns "re im" with the given precision.
     const char *            ToString(int precision) const;
 
                             /// Returns dimension of this type

@@ -22,9 +22,12 @@
 #include "Sound/Pcm.h"
 
 #if defined(__APPLE__)
+
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
+
 #elif defined(__WIN32__)
+
 #define USE_WINDOWS_OPENAL 0
 #if USE_WINDOWS_OPENAL
 #include "al.h"
@@ -32,10 +35,13 @@
 #else
 #include <dsound.h>
 #endif
+
 #elif defined(__ANDROID__)
+
 // Reference: https://googlesamples.github.io/android-audio-high-performance/guides/opensl_es.html
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
+
 #endif
 
 BE_NAMESPACE_BEGIN
@@ -113,7 +119,7 @@ public:
     uint32_t                streamWriteOffset;
     bool                    streamEnded;
 #elif defined(__ANDROID__)
-    bool                    CreateAudioPlayer();
+    bool                    CreateAudioPlayer(const Sound *sound);
     void                    DestroyAudioPlayer();
     void                    OnRequeueBufferCallback(SLAndroidSimpleBufferQueueItf bufferQueue);
 
@@ -145,7 +151,7 @@ public:
     int                     BitsWidth() const { return bitsWidth; }
     int                     Duration() const { return duration; }
     int                     Bytes() const { return bytes; }
-    int                     ByteOffset() const { return bytes * ((float)playingTime / duration); }
+    int                     ByteOffset() const;
 
     void                    Purge();
 
@@ -229,18 +235,17 @@ public:
     Sound *                 FindSound(const char *name) const;
     Sound *                 GetSound(const char *name);
 
-    void                    RenameSound(Sound *sound, const Str &newName);
-
     void                    ReleaseSound(Sound *sound, bool immediateDestroy = false);
     void                    DestroySound(Sound *sound);
     void                    DestroyAllSounds();
     void                    DestroyUnusedSounds();
-    
+
+    void                    PrecacheSound(const char *filename);
+
+    void                    RenameSound(Sound *sound, const Str &newName);
+
                             /// Sets where the camera is
     void                    PlaceListener(const Vec3 &pos, const Mat3 &axis);
-
-                            /// Precaches static sound buffer
-    void                    PrecacheSound(const char *filename);
 
     void                    StopAllSounds();
 
@@ -263,6 +268,8 @@ private:
 
     StrIHashMap<Sound *>    soundHashMap;
     LinkList<Sound>         soundPlayLinkList;
+
+    Array<Sound *>          prioritySounds;
 
     Array<SoundSource *>    sources;
     Array<SoundSource *>    freeSources;

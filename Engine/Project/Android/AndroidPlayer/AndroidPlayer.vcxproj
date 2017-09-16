@@ -72,9 +72,10 @@
     </AntBuild>
     <Link>
       <AdditionalLibraryDirectories>../../../Library/$(Platform)/$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;luasocket;NvTriStrip;android;nvidia;GLESv3;EGL;OpenSLES;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <EchoCommandLines>true</EchoCommandLines>
+      <AndroidSystemLibs>c;m;log;gcc;android;GLESv3;EGL;OpenSLES;dl;</AndroidSystemLibs>
     </Link>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-android\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -94,8 +95,9 @@
     </AntBuild>
     <Link>
       <AdditionalLibraryDirectories>../../../Library/$(Platform)/$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;luasocket;NvTriStrip;android;nvidia;GLESv3;EGL;OpenSLES;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <AndroidSystemLibs>c;m;log;gcc;android;GLESv3;EGL;OpenSLES;dl;</AndroidSystemLibs>
     </Link>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-android\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -113,8 +115,9 @@
     </AntBuild>
     <Link>
       <AdditionalLibraryDirectories>../../../Library/$(Platform)/$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;luasocket;NvTriStrip;android;nvidia;GLESv3;EGL;OpenSLES;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <AndroidSystemLibs>c;m;log;gcc;android;GLESv3;EGL;OpenSLES;dl;</AndroidSystemLibs>
     </Link>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-android\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

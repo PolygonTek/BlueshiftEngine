@@ -1,7 +1,7 @@
 in vec4 in_position : POSITION;
-in vec2 in_st : TEXCOORD0;
+in MEDIUMP vec2 in_st : TEXCOORD0;
 
-out vec2 v2f_texCoord;
+out MEDIUMP vec2 v2f_texCoord;
 
 uniform mat4 modelViewProjectionMatrix;
 

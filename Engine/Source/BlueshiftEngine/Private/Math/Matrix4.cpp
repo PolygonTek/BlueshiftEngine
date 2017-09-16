@@ -465,7 +465,7 @@ void Mat4::UniformScale(const float s) {
 }
 
 void Mat4::SetFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
-    float nudge = 0.999f;	// prevent artifacts with infinite far plane
+    float nudge = 0.999f;   // prevent artifacts with infinite far plane
     
     // check for division by 0
     if (left == right || top == bottom || znear == zfar) {
@@ -475,38 +475,38 @@ void Mat4::SetFrustum(float left, float right, float bottom, float top, float zn
     mat[0][0] = (2 * znear) / (right - left);
     mat[0][1] = 0.f;
     mat[0][2] = (right + left) / (right - left);
-    mat[0][3] = 0.f;	
+    mat[0][3] = 0.f;
         
     mat[1][0] = 0.f;
     mat[1][1] = (2 * znear) / (top - bottom);
     mat[1][2] = (top + bottom) / (top - bottom);
-    mat[1][3] = 0.f;	
+    mat[1][3] = 0.f;
     
     mat[2][0] = 0.f;
     mat[2][1] = 0.f;
     if (zfar != -1) {
         mat[2][2] = -(zfar + znear) / (zfar - znear);
     } else { // if zfar == -1, use an infinite far plane
-        mat[2][2] = -nudge;	
+        mat[2][2] = -nudge;
     }
 
     if (zfar != -1) {
         mat[2][3] = -(2 * zfar * znear) / (zfar - znear);
     } else { // if zfar == -1, use an infinite far plane
-        mat[2][3] = -2 * znear * nudge;	
+        mat[2][3] = -2 * znear * nudge;
     }
     
     mat[3][0] = 0.f;
-    mat[3][1] = 0.f;	
+    mat[3][1] = 0.f;
     mat[3][2] = -1;
     mat[3][3] = 0.f;
 }
 
 void Mat4::SetPerspective(float fovy, float aspect, float znear, float zfar) {
-    float top		= znear * Math::Tan(DEG2RAD(fovy / (aspect * 2)));
-    float bottom	= -top;
-    float left		= bottom * aspect;
-    float right		= top * aspect;
+    float top       = znear * Math::Tan(DEG2RAD(fovy / (aspect * 2)));
+    float bottom    = -top;
+    float left      = bottom * aspect;
+    float right     = top * aspect;
     
     SetFrustum(left, right, bottom, top, znear, zfar);
 }

@@ -94,6 +94,9 @@ public:
     void                        RegisterEntity(Entity *ent, int spawn_entnum = -1);
     void                        UnregisterEntity(Entity *ent);
 
+                                // Create an entity that has no components but transform component
+    Entity *                    CreateEntity(const char *name);
+
     Entity *                    InstantiateEntity(const Entity *originalEntity);
     Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Angles &angles);
 

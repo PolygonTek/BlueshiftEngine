@@ -97,7 +97,7 @@ public:
 
     RenderContext();
 
-    void                    Init(RHI::WindowHandle hwnd, int renderWidth, int renderHeight, RHI::DisplayContextFunc displayFunc, void *displayFuncDataPtr, int flags = 0);
+    void                    Init(RHI::WindowHandle hwnd, int renderingWidth, int renderingHeight, RHI::DisplayContextFunc displayFunc, void *displayFuncDataPtr, int flags = 0);
     void                    Shutdown();
 
     RHI::Handle             GetContextHandle() const { return contextHandle; }
@@ -111,12 +111,12 @@ public:
     int                     GetDeviceHeight() const { return deviceHeight; }
 
                             // actual screen render target resolution
-    int                     GetRenderWidth() const { return renderWidth; }
-    int                     GetRenderHeight() const { return renderHeight; }
+    int                     GetRenderingWidth() const { return renderingWidth; }
+    int                     GetRenderingHeight() const { return renderingHeight; }
 
                             // upscale factor for render to device mapping
-    float                   GetUpscaleFactorX() const { return (float)deviceWidth / renderWidth; }
-    float                   GetUpscaleFactorY() const { return (float)deviceHeight / renderHeight; }
+    float                   GetUpscaleFactorX() const { return (float)deviceWidth / renderingWidth; }
+    float                   GetUpscaleFactorY() const { return (float)deviceHeight / renderingHeight; }
 
     void                    OnResize(int width, int height);
 
@@ -191,8 +191,8 @@ public:
     int                     windowHeight;
     int                     deviceWidth;
     int                     deviceHeight;
-    int                     renderWidth;
-    int                     renderHeight;
+    int                     renderingWidth;
+    int                     renderingHeight;
     float                   screenSelectionScale;
 
     Random                  random;

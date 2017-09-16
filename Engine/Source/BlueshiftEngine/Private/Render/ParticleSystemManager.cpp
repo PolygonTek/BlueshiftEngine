@@ -133,4 +133,9 @@ ParticleSystem *ParticleSystemManager::GetParticleSystem(const char *hashName) {
     return particleSystem;
 }
 
+void ParticleSystemManager::PrecacheParticleSystem(const char *name) {
+    ParticleSystem *ps = GetParticleSystem(name);
+    ReleaseParticleSystem(ps);
+}
+
 BE_NAMESPACE_END

@@ -197,7 +197,11 @@ public:
                                 // eventDef 에 해당하는 Callback 이 등록되어 있는지 체크
     bool                        IsRespondsTo(const EventDef &evdef) const;
 
+                                /// Returns GUID of the object
     const Guid &                GetGuid() const { return guid; }
+
+                                /// Returns instance ID of the object
+    int                         GetInstanceID() const { return instanceID; }
 
                                 /// Post event
     template <typename... Args>
@@ -247,6 +251,7 @@ private:
     void                        Event_Destroy();
 
     Guid                        guid;
+    int                         instanceID;
 
     static bool                 initialized;
     static Array<MetaObject *>  types; // alphabetical order

@@ -158,6 +158,11 @@ void TextureManager::DestroyUnusedTextures() {
     }
 }
 
+void TextureManager::PrecacheTexture(const char *filename) {
+    Texture *texture = GetTexture(filename);
+    ReleaseTexture(texture);
+}
+
 void TextureManager::SetFilter(const char *filterName) {
     int mode;
     for (mode = 0; mode < 6; mode++) {

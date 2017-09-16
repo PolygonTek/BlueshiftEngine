@@ -36,6 +36,15 @@ Sound::~Sound() {
     Purge();
 }
 
+int Sound::ByteOffset() const { 
+    float fraction = ((float)playingTime / duration);
+    
+    int byteOffset = AlignDown((int)(bytes * fraction), numChannels * (bitsWidth >> 3));    
+    Clamp(byteOffset, 0, bytes);
+
+    return byteOffset;
+}
+
 void Sound::Purge() {
     // If this sound have a original sound pointer, this is the duplicated one
     if (originalSound) {
@@ -190,6 +199,7 @@ void Sound::Stop() {
 
         if (soundSource) {
             soundSource->Stop();
+            soundSource = nullptr;
         }
     }
 

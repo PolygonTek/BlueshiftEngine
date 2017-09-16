@@ -103,12 +103,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <OutDir>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\..\Build\XamarinAndroid\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <OutDir>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\..\Build\XamarinAndroid\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -227,6 +225,11 @@
     <ClCompile Include="..\..\..\Source\Dependencies\libvorbis\lib\vorbisenc.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\libvorbis\lib\window.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\libvorbis\lib\vorbisfile.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libogg\libogg.vcxproj">
+      <Project>{c2b44a48-7789-4b17-9c32-453d4ac7b10d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

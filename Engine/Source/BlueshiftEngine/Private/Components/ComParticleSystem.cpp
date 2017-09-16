@@ -191,7 +191,7 @@ void ComParticleSystem::Awake() {
 void ComParticleSystem::Enable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
-            UpdateVisuals();
+            ResetParticles();
             ComRenderable::Enable(true);
         }
     } else {

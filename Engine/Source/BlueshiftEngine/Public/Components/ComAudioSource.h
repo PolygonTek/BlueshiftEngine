@@ -41,6 +41,7 @@ public:
 
     void                    Play();
     void                    Stop();
+    bool                    IsPlaying() const;
 
 protected:
     const Guid              GetAudioClip() const;
@@ -56,6 +57,7 @@ protected:
     float                   minDistance;
     float                   maxDistance;
     float                   volume;
+    bool                    spatial;
     bool                    looping;
 };
 

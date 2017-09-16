@@ -641,7 +641,7 @@ static void RB_DrawDebugLights(int mode) {
     
         RB_DrawLightVolume(viewLight->def);
 
-        RB_DrawAABB(viewLight->litAABB);
+        RB_DrawAABB(viewLight->litSurfsAABB);
     }
 
     if (mode == 2) {
@@ -665,7 +665,7 @@ static void RB_DrawDebugLightScissorRects() {
         shader->SetConstant3f("color", &viewLight->def->parms.materialParms[SceneEntity::RedParm]);
 
         Rect drawRect = viewLight->scissorRect;
-        drawRect.y = backEnd.ctx->GetRenderHeight() - drawRect.Y2();
+        drawRect.y = backEnd.ctx->GetRenderingHeight() - drawRect.Y2();
 
         float x = drawRect.x * backEnd.upscaleFactor.x;
         float y = drawRect.y * backEnd.upscaleFactor.y;

@@ -354,6 +354,26 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
     return clonedEntities[0];
 }
 
+Entity *GameWorld::CreateEntity(const char *name) {
+    Json::Value value;
+    value["name"] = name;
+
+    value["components"][0]["classname"] = BE1::ComTransform::metaObject.ClassName();
+    value["components"][0]["origin"] = BE1::Vec3::zero.ToString();
+    value["components"][0]["angles"] = BE1::Angles::zero.ToString();
+
+    Entity *entity = Entity::CreateEntity(value);
+
+    entity->gameWorld = this;
+
+    entity->InitHierarchy();
+    entity->Init();
+
+    RegisterEntity(entity);
+
+    return entity;
+}
+
 Entity *GameWorld::InstantiateEntity(const Entity *originalEntity) {
     Entity *clonedEntity = CloneEntity(originalEntity);
 
@@ -765,7 +785,7 @@ void GameWorld::RenderCamera() {
     cameraArray.Sort(compareFunc);
 
     for (int i = 0; i < cameraArray.Count(); i++) {
-        cameraArray[i]->Render();
+        cameraArray[i]->RenderScene();
     }
 }
 

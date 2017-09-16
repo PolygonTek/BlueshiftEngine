@@ -25,45 +25,54 @@
 BE_NAMESPACE_BEGIN
 
 struct InOut {
+    Str precision;
     Str type;
     Str name;
+    int index;
     int location;
 };
 
 struct InOutSemantic {
-    int ident;
+    int index;
+    int location;
     const char *name;
 };
 
 static const InOutSemantic inOutSemantics[] = {
     // vertex shader input semantics
-    { RHI::VertexElement::Position, "POSITION" }, 
-    { RHI::VertexElement::Normal, "NORMAL" },
-    { RHI::VertexElement::Color, "COLOR" },
-    { RHI::VertexElement::SecondaryColor, "SECONDARY_COLOR" },
-    { RHI::VertexElement::WeightIndex, "WEIGHT_INDEX" },
-    { RHI::VertexElement::WeightIndex0, "WEIGHT_INDEX0" },
-    { RHI::VertexElement::WeightIndex1, "WEIGHT_INDEX1" },
-    { RHI::VertexElement::WeightValue, "WEIGHT_VALUE" },
-    { RHI::VertexElement::WeightValue0, "WEIGHT_VALUE0" },
-    { RHI::VertexElement::WeightValue1, "WEIGHT_VALUE1" },
-    { RHI::VertexElement::TexCoord, "TEXCOORD" },
-    { RHI::VertexElement::TexCoord0, "TEXCOORD0" },
-    { RHI::VertexElement::TexCoord1, "TEXCOORD1" },
-    { RHI::VertexElement::TexCoord2, "TEXCOORD2" },
-    { RHI::VertexElement::TexCoord3, "TEXCOORD3" },
-    { RHI::VertexElement::TexCoord4, "TEXCOORD4" },
-    { RHI::VertexElement::TexCoord5, "TEXCOORD5" },
-    { RHI::VertexElement::TexCoord6, "TEXCOORD6" },
-    { RHI::VertexElement::TexCoord7, "TEXCOORD7" },
+    { 0, RHI::VertexElement::Position, "POSITION" }, 
+    { 1, RHI::VertexElement::Normal, "NORMAL" },
+    { 2, RHI::VertexElement::Color, "COLOR" },
+    { 3, RHI::VertexElement::SecondaryColor, "SECONDARY_COLOR" },
+    { 4, RHI::VertexElement::WeightIndex, "WEIGHT_INDEX" },
+    { 5, RHI::VertexElement::WeightIndex0, "WEIGHT_INDEX0" },
+    { 6, RHI::VertexElement::WeightIndex1, "WEIGHT_INDEX1" },
+    { 7, RHI::VertexElement::WeightValue, "WEIGHT_VALUE" },
+    { 8, RHI::VertexElement::WeightValue0, "WEIGHT_VALUE0" },
+    { 9, RHI::VertexElement::WeightValue1, "WEIGHT_VALUE1" },
+    { 10, RHI::VertexElement::TexCoord, "TEXCOORD" },
+    { 11, RHI::VertexElement::TexCoord0, "TEXCOORD0" },
+    { 12, RHI::VertexElement::TexCoord1, "TEXCOORD1" },
+    { 13, RHI::VertexElement::TexCoord2, "TEXCOORD2" },
+    { 14, RHI::VertexElement::TexCoord3, "TEXCOORD3" },
+    { 15, RHI::VertexElement::TexCoord4, "TEXCOORD4" },
+    { 16, RHI::VertexElement::TexCoord5, "TEXCOORD5" },
+    { 17, RHI::VertexElement::TexCoord6, "TEXCOORD6" },
+    { 18, RHI::VertexElement::TexCoord7, "TEXCOORD7" },
 
     // fragment shader output semantics
-    { 0, "FRAG_COLOR" },
-    { 1, "FRAG_COLOR0" },
-    { 2, "FRAG_COLOR1" },
-    { 3, "FRAG_COLOR2" },
-    { 4, "FRAG_COLOR3" },
-    { 5, "FRAG_DEPTH" },
+    { 0, 0, "FRAG_COLOR" },
+    { 1, 0, "FRAG_COLOR0" },
+    { 2, 1, "FRAG_COLOR1" },
+    { 3, 2, "FRAG_COLOR2" },
+    { 4, 3, "FRAG_COLOR3" },
+    { 5, 3, "FRAG_DEPTH" },
+};
+
+struct Uniform {
+    Str precision;
+    Str type;
+    Str name;
 };
 
 struct FsOutBuiltInVar {
@@ -131,38 +140,77 @@ static const char *fsInsert = {
     "#endif\n"
 };
 
-static int InOutSemanticIdent(const char *semanticName) {
+static const InOutSemantic *FindInOutSemantic(const char *semanticName) {
     for (int i = 0; i < COUNT_OF(inOutSemantics); i++) {
         if (!Str::Cmp(semanticName, inOutSemantics[i].name)) {
-            return inOutSemantics[i].ident;
+            return &inOutSemantics[i];
         }
     }
 
-    return -1;
+    return nullptr;
 }
 
 static void ParseInOut(Lexer &lexer, bool hasSemantic, InOut &inOut) {
     Str token;
     Str semanticName;
 
-    lexer.ReadToken(&token); // type
+    lexer.ReadToken(&token); // type or precision qualifier
+
+    if (token == "LOWP" || token == "MEDIUMP" || token == "HIGHP") {
+        inOut.precision = token;
+
+        lexer.ReadToken(&token); // type
+    } else {
+        inOut.precision = "";
+    }
+
     inOut.type = token;
 
     lexer.ReadToken(&token); // name
     inOut.name = token;
 
+    inOut.index = -1;
     inOut.location = -1;
 
     if (hasSemantic) {
         if (lexer.ExpectPunctuation(P_COLON)) { // :
             if (lexer.ReadToken(&semanticName)) { // semantic name
-                inOut.location = InOutSemanticIdent(semanticName);
-            }
-            else {
+                const InOutSemantic *inOutSemantic = FindInOutSemantic(semanticName);
+                inOut.index = inOutSemantic->index;
+                inOut.location = inOutSemantic->location;
+            } else {
                 lexer.Warning("ParseInOut: missing semantic for inOut %s", inOut.name.c_str());
             }
         }
     }
+}
+
+static void ParseUniform(Lexer &lexer, Uniform &uniform) {
+    Str token;
+
+    lexer.ReadToken(&token); // type or precision qualifier
+
+    if (token == "LOWP" || token == "MEDIUMP" || token == "HIGHP") {
+        uniform.precision = token;
+
+        lexer.ReadToken(&token); // type
+    } else {
+        uniform.precision = "";
+    }
+
+    uniform.type = token;
+
+    lexer.ReadToken(&token); // name
+    uniform.name = token;
+
+    while (lexer.ReadToken(&token)) {
+        if (token == ";") {
+            break;
+        }
+        uniform.name += token;
+    }
+
+    lexer.UnreadToken(&token);
 }
 
 static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, const Str &sourceText, Array<InOut> &inOutList) {
@@ -175,6 +223,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
     int parentheses = 0;
     Str token;
     InOut inOut;
+    Uniform uniform;
 
     while (lexer.ReadToken(&token, true)) {
         if (token.IsEmpty()) {
@@ -241,6 +290,9 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                 }
             }
 
+            if (!inOut.precision.IsEmpty()) {
+                processedText += inOut.precision + " ";
+            }
             processedText += inOut.type + " " + inOut.name + ";";
             continue;
         }
@@ -266,16 +318,36 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                 }
             }
 
+            if (!inOut.precision.IsEmpty()) {
+                processedText += inOut.precision + " ";
+            }
             processedText += inOut.type + " " + inOut.name + ";";
+            continue;
+        }
+
+        if (token == "uniform" && parentheses == 0) {
+            processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
+
+            ParseUniform(lexer, uniform);
+            lexer.SkipUntilString(";");
+
+            processedText += "uniform ";
+                
+            if (!uniform.precision.IsEmpty()) {
+                processedText += uniform.precision + " ";
+            }
+            processedText += uniform.type + " " + uniform.name + ";";
             continue;
         }
 
         if (!isVertexShader) {
             for (int i = 0; i < inOutList.Count(); i++) {
                 const InOut &fsOut = inOutList[i];
-                if (token == fsOut.name && fsOut.location != -1) {
-                    if (fsOutBuiltInVars[fsOut.location].deprecatedVersion > OpenGL::GLSL_VERSION) {
-                        token = fsOutBuiltInVars[fsOut.location].name;
+
+                if (token == fsOut.name && fsOut.index != -1) {
+                    if (fsOutBuiltInVars[fsOut.index].deprecatedVersion > OpenGL::GLSL_VERSION) {
+                        token = fsOutBuiltInVars[fsOut.index].name;
+                        break;
                     }
                 }
             }
@@ -326,35 +398,46 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
 #endif
     
     headerText += "#ifdef GL_ES\n";
-    
+
+    headerText += "#define LOWP lowp\n";
+    headerText += "#define MEDIUMP mediump\n";
+    headerText += "#define HIGHP highp\n";
+
+    // Set default precisions
     if (isVertexShader) {
         headerText += "precision highp float;\n";
         headerText += "precision highp int;\n";
     } else {
         headerText += "precision highp float;\n";
         headerText += "precision highp int;\n";
-        headerText += "precision highp sampler2D;\n";
+        headerText += "precision lowp sampler2D;\n";
         headerText += "#ifdef TEXTURE_RECT\n";
-        headerText += "precision highp sampler2DRect;\n";
+        headerText += "precision lowp sampler2DRect;\n";
         headerText += "#endif\n";
-        headerText += "precision highp sampler3D;\n";
-        headerText += "precision highp samplerCube;\n";
-        headerText += "precision highp sampler2DArray;\n";
+        headerText += "precision lowp sampler3D;\n";
+        headerText += "precision lowp samplerCube;\n";
+        headerText += "precision lowp sampler2DArray;\n";
         headerText += "precision highp sampler2DShadow;\n";
         headerText += "precision highp samplerCubeShadow;\n";
         headerText += "precision highp sampler2DArrayShadow;\n";
     }
+
+    headerText += "#else\n";
+
+    headerText += "#define LOWP\n";
+    headerText += "#define MEDIUMP\n";
+    headerText += "#define HIGHP\n";
     
     headerText += "#endif\n";
 
     Str outputText;
 
     if (isVertexShader) {
-        outputText.ReAllocate(Str::Length(vsInsert) + headerText.Length() + processedText.Length(), false);
+        outputText.ReAllocate(headerText.Length() + Str::Length(vsInsert) + processedText.Length(), false);
         outputText += headerText;
         outputText += vsInsert;
     } else {
-        outputText.ReAllocate(Str::Length(fsInsert) + headerText.Length() + processedText.Length(), false);
+        outputText.ReAllocate(headerText.Length() + Str::Length(fsInsert) + processedText.Length(), false);
         outputText += headerText;
         outputText += fsInsert;
     }

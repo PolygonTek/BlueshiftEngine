@@ -585,7 +585,7 @@ static void RB_ProjectedShadowMapPass(const viewLight_t *viewLight, const Frustu
 
 static bool RB_SingleCascadedShadowMapPass(const viewLight_t *viewLight, const Frustum &splitViewFrustum, int cascadeIndex, bool forceClear) {
     // split 된 viewFrustum 일 수 있기 때문에 컬링 가능
-    if (splitViewFrustum.CullAABB(viewLight->litAABB)) {
+    if (splitViewFrustum.CullAABB(viewLight->litSurfsAABB)) {
         return false;
     }
 

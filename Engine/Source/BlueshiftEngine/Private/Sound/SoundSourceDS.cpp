@@ -33,9 +33,8 @@ SoundSource::~SoundSource() {
 
 void SoundSource::Init(Sound *sound) {
     this->sound = sound;
-
-    dsBuffer = sound->soundBuffer->dsBuffer;
-    ds3dBuffer = sound->soundBuffer->ds3dBuffer;
+    this->dsBuffer = sound->soundBuffer->dsBuffer;
+    this->ds3dBuffer = sound->soundBuffer->ds3dBuffer;
 
     if (!sound->isStream) {
         if (sound->playingTime > 0) {

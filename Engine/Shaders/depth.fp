@@ -1,10 +1,10 @@
-in vec2 v2f_texCoord;
+in MEDIUMP vec2 v2f_texCoord;
 
 out vec4 o_fragColor : FRAG_COLOR;
 
 uniform sampler2D albedoMap;
-uniform float perforatedAlpha;
-uniform vec4 constantColor;
+uniform LOWP float perforatedAlpha;
+uniform LOWP vec4 constantColor;
 
 void main() {
 #ifdef PERFORATED

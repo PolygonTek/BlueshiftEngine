@@ -285,8 +285,8 @@ bool Entity::HasRenderEntity(int renderEntityHandle) const {
     return false;
 }
 
-void Entity::SetParent(int parentGuid) {
-    props->Set("parent", parentGuid);
+void Entity::SetParent(Entity *parentEntity) {
+    props->Set("parent", parentEntity->GetGuid());
 }
 
 void Entity::PurgeJointComponents() {

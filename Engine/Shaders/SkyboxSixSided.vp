@@ -1,8 +1,8 @@
 in vec4 in_position : POSITION;
-in vec4 in_color : COLOR;
+in LOWP vec4 in_color : COLOR;
 
-out vec4 v2f_color;
-out vec3 v2f_texCoord;
+out LOWP vec4 v2f_color;
+out MEDIUMP vec3 v2f_texCoord;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 modelViewProjectionMatrix;
@@ -17,9 +17,9 @@ uniform mat4 modelViewProjectionMatrix;
         vec4 localLightOrigin;
         vec4 textureMatrixS;
         vec4 textureMatrixT;
-        vec4 vertexColorScale;
-        vec4 vertexColorAdd;
-        vec4 constantColor;
+        vec4 LOWP vertexColorScale;
+        vec4 LOWP vertexColorAdd;
+        vec4 LOWP constantColor;
     };
 
     uniform entityData_t entityData[256];
@@ -33,12 +33,12 @@ uniform mat4 modelViewProjectionMatrix;
     uniform vec4 localLightOrigin;
     uniform vec4 textureMatrixS;
     uniform vec4 textureMatrixT;
-    uniform vec4 vertexColorScale;
-    uniform vec4 vertexColorAdd;
-    uniform vec4 constantColor;
+    uniform LOWP vec4 vertexColorScale;
+    uniform LOWP vec4 vertexColorAdd;
+    uniform LOWP vec4 constantColor;
 #endif
 
-uniform float rotation;
+uniform MEDIUMP float rotation;
 
 void main() {
     vec3 v = in_position.xyz + modelViewMatrix[3].xyz * mat3(modelViewMatrix);

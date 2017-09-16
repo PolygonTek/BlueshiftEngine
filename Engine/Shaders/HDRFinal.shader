@@ -25,13 +25,13 @@ shader "HDRFinal" {
 		$include "logluv.glsl"
 		#endif
 		$include "image_processing.glsl"
-		uniform sampler2D luminanceMap;
-		uniform sampler2D colorMap;
-		uniform sampler2D bloomMap0;
-		uniform sampler2D bloomMap1;
-		uniform sampler2D bloomMap2;
-		uniform sampler2D bloomMap3;
-		uniform sampler2D bloomMap4;
+		uniform HIGHP sampler2D luminanceMap;
+		uniform HIGHP sampler2D colorMap;
+		uniform HIGHP sampler2D bloomMap0;
+		uniform HIGHP sampler2D bloomMap1;
+		uniform HIGHP sampler2D bloomMap2;
+		uniform HIGHP sampler2D bloomMap3;
+		uniform HIGHP sampler2D bloomMap4;
 		uniform sampler2D randomDir4x4Map;
 		uniform float middleGray;
 		uniform float bloomScale;

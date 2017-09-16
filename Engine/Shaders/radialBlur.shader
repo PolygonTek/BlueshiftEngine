@@ -17,7 +17,7 @@ shader "radialBlur" {
 			vec2 blurVec = screenPos.xy - v2f_texCoord.xy;
 
 			float blurDist = 1.0 - dot(blurVec.xy * invRadius, blurVec.xy * invRadius);
-			clamp(blurDist, 0.0, 1.0);
+			saturate(blurDist);
 
 			float b = blurAmount * blurDist * blurDist;
 

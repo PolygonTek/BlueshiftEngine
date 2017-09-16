@@ -8,9 +8,9 @@ BE_NAMESPACE_BEGIN
 
 static const int MaxSources = 12;
 
-static CVar     s_khz(L"s_khz", L"44", CVar::Integer | CVar::Archive);
-static CVar     s_doppler(L"s_doppler", L"1.0", CVar::Float | CVar::Archive);
-static CVar     s_rolloff(L"s_rolloff", L"2.0", CVar::Float | CVar::Archive);
+static CVar     s_khz(L"s_khz", L"44", CVar::Integer | CVar::Archive, L"");
+static CVar     s_doppler(L"s_doppler", L"1.0", CVar::Float | CVar::Archive, L"");
+static CVar     s_rolloff(L"s_rolloff", L"2.0", CVar::Float | CVar::Archive, L"");
 
 bool SoundSystem::InitDevice(void *windowHandle) {
     BE_LOG(L"Initializing OpenSL ES...\n");

@@ -185,6 +185,11 @@ void MeshManager::ReleaseMesh(Mesh *mesh, bool immediateDestroy) {
     }
 }
 
+void MeshManager::PrecacheMesh(const char *filename) {
+    Mesh *mesh = GetMesh(filename);
+    ReleaseMesh(mesh);
+}
+
 void MeshManager::RenameMesh(Mesh *mesh, const Str &newName) {
     const auto *entry = meshHashMap.Get(mesh->hashName);
     if (entry) {

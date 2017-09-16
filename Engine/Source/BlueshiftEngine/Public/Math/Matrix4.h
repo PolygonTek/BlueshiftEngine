@@ -171,10 +171,16 @@ public:
     void                SetIdentity();
                         /// Sets the translation part of this matrix.
     void                SetTranslation(float tx, float ty, float tz);
+
+                        /// Sets perspective projection matrix with given frustum definition.
     void                SetFrustum(float left, float right, float bottom, float top, float znear, float zfar);
+                        /// Sets perspective projection matrix.
     void                SetPerspective(float fovy, float aspect, float znear, float zfar);
+                        /// Sets orthogonal projection matrix.
     void                SetOrtho(float left, float right, float bottom, float top, float znear, float zfar);
+                        /// Sets reflection matrix with the given reflection plane.
     void                SetReflect(const Plane &plane);
+                        /// Sets linear transformation matrix.
     void                SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &origin);
 
                         /// Returns the sum of the diagonal elements of this matrix.
@@ -200,31 +206,35 @@ public:
                         /// If a matrix M is made up of only translation, rotation, reflection, scaling and shearing,
                         /// then M is affine matrix and this function can be used to compute the inverse
     Mat4                AffineInverse() const;
+                        /// Inverts a affine matrix, in-place.
     bool                AffineInverseSelf();
     
                         /// Inverts a euclidean matrix
                         /// If a matrix is made up of only translation, rotation, and reflection,
                         /// then M is euclidean matrix and this function can be used to compute the inverse
     Mat4                EuclideanInverse() const;
+                        /// Inverts a euclidean matrix, in-place.
     bool                EuclideanInverseSelf();
 
-                        /// LU decomposition, in-place
+                        /// LU decomposition, in-place.
     bool                DecompLU();
 
-                        /// Solve Ax = b with LU decomposition
+                        /// Solve Ax = b with LU decomposition.
     Vec4                SolveLU(const Vec4 &b) const;
 
-                        /// Translates by the given offset, in-place
+                        /// Translates by the given offset, in-place.
     void                Translate(const Vec3 &t) { Translate(t.x, t.y, t.z); }
     void                Translate(float tx, float ty, float tz);
 
-                        /// Scales by the given factors, in-place
+                        /// Scales by the given factors, in-place.
     void                Scale(const Vec3 &s) { Scale(s.x, s.y, s.z); }
     void                Scale(float sx, float sy, float sz);
-                        /// Performs uniform scaling by the given amout, in-place
+                        /// Performs uniform scaling by the given amout, in-place.
     void                UniformScale(const float s);
     
+                        /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
+                        /// Returns translation vector part.
     Vec3                ToTranslationVec3() const;
 
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23 _30 _31 _32 _33".

@@ -49,6 +49,8 @@ enum IOSDevice {
     IOS_IPadMini4,
     IOS_IPadPro_9_7, // iPad Pro 9.7 inch
     IOS_IPadPro_12_9, // iPad Pro 12.9 inch
+    IOS_IPadPro2_12_9,
+    IOS_IPadPro2_10_5,
     IOS_Unknown,
 };
 
@@ -61,7 +63,7 @@ static bool IsIPod(IOSDevice deviceType) {
 }
 
 static bool IsIPad(IOSDevice deviceType) {
-    return deviceType >= IOS_IPad2 && deviceType <= IOS_IPadPro_9_7;
+    return deviceType >= IOS_IPad2 && deviceType <= IOS_IPadPro2_10_5;
 }
 
 static IOSDevice GetIOSDeviceType() {
@@ -127,11 +129,17 @@ static IOSDevice GetIOSDeviceType() {
             } else {
                 deviceType = IOS_IPadMini4;
             }
-        } else if (major >= 6) { // Default to highest settings currently available for any future device
+        } else if (major == 6) {
             if (minor >= 7) {
                 deviceType = IOS_IPadPro_12_9;
             } else {
                 deviceType = IOS_IPadPro_9_7;
+            }
+        } else if (major >= 7) { // Default to highest settings currently available for any future device
+            if (minor >= 3) {
+                deviceType = IOS_IPadPro2_10_5;
+            } else {
+                deviceType = IOS_IPadPro2_12_9;
             }
         }
     } else if ([deviceIDString hasPrefix:@"iPhone"]) {
@@ -448,7 +456,6 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 }
 
 @end // @implementation AppDelegate
-
 
 int main(int argc, char *argv[]) {
     @autoreleasepool {

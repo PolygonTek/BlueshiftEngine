@@ -52,18 +52,18 @@ public:
         int             layerMask;
 
         Rect            renderRect;
-        Vec3            origin;             // view origin
-        Mat3            axis;               // view axis [FORWARD, LEFT, UP]
-        ClearMethod     clearMethod;
-        Color4          clearColor;
+        Vec3            origin;             ///< View origin
+        Mat3            axis;               ///< View axis [FORWARD, LEFT, UP]
+        ClearMethod     clearMethod;        ///< Clearing method before rendering view
+        Color4          clearColor;         ///< Clearing color is needed if clearing method is set to 'ColorClear'
 
-        float           fovX;
-        float           fovY;
-        float           sizeX;
-        float           sizeY;
-        float           zNear;
-        float           zFar;
-        bool            orthogonal;
+        float           fovX;               ///< Perspective projection FOV in horizontal axis
+        float           fovY;               ///< Perspective projection FOV in vertical axis
+        float           sizeX;              ///< Orthogonal projection size in horizontal axis
+        float           sizeY;              ///< Orthogonal projection size in vertical axis
+        float           zNear;              ///< Near distance in z axis
+        float           zFar;               ///< Far distance in z axis
+        bool            orthogonal;         ///< True for orthogonal projection or perspective projection
     };
 
     void                Update(const Parms *viewParms);

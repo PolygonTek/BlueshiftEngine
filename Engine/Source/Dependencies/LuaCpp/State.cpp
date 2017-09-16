@@ -9,7 +9,22 @@ void State::Require(const char *name) {
 }
 
 void State::Require(const char *name, lua_CFunction openf) {
+#if LUA_VERSION_NUM >= 502
     luaL_requiref(_l, name, openf, 1);
+#else
+    luaL_checkstack(_l, 3, "not enough stack slots");
+    lua_pushcfunction(_l, openf);
+    lua_pushstring(_l, name);
+    lua_call(_l, 1, 1);
+    lua_getglobal(_l, "package");
+    lua_getfield(_l, -1, "loaded");
+    lua_replace(_l, -2);
+    lua_pushvalue(_l, -2);
+    lua_setfield(_l, -2, name);
+    lua_pop(_l, 1);
+    lua_pushvalue(_l, -1);
+    lua_setglobal(_l, name);
+#endif
     lua_pop(_l, 1);  /* remove lib */
 }
 

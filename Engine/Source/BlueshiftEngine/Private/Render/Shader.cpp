@@ -18,6 +18,9 @@
 #include "Core/Lexer.h"
 #include "File/FileSystem.h"
 
+#if defined __ANDROID__ && ! defined __XAMARIN__
+int android_progress = 0;
+#endif
 BE_NAMESPACE_BEGIN
 
 static const char *directiveInclude = "$include";
@@ -831,21 +834,23 @@ void Shader::Reinstantiate() {
     }
 }
 
+
 bool Shader::Instantiate(const Array<Define> &defineArray) {
 #if defined __ANDROID__ && ! defined __XAMARIN__
-    static int progress = 0;
 
-    float f = progress * (M_PI * 0.01f);
-    progress++;
-    Color4 color;
-    color.r = sinf(f) * 0.5f + 0.5f;
-    color.g = sinf(f + M_PI * 2.0f / 3.0f)* 0.5f + 0.5f;
-    color.b = sinf(f + M_PI * 4.0f / 3.0f)* 0.5f + 0.5f;
-    color.a = 1.0f;
+	if (android_progress >= 0) {
+		float f = android_progress * (M_PI * 0.01f);
+		android_progress++;
+		Color4 color;
+		color.r = sinf(f) * 0.5f + 0.5f;
+		color.g = sinf(f + M_PI * 2.0f / 3.0f)* 0.5f + 0.5f;
+		color.b = sinf(f + M_PI * 4.0f / 3.0f)* 0.5f + 0.5f;
+		color.a = 1.0f;
 
-    rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.Clear(RHI::ColorBit, color, 0, 0);
-    rhi.SwapBuffers();
+		rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
+		rhi.Clear(RHI::ColorBit, color, 0, 0);
+		rhi.SwapBuffers();
+	}
 
     //BE_LOG(L"progress %f %f %f %f %d", color.r, color.g, color.b, f, progress);
 #endif

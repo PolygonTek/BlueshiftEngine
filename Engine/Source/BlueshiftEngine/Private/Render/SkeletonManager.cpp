@@ -111,6 +111,11 @@ void SkeletonManager::DestroyUnusedSkeletons() {
     }
 }
 
+void SkeletonManager::PrecacheSkeleton(const char *filename) {
+    Skeleton *skeleton = GetSkeleton(filename);
+    ReleaseSkeleton(skeleton);
+}
+
 Skeleton *SkeletonManager::FindSkeleton(const char *hashName) const {
     const auto *entry = skeletonHashMap.Get(Str(hashName));
     if (entry) {

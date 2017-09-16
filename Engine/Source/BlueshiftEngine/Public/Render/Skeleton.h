@@ -126,11 +126,13 @@ public:
     Skeleton *              FindSkeleton(const char *name) const;
     Skeleton *              GetSkeleton(const char *name);
 
-    void                    RenameSkeleton(Skeleton *skeleton, const Str &newName);
-
     void                    ReleaseSkeleton(Skeleton *skeleton, bool immediateDestroy = false);
     void                    DestroySkeleton(Skeleton *skeleton);
     void                    DestroyUnusedSkeletons();
+
+    void                    PrecacheSkeleton(const char *filename);
+
+    void                    RenameSkeleton(Skeleton *skeleton, const Str &newName);
 
     static Skeleton *       defaultSkeleton;
 

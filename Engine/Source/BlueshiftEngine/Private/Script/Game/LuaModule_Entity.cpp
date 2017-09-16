@@ -62,6 +62,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "set_active", &Entity::SetActive,
         "game_world", &Entity::GetGameWorld,
         "parent", &Entity::GetParent,
+        "set_parent", &Entity::SetParent,
         "children", &Entity::GetChildren,
         "find_child", &Entity::FindChild,
         "num_components", &Entity::NumComponents,

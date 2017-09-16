@@ -1,5 +1,5 @@
-in vec2 v2f_texCoord;
-in vec4 v2f_color;
+in MEDIUMP vec2 v2f_texCoord;
+in LOWP vec4 v2f_color;
 
 out vec4 o_fragColor : FRAG_COLOR;
 

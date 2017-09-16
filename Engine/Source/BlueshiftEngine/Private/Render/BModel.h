@@ -41,7 +41,7 @@ struct BSkelHeader {
 };
 
 struct BJoint {
-    char            name[64];
+    char            name[60];
     int32_t         parentIndex;
 };
 
@@ -58,8 +58,8 @@ struct BMeshSurf {
     int32_t         materialIndex;
     uint32_t        numVerts;
     uint32_t        numIndexes;
-    uint32_t        indexSize;
-    uint32_t        maxWeights;
+    uint16_t        indexSize;
+    uint16_t        maxWeights;
     Vec3            aabbMin;
     Vec3            aabbMax;
 };
@@ -70,7 +70,8 @@ struct BMeshVert {
     Vec3            normal;
     Vec3            tangent;
     Vec3            bitangent;
-    byte            color[4];
+    uint32_t        color;
+    uint32_t        reserved;
 };
 
 struct BAnimHeader {
@@ -85,7 +86,7 @@ struct BAnimHeader {
 };
 
 struct BAnimJoint {
-    char            name[64];
+    char            name[60];
     int32_t         parentIndex;
     int32_t         animBits;
     int32_t         firstComponent;

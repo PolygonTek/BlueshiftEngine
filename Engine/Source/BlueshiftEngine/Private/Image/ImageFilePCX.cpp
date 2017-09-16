@@ -52,7 +52,7 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
     
     Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, RGB_8_8_8, nullptr, 0);
 
-    if (header->planes == 1) { // 256 컬러
+    if (header->planes == 1) { // 8 bits paletted color
         const byte *palette = data + size - 768;
 
         for (int y = 0; y < this->height; y++) {
@@ -76,11 +76,11 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
                 }
             }
         }
-    } else { // 24 bit 컬러	
+    } else { // 24 bits color
         for (int y = 0; y < this->height; y++) {
             for (int c = 0; c <= 2; c++) {
                 byte *dstptr = this->pic + this->height * this->width * 3 + c;
-                for (int x = 0; x < this->width;)	{
+                for (int x = 0; x < this->width;) {
                     byte packet = *ptr++;
                     if ((packet & 0xc0) == 0xc0) {
                         int length = (packet & 0x3f);

@@ -67,7 +67,7 @@ public:
     int                     GetPlayStartTime() const { return playStartTime; }
 
 protected:
-    void                    UpdateVisuals();
+    virtual void            UpdateVisuals() override;
 
     virtual void            MeshUpdated() override;
 

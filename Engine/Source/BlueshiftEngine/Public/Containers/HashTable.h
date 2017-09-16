@@ -19,8 +19,8 @@
 
     Hash table
 
-    STL hash_map/unorderd_map 하고 비슷하다.
-    key 는 unique 해야 한다.
+    Similar with STL hash_map/unorderd_map
+    The key should be unique
 
     NOTE:
     - 검색/삭제가 HashMap 에 비해 빠르다.
@@ -351,12 +351,13 @@ BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Set(const KeyT &key, 
         }
     }
 
-    numEntries++;
     THashBucket *newBucket = blockAllocator.Alloc();
     newBucket->key = key;
     newBucket->value = value;
     newBucket->next = node;
     *nextPtr = newBucket;
+
+    numEntries++;
 }
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
@@ -378,13 +379,13 @@ BE_INLINE ValueT &HashTable<KeyT, ValueT, BucketGranularity>::operator[](const K
         }
     }
 
-    numEntries++;
-
     THashBucket *newBucket = blockAllocator.Alloc();
     newBucket->key = key;
     newBucket->next = node;
     *nextPtr = newBucket;
-    
+
+    numEntries++;
+
     return newBucket->value;
 }
 
