@@ -114,6 +114,18 @@ Engine::Engine(NvEGLUtil& egl, struct android_app* app) :
 	m_uiText[1] = NULL;
 #endif
 #if _ENGINE
+
+	bool bDebugAndroid = 0;
+	jclass contextClass = (app->appThreadEnv)->FindClass("android/content/Context");
+	jmethodID midGetPackageName = (app->appThreadEnv)->GetMethodID(contextClass, "getPackageName", "()Ljava/lang/String;");
+	jstring packageName = (jstring)(app->appThreadEnv)->CallObjectMethod(app->activity->clazz, midGetPackageName);
+	const char *package = (app->appThreadEnv)->GetStringUTFChars(packageName, JNI_FALSE);
+	if (strcmp(package, "com.polygontek.devtech.AndroidPlayer") == 0)
+		bDebugAndroid = 1;
+	(app->appThreadEnv)->ReleaseStringUTFChars(packageName, package);
+	(app->appThreadEnv)->DeleteLocalRef(contextClass);
+	(app->appThreadEnv)->DeleteLocalRef(packageName);
+
 	BE1::PlatformFile::SetManager(app->activity->assetManager);
 	ANativeActivity_setWindowFlags(app->activity,
 		AWINDOW_FLAG_KEEP_SCREEN_ON, 0);

@@ -79,11 +79,15 @@ namespace XamarinPlayer
             mGLView = new DemoGLSurfaceView(this);
             SetContentView(mGLView);
 
-#if !DEBUG
-            SetAssetManager(JNIEnv.Handle, Assets.Handle, FilesDir.AbsolutePath);
-#else
-            SetAssetManager(JNIEnv.Handle, Assets.Handle, "/sdcard/blueshift");
-#endif
+            if (!PackageName.Equals("com.polygontek.devtech.AndroidPlayer"))
+            {
+                SetAssetManager(JNIEnv.Handle, Assets.Handle, FilesDir.AbsolutePath);
+            }
+            else
+            {
+                SetAssetManager(JNIEnv.Handle, Assets.Handle, "/sdcard/blueshift");
+            }
+
         }
 
         protected override void OnPause () 
