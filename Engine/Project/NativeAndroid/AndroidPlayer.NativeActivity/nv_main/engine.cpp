@@ -129,14 +129,14 @@ Engine::Engine(NvEGLUtil& egl, struct android_app* app) :
 	BE1::PlatformFile::SetManager(app->activity->assetManager);
 	ANativeActivity_setWindowFlags(app->activity,
 		AWINDOW_FLAG_KEEP_SCREEN_ON, 0);
-#	if defined(NDEBUG) 
-	BE1::PlatformFile::SetExecutablePath(app->activity->externalDataPath);
-#	elif defined (DEBUG)
-	mkdir("/sdcard/blueshift", S_IRWXU | S_IRWXG | S_IRWXO);
-	BE1::PlatformFile::SetExecutablePath("/sdcard/blueshift");
-#	else
-#		error DEBUG or NDEBUG should be defined.  
-#	endif // defined(DEBUG)
+	if (!bDebugAndroid) {
+		BE1::PlatformFile::SetExecutablePath(app->activity->externalDataPath);
+	}
+	else {
+		mkdir("/sdcard/blueshift", S_IRWXU | S_IRWXG | S_IRWXO);
+		BE1::PlatformFile::SetExecutablePath("/sdcard/blueshift");
+	}
+
 #endif // _ENGINE
 
 }
