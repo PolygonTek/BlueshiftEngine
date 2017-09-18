@@ -114,18 +114,30 @@ Engine::Engine(NvEGLUtil& egl, struct android_app* app) :
 	m_uiText[1] = NULL;
 #endif
 #if _ENGINE
+	//jclass activityClass = (app->activity->env)->GetObjectClass(app->activity->clazz);
+	bool bDebugAndroid;
+	jclass contextClass = (app->appThreadEnv)->FindClass("android/content/Context");
+	jmethodID midGetPackageName = (app->appThreadEnv)->GetMethodID(contextClass, "getPackageName", "()Ljava/lang/String;");
+	jstring packageName = (jstring)(app->appThreadEnv)->CallObjectMethod(app->activity->clazz, midGetPackageName);
+	const char *package = (app->appThreadEnv)->GetStringUTFChars(packageName, JNI_FALSE);
+	if (strcmp(package, "com.polygontek.devtech.AndroidPlayer") == 0)
+		bDebugAndroid = 1;
+	(app->appThreadEnv)->ReleaseStringUTFChars(packageName, package);
+	(app->appThreadEnv)->DeleteLocalRef(contextClass);
+	(app->appThreadEnv)->DeleteLocalRef(packageName);
+
+
+
 	BE1::PlatformFile::SetManager(app->activity->assetManager);
 	ANativeActivity_setWindowFlags(app->activity,
 		AWINDOW_FLAG_KEEP_SCREEN_ON, 0);
-#	if defined(NDEBUG) 
-	BE1::PlatformFile::SetExecutablePath(app->activity->externalDataPath);
-#	elif defined (DEBUG)
-	mkdir("/sdcard/blueshift", S_IRWXU | S_IRWXG | S_IRWXO);
-	BE1::PlatformFile::SetExecutablePath("/sdcard/blueshift");
-#	else
-#		error DEBUG or RELEASE should be defined.  
-#	endif // defined(DEBUG)
-
+	if (!bDebugAndroid) {
+		BE1::PlatformFile::SetExecutablePath(app->activity->externalDataPath);
+	}
+	else {
+		mkdir("/sdcard/blueshift", S_IRWXU | S_IRWXG | S_IRWXO);
+		BE1::PlatformFile::SetExecutablePath("/sdcard/blueshift");
+	}
 #endif // _ENGINE
 
 }
