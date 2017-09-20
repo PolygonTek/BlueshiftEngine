@@ -10,7 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifdef __APPLE__
 #include <spawn.h>
+#endif
 
 #define loslib_c
 #define LUA_LIB
