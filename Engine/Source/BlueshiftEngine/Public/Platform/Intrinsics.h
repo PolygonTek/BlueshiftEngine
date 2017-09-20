@@ -22,6 +22,12 @@
 
 #include <intrin.h>
 
+BE_FORCE_INLINE size_t read_tsc() {
+    LARGE_INTEGER li;
+    QueryPerformanceCounter(&li);
+    return (size_t)li.QuadPart;
+}
+
 BE_FORCE_INLINE uint64_t __rdpmc(int i) {
     return __readpmc(i);
 }
@@ -136,14 +142,14 @@ BE_FORCE_INLINE void __cpuid(int out[4], int op) {
     asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op));
 }
 
-BE_FORCE_INLINE uint64_t __rdtsc()  {
-    uint32_t high,low;
+BE_FORCE_INLINE uint64_t read_tsc()  {
+    uint32_t high, low;
     asm volatile ("rdtsc" : "=d"(high), "=a"(low));
     return (((uint64_t)high) << 32) + (uint64_t)low;
 }
 
 BE_FORCE_INLINE uint64_t __rdpmc(int i) {
-    uint32_t high,low;
+    uint32_t high, low;
     asm volatile ("rdpmc" : "=d"(high), "=a"(low) : "c"(i));
     return (((uint64_t)high) << 32) + (uint64_t)low;
 }
@@ -287,7 +293,7 @@ BE_FORCE_INLINE T *atomic_cmpxchg(T *volatile *value, const T *input, T *compara
 BE_FORCE_INLINE uint64_t rdtsc() {
     int dummy[4];
     __cpuid(dummy, 0);
-    uint64_t clock = __rdtsc();
+    uint64_t clock = read_tsc();
     __cpuid(dummy, 0);
     return clock;
 }
