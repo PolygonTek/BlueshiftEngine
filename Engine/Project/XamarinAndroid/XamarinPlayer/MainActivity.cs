@@ -212,10 +212,13 @@ namespace XamarinPlayer
 		
 		public void OnDrawFrame (IGL10 gl) 
 		{
-			nativeRender (IntPtr.Zero);
-		}
-		
-		[DllImport ("XamarinPlayer", EntryPoint = "Java_com_example_XamarinPlayer_DemoRenderer_nativeInit")]
+            nativeRender (IntPtr.Zero);
+#if _ENGINE && !DEBUG
+            System.GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+#endif
+        }
+
+        [DllImport ("XamarinPlayer", EntryPoint = "Java_com_example_XamarinPlayer_DemoRenderer_nativeInit")]
 		private static extern void nativeInit (IntPtr jnienv);
 		[DllImport ("XamarinPlayer", EntryPoint = "Java_com_example_XamarinPlayer_DemoRenderer_nativeResize")]
 		private static extern void nativeResize (IntPtr jnienv, IntPtr thiz, int w, int h);
