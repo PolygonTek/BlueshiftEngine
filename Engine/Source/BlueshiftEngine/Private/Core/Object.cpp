@@ -160,6 +160,10 @@ void MetaObject::Shutdown() {
         }
         eventCallbacks = nullptr;
     }
+    
+    node.SetOwner(nullptr);
+    node.RemoveFromHierarchy();
+
     hierarchyIndex = 0;
     lastChildIndex = 0;
 }
@@ -265,6 +269,8 @@ void Object::Init() {
         BE_LOG(L"...already initialized\n");
         return;
     }
+
+    eventCallbackMemory = 0;
 
     int num = 0; 
     for (MetaObject *t = staticTypeList; t != nullptr; t = t->next, num++) {
