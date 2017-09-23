@@ -252,7 +252,37 @@ Image &Image::AddNormalMapRGBA8888(const Image &normalMap) {
 }
 
 template <typename T>
-void BuildMipMap(T *dst, const T *src, const int width, const int height, const int depth, const int components) {
+void BuildMipMap1D(T *dst, const T *src, const int width, const int components) {
+    int xOff = (width  < 2) ? 0 : components;
+
+    for (int x = 0; x < width; x += 2) {
+        for (int i = 0; i < components; i++) {
+            *dst++ = (src[0] + src[xOff]) / 2;
+            src++;
+        }
+        src += xOff;
+    }
+}
+
+template <typename T>
+void BuildMipMap2D(T *dst, const T *src, const int width, const int height, const int components) {
+    int xOff = (width  < 2) ? 0 : components;
+    int yOff = (height < 2) ? 0 : components * width;
+
+    for (int y = 0; y < height; y += 2) {
+        for (int x = 0; x < width; x += 2) {
+            for (int i = 0; i < components; i++) {
+                *dst++ = (src[0] + src[xOff] + src[yOff] + src[yOff + xOff]) / 4;
+                src++;
+            }
+            src += xOff;
+        }
+        src += yOff;
+    }
+}
+
+template <typename T>
+void BuildMipMap3D(T *dst, const T *src, const int width, const int height, const int depth, const int components) {
     int xOff = (width  < 2) ? 0 : components;
     int yOff = (height < 2) ? 0 : components * width;
     int zOff = (depth  < 2) ? 0 : components * width * height;
@@ -269,6 +299,17 @@ void BuildMipMap(T *dst, const T *src, const int width, const int height, const 
             src += yOff;
         }
         src += zOff;
+    }
+}
+
+template <typename T>
+void BuildMipMap(T *dst, const T *src, const int width, const int height, const int depth, const int components) {
+    if (depth > 1) {
+        BuildMipMap3D(dst, src, width, height, depth, components);
+    } else if (height > 1) {
+        BuildMipMap2D(dst, src, width, height, components);
+    } else {
+        BuildMipMap1D(dst, src, width, components);
     }
 }
 
