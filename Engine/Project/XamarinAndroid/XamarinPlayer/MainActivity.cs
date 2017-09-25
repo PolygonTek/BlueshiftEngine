@@ -79,11 +79,15 @@ namespace XamarinPlayer
             mGLView = new DemoGLSurfaceView(this);
             SetContentView(mGLView);
 
-#if !DEBUG
-            SetAssetManager(JNIEnv.Handle, Assets.Handle, FilesDir.AbsolutePath);
-#else
-            SetAssetManager(JNIEnv.Handle, Assets.Handle, "/sdcard/blueshift");
-#endif
+            if (!PackageName.Equals("com.polygontek.devtech.AndroidPlayer"))
+            {
+                SetAssetManager(JNIEnv.Handle, Assets.Handle, FilesDir.AbsolutePath);
+            }
+            else
+            {
+                SetAssetManager(JNIEnv.Handle, Assets.Handle, "/sdcard/blueshift");
+            }
+
         }
 
         protected override void OnPause () 
@@ -208,10 +212,13 @@ namespace XamarinPlayer
 		
 		public void OnDrawFrame (IGL10 gl) 
 		{
-			nativeRender (IntPtr.Zero);
-		}
-		
-		[DllImport ("XamarinPlayer", EntryPoint = "Java_com_example_XamarinPlayer_DemoRenderer_nativeInit")]
+            nativeRender (IntPtr.Zero);
+#if _ENGINE && !DEBUG
+            System.GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+#endif
+        }
+
+        [DllImport ("XamarinPlayer", EntryPoint = "Java_com_example_XamarinPlayer_DemoRenderer_nativeInit")]
 		private static extern void nativeInit (IntPtr jnienv);
 		[DllImport ("XamarinPlayer", EntryPoint = "Java_com_example_XamarinPlayer_DemoRenderer_nativeResize")]
 		private static extern void nativeResize (IntPtr jnienv, IntPtr thiz, int w, int h);

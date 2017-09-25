@@ -498,18 +498,22 @@ void Texture::Upload(const Image *srcImage) {
     Image tmpImage;
 
     if (type == RHI::TextureRectangle) {
-        flags |= (NoMipmaps | Clamp | NoScaleDown);
+        flags |= (Flag::NoMipmaps | Flag::Clamp | Flag::NoScaleDown);
+    }
+
+    if (flags & Flag::NonPowerOfTwo) {
+        flags |= Flag::NoMipmaps;
     }
 
     if (srcImage->IsEmpty()) {
-        flags |= (NoScaleDown | NoCompression);
+        flags |= (Flag::NoScaleDown | Flag::NoCompression);
         forceFormat = srcImage->GetFormat();
     }
 
-    bool useNormalMap   = (flags & NormalMap) ? true : false;
-    bool useCompression = !(flags & NoCompression) ? TextureManager::texture_useCompression.GetBool() : false;
-    bool useNPOT        = (flags & NonPowerOfTwo) ? true : false;
-    bool useSRGB        = ((flags & SRGB) && TextureManager::texture_sRGB.GetBool()) ? true : false;
+    bool useNormalMap   = (flags & Flag::NormalMap) ? true : false;
+    bool useCompression = !(flags & Flag::NoCompression) ? TextureManager::texture_useCompression.GetBool() : false;
+    bool useNPOT        = (flags & Flag::NonPowerOfTwo) ? true : false;
+    bool useSRGB        = ((flags & Flag::SRGB) && TextureManager::texture_sRGB.GetBool()) ? true : false;
 
     Image::Format dstFormat;
     if (forceFormat != Image::Format::UnknownFormat) {
@@ -527,7 +531,7 @@ void Texture::Upload(const Image *srcImage) {
     rhi.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
 
     // Apply scale down mip level
-    int mipLevel = !(flags & NoScaleDown) ? TextureManager::texture_mipLevel.GetInteger() : 0;
+    int mipLevel = !(flags & Flag::NoScaleDown) ? TextureManager::texture_mipLevel.GetInteger() : 0;
     if (mipLevel > 0) {
         dstWidth = Max(dstWidth >> mipLevel, 1);
         dstHeight = Max(dstHeight >> mipLevel, 1);
@@ -553,8 +557,8 @@ void Texture::Upload(const Image *srcImage) {
     this->height        = dstHeight;
     this->depth         = dstDepth;
     
-    this->hasMipmaps    = !(flags & NoMipmaps);
-    this->permanence    = !!(flags & Permanence);
+    this->hasMipmaps    = !(flags & Flag::NoMipmaps);
+    this->permanence    = !!(flags & Flag::Permanence);
     this->addressMode   = TextureFlagsToAddressMode(flags);
 
     rhi.BindTexture(textureHandle);
@@ -573,12 +577,12 @@ void Texture::Upload(const Image *srcImage) {
     rhi.SetTextureAddressMode(addressMode);
 
     if (hasMipmaps) {
-        rhi.SetTextureFilter((flags & Nearest) ? RHI::NearestMipmapNearest : ((flags & Trilinear) ? RHI::LinearMipmapLinear : textureManager.textureFilter));
+        rhi.SetTextureFilter((flags & Flag::Nearest) ? RHI::NearestMipmapNearest : ((flags & Flag::Trilinear) ? RHI::LinearMipmapLinear : textureManager.textureFilter));
     } else {
-        rhi.SetTextureFilter((flags & Nearest) ? RHI::Nearest : RHI::Linear);
+        rhi.SetTextureFilter((flags & Flag::Nearest) ? RHI::Nearest : RHI::Linear);
     }
 
-    if (hasMipmaps && !(flags & Nearest)) {
+    if (hasMipmaps && !(flags & Flag::Nearest)) {
         rhi.SetTextureAnisotropy(textureManager.textureAnisotropy);
     }
 }

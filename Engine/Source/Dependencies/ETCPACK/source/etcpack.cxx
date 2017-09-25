@@ -296,6 +296,8 @@ int indexConversion(int pixelIndices)
 	return correctIndices;
 }
 
+#if 0
+
 // Tests if a file exists.
 // NO WARRANTY --- SEE STATEMENT IN TOP OF FILE (C) Ericsson AB 2005-2013. All Rights Reserved.
 bool fileExist(char *filename)
@@ -808,6 +810,8 @@ void readArguments(int argc,char *argv[],char* src,char *dst)
 	else if(codec==CODEC_ETC)
 		format=ETC1_RGB_NO_MIPMAPS;
 }
+
+#endif
 
 static int compressParams[16][4] = {
     {  -8,   -2,  2,   8 },
@@ -9028,6 +9032,8 @@ void compressBlockAlphaSlow(uint8* data, int ix, int iy, int width, int height, 
 	}
 }
 
+#if 0
+
 // Calculate weighted PSNR
 // NO WARRANTY --- SEE STATEMENT IN TOP OF FILE (C) Ericsson AB 2005-2013. All Rights Reserved.
 double calculateWeightedPSNR(uint8 *lossyimg, uint8 *origimg, int width, int height, double w1, double w2, double w3)
@@ -9625,6 +9631,8 @@ double calculatePSNRfile(char *srcfile, uint8 *origimg, uint8* origalpha)
 	free(img);
 	return PSNR;
 }
+
+#endif
 
 //// Exhaustive code starts here.
 
@@ -15537,6 +15545,7 @@ void compressBlockETC2Exhaustive(uint8 *img, uint8 *imgdec,int width,int height,
 
 //// Exhaustive code ends here.
 
+#if 0
 
 // Compress an image file.
 // NO WARRANTY --- SEE STATEMENT IN TOP OF FILE (C) Ericsson AB 2005-2013. All Rights Reserved.
@@ -16100,3 +16109,5 @@ int main(int argc,char *argv[])
 	}
  	return 0;
 }
+
+#endif

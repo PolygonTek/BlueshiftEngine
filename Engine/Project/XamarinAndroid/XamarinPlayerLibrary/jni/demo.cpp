@@ -64,8 +64,8 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 	int t = BE1::PlatformTime::Milliseconds();
 	int elapsedMsec = t - t0;
-	if (elapsedMsec > 500)
-		elapsedMsec = 500;
+	if (elapsedMsec > 100)
+		elapsedMsec = 100;
 
 	BE1::Engine::RunFrame(elapsedMsec);
 
