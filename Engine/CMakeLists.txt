@@ -89,7 +89,13 @@ if (MSVC)
     add_definitions(-D_UNICODE -DUNICODE)
 
     # Enable Function-Level Linking
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+    
+    # Force Synchronous PDB Writes
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+    
     # Remove RTTI
     string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
