@@ -51,8 +51,12 @@ MetaObject::MetaObject(const char *visualname, const char *classname, const char
     // classname 을 알파벳 순서로 링크드리스트에 소팅하면서 insert
     MetaObject **insert;
     for (insert = &staticTypeList; *insert; insert = &(*insert)->next) {
-        assert(Str::Cmp(classname, (*insert)->classname) != 0);
-        if (Str::Cmp(classname, (*insert)->classname) < 0) {
+        int cmpResult = Str::Cmp(classname, (*insert)->classname);
+        
+        // classname conflicts
+        assert(cmpResult != 0);
+
+        if (cmpResult < 0) {
             next = *insert;
             *insert = this;
             break;

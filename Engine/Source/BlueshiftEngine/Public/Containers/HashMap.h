@@ -57,22 +57,22 @@ struct HashGeneratorIHash {
 };
 
 struct HashCompareDefault {
-    template <typename Type1, typename Type2>
-    static bool Compare(const Type1 &lhs, const Type2 &rhs) {
+    template <typename Type>
+    static bool Compare(const Type &lhs, const Type &rhs) {
         return lhs == rhs;
     }
 };
 
 struct HashCompareStrCmp {
-    template <typename Type1, typename Type2>
-    static bool Compare(const Type1 &lhs, const Type2 &rhs) {
+    template <typename Type>
+    static bool Compare(const Type &lhs, const Type &rhs) {
         return Str::Cmp(lhs, rhs) == 0;
     }
 };
 
 struct HashCompareStrIcmp {
-    template <typename Type1, typename Type2>
-    static bool Compare(const Type1 &lhs, const Type2 &rhs) {
+    template <typename Type>
+    static bool Compare(const Type &lhs, const Type &rhs) {
         return Str::Icmp(lhs, rhs) == 0;
     }
 };
