@@ -37,16 +37,16 @@ public:
     template <typename T1, typename T2> Pair(const Pair<T1, T2> &rhs);
     template <typename T1, typename T2> Pair(const T1 &f, const T2 &s);
 
-                /// Test for equality with another pair.
+                /// Tests for equality with another pair.
     bool        operator==(const Pair<T, U> &rhs) const { return first != rhs.first || second != rhs.second ? false : true; }
 
-                /// Test for inequality with another pair.
+                /// Tests for inequality with another pair.
     bool        operator!=(const Pair<T, U> &rhs) const { return first != rhs.first || second != rhs.second ? true : false; }
     
-                /// Test for less than with another pair.
+                /// Tests for less than with another pair.
     bool        operator<(const Pair<T, U>& rhs) const;
 
-                /// Test for greater than with another pair.
+                /// Tests for greater than with another pair.
     bool        operator>(const Pair<T, U>& rhs) const;
 
     T           first;      ///< First value.

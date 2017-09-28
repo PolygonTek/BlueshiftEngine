@@ -27,7 +27,7 @@ class MetaObject;
 class Object;
 class Lexer;
 
-/// Abstract base class for invoking property accessors.
+/// Abstract base class for invoking property getter/setter functions.
 class PropertyAccessor {
 public:
     /// Get the property.
@@ -37,7 +37,8 @@ public:
 };
 
 /// Property type trait (default use const reference for object type).
-template <typename T> struct PropertyTrait {
+template <typename T> 
+struct PropertyTrait {
     /// Get function return type.
     typedef const T &ReturnType;
     /// Set function parameter type.
@@ -45,40 +46,46 @@ template <typename T> struct PropertyTrait {
 };
 
 /// Int property trait.
-template <> struct PropertyTrait<int> {
+template <> 
+struct PropertyTrait<int> {
     typedef int ReturnType;
     typedef int ParameterType;
 };
 
 /// unsigned property trait.
-template <> struct PropertyTrait<unsigned> {
+template <> 
+struct PropertyTrait<unsigned> {
     typedef unsigned ReturnType;
     typedef unsigned ParameterType;
 };
 
 /// Bool property trait.
-template <> struct PropertyTrait<bool> {
+template <> 
+struct PropertyTrait<bool> {
     typedef bool ReturnType;
     typedef bool ParameterType;
 };
 
 /// Float property trait.
-template <> struct PropertyTrait<float> {
+template <> 
+struct PropertyTrait<float> {
     typedef float ReturnType;
     typedef float ParameterType;
 };
 
 /// Mixed property trait (use const reference for set function only).
-template <typename T> struct MixedPropertyTrait {
+template <typename T> 
+struct MixedPropertyTrait {
     typedef T ReturnType;
     typedef const T &ParameterType;
 };
 
-/// Template implementation of the property accessor invoke helper class.
-template <typename Class, typename VarType, typename Trait> class PropertyAccessorImpl : public PropertyAccessor {
+/// Template implementation of the property accessor.
+template <typename Class, typename VarType, template <typename T> class Trait = PropertyTrait> 
+class PropertyAccessorImpl : public PropertyAccessor {
 public:
-    using GetFunctionPtr = typename Trait::ReturnType (Class::*)() const;
-    using SetFunctionPtr = void (Class::*)(typename Trait::ParameterType);
+    using GetFunctionPtr = typename Trait<VarType>::ReturnType (Class::*)() const;
+    using SetFunctionPtr = void (Class::*)(typename Trait<VarType>::ParameterType);
 
     /// Construct with function pointers.
     PropertyAccessorImpl(GetFunctionPtr getter, SetFunctionPtr setter) :
@@ -107,11 +114,12 @@ public:
     SetFunctionPtr setFunction;
 };
 
-/// Template implementation of the property accessor invoke helper class.
-template <typename Class, typename VarType, typename Trait> class ListPropertyAccessorImpl : public PropertyAccessor {
+/// Template implementation of the list property accessor.
+template <typename Class, typename VarType, template <typename T> class Trait = PropertyTrait> 
+class ListPropertyAccessorImpl : public PropertyAccessor {
 public:
-    using GetFunctionPtr = typename Trait::ReturnType(Class::*)(int index) const;
-    using SetFunctionPtr = void (Class::*)(int index, typename Trait::ParameterType);
+    using GetFunctionPtr = typename Trait<VarType>::ReturnType(Class::*)(int index) const;
+    using SetFunctionPtr = void (Class::*)(int index, typename Trait<VarType>::ParameterType);
 
     /// Construct with function pointers.
     ListPropertyAccessorImpl(GetFunctionPtr getter, SetFunctionPtr setter) :
@@ -400,10 +408,6 @@ BE_INLINE PropertySpec::PropertySpec(const char *name, const MetaObject &metaObj
 
 #endif
 
-//-------------------------------------------------------------------------------
-// Returns property type from concrete types
-//-------------------------------------------------------------------------------
-
 class Vec2;
 class Vec3;
 class Vec4;
@@ -415,22 +419,53 @@ class Point;
 class Rect;
 class Str;
 
-template <typename T> PropertySpec::Type GetPropertyType();
+//-------------------------------------------------------------------------------
+// Returns property type enum from corresponding types
+//-------------------------------------------------------------------------------
+template <typename T> 
+BE_INLINE PropertySpec::Type GetPropertyType() { return PropertySpec::Type::BadType; }
 
-template <> BE_INLINE PropertySpec::Type GetPropertyType<int>() { return PropertySpec::Type::IntType; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<unsigned>() { return PropertySpec::Type::IntType; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<bool>() { return PropertySpec::Type::BoolType; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<float>() { return PropertySpec::Type::FloatType; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Vec2>() { return PropertySpec::Type::Vec2Type; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Vec3>() { return PropertySpec::Type::Vec3Type; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Vec4>() { return PropertySpec::Type::Vec4Type; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Color3>() { return PropertySpec::Type::Color3Type; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Color4>() { return PropertySpec::Type::Color4Type; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Mat3>() { return PropertySpec::Type::Mat3Type; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Angles>() { return PropertySpec::Type::AnglesType; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Point>() { return PropertySpec::Type::PointType; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Rect>() { return PropertySpec::Type::RectType; }
-template <> BE_INLINE PropertySpec::Type GetPropertyType<Str>() { return PropertySpec::Type::StringType; }
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<int>() { return PropertySpec::Type::IntType; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<unsigned>() { return PropertySpec::Type::IntType; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<bool>() { return PropertySpec::Type::BoolType; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<float>() { return PropertySpec::Type::FloatType; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Vec2>() { return PropertySpec::Type::Vec2Type; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Vec3>() { return PropertySpec::Type::Vec3Type; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Vec4>() { return PropertySpec::Type::Vec4Type; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Color3>() { return PropertySpec::Type::Color3Type; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Color4>() { return PropertySpec::Type::Color4Type; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Mat3>() { return PropertySpec::Type::Mat3Type; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Angles>() { return PropertySpec::Type::AnglesType; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Point>() { return PropertySpec::Type::PointType; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Rect>() { return PropertySpec::Type::RectType; }
+
+template <> 
+BE_INLINE PropertySpec::Type GetPropertyType<Str>() { return PropertySpec::Type::StringType; }
 
 // property definition begin
 #define BEGIN_PROPERTIES(classname) \
@@ -516,27 +551,27 @@ template <> BE_INLINE PropertySpec::Type GetPropertyType<Str>() { return Propert
 #define REGISTER_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(std::is_base_of<type, BE1::Object>::value ? \
         BE1::PropertySpec(name, type::metaObject, \
-            new BE1::PropertyAccessorImpl<Class, type, BE1::PropertyTrait<type>>(Class::getter, Class::setter), defaultValue, desc, flags) : \
+            new BE1::PropertyAccessorImpl<Class, type>(Class::getter, Class::setter), defaultValue, desc, flags) : \
         BE1::PropertySpec(name, BE1::GetPropertyType<type>(), \
-            new BE1::PropertyAccessorImpl<Class, type, BE1::PropertyTrait<type>>(Class::getter, Class::setter), defaultValue, desc, flags));
+            new BE1::PropertyAccessorImpl<Class, type>(Class::getter, Class::setter), defaultValue, desc, flags));
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(std::is_base_of<type, BE1::Object>::value ? \
         BE1::PropertySpec(name, type::metaObject, \
-            new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait<type>>(Class::getter, Class::setter), defaultValue, desc, flags) : \
+            new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(Class::getter, Class::setter), defaultValue, desc, flags) : \
         BE1::PropertySpec(name, BE1::GetPropertyType<type>(), \
-            new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait<type>>(Class::getter, Class::setter), defaultValue, desc, flags));
+            new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(Class::getter, Class::setter), defaultValue, desc, flags));
 
 #define REGISTER_ENUM_ACCESSOR_PROPERTY(name, enumSequence, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertySpec(name, enumSequence, \
-        new BE1::PropertyAccessorImpl<Class, int, BE1::PropertyTrait<int>>(Class::getter, Class::setter), defaultValue, desc, flags))
+        new BE1::PropertyAccessorImpl<Class, int>(Class::getter, Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_LIST_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(std::is_base_of<type, BE1::Object>::value ? \
         BE1::PropertySpec(name, type::metaObject, \
-            new BE1::PropertyAccessorImpl<Class, type, BE1::PropertyTrait<type>>(Class::getter, Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray) : \
+            new BE1::PropertyAccessorImpl<Class, type>(Class::getter, Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray) : \
         BE1::PropertySpec(name, BE1::GetPropertyType<type>(), \
-            new BE1::PropertyAccessorImpl<Class, type, BE1::PropertyTrait<type>>(Class::getter, Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray));
+            new BE1::PropertyAccessorImpl<Class, type>(Class::getter, Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray));
 
 
 BE_NAMESPACE_END

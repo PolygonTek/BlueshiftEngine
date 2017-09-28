@@ -21,8 +21,6 @@
 
     Circular linked list template
 
-    끊어진 node 는 자기 자신을 가리키는 head node
-
 -------------------------------------------------------------------------------
 */
 
@@ -51,49 +49,54 @@ public:
                     /// Otherwise it just removes the node from the list.
     void            Clear();
 
-                    // this 를 node 전에 삽입
+                    /// Inserts this node before node node
     void            InsertBefore(LinkList &node);
 
-                    // this 를 node 뒤에 삽입
+                    /// Inserts this node after node node
     void            InsertAfter(LinkList &node);
 
-                    // this 를 node 의 linked list 맨 뒤에 추가
+                    /// Adds this node to the end of node node
     void            AddToEnd(LinkList &node) { InsertBefore(*node.head); }
 
-                    // this 를 node 의 linked list 맨 앞에 추가
+                    /// Adds this node to the front of node node
     void            AddToFront(LinkList &node) { InsertAfter(*node.head); }
 
-                    // this 를 연결된 list 에서 삭제
+                    /// Removes this node in link list
     void            Remove();
 
-                    // next node 의 owner 를 리턴, 끝 node 라면 nullptr 리턴
+                    /// Returns owner pointer of next node. 
+                    /// Returns nullptr if this node is a last one
     T *             Next() const;
 
-                    // prev node 의 owner 를 리턴, 첫 node 라면 nullptr 리턴
+                    /// Returns owner pointer of previous node. 
+                    /// Returns nullptr if this node is a first one
     T *             Prev() const;
 
-                    // node 의 owner 객체 주소 리턴
+                    /// Returns owner pointer of this node.
     T *             Owner() const { return owner; }
 
-                    // node 의 owner 객체 설정
+                    /// Sets owner pointer of this node.
     void            SetOwner(T *object) { owner = object; }
 
                     /// Returns head node pointer.
     LinkList *      ListHead() const { return head; }
 
-                    // next node 리턴, 끝 node 라면 nullptr 리턴
+                    /// Returns next node pointer.
+                    /// Returns nullptr if this node is a last one
     LinkList *      NextNode() const { if (next == head) { return nullptr; } return next; }
 
-                    // prev node 리턴, 첫 node 라면 nullptr 리턴
+                    /// Returns previous node pointer.
+                    /// Returns nullptr if this node is a first one
     LinkList *      PrevNode() const { if (prev == head) { return nullptr; } return prev; }
 
 private:
-    LinkList *      head;   // 순환 node 의 head pointer. 비어 있을 경우 head == next == prev
-    LinkList *      next;   // 순환 node 의 next pointer
-    LinkList *      prev;   // 순환 node 의 prev pointer
-    T *             owner;  // node 의 owner
+    LinkList *      head;   ///< Head pointer of circular node list. If empty list, head == next == prev
+    LinkList *      next;   ///< Next pointer of circular node list
+    LinkList *      prev;   ///< Previous pointer of circular node list
+    T *             owner;  ///< Owner pointer
 };
 
+// 끊어진 node 는 자기 자신을 가리키는 head node
 template <typename T>
 LinkList<T>::LinkList() {
     head    = this;
