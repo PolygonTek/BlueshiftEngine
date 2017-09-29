@@ -36,7 +36,9 @@ BEGIN_PROPERTIES(ComTextRenderer)
 END_PROPERTIES
 
 void ComTextRenderer::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
     //REGISTER_ACCESSOR_PROPERTY("Text", Str, GetText, SetText, "Hello World", "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComTextRenderer::ComTextRenderer() {

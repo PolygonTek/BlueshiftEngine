@@ -38,6 +38,8 @@ BEGIN_PROPERTIES(ComReflectionProbe)
 END_PROPERTIES
 
 void ComReflectionProbe::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+#endif
 }
 
 ComReflectionProbe::ComReflectionProbe() {

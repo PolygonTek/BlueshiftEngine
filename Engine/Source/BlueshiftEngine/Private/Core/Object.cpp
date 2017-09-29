@@ -205,10 +205,11 @@ void MetaObject::GetPropertySpecList(Array<const PropertySpec *> &pspecs) const 
     }
 }
 
-void MetaObject::RegisterProperty(const PropertySpec &propertySpec) {
+PropertySpec &MetaObject::RegisterProperty(const PropertySpec &propertySpec) {
     int index = pspecs.Append(propertySpec);
     int hash = pspecHash.GenerateHash(propertySpec.GetName(), false);
     pspecHash.Add(hash, index);
+    return pspecs[index];
 }
 
 //-----------------------------------------------------------------------------------------------

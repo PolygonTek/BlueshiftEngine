@@ -30,6 +30,8 @@ BEGIN_PROPERTIES(ComSensor)
 END_PROPERTIES
 
 void ComSensor::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+#endif
 }
 
 ComSensor::ComSensor() {

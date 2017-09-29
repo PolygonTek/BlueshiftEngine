@@ -29,6 +29,8 @@ BEGIN_PROPERTIES(ComFixedJoint)
 END_PROPERTIES
 
 void ComFixedJoint::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+#endif
 }
 
 ComFixedJoint::ComFixedJoint() {

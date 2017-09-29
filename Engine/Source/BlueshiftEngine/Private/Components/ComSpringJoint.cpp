@@ -35,12 +35,14 @@ BEGIN_PROPERTIES(ComSpringJoint)
 END_PROPERTIES
 
 void ComSpringJoint::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Lower Limit", float, GetLowerLimit, SetLowerLimit, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Upper Limit", float, GetUpperLimit, SetUpperLimit, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Stiffness", float, GetStiffness, SetStiffness, "2", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Damping", float, GetDamping, SetDamping, "0.2", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Lower Limit", float, GetLowerLimit, SetLowerLimit, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Upper Limit", float, GetUpperLimit, SetUpperLimit, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Stiffness", float, GetStiffness, SetStiffness, "2", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Damping", float, GetDamping, SetDamping, "0.2", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+#endif
 }
 
 ComSpringJoint::ComSpringJoint() {
@@ -162,7 +164,7 @@ void ComSpringJoint::SetAnchor(const Vec3 &anchor) {
     }
 }
 
-const Angles ComSpringJoint::GetAngles() const {
+Angles ComSpringJoint::GetAngles() const {
     return axis.ToAngles();
 }
 
@@ -173,44 +175,44 @@ void ComSpringJoint::SetAngles(const Angles &angles) {
     }
 }
 
-const float ComSpringJoint::GetLowerLimit() const {
+float ComSpringJoint::GetLowerLimit() const {
     return lowerLimit;
 }
 
-void ComSpringJoint::SetLowerLimit(const float limit) {
+void ComSpringJoint::SetLowerLimit(float limit) {
     this->lowerLimit = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, lowerLimit));
     }
 }
 
-const float ComSpringJoint::GetUpperLimit() const {
+float ComSpringJoint::GetUpperLimit() const {
     return upperLimit;
 }
 
-void ComSpringJoint::SetUpperLimit(const float limit) {
+void ComSpringJoint::SetUpperLimit(float limit) {
     this->upperLimit = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, upperLimit));
     }
 }
 
-const float ComSpringJoint::GetStiffness() const {
+float ComSpringJoint::GetStiffness() const {
     return stiffness;
 }
 
-void ComSpringJoint::SetStiffness(const float stiffness) {
+void ComSpringJoint::SetStiffness(float stiffness) {
     this->stiffness = stiffness;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetLinearStiffness(Vec3(0, 0, stiffness));
     }
 }
 
-const float ComSpringJoint::GetDamping() const {
+float ComSpringJoint::GetDamping() const {
     return damping;
 }
 
-void ComSpringJoint::SetDamping(const float damping) {
+void ComSpringJoint::SetDamping(float damping) {
     this->damping = damping;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetLinearDamping(Vec3(0, 0, damping));

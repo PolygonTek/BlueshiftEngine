@@ -29,6 +29,8 @@ BEGIN_PROPERTIES(ComSpline)
 END_PROPERTIES
 
 void ComSpline::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+#endif
 }
 
 ComSpline::ComSpline() {

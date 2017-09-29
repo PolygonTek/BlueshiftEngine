@@ -33,10 +33,12 @@ BEGIN_PROPERTIES(ComHingeJoint)
 END_PROPERTIES
 
 void ComHingeJoint::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Angles", Angles, Angles, GetAngles, SetAngles, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, "0", PropertySpec::ReadWrite);
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, "0", "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComHingeJoint::ComHingeJoint() {
@@ -144,7 +146,7 @@ void ComHingeJoint::SetAnchor(const Vec3 &anchor) {
     }
 }
 
-const Angles ComHingeJoint::GetAngles() const {
+Angles ComHingeJoint::GetAngles() const {
     return axis.ToAngles();
 }
 
@@ -155,11 +157,11 @@ void ComHingeJoint::SetAngles(const Angles &angles) {
     }
 }
 
-const float ComHingeJoint::GetMotorSpeed() const {
+float ComHingeJoint::GetMotorSpeed() const {
     return motorSpeed;
 }
 
-void ComHingeJoint::SetMotorSpeed(const float motorSpeed) {
+void ComHingeJoint::SetMotorSpeed(float motorSpeed) {
     this->motorSpeed = motorSpeed;
     if (constraint) {
         ((PhysHingeConstraint *)constraint)->EnableMotor(motorSpeed != 0.0f ? true : false);
@@ -167,11 +169,11 @@ void ComHingeJoint::SetMotorSpeed(const float motorSpeed) {
     }
 }
 
-const float ComHingeJoint::GetMaxMotorImpulse() const {
+float ComHingeJoint::GetMaxMotorImpulse() const {
     return maxMotorImpulse;
 }
 
-void ComHingeJoint::SetMaxMotorImpulse(const float maxMotorImpulse) {
+void ComHingeJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     this->maxMotorImpulse = maxMotorImpulse;
     if (constraint) {
         ((PhysHingeConstraint *)constraint)->EnableMotor(motorSpeed != 0.0f ? true : false);

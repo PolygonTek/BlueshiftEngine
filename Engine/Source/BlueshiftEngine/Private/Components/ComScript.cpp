@@ -33,7 +33,9 @@ BEGIN_PROPERTIES(ComScript)
 END_PROPERTIES
 
 void ComScript::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
     //REGISTER_ACCESSOR_PROPERTY("Script", ScriptAsset, GetScript, SetScript, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComScript::ComScript() {

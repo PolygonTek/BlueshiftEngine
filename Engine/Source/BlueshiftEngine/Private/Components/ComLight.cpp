@@ -48,21 +48,23 @@ BEGIN_PROPERTIES(ComLight)
 END_PROPERTIES
 
 void ComLight::RegisterProperties() {
-    //REGISTER_ENUM_ACCESSOR_PROPERTY("Light Type", "Point;Spot;Directional", GetLightType, SetLightType, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Material", MaterialAsset, GetMaterial, SetMaterial, GuidMapper::zeroClampLightMaterialGuid.ToString(), PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, "1 1 1", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Turn On", bool, IsTurnOn, SetTurnOn, "true", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "false", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Shadow Offset Factor", bool, GetShadowOffsetFactor, SetShadowOffsetFactor, "3", PropertySpec::ReadWrite).SetRange(0, 16, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Shadow Offset Units", bool, GetShadowOffsetUnits, SetShadowOffsetUnits, "200", PropertySpec::ReadWrite).SetRange(0, 1000, 1);
-    //REGISTER_ACCESSOR_PROPERTY("Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, "false", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Light Size", Vec3, GetLightSize, SetLightSize, "200 200 200", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, "1.25", PropertySpec::ReadWrite).SetRange(0.01f, 100, 0.1f);
-    //REGISTER_ACCESSOR_PROPERTY("Intensity", float, GetIntensity, SetIntensity, "2.0", PropertySpec::ReadWrite).SetRange(0, 8, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Near", float, GetLightZNear, SetLightZNear, "10", PropertySpec::ReadWrite).SetRange(1, 200, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, "1", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, "16384", PropertySpec::ReadWrite);
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Light Type", "Point;Spot;Directional", GetLightType, SetLightType, "0", "", PropertySpec::ReadWrite);
+    //REGISTER_ACCESSOR_PROPERTY("Material", MaterialAsset, GetMaterial, SetMaterial, GuidMapper::zeroClampLightMaterialGuid.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, "1 1 1", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Turn On", bool, IsTurnOn, SetTurnOn, "true", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "false", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Shadow Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, "3", "", PropertySpec::ReadWrite).SetRange(0, 16, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Shadow Offset Units", float, GetShadowOffsetUnits, SetShadowOffsetUnits, "200", "", PropertySpec::ReadWrite).SetRange(0, 1000, 1);
+    REGISTER_ACCESSOR_PROPERTY("Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, "false", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Light Size", Vec3, GetLightSize, SetLightSize, "200 200 200", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, "1.25", "", PropertySpec::ReadWrite).SetRange(0.01f, 100, 0.1f);
+    REGISTER_ACCESSOR_PROPERTY("Intensity", float, GetIntensity, SetIntensity, "2.0", "", PropertySpec::ReadWrite).SetRange(0, 8, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Near", float, GetLightZNear, SetLightZNear, "10", "", PropertySpec::ReadWrite).SetRange(1, 200, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, "1", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, "16384", "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComLight::ComLight() {
@@ -416,12 +418,12 @@ void ComLight::PropertyChanged(const char *classname, const char *propName) {
     Component::PropertyChanged(classname, propName);
 }
 
-SceneLight::Type ComLight::GetLightType() const {
-    return sceneLight.type;
+int ComLight::GetLightType() const {
+    return (int)sceneLight.type;
 }
 
-void ComLight::SetLightType(const SceneLight::Type type) {
-    sceneLight.type = type;
+void ComLight::SetLightType(int type) {
+    sceneLight.type = (SceneLight::Type)type;
     materialManager.ReleaseMaterial(sprite.customMaterials[0]);
     Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(sceneLight.type), Texture::Clamp | Texture::HighQuality);
     sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);

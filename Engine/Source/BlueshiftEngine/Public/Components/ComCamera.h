@@ -67,26 +67,26 @@ private:
 protected:
     void                    UpdateVisuals();
 
-    const int               GetLayerMask() const;
-    void                    SetLayerMask(const int layerMask);
+    int                     GetLayerMask() const;
+    void                    SetLayerMask(int layerMask);
 
-    const int               GetProjectionMethod() const;
-    void                    SetProjectionMethod(const int projectionMethod);
+    int                     GetProjectionMethod() const;
+    void                    SetProjectionMethod(int projectionMethod);
 
-    const float             GetNear() const;
+    float                   GetNear() const;
     void                    SetNear(const float zNear);
 
-    const float             GetFar() const;
+    float                   GetFar() const;
     void                    SetFar(const float zFar);
 
-    const int               GetClearMethod() const;
-    void                    SetClearMethod(const int clearMethod);
+    int                     GetClearMethod() const;
+    void                    SetClearMethod(int clearMethod);
 
     const Color3 &          GetClearColor() const;
     void                    SetClearColor(const Color3 &clearColor);
 
-    const float             GetClearAlpha() const;
-    void                    SetClearAlpha(const float clearAlpha);
+    float                   GetClearAlpha() const;
+    void                    SetClearAlpha(float clearAlpha);
 
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);

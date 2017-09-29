@@ -25,6 +25,8 @@ BEGIN_PROPERTIES(ComAnimator)
 END_PROPERTIES
 
 void ComAnimator::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+#endif
 }
 
 ComAnimator::ComAnimator() {

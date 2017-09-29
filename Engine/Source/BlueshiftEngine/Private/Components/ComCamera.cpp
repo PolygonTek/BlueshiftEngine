@@ -48,20 +48,22 @@ BEGIN_PROPERTIES(ComCamera)
 END_PROPERTIES
 
 void ComCamera::RegisterProperties() {
-    //REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjection, SetProjection, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, "10", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
-    //REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, "8192", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
-    //REGISTER_PROPERTY("FOV", float, fov, "60", PropertySpec::ReadWrite).SetRange(1, 179, 1);
-    //REGISTER_PROPERTY("Size", float, size, "1000", PropertySpec::ReadWrite).SetRange(1, 16384, 1);
-    //REGISTER_PROPERTY("X", float, nx, "0", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    //REGISTER_PROPERTY("Y", float, ny, "0", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    //REGISTER_PROPERTY("W", float, nw, "1", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    //REGISTER_PROPERTY("H", float, nh, "1", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Layer Mask", int, GetLayerMask, SetLayerMask, Str(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), PropertySpec::ReadWrite);
-    //REGISTER_ENUM_ACCESSOR_PROPERTY("Clear", "No Clear;Depth Only;Color", GetClear, SetClear, "1", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, "0", PropertySpec::ReadWrite);
-    //REGISTER_PROPERTY("Order", int, order, "0", PropertySpec::ReadWrite);
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjectionMethod, SetProjectionMethod, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, "10", "", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
+    REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, "8192", "", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
+    REGISTER_PROPERTY("FOV", float, fov, "60", "", PropertySpec::ReadWrite).SetRange(1, 179, 1);
+    REGISTER_PROPERTY("Size", float, size, "1000", "", PropertySpec::ReadWrite).SetRange(1, 16384, 1);
+    REGISTER_PROPERTY("X", float, nx, "0", "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("Y", float, ny, "0", "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("W", float, nw, "1", "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("H", float, nh, "1", "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Layer Mask", int, GetLayerMask, SetLayerMask, Str(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), "", PropertySpec::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Clear", "No Clear;Depth Only;Color", GetClearMethod, SetClearMethod, "1", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, "0", "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Order", int, order, "0", "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComCamera::ComCamera() {
@@ -520,16 +522,16 @@ void ComCamera::PropertyChanged(const char *classname, const char *propName) {
     Component::PropertyChanged(classname, propName);
 }
 
-const int ComCamera::GetLayerMask() const {
+int ComCamera::GetLayerMask() const {
     return viewParms.layerMask;
 }
 
-void ComCamera::SetLayerMask(const int layerMask) {
+void ComCamera::SetLayerMask(int layerMask) {
     viewParms.layerMask = layerMask;
     UpdateVisuals();
 }
 
-const int ComCamera::GetProjectionMethod() const {
+int ComCamera::GetProjectionMethod() const {
     return viewParms.orthogonal ? 1 : 0;
 }
 
@@ -538,29 +540,29 @@ void ComCamera::SetProjectionMethod(const int projectionMethod) {
     UpdateVisuals();
 }
 
-const float ComCamera::GetNear() const {
+float ComCamera::GetNear() const {
     return viewParms.clearColor.a;
 }
 
-void ComCamera::SetNear(const float zNear) {
+void ComCamera::SetNear(float zNear) {
     viewParms.zNear = zNear;
     UpdateVisuals();
 }
 
-const float ComCamera::GetFar() const {
+float ComCamera::GetFar() const {
     return viewParms.clearColor.a;
 }
 
-void ComCamera::SetFar(const float zFar) {
+void ComCamera::SetFar(float zFar) {
     viewParms.zFar = zFar;
     UpdateVisuals();
 }
 
-const int ComCamera::GetClearMethod() const {
+int ComCamera::GetClearMethod() const {
     return viewParms.clearMethod;
 }
 
-void ComCamera::SetClearMethod(const int clearMethod) {
+void ComCamera::SetClearMethod(int clearMethod) {
     viewParms.clearMethod = (SceneView::ClearMethod)clearMethod;
     UpdateVisuals();
 }
@@ -574,7 +576,7 @@ void ComCamera::SetClearColor(const Color3 &clearColor) {
     UpdateVisuals();
 }
 
-const float ComCamera::GetClearAlpha() const {
+float ComCamera::GetClearAlpha() const {
     return viewParms.clearColor.a;
 }
 

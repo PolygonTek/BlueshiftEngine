@@ -32,9 +32,12 @@ BEGIN_PROPERTIES(ComParticleSystem)
     PROPERTY_BOOL("playOnAwake", "Play On Awake", "", "true", PropertySpec::ReadWrite),
 END_PROPERTIES
 
-void ComParticleSystem::RegisterProperties() {}
+void ComParticleSystem::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+#endif
+}
 
-ComParticleSystem::ComParticleSystem() {    
+ComParticleSystem::ComParticleSystem() {
     particleSystemAsset = nullptr;
 
     spriteHandle = -1;

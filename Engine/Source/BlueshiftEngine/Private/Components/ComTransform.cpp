@@ -31,9 +31,11 @@ BEGIN_PROPERTIES(ComTransform)
 END_PROPERTIES
 
 void ComTransform::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Origin", Vec3, GetLocalOrigin, SetLocalOrigin, "1 1 1", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Angles", Vec3, GetLocalAngles, SetLocalAngles, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Scale", Vec3, GetLocalScale, SetLocalScale, "1 1 1", PropertySpec::ReadWrite);
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Origin", Vec3, GetLocalOrigin, SetLocalOrigin, "0 0 0", "xyz position in local space", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetLocalAngles, SetLocalAngles, "0 0 0", "yaw, pitch, roll in degree in local space", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Scale", Vec3, GetLocalScale, SetLocalScale, "1 1 1", "xyz scale in local space", PropertySpec::ReadWrite);
+#endif
 }
 
 ComTransform::ComTransform() {
@@ -125,17 +127,17 @@ void ComTransform::SetLocalTransform(const Vec3 &origin, const Vec3 &scale, cons
     UpdateChildren();
 }
 
-const Vec3 ComTransform::GetOrigin() const {
+Vec3 ComTransform::GetOrigin() const {
     return worldMatrix.ToTranslationVec3();
 }
 
-const Mat3 ComTransform::GetAxis() const {
+Mat3 ComTransform::GetAxis() const {
     Mat3 axis = worldMatrix.ToMat3();
     axis.OrthoNormalizeSelf();
     return axis;
 }
 
-const Vec3 ComTransform::GetScale() const {
+Vec3 ComTransform::GetScale() const {
     Mat3 axis = worldMatrix.ToMat3();
     Vec3 scale;
     scale.x = axis[0].Length();

@@ -32,9 +32,11 @@ BEGIN_PROPERTIES(ComCapsuleCollider)
 END_PROPERTIES
 
 void ComCapsuleCollider::RegisterProperties() {
-    //REGISTER_PROPERTY("Center", Vec3, center, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_PROPERTY("Radius", float, radius, "1", PropertySpec::ReadWrite);
-    //REGISTER_PROPERTY("Height", float, height, "1", PropertySpec::ReadWrite);
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_PROPERTY("Center", Vec3, center, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Radius", float, radius, "1", "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Height", float, height, "1", "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComCapsuleCollider::ComCapsuleCollider() {

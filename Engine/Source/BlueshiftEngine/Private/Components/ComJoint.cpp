@@ -29,9 +29,11 @@ BEGIN_PROPERTIES(ComJoint)
 END_PROPERTIES
 
 void ComJoint::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Connected Body", ComRigidBody, GetConnectedBody, SetConnectedBody, Guid::zero.ToString(), PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, PropertySpec::ReadWrite);
+#ifdef NEW_PROPERTY_SYSTEM
+    //REGISTER_ACCESSOR_PROPERTY("Connected Body", ComRigidBody, GetConnectedBody, SetConnectedBody, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, "true", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, "1e30f", "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComJoint::ComJoint() {
@@ -128,22 +130,22 @@ void ComJoint::SetConnectedBody(const Guid &guid) {
     }
 }
 
-const bool ComJoint::IsCollisionEnabled() const {
+bool ComJoint::IsCollisionEnabled() const {
     return collisionEnabled;
 }
 
-void ComJoint::SetCollisionEnabled(const bool enabled) {
+void ComJoint::SetCollisionEnabled(bool enabled) {
     collisionEnabled = enabled;
     if (constraint) {
         constraint->EnableCollision(collisionEnabled);
     }
 }
 
-const float ComJoint::GetBreakImpulse() const {
+float ComJoint::GetBreakImpulse() const {
     return breakImpulse;
 }
 
-void ComJoint::SetBreakImpulse(const float breakImpulse) {
+void ComJoint::SetBreakImpulse(float breakImpulse) {
     this->breakImpulse = breakImpulse;
     if (constraint) {
         constraint->SetBreakImpulse(breakImpulse);

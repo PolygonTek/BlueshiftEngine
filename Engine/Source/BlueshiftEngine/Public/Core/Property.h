@@ -21,6 +21,8 @@
 #include "Core/Variant.h"
 #include "Containers/StrArray.h"
 
+//#define NEW_PROPERTY_SYSTEM
+
 BE_NAMESPACE_BEGIN
 
 class Properties;
@@ -41,44 +43,44 @@ public:
 template <typename T> 
 struct PropertyTrait {
     /// Get function return type.
-    typedef const T &ReturnType;
+    using ReturnType = const T &;
     /// Set function parameter type.
-    typedef const T &ParameterType;
+    using ParameterType = const T &;
 };
 
 /// Int property trait.
 template <> 
 struct PropertyTrait<int> {
-    typedef int ReturnType;
-    typedef int ParameterType;
+    using ReturnType = int;
+    using ParameterType = int;
 };
 
 /// unsigned property trait.
 template <> 
 struct PropertyTrait<unsigned> {
-    typedef unsigned ReturnType;
-    typedef unsigned ParameterType;
+    using ReturnType = unsigned;
+    using ParameterType = unsigned;
 };
 
 /// Bool property trait.
 template <> 
 struct PropertyTrait<bool> {
-    typedef bool ReturnType;
-    typedef bool ParameterType;
+    using ReturnType = bool;
+    using ParameterType = bool;
 };
 
 /// Float property trait.
 template <> 
 struct PropertyTrait<float> {
-    typedef float ReturnType;
-    typedef float ParameterType;
+    using ReturnType = float;
+    using ParameterType = float;
 };
 
 /// Mixed property trait (use const reference for set function only).
 template <typename T> 
 struct MixedPropertyTrait {
-    typedef T ReturnType;
-    typedef const T &ParameterType;
+    using ReturnType = T;
+    using ParameterType = const T &;
 };
 
 /// Template implementation of the property accessor.
@@ -197,18 +199,18 @@ public:
     ~PropertySpec();
 
     PropertySpec(const PropertySpec &pspec);
-#if 1
-    PropertySpec(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags);
-    PropertySpec(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags);
-    PropertySpec(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags);
-    PropertySpec(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags);
-#else
+#ifdef NEW_PROPERTY_SYSTEM
     PropertySpec(const char *name, Type type, int offset, const char *defaultValue, const char *desc, int flags);
     PropertySpec(const char *name, const Enum &e, int offset, const char *defaultValue, const char *desc, int flags);
     PropertySpec(const char *name, const MetaObject &metaObject, int offset, const char *defaultValue, const char *desc, int flags);
     PropertySpec(const char *name, Type type, PropertyAccessor *accesor, const char *defaultValue, const char *desc, int flags);
     PropertySpec(const char *name, const Enum &e, PropertyAccessor *accesor, const char *defaultValue, const char *desc, int flags);
     PropertySpec(const char *name, const MetaObject &metaObject, PropertyAccessor *accesor, const char *defaultValue, const char *desc, int flags);
+#else
+    PropertySpec(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags);
+    PropertySpec(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags);
+    PropertySpec(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags);
+    PropertySpec(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags);
 #endif
 
     Type                    GetType() const { return type; }
@@ -275,63 +277,7 @@ BE_INLINE PropertySpec::PropertySpec(const PropertySpec &pspec) {
     this->metaObject = pspec.metaObject;
 }
 
-#if 1
-
-BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags) {
-    this->type = type;
-    this->name = name;
-    this->defaultValue = defaultValue;
-    this->offset = 0;
-    this->accessor = nullptr;
-    this->flags = flags;
-    this->label = label;
-    this->desc = desc;
-    this->range = Rangef(0, 0, 1);
-    this->metaObject = nullptr;
-}
-
-BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags) {
-    this->type = type;
-    this->name = name;
-    this->defaultValue = defaultValue;
-    this->offset = 0;
-    this->accessor = nullptr;
-    this->flags = flags | Ranged;
-    this->label = label;
-    this->desc = desc;
-    this->range = r;
-    this->metaObject = nullptr;
-}
-
-BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags) {
-    this->type = type;
-    this->name = name;
-    this->defaultValue = defaultValue;
-    this->offset = 0;
-    this->accessor = nullptr;
-    this->flags = flags;
-    this->label = label;
-    this->desc = desc;
-    this->range = Rangef(0, 0, 1);
-    this->metaObject = nullptr;
-    SplitStringIntoList(this->enumeration, e.sequence, ";");
-    assert(enumeration.Count() > 0);
-}
-
-BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags) {
-    this->type = type;
-    this->name = name;
-    this->defaultValue = defaultValue;
-    this->offset = 0;
-    this->accessor = nullptr;
-    this->flags = flags;
-    this->label = label;
-    this->desc = desc;
-    this->range = Rangef(0, 0, 1);
-    this->metaObject = &metaObject;
-}
-
-#else
+#ifdef NEW_PROPERTY_SYSTEM
 
 BE_INLINE PropertySpec::PropertySpec(const char *name, Type type, int offset, const char *defaultValue, const char *desc, int flags) {
     this->type = type;
@@ -407,11 +353,68 @@ BE_INLINE PropertySpec::PropertySpec(const char *name, const MetaObject &metaObj
     this->metaObject = &metaObject;
 }
 
+#else
+
+BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags) {
+    this->type = type;
+    this->name = name;
+    this->defaultValue = defaultValue;
+    this->offset = 0;
+    this->accessor = nullptr;
+    this->flags = flags;
+    this->label = label;
+    this->desc = desc;
+    this->range = Rangef(0, 0, 1);
+    this->metaObject = nullptr;
+}
+
+BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags) {
+    this->type = type;
+    this->name = name;
+    this->defaultValue = defaultValue;
+    this->offset = 0;
+    this->accessor = nullptr;
+    this->flags = flags | Ranged;
+    this->label = label;
+    this->desc = desc;
+    this->range = r;
+    this->metaObject = nullptr;
+}
+
+BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags) {
+    this->type = type;
+    this->name = name;
+    this->defaultValue = defaultValue;
+    this->offset = 0;
+    this->accessor = nullptr;
+    this->flags = flags;
+    this->label = label;
+    this->desc = desc;
+    this->range = Rangef(0, 0, 1);
+    this->metaObject = nullptr;
+    SplitStringIntoList(this->enumeration, e.sequence, ";");
+    assert(enumeration.Count() > 0);
+}
+
+BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags) {
+    this->type = type;
+    this->name = name;
+    this->defaultValue = defaultValue;
+    this->offset = 0;
+    this->accessor = nullptr;
+    this->flags = flags;
+    this->label = label;
+    this->desc = desc;
+    this->range = Rangef(0, 0, 1);
+    this->metaObject = &metaObject;
+}
+
 #endif
 
+#ifdef NEW_PROPERTY_SYSTEM
+
 template <typename T, bool IsObject = std::is_base_of<Object, T>::value>
-struct PropertyType {
-};
+struct PropertyType { };
 
 template <>
 struct PropertyType<int> {
@@ -488,6 +491,59 @@ struct PropertyType<T, true> {
     static const MetaObject &GetType() { return T::metaObject }
 };
 
+#define REGISTER_PROPERTY(name, type, var, defaultValue, desc, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+        offsetof(Class, var), defaultValue, desc, flags))
+
+#define REGISTER_ENUM_PROPERTY(name, enumSequence, var, defaultValue, desc, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, BE1::PropertySpec::Enum(enumSequence), \
+        offsetof(Class, var), defaultValue, desc, flags))
+
+#define REGISTER_LIST_PROPERTY(name, type, var, defaultValue, desc, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+        offsetof(Class, var), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
+
+#define REGISTER_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+        new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags))
+
+#define REGISTER_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+        new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags))
+
+#define REGISTER_ENUM_ACCESSOR_PROPERTY(name, enumSequence, getter, setter, defaultValue, desc, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, enumSequence, \
+        new BE1::PropertyAccessorImpl<Class, int>(&Class::getter, &Class::setter), defaultValue, desc, flags))
+
+#define REGISTER_LIST_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+        new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
+
+#define BEGIN_PROPERTIES(classname) static int dummy[] = {
+#define PROPERTY_STRING(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_FLOAT(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_INT(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_BOOL(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_POINT(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_RECT(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_VEC2(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_VEC3(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_VEC4(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_ANGLES(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_MAT3(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_RANGED_INT(name, label, desc, range, defaultValue, flags) 0
+#define PROPERTY_RANGED_FLOAT(name, label, desc, range, defaultValue, flags) 0
+#define PROPERTY_RANGED_VEC2(name, label, desc, range, defaultValue, flags) 0
+#define PROPERTY_RANGED_VEC3(name, label, desc, range, defaultValue, flags) 0
+#define PROPERTY_RANGED_VEC4(name, label, desc, range, defaultValue, flags) 0
+#define PROPERTY_COLOR3(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_COLOR4(name, label, desc, defaultValue, flags) 0
+#define PROPERTY_ENUM(name, label, desc, sequence, defaultValue, flags) 0
+#define PROPERTY_OBJECT(name, label, desc, defaultValue, metaObject, flags) 0
+#define END_PROPERTIES 0 };
+
+#else
+
 // property definition begin
 #define BEGIN_PROPERTIES(classname) \
     BE1::PropertySpec classname::pspecMap[] = {
@@ -555,32 +611,6 @@ struct PropertyType<T, true> {
 // property definition end
 #define END_PROPERTIES BE1::PropertySpec() };
 
-#define REGISTER_PROPERTY(name, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
-        offsetof(Class, var), defaultValue, desc, flags));
-
-#define REGISTER_ENUM_PROPERTY(name, enumSequence, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, BE1::PropertySpec::Enum(enumSequence), \
-        offsetof(Class, var), defaultValue, desc, flags))
-
-#define REGISTER_LIST_PROPERTY(name, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
-        offsetof(Class, var), defaultValue, desc, flags | BE1::PropertySpec::IsArray));
-
-#define REGISTER_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type>(Class::getter, Class::setter), defaultValue, desc, flags));
-
-#define REGISTER_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(Class::getter, Class::setter), defaultValue, desc, flags));
-
-#define REGISTER_ENUM_ACCESSOR_PROPERTY(name, enumSequence, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, enumSequence, \
-        new BE1::PropertyAccessorImpl<Class, int>(Class::getter, Class::setter), defaultValue, desc, flags))
-
-#define REGISTER_LIST_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type>(Class::getter, Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray));
+#endif
 
 BE_NAMESPACE_END

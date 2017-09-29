@@ -35,11 +35,13 @@ BEGIN_PROPERTIES(ComMeshRenderer)
 END_PROPERTIES
 
 void ComMeshRenderer::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
     //REGISTER_ACCESSOR_PROPERTY("Mesh", MeshAsset, GetMesh, SetMesh, GuidMapper::defaultMeshGuid.ToString(), "", PropertySpec::ReadWrite);
     //REGISTER_ACCESSOR_PROPERTY("Materials", MaterialAsset, GetMaterial, SetMaterial, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, "", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, "true", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "true", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, "true", "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComMeshRenderer::ComMeshRenderer() {

@@ -28,8 +28,10 @@ BEGIN_PROPERTIES(Component)
 END_PROPERTIES
 
 void Component::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
     //REGISTER_PROPERTY("GUID", Component, guid, Guid::zero.ToString(), PropertySpec::ReadWrite | PropertySpec::Hidden);
-    //REGISTER_ACCESSOR_PROPERTY("Enabled", bool, IsEnabled, SetEnabled, "true", PropertySpec::ReadWrite | PropertySpec::Hidden);
+    REGISTER_ACCESSOR_PROPERTY("Enabled", bool, IsEnabled, Enable, "true", "", PropertySpec::ReadWrite | PropertySpec::Hidden);
+#endif
 }
 
 Component::Component() {

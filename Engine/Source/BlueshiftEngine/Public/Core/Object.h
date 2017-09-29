@@ -144,7 +144,7 @@ public:
     void                        GetPropertySpecList(Array<const PropertySpec *> &pspecs) const;
 
                                 /// 
-    void                        RegisterProperty(const PropertySpec &propertySpec);
+    PropertySpec &              RegisterProperty(const PropertySpec &propertySpec);
 
 private:
     const char *                visualname;

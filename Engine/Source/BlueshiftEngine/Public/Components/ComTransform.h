@@ -36,10 +36,10 @@ public:
     ComTransform *          GetParent() const;
 
                             // origin/scale/axis in local space 
-    const Vec3              GetLocalOrigin() const { return localOrigin; }
-    const Vec3              GetLocalScale() const { return localScale; }
-    const Mat3              GetLocalAxis() const { return localAxis; }
-    const Angles            GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
+    Vec3                    GetLocalOrigin() const { return localOrigin; }
+    Vec3                    GetLocalScale() const { return localScale; }
+    Mat3                    GetLocalAxis() const { return localAxis; }
+    Angles                  GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
 
     void                    SetLocalOrigin(const Vec3 &origin);
     void                    SetLocalScale(const Vec3 &scale);
@@ -48,21 +48,21 @@ public:
     void                    SetLocalTransform(const Vec3 &origin, const Vec3 &scale, const Mat3 &axis);
 
                             // origin/scale/axis in world space
-    const Vec3              GetOrigin() const;
-    const Vec3              GetScale() const;
-    const Mat3              GetAxis() const;
-    const Angles            GetAngles() const { return GetAxis().ToAngles(); }
+    Vec3                    GetOrigin() const;
+    Vec3                    GetScale() const;
+    Mat3                    GetAxis() const;
+    Angles                  GetAngles() const { return GetAxis().ToAngles(); }
 
-    const Vec3              Forward() const { return GetAxis()[0]; }
-    const Vec3              Right() const { return GetAxis()[1]; }
-    const Vec3              Up() const { return GetAxis()[2]; }
+    Vec3                    Forward() const { return GetAxis()[0]; }
+    Vec3                    Right() const { return GetAxis()[1]; }
+    Vec3                    Up() const { return GetAxis()[2]; }
 
     void                    SetOrigin(const Vec3 &origin);
     void                    SetAxis(const Mat3 &axis);
     void                    SetAngles(const Angles &angles) { SetAxis(angles.ToMat3()); }
 
-    const Mat4              GetLocalMatrix() const { return localMatrix; }
-    const Mat4              GetWorldMatrix() const { return worldMatrix; }
+    Mat4                    GetLocalMatrix() const { return localMatrix; }
+    Mat4                    GetWorldMatrix() const { return worldMatrix; }
 
     void                    Translate(const Vec3 &translation);
     void                    Rotate(const Vec3 &axis, float angle);

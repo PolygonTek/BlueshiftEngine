@@ -45,11 +45,11 @@ protected:
     const Guid              GetConnectedBody() const;
     void                    SetConnectedBody(const Guid &guid);
 
-    const bool              IsCollisionEnabled() const;
-    void                    SetCollisionEnabled(const bool enabled);
+    bool                    IsCollisionEnabled() const;
+    void                    SetCollisionEnabled(bool enabled);
 
-    const float             GetBreakImpulse() const;
-    void                    SetBreakImpulse(const float breakImpulse);
+    float                   GetBreakImpulse() const;
+    void                    SetBreakImpulse(float breakImpulse);
 
     void                    PropertyChanged(const char *classname, const char *propName);
 

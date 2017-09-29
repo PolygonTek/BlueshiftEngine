@@ -28,6 +28,8 @@ BEGIN_PROPERTIES(ComAudioListener)
 END_PROPERTIES
 
 void ComAudioListener::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+#endif
 }
 
 ComAudioListener::ComAudioListener() {

@@ -30,7 +30,9 @@ BEGIN_PROPERTIES(ComSocketJoint)
 END_PROPERTIES
 
 void ComSocketJoint::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", PropertySpec::ReadWrite);
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", "", PropertySpec::ReadWrite);
+#endif
 }
 
 ComSocketJoint::ComSocketJoint() {

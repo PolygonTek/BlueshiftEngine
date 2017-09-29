@@ -43,20 +43,22 @@ BEGIN_PROPERTIES(ComCharacterJoint)
 END_PROPERTIES
 
 void ComCharacterJoint::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("X Swing Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, "-45", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
-    //REGISTER_ACCESSOR_PROPERTY("X Swing Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, "45", PropertySpec::ReadWrite).SetRange(0, 180, 1);
-    //REGISTER_ACCESSOR_PROPERTY("X Swing Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("X Swing Damping", float, GetSwing1Damping, SetSwing1Damping, "0.2", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Y Swing Lower Limit", float, GetSwing2LowerLimit, SetSwing2LowerLimit, "-45", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
-    //REGISTER_ACCESSOR_PROPERTY("Y Swing Upper Limit", float, GetSwing2UpperLimit, SetSwing2UpperLimit, "45", PropertySpec::ReadWrite).SetRange(0, 180, 1);
-    //REGISTER_ACCESSOR_PROPERTY("Y Swing Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Y Swing Damping", float, GetSwing2Damping, SetSwing2Damping, "0.2", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Twist Lower Limit", float, GetTwistLowerLimit, SetTwistLowerLimit, "-45", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
-    //REGISTER_ACCESSOR_PROPERTY("Twist Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, "45", PropertySpec::ReadWrite).SetRange(0, 180, 1);
-    //REGISTER_ACCESSOR_PROPERTY("Twist Stiffness", float, GetTwistStiffness, SetTwistStiffness, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Twist Damping", float, GetTwistDamping, SetTwistDamping, "0.2", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, "-45", "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, "45", "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Damping", float, GetSwing1Damping, SetSwing1Damping, "0.2", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Lower Limit", float, GetSwing2LowerLimit, SetSwing2LowerLimit, "-45", "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Upper Limit", float, GetSwing2UpperLimit, SetSwing2UpperLimit, "45", "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Damping", float, GetSwing2Damping, SetSwing2Damping, "0.2", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Twist Lower Limit", float, GetTwistLowerLimit, SetTwistLowerLimit, "-45", "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("Twist Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, "45", "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("Twist Stiffness", float, GetTwistStiffness, SetTwistStiffness, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Twist Damping", float, GetTwistDamping, SetTwistDamping, "0.2", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+#endif
 }
 
 ComCharacterJoint::ComCharacterJoint() {
@@ -229,7 +231,7 @@ void ComCharacterJoint::SetAnchor(const Vec3 &anchor) {
     }
 }
 
-const Angles ComCharacterJoint::GetAngles() const {
+Angles ComCharacterJoint::GetAngles() const {
     return axis.ToAngles();
 }
 
@@ -240,132 +242,132 @@ void ComCharacterJoint::SetAngles(const Angles &angles) {
     }
 }
 
-const float ComCharacterJoint::GetSwing1LowerLimit() const {
-    return lowerLimit.x;   
+float ComCharacterJoint::GetSwing1LowerLimit() const {
+    return lowerLimit.x;
 }
 
-void ComCharacterJoint::SetSwing1LowerLimit(const float limit) {
+void ComCharacterJoint::SetSwing1LowerLimit(float limit) {
     this->lowerLimit.x = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
-const float ComCharacterJoint::GetSwing1UpperLimit() const {
+float ComCharacterJoint::GetSwing1UpperLimit() const {
     return upperLimit.x;
 }
 
-void ComCharacterJoint::SetSwing1UpperLimit(const float limit) {
+void ComCharacterJoint::SetSwing1UpperLimit(float limit) {
     this->upperLimit.x = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
-const float ComCharacterJoint::GetSwing1Stiffness() const {
+float ComCharacterJoint::GetSwing1Stiffness() const {
     return stiffness.x;
 }
 
-void ComCharacterJoint::SetSwing1Stiffness(const float stiffness) {
+void ComCharacterJoint::SetSwing1Stiffness(float stiffness) {
     this->stiffness.x = stiffness;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
 }
 
-const float ComCharacterJoint::GetSwing1Damping() const {
+float ComCharacterJoint::GetSwing1Damping() const {
     return damping.x;
 }
 
-void ComCharacterJoint::SetSwing1Damping(const float damping) {
+void ComCharacterJoint::SetSwing1Damping(float damping) {
     this->damping.x = damping;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularDamping(this->damping);
     }
 }
 
-const float ComCharacterJoint::GetSwing2LowerLimit() const {
+float ComCharacterJoint::GetSwing2LowerLimit() const {
     return lowerLimit.y;
 }
 
-void ComCharacterJoint::SetSwing2LowerLimit(const float limit) {
+void ComCharacterJoint::SetSwing2LowerLimit(float limit) {
     this->lowerLimit.y = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
-const float ComCharacterJoint::GetSwing2UpperLimit() const {
+float ComCharacterJoint::GetSwing2UpperLimit() const {
     return upperLimit.y;
 }
 
-void ComCharacterJoint::SetSwing2UpperLimit(const float limit) {
+void ComCharacterJoint::SetSwing2UpperLimit(float limit) {
     this->upperLimit.y = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
-const float ComCharacterJoint::GetSwing2Stiffness() const {
+float ComCharacterJoint::GetSwing2Stiffness() const {
     return stiffness.y;
 }
 
-void ComCharacterJoint::SetSwing2Stiffness(const float stiffness) {
+void ComCharacterJoint::SetSwing2Stiffness(float stiffness) {
     this->stiffness.y = stiffness;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
 }
 
-const float ComCharacterJoint::GetSwing2Damping() const {
+float ComCharacterJoint::GetSwing2Damping() const {
     return damping.y;
 }
 
-void ComCharacterJoint::SetSwing2Damping(const float damping) {
+void ComCharacterJoint::SetSwing2Damping(float damping) {
     this->damping.y = damping;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularDamping(this->damping);
     }
 }
 
-const float ComCharacterJoint::GetTwistLowerLimit() const {
+float ComCharacterJoint::GetTwistLowerLimit() const {
     return lowerLimit.z;
 }
 
-void ComCharacterJoint::SetTwistLowerLimit(const float limit) {
+void ComCharacterJoint::SetTwistLowerLimit(float limit) {
     this->lowerLimit.z = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
-const float ComCharacterJoint::GetTwistUpperLimit() const {
+float ComCharacterJoint::GetTwistUpperLimit() const {
     return upperLimit.z;
 }
 
-void ComCharacterJoint::SetTwistUpperLimit(const float limit) {
+void ComCharacterJoint::SetTwistUpperLimit(float limit) {
     this->upperLimit.z = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
-const float ComCharacterJoint::GetTwistStiffness() const {
+float ComCharacterJoint::GetTwistStiffness() const {
     return stiffness.z;
 }
 
-void ComCharacterJoint::SetTwistStiffness(const float stiffness) {
+void ComCharacterJoint::SetTwistStiffness(float stiffness) {
     this->stiffness.z = stiffness;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
 }
 
-const float ComCharacterJoint::GetTwistDamping() const {
+float ComCharacterJoint::GetTwistDamping() const {
     return damping.z;
 }
 
-void ComCharacterJoint::SetTwistDamping(const float damping) {
+void ComCharacterJoint::SetTwistDamping(float damping) {
     this->damping.z = damping;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularDamping(this->damping);

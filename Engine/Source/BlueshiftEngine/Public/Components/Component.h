@@ -65,7 +65,7 @@ public:
                             /// Enable/Disable this component
     virtual void            Enable(bool enable) { enabled = enable; }
 
-                            /// Purge all the resources in this component    
+                            /// Purge all the resources in this component
     virtual void            Purge(bool chainPurge = true);
 
                             /// Called in initialization

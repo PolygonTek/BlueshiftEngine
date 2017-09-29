@@ -27,6 +27,8 @@ BEGIN_PROPERTIES(ComCollider)
 END_PROPERTIES
 
 void ComCollider::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+#endif
 }
 
 ComCollider::ComCollider() {

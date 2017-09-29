@@ -39,20 +39,20 @@ protected:
     const Vec3 &            GetAnchor() const;
     void                    SetAnchor(const Vec3 &anchor);
 
-    const Angles            GetAngles() const;
+    Angles                  GetAngles() const;
     void                    SetAngles(const Angles &angles);
 
-    const float             GetLowerLimit() const;
-    void                    SetLowerLimit(const float limit);
+    float                   GetLowerLimit() const;
+    void                    SetLowerLimit(float limit);
 
-    const float             GetUpperLimit() const;
-    void                    SetUpperLimit(const float limit);
+    float                   GetUpperLimit() const;
+    void                    SetUpperLimit(float limit);
 
-    const float             GetStiffness() const;
-    void                    SetStiffness(const float stiffness);
+    float                   GetStiffness() const;
+    void                    SetStiffness(float stiffness);
 
-    const float             GetDamping() const;
-    void                    SetDamping(const float damping);
+    float                   GetDamping() const;
+    void                    SetDamping(float damping);
 
     void                    PropertyChanged(const char *classname, const char *propName);
 
