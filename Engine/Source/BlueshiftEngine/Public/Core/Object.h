@@ -184,12 +184,12 @@ public:
     template <typename T> 
     const T *                   Cast() const;
 
-                                // superclass 의 grandchild class 인지 체크
+                                // superclass 의 grand child class 인지 체크
     bool                        IsTypeOf(const MetaObject &superclass) const;
     template <typename T>
     bool                        IsTypeOf() const { return IsTypeOf(T::metaObject); }
 
-                                // klass 의 insntace 인지 체크
+                                // klass 의 instance 인지 체크
     bool                        IsInstanceOf(const MetaObject &klass) const;
     template <typename T>
     bool                        IsInstanceOf() const { return IsInstanceOf(T::metaObject); }

@@ -38,6 +38,8 @@ BE_NAMESPACE_BEGIN
 /// Templated dynamic array
 template <typename T>
 class Array {
+    static_assert(std::is_default_constructible<T>::value, "Array requires default-constructible elements");
+
 public:
     static constexpr int DefaultGranularity = 16;
 

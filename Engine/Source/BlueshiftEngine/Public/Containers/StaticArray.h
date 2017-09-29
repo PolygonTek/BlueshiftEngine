@@ -29,6 +29,8 @@ BE_NAMESPACE_BEGIN
 /// Templated static array
 template <typename T, int capacity>
 class StaticArray {
+    static_assert(std::is_default_constructible<T>::value, "StaticArray requires default-constructible elements");
+
 public:
     /// Constructs empty array.
     StaticArray();

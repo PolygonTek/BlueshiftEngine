@@ -513,13 +513,13 @@ BE_FORCE_INLINE void Clamp(T &v, const T &min, const T &max) { v = (v > max) ? m
 
 /// Returns the clamped number to a range.
 template <typename T>
-BE_FORCE_INLINE T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
+BE_FORCE_INLINE constexpr T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
 
 /// Returns remainder of the division operation x / y.
 template <typename T>
-BE_FORCE_INLINE T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
+BE_FORCE_INLINE constexpr T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
 template <>
-BE_FORCE_INLINE int Mod(const int &x, const int &y) { return x % y; }
+BE_FORCE_INLINE constexpr int Mod(const int &x, const int &y) { return x % y; }
 
 /// Wraps a number to a range.
 template <typename T>
@@ -530,7 +530,7 @@ BE_FORCE_INLINE void Wrap(T &v, const T &min, const T &max) {
 
 /// Returns the wrapped number to a range.
 template <typename T>
-BE_FORCE_INLINE T Wrap(const T &v, const T &min, const T &max) {
+BE_FORCE_INLINE constexpr T Wrap(const T &v, const T &min, const T &max) {
     if (v > max) return min + Mod(v - min, max - min);
     if (v < min) return max - Mod(min - v, max - min);
     return v;
