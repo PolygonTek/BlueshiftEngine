@@ -54,6 +54,9 @@ public:
 
     void                    ResetParticles();
 
+    Guid                    GetParticleSystem() const;
+    void                    SetParticleSystem(const Guid &guid);
+
 protected:
     virtual void            UpdateVisuals() override;
     void                    ChangeParticleSystem(const Guid &particleSystemGuid);
@@ -64,9 +67,7 @@ protected:
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
-    Guid                    GetParticleSystem() const;
-    void                    SetParticleSystem(const Guid &guid);
-
+    bool                    playOnAwake;
     ParticleSystemAsset *   particleSystemAsset;
     bool                    simulationStarted;
     int                     currentTime;

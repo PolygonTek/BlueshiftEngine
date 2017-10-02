@@ -23,7 +23,7 @@ void LuaVM::RegisterTextRendererComponent(LuaCpp::Module &module) {
 
     _ComTextRenderer.SetClass<ComTextRenderer>(module["ComRenderable"]);
     _ComTextRenderer.AddClassMembers<ComTextRenderer>(
-        "set_text", &ComTextRenderer::SetText);
+        "set_text", &ComTextRenderer::SetTextCString);
 
     _ComTextRenderer["meta_object"] = ComTextRenderer::metaObject;
 }

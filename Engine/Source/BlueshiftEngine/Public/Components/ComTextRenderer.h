@@ -29,7 +29,25 @@ public:
 
     virtual void            Init() override;
 
-    void                    SetText(const char *text);
+    void                    SetTextCString(const char *text);
+
+    Str                     GetText() const;
+    void                    SetText(const Str &text);
+
+    int                     GetAnchor() const;
+    void                    SetAnchor(int anchor);
+
+    int                     GetAlignment() const;
+    void                    SetAlignment(int alignment);
+
+    float                   GetLineSpacing() const;
+    void                    SetLineSpacing(float lineSpacing);
+
+    Guid                    GetFont() const;
+    void                    SetFont(const Guid &fontGuid);
+
+    int                     GetFontSize() const;
+    void                    SetFontSize(int fontSize);
 
 protected:
     void                    ChangeFont(const Guid &fontGuid, int fontSize);
@@ -37,6 +55,8 @@ protected:
     void                    UpdateAABB();
 
     void                    PropertyChanged(const char *classname, const char *propName);
+
+    int                     fontSize;
 };
 
 BE_NAMESPACE_END

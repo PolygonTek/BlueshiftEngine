@@ -35,10 +35,10 @@ public:
 
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-protected:
     const Vec3 &            GetAnchor() const;
     void                    SetAnchor(const Vec3 &anchor);
 
+protected:
     void                    PropertyChanged(const char *classname, const char *propName);
 
     Vec3                    anchor;

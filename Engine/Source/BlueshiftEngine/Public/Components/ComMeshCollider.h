@@ -33,10 +33,10 @@ public:
 
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-protected:
     Guid                    GetMesh() const;
     void                    SetMesh(const Guid &meshGuid);
 
+protected:
     void                    PropertyChanged(const char *classname, const char *propName);
 
     Guid                    meshGuid;

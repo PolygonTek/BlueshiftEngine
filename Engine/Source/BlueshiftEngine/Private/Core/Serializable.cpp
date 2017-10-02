@@ -330,9 +330,9 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
         return false;
     }
     
-#if 0
+#ifdef NEW_PROPERTY_SYSTEM
     if (spec->accessor) {
-        spec->accessor->Get(this, out);
+        spec->accessor->Get(owner, out);
         return true;
     }
 
@@ -340,44 +340,20 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
 
     switch (spec->GetType()) {
     case PropertySpec::IntType:
-    case PropertySpec::EnumType:
-        out = *(reinterpret_cast<const int *>(src));
-        break;
-    case PropertySpec::BoolType:
-        out = *(reinterpret_cast<const bool *>(src));
-        break;
-    case PropertySpec::FloatType:
-        out = *(reinterpret_cast<const float *>(src));
-        break;
-    case PropertySpec::StringType:
-        out = *(reinterpret_cast<const Str *>(src));
-        break;
-    case PropertySpec::PointType:
-        out = *(reinterpret_cast<const Point *>(src));
-        break;
-    case PropertySpec::RectType:
-        out = *(reinterpret_cast<const Rect *>(src));
-        break;
-    case PropertySpec::Vec2Type:
-        out = *(reinterpret_cast<const Vec2 *>(src));
-        break;
-    case PropertySpec::Vec3Type:
-    case PropertySpec::Color3Type:
-        out = *(reinterpret_cast<const Vec3 *>(src));
-        break; 
-    case PropertySpec::Vec4Type:
-    case PropertySpec::Color4Type:
-        out = *(reinterpret_cast<const Vec4 *>(src));
-        break;
-    case PropertySpec::AnglesType:
-        out = *(reinterpret_cast<const Angles *>(src));
-        break;
-    case PropertySpec::Mat3Type:
-        out = *(reinterpret_cast<const Mat3 *>(src));
-        break;
-    case PropertySpec::ObjectType:
-        out = *(reinterpret_cast<const Guid *>(src));
-        break;
+    case PropertySpec::EnumType:    out = *(reinterpret_cast<const int *>(src)); break;
+    case PropertySpec::BoolType:    out = *(reinterpret_cast<const bool *>(src)); break;
+    case PropertySpec::FloatType:   out = *(reinterpret_cast<const float *>(src)); break;
+    case PropertySpec::StringType:  out = *(reinterpret_cast<const Str *>(src)); break;
+    case PropertySpec::PointType:   out = *(reinterpret_cast<const Point *>(src)); break;
+    case PropertySpec::RectType:    out = *(reinterpret_cast<const Rect *>(src)); break;
+    case PropertySpec::Vec2Type:    out = *(reinterpret_cast<const Vec2 *>(src)); break;
+    case PropertySpec::Vec3Type:    out = *(reinterpret_cast<const Vec3 *>(src)); break;
+    case PropertySpec::Vec4Type:    out = *(reinterpret_cast<const Vec4 *>(src)); break;
+    case PropertySpec::Color3Type:  out = *(reinterpret_cast<const Color3 *>(src)); break; 
+    case PropertySpec::Color4Type:  out = *(reinterpret_cast<const Color4 *>(src)); break;
+    case PropertySpec::AnglesType:  out = *(reinterpret_cast<const Angles *>(src)); break;
+    case PropertySpec::Mat3Type:    out = *(reinterpret_cast<const Mat3 *>(src)); break;
+    case PropertySpec::ObjectType:  out = *(reinterpret_cast<const Guid *>(src)); break;
     }
 
     return true;
@@ -531,9 +507,9 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
 
     Variant oldVar = Get(name);
 
-#if 0
+#ifdef NEW_PROPERTY_SYSTEM
     if (spec->accessor) {
-        spec->accessor->Set(this, newVar);
+        spec->accessor->Set(owner, newVar);
         return true;
     }
 
@@ -541,44 +517,20 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
 
     switch (spec->GetType()) {
     case PropertySpec::IntType:
-    case PropertySpec::EnumType:
-        *(reinterpret_cast<int *>(dest)) = newVar.As<int>();
-        break;
-    case PropertySpec::BoolType:
-        *(reinterpret_cast<bool *>(dest)) = newVar.As<bool>();
-        break;
-    case PropertySpec::FloatType:
-        *(reinterpret_cast<float *>(dest)) = newVar.As<float>();
-        break;
-    case PropertySpec::StringType:
-        *(reinterpret_cast<Str *>(dest)) = newVar.As<Str>();
-        break;
-    case PropertySpec::PointType:
-        *(reinterpret_cast<Point *>(dest)) = newVar.As<Point>();
-        break;
-    case PropertySpec::RectType:
-        *(reinterpret_cast<Rect *>(dest)) = newVar.As<Rect>();
-        break;
-    case PropertySpec::Vec2Type:
-        *(reinterpret_cast<Vec2 *>(dest)) = newVar.As<Vec2>();
-        break;
-    case PropertySpec::Vec3Type:
-    case PropertySpec::Color3Type:
-        *(reinterpret_cast<Vec3 *>(dest)) = newVar.As<Vec3>();
-        break; 
-    case PropertySpec::Vec4Type:
-    case PropertySpec::Color4Type:
-        *(reinterpret_cast<Vec4 *>(dest)) = newVar.As<Vec4>();
-        break;
-    case PropertySpec::AnglesType:
-        *(reinterpret_cast<Angles *>(dest)) = newVar.As<Angles>();
-        break;
-    case PropertySpec::Mat3Type:
-        *(reinterpret_cast<Mat3 *>(dest)) = newVar.As<Mat3>();
-        break;
-    case PropertySpec::ObjectType:
-        *(reinterpret_cast<Object *>(dest)) = newVar.As<Object>();
-        break;
+    case PropertySpec::EnumType:    *(reinterpret_cast<int *>(dest)) = newVar.As<int>(); break;
+    case PropertySpec::BoolType:    *(reinterpret_cast<bool *>(dest)) = newVar.As<bool>(); break;
+    case PropertySpec::FloatType:   *(reinterpret_cast<float *>(dest)) = newVar.As<float>(); break;
+    case PropertySpec::StringType:  *(reinterpret_cast<Str *>(dest)) = newVar.As<Str>(); break;
+    case PropertySpec::PointType:   *(reinterpret_cast<Point *>(dest)) = newVar.As<Point>(); break;
+    case PropertySpec::RectType:    *(reinterpret_cast<Rect *>(dest)) = newVar.As<Rect>(); break;
+    case PropertySpec::Vec2Type:    *(reinterpret_cast<Vec2 *>(dest)) = newVar.As<Vec2>(); break;
+    case PropertySpec::Vec3Type:    *(reinterpret_cast<Vec3 *>(dest)) = newVar.As<Vec3>(); break;
+    case PropertySpec::Vec4Type:    *(reinterpret_cast<Vec4 *>(dest)) = newVar.As<Vec4>(); break;
+    case PropertySpec::Color3Type:  *(reinterpret_cast<Color3 *>(dest)) = newVar.As<Color3>(); break;
+    case PropertySpec::Color4Type:  *(reinterpret_cast<Color4 *>(dest)) = newVar.As<Color4>(); break;
+    case PropertySpec::AnglesType:  *(reinterpret_cast<Angles *>(dest)) = newVar.As<Angles>(); break;
+    case PropertySpec::Mat3Type:    *(reinterpret_cast<Mat3 *>(dest)) = newVar.As<Mat3>(); break;
+    case PropertySpec::ObjectType: break;
     }
 
     return true;

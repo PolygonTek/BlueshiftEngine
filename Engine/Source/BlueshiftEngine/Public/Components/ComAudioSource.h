@@ -43,10 +43,10 @@ public:
     void                    Stop();
     bool                    IsPlaying() const;
 
-protected:
-    const Guid              GetAudioClip() const;
+    Guid                    GetAudioClip() const;
     void                    SetAudioClip(const Guid &guid);
 
+protected:
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 

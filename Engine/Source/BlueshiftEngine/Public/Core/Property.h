@@ -15,6 +15,7 @@
 #pragma once
 
 #include "jsoncpp/include/json/json.h"
+#include "Core/Guid.h"
 #include "Math/Math.h"
 #include "Core/Str.h"
 #include "Core/Range.h"
@@ -83,12 +84,25 @@ struct MixedPropertyTrait {
     using ParameterType = const T &;
 };
 
+/// Actual property type trait
+template <typename T, bool = std::is_base_of<Object, T>::value>
+struct PropertyTypeTrait {
+    using Type = T;
+};
+
+/// Actual property type trait (Guid for Object class)
+template <typename T>
+struct PropertyTypeTrait<T, true> {
+    using Type = Guid;
+};
+
 /// Template implementation of the property accessor.
-template <typename Class, typename VarType, template <typename T> class Trait = PropertyTrait> 
+template <typename Class, typename Type, template <typename T> class Trait = PropertyTrait> 
 class PropertyAccessorImpl : public PropertyAccessor {
 public:
-    using GetFunctionPtr = typename Trait<VarType>::ReturnType (Class::*)() const;
-    using SetFunctionPtr = void (Class::*)(typename Trait<VarType>::ParameterType);
+    using ActualType = typename PropertyTypeTrait<Type>::Type;
+    using GetFunctionPtr = typename Trait<ActualType>::ReturnType (Class::*)() const;
+    using SetFunctionPtr = void (Class::*)(typename Trait<ActualType>::ParameterType);
 
     /// Construct with function pointers.
     PropertyAccessorImpl(GetFunctionPtr getter, SetFunctionPtr setter) :
@@ -108,7 +122,7 @@ public:
     virtual void Set(Object *ptr, const Variant &in) {
         assert(ptr);
         Class *classPtr = static_cast<Class *>(ptr);
-        (classPtr->*setFunction)(in.As<VarType>());
+        (classPtr->*setFunction)(in.As<ActualType>());
     }
 
     /// Class-specific pointer to getter function.
@@ -118,11 +132,12 @@ public:
 };
 
 /// Template implementation of the list property accessor.
-template <typename Class, typename VarType, template <typename T> class Trait = PropertyTrait> 
+template <typename Class, typename Type, template <typename T> class Trait = PropertyTrait>
 class ListPropertyAccessorImpl : public PropertyAccessor {
 public:
-    using GetFunctionPtr = typename Trait<VarType>::ReturnType(Class::*)(int index) const;
-    using SetFunctionPtr = void (Class::*)(int index, typename Trait<VarType>::ParameterType);
+    using ActualType = typename PropertyTypeTrait<Type>::Type;
+    using GetFunctionPtr = typename Trait<ActualType>::ReturnType(Class::*)(int index) const;
+    using SetFunctionPtr = void (Class::*)(int index, typename Trait<ActualType>::ParameterType);
 
     /// Construct with function pointers.
     ListPropertyAccessorImpl(GetFunctionPtr getter, SetFunctionPtr setter) :
@@ -142,7 +157,7 @@ public:
     virtual void Set(Object *ptr, int index, const Variant &in) {
         assert(ptr);
         Class *classPtr = static_cast<Class *>(ptr);
-        (classPtr->*setFunction)(index, in.As<VarType>());
+        (classPtr->*setFunction)(index, in.As<ActualType>());
     }
 
     /// Class-specific pointer to getter function.
@@ -235,7 +250,7 @@ public:
     static const Variant    ToVariant(Type type, const char *value);
 
 private:
-    Type                    type;               ///< Property Type
+    Type                    type;               ///< Property type
     Str                     name;               ///< Variable name
     Str                     defaultValue;       ///< Default value in Str
     Str                     label;              ///< Label in Editor
@@ -413,86 +428,86 @@ BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *la
 
 #ifdef NEW_PROPERTY_SYSTEM
 
-template <typename T, bool IsObject = std::is_base_of<Object, T>::value>
-struct PropertyType { };
+template <typename T, bool = std::is_base_of<Object, T>::value>
+struct PropertyTypeID { };
 
 template <>
-struct PropertyType<int> {
+struct PropertyTypeID<int> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::IntType; }
 };
 
 template <>
-struct PropertyType<unsigned> {
+struct PropertyTypeID<unsigned> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::IntType; }
 };
 
 template <>
-struct PropertyType<bool> {
+struct PropertyTypeID<bool> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::BoolType; }
 };
 
 template <>
-struct PropertyType<float> {
+struct PropertyTypeID<float> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::FloatType; }
 };
 
 template <>
-struct PropertyType<Vec2> {
+struct PropertyTypeID<Vec2> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::Vec2Type; }
 };
 
 template <>
-struct PropertyType<Vec3> {
+struct PropertyTypeID<Vec3> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::Vec3Type; }
 };
 
 template <>
-struct PropertyType<Vec4> {
+struct PropertyTypeID<Vec4> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::Vec4Type; }
 };
 
 template <>
-struct PropertyType<Color3> {
+struct PropertyTypeID<Color3> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::Color3Type; }
 };
 
 template <>
-struct PropertyType<Color4> {
+struct PropertyTypeID<Color4> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::Color4Type; }
 };
 
 template <>
-struct PropertyType<Mat3> {
+struct PropertyTypeID<Mat3> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::Mat3Type; }
 };
 
 template <>
-struct PropertyType<Angles> {
+struct PropertyTypeID<Angles> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::AnglesType; }
 };
 
 template <>
-struct PropertyType<Point> {
+struct PropertyTypeID<Point> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::PointType; }
 };
 
 template <>
-struct PropertyType<Rect> {
+struct PropertyTypeID<Rect> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::RectType; }
 };
 
 template <>
-struct PropertyType<Str> {
+struct PropertyTypeID<Str> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::StringType; }
 };
 
 template <typename T>
-struct PropertyType<T, true> {
-    static const MetaObject &GetType() { return T::metaObject }
+struct PropertyTypeID<T, true> {
+    static const MetaObject &GetType() { return T::metaObject; }
 };
 
 #define REGISTER_PROPERTY(name, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
         offsetof(Class, var), defaultValue, desc, flags))
 
 #define REGISTER_ENUM_PROPERTY(name, enumSequence, var, defaultValue, desc, flags) \
@@ -500,15 +515,15 @@ struct PropertyType<T, true> {
         offsetof(Class, var), defaultValue, desc, flags))
 
 #define REGISTER_LIST_PROPERTY(name, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
         offsetof(Class, var), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
 
 #define REGISTER_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_ENUM_ACCESSOR_PROPERTY(name, enumSequence, getter, setter, defaultValue, desc, flags) \
@@ -516,7 +531,7 @@ struct PropertyType<T, true> {
         new BE1::PropertyAccessorImpl<Class, int>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_LIST_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyType<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
 
 #define BEGIN_PROPERTIES(classname) static int dummy[] = {

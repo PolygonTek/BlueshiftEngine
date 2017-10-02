@@ -40,11 +40,11 @@ public:
     void                    SetMesh(const Guid &guid);
 
     int                     NumMaterials() const;
-    Guid                    GetMaterialGuid(int index) const;
-    void                    SetMaterialGuid(int index, const Guid &materialGuid);
+    Guid                    GetMaterial(int index) const;
+    void                    SetMaterial(int index, const Guid &materialGuid);
 
-    Material *              GetMaterial(int index) const;
-    void                    SetMaterial(int index, const Material *material);
+    Material *              GetMaterialPtr(int index) const;
+    void                    SetMaterialPtr(int index, const Material *material);
 
     bool                    IsUseLightProbe() const;
     void                    SetUseLightProbe(bool useLightProbe);

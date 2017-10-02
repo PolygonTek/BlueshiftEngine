@@ -50,7 +50,7 @@ END_PROPERTIES
 void ComLight::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
     REGISTER_ENUM_ACCESSOR_PROPERTY("Light Type", "Point;Spot;Directional", GetLightType, SetLightType, "0", "", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Material", MaterialAsset, GetMaterial, SetMaterial, GuidMapper::zeroClampLightMaterialGuid.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Material", MaterialAsset, GetMaterial, SetMaterial, GuidMapper::zeroClampLightMaterialGuid.ToString(), "", PropertySpec::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, "1 1 1", "", PropertySpec::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Turn On", bool, IsTurnOn, SetTurnOn, "true", "", PropertySpec::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "false", "", PropertySpec::ReadWrite);
@@ -316,7 +316,7 @@ void ComLight::UpdateVisuals() {
 }
 
 void ComLight::LayerChanged(const Entity *entity) {
-    sceneLight.layer = entity->props->Get("layer").As<int>();
+    sceneLight.layer = entity->GetProperties()->Get("layer").As<int>();
 
     UpdateVisuals();
 }

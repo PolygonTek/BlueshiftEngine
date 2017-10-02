@@ -112,11 +112,11 @@ void Asset::WriteMetaDataFile() const {
     Str metaFilename = Asset::GetMetaFilenameFromAssetPath(GetAssetFilename());
 
     Json::Value metaDataValue;
-    props->Serialize(metaDataValue);
+    GetProperties()->Serialize(metaDataValue);
 
     if (assetImporter) {
         Json::Value importerValue;
-        assetImporter->props->Serialize(importerValue);
+        assetImporter->GetProperties()->Serialize(importerValue);
 
         metaDataValue["importer"] = importerValue;
     }

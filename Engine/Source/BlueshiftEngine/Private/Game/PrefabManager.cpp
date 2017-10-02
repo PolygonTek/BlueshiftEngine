@@ -124,7 +124,7 @@ Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
         prefabEntities.Append(prefabEntity);
 
         // Set the original entity's prefab parent
-        originalEntities[i]->props->Set("prefabParent", prefabEntity->GetGuid());
+        originalEntities[i]->GetProperties()->Set("prefabParent", prefabEntity->GetGuid());
     }
 
     // Remap GUIDs for the cloned entities

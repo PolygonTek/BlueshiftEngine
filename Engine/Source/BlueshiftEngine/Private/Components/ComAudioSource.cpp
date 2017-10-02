@@ -39,7 +39,7 @@ END_PROPERTIES
 
 void ComAudioSource::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    //REGISTER_ACCESSOR_PROPERTY("Audio Clip", SoundAsset, GetAudioClip, SetAudioClip, GuidMapper::defaultSoundGuid.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Audio Clip", SoundAsset, GetAudioClip, SetAudioClip, GuidMapper::defaultSoundGuid.ToString(), "", PropertySpec::ReadWrite);
     REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, "false", "Play the sound when the map loaded.", PropertySpec::ReadWrite);
     REGISTER_PROPERTY("Spatial", bool, spatial, "true", "", PropertySpec::ReadWrite);
     REGISTER_PROPERTY("Looping", bool, looping, "false", "", PropertySpec::ReadWrite);
@@ -179,7 +179,7 @@ void ComAudioSource::PropertyChanged(const char *classname, const char *propName
     Component::PropertyChanged(classname, propName);
 }
 
-const Guid ComAudioSource::GetAudioClip() const {
+Guid ComAudioSource::GetAudioClip() const {
     Guid guid = resourceGuidMapper.Get(audioClipPath);
     return guid;
 }

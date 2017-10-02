@@ -30,7 +30,7 @@ END_PROPERTIES
 
 void ComJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    //REGISTER_ACCESSOR_PROPERTY("Connected Body", ComRigidBody, GetConnectedBody, SetConnectedBody, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Connected Body", ComRigidBody, GetConnectedBody, SetConnectedBody, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, "true", "", PropertySpec::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, "1e30f", "", PropertySpec::ReadWrite);
 #endif
@@ -115,7 +115,7 @@ void ComJoint::PropertyChanged(const char *classname, const char *propName) {
     Component::PropertyChanged(classname, propName);
 }
 
-const Guid ComJoint::GetConnectedBody() const {
+Guid ComJoint::GetConnectedBody() const {
     if (connectedBody) {
         return connectedBody->GetGuid();
     }

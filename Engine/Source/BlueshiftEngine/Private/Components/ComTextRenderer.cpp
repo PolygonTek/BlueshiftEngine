@@ -37,7 +37,12 @@ END_PROPERTIES
 
 void ComTextRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    //REGISTER_ACCESSOR_PROPERTY("Text", Str, GetText, SetText, "Hello World", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Text", Str, GetText, SetText, "Hello World", "", PropertySpec::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Anchor", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", GetAnchor, SetAnchor, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Alignment", "Left; Center; Right", GetAlignment, SetAlignment, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Line Spacing", float, GetLineSpacing, SetLineSpacing, "1.0", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Font", FontAsset, GetFont, SetFont, GuidMapper::defaultFontGuid.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Font Size", int, GetFontSize, SetFontSize, "14", "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -64,7 +69,7 @@ void ComTextRenderer::Init() {
     ComRenderable::Init();
 
     const Guid fontGuid = props->Get("font").As<Guid>();
-    int fontSize = props->Get("fontSize").As<int>();
+    fontSize = props->Get("fontSize").As<int>();
     ChangeFont(fontGuid, fontSize);
 
     sceneEntity.layer          = GetEntity()->GetLayer();
@@ -79,9 +84,68 @@ void ComTextRenderer::Init() {
     UpdateVisuals();
 }
 
-void ComTextRenderer::SetText(const char *text) {
+Str ComTextRenderer::GetText() const {
+    return Str(sceneEntity.text);
+}
+
+void ComTextRenderer::SetText(const Str &text) {
     sceneEntity.text = Str::ToWStr(text);
 
+    UpdateAABB();
+    UpdateVisuals();
+}
+
+void ComTextRenderer::SetTextCString(const char *text) {
+    SetText(Str(text));
+}
+
+int ComTextRenderer::GetAnchor() const {
+    return (int)sceneEntity.textAnchor;
+}
+
+void ComTextRenderer::SetAnchor(int anchor) {
+    sceneEntity.textAnchor = (SceneEntity::TextAnchor)anchor;
+    UpdateAABB();
+    UpdateVisuals();
+}
+
+int ComTextRenderer::GetAlignment() const {
+    return (int)sceneEntity.textAlignment;
+}
+
+void ComTextRenderer::SetAlignment(int alignment) {
+    sceneEntity.textAlignment = (SceneEntity::TextAlignment)alignment;
+    UpdateAABB();
+    UpdateVisuals();
+}
+
+float ComTextRenderer::GetLineSpacing() const {
+    return sceneEntity.lineSpacing;
+}
+
+void ComTextRenderer::SetLineSpacing(float lineSpacing) {
+    sceneEntity.lineSpacing = lineSpacing;
+    UpdateAABB();
+    UpdateVisuals();
+}
+
+Guid ComTextRenderer::GetFont() const {
+    const Str fontPath = sceneEntity.font->GetHashName();
+    return resourceGuidMapper.Get(fontPath);
+}
+
+void ComTextRenderer::SetFont(const Guid &fontGuid) {
+    ChangeFont(fontGuid, fontSize);
+    UpdateAABB();
+    UpdateVisuals();
+}
+
+int ComTextRenderer::GetFontSize() const {
+    return fontSize;
+}
+
+void ComTextRenderer::SetFontSize(int fontSize) {
+    ChangeFont(GetFont(), fontSize);
     UpdateAABB();
     UpdateVisuals();
 }
@@ -105,16 +169,12 @@ void ComTextRenderer::PropertyChanged(const char *classname, const char *propNam
     }
 
     if (!Str::Cmp(propName, "font")) {
-        ChangeFont(props->Get("font").As<Guid>(), props->Get("fontSize").As<int>());
-        UpdateAABB();
-        UpdateVisuals();
+        SetFont(props->Get("font").As<Guid>());
         return;
     }
 
     if (!Str::Cmp(propName, "fontSize")) {
-        ChangeFont(props->Get("font").As<Guid>(), props->Get("fontSize").As<int>());
-        UpdateAABB();
-        UpdateVisuals();
+        SetFontSize(props->Get("fontSize").As<int>());
         return;
     }
 
@@ -124,23 +184,17 @@ void ComTextRenderer::PropertyChanged(const char *classname, const char *propNam
     }
 
     if (!Str::Cmp(propName, "textAnchor")) {
-        sceneEntity.textAnchor = (SceneEntity::TextAnchor)props->Get("textAnchor").As<int>();
-        UpdateAABB();
-        UpdateVisuals();
+        SetAnchor(props->Get("textAnchor").As<int>());
         return;
     }
 
     if (!Str::Cmp(propName, "textAlignment")) {
-        sceneEntity.textAlignment = (SceneEntity::TextAlignment)props->Get("textAlignment").As<int>();
-        UpdateAABB();
-        UpdateVisuals();
+        SetAlignment(props->Get("textAlignment").As<int>());
         return;
     }
 
     if (!Str::Cmp(propName, "lineSpacing")) {
-        sceneEntity.lineSpacing = props->Get("lineSpacing").As<float>();
-        UpdateAABB();
-        UpdateVisuals();
+        SetLineSpacing(props->Get("lineSpacing").As<float>());
         return;
     }    
 

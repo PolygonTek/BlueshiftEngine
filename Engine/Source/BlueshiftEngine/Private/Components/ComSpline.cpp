@@ -30,6 +30,8 @@ END_PROPERTIES
 
 void ComSpline::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_PROPERTY("Loop", bool, loop, "false", "", PropertySpec::ReadWrite);
+    REGISTER_LIST_ACCESSOR_PROPERTY("Points", ComTransform, GetMesh, SetMesh, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
 #endif
 }
 

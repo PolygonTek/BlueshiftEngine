@@ -223,6 +223,8 @@ public:
 
     const PropertySpec *        FindPropertySpec(const char *name) const;
 
+    Properties *                GetProperties() const { return props; }
+
     virtual void                GetPropertySpecList(Array<const PropertySpec *> &pspecs) const { GetMetaObject()->GetPropertySpecList(pspecs); }
     
     static void                 Init();
@@ -237,21 +239,20 @@ public:
    
     static void                 ListClasses(const CmdArgs &args);
 
-    Properties *                props;
-
 protected:
     void                        InitInstance(Guid guid);
 
     virtual void                Event_ImmediateDestroy();
+
+    Properties *                props;
+    Guid                        guid;
+    int                         instanceID;
 
 private:
     bool                        PostEventArgs(const EventDef *evdef, int time, int numArgs, ...);
     bool                        ProcessEventArgs(const EventDef *evdef, int numArgs, ...);
 
     void                        Event_Destroy();
-
-    Guid                        guid;
-    int                         instanceID;
 
     static bool                 initialized;
     static Array<MetaObject *>  types; // alphabetical order

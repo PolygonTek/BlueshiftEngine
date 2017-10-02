@@ -53,11 +53,6 @@ public:
 
     bool                    Move(const Vec3 &moveVector);
 
-protected:
-    void                    GroundTrace();
-    void                    RecoverFromPenetration();
-    bool                    SlideMove(const Vec3 &moveVector);
-
     float                   GetMass() const;
     void                    SetMass(const float mass);
 
@@ -72,6 +67,11 @@ protected:
 
     float                   GetSlopeLimit() const;
     void                    SetSlopeLimit(const float slopeLimit);
+
+protected:
+    void                    GroundTrace();
+    void                    RecoverFromPenetration();
+    bool                    SlideMove(const Vec3 &moveVector);
 
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);

@@ -45,9 +45,6 @@ public:
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
-protected:
-    void                    UpdateVisuals();
-
     int                     GetLightType() const;
     void                    SetLightType(int type);
 
@@ -95,6 +92,9 @@ protected:
 
     const Vec3 &            GetRadius() const;
     void                    SetRadius(const Vec3 &radius);
+
+protected:
+    void                    UpdateVisuals();
 
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    LayerChanged(const Entity *entity);

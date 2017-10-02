@@ -41,6 +41,7 @@ END_PROPERTIES
 void ComSkinnedMeshRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
     //REGISTER_ACCESSOR_PROPERTY("Occluder", bool, IsOccluder, SetOccluder, "false", PropertySpec::ReadWrite);
+
 #endif
 }
 

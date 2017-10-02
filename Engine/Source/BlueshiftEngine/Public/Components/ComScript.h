@@ -72,6 +72,9 @@ public:
     void                    OnApplicationTerminate();
     void                    OnApplicationPause(bool pause);
 
+    Guid                    GetScript() const;
+    void                    SetScript(const Guid &guid);
+
 protected:
     void                    InitPropertySpecImpl(const Guid &scriptGuid);
     bool                    LoadScriptWithSandboxed(const char *filename, const char *sandboxName);
@@ -79,9 +82,6 @@ protected:
 
     void                    ChangeScript(const Guid &scriptGuid);
     void                    ScriptReloaded();
-
-    const Guid              GetScript() const;
-    void                    SetScript(const Guid &guid);
 
     void                    PropertyChanged(const char *classname, const char *propName);
 

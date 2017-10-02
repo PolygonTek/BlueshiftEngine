@@ -33,7 +33,7 @@ END_PROPERTIES
 
 void ComMeshCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    //REGISTER_ACCESSOR_PROPERTY("Mesh", MeshAsset, GetMesh, SetMesh, GuidMapper::defaultMeshGuid.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", MeshAsset, GetMesh, SetMesh, GuidMapper::defaultMeshGuid.ToString(), "", PropertySpec::ReadWrite);
     REGISTER_PROPERTY("Convex", bool, convex, "true", "", PropertySpec::ReadWrite);
 #endif
 }

@@ -25,8 +25,8 @@ void LuaVM::RegisterMeshRendererComponent(LuaCpp::Module &module) {
     _ComMeshRenderer.SetClass<ComMeshRenderer>(module["ComRenderable"]);
     _ComMeshRenderer.AddClassMembers<ComMeshRenderer>(
         "num_materials", &ComMeshRenderer::NumMaterials,
-        "material", &ComMeshRenderer::GetMaterial,
-        "set_material", &ComMeshRenderer::SetMaterial);
+        "material", &ComMeshRenderer::GetMaterialPtr,
+        "set_material", &ComMeshRenderer::SetMaterialPtr);
 
     _ComMeshRenderer["meta_object"] = ComMeshRenderer::metaObject;
 }

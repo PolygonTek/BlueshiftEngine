@@ -590,7 +590,7 @@ void GameWorld::LoadPhysicsSettings(const char *filename) {
 
     if (!Str::Cmp(classname, PhysicsSettings::metaObject.ClassName())) {
         physicsSettings = static_cast<PhysicsSettings *>(PhysicsSettings::metaObject.CreateInstance());
-        physicsSettings->props->Init(jsonNode);
+        physicsSettings->GetProperties()->Init(jsonNode);
         physicsSettings->SetGameWorld(this);
         physicsSettings->Init();
     } else {
@@ -605,7 +605,7 @@ void GameWorld::SaveSettings() {
 
 void GameWorld::SaveObject(const char *filename, const Object *object) const {
     Json::Value jsonNode;
-    object->props->Serialize(jsonNode);
+    object->GetProperties()->Serialize(jsonNode);
 
     Json::StyledWriter jsonWriter;
     Str jsonText = jsonWriter.write(jsonNode).c_str();
@@ -617,7 +617,7 @@ void GameWorld::NewMap() {
     Json::Value defaultMapRenderSettingsValue;
     defaultMapRenderSettingsValue["classname"] = MapRenderSettings::metaObject.ClassName();
 
-    mapRenderSettings->props->Init(defaultMapRenderSettingsValue);
+    mapRenderSettings->GetProperties()->Init(defaultMapRenderSettingsValue);
 
     Reset();
 }

@@ -57,16 +57,6 @@ public:
 
     const Ray               ScreenToRay(const Point &screenPoint);
 
-private:
-    int                     GetOrder() const { return order; }
-
-    void                    ProcessPointerInput(const Point &screenPoint);
-
-    void                    RenderScene();
-
-protected:
-    void                    UpdateVisuals();
-
     int                     GetLayerMask() const;
     void                    SetLayerMask(int layerMask);
 
@@ -87,6 +77,16 @@ protected:
 
     float                   GetClearAlpha() const;
     void                    SetClearAlpha(float clearAlpha);
+
+private:
+    int                     GetOrder() const { return order; }
+
+    void                    ProcessPointerInput(const Point &screenPoint);
+
+    void                    RenderScene();
+
+protected:
+    void                    UpdateVisuals();
 
     void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);

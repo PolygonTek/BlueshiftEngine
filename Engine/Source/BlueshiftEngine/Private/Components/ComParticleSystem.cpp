@@ -34,6 +34,8 @@ END_PROPERTIES
 
 void ComParticleSystem::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Particle System", ParticleSystemAsset, GetParticleSystem, SetParticleSystem, GuidMapper::defaultParticleSystemGuid.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, "true", "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -87,6 +89,8 @@ void ComParticleSystem::Purge(bool chainPurge) {
 
 void ComParticleSystem::Init() {
     ComRenderable::Init();
+
+    playOnAwake = props->Get("playOnAwake").As<bool>();
 
     ChangeParticleSystem(props->Get("particleSystem").As<Guid>());
 
@@ -186,7 +190,7 @@ void ComParticleSystem::ResetParticles() {
 }
 
 void ComParticleSystem::Awake() {
-    if (props->Get("playOnAwake").As<bool>()) {
+    if (playOnAwake) {
         simulationStarted = true;
     }
 }
@@ -727,6 +731,11 @@ void ComParticleSystem::PropertyChanged(const char *classname, const char *propN
 
     if (!Str::Cmp(propName, "particleSystem")) {
         SetParticleSystem(props->Get("particleSystem").As<Guid>());
+        return;
+    }
+
+    if (!Str::Cmp(propName, "playOnAwake")) {
+        playOnAwake = props->Get("particleSystem").As<bool>();
         return;
     }
 

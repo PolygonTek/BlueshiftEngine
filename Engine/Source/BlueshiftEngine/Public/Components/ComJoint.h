@@ -41,8 +41,7 @@ public:
 
     virtual void            Enable(bool enable) override;
 
-protected:
-    const Guid              GetConnectedBody() const;
+    Guid                    GetConnectedBody() const;
     void                    SetConnectedBody(const Guid &guid);
 
     bool                    IsCollisionEnabled() const;
@@ -51,6 +50,7 @@ protected:
     float                   GetBreakImpulse() const;
     void                    SetBreakImpulse(float breakImpulse);
 
+protected:
     void                    PropertyChanged(const char *classname, const char *propName);
 
     const ComRigidBody *    connectedBody;

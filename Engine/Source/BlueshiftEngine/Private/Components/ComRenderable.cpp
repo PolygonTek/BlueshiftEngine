@@ -37,8 +37,8 @@ END_PROPERTIES
 
 void ComRenderable::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, "1 1 1", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Color", float, GetAlpha, SetAlpha, "1", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, "1 1 1", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Alpha", float, GetAlpha, SetAlpha, "1", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("Billboard", bool, IsBillboard, SetBillboard, "false", "", PropertySpec::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, "0", "", PropertySpec::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, "1", "", PropertySpec::ReadWrite);
@@ -191,7 +191,7 @@ void ComRenderable::ShowWireframe(SceneEntity::WireframeMode wireframeMode) {
 }
 
 void ComRenderable::LayerChanged(const Entity *entity) {
-    sceneEntity.layer = entity->props->Get("layer").As<int>();
+    sceneEntity.layer = entity->GetProperties()->Get("layer").As<int>();
     UpdateVisuals();
 }
 
