@@ -47,7 +47,9 @@ void ComTextRenderer::RegisterProperties() {
 }
 
 ComTextRenderer::ComTextRenderer() {
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComTextRenderer::PropertyChanged);
+#endif
 }
 
 ComTextRenderer::~ComTextRenderer() {

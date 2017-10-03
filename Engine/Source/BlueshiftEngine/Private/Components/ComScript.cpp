@@ -41,7 +41,9 @@ void ComScript::RegisterProperties() {
 ComScript::ComScript() {
     scriptAsset = nullptr;
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComScript::PropertyChanged);
+#endif
 }
 
 ComScript::~ComScript() {
@@ -303,12 +305,16 @@ void ComScript::SetScriptProperties() {
             (Vec2 &)properties[name]["value"] = props->Get(name).As<Vec2>();
             break;
         case PropertySpec::Vec3Type:
-        case PropertySpec::Color3Type:
             (Vec3 &)properties[name]["value"] = props->Get(name).As<Vec3>();
             break;
         case PropertySpec::Vec4Type:
-        case PropertySpec::Color4Type:
             (Vec4 &)properties[name]["value"] = props->Get(name).As<Vec4>();
+            break;
+        case PropertySpec::Color3Type:
+            (Color3 &)properties[name]["value"] = props->Get(name).As<Color3>();
+            break;
+        case PropertySpec::Color4Type:
+            (Color4 &)properties[name]["value"] = props->Get(name).As<Color4>();
             break;
         case PropertySpec::AnglesType:
             (Angles &)properties[name]["value"] = props->Get(name).As<Angles>();

@@ -17,6 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
+const Color3  Color3::zero      = Color3(0.0f, 0.0f, 0.0f);
 const Color3  Color3::black     = Color3(0.0f, 0.0f, 0.0f);
 const Color3  Color3::white     = Color3(1.0f, 1.0f, 1.0f);
 const Color3  Color3::red       = Color3(1.0f, 0.0f, 0.0f);

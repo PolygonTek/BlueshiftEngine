@@ -52,7 +52,9 @@ void ComAudioSource::RegisterProperties() {
 ComAudioSource::ComAudioSource() {
     referenceSound = nullptr;
     sound = nullptr;
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAudioSource::PropertyChanged);
+#endif
 }
 
 ComAudioSource::~ComAudioSource() {

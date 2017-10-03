@@ -40,7 +40,9 @@ ComSpline::ComSpline() {
     anglesCurve = nullptr;
     curveUpdated = false;
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSpline::PropertyChanged);
+#endif
 }
 
 ComSpline::~ComSpline() {

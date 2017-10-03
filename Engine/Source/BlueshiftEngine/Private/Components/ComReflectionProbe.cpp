@@ -47,7 +47,9 @@ ComReflectionProbe::ComReflectionProbe() {
     sphereMesh = nullptr;
     memset(&sphere, 0, sizeof(sphere));
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComReflectionProbe::PropertyChanged);
+#endif
 }
 
 ComReflectionProbe::~ComReflectionProbe() {

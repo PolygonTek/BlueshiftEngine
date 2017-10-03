@@ -33,7 +33,9 @@ void ComAudioListener::RegisterProperties() {
 }
 
 ComAudioListener::ComAudioListener() {
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAudioListener::PropertyChanged);
+#endif
 }
 
 ComAudioListener::~ComAudioListener() {

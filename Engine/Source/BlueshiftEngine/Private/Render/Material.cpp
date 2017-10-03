@@ -690,12 +690,16 @@ void Material::Write(const char *filename) {
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec2>().ToString());
                 break;
             case PropertySpec::Vec3Type:
-            case PropertySpec::Color3Type:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec3>().ToString());
                 break;
             case PropertySpec::Vec4Type:
-            case PropertySpec::Color4Type:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec4>().ToString());
+                break;
+            case PropertySpec::Color3Type:
+                fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Color3>().ToString());
+                break;
+            case PropertySpec::Color4Type:
+                fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Color4>().ToString());
                 break;
             default:
                 break;

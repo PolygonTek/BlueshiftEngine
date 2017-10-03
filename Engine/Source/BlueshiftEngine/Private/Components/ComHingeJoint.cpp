@@ -42,7 +42,9 @@ void ComHingeJoint::RegisterProperties() {
 }
 
 ComHingeJoint::ComHingeJoint() {
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComHingeJoint::PropertyChanged);
+#endif
 }
 
 ComHingeJoint::~ComHingeJoint() {

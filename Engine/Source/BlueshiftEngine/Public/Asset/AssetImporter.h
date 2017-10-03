@@ -42,8 +42,6 @@ public:
     void                    RevertChanged();
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Asset *                 asset;
 };
 

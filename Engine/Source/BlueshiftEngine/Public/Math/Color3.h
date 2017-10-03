@@ -115,6 +115,7 @@ public:
                         /// Returns dimension of this type
     int                 GetDimension() const { return Size; }
 
+    static const Color3 zero;       ///< (0.0, 0.0, 0.0)
     static const Color3 black;      ///< (0.0, 0.0, 0.0)
     static const Color3 white;      ///< (1.0, 1.0, 1.0)
     static const Color3 red;        ///< (1.0, 0.0, 0.0)

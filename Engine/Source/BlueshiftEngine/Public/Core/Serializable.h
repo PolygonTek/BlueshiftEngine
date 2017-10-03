@@ -41,7 +41,7 @@ public:
         Hidden              = BIT(0)
     };
 
-    Property() : numElements(0), flags(0) { value.SetEmpty(); }
+    Property() : numElements(0), flags(0) {}
     Property(const Variant &_value, int _flags) : value(_value), numElements(0), flags(_flags) {}
 
     const Variant &         Value() const { return value; }
@@ -103,15 +103,9 @@ public:
                             /// Gets property, if it is a invalid property, returns 0-set value or "" (empty string)
     Variant                 Get(const char *name) const;
 
-                            /// Gets property with vargs (name1, variant_ptr1, name2, variant_ptr2, ...)
-    bool                    GetVa(const char *name, ...) const;
-
                             /// Sets property
     bool                    Set(const char *name, const Variant &value, bool forceWrite = false);
 
-                            /// Sets property with vargs (name1, variant_ptr1, name2, variant_ptr2, ...)
-    bool                    SetVa(const char *name, ...);
-        
                             /// Deserialize to Json::Value
     const Json::Value       Deserialize() const;
 

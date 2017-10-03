@@ -51,7 +51,9 @@ ComCharacterController::ComCharacterController() {
     body = nullptr;
     correctionSensor = nullptr;
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCharacterController::PropertyChanged);
+#endif
 }
 
 ComCharacterController::~ComCharacterController() {

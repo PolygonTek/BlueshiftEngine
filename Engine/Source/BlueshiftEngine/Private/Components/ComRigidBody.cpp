@@ -97,7 +97,9 @@ ComRigidBody::ComRigidBody() {
     body = nullptr;
     collisionListener = nullptr;
     physicsUpdating = false;
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComRigidBody::PropertyChanged);
+#endif
 }
 
 ComRigidBody::~ComRigidBody() {

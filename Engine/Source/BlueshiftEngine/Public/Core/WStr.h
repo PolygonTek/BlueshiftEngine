@@ -378,6 +378,8 @@ public:
     void                ReAllocate(int amount, bool keepOld);
     void                FreeData();
 
+    static WStr         empty;
+
 private:
                         /// Ensures string data buffer is large enough.
     void                EnsureAlloced(int amount, bool keepOld = true);

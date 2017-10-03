@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+Str Str::empty;
+
 void Str::ReAllocate(int amount, bool keepOld) {
     assert(amount > 0);
 

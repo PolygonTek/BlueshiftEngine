@@ -56,7 +56,9 @@ ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {
 
     jointMats = nullptr;
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSkinnedMeshRenderer::PropertyChanged);
+#endif
 }
 
 ComSkinnedMeshRenderer::~ComSkinnedMeshRenderer() {

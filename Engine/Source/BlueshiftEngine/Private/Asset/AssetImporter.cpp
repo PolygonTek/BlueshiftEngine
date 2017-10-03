@@ -29,7 +29,6 @@ END_PROPERTIES
 
 AssetImporter::AssetImporter() {
     asset = nullptr;
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&AssetImporter::PropertyChanged);
 }
 
 AssetImporter::~AssetImporter() {
@@ -64,9 +63,6 @@ void AssetImporter::ApplyChanged() {
     asset->WriteMetaDataFile();
 
     EmitSignal(&SIG_ApplyChanged);
-}
-
-void AssetImporter::PropertyChanged(const char *classname, const char *propName) {
 }
 
 BE_NAMESPACE_END

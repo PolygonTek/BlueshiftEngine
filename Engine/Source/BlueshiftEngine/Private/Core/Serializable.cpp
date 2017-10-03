@@ -111,7 +111,7 @@ void Properties::SetFlags(const char *name, int flags) {
 
 void Properties::Init(const Properties *props) {
     Array<const PropertySpec *> pspecs;
-    owner->GetPropertySpecList(pspecs);    
+    owner->GetPropertySpecList(pspecs);
 
     for (int i = 0; i < pspecs.Count(); i++) {
         const PropertySpec *spec = pspecs[i];
@@ -146,16 +146,19 @@ void Properties::Init(const Json::Value &node) {
                 
                 switch (type) {
                 case PropertySpec::StringType: {
-                    const Json::Value value = subNode.get(elementIndex, PropertySpec::ToVariant(type, defaultValue).As<Str>().c_str());
-                    Set(elementName, value.asCString(), true);
+                    Variant variant = PropertySpec::ToVariant(type, defaultValue);
+                    const Json::Value value = subNode.get(elementIndex, variant.As<Str>().c_str());
+                    Set(elementName, Str(value.asCString()), true);
                     break; }
                 case PropertySpec::FloatType: {
-                    const Json::Value value = subNode.get(elementIndex, PropertySpec::ToVariant(type, defaultValue).As<float>());
+                    Variant variant = PropertySpec::ToVariant(type, defaultValue);
+                    const Json::Value value = subNode.get(elementIndex, variant.As<float>());
                     Set(elementName, value.asFloat(), true);
                     break; }
                 case PropertySpec::IntType: 
                 case PropertySpec::EnumType: {
-                    const Json::Value value = subNode.get(elementIndex, PropertySpec::ToVariant(type, defaultValue).As<int>());
+                    Variant variant = PropertySpec::ToVariant(type, defaultValue);
+                    const Json::Value value = subNode.get(elementIndex, variant.As<int>());
                     Set(elementName, value.asInt(), true);
                     break; }
                 case PropertySpec::ObjectType: {
@@ -164,7 +167,8 @@ void Properties::Init(const Json::Value &node) {
                     Set(elementName, guid, true);
                     break; }
                 case PropertySpec::BoolType: {
-                    const Json::Value value = subNode.get(elementIndex, PropertySpec::ToVariant(type, defaultValue).As<bool>());
+                    Variant variant = PropertySpec::ToVariant(type, defaultValue);
+                    const Json::Value value = subNode.get(elementIndex, variant.As<bool>());
                     Set(elementName, value.asBool(), true);
                     break; }
                 case PropertySpec::PointType: {
@@ -188,20 +192,32 @@ void Properties::Init(const Json::Value &node) {
                     sscanf(s, "%f %f", &v.x, &v.y);
                     Set(elementName, v, true);
                     break; }
-                case PropertySpec::Vec3Type:
-                case PropertySpec::Color3Type: {
+                case PropertySpec::Vec3Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue);
                     const char *s = value.asCString();
                     Vec3 v;
                     sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
                     Set(elementName, v, true);
                     break; }
-                case PropertySpec::Vec4Type:
-                case PropertySpec::Color4Type: {
+                case PropertySpec::Vec4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue);
                     const char *s = value.asCString();
                     Vec4 v;
                     sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
+                    Set(elementName, v, true);
+                    break; }
+                case PropertySpec::Color3Type: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue);
+                    const char *s = value.asCString();
+                    Color3 v;
+                    sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
+                    Set(elementName, v, true);
+                    break; }
+                case PropertySpec::Color4Type: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue);
+                    const char *s = value.asCString();
+                    Color4 v;
+                    sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
                     Set(elementName, v, true);
                     break; }
                 case PropertySpec::AnglesType: {
@@ -226,16 +242,19 @@ void Properties::Init(const Json::Value &node) {
         } else {
             switch (type) {
             case PropertySpec::StringType: {
-                const Json::Value value = node.get(name, PropertySpec::ToVariant(type, defaultValue).As<Str>().c_str());
-                Set(name, value.asCString(), true);
+                Variant variant = PropertySpec::ToVariant(type, defaultValue);
+                const Json::Value value = node.get(name, variant.As<Str>().c_str());
+                Set(name, Str(value.asCString()), true);
                 break; }
             case PropertySpec::FloatType: {
-                const Json::Value value = node.get(name, PropertySpec::ToVariant(type, defaultValue).As<float>());
+                Variant variant = PropertySpec::ToVariant(type, defaultValue);
+                const Json::Value value = node.get(name, variant.As<float>());
                 Set(name, value.asFloat(), true);
                 break; }
             case PropertySpec::IntType:
             case PropertySpec::EnumType: {
-                const Json::Value value = node.get(name, PropertySpec::ToVariant(type, defaultValue).As<int>());
+                Variant variant = PropertySpec::ToVariant(type, defaultValue);
+                const Json::Value value = node.get(name, variant.As<int>());
                 Set(name, value.asInt(), true);
                 break; }
             case PropertySpec::ObjectType: {
@@ -244,7 +263,8 @@ void Properties::Init(const Json::Value &node) {
                 Set(name, guid, true);
                 break; }
             case PropertySpec::BoolType: {
-                const Json::Value value = node.get(name, PropertySpec::ToVariant(type, defaultValue).As<bool>());
+                Variant variant = PropertySpec::ToVariant(type, defaultValue);
+                const Json::Value value = node.get(name, variant.As<bool>());
                 Set(name, value.asBool(), true);
                 break; }
             case PropertySpec::PointType: {
@@ -268,20 +288,32 @@ void Properties::Init(const Json::Value &node) {
                 sscanf(s, "%f %f", &v.x, &v.y);
                 Set(name, v, true);
                 break; }
-            case PropertySpec::Vec3Type:
-            case PropertySpec::Color3Type: {
+            case PropertySpec::Vec3Type: {
                 const Json::Value value = node.get(name, defaultValue);
                 const char *s = value.asCString();
                 Vec3 v;
                 sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
                 Set(name, v, true);
                 break; }
-            case PropertySpec::Vec4Type:
-            case PropertySpec::Color4Type: {
+            case PropertySpec::Vec4Type: {
                 const Json::Value value = node.get(name, defaultValue);
                 const char *s = value.asCString();
                 Vec4 v;
                 sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
+                Set(name, v, true);
+                break; }
+            case PropertySpec::Color3Type: {
+                const Json::Value value = node.get(name, defaultValue);
+                const char *s = value.asCString();
+                Color3 v;
+                sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
+                Set(name, v, true);
+                break; }
+            case PropertySpec::Color4Type: {
+                const Json::Value value = node.get(name, defaultValue);
+                const char *s = value.asCString();
+                Color4 v;
+                sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
                 Set(name, v, true);
                 break; }
             case PropertySpec::AnglesType: {
@@ -310,7 +342,7 @@ bool Properties::GetDefaultValue(const char *name, Variant &out) const {
     const PropertySpec *spec = GetSpec(name);
     if (!spec) {
         BE_WARNLOG(L"invalid property name '%hs'\n", name);
-        out.SetEmpty();
+        out.Clear();
         return false;
     }
 
@@ -322,7 +354,7 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
     const PropertySpec *spec = GetSpec(name);
     if (!spec) {
         BE_WARNLOG(L"invalid property name '%hs'\n", name);
-        out.SetEmpty();
+        out.Clear();
         return false;
     }
 
@@ -369,30 +401,6 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
 #endif
 }
 
-bool Properties::GetVa(const char *name, ...) const {
-    va_list	args;
-    
-    va_start(args, name);
-    while (1) {
-        const PropertySpec *spec = GetSpec(name);
-        if (!spec) {
-            BE_WARNLOG(L"invalid property name '%hs'\n", name);
-            va_end(args);
-            return false;
-        }
-
-        Get(name, *(Variant *)va_arg(args, Variant *));
-
-        name = va_arg(args, const char *);
-        if (!name) {
-            break;
-        }
-    }
-
-    va_end(args);
-    return true;
-}
-
 bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
     const PropertySpec *spec = GetSpec(name);
     if (!spec) {
@@ -432,7 +440,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         }
         newVar = i;
         break; }
-    case PropertySpec::EnumType: 
+    case PropertySpec::EnumType:
         newVar = var.As<int>();
         break;
     case PropertySpec::ObjectType:
@@ -467,8 +475,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         }
         newVar = vec2;
         break; }
-    case PropertySpec::Vec3Type:
-    case PropertySpec::Color3Type: {
+    case PropertySpec::Vec3Type: {
         Vec3 vec3 = var.As<Vec3>();
         if (spec->GetFlags() & PropertySpec::Ranged) {
             Clamp(vec3.x, minValue, maxValue);
@@ -477,8 +484,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         }
         newVar = vec3;
         break; }
-    case PropertySpec::Vec4Type:
-    case PropertySpec::Color4Type: {
+    case PropertySpec::Vec4Type: {
         Vec4 vec4 = var.As<Vec4>();
         if (spec->GetFlags() & PropertySpec::Ranged) {
             Clamp(vec4.x, minValue, maxValue);
@@ -487,6 +493,25 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
             Clamp(vec4.w, minValue, maxValue);
         }
         newVar = vec4;
+        break; }
+    case PropertySpec::Color3Type: {
+        Color3 color3 = var.As<Color3>();
+        if (spec->GetFlags() & PropertySpec::Ranged) {
+            Clamp(color3.r, minValue, maxValue);
+            Clamp(color3.g, minValue, maxValue);
+            Clamp(color3.b, minValue, maxValue);
+        }
+        newVar = color3;
+        break; }
+    case PropertySpec::Color4Type: {
+        Color4 color4 = var.As<Color4>();
+        if (spec->GetFlags() & PropertySpec::Ranged) {
+            Clamp(color4.r, minValue, maxValue);
+            Clamp(color4.g, minValue, maxValue);
+            Clamp(color4.b, minValue, maxValue);
+            Clamp(color4.a, minValue, maxValue);
+        }
+        newVar = color4;
         break; }
     case PropertySpec::AnglesType: {
         Angles angles = var.As<Angles>();
@@ -530,7 +555,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
     case PropertySpec::Color4Type:  *(reinterpret_cast<Color4 *>(dest)) = newVar.As<Color4>(); break;
     case PropertySpec::AnglesType:  *(reinterpret_cast<Angles *>(dest)) = newVar.As<Angles>(); break;
     case PropertySpec::Mat3Type:    *(reinterpret_cast<Mat3 *>(dest)) = newVar.As<Mat3>(); break;
-    case PropertySpec::ObjectType: break;
+    case PropertySpec::ObjectType:  break;
     }
 
     return true;
@@ -543,30 +568,6 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
 
     return true;
 #endif
-}
-
-bool Properties::SetVa(const char *name, ...) {
-    va_list	args;
-    
-    va_start(args, name);
-    while (1) {
-        const PropertySpec *spec = GetSpec(name);
-        if (!spec) {
-            BE_WARNLOG(L"invalid property name '%hs'\n", name);
-            va_end(args);
-            return false;
-        }
-
-        Set(name, va_arg(args, const Variant *));
-
-        name = va_arg(args, const char *);
-        if (!name) {
-            break;
-        }
-    }
-
-    va_end(args);
-    return true;
 }
 
 const Json::Value Properties::Deserialize() const {

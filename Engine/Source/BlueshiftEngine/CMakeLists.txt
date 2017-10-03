@@ -321,9 +321,11 @@ set(ENGINE_FILES
   Private/Core/DateTime.cpp
   Private/Core/Dict.cpp
   Private/Core/Expr.cpp
+  Private/Core/MinMaxCurve.cpp
   Private/Core/Lexer.cpp
   Private/Core/WLexer.cpp
   Private/Core/Task.cpp
+  Private/Core/Variant.cpp
 
   Private/RHIOpenGL/OpenGL/OpenGL.h
   Private/RHIOpenGL/OpenGL/OpenGL.cpp

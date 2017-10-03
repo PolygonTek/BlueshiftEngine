@@ -72,7 +72,9 @@ ComCamera::ComCamera() {
     memset(&sprite, 0, sizeof(sprite));
     view = nullptr;
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCamera::PropertyChanged);
+#endif
 }
 
 ComCamera::~ComCamera() {

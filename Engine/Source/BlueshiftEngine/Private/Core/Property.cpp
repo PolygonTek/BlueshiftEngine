@@ -50,12 +50,16 @@ const Json::Value PropertySpec::ToJsonValue(PropertySpec::Type type, const Varia
         value = var.As<Vec2>().ToString();
         break;
     case PropertySpec::Vec3Type:
-    case PropertySpec::Color3Type:
         value = var.As<Vec3>().ToString();
         break;
     case PropertySpec::Vec4Type:
-    case PropertySpec::Color4Type:
         value = var.As<Vec4>().ToString();
+        break;
+    case PropertySpec::Color3Type:
+        value = var.As<Color3>().ToString();
+        break;
+    case PropertySpec::Color4Type:
+        value = var.As<Color4>().ToString();
         break;
     case PropertySpec::AnglesType:
         value = var.As<Angles>().ToString();
@@ -71,7 +75,7 @@ const Json::Value PropertySpec::ToJsonValue(PropertySpec::Type type, const Varia
     return value;
 }
 
-const Variant PropertySpec::ToVariant(PropertySpec::Type type, const char *value) {
+Variant PropertySpec::ToVariant(PropertySpec::Type type, const char *value) {
     Variant out;
 
     switch (type) {
@@ -107,17 +111,25 @@ const Variant PropertySpec::ToVariant(PropertySpec::Type type, const char *value
         sscanf(value, "%f %f", &vec2.x, &vec2.y);
         out = vec2;
         break; }
-    case PropertySpec::Vec3Type: 
-    case PropertySpec::Color3Type: {
+    case PropertySpec::Vec3Type: {
         Vec3 vec3;
         sscanf(value, "%f %f %f", &vec3.x, &vec3.y, &vec3.z);
         out = vec3;
         break; }
-    case PropertySpec::Vec4Type: 
-    case PropertySpec::Color4Type: {
+    case PropertySpec::Vec4Type: {
         Vec4 vec4;
         sscanf(value, "%f %f %f %f", &vec4.x, &vec4.y, &vec4.z, &vec4.w);
         out = vec4;
+        break; }
+    case PropertySpec::Color3Type: {
+        Color3 color3;
+        sscanf(value, "%f %f %f", &color3.r, &color3.g, &color3.b);
+        out = color3;
+        break; }
+    case PropertySpec::Color4Type: {
+        Color4 color4;
+        sscanf(value, "%f %f %f %f", &color4.r, &color4.g, &color4.b, &color4.a);
+        out = color4;
         break; }
     case PropertySpec::AnglesType: {
         Angles angles;

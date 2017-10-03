@@ -39,7 +39,9 @@ void ComTransform::RegisterProperties() {
 }
 
 ComTransform::ComTransform() {
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComTransform::PropertyChanged);
+#endif
 }
 
 ComTransform::~ComTransform() {

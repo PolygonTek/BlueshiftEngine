@@ -247,7 +247,7 @@ public:
     bool                    ParseSpec(Lexer &lexer);
 
     static const Json::Value ToJsonValue(Type type, const Variant &var);
-    static const Variant    ToVariant(Type type, const char *value);
+    static Variant          ToVariant(Type type, const char *value);
 
 private:
     Type                    type;               ///< Property type
@@ -524,7 +524,7 @@ struct PropertyTypeID<T, true> {
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags))
+        new BE1::PropertyAccessorImpl<Class, type, MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_ENUM_ACCESSOR_PROPERTY(name, enumSequence, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertySpec(name, enumSequence, \
@@ -533,6 +533,10 @@ struct PropertyTypeID<T, true> {
 #define REGISTER_LIST_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
+
+#define REGISTER_LIST_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
+        new BE1::PropertyAccessorImpl<Class, type, MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
 
 #define BEGIN_PROPERTIES(classname) static int dummy[] = {
 #define PROPERTY_STRING(name, label, desc, defaultValue, flags) 0

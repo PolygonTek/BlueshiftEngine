@@ -37,7 +37,9 @@ void ComSensor::RegisterProperties() {
 ComSensor::ComSensor() {
     sensor = nullptr;
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSensor::PropertyChanged);
+#endif
 }
 
 ComSensor::~ComSensor() {

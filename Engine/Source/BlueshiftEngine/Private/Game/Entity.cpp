@@ -41,6 +41,13 @@ BEGIN_PROPERTIES(Entity)
     PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", "false", PropertySpec::ReadWrite),
 END_PROPERTIES
 
+void Entity::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", Entity, GetParent, SetParent, Guid::zero.ToString, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "", "", PropertySpec::ReadWrite);
+#endif
+}
+
 Entity::Entity() {
     gameWorld = nullptr;
     entityNum = GameWorld::BadEntityNum;
@@ -48,7 +55,9 @@ Entity::Entity() {
     frozen = false;
     initialized = false;
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&Entity::PropertyChanged);
+#endif
 }
 
 Entity::~Entity() {

@@ -34,7 +34,9 @@ void ComFixedJoint::RegisterProperties() {
 }
 
 ComFixedJoint::ComFixedJoint() {
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComFixedJoint::PropertyChanged);
+#endif
 }
 
 ComFixedJoint::~ComFixedJoint() {

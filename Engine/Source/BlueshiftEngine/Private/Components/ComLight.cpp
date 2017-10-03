@@ -75,7 +75,9 @@ ComLight::ComLight() {
     spriteMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
 
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComLight::PropertyChanged);
+#endif
 }
 
 ComLight::~ComLight() {

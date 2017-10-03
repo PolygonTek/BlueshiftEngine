@@ -30,7 +30,9 @@ void ComAnimator::RegisterProperties() {
 }
 
 ComAnimator::ComAnimator() {
+#ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAnimator::PropertyChanged);
+#endif
 }
 
 ComAnimator::~ComAnimator() {
