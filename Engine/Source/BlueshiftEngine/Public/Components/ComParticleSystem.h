@@ -58,7 +58,7 @@ public:
     void                    SetParticleSystem(const Guid &guid);
 
     ObjectRef               GetParticleSystemRef() const;
-    void                    SetParticleSystemRef(const ObjectRef &objectRef);
+    void                    SetParticleSystemRef(const ObjectRef &particleSystemRef);
 
 protected:
     virtual void            UpdateVisuals() override;

@@ -117,8 +117,8 @@ ObjectRef ComMeshCollider::GetMeshRef() const {
     return ObjectRef(MeshAsset::metaObject, meshGuid);
 }
 
-void ComMeshCollider::SetMeshRef(const ObjectRef &objectRef) {
-    meshGuid = objectRef.objectGuid;
+void ComMeshCollider::SetMeshRef(const ObjectRef &meshRef) {
+    meshGuid = meshRef.objectGuid;
 
     if (!meshGuid.IsZero()) {
         const Str meshPath = resourceGuidMapper.Get(meshGuid);

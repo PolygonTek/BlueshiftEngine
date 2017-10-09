@@ -49,8 +49,10 @@ ComBoxCollider::~ComBoxCollider() {
 void ComBoxCollider::Init() {
     ComCollider::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     center = props->Get("center").As<Vec3>();
     extents = props->Get("extents").As<Vec3>();
+#endif
 
     ComTransform *transform = GetEntity()->GetTransform();
 

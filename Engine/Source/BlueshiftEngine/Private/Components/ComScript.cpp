@@ -34,7 +34,7 @@ END_PROPERTIES
 
 void ComScript::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Script", ScriptAsset, GetScript, SetScript, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Script", ObjectRef, GetScriptRef, SetScriptRef, ObjectRef(ScriptAsset::metaObject, Guid::zero), "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -449,6 +449,19 @@ void ComScript::SetScript(const Guid &guid) {
     InitPropertySpecImpl(guid);
 
     ChangeScript(guid);
+
+    EmitSignal(&Properties::SIG_UpdateUI);
+}
+
+
+ObjectRef ComScript::GetScriptRef() const {
+    return ObjectRef(ScriptAsset::metaObject, scriptAsset ? scriptAsset->GetGuid() : Guid::zero);
+}
+
+void ComScript::SetScriptRef(const ObjectRef &scriptRef) {
+    InitPropertySpecImpl(scriptRef.objectGuid);
+
+    ChangeScript(scriptRef.objectGuid);
 
     EmitSignal(&Properties::SIG_UpdateUI);
 }

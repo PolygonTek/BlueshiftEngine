@@ -82,14 +82,14 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
 
 void ComRigidBody::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ACCESSOR_PROPERTY("Mass", float, GetMass, SetMass, "1", "", PropertySpec::ReadWrite).SetRange(0, 200, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Restitution", float, GetRestitution, SetRestitution, "0", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Friction", float, GetFriction, SetFriction, "1", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Rolling Friction", float, GetRollingFriction, SetRollingFriction, "1", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Linear Damping", float, GetLinearDamping, SetLinearDamping, "0.05", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Angular Damping", float, GetAngularDamping, SetAngularDamping, "0.01", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Kinematic", bool, IsKinematic, SetKinematic, "false", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("CCD", bool, IsCCD, SetCCD, "false", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Mass", float, GetMass, SetMass, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 200, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Restitution", float, GetRestitution, SetRestitution, 0.f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Friction", float, GetFriction, SetFriction, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Rolling Friction", float, GetRollingFriction, SetRollingFriction, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.05f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Kinematic", bool, IsKinematic, SetKinematic, false, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("CCD", bool, IsCCD, SetCCD, false, "", PropertySpec::ReadWrite);
 #endif
 }
 

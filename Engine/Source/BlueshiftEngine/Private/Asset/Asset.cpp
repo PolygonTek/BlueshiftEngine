@@ -24,7 +24,6 @@ ABSTRACT_DECLARATION("Asset", Asset, Object)
 BEGIN_EVENTS(Asset)
 END_EVENTS
 BEGIN_PROPERTIES(Asset)
-    PROPERTY_OBJECT("guid", "GUID", "GUID", Guid::zero.ToString(), Object::metaObject, PropertySpec::ReadWrite | PropertySpec::Hidden),
     PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertySpec::ReadWrite | PropertySpec::Hidden),
 END_PROPERTIES
 

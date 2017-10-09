@@ -75,6 +75,9 @@ public:
     Guid                    GetScript() const;
     void                    SetScript(const Guid &guid);
 
+    ObjectRef               GetScriptRef() const;
+    void                    SetScriptRef(const ObjectRef &scriptRef);
+
 protected:
     void                    InitPropertySpecImpl(const Guid &scriptGuid);
     bool                    LoadScriptWithSandboxed(const char *filename, const char *sandboxName);

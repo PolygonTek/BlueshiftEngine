@@ -499,10 +499,10 @@ ObjectRef ComLight::GetMaterialRef() const {
     return ObjectRef(MaterialAsset::metaObject, resourceGuidMapper.Get(materialPath));
 }
 
-void ComLight::SetMaterialRef(const ObjectRef &objectRef) {
+void ComLight::SetMaterialRef(const ObjectRef &materialRef) {
     materialManager.ReleaseMaterial(sceneLight.material);
 
-    const Str materialPath = resourceGuidMapper.Get(objectRef.objectGuid);
+    const Str materialPath = resourceGuidMapper.Get(materialRef.objectGuid);
     sceneLight.material = materialManager.GetMaterial(materialPath);
     UpdateVisuals();
 }

@@ -45,7 +45,7 @@ public:
     void                    SetConnectedBody(const Guid &guid);
 
     ObjectRef               GetConnectedBodyRef() const;
-    void                    SetConnectedBodyRef(const ObjectRef &objectRef);
+    void                    SetConnectedBodyRef(const ObjectRef &bodyRef);
 
     bool                    IsCollisionEnabled() const;
     void                    SetCollisionEnabled(bool enabled);

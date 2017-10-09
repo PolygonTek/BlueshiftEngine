@@ -40,8 +40,10 @@ END_PROPERTIES
 
 void ComSkinnedMeshRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    //REGISTER_ACCESSOR_PROPERTY("Occluder", bool, IsOccluder, SetOccluder, "false", PropertySpec::ReadWrite);
-
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Animation Type", "Animation Controller;Single Animation", GetAnimationType, SetAnimationType, 0, "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Anim Controller", ObjectRef, GetAnimControllerRef, SetAnimControllerRef, ObjectRef(AnimControllerAsset::metaObject, GuidMapper::defaultAnimControllerGuid), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Skeleton", ObjectRef, GetSkeletonRef, SetSkeletonRef, ObjectRef(SkeletonAsset::metaObject, Guid::zero), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Animation", ObjectRef, GetAnimRef, SetAnimRef, ObjectRef(AnimAsset::metaObject, Guid::zero), "", PropertySpec::ReadWrite);
 #endif
 }
 

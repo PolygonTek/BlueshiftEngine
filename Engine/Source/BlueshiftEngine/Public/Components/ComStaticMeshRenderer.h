@@ -33,6 +33,9 @@ public:
 
     virtual void            Update() override;
 
+    bool                    IsOccluder() const;
+    void                    SetOccluder(bool occluder);
+
 protected:
     virtual void            MeshUpdated() override;
 

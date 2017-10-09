@@ -762,8 +762,8 @@ ObjectRef ComParticleSystem::GetParticleSystemRef() const {
     return ObjectRef(ParticleSystemAsset::metaObject, resourceGuidMapper.Get(particleSystemPath));
 }
 
-void ComParticleSystem::SetParticleSystemRef(const ObjectRef &objectRef) {
-    ChangeParticleSystem(objectRef.objectGuid);
+void ComParticleSystem::SetParticleSystemRef(const ObjectRef &particleSystemRef) {
+    ChangeParticleSystem(particleSystemRef.objectGuid);
 
     //ResetParticles();
 

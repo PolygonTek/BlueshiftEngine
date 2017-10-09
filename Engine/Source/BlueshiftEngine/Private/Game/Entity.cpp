@@ -31,7 +31,6 @@ OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
 END_EVENTS
 BEGIN_PROPERTIES(Entity)
-    PROPERTY_OBJECT("guid", "GUID", "entity GUID", Guid::zero.ToString(), Entity::metaObject, PropertySpec::ReadWrite),
     PROPERTY_OBJECT("parent", "Parent Entity", "parent entity", Guid::zero.ToString(), Entity::metaObject, PropertySpec::ReadWrite),
     PROPERTY_BOOL("isPrefabParent", "Is prefab Parent", "is prefab parent ?", "false", PropertySpec::ReadWrite),
     PROPERTY_OBJECT("prefabParent", "Prefab Parent", "prefab parent entity", Guid::zero.ToString(), Entity::metaObject, PropertySpec::ReadWrite),

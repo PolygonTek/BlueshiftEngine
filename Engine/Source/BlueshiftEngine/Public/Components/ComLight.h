@@ -67,7 +67,7 @@ public:
     void                    SetMaterial(const Guid &material);
 
     ObjectRef               GetMaterialRef() const;
-    void                    SetMaterialRef(const ObjectRef &objectRef);
+    void                    SetMaterialRef(const ObjectRef &materialRef);
 
     Color3                  GetColor() const;
     void                    SetColor(const Color3 &color);

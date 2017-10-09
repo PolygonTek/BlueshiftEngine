@@ -40,14 +40,14 @@ public:
     void                    SetMesh(const Guid &guid);
 
     ObjectRef               GetMeshRef() const;
-    void                    SetMeshRef(const ObjectRef &objectRef);
+    void                    SetMeshRef(const ObjectRef &meshRef);
 
     int                     NumMaterials() const;
     Guid                    GetMaterial(int index) const;
     void                    SetMaterial(int index, const Guid &materialGuid);
 
     ObjectRefArray          GetMaterialsRef() const;
-    void                    SetMaterialsRef(const ObjectRefArray &objectRefArray);
+    void                    SetMaterialsRef(const ObjectRefArray &materialsRef);
 
     Material *              GetMaterialPtr(int index) const;
     void                    SetMaterialPtr(int index, const Material *material);

@@ -212,8 +212,8 @@ ObjectRef ComMeshRenderer::GetMeshRef() const {
     return ObjectRef(MeshAsset::metaObject, resourceGuidMapper.Get(meshPath));
 }
 
-void ComMeshRenderer::SetMeshRef(const ObjectRef &objectRef) {
-    ChangeMesh(objectRef.objectGuid);
+void ComMeshRenderer::SetMeshRef(const ObjectRef &meshRef) {
+    ChangeMesh(meshRef.objectGuid);
 
     MeshUpdated();
 }
@@ -237,18 +237,18 @@ void ComMeshRenderer::SetMaterial(int index, const Guid &materialGuid) {
 }
 
 ObjectRefArray ComMeshRenderer::GetMaterialsRef() const {
-    ObjectRefArray objectRefArray(MaterialAsset::metaObject);
-    objectRefArray.objectGuids.SetCount(sceneEntity.customMaterials.Count());
+    ObjectRefArray materialsRef(MaterialAsset::metaObject);
+    materialsRef.objectGuids.SetCount(sceneEntity.customMaterials.Count());
 
     for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
         const Str materialPath = sceneEntity.customMaterials[i]->GetHashName();
-        objectRefArray.objectGuids[i] = resourceGuidMapper.Get(materialPath);
+        materialsRef.objectGuids[i] = resourceGuidMapper.Get(materialPath);
     }
 
-    return objectRefArray;
+    return materialsRef;
 }
 
-void ComMeshRenderer::SetMaterialsRef(const ObjectRefArray &objectRefArray) {
+void ComMeshRenderer::SetMaterialsRef(const ObjectRefArray &materialsRef) {
     // Release the previous used materials
     for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
         if (sceneEntity.customMaterials[i]) {
@@ -256,11 +256,11 @@ void ComMeshRenderer::SetMaterialsRef(const ObjectRefArray &objectRefArray) {
         }
     }
 
-    sceneEntity.customMaterials.SetCount(objectRefArray.objectGuids.Count());
+    sceneEntity.customMaterials.SetCount(materialsRef.objectGuids.Count());
 
     // Get the new materials
     for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
-        const Str materialPath = resourceGuidMapper.Get(objectRefArray.objectGuids[i]);
+        const Str materialPath = resourceGuidMapper.Get(materialsRef.objectGuids[i]);
         sceneEntity.customMaterials[i] = materialManager.GetMaterial(materialPath);
     }
 

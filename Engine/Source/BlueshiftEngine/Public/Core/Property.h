@@ -177,6 +177,7 @@ public:
         IntType,
         BoolType,
         FloatType,
+        GuidType,
         StringType,
         PointType,
         RectType,
@@ -508,6 +509,11 @@ struct PropertyTypeID<Rect> {
 template <>
 struct PropertyTypeID<Str> {
     static PropertySpec::Type GetType() { return PropertySpec::Type::StringType; }
+};
+
+template <>
+struct PropertyTypeID<Guid> {
+    static PropertySpec::Type GetType() { return PropertySpec::Type::GuidType; }
 };
 
 template <>

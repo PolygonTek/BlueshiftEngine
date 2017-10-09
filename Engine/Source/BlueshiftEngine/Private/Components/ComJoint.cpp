@@ -137,9 +137,9 @@ ObjectRef ComJoint::GetConnectedBodyRef() const {
     return ObjectRef();
 }
 
-void ComJoint::SetConnectedBodyRef(const ObjectRef &objectRef) {
-    if (!objectRef.objectGuid.IsZero()) {
-        connectedBody = Object::FindInstance(objectRef.objectGuid)->Cast<ComRigidBody>();
+void ComJoint::SetConnectedBodyRef(const ObjectRef &bodyRef) {
+    if (!bodyRef.objectGuid.IsZero()) {
+        connectedBody = Object::FindInstance(bodyRef.objectGuid)->Cast<ComRigidBody>();
     } else {
         connectedBody = nullptr;
     }

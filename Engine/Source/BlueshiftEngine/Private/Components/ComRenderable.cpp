@@ -37,13 +37,13 @@ END_PROPERTIES
 
 void ComRenderable::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, "1 1 1", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Alpha", float, GetAlpha, SetAlpha, "1", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Billboard", bool, IsBillboard, SetBillboard, "false", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, "0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, "1", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, "16384", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Skip Selection", bool, IsSkipSelection, SetSkipSelection, "false", "", PropertySpec::ReadWrite | PropertySpec::Hidden | PropertySpec::SkipSerialization);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, Color3::white, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Alpha", float, GetAlpha, SetAlpha, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Billboard", bool, IsBillboard, SetBillboard, false, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, 1.f, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 20000.f, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Skip Selection", bool, IsSkipSelection, SetSkipSelection, false, "", PropertySpec::ReadWrite | PropertySpec::Hidden | PropertySpec::SkipSerialization);
 #endif
 }
 

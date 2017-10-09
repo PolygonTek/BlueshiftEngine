@@ -37,7 +37,7 @@ public:
     void                    SetMesh(const Guid &meshGuid);
 
     ObjectRef               GetMeshRef() const;
-    void                    SetMeshRef(const ObjectRef &objectRef);
+    void                    SetMeshRef(const ObjectRef &meshRef);
 
 protected:
     void                    PropertyChanged(const char *classname, const char *propName);

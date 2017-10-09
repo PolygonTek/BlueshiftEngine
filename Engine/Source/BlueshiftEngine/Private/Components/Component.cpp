@@ -23,13 +23,11 @@ ABSTRACT_DECLARATION("Component", Component, Object)
 BEGIN_EVENTS(Component)
 END_EVENTS
 BEGIN_PROPERTIES(Component)
-    PROPERTY_OBJECT("guid", "GUID", "component GUID", Guid::zero.ToString(), Component::metaObject, PropertySpec::ReadWrite | PropertySpec::Hidden),
     PROPERTY_BOOL("enabled", "Enabled", "is enabled component ?", "true", PropertySpec::ReadWrite | PropertySpec::Hidden),
 END_PROPERTIES
 
 void Component::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertySpec::ReadWrite | PropertySpec::Hidden);
     REGISTER_ACCESSOR_PROPERTY("Enabled", bool, IsEnabled, SetEnable, true, "", PropertySpec::ReadWrite | PropertySpec::Hidden);
 #endif
 }

@@ -29,7 +29,7 @@ END_PROPERTIES
 
 void ComStaticMeshRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    //REGISTER_ACCESSOR_PROPERTY("Occluder", bool, IsOccluder, SetOccluder, "false", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Occluder", bool, IsOccluder, SetOccluder, false, "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -80,14 +80,22 @@ void ComStaticMeshRenderer::MeshUpdated() {
     UpdateVisuals();
 }
 
+bool ComStaticMeshRenderer::IsOccluder() const {
+    return sceneEntity.occluder;
+}
+
+void ComStaticMeshRenderer::SetOccluder(bool occluder) {
+    sceneEntity.occluder = occluder;
+    UpdateVisuals();
+}
+
 void ComStaticMeshRenderer::PropertyChanged(const char *classname, const char *propName) {
     if (!IsInitalized()) {
         return;
     }
 
     if (!Str::Cmp(propName, "occluder")) {
-        sceneEntity.occluder = props->Get("occluder").As<bool>();
-        UpdateVisuals();
+        SetOccluder(props->Get("occluder").As<bool>());
         return;
     }
 

@@ -221,6 +221,7 @@ ABSTRACT_DECLARATION("Object", Object, nullptr)
 
 BEGIN_PROPERTIES(Object)
     PROPERTY_STRING("classname", "Classname", "", "", PropertySpec::ReadWrite | PropertySpec::Hidden),
+    PROPERTY_STRING("guid", "GUID", "GUID", Guid::zero.ToString(), PropertySpec::ReadWrite | PropertySpec::Hidden),
 END_PROPERTIES
 
 BEGIN_EVENTS(Object)
@@ -233,6 +234,13 @@ Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
 static PlatformAtomic instanceCounter(0);
+
+void Object::RegisterProperties() {
+#ifdef NEW_PROPERTY_SYSTEM
+    REGISTER_PROPERTY("Classname", "", "", PropertySpec::ReadWrite | PropertySpec::Hidden),
+    REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertySpec::ReadWrite | PropertySpec::Hidden);
+#endif
+}
 
 void Object::InitInstance(Guid guid) {
     if (guid.IsZero()) {

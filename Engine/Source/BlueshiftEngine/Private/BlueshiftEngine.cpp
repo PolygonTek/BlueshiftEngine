@@ -67,6 +67,8 @@ void Engine::ShutdownBase() {
 }
 
 static void RegisterEngineObjects() {
+    Object::RegisterProperties();
+    Component::RegisterProperties();
     ComTransform::RegisterProperties();
     ComCollider::RegisterProperties();
     ComBoxCollider::RegisterProperties();
@@ -92,6 +94,7 @@ static void RegisterEngineObjects() {
     ComLight::RegisterProperties();
     ComCamera::RegisterProperties();
     ComScript::RegisterProperties();
+    Entity::RegisterProperties();
 }
 
 void Engine::Init(const InitParms *initParms) {

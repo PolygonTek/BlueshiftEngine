@@ -30,8 +30,8 @@ END_PROPERTIES
 
 void ComSpline::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Loop", bool, loop, "false", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Points", ObjectRefArray, GetPointsRef, SetPointsRef, ObjectRefArray(ComTransform::metaObject, {Guid::zero}), "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Loop", bool, loop, false, "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Points", ObjectRefArray, GetPointsRef, SetPointsRef, ObjectRefArray(ComTransform::metaObject, {Guid::zero}), "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -92,18 +92,18 @@ Mat3 ComSpline::GetCurrentAxis(float time) const {
 }
 
 ObjectRefArray ComSpline::GetPointsRef() const {
-    ObjectRefArray objectRefArray(ComTransform::metaObject);
-    objectRefArray.objectGuids.SetCount(pointGuids.Count());
+    ObjectRefArray pointsRef(ComTransform::metaObject);
+    pointsRef.objectGuids.SetCount(pointGuids.Count());
 
     for (int i = 0; i < pointGuids.Count(); i++) {
-        objectRefArray.objectGuids[i] = pointGuids[i];
+        pointsRef.objectGuids[i] = pointGuids[i];
     }
 
-    return objectRefArray;
+    return pointsRef;
 }
 
 void ComSpline::SetPointsRef(const ObjectRefArray &pointsRef) {
-
+    UpdateCurve();
 }
 
 void ComSpline::UpdateCurve() {
