@@ -20,8 +20,8 @@ BE_NAMESPACE_BEGIN
 
 struct MinMaxCurve {
     enum Type {
-        InvalidType,
-        ConstantType,
+        InvalidType = -1,
+        ConstantType = 0,
         CurveType,
         RandomBetweenTwoConstantsType,
         RandomBetweenTwoCurvesType
