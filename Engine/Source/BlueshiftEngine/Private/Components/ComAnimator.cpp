@@ -60,8 +60,8 @@ void ComAnimator::Update() {
     }
 }
 
-void ComAnimator::Enable(bool enable) {
-    Component::Enable(enable);
+void ComAnimator::SetEnable(bool enable) {
+    Component::SetEnable(enable);
 }
 
 void ComAnimator::PropertyChanged(const char *classname, const char *propName) {

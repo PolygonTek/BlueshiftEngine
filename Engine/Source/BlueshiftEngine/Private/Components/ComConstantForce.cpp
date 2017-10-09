@@ -30,8 +30,8 @@ END_PROPERTIES
 
 void ComConstantForce::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Force", Vec3, force, "0 0 0", "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Torque", Vec3, torque, "0 0 0", "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Force", Vec3, force, Vec3::zero, "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Torque", Vec3, torque, Vec3::zero, "", PropertySpec::ReadWrite);
 #endif
 }
 

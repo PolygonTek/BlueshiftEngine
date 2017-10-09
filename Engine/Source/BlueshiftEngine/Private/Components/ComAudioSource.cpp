@@ -39,13 +39,13 @@ END_PROPERTIES
 
 void ComAudioSource::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Audio Clip", SoundAsset, GetAudioClip, SetAudioClip, GuidMapper::defaultSoundGuid.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Audio Clip", ObjectRef, GetAudioClipRef, SetAudioClipRef, ObjectRef(SoundAsset::metaObject, GuidMapper::defaultSoundGuid), "", PropertySpec::ReadWrite);
     REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, "false", "Play the sound when the map loaded.", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Spatial", bool, spatial, "true", "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Looping", bool, looping, "false", "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Min Distance", float, minDistance, "4", "", PropertySpec::ReadWrite).SetRange(0, 100, 1);
-    REGISTER_PROPERTY("Max Distance", float, maxDistance, "16", "", PropertySpec::ReadWrite).SetRange(0, 100, 1);
-    REGISTER_PROPERTY("Volume", float, volume, "1.0", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.1);
+    REGISTER_PROPERTY("Spatial", bool, spatial, true, "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Looping", bool, looping, false, "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Min Distance", float, minDistance, 4.f, "", PropertySpec::ReadWrite).SetRange(0, 100, 1);
+    REGISTER_PROPERTY("Max Distance", float, maxDistance, 16.f, "", PropertySpec::ReadWrite).SetRange(0, 100, 1);
+    REGISTER_PROPERTY("Volume", float, volume, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.1);
 #endif
 }
 
@@ -115,20 +115,20 @@ void ComAudioSource::Update() {
     }
 }
 
-void ComAudioSource::Enable(bool enable) {
+void ComAudioSource::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             if (sound) {
                 sound->SetVolume(volume);
             }
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             if (sound) {
                 sound->SetVolume(0);
             }
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }
@@ -189,6 +189,28 @@ Guid ComAudioSource::GetAudioClip() const {
 void ComAudioSource::SetAudioClip(const Guid &guid) {
     if (!guid.IsZero()) {
         audioClipPath = resourceGuidMapper.Get(guid);
+    }
+
+    if (sound) {
+        sound->Stop();
+        sound = nullptr;
+    }
+
+    if (referenceSound) {
+        soundSystem.ReleaseSound(referenceSound);
+        referenceSound = nullptr;
+    }
+
+    referenceSound = soundSystem.GetSound(audioClipPath);
+}
+
+ObjectRef ComAudioSource::GetAudioClipRef() const {
+    return ObjectRef(SoundAsset::metaObject, resourceGuidMapper.Get(audioClipPath));
+}
+
+void ComAudioSource::SetAudioClipRef(const ObjectRef &soundAssetRef) {
+    if (!soundAssetRef.objectGuid.IsZero()) {
+        audioClipPath = resourceGuidMapper.Get(soundAssetRef.objectGuid);
     }
 
     if (sound) {

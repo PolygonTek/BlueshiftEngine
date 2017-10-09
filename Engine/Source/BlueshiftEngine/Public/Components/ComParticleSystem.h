@@ -33,7 +33,7 @@ public:
 
     virtual void            Awake() override;
 
-    virtual void            Enable(bool enable) override;
+    virtual void            SetEnable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
@@ -56,6 +56,9 @@ public:
 
     Guid                    GetParticleSystem() const;
     void                    SetParticleSystem(const Guid &guid);
+
+    ObjectRef               GetParticleSystemRef() const;
+    void                    SetParticleSystemRef(const ObjectRef &objectRef);
 
 protected:
     virtual void            UpdateVisuals() override;

@@ -33,8 +33,8 @@ END_PROPERTIES
 
 void ComMeshCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", MeshAsset, GetMesh, SetMesh, GuidMapper::defaultMeshGuid.ToString(), "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Convex", bool, convex, "true", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Convex", bool, convex, true, "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -59,17 +59,17 @@ void ComMeshCollider::Init() {
     }
 }
 
-void ComMeshCollider::Enable(bool enable) {
+void ComMeshCollider::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             //UpdateVisuals();
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             //renderWorld->RemoveEntity(renderEntityHandle);
             //renderEntityHandle = -1;
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }
@@ -106,6 +106,19 @@ Guid ComMeshCollider::GetMesh() const {
 
 void ComMeshCollider::SetMesh(const Guid &meshGuid) {
     this->meshGuid = meshGuid;
+
+    if (!meshGuid.IsZero()) {
+        const Str meshPath = resourceGuidMapper.Get(meshGuid);
+        collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
+    }
+}
+
+ObjectRef ComMeshCollider::GetMeshRef() const {
+    return ObjectRef(MeshAsset::metaObject, meshGuid);
+}
+
+void ComMeshCollider::SetMeshRef(const ObjectRef &objectRef) {
+    meshGuid = objectRef.objectGuid;
 
     if (!meshGuid.IsZero()) {
         const Str meshPath = resourceGuidMapper.Get(meshGuid);

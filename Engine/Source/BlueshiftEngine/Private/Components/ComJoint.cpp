@@ -30,9 +30,9 @@ END_PROPERTIES
 
 void ComJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Connected Body", ComRigidBody, GetConnectedBody, SetConnectedBody, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, "true", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, "1e30f", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Connected Body", ObjectRef, GetConnectedBodyRef, SetConnectedBodyRef, ObjectRef(ComRigidBody::metaObject, Guid::zero), "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -74,20 +74,20 @@ void ComJoint::Start() {
     }
 }
 
-void ComJoint::Enable(bool enable) {
+void ComJoint::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             if (constraint) {
                 constraint->SetEnabled(true);
             }
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             if (constraint) {
                 constraint->SetEnabled(false);
             }
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }
@@ -125,6 +125,21 @@ Guid ComJoint::GetConnectedBody() const {
 void ComJoint::SetConnectedBody(const Guid &guid) {
     if (!guid.IsZero()) {
         connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
+    } else {
+        connectedBody = nullptr;
+    }
+}
+
+ObjectRef ComJoint::GetConnectedBodyRef() const {
+    if (connectedBody) {
+        return ObjectRef(ComRigidBody::metaObject, connectedBody->GetGuid());
+    }
+    return ObjectRef();
+}
+
+void ComJoint::SetConnectedBodyRef(const ObjectRef &objectRef) {
+    if (!objectRef.objectGuid.IsZero()) {
+        connectedBody = Object::FindInstance(objectRef.objectGuid)->Cast<ComRigidBody>();
     } else {
         connectedBody = nullptr;
     }

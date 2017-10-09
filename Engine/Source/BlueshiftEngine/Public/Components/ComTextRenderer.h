@@ -46,6 +46,9 @@ public:
     Guid                    GetFont() const;
     void                    SetFont(const Guid &fontGuid);
 
+    ObjectRef               GetFontRef() const;
+    void                    SetFontRef(const ObjectRef &objectRef);
+
     int                     GetFontSize() const;
     void                    SetFontSize(int fontSize);
 

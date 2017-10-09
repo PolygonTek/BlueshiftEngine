@@ -115,6 +115,7 @@ public:
 
                     /// Compares with another array.
     bool            operator==(const Array<T> &rhs) const;
+    bool            operator!=(const Array<T> &rhs) const;
 
                     /// Removes all the elements from the array.
                     /// This also released the memory used by the array.
@@ -472,6 +473,21 @@ BE_INLINE bool Array<T>::operator==(const Array<T> &rhs) const {
 
     for (int i = 0; i < count; i++) {
         if (elements[i] != rhs.elements[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+template <typename T>
+BE_INLINE bool Array<T>::operator!=(const Array<T> &rhs) const {
+    if (count == rhs.count) {
+        return false;
+    }
+
+    for (int i = 0; i < count; i++) {
+        if (elements[i] == rhs.elements[i]) {
             return false;
         }
     }

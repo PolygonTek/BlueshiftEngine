@@ -35,7 +35,7 @@ public:
 
     virtual void            Awake() override;
 
-    virtual void            Enable(bool enable) override;
+    virtual void            SetEnable(bool enable) override;
 
     virtual void            Update() override;
 
@@ -45,6 +45,9 @@ public:
 
     Guid                    GetAudioClip() const;
     void                    SetAudioClip(const Guid &guid);
+
+    ObjectRef               GetAudioClipRef() const;
+    void                    SetAudioClipRef(const ObjectRef &objectRef);
 
 protected:
     void                    PropertyChanged(const char *classname, const char *propName);

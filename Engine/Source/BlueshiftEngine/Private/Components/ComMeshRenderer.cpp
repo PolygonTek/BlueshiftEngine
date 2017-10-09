@@ -36,11 +36,11 @@ END_PROPERTIES
 
 void ComMeshRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", MeshAsset, GetMesh, SetMesh, GuidMapper::defaultMeshGuid.ToString(), "", PropertySpec::ReadWrite);
-    REGISTER_LIST_ACCESSOR_PROPERTY("Materials", Array<MaterialAsset>, GetMaterial, SetMaterial, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, "true", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "true", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, "true", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Materials", ObjectRefArray, GetMaterialsRef, SetMaterialsRef, ObjectRefArray(MaterialAsset::metaObject, {Guid::zero}), "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, true, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, true, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -207,6 +207,17 @@ void ComMeshRenderer::SetMesh(const Guid &guid) {
     MeshUpdated();
 }
 
+ObjectRef ComMeshRenderer::GetMeshRef() const {
+    const Str meshPath = referenceMesh->GetHashName();
+    return ObjectRef(MeshAsset::metaObject, resourceGuidMapper.Get(meshPath));
+}
+
+void ComMeshRenderer::SetMeshRef(const ObjectRef &objectRef) {
+    ChangeMesh(objectRef.objectGuid);
+
+    MeshUpdated();
+}
+
 int ComMeshRenderer::NumMaterials() const {
     return sceneEntity.customMaterials.Count();
 }
@@ -221,6 +232,37 @@ Guid ComMeshRenderer::GetMaterial(int index) const {
 
 void ComMeshRenderer::SetMaterial(int index, const Guid &materialGuid) {
     ChangeMaterial(index, materialGuid);
+
+    UpdateVisuals();
+}
+
+ObjectRefArray ComMeshRenderer::GetMaterialsRef() const {
+    ObjectRefArray objectRefArray(MaterialAsset::metaObject);
+    objectRefArray.objectGuids.SetCount(sceneEntity.customMaterials.Count());
+
+    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
+        const Str materialPath = sceneEntity.customMaterials[i]->GetHashName();
+        objectRefArray.objectGuids[i] = resourceGuidMapper.Get(materialPath);
+    }
+
+    return objectRefArray;
+}
+
+void ComMeshRenderer::SetMaterialsRef(const ObjectRefArray &objectRefArray) {
+    // Release the previous used materials
+    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
+        if (sceneEntity.customMaterials[i]) {
+            materialManager.ReleaseMaterial(sceneEntity.customMaterials[i]);
+        }
+    }
+
+    sceneEntity.customMaterials.SetCount(objectRefArray.objectGuids.Count());
+
+    // Get the new materials
+    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
+        const Str materialPath = resourceGuidMapper.Get(objectRefArray.objectGuids[i]);
+        sceneEntity.customMaterials[i] = materialManager.GetMaterial(materialPath);
+    }
 
     UpdateVisuals();
 }

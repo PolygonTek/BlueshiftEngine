@@ -38,11 +38,11 @@ END_PROPERTIES
 
 void ComCharacterController::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Mass", float, mass, "10", "", PropertySpec::ReadWrite).SetRange(0, 100, 0.1f);
-    REGISTER_ACCESSOR_PROPERTY("Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, "0.5", "", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, "0.8", "", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("Step Offset", float, GetStepOffset, SetStepOffset, "0.8", "", PropertySpec::ReadWrite).SetRange(0.0, 1.0, 0.1);
-    REGISTER_ACCESSOR_PROPERTY("Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, "0.8", "", PropertySpec::ReadWrite).SetRange(0, 90, 1);
+    REGISTER_PROPERTY("Mass", float, mass, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 100, 0.1f);
+    REGISTER_ACCESSOR_PROPERTY("Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("Step Offset", float, GetStepOffset, SetStepOffset, 0.8f, "", PropertySpec::ReadWrite).SetRange(0.0, 1.0, 0.1);
+    REGISTER_ACCESSOR_PROPERTY("Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 0.8f, "", PropertySpec::ReadWrite).SetRange(0, 90, 1);
 #endif
 }
 
@@ -184,7 +184,7 @@ void ComCharacterController::Update() {
     GetEntity()->GetTransform()->SetOrigin(origin);
 }
 
-void ComCharacterController::Enable(bool enable) {
+void ComCharacterController::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             if (body) {
@@ -193,7 +193,7 @@ void ComCharacterController::Enable(bool enable) {
             if (correctionSensor) {
                 correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
             }
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
@@ -203,7 +203,7 @@ void ComCharacterController::Enable(bool enable) {
             if (correctionSensor) {
                 correctionSensor->RemoveFromWorld();
             }
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }

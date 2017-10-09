@@ -92,6 +92,7 @@ public:
 
                     /// Compares with another array.
     bool            operator==(const StaticArray<T, capacity> &rhs) const;
+    bool            operator!=(const StaticArray<T, capacity> &rhs) const;
 
                     /// Removes all the elements from the array.
     void            Clear();
@@ -268,6 +269,21 @@ BE_INLINE bool StaticArray<T, capacity>::operator==(const StaticArray<T, capacit
 
     for (int i = 0; i < count; i++) {
         if (elements[i] != rhs.elements[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+template <typename T, int capacity>
+BE_INLINE bool StaticArray<T, capacity>::operator!=(const StaticArray<T, capacity> &rhs) const {
+    if (count == rhs.count) {
+        return false;
+    }
+
+    for (int i = 0; i < count; i++) {
+        if (elements[i] == rhs.elements[i]) {
             return false;
         }
     }

@@ -31,7 +31,7 @@ END_PROPERTIES
 void ComSpline::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
     REGISTER_PROPERTY("Loop", bool, loop, "false", "", PropertySpec::ReadWrite);
-    REGISTER_LIST_ACCESSOR_PROPERTY("Points", ComTransform, GetMesh, SetMesh, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Points", ObjectRefArray, GetPointsRef, SetPointsRef, ObjectRefArray(ComTransform::metaObject, {Guid::zero}), "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -89,6 +89,21 @@ Mat3 ComSpline::GetCurrentAxis(float time) const {
     }
     const ComTransform *transform = GetEntity()->GetTransform();
     return transform->GetWorldMatrix().ToMat3() * anglesCurve->GetCurrentValue(time).ToMat3();
+}
+
+ObjectRefArray ComSpline::GetPointsRef() const {
+    ObjectRefArray objectRefArray(ComTransform::metaObject);
+    objectRefArray.objectGuids.SetCount(pointGuids.Count());
+
+    for (int i = 0; i < pointGuids.Count(); i++) {
+        objectRefArray.objectGuids[i] = pointGuids[i];
+    }
+
+    return objectRefArray;
+}
+
+void ComSpline::SetPointsRef(const ObjectRefArray &pointsRef) {
+
 }
 
 void ComSpline::UpdateCurve() {

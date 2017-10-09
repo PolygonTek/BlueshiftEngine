@@ -207,20 +207,20 @@ void ComSensor::ProcessScriptCallback() {
     oldColliders.Swap(newColliders);
 }
 
-void ComSensor::Enable(bool enable) {
+void ComSensor::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             if (sensor) {
                 sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
             }
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             if (sensor) {
                 sensor->RemoveFromWorld();
             }
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }

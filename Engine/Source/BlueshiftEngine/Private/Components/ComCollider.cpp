@@ -23,7 +23,6 @@ ABSTRACT_DECLARATION("Collider", ComCollider, Component)
 BEGIN_EVENTS(ComCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComCollider)
-    PROPERTY_STRING("material", "Physics Material", "", "", PropertySpec::ReadWrite),
 END_PROPERTIES
 
 void ComCollider::RegisterProperties() {
@@ -56,17 +55,17 @@ void ComCollider::Init() {
     Component::Init();
 }
 
-void ComCollider::Enable(bool enable) {
+void ComCollider::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             //UpdateVisuals();
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             //renderWorld->RemoveEntity(renderEntityHandle);
             //renderEntityHandle = -1;
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }
@@ -87,11 +86,6 @@ void ComCollider::PropertyChanged(const char *classname, const char *propName) {
         return;
     }
     
-    if (!Str::Cmp(propName, "material")) {
-        material = props->Get("material").As<Str>();
-        return;
-    } 
-
     Component::PropertyChanged(classname, propName);
 }
 

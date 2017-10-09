@@ -31,7 +31,7 @@ public:
 
     virtual void            Init() override;
 
-    virtual void            Enable(bool enable) override;
+    virtual void            SetEnable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 

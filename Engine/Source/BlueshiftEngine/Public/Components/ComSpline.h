@@ -40,6 +40,9 @@ public:
     Vec3                    GetCurrentOrigin(float time) const;
     Mat3                    GetCurrentAxis(float time) const;
 
+    ObjectRefArray          GetPointsRef() const;
+    void                    SetPointsRef(const ObjectRefArray &pointsRef);
+
 protected:
     void                    UpdateCurve();
     void                    PropertyChanged(const char *classname, const char *propName);

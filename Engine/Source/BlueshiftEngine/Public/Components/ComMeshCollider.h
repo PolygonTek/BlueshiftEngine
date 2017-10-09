@@ -27,7 +27,7 @@ public:
 
     virtual void            Init() override;
 
-    virtual void            Enable(bool enable) override;
+    virtual void            SetEnable(bool enable) override;
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
@@ -35,6 +35,9 @@ public:
 
     Guid                    GetMesh() const;
     void                    SetMesh(const Guid &meshGuid);
+
+    ObjectRef               GetMeshRef() const;
+    void                    SetMeshRef(const ObjectRef &objectRef);
 
 protected:
     void                    PropertyChanged(const char *classname, const char *propName);

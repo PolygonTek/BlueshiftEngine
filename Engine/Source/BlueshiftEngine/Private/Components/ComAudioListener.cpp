@@ -67,8 +67,8 @@ void ComAudioListener::Update() {
     }
 }
 
-void ComAudioListener::Enable(bool enable) {
-    Component::Enable(enable);
+void ComAudioListener::SetEnable(bool enable) {
+    Component::SetEnable(enable);
 }
 
 void ComAudioListener::TransformUpdated(const ComTransform *transform) {

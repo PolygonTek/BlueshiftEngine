@@ -44,20 +44,20 @@ END_PROPERTIES
 
 void ComCharacterJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, "0 0 0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("X Swing Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, "-45", "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("X Swing Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, "45", "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
-    REGISTER_ACCESSOR_PROPERTY("X Swing Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, "0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("X Swing Damping", float, GetSwing1Damping, SetSwing1Damping, "0.2", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Y Swing Lower Limit", float, GetSwing2LowerLimit, SetSwing2LowerLimit, "-45", "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("Y Swing Upper Limit", float, GetSwing2UpperLimit, SetSwing2UpperLimit, "45", "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
-    REGISTER_ACCESSOR_PROPERTY("Y Swing Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, "0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Y Swing Damping", float, GetSwing2Damping, SetSwing2Damping, "0.2", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Twist Lower Limit", float, GetTwistLowerLimit, SetTwistLowerLimit, "-45", "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("Twist Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, "45", "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
-    REGISTER_ACCESSOR_PROPERTY("Twist Stiffness", float, GetTwistStiffness, SetTwistStiffness, "0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Twist Damping", float, GetTwistDamping, SetTwistDamping, "0.2", "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, -45.f, "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, 45.f, "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, 0.f, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Damping", float, GetSwing1Damping, SetSwing1Damping, 0.2f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Lower Limit", float, GetSwing2LowerLimit, SetSwing2LowerLimit, -45.f, "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Upper Limit", float, GetSwing2UpperLimit, SetSwing2UpperLimit, 45.f, "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, 0.f, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Damping", float, GetSwing2Damping, SetSwing2Damping, 0.2f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Twist Lower Limit", float, GetTwistLowerLimit, SetTwistLowerLimit, -45.f, "", PropertySpec::ReadWrite).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("Twist Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, 45.f, "", PropertySpec::ReadWrite).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("Twist Stiffness", float, GetTwistStiffness, SetTwistStiffness, 0.f, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Twist Damping", float, GetTwistDamping, SetTwistDamping, 0.2f, "", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
 #endif
 }
 

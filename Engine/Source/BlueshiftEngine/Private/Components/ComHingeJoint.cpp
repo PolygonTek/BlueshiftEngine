@@ -34,10 +34,10 @@ END_PROPERTIES
 
 void ComHingeJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, "0 0 0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, "0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertySpec::ReadWrite);
 #endif
 }
 

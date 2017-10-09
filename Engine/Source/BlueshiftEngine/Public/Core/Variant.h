@@ -22,10 +22,44 @@
 
 BE_NAMESPACE_BEGIN
 
+class MetaObject;
 class Variant;
 
 using VariantArray = Array<Variant>;
 
+/// Object reference.
+struct ObjectRef {
+    ObjectRef() : metaObject(nullptr) {}
+    explicit ObjectRef(const MetaObject &meta) : metaObject(&meta) {}
+    explicit ObjectRef(const MetaObject &meta, const Guid &guid) : metaObject(&meta), objectGuid(guid) {}
+
+    /// Test for equality with another reference.
+    bool operator==(const ObjectRef &rhs) const { return metaObject == rhs.metaObject && objectGuid == rhs.objectGuid; }
+
+    /// Test for inequality with another reference.
+    bool operator!=(const ObjectRef &rhs) const { return metaObject != rhs.metaObject || objectGuid != rhs.objectGuid; }
+
+    const MetaObject *metaObject;
+    Guid objectGuid;
+};
+
+/// Object reference array.
+struct ObjectRefArray {
+    ObjectRefArray() : metaObject(nullptr) {}
+    explicit ObjectRefArray(const MetaObject &meta) : metaObject(&meta) {}
+    explicit ObjectRefArray(const MetaObject &meta, const Array<Guid> &guids) : metaObject(&meta), objectGuids(guids) {}
+
+    /// Test for equality with another reference.
+    bool operator==(const ObjectRefArray &rhs) const { return metaObject == rhs.metaObject && objectGuids == rhs.objectGuids; }
+
+    /// Test for inequality with another reference.
+    bool operator!=(const ObjectRefArray &rhs) const { return metaObject != rhs.metaObject || objectGuids != rhs.objectGuids; }
+
+    const MetaObject *metaObject;
+    Array<Guid> objectGuids;
+};
+
+/// Variable that supports a fixed set of types.
 class BE_API Variant {
 public:
     enum Type {
@@ -50,6 +84,8 @@ public:
         RectType,
         GuidType,
         StrType,
+        ObjectRefType,
+        ObjectRefArrayType,
         MinMaxCurveType,
         VariantArrayType,
     };
@@ -198,6 +234,16 @@ public:
         *this = value;
     }
 
+    Variant(const ObjectRef &value)
+        : type(Type::None) {
+        *this = value;
+    }
+
+    Variant(const ObjectRefArray &value)
+        : type(Type::None) {
+        *this = value;
+    }
+
     Variant(const MinMaxCurve &value)
         : type(Type::None) {
         *this = value;
@@ -239,6 +285,8 @@ public:
     Variant &               operator=(const Rect &rhs);
     Variant &               operator=(const Guid &rhs);
     Variant &               operator=(const Str &rhs);
+    Variant &               operator=(const ObjectRef &rhs);
+    Variant &               operator=(const ObjectRefArray &rhs);
     Variant &               operator=(const MinMaxCurve &rhs);
     Variant &               operator=(const VariantArray &rhs);
 
@@ -249,8 +297,8 @@ public:
     const T &               As() const;
     
 private:
-    Type                    type;
-    Value                   value;
+    Type type;
+    Value value;
 };
 
 BE_INLINE void Variant::Clear() {
@@ -380,6 +428,18 @@ BE_INLINE Variant &Variant::operator=(const Guid &rhs) {
 BE_INLINE Variant &Variant::operator=(const Str &rhs) {
     SetType(Type::StrType);
     *(reinterpret_cast<Str *>(value.ptr1)) = rhs;
+    return *this;
+}
+
+BE_INLINE Variant &Variant::operator=(const ObjectRef &rhs) {
+    SetType(Type::ObjectRefType);
+    *(reinterpret_cast<ObjectRef *>(value.ptr1)) = rhs;
+    return *this;
+}
+
+BE_INLINE Variant &Variant::operator=(const ObjectRefArray &rhs) {
+    SetType(Type::ObjectRefArrayType);
+    *(reinterpret_cast<ObjectRefArray *>(value.ptr1)) = rhs;
     return *this;
 }
 

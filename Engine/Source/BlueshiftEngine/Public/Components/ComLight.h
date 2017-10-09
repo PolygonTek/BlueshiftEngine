@@ -35,7 +35,7 @@ public:
 
     virtual void            Init() override;
 
-    virtual void            Enable(bool enable) override;
+    virtual void            SetEnable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
@@ -65,6 +65,9 @@ public:
 
     Guid                    GetMaterial() const;
     void                    SetMaterial(const Guid &material);
+
+    ObjectRef               GetMaterialRef() const;
+    void                    SetMaterialRef(const ObjectRef &objectRef);
 
     Color3                  GetColor() const;
     void                    SetColor(const Color3 &color);

@@ -284,13 +284,13 @@ void ComRigidBody::ProcessScriptCallback() {
     collisions.Clear();
 }
 
-void ComRigidBody::Enable(bool enable) {
+void ComRigidBody::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             if (body) {
                 body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
             }
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
@@ -300,7 +300,7 @@ void ComRigidBody::Enable(bool enable) {
             collisions.Clear();
             oldCollisions.Clear();
 
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }

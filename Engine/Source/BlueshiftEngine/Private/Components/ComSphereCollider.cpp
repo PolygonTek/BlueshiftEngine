@@ -61,17 +61,17 @@ void ComSphereCollider::Init() {
     collider->CreateSphere(scaledCenter, scaledRadius);
 }
 
-void ComSphereCollider::Enable(bool enable) {
+void ComSphereCollider::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             //UpdateVisuals();
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             //renderWorld->RemoveEntity(renderEntityHandle);
             //renderEntityHandle = -1;
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }

@@ -49,20 +49,20 @@ END_PROPERTIES
 
 void ComCamera::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjectionMethod, SetProjectionMethod, "0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, "10", "", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
-    REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, "8192", "", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
-    REGISTER_PROPERTY("FOV", float, fov, "60", "", PropertySpec::ReadWrite).SetRange(1, 179, 1);
-    REGISTER_PROPERTY("Size", float, size, "1000", "", PropertySpec::ReadWrite).SetRange(1, 16384, 1);
-    REGISTER_PROPERTY("X", float, nx, "0", "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("Y", float, ny, "0", "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("W", float, nw, "1", "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("H", float, nh, "1", "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Layer Mask", int, GetLayerMask, SetLayerMask, Str(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), "", PropertySpec::ReadWrite);
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Clear", "No Clear;Depth Only;Color", GetClearMethod, SetClearMethod, "1", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, "0 0 0", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, "0", "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Order", int, order, "0", "", PropertySpec::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjectionMethod, SetProjectionMethod, 0, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, 10.f, "", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
+    REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, 8192.f, "", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
+    REGISTER_PROPERTY("FOV", float, fov, 60.f, "", PropertySpec::ReadWrite).SetRange(1, 179, 1);
+    REGISTER_PROPERTY("Size", float, size, 1000.f, "", PropertySpec::ReadWrite).SetRange(1, 16384, 1);
+    REGISTER_PROPERTY("X", float, nx, 0.f, "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("Y", float, ny, 0.f, "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("W", float, nw, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("H", float, nh, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Layer Mask", int, GetLayerMask, SetLayerMask, BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer), "", PropertySpec::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Clear", "No Clear;Depth Only;Color", GetClearMethod, SetClearMethod, 1, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Order", int, order, 0, "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -187,17 +187,17 @@ void ComCamera::Init() {
     UpdateVisuals();
 }
 
-void ComCamera::Enable(bool enable) {
+void ComCamera::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             UpdateVisuals();
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             renderWorld->RemoveEntity(spriteHandle);
             spriteHandle = -1;
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }

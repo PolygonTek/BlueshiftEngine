@@ -44,7 +44,8 @@ END_PROPERTIES
 void Entity::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
     REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", Entity, GetParent, SetParent, Guid::zero.ToString, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -479,7 +480,7 @@ void Entity::SetActive(bool active) {
     for (int i = 1; i < components.Count(); i++) {
         Component *component = components[i];
         if (component) {
-            component->Enable(active);
+            component->SetEnable(active);
         }
     }
 

@@ -110,15 +110,15 @@ void ComRenderable::Init() {
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
 }
 
-void ComRenderable::Enable(bool enable) {
+void ComRenderable::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
-            Component::Enable(true);
+            Component::SetEnable(true);
             UpdateVisuals();
         }
     } else {
         if (IsEnabled()) {
-            Component::Enable(false);
+            Component::SetEnable(false);
             renderWorld->RemoveEntity(sceneEntityHandle);
             sceneEntityHandle = -1;
         }

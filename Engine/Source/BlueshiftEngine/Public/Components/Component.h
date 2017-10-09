@@ -63,7 +63,7 @@ public:
     bool                    IsEnabled() const { return enabled; }
 
                             /// Enable/Disable this component
-    virtual void            Enable(bool enable) { enabled = enable; }
+    virtual void            SetEnable(bool enable) { enabled = enable; }
 
                             /// Purge all the resources in this component
     virtual void            Purge(bool chainPurge = true);

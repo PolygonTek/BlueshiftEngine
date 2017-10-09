@@ -26,6 +26,12 @@ void Variant::SetType(Type type) {
     case VariantArrayType:
         (reinterpret_cast<VariantArray *>(&value))->~VariantArray();
         break;
+    case ObjectRefType:
+        delete reinterpret_cast<ObjectRef *>(value.ptr1);
+        break;
+    case ObjectRefArrayType:
+        delete reinterpret_cast<ObjectRefArray *>(value.ptr1);
+        break;
     case StrType:
         delete reinterpret_cast<Str *>(value.ptr1);
         break;
@@ -48,6 +54,12 @@ void Variant::SetType(Type type) {
     switch (type) {
     case VariantArrayType:
         new(reinterpret_cast<VariantArray *>(&value))VariantArray();
+        break;
+    case ObjectRefType:
+        value.ptr1 = new ObjectRef;
+        break;
+    case ObjectRefArrayType:
+        value.ptr1 = new ObjectRefArray;
         break;
     case StrType:
         value.ptr1 = new Str();
@@ -73,6 +85,12 @@ Variant &Variant::operator=(const Variant &rhs) {
     switch (type) {
     case VariantArrayType:
         *(reinterpret_cast<VariantArray *>(value.ptr1)) = *(reinterpret_cast<const VariantArray *>(rhs.value.ptr1));
+        break;
+    case ObjectRefType:
+        *(reinterpret_cast<ObjectRef *>(value.ptr1)) = *(reinterpret_cast<const ObjectRef *>(rhs.value.ptr1));
+        break;
+    case ObjectRefArrayType:
+        *(reinterpret_cast<ObjectRefArray *>(value.ptr1)) = *(reinterpret_cast<const ObjectRefArray *>(rhs.value.ptr1));
         break;
     case StrType:
         *(reinterpret_cast<Str *>(value.ptr1)) = *(reinterpret_cast<const Str *>(rhs.value.ptr1));
@@ -141,6 +159,10 @@ bool Variant::operator==(const Variant &rhs) const {
         return *(reinterpret_cast<const Guid *>(&value)) == *(reinterpret_cast<const Guid *>(&rhs.value));
     case StrType:
         return *(reinterpret_cast<const Str *>(value.ptr1)) == *(reinterpret_cast<const Str *>(rhs.value.ptr1));
+    case ObjectRefType:
+        return *(reinterpret_cast<const ObjectRef *>(value.ptr1)) == *(reinterpret_cast<const ObjectRef *>(rhs.value.ptr1));
+    case ObjectRefArrayType:
+        return *(reinterpret_cast<const ObjectRefArray *>(value.ptr1)) == *(reinterpret_cast<const ObjectRefArray *>(rhs.value.ptr1));
     case MinMaxCurveType:
         return *(reinterpret_cast<const MinMaxCurve *>(value.ptr1)) == *(reinterpret_cast<const MinMaxCurve *>(rhs.value.ptr1));
     case VariantArrayType:

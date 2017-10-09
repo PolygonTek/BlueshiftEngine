@@ -29,8 +29,8 @@ END_PROPERTIES
 
 void Component::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("GUID", Component, guid, Guid::zero.ToString(), "", PropertySpec::ReadWrite | PropertySpec::Hidden);
-    REGISTER_ACCESSOR_PROPERTY("Enabled", bool, IsEnabled, Enable, "true", "", PropertySpec::ReadWrite | PropertySpec::Hidden);
+    REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertySpec::ReadWrite | PropertySpec::Hidden);
+    REGISTER_ACCESSOR_PROPERTY("Enabled", bool, IsEnabled, SetEnable, true, "", PropertySpec::ReadWrite | PropertySpec::Hidden);
 #endif
 }
 
@@ -88,7 +88,7 @@ void Component::Reload() {
 
 void Component::PropertyChanged(const char *classname, const char *propName) {
     if (!Str::Cmp(propName, "enabled")) {
-        Enable(props->Get("enabled").As<bool>());
+        SetEnable(props->Get("enabled").As<bool>());
         return;
     }
 }

@@ -32,8 +32,8 @@ END_PROPERTIES
 
 void ComBoxCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Center", Vec3, center, "0 0 0", "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Extents", Vec3, extents, "1 1 1", "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Extents", Vec3, extents, Vec3::one, "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -61,17 +61,17 @@ void ComBoxCollider::Init() {
     collider->CreateBox(scaledCenter, scaledExtents);
 }
 
-void ComBoxCollider::Enable(bool enable) {
+void ComBoxCollider::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             //UpdateVisuals();
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             //renderWorld->RemoveEntity(renderEntityHandle);
             //renderEntityHandle = -1;
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }

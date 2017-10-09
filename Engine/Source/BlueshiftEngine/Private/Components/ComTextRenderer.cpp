@@ -41,7 +41,7 @@ void ComTextRenderer::RegisterProperties() {
     REGISTER_ENUM_ACCESSOR_PROPERTY("Anchor", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", GetAnchor, SetAnchor, "0", "", PropertySpec::ReadWrite);
     REGISTER_ENUM_ACCESSOR_PROPERTY("Alignment", "Left; Center; Right", GetAlignment, SetAlignment, "0", "", PropertySpec::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Line Spacing", float, GetLineSpacing, SetLineSpacing, "1.0", "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Font", FontAsset, GetFont, SetFont, GuidMapper::defaultFontGuid.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Font", ObjectRef, GetFontRef, SetFontRef, ObjectRef(FontAsset::metaObject, GuidMapper::defaultFontGuid), "", PropertySpec::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Font Size", int, GetFontSize, SetFontSize, "14", "", PropertySpec::ReadWrite);
 #endif
 }
@@ -138,6 +138,17 @@ Guid ComTextRenderer::GetFont() const {
 
 void ComTextRenderer::SetFont(const Guid &fontGuid) {
     ChangeFont(fontGuid, fontSize);
+    UpdateAABB();
+    UpdateVisuals();
+}
+
+ObjectRef ComTextRenderer::GetFontRef() const {
+    const Str fontPath = sceneEntity.font->GetHashName();
+    return ObjectRef(FontAsset::metaObject, resourceGuidMapper.Get(fontPath));
+}
+
+void ComTextRenderer::SetFontRef(const ObjectRef &objectRef) {
+    ChangeFont(objectRef.objectGuid, fontSize);
     UpdateAABB();
     UpdateVisuals();
 }

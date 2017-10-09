@@ -34,8 +34,8 @@ END_PROPERTIES
 
 void ComParticleSystem::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Particle System", ParticleSystemAsset, GetParticleSystem, SetParticleSystem, GuidMapper::defaultParticleSystemGuid.ToString(), "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, "true", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Particle System", ObjectRef, GetParticleSystemRef, SetParticleSystemRef, ObjectRef(ParticleSystemAsset::metaObject, GuidMapper::defaultParticleSystemGuid), "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, true, "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -197,17 +197,17 @@ void ComParticleSystem::Awake() {
     }
 }
 
-void ComParticleSystem::Enable(bool enable) {
+void ComParticleSystem::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             ResetParticles();
-            ComRenderable::Enable(true);
+            ComRenderable::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             renderWorld->RemoveEntity(spriteHandle);
             spriteHandle = -1;
-            ComRenderable::Enable(false);
+            ComRenderable::SetEnable(false);
         }
     }
 }
@@ -751,6 +751,19 @@ Guid ComParticleSystem::GetParticleSystem() const {
 
 void ComParticleSystem::SetParticleSystem(const Guid &guid) {
     ChangeParticleSystem(guid);
+
+    //ResetParticles();
+
+    UpdateVisuals();
+}
+
+ObjectRef ComParticleSystem::GetParticleSystemRef() const {
+    const Str particleSystemPath = sceneEntity.particleSystem->GetHashName();
+    return ObjectRef(ParticleSystemAsset::metaObject, resourceGuidMapper.Get(particleSystemPath));
+}
+
+void ComParticleSystem::SetParticleSystemRef(const ObjectRef &objectRef) {
+    ChangeParticleSystem(objectRef.objectGuid);
 
     //ResetParticles();
 

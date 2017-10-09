@@ -115,17 +115,17 @@ void ComReflectionProbe::Init() {
     UpdateVisuals();
 }
 
-void ComReflectionProbe::Enable(bool enable) {
+void ComReflectionProbe::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             UpdateVisuals();
-            Component::Enable(true);
+            Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             renderWorld->RemoveEntity(sphereHandle);
             sphereHandle = -1;
-            Component::Enable(false);
+            Component::SetEnable(false);
         }
     }
 }

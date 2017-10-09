@@ -39,10 +39,13 @@ public:
 
     virtual void            Start() override;
 
-    virtual void            Enable(bool enable) override;
+    virtual void            SetEnable(bool enable) override;
 
     Guid                    GetConnectedBody() const;
     void                    SetConnectedBody(const Guid &guid);
+
+    ObjectRef               GetConnectedBodyRef() const;
+    void                    SetConnectedBodyRef(const ObjectRef &objectRef);
 
     bool                    IsCollisionEnabled() const;
     void                    SetCollisionEnabled(bool enabled);
