@@ -53,18 +53,18 @@ public:
 
     bool                    Move(const Vec3 &moveVector);
 
-    float                   GetMass() const;
+    float                   GetMass() const;    
     void                    SetMass(const float mass);
-
+    
     float                   GetCapsuleRadius() const;
     void                    SetCapsuleRadius(const float capsuleRadius);
-
-    float                   GetCapsuleHeight() const;
+    
+    float                   GetCapsuleHeight() const;    
     void                    SetCapsuleHeight(const float capsuleHeight);
-
-    float                   GetStepOffset() const;
+    
+    float                   GetStepOffset() const;    
     void                    SetStepOffset(const float stepOffset);
-
+        
     float                   GetSlopeLimit() const;
     void                    SetSlopeLimit(const float slopeLimit);
 

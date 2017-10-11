@@ -135,8 +135,6 @@ static const char *LightSpriteTexturePath(SceneLight::Type lightType) {
 }
 
 void ComLight::Init() {
-    Purge();
-
     Component::Init();
 
     renderWorld = GetGameWorld()->GetRenderWorld();
@@ -209,6 +207,9 @@ void ComLight::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
     
+    // Mark as initialized
+    SetInitialized(true);
+
     UpdateVisuals();
 }
 

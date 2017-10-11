@@ -46,9 +46,10 @@ void ComAnimator::Purge(bool chainPurge) {
 }
 
 void ComAnimator::Init() {
-    Purge();
-
     Component::Init();
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComAnimator::Awake() {

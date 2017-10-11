@@ -130,6 +130,9 @@ void ComSkinnedMeshRenderer::Init() {
         playStartTime = GetGameWorld()->GetTime();
     }
 
+    // Mark as initialized
+    SetInitialized(true);
+
     UpdateVisuals();
 }
 

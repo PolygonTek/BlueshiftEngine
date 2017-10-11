@@ -51,18 +51,23 @@ ComCapsuleCollider::~ComCapsuleCollider() {
 void ComCapsuleCollider::Init() {
     ComCollider::Init();
     
+#ifndef NEW_PROPERTY_SYSTEM
     center = props->Get("center").As<Vec3>();
     radius = props->Get("radius").As<float>();
-    height = props->Get("height").As<float>();  
+    height = props->Get("height").As<float>();
+#endif
 
+    // Create collider based on transformed capsule
     ComTransform *transform = GetEntity()->GetTransform();
-
     Vec3 scaledCenter = transform->GetScale() * center;
     float scaledRadius = (transform->GetScale() * radius).MaxComponent();
     float scaledHeight = transform->GetScale().z * height;
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight);
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComCapsuleCollider::SetEnable(bool enable) {

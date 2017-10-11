@@ -73,6 +73,7 @@ ComCharacterJoint::~ComCharacterJoint() {
 void ComCharacterJoint::Init() {
     ComJoint::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     anchor = props->Get("anchor").As<Vec3>();
     axis = props->Get("angles").As<Angles>().ToMat3();
     axis.FixDegeneracies();
@@ -91,6 +92,10 @@ void ComCharacterJoint::Init() {
     upperLimit.z = props->Get("twistUpperLimit").As<float>();
     stiffness.z = props->Get("twistStiffness").As<float>();
     damping.z = props->Get("twistDamping").As<float>();
+#endif
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComCharacterJoint::Start() {
@@ -239,6 +244,8 @@ Angles ComCharacterJoint::GetAngles() const {
 
 void ComCharacterJoint::SetAngles(const Angles &angles) {
     this->axis = angles.ToMat3();
+    this->axis.FixDegeneracies();
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, axis);
     }

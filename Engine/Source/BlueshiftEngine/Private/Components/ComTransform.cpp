@@ -62,19 +62,27 @@ ComTransform *ComTransform::GetParent() const {
 void ComTransform::Init() {
     Component::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     localOrigin = props->Get("origin").As<Vec3>();
     localScale = props->Get("scale").As<Vec3>();
     localAxis = props->Get("angles").As<Angles>().ToMat3();
     localAxis.FixDegeneracies();
+#endif
 
     localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
+    // Re-calculate world matrix from the hierarchy
+    // For the correct world matrix calculation, this should be called in depth first order
+    RecalcWorldMatrix();
+
+    // If this entity has a rigid body component, connect it to update the transform due to the physics simulation.
     ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     if (rigidBody) {
         rigidBody->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComTransform::PhysicsUpdated, SignalObject::Unique);
     }
 
-    RecalcWorldMatrix();
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComTransform::SetLocalOrigin(const Vec3 &origin) {

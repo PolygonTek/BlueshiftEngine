@@ -53,11 +53,16 @@ ComHingeJoint::~ComHingeJoint() {
 void ComHingeJoint::Init() {
     ComJoint::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     anchor = props->Get("anchor").As<Vec3>();
-    axis = props->Get("angles").As<Angles>().ToMat3();    
+    axis = props->Get("angles").As<Angles>().ToMat3();
     axis.FixDegeneracies();
     motorSpeed = props->Get("motorSpeed").As<float>();
     maxMotorImpulse = props->Get("maxMotorImpulse").As<float>();
+#endif
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComHingeJoint::Start() {
@@ -154,6 +159,8 @@ Angles ComHingeJoint::GetAngles() const {
 
 void ComHingeJoint::SetAngles(const Angles &angles) {
     this->axis = angles.ToMat3();
+    this->axis.FixDegeneracies();
+
     if (constraint) {
         ((PhysHingeConstraint *)constraint)->SetFrameA(anchor, axis);
     }

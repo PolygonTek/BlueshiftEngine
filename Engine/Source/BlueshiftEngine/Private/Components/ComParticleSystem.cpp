@@ -134,7 +134,10 @@ void ComParticleSystem::Init() {
     sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
     GetEntity()->GetTransform()->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
- 
+
+    // Mark as initialized
+    SetInitialized(true);
+
     UpdateVisuals();
 }
 

@@ -50,8 +50,6 @@ void ComCollider::Purge(bool chainPurge) {
 }
 
 void ComCollider::Init() {
-    Purge();
-
     Component::Init();
 }
 

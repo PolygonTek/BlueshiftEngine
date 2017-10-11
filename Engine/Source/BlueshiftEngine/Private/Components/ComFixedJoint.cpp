@@ -44,6 +44,9 @@ ComFixedJoint::~ComFixedJoint() {
 
 void ComFixedJoint::Init() {
     ComJoint::Init();
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComFixedJoint::Start() {

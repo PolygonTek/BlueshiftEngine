@@ -49,9 +49,10 @@ void ComAudioListener::Purge(bool chainPurge) {
 }
 
 void ComAudioListener::Init() {
-    Purge();
-
     Component::Init();
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComAudioListener::Awake() {

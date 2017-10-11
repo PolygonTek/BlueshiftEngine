@@ -90,10 +90,9 @@ void ComCharacterController::Purge(bool chainPurge) {
 }
 
 void ComCharacterController::Init() {
-    Purge();
-
     Component::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     //
     mass = props->Get("mass").As<float>();
 
@@ -102,11 +101,14 @@ void ComCharacterController::Init() {
 
     stepOffset = MeterToUnit(props->Get("stepOffset").As<float>());
     slopeDotZ = Math::Cos(DEG2RAD(props->Get("slopeLimit").As<float>())); 
-    //
+#endif
 
     ComTransform *transform = GetEntity()->GetTransform();
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::Unique);
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComCharacterController::Awake() {
@@ -460,7 +462,7 @@ void ComCharacterController::PropertyChanged(const char *classname, const char *
         return;
     }
 
-    if (!Str::Cmp(propName, "capsuleHeight")) {    
+    if (!Str::Cmp(propName, "capsuleHeight")) {
         SetCapsuleHeight(props->Get("capsuleHeight").As<float>());
         return;
     }

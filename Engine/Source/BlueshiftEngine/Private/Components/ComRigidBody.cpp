@@ -123,11 +123,12 @@ void ComRigidBody::Purge(bool chainPurge) {
 }
 
 void ComRigidBody::Init() {
-    Purge();
-
     Component::Init();
 
-    physicsDesc.type            = PhysCollidable::Type::RigidBody;
+    physicsDesc.type = PhysCollidable::Type::RigidBody;
+    physicsDesc.shapes.Clear();
+
+#ifndef NEW_PROPERTY_SYSTEM
     physicsDesc.mass            = props->Get("mass").As<float>();
     physicsDesc.restitution     = props->Get("restitution").As<float>();
     physicsDesc.friction        = props->Get("friction").As<float>();
@@ -136,13 +137,15 @@ void ComRigidBody::Init() {
     physicsDesc.angularDamping  = props->Get("angularDamping").As<float>();
     physicsDesc.kinematic       = props->Get("kinematic").As<bool>();
     physicsDesc.ccd             = props->Get("ccd").As<bool>();
-
-    physicsDesc.shapes.Clear();
+#endif
 
     // static rigid body can't have collision listener
     if (physicsDesc.mass > 0) {
         collisionListener = new CollisionListener(this);
     }
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &shapes) {
@@ -365,6 +368,102 @@ void ComRigidBody::PropertyChanged(const char *classname, const char *propName) 
     }
 
     Component::PropertyChanged(classname, propName);
+}
+
+float ComRigidBody::GetMass() const { 
+    return body ? body->GetMass() : 0;
+}
+
+void ComRigidBody::SetMass(float mass) { 
+    if (body) {
+        body->SetMass(mass);
+    } else {
+        physicsDesc.mass = mass;
+    }
+}
+
+float ComRigidBody::GetRestitution() const { 
+    return body ? body->GetRestitution() : 0; 
+}
+
+void ComRigidBody::SetRestitution(float restitution) {
+    if (body) {
+        body->SetRestitution(restitution);
+    } else {
+        physicsDesc.restitution = restitution;
+    }
+}
+
+float ComRigidBody::GetFriction() const { 
+    return body ? body->GetFriction() : 0; 
+}
+
+void ComRigidBody::SetFriction(float friction) { 
+    if (body) {
+        body->SetFriction(friction);
+    } else {
+        physicsDesc.friction = friction;
+    }
+}
+
+float ComRigidBody::GetRollingFriction() const { 
+    return body ? body->GetRollingFriction() : 0; 
+}
+
+void ComRigidBody::SetRollingFriction(float rollingFriction) {
+    if (body) {
+        body->SetRollingFriction(rollingFriction);
+    } else {
+        physicsDesc.rollingFriction = rollingFriction;
+    }
+}
+
+float ComRigidBody::GetLinearDamping() const { 
+    return body ? body->GetLinearDamping() : 0; 
+}
+
+void ComRigidBody::SetLinearDamping(float linearDamping) { 
+    if (body) {
+        body->SetLinearDamping(linearDamping);
+    } else {
+        physicsDesc.linearDamping = linearDamping;
+    }
+}
+
+float ComRigidBody::GetAngularDamping() const { 
+    return body ? body->GetAngularDamping() : 0; 
+}
+
+void ComRigidBody::SetAngularDamping(float angularDamping) { 
+    if (body) {
+        body->SetAngularDamping(angularDamping);
+    } else {
+        physicsDesc.angularDamping = angularDamping;
+    }
+}
+
+bool ComRigidBody::IsKinematic() const { 
+    return body ? body->IsKinematic() : false; 
+}
+
+void ComRigidBody::SetKinematic(bool kinematic) {
+    if (body) {
+        body->SetKinematic(kinematic);
+    } else {
+        physicsDesc.kinematic = kinematic;
+    }
+}
+
+bool ComRigidBody::IsCCD() const { 
+    return body ? body->IsCCD() : false; 
+}
+
+void ComRigidBody::SetCCD(bool enableCcd) { 
+    if (body) {
+        body->SetCCD(enableCcd);
+    } else {
+        physicsDesc.ccd = enableCcd;
+    }
 }
 
 BE_NAMESPACE_END

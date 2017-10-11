@@ -27,14 +27,14 @@ OBJECT_DECLARATION("Mesh Collider", ComMeshCollider, ComCollider)
 BEGIN_EVENTS(ComMeshCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComMeshCollider)
-    PROPERTY_OBJECT("mesh", "Mesh", "collision mesh", GuidMapper::defaultMeshGuid.ToString(), MeshAsset::metaObject, PropertySpec::ReadWrite),
     PROPERTY_BOOL("convex", "Convex", "", "true", PropertySpec::ReadWrite),
+    PROPERTY_OBJECT("mesh", "Mesh", "collision mesh", GuidMapper::defaultMeshGuid.ToString(), MeshAsset::metaObject, PropertySpec::ReadWrite),
 END_PROPERTIES
 
 void ComMeshCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertySpec::ReadWrite);
     REGISTER_PROPERTY("Convex", bool, convex, true, "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertySpec::ReadWrite);
 #endif
 }
 
@@ -50,13 +50,18 @@ ComMeshCollider::~ComMeshCollider() {
 void ComMeshCollider::Init() {
     ComCollider::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     convex = props->Get("convex").As<bool>();
-
     meshGuid = props->Get("mesh").As<Guid>();
+#endif
+
     if (!meshGuid.IsZero()) {
         const Str meshPath = resourceGuidMapper.Get(meshGuid);
         collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
     }
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComMeshCollider::SetEnable(bool enable) {

@@ -57,6 +57,7 @@ ComSpringJoint::~ComSpringJoint() {
 void ComSpringJoint::Init() {
     ComJoint::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     anchor = props->Get("anchor").As<Vec3>();
     axis = props->Get("angles").As<Angles>().ToMat3();
     axis.FixDegeneracies();
@@ -65,6 +66,10 @@ void ComSpringJoint::Init() {
     upperLimit = props->Get("upperLimit").As<float>();
     stiffness = props->Get("stiffness").As<float>();
     damping = props->Get("damping").As<float>();
+#endif
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComSpringJoint::Start() {
@@ -172,6 +177,8 @@ Angles ComSpringJoint::GetAngles() const {
 
 void ComSpringJoint::SetAngles(const Angles &angles) {
     this->axis = angles.ToMat3();
+    this->axis.FixDegeneracies();
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, axis);
     }

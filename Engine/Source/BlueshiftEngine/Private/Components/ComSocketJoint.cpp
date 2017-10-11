@@ -47,7 +47,12 @@ ComSocketJoint::~ComSocketJoint() {
 void ComSocketJoint::Init() {
     ComJoint::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     anchor = props->Get("anchor").As<Vec3>();
+#endif
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComSocketJoint::Start() {

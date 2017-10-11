@@ -187,8 +187,6 @@ void ComScript::Purge(bool chainPurge) {
 }
 
 void ComScript::Init() {
-    Purge();
-
     Component::Init();
 
     // Sandboxes with component GUID string
@@ -204,6 +202,9 @@ void ComScript::Init() {
 
         LuaVM::State().Run();
     }
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {

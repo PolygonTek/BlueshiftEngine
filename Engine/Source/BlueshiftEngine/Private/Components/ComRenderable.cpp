@@ -75,8 +75,6 @@ void ComRenderable::Purge(bool chainPurge) {
 }
 
 void ComRenderable::Init() {
-    Purge();
-
     Component::Init();
 
     renderWorld = GetGameWorld()->GetRenderWorld();
@@ -95,9 +93,7 @@ void ComRenderable::Init() {
     sceneEntity.materialParms[SceneEntity::TimeOffsetParm] = props->Get("timeOffset").As<float>();
     sceneEntity.materialParms[SceneEntity::TimeScaleParm] = props->Get("timeScale").As<float>();
     sceneEntity.wireframeColor.Set(1, 1, 1, 1);
-
     sceneEntity.billboard = props->Get("billboard").As<bool>();
-
     sceneEntity.skipSelectionBuffer = props->Get("skipSelection").As<bool>();
 
     ComTransform *transform = GetEntity()->GetTransform();
@@ -108,6 +104,9 @@ void ComRenderable::Init() {
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComRenderable::SetEnable(bool enable) {

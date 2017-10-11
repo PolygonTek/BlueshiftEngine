@@ -42,10 +42,13 @@ ComConstantForce::~ComConstantForce() {
 }
 
 void ComConstantForce::Init() {
-    Purge();
-
+#ifndef NEW_PROPERTY_SYSTEM
     force = props->Get("force").As<Vec3>();
     torque = props->Get("torque").As<Vec3>();
+#endif
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComConstantForce::Update() {

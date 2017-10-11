@@ -63,6 +63,9 @@ void ComStaticMeshRenderer::Init() {
     sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
     sceneEntity.occluder = props->Get("occluder").As<bool>();
 
+    // Mark as initialized
+    SetInitialized(true);
+
     UpdateVisuals();
 }
 

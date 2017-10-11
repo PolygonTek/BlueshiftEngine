@@ -49,16 +49,21 @@ ComSphereCollider::~ComSphereCollider() {
 void ComSphereCollider::Init() {
     ComCollider::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     center = props->Get("center").As<Vec3>();
     radius = props->Get("radius").As<float>();
+#endif
 
+    // Create collider based on transformed sphere
     const ComTransform *transform = GetEntity()->GetTransform();
-
     const Vec3 scaledCenter = transform->GetScale() * center;
     const float scaledRadius = (transform->GetScale() * radius).MaxComponent();
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateSphere(scaledCenter, scaledRadius);
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComSphereCollider::SetEnable(bool enable) {

@@ -55,7 +55,6 @@ protected:
 
     Sound *                 referenceSound;
     Sound *                 sound;
-    Str                     audioClipPath;
     bool                    playOnAwake;
     float                   minDistance;
     float                   maxDistance;

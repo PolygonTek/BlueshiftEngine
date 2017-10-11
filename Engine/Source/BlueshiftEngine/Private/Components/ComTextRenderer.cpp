@@ -83,6 +83,10 @@ void ComTextRenderer::Init() {
     sceneEntity.lineSpacing    = props->Get("lineSpacing").As<float>();
 
     UpdateAABB();
+
+    // Mark as initialized
+    SetInitialized(true);
+
     UpdateVisuals();
 }
 

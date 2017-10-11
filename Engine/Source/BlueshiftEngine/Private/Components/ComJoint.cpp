@@ -57,13 +57,13 @@ void ComJoint::Purge(bool chainPurge) {
 }
 
 void ComJoint::Init() {
-    Purge();
-
     Component::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     collisionEnabled = props->Get("collisionEnabled").As<bool>();
     // FIXME: atof("infinity") parsing 안됨
     breakImpulse = props->Get("breakImpulse").As<float>();
+#endif
 }
 
 void ComJoint::Start() {
@@ -97,7 +97,7 @@ void ComJoint::PropertyChanged(const char *classname, const char *propName) {
         return;
     }
 
-    if (!Str::Cmp(propName, "connectedBody")) {        
+    if (!Str::Cmp(propName, "connectedBody")) {
         SetConnectedBody(props->Get("connectedBody").As<Guid>());
         return;
     }

@@ -24,6 +24,7 @@ BEGIN_PROPERTIES(GameSettings)
 END_PROPERTIES
 
 void GameSettings::Init() {
+    // Mark as initialized
     SetInitialized(true);
 }
 

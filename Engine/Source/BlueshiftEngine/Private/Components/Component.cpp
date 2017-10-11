@@ -34,8 +34,8 @@ void Component::RegisterProperties() {
 
 Component::Component() {
     entity = nullptr;
-    enabled = true;
     initialized = false;
+    enabled = true;
 }
 
 Component::~Component() {
@@ -71,16 +71,14 @@ GameWorld *Component::GetGameWorld() const {
 }
 
 void Component::Init() {
-    SetInitialized(true);
+    Purge();
 
-    //
+#ifndef NEW_PROPERTY_SYSTEM
     enabled = props->Get("enabled").As<bool>();
-    //
+#endif
 }
 
 void Component::Reload() {
-    Purge();
-
     Init();
 }
 

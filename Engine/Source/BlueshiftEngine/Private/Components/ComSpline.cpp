@@ -57,14 +57,15 @@ void ComSpline::Purge(bool chainPurge) {
 }
 
 void ComSpline::Init() {
-    Purge();
-
     Component::Init();
 
     originCurve = new Curve_BSpline<Vec3>();
     anglesCurve = new Curve_BSpline<Angles>();
 
     loop = props->Get("loop").As<bool>();
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComSpline::Awake() {

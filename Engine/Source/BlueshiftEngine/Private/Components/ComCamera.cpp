@@ -113,8 +113,6 @@ void ComCamera::Purge(bool chainPurge) {
 }
 
 void ComCamera::Init() {
-    Purge();
-
     Component::Init();
 
     renderWorld = GetGameWorld()->GetRenderWorld();
@@ -123,34 +121,28 @@ void ComCamera::Init() {
 
     memset(&viewParms, 0, sizeof(viewParms));
 
-    //
-    order = props->Get("order").As<int>();
-
+#ifndef NEW_PROPERTY_SYSTEM
+    order = props->Get("order").As<int>(); //
     nx = props->Get("x").As<float>();
     ny = props->Get("y").As<float>();
     nw = props->Get("w").As<float>();
     nh = props->Get("h").As<float>();
+    fov = props->Get("fov").As<float>();
+    size = props->Get("size").As<float>();
 
     viewParms.layerMask = props->Get("layerMask").As<int>();
+    viewParms.clearMethod = (SceneView::ClearMethod)props->Get("clear").As<int>();
+    viewParms.clearColor.ToColor3() = props->Get("clearColor").As<Color3>();
+    viewParms.clearColor.a = props->Get("clearAlpha").As<float>();
+    viewParms.zNear = props->Get("near").As<float>();
+    viewParms.zFar = props->Get("far").As<float>();
+    viewParms.orthogonal = props->Get("projection").As<int>() == 1 ? true : false;
+#endif
 
     viewParms.flags = SceneView::Flag::TexturedMode | SceneView::Flag::NoSubViews;
     if (!(viewParms.layerMask & BIT(TagLayerSettings::DefaultLayer))) {
         viewParms.flags |= SceneView::Flag::NoShadows | SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess;
     }
-
-    viewParms.clearMethod = (SceneView::ClearMethod)props->Get("clear").As<int>();
-
-    viewParms.clearColor.ToColor3() = props->Get("clearColor").As<Color3>();
-    viewParms.clearColor.a = props->Get("clearAlpha").As<float>();
-
-    viewParms.zNear = props->Get("near").As<float>();
-    viewParms.zFar = props->Get("far").As<float>();
-
-    viewParms.orthogonal = props->Get("projection").As<int>() == 1 ? true : false;
-
-    fov = props->Get("fov").As<float>();
-        
-    size = props->Get("size").As<float>();
     
     ComTransform *transform = GetEntity()->GetTransform();
     
@@ -183,6 +175,9 @@ void ComCamera::Init() {
     sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
+
+    // Mark as initialized
+    SetInitialized(true);
 
     UpdateVisuals();
 }
@@ -430,10 +425,12 @@ void ComCamera::RenderScene() {
 }
 
 void ComCamera::UpdateVisuals() {
-    if (spriteHandle == -1) {
-        spriteHandle = renderWorld->AddEntity(&sprite);
-    } else {
-        renderWorld->UpdateEntity(spriteHandle, &sprite);
+    if (IsInitalized()) {
+        if (spriteHandle == -1) {
+            spriteHandle = renderWorld->AddEntity(&sprite);
+        } else {
+            renderWorld->UpdateEntity(spriteHandle, &sprite);
+        }
     }
 }
 

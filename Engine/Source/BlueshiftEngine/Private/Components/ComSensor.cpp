@@ -58,14 +58,14 @@ void ComSensor::Purge(bool chainPurge) {
 }
 
 void ComSensor::Init() {
-    Purge();
-
     Component::Init();
 
     memset(&physicsDesc, 0, sizeof(physicsDesc));
     physicsDesc.type = PhysCollidable::Sensor;
-
     physicsDesc.shapes.Clear();
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &shapes) {

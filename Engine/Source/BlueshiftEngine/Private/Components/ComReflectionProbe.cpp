@@ -78,8 +78,6 @@ void ComReflectionProbe::Purge(bool chainPurge) {
 }
 
 void ComReflectionProbe::Init() {
-    Purge();
-
     Component::Init();
 
     renderWorld = GetGameWorld()->GetRenderWorld();
@@ -111,6 +109,9 @@ void ComReflectionProbe::Init() {
     sphere.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComReflectionProbe::TransformUpdated, SignalObject::Unique);
+
+    // Mark as initialized
+    SetInitialized(true);
 
     UpdateVisuals();
 }

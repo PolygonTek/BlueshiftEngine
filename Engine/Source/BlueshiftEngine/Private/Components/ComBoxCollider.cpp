@@ -54,13 +54,16 @@ void ComBoxCollider::Init() {
     extents = props->Get("extents").As<Vec3>();
 #endif
 
+    // Create collider based on transformed box
     ComTransform *transform = GetEntity()->GetTransform();
-
     Vec3 scaledCenter = transform->GetScale() * center;
     Vec3 scaledExtents = transform->GetScale() * extents;
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateBox(scaledCenter, scaledExtents);
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComBoxCollider::SetEnable(bool enable) {
