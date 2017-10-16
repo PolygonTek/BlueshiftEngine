@@ -55,18 +55,19 @@ void ComFixedJoint::Start() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
+    // Fill up a constraint description 
     PhysConstraintDesc desc;
     desc.type           = PhysConstraint::Generic;
     desc.bodyA          = rigidBody->GetBody();
     desc.axisInA        = Mat3::identity;
     desc.anchorInA      = Vec3::zero;
-    desc.bodyB          = connectedBody ? connectedBody->GetBody() : nullptr;          
+    desc.bodyB          = connectedBody ? connectedBody->GetBody() : nullptr;
     desc.axisInB        = Mat3::identity;
     desc.anchorInB      = Vec3::zero;
-
     desc.collision      = collisionEnabled;
     desc.breakImpulse   = breakImpulse;
 
+    // Create a constraint by description
     constraint          = physicsSystem.CreateConstraint(&desc);
 
     PhysGenericConstraint *genericConstraint = static_cast<PhysGenericConstraint *>(constraint);
@@ -81,7 +82,7 @@ void ComFixedJoint::Start() {
 }
 
 void ComFixedJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

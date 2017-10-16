@@ -39,6 +39,7 @@ END_PROPERTIES
 
 void ComReflectionProbe::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+
 #endif
 }
 
@@ -92,8 +93,8 @@ void ComReflectionProbe::Init() {
     sphere.maxVisDist = MeterToUnit(50);
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
-    sphere.customMaterials.SetCount(1);
-    sphere.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sphere.materials.SetCount(1);
+    sphere.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
 
     sphere.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);
@@ -162,6 +163,10 @@ const AABB ComReflectionProbe::GetAABB() {
 }
 
 void ComReflectionProbe::UpdateVisuals() {
+    if (!IsInitialized() || !IsEnabled()) {
+        return;
+    }
+
     if (sphereHandle == -1) {
         sphereHandle = renderWorld->AddEntity(&sphere);
     } else {
@@ -179,7 +184,7 @@ void ComReflectionProbe::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComReflectionProbe::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

@@ -100,7 +100,7 @@ void ComBoxCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selected
 }
 
 void ComBoxCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

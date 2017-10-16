@@ -76,37 +76,44 @@ void ComMeshRenderer::Purge(bool chainPurge) {
 void ComMeshRenderer::Init() {
     ComRenderable::Init();
 
-    ChangeMesh(props->Get("mesh").As<Guid>());
+#ifndef NEW_PROPERTY_SYSTEM
+    sceneEntity.castShadows = props->Get("castShadows").As<bool>();
+    sceneEntity.receiveShadows = props->Get("receiveShadows").As<bool>();
+    sceneEntity.useLightProbe = props->Get("useLightProbe").As<bool>();
 
-    // Set SceneEntity parameters
-    sceneEntity.mesh            = nullptr;
-    sceneEntity.aabb            = referenceMesh->GetAABB();
-    sceneEntity.customSkin      = nullptr;
-    sceneEntity.castShadows     = props->Get("castShadows").As<bool>();
-    sceneEntity.receiveShadows  = props->Get("receiveShadows").As<bool>();
+    const Guid meshGuid = props->Get("mesh").As<Guid>();
+
+    ChangeMesh(meshGuid);
+#endif
+
+    sceneEntity.aabb = referenceMesh->GetAABB();
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
-    // Disconnect from old mesh asset
+    // Disconnect with previously connected mesh asset
     if (meshAsset) {
         meshAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        meshAsset = nullptr;
     }
 
-    // Release the previous used instantiated mesh
+    // Release the previously used instantiated mesh
     if (sceneEntity.mesh) {
         meshManager.ReleaseMesh(sceneEntity.mesh);
         sceneEntity.mesh = nullptr;
     }
 
-    // Release the previous used reference mesh
+    // Release the previously used reference mesh
     if (referenceMesh) {
         meshManager.ReleaseMesh(referenceMesh);
         referenceMesh = nullptr;
     }
 
-    // Release previous used materials
-    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
-        materialManager.ReleaseMaterial(sceneEntity.customMaterials[i]);
+    // Release previously used materials
+    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sceneEntity.materials[i]);
     }
 
     // Get the new reference mesh
@@ -121,38 +128,29 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     int numMaterials = materialIndexArray.Count();
 
     // Resize material slots
-    sceneEntity.customMaterials.SetCount(numMaterials);
+    sceneEntity.materials.SetCount(numMaterials);
 
+#ifndef NEW_PROPERTY_SYSTEM
     props->SetNumElements("materials", numMaterials);
 
     // Get all of the new materials
     for (int i = 0; i < numMaterials; i++) {
         Str name = va("materials[%i]", i);
 
-        //const MeshSurf *surf = referenceMesh->GetSurface(i);
         const Guid materialGuid = props->Get(name).As<Guid>();
         const Str materialPath = resourceGuidMapper.Get(materialGuid);
-
-        sceneEntity.customMaterials[i] = materialManager.GetMaterial(materialPath);
+        sceneEntity.materials[i] = materialManager.GetMaterial(materialPath);
     }
+#else
+    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
+        sceneEntity.materials[i] = materialManager.GetMaterial("_defaultMaterial");
+    }
+#endif
 
-    // Need to mesh asset to be reloaded in Editor
+    // Need mesh asset to be reloaded in editor
     meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
     if (meshAsset) {
         meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
-    }
-}
-
-void ComMeshRenderer::ChangeMaterial(int index, const Guid &materialGuid) {
-    if (index >= 0 && index < props->NumElements("materials")) {
-        // Release the previous used material
-        if (sceneEntity.customMaterials[index]) {
-            materialManager.ReleaseMaterial(sceneEntity.customMaterials[index]);
-        }
-
-        // Get the new material
-        const Str materialPath = resourceGuidMapper.Get(materialGuid);
-        sceneEntity.customMaterials[index] = materialManager.GetMaterial(materialPath);
     }
 }
 
@@ -161,7 +159,7 @@ void ComMeshRenderer::MeshReloaded() {
 }
 
 void ComMeshRenderer::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 
@@ -219,29 +217,37 @@ void ComMeshRenderer::SetMeshRef(const ObjectRef &meshRef) {
 }
 
 int ComMeshRenderer::NumMaterials() const {
-    return sceneEntity.customMaterials.Count();
+    return sceneEntity.materials.Count();
 }
 
 Guid ComMeshRenderer::GetMaterial(int index) const {
-    if (index >= 0 && index < sceneEntity.customMaterials.Count()) {
-        const Str materialPath = sceneEntity.customMaterials[index]->GetHashName();
+    if (index >= 0 && index < sceneEntity.materials.Count()) {
+        const Str materialPath = sceneEntity.materials[index]->GetHashName();
         return resourceGuidMapper.Get(materialPath);
     }
     return Guid();
 }
 
 void ComMeshRenderer::SetMaterial(int index, const Guid &materialGuid) {
-    ChangeMaterial(index, materialGuid);
+    if (index >= 0 && index < props->NumElements("materials")) {
+        // Release the previously used material
+        if (sceneEntity.materials[index]) {
+            materialManager.ReleaseMaterial(sceneEntity.materials[index]);
+        }
+
+        // Get the new material
+        sceneEntity.materials[index] = materialManager.GetMaterial(resourceGuidMapper.Get(materialGuid));
+    }
 
     UpdateVisuals();
 }
 
 ObjectRefArray ComMeshRenderer::GetMaterialsRef() const {
     ObjectRefArray materialsRef(MaterialAsset::metaObject);
-    materialsRef.objectGuids.SetCount(sceneEntity.customMaterials.Count());
+    materialsRef.objectGuids.SetCount(sceneEntity.materials.Count());
 
-    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
-        const Str materialPath = sceneEntity.customMaterials[i]->GetHashName();
+    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
+        const Str materialPath = sceneEntity.materials[i]->GetHashName();
         materialsRef.objectGuids[i] = resourceGuidMapper.Get(materialPath);
     }
 
@@ -249,19 +255,19 @@ ObjectRefArray ComMeshRenderer::GetMaterialsRef() const {
 }
 
 void ComMeshRenderer::SetMaterialsRef(const ObjectRefArray &materialsRef) {
-    // Release the previous used materials
-    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
-        if (sceneEntity.customMaterials[i]) {
-            materialManager.ReleaseMaterial(sceneEntity.customMaterials[i]);
+    // Release the previously used materials
+    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
+        if (sceneEntity.materials[i]) {
+            materialManager.ReleaseMaterial(sceneEntity.materials[i]);
         }
     }
 
-    sceneEntity.customMaterials.SetCount(materialsRef.objectGuids.Count());
+    sceneEntity.materials.SetCount(materialsRef.objectGuids.Count());
 
     // Get the new materials
-    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
+    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
         const Str materialPath = resourceGuidMapper.Get(materialsRef.objectGuids[i]);
-        sceneEntity.customMaterials[i] = materialManager.GetMaterial(materialPath);
+        sceneEntity.materials[i] = materialManager.GetMaterial(materialPath);
     }
 
     UpdateVisuals();
@@ -279,6 +285,7 @@ Material *ComMeshRenderer::GetMaterialPtr(int index) const {
 
 void ComMeshRenderer::SetMaterialPtr(int index, const Material *material) {
     const Guid materialGuid = resourceGuidMapper.Get(material->GetHashName());
+
     SetMaterial(index, materialGuid);
 }
 
@@ -288,6 +295,7 @@ bool ComMeshRenderer::IsUseLightProbe() const {
 
 void ComMeshRenderer::SetUseLightProbe(bool useLightProbe) {
     sceneEntity.useLightProbe = useLightProbe;
+
     UpdateVisuals();
 }
 
@@ -297,6 +305,7 @@ bool ComMeshRenderer::IsCastShadows() const {
 
 void ComMeshRenderer::SetCastShadows(bool castShadows) {
     sceneEntity.castShadows = castShadows;
+    
     UpdateVisuals();
 }
 
@@ -306,6 +315,7 @@ bool ComMeshRenderer::IsReceiveShadows() const {
 
 void ComMeshRenderer::SetReceiveShadows(bool receiveShadows) {
     sceneEntity.receiveShadows = receiveShadows;
+
     UpdateVisuals();
 }
 

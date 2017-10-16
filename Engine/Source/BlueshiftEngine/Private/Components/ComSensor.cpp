@@ -35,6 +35,7 @@ void ComSensor::RegisterProperties() {
 }
 
 ComSensor::ComSensor() {
+    memset(&physicsDesc, 0, sizeof(physicsDesc));
     sensor = nullptr;
 
 #ifndef NEW_PROPERTY_SYSTEM
@@ -60,7 +61,6 @@ void ComSensor::Purge(bool chainPurge) {
 void ComSensor::Init() {
     Component::Init();
 
-    memset(&physicsDesc, 0, sizeof(physicsDesc));
     physicsDesc.type = PhysCollidable::Sensor;
     physicsDesc.shapes.Clear();
 
@@ -243,7 +243,7 @@ void ComSensor::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComSensor::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

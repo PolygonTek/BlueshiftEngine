@@ -172,4 +172,49 @@ bool Variant::operator==(const Variant &rhs) const {
     return false;
 }
 
+Str Variant::ToString() const {
+    switch (type) {
+    case IntType:
+        return Str(value.i1);
+    case Int64Type:
+        return Str(*(reinterpret_cast<const int64_t *>(&value)));
+    case BoolType:
+        return Str(value.b1);
+    case FloatType:
+        return Str(value.f1);
+    case Vec2Type:
+        return (reinterpret_cast<const Vec2 *>(&value))->ToString();
+    case Vec3Type:
+        return (reinterpret_cast<const Vec3 *>(&value))->ToString();
+    case Vec4Type:
+        return (reinterpret_cast<const Vec4 *>(&value))->ToString();
+    case Color3Type:
+        return (reinterpret_cast<const Color3 *>(&value))->ToString();
+    case Color4Type:
+        return (reinterpret_cast<const Color4 *>(&value))->ToString();
+    case Mat2Type:
+        return (reinterpret_cast<const Mat2 *>(&value))->ToString();
+    case Mat3Type:
+        return (reinterpret_cast<const Mat3 *>(value.ptr1))->ToString();
+    case Mat4Type:
+        return (reinterpret_cast<const Mat4 *>(value.ptr1))->ToString();
+    case Mat3x4Type:
+        return (reinterpret_cast<const Mat3x4 *>(value.ptr1))->ToString();
+    case AnglesType:
+        return (reinterpret_cast<const Angles *>(&value))->ToString();
+    case QuatType:
+        return (reinterpret_cast<const Quat *>(&value))->ToString();
+    case PointType:
+        return (reinterpret_cast<const Point *>(&value))->ToString();
+    case RectType:
+        return (reinterpret_cast<const Rect *>(&value))->ToString();
+    case GuidType:
+        return (reinterpret_cast<const Guid *>(&value))->ToString();
+    case StrType:
+        return *(reinterpret_cast<const Str *>(value.ptr1));
+    default:
+        return Str();
+    }
+}
+
 BE_NAMESPACE_END

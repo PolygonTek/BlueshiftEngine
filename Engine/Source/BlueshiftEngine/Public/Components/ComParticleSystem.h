@@ -76,9 +76,9 @@ protected:
     int                     currentTime;
     int                     stopTime;
 
-    Mesh *                  spriteMesh;
     SceneEntity::Parms      sprite;
     int                     spriteHandle;
+    Mesh *                  spriteReferenceMesh;
 };
 
 BE_NAMESPACE_END

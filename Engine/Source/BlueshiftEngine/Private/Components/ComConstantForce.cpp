@@ -64,7 +64,7 @@ void ComConstantForce::Update() {
 }
 
 void ComConstantForce::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

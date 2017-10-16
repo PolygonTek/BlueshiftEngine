@@ -105,6 +105,7 @@ void ComCharacterJoint::Start() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
+    // Fill up a constraint description 
     PhysConstraintDesc desc;
     desc.type           = PhysConstraint::GenericSpring;
     desc.bodyA          = rigidBody->GetBody();
@@ -123,6 +124,8 @@ void ComCharacterJoint::Start() {
 
     desc.collision      = collisionEnabled;
     desc.breakImpulse   = breakImpulse;
+
+    // Create a constraint by description
     constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);
@@ -150,7 +153,7 @@ void ComCharacterJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selec
 }
 
 void ComCharacterJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
     
@@ -160,7 +163,7 @@ void ComCharacterJoint::PropertyChanged(const char *classname, const char *propN
     }
     
     if (!Str::Cmp(propName, "angles")) {
-        axis = props->Get("angles").As<Angles>().ToMat3();
+        SetAngles(props->Get("angles").As<Angles>());
         return;
     }
 

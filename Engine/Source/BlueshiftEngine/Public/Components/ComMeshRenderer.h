@@ -63,7 +63,6 @@ public:
 
 protected:
     void                    ChangeMesh(const Guid &meshGuid);
-    void                    ChangeMaterial(int index, const Guid &materialGuid);
 
     virtual void            MeshUpdated() = 0;
 

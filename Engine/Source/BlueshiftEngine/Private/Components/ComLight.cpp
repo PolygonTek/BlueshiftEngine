@@ -95,10 +95,10 @@ void ComLight::Purge(bool chainPurge) {
         sceneLightHandle = -1;
     }
 
-    for (int i = 0; i < sprite.customMaterials.Count(); i++) {
-        materialManager.ReleaseMaterial(sprite.customMaterials[i]);
+    for (int i = 0; i < sprite.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sprite.materials[i]);
     }
-    sprite.customMaterials.Clear();
+    sprite.materials.Clear();
 
     if (sprite.mesh) {
         meshManager.ReleaseMesh(sprite.mesh);
@@ -139,9 +139,9 @@ void ComLight::Init() {
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    memset(&sceneLight, 0, sizeof(sceneLight));
-
     sceneLight.layer = GetEntity()->GetLayer();
+
+#ifndef NEW_PROPERTY_SYSTEM
     sceneLight.isStaticLight = true; //
     sceneLight.type = props->Get("lightType").As<SceneLight::Type>();
     
@@ -173,12 +173,15 @@ void ComLight::Init() {
     sceneLight.castShadows = props->Get("castShadows").As<bool>();
     sceneLight.shadowOffsetFactor = props->Get("shadowOffsetFactor").As<float>();
     sceneLight.shadowOffsetUnits = props->Get("shadowOffsetUnits").As<float>();
+#endif
 
     ComTransform *transform = GetEntity()->GetTransform();
     sceneLight.origin = transform->GetOrigin();
     sceneLight.axis = transform->GetAxis();
 
-    // 3d sprite
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
+
+    // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
     memset(&sprite, 0, sizeof(sprite));
@@ -187,8 +190,8 @@ void ComLight::Init() {
     sprite.billboard = true;
 
     Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(sceneLight.type), Texture::Clamp | Texture::HighQuality);
-    sprite.customMaterials.SetCount(1);
-    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.materials.SetCount(1);
+    sprite.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
     
     sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
@@ -196,17 +199,16 @@ void ComLight::Init() {
     sprite.origin = transform->GetOrigin();
     sprite.scale = Vec3(1, 1, 1);
     sprite.axis = Mat3::identity;
-    sprite.materialParms[SceneEntity::RedParm] = color.r;
-    sprite.materialParms[SceneEntity::GreenParm] = color.g;
-    sprite.materialParms[SceneEntity::BlueParm] = color.b;
-    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;	
-    sprite.materialParms[SceneEntity::TimeOffsetParm] = props->Get("timeOffset").As<float>();
-    sprite.materialParms[SceneEntity::TimeScaleParm] = props->Get("timeScale").As<float>();
+    sprite.materialParms[SceneEntity::RedParm] = sceneLight.materialParms[SceneEntity::RedParm];
+    sprite.materialParms[SceneEntity::GreenParm] = sceneLight.materialParms[SceneEntity::GreenParm];
+    sprite.materialParms[SceneEntity::BlueParm] = sceneLight.materialParms[SceneEntity::BlueParm];
+    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;
+    sprite.materialParms[SceneEntity::TimeOffsetParm] = sceneLight.materialParms[SceneEntity::TimeOffsetParm];
+    sprite.materialParms[SceneEntity::TimeScaleParm] = sceneLight.materialParms[SceneEntity::TimeScaleParm];
+    //
 
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
 
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
-    
     // Mark as initialized
     SetInitialized(true);
 
@@ -216,22 +218,25 @@ void ComLight::Init() {
 void ComLight::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
-            UpdateVisuals();
             Component::SetEnable(true);
+
+            UpdateVisuals();
         }
     } else {
         if (IsEnabled()) {
             renderWorld->RemoveLight(sceneLightHandle);
             sceneLightHandle = -1;
+
             renderWorld->RemoveEntity(spriteHandle);
             spriteHandle = -1;
+
             Component::SetEnable(false);
         }
     }
 }
 
 bool ComLight::HasRenderEntity(int renderEntityHandle) const { 
-    if (this->spriteHandle == renderEntityHandle) {
+    if (spriteHandle == renderEntityHandle) {
         return true;
     }
 
@@ -239,7 +244,7 @@ bool ComLight::HasRenderEntity(int renderEntityHandle) const {
 }
 
 void ComLight::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
-    const Color4 lightColor = *(Color4 *)&sceneLight.materialParms[SceneEntity::RedParm];
+    const Color4 lightColor = Color4(GetColor(), 1.0f);
 
     if (sceneLight.type == SceneLight::DirectionalLight || sceneLight.type == SceneLight::SpotLight) {
         if (selected) {
@@ -293,7 +298,7 @@ void ComLight::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
 
-    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
+    sprite.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComLight::GetAABB() {
@@ -305,6 +310,10 @@ bool ComLight::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFace
 }
 
 void ComLight::UpdateVisuals() {
+    if (!IsInitialized() || !IsEnabled()) {
+        return;
+    }
+
     if (sceneLightHandle == -1) {
         sceneLightHandle = renderWorld->AddLight(&sceneLight);
     } else {
@@ -334,7 +343,7 @@ void ComLight::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComLight::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 
@@ -359,42 +368,42 @@ void ComLight::PropertyChanged(const char *classname, const char *propName) {
     }
 
     if (!Str::Cmp(propName, "lightZNear")) {
-        SetLightZNear(props->Get("lightZNear").As<float>());        
+        SetLightZNear(props->Get("lightZNear").As<float>());
         return;
     } 
 
     if (!Str::Cmp(propName, "maxVisDist")) {
-        SetMaxVisDist(props->Get("maxVisDist").As<float>());        
+        SetMaxVisDist(props->Get("maxVisDist").As<float>());
         return;
     } 
 
     if (!Str::Cmp(propName, "material")) {
-        SetMaterial(props->Get("material").As<Guid>());        
+        SetMaterial(props->Get("material").As<Guid>());
         return;
     }
 
     if (!Str::Cmp(propName, "color")) {
-        SetColor(props->Get("color").As<Color3>());        
+        SetColor(props->Get("color").As<Color3>());
         return;
     } 
 
     if (!Str::Cmp(propName, "timeOffset")) {
-        SetTimeOffset(props->Get("timeOffset").As<float>());        
+        SetTimeOffset(props->Get("timeOffset").As<float>());
         return;
     } 
     
     if (!Str::Cmp(propName, "timeScale")) {
-        SetTimeOffset(props->Get("timeScale").As<float>());       
+        SetTimeOffset(props->Get("timeScale").As<float>());
         return;
     } 
 
     if (!Str::Cmp(propName, "castShadows")) {
-        SetCastShadows(props->Get("castShadows").As<bool>());        
+        SetCastShadows(props->Get("castShadows").As<bool>());
         return;
     }
 
     if (!Str::Cmp(propName, "shadowOffsetFactor")) {
-        SetShadowOffsetFactor(props->Get("shadowOffsetFactor").As<float>());        
+        SetShadowOffsetFactor(props->Get("shadowOffsetFactor").As<float>());
         return;
     } 
 
@@ -427,10 +436,13 @@ int ComLight::GetLightType() const {
 
 void ComLight::SetLightType(int type) {
     sceneLight.type = (SceneLight::Type)type;
-    materialManager.ReleaseMaterial(sprite.customMaterials[0]);
+
+    materialManager.ReleaseMaterial(sprite.materials[0]);
+
     Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(sceneLight.type), Texture::Clamp | Texture::HighQuality);
-    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
+
     UpdateVisuals();
 }
 
@@ -440,6 +452,7 @@ bool ComLight::IsPrimaryLight() const {
 
 void ComLight::SetPrimaryLight(bool isPrimaryLight) {
     sceneLight.isPrimaryLight = isPrimaryLight;
+
     UpdateVisuals();
 }
 
@@ -449,6 +462,7 @@ bool ComLight::IsTurnOn() const {
 
 void ComLight::SetTurnOn(bool turnOn) {
     sceneLight.turnOn = turnOn;
+
     UpdateVisuals();
 }
 
@@ -461,6 +475,7 @@ void ComLight::SetLightSize(const Vec3 &lightSize) {
     sceneLight.value[0] = Max(sceneLight.value[0], 1.0f);
     sceneLight.value[1] = Max(sceneLight.value[1], 1.0f);
     sceneLight.value[2] = Max(sceneLight.value[2], 1.0f);
+
     UpdateVisuals();
 }
 
@@ -470,6 +485,7 @@ float ComLight::GetLightZNear() const {
 
 void ComLight::SetLightZNear(float lightZNear) {
     sceneLight.zNear = lightZNear;
+    
     UpdateVisuals();
 }
 
@@ -479,6 +495,7 @@ float ComLight::GetMaxVisDist() const {
 
 void ComLight::SetMaxVisDist(float maxVisDist) {
     sceneLight.maxVisDist = maxVisDist;
+
     UpdateVisuals();
 }
 
@@ -492,6 +509,7 @@ void ComLight::SetMaterial(const Guid &materialGuid) {
 
     const Str materialPath = resourceGuidMapper.Get(materialGuid);
     sceneLight.material = materialManager.GetMaterial(materialPath);
+
     UpdateVisuals();
 }
 
@@ -505,6 +523,7 @@ void ComLight::SetMaterialRef(const ObjectRef &materialRef) {
 
     const Str materialPath = resourceGuidMapper.Get(materialRef.objectGuid);
     sceneLight.material = materialManager.GetMaterial(materialPath);
+
     UpdateVisuals();
 }
 
@@ -516,9 +535,11 @@ void ComLight::SetColor(const Color3 &color) {
     sceneLight.materialParms[SceneEntity::RedParm] = color.r;
     sceneLight.materialParms[SceneEntity::GreenParm] = color.g;
     sceneLight.materialParms[SceneEntity::BlueParm] = color.b;
+
     sprite.materialParms[SceneEntity::RedParm] = color.r;
     sprite.materialParms[SceneEntity::GreenParm] = color.g;
     sprite.materialParms[SceneEntity::BlueParm] = color.b;
+
     UpdateVisuals();
 }
 
@@ -528,6 +549,7 @@ float ComLight::GetTimeOffset() const {
 
 void ComLight::SetTimeOffset(float timeOffset) {
     sceneLight.materialParms[SceneEntity::TimeOffsetParm] = timeOffset;
+
     UpdateVisuals();
 }
 
@@ -537,6 +559,7 @@ float ComLight::GetTimeScale() const {
 
 void ComLight::SetTimeScale(float timeScale) {
     sceneLight.materialParms[SceneEntity::TimeScaleParm] = timeScale;
+
     UpdateVisuals();
 }
 
@@ -546,6 +569,7 @@ bool ComLight::IsCastShadows() const {
 
 void ComLight::SetCastShadows(bool castShadows) {
     sceneLight.castShadows = castShadows;
+
     UpdateVisuals();
 }
 
@@ -555,6 +579,7 @@ float ComLight::GetShadowOffsetFactor() const {
 
 void ComLight::SetShadowOffsetFactor(float factor) {
     sceneLight.shadowOffsetFactor = factor;
+
     UpdateVisuals();
 }
 
@@ -564,6 +589,7 @@ float ComLight::GetShadowOffsetUnits() const {
 
 void ComLight::SetShadowOffsetUnits(float units) {
     sceneLight.shadowOffsetUnits = units;
+
     UpdateVisuals();
 }
 
@@ -573,6 +599,7 @@ float ComLight::GetFallOffExponent() const {
 
 void ComLight::SetFallOffExponent(float fallOff) {
     sceneLight.fallOffExponent = fallOff;
+
     UpdateVisuals();
 }
 
@@ -582,6 +609,7 @@ float ComLight::GetIntensity() const {
 
 void ComLight::SetIntensity(float intensity) {
     sceneLight.intensity = intensity;
+
     UpdateVisuals();
 }
 
@@ -591,6 +619,7 @@ const Vec3 &ComLight::GetRadius() const {
 
 void ComLight::SetRadius(const Vec3 &radius) {
     sceneLight.value = props->Get("radius").As<Vec3>();
+
     UpdateVisuals();
 }
 

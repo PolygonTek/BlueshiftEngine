@@ -295,10 +295,12 @@ public:
 
     template <typename T>
     const T &               As() const;
+
+    Str                     ToString() const;
     
 private:
-    Type type;
-    Value value;
+    Type                    type;
+    Value                   value;
 };
 
 BE_INLINE void Variant::Clear() {

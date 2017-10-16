@@ -68,6 +68,9 @@ void ComJoint::Init() {
 
 void ComJoint::Start() {
     connectedBody = nullptr;
+
+    // Rigid body component will be created after calling Awake() function
+    // So we can connect this joint to the connected rigid body in Start() function
     const Guid guid = props->Get("connectedBody").As<Guid>();
     if (!guid.IsZero()) {
         connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
@@ -93,7 +96,7 @@ void ComJoint::SetEnable(bool enable) {
 }
 
 void ComJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

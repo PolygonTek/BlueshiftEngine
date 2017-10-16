@@ -32,7 +32,7 @@ void LuaVM::RegisterComponent(LuaCpp::Module &module) {
         "is_enabled", &Component::IsEnabled,
         "enable", &Component::SetEnable,
         "purge", &Component::Purge,
-        "is_initialized", &Component::IsInitalized);
+        "is_initialized", &Component::IsInitialized);
         
     _Component["destroy"].SetFunc([](Component *component) {
         Component::DestroyInstance(component);

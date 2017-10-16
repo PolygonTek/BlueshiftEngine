@@ -30,7 +30,7 @@ END_PROPERTIES
 
 void ComSpline::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Loop", bool, loop, false, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Loop", bool, IsLoop, SetLoop, false, "", PropertySpec::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Points", ObjectRefArray, GetPointsRef, SetPointsRef, ObjectRefArray(ComTransform::metaObject, {Guid::zero}), "", PropertySpec::ReadWrite);
 #endif
 }
@@ -53,16 +53,25 @@ void ComSpline::Purge(bool chainPurge) {
     SAFE_DELETE(originCurve);
     SAFE_DELETE(anglesCurve);
 
+    pointGuids.Clear();
+
     curveUpdated = false;
 }
 
 void ComSpline::Init() {
     Component::Init();
 
-    originCurve = new Curve_BSpline<Vec3>();
-    anglesCurve = new Curve_BSpline<Angles>();
+    if (!originCurve) {
+        originCurve = new Curve_BSpline<Vec3>();
+    }
 
+    if (!anglesCurve) {
+        anglesCurve = new Curve_BSpline<Angles>();
+    }
+
+#ifndef NEW_PROPERTY_SYSTEM
     loop = props->Get("loop").As<bool>();
+#endif
 
     // Mark as initialized
     SetInitialized(true);
@@ -111,6 +120,7 @@ void ComSpline::UpdateCurve() {
     originCurve->Clear();
     anglesCurve->Clear();
 
+    // Disconnect with previously connected points
     for (int pointIndex = 0; pointIndex < pointGuids.Count(); pointIndex++) {
         const Guid pointTransformGuid = pointGuids[pointIndex];
         if (pointTransformGuid.IsZero()) {
@@ -125,15 +135,18 @@ void ComSpline::UpdateCurve() {
         pointTransform->Disconnect(&ComTransform::SIG_TransformUpdated, this);
     }
 
+#ifndef NEW_PROPERTY_SYSTEM
     int numPoints = props->NumElements("points");
 
     pointGuids.SetCount(numPoints);
+#endif
 
-    if (numPoints > 1) {
+    if (pointGuids.Count() > 1) {
         // incremental time just used for key ordering
         float t = loop ? 0 : 100;
 
-        for (int pointIndex = 0; pointIndex < numPoints; pointIndex++, t += 100) {
+        for (int pointIndex = 0; pointIndex < pointGuids.Count(); pointIndex++, t += 100) {
+#ifndef NEW_PROPERTY_SYSTEM
             Str propName = va("points[%i]", pointIndex);
 
             const Guid pointTransformGuid = props->Get(propName).As<Guid>();
@@ -142,6 +155,12 @@ void ComSpline::UpdateCurve() {
             }
 
             pointGuids[pointIndex] = pointTransformGuid;
+#else
+            const Guid pointTransformGuid = pointGuids[pointIndex];
+            if (pointTransformGuid.IsZero()) {
+                continue;
+            }
+#endif
 
             ComTransform *pointTransform = (ComTransform *)ComTransform::FindInstance(pointTransformGuid);
             if (!pointTransform) {
@@ -272,13 +291,12 @@ void ComSpline::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
 }
 
 void ComSpline::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 
     if (!Str::Cmp(propName, "loop")) {
-        loop = props->Get(propName).As<bool>();
-        UpdateCurve();
+        SetLoop(props->Get(propName).As<bool>());
         return;
     }
 
@@ -288,6 +306,16 @@ void ComSpline::PropertyChanged(const char *classname, const char *propName) {
     }
 
     Component::PropertyChanged(classname, propName);
+}
+
+bool ComSpline::IsLoop() const {
+    return loop;
+}
+
+void ComSpline::SetLoop(bool loop) {
+    this->loop = loop;
+
+    UpdateCurve();
 }
 
 void ComSpline::PointTransformUpdated(const ComTransform *transform) {

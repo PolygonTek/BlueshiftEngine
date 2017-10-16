@@ -99,7 +99,7 @@ void ComSphereCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selec
 }
 
 void ComSphereCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

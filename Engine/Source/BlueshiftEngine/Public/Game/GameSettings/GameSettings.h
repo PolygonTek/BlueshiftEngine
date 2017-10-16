@@ -28,7 +28,7 @@ public:
 
     GameSettings() {}
 
-    bool					IsInitalized() const { return initialized; }
+    bool					IsInitialized() const { return initialized; }
 
     GameWorld *				GetGameWorld() const { return gameWorld; }
 

@@ -30,7 +30,7 @@ ComLogic::~ComLogic() {
 }
 
 void ComLogic::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

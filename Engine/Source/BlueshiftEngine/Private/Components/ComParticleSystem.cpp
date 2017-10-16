@@ -43,7 +43,7 @@ ComParticleSystem::ComParticleSystem() {
     particleSystemAsset = nullptr;
 
     spriteHandle = -1;
-    spriteMesh = nullptr;
+    spriteReferenceMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
 
 #ifndef NEW_PROPERTY_SYSTEM
@@ -74,9 +74,9 @@ void ComParticleSystem::Purge(bool chainPurge) {
         sprite.mesh = nullptr;
     }
 
-    if (spriteMesh) {
-        meshManager.ReleaseMesh(spriteMesh);
-        spriteMesh = nullptr;
+    if (spriteReferenceMesh) {
+        meshManager.ReleaseMesh(spriteReferenceMesh);
+        spriteReferenceMesh = nullptr;
     }
 
     if (spriteHandle != -1) {
@@ -92,16 +92,13 @@ void ComParticleSystem::Purge(bool chainPurge) {
 void ComParticleSystem::Init() {
     ComRenderable::Init();
 
+#ifndef NEW_PROPERTY_SYSTEM
     playOnAwake = props->Get("playOnAwake").As<bool>();
 
-    ChangeParticleSystem(props->Get("particleSystem").As<Guid>());
+    const Guid particleSystemGuid = props->Get("particleSystem").As<Guid>();
 
-    sceneEntity.mesh = nullptr;
-    sceneEntity.aabb = AABB::zero;
-    sceneEntity.customSkin = nullptr;
-    sceneEntity.castShadows = false;
-    sceneEntity.receiveShadows = false;
-    sceneEntity.time = 0;
+    ChangeParticleSystem(particleSystemGuid);
+#endif
 
     currentTime = 0;
     stopTime = 0;
@@ -109,7 +106,7 @@ void ComParticleSystem::Init() {
     simulationStarted = false;
 
     // 3d sprite
-    spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
+    spriteReferenceMesh = meshManager.GetMesh("_defaultQuadMesh");
 
     memset(&sprite, 0, sizeof(sprite));
     sprite.layer = TagLayerSettings::EditorLayer;
@@ -117,12 +114,12 @@ void ComParticleSystem::Init() {
     sprite.billboard = true;
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ParticleSystem.png", Texture::Clamp | Texture::HighQuality);
-    sprite.customMaterials.SetCount(1);
-    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.materials.SetCount(1);
+    sprite.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
 
-    sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
-    sprite.aabb = spriteMesh->GetAABB();
+    sprite.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    sprite.aabb = spriteReferenceMesh->GetAABB();
     sprite.origin = GetEntity()->GetTransform()->GetOrigin();
     sprite.scale = Vec3(1, 1, 1);
     sprite.axis = Mat3::identity;
@@ -142,12 +139,13 @@ void ComParticleSystem::Init() {
 }
 
 void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
-    // Disconnect from old particleSystem asset
+    // Disconnect with previously connected particleSystem asset
     if (particleSystemAsset) {
         particleSystemAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        particleSystemAsset = nullptr;
     }
 
-    // Release the previous used particleSystem
+    // Release the previously used particleSystem
     if (sceneEntity.particleSystem) {
         particleSystemManager.ReleaseParticleSystem(sceneEntity.particleSystem);
         sceneEntity.particleSystem = nullptr;
@@ -159,7 +157,7 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
 
     ResetParticles();
 
-    // Need to particleSystem asset to be reloaded in Editor
+    // Need to particleSystem asset to be reloaded in editor
     particleSystemAsset = (ParticleSystemAsset *)ParticleSystemAsset::FindInstance(particleSystemGuid);
     if (particleSystemAsset) {
         particleSystemAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::Queued);
@@ -683,7 +681,7 @@ void ComParticleSystem::DrawGizmos(const SceneView::Parms &sceneView, bool selec
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
 
-    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
+    sprite.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 bool ComParticleSystem::IsAlive() const {
@@ -710,6 +708,10 @@ void ComParticleSystem::Pause() {
 }
 
 void ComParticleSystem::UpdateVisuals() {
+    if (!IsInitialized() || !IsEnabled()) {
+        return;
+    }
+
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddEntity(&sprite);
     } else {
@@ -730,7 +732,7 @@ void ComParticleSystem::ParticleSystemReloaded() {
 }
 
 void ComParticleSystem::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 
@@ -755,8 +757,6 @@ Guid ComParticleSystem::GetParticleSystem() const {
 void ComParticleSystem::SetParticleSystem(const Guid &guid) {
     ChangeParticleSystem(guid);
 
-    //ResetParticles();
-
     UpdateVisuals();
 }
 
@@ -767,8 +767,6 @@ ObjectRef ComParticleSystem::GetParticleSystemRef() const {
 
 void ComParticleSystem::SetParticleSystemRef(const ObjectRef &particleSystemRef) {
     ChangeParticleSystem(particleSystemRef.objectGuid);
-
-    //ResetParticles();
 
     UpdateVisuals();
 }

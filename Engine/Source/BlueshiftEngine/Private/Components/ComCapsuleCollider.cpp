@@ -106,13 +106,21 @@ void ComCapsuleCollider::DrawGizmos(const SceneView::Parms &sceneView, bool sele
 }
 
 void ComCapsuleCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 
-    if (!Str::Cmp(propName, "center") || !Str::Cmp(propName, "radius") || !Str::Cmp(propName, "height")) {
+    if (!Str::Cmp(propName, "center")) {
         center = props->Get("center").As<Vec3>();
+        return;
+    }
+
+    if (!Str::Cmp(propName, "radius")) {
         radius = props->Get("radius").As<float>();
+        return;
+    }
+
+    if (!Str::Cmp(propName, "height")) {
         height = props->Get("height").As<float>();
         return;
     }

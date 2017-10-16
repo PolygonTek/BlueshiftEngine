@@ -58,10 +58,10 @@ ComRenderable::~ComRenderable() {
 }
 
 void ComRenderable::Purge(bool chainPurge) {
-    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
-        materialManager.ReleaseMaterial(sceneEntity.customMaterials[i]);
+    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sceneEntity.materials[i]);
     }
-    sceneEntity.customMaterials.Clear();
+    sceneEntity.materials.Clear();
 
     if (sceneEntityHandle != -1) {
         renderWorld->RemoveEntity(sceneEntityHandle);
@@ -79,45 +79,45 @@ void ComRenderable::Init() {
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    memset(&sceneEntity, 0, sizeof(sceneEntity));
-
     sceneEntity.layer = GetEntity()->GetLayer();
+    sceneEntity.wireframeColor.Set(1, 1, 1, 1);
+
+#ifndef NEW_PROPERTY_SYSTEM
     sceneEntity.maxVisDist = props->Get("maxVisDist").As<float>();
 
     Color3 color = props->Get("color").As<Color3>();
-    float alpha = props->Get("alpha").As<float>();
     sceneEntity.materialParms[SceneEntity::RedParm] = color.r;
     sceneEntity.materialParms[SceneEntity::GreenParm] = color.g;
     sceneEntity.materialParms[SceneEntity::BlueParm] = color.b;
-    sceneEntity.materialParms[SceneEntity::AlphaParm] = alpha;
+    sceneEntity.materialParms[SceneEntity::AlphaParm] = props->Get("alpha").As<float>();
     sceneEntity.materialParms[SceneEntity::TimeOffsetParm] = props->Get("timeOffset").As<float>();
     sceneEntity.materialParms[SceneEntity::TimeScaleParm] = props->Get("timeScale").As<float>();
-    sceneEntity.wireframeColor.Set(1, 1, 1, 1);
+
     sceneEntity.billboard = props->Get("billboard").As<bool>();
     sceneEntity.skipSelectionBuffer = props->Get("skipSelection").As<bool>();
+#endif
 
     ComTransform *transform = GetEntity()->GetTransform();
     sceneEntity.origin = transform->GetOrigin();
     sceneEntity.scale = transform->GetScale();
     sceneEntity.axis = transform->GetAxis();
 
-    GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
-
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
 
-    // Mark as initialized
-    SetInitialized(true);
+    GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
 }
 
 void ComRenderable::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             Component::SetEnable(true);
+
             UpdateVisuals();
         }
     } else {
         if (IsEnabled()) {
             Component::SetEnable(false);
+
             renderWorld->RemoveEntity(sceneEntityHandle);
             sceneEntityHandle = -1;
         }
@@ -133,7 +133,7 @@ bool ComRenderable::HasRenderEntity(int sceneEntityHandle) const {
 }
 
 void ComRenderable::UpdateVisuals() {
-    if (!IsEnabled()) {
+    if (!IsInitialized() || !IsEnabled()) {
         return;
     }
 
@@ -181,16 +181,19 @@ bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool bac
 
 void ComRenderable::SetWireframeColor(const Color4 &color) {
     sceneEntity.wireframeColor = color;
+
     UpdateVisuals();
 }
 
 void ComRenderable::ShowWireframe(SceneEntity::WireframeMode wireframeMode) {
     sceneEntity.wireframeMode = wireframeMode;
+    
     UpdateVisuals();
 }
 
 void ComRenderable::LayerChanged(const Entity *entity) {
     sceneEntity.layer = entity->GetProperties()->Get("layer").As<int>();
+    
     UpdateVisuals();
 }
 
@@ -198,11 +201,12 @@ void ComRenderable::TransformUpdated(const ComTransform *transform) {
     sceneEntity.origin = transform->GetOrigin();
     sceneEntity.axis = transform->GetAxis();
     sceneEntity.scale = transform->GetScale();
+
     UpdateVisuals();
 }
 
 void ComRenderable::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 
@@ -250,6 +254,7 @@ float ComRenderable::GetMaxVisDist() const {
 
 void ComRenderable::SetMaxVisDist(float maxVisDist) {
     sceneEntity.maxVisDist = maxVisDist;
+
     UpdateVisuals();
 }
 
@@ -261,6 +266,7 @@ void ComRenderable::SetColor(const Color3 &color) {
     sceneEntity.materialParms[SceneEntity::RedParm] = color.r;
     sceneEntity.materialParms[SceneEntity::GreenParm] = color.g;
     sceneEntity.materialParms[SceneEntity::BlueParm] = color.b;
+    
     UpdateVisuals();
 }
 
@@ -270,6 +276,7 @@ float ComRenderable::GetAlpha() const {
 
 void ComRenderable::SetAlpha(float alpha) {
     sceneEntity.materialParms[SceneEntity::AlphaParm] = alpha;
+
     UpdateVisuals();
 }
 
@@ -279,6 +286,7 @@ float ComRenderable::GetTimeOffset() const {
 
 void ComRenderable::SetTimeOffset(float timeOffset) {
     sceneEntity.materialParms[SceneEntity::TimeOffsetParm] = timeOffset;
+
     UpdateVisuals();
 }
 
@@ -288,6 +296,7 @@ float ComRenderable::GetTimeScale() const {
 
 void ComRenderable::SetTimeScale(float timeScale) {
     sceneEntity.materialParms[SceneEntity::TimeScaleParm] = timeScale;
+
     UpdateVisuals();
 }
 
@@ -297,6 +306,7 @@ bool ComRenderable::IsBillboard() const {
 
 void ComRenderable::SetBillboard(bool billboard) {
     sceneEntity.billboard = billboard;
+
     UpdateVisuals();
 }
 
@@ -306,6 +316,7 @@ bool ComRenderable::IsSkipSelection() const {
 
 void ComRenderable::SetSkipSelection(bool skip) {
     sceneEntity.skipSelectionBuffer = skip;
+
     UpdateVisuals();
 }
 

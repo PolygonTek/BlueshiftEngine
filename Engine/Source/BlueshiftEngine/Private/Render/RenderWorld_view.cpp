@@ -233,7 +233,7 @@ void RenderWorld::AddStaticMeshes(view_t *view) {
         }
 
         viewEntity_t *viewEntity = proxy->sceneEntity->viewEntity;
-        AddDrawSurf(view, viewEntity, viewEntity->def->parms.customMaterials[surf->materialIndex], surf->subMesh, flags);
+        AddDrawSurf(view, viewEntity, viewEntity->def->parms.materials[surf->materialIndex], surf->subMesh, flags);
 
         surf->viewCount = this->viewCount;
         surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
@@ -288,7 +288,7 @@ void RenderWorld::AddSkinnedMeshes(view_t *view) {
         for (int surfaceIndex = 0; surfaceIndex < entityParms.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = entityParms.mesh->GetSurface(surfaceIndex);
 
-            AddDrawSurf(view, viewEntity, entityParms.customMaterials[surf->materialIndex], surf->subMesh, flags);
+            AddDrawSurf(view, viewEntity, entityParms.materials[surf->materialIndex], surf->subMesh, flags);
 
             surf->viewCount = viewCount;
             surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
@@ -456,7 +456,7 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
             return true;
         }
 
-        const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
+        const Material *material = proxyEntity->parms.materials[surf->materialIndex];
 
         // Is surface visible for this frame ?
         if (surf->viewCount == this->viewCount) {
@@ -560,7 +560,7 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
         for (int surfaceIndex = 0; surfaceIndex < proxyEntity->parms.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = proxyEntity->parms.mesh->GetSurface(surfaceIndex);
 
-            const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
+            const Material *material = proxyEntity->parms.materials[surf->materialIndex];
 
             // 이미 ambient visible surf 로 등록되었고, lighting 이 필요한 surf 라면 litSurfs 리스트에 추가한다.
             if (surf->viewCount == this->viewCount && surf->drawSurf->flags & DrawSurf::AmbientVisible && material->IsLitSurface()) {
@@ -590,7 +590,7 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
         for (int surfaceIndex = 0; surfaceIndex < proxyEntity->parms.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = proxyEntity->parms.mesh->GetSurface(surfaceIndex);
 
-            const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
+            const Material *material = proxyEntity->parms.materials[surf->materialIndex];
 
             if (material->IsShadowCaster()) {
                 if (surf->viewCount != this->viewCount) {

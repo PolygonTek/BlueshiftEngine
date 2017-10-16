@@ -174,7 +174,10 @@ public:
     Object() {}
     virtual ~Object();
 
+                                /// Returns class name
     const char *                ClassName() const;
+
+                                /// Returns super class name
     const char *                SuperClassName() const;
 
     virtual const Str           ToString() const { return ""; }

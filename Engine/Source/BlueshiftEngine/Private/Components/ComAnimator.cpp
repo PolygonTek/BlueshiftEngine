@@ -66,7 +66,7 @@ void ComAnimator::SetEnable(bool enable) {
 }
 
 void ComAnimator::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

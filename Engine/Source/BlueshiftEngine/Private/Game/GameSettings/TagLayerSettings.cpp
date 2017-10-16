@@ -54,7 +54,7 @@ int32_t TagLayerSettings::FindLayer(const char *layerName) const {
 }
 
 void TagLayerSettings::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

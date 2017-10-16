@@ -359,7 +359,7 @@ void Entity::Init() {
 
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
-        if (component && !component->IsInitalized()) {
+        if (component && !component->IsInitialized()) {
             component->Init();
         }
     }

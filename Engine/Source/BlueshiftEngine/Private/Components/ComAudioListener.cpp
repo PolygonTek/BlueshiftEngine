@@ -77,7 +77,7 @@ void ComAudioListener::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComAudioListener::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

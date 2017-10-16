@@ -50,11 +50,11 @@ public:
                             /// Is conflict with specific component ?
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const { return false; }
 
-                            //
+                            /// Returns true if this component have render entity by checking renderEntityHandle
     virtual bool            HasRenderEntity(int renderEntityHandle) const { return false; }
 
-                            //
-    bool                    IsInitalized() const { return initialized; }
+                            /// Is initialized ? (initialized should be set to true after calling Init function)
+    bool                    IsInitialized() const { return initialized; }
 
                             /// Can disable ?
     virtual bool            CanDisable() const { return true; }
@@ -71,25 +71,25 @@ public:
                             /// Called in initialization
     virtual void            Init();
 
-                            //
+                            ///
     virtual void            Awake() {}
     
-                            //
+                            ///
     virtual void            Start() {}
 
-                            //
+                            ///
     virtual void            Update() {}
 
-                            //
+                            ///
     virtual void            LateUpdate() {}
 
-                            //
+                            ///
     virtual const AABB      GetAABB() { return AABB::zero; }
 
-                            //
+                            ///
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const { return false; }
 
-                            //
+                            ///
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) {}
 
 protected:
@@ -98,7 +98,6 @@ protected:
     void                    SetInitialized(bool init) { initialized = init; }
     void                    SetEntity(Entity *entity) { this->entity = entity; }
 
-    void                    Reload();
     void                    PropertyChanged(const char *classname, const char *propName);
 
     Entity *                entity;

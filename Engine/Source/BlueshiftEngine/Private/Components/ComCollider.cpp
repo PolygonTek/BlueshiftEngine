@@ -80,7 +80,7 @@ bool ComCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backF
 }
 
 void ComCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
     

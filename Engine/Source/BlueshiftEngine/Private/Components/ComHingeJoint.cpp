@@ -115,7 +115,7 @@ void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected)
 }
 
 void ComHingeJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

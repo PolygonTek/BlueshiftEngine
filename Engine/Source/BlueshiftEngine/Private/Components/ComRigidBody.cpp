@@ -323,7 +323,7 @@ void ComRigidBody::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComRigidBody::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
     

@@ -448,7 +448,7 @@ void ComCharacterController::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComCharacterController::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

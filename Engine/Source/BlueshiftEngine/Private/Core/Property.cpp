@@ -34,9 +34,6 @@ const Json::Value PropertySpec::ToJsonValue(PropertySpec::Type type, const Varia
     case PropertySpec::EnumType:
         value = var.As<int>();
         break;
-    case PropertySpec::ObjectType:
-        value = var.As<Guid>().ToString();
-        break;
     case PropertySpec::BoolType:
         value = var.As<bool>();
         break;
@@ -67,6 +64,9 @@ const Json::Value PropertySpec::ToJsonValue(PropertySpec::Type type, const Varia
     case PropertySpec::Mat3Type:
         value = var.As<Mat3>().ToString();
         break;
+    case PropertySpec::ObjectType:
+        value = var.As<Guid>().ToString();
+        break;
     default:
         assert(0);
         break;
@@ -89,10 +89,6 @@ Variant PropertySpec::ToVariant(PropertySpec::Type type, const char *value) {
     case PropertySpec::EnumType:
         out = atoi(value);
         break;
-    case PropertySpec::ObjectType: {
-        Guid guid = Guid::ParseString(value);
-        out = guid;
-        break; }
     case PropertySpec::BoolType:
         out = !Str::Cmp(value, "true");
         break;
@@ -140,6 +136,10 @@ Variant PropertySpec::ToVariant(PropertySpec::Type type, const char *value) {
         Mat3 mat3;
         sscanf(value, "%f %f %f %f %f %f %f %f %f", &mat3[0].x, &mat3[0].y, &mat3[0].z, &mat3[1].x, &mat3[1].y, &mat3[1].z, &mat3[2].x, &mat3[2].y, &mat3[2].z);
         out = mat3;
+        break; }
+    case PropertySpec::ObjectType: {
+        Guid guid = Guid::ParseString(value);
+        out = guid;
         break; }
     default:
         assert(0);
@@ -270,7 +270,7 @@ bool PropertySpec::ParseSpec(Lexer &lexer) {
 
     type = StringToType(typeStr);
 
-    Str enumSequence, metaObjectName;    
+    Str enumSequence, metaObjectName;
     if (type == PropertySpec::EnumType) {
         if (!lexer.ExpectTokenType(TokenType::TT_STRING, &enumSequence)) {
             return false;

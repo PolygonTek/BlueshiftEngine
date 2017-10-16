@@ -67,8 +67,8 @@ void ComScript::InitPropertySpec(Json::Value &jsonComponent) {
 void ComScript::InitPropertySpecImpl(const Guid &scriptGuid) {
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
 
-    sandboxName = GetGuid().ToString();
-
+    const Str sandboxName = GetGuid().ToString();
+    
     LoadScriptWithSandboxed(scriptPath, sandboxName);
 
     sandbox = LuaVM::State()[sandboxName];
@@ -189,16 +189,21 @@ void ComScript::Purge(bool chainPurge) {
 void ComScript::Init() {
     Component::Init();
 
-    // Sandboxes with component GUID string
+#ifndef NEW_PROPERTY_SYSTEM
+    Guid scriptGuid = props->Get("script").As<Guid>();
+
+    ChangeScript(scriptGuid);
+#endif
+
     sandboxName = GetGuid().ToString();
 
-    ChangeScript(props->Get("script").As<Guid>());
-
     if (sandbox.IsValid()) {
-        sandbox["owner"]["game_world"] = GetGameWorld();
-        sandbox["owner"]["entity"] = GetEntity();
-        sandbox["owner"]["name"] = GetEntity()->GetName();
-        sandbox["owner"]["transform"] = GetEntity()->GetTransform();
+        auto &owner = sandbox["owner"];
+
+        owner["game_world"] = GetGameWorld();
+        owner["entity"] = GetEntity();
+        owner["name"] = GetEntity()->GetName();
+        owner["transform"] = GetEntity()->GetTransform();
 
         LuaVM::State().Run();
     }
@@ -208,10 +213,14 @@ void ComScript::Init() {
 }
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {
-    // Disconnect from old script asset
+    // Disconnect with previously connected script asset
     if (scriptAsset) {
         scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        scriptAsset = nullptr;
     }
+
+    // Sandboxes with component GUID string
+    const Str sandboxName = GetGuid().ToString();
 
     LuaVM::State().SetToNil(sandboxName.c_str());
 
@@ -224,7 +233,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         return;
     }
 
-    // Need to script asset to be reloaded in Editor
+    // Need to script asset to be reloaded in editor
     Object *scriptObject = ScriptAsset::FindInstance(scriptGuid);
     if (scriptObject) {
         scriptAsset = scriptObject->Cast<ScriptAsset>();
@@ -237,7 +246,6 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     sandbox = LuaVM::State()[sandboxName];
 }
 
-
 static BE1::CVar lua_path(L"lua_path", L"", BE1::CVar::Archive, L"lua project path for debugging");
 
 bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandboxName) {
@@ -249,7 +257,7 @@ bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandbo
 
     Str name;
 #if 1
-    // NOTE: absolute file path is needed for Lua debugging    
+    // NOTE: absolute file path is needed for Lua debugging
     char *path = tombs(lua_path.GetString());
 
     if (path[0]) {
@@ -427,7 +435,7 @@ void ComScript::ScriptReloaded() {
 }
 
 void ComScript::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

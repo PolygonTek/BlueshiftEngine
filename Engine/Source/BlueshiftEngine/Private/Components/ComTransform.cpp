@@ -231,7 +231,7 @@ void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
 }
 
 void ComTransform::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

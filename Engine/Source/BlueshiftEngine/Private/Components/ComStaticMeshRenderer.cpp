@@ -59,9 +59,11 @@ void ComStaticMeshRenderer::Purge(bool chainPurge) {
 void ComStaticMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
-    // Set SceneEntity parameters
-    sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+#ifndef NEW_PROPERTY_SYSTEM
     sceneEntity.occluder = props->Get("occluder").As<bool>();
+#endif
+
+    sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
 
     // Mark as initialized
     SetInitialized(true);
@@ -93,7 +95,7 @@ void ComStaticMeshRenderer::SetOccluder(bool occluder) {
 }
 
 void ComStaticMeshRenderer::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

@@ -71,15 +71,9 @@ GameWorld *Component::GetGameWorld() const {
 }
 
 void Component::Init() {
-    Purge();
-
 #ifndef NEW_PROPERTY_SYSTEM
     enabled = props->Get("enabled").As<bool>();
 #endif
-}
-
-void Component::Reload() {
-    Init();
 }
 
 void Component::PropertyChanged(const char *classname, const char *propName) {

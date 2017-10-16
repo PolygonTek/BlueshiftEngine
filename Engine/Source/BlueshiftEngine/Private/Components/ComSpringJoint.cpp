@@ -79,6 +79,7 @@ void ComSpringJoint::Start() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
+    // Fill up a constraint description 
     PhysConstraintDesc desc;
     desc.type           = PhysConstraint::GenericSpring;
     desc.bodyA          = rigidBody->GetBody();
@@ -97,6 +98,8 @@ void ComSpringJoint::Start() {
 
     desc.collision      = collisionEnabled;
     desc.breakImpulse   = breakImpulse;
+
+    // Create a constraint by description
     constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);    
@@ -123,7 +126,7 @@ void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
 }
 
 void ComSpringJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

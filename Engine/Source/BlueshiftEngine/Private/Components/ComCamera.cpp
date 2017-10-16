@@ -67,10 +67,12 @@ void ComCamera::RegisterProperties() {
 }
 
 ComCamera::ComCamera() {
+    memset(&viewParms, 0, sizeof(viewParms));
+    view = nullptr;
+
     spriteHandle = -1;
     spriteMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
-    view = nullptr;
 
 #ifndef NEW_PROPERTY_SYSTEM
     Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCamera::PropertyChanged);
@@ -87,10 +89,10 @@ void ComCamera::Purge(bool chainPurge) {
         view = nullptr;
     }
 
-    for (int i = 0; i < sprite.customMaterials.Count(); i++) {
-        materialManager.ReleaseMaterial(sprite.customMaterials[i]);
+    for (int i = 0; i < sprite.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sprite.materials[i]);
     }
-    sprite.customMaterials.Clear();
+    sprite.materials.Clear();
 
     if (sprite.mesh) {
         meshManager.ReleaseMesh(sprite.mesh);
@@ -117,9 +119,9 @@ void ComCamera::Init() {
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    view = new SceneView;
-
-    memset(&viewParms, 0, sizeof(viewParms));
+    if (!view) {
+        view = new SceneView;
+    }
 
 #ifndef NEW_PROPERTY_SYSTEM
     order = props->Get("order").As<int>(); //
@@ -149,7 +151,7 @@ void ComCamera::Init() {
     viewParms.origin = transform->GetOrigin();
     viewParms.axis = transform->GetAxis();
 
-    // 3d sprite
+    // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
     memset(&sprite, 0, sizeof(sprite));
@@ -158,8 +160,8 @@ void ComCamera::Init() {
     sprite.billboard = true;
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
-    sprite.customMaterials.SetCount(1);
-    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.materials.SetCount(1);
+    sprite.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
     
     sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
@@ -186,12 +188,14 @@ void ComCamera::SetEnable(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             UpdateVisuals();
+
             Component::SetEnable(true);
         }
     } else {
         if (IsEnabled()) {
             renderWorld->RemoveEntity(spriteHandle);
             spriteHandle = -1;
+
             Component::SetEnable(false);
         }
     }
@@ -268,7 +272,7 @@ void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
 
-    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
+    sprite.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComCamera::GetAABB() {
@@ -425,12 +429,14 @@ void ComCamera::RenderScene() {
 }
 
 void ComCamera::UpdateVisuals() {
-    if (IsInitalized()) {
-        if (spriteHandle == -1) {
-            spriteHandle = renderWorld->AddEntity(&sprite);
-        } else {
-            renderWorld->UpdateEntity(spriteHandle, &sprite);
-        }
+    if (!IsInitialized() || !IsEnabled()) {
+        return;
+    }
+
+    if (spriteHandle == -1) {
+        spriteHandle = renderWorld->AddEntity(&sprite);
+    } else {
+        renderWorld->UpdateEntity(spriteHandle, &sprite);
     }
 }
 
@@ -444,7 +450,7 @@ void ComCamera::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComCamera::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

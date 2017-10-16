@@ -88,7 +88,7 @@ void ComMeshCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selecte
 }
 
 void ComMeshCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

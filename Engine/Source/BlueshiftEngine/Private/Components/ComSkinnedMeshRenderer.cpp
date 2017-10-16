@@ -167,9 +167,10 @@ void ComSkinnedMeshRenderer::ChangeAnimationType() {
 }
 
 void ComSkinnedMeshRenderer::ChangeAnimController() {
-    // Disconnect from old animation controller asset
+    // Disconnect with previously connected animation controller asset
     if (animControllerAsset) {
         animControllerAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        animControllerAsset = nullptr;
     }
 
     // Set new animation controller
@@ -188,9 +189,10 @@ void ComSkinnedMeshRenderer::ChangeAnimController() {
 }
 
 void ComSkinnedMeshRenderer::ChangeSkeleton() {
-    // Disconnect from old skeleton asset
+    // Disconnect with previously connected skeleton asset
     if (skeletonAsset) {
         skeletonAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        skeletonAsset = nullptr;
     }
 
     if (skeleton) {
@@ -241,11 +243,13 @@ void ComSkinnedMeshRenderer::ChangeSkeleton() {
 }
 
 void ComSkinnedMeshRenderer::ChangeAnim() {
-    // Disconnect from old anim asset
+    // Disconnect with previously connected anim asset
     if (animAsset) {
         animAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        animAsset = nullptr;
     }
 
+    // Release the previously used anim
     if (anim) {
         animManager.ReleaseAnim(anim);
         anim = nullptr;
@@ -299,6 +303,10 @@ void ComSkinnedMeshRenderer::Update() {
 }
 
 void ComSkinnedMeshRenderer::UpdateVisuals() {
+    if (!IsInitialized() || !IsEnabled()) {
+        return;
+    }
+
     int currentTime = GetGameWorld()->GetTime();
 
     UpdateAnimation(currentTime);
@@ -399,7 +407,7 @@ void ComSkinnedMeshRenderer::AnimReloaded() {
 }
 
 void ComSkinnedMeshRenderer::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
+    if (!IsInitialized()) {
         return;
     }
 

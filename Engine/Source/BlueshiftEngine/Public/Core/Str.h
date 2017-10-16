@@ -79,8 +79,12 @@ public:
     explicit Str(const char c);
     /// Constructs from an integer.
     explicit Str(const int i);
+    /// Constructs from an 64 bits integer.
+    explicit Str(const int64_t i);
     /// Constructs from an unsigned integer.
     explicit Str(const unsigned u);
+    /// Constructs from an unsigned 64 bits integer.
+    explicit Str(const uint64_t u);
     /// Constructs from a float.
     explicit Str(const float f);
     /// Assign a string.
@@ -473,9 +477,25 @@ BE_INLINE Str::Str(const int i) : Str() {
     len = l;
 }
 
+BE_INLINE Str::Str(const int64_t i) : Str() {
+    char text[64];
+    int l = Str::snPrintf(text, sizeof(text), "%lli", i);
+    EnsureAlloced(l + 1, false);
+    strcpy(data, text);
+    len = l;
+}
+
 BE_INLINE Str::Str(const unsigned u) : Str() {
     char text[64];
     int l = Str::snPrintf(text, sizeof(text), "%u", u);
+    EnsureAlloced(l + 1, false);
+    strcpy(data, text);
+    len = l;
+}
+
+BE_INLINE Str::Str(const uint64_t u) : Str() {
+    char text[64];
+    int l = Str::snPrintf(text, sizeof(text), "%llu", u);
     EnsureAlloced(l + 1, false);
     strcpy(data, text);
     len = l;

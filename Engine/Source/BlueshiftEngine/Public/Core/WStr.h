@@ -82,8 +82,12 @@ public:
     explicit WStr(const wchar_t c);
     /// Construct from an integer.
     explicit WStr(const int i);
+    /// Construct from an 64 bits integer.
+    explicit WStr(const int64_t i);
     /// Construct from an unsigned integer.
     explicit WStr(const unsigned u);
+    /// Construct from an unsigned 64 bits integer.
+    explicit WStr(const uint64_t u);
     /// Construct from a float.
     explicit WStr(const float f);
     /// Assign a wide string.
@@ -481,9 +485,25 @@ BE_INLINE WStr::WStr(const int i) : WStr() {
     len = l;
 }
 
+BE_INLINE WStr::WStr(const int64_t i) : WStr() {
+    wchar_t text[64];
+    int l = WStr::snPrintf(text, COUNT_OF(text), L"%lli", i);
+    EnsureAlloced(l + 1, false);
+    wcscpy(data, text);
+    len = l;
+}
+
 BE_INLINE WStr::WStr(const unsigned u) : WStr() {
     wchar_t text[64];
     int l = WStr::snPrintf(text, COUNT_OF(text), L"%u", u);
+    EnsureAlloced(l + 1, false);
+    wcscpy(data, text);
+    len = l;
+}
+
+BE_INLINE WStr::WStr(const uint64_t u) : WStr() {
+    wchar_t text[64];
+    int l = WStr::snPrintf(text, COUNT_OF(text), L"%llu", u);
     EnsureAlloced(l + 1, false);
     wcscpy(data, text);
     len = l;

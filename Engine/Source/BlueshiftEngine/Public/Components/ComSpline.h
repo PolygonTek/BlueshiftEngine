@@ -43,6 +43,9 @@ public:
     ObjectRefArray          GetPointsRef() const;
     void                    SetPointsRef(const ObjectRefArray &pointsRef);
 
+    bool                    IsLoop() const;
+    void                    SetLoop(bool loop);
+
 protected:
     void                    UpdateCurve();
     void                    PropertyChanged(const char *classname, const char *propName);
