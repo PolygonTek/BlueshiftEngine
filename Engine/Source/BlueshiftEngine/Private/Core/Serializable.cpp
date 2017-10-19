@@ -41,29 +41,28 @@ const char *Properties::GetName(int index) const {
     return key.c_str();
 }
 
-const PropertyInfo *Properties::GetInfo(const char *specname) const {
-    const PropertyInfo *propInfo = nullptr;
+bool Properties::GetInfo(const char *specname, PropertyInfo &propertyInfo) const {
     char basename[2048];
 
-    if (specname && specname[0]) {
-        const char *realSpecName = specname;
-
-        int index = Str::FindChar(specname, '[');
-        if (index >= 0) {
-            Str::Copynz(basename, specname, index + 1);
-            realSpecName = basename;
-        }
-
-        propInfo = owner->FindPropertyInfo(realSpecName);
+    if (!specname || !specname[0]) {
+        return false;
     }
 
-    return propInfo;
+    const char *realSpecName = specname;
+
+    int index = Str::FindChar(specname, '[');
+    if (index >= 0) {
+        Str::Copynz(basename, specname, index + 1);
+        realSpecName = basename;
+    }
+
+    return owner->FindPropertyInfo(realSpecName, propertyInfo);
 }
 
-const PropertyInfo *Properties::GetInfo(int index) const {
+bool Properties::GetInfo(int index, PropertyInfo &propertyInfo) const {
     const Str &key = propertyHashMap.GetKey(index);
     const char *name = key.c_str();
-    return GetInfo(name);
+    return GetInfo(name, propertyInfo);
 }
 
 int Properties::NumElements(const char *name) const {
@@ -110,12 +109,12 @@ void Properties::SetFlags(const char *name, int flags) {
 }
 
 void Properties::Init(const Properties *props) {
-    Array<const PropertyInfo *> propertyInfos;
+    Array<PropertyInfo> propertyInfos;
     owner->GetPropertyInfoList(propertyInfos);
 
     for (int i = 0; i < propertyInfos.Count(); i++) {
-        const PropertyInfo *propInfo = propertyInfos[i];
-        const char *key = propInfo->GetName();
+        const PropertyInfo &propInfo = propertyInfos[i];
+        const char *key = propInfo.GetName();
         const auto &value = props->Get(key);
 
         Set(key, value, true);
@@ -123,20 +122,20 @@ void Properties::Init(const Properties *props) {
 }
 
 void Properties::Init(const Json::Value &node) {
-    Array<const PropertyInfo *> propertyInfos;
+    Array<PropertyInfo> propertyInfos;
     owner->GetPropertyInfoList(propertyInfos);
 
     for (int i = 0; i < propertyInfos.Count(); i++) {
-        const PropertyInfo *propInfo = propertyInfos[i];
+        const PropertyInfo &propInfo = propertyInfos[i];
 
         // variable name
-        const Str name = propInfo->GetName();
+        const Str name = propInfo.GetName();
         // variable type
-        const PropertyInfo::Type type = propInfo->GetType();
+        const PropertyInfo::Type type = propInfo.GetType();
         // defalut value in C string
-        const char *defaultValue = propInfo->GetDefaultValue();
+        const char *defaultValue = propInfo.GetDefaultValue();
 
-        if (propInfo->GetFlags() & PropertyInfo::IsArray) {
+        if (propInfo.GetFlags() & PropertyInfo::IsArray) {
             Json::Value subNode = node.get(name, Json::Value());
 
             SetNumElements(name, subNode.size());
@@ -163,7 +162,7 @@ void Properties::Init(const Json::Value &node) {
                     break; }
                 case PropertyInfo::ObjectType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue);
-                    Guid guid = Guid::ParseString(value.asCString());
+                    Guid guid = Guid::FromString(value.asCString());
                     Set(elementName, guid, true);
                     break; }
                 case PropertyInfo::BoolType: {
@@ -259,7 +258,7 @@ void Properties::Init(const Json::Value &node) {
                 break; }
             case PropertyInfo::ObjectType: {
                 const Json::Value value = node.get(name, defaultValue);
-                Guid guid = Guid::ParseString(value.asCString());
+                Guid guid = Guid::FromString(value.asCString());
                 Set(name, guid, true);
                 break; }
             case PropertyInfo::BoolType: {
@@ -339,26 +338,26 @@ void Properties::Init(const Json::Value &node) {
 }
 
 bool Properties::GetDefaultValue(const char *name, Variant &out) const {
-    const PropertyInfo *propInfo = GetInfo(name);
-    if (!propInfo) {
+    PropertyInfo propInfo;
+    if (!GetInfo(name, propInfo)) {
         BE_WARNLOG(L"invalid property name '%hs'\n", name);
         out.Clear();
         return false;
     }
 
-    out = PropertyInfo::ToVariant(propInfo->GetType(), propInfo->GetDefaultValue());
+    out = PropertyInfo::ToVariant(propInfo.GetType(), propInfo.GetDefaultValue());
     return true;
 }
 
 bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
-    const PropertyInfo *propInfo = GetInfo(name);
-    if (!propInfo) {
+    PropertyInfo propInfo;
+    if (!GetInfo(name, propInfo)) {
         BE_WARNLOG(L"invalid property name '%hs'\n", name);
         out.Clear();
         return false;
     }
 
-    if (!forceRead && !(propInfo->GetFlags() & PropertyInfo::Readable)) {
+    if (!forceRead && !(propInfo.GetFlags() & PropertyInfo::Readable)) {
         return false;
     }
     
@@ -392,7 +391,7 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
 #else
     const auto *entry = propertyHashMap.Get(name);
     if (!entry) {
-        out = PropertyInfo::ToVariant(propInfo->GetType(), propInfo->GetDefaultValue());
+        out = PropertyInfo::ToVariant(propInfo.GetType(), propInfo.GetDefaultValue());
         return true;
     }
 
@@ -402,14 +401,14 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
 }
 
 bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
-    const PropertyInfo *propInfo = GetInfo(name);
-    if (!propInfo) {
+    PropertyInfo propertyInfo;
+    if (!GetInfo(name, propertyInfo)) {
         BE_WARNLOG(L"invalid property name '%hs'\n", name);
         return false;
     }
 
     // You can force to write value even though property has read only flag.
-    if (!forceWrite && !(propInfo->GetFlags() & PropertyInfo::Writable)) {
+    if (!forceWrite && !(propertyInfo.GetFlags() & PropertyInfo::Writable)) {
         return false;
     }
 
@@ -417,25 +416,25 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
     float minValue;
     float maxValue;
 
-    if (propInfo->GetFlags() & PropertyInfo::Ranged) {
-        minValue = propInfo->GetMinValue();
-        maxValue = propInfo->GetMaxValue();
+    if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        minValue = propertyInfo.GetMinValue();
+        maxValue = propertyInfo.GetMaxValue();
     }
 
-    switch (propInfo->GetType()) {
+    switch (propertyInfo.GetType()) {
     case PropertyInfo::StringType: 
         newVar = var.As<Str>();
         break;
     case PropertyInfo::FloatType: {
         float f = var.As<float>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(f, minValue, maxValue);
         }
         newVar = f;
         break; }
     case PropertyInfo::IntType: {
         int i = var.As<int>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(i, (int)minValue, (int)maxValue);
         }
         newVar = i;
@@ -451,7 +450,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         break;
     case PropertyInfo::PointType: {
         Point pt = var.As<Point>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(pt.x, (int)minValue, (int)maxValue);
             Clamp(pt.y, (int)minValue, (int)maxValue);
         }
@@ -459,7 +458,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         break; }
     case PropertyInfo::RectType: {
         Rect rect = var.As<Rect>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(rect.x, (int)minValue, (int)maxValue);
             Clamp(rect.y, (int)minValue, (int)maxValue);
             Clamp(rect.w, (int)minValue, (int)maxValue);
@@ -469,7 +468,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         break; }
     case PropertyInfo::Vec2Type: {
         Vec2 vec2 = var.As<Vec2>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(vec2.x, minValue, maxValue);
             Clamp(vec2.y, minValue, maxValue);
         }
@@ -477,7 +476,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         break; }
     case PropertyInfo::Vec3Type: {
         Vec3 vec3 = var.As<Vec3>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(vec3.x, minValue, maxValue);
             Clamp(vec3.y, minValue, maxValue);
             Clamp(vec3.z, minValue, maxValue);
@@ -486,7 +485,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         break; }
     case PropertyInfo::Vec4Type: {
         Vec4 vec4 = var.As<Vec4>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(vec4.x, minValue, maxValue);
             Clamp(vec4.y, minValue, maxValue);
             Clamp(vec4.z, minValue, maxValue);
@@ -496,7 +495,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         break; }
     case PropertyInfo::Color3Type: {
         Color3 color3 = var.As<Color3>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(color3.r, minValue, maxValue);
             Clamp(color3.g, minValue, maxValue);
             Clamp(color3.b, minValue, maxValue);
@@ -505,7 +504,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         break; }
     case PropertyInfo::Color4Type: {
         Color4 color4 = var.As<Color4>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(color4.r, minValue, maxValue);
             Clamp(color4.g, minValue, maxValue);
             Clamp(color4.b, minValue, maxValue);
@@ -515,7 +514,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         break; }
     case PropertyInfo::AnglesType: {
         Angles angles = var.As<Angles>();
-        if (propInfo->GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(angles[0], minValue, maxValue);
             Clamp(angles[1], minValue, maxValue);
             Clamp(angles[2], minValue, maxValue);
@@ -571,16 +570,16 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
 }
 
 const Json::Value Properties::Deserialize() const {
-    Array<const PropertyInfo *> propertyInfos;
+    Array<PropertyInfo> propertyInfos;
     Json::Value node;
     
     owner->GetPropertyInfoList(propertyInfos);
  
     for (int i = 0; i < propertyInfos.Count(); i++) {
-        const PropertyInfo *propInfo = propertyInfos[i];
-        const Str name = propInfo->GetName();
+        const PropertyInfo &propInfo = propertyInfos[i];
+        const Str name = propInfo.GetName();
 
-        if (propInfo->GetFlags() & PropertyInfo::IsArray) {
+        if (propInfo.GetFlags() & PropertyInfo::IsArray) {
             node[name] = Json::arrayValue;
 
             for (int elementIndex = 0; elementIndex < NumElements(name); elementIndex++) {
@@ -589,13 +588,13 @@ const Json::Value Properties::Deserialize() const {
                 Variant var;
                 Get(elementName, var, true);
 
-                node[name][elementIndex] = PropertyInfo::ToJsonValue(propInfo->GetType(), var);
+                node[name][elementIndex] = PropertyInfo::ToJsonValue(propInfo.GetType(), var);
             }
         } else {
             Variant var;
             Get(name, var, true);
 
-            node[name] = PropertyInfo::ToJsonValue(propInfo->GetType(), var);
+            node[name] = PropertyInfo::ToJsonValue(propInfo.GetType(), var);
         }
     }
 
@@ -603,19 +602,19 @@ const Json::Value Properties::Deserialize() const {
 }
 
 void Properties::Serialize(Json::Value &out) const {
-    Array<const PropertyInfo *> propertyInfos;
+    Array<PropertyInfo> propertyInfos;
     
     owner->GetPropertyInfoList(propertyInfos);
 
     for (int i = 0; i < propertyInfos.Count(); i++) {
-        const PropertyInfo *propInfo = propertyInfos[i];
-        const Str name = propInfo->GetName();
+        const PropertyInfo &propInfo = propertyInfos[i];
+        const Str name = propInfo.GetName();
 
-        if (propInfo->GetFlags() & PropertyInfo::SkipSerialization) {
+        if (propInfo.GetFlags() & PropertyInfo::SkipSerialization) {
             continue;
         }
 
-        if (propInfo->GetFlags() & PropertyInfo::IsArray) {
+        if (propInfo.GetFlags() & PropertyInfo::IsArray) {
             out[name] = Json::arrayValue;
 
             for (int elementIndex = 0; elementIndex < NumElements(name); elementIndex++) {
@@ -624,13 +623,13 @@ void Properties::Serialize(Json::Value &out) const {
                 Variant var;
                 Get(elementName, var, true);
 
-                out[name][elementIndex] = PropertyInfo::ToJsonValue(propInfo->GetType(), var);
+                out[name][elementIndex] = PropertyInfo::ToJsonValue(propInfo.GetType(), var);
             }
         } else {
             Variant var;
             Get(name, var, true);
 
-            out[name] = PropertyInfo::ToJsonValue(propInfo->GetType(), var);
+            out[name] = PropertyInfo::ToJsonValue(propInfo.GetType(), var);
         }
     }
 }

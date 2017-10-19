@@ -31,7 +31,7 @@ public:
 
     void                    InitPropertyInfo(Json::Value &jsonComponent);
 
-    virtual void            GetPropertyInfoList(Array<const PropertyInfo *> &pspecs) const override;
+    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const override;
 
     virtual bool            AllowSameComponent() const override { return true; }
 
@@ -80,7 +80,7 @@ public:
 
 protected:
     void                    InitPropertyInfoImpl(const Guid &scriptGuid);
-    bool                    LoadScriptWithSandboxed(const char *filename, const char *sandboxName);
+    bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
     void                    SetScriptProperties();
 
     void                    ChangeScript(const Guid &scriptGuid);
@@ -92,7 +92,12 @@ protected:
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
 
-    Array<const PropertyInfo *> scriptPropertyInfos;
+#ifdef NEW_PROPERTY_SYSTEM
+    Array<PropertyInfo>     fieldInfos;
+#else
+    Array<const PropertyInfo *> fieldInfos;
+#endif
+    HashMap<Str, Variant>   fieldValues;
 };
 
 template <typename... Args>

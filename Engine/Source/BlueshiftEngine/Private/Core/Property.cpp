@@ -138,7 +138,7 @@ Variant PropertyInfo::ToVariant(PropertyInfo::Type type, const char *value) {
         out = mat3;
         break; }
     case PropertyInfo::ObjectType: {
-        Guid guid = Guid::ParseString(value);
+        Guid guid = Guid::FromString(value);
         out = guid;
         break; }
     default:

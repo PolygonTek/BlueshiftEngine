@@ -84,12 +84,12 @@ bool Skin::Create(const char *text) {
             if (!token.Cmp("_all")) {
                 skinMapping.from = nullptr;
             } else {
-                const Guid fromGuid = Guid::ParseString(token);
+                const Guid fromGuid = Guid::FromString(token);
                 const Str fromPath = resourceGuidMapper.Get(fromGuid);
                 skinMapping.from = materialManager.GetMaterial(fromPath);
             }
 
-            const Guid toGuid = Guid::ParseString(token2);
+            const Guid toGuid = Guid::FromString(token2);
             const Str toPath = resourceGuidMapper.Get(toGuid);
             skinMapping.to = materialManager.GetMaterial(toPath);
             

@@ -65,12 +65,12 @@ Entity::~Entity() {
 }
 
 Entity *Entity::CreateEntity(Json::Value &entityValue) {
-    Guid entityGuid = Guid::ParseString(entityValue.get("guid", Guid::zero.ToString()).asCString());
+    Guid entityGuid = Guid::FromString(entityValue.get("guid", Guid::zero.ToString()).asCString());
     if (entityGuid.IsZero()) {
         entityValue["guid"] = Guid::CreateGuid().ToString();
     }
 
-    entityGuid = Guid::ParseString(entityValue["guid"].asCString());
+    entityGuid = Guid::FromString(entityValue["guid"].asCString());
 
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
     entity->props->Init(entityValue);
@@ -88,15 +88,16 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
 
         if (metaComponent) {
             if (metaComponent->IsTypeOf(Component::metaObject)) {
-                Guid componentGuid = Guid::ParseString(componentValue.get("guid", Guid::zero.ToString()).asCString());
+                Guid componentGuid = Guid::FromString(componentValue.get("guid", Guid::zero.ToString()).asCString());
                 if (componentGuid.IsZero()) {
                     componentValue["guid"] = Guid::CreateGuid().ToString();
                 }
 
-                componentGuid = Guid::ParseString(componentValue["guid"].asCString());
+                componentGuid = Guid::FromString(componentValue["guid"].asCString());
 
                 Component *component = static_cast<Component *>(metaComponent->CreateInstance(componentGuid));
 
+                // Initialize property infos for script a component
                 if (metaComponent->IsTypeOf(ComScript::metaObject)) {
                     ComScript *scriptComponent = component->Cast<ComScript>();
                     scriptComponent->InitPropertyInfo(componentValue);
@@ -119,7 +120,7 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
 Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap) {
     Json::Value newEntityValue = entityValue;
 
-    Guid oldEntityGuid = Guid::ParseString(entityValue["guid"].asCString());
+    Guid oldEntityGuid = Guid::FromString(entityValue["guid"].asCString());
     Guid newEntityGuid = Guid::CreateGuid();
 
     //BE_LOG(L"NewGUID %hs: %hs -> %hs\n", entityValue["name"].asCString(), oldEntityGuid.ToString(), newEntityGuid.ToString());
@@ -131,7 +132,7 @@ Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<G
     Json::Value &componentsValue = newEntityValue["components"];
 
     for (int i = 0; i < componentsValue.size(); i++) {
-        Guid oldComponentGuid = Guid::ParseString(componentsValue[i]["guid"].asCString());
+        Guid oldComponentGuid = Guid::FromString(componentsValue[i]["guid"].asCString());
         Guid newComponentGuid = Guid::CreateGuid();
 
         oldToNewGuidMap.Set(oldComponentGuid, newComponentGuid);
@@ -143,20 +144,22 @@ Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<G
 }
 
 void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &guidMap) {
+    PropertyInfo propInfo;
+    Guid mappedGuid;
+
     for (int i = 0; i < entities.Count(); i++) {
         Entity *ent = entities[i];
 
         for (int propIndex = 0; propIndex < ent->props->Count(); propIndex++) {
-            const PropertyInfo *propInfo = ent->props->GetInfo(propIndex);
+            if (ent->props->GetInfo(propIndex, propInfo)) {
+                if (propInfo.GetType() == PropertyInfo::ObjectType) {
+                    const Guid objectGuid = ent->props->Get(propInfo.GetName()).As<Guid>();
 
-            if (propInfo->GetType() == PropertyInfo::ObjectType) {
-                const Guid objectGuid = ent->props->Get(propInfo->GetName()).As<Guid>();
-                Guid mappedGuid;
+                    if (guidMap.Get(objectGuid, &mappedGuid)) {
+                        //BE_LOG(L"Remap %hs %hs: %hs -> %hs\n", ent->GetName(), propInfo->GetName(), objectGuid.ToString(), mappedGuidPtr->ToString());
 
-                if (guidMap.Get(objectGuid, &mappedGuid)) {
-                    //BE_LOG(L"Remap %hs %hs: %hs -> %hs\n", ent->GetName(), propInfo->GetName(), objectGuid.ToString(), mappedGuidPtr->ToString());
-
-                    ent->props->Set(propInfo->GetName(), mappedGuid);
+                        ent->props->Set(propInfo.GetName(), mappedGuid);
+                    }
                 }
             }
         }
@@ -165,14 +168,13 @@ void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &g
             Component *component = ent->GetComponent(componentIndex);
 
             for (int propIndex = 0; propIndex < component->props->Count(); propIndex++) {
-                const PropertyInfo *propInfo = component->props->GetInfo(propIndex);
+                if (component->props->GetInfo(propIndex, propInfo)) {
+                    if (propInfo.GetType() == PropertyInfo::ObjectType) {
+                        const Guid objectGuid = component->props->Get(propInfo.GetName()).As<Guid>();
 
-                if (propInfo->GetType() == PropertyInfo::ObjectType) {
-                    const Guid objectGuid = component->props->Get(propInfo->GetName()).As<Guid>();
-                    Guid mappedGuid;
-
-                    if (guidMap.Get(objectGuid, &mappedGuid)) {
-                        component->props->Set(propInfo->GetName(), mappedGuid);
+                        if (guidMap.Get(objectGuid, &mappedGuid)) {
+                            component->props->Set(propInfo.GetName(), mappedGuid);
+                        }
                     }
                 }
             }

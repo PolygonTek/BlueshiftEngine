@@ -138,10 +138,10 @@ public:
     bool                        IsRespondsTo(const EventDef &evdef) const;
 
                                 /// Finds property info including parent meta object.
-    const PropertyInfo *        FindPropertyInfo(const char *name) const;
+    bool                        FindPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
 
                                 /// Returns property info list including parent meta object.
-    void                        GetPropertyInfoList(Array<const PropertyInfo *> &pspecs) const;
+    void                        GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const;
 
                                 /// 
 #ifdef NEW_PROPERTY_SYSTEM
@@ -160,10 +160,10 @@ private:
     MetaObject *                super;
     MetaObject *                next;
 
-#ifndef NEW_PROPERTY_SYSTEM
-    PropertyInfo *              propertyInfos;
-#else
+#ifdef NEW_PROPERTY_SYSTEM
     Array<PropertyInfo>         propertyInfos;
+#else
+    PropertyInfo *              propertyInfos;
 #endif
     HashIndex                   propertyInfoHash;
 
@@ -230,11 +230,11 @@ public:
                                 /// Cancels a event in event queue
     void                        CancelEvents(const EventDef *evdef);
 
-    const PropertyInfo *        FindPropertyInfo(const char *name) const;
+    bool                        FindPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
 
     Properties *                GetProperties() const { return props; }
 
-    virtual void                GetPropertyInfoList(Array<const PropertyInfo *> &pspecs) const { GetMetaObject()->GetPropertyInfoList(pspecs); }
+    virtual void                GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const { GetMetaObject()->GetPropertyInfoList(propertyInfos); }
     
     static void                 Init();
     static void                 Shutdown();

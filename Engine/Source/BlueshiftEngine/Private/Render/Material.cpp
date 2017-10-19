@@ -144,7 +144,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
             }
         } else if (!token.Icmp("shader")) {
             if (lexer.ReadToken(&token, false)) {
-                const Guid shaderGuid = Guid::ParseString(token);
+                const Guid shaderGuid = Guid::FromString(token);
                 const Str shaderPath = resourceGuidMapper.Get(shaderGuid);
                 pass->referenceShader = shaderManager.GetShader(shaderPath);
 
@@ -192,7 +192,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
             }
         } else if (!token.Icmp("map")) {
             if (lexer.ReadToken(&token, false)) {
-                const Guid textureGuid = Guid::ParseString(token);
+                const Guid textureGuid = Guid::FromString(token);
                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
                 pass->texture = textureManager.GetTexture(texturePath);
             } else {

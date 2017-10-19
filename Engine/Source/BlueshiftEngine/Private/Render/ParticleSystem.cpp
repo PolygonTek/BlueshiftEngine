@@ -280,7 +280,7 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
             ParseOrientation(lexer, &module.orientation);
         } else if (!token.Icmp("material")) {
             if (lexer.ReadToken(&token, false)) {
-                const Guid materialGuid = Guid::ParseString(token);
+                const Guid materialGuid = Guid::FromString(token);
                 const Str materialPath = resourceGuidMapper.Get(materialGuid);
                 module.material = materialManager.GetMaterial(materialPath);
             } else {

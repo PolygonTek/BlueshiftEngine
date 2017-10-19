@@ -172,9 +172,9 @@ void MetaObject::Shutdown() {
     lastChildIndex = 0;
 }
 
-const PropertyInfo *MetaObject::FindPropertyInfo(const char *name) const {
+bool MetaObject::FindPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
     if (!name || !name[0]) {
-        return nullptr;
+        return false;
     }
 
     int hash = propertyInfoHash.GenerateHash(name, false);
@@ -182,26 +182,39 @@ const PropertyInfo *MetaObject::FindPropertyInfo(const char *name) const {
     for (const MetaObject *t = this; t != nullptr; t = t->super) {	
         for (int i = t->propertyInfoHash.First(hash); i != -1; i = t->propertyInfoHash.Next(i)) {
             if (!Str::Icmp(t->propertyInfos[i].name, name)) {
-                return &t->propertyInfos[i];
+                propertyInfo = t->propertyInfos[i];
+                return true;
             }
         }
     }
 
-    return nullptr;
+    return false;
 }
 
-void MetaObject::GetPropertyInfoList(Array<const PropertyInfo *> &propertyInfos) const {
+void MetaObject::GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const {
     Array<Str> names;
 
-    propertyInfos.Clear();
-
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
-        for (const PropertyInfo *propInfo = t->propertyInfos; propInfo->flags != PropertyInfo::Empty; propInfo++) {            
-            if (!names.Find(propInfo->GetName())) {
-                names.Append(propInfo->GetName());
+#ifdef NEW_PROPERTY_SYSTEM
+        for (int index = 0; index < t->propertyInfos.Count(); index++) {
+            const PropertyInfo &propInfo = t->propertyInfos[index];
+            const char *propName = propInfo.GetName();
+
+            if (!names.Find(propName)) {
+                names.Append(propName);
                 propertyInfos.Append(propInfo);
             }
         }
+#else
+        for (const PropertyInfo *propInfo = t->propertyInfos; propInfo->flags != PropertyInfo::Empty; propInfo++) {
+            const char *propName = propInfo->GetName();
+
+            if (!names.Find(propName)) {
+                names.Append(propName);
+                propertyInfos.Append(*propInfo);
+            }
+        }
+#endif
     }
 }
 
@@ -400,17 +413,18 @@ Object *Object::FindInstance(const Guid &guid) {
     return instance;
 }
 
-const PropertyInfo *Object::FindPropertyInfo(const char *name) const {
-    Array<const PropertyInfo *> propertyInfos;
+bool Object::FindPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
+    Array<PropertyInfo> propertyInfos;
     GetPropertyInfoList(propertyInfos);
 
     for (int i = 0; i < propertyInfos.Count(); i++) {
-        if (!Str::Cmp(propertyInfos[i]->GetName(), name)) {
-            return propertyInfos[i];
+        if (!Str::Cmp(propertyInfos[i].GetName(), name)) {
+            propertyInfo = propertyInfos[i];
+            return true;
         }
     }
 
-    return nullptr;
+    return false;
 }
 
 void Object::ListClasses(const CmdArgs &args) {

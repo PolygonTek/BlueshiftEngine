@@ -49,17 +49,26 @@ ComScript::ComScript() {
 ComScript::~ComScript() {
     Purge(false);
 
-    scriptPropertyInfos.DeleteContents(true);
+#ifdef NEW_PROPERTY_SYSTEM
+    fieldInfos.Clear();
+#else
+    fieldInfos.DeleteContents(true);
+#endif
 }
 
-void ComScript::GetPropertyInfoList(Array<const PropertyInfo *> &pspecs) const {
-    Component::GetPropertyInfoList(pspecs);
+void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
+    Component::GetPropertyInfoList(propInfos);
 
-    pspecs.AppendList(scriptPropertyInfos);
+#ifndef NEW_PROPERTY_SYSTEM
+    for (int index = 0; index < fieldInfos.Count(); index++) {
+        propInfos.Append(*fieldInfos[index]);
+    }
+#endif
 }
 
 void ComScript::InitPropertyInfo(Json::Value &jsonComponent) {
-    const Guid scriptGuid = Guid::ParseString(jsonComponent.get("script", Guid::zero.ToString()).asCString());
+    const Str scriptGuidString = jsonComponent.get("script", Guid::zero.ToString()).asCString();
+    const Guid scriptGuid = Guid::FromString(scriptGuidString);
 
     InitPropertyInfoImpl(scriptGuid);
 }
@@ -69,108 +78,267 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
 
     const Str sandboxName = GetGuid().ToString();
     
-    LoadScriptWithSandboxed(scriptPath, sandboxName);
+    // Load a script with sandboxed on current Lua state
+    LoadScriptWithSandbox(scriptPath, sandboxName);
 
+    // Get the state of current loaded script
     sandbox = LuaVM::State()[sandboxName];
 
+    // Run this 
     LuaVM::State().Run();
 
-    scriptPropertyInfos.Clear();
+    fieldInfos.Clear();
+    
+    fieldValues.Clear();
 
+    // Get the script property informations with this sandboxed script
     if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
         auto enumerator = [this](LuaCpp::Selector &selector) {
             const char *name = selector;
-            auto prop = sandbox["properties"][name];
-            const char *label = prop["label"];
-            const char *desc = prop["description"];
-            const char *type = prop["type"];
+            auto props = sandbox["properties"][name];
+            const char *label = props["label"];
+            const char *desc = props["description"];
+            const char *type = props["type"];
 
             if (!label) {
                 label = name;
             }
 
             if (!Str::Cmp(type, "string")) {
-                const char *value = prop["value"];
-                scriptPropertyInfos.Append(new PROPERTY_STRING(name, label, desc, value, PropertyInfo::ReadWrite));
+#ifdef NEW_PROPERTY_SYSTEM
+                Str value = (const char *)props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Str>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Str>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Str value = (const char *)props["value"];
+                fieldInfos.Append(new PROPERTY_STRING(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "enum")) {
-                const char *sequence = prop["sequence"];
-                Str value = Str((int)prop["value"]);
-                scriptPropertyInfos.Append(new PROPERTY_ENUM(name, label, desc, sequence, value.c_str(), PropertyInfo::ReadWrite));
+#ifdef NEW_PROPERTY_SYSTEM
+                int value = props["value"];
+                const char *enumSequence = props["sequence"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyInfo::Enum(enumSequence), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                const char *sequence = props["sequence"];
+                Str value = Str((int)props["value"]);
+                fieldInfos.Append(new PROPERTY_ENUM(name, label, desc, sequence, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "float")) {
-                Str value = Str((float)prop["value"]);
-                if (prop["minimum"].LuaType() == LUA_TNUMBER && prop["maximum"].LuaType() == LUA_TNUMBER) {
-                    float minimum = prop["minimum"];
-                    float maximum = prop["maximum"];
-                    float step = prop["step"];
+#ifdef NEW_PROPERTY_SYSTEM
+                float value = props["value"];
+                fieldValues.Set(name, value);
+
+                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
+                    float minimum = props["minimum"];
+                    float maximum = props["maximum"];
+                    float step = props["step"];
 
                     Rangef range(minimum, maximum, step);
                     if (step == 0.0f) {
                         range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
                     }
-                    scriptPropertyInfos.Append(new PROPERTY_RANGED_FLOAT(name, label, desc, range, value.c_str(), PropertyInfo::ReadWrite));
+
+                    auto propInfo = PropertyInfo(name, PropertyTypeID<float>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<float>()), value, desc, PropertyInfo::ReadWrite);
+                    propInfo.SetRange(minimum, maximum, step);
+                    fieldInfos.Append(propInfo);
                 } else {
-                    scriptPropertyInfos.Append(new PROPERTY_FLOAT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                    auto propInfo = PropertyInfo(name, PropertyTypeID<float>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<float>()), value, desc, PropertyInfo::ReadWrite);
+                    fieldInfos.Append(propInfo);
                 }
+#else
+                Str value = Str((float)props["value"]);
+                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
+                    float minimum = props["minimum"];
+                    float maximum = props["maximum"];
+                    float step = props["step"];
+
+                    Rangef range(minimum, maximum, step);
+                    if (step == 0.0f) {
+                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
+                    }
+                    fieldInfos.Append(new PROPERTY_RANGED_FLOAT(name, label, desc, range, value.c_str(), PropertyInfo::ReadWrite));
+                } else {
+                    fieldInfos.Append(new PROPERTY_FLOAT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                }
+#endif
             } else if (!Str::Cmp(type, "int")) {
-                Str value = Str((int)prop["value"]);
-                if (prop["minimum"].LuaType() == LUA_TNUMBER && prop["maximum"].LuaType() == LUA_TNUMBER) {
-                    float minimum = prop["minimum"];
-                    float maximum = prop["maximum"];
-                    float step = prop["step"];
+#ifdef NEW_PROPERTY_SYSTEM
+                int value = props["value"];
+                fieldValues.Set(name, value);
+
+                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
+                    float minimum = props["minimum"];
+                    float maximum = props["maximum"];
+                    float step = props["step"];
 
                     Rangef range(minimum, maximum, step);
                     if (step == 0.0f) {
                         range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
                     }
-                    scriptPropertyInfos.Append(new PROPERTY_RANGED_INT(name, label, desc, range, value.c_str(), PropertyInfo::ReadWrite));
+
+                    auto propInfo = PropertyInfo(name, PropertyTypeID<int>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::ReadWrite);
+                    propInfo.SetRange(minimum, maximum, step);
+                    fieldInfos.Append(propInfo);
                 } else {
-                    scriptPropertyInfos.Append(new PROPERTY_INT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                    auto propInfo = PropertyInfo(name, PropertyTypeID<int>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::ReadWrite);
+                    fieldInfos.Append(propInfo);
                 }
+#else
+                Str value = Str((int)props["value"]);
+                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
+                    float minimum = props["minimum"];
+                    float maximum = props["maximum"];
+                    float step = props["step"];
+
+                    Rangef range(minimum, maximum, step);
+                    if (step == 0.0f) {
+                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
+                    }
+                    fieldInfos.Append(new PROPERTY_RANGED_INT(name, label, desc, range, value.c_str(), PropertyInfo::ReadWrite));
+                } else {
+                    fieldInfos.Append(new PROPERTY_INT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                }
+#endif
             } else if (!Str::Cmp(type, "bool")) {
-                Str value = Str((bool)prop["value"]);
-                scriptPropertyInfos.Append(new PROPERTY_BOOL(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#ifdef NEW_PROPERTY_SYSTEM
+                bool value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<bool>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<bool>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Str value = Str((bool)props["value"]);
+                fieldInfos.Append(new PROPERTY_BOOL(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "point")) {
-                Point point = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Point value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Point>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Point>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Point point = props["value"];
                 Str value = point.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_POINT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_POINT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "rect")) {
-                Rect rect = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Rect value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Rect>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Rect>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Rect rect = props["value"];
                 Str value = rect.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_RECT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_RECT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "vec2")) {
-                Vec2 vec2 = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Vec2 value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec2>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec2>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Vec2 vec2 = props["value"];
                 Str value = vec2.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_VEC2(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_VEC2(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "vec3")) {
-                Vec3 vec3 = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Vec3 value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec3>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Vec3 vec3 = props["value"];
                 Str value = vec3.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_VEC3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_VEC3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "vec4")) {
-                Vec4 vec4 = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Vec4 value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec4>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec4>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Vec4 vec4 = props["value"];
                 Str value = vec4.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_VEC4(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_VEC4(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "color3")) {
-                Color3 color3 = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Color3 value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Color3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Color3>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Color3 color3 = props["value"];
                 Str value = color3.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_COLOR3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_COLOR3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "color4")) {
-                Color4 color4 = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Color4 value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Color4>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Color4>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Color4 color4 = props["value"];
                 Str value = color4.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_COLOR4(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_COLOR4(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "angles")) {
-                Angles angles = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Angles value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Angles>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Angles>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Angles angles = props["value"];
                 Str value = angles.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_ANGLES(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_ANGLES(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "mat3")) {
-                Mat3 mat3 = prop["value"];
+#ifdef NEW_PROPERTY_SYSTEM
+                Mat3 value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Mat3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Mat3>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                Mat3 mat3 = props["value"];
                 Str value = mat3.ToString();
-                scriptPropertyInfos.Append(new PROPERTY_MAT3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_MAT3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+#endif
             } else if (!Str::Cmp(type, "object")) {
-                const char *classname = prop["classname"];
+#ifdef NEW_PROPERTY_SYSTEM
+                const char *classname = props["classname"];
+                MetaObject *metaObject = Object::GetMetaObject(classname);
+                ObjectRef value = ObjectRef(*metaObject, Guid::FromString((const char *)props["value"]));
+                fieldValues.Set(name, value);
+
+                auto propInfo = PropertyInfo(name, PropertyTypeID<ObjectRef>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<ObjectRef>()), value, desc, PropertyInfo::ReadWrite);
+                fieldInfos.Append(propInfo);
+#else
+                const char *classname = props["classname"];
                 MetaObject *metaObject = Object::GetMetaObject(classname);
                 if (metaObject) {
-                    scriptPropertyInfos.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertyInfo::ReadWrite));
+                    fieldInfos.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertyInfo::ReadWrite));
                 }
+#endif
             }
         };
 
@@ -229,7 +397,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         return;
     }
 
-    if (!LoadScriptWithSandboxed(scriptPath, sandboxName)) {
+    if (!LoadScriptWithSandbox(scriptPath, sandboxName)) {
         return;
     }
 
@@ -248,7 +416,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
 
 static BE1::CVar lua_path(L"lua_path", L"", BE1::CVar::Archive, L"lua project path for debugging");
 
-bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandboxName) {
+bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxName) {
     char *data;
     size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
@@ -282,10 +450,11 @@ bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandbo
 }
 
 void ComScript::SetScriptProperties() {
+#ifndef NEW_PROPERTY_SYSTEM
     LuaCpp::Selector properties = sandbox["properties"];
 
-    for (int i = 0; i < scriptPropertyInfos.Count(); ++i) {
-        const BE1::PropertyInfo *propInfo = scriptPropertyInfos[i];
+    for (int i = 0; i < fieldInfos.Count(); ++i) {
+        const BE1::PropertyInfo *propInfo = fieldInfos[i];
 
         const char *name = propInfo->GetName();
         const PropertyInfo::Type type = propInfo->GetType();
@@ -350,6 +519,7 @@ void ComScript::SetScriptProperties() {
             break;
         }
     }
+#endif
 }
 
 void ComScript::Awake() {
@@ -461,7 +631,6 @@ void ComScript::SetScript(const Guid &guid) {
 
     EmitSignal(&Properties::SIG_UpdateUI);
 }
-
 
 ObjectRef ComScript::GetScriptRef() const {
     return ObjectRef(ScriptAsset::metaObject, scriptAsset ? scriptAsset->GetGuid() : Guid::zero);

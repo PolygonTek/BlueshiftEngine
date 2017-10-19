@@ -72,10 +72,10 @@ public:
     const char *            GetName(int index) const;
 
                             /// Returns property info by index.
-    const PropertyInfo *    GetInfo(int index) const;
+    bool                    GetInfo(int index, PropertyInfo &propertyInfo) const;
 
                             /// Returns property info by name.
-    const PropertyInfo *    GetInfo(const char *name) const;
+    bool                    GetInfo(const char *name, PropertyInfo &propertyInfo) const;
 
                             /// Returns number of elements of array property
                             /// This function is valid only if property is an array
