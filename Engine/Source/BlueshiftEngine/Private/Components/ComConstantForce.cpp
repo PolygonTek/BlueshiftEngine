@@ -24,14 +24,14 @@ OBJECT_DECLARATION("Constant Force", ComConstantForce, Component)
 BEGIN_EVENTS(ComConstantForce)
 END_EVENTS
 BEGIN_PROPERTIES(ComConstantForce)
-    PROPERTY_VEC3("force", "Force", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_VEC3("torque", "Torque", "", "0 0 0", PropertySpec::ReadWrite),
+    PROPERTY_VEC3("force", "Force", "", "0 0 0", PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("torque", "Torque", "", "0 0 0", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComConstantForce::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Force", Vec3, force, Vec3::zero, "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Torque", Vec3, torque, Vec3::zero, "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Force", Vec3, force, Vec3::zero, "", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Torque", Vec3, torque, Vec3::zero, "", PropertyInfo::ReadWrite);
 #endif
 }
 

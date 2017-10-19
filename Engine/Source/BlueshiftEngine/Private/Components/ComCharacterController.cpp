@@ -29,20 +29,20 @@ OBJECT_DECLARATION("Character Controller", ComCharacterController, Component)
 BEGIN_EVENTS(ComCharacterController)
 END_EVENTS
 BEGIN_PROPERTIES(ComCharacterController)
-    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.1f), "10", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("capsuleRadius", "Capsule Radius", "", Rangef(0.01, 2, 0.01), "0.5", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("capsuleHeight", "Capsule Height", "", Rangef(0.01, 2, 0.01), "0.8", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("stepOffset", "Step Offset", "", Rangef(0, 1.0, 0.1), "0.5", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("slopeLimit", "Slope Limit Angle", "", Rangef(0, 90, 1), "60", PropertySpec::ReadWrite),
+    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.1f), "10", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("capsuleRadius", "Capsule Radius", "", Rangef(0.01, 2, 0.01), "0.5", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("capsuleHeight", "Capsule Height", "", Rangef(0.01, 2, 0.01), "0.8", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("stepOffset", "Step Offset", "", Rangef(0, 1.0, 0.1), "0.5", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("slopeLimit", "Slope Limit Angle", "", Rangef(0, 90, 1), "60", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComCharacterController::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Mass", float, mass, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 100, 0.1f);
-    REGISTER_ACCESSOR_PROPERTY("Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("Step Offset", float, GetStepOffset, SetStepOffset, 0.8f, "", PropertySpec::ReadWrite).SetRange(0.0, 1.0, 0.1);
-    REGISTER_ACCESSOR_PROPERTY("Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 0.8f, "", PropertySpec::ReadWrite).SetRange(0, 90, 1);
+    REGISTER_PROPERTY("Mass", float, mass, 1.f, "", PropertyInfo::ReadWrite).SetRange(0, 100, 0.1f);
+    REGISTER_ACCESSOR_PROPERTY("Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertyInfo::ReadWrite).SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertyInfo::ReadWrite).SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("Step Offset", float, GetStepOffset, SetStepOffset, 0.8f, "", PropertyInfo::ReadWrite).SetRange(0.0, 1.0, 0.1);
+    REGISTER_ACCESSOR_PROPERTY("Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 0.8f, "", PropertyInfo::ReadWrite).SetRange(0, 90, 1);
 #endif
 }
 

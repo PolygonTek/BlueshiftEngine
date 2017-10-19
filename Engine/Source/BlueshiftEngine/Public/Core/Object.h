@@ -35,7 +35,7 @@
 BE_NAMESPACE_BEGIN
 
 class CmdArgs;
-class PropertySpec;
+class PropertyInfo;
 class Object;
 class EventDef;
 
@@ -61,7 +61,7 @@ extern const EventDef   EV_ImmediateDestroy;
     virtual BE1::MetaObject *GetMetaObject() const; \
     static BE1::Object *CreateInstance(const BE1::Guid &guid = BE1::Guid()); \
     static BE1::MetaObject metaObject; \
-    static BE1::PropertySpec pspecMap[]; \
+    static BE1::PropertyInfo propertyInfos[]; \
     static BE1::EventInfo<classname> eventMap[]
 
 // 이 매크로는 Object class 를 상속받는 자식 클래스의 prototype 에 선언해야 한다.
@@ -75,7 +75,7 @@ extern const EventDef   EV_ImmediateDestroy;
     virtual BE1::MetaObject *GetMetaObject() const override; \
     static BE1::Object *CreateInstance(const BE1::Guid &guid = BE1::Guid()); \
     static BE1::MetaObject metaObject; \
-    static BE1::PropertySpec pspecMap[]; \
+    static BE1::PropertyInfo propertyInfos[]; \
     static BE1::EventInfo<classname> eventMap[]
 
 // 이 매크로는 static 멤버 변수를 초기화할 수 있는 곳에 정의되어야 한다.
@@ -87,7 +87,7 @@ extern const EventDef   EV_ImmediateDestroy;
         return nullptr; \
     } \
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
-        classname::CreateInstance, classname::pspecMap, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
+        classname::CreateInstance, classname::propertyInfos, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
 
 // 이 매크로는 static 멤버 변수를 초기화할 수 있는 곳에 정의되어야 한다.
 // concrete 클래스에만 사용할 것
@@ -99,7 +99,7 @@ extern const EventDef   EV_ImmediateDestroy;
         return ptr; \
     } \
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
-        classname::CreateInstance, classname::pspecMap, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
+        classname::CreateInstance, classname::propertyInfos, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
 
 // event definition
 #define BEGIN_EVENTS(classname) BE1::EventInfo<classname> classname::eventMap[] = {
@@ -112,7 +112,7 @@ class BE_API MetaObject {
 
 public:
     MetaObject(const char *visualname, const char *classname, const char *superclassname, 
-        Object *(*CreateInstance)(const Guid &guid), PropertySpec *pspecMap, EventInfo<Object> *eventMap);
+        Object *(*CreateInstance)(const Guid &guid), PropertyInfo *propertyInfos, EventInfo<Object> *eventMap);
     ~MetaObject();
 
     void                        Init();
@@ -137,14 +137,16 @@ public:
                                 /// Tests if corresponding event def is registered.
     bool                        IsRespondsTo(const EventDef &evdef) const;
 
-                                /// Finds property spec including parent meta object.
-    const PropertySpec *        FindPropertySpec(const char *name) const;
+                                /// Finds property info including parent meta object.
+    const PropertyInfo *        FindPropertyInfo(const char *name) const;
 
-                                /// Returns property spec list including parent meta object.
-    void                        GetPropertySpecList(Array<const PropertySpec *> &pspecs) const;
+                                /// Returns property info list including parent meta object.
+    void                        GetPropertyInfoList(Array<const PropertyInfo *> &pspecs) const;
 
                                 /// 
-    PropertySpec &              RegisterProperty(const PropertySpec &propertySpec);
+#ifdef NEW_PROPERTY_SYSTEM
+    PropertyInfo &              RegisterProperty(const PropertyInfo &propertySpec);
+#endif
 
 private:
     const char *                visualname;
@@ -154,13 +156,16 @@ private:
     
     Hierarchy<MetaObject>       node;               // hierarchy node
     int                         hierarchyIndex;     // hierarchy index (depth-first-order): Hierarchy::GetNext() 참고
-    int                         lastChildIndex;     // 마지막 grandchild node hierarchy index
+    int                         lastChildIndex;     // last grandchild node hierarchy index
     MetaObject *                super;
     MetaObject *                next;
 
-    PropertySpec *              pspecMap;
-    Array<PropertySpec>         pspecs;
-    HashIndex                   pspecHash;
+#ifndef NEW_PROPERTY_SYSTEM
+    PropertyInfo *              propertyInfos;
+#else
+    Array<PropertyInfo>         propertyInfos;
+#endif
+    HashIndex                   propertyInfoHash;
 
     EventInfo<Object> *         eventMap;
     EventCallback *             eventCallbacks;
@@ -187,17 +192,17 @@ public:
     template <typename T> 
     const T *                   Cast() const;
 
-                                // superclass 의 grand child class 인지 체크
-    bool                        IsTypeOf(const MetaObject &superclass) const;
+                                /// Returns true if meta object of this object is a meta object metaObject
+    bool                        IsTypeOf(const MetaObject &metaObject) const;
     template <typename T>
     bool                        IsTypeOf() const { return IsTypeOf(T::metaObject); }
 
-                                // klass 의 instance 인지 체크
-    bool                        IsInstanceOf(const MetaObject &klass) const;
+                                /// Returns true if this object is a instance of meta object metaObject
+    bool                        IsInstanceOf(const MetaObject &metaObject) const;
     template <typename T>
     bool                        IsInstanceOf() const { return IsInstanceOf(T::metaObject); }
 
-                                // eventDef 에 해당하는 Callback 이 등록되어 있는지 체크
+                                /// Returns true if this object can be respondable event evdef
     bool                        IsRespondsTo(const EventDef &evdef) const;
 
                                 /// Returns GUID of the object
@@ -206,15 +211,15 @@ public:
                                 /// Returns instance ID of the object
     int                         GetInstanceID() const { return instanceID; }
 
-                                /// Post event
+                                /// Post a event
     template <typename... Args>
     bool                        PostEvent(const EventDef *evdef, Args&&... args);
 
-                                /// Post event that will be executed after given milliseconds
+                                /// Post a event that will be executed after given milliseconds
     template <typename... Args>
     bool                        PostEventMS(const EventDef *evdef, int milliseconds, Args&&... args);
 
-                                /// Post event that will be executed after given seconds
+                                /// Post a event that will be executed after given seconds
     template <typename... Args>
     bool                        PostEventSec(const EventDef *evdef, int seconds, Args&&... args);
 
@@ -222,13 +227,14 @@ public:
     bool                        ProcessEvent(const EventDef *evdef, Args&&... args);
     bool                        ProcessEventArgPtr(const EventDef *evdef, intptr_t *data);
 
+                                /// Cancels a event in event queue
     void                        CancelEvents(const EventDef *evdef);
 
-    const PropertySpec *        FindPropertySpec(const char *name) const;
+    const PropertyInfo *        FindPropertyInfo(const char *name) const;
 
     Properties *                GetProperties() const { return props; }
 
-    virtual void                GetPropertySpecList(Array<const PropertySpec *> &pspecs) const { GetMetaObject()->GetPropertySpecList(pspecs); }
+    virtual void                GetPropertyInfoList(Array<const PropertyInfo *> &pspecs) const { GetMetaObject()->GetPropertyInfoList(pspecs); }
     
     static void                 Init();
     static void                 Shutdown();
@@ -261,14 +267,12 @@ private:
     static Array<MetaObject *>  types; // alphabetical order
 };
 
-BE_INLINE bool Object::IsTypeOf(const MetaObject &superclass) const {
-    MetaObject *selfclass = GetMetaObject();
-    return selfclass->IsTypeOf(superclass);
+BE_INLINE bool Object::IsTypeOf(const MetaObject &metaObject) const {
+    return GetMetaObject()->IsTypeOf(metaObject);
 }
 
-BE_INLINE bool Object::IsInstanceOf(const MetaObject &klass) const {
-    MetaObject *selfclass = GetMetaObject();
-    return selfclass == &klass;
+BE_INLINE bool Object::IsInstanceOf(const MetaObject &metaObject) const {
+    return GetMetaObject() == &metaObject;
 }
 
 template <typename T>

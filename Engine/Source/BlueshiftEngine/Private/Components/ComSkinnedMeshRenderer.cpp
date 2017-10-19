@@ -32,18 +32,18 @@ OBJECT_DECLARATION("Skinned Mesh Renderer", ComSkinnedMeshRenderer, ComMeshRende
 BEGIN_EVENTS(ComSkinnedMeshRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComSkinnedMeshRenderer)
-    PROPERTY_ENUM("animationType", "Animation Type", "", "Animation Controller;Single Animation", "0", PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("animController", "Anim Controller", "", GuidMapper::defaultAnimControllerGuid.ToString(), AnimControllerAsset::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("skeleton", "Skeleton", "", "0", SkeletonAsset::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("anim", "Animation", "", "0", AnimAsset::metaObject, PropertySpec::ReadWrite),
+    PROPERTY_ENUM("animationType", "Animation Type", "", "Animation Controller;Single Animation", "0", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("animController", "Anim Controller", "", GuidMapper::defaultAnimControllerGuid.ToString(), AnimControllerAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("skeleton", "Skeleton", "", "0", SkeletonAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("anim", "Animation", "", "0", AnimAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComSkinnedMeshRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Animation Type", "Animation Controller;Single Animation", GetAnimationType, SetAnimationType, 0, "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Anim Controller", ObjectRef, GetAnimControllerRef, SetAnimControllerRef, ObjectRef(AnimControllerAsset::metaObject, GuidMapper::defaultAnimControllerGuid), "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Skeleton", ObjectRef, GetSkeletonRef, SetSkeletonRef, ObjectRef(SkeletonAsset::metaObject, Guid::zero), "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Animation", ObjectRef, GetAnimRef, SetAnimRef, ObjectRef(AnimAsset::metaObject, Guid::zero), "", PropertySpec::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Animation Type", "Animation Controller;Single Animation", GetAnimationType, SetAnimationType, 0, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Anim Controller", ObjectRef, GetAnimControllerRef, SetAnimControllerRef, ObjectRef(AnimControllerAsset::metaObject, GuidMapper::defaultAnimControllerGuid), "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Skeleton", ObjectRef, GetSkeletonRef, SetSkeletonRef, ObjectRef(SkeletonAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Animation", ObjectRef, GetAnimRef, SetAnimRef, ObjectRef(AnimAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
 #endif
 }
 

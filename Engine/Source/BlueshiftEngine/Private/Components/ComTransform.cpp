@@ -25,16 +25,16 @@ OBJECT_DECLARATION("Transform", ComTransform, Component)
 BEGIN_EVENTS(ComTransform)
 END_EVENTS
 BEGIN_PROPERTIES(ComTransform)
-    PROPERTY_VEC3("origin", "Origin", "xyz position in local space", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_ANGLES("angles", "Angles", "yaw, pitch, roll in degree in local space", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_VEC3("scale", "Scale", "xyz scale in local space", "1 1 1", PropertySpec::ReadWrite),
+    PROPERTY_VEC3("origin", "Origin", "xyz position in local space", "0 0 0", PropertyInfo::ReadWrite),
+    PROPERTY_ANGLES("angles", "Angles", "yaw, pitch, roll in degree in local space", "0 0 0", PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("scale", "Scale", "xyz scale in local space", "1 1 1", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComTransform::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero, "xyz position in local space", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "yaw, pitch, roll in degree in local space", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one, "xyz scale in local space", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero, "xyz position in local space", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "yaw, pitch, roll in degree in local space", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one, "xyz scale in local space", PropertyInfo::ReadWrite);
 #endif
 }
 

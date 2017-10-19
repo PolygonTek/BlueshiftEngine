@@ -26,16 +26,16 @@ OBJECT_DECLARATION("Capsule Collider", ComCapsuleCollider, ComCollider)
 BEGIN_EVENTS(ComCapsuleCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComCapsuleCollider)
-    PROPERTY_VEC3("center", "Center", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("radius", "Radius", "", "1", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("height", "Height", "", "1", PropertySpec::ReadWrite),
+    PROPERTY_VEC3("center", "Center", "", "0 0 0", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("radius", "Radius", "", "1", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("height", "Height", "", "1", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComCapsuleCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Radius", float, radius, 1.f, "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Height", float, height, 1.f, "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Radius", float, radius, 1.f, "", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Height", float, height, 1.f, "", PropertyInfo::ReadWrite);
 #endif
 }
 

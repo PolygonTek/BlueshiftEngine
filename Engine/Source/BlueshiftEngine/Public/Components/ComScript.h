@@ -29,9 +29,9 @@ public:
     ComScript();
     virtual ~ComScript();
 
-    void                    InitPropertySpec(Json::Value &jsonComponent);
+    void                    InitPropertyInfo(Json::Value &jsonComponent);
 
-    virtual void            GetPropertySpecList(Array<const PropertySpec *> &pspecs) const override;
+    virtual void            GetPropertyInfoList(Array<const PropertyInfo *> &pspecs) const override;
 
     virtual bool            AllowSameComponent() const override { return true; }
 
@@ -79,7 +79,7 @@ public:
     void                    SetScriptRef(const ObjectRef &scriptRef);
 
 protected:
-    void                    InitPropertySpecImpl(const Guid &scriptGuid);
+    void                    InitPropertyInfoImpl(const Guid &scriptGuid);
     bool                    LoadScriptWithSandboxed(const char *filename, const char *sandboxName);
     void                    SetScriptProperties();
 
@@ -92,7 +92,7 @@ protected:
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
 
-    Array<const PropertySpec *> scriptPropertySpecs;
+    Array<const PropertyInfo *> scriptPropertyInfos;
 };
 
 template <typename... Args>

@@ -60,11 +60,11 @@ int Shader::GetFlags() const {
     return flags;
 }
 
-const StrHashMap<PropertySpec> &Shader::GetSpecHashMap() const { 
+const StrHashMap<PropertyInfo> &Shader::GetPropertyInfoHashMap() const { 
     if (originalShader) {
-        return originalShader->specHashMap; 
+        return originalShader->propertyInfoHashMap; 
     }
-    return specHashMap; 
+    return propertyInfoHashMap; 
 }
 
 void Shader::Purge() {
@@ -121,7 +121,7 @@ void Shader::Purge() {
     }
 
     defineArray.Clear();
-    specHashMap.Clear();
+    propertyInfoHashMap.Clear();
 }
 
 bool Shader::Create(const char *text, const char *baseDir) {
@@ -164,7 +164,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 Shader *shader = shaderManager.FindShader(path);
                 if (shader) {
-                    specHashMap = shader->specHashMap;
+                    propertyInfoHashMap = shader->propertyInfoHashMap;
                 }
             } else {
                 BE_WARNLOG(L"missing inheritProperties name in shader '%hs'\n", hashName.c_str());
@@ -284,7 +284,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 }
 
 bool Shader::ParseProperties(Lexer &lexer) {
-    PropertySpec spec;
+    PropertyInfo propInfo;
     Str token;
 
     if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
@@ -296,7 +296,7 @@ bool Shader::ParseProperties(Lexer &lexer) {
             break;
         }
         else {
-            if (specHashMap.Get(token)) {
+            if (propertyInfoHashMap.Get(token)) {
                 BE_WARNLOG(L"same property name '%hs' ignored in shader '%hs'\n", token.c_str(), hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
@@ -304,13 +304,13 @@ bool Shader::ParseProperties(Lexer &lexer) {
 
             lexer.UnreadToken(&token);
 
-            if (!spec.ParseSpec(lexer)) {
-                BE_WARNLOG(L"error occured in parsing property spec in shader '%hs'\n", hashName.c_str());
+            if (!propInfo.ParseSpec(lexer)) {
+                BE_WARNLOG(L"error occured in parsing property propInfo in shader '%hs'\n", hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
             }
 
-            specHashMap.Set(token, spec);
+            propertyInfoHashMap.Set(token, propInfo);
         }
     }
 
@@ -356,7 +356,7 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         return nullptr;
     }
 
-    shader->specHashMap = specHashMap;
+    shader->propertyInfoHashMap = propertyInfoHashMap;
 
     return shader;
 }

@@ -21,8 +21,8 @@ OBJECT_DECLARATION("Tag & Layer Settings", TagLayerSettings, GameSettings)
 BEGIN_EVENTS(TagLayerSettings)
 END_EVENTS
 BEGIN_PROPERTIES(TagLayerSettings)
-    PROPERTY_STRING("tag", "Tag", "tag", "Untagged", PropertySpec::ReadWrite | PropertySpec::IsArray),
-    PROPERTY_STRING("layer", "Layer", "layer", "Default", PropertySpec::ReadWrite | PropertySpec::IsArray),
+    PROPERTY_STRING("tag", "Tag", "tag", "Untagged", PropertyInfo::ReadWrite | PropertyInfo::IsArray),
+    PROPERTY_STRING("layer", "Layer", "layer", "Default", PropertyInfo::ReadWrite | PropertyInfo::IsArray),
 END_PROPERTIES
 
 void TagLayerSettings::Init() {

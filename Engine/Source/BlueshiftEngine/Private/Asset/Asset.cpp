@@ -24,7 +24,7 @@ ABSTRACT_DECLARATION("Asset", Asset, Object)
 BEGIN_EVENTS(Asset)
 END_EVENTS
 BEGIN_PROPERTIES(Asset)
-    PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertySpec::ReadWrite | PropertySpec::Hidden),
+    PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
 END_PROPERTIES
 
 const SignalDef Asset::SIG_Reloaded("reloaded");

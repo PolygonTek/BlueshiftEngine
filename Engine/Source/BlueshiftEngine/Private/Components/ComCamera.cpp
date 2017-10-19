@@ -31,38 +31,38 @@ OBJECT_DECLARATION("Camera", ComCamera, Component)
 BEGIN_EVENTS(ComCamera)
 END_EVENTS
 BEGIN_PROPERTIES(ComCamera)
-    PROPERTY_ENUM("projection", "Projection", "", "Perspective;Orthographic", "0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(1, 20000, 10), "10", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), "4096", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("fov", "Field Of View", "field of view", Rangef(1, 179, 1), "60", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("size", "Size", "", Rangef(1, 16384, 1), "1000", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("x", "X", "normalized screen x-coordinate", Rangef(0, 1.0f, 0.01f), "0.0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("y", "Y", "normalized screen y-coordinate", Rangef(0, 1.0f, 0.01f), "0.0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("w", "W", "normalized screen width", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("h", "H", "normalized screen height", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
-    PROPERTY_INT("layerMask", "Layer Mask", "", Str(BIT(TagLayerSettings::DefaultLayer)), PropertySpec::ReadWrite),
-    PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color;Skybox", "1", PropertySpec::ReadWrite),
-    PROPERTY_COLOR3("clearColor", "Clear Color", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", "0", PropertySpec::ReadWrite),
-    PROPERTY_INT("order", "Order", "", "0", PropertySpec::ReadWrite),
+    PROPERTY_ENUM("projection", "Projection", "", "Perspective;Orthographic", "0", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(1, 20000, 10), "10", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), "4096", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("fov", "Field Of View", "field of view", Rangef(1, 179, 1), "60", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("size", "Size", "", Rangef(1, 16384, 1), "1000", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("x", "X", "normalized screen x-coordinate", Rangef(0, 1.0f, 0.01f), "0.0", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("y", "Y", "normalized screen y-coordinate", Rangef(0, 1.0f, 0.01f), "0.0", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("w", "W", "normalized screen width", Rangef(0, 1.0f, 0.01f), "1.0", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("h", "H", "normalized screen height", Rangef(0, 1.0f, 0.01f), "1.0", PropertyInfo::ReadWrite),
+    PROPERTY_INT("layerMask", "Layer Mask", "", Str(BIT(TagLayerSettings::DefaultLayer)), PropertyInfo::ReadWrite),
+    PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color;Skybox", "1", PropertyInfo::ReadWrite),
+    PROPERTY_COLOR3("clearColor", "Clear Color", "", "0 0 0", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", "0", PropertyInfo::ReadWrite),
+    PROPERTY_INT("order", "Order", "", "0", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComCamera::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjectionMethod, SetProjectionMethod, 0, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, 10.f, "", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
-    REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, 8192.f, "", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
-    REGISTER_PROPERTY("FOV", float, fov, 60.f, "", PropertySpec::ReadWrite).SetRange(1, 179, 1);
-    REGISTER_PROPERTY("Size", float, size, 1000.f, "", PropertySpec::ReadWrite).SetRange(1, 16384, 1);
-    REGISTER_PROPERTY("X", float, nx, 0.f, "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("Y", float, ny, 0.f, "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("W", float, nw, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("H", float, nh, 1.f, "", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Layer Mask", int, GetLayerMask, SetLayerMask, BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer), "", PropertySpec::ReadWrite);
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Clear", "No Clear;Depth Only;Color", GetClearMethod, SetClearMethod, 1, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Order", int, order, 0, "", PropertySpec::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjectionMethod, SetProjectionMethod, 0, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, 10.f, "", PropertyInfo::ReadWrite).SetRange(1, 20000, 10);
+    REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, 8192.f, "", PropertyInfo::ReadWrite).SetRange(1, 20000, 10);
+    REGISTER_PROPERTY("FOV", float, fov, 60.f, "", PropertyInfo::ReadWrite).SetRange(1, 179, 1);
+    REGISTER_PROPERTY("Size", float, size, 1000.f, "", PropertyInfo::ReadWrite).SetRange(1, 16384, 1);
+    REGISTER_PROPERTY("X", float, nx, 0.f, "", PropertyInfo::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("Y", float, ny, 0.f, "", PropertyInfo::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("W", float, nw, 1.f, "", PropertyInfo::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("H", float, nh, 1.f, "", PropertyInfo::ReadWrite).SetRange(0, 1.0f, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Layer Mask", int, GetLayerMask, SetLayerMask, BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer), "", PropertyInfo::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Clear", "No Clear;Depth Only;Color", GetClearMethod, SetClearMethod, 1, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Order", int, order, 0, "", PropertyInfo::ReadWrite);
 #endif
 }
 

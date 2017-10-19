@@ -27,22 +27,22 @@ OBJECT_DECLARATION("Text Renderer", ComTextRenderer, ComRenderable)
 BEGIN_EVENTS(ComTextRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComTextRenderer)
-    PROPERTY_STRING("text", "Text", "", "Hello World", PropertySpec::ReadWrite | PropertySpec::MultiLines),
-    PROPERTY_ENUM("textAnchor", "Anchor", "", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", "0", PropertySpec::ReadWrite),
-    PROPERTY_ENUM("textAlignment", "Alignment", "", "Left;Center;Right", "0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("lineSpacing", "Line Spacing", "", "1.0", PropertySpec::ReadWrite),
-    PROPERTY_INT("fontSize", "Font Size", "", "14", PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("font", "Font", "", GuidMapper::defaultFontGuid.ToString(), FontAsset::metaObject, PropertySpec::ReadWrite),
+    PROPERTY_STRING("text", "Text", "", "Hello World", PropertyInfo::ReadWrite | PropertyInfo::MultiLines),
+    PROPERTY_ENUM("textAnchor", "Anchor", "", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", "0", PropertyInfo::ReadWrite),
+    PROPERTY_ENUM("textAlignment", "Alignment", "", "Left;Center;Right", "0", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("lineSpacing", "Line Spacing", "", "1.0", PropertyInfo::ReadWrite),
+    PROPERTY_INT("fontSize", "Font Size", "", "14", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("font", "Font", "", GuidMapper::defaultFontGuid.ToString(), FontAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComTextRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Text", Str, GetText, SetText, "Hello World", "", PropertySpec::ReadWrite);
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Anchor", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", GetAnchor, SetAnchor, 0, "", PropertySpec::ReadWrite);
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Alignment", "Left; Center; Right", GetAlignment, SetAlignment, 0, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Font Size", int, GetFontSize, SetFontSize, 14, "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Font", ObjectRef, GetFontRef, SetFontRef, ObjectRef(FontAsset::metaObject, GuidMapper::defaultFontGuid), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Text", Str, GetText, SetText, "Hello World", "", PropertyInfo::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Anchor", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", GetAnchor, SetAnchor, 0, "", PropertyInfo::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Alignment", "Left; Center; Right", GetAlignment, SetAlignment, 0, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Font Size", int, GetFontSize, SetFontSize, 14, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Font", ObjectRef, GetFontRef, SetFontRef, ObjectRef(FontAsset::metaObject, GuidMapper::defaultFontGuid), "", PropertyInfo::ReadWrite);
 #endif
 }
 

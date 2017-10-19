@@ -166,7 +166,7 @@ public:
     SetFunctionPtr setFunction;
 };
 
-class BE_API PropertySpec {
+class BE_API PropertyInfo {
     friend class Properties;
     friend class MetaObject;
 
@@ -212,22 +212,22 @@ public:
         Str sequence;
     };
 
-    PropertySpec();
-    ~PropertySpec();
+    PropertyInfo();
+    ~PropertyInfo();
 
-    PropertySpec(const PropertySpec &pspec);
+    PropertyInfo(const PropertyInfo &propInfo);
 #ifdef NEW_PROPERTY_SYSTEM
-    PropertySpec(const char *name, Type type, int offset, const Variant &defaultValue, const char *desc, int flags);
-    PropertySpec(const char *name, const Enum &e, int offset, const Variant &defaultValue, const char *desc, int flags);
-    PropertySpec(const char *name, const MetaObject &metaObject, int offset, const Variant &defaultValue, const char *desc, int flags);
-    PropertySpec(const char *name, Type type, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags);
-    PropertySpec(const char *name, const Enum &e, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags);
-    PropertySpec(const char *name, const MetaObject &metaObject, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, Type type, int offset, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, const Enum &e, int offset, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, const MetaObject &metaObject, int offset, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, Type type, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, const Enum &e, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, const MetaObject &metaObject, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags);
 #else
-    PropertySpec(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags);
-    PropertySpec(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags);
-    PropertySpec(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags);
-    PropertySpec(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags);
+    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags);
+    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags);
+    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags);
+    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags);
 #endif
 
     Type                    GetType() const { return type; }
@@ -273,7 +273,7 @@ private:
     const MetaObject *      metaObject;         ///< MetaObject pointer for object type
 };
 
-BE_INLINE PropertySpec::PropertySpec() {
+BE_INLINE PropertyInfo::PropertyInfo() {
     this->type = BadType;
     this->offset = 0;
     this->accessor = nullptr;
@@ -282,29 +282,29 @@ BE_INLINE PropertySpec::PropertySpec() {
     this->metaObject = nullptr;
 }
 
-BE_INLINE PropertySpec::~PropertySpec() {
+BE_INLINE PropertyInfo::~PropertyInfo() {
     if (accessor) {
         delete accessor;
     }
 }
 
-BE_INLINE PropertySpec::PropertySpec(const PropertySpec &pspec) {
-    this->type = pspec.type;
-    this->name = pspec.name;
-    this->defaultValue = pspec.defaultValue;
-    this->offset = pspec.offset;
-    this->accessor = pspec.accessor;
-    this->flags = pspec.flags;
-    this->label = pspec.label;
-    this->desc = pspec.desc;
-    this->range = pspec.range;
-    this->enumeration = pspec.enumeration;
-    this->metaObject = pspec.metaObject;
+BE_INLINE PropertyInfo::PropertyInfo(const PropertyInfo &propInfo) {
+    this->type = propInfo.type;
+    this->name = propInfo.name;
+    this->defaultValue = propInfo.defaultValue;
+    this->offset = propInfo.offset;
+    this->accessor = propInfo.accessor;
+    this->flags = propInfo.flags;
+    this->label = propInfo.label;
+    this->desc = propInfo.desc;
+    this->range = propInfo.range;
+    this->enumeration = propInfo.enumeration;
+    this->metaObject = propInfo.metaObject;
 }
 
 #ifdef NEW_PROPERTY_SYSTEM
 
-BE_INLINE PropertySpec::PropertySpec(const char *name, Type type, int offset, const Variant &defaultValue, const char *desc, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(const char *name, Type type, int offset, const Variant &defaultValue, const char *desc, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -316,7 +316,7 @@ BE_INLINE PropertySpec::PropertySpec(const char *name, Type type, int offset, co
     this->metaObject = nullptr;
 }
 
-BE_INLINE PropertySpec::PropertySpec(const char *name, const Enum &e, int offset, const Variant &defaultValue, const char *desc, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(const char *name, const Enum &e, int offset, const Variant &defaultValue, const char *desc, int flags) {
     this->type = Type::EnumType;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -329,7 +329,7 @@ BE_INLINE PropertySpec::PropertySpec(const char *name, const Enum &e, int offset
     SplitStringIntoList(this->enumeration, e.sequence, ";");
 }
 
-BE_INLINE PropertySpec::PropertySpec(const char *name, const MetaObject &metaObject, int offset, const Variant &defaultValue, const char *desc, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(const char *name, const MetaObject &metaObject, int offset, const Variant &defaultValue, const char *desc, int flags) {
     this->type = Type::ObjectType;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -341,7 +341,7 @@ BE_INLINE PropertySpec::PropertySpec(const char *name, const MetaObject &metaObj
     this->metaObject = &metaObject;
 }
 
-BE_INLINE PropertySpec::PropertySpec(const char *name, Type type, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(const char *name, Type type, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -353,7 +353,7 @@ BE_INLINE PropertySpec::PropertySpec(const char *name, Type type, PropertyAccess
     this->metaObject = nullptr;
 }
 
-BE_INLINE PropertySpec::PropertySpec(const char *name, const Enum &e, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(const char *name, const Enum &e, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -366,7 +366,7 @@ BE_INLINE PropertySpec::PropertySpec(const char *name, const Enum &e, PropertyAc
     SplitStringIntoList(this->enumeration, e.sequence, ";");
 }
 
-BE_INLINE PropertySpec::PropertySpec(const char *name, const MetaObject &metaObject, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(const char *name, const MetaObject &metaObject, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -380,7 +380,7 @@ BE_INLINE PropertySpec::PropertySpec(const char *name, const MetaObject &metaObj
 
 #else
 
-BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -393,7 +393,7 @@ BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *la
     this->metaObject = nullptr;
 }
 
-BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -406,7 +406,7 @@ BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *la
     this->metaObject = nullptr;
 }
 
-BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -421,7 +421,7 @@ BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *la
     assert(enumeration.Count() > 0);
 }
 
-BE_INLINE PropertySpec::PropertySpec(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -443,120 +443,120 @@ struct PropertyTypeID { };
 
 template <>
 struct PropertyTypeID<int> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::IntType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::IntType; }
 };
 
 template <>
 struct PropertyTypeID<unsigned> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::IntType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::IntType; }
 };
 
 template <>
 struct PropertyTypeID<bool> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::BoolType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::BoolType; }
 };
 
 template <>
 struct PropertyTypeID<float> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::FloatType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::FloatType; }
 };
 
 template <>
 struct PropertyTypeID<Vec2> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::Vec2Type; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::Vec2Type; }
 };
 
 template <>
 struct PropertyTypeID<Vec3> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::Vec3Type; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::Vec3Type; }
 };
 
 template <>
 struct PropertyTypeID<Vec4> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::Vec4Type; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::Vec4Type; }
 };
 
 template <>
 struct PropertyTypeID<Color3> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::Color3Type; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::Color3Type; }
 };
 
 template <>
 struct PropertyTypeID<Color4> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::Color4Type; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::Color4Type; }
 };
 
 template <>
 struct PropertyTypeID<Mat3> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::Mat3Type; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::Mat3Type; }
 };
 
 template <>
 struct PropertyTypeID<Angles> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::AnglesType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::AnglesType; }
 };
 
 template <>
 struct PropertyTypeID<Point> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::PointType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::PointType; }
 };
 
 template <>
 struct PropertyTypeID<Rect> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::RectType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::RectType; }
 };
 
 template <>
 struct PropertyTypeID<Str> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::StringType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::StringType; }
 };
 
 template <>
 struct PropertyTypeID<Guid> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::GuidType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::GuidType; }
 };
 
 template <>
 struct PropertyTypeID<ObjectRef> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::ObjectType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::ObjectType; }
 };
 
 template <>
 struct PropertyTypeID<ObjectRefArray> {
-    static PropertySpec::Type GetType() { return PropertySpec::Type::ObjectArrayType; }
+    static PropertyInfo::Type GetType() { return PropertyInfo::Type::ObjectArrayType; }
 };
 
 #define REGISTER_PROPERTY(name, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
         offsetof(Class, var), defaultValue, desc, flags))
 
 #define REGISTER_ENUM_PROPERTY(name, enumSequence, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, BE1::PropertySpec::Enum(enumSequence), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, BE1::PropertyInfo::Enum(enumSequence), \
         offsetof(Class, var), defaultValue, desc, flags))
 
 #define REGISTER_LIST_PROPERTY(name, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
-        offsetof(Class, var), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+        offsetof(Class, var), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
 #define REGISTER_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type, MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_ENUM_ACCESSOR_PROPERTY(name, enumSequence, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, enumSequence, \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, enumSequence, \
         new BE1::PropertyAccessorImpl<Class, int>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_LIST_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+        new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
 #define REGISTER_LIST_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertySpec(name, PropertyTypeID<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type, MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertySpec::IsArray))
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+        new BE1::PropertyAccessorImpl<Class, type, MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
 #define BEGIN_PROPERTIES(classname) static int dummy[] = {
 #define PROPERTY_STRING(name, label, desc, defaultValue, flags) 0
@@ -585,70 +585,70 @@ struct PropertyTypeID<ObjectRefArray> {
 
 // property definition begin
 #define BEGIN_PROPERTIES(classname) \
-    BE1::PropertySpec classname::pspecMap[] = {
+    BE1::PropertyInfo classname::propertyInfos[] = {
 
 #define PROPERTY_STRING(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::StringType, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::StringType, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_FLOAT(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::FloatType, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::FloatType, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_INT(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::IntType, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::IntType, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_BOOL(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::BoolType, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::BoolType, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_POINT(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::PointType, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::PointType, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_RECT(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::RectType, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::RectType, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_VEC2(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Vec2Type, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Vec2Type, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_VEC3(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Vec3Type, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Vec3Type, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_VEC4(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Vec4Type, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Vec4Type, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_ANGLES(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::AnglesType, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::AnglesType, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_MAT3(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Mat3Type, name, label, desc, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Mat3Type, name, label, desc, defaultValue, flags)
 
 #define PROPERTY_RANGED_INT(name, label, desc, range, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::IntType, name, label, desc, range, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::IntType, name, label, desc, range, defaultValue, flags)
 
 #define PROPERTY_RANGED_FLOAT(name, label, desc, range, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::FloatType, name, label, desc, range, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::FloatType, name, label, desc, range, defaultValue, flags)
 
 #define PROPERTY_RANGED_VEC2(name, label, desc, range, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Vec2Type, name, label, desc, range, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Vec2Type, name, label, desc, range, defaultValue, flags)
 
 #define PROPERTY_RANGED_VEC3(name, label, desc, range, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Vec3Type, name, label, desc, range, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Vec3Type, name, label, desc, range, defaultValue, flags)
 
 #define PROPERTY_RANGED_VEC4(name, label, desc, range, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Vec4Type, name, label, desc, range, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Vec4Type, name, label, desc, range, defaultValue, flags)
 
 #define PROPERTY_COLOR3(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Color3Type, name, label, desc, BE1::Rangef(0.0f, 1.0f, 0.01f), defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Color3Type, name, label, desc, BE1::Rangef(0.0f, 1.0f, 0.01f), defaultValue, flags)
 
 #define PROPERTY_COLOR4(name, label, desc, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::Color4Type, name, label, desc, BE1::Rangef(0.0f, 1.0f, 0.01f), defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::Color4Type, name, label, desc, BE1::Rangef(0.0f, 1.0f, 0.01f), defaultValue, flags)
 
 #define PROPERTY_ENUM(name, label, desc, sequence, defaultValue, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::EnumType, name, label, desc, BE1::PropertySpec::Enum(sequence), defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::EnumType, name, label, desc, BE1::PropertyInfo::Enum(sequence), defaultValue, flags)
 
 #define PROPERTY_OBJECT(name, label, desc, defaultValue, metaObject, flags) \
-    BE1::PropertySpec(BE1::PropertySpec::ObjectType, name, label, desc, metaObject, defaultValue, flags)
+    BE1::PropertyInfo(BE1::PropertyInfo::ObjectType, name, label, desc, metaObject, defaultValue, flags)
 
 // property definition end
-#define END_PROPERTIES BE1::PropertySpec() };
+#define END_PROPERTIES BE1::PropertyInfo() };
 
 #endif
 

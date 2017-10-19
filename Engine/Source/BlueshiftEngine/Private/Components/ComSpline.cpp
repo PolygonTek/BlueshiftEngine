@@ -24,14 +24,14 @@ OBJECT_DECLARATION("Spline", ComSpline, Component)
 BEGIN_EVENTS(ComSpline)
 END_EVENTS
 BEGIN_PROPERTIES(ComSpline)
-    PROPERTY_BOOL("loop", "Loop", "", "false", PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("points", "Points", "points", Guid::zero.ToString(), ComTransform::metaObject, PropertySpec::ReadWrite | PropertySpec::IsArray),
+    PROPERTY_BOOL("loop", "Loop", "", "false", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("points", "Points", "points", Guid::zero.ToString(), ComTransform::metaObject, PropertyInfo::ReadWrite | PropertyInfo::IsArray),
 END_PROPERTIES
 
 void ComSpline::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ACCESSOR_PROPERTY("Loop", bool, IsLoop, SetLoop, false, "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Points", ObjectRefArray, GetPointsRef, SetPointsRef, ObjectRefArray(ComTransform::metaObject, {Guid::zero}), "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Loop", bool, IsLoop, SetLoop, false, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Points", ObjectRefArray, GetPointsRef, SetPointsRef, ObjectRefArray(ComTransform::metaObject, {Guid::zero}), "", PropertyInfo::ReadWrite);
 #endif
 }
 

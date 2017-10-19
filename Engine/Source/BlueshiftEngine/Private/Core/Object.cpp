@@ -26,7 +26,7 @@ static Hierarchy<MetaObject>    classHierarchy;
 static int                      eventCallbackMemory = 0;
 
 MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname, 
-    Object *(*CreateInstance)(const Guid &guid), PropertySpec *pspecMap, EventInfo<Object> *eventMap) {
+    Object *(*CreateInstance)(const Guid &guid), PropertyInfo *propertyInfos, EventInfo<Object> *eventMap) {
     this->visualname            = visualname;
     this->classname             = classname;
     this->superclassname        = superclassname;
@@ -34,7 +34,7 @@ MetaObject::MetaObject(const char *visualname, const char *classname, const char
     this->hierarchyIndex        = 0;
     this->lastChildIndex        = 0;
     this->funcCreateInstance    = CreateInstance;
-    this->pspecMap              = pspecMap;
+    this->propertyInfos         = propertyInfos;
     this->eventMap              = eventMap;
     this->eventCallbacks        = nullptr;
     this->freeEventCallbacks    = false;
@@ -101,11 +101,11 @@ void MetaObject::Init() {
     
     node.SetOwner(this);
 
-    // property spec array 의 hash 를 작성
-    PropertySpec *pspec = pspecMap;
-    for (int i = 0; pspec->flags != PropertySpec::Empty; i++, pspec++) {
-        int hash = pspecHash.GenerateHash(pspec->name, false);
-        pspecHash.Add(hash, i);
+    // property info array 의 hash 를 작성
+    PropertyInfo *propInfo = propertyInfos;
+    for (int i = 0; propInfo->flags != PropertyInfo::Empty; i++, propInfo++) {
+        int hash = propertyInfoHash.GenerateHash(propInfo->name, false);
+        propertyInfoHash.Add(hash, i);
     }
 
     // 각 클래스별로 child 노드 개수를 lastChildIndex 에 담는다
@@ -172,17 +172,17 @@ void MetaObject::Shutdown() {
     lastChildIndex = 0;
 }
 
-const PropertySpec *MetaObject::FindPropertySpec(const char *name) const {
+const PropertyInfo *MetaObject::FindPropertyInfo(const char *name) const {
     if (!name || !name[0]) {
         return nullptr;
     }
 
-    int hash = pspecHash.GenerateHash(name, false);
+    int hash = propertyInfoHash.GenerateHash(name, false);
     
     for (const MetaObject *t = this; t != nullptr; t = t->super) {	
-        for (int i = t->pspecHash.First(hash); i != -1; i = t->pspecHash.Next(i)) {
-            if (!Str::Icmp(t->pspecMap[i].name, name)) {
-                return &t->pspecMap[i];
+        for (int i = t->propertyInfoHash.First(hash); i != -1; i = t->propertyInfoHash.Next(i)) {
+            if (!Str::Icmp(t->propertyInfos[i].name, name)) {
+                return &t->propertyInfos[i];
             }
         }
     }
@@ -190,27 +190,31 @@ const PropertySpec *MetaObject::FindPropertySpec(const char *name) const {
     return nullptr;
 }
 
-void MetaObject::GetPropertySpecList(Array<const PropertySpec *> &pspecs) const {
+void MetaObject::GetPropertyInfoList(Array<const PropertyInfo *> &propertyInfos) const {
     Array<Str> names;
 
-    pspecs.Clear();
+    propertyInfos.Clear();
 
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
-        for (const PropertySpec *pspec = t->pspecMap; pspec->flags != PropertySpec::Empty; pspec++) {            
-            if (!names.Find(pspec->GetName())) {
-                names.Append(pspec->GetName());
-                pspecs.Append(pspec);
+        for (const PropertyInfo *propInfo = t->propertyInfos; propInfo->flags != PropertyInfo::Empty; propInfo++) {            
+            if (!names.Find(propInfo->GetName())) {
+                names.Append(propInfo->GetName());
+                propertyInfos.Append(propInfo);
             }
         }
     }
 }
 
-PropertySpec &MetaObject::RegisterProperty(const PropertySpec &propertySpec) {
-    int index = pspecs.Append(propertySpec);
-    int hash = pspecHash.GenerateHash(propertySpec.GetName(), false);
-    pspecHash.Add(hash, index);
-    return pspecs[index];
+#ifdef NEW_PROPERTY_SYSTEM 
+
+PropertyInfo &MetaObject::RegisterProperty(const PropertyInfo &propInfo) {
+    int index = propertyInfos.Append(propInfo);
+    int hash = propertyInfoHash.GenerateHash(propInfo.GetName(), false);
+    propertyInfoHash.Add(hash, index);
+    return propertyInfos[index];
 }
+
+#endif
 
 //-----------------------------------------------------------------------------------------------
 
@@ -220,8 +224,8 @@ const EventDef EV_Destroy("destroy");
 ABSTRACT_DECLARATION("Object", Object, nullptr)
 
 BEGIN_PROPERTIES(Object)
-    PROPERTY_STRING("classname", "Classname", "", "", PropertySpec::ReadWrite | PropertySpec::Hidden),
-    PROPERTY_STRING("guid", "GUID", "GUID", Guid::zero.ToString(), PropertySpec::ReadWrite | PropertySpec::Hidden),
+    PROPERTY_STRING("classname", "Classname", "", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
+    PROPERTY_STRING("guid", "GUID", "GUID", Guid::zero.ToString(), PropertyInfo::ReadWrite | PropertyInfo::Hidden),
 END_PROPERTIES
 
 BEGIN_EVENTS(Object)
@@ -237,8 +241,8 @@ static PlatformAtomic instanceCounter(0);
 
 void Object::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Classname", "", "", PropertySpec::ReadWrite | PropertySpec::Hidden),
-    REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertySpec::ReadWrite | PropertySpec::Hidden);
+    REGISTER_PROPERTY("Classname", "", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
+    REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadWrite | PropertyInfo::Hidden);
 #endif
 }
 
@@ -396,13 +400,13 @@ Object *Object::FindInstance(const Guid &guid) {
     return instance;
 }
 
-const PropertySpec *Object::FindPropertySpec(const char *name) const {
-    Array<const PropertySpec *> pspecs;
-    GetPropertySpecList(pspecs);
+const PropertyInfo *Object::FindPropertyInfo(const char *name) const {
+    Array<const PropertyInfo *> propertyInfos;
+    GetPropertyInfoList(propertyInfos);
 
-    for (int i = 0; i < pspecs.Count(); i++) {
-        if (!Str::Cmp(pspecs[i]->GetName(), name)) {
-            return pspecs[i];
+    for (int i = 0; i < propertyInfos.Count(); i++) {
+        if (!Str::Cmp(propertyInfos[i]->GetName(), name)) {
+            return propertyInfos[i];
         }
     }
 

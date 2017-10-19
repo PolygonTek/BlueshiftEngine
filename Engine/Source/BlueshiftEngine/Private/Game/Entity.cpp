@@ -31,20 +31,20 @@ OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
 END_EVENTS
 BEGIN_PROPERTIES(Entity)
-    PROPERTY_OBJECT("parent", "Parent Entity", "parent entity", Guid::zero.ToString(), Entity::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_BOOL("isPrefabParent", "Is prefab Parent", "is prefab parent ?", "false", PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("prefabParent", "Prefab Parent", "prefab parent entity", Guid::zero.ToString(), Entity::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_STRING("name", "Name", "entity name", "", PropertySpec::ReadWrite),
-    PROPERTY_STRING("tag", "Tag", "Tag", "Untagged", PropertySpec::ReadWrite),
-    PROPERTY_INT("layer", "Layer", "Layer", "0", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", "false", PropertySpec::ReadWrite),
+    PROPERTY_OBJECT("parent", "Parent Entity", "parent entity", Guid::zero.ToString(), Entity::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("isPrefabParent", "Is prefab Parent", "is prefab parent ?", "false", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("prefabParent", "Prefab Parent", "prefab parent entity", Guid::zero.ToString(), Entity::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_STRING("name", "Name", "entity name", "", PropertyInfo::ReadWrite),
+    PROPERTY_STRING("tag", "Tag", "Tag", "Untagged", PropertyInfo::ReadWrite),
+    PROPERTY_INT("layer", "Layer", "Layer", "0", PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", "false", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void Entity::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", Entity, GetParent, SetParent, Guid::zero.ToString, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", Entity, GetParent, SetParent, Guid::zero.ToString, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::ReadWrite);
 #endif
 }
 
@@ -99,7 +99,7 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
 
                 if (metaComponent->IsTypeOf(ComScript::metaObject)) {
                     ComScript *scriptComponent = component->Cast<ComScript>();
-                    scriptComponent->InitPropertySpec(componentValue);
+                    scriptComponent->InitPropertyInfo(componentValue);
                 }
 
                 component->props->Init(componentValue);
@@ -147,16 +147,16 @@ void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &g
         Entity *ent = entities[i];
 
         for (int propIndex = 0; propIndex < ent->props->Count(); propIndex++) {
-            const PropertySpec *spec = ent->props->GetSpec(propIndex);
+            const PropertyInfo *propInfo = ent->props->GetInfo(propIndex);
 
-            if (spec->GetType() == PropertySpec::ObjectType) {
-                const Guid objectGuid = ent->props->Get(spec->GetName()).As<Guid>();
+            if (propInfo->GetType() == PropertyInfo::ObjectType) {
+                const Guid objectGuid = ent->props->Get(propInfo->GetName()).As<Guid>();
                 Guid mappedGuid;
 
                 if (guidMap.Get(objectGuid, &mappedGuid)) {
-                    //BE_LOG(L"Remap %hs %hs: %hs -> %hs\n", ent->GetName(), spec->GetName(), objectGuid.ToString(), mappedGuidPtr->ToString());
+                    //BE_LOG(L"Remap %hs %hs: %hs -> %hs\n", ent->GetName(), propInfo->GetName(), objectGuid.ToString(), mappedGuidPtr->ToString());
 
-                    ent->props->Set(spec->GetName(), mappedGuid);
+                    ent->props->Set(propInfo->GetName(), mappedGuid);
                 }
             }
         }
@@ -165,14 +165,14 @@ void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &g
             Component *component = ent->GetComponent(componentIndex);
 
             for (int propIndex = 0; propIndex < component->props->Count(); propIndex++) {
-                const PropertySpec *spec = component->props->GetSpec(propIndex);
+                const PropertyInfo *propInfo = component->props->GetInfo(propIndex);
 
-                if (spec->GetType() == PropertySpec::ObjectType) {
-                    const Guid objectGuid = component->props->Get(spec->GetName()).As<Guid>();
+                if (propInfo->GetType() == PropertyInfo::ObjectType) {
+                    const Guid objectGuid = component->props->Get(propInfo->GetName()).As<Guid>();
                     Guid mappedGuid;
 
                     if (guidMap.Get(objectGuid, &mappedGuid)) {
-                        component->props->Set(spec->GetName(), mappedGuid);
+                        component->props->Set(propInfo->GetName(), mappedGuid);
                     }
                 }
             }

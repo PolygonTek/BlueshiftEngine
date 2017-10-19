@@ -40,16 +40,16 @@ void RBSurf::DrawPrimitives() const {
 }
 
 void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
-    const auto &specHashMap = shader->GetSpecHashMap();
+    const auto &propertyInfoHashMap = shader->GetPropertyInfoHashMap();
 
     // Iterate over all shader property specs
-    for (int i = 0; i < specHashMap.Count(); i++) {
-        const auto *entry = specHashMap.GetByIndex(i);
+    for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
+        const auto *entry = propertyInfoHashMap.GetByIndex(i);
         const auto &key = entry->first;
-        const auto &spec = entry->second;
+        const auto &propInfo = entry->second;
 
         // Skip if it is a shader define
-        if (spec.GetFlags() & PropertySpec::ShaderDefine) {
+        if (propInfo.GetFlags() & PropertyInfo::ShaderDefine) {
             continue;
         }
 
@@ -61,35 +61,35 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
 
         const Shader::Property &prop = propEntry->second;
 
-        switch (spec.GetType()) {
-        case PropertySpec::FloatType:
+        switch (propInfo.GetType()) {
+        case PropertyInfo::FloatType:
             shader->SetConstant1f(key, prop.data.As<float>());
             break;
-        case PropertySpec::Vec2Type:
+        case PropertyInfo::Vec2Type:
             shader->SetConstant2f(key, prop.data.As<Vec2>());
             break;
-        case PropertySpec::Vec3Type:
+        case PropertyInfo::Vec3Type:
             shader->SetConstant3f(key, prop.data.As<Vec3>());
             break;
-        case PropertySpec::Vec4Type:
+        case PropertyInfo::Vec4Type:
             shader->SetConstant4f(key, prop.data.As<Vec4>());
             break;
-        case PropertySpec::Color3Type:
+        case PropertyInfo::Color3Type:
             shader->SetConstant3f(key, prop.data.As<Color3>());
             break;
-        case PropertySpec::Color4Type:
+        case PropertyInfo::Color4Type:
             shader->SetConstant4f(key, prop.data.As<Color4>());
             break;
-        case PropertySpec::PointType:
+        case PropertyInfo::PointType:
             shader->SetConstant2i(key, prop.data.As<Point>());
             break;
-        case PropertySpec::RectType:
+        case PropertyInfo::RectType:
             shader->SetConstant4i(key, prop.data.As<Rect>());
             break;
-        case PropertySpec::Mat3Type:
+        case PropertyInfo::Mat3Type:
             shader->SetConstant3x3f(key, true, prop.data.As<Mat3>());
             break;
-        case PropertySpec::ObjectType: // 
+        case PropertyInfo::ObjectType: // 
             shader->SetTexture(key, prop.texture);
             break;
         default:
@@ -103,13 +103,13 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
 }
 
 const Texture *RBSurf::TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const {
-    const auto *entry = mtrlPass->shader->GetSpecHashMap().Get(textureName);
+    const auto *entry = mtrlPass->shader->GetPropertyInfoHashMap().Get(textureName);
     if (!entry) {
         return nullptr;
     }
 
-    const auto &spec = entry->second;
-    if ((spec.GetFlags() & PropertySpec::ShaderDefine) || (spec.GetType() != PropertySpec::ObjectType)) {
+    const auto &propInfo = entry->second;
+    if ((propInfo.GetFlags() & PropertyInfo::ShaderDefine) || (propInfo.GetType() != PropertyInfo::ObjectType)) {
         return nullptr;
     }
 

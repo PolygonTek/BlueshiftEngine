@@ -30,40 +30,40 @@ BEGIN_EVENTS(ComLight)
 END_EVENTS
 BEGIN_PROPERTIES(ComLight)
     // NOTE: lightType_t enum 과 같은 순서여야 함
-    PROPERTY_ENUM("lightType", "Light Type", "", "Point;Spot;Directional", "0", PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("material", "Material", "", GuidMapper::zeroClampLightMaterialGuid.ToString(), MaterialAsset::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_COLOR3("color", "Color", "", "1 1 1", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("turnOn", "Turn On", "", "true", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("castShadows", "Cast Shadows", "", "false", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("shadowOffsetFactor", "Shadow Offset Factor", "scale value for shadow map drawing", Rangef(0, 16, 0.01f), "3", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("shadowOffsetUnits", "Shadow Offset Unit", "bias value added to depth test for shadow map drawing", Rangef(0, 1000, 1), "200", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("primaryLight", "Is Primary Light", "", "false", PropertySpec::ReadWrite),
-    PROPERTY_VEC3("lightSize", "Size", "", "200 200 200", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("fallOffExponent", "Fall Off Exponent", "", Rangef(0.01f, 100, 0.1f), "1.25", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("intensity", "Intensity", "", Rangef(0, 8, 0.01f), "2.0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("lightZNear", "Near", "", Rangef(1, 200, 0.01f), "10", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("timeOffset", "Time Offset", "", "0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("timeScale", "Time Scale", "", "1", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "16384", PropertySpec::ReadWrite),
+    PROPERTY_ENUM("lightType", "Light Type", "", "Point;Spot;Directional", "0", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("material", "Material", "", GuidMapper::zeroClampLightMaterialGuid.ToString(), MaterialAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_COLOR3("color", "Color", "", "1 1 1", PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("turnOn", "Turn On", "", "true", PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("castShadows", "Cast Shadows", "", "false", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("shadowOffsetFactor", "Shadow Offset Factor", "scale value for shadow map drawing", Rangef(0, 16, 0.01f), "3", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("shadowOffsetUnits", "Shadow Offset Unit", "bias value added to depth test for shadow map drawing", Rangef(0, 1000, 1), "200", PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("primaryLight", "Is Primary Light", "", "false", PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("lightSize", "Size", "", "200 200 200", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("fallOffExponent", "Fall Off Exponent", "", Rangef(0.01f, 100, 0.1f), "1.25", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("intensity", "Intensity", "", Rangef(0, 8, 0.01f), "2.0", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("lightZNear", "Near", "", Rangef(1, 200, 0.01f), "10", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("timeOffset", "Time Offset", "", "0", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("timeScale", "Time Scale", "", "1", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "16384", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComLight::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Light Type", "Point;Spot;Directional", GetLightType, SetLightType, 0, "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Material", ObjectRef, GetMaterialRef, SetMaterialRef, ObjectRef(MaterialAsset::metaObject, GuidMapper::zeroClampLightMaterialGuid), "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, Color3::white, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Turn On", bool, IsTurnOn, SetTurnOn, true, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, false, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Shadow Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, 3.f, "", PropertySpec::ReadWrite).SetRange(0, 16, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Shadow Offset Units", float, GetShadowOffsetUnits, SetShadowOffsetUnits, 200.f, "", PropertySpec::ReadWrite).SetRange(0, 1000, 1);
-    REGISTER_ACCESSOR_PROPERTY("Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false, "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Light Size", Vec3, GetLightSize, SetLightSize, Vec3(200, 200, 200), "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, 1.25f, "", PropertySpec::ReadWrite).SetRange(0.01f, 100, 0.1f);
-    REGISTER_ACCESSOR_PROPERTY("Intensity", float, GetIntensity, SetIntensity, 2.f, "", PropertySpec::ReadWrite).SetRange(0, 8, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Near", float, GetLightZNear, SetLightZNear, 10.f, "", PropertySpec::ReadWrite).SetRange(1, 200, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, 1.f, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 16384.f, "", PropertySpec::ReadWrite);
+    REGISTER_ENUM_ACCESSOR_PROPERTY("Light Type", "Point;Spot;Directional", GetLightType, SetLightType, 0, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Material", ObjectRef, GetMaterialRef, SetMaterialRef, ObjectRef(MaterialAsset::metaObject, GuidMapper::zeroClampLightMaterialGuid), "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, Color3::white, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Turn On", bool, IsTurnOn, SetTurnOn, true, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, false, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Shadow Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, 3.f, "", PropertyInfo::ReadWrite).SetRange(0, 16, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Shadow Offset Units", float, GetShadowOffsetUnits, SetShadowOffsetUnits, 200.f, "", PropertyInfo::ReadWrite).SetRange(0, 1000, 1);
+    REGISTER_ACCESSOR_PROPERTY("Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Light Size", Vec3, GetLightSize, SetLightSize, Vec3(200, 200, 200), "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, 1.25f, "", PropertyInfo::ReadWrite).SetRange(0.01f, 100, 0.1f);
+    REGISTER_ACCESSOR_PROPERTY("Intensity", float, GetIntensity, SetIntensity, 2.f, "", PropertyInfo::ReadWrite).SetRange(0, 8, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Near", float, GetLightZNear, SetLightZNear, 10.f, "", PropertyInfo::ReadWrite).SetRange(1, 200, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, 1.f, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 16384.f, "", PropertyInfo::ReadWrite);
 #endif
 }
 

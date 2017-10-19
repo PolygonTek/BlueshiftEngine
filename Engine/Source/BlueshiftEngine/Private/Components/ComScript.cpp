@@ -29,12 +29,12 @@ OBJECT_DECLARATION("Script", ComScript, Component)
 BEGIN_EVENTS(ComScript)
 END_EVENTS
 BEGIN_PROPERTIES(ComScript)
-    PROPERTY_OBJECT("script", "Script", "", Guid::zero.ToString(), ScriptAsset::metaObject, PropertySpec::ReadWrite),
+    PROPERTY_OBJECT("script", "Script", "", Guid::zero.ToString(), ScriptAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComScript::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Script", ObjectRef, GetScriptRef, SetScriptRef, ObjectRef(ScriptAsset::metaObject, Guid::zero), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Script", ObjectRef, GetScriptRef, SetScriptRef, ObjectRef(ScriptAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
 #endif
 }
 
@@ -49,22 +49,22 @@ ComScript::ComScript() {
 ComScript::~ComScript() {
     Purge(false);
 
-    scriptPropertySpecs.DeleteContents(true);
+    scriptPropertyInfos.DeleteContents(true);
 }
 
-void ComScript::GetPropertySpecList(Array<const PropertySpec *> &pspecs) const {
-    Component::GetPropertySpecList(pspecs);
+void ComScript::GetPropertyInfoList(Array<const PropertyInfo *> &pspecs) const {
+    Component::GetPropertyInfoList(pspecs);
 
-    pspecs.AppendList(scriptPropertySpecs);
+    pspecs.AppendList(scriptPropertyInfos);
 }
 
-void ComScript::InitPropertySpec(Json::Value &jsonComponent) {
+void ComScript::InitPropertyInfo(Json::Value &jsonComponent) {
     const Guid scriptGuid = Guid::ParseString(jsonComponent.get("script", Guid::zero.ToString()).asCString());
 
-    InitPropertySpecImpl(scriptGuid);
+    InitPropertyInfoImpl(scriptGuid);
 }
 
-void ComScript::InitPropertySpecImpl(const Guid &scriptGuid) {
+void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
 
     const Str sandboxName = GetGuid().ToString();
@@ -75,7 +75,7 @@ void ComScript::InitPropertySpecImpl(const Guid &scriptGuid) {
 
     LuaVM::State().Run();
 
-    scriptPropertySpecs.Clear();
+    scriptPropertyInfos.Clear();
 
     if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
         auto enumerator = [this](LuaCpp::Selector &selector) {
@@ -91,11 +91,11 @@ void ComScript::InitPropertySpecImpl(const Guid &scriptGuid) {
 
             if (!Str::Cmp(type, "string")) {
                 const char *value = prop["value"];
-                scriptPropertySpecs.Append(new PROPERTY_STRING(name, label, desc, value, PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_STRING(name, label, desc, value, PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "enum")) {
                 const char *sequence = prop["sequence"];
                 Str value = Str((int)prop["value"]);
-                scriptPropertySpecs.Append(new PROPERTY_ENUM(name, label, desc, sequence, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_ENUM(name, label, desc, sequence, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "float")) {
                 Str value = Str((float)prop["value"]);
                 if (prop["minimum"].LuaType() == LUA_TNUMBER && prop["maximum"].LuaType() == LUA_TNUMBER) {
@@ -107,9 +107,9 @@ void ComScript::InitPropertySpecImpl(const Guid &scriptGuid) {
                     if (step == 0.0f) {
                         range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
                     }
-                    scriptPropertySpecs.Append(new PROPERTY_RANGED_FLOAT(name, label, desc, range, value.c_str(), PropertySpec::ReadWrite));
+                    scriptPropertyInfos.Append(new PROPERTY_RANGED_FLOAT(name, label, desc, range, value.c_str(), PropertyInfo::ReadWrite));
                 } else {
-                    scriptPropertySpecs.Append(new PROPERTY_FLOAT(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                    scriptPropertyInfos.Append(new PROPERTY_FLOAT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
                 }
             } else if (!Str::Cmp(type, "int")) {
                 Str value = Str((int)prop["value"]);
@@ -122,54 +122,54 @@ void ComScript::InitPropertySpecImpl(const Guid &scriptGuid) {
                     if (step == 0.0f) {
                         range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
                     }
-                    scriptPropertySpecs.Append(new PROPERTY_RANGED_INT(name, label, desc, range, value.c_str(), PropertySpec::ReadWrite));
+                    scriptPropertyInfos.Append(new PROPERTY_RANGED_INT(name, label, desc, range, value.c_str(), PropertyInfo::ReadWrite));
                 } else {
-                    scriptPropertySpecs.Append(new PROPERTY_INT(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                    scriptPropertyInfos.Append(new PROPERTY_INT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
                 }
             } else if (!Str::Cmp(type, "bool")) {
                 Str value = Str((bool)prop["value"]);
-                scriptPropertySpecs.Append(new PROPERTY_BOOL(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_BOOL(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "point")) {
                 Point point = prop["value"];
                 Str value = point.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_POINT(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_POINT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "rect")) {
                 Rect rect = prop["value"];
                 Str value = rect.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_RECT(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_RECT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "vec2")) {
                 Vec2 vec2 = prop["value"];
                 Str value = vec2.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_VEC2(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_VEC2(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "vec3")) {
                 Vec3 vec3 = prop["value"];
                 Str value = vec3.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_VEC3(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_VEC3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "vec4")) {
                 Vec4 vec4 = prop["value"];
                 Str value = vec4.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_VEC4(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_VEC4(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "color3")) {
                 Color3 color3 = prop["value"];
                 Str value = color3.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_COLOR3(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_COLOR3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "color4")) {
                 Color4 color4 = prop["value"];
                 Str value = color4.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_COLOR4(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_COLOR4(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "angles")) {
                 Angles angles = prop["value"];
                 Str value = angles.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_ANGLES(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_ANGLES(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "mat3")) {
                 Mat3 mat3 = prop["value"];
                 Str value = mat3.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_MAT3(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
+                scriptPropertyInfos.Append(new PROPERTY_MAT3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
             } else if (!Str::Cmp(type, "object")) {
                 const char *classname = prop["classname"];
                 MetaObject *metaObject = Object::GetMetaObject(classname);
                 if (metaObject) {
-                    scriptPropertySpecs.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertySpec::ReadWrite));
+                    scriptPropertyInfos.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertyInfo::ReadWrite));
                 }
             }
         };
@@ -284,62 +284,62 @@ bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandbo
 void ComScript::SetScriptProperties() {
     LuaCpp::Selector properties = sandbox["properties"];
 
-    for (int i = 0; i < scriptPropertySpecs.Count(); ++i) {
-        const BE1::PropertySpec *spec = scriptPropertySpecs[i];
+    for (int i = 0; i < scriptPropertyInfos.Count(); ++i) {
+        const BE1::PropertyInfo *propInfo = scriptPropertyInfos[i];
 
-        const char *name = spec->GetName();
-        const PropertySpec::Type type = spec->GetType();
+        const char *name = propInfo->GetName();
+        const PropertyInfo::Type type = propInfo->GetType();
         
         switch (type) {
-        case PropertySpec::StringType:
+        case PropertyInfo::StringType:
             properties[name]["value"] = props->Get(name).As<Str>().c_str();
             break;
-        case PropertySpec::FloatType:
+        case PropertyInfo::FloatType:
             properties[name]["value"] = props->Get(name).As<float>();
             break;
-        case PropertySpec::IntType:
-        case PropertySpec::EnumType:
+        case PropertyInfo::IntType:
+        case PropertyInfo::EnumType:
             properties[name]["value"] = props->Get(name).As<int>();
             break;
-        case PropertySpec::BoolType:
+        case PropertyInfo::BoolType:
             properties[name]["value"] = props->Get(name).As<bool>();
             break;
-        case PropertySpec::PointType:
+        case PropertyInfo::PointType:
             (Point &)properties[name]["value"] = props->Get(name).As<Point>();
             break;
-        case PropertySpec::RectType:
+        case PropertyInfo::RectType:
             (Rect &)properties[name]["value"] = props->Get(name).As<Rect>();
             break;
-        case PropertySpec::Vec2Type:
+        case PropertyInfo::Vec2Type:
             (Vec2 &)properties[name]["value"] = props->Get(name).As<Vec2>();
             break;
-        case PropertySpec::Vec3Type:
+        case PropertyInfo::Vec3Type:
             (Vec3 &)properties[name]["value"] = props->Get(name).As<Vec3>();
             break;
-        case PropertySpec::Vec4Type:
+        case PropertyInfo::Vec4Type:
             (Vec4 &)properties[name]["value"] = props->Get(name).As<Vec4>();
             break;
-        case PropertySpec::Color3Type:
+        case PropertyInfo::Color3Type:
             (Color3 &)properties[name]["value"] = props->Get(name).As<Color3>();
             break;
-        case PropertySpec::Color4Type:
+        case PropertyInfo::Color4Type:
             (Color4 &)properties[name]["value"] = props->Get(name).As<Color4>();
             break;
-        case PropertySpec::AnglesType:
+        case PropertyInfo::AnglesType:
             (Angles &)properties[name]["value"] = props->Get(name).As<Angles>();
             break;
-        case PropertySpec::Mat3Type:
+        case PropertyInfo::Mat3Type:
             (Mat3 &)properties[name]["value"] = props->Get(name).As<Mat3>();
             break;
-        case PropertySpec::ObjectType: {
+        case PropertyInfo::ObjectType: {
             Guid objectGuid = props->Get(name).As<Guid>();
             Object *object = Object::FindInstance(objectGuid);
             if (object) {
                 properties[name]["value"] = object;
             } else {
-                if (spec->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
+                if (propInfo->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
                     if (!objectGuid.IsZero()) {
-                        object = spec->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
+                        object = propInfo->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
                         properties[name]["value"] = object;
                     }
                 }
@@ -455,7 +455,7 @@ Guid ComScript::GetScript() const {
 }
 
 void ComScript::SetScript(const Guid &guid) {
-    InitPropertySpecImpl(guid);
+    InitPropertyInfoImpl(guid);
 
     ChangeScript(guid);
 
@@ -468,7 +468,7 @@ ObjectRef ComScript::GetScriptRef() const {
 }
 
 void ComScript::SetScriptRef(const ObjectRef &scriptRef) {
-    InitPropertySpecImpl(scriptRef.objectGuid);
+    InitPropertyInfoImpl(scriptRef.objectGuid);
 
     ChangeScript(scriptRef.objectGuid);
 

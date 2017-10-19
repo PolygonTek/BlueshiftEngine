@@ -112,7 +112,9 @@ public:
     static Event *          Alloc(const EventDef *evdef, int numArgs, va_list args);
     static void             CopyArgPtrs(const EventDef *evdef, int numArgs, va_list args, intptr_t data[EventArg::MaxArgs]);
 
+                            /// Cancels a event which is posted by sender in event queue
     static void             CancelEvents(const Object *sender, const EventDef *evdef = nullptr);
+
     static void             ServiceEvent(Event *event);
     static void             ServiceEvents();
     static void             ServiceGuiEvents();

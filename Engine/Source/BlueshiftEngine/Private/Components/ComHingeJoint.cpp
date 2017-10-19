@@ -26,18 +26,18 @@ OBJECT_DECLARATION("Hinge Joint", ComHingeJoint, ComJoint)
 BEGIN_EVENTS(ComHingeJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComHingeJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_ANGLES("angles", "Angles", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("motorSpeed", "Motor Speed", "", "0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("maxMotorImpulse", "Max Motor Impulse", "", "0", PropertySpec::ReadWrite),
+    PROPERTY_VEC3("anchor", "Anchor", "", "0 0 0", PropertyInfo::ReadWrite),
+    PROPERTY_ANGLES("angles", "Angles", "", "0 0 0", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("motorSpeed", "Motor Speed", "", "0", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("maxMotorImpulse", "Max Motor Impulse", "", "0", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComHingeJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertySpec::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertySpec::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertyInfo::ReadWrite);
 #endif
 }
 

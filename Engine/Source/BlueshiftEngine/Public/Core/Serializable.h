@@ -31,7 +31,7 @@ public:
 //
 //-------------------------------------------------------------------------------
 
-class PropertySpec;
+class PropertyInfo;
 
 class Property {
     friend class Properties;
@@ -71,11 +71,11 @@ public:
                             /// Returns property name by index.
     const char *            GetName(int index) const;
 
-                            /// Returns property spec by index.
-    const PropertySpec *    GetSpec(int index) const;
+                            /// Returns property info by index.
+    const PropertyInfo *    GetInfo(int index) const;
 
-                            /// Returns property spec by spec name.
-    const PropertySpec *    GetSpec(const char *name) const;
+                            /// Returns property info by name.
+    const PropertyInfo *    GetInfo(const char *name) const;
 
                             /// Returns number of elements of array property
                             /// This function is valid only if property is an array

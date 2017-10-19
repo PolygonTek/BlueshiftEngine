@@ -24,8 +24,8 @@ OBJECT_DECLARATION("Physics Settings", PhysicsSettings, GameSettings)
 BEGIN_EVENTS(PhysicsSettings)
 END_EVENTS
 BEGIN_PROPERTIES(PhysicsSettings)
-    PROPERTY_VEC3("gravity", "Gravity", "gravity", "0 0 -9.8", PropertySpec::ReadWrite),
-    PROPERTY_INT("filterMasks", "Filter Mask", "", "-1", PropertySpec::ReadWrite | PropertySpec::IsArray),
+    PROPERTY_VEC3("gravity", "Gravity", "gravity", "0 0 -9.8", PropertyInfo::ReadWrite),
+    PROPERTY_INT("filterMasks", "Filter Mask", "", "-1", PropertyInfo::ReadWrite | PropertyInfo::IsArray),
 END_PROPERTIES
 
 void PhysicsSettings::Init() {

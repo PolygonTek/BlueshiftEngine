@@ -26,14 +26,14 @@ OBJECT_DECLARATION("Sphere Collider", ComSphereCollider, ComCollider)
 BEGIN_EVENTS(ComSphereCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComSphereCollider)
-    PROPERTY_VEC3("center", "Center", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("radius", "Radius", "", "1", PropertySpec::ReadWrite),
+    PROPERTY_VEC3("center", "Center", "", "0 0 0", PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("radius", "Radius", "", "1", PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComSphereCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertySpec::ReadWrite);
-    REGISTER_PROPERTY("Radius", float, radius, 1.f, "", PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Radius", float, radius, 1.f, "", PropertyInfo::ReadWrite);
 #endif
 }
 
