@@ -30,14 +30,14 @@ OBJECT_DECLARATION("Rigid Body", ComRigidBody, Component)
 BEGIN_EVENTS(ComRigidBody)
 END_EVENTS
 BEGIN_PROPERTIES(ComRigidBody)
-    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.01f), "1", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("restitution", "Restitution", "parameter for make objects bounce", Rangef(0, 1, 0.01f), "0", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("friction", "Friction", "parameter for make objects slide along each other realistically", Rangef(0, 1, 0.01f), "1", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("rollingFriction", "Rolling Friction", "", Rangef(0, 1, 0.01f), "1", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("linearDamping", "Linear Damping", "reduced amount of linear velocity", Rangef(0, 1, 0.01f), "0.05", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("angularDamping", "Angular Damping", "reduced amount of angular velocity", Rangef(0, 1, 0.01f), "0.01", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("kinematic", "Kinematic", "", "false", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("ccd", "CCD", "continuous collision detection", "false", PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.01f), 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("restitution", "Restitution", "parameter for make objects bounce", Rangef(0, 1, 0.01f), 0.0f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("friction", "Friction", "parameter for make objects slide along each other realistically", Rangef(0, 1, 0.01f), 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("rollingFriction", "Rolling Friction", "", Rangef(0, 1, 0.01f), 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("linearDamping", "Linear Damping", "reduced amount of linear velocity", Rangef(0, 1, 0.01f), 0.05f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("angularDamping", "Angular Damping", "reduced amount of angular velocity", Rangef(0, 1, 0.01f), 0.01f, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("kinematic", "Kinematic", "", false, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("ccd", "CCD", "continuous collision detection", false, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 class ComRigidBody::CollisionListener : public PhysCollisionListener {

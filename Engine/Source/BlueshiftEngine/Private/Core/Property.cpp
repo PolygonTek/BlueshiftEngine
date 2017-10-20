@@ -149,48 +149,7 @@ Variant PropertyInfo::ToVariant(PropertyInfo::Type type, const char *value) {
     return out;
 }
 
-static PropertyInfo::Type StringToType(const char *s) {
-    if (!Str::Cmp(s, "string")) return PropertyInfo::StringType;
-    if (!Str::Cmp(s, "float")) return PropertyInfo::FloatType;
-    if (!Str::Cmp(s, "int")) return PropertyInfo::IntType;
-    if (!Str::Cmp(s, "bool")) return PropertyInfo::BoolType;
-    if (!Str::Cmp(s, "point")) return PropertyInfo::PointType;
-    if (!Str::Cmp(s, "rect")) return PropertyInfo::RectType;
-    if (!Str::Cmp(s, "vec2")) return PropertyInfo::Vec2Type;
-    if (!Str::Cmp(s, "vec3")) return PropertyInfo::Vec3Type;
-    if (!Str::Cmp(s, "vec4")) return PropertyInfo::Vec4Type;
-    if (!Str::Cmp(s, "color3")) return PropertyInfo::Color3Type;
-    if (!Str::Cmp(s, "color4")) return PropertyInfo::Color4Type;
-    if (!Str::Cmp(s, "angles")) return PropertyInfo::AnglesType;
-    if (!Str::Cmp(s, "mat3")) return PropertyInfo::Mat3Type;
-    if (!Str::Cmp(s, "enum")) return PropertyInfo::EnumType;
-    if (!Str::Cmp(s, "object")) return PropertyInfo::ObjectType;
-    return PropertyInfo::BadType;
-}
-
-static const Str TypeToString(PropertyInfo::Type type) {
-    Str s;
-    switch (type) {
-    case PropertyInfo::StringType: s = "string"; break;
-    case PropertyInfo::FloatType: s = "float"; break;
-    case PropertyInfo::IntType: s = "int"; break;
-    case PropertyInfo::BoolType: s = "bool"; break;
-    case PropertyInfo::PointType: s = "point"; break;
-    case PropertyInfo::RectType: s = "rect"; break;
-    case PropertyInfo::Vec2Type: s = "vec2"; break;
-    case PropertyInfo::Vec3Type: s = "vec3"; break;
-    case PropertyInfo::Vec4Type: s = "vec4"; break;
-    case PropertyInfo::Color3Type: s = "color3"; break;
-    case PropertyInfo::Color4Type: s = "color4"; break;
-    case PropertyInfo::AnglesType: s = "angls"; break;
-    case PropertyInfo::Mat3Type: s = "mat3"; break;
-    case PropertyInfo::EnumType: s = "enum"; break;
-    case PropertyInfo::ObjectType: s = "object"; break;
-    default: break;
-    }
-    return s;
-}
-
+/*
 char *PropertyInfo::ToString() const {
     static char buffer[1024];
     char s1[256] = "";
@@ -232,99 +191,10 @@ char *PropertyInfo::ToString() const {
     assert(*lastChar == ' ');
     *lastChar = '\0';
 
-    Str::snPrintf(buffer, sizeof(buffer), "%s%s = \"%s\" (%s)", s1, s2, defaultValue.c_str(), s3);
+    Str::snPrintf(buffer, sizeof(buffer), "%s%s = \"%s\" (%s)", s1, s2, defaultValue.ToString().c_str(), s3);
 
     return buffer;
 }
-
-bool PropertyInfo::ParseSpec(Lexer &lexer) {
-    type = BadType;
-    flags = Readable | Writable;
-    range = Rangef(0, 0, 1);
-    metaObject = nullptr;
-    
-    if (!lexer.ReadToken(&name, false)) {
-        return false;
-    }
-
-    if (!lexer.ExpectPunctuation(P_PARENTHESESOPEN)) {
-        return false;
-    }
-
-    if (!lexer.ExpectTokenType(TokenType::TT_STRING, &label)) {
-        return false;
-    }
-
-    if (!lexer.ExpectPunctuation(P_PARENTHESESCLOSE)) {
-        return false;
-    }
-
-    if (!lexer.ExpectPunctuation(P_COLON)) {
-        return false;
-    }
-
-    Str typeStr;
-    if (!lexer.ReadToken(&typeStr, false)) {
-        return false;
-    }
-
-    type = StringToType(typeStr);
-
-    Str enumSequence, metaObjectName;
-    if (type == PropertyInfo::EnumType) {
-        if (!lexer.ExpectTokenType(TokenType::TT_STRING, &enumSequence)) {
-            return false;
-        }
-        enumeration.Clear();
-        SplitStringIntoList(enumeration, enumSequence, ";");
-    } else if (type == PropertyInfo::ObjectType) {
-        if (!lexer.ReadToken(&metaObjectName, false)) {
-            return false;
-        }
-        metaObject = Object::GetMetaObject(metaObjectName);
-    } else if (type == PropertyInfo::IntType || 
-        type == PropertyInfo::FloatType || 
-        type == PropertyInfo::Vec2Type || 
-        type == PropertyInfo::Vec3Type || 
-        type == PropertyInfo::Vec4Type) {
-        Str token;
-        lexer.ReadToken(&token, false);
-
-        if (token == "range") {
-            flags |= PropertyInfo::Ranged;
-            range.minValue = lexer.ParseNumber();
-            range.maxValue = lexer.ParseNumber();
-            range.step = lexer.ParseNumber();
-        } else {
-            lexer.UnreadToken(&token);
-        }
-    }
-
-    if (!lexer.ExpectPunctuation(P_ASSIGN)) {
-        return false;
-    }
-
-    if (!lexer.ExpectTokenType(TokenType::TT_STRING, &defaultValue)) {
-        return false;
-    }
-
-    Str token;
-    lexer.ReadToken(&token, false);
-    if (token == "(") {
-        while (lexer.ReadToken(&token, false)) {
-            if (token == ")") {
-                break;
-            } else if (token == "hidden") {
-                flags |= Hidden;
-            } else if (token == "shaderDefine") {
-                flags |= ShaderDefine;
-            } else {
-                return false;
-            }
-        }
-    }
-    
-    return true;
-}
+*/
 
 BE_NAMESPACE_END

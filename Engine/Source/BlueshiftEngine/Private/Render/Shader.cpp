@@ -17,6 +17,8 @@
 #include "RenderInternal.h"
 #include "Core/Lexer.h"
 #include "File/FileSystem.h"
+#include "Asset/Asset.h"
+#include "Asset/GuidMapper.h"
 
 #if defined __ANDROID__ && ! defined __XAMARIN__
 int android_progress = 0;
@@ -283,6 +285,122 @@ bool Shader::Create(const char *text, const char *baseDir) {
     return Finish(generatePerforatedVersion, generatePremulAlphaVersion, generateGpuSkinningVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion, baseDir);
 }
 
+bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
+    propInfo.type = PropertyInfo::BadType;
+    propInfo.flags = PropertyInfo::Readable | PropertyInfo::Writable;
+    propInfo.range = Rangef(0, 0, 1);
+    propInfo.metaObject = nullptr;
+
+    if (!lexer.ReadToken(&propInfo.name, false)) {
+        return false;
+    }
+
+    if (!lexer.ExpectPunctuation(P_PARENTHESESOPEN)) {
+        return false;
+    }
+
+    if (!lexer.ExpectTokenType(TokenType::TT_STRING, &propInfo.label)) {
+        return false;
+    }
+
+    if (!lexer.ExpectPunctuation(P_PARENTHESESCLOSE)) {
+        return false;
+    }
+
+    if (!lexer.ExpectPunctuation(P_COLON)) {
+        return false;
+    }
+
+    Str typeStr;
+    if (!lexer.ReadToken(&typeStr, false)) {
+        return false;
+    }
+
+    if (!Str::Cmp(typeStr, "bool")) {
+        propInfo.type = PropertyInfo::BoolType;
+    } else if (!Str::Cmp(typeStr, "int")) {
+        propInfo.type = PropertyInfo::IntType;
+    } else if (!Str::Cmp(typeStr, "point")) {
+        propInfo.type = PropertyInfo::PointType;
+    } else if (!Str::Cmp(typeStr, "rect")) {
+        propInfo.type = PropertyInfo::RectType;
+    } else if (!Str::Cmp(typeStr, "float")) {
+        propInfo.type = PropertyInfo::FloatType;
+    } else if (!Str::Cmp(typeStr, "vec2")) {
+        propInfo.type = PropertyInfo::Vec2Type;
+    } else if (!Str::Cmp(typeStr, "vec3")) {
+        propInfo.type = PropertyInfo::Vec3Type;
+    } else if (!Str::Cmp(typeStr, "vec4")) {
+        propInfo.type = PropertyInfo::Vec4Type;
+    } else if (!Str::Cmp(typeStr, "color3")) {
+        propInfo.type = PropertyInfo::Color3Type;
+    } else if (!Str::Cmp(typeStr, "color4")) {
+        propInfo.type = PropertyInfo::Color4Type;
+    } else if (!Str::Cmp(typeStr, "enum")) {
+        Str enumSequence;
+        if (!lexer.ExpectTokenType(TokenType::TT_STRING, &enumSequence)) {
+            return false;
+        }
+        propInfo.type = PropertyInfo::EnumType;
+        propInfo.enumeration.Clear();
+        SplitStringIntoList(propInfo.enumeration, enumSequence, ";");
+    } else if (!Str::Cmp(typeStr, "texture")) {
+        propInfo.type = PropertyInfo::ObjectType;
+        propInfo.metaObject = &TextureAsset::metaObject;
+    }
+
+    if (propInfo.type == PropertyInfo::IntType ||
+        propInfo.type == PropertyInfo::FloatType ||
+        propInfo.type == PropertyInfo::Vec2Type ||
+        propInfo.type == PropertyInfo::Vec3Type ||
+        propInfo.type == PropertyInfo::Vec4Type) {
+        Str token;
+        lexer.ReadToken(&token, false);
+
+        if (token == "range") {
+            propInfo.flags |= PropertyInfo::Ranged;
+            propInfo.range.minValue = lexer.ParseNumber();
+            propInfo.range.maxValue = lexer.ParseNumber();
+            propInfo.range.step = lexer.ParseNumber();
+        } else {
+            lexer.UnreadToken(&token);
+        }
+    }
+
+    if (!lexer.ExpectPunctuation(P_ASSIGN)) {
+        return false;
+    }
+
+    Str defaultValueString;
+    if (!lexer.ExpectTokenType(TokenType::TT_STRING, &defaultValueString)) {
+        return false;
+    }
+
+    if (!Str::Cmp(typeStr, "texture")) {
+        propInfo.defaultValue = resourceGuidMapper.Get(defaultValueString);
+    } else {
+        propInfo.defaultValue = PropertyInfo::ToVariant(propInfo.type, defaultValueString);
+    }
+
+    Str token;
+    lexer.ReadToken(&token, false);
+    if (token == "(") {
+        while (lexer.ReadToken(&token, false)) {
+            if (token == ")") {
+                break;
+            } else if (token == "hidden") {
+                propInfo.flags |= PropertyInfo::Hidden;
+            } else if (token == "shaderDefine") {
+                propInfo.flags |= PropertyInfo::ShaderDefine;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 bool Shader::ParseProperties(Lexer &lexer) {
     PropertyInfo propInfo;
     Str token;
@@ -304,7 +422,7 @@ bool Shader::ParseProperties(Lexer &lexer) {
 
             lexer.UnreadToken(&token);
 
-            if (!propInfo.ParseSpec(lexer)) {
+            if (!ParseShaderPropertyInfo(lexer, propInfo)) {
                 BE_WARNLOG(L"error occured in parsing property propInfo in shader '%hs'\n", hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;

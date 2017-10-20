@@ -157,32 +157,28 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 }
 
                 if (pass->referenceShader) {
-                    const auto &shaderSpecs = pass->referenceShader->GetPropertyInfoHashMap();
+                    const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
 
-                    for (int i = 0; i < shaderSpecs.Count(); i++) {
-                        const auto entry = shaderSpecs.GetByIndex(i);
-                        const auto &shaderSpecKey = entry->first;
-                        const auto &shaderSpec = entry->second;
+                    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
+                        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
+                        const auto &propName = entry->first;
+                        const auto &propInfo = entry->second;
 
                         Shader::Property shaderProp;
 
-                        if (shaderSpec.GetType() == PropertyInfo::ObjectType) {
-                            if (shaderSpec.GetMetaObject() == &TextureAsset::metaObject) {
-                                const Texture *defaultTexture = textureManager.FindTexture(shaderSpec.GetDefaultValue());
-                                assert(defaultTexture);
-                                const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
-
-                                shaderProp.data = PropertyInfo::ToVariant(shaderSpec.GetType(), propDict.GetString(shaderSpecKey, defaultTextureGuid.ToString()));
+                        if (propInfo.GetType() == PropertyInfo::ObjectType) {
+                            if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+                                shaderProp.data = PropertyInfo::ToVariant(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
                                 const Guid textureGuid = shaderProp.data.As<Guid>();
                                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
                                 shaderProp.texture = textureManager.GetTexture(texturePath);
                             }
                         } else {
-                            shaderProp.data = PropertyInfo::ToVariant(shaderSpec.GetType(), propDict.GetString(shaderSpecKey, shaderSpec.GetDefaultValue()));
+                            shaderProp.data = PropertyInfo::ToVariant(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
                             shaderProp.texture = nullptr;
                         }
 
-                        pass->shaderProperties.Set(shaderSpecKey, shaderProp);
+                        pass->shaderProperties.Set(propName, shaderProp);
                     }
 
                     EndShaderPropertiesChanged();
@@ -351,14 +347,14 @@ void Material::ChangeShader(Shader *shader) {
 
             if (propInfo.GetType() == PropertyInfo::ObjectType) {
                 if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                    Texture *defaultTexture = textureManager.FindTexture(propInfo.GetDefaultValue());
+                    Texture *defaultTexture = textureManager.FindTexture(propInfo.GetDefaultValue().As<Str>());
                     assert(defaultTexture);
                     const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
 
                     prop.data = defaultTextureGuid;
                 }
             } else {
-                prop.data = PropertyInfo::ToVariant(propInfo.GetType(), propInfo.GetDefaultValue());
+                prop.data = PropertyInfo::ToVariant(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
             }
 
             prop.texture = nullptr;
@@ -380,28 +376,28 @@ void Material::EndShaderPropertiesChanged() {
         shaderManager.ReleaseShader(pass->shader);
     }
 
-    const auto &shaderSpecs = pass->referenceShader->GetPropertyInfoHashMap();
+    const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
 
     Array<Shader::Define> defineArray;
 
     // List up define list for re-instantiating shader
-    for (int i = 0; i < shaderSpecs.Count(); i++) {
-        const auto entry = shaderSpecs.GetByIndex(i);
-        const auto &shaderSpecKey = entry->first;
-        const auto &shaderSpec = entry->second;
+    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
+        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
+        const auto &propName = entry->first;
+        const auto &propInfo = entry->second;
 
         // property propInfo with shaderDefine allows only bool/enum type
-        if (shaderSpec.GetFlags() & PropertyInfo::ShaderDefine) {
-            const auto *entry = pass->shaderProperties.Get(shaderSpecKey);
+        if (propInfo.GetFlags() & PropertyInfo::ShaderDefine) {
+            const auto *entry = pass->shaderProperties.Get(propName);
             const Shader::Property &shaderProp = entry->second;
 
-            if (shaderSpec.GetType() == PropertyInfo::BoolType) {
+            if (propInfo.GetType() == PropertyInfo::BoolType) {
                 if (shaderProp.data.As<bool>()) {
-                    defineArray.Append(Shader::Define(shaderSpecKey, 1));
+                    defineArray.Append(Shader::Define(propName, 1));
                 }
-            } else if (shaderSpec.GetType() == PropertyInfo::EnumType) {
+            } else if (propInfo.GetType() == PropertyInfo::EnumType) {
                 int enumIndex = shaderProp.data.As<int>();
-                defineArray.Append(Shader::Define(shaderSpecKey, enumIndex));
+                defineArray.Append(Shader::Define(propName, enumIndex));
             }
         }
     }    
@@ -410,14 +406,14 @@ void Material::EndShaderPropertiesChanged() {
     pass->shader = pass->referenceShader->InstantiateShader(defineArray);
 
     // Reload shader's texture
-    for (int i = 0; i < shaderSpecs.Count(); i++) {
-        const auto entry = shaderSpecs.GetByIndex(i);
-        const auto &shaderSpecKey = entry->first;
-        const auto &shaderSpec = entry->second;
+    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
+        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
+        const auto &propName = entry->first;
+        const auto &propInfo = entry->second;
 
-        if (shaderSpec.GetType() == PropertyInfo::ObjectType) {
-            if (shaderSpec.GetMetaObject() == &TextureAsset::metaObject) {
-                auto *entry = pass->shaderProperties.Get(shaderSpecKey);
+        if (propInfo.GetType() == PropertyInfo::ObjectType) {
+            if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+                auto *entry = pass->shaderProperties.Get(propName);
                 Shader::Property &shaderProp = entry->second;
 
                 if (shaderProp.texture) {

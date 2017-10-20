@@ -28,11 +28,11 @@ BEGIN_EVENTS(ComTextRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComTextRenderer)
     PROPERTY_STRING("text", "Text", "", "Hello World", PropertyInfo::ReadWrite | PropertyInfo::MultiLines),
-    PROPERTY_ENUM("textAnchor", "Anchor", "", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", "0", PropertyInfo::ReadWrite),
-    PROPERTY_ENUM("textAlignment", "Alignment", "", "Left;Center;Right", "0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("lineSpacing", "Line Spacing", "", "1.0", PropertyInfo::ReadWrite),
-    PROPERTY_INT("fontSize", "Font Size", "", "14", PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("font", "Font", "", GuidMapper::defaultFontGuid.ToString(), FontAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_ENUM("textAnchor", "Anchor", "", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", 0, PropertyInfo::ReadWrite),
+    PROPERTY_ENUM("textAlignment", "Alignment", "", "Left;Center;Right", 0, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("lineSpacing", "Line Spacing", "", 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_INT("fontSize", "Font Size", "", 14, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("font", "Font", "", GuidMapper::defaultFontGuid, FontAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComTextRenderer::RegisterProperties() {

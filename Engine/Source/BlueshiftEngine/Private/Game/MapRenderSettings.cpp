@@ -26,7 +26,7 @@ OBJECT_DECLARATION("MapRenderSettings", MapRenderSettings, Object)
 BEGIN_EVENTS(MapRenderSettings)
 END_EVENTS
 BEGIN_PROPERTIES(MapRenderSettings)
-    PROPERTY_OBJECT("skyboxMaterial", "Skybox Material", "", GuidMapper::defaultSkyboxMaterialGuid.ToString(), MaterialAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("skyboxMaterial", "Skybox Material", "", GuidMapper::defaultSkyboxMaterialGuid, MaterialAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void MapRenderSettings::RegisterProperties() {

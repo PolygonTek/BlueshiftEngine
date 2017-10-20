@@ -28,13 +28,13 @@ OBJECT_DECLARATION("Audio Source", ComAudioSource, Component)
 BEGIN_EVENTS(ComAudioSource)
 END_EVENTS
 BEGIN_PROPERTIES(ComAudioSource)
-    PROPERTY_OBJECT("audioClip", "Audio Clip", "", GuidMapper::defaultSoundGuid.ToString(), SoundAsset::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("playOnAwake", "Play On Awake", "Play the sound when the map loaded.", "false", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("spatial", "Spatial", "", "true", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("looping", "Looping", "", "false", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("volume", "Volume", "", BE1::Rangef(0, 1, 0.1), "1.0", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("minDistance", "Min Distance", "", BE1::Rangef(0, 10000, 1), "400", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("maxDistance", "Max Distance", "", BE1::Rangef(0, 10000, 1), "1600", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("audioClip", "Audio Clip", "", GuidMapper::defaultSoundGuid, SoundAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("playOnAwake", "Play On Awake", "Play the sound when the map loaded.", false, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("spatial", "Spatial", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("looping", "Looping", "", false, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("volume", "Volume", "", BE1::Rangef(0, 1, 0.1), 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("minDistance", "Min Distance", "", BE1::Rangef(0, 10000, 1), 400.0f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("maxDistance", "Max Distance", "", BE1::Rangef(0, 10000, 1), 1600.0f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComAudioSource::RegisterProperties() {

@@ -62,6 +62,15 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
         const Shader::Property &prop = propEntry->second;
 
         switch (propInfo.GetType()) {
+        case PropertyInfo::IntType:
+            shader->SetConstant1i(key, prop.data.As<int>());
+            break;
+        case PropertyInfo::PointType:
+            shader->SetConstant2i(key, prop.data.As<Point>());
+            break;
+        case PropertyInfo::RectType:
+            shader->SetConstant4i(key, prop.data.As<Rect>());
+            break;
         case PropertyInfo::FloatType:
             shader->SetConstant1f(key, prop.data.As<float>());
             break;
@@ -79,13 +88,7 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
             break;
         case PropertyInfo::Color4Type:
             shader->SetConstant4f(key, prop.data.As<Color4>());
-            break;
-        case PropertyInfo::PointType:
-            shader->SetConstant2i(key, prop.data.As<Point>());
-            break;
-        case PropertyInfo::RectType:
-            shader->SetConstant4i(key, prop.data.As<Rect>());
-            break;
+            break;        
         case PropertyInfo::Mat3Type:
             shader->SetConstant3x3f(key, true, prop.data.As<Mat3>());
             break;

@@ -23,7 +23,7 @@ ABSTRACT_DECLARATION("Component", Component, Object)
 BEGIN_EVENTS(Component)
 END_EVENTS
 BEGIN_PROPERTIES(Component)
-    PROPERTY_BOOL("enabled", "Enabled", "is enabled component ?", "true", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
+    PROPERTY_BOOL("enabled", "Enabled", "is enabled component ?", true, PropertyInfo::ReadWrite | PropertyInfo::Hidden),
 END_PROPERTIES
 
 void Component::RegisterProperties() {

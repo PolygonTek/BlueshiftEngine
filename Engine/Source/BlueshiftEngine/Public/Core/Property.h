@@ -174,11 +174,11 @@ public:
     /// Property types
     enum Type {
         BadType             = -1,
-        IntType,
         BoolType,
+        IntType,
         FloatType,
-        GuidType,
         StringType,
+        EnumType,
         PointType,
         RectType,
         Vec2Type,
@@ -188,7 +188,7 @@ public:
         Color4Type,
         AnglesType,
         Mat3Type,
-        EnumType,
+        GuidType,
         ObjectType,
         ObjectArrayType
     };
@@ -224,19 +224,15 @@ public:
     PropertyInfo(const char *name, const Enum &e, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags);
     PropertyInfo(const char *name, const MetaObject &metaObject, PropertyAccessor *accesor, const Variant &defaultValue, const char *desc, int flags);
 #else
-    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags);
-    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags);
-    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags);
-    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags);
+    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Variant &defaultValue, int flags);
+    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const Variant &defaultValue, int flags);
+    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Enum &e, const Variant &defaultValue, int flags);
+    PropertyInfo(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const Variant &defaultValue, int flags);
 #endif
 
     Type                    GetType() const { return type; }
     const char *            GetName() const { return name; }
-#ifdef NEW_PROPERTY_SYSTEM
     const Variant &         GetDefaultValue() const { return defaultValue; }
-#else
-    const char *            GetDefaultValue() const { return defaultValue; }
-#endif
     const char *            GetLabel() const { return label; }
     const char *            GetDescription() const { return desc; }
     int                     GetFlags() const { return flags; }
@@ -248,9 +244,11 @@ public:
 
     void                    SetRange(float minValue, float maxValue, float step) { range = Rangef(minValue, maxValue, step); }
 
-    char *                  ToString() const;
+    //char *                  ToString() const;
 
-    bool                    ParseSpec(Lexer &lexer);
+    //bool                    Parse(Lexer &lexer);
+
+    friend bool             ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo);
 
     static const Json::Value ToJsonValue(Type type, const Variant &var);
     static Variant          ToVariant(Type type, const char *value);
@@ -258,11 +256,7 @@ public:
 private:
     Type                    type;               ///< Property type
     Str                     name;               ///< Variable name
-#ifdef NEW_PROPERTY_SYSTEM
     Variant                 defaultValue;
-#else
-    Str                     defaultValue;       ///< Default value in Str
-#endif
     Str                     label;              ///< Label in Editor
     Str                     desc;               ///< Description in Editor
     int                     offset;             ///< Byte offset from start of object
@@ -380,7 +374,7 @@ BE_INLINE PropertyInfo::PropertyInfo(const char *name, const MetaObject &metaObj
 
 #else
 
-BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const char *defaultValue, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Variant &defaultValue, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -393,7 +387,7 @@ BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *la
     this->metaObject = nullptr;
 }
 
-BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const char *defaultValue, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Rangef &r, const Variant &defaultValue, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -406,7 +400,7 @@ BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *la
     this->metaObject = nullptr;
 }
 
-BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Enum &e, const char *defaultValue, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const Enum &e, const Variant &defaultValue, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;
@@ -421,7 +415,7 @@ BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *la
     assert(enumeration.Count() > 0);
 }
 
-BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const char *defaultValue, int flags) {
+BE_INLINE PropertyInfo::PropertyInfo(Type type, const char *name, const char *label, const char *desc, const MetaObject &metaObject, const Variant &defaultValue, int flags) {
     this->type = type;
     this->name = name;
     this->defaultValue = defaultValue;

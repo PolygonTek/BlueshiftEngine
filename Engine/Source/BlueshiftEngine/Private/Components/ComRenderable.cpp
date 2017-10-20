@@ -26,13 +26,13 @@ ABSTRACT_DECLARATION("Renderable", ComRenderable, Component)
 BEGIN_EVENTS(ComRenderable)
 END_EVENTS
 BEGIN_PROPERTIES(ComRenderable)
-    PROPERTY_COLOR3("color", "Color", "", "1 1 1", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("alpha", "Alpha", "", Rangef(0, 1, 0.01f), "1", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("billboard", "Billboard", "", "false", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("timeOffset", "Time Offset", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("timeScale", "Time Scale", "", "1", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "25000", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("skipSelection", "Skip Selection", "", "false", PropertyInfo::ReadWrite | PropertyInfo::Hidden | PropertyInfo::SkipSerialization),
+    PROPERTY_COLOR3("color", "Color", "", Color3(1, 1, 1), PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("alpha", "Alpha", "", Rangef(0, 1, 0.01f), 1.f, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("billboard", "Billboard", "", false, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("timeOffset", "Time Offset", "", 0.0f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("timeScale", "Time Scale", "", 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", 25000.f, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("skipSelection", "Skip Selection", "", false, PropertyInfo::ReadWrite | PropertyInfo::Hidden | PropertyInfo::SkipSerialization),
 END_PROPERTIES
 
 void ComRenderable::RegisterProperties() {

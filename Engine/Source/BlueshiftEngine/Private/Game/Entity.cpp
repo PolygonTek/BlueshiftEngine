@@ -31,13 +31,13 @@ OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
 END_EVENTS
 BEGIN_PROPERTIES(Entity)
-    PROPERTY_OBJECT("parent", "Parent Entity", "parent entity", Guid::zero.ToString(), Entity::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("isPrefabParent", "Is prefab Parent", "is prefab parent ?", "false", PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("prefabParent", "Prefab Parent", "prefab parent entity", Guid::zero.ToString(), Entity::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("parent", "Parent Entity", "parent entity", Guid::zero, Entity::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("isPrefabParent", "Is prefab Parent", "is prefab parent ?", false, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("prefabParent", "Prefab Parent", "prefab parent entity", Guid::zero, Entity::metaObject, PropertyInfo::ReadWrite),
     PROPERTY_STRING("name", "Name", "entity name", "", PropertyInfo::ReadWrite),
     PROPERTY_STRING("tag", "Tag", "Tag", "Untagged", PropertyInfo::ReadWrite),
-    PROPERTY_INT("layer", "Layer", "Layer", "0", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", "false", PropertyInfo::ReadWrite),
+    PROPERTY_INT("layer", "Layer", "Layer", 0, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", false, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void Entity::RegisterProperties() {

@@ -26,9 +26,9 @@ OBJECT_DECLARATION("Cylinder Collider", ComCylinderCollider, ComCollider)
 BEGIN_EVENTS(ComCylinderCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComCylinderCollider)
-    PROPERTY_VEC3("center", "Center", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("radius", "Radius", "", "1", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("height", "Height", "", "1", PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("radius", "Radius", "", 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("height", "Height", "", 1.0f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComCylinderCollider::RegisterProperties() {

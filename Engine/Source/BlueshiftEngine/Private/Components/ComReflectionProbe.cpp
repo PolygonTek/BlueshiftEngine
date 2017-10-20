@@ -25,16 +25,16 @@ OBJECT_DECLARATION("Reflection Probe", ComReflectionProbe, Component)
 BEGIN_EVENTS(ComReflectionProbe)
 END_EVENTS
 BEGIN_PROPERTIES(ComReflectionProbe)
-    PROPERTY_INT("importance", "Importance", "", "1", PropertyInfo::ReadWrite),
-    PROPERTY_ENUM("resolution", "Resolution", "", "16;32;64;128;256;1024;2048", "3", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("hdr", "HDR", "", "true", PropertyInfo::ReadWrite),
-    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", "1", PropertyInfo::ReadWrite), 
-    PROPERTY_COLOR3("clearColor", "Clear Color", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(0.01, 20000, 10), "0.3", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), "1000", PropertyInfo::ReadWrite),
-    PROPERTY_VEC3("boxOffset", "Box Offset", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_VEC3("boxSize", "Box Size", "", "10 10 10", PropertyInfo::ReadWrite),
+    PROPERTY_INT("importance", "Importance", "", 1, PropertyInfo::ReadWrite),
+    PROPERTY_ENUM("resolution", "Resolution", "", "16;32;64;128;256;1024;2048", 3, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("hdr", "HDR", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", 1, PropertyInfo::ReadWrite), 
+    PROPERTY_COLOR3("clearColor", "Clear Color", "", Color3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", 0.0f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(0.01, 20000, 10), 0.3f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), 1000.f, PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("boxOffset", "Box Offset", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("boxSize", "Box Size", "", Vec3(10, 10, 10), PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComReflectionProbe::RegisterProperties() {

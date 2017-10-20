@@ -32,10 +32,10 @@ OBJECT_DECLARATION("Skinned Mesh Renderer", ComSkinnedMeshRenderer, ComMeshRende
 BEGIN_EVENTS(ComSkinnedMeshRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComSkinnedMeshRenderer)
-    PROPERTY_ENUM("animationType", "Animation Type", "", "Animation Controller;Single Animation", "0", PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("animController", "Anim Controller", "", GuidMapper::defaultAnimControllerGuid.ToString(), AnimControllerAsset::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("skeleton", "Skeleton", "", "0", SkeletonAsset::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("anim", "Animation", "", "0", AnimAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_ENUM("animationType", "Animation Type", "", "Animation Controller;Single Animation", 0, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("animController", "Anim Controller", "", GuidMapper::defaultAnimControllerGuid, AnimControllerAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("skeleton", "Skeleton", "", Guid::zero, SkeletonAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("anim", "Animation", "", Guid::zero, AnimAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComSkinnedMeshRenderer::RegisterProperties() {

@@ -30,21 +30,21 @@ BEGIN_EVENTS(ComLight)
 END_EVENTS
 BEGIN_PROPERTIES(ComLight)
     // NOTE: lightType_t enum 과 같은 순서여야 함
-    PROPERTY_ENUM("lightType", "Light Type", "", "Point;Spot;Directional", "0", PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("material", "Material", "", GuidMapper::zeroClampLightMaterialGuid.ToString(), MaterialAsset::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_COLOR3("color", "Color", "", "1 1 1", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("turnOn", "Turn On", "", "true", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("castShadows", "Cast Shadows", "", "false", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("shadowOffsetFactor", "Shadow Offset Factor", "scale value for shadow map drawing", Rangef(0, 16, 0.01f), "3", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("shadowOffsetUnits", "Shadow Offset Unit", "bias value added to depth test for shadow map drawing", Rangef(0, 1000, 1), "200", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("primaryLight", "Is Primary Light", "", "false", PropertyInfo::ReadWrite),
-    PROPERTY_VEC3("lightSize", "Size", "", "200 200 200", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("fallOffExponent", "Fall Off Exponent", "", Rangef(0.01f, 100, 0.1f), "1.25", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("intensity", "Intensity", "", Rangef(0, 8, 0.01f), "2.0", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("lightZNear", "Near", "", Rangef(1, 200, 0.01f), "10", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("timeOffset", "Time Offset", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("timeScale", "Time Scale", "", "1", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", "16384", PropertyInfo::ReadWrite),
+    PROPERTY_ENUM("lightType", "Light Type", "", "Point;Spot;Directional", 0, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("material", "Material", "", GuidMapper::zeroClampLightMaterialGuid, MaterialAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_COLOR3("color", "Color", "", Color3(1, 1, 1), PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("turnOn", "Turn On", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("castShadows", "Cast Shadows", "", false, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("shadowOffsetFactor", "Shadow Offset Factor", "scale value for shadow map drawing", Rangef(0, 16, 0.01f), 3.f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("shadowOffsetUnits", "Shadow Offset Unit", "bias value added to depth test for shadow map drawing", Rangef(0, 1000, 1), 200.f, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("primaryLight", "Is Primary Light", "", false, PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("lightSize", "Size", "", Vec3(200, 200, 200), PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("fallOffExponent", "Fall Off Exponent", "", Rangef(0.01f, 100, 0.1f), 1.25f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("intensity", "Intensity", "", Rangef(0, 8, 0.01f), 2.0f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("lightZNear", "Near", "", Rangef(1, 200, 0.01f), 10.0f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("timeOffset", "Time Offset", "", 0.0f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("timeScale", "Time Scale", "", 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", 16384.f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComLight::RegisterProperties() {

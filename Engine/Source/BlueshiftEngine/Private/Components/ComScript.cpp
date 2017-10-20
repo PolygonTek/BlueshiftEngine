@@ -29,7 +29,7 @@ OBJECT_DECLARATION("Script", ComScript, Component)
 BEGIN_EVENTS(ComScript)
 END_EVENTS
 BEGIN_PROPERTIES(ComScript)
-    PROPERTY_OBJECT("script", "Script", "", Guid::zero.ToString(), ScriptAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("script", "Script", "", Guid::zero, ScriptAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComScript::RegisterProperties() {

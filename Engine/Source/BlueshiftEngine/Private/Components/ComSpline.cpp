@@ -24,8 +24,8 @@ OBJECT_DECLARATION("Spline", ComSpline, Component)
 BEGIN_EVENTS(ComSpline)
 END_EVENTS
 BEGIN_PROPERTIES(ComSpline)
-    PROPERTY_BOOL("loop", "Loop", "", "false", PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("points", "Points", "points", Guid::zero.ToString(), ComTransform::metaObject, PropertyInfo::ReadWrite | PropertyInfo::IsArray),
+    PROPERTY_BOOL("loop", "Loop", "", false, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("points", "Points", "points", Guid::zero, ComTransform::metaObject, PropertyInfo::ReadWrite | PropertyInfo::IsArray),
 END_PROPERTIES
 
 void ComSpline::RegisterProperties() {

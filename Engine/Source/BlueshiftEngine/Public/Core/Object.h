@@ -138,14 +138,14 @@ public:
     bool                        IsRespondsTo(const EventDef &evdef) const;
 
                                 /// Finds property info including parent meta object.
-    bool                        FindPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
+    bool                        GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
 
                                 /// Returns property info list including parent meta object.
     void                        GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const;
 
                                 /// 
 #ifdef NEW_PROPERTY_SYSTEM
-    PropertyInfo &              RegisterProperty(const PropertyInfo &propertySpec);
+    PropertyInfo &              RegisterProperty(const PropertyInfo &propertyInfo);
 #endif
 
 private:
@@ -230,15 +230,19 @@ public:
                                 /// Cancels a event in event queue
     void                        CancelEvents(const EventDef *evdef);
 
-    bool                        FindPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
+                                /// Gets property info with the given name
+    bool                        GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
 
-    Properties *                GetProperties() const { return props; }
-
+                                /// Gets full list of property info
     virtual void                GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const { GetMetaObject()->GetPropertyInfoList(propertyInfos); }
+
+                                /// Gets properties
+    Properties *                GetProperties() const { return props; }
     
     static void                 Init();
     static void                 Shutdown();
 
+                                /// Gets meta object with the given name
     static MetaObject *         GetMetaObject(const char *name);
 
     static Object *             CreateInstance(const char *name, const Guid &guid = Guid::zero);
@@ -264,7 +268,7 @@ private:
     void                        Event_Destroy();
 
     static bool                 initialized;
-    static Array<MetaObject *>  types; // alphabetical order
+    static Array<MetaObject *>  types;          // alphabetical order
 };
 
 BE_INLINE bool Object::IsTypeOf(const MetaObject &metaObject) const {

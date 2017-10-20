@@ -26,8 +26,8 @@ OBJECT_DECLARATION("Box Collider", ComBoxCollider, ComCollider)
 BEGIN_EVENTS(ComBoxCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComBoxCollider)
-    PROPERTY_VEC3("center", "Center", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_VEC3("extents", "Extents", "", "1 1 1", PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("extents", "Extents", "", Vec3(1, 1, 1), PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComBoxCollider::RegisterProperties() {

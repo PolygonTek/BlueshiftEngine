@@ -23,9 +23,9 @@ ABSTRACT_DECLARATION("Joint", ComJoint, Component)
 BEGIN_EVENTS(ComJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComJoint)
-    PROPERTY_OBJECT("connectedBody", "Connected Body", "", Guid::zero.ToString(), ComRigidBody::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("collisionEnabled", "Collision Enabled", "", "true", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("breakImpulse", "Break Impulse", "", "1e30f", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("connectedBody", "Connected Body", "", Guid::zero, ComRigidBody::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("collisionEnabled", "Collision Enabled", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("breakImpulse", "Break Impulse", "", 1e30f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComJoint::RegisterProperties() {
@@ -154,6 +154,7 @@ bool ComJoint::IsCollisionEnabled() const {
 
 void ComJoint::SetCollisionEnabled(bool enabled) {
     collisionEnabled = enabled;
+
     if (constraint) {
         constraint->EnableCollision(collisionEnabled);
     }
@@ -165,6 +166,7 @@ float ComJoint::GetBreakImpulse() const {
 
 void ComJoint::SetBreakImpulse(float breakImpulse) {
     this->breakImpulse = breakImpulse;
+
     if (constraint) {
         constraint->SetBreakImpulse(breakImpulse);
     }

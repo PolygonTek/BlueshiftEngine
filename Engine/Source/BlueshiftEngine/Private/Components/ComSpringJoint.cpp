@@ -26,12 +26,12 @@ OBJECT_DECLARATION("Spring Joint", ComSpringJoint, ComJoint)
 BEGIN_EVENTS(ComSpringJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComSpringJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_ANGLES("angles", "Angles", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("lowerLimit", "Lower Limit", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("upperLimit", "Upper Limit", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("stiffness", "Stiffness", "", "2", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("damping", "Damping", "", Rangef(0, 1, 0.01f), "0.2", PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("lowerLimit", "Lower Limit", "", 0.f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("upperLimit", "Upper Limit", "", 0.f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("stiffness", "Stiffness", "", 2.f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("damping", "Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComSpringJoint::RegisterProperties() {

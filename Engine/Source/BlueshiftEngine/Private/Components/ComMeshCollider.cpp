@@ -27,8 +27,8 @@ OBJECT_DECLARATION("Mesh Collider", ComMeshCollider, ComCollider)
 BEGIN_EVENTS(ComMeshCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComMeshCollider)
-    PROPERTY_BOOL("convex", "Convex", "", "true", PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("mesh", "Mesh", "collision mesh", GuidMapper::defaultMeshGuid.ToString(), MeshAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("convex", "Convex", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("mesh", "Mesh", "collision mesh", GuidMapper::defaultMeshGuid, MeshAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComMeshCollider::RegisterProperties() {

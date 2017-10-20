@@ -24,7 +24,7 @@ OBJECT_DECLARATION("Static Mesh Renderer", ComStaticMeshRenderer, ComMeshRendere
 BEGIN_EVENTS(ComStaticMeshRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComStaticMeshRenderer)
-    PROPERTY_BOOL("occluder", "Occluder", "", "false", PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("occluder", "Occluder", "", false, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComStaticMeshRenderer::RegisterProperties() {

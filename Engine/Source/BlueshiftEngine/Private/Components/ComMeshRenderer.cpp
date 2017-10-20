@@ -26,12 +26,12 @@ ABSTRACT_DECLARATION("Mesh Renderer", ComMeshRenderer, ComRenderable)
 BEGIN_EVENTS(ComMeshRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComMeshRenderer)
-    PROPERTY_OBJECT("mesh", "Mesh", "mesh", GuidMapper::defaultMeshGuid.ToString(), MeshAsset::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("materials", "Materials", "List of materials to use when rendering.", GuidMapper::defaultMaterialGuid.ToString(), MaterialAsset::metaObject, PropertyInfo::ReadWrite | PropertyInfo::IsArray),
-    PROPERTY_BOOL("useLightProbe", "Use Light Probe", "", "true", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("useReflectionProbe", "Use Reflection Probe", "", "true", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("castShadows", "Cast Shadows", "", "true", PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("receiveShadows", "Receive Shadows", "", "true", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("mesh", "Mesh", "mesh", GuidMapper::defaultMeshGuid, MeshAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("materials", "Materials", "List of materials to use when rendering.", GuidMapper::defaultMaterialGuid, MaterialAsset::metaObject, PropertyInfo::ReadWrite | PropertyInfo::IsArray),
+    PROPERTY_BOOL("useLightProbe", "Use Light Probe", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("useReflectionProbe", "Use Reflection Probe", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("castShadows", "Cast Shadows", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("receiveShadows", "Receive Shadows", "", true, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComMeshRenderer::RegisterProperties() {

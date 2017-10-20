@@ -172,7 +172,7 @@ void MetaObject::Shutdown() {
     lastChildIndex = 0;
 }
 
-bool MetaObject::FindPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
+bool MetaObject::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
     if (!name || !name[0]) {
         return false;
     }
@@ -238,7 +238,7 @@ ABSTRACT_DECLARATION("Object", Object, nullptr)
 
 BEGIN_PROPERTIES(Object)
     PROPERTY_STRING("classname", "Classname", "", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
-    PROPERTY_STRING("guid", "GUID", "GUID", Guid::zero.ToString(), PropertyInfo::ReadWrite | PropertyInfo::Hidden),
+    PROPERTY_STRING("guid", "GUID", "GUID", Guid::zero, PropertyInfo::ReadWrite | PropertyInfo::Hidden),
 END_PROPERTIES
 
 BEGIN_EVENTS(Object)
@@ -413,7 +413,7 @@ Object *Object::FindInstance(const Guid &guid) {
     return instance;
 }
 
-bool Object::FindPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
+bool Object::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
     Array<PropertyInfo> propertyInfos;
     GetPropertyInfoList(propertyInfos);
 

@@ -26,10 +26,10 @@ OBJECT_DECLARATION("Hinge Joint", ComHingeJoint, ComJoint)
 BEGIN_EVENTS(ComHingeJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComHingeJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_ANGLES("angles", "Angles", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("motorSpeed", "Motor Speed", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("maxMotorImpulse", "Max Motor Impulse", "", "0", PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("motorSpeed", "Motor Speed", "", 0.f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("maxMotorImpulse", "Max Motor Impulse", "", 0.f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComHingeJoint::RegisterProperties() {

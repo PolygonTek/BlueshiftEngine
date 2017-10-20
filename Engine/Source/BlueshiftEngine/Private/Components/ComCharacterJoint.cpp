@@ -26,20 +26,20 @@ OBJECT_DECLARATION("Character Joint", ComCharacterJoint, ComJoint)
 BEGIN_EVENTS(ComCharacterJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComCharacterJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_ANGLES("angles", "Angles", "", "0 0 0", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing1LowerLimit", "X Swing Lower Limit", "", Rangef(-180, 0, 1), "-45", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing1UpperLimit", "X Swing Upper Limit", "", Rangef(0, 180, 1), "45", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("swing1Stiffness", "X Swing Stiffness", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing1Damping", "X Swing Damping", "", Rangef(0, 1, 0.01f), "0.2", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing2LowerLimit", "Y Swing Lower Limit", "", Rangef(-180, 0, 1), "-45", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing2UpperLimit", "Y Swing Upper Limit", "", Rangef(0, 180, 1), "45", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("swing2Stiffness", "Y Swing Stiffness", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing2Damping", "Y Swing Damping", "", Rangef(0, 1, 0.01f), "0.2", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("twistLowerLimit", "Twist Lower Limit", "", Rangef(-180, 0, 1), "-45", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("twistUpperLimit", "Twist Upper Limit", "", Rangef(0, 180, 1), "45", PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("twistStiffness", "Twist Stiffness", "", "0", PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("twistDamping", "Twist Damping", "", Rangef(0, 1, 0.01), "0.2", PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("swing1LowerLimit", "X Swing Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("swing1UpperLimit", "X Swing Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("swing1Stiffness", "X Swing Stiffness", "", 0.f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("swing1Damping", "X Swing Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("swing2LowerLimit", "Y Swing Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("swing2UpperLimit", "Y Swing Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("swing2Stiffness", "Y Swing Stiffness", "", 0.f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("swing2Damping", "Y Swing Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("twistLowerLimit", "Twist Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("twistUpperLimit", "Twist Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::ReadWrite),
+    PROPERTY_FLOAT("twistStiffness", "Twist Stiffness", "", 0.f, PropertyInfo::ReadWrite),
+    PROPERTY_RANGED_FLOAT("twistDamping", "Twist Damping", "", Rangef(0, 1, 0.01), 0.2f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
 void ComCharacterJoint::RegisterProperties() {
