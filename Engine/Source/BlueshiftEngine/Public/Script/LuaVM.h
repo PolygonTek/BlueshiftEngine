@@ -64,6 +64,8 @@ private:
 
     static void             RegisterPhysics(LuaCpp::Module &module);
 
+    static void             RegisterStr(LuaCpp::Module &module);
+
     static void             RegisterObject(LuaCpp::Module &module);
 
     static void             RegisterAsset(LuaCpp::Module &module);

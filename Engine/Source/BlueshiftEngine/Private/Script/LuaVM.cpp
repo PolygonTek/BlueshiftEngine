@@ -136,6 +136,8 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterScreen(module);
         // Physics
         RegisterPhysics(module);
+        // Str
+        RegisterStr(module);
         // Object
         RegisterObject(module);
         // Asset

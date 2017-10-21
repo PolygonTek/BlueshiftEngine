@@ -550,6 +550,7 @@ set(ENGINE_FILES
   Private/Script/Input/LuaModule_InputSystem.cpp
   Private/Script/Screen/LuaModule_Screen.cpp
   Private/Script/Physics/LuaModule_Physics.cpp
+  Private/Script/Core/LuaModule_Str.cpp
   Private/Script/Core/LuaModule_Object.cpp
   Private/Script/Asset/LuaModule_Asset.cpp
   Private/Script/Asset/LuaModule_TextureAsset.cpp
