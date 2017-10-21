@@ -102,10 +102,12 @@ void ComSkinnedMeshRenderer::Init() {
 
     animationType = (AnimationType)props->Get("animationType").As<int>();
 
-    ChangeAnimationType();
+    const Guid animControllerGuid = props->Get("animController").As<Guid>();
+    const Guid skeletonGuid = props->Get("skeleton").As<Guid>();
+    const Guid animGuid = props->Get("anim").As<Guid>();
 
     if (animationType == AnimationControllerType) {
-        ChangeAnimController();
+        ChangeAnimController(animControllerGuid);
         
         animator.ComputeAnimAABBs(referenceMesh);
 
@@ -117,9 +119,9 @@ void ComSkinnedMeshRenderer::Init() {
         sceneEntity.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
         sceneEntity.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
     } else {
-        ChangeSkeleton();
+        ChangeSkeleton(skeletonGuid);
         
-        ChangeAnim();
+        ChangeAnim(animGuid);
         
         bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
         
@@ -152,7 +154,7 @@ void ComSkinnedMeshRenderer::TransitAnimState(int layerNum, const char *stateNam
     animator.TransitState(layerNum, stateName, GetGameWorld()->GetTime(), blendOffset, blendDuration, isAtomic);
 }
 
-void ComSkinnedMeshRenderer::ChangeAnimationType() {
+/*void ComSkinnedMeshRenderer::ChangeAnimationType() {
     animationType = props->Get("animationType").As<AnimationType>();
 
     if (animationType == AnimationControllerType) {
@@ -164,9 +166,9 @@ void ComSkinnedMeshRenderer::ChangeAnimationType() {
         props->SetFlags("skeleton", props->GetFlags("skeleton") & ~Property::Hidden);
         props->SetFlags("anim", props->GetFlags("anim") & ~Property::Hidden);
     }
-}
+}*/
 
-void ComSkinnedMeshRenderer::ChangeAnimController() {
+void ComSkinnedMeshRenderer::ChangeAnimController(const Guid &animControllerGuid) {
     // Disconnect with previously connected animation controller asset
     if (animControllerAsset) {
         animControllerAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -174,7 +176,6 @@ void ComSkinnedMeshRenderer::ChangeAnimController() {
     }
 
     // Set new animation controller
-    const Guid animControllerGuid = props->Get("animController").As<Guid>();
     const Str animControllerPath = resourceGuidMapper.Get(animControllerGuid);
     animator.SetAnimController(animControllerPath);
     
@@ -188,7 +189,7 @@ void ComSkinnedMeshRenderer::ChangeAnimController() {
     }
 }
 
-void ComSkinnedMeshRenderer::ChangeSkeleton() {
+void ComSkinnedMeshRenderer::ChangeSkeleton(const Guid &skeletonGuid) {
     // Disconnect with previously connected skeleton asset
     if (skeletonAsset) {
         skeletonAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -200,7 +201,6 @@ void ComSkinnedMeshRenderer::ChangeSkeleton() {
         skeleton = nullptr;
     }
 
-    const Guid skeletonGuid = props->Get("skeleton").As<Guid>();
     const Str skeletonPath = resourceGuidMapper.Get(skeletonGuid);
     skeleton = skeletonManager.GetSkeleton(skeletonPath);
 
@@ -242,7 +242,7 @@ void ComSkinnedMeshRenderer::ChangeSkeleton() {
     }
 }
 
-void ComSkinnedMeshRenderer::ChangeAnim() {
+void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
     // Disconnect with previously connected anim asset
     if (animAsset) {
         animAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -255,7 +255,6 @@ void ComSkinnedMeshRenderer::ChangeAnim() {
         anim = nullptr;
     }
 
-    const Guid animGuid = props->Get("anim").As<Guid>();
     const Str animPath = resourceGuidMapper.Get(animGuid);
     anim = animManager.GetAnim(animPath);
      
@@ -389,21 +388,15 @@ void ComSkinnedMeshRenderer::MeshUpdated() {
 }
 
 void ComSkinnedMeshRenderer::AnimControllerReloaded() {
-    ChangeAnimController();
-   
-    MeshUpdated();
+    SetAnimControllerGuid(props->Get("animController").As<Guid>());
 }
 
 void ComSkinnedMeshRenderer::SkeletonReloaded() {
-    ChangeSkeleton();
-
-    MeshUpdated();
+    SetSkeletonGuid(props->Get("skeleton").As<Guid>());
 }
 
 void ComSkinnedMeshRenderer::AnimReloaded() {
-    ChangeAnim();
-
-    MeshUpdated();
+    SetAnimGuid(props->Get("anim").As<Guid>());
 }
 
 void ComSkinnedMeshRenderer::PropertyChanged(const char *classname, const char *propName) {
@@ -412,28 +405,68 @@ void ComSkinnedMeshRenderer::PropertyChanged(const char *classname, const char *
     }
 
     if (!Str::Cmp(propName, "animationType")) {
-        ChangeAnimationType();
-        Purge();
-        Init();
+        SetAnimationType((AnimationType)props->Get("animationType").As<int>());
         return;
     }
 
     if (!Str::Cmp(propName, "skeleton")) {
-        SkeletonReloaded();
+        SetSkeletonGuid(props->Get("skeleton").As<Guid>());
         return;
     }
 
     if (!Str::Cmp(propName, "anim")) {
-        AnimReloaded();
+        SetAnimGuid(props->Get("anim").As<Guid>());
         return;
     }
 
     if (!Str::Cmp(propName, "animController")) {
-        AnimControllerReloaded();
+        SetAnimControllerGuid(props->Get("animController").As<Guid>());
         return;
     }
 
     ComMeshRenderer::PropertyChanged(classname, propName);
+}
+
+ComSkinnedMeshRenderer::AnimationType ComSkinnedMeshRenderer::GetAnimationType() const {
+    return animationType;
+}
+
+void ComSkinnedMeshRenderer::SetAnimationType(AnimationType animationType) {
+    Purge();
+    Init();
+}
+
+Guid ComSkinnedMeshRenderer::GetSkeletonGuid() const {
+    const Str skeletonPath = skeleton->GetHashName();
+    return resourceGuidMapper.Get(skeletonPath);
+}
+
+void ComSkinnedMeshRenderer::SetSkeletonGuid(const Guid &guid) {
+    ChangeSkeleton(guid);
+
+    MeshUpdated();
+}
+
+Guid ComSkinnedMeshRenderer::GetAnimGuid() const {
+    const Str animPath = anim->GetHashName();
+    return resourceGuidMapper.Get(animPath);
+}
+
+void ComSkinnedMeshRenderer::SetAnimGuid(const Guid &guid) {
+    ChangeAnim(guid);
+
+    MeshUpdated();
+}
+
+Guid ComSkinnedMeshRenderer::GetAnimControllerGuid() const {
+    const Str animControllerPath = animator.GetAnimController()->GetHashName();
+    return resourceGuidMapper.Get(animControllerPath);
+}
+
+void ComSkinnedMeshRenderer::SetAnimControllerGuid(const Guid &guid) {
+    ChangeAnimController(guid);
+
+    MeshUpdated();
 }
 
 BE_NAMESPACE_END

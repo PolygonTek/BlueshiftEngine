@@ -36,7 +36,7 @@ public:
     virtual ~Component() = 0;
 
                             /// Components share the same name with the entity
-    virtual const Str       ToString() const override;
+    virtual Str             ToString() const override;
     
                             /// Get the entity that own this component
     Entity *                GetEntity() const { return entity; }

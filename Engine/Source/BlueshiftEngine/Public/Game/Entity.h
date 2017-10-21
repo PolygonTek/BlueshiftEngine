@@ -57,7 +57,7 @@ public:
     Entity();
     virtual ~Entity();
 
-    virtual const Str           ToString() const override { return GetName(); }
+    virtual Str                 ToString() const override { return GetName(); }
     
     Str                         GetName() const { return name; }
     void                        SetName(const Str &name);
@@ -72,16 +72,19 @@ public:
     bool                        IsFrozen() const { return frozen; }
     void                        SetFrozen(bool frozen);
 
+    bool                        IsPrefabSource() const { return prefab; }
+
+    Guid                        GetPrefabSource() const;
+    void                        SetPrefabSource(const Guid &prefabSourceGuid);
+
+    ObjectRef                   GetPrefabSourceRef() const;
+    void                        SetPrefabSourceRef(const ObjectRef &prefabSourceRef);
+
+    GameWorld *                 GetGameWorld() const { return gameWorld; }
+
     int                         GetEntityNum() const { return entityNum; }
 
     int                         GetSpawnId() const;
-
-    bool                        IsPrefabParent() const;
-    bool                        IsPrefabInstance() const;
-
-    Entity *                    GetPrefabParent() const;
-
-    GameWorld *                 GetGameWorld() const { return gameWorld; }
 
                                 /// Returns hierarchy node
     const Hierarchy<Entity> &   GetNode() const { return node; }
@@ -95,7 +98,11 @@ public:
     Entity *                    GetParent() const;
     void                        SetParent(Entity *parentEntity);
 
+    Guid                        GetParentGuid() const;
     void                        SetParentGuid(const Guid &parentGuid);
+
+    ObjectRef                   GetParentRef() const;
+    void                        SetParentRef(const ObjectRef &parentRef);
 
                                 /// Get the children by depth first order
     void                        GetChildren(EntityPtrArray &children) const;
@@ -139,8 +146,6 @@ public:
     bool                        HasRenderEntity(int renderEntityHandle) const;
 
     void                        Purge();
-
-    void                        InitHierarchy();
 
                                 // entity 초기화 함수, 언제나 부모 entity 초기화가 먼저 실행된다.
     void                        Init();
@@ -203,8 +208,10 @@ protected:
     int                         entityNum;      // Index for gameWorld->entities
     int                         layer;
     Hierarchy<Entity>           node;
+    Guid                        prefabSourceGuid;
 
     bool                        initialized;
+    bool                        prefab;
     bool                        frozen;
 
     GameWorld *                 gameWorld;

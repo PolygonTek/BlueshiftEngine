@@ -341,13 +341,12 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
 
         clonedEntity->gameWorld = this;
 
-        // if the originalEntity is a prefab parent
-        if (originalEntity->IsPrefabParent()) {
-            clonedEntity->props->Set("prefabParent", originalEntity->GetGuid());
-            clonedEntity->props->Set("isPrefabParent", false);
+        // if the originalEntity is a prefab source
+        if (originalEntity->IsPrefabSource()) {
+            clonedEntity->props->Set("prefabSource", originalEntity->GetGuid());
+            clonedEntity->props->Set("prefab", false);
         }
 
-        clonedEntity->InitHierarchy();
         clonedEntity->Init();
         clonedEntity->InitComponents();
     }
@@ -367,7 +366,6 @@ Entity *GameWorld::CreateEntity(const char *name) {
 
     entity->gameWorld = this;
 
-    entity->InitHierarchy();
     entity->Init();
     entity->InitComponents();
 
@@ -421,7 +419,6 @@ bool GameWorld::SpawnEntityFromJson(Json::Value &entityValue, Entity **ent) {
     Entity *entity = Entity::CreateEntity(entityValue);
     entity->gameWorld = this;
 
-    entity->InitHierarchy();
     entity->Init();
     entity->InitComponents();
 

@@ -47,17 +47,14 @@ bool Prefab::Create(const Json::Value &entitiesValue) {
 
         if (!Str::Cmp(classname, Entity::metaObject.ClassName())) {
             Entity *entity = Entity::CreateEntity(entityValue);
-
-            // all of the entities in the prefab have this property
-            assert(entity->props->Get("isPrefabParent").As<bool>());
+            assert(entity->props->Get("prefab").As<bool>());
             
             const Guid parentGuid = Guid::FromString(entityValue["parent"].asCString());
-            if (parentGuid.IsZero()) {
-                // guid 0 means a root entity
+            if (parentGuid.IsZero()) { // guid 0 means a root entity
                 entity->node.SetParent(entityHierarchy);
             }
 
-            entity->InitHierarchy();
+            entity->Init();
 
             entities.Append(entity);
         } else {

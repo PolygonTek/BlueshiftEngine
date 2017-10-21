@@ -31,10 +31,10 @@ OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
 END_EVENTS
 BEGIN_PROPERTIES(Entity)
-    PROPERTY_OBJECT("parent", "Parent Entity", "parent entity", Guid::zero, Entity::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("isPrefabParent", "Is prefab Parent", "is prefab parent ?", false, PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("prefabParent", "Prefab Parent", "prefab parent entity", Guid::zero, Entity::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_STRING("name", "Name", "entity name", "", PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("parent", "Parent", "parent entity", Guid::zero, Entity::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("prefab", "Prefab", "is prefab ?", false, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("prefabSource", "Prefab Source", "prefab source entity", Guid::zero, Entity::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_STRING("name", "Name", "entity name", "Entity", PropertyInfo::ReadWrite),
     PROPERTY_STRING("tag", "Tag", "Tag", "Untagged", PropertyInfo::ReadWrite),
     PROPERTY_INT("layer", "Layer", "Layer", 0, PropertyInfo::ReadWrite),
     PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", false, PropertyInfo::ReadWrite),
@@ -42,11 +42,11 @@ END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void Entity::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", Entity, GetParent, SetParent, Guid::zero, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Is Prefab Parent", bool, IsPrefabParent, SetPrefabParent, false, "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Prefab Parent", Entity, GetPrefabParent, SetPrefabParent, Guid::zero, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", ObjectRef, GetParentRef, SetParentRef, ObjectRef(Entity::metaObject, Guid::zero), "Parent Entity", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Prefab", bool, prefab, false, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Prefab Source", ObjectRef, GetPrefabSourceRef, SetPrefabSourceRef, ObjectRef(Entity::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::ReadWrite);
 }
@@ -58,6 +58,8 @@ Entity::Entity() {
     node.SetOwner(this);
     layer = 0;
     frozen = false;
+    prefab = false;
+    prefabSourceGuid = Guid::zero;
     initialized = false;
 
 #ifndef NEW_PROPERTY_SYSTEM
@@ -101,11 +103,24 @@ void Entity::Event_ImmediateDestroy() {
 
 void Entity::Init() {
 #ifndef NEW_PROPERTY_SYSTEM
-    //isPrefabParent = props->Get("isPrefabParent").As<bool>();
     name = props->Get("name").As<Str>();
     tag = props->Get("tag").As<Str>();
     layer = props->Get("layer").As<int>();
     frozen = props->Get("frozen").As<bool>();
+
+    const Guid parentGuid = props->Get("parent").As<Guid>();
+    if (!parentGuid.IsZero()) {
+        Object *parentObject = Entity::FindInstance(parentGuid);
+        Entity *parent = parentObject ? parentObject->Cast<Entity>() : nullptr;
+        if (!parent) {
+            BE_WARNLOG(L"Couldn't find parent entity %hs of %hs\n", parentGuid.ToString(), name.c_str());
+        } else {
+            node.SetParent(parent->node);
+        }
+    }
+
+    prefab = props->Get("prefab").As<bool>();
+    prefabSourceGuid = props->Get("prefabSource").As<Guid>();
 #endif
 
     initialized = true;
@@ -124,12 +139,10 @@ void Entity::InitComponents() {
         }
     }
 
-#ifndef NEW_PROPERTY_SYSTEM
     ComRenderable *renderable = GetComponent<ComRenderable>();
     if (renderable) {
         renderable->props->Set("skipSelection", frozen);
     }
-#endif
 }
 
 void Entity::Awake() {
@@ -177,23 +190,6 @@ int Entity::GetSpawnId() const {
     return gameWorld->GetEntitySpawnId(this);
 }
 
-bool Entity::IsPrefabParent() const {
-    bool isPrefabParent = props->Get("isPrefabParent").As<bool>();
-    return isPrefabParent;
-}
-
-bool Entity::IsPrefabInstance() const {
-    Guid prefabParentGuid = props->Get("prefabParent").As<Guid>();
-    return !prefabParentGuid.IsZero();
-}
-
-Entity *Entity::GetPrefabParent() const {
-    Guid prefabParentGuid = props->Get("prefabParent").As<Guid>();
-    Object *prefabParentObj = Entity::FindInstance(prefabParentGuid);
-    Entity *prefabParent = prefabParentObj ? prefabParentObj->Cast<Entity>() : nullptr;
-    return prefabParent;
-}
-
 ComTransform *Entity::GetTransform() const {
     ComTransform *transform = static_cast<ComTransform *>(GetComponent(0));
     assert(transform);
@@ -237,23 +233,6 @@ bool Entity::HasRenderEntity(int renderEntityHandle) const {
     return false;
 }
 
-void Entity::InitHierarchy() {
-    Entity *parent = nullptr;
-
-    const Guid parentGuid = props->Get("parent").As<Guid>();
-    if (!parentGuid.IsZero()) {
-        Object *parentObject = Entity::FindInstance(parentGuid);
-        parent = parentObject ? parentObject->Cast<Entity>() : nullptr;
-        if (!parent) {
-            BE_WARNLOG(L"Couldn't find parent entity %hs of %hs\n", parentGuid.ToString(), name.c_str());
-        }
-    }
-
-    if (parent) {
-        node.SetParent(parent->node);
-    } 
-}
-
 void Entity::OnApplicationTerminate() {
     ComponentPtrArray scriptComponents = GetComponents(ComScript::metaObject);
     for (int i = 0; i < scriptComponents.Count(); i++) {
@@ -272,23 +251,23 @@ void Entity::OnApplicationPause(bool pause) {
     }
 }
 
-void Entity::Serialize(Json::Value &data) const {
-    Json::Value componentsData;
+void Entity::Serialize(Json::Value &value) const {
+    Json::Value componentsValue;
 
-    props->Serialize(data);
+    props->Serialize(value);
 
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
-            Json::Value componentData;
-            component->props->Serialize(componentData);
+            Json::Value componentValue;
+            component->props->Serialize(componentValue);
 
-            componentsData.append(componentData);
+            componentsValue.append(componentValue);
         }
     }
 
-    data["components"] = componentsData;
+    value["components"] = componentsValue;
 }
 
 bool Entity::IsActiveSelf() const {
@@ -428,6 +407,16 @@ void Entity::PropertyChanged(const char *classname, const char *propName) {
         return;
     }
 
+    if (!Str::Cmp(propName, "prefab")) {
+        prefab = props->Get("prefab").As<bool>();
+        return;
+    }
+
+    if (!Str::Cmp(propName, "prefabSource")) {
+        SetPrefabSource(props->Get("prefabSource").As<Guid>());
+        return;
+    }
+
     if (!Str::Cmp(propName, "frozen")) {
         SetFrozen(props->Get("frozen").As<bool>());
         return;
@@ -453,7 +442,15 @@ void Entity::SetLayer(int layer) {
 }
 
 void Entity::SetParent(Entity *parentEntity) {
-    props->Set("parent", parentEntity->GetGuid());
+    SetParentGuid(parentEntity->GetGuid());
+}
+
+Guid Entity::GetParentGuid() const {
+    Entity *parentEntity = node.GetParent();
+    if (parentEntity) {
+        return parentEntity->GetGuid();
+    }
+    return Guid::zero;
 }
 
 void Entity::SetParentGuid(const Guid &parentGuid) {
@@ -484,6 +481,32 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
     transform->props->Set("angles", axis.ToAngles());
 }
 
+ObjectRef Entity::GetParentRef() const {
+    Entity *parentEntity = node.GetParent();
+    Guid parentEntityGuid = parentEntity ? parentEntity->GetGuid() : Guid::zero;
+    return ObjectRef(Entity::metaObject, parentEntityGuid);
+}
+
+void Entity::SetParentRef(const ObjectRef &parenteRef) {
+    SetParentGuid(parenteRef.objectGuid);
+}
+
+Guid Entity::GetPrefabSource() const {
+    return prefabSourceGuid;
+}
+
+void Entity::SetPrefabSource(const Guid &prefabSourceGuid) {
+    this->prefabSourceGuid = prefabSourceGuid;
+}
+
+ObjectRef Entity::GetPrefabSourceRef() const {
+    return ObjectRef(Entity::metaObject, prefabSourceGuid);
+}
+
+void Entity::SetPrefabSourceRef(const ObjectRef &prefabSourceRef) {
+    prefabSourceGuid = prefabSourceRef.objectGuid;
+}
+
 void Entity::SetFrozen(bool frozen) {
     this->frozen = frozen;
 
@@ -503,10 +526,6 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
 
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
     entity->props->Init(entityValue);
-
-    entity->name = entity->props->Get("name").As<Str>();
-    entity->tag = entity->props->Get("tag").As<Str>();
-    entity->layer = entity->props->Get("layer").As<int>();
 
     Json::Value &componentsValue = entityValue["components"];
 

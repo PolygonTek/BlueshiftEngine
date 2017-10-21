@@ -31,9 +31,9 @@ public:
 
     const Asset *           GetAsset() const { return asset;  }
 
-    virtual const BE1::Str  ToString() const override;
+    virtual BE1::Str        ToString() const override;
 
-    virtual const BE1::Str  GetCacheFilename() const = 0;
+    virtual BE1::Str        GetCacheFilename() const = 0;
 
     virtual void            Import() = 0;
     

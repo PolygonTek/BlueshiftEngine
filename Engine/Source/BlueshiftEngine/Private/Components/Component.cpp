@@ -59,7 +59,7 @@ void Component::Event_ImmediateDestroy() {
     Object::Event_ImmediateDestroy();
 }
 
-const Str Component::ToString() const { 
+Str Component::ToString() const { 
     return entity->ToString(); 
 }
 

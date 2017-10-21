@@ -50,7 +50,7 @@ public:
     GameWorld();
     ~GameWorld();
 
-    virtual const Str           ToString() const override { return "Game World"; }
+    virtual Str                 ToString() const override { return "Game World"; }
 
     RenderWorld *               GetRenderWorld() const { return renderWorld; }
     PhysicsWorld *              GetPhysicsWorld() const { return physicsWorld; }

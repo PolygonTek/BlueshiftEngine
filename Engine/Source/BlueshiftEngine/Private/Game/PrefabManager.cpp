@@ -94,7 +94,7 @@ void PrefabManager::RenamePrefab(Prefab *prefab, const Str &newName) {
 }
 
 Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
-    assert(!originalEntity->IsPrefabParent());
+    assert(!originalEntity->IsPrefabSource());
 
     // Get the original entity and all of it's children
     EntityPtrArray originalEntities;
@@ -117,14 +117,16 @@ Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
             prefabEntityValue["parent"] = Guid::zero.ToString();
         }
 
-        prefabEntityValue["isPrefabParent"] = true;
-        prefabEntityValue["prefabParent"] = Guid::zero.ToString();
+        prefabEntityValue["prefab"] = true;
+        prefabEntityValue["prefabSource"] = Guid::zero.ToString();
 
         Entity *prefabEntity = Entity::CreateEntity(prefabEntityValue);
+        prefabEntity->Init();
+
         prefabEntities.Append(prefabEntity);
 
-        // Set the original entity's prefab parent
-        originalEntities[i]->GetProperties()->Set("prefabParent", prefabEntity->GetGuid());
+        // Set the original entity's prefab source
+        originalEntities[i]->GetProperties()->Set("prefabSource", prefabEntity->GetGuid());
     }
 
     // Remap GUIDs for the cloned entities

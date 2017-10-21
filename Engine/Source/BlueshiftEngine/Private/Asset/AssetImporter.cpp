@@ -34,7 +34,7 @@ AssetImporter::AssetImporter() {
 AssetImporter::~AssetImporter() {
 }
 
-const Str AssetImporter::ToString() const {
+Str AssetImporter::ToString() const {
     return asset->ToString();
 }
 

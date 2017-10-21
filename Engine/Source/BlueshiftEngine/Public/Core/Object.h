@@ -243,7 +243,7 @@ public:
                                 /// Returns super class name
     Str                         SuperClassName() const;
 
-    virtual const Str           ToString() const { return ""; }
+    virtual Str                 ToString() const { return ""; }
     
     template <typename T>
     T *                         Cast();

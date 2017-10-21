@@ -62,7 +62,19 @@ public:
 
     Animator &              GetAnimator() { return animator; }
 
-    const Anim *            GetAnim() const { return anim; }
+    Anim *                  GetAnim() const { return anim; }
+
+    AnimationType           GetAnimationType() const;
+    void                    SetAnimationType(AnimationType animationType);
+
+    Guid                    GetAnimGuid() const;
+    void                    SetAnimGuid(const Guid &animGuid);
+
+    Guid                    GetSkeletonGuid() const;
+    void                    SetSkeletonGuid(const Guid &skeletonGuid);
+
+    Guid                    GetAnimControllerGuid() const;
+    void                    SetAnimControllerGuid(const Guid &animGuid);
 
     int                     GetPlayStartTime() const { return playStartTime; }
 
@@ -71,15 +83,13 @@ protected:
 
     virtual void            MeshUpdated() override;
 
-    void                    ChangeAnimationType();
-
-    void                    ChangeAnimController();
+    void                    ChangeAnimController(const Guid &animControllerGuid);
     void                    AnimControllerReloaded();
 
-    void                    ChangeAnim();
+    void                    ChangeAnim(const Guid &animGuid);
     void                    AnimReloaded();
 
-    void                    ChangeSkeleton();
+    void                    ChangeSkeleton(const Guid &skeletonGuid);
     void                    SkeletonReloaded();
 
     void                    PropertyChanged(const char *classname, const char *propName);
