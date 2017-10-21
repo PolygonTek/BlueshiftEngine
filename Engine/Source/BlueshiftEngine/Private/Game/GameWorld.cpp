@@ -349,6 +349,7 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
 
         clonedEntity->InitHierarchy();
         clonedEntity->Init();
+        clonedEntity->InitComponents();
     }
 
     return clonedEntities[0];
@@ -368,6 +369,7 @@ Entity *GameWorld::CreateEntity(const char *name) {
 
     entity->InitHierarchy();
     entity->Init();
+    entity->InitComponents();
 
     RegisterEntity(entity);
 
@@ -421,6 +423,7 @@ bool GameWorld::SpawnEntityFromJson(Json::Value &entityValue, Entity **ent) {
 
     entity->InitHierarchy();
     entity->Init();
+    entity->InitComponents();
 
     RegisterEntity(entity, spawn_entnum);
 

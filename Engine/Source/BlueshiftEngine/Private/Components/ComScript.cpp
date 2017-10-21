@@ -370,7 +370,7 @@ void ComScript::Init() {
 
         owner["game_world"] = GetGameWorld();
         owner["entity"] = GetEntity();
-        owner["name"] = GetEntity()->GetName();
+        owner["name"] = GetEntity()->GetName().c_str();
         owner["transform"] = GetEntity()->GetTransform();
 
         LuaVM::State().Run();
