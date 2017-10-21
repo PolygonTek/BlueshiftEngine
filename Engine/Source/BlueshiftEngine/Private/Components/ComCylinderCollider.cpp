@@ -31,13 +31,13 @@ BEGIN_PROPERTIES(ComCylinderCollider)
     PROPERTY_FLOAT("height", "Height", "", 1.0f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComCylinderCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComCylinderCollider::RegisterProperties() {
     REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Radius", float, radius, 1.f, "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Height", float, height, 1.f, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComCylinderCollider::ComCylinderCollider() {
 #ifndef NEW_PROPERTY_SYSTEM

@@ -30,12 +30,12 @@ BEGIN_PROPERTIES(ComBoxCollider)
     PROPERTY_VEC3("extents", "Extents", "", Vec3(1, 1, 1), PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComBoxCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComBoxCollider::RegisterProperties() {
     REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Extents", Vec3, extents, Vec3::one, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComBoxCollider::ComBoxCollider() {
 #ifndef NEW_PROPERTY_SYSTEM

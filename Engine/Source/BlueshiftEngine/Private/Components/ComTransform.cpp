@@ -30,13 +30,13 @@ BEGIN_PROPERTIES(ComTransform)
     PROPERTY_VEC3("scale", "Scale", "xyz scale in local space", Vec3(1, 1, 1), PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComTransform::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComTransform::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero, "xyz position in local space", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, "yaw, pitch, roll in degree in local space", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one, "xyz scale in local space", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComTransform::ComTransform() {
 #ifndef NEW_PROPERTY_SYSTEM

@@ -31,12 +31,12 @@ BEGIN_PROPERTIES(ComMeshCollider)
     PROPERTY_OBJECT("mesh", "Mesh", "collision mesh", GuidMapper::defaultMeshGuid, MeshAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComMeshCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComMeshCollider::RegisterProperties() {
     REGISTER_PROPERTY("Convex", bool, convex, true, "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComMeshCollider::ComMeshCollider() {
 #ifndef NEW_PROPERTY_SYSTEM

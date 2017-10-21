@@ -28,13 +28,13 @@ BEGIN_PROPERTIES(ComJoint)
     PROPERTY_FLOAT("breakImpulse", "Break Impulse", "", 1e30f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComJoint::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("Connected Body", ObjectRef, GetConnectedBodyRef, SetConnectedBodyRef, ObjectRef(ComRigidBody::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComJoint::ComJoint() {
     constraint = nullptr;

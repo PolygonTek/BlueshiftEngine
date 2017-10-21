@@ -31,13 +31,13 @@ BEGIN_PROPERTIES(ComCapsuleCollider)
     PROPERTY_FLOAT("height", "Height", "", 1.0f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComCapsuleCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComCapsuleCollider::RegisterProperties() {
     REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Radius", float, radius, 1.0f, "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Height", float, height, 1.0f, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComCapsuleCollider::ComCapsuleCollider() {
 #ifndef NEW_PROPERTY_SYSTEM

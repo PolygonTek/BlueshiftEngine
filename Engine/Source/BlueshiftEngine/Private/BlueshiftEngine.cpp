@@ -66,6 +66,7 @@ void Engine::ShutdownBase() {
     cmdSystem.Shutdown();
 }
 
+#ifdef NEW_PROPERTY_SYSTEM
 static void RegisterEngineObjects() {
     Object::RegisterProperties();
     Component::RegisterProperties();
@@ -96,6 +97,7 @@ static void RegisterEngineObjects() {
     ComScript::RegisterProperties();
     Entity::RegisterProperties();
 }
+#endif
 
 void Engine::Init(const InitParms *initParms) {
     Engine::baseDir = initParms->baseDir;
@@ -110,7 +112,9 @@ void Engine::Init(const InitParms *initParms) {
         fileSystem.SetSearchPath(Engine::searchPath);
     }
 
+#ifdef NEW_PROPERTY_SYSTEM
     RegisterEngineObjects();
+#endif
 
     LuaVM::Init();
 }

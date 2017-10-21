@@ -25,10 +25,10 @@ END_EVENTS
 BEGIN_PROPERTIES(ComCollider)
 END_PROPERTIES
 
-void ComCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-#endif
+void ComCollider::RegisterProperties() {
 }
+#endif
 
 ComCollider::ComCollider() {
     collider = nullptr;

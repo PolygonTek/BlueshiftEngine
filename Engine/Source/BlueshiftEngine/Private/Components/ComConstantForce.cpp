@@ -28,12 +28,12 @@ BEGIN_PROPERTIES(ComConstantForce)
     PROPERTY_VEC3("torque", "Torque", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComConstantForce::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComConstantForce::RegisterProperties() {
     REGISTER_PROPERTY("Force", Vec3, force, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Torque", Vec3, torque, Vec3::zero, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComConstantForce::ComConstantForce() {
 }

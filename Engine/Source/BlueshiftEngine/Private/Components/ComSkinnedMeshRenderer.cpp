@@ -38,14 +38,14 @@ BEGIN_PROPERTIES(ComSkinnedMeshRenderer)
     PROPERTY_OBJECT("anim", "Animation", "", Guid::zero, AnimAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComSkinnedMeshRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComSkinnedMeshRenderer::RegisterProperties() {
     REGISTER_ENUM_ACCESSOR_PROPERTY("Animation Type", "Animation Controller;Single Animation", GetAnimationType, SetAnimationType, 0, "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Anim Controller", ObjectRef, GetAnimControllerRef, SetAnimControllerRef, ObjectRef(AnimControllerAsset::metaObject, GuidMapper::defaultAnimControllerGuid), "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Skeleton", ObjectRef, GetSkeletonRef, SetSkeletonRef, ObjectRef(SkeletonAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Animation", ObjectRef, GetAnimRef, SetAnimRef, ObjectRef(AnimAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {
     animControllerAsset = nullptr;

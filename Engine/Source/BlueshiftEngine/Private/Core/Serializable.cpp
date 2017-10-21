@@ -354,14 +354,14 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
     }
     
 #ifdef NEW_PROPERTY_SYSTEM
-    if (propInfo->accessor) {
-        propInfo->accessor->Get(owner, out);
+    if (propInfo.accessor) {
+        propInfo.accessor->Get(owner, out);
         return true;
     }
 
-    const void *src = reinterpret_cast<const byte *>(this) + propInfo->offset;
+    const void *src = reinterpret_cast<const byte *>(this) + propInfo.offset;
 
-    switch (propInfo->GetType()) {
+    switch (propInfo.GetType()) {
     case PropertyInfo::IntType:
     case PropertyInfo::EnumType:    out = *(reinterpret_cast<const int *>(src)); break;
     case PropertyInfo::BoolType:    out = *(reinterpret_cast<const bool *>(src)); break;
@@ -524,14 +524,14 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
     Variant oldVar = Get(name);
 
 #ifdef NEW_PROPERTY_SYSTEM
-    if (propInfo->accessor) {
-        propInfo->accessor->Set(owner, newVar);
+    if (propertyInfo.accessor) {
+        propertyInfo.accessor->Set(owner, newVar);
         return true;
     }
 
-    void *dest = reinterpret_cast<byte *>(this) + propInfo->offset;
+    void *dest = reinterpret_cast<byte *>(this) + propertyInfo.offset;
 
-    switch (propInfo->GetType()) {
+    switch (propertyInfo.GetType()) {
     case PropertyInfo::IntType:
     case PropertyInfo::EnumType:    *(reinterpret_cast<int *>(dest)) = newVar.As<int>(); break;
     case PropertyInfo::BoolType:    *(reinterpret_cast<bool *>(dest)) = newVar.As<bool>(); break;

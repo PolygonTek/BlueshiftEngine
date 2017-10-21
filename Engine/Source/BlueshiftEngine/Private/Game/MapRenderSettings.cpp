@@ -29,10 +29,10 @@ BEGIN_PROPERTIES(MapRenderSettings)
     PROPERTY_OBJECT("skyboxMaterial", "Skybox Material", "", GuidMapper::defaultSkyboxMaterialGuid, MaterialAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void MapRenderSettings::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-#endif
+void MapRenderSettings::RegisterProperties() {
 }
+#endif
 
 MapRenderSettings::MapRenderSettings() {
     gameWorld = nullptr;

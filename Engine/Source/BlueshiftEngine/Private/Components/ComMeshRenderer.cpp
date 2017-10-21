@@ -34,15 +34,15 @@ BEGIN_PROPERTIES(ComMeshRenderer)
     PROPERTY_BOOL("receiveShadows", "Receive Shadows", "", true, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComMeshRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComMeshRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Materials", ObjectRefArray, GetMaterialsRef, SetMaterialsRef, ObjectRefArray(MaterialAsset::metaObject, {Guid::zero}), "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, true, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, true, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComMeshRenderer::ComMeshRenderer() {
     meshAsset = nullptr;

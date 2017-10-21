@@ -35,16 +35,16 @@ BEGIN_PROPERTIES(ComTextRenderer)
     PROPERTY_OBJECT("font", "Font", "", GuidMapper::defaultFontGuid, FontAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComTextRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComTextRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("Text", Str, GetText, SetText, "Hello World", "", PropertyInfo::ReadWrite);
     REGISTER_ENUM_ACCESSOR_PROPERTY("Anchor", "Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right", GetAnchor, SetAnchor, 0, "", PropertyInfo::ReadWrite);
     REGISTER_ENUM_ACCESSOR_PROPERTY("Alignment", "Left; Center; Right", GetAlignment, SetAlignment, 0, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Font Size", int, GetFontSize, SetFontSize, 14, "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Font", ObjectRef, GetFontRef, SetFontRef, ObjectRef(FontAsset::metaObject, GuidMapper::defaultFontGuid), "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComTextRenderer::ComTextRenderer() {
 #ifndef NEW_PROPERTY_SYSTEM

@@ -42,8 +42,8 @@ BEGIN_PROPERTIES(ComCharacterJoint)
     PROPERTY_RANGED_FLOAT("twistDamping", "Twist Damping", "", Rangef(0, 1, 0.01), 0.2f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComCharacterJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComCharacterJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("X Swing Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, -45.f, "", PropertyInfo::ReadWrite).SetRange(-180, 0, 1);
@@ -58,8 +58,8 @@ void ComCharacterJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Twist Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, 45.f, "", PropertyInfo::ReadWrite).SetRange(0, 180, 1);
     REGISTER_ACCESSOR_PROPERTY("Twist Stiffness", float, GetTwistStiffness, SetTwistStiffness, 0.f, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Twist Damping", float, GetTwistDamping, SetTwistDamping, 0.2f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
-#endif
 }
+#endif
 
 ComCharacterJoint::ComCharacterJoint() {
 #ifndef NEW_PROPERTY_SYSTEM

@@ -28,12 +28,12 @@ BEGIN_PROPERTIES(ComSpline)
     PROPERTY_OBJECT("points", "Points", "points", Guid::zero, ComTransform::metaObject, PropertyInfo::ReadWrite | PropertyInfo::IsArray),
 END_PROPERTIES
 
-void ComSpline::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComSpline::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Loop", bool, IsLoop, SetLoop, false, "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Points", ObjectRefArray, GetPointsRef, SetPointsRef, ObjectRefArray(ComTransform::metaObject, {Guid::zero}), "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComSpline::ComSpline() {
     originCurve = nullptr;

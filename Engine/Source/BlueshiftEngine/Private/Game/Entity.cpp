@@ -40,13 +40,13 @@ BEGIN_PROPERTIES(Entity)
     PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", false, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void Entity::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void Entity::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", Entity, GetParent, SetParent, Guid::zero.ToString, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 Entity::Entity() {
     gameWorld = nullptr;

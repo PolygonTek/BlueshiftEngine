@@ -47,8 +47,8 @@ BEGIN_PROPERTIES(ComCamera)
     PROPERTY_INT("order", "Order", "", 0, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComCamera::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComCamera::RegisterProperties() {
     REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjectionMethod, SetProjectionMethod, 0, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, 10.f, "", PropertyInfo::ReadWrite).SetRange(1, 20000, 10);
     REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, 8192.f, "", PropertyInfo::ReadWrite).SetRange(1, 20000, 10);
@@ -63,8 +63,8 @@ void ComCamera::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Order", int, order, 0, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComCamera::ComCamera() {
     memset(&viewParms, 0, sizeof(viewParms));

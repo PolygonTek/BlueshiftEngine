@@ -27,10 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(ComAudioListener)
 END_PROPERTIES
 
-void ComAudioListener::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-#endif
+void ComAudioListener::RegisterProperties() {
 }
+#endif
 
 ComAudioListener::ComAudioListener() {
 #ifndef NEW_PROPERTY_SYSTEM

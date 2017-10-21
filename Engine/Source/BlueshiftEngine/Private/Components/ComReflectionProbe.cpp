@@ -37,11 +37,10 @@ BEGIN_PROPERTIES(ComReflectionProbe)
     PROPERTY_VEC3("boxSize", "Box Size", "", Vec3(10, 10, 10), PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComReflectionProbe::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-
-#endif
+void ComReflectionProbe::RegisterProperties() {
 }
+#endif
 
 ComReflectionProbe::ComReflectionProbe() {
     sphereHandle = -1;

@@ -28,10 +28,10 @@ END_EVENTS
 BEGIN_PROPERTIES(ComFixedJoint)
 END_PROPERTIES
 
-void ComFixedJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-#endif
+void ComFixedJoint::RegisterProperties() {
 }
+#endif
 
 ComFixedJoint::ComFixedJoint() {
 #ifndef NEW_PROPERTY_SYSTEM

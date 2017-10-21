@@ -30,12 +30,12 @@ BEGIN_PROPERTIES(ComSphereCollider)
     PROPERTY_FLOAT("radius", "Radius", "", 1.0f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComSphereCollider::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComSphereCollider::RegisterProperties() {
     REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Radius", float, radius, 1.0f, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComSphereCollider::ComSphereCollider() {
 #ifndef NEW_PROPERTY_SYSTEM

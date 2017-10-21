@@ -80,8 +80,8 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
     }
 }
 
-void ComRigidBody::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComRigidBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Mass", float, GetMass, SetMass, 1.f, "", PropertyInfo::ReadWrite).SetRange(0, 200, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("Restitution", float, GetRestitution, SetRestitution, 0.f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("Friction", float, GetFriction, SetFriction, 1.f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
@@ -90,8 +90,8 @@ void ComRigidBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("Kinematic", bool, IsKinematic, SetKinematic, false, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("CCD", bool, IsCCD, SetCCD, false, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComRigidBody::ComRigidBody() {
     body = nullptr;

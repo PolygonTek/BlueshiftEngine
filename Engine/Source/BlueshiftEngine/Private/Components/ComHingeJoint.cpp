@@ -32,14 +32,14 @@ BEGIN_PROPERTIES(ComHingeJoint)
     PROPERTY_FLOAT("maxMotorImpulse", "Max Motor Impulse", "", 0.f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComHingeJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComHingeJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComHingeJoint::ComHingeJoint() {
 #ifndef NEW_PROPERTY_SYSTEM

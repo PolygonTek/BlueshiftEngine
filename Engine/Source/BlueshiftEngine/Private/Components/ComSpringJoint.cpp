@@ -34,16 +34,16 @@ BEGIN_PROPERTIES(ComSpringJoint)
     PROPERTY_RANGED_FLOAT("damping", "Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComSpringJoint::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComSpringJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Lower Limit", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Upper Limit", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
-#endif
 }
+#endif
 
 ComSpringJoint::ComSpringJoint() {
 #ifndef NEW_PROPERTY_SYSTEM

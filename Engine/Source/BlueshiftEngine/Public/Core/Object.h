@@ -50,6 +50,8 @@ struct EventInfo {
 extern const EventDef   EV_Destroy;
 extern const EventDef   EV_ImmediateDestroy;
 
+#ifdef NEW_PROPERTY_SYSTEM
+
 // 이 매크로는 Object class 를 상속받는 추상 클래스의 prototype 에 선언해야 한다.
 // 객체화하는데 필요한 type 정보와 run-time type checking 기능을 제공한다. 
 // 반드시 단일 상속 abstract class 에만 사용할 것
@@ -58,6 +60,56 @@ extern const EventDef   EV_ImmediateDestroy;
     classname(const classname &rhs) = delete; \
     classname &operator=(const classname &rhs) = delete; \
     static void RegisterProperties(); \
+    virtual BE1::MetaObject *GetMetaObject() const; \
+    static BE1::Object *CreateInstance(const BE1::Guid &guid = BE1::Guid()); \
+    static BE1::MetaObject metaObject; \
+    static BE1::EventInfo<classname> eventMap[]
+
+// 이 매크로는 Object class 를 상속받는 자식 클래스의 prototype 에 선언해야 한다.
+// 객체화하는데 필요한 type 정보와 run-time type checking 기능을 제공한다.
+// 반드시 단일 상속 concrete class 에만 사용할 것
+#define OBJECT_PROTOTYPE(classname) \
+    using Class = classname; \
+    classname(const classname &rhs) = delete; \
+    classname &operator=(const classname &rhs) = delete; \
+    static void RegisterProperties(); \
+    virtual BE1::MetaObject *GetMetaObject() const override; \
+    static BE1::Object *CreateInstance(const BE1::Guid &guid = BE1::Guid()); \
+    static BE1::MetaObject metaObject; \
+    static BE1::EventInfo<classname> eventMap[]
+
+// 이 매크로는 static 멤버 변수를 초기화할 수 있는 곳에 정의되어야 한다.
+// abstract 클래스에만 사용할 것
+#define ABSTRACT_DECLARATION(visualname, classname, superclassname) \
+    BE1::MetaObject *classname::GetMetaObject() const { return &(classname::metaObject); } \
+    BE1::Object *classname::CreateInstance(const BE1::Guid &guid) { \
+        BE_LOG(L"Cannot instanciate abstract class %hs.", #classname); \
+        return nullptr; \
+    } \
+    BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
+        classname::CreateInstance, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
+
+// 이 매크로는 static 멤버 변수를 초기화할 수 있는 곳에 정의되어야 한다.
+// concrete 클래스에만 사용할 것
+#define OBJECT_DECLARATION(visualname, classname, superclassname) \
+    BE1::MetaObject *classname::GetMetaObject() const { return &(classname::metaObject); } \
+    BE1::Object *classname::CreateInstance(const BE1::Guid &guid) { \
+        classname *ptr = new classname; \
+        ptr->InitInstance(guid); \
+        return ptr; \
+    } \
+    BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
+        classname::CreateInstance, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
+
+#else
+
+// 이 매크로는 Object class 를 상속받는 추상 클래스의 prototype 에 선언해야 한다.
+// 객체화하는데 필요한 type 정보와 run-time type checking 기능을 제공한다. 
+// 반드시 단일 상속 abstract class 에만 사용할 것
+#define ABSTRACT_PROTOTYPE(classname) \
+    using Class = classname; \
+    classname(const classname &rhs) = delete; \
+    classname &operator=(const classname &rhs) = delete; \
     virtual BE1::MetaObject *GetMetaObject() const; \
     static BE1::Object *CreateInstance(const BE1::Guid &guid = BE1::Guid()); \
     static BE1::MetaObject metaObject; \
@@ -71,7 +123,6 @@ extern const EventDef   EV_ImmediateDestroy;
     using Class = classname; \
     classname(const classname &rhs) = delete; \
     classname &operator=(const classname &rhs) = delete; \
-    static void RegisterProperties(); \
     virtual BE1::MetaObject *GetMetaObject() const override; \
     static BE1::Object *CreateInstance(const BE1::Guid &guid = BE1::Guid()); \
     static BE1::MetaObject metaObject; \
@@ -101,6 +152,8 @@ extern const EventDef   EV_ImmediateDestroy;
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
         classname::CreateInstance, classname::propertyInfos, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
 
+#endif
+
 // event definition
 #define BEGIN_EVENTS(classname) BE1::EventInfo<classname> classname::eventMap[] = {
 #define EVENT(event, function) { &(event), (void (Object::*)())(&function) }
@@ -111,8 +164,13 @@ class BE_API MetaObject {
     friend class Object;
 
 public:
+#ifdef NEW_PROPERTY_SYSTEM
+    MetaObject(const char *visualname, const char *classname, const char *superclassname,
+        Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap);
+#else
     MetaObject(const char *visualname, const char *classname, const char *superclassname, 
         Object *(*CreateInstance)(const Guid &guid), PropertyInfo *propertyInfos, EventInfo<Object> *eventMap);
+#endif
     ~MetaObject();
 
     void                        Init();
@@ -180,10 +238,10 @@ public:
     virtual ~Object();
 
                                 /// Returns class name
-    const char *                ClassName() const;
+    Str                         ClassName() const;
 
                                 /// Returns super class name
-    const char *                SuperClassName() const;
+    Str                         SuperClassName() const;
 
     virtual const Str           ToString() const { return ""; }
     
@@ -262,6 +320,8 @@ protected:
     int                         instanceID;
 
 private:
+    void                        SetClassName(const Str &classname);
+
     bool                        PostEventArgs(const EventDef *evdef, int time, int numArgs, ...);
     bool                        ProcessEventArgs(const EventDef *evdef, int numArgs, ...);
 

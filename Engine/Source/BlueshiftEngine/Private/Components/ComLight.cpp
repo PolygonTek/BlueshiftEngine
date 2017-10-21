@@ -47,8 +47,8 @@ BEGIN_PROPERTIES(ComLight)
     PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", 16384.f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComLight::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComLight::RegisterProperties() {
     REGISTER_ENUM_ACCESSOR_PROPERTY("Light Type", "Point;Spot;Directional", GetLightType, SetLightType, 0, "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Material", ObjectRef, GetMaterialRef, SetMaterialRef, ObjectRef(MaterialAsset::metaObject, GuidMapper::zeroClampLightMaterialGuid), "", PropertyInfo::ReadWrite);
     REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, Color3::white, "", PropertyInfo::ReadWrite);
@@ -64,8 +64,8 @@ void ComLight::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, 1.f, "", PropertyInfo::ReadWrite);
     REGISTER_ACCESSOR_PROPERTY("Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 16384.f, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComLight::ComLight() {
     sceneLightHandle = -1;

@@ -26,11 +26,11 @@ BEGIN_PROPERTIES(Component)
     PROPERTY_BOOL("enabled", "Enabled", "is enabled component ?", true, PropertyInfo::ReadWrite | PropertyInfo::Hidden),
 END_PROPERTIES
 
-void Component::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void Component::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Enabled", bool, IsEnabled, SetEnable, true, "", PropertyInfo::ReadWrite | PropertyInfo::Hidden);
-#endif
 }
+#endif
 
 Component::Component() {
     entity = nullptr;

@@ -37,8 +37,8 @@ BEGIN_PROPERTIES(ComAudioSource)
     PROPERTY_RANGED_FLOAT("maxDistance", "Max Distance", "", BE1::Rangef(0, 10000, 1), 1600.0f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComAudioSource::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComAudioSource::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("Audio Clip", ObjectRef, GetAudioClipRef, SetAudioClipRef, ObjectRef(SoundAsset::metaObject, GuidMapper::defaultSoundGuid), "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, "false", "Play the sound when the map loaded.", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Spatial", bool, spatial, true, "", PropertyInfo::ReadWrite);
@@ -46,8 +46,8 @@ void ComAudioSource::RegisterProperties() {
     REGISTER_PROPERTY("Volume", float, volume, 1.f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.1);
     REGISTER_PROPERTY("Min Distance", float, minDistance, 4.f, "", PropertyInfo::ReadWrite).SetRange(0, 100, 1);
     REGISTER_PROPERTY("Max Distance", float, maxDistance, 16.f, "", PropertyInfo::ReadWrite).SetRange(0, 100, 1);
-#endif
 }
+#endif
 
 ComAudioSource::ComAudioSource() {
     referenceSound = nullptr;

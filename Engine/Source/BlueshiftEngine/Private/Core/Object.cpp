@@ -25,8 +25,13 @@ static MetaObject *             staticTypeList = nullptr;
 static Hierarchy<MetaObject>    classHierarchy;
 static int                      eventCallbackMemory = 0;
 
+#ifdef NEW_PROPERTY_SYSTEM
 MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname, 
+    Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap) {
+#else
+MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname,
     Object *(*CreateInstance)(const Guid &guid), PropertyInfo *propertyInfos, EventInfo<Object> *eventMap) {
+#endif
     this->visualname            = visualname;
     this->classname             = classname;
     this->superclassname        = superclassname;
@@ -34,7 +39,9 @@ MetaObject::MetaObject(const char *visualname, const char *classname, const char
     this->hierarchyIndex        = 0;
     this->lastChildIndex        = 0;
     this->funcCreateInstance    = CreateInstance;
+#ifndef NEW_PROPERTY_SYSTEM
     this->propertyInfos         = propertyInfos;
+#endif
     this->eventMap              = eventMap;
     this->eventCallbacks        = nullptr;
     this->freeEventCallbacks    = false;
@@ -101,12 +108,14 @@ void MetaObject::Init() {
     
     node.SetOwner(this);
 
+#ifndef NEW_PROPERTY_SYSTEM
     // property info array 의 hash 를 작성
     PropertyInfo *propInfo = propertyInfos;
     for (int i = 0; propInfo->flags != PropertyInfo::Empty; i++, propInfo++) {
         int hash = propertyInfoHash.GenerateHash(propInfo->name, false);
         propertyInfoHash.Add(hash, i);
     }
+#endif
 
     // 각 클래스별로 child 노드 개수를 lastChildIndex 에 담는다
     for (MetaObject *t = super; t != nullptr; t = t->super) {
@@ -179,7 +188,7 @@ bool MetaObject::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) c
 
     int hash = propertyInfoHash.GenerateHash(name, false);
     
-    for (const MetaObject *t = this; t != nullptr; t = t->super) {	
+    for (const MetaObject *t = this; t != nullptr; t = t->super) {
         for (int i = t->propertyInfoHash.First(hash); i != -1; i = t->propertyInfoHash.Next(i)) {
             if (!Str::Icmp(t->propertyInfos[i].name, name)) {
                 propertyInfo = t->propertyInfos[i];
@@ -252,12 +261,12 @@ Array<MetaObject *> Object::types;  // alphabetical order
 static HashTable<Guid, Object *> instanceHash;
 static PlatformAtomic instanceCounter(0);
 
-void Object::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-    REGISTER_PROPERTY("Classname", "", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
+void Object::RegisterProperties() {
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Classname", Str, ClassName, SetClassName, "Object", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
     REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadWrite | PropertyInfo::Hidden);
-#endif
 }
+#endif
 
 void Object::InitInstance(Guid guid) {
     if (guid.IsZero()) {
@@ -341,12 +350,16 @@ void Object::Shutdown() {
     initialized = false;
 }
 
-const char *Object::ClassName() const {
+Str Object::ClassName() const {
     MetaObject *meta = GetMetaObject();
     return meta->classname;
 }
 
-const char *Object::SuperClassName() const {
+void Object::SetClassName(const Str &classname) {
+    BE_ERRLOG(L"not allowed to call SetClassName()");
+}
+
+Str Object::SuperClassName() const {
     MetaObject *meta = GetMetaObject();
     return meta->superclassname;
 }

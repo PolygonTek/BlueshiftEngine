@@ -24,10 +24,10 @@ END_EVENTS
 BEGIN_PROPERTIES(ComAnimator)
 END_PROPERTIES
 
-void ComAnimator::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
-#endif
+void ComAnimator::RegisterProperties() {
 }
+#endif
 
 ComAnimator::ComAnimator() {
 #ifndef NEW_PROPERTY_SYSTEM

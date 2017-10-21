@@ -36,15 +36,15 @@ BEGIN_PROPERTIES(ComCharacterController)
     PROPERTY_RANGED_FLOAT("slopeLimit", "Slope Limit Angle", "", Rangef(0, 90, 1), 60.0f, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComCharacterController::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComCharacterController::RegisterProperties() {
     REGISTER_PROPERTY("Mass", float, mass, 1.f, "", PropertyInfo::ReadWrite).SetRange(0, 100, 0.1f);
     REGISTER_ACCESSOR_PROPERTY("Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertyInfo::ReadWrite).SetRange(0.01, 2, 0.01);
     REGISTER_ACCESSOR_PROPERTY("Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertyInfo::ReadWrite).SetRange(0.01, 2, 0.01);
     REGISTER_ACCESSOR_PROPERTY("Step Offset", float, GetStepOffset, SetStepOffset, 0.5f, "", PropertyInfo::ReadWrite).SetRange(0.0, 1.0, 0.1);
     REGISTER_ACCESSOR_PROPERTY("Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, "", PropertyInfo::ReadWrite).SetRange(0, 90, 1);
-#endif
 }
+#endif
 
 ComCharacterController::ComCharacterController() {
     collider = nullptr;

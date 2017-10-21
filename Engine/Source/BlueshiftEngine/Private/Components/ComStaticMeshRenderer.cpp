@@ -27,11 +27,11 @@ BEGIN_PROPERTIES(ComStaticMeshRenderer)
     PROPERTY_BOOL("occluder", "Occluder", "", false, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComStaticMeshRenderer::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComStaticMeshRenderer::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("Occluder", bool, IsOccluder, SetOccluder, false, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComStaticMeshRenderer::ComStaticMeshRenderer() {
 #ifndef NEW_PROPERTY_SYSTEM

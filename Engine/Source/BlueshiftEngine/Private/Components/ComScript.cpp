@@ -32,11 +32,11 @@ BEGIN_PROPERTIES(ComScript)
     PROPERTY_OBJECT("script", "Script", "", Guid::zero, ScriptAsset::metaObject, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComScript::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComScript::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("Script", ObjectRef, GetScriptRef, SetScriptRef, ObjectRef(ScriptAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComScript::ComScript() {
     scriptAsset = nullptr;

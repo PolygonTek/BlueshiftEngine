@@ -32,12 +32,12 @@ BEGIN_PROPERTIES(ComParticleSystem)
     PROPERTY_BOOL("playOnAwake", "Play On Awake", "", true, PropertyInfo::ReadWrite),
 END_PROPERTIES
 
-void ComParticleSystem::RegisterProperties() {
 #ifdef NEW_PROPERTY_SYSTEM
+void ComParticleSystem::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("Particle System", ObjectRef, GetParticleSystemRef, SetParticleSystemRef, ObjectRef(ParticleSystemAsset::metaObject, GuidMapper::defaultParticleSystemGuid), "", PropertyInfo::ReadWrite);
     REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, true, "", PropertyInfo::ReadWrite);
-#endif
 }
+#endif
 
 ComParticleSystem::ComParticleSystem() {
     particleSystemAsset = nullptr;
