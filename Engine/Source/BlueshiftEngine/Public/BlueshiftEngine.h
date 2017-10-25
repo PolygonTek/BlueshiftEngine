@@ -155,6 +155,7 @@
 #include "Components/ComMeshRenderer.h"
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
+#include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
 #include "Components/ComParticleSystem.h"
 #include "Components/ComSpline.h"

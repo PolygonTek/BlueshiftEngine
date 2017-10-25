@@ -102,6 +102,7 @@ private:
     static void             RegisterMeshRendererComponent(LuaCpp::Module &module);
     static void             RegisterStaticMeshRendererComponent(LuaCpp::Module &module);
     static void             RegisterSkinnedMeshRendererComponent(LuaCpp::Module &module);
+    static void             RegisterAnimatorComponent(LuaCpp::Module &module);
     static void             RegisterTextRendererComponent(LuaCpp::Module &module);
     static void             RegisterParticleSystemComponent(LuaCpp::Module &module);
     static void             RegisterCameraComponent(LuaCpp::Module &module);

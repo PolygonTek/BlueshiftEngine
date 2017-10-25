@@ -39,6 +39,7 @@
 #include "Components/ComMeshRenderer.h"
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
+#include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
 #include "Components/ComParticleSystem.h"
 #include "Components/ComLogic.h"
@@ -92,6 +93,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "mesh_renderer", static_cast<ComMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComMeshRenderer>),
         "static_mesh_renderer", static_cast<ComStaticMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComStaticMeshRenderer>),
         "skinned_mesh_renderer", static_cast<ComSkinnedMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComSkinnedMeshRenderer>),
+        "animator", static_cast<ComAnimator*(Entity::*)()const>(&Entity::GetComponent<ComAnimator>),
         "text_renderer", static_cast<ComTextRenderer*(Entity::*)()const>(&Entity::GetComponent<ComTextRenderer>),
         "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),
         "audio_source", static_cast<ComAudioSource*(Entity::*)()const>(&Entity::GetComponent<ComAudioSource>),
