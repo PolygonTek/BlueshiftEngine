@@ -28,15 +28,15 @@ public:
 
     OBJECT_PROTOTYPE(TagLayerSettings);
 
-    TagLayerSettings() {}
+    TagLayerSettings();
 
-    virtual void			Init() override;
+    virtual void            Init() override;
 
-    int32_t					FindTag(const char *tagName) const;
-    int32_t					FindLayer(const char *layerName) const;
+    int32_t                 FindTag(const char *tagName) const;
+    int32_t                 FindLayer(const char *layerName) const;
 
 protected:
-    void					PropertyChanged(const char *classname, const char *propName);
+    void                    PropertyChanged(const char *classname, const char *propName);
 };
 
 BE_NAMESPACE_END

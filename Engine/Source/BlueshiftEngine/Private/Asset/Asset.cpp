@@ -30,6 +30,12 @@ END_PROPERTIES
 const SignalDef Asset::SIG_Reloaded("reloaded");
 const SignalDef Asset::SIG_Modified("modified", "i");
 
+#ifdef NEW_PROPERTY_SYSTEM
+void Asset::RegisterProperties() {
+    REGISTER_PROPERTY("Time Stamp", Str, timeStamp, "", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden);
+}
+#endif
+
 Asset::Asset() {
     node.SetOwner(this);
     assetImporter = nullptr;

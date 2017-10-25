@@ -26,6 +26,10 @@ END_EVENTS
 BEGIN_PROPERTIES(FolderAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void FolderAsset::RegisterProperties() {}
+#endif
+
 FolderAsset::FolderAsset() {}
 
 FolderAsset::~FolderAsset() {}

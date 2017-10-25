@@ -101,7 +101,7 @@ void ComJoint::PropertyChanged(const char *classname, const char *propName) {
     }
 
     if (!Str::Cmp(propName, "connectedBody")) {
-        SetConnectedBody(props->Get("connectedBody").As<Guid>());
+        SetConnectedBodyGuid(props->Get("connectedBody").As<Guid>());
         return;
     }
 
@@ -118,14 +118,14 @@ void ComJoint::PropertyChanged(const char *classname, const char *propName) {
     Component::PropertyChanged(classname, propName);
 }
 
-Guid ComJoint::GetConnectedBody() const {
+Guid ComJoint::GetConnectedBodyGuid() const {
     if (connectedBody) {
         return connectedBody->GetGuid();
     }
     return Guid();
 }
 
-void ComJoint::SetConnectedBody(const Guid &guid) {
+void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
     if (!guid.IsZero()) {
         connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
     } else {

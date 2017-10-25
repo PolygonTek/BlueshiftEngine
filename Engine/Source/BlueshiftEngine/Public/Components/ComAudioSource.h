@@ -43,8 +43,8 @@ public:
     void                    Stop();
     bool                    IsPlaying() const;
 
-    Guid                    GetAudioClip() const;
-    void                    SetAudioClip(const Guid &guid);
+    Guid                    GetAudioClipGuid() const;
+    void                    SetAudioClipGuid(const Guid &guid);
 
     ObjectRef               GetAudioClipRef() const;
     void                    SetAudioClipRef(const ObjectRef &objectRef);

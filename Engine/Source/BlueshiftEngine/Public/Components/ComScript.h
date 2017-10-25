@@ -72,8 +72,8 @@ public:
     void                    OnApplicationTerminate();
     void                    OnApplicationPause(bool pause);
 
-    Guid                    GetScript() const;
-    void                    SetScript(const Guid &guid);
+    Guid                    GetScriptGuid() const;
+    void                    SetScriptGuid(const Guid &guid);
 
     ObjectRef               GetScriptRef() const;
     void                    SetScriptRef(const ObjectRef &scriptRef);

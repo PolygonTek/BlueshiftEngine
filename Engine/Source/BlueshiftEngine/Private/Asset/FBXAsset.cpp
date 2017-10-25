@@ -26,6 +26,10 @@ END_EVENTS
 BEGIN_PROPERTIES(FbxAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void FbxAsset::RegisterProperties() {}
+#endif
+
 FbxAsset::FbxAsset() {
     isRedundantAsset = true;
 }

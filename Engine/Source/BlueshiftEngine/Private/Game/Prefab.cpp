@@ -26,13 +26,17 @@ END_EVENTS
 BEGIN_PROPERTIES(Prefab)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void Prefab::RegisterProperties() {}
+#endif
+
 void Prefab::Clear() {
     entityHierarchy.RemoveFromHierarchy();
 
-    for (int i = 0; i < entities.Count(); i++) {
-        Entity *ent = entities[i];
-        Entity::DestroyInstanceImmediate(ent);
-        entities[i] = nullptr;
+    for (int entityIndex = 0; entityIndex < entities.Count(); entityIndex++) {
+        Entity *entity = entities[entityIndex];
+        Entity::DestroyInstanceImmediate(entity);
+        entities[entityIndex] = nullptr;
     }
 
     entities.Clear();
@@ -41,8 +45,9 @@ void Prefab::Clear() {
 bool Prefab::Create(const Json::Value &entitiesValue) {
     Clear();
 
-    for (int i = 0; i < entitiesValue.size(); i++) {
-        Json::Value entityValue = entitiesValue[i];
+    for (int entityIndex = 0; entityIndex < entitiesValue.size(); entityIndex++) {
+        Json::Value entityValue = entitiesValue[entityIndex];
+
         const char *classname = entityValue["classname"].asCString();
 
         if (!Str::Cmp(classname, Entity::metaObject.ClassName())) {
@@ -50,7 +55,7 @@ bool Prefab::Create(const Json::Value &entitiesValue) {
             assert(entity->props->Get("prefab").As<bool>());
             
             const Guid parentGuid = Guid::FromString(entityValue["parent"].asCString());
-            if (parentGuid.IsZero()) { // guid 0 means a root entity
+            if (parentGuid.IsZero()) { // GUID 0 means a root entity
                 entity->node.SetParent(entityHierarchy);
             }
 

@@ -63,8 +63,8 @@ public:
     float                   GetMaxVisDist() const;
     void                    SetMaxVisDist(float maxVisDist);
 
-    Guid                    GetMaterial() const;
-    void                    SetMaterial(const Guid &material);
+    Guid                    GetMaterialGuid() const;
+    void                    SetMaterialGuid(const Guid &material);
 
     ObjectRef               GetMaterialRef() const;
     void                    SetMaterialRef(const ObjectRef &materialRef);

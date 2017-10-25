@@ -36,21 +36,21 @@ public:
 
     bool                    GetClosestVertex(const SceneView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const;
 
-    Guid                    GetMesh() const;
-    void                    SetMesh(const Guid &guid);
+    Guid                    GetMeshGuid() const;
+    void                    SetMeshGuid(const Guid &guid);
 
     ObjectRef               GetMeshRef() const;
     void                    SetMeshRef(const ObjectRef &meshRef);
 
     int                     NumMaterials() const;
-    Guid                    GetMaterial(int index) const;
-    void                    SetMaterial(int index, const Guid &materialGuid);
+    Guid                    GetMaterialGuid(int index) const;
+    void                    SetMaterialGuid(int index, const Guid &materialGuid);
 
     ObjectRefArray          GetMaterialsRef() const;
     void                    SetMaterialsRef(const ObjectRefArray &materialsRef);
 
-    Material *              GetMaterialPtr(int index) const;
-    void                    SetMaterialPtr(int index, const Material *material);
+    Material *              GetMaterial(int index) const;
+    void                    SetMaterial(int index, const Material *material);
 
     bool                    IsUseLightProbe() const;
     void                    SetUseLightProbe(bool useLightProbe);

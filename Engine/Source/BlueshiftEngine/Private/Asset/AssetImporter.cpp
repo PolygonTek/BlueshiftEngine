@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(AssetImporter)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void AssetImporter::RegisterProperties() {}
+#endif
+
 AssetImporter::AssetImporter() {
     asset = nullptr;
 }

@@ -23,6 +23,14 @@ END_EVENTS
 BEGIN_PROPERTIES(GameSettings)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void GameSettings::RegisterProperties() {
+}
+#endif
+
+GameSettings::GameSettings() {
+}
+
 void GameSettings::Init() {
     // Mark as initialized
     SetInitialized(true);

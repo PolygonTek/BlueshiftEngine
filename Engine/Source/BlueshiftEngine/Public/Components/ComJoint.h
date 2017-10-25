@@ -41,8 +41,8 @@ public:
 
     virtual void            SetEnable(bool enable) override;
 
-    Guid                    GetConnectedBody() const;
-    void                    SetConnectedBody(const Guid &guid);
+    Guid                    GetConnectedBodyGuid() const;
+    void                    SetConnectedBodyGuid(const Guid &guid);
 
     ObjectRef               GetConnectedBodyRef() const;
     void                    SetConnectedBodyRef(const ObjectRef &bodyRef);

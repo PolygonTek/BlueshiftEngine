@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(MaterialAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void MaterialAsset::RegisterProperties() {}
+#endif
+
 MaterialAsset::MaterialAsset() {
     material = nullptr;
 }

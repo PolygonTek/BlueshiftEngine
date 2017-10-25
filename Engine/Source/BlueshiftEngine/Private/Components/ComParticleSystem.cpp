@@ -728,7 +728,7 @@ void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComParticleSystem::ParticleSystemReloaded() {
-    SetParticleSystem(props->Get("particleSystem").As<Guid>());
+    SetParticleSystemGuid(props->Get("particleSystem").As<Guid>());
 }
 
 void ComParticleSystem::PropertyChanged(const char *classname, const char *propName) {
@@ -737,7 +737,7 @@ void ComParticleSystem::PropertyChanged(const char *classname, const char *propN
     }
 
     if (!Str::Cmp(propName, "particleSystem")) {
-        SetParticleSystem(props->Get("particleSystem").As<Guid>());
+        SetParticleSystemGuid(props->Get("particleSystem").As<Guid>());
         return;
     }
 
@@ -749,12 +749,12 @@ void ComParticleSystem::PropertyChanged(const char *classname, const char *propN
     ComRenderable::PropertyChanged(classname, propName);
 }
 
-Guid ComParticleSystem::GetParticleSystem() const {
+Guid ComParticleSystem::GetParticleSystemGuid() const {
     const Str particleSystemPath = sceneEntity.particleSystem->GetHashName();
     return resourceGuidMapper.Get(particleSystemPath);
 }
 
-void ComParticleSystem::SetParticleSystem(const Guid &guid) {
+void ComParticleSystem::SetParticleSystemGuid(const Guid &guid) {
     ChangeParticleSystem(guid);
 
     UpdateVisuals();

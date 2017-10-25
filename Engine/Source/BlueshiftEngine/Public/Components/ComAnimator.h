@@ -55,7 +55,10 @@ public:
     Animator &              GetAnimator() { return animator; }
 
     Guid                    GetAnimControllerGuid() const;
-    void                    SetAnimControllerGuid(const Guid &animGuid);
+    void                    SetAnimControllerGuid(const Guid &animControllerGuid);
+
+    ObjectRef               GetAnimControllerRef() const;
+    void                    SetAnimControllerRef(const ObjectRef &animControllerRef);
 
 protected:
     virtual void            UpdateVisuals() override;

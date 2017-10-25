@@ -302,6 +302,17 @@ void ComSkinnedMeshRenderer::SetSkeletonGuid(const Guid &guid) {
     MeshUpdated();
 }
 
+ObjectRef ComSkinnedMeshRenderer::GetSkeletonRef() const {
+    const Str skeletonPath = skeleton->GetHashName();
+    return ObjectRef(SkeletonAsset::metaObject, resourceGuidMapper.Get(skeletonPath));
+}
+
+void ComSkinnedMeshRenderer::SetSkeletonRef(const ObjectRef &skeletonRef) {
+    ChangeSkeleton(skeletonRef.objectGuid);
+
+    MeshUpdated();
+}
+
 Guid ComSkinnedMeshRenderer::GetAnimGuid() const {
     const Str animPath = anim->GetHashName();
     return resourceGuidMapper.Get(animPath);
@@ -309,6 +320,17 @@ Guid ComSkinnedMeshRenderer::GetAnimGuid() const {
 
 void ComSkinnedMeshRenderer::SetAnimGuid(const Guid &guid) {
     ChangeAnim(guid);
+
+    MeshUpdated();
+}
+
+ObjectRef ComSkinnedMeshRenderer::GetAnimRef() const {
+    const Str animPath = anim->GetHashName();
+    return ObjectRef(AnimAsset::metaObject, resourceGuidMapper.Get(animPath));
+}
+
+void ComSkinnedMeshRenderer::SetAnimRef(const ObjectRef &animRef) {
+    ChangeAnim(animRef.objectGuid);
 
     MeshUpdated();
 }

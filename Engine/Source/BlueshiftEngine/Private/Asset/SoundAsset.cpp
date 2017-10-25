@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(SoundAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void SoundAsset::RegisterProperties() {}
+#endif
+
 SoundAsset::SoundAsset() {
     sound = nullptr;
 }

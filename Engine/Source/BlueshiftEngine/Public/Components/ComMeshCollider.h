@@ -33,8 +33,8 @@ public:
 
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-    Guid                    GetMesh() const;
-    void                    SetMesh(const Guid &meshGuid);
+    Guid                    GetMeshGuid() const;
+    void                    SetMeshGuid(const Guid &meshGuid);
 
     ObjectRef               GetMeshRef() const;
     void                    SetMeshRef(const ObjectRef &meshRef);

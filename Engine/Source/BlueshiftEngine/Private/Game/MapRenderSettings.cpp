@@ -31,6 +31,7 @@ END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void MapRenderSettings::RegisterProperties() {
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Skybox Material", ObjectRef, GetSkyboxMaterialRef, SetSkyboxMaterialRef, ObjectRef(MaterialAsset::metaObject, GuidMapper::defaultSkyboxMaterialGuid), "", PropertyInfo::ReadWrite);
 }
 #endif
 
@@ -58,14 +59,25 @@ void MapRenderSettings::Purge() {
 void MapRenderSettings::Init() {
     Purge();
 
+#ifndef NEW_PROPERTY_SYSTEM
     const Guid materialGuid = props->Get("skyboxMaterial").As<Guid>();
+
+    ChangeSkyboxMaterial(materialGuid);
+#endif
+
+    initialized = true;
+}
+
+void MapRenderSettings::ChangeSkyboxMaterial(const Guid &materialGuid) {
+    if (skyboxMaterial) {
+        materialManager.ReleaseMaterial(skyboxMaterial);
+    }
+
     const Str materialPath = resourceGuidMapper.Get(materialGuid);
 
     skyboxMaterial = materialManager.GetMaterial(materialPath);
 
     gameWorld->GetRenderWorld()->SetSkyboxMaterial(skyboxMaterial);
-
-    initialized = true;
 }
 
 void MapRenderSettings::Serialize(Json::Value &value) const {
@@ -91,12 +103,16 @@ Guid MapRenderSettings::GetSkyboxMaterial() const {
 }
 
 void MapRenderSettings::SetSkyboxMaterial(const Guid &materialGuid) {
-    materialManager.ReleaseMaterial(skyboxMaterial);
+    ChangeSkyboxMaterial(materialGuid);
+}
 
-    const Str materialPath = resourceGuidMapper.Get(materialGuid);
-    skyboxMaterial = materialManager.GetMaterial(materialPath);
+ObjectRef MapRenderSettings::GetSkyboxMaterialRef() const {
+    const Str materialPath = skyboxMaterial->GetHashName();
+    return ObjectRef(MaterialAsset::metaObject, resourceGuidMapper.Get(materialPath));
+}
 
-    gameWorld->GetRenderWorld()->SetSkyboxMaterial(skyboxMaterial);
+void MapRenderSettings::SetSkyboxMaterialRef(const ObjectRef &materialRef) {
+    ChangeSkyboxMaterial(materialRef.objectGuid);
 }
 
 BE_NAMESPACE_END

@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(AnimAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void AnimAsset::RegisterProperties() {}
+#endif
+
 AnimAsset::AnimAsset() {
     anim = nullptr;
 }

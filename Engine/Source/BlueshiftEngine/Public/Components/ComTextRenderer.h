@@ -43,8 +43,8 @@ public:
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);
 
-    Guid                    GetFont() const;
-    void                    SetFont(const Guid &fontGuid);
+    Guid                    GetFontGuid() const;
+    void                    SetFontGuid(const Guid &fontGuid);
 
     ObjectRef               GetFontRef() const;
     void                    SetFontRef(const ObjectRef &objectRef);

@@ -25,6 +25,14 @@ BEGIN_PROPERTIES(TagLayerSettings)
     PROPERTY_STRING("layer", "Layer", "layer", "Default", PropertyInfo::ReadWrite | PropertyInfo::IsArray),
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void TagLayerSettings::RegisterProperties() {
+}
+#endif
+
+TagLayerSettings::TagLayerSettings() {
+}
+
 void TagLayerSettings::Init() {
     GameSettings::Init();
 }

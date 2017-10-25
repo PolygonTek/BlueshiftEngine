@@ -26,6 +26,10 @@ END_EVENTS
 BEGIN_PROPERTIES(ScriptAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void ScriptAsset::RegisterProperties() {}
+#endif
+
 ScriptAsset::ScriptAsset() {}
 
 ScriptAsset::~ScriptAsset() {}

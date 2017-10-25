@@ -220,4 +220,15 @@ void ComAnimator::SetAnimControllerGuid(const Guid &guid) {
     MeshUpdated();
 }
 
+ObjectRef ComAnimator::GetAnimControllerRef() const {
+    const Str animControllerPath = animator.GetAnimController()->GetHashName();
+    return ObjectRef(AnimControllerAsset::metaObject, resourceGuidMapper.Get(animControllerPath));
+}
+
+void ComAnimator::SetAnimControllerRef(const ObjectRef &animControllerRef) {
+    ChangeAnimController(animControllerRef.objectGuid);
+
+    MeshUpdated();
+}
+
 BE_NAMESPACE_END

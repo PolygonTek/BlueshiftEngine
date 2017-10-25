@@ -26,22 +26,22 @@ class GameSettings : public Object {
 public:
     ABSTRACT_PROTOTYPE(GameSettings);
 
-    GameSettings() {}
+    GameSettings();
 
-    bool					IsInitialized() const { return initialized; }
+    bool                    IsInitialized() const { return initialized; }
 
-    GameWorld *				GetGameWorld() const { return gameWorld; }
+    GameWorld *             GetGameWorld() const { return gameWorld; }
 
-    virtual void			Init();
+    virtual void            Init();
 
 protected:
-    void					SetInitialized(bool init) { initialized = init; }
-    void					SetGameWorld(GameWorld *gameWorld) { this->gameWorld = gameWorld; }
+    void                    SetInitialized(bool init) { initialized = init; }
+    void                    SetGameWorld(GameWorld *gameWorld) { this->gameWorld = gameWorld; }
 
-    void					PropertyChanged(const char *classname, const char *propName);
+    void                    PropertyChanged(const char *classname, const char *propName);
 
-    bool					initialized;
-    GameWorld *				gameWorld;
+    bool                    initialized;
+    GameWorld *             gameWorld;
 };
 
 BE_NAMESPACE_END

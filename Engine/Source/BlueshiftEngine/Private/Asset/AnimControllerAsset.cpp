@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(AnimControllerAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void AnimControllerAsset::RegisterProperties() {}
+#endif
+
 AnimControllerAsset::AnimControllerAsset() {
     animController = nullptr;
 }

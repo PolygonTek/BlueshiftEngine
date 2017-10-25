@@ -59,13 +59,22 @@ public:
 
     virtual Str                 ToString() const override { return GetName(); }
     
+                                /// Returns entity name
     Str                         GetName() const { return name; }
+
+                                /// Sets entity name
     void                        SetName(const Str &name);
 
+                                /// Returns tag name
     Str                         GetTag() const { return tag; }
+
+                                /// Sets tag name
     void                        SetTag(const Str &tag);
 
+                                /// Returns layer index
     int                         GetLayer() const { return layer; }
+
+                                /// Sets layer index
     void                        SetLayer(int layer);
 
                                 // frozen entity is not selectable in editor
@@ -104,13 +113,13 @@ public:
     ObjectRef                   GetParentRef() const;
     void                        SetParentRef(const ObjectRef &parentRef);
 
-                                /// Get the children by depth first order
+                                /// Gets the children by depth first order
     void                        GetChildren(EntityPtrArray &children) const;
     
-                                /// Find a child by name
+                                /// Finds a child entity with the given name
     Entity *                    FindChild(const char *name) const;
     
-                                /// Number of components
+                                /// Returns number of components
     int                         NumComponents() const { return components.Count(); }
 
                                 /// Checks if component exist by the given meta object
@@ -145,12 +154,13 @@ public:
 
     bool                        HasRenderEntity(int renderEntityHandle) const;
 
+                                /// Purges all the data in this entity.
     void                        Purge();
 
-                                // entity 초기화 함수, 언제나 부모 entity 초기화가 먼저 실행된다.
+                                /// Initializes this entity. Always parent entities will be initialized first.
     void                        Init();
 
-                                /// Initialize components
+                                /// Initializes components
     void                        InitComponents();
 
     void                        Awake();
@@ -180,15 +190,15 @@ public:
 
     virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
 
-                                // Create an entity by JSON text.
-                                // Just initialize properties of an entity and it's components.
-                                // Later this have to be initialized by it's properties.
+                                /// Creates an entity by JSON text.
+                                /// Just initialize properties of an entity and it's components.
+                                /// Later this have to be initialized by it's properties.
     static Entity *             CreateEntity(Json::Value &data);
 
-                                // Make copy of a entity's JSON value and replace the GUID of entity/components to new one
+                                /// Makes copy of JSON value of an entity and its children and then replace each GUID of entity/components to the new one
     static Json::Value          CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap);
 
-    static void                 RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &guidMap);
+    static void                 RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &remapGuidMap);
 
     static void                 DestroyInstance(Entity *entity);
 
@@ -201,7 +211,7 @@ protected:
 
     void                        PropertyChanged(const char *classname, const char *propName);
 
-    Str                         name;           // Name of entity
+    Str                         name;           // Entity name
     int                         nameHash;       // Hash key for gameWorld->entityHash
     Str                         tag;            // Tag name
     int                         tagHash;        // Hash key for gameWorld->entityTagHash

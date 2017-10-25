@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(TextureAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void TextureAsset::RegisterProperties() {}
+#endif
+
 TextureAsset::TextureAsset() {
     texture = nullptr;
 }

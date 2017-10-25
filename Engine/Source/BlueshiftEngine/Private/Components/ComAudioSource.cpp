@@ -176,18 +176,18 @@ void ComAudioSource::PropertyChanged(const char *classname, const char *propName
     }
 
     if (!Str::Cmp(propName, "audioClip")) {
-        SetAudioClip(props->Get("audioClip").As<Guid>());
+        SetAudioClipGuid(props->Get("audioClip").As<Guid>());
         return;
     }
 
     Component::PropertyChanged(classname, propName);
 }
 
-Guid ComAudioSource::GetAudioClip() const {
+Guid ComAudioSource::GetAudioClipGuid() const {
     return referenceSound ? resourceGuidMapper.Get(referenceSound->GetHashName()) : Guid::zero;
 }
 
-void ComAudioSource::SetAudioClip(const Guid &guid) {
+void ComAudioSource::SetAudioClipGuid(const Guid &guid) {
     Str audioClipPath;
 
     if (!guid.IsZero()) {

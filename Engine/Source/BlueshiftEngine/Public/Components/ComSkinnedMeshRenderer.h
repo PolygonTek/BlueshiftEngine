@@ -39,13 +39,19 @@ public:
 
     void                    UpdateAnimation(int time);
 
-    Anim *                  GetAnim() const { return anim; }
+    Guid                    GetSkeletonGuid() const;
+    void                    SetSkeletonGuid(const Guid &skeletonGuid);
+
+    ObjectRef               GetSkeletonRef() const;
+    void                    SetSkeletonRef(const ObjectRef &skeletonRef);
 
     Guid                    GetAnimGuid() const;
     void                    SetAnimGuid(const Guid &animGuid);
 
-    Guid                    GetSkeletonGuid() const;
-    void                    SetSkeletonGuid(const Guid &skeletonGuid);
+    ObjectRef               GetAnimRef() const;
+    void                    SetAnimRef(const ObjectRef &animRef);
+
+    Anim *                  GetAnim() const { return anim; }
 
     int                     GetPlayStartTime() const { return playStartTime; }
 

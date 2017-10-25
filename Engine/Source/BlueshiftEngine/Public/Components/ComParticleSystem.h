@@ -54,8 +54,8 @@ public:
 
     void                    ResetParticles();
 
-    Guid                    GetParticleSystem() const;
-    void                    SetParticleSystem(const Guid &guid);
+    Guid                    GetParticleSystemGuid() const;
+    void                    SetParticleSystemGuid(const Guid &guid);
 
     ObjectRef               GetParticleSystemRef() const;
     void                    SetParticleSystemRef(const ObjectRef &particleSystemRef);

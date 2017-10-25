@@ -28,6 +28,14 @@ BEGIN_PROPERTIES(PhysicsSettings)
     PROPERTY_INT("filterMasks", "Filter Mask", "", -1, PropertyInfo::ReadWrite | PropertyInfo::IsArray),
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void PhysicsSettings::RegisterProperties() {
+}
+#endif
+
+PhysicsSettings::PhysicsSettings() {
+}
+
 void PhysicsSettings::Init() {
     GameSettings::Init();
 

@@ -149,12 +149,12 @@ void ComTextRenderer::SetLineSpacing(float lineSpacing) {
     }
 }
 
-Guid ComTextRenderer::GetFont() const {
+Guid ComTextRenderer::GetFontGuid() const {
     const Str fontPath = sceneEntity.font->GetHashName();
     return resourceGuidMapper.Get(fontPath);
 }
 
-void ComTextRenderer::SetFont(const Guid &fontGuid) {
+void ComTextRenderer::SetFontGuid(const Guid &fontGuid) {
     ChangeFont(fontGuid, fontSize);
     
     if (IsInitialized()) {
@@ -185,7 +185,7 @@ void ComTextRenderer::SetFontSize(int fontSize) {
     this->fontSize = fontSize;
 
     if (IsInitialized()) {
-        ChangeFont(GetFont(), fontSize);
+        ChangeFont(GetFontGuid(), fontSize);
 
         UpdateAABB();
         UpdateVisuals();
@@ -211,7 +211,7 @@ void ComTextRenderer::PropertyChanged(const char *classname, const char *propNam
     }
 
     if (!Str::Cmp(propName, "font")) {
-        SetFont(props->Get("font").As<Guid>());
+        SetFontGuid(props->Get("font").As<Guid>());
         return;
     }
 

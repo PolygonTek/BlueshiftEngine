@@ -26,6 +26,10 @@ END_EVENTS
 BEGIN_PROPERTIES(MapAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void MapAsset::RegisterProperties() {}
+#endif
+
 MapAsset::MapAsset() {}
 
 MapAsset::~MapAsset() {}

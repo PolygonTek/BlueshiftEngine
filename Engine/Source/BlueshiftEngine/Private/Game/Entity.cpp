@@ -72,8 +72,9 @@ Entity::~Entity() {
 }
 
 void Entity::Purge() {
-    for (int i = components.Count() - 1; i >= 0; i--) {
-        Component *component = components[i];
+    // Purge all the components in opposite order
+    for (int componentIndex = components.Count() - 1; componentIndex >= 0; componentIndex--) {
+        Component *component = components[componentIndex];
         if (component) {
             component->Purge();
         }
@@ -572,8 +573,6 @@ Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<G
     Guid oldEntityGuid = Guid::FromString(entityValue["guid"].asCString());
     Guid newEntityGuid = Guid::CreateGuid();
 
-    //BE_LOG(L"NewGUID %hs: %hs -> %hs\n", entityValue["name"].asCString(), oldEntityGuid.ToString(), newEntityGuid.ToString());
-
     oldToNewGuidMap.Set(oldEntityGuid, newEntityGuid);
 
     newEntityValue["guid"] = newEntityGuid.ToString();
@@ -592,37 +591,35 @@ Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<G
     return newEntityValue;
 }
 
-void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &guidMap) {
+void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &remapGuidMap) {
     PropertyInfo propInfo;
-    Guid mappedGuid;
+    Guid toGuid;
 
-    for (int i = 0; i < entities.Count(); i++) {
-        Entity *ent = entities[i];
+    for (int entityIndex = 0; entityIndex < entities.Count(); entityIndex++) {
+        Entity *entity = entities[entityIndex];
 
-        for (int propIndex = 0; propIndex < ent->props->Count(); propIndex++) {
-            if (ent->props->GetInfo(propIndex, propInfo)) {
+        for (int propIndex = 0; propIndex < entity->props->Count(); propIndex++) {
+            if (entity->props->GetInfo(propIndex, propInfo)) {
                 if (propInfo.GetType() == PropertyInfo::ObjectType) {
-                    const Guid objectGuid = ent->props->Get(propInfo.GetName()).As<Guid>();
+                    const Guid fromGuid = entity->props->Get(propInfo.GetName()).As<Guid>();
 
-                    if (guidMap.Get(objectGuid, &mappedGuid)) {
-                        //BE_LOG(L"Remap %hs %hs: %hs -> %hs\n", ent->GetName(), propInfo->GetName(), objectGuid.ToString(), mappedGuidPtr->ToString());
-
-                        ent->props->Set(propInfo.GetName(), mappedGuid);
+                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                        entity->props->Set(propInfo.GetName(), toGuid);
                     }
                 }
             }
         }
 
-        for (int componentIndex = 0; componentIndex < ent->NumComponents(); componentIndex++) {
-            Component *component = ent->GetComponent(componentIndex);
+        for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
+            Component *component = entity->GetComponent(componentIndex);
 
             for (int propIndex = 0; propIndex < component->props->Count(); propIndex++) {
                 if (component->props->GetInfo(propIndex, propInfo)) {
                     if (propInfo.GetType() == PropertyInfo::ObjectType) {
-                        const Guid objectGuid = component->props->Get(propInfo.GetName()).As<Guid>();
+                        const Guid fromGuid = component->props->Get(propInfo.GetName()).As<Guid>();
 
-                        if (guidMap.Get(objectGuid, &mappedGuid)) {
-                            component->props->Set(propInfo.GetName(), mappedGuid);
+                        if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                            component->props->Set(propInfo.GetName(), toGuid);
                         }
                     }
                 }

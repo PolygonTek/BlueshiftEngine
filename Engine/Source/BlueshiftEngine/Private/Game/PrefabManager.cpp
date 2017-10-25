@@ -31,8 +31,6 @@ void PrefabManager::Shutdown() {
         const auto *entry = prefabHashMap.GetByIndex(i);
         Prefab *prefab = entry->second;
 
-        //prefab->Write(prefab->hashName);
-
         Prefab::DestroyInstanceImmediate(prefab);
     }
 

@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(MeshAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void MeshAsset::RegisterProperties() {}
+#endif
+
 MeshAsset::MeshAsset() {
     mesh = nullptr;
 }

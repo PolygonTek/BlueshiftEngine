@@ -601,7 +601,7 @@ void ComScript::OnApplicationPause(bool pause) {
 }
 
 void ComScript::ScriptReloaded() {
-    SetScript(props->Get("script").As<Guid>());
+    SetScriptGuid(props->Get("script").As<Guid>());
 }
 
 void ComScript::PropertyChanged(const char *classname, const char *propName) {
@@ -610,21 +610,21 @@ void ComScript::PropertyChanged(const char *classname, const char *propName) {
     }
 
     if (!Str::Cmp(propName, "script")) {
-        SetScript(props->Get("script").As<Guid>());
+        SetScriptGuid(props->Get("script").As<Guid>());
         return;
     }
 
     Component::PropertyChanged(classname, propName);
 }
 
-Guid ComScript::GetScript() const {
+Guid ComScript::GetScriptGuid() const {
     if (scriptAsset) {
         return scriptAsset->GetGuid();
     }
     return Guid();
 }
 
-void ComScript::SetScript(const Guid &guid) {
+void ComScript::SetScriptGuid(const Guid &guid) {
     InitPropertyInfoImpl(guid);
 
     ChangeScript(guid);

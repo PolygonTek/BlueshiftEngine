@@ -378,7 +378,7 @@ void ComLight::PropertyChanged(const char *classname, const char *propName) {
     } 
 
     if (!Str::Cmp(propName, "material")) {
-        SetMaterial(props->Get("material").As<Guid>());
+        SetMaterialGuid(props->Get("material").As<Guid>());
         return;
     }
 
@@ -499,12 +499,12 @@ void ComLight::SetMaxVisDist(float maxVisDist) {
     UpdateVisuals();
 }
 
-Guid ComLight::GetMaterial() const {
+Guid ComLight::GetMaterialGuid() const {
     const Str materialPath = sceneLight.material->GetHashName();
     return resourceGuidMapper.Get(materialPath);
 }
 
-void ComLight::SetMaterial(const Guid &materialGuid) {
+void ComLight::SetMaterialGuid(const Guid &materialGuid) {
     materialManager.ReleaseMaterial(sceneLight.material);
 
     const Str materialPath = resourceGuidMapper.Get(materialGuid);

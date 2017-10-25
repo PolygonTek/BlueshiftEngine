@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(ParticleSystemAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void ParticleSystemAsset::RegisterProperties() {}
+#endif
+
 ParticleSystemAsset::ParticleSystemAsset() {
     particleSystem = nullptr;
 }

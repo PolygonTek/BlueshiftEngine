@@ -47,6 +47,11 @@ END_EVENTS
 BEGIN_PROPERTIES(GameWorld)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void GameWorld::RegisterProperties() {
+}
+#endif
+
 GameWorld::GameWorld() {
     memset(entities, 0, sizeof(entities));
 

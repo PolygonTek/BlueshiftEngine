@@ -41,22 +41,22 @@ const char *Properties::GetName(int index) const {
     return key.c_str();
 }
 
-bool Properties::GetInfo(const char *specname, PropertyInfo &propertyInfo) const {
+bool Properties::GetInfo(const char *name, PropertyInfo &propertyInfo) const {
     char basename[2048];
 
-    if (!specname || !specname[0]) {
+    if (!name || !name[0]) {
         return false;
     }
 
-    const char *realSpecName = specname;
+    const char *realName = name;
 
-    int index = Str::FindChar(specname, '[');
+    int index = Str::FindChar(name, '[');
     if (index >= 0) {
-        Str::Copynz(basename, specname, index + 1);
-        realSpecName = basename;
+        Str::Copynz(basename, name, index + 1);
+        realName = basename;
     }
 
-    return owner->GetPropertyInfo(realSpecName, propertyInfo);
+    return owner->GetPropertyInfo(realName, propertyInfo);
 }
 
 bool Properties::GetInfo(int index, PropertyInfo &propertyInfo) const {
@@ -394,6 +394,7 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
 
 bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
     PropertyInfo propertyInfo;
+
     if (!GetInfo(name, propertyInfo)) {
         BE_WARNLOG(L"invalid property name '%hs'\n", name);
         return false;

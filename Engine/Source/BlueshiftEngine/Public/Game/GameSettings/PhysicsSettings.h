@@ -22,12 +22,12 @@ class PhysicsSettings : public GameSettings {
 public:
     OBJECT_PROTOTYPE(PhysicsSettings);
 
-    PhysicsSettings() {}
+    PhysicsSettings();
 
-    virtual void			Init() override;
+    virtual void            Init() override;
 
 protected:
-    void					PropertyChanged(const char *classname, const char *propName);
+    void                    PropertyChanged(const char *classname, const char *propName);
 };
 
 BE_NAMESPACE_END

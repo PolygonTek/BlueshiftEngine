@@ -26,6 +26,10 @@ END_EVENTS
 BEGIN_PROPERTIES(FontAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void FontAsset::RegisterProperties() {}
+#endif
+
 FontAsset::FontAsset() {}
 
 FontAsset::~FontAsset() {}

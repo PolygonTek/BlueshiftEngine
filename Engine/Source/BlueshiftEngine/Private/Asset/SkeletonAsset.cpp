@@ -27,6 +27,10 @@ END_EVENTS
 BEGIN_PROPERTIES(SkeletonAsset)
 END_PROPERTIES
 
+#ifdef NEW_PROPERTY_SYSTEM
+void SkeletonAsset::RegisterProperties() {}
+#endif
+
 SkeletonAsset::SkeletonAsset() {
     skeleton = nullptr;
 }

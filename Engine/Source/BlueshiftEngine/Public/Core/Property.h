@@ -521,7 +521,7 @@ struct PropertyTypeID<ObjectRefArray> {
 };
 
 #define REGISTER_PROPERTY(name, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, BE1::PropertyTypeID<type>::GetType(), \
         offsetof(Class, var), defaultValue, desc, flags))
 
 #define REGISTER_ENUM_PROPERTY(name, enumSequence, var, defaultValue, desc, flags) \
@@ -529,15 +529,15 @@ struct PropertyTypeID<ObjectRefArray> {
         offsetof(Class, var), defaultValue, desc, flags))
 
 #define REGISTER_LIST_PROPERTY(name, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, BE1::PropertyTypeID<type>::GetType(), \
         offsetof(Class, var), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
 #define REGISTER_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, BE1::PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, BE1::PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type, MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_ENUM_ACCESSOR_PROPERTY(name, enumSequence, getter, setter, defaultValue, desc, flags) \
@@ -545,11 +545,11 @@ struct PropertyTypeID<ObjectRefArray> {
         new BE1::PropertyAccessorImpl<Class, int>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
 #define REGISTER_LIST_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, BE1::PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
 #define REGISTER_LIST_MIXED_ACCESSOR_PROPERTY(name, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, PropertyTypeID<type>::GetType(), \
+    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, BE1::PropertyTypeID<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type, MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
 #define BEGIN_PROPERTIES(classname) static int dummy[] = {

@@ -75,6 +75,7 @@ public:
 protected:
     AssetImporter *             assetImporter;
     Str                         name;
+    Str                         timeStamp;
     Hierarchy<Asset>            node;
     bool                        isStoredInDisk;
     bool                        isRedundantAsset;

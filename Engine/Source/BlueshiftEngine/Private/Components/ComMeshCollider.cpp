@@ -93,7 +93,7 @@ void ComMeshCollider::PropertyChanged(const char *classname, const char *propNam
     }
 
     if (!Str::Cmp(propName, "mesh")) {
-        SetMesh(props->Get("mesh").As<Guid>());
+        SetMeshGuid(props->Get("mesh").As<Guid>());
         return;
     }
 
@@ -105,11 +105,11 @@ void ComMeshCollider::PropertyChanged(const char *classname, const char *propNam
     ComCollider::PropertyChanged(classname, propName);
 }
 
-Guid ComMeshCollider::GetMesh() const {
+Guid ComMeshCollider::GetMeshGuid() const {
     return meshGuid;
 }
 
-void ComMeshCollider::SetMesh(const Guid &meshGuid) {
+void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     this->meshGuid = meshGuid;
 
     if (!meshGuid.IsZero()) {
