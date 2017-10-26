@@ -443,7 +443,8 @@ void Entity::SetLayer(int layer) {
 }
 
 void Entity::SetParent(Entity *parentEntity) {
-    SetParentGuid(parentEntity->GetGuid());
+    //SetParentGuid(parentEntity->GetGuid());
+    props->Set("parent", parentEntity->GetGuid());
 }
 
 Guid Entity::GetParentGuid() const {
