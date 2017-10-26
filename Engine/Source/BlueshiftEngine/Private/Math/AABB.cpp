@@ -32,7 +32,7 @@ float AABB::OuterRadius() const {
 
 float AABB::OuterRadius(const Vec3 &center) const {
     float total = 0.0f;
-    for (int i = 0; i < 3; i++)	{
+    for (int i = 0; i < 3; i++) {
         float b0 = (float)Math::Fabs(center[i] - b[0][i]);
         float b1 = (float)Math::Fabs(b[1][i] - center[i]);
         float bmax = Max(b0, b1);
