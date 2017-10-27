@@ -331,6 +331,7 @@ void Properties::Init(const Json::Value &node) {
 
 bool Properties::GetDefaultValue(const char *name, Variant &out) const {
     PropertyInfo propInfo;
+
     if (!GetInfo(name, propInfo)) {
         BE_WARNLOG(L"Properties::GetDefaultValue: invalid property name '%hs'\n", name);
         out.Clear();
@@ -343,6 +344,7 @@ bool Properties::GetDefaultValue(const char *name, Variant &out) const {
 
 bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
     PropertyInfo propInfo;
+
     if (!GetInfo(name, propInfo)) {
         BE_WARNLOG(L"Properties::Get: invalid property name '%hs'\n", name);
         out.Clear();

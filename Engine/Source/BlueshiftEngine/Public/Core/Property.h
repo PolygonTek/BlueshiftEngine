@@ -244,10 +244,6 @@ public:
 
     void                    SetRange(float minValue, float maxValue, float step) { range = Rangef(minValue, maxValue, step); }
 
-    //char *                  ToString() const;
-
-    //bool                    Parse(Lexer &lexer);
-
     friend bool             ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo);
 
     static const Json::Value ToJsonValue(Type type, const Variant &var);
