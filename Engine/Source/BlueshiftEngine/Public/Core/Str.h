@@ -318,6 +318,8 @@ public:
     static char *       ToUpper(char *s);
     static bool         IsNumeric(const char *s);
     static bool         IsAlpha(const char *s);
+    static int32_t      ToI32(const char *s);
+    static uint32_t     ToUI32(const char *s);
     static int64_t      ToI64(const char *s);
     static uint64_t     ToUI64(const char *s);
     static Str          FormatBytes(int bytes);
@@ -1028,6 +1030,14 @@ BE_INLINE bool Str::IsAlpha(const char *s) {
     }
 
     return true;
+}
+
+BE_INLINE int32_t Str::ToI32(const char *s) {
+    return strtol(s, nullptr, 10);
+}
+
+BE_INLINE uint32_t Str::ToUI32(const char *s) {
+    return strtoul(s, nullptr, 10);
 }
 
 BE_INLINE int64_t Str::ToI64(const char *s) {

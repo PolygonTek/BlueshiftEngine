@@ -311,6 +311,8 @@ public:
 
     static int          Length(const wchar_t *s);
     static int          LineCount(const wchar_t *s);
+    static int32_t      ToI32(const wchar_t *s);
+    static uint32_t     ToUI32(const wchar_t *s);
     static int64_t      ToI64(const wchar_t *s);
     static uint64_t     ToUI64(const wchar_t *s);
     static WStr         FormatBytes(int bytes);
@@ -930,6 +932,14 @@ BE_INLINE int WStr::LineCount(const wchar_t *s) {
 }
 
 #ifndef __ANDROID__
+
+BE_INLINE int32_t WStr::ToI32(const wchar_t *s) {
+    return wcstol(s, nullptr, 10);
+}
+
+BE_INLINE uint32_t WStr::ToUI32(const wchar_t *s) {
+    return wcstoul(s, nullptr, 10);
+}
 
 BE_INLINE int64_t WStr::ToI64(const wchar_t *s) {
     return wcstoll(s, nullptr, 10);
