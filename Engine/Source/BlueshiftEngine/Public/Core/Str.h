@@ -65,7 +65,7 @@ public:
 #ifdef QSTRING_H
     /// Constructs from a QString.
     Str(const QString &qstr) : Str() {
-        const QByteArray bytes = qstr.toLatin1();
+        const QByteArray bytes = qstr.toLatin1(); // qstr.toUtf8();
         int l = bytes.length();
         EnsureAlloced(l + 1, false);
         strcpy(data, (const char *)bytes.constData());

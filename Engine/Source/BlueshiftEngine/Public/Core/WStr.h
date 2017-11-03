@@ -63,16 +63,21 @@ public:
 #ifdef QSTRING_H
     /// Constructs from a QString.
     WStr(const QString &qstr) : WStr() {
+#if 1
         int l = qstr.length();
         EnsureAlloced(l + 1, false);
         qstr.toWCharArray(data);
-        //QTextCodec *codec = QTextCodec::codecForName(sizeof(wchar_t) == 4 ? "UTF-32" : "UTF-16");
-        //QTextEncoder *encoderWithoutBom = codec->makeEncoder(QTextCodec::IgnoreHeader);
-
-        //int l = qstr.length();
-        //QByteArray bytes = encoderWithoutBom->fromUnicode(qstr);
-        //wcscpy(data, (const wchar_t *)bytes.constData());
         len = l;
+#else
+        static QTextCodec *codec = QTextCodec::codecForName(sizeof(wchar_t) == 4 ? "UTF-32" : "UTF-16");
+        static QTextEncoder *encoderWithoutBom = codec->makeEncoder(QTextCodec::IgnoreHeader);
+
+        int l = qstr.length();
+        EnsureAlloced(l + 1, false);
+        QByteArray bytes = encoderWithoutBom->fromUnicode(qstr);
+        wcscpy(data, (const wchar_t *)bytes.constData());
+        len = l;
+#endif
     }
 #endif
 
