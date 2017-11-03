@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(BlueshiftEngine)
 
-if (WIN32)
-  include(FindOpenAL)
-endif ()
-
 set(ENGINE_FILES
   Precompiled.h
   Precompiled.cpp
@@ -732,24 +728,20 @@ endif ()
 if (IOS)
   set(GGL_FILES
     Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
-  )
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
 elseif (ANDROID)
   set(GGL_FILES
     Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
-  )
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
 else ()
   set(GGL_FILES
     Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
-  )
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h)
 
   if (WIN32)
     list(APPEND GGL_FILES
       Private/RHIOpenGL/OpenGL/GGL/gwgl.c
-      Private/RHIOpenGL/OpenGL/GGL/gwgl.h
-    )
+      Private/RHIOpenGL/OpenGL/GGL/gwgl.h)
   endif ()
 endif ()
 
@@ -769,6 +761,7 @@ include_directories(
 )
 
 if (WIN32)
+  include(FindOpenAL)
   include_directories(${OPENAL_INCLUDE_DIR})
 endif ()
 
@@ -837,6 +830,5 @@ target_link_libraries(${PROJECT_NAME}
   zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
 
 if (ANDROID)
-	target_link_libraries(${PROJECT_NAME} nvidia)
+  target_link_libraries(${PROJECT_NAME} nvidia)
 endif ()
-

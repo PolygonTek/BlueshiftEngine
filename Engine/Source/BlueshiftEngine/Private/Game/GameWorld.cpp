@@ -37,8 +37,8 @@ BE_NAMESPACE_BEGIN
 
 const EventDef EV_RestartGame("restartGame", false, "s");
 
-const SignalDef GameWorld::SIG_EntityRegistered("entityRegistered", "a");
-const SignalDef GameWorld::SIG_EntityUnregistered("entityUnregistered", "a");
+const SignalDef GameWorld::SIG_EntityRegistered("GameWorld::EntityRegistered", "a");
+const SignalDef GameWorld::SIG_EntityUnregistered("GameWorld::EntityUnregistered", "a");
 
 OBJECT_DECLARATION("Game World", GameWorld, Object)
 BEGIN_EVENTS(GameWorld)
@@ -561,7 +561,7 @@ void GameWorld::LoadTagLayerSettings(const char *filename) {
 
     if (!Str::Cmp(classname, TagLayerSettings::metaObject.ClassName())) {
         tagLayerSettings = static_cast<TagLayerSettings *>(TagLayerSettings::metaObject.CreateInstance());
-        tagLayerSettings->props->Init(jsonNode);
+        tagLayerSettings->props->Deserialize(jsonNode);
         tagLayerSettings->SetGameWorld(this);
         tagLayerSettings->Init();
     } else {
@@ -595,7 +595,7 @@ void GameWorld::LoadPhysicsSettings(const char *filename) {
 
     if (!Str::Cmp(classname, PhysicsSettings::metaObject.ClassName())) {
         physicsSettings = static_cast<PhysicsSettings *>(PhysicsSettings::metaObject.CreateInstance());
-        physicsSettings->GetProperties()->Init(jsonNode);
+        physicsSettings->GetProperties()->Deserialize(jsonNode);
         physicsSettings->SetGameWorld(this);
         physicsSettings->Init();
     } else {
@@ -622,7 +622,7 @@ void GameWorld::NewMap() {
     Json::Value defaultMapRenderSettingsValue;
     defaultMapRenderSettingsValue["classname"] = MapRenderSettings::metaObject.ClassName();
 
-    mapRenderSettings->GetProperties()->Init(defaultMapRenderSettingsValue);
+    mapRenderSettings->GetProperties()->Deserialize(defaultMapRenderSettingsValue);
 
     Reset();
 }
@@ -653,7 +653,7 @@ bool GameWorld::LoadMap(const char *filename) {
     int mapVersion = map["version"].asInt();
 
     // Read map render settings
-    mapRenderSettings->props->Init(map["renderSettings"]);
+    mapRenderSettings->props->Deserialize(map["renderSettings"]);
     mapRenderSettings->Init();
 
     // Read entities
@@ -808,7 +808,7 @@ void GameWorld::SaveSnapshot() {
 void GameWorld::RestoreSnapshot() {
     BeginMapLoading();
 
-    mapRenderSettings->props->Init(snapshotValues["renderSettings"]);
+    mapRenderSettings->props->Deserialize(snapshotValues["renderSettings"]);
     mapRenderSettings->Init();
 
     SpawnEntitiesFromJson(snapshotValues["entities"]);

@@ -23,7 +23,7 @@ BE_NAMESPACE_BEGIN
 
 Console console;
 
-const SignalDef Console::SIG_ConsoleOutputTextAdded("consoleOutputTextAdded", "w");
+const SignalDef Console::SIG_TextAdded("Console::TextAdded", "w");
 
 void Console::Init() {
     cmdSystem.AddCommand(L"clear", Cmd_ConClear);
@@ -111,7 +111,7 @@ void Console::Print(const wchar_t *string) {
         return;
     }
 
-    EmitSignal(&SIG_ConsoleOutputTextAdded, string);
+    EmitSignal(&SIG_TextAdded, string);
 
     while ((c = *string)) {
         // count words

@@ -56,7 +56,7 @@ public:
     static void         Cmd_ConClear(const CmdArgs &args);
     static void         Cmd_ConDump(const CmdArgs &args);
 
-    static const SignalDef SIG_ConsoleOutputTextAdded;
+    static const SignalDef SIG_TextAdded;
 };
 
 extern Console          console;

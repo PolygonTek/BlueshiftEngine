@@ -300,8 +300,8 @@ public:
     static void                 Init();
     static void                 Shutdown();
 
-                                /// Gets meta object with the given name
-    static MetaObject *         GetMetaObject(const char *name);
+                                /// Finds meta object with the given name
+    static MetaObject *         FindMetaObject(const char *name);
 
     static Object *             CreateInstance(const char *name, const Guid &guid = Guid::zero);
     static void                 DestroyInstance(Object *instance, bool immediate = false);

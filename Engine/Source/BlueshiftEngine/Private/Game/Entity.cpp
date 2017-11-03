@@ -23,9 +23,12 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef Entity::SIG_ComponentInserted("componentInserted", "ai");
-const SignalDef Entity::SIG_ComponentRemoved("componentRemoved", "a");
-const SignalDef Entity::SIG_LayerChanged("layerChanged", "a");
+const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
+const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
+const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ab");
+const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
+const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
+const SignalDef Entity::SIG_ComponentRemoved("Entity::ComponentRemoved", "a");
 
 OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
@@ -428,6 +431,8 @@ void Entity::SetName(const Str &name) {
     this->name = name;
 
     GetGameWorld()->OnEntityNameChanged(this);
+
+    EmitSignal(&SIG_NameChanged, this, name);
 }
 
 void Entity::SetTag(const Str &tag) {
@@ -443,8 +448,7 @@ void Entity::SetLayer(int layer) {
 }
 
 void Entity::SetParent(Entity *parentEntity) {
-    //SetParentGuid(parentEntity->GetGuid());
-    props->Set("parent", parentEntity->GetGuid());
+    SetParentGuid(parentEntity->GetGuid());
 }
 
 Guid Entity::GetParentGuid() const {
@@ -457,30 +461,15 @@ Guid Entity::GetParentGuid() const {
 
 void Entity::SetParentGuid(const Guid &parentGuid) {
     Object *parentObject = Entity::FindInstance(parentGuid);
-    Entity *parent = parentObject ? parentObject->Cast<Entity>() : nullptr;
-    ComTransform *transform = GetTransform();
-    Mat4 localMatrix;
-
-    if (parent) {
-        node.SetParent(parent->node);
-
-        localMatrix = parent->GetTransform()->GetWorldMatrix().AffineInverse() * transform->GetWorldMatrix();
+    Entity *parentEntity = parentObject ? parentObject->Cast<Entity>() : nullptr;
+    
+    if (parentEntity) {
+        node.SetParent(parentEntity->node);
     } else {
         node.SetParent(gameWorld->GetEntityHierarchy());
-
-        localMatrix = transform->GetWorldMatrix();
     }
 
-    Mat3 axis = localMatrix.ToMat3();
-    Vec3 scale;
-    scale.x = axis[0].Length();
-    scale.y = axis[1].Length();
-    scale.z = axis[2].Length();
-    axis.OrthoNormalizeSelf();
-
-    transform->props->Set("origin", localMatrix.ToTranslationVec3());
-    transform->props->Set("scale", scale);
-    transform->props->Set("angles", axis.ToAngles());
+    EmitSignal(&SIG_ParentChanged, this, parentEntity);
 }
 
 ObjectRef Entity::GetParentRef() const {
@@ -516,6 +505,8 @@ void Entity::SetFrozen(bool frozen) {
     if (renderable) {
         renderable->props->Set("skipSelection", frozen);
     }
+
+    EmitSignal(&SIG_FrozenChanged, this, frozen);
 }
 
 Entity *Entity::CreateEntity(Json::Value &entityValue) {
@@ -527,7 +518,7 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
     entityGuid = Guid::FromString(entityValue["guid"].asCString());
 
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
-    entity->props->Init(entityValue);
+    entity->props->Deserialize(entityValue);
 
     Json::Value &componentsValue = entityValue["components"];
 
@@ -535,7 +526,7 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
         Json::Value &componentValue = componentsValue[i];
 
         const char *classname = componentValue["classname"].asCString();
-        MetaObject *metaComponent = Object::GetMetaObject(classname);
+        MetaObject *metaComponent = Object::FindMetaObject(classname);
 
         if (metaComponent) {
             if (metaComponent->IsTypeOf(Component::metaObject)) {
@@ -554,7 +545,7 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
                     scriptComponent->InitPropertyInfo(componentValue);
                 }
 
-                component->props->Init(componentValue);
+                component->props->Deserialize(componentValue);
 
                 entity->AddComponent(component);
             } else {

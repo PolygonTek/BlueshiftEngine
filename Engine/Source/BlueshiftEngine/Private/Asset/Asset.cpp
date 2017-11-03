@@ -27,8 +27,8 @@ BEGIN_PROPERTIES(Asset)
     PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
 END_PROPERTIES
 
-const SignalDef Asset::SIG_Reloaded("reloaded");
-const SignalDef Asset::SIG_Modified("modified", "i");
+const SignalDef Asset::SIG_Reloaded("Asset::Reloaded");
+const SignalDef Asset::SIG_Modified("Asset::Modified", "i");
 
 #ifdef NEW_PROPERTY_SYSTEM
 void Asset::RegisterProperties() {

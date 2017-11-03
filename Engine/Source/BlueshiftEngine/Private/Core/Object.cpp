@@ -35,7 +35,7 @@ MetaObject::MetaObject(const char *visualname, const char *classname, const char
     this->visualname            = visualname;
     this->classname             = classname;
     this->superclassname        = superclassname;
-    this->super                 = Object::GetMetaObject(superclassname);
+    this->super                 = Object::FindMetaObject(superclassname);
     this->hierarchyIndex        = 0;
     this->lastChildIndex        = 0;
     this->funcCreateInstance    = CreateInstance;
@@ -364,7 +364,7 @@ Str Object::SuperClassName() const {
     return meta->superclassname;
 }
 
-MetaObject *Object::GetMetaObject(const char *name) {
+MetaObject *Object::FindMetaObject(const char *name) {
     if (!initialized) {
         // Object::Init hasn't been called yet, so do a slow lookup
         for (MetaObject *c = staticTypeList; c != nullptr; c = c->next) {
@@ -400,7 +400,7 @@ bool Object::IsRespondsTo(const EventDef &ev) const {
 }
 
 Object *Object::CreateInstance(const char *name, const Guid &guid) {
-    const MetaObject *metaObject = Object::GetMetaObject(name);
+    const MetaObject *metaObject = Object::FindMetaObject(name);
     if (!metaObject) {
         return nullptr;
     }

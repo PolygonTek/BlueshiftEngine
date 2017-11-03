@@ -21,11 +21,18 @@ public:
     static void             Init();
     static void             Shutdown();
 
+                            /// Returns time in seconds.
     static float            Seconds();
+
+                            /// Returns time in milliseconds.
     static uint32_t         Milliseconds();
+
+                            /// Returns time in microseconds.
     static uint64_t         Microseconds();
 
+                            /// Returns CPU clocks counter.
     static uint64_t         Cycles();
+
     static double           SecondsPerCycles() { return secondsPerCycle; }
 
     static int              GetTimeOfDay(struct timeval *tv);

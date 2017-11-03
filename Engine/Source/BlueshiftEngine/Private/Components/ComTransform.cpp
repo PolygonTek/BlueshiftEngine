@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef ComTransform::SIG_TransformUpdated("transformUpdated", "a");
+const SignalDef ComTransform::SIG_TransformUpdated("ComTransform::TransformUpdated", "a");
 
 OBJECT_DECLARATION("Transform", ComTransform, Component)
 BEGIN_EVENTS(ComTransform)

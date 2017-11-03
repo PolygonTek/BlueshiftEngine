@@ -19,10 +19,10 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef Properties::SIG_PropertyChanged("propertyChanged", "ss");
-const SignalDef Properties::SIG_PropertyArrayNumChanged("propertyArrayNumChanged", "ss");
-const SignalDef Properties::SIG_PropertyFlagsChanged("propertyFlagsChanged", "ss");
-const SignalDef Properties::SIG_UpdateUI("updateUI");
+const SignalDef Properties::SIG_PropertyChanged("Properties::PropertyChanged", "ss");
+const SignalDef Properties::SIG_PropertyArrayNumChanged("Properties::PropertyArrayNumChanged", "ss");
+const SignalDef Properties::SIG_PropertyFlagsChanged("Properties::PropertyFlagsChanged", "ss");
+const SignalDef Properties::SIG_UpdateUI("Properties::UpdateUI");
 
 Properties::Properties(Object *owner) {
     this->owner = owner;
@@ -105,227 +105,6 @@ void Properties::SetFlags(const char *name, int flags) {
 
     if (oldFlags != flags) {
         owner->EmitSignal(&SIG_PropertyFlagsChanged, owner->ClassName(), name);
-    }
-}
-
-void Properties::Init(const Properties *props) {
-    Array<PropertyInfo> propertyInfos;
-    owner->GetPropertyInfoList(propertyInfos);
-
-    for (int i = 0; i < propertyInfos.Count(); i++) {
-        const PropertyInfo &propInfo = propertyInfos[i];
-        const char *key = propInfo.GetName();
-        const auto &value = props->Get(key);
-
-        Set(key, value, true);
-    }
-}
-
-void Properties::Init(const Json::Value &node) {
-    Array<PropertyInfo> propertyInfos;
-    owner->GetPropertyInfoList(propertyInfos);
-
-    for (int i = 0; i < propertyInfos.Count(); i++) {
-        const PropertyInfo &propInfo = propertyInfos[i];
-
-        // variable name
-        const Str name = propInfo.GetName();
-        // variable type
-        const PropertyInfo::Type type = propInfo.GetType();
-        // defalut value in C string
-        const Variant defaultValue = propInfo.GetDefaultValue();
-
-        if (propInfo.GetFlags() & PropertyInfo::IsArray) {
-            Json::Value subNode = node.get(name, Json::Value());
-
-            SetNumElements(name, subNode.size());
-
-            for (int elementIndex = 0; elementIndex < subNode.size(); elementIndex++) {
-                const Str elementName = name + va("[%d]", elementIndex);
-                
-                switch (type) {
-                case PropertyInfo::StringType: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Str>().c_str());
-                    Set(elementName, Str(value.asCString()), true);
-                    break; }
-                case PropertyInfo::BoolType: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<bool>());
-                    Set(elementName, value.asBool(), true);
-                    break; }
-                case PropertyInfo::FloatType: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<float>());
-                    Set(elementName, value.asFloat(), true);
-                    break; }
-                case PropertyInfo::IntType:
-                case PropertyInfo::EnumType: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<int>());
-                    Set(elementName, value.asInt(), true);
-                    break; }
-                case PropertyInfo::ObjectType: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Guid>().ToString());
-                    Guid guid = Guid::FromString(value.asCString());
-                    Set(elementName, guid, true);
-                    break; }
-                case PropertyInfo::PointType: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Point>().ToString());
-                    const char *s = value.asCString();
-                    Point p;
-                    sscanf(s, "%i %i", &p.x, &p.y);
-                    Set(elementName, p, true);
-                    break; }
-                case PropertyInfo::RectType: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Rect>().ToString());
-                    const char *s = value.asCString();
-                    Rect r;
-                    sscanf(s, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
-                    Set(elementName, r, true);
-                    break; }
-                case PropertyInfo::Vec2Type: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec2>().ToString());
-                    const char *s = value.asCString();
-                    Vec2 v;
-                    sscanf(s, "%f %f", &v.x, &v.y);
-                    Set(elementName, v, true);
-                    break; }
-                case PropertyInfo::Vec3Type: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec3>().ToString());
-                    const char *s = value.asCString();
-                    Vec3 v;
-                    sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
-                    Set(elementName, v, true);
-                    break; }
-                case PropertyInfo::Vec4Type: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec4>().ToString());
-                    const char *s = value.asCString();
-                    Vec4 v;
-                    sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
-                    Set(elementName, v, true);
-                    break; }
-                case PropertyInfo::Color3Type: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Color3>().ToString());
-                    const char *s = value.asCString();
-                    Color3 v;
-                    sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
-                    Set(elementName, v, true);
-                    break; }
-                case PropertyInfo::Color4Type: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Color4>().ToString());
-                    const char *s = value.asCString();
-                    Color4 v;
-                    sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
-                    Set(elementName, v, true);
-                    break; }
-                case PropertyInfo::AnglesType: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Angles>().ToString());
-                    const char *s = value.asCString();
-                    Angles a;
-                    sscanf(s, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
-                    Set(elementName, a, true);
-                    break; }
-                case PropertyInfo::Mat3Type: {
-                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat3>().ToString());
-                    const char *s = value.asCString();
-                    Mat3 m;
-                    sscanf(s, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
-                    Set(elementName, m, true);
-                    break; }
-                default:
-                    assert(0);
-                    break;
-                }
-            }
-        } else {
-            switch (type) {
-            case PropertyInfo::StringType: {
-                const Json::Value value = node.get(name, defaultValue.As<Str>().c_str());
-                Set(name, Str(value.asCString()), true);
-                break; }
-            case PropertyInfo::BoolType: {
-                const Json::Value value = node.get(name, defaultValue.As<bool>());
-                Set(name, value.asBool(), true);
-                break; }
-            case PropertyInfo::FloatType: {
-                const Json::Value value = node.get(name, defaultValue.As<float>());
-                Set(name, value.asFloat(), true);
-                break; }
-            case PropertyInfo::IntType:
-            case PropertyInfo::EnumType: {
-                const Json::Value value = node.get(name, defaultValue.As<int>());
-                Set(name, value.asInt(), true);
-                break; }
-            case PropertyInfo::ObjectType: {
-                const Json::Value value = node.get(name, defaultValue.As<Guid>().ToString());
-                Guid guid = Guid::FromString(value.asCString());
-                Set(name, guid, true);
-                break; }
-            case PropertyInfo::PointType: {
-                const Json::Value value = node.get(name, defaultValue.As<Point>().ToString());
-                const char *s = value.asCString();
-                Point p;
-                sscanf(s, "%i %i", &p.x, &p.y);
-                Set(name, p, true);
-                break; }
-            case PropertyInfo::RectType: {
-                const Json::Value value = node.get(name, defaultValue.As<Rect>().ToString());
-                const char *s = value.asCString();
-                Rect r;
-                sscanf(s, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
-                Set(name, r, true);
-                break; }
-            case PropertyInfo::Vec2Type: {
-                const Json::Value value = node.get(name, defaultValue.As<Vec2>().ToString());
-                const char *s = value.asCString();
-                Vec2 v;
-                sscanf(s, "%f %f", &v.x, &v.y);
-                Set(name, v, true);
-                break; }
-            case PropertyInfo::Vec3Type: {
-                const Json::Value value = node.get(name, defaultValue.As<Vec3>().ToString());
-                const char *s = value.asCString();
-                Vec3 v;
-                sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
-                Set(name, v, true);
-                break; }
-            case PropertyInfo::Vec4Type: {
-                const Json::Value value = node.get(name, defaultValue.As<Vec4>().ToString());
-                const char *s = value.asCString();
-                Vec4 v;
-                sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
-                Set(name, v, true);
-                break; }
-            case PropertyInfo::Color3Type: {
-                const Json::Value value = node.get(name, defaultValue.As<Color3>().ToString());
-                const char *s = value.asCString();
-                Color3 v;
-                sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
-                Set(name, v, true);
-                break; }
-            case PropertyInfo::Color4Type: {
-                const Json::Value value = node.get(name, defaultValue.As<Color4>().ToString());
-                const char *s = value.asCString();
-                Color4 v;
-                sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
-                Set(name, v, true);
-                break; }
-            case PropertyInfo::AnglesType: {
-                const Json::Value value = node.get(name, defaultValue.As<Angles>().ToString());
-                const char *s = value.asCString();
-                Angles a;
-                sscanf(s, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
-                Set(name, a, true);
-                break; }
-            case PropertyInfo::Mat3Type: {
-                const Json::Value value = node.get(name, defaultValue.As<Mat3>().ToString());
-                const char *s = value.asCString();
-                Mat3 m;
-                sscanf(s, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
-                Set(name, m, true);
-                break; }
-            default:
-                assert(0);
-                break;
-            }
-        }
     }
 }
 
@@ -564,36 +343,213 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
 #endif
 }
 
-const Json::Value Properties::Deserialize() const {
+void Properties::Deserialize(const Json::Value &node) {
     Array<PropertyInfo> propertyInfos;
-    Json::Value node;
-    
+
     owner->GetPropertyInfoList(propertyInfos);
- 
+
     for (int i = 0; i < propertyInfos.Count(); i++) {
         const PropertyInfo &propInfo = propertyInfos[i];
+
+        // variable name
         const Str name = propInfo.GetName();
+        // variable type
+        const PropertyInfo::Type type = propInfo.GetType();
+        // defalut value in C string
+        const Variant defaultValue = propInfo.GetDefaultValue();
 
         if (propInfo.GetFlags() & PropertyInfo::IsArray) {
-            node[name] = Json::arrayValue;
+            Json::Value subNode = node.get(name, Json::Value());
 
-            for (int elementIndex = 0; elementIndex < NumElements(name); elementIndex++) {
-                BE1::Str elementName = name + BE1::va("[%d]", elementIndex);
+            SetNumElements(name, subNode.size());
 
-                Variant var;
-                Get(elementName, var, true);
-
-                node[name][elementIndex] = PropertyInfo::ToJsonValue(propInfo.GetType(), var);
+            for (int elementIndex = 0; elementIndex < subNode.size(); elementIndex++) {
+                const Str elementName = name + va("[%d]", elementIndex);
+                
+                switch (type) {
+                case PropertyInfo::StringType: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Str>().c_str());
+                    Set(elementName, Str(value.asCString()), true);
+                    break; }
+                case PropertyInfo::BoolType: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<bool>());
+                    Set(elementName, value.asBool(), true);
+                    break; }
+                case PropertyInfo::FloatType: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<float>());
+                    Set(elementName, value.asFloat(), true);
+                    break; }
+                case PropertyInfo::IntType:
+                case PropertyInfo::EnumType: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<int>());
+                    Set(elementName, value.asInt(), true);
+                    break; }
+                case PropertyInfo::ObjectType: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Guid>().ToString());
+                    Guid guid = Guid::FromString(value.asCString());
+                    Set(elementName, guid, true);
+                    break; }
+                case PropertyInfo::PointType: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Point>().ToString());
+                    const char *s = value.asCString();
+                    Point p;
+                    sscanf(s, "%i %i", &p.x, &p.y);
+                    Set(elementName, p, true);
+                    break; }
+                case PropertyInfo::RectType: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Rect>().ToString());
+                    const char *s = value.asCString();
+                    Rect r;
+                    sscanf(s, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
+                    Set(elementName, r, true);
+                    break; }
+                case PropertyInfo::Vec2Type: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec2>().ToString());
+                    const char *s = value.asCString();
+                    Vec2 v;
+                    sscanf(s, "%f %f", &v.x, &v.y);
+                    Set(elementName, v, true);
+                    break; }
+                case PropertyInfo::Vec3Type: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec3>().ToString());
+                    const char *s = value.asCString();
+                    Vec3 v;
+                    sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
+                    Set(elementName, v, true);
+                    break; }
+                case PropertyInfo::Vec4Type: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec4>().ToString());
+                    const char *s = value.asCString();
+                    Vec4 v;
+                    sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
+                    Set(elementName, v, true);
+                    break; }
+                case PropertyInfo::Color3Type: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Color3>().ToString());
+                    const char *s = value.asCString();
+                    Color3 v;
+                    sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
+                    Set(elementName, v, true);
+                    break; }
+                case PropertyInfo::Color4Type: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Color4>().ToString());
+                    const char *s = value.asCString();
+                    Color4 v;
+                    sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
+                    Set(elementName, v, true);
+                    break; }
+                case PropertyInfo::AnglesType: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Angles>().ToString());
+                    const char *s = value.asCString();
+                    Angles a;
+                    sscanf(s, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
+                    Set(elementName, a, true);
+                    break; }
+                case PropertyInfo::Mat3Type: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat3>().ToString());
+                    const char *s = value.asCString();
+                    Mat3 m;
+                    sscanf(s, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
+                    Set(elementName, m, true);
+                    break; }
+                default:
+                    assert(0);
+                    break;
+                }
             }
         } else {
-            Variant var;
-            Get(name, var, true);
-
-            node[name] = PropertyInfo::ToJsonValue(propInfo.GetType(), var);
+            switch (type) {
+            case PropertyInfo::StringType: {
+                const Json::Value value = node.get(name, defaultValue.As<Str>().c_str());
+                Set(name, Str(value.asCString()), true);
+                break; }
+            case PropertyInfo::BoolType: {
+                const Json::Value value = node.get(name, defaultValue.As<bool>());
+                Set(name, value.asBool(), true);
+                break; }
+            case PropertyInfo::FloatType: {
+                const Json::Value value = node.get(name, defaultValue.As<float>());
+                Set(name, value.asFloat(), true);
+                break; }
+            case PropertyInfo::IntType:
+            case PropertyInfo::EnumType: {
+                const Json::Value value = node.get(name, defaultValue.As<int>());
+                Set(name, value.asInt(), true);
+                break; }
+            case PropertyInfo::ObjectType: {
+                const Json::Value value = node.get(name, defaultValue.As<Guid>().ToString());
+                Guid guid = Guid::FromString(value.asCString());
+                Set(name, guid, true);
+                break; }
+            case PropertyInfo::PointType: {
+                const Json::Value value = node.get(name, defaultValue.As<Point>().ToString());
+                const char *s = value.asCString();
+                Point p;
+                sscanf(s, "%i %i", &p.x, &p.y);
+                Set(name, p, true);
+                break; }
+            case PropertyInfo::RectType: {
+                const Json::Value value = node.get(name, defaultValue.As<Rect>().ToString());
+                const char *s = value.asCString();
+                Rect r;
+                sscanf(s, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
+                Set(name, r, true);
+                break; }
+            case PropertyInfo::Vec2Type: {
+                const Json::Value value = node.get(name, defaultValue.As<Vec2>().ToString());
+                const char *s = value.asCString();
+                Vec2 v;
+                sscanf(s, "%f %f", &v.x, &v.y);
+                Set(name, v, true);
+                break; }
+            case PropertyInfo::Vec3Type: {
+                const Json::Value value = node.get(name, defaultValue.As<Vec3>().ToString());
+                const char *s = value.asCString();
+                Vec3 v;
+                sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
+                Set(name, v, true);
+                break; }
+            case PropertyInfo::Vec4Type: {
+                const Json::Value value = node.get(name, defaultValue.As<Vec4>().ToString());
+                const char *s = value.asCString();
+                Vec4 v;
+                sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
+                Set(name, v, true);
+                break; }
+            case PropertyInfo::Color3Type: {
+                const Json::Value value = node.get(name, defaultValue.As<Color3>().ToString());
+                const char *s = value.asCString();
+                Color3 v;
+                sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
+                Set(name, v, true);
+                break; }
+            case PropertyInfo::Color4Type: {
+                const Json::Value value = node.get(name, defaultValue.As<Color4>().ToString());
+                const char *s = value.asCString();
+                Color4 v;
+                sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
+                Set(name, v, true);
+                break; }
+            case PropertyInfo::AnglesType: {
+                const Json::Value value = node.get(name, defaultValue.As<Angles>().ToString());
+                const char *s = value.asCString();
+                Angles a;
+                sscanf(s, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
+                Set(name, a, true);
+                break; }
+            case PropertyInfo::Mat3Type: {
+                const Json::Value value = node.get(name, defaultValue.As<Mat3>().ToString());
+                const char *s = value.asCString();
+                Mat3 m;
+                sscanf(s, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
+                Set(name, m, true);
+                break; }
+            default:
+                assert(0);
+                break;
+            }
         }
     }
-
-    return node;
 }
 
 void Properties::Serialize(Json::Value &out) const {

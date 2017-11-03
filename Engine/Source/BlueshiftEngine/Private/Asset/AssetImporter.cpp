@@ -19,8 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef     SIG_ApplyChanged("applyChanged");
-    
+const SignalDef AssetImporter::SIG_ApplyChanged("AssetImporter::ApplyChanged");
+
 ABSTRACT_DECLARATION("AssetImporter", AssetImporter, Object)
 BEGIN_EVENTS(AssetImporter)
 END_EVENTS
@@ -55,7 +55,7 @@ void AssetImporter::RevertChanged() {
 
     if (validRootNode) {
         Json::Value importerValue = metaDataValue["importer"];
-        props->Init(importerValue);
+        props->Deserialize(importerValue);
     }
 }
 

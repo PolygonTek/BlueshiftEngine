@@ -326,7 +326,7 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
             } else if (!Str::Cmp(type, "object")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 const char *classname = props["classname"];
-                MetaObject *metaObject = Object::GetMetaObject(classname);
+                MetaObject *metaObject = Object::FindMetaObject(classname);
                 ObjectRef value = ObjectRef(*metaObject, Guid::FromString((const char *)props["value"]));
                 fieldValues.Set(name, value);
 
@@ -334,7 +334,7 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                 fieldInfos.Append(propInfo);
 #else
                 const char *classname = props["classname"];
-                MetaObject *metaObject = Object::GetMetaObject(classname);
+                MetaObject *metaObject = Object::FindMetaObject(classname);
                 if (metaObject) {
                     fieldInfos.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertyInfo::ReadWrite));
                 }

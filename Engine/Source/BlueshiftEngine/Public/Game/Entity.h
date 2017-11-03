@@ -35,8 +35,8 @@ class GameWorld;
 class Prefab;
 class Entity;
 
-using EntityPtr                 = Entity*;
-using EntityPtrArray            = Array<EntityPtr>;
+using EntityPtr = Entity*;
+using EntityPtrArray = Array<EntityPtr>;
 
 class Entity : public Object {
     friend class GameWorld;
@@ -61,19 +61,16 @@ public:
     
                                 /// Returns entity name
     Str                         GetName() const { return name; }
-
                                 /// Sets entity name
     void                        SetName(const Str &name);
 
                                 /// Returns tag name
     Str                         GetTag() const { return tag; }
-
                                 /// Sets tag name
     void                        SetTag(const Str &tag);
 
                                 /// Returns layer index
     int                         GetLayer() const { return layer; }
-
                                 /// Sets layer index
     void                        SetLayer(int layer);
 
@@ -202,10 +199,14 @@ public:
 
     static void                 DestroyInstance(Entity *entity);
 
+                                // FIXME: Don't emit these signals in player mode
+    static const SignalDef      SIG_NameChanged;
+    static const SignalDef      SIG_LayerChanged;
+    static const SignalDef      SIG_FrozenChanged;
+    static const SignalDef      SIG_ParentChanged;
     static const SignalDef      SIG_ComponentInserted;
     static const SignalDef      SIG_ComponentRemoved;
-    static const SignalDef      SIG_LayerChanged;
-        
+    
 protected:
     virtual void                Event_ImmediateDestroy() override;
 

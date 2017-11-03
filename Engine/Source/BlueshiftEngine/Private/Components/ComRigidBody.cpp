@@ -24,7 +24,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef ComRigidBody::SIG_PhysicsUpdated("physicsUpdated", "a");
+const SignalDef ComRigidBody::SIG_PhysicsUpdated("ComRigidBody::PhysicsUpdated", "a");
 
 OBJECT_DECLARATION("Rigid Body", ComRigidBody, Component)
 BEGIN_EVENTS(ComRigidBody)

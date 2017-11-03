@@ -174,9 +174,9 @@
 
 #define BE_STATIC_LINK
 
-#if defined (BE_STATIC_LINK) || !defined (__WIN32__)
+#if defined(BE_STATIC_LINK) || !defined(__WIN32__)
 #define BE_API
-#elif defined (BE_EXPORTS)
+#elif defined(BE_EXPORTS)
 #define BE_API __declspec (dllexport)
 #else 
 #define BE_API __declspec (dllimport)
