@@ -24,7 +24,7 @@ ABSTRACT_DECLARATION("Asset", Asset, Object)
 BEGIN_EVENTS(Asset)
 END_EVENTS
 BEGIN_PROPERTIES(Asset)
-    PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
+    PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertyInfo::Editor | PropertyInfo::Hidden),
 END_PROPERTIES
 
 const SignalDef Asset::SIG_Reloaded("Asset::Reloaded");
@@ -32,7 +32,7 @@ const SignalDef Asset::SIG_Modified("Asset::Modified", "i");
 
 #ifdef NEW_PROPERTY_SYSTEM
 void Asset::RegisterProperties() {
-    REGISTER_PROPERTY("Time Stamp", Str, timeStamp, "", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden);
+    REGISTER_PROPERTY("Time Stamp", Str, timeStamp, "", "", PropertyInfo::Editor | PropertyInfo::Hidden);
 }
 #endif
 

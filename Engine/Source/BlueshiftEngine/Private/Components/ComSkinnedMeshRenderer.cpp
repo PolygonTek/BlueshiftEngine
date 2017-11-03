@@ -31,14 +31,14 @@ OBJECT_DECLARATION("Skinned Mesh Renderer", ComSkinnedMeshRenderer, ComMeshRende
 BEGIN_EVENTS(ComSkinnedMeshRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComSkinnedMeshRenderer)
-    PROPERTY_OBJECT("skeleton", "Skeleton", "", Guid::zero, SkeletonAsset::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("anim", "Animation", "", Guid::zero, AnimAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("skeleton", "Skeleton", "", Guid::zero, SkeletonAsset::metaObject, PropertyInfo::Editor),
+    PROPERTY_OBJECT("anim", "Animation", "", Guid::zero, AnimAsset::metaObject, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComSkinnedMeshRenderer::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Skeleton", ObjectRef, GetSkeletonRef, SetSkeletonRef, ObjectRef(SkeletonAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Animation", ObjectRef, GetAnimRef, SetAnimRef, ObjectRef(AnimAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Skeleton", ObjectRef, GetSkeletonRef, SetSkeletonRef, ObjectRef(SkeletonAsset::metaObject, Guid::zero), "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Animation", ObjectRef, GetAnimRef, SetAnimRef, ObjectRef(AnimAsset::metaObject, Guid::zero), "", PropertyInfo::Editor);
 }
 #endif
 

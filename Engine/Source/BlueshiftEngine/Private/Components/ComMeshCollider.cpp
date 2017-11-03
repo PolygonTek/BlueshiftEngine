@@ -27,14 +27,14 @@ OBJECT_DECLARATION("Mesh Collider", ComMeshCollider, ComCollider)
 BEGIN_EVENTS(ComMeshCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComMeshCollider)
-    PROPERTY_BOOL("convex", "Convex", "", true, PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("mesh", "Mesh", "collision mesh", GuidMapper::defaultMeshGuid, MeshAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("convex", "Convex", "", true, PropertyInfo::Editor),
+    PROPERTY_OBJECT("mesh", "Mesh", "collision mesh", GuidMapper::defaultMeshGuid, MeshAsset::metaObject, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComMeshCollider::RegisterProperties() {
-    REGISTER_PROPERTY("Convex", bool, convex, true, "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Convex", bool, convex, true, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertyInfo::Editor);
 }
 #endif
 

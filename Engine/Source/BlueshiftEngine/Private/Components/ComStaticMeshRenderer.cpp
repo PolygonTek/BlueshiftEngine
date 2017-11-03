@@ -24,12 +24,12 @@ OBJECT_DECLARATION("Static Mesh Renderer", ComStaticMeshRenderer, ComMeshRendere
 BEGIN_EVENTS(ComStaticMeshRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComStaticMeshRenderer)
-    PROPERTY_BOOL("occluder", "Occluder", "", false, PropertyInfo::ReadWrite),
+    PROPERTY_BOOL("occluder", "Occluder", "", false, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComStaticMeshRenderer::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Occluder", bool, IsOccluder, SetOccluder, false, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Occluder", bool, IsOccluder, SetOccluder, false, "", PropertyInfo::Editor);
 }
 #endif
 

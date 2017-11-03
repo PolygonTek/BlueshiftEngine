@@ -60,19 +60,7 @@ public:
     explicit Properties(Object *owner);
     ~Properties();
 
-    void                    Init(const Properties *props);
-    void                    Init(const Json::Value &node);
-
     void                    Purge();
-
-                            /// Returns number of properties.
-    int                     Count() const { return propertyHashMap.Count(); }
-
-                            /// Returns property name by index.
-    const char *            GetName(int index) const;
-
-                            /// Returns property info by index.
-    bool                    GetInfo(int index, PropertyInfo &propertyInfo) const;
 
                             /// Returns property info by name.
     bool                    GetInfo(const char *name, PropertyInfo &propertyInfo) const;
@@ -98,7 +86,7 @@ public:
     Variant                 GetDefaultValue(const char *name) const;
 
                             /// Gets property
-    bool                    Get(const char *name, Variant &out, bool forceRead = false) const;
+    bool                    Get(const char *name, Variant &out) const;
 
                             /// Gets property, if it is a invalid property, returns 0-set value or "" (empty string)
     Variant                 Get(const char *name) const;
@@ -106,10 +94,10 @@ public:
                             /// Sets property
     bool                    Set(const char *name, const Variant &value, bool forceWrite = false);
 
-                            /// Deserialize to Json::Value
-    const Json::Value       Deserialize() const;
+                            /// Deserialize from JSON value
+    void                    Deserialize(const Json::Value &in);
 
-                            /// Serialize to JSON node
+                            /// Serialize to JSON value
     void                    Serialize(Json::Value &out) const;
 
     static const SignalDef  SIG_PropertyChanged;

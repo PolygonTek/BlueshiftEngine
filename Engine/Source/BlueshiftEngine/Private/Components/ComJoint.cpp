@@ -23,16 +23,16 @@ ABSTRACT_DECLARATION("Joint", ComJoint, Component)
 BEGIN_EVENTS(ComJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComJoint)
-    PROPERTY_OBJECT("connectedBody", "Connected Body", "", Guid::zero, ComRigidBody::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("collisionEnabled", "Collision Enabled", "", true, PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("breakImpulse", "Break Impulse", "", 1e30f, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("connectedBody", "Connected Body", "", Guid::zero, ComRigidBody::metaObject, PropertyInfo::Editor),
+    PROPERTY_BOOL("collisionEnabled", "Collision Enabled", "", true, PropertyInfo::Editor),
+    PROPERTY_FLOAT("breakImpulse", "Break Impulse", "", 1e30f, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComJoint::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Connected Body", ObjectRef, GetConnectedBodyRef, SetConnectedBodyRef, ObjectRef(ComRigidBody::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Connected Body", ObjectRef, GetConnectedBodyRef, SetConnectedBodyRef, ObjectRef(ComRigidBody::metaObject, Guid::zero), "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::Editor);
 }
 #endif
 

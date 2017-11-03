@@ -29,12 +29,12 @@ OBJECT_DECLARATION("Script", ComScript, Component)
 BEGIN_EVENTS(ComScript)
 END_EVENTS
 BEGIN_PROPERTIES(ComScript)
-    PROPERTY_OBJECT("script", "Script", "", Guid::zero, ScriptAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("script", "Script", "", Guid::zero, ScriptAsset::metaObject, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComScript::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Script", ObjectRef, GetScriptRef, SetScriptRef, ObjectRef(ScriptAsset::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Script", ObjectRef, GetScriptRef, SetScriptRef, ObjectRef(ScriptAsset::metaObject, Guid::zero), "", PropertyInfo::Editor);
 }
 #endif
 
@@ -109,11 +109,11 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                 Str value = (const char *)props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Str>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Str>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Str>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Str>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Str value = (const char *)props["value"];
-                fieldInfos.Append(new PROPERTY_STRING(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_STRING(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "enum")) {
 #ifdef NEW_PROPERTY_SYSTEM
@@ -121,12 +121,12 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                 const char *enumSequence = props["sequence"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyInfo::Enum(enumSequence), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyInfo::Enum(enumSequence), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 const char *sequence = props["sequence"];
                 Str value = Str((int)props["value"]);
-                fieldInfos.Append(new PROPERTY_ENUM(name, label, desc, sequence, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_ENUM(name, label, desc, sequence, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "float")) {
 #ifdef NEW_PROPERTY_SYSTEM
@@ -143,11 +143,11 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                         range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
                     }
 
-                    auto propInfo = PropertyInfo(name, PropertyTypeID<float>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<float>()), value, desc, PropertyInfo::ReadWrite);
+                    auto propInfo = PropertyInfo(name, PropertyTypeID<float>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<float>()), value, desc, PropertyInfo::Editor);
                     propInfo.SetRange(minimum, maximum, step);
                     fieldInfos.Append(propInfo);
                 } else {
-                    auto propInfo = PropertyInfo(name, PropertyTypeID<float>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<float>()), value, desc, PropertyInfo::ReadWrite);
+                    auto propInfo = PropertyInfo(name, PropertyTypeID<float>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<float>()), value, desc, PropertyInfo::Editor);
                     fieldInfos.Append(propInfo);
                 }
 #else
@@ -161,9 +161,9 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                     if (step == 0.0f) {
                         range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
                     }
-                    fieldInfos.Append(new PROPERTY_RANGED_FLOAT(name, label, desc, range, value.c_str(), PropertyInfo::ReadWrite));
+                    fieldInfos.Append(new PROPERTY_RANGED_FLOAT(name, label, desc, range, value.c_str(), PropertyInfo::Editor));
                 } else {
-                    fieldInfos.Append(new PROPERTY_FLOAT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                    fieldInfos.Append(new PROPERTY_FLOAT(name, label, desc, value.c_str(), PropertyInfo::Editor));
                 }
 #endif
             } else if (!Str::Cmp(type, "int")) {
@@ -181,11 +181,11 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                         range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
                     }
 
-                    auto propInfo = PropertyInfo(name, PropertyTypeID<int>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::ReadWrite);
+                    auto propInfo = PropertyInfo(name, PropertyTypeID<int>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::Editor);
                     propInfo.SetRange(minimum, maximum, step);
                     fieldInfos.Append(propInfo);
                 } else {
-                    auto propInfo = PropertyInfo(name, PropertyTypeID<int>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::ReadWrite);
+                    auto propInfo = PropertyInfo(name, PropertyTypeID<int>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::Editor);
                     fieldInfos.Append(propInfo);
                 }
 #else
@@ -199,9 +199,9 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                     if (step == 0.0f) {
                         range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
                     }
-                    fieldInfos.Append(new PROPERTY_RANGED_INT(name, label, desc, range, value.c_str(), PropertyInfo::ReadWrite));
+                    fieldInfos.Append(new PROPERTY_RANGED_INT(name, label, desc, range, value.c_str(), PropertyInfo::Editor));
                 } else {
-                    fieldInfos.Append(new PROPERTY_INT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                    fieldInfos.Append(new PROPERTY_INT(name, label, desc, value.c_str(), PropertyInfo::Editor));
                 }
 #endif
             } else if (!Str::Cmp(type, "bool")) {
@@ -209,119 +209,119 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                 bool value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<bool>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<bool>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<bool>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<bool>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Str value = Str((bool)props["value"]);
-                fieldInfos.Append(new PROPERTY_BOOL(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_BOOL(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "point")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Point value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Point>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Point>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Point>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Point>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Point point = props["value"];
                 Str value = point.ToString();
-                fieldInfos.Append(new PROPERTY_POINT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_POINT(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "rect")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Rect value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Rect>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Rect>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Rect>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Rect>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Rect rect = props["value"];
                 Str value = rect.ToString();
-                fieldInfos.Append(new PROPERTY_RECT(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_RECT(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "vec2")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Vec2 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec2>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec2>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec2>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec2>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Vec2 vec2 = props["value"];
                 Str value = vec2.ToString();
-                fieldInfos.Append(new PROPERTY_VEC2(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_VEC2(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "vec3")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Vec3 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec3>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec3>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Vec3 vec3 = props["value"];
                 Str value = vec3.ToString();
-                fieldInfos.Append(new PROPERTY_VEC3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_VEC3(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "vec4")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Vec4 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec4>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec4>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec4>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec4>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Vec4 vec4 = props["value"];
                 Str value = vec4.ToString();
-                fieldInfos.Append(new PROPERTY_VEC4(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_VEC4(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "color3")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Color3 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Color3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Color3>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Color3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Color3>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Color3 color3 = props["value"];
                 Str value = color3.ToString();
-                fieldInfos.Append(new PROPERTY_COLOR3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_COLOR3(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "color4")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Color4 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Color4>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Color4>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Color4>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Color4>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Color4 color4 = props["value"];
                 Str value = color4.ToString();
-                fieldInfos.Append(new PROPERTY_COLOR4(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_COLOR4(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "angles")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Angles value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Angles>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Angles>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Angles>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Angles>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Angles angles = props["value"];
                 Str value = angles.ToString();
-                fieldInfos.Append(new PROPERTY_ANGLES(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_ANGLES(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "mat3")) {
 #ifdef NEW_PROPERTY_SYSTEM
                 Mat3 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Mat3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Mat3>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<Mat3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Mat3>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 Mat3 mat3 = props["value"];
                 Str value = mat3.ToString();
-                fieldInfos.Append(new PROPERTY_MAT3(name, label, desc, value.c_str(), PropertyInfo::ReadWrite));
+                fieldInfos.Append(new PROPERTY_MAT3(name, label, desc, value.c_str(), PropertyInfo::Editor));
 #endif
             } else if (!Str::Cmp(type, "object")) {
 #ifdef NEW_PROPERTY_SYSTEM
@@ -330,13 +330,13 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                 ObjectRef value = ObjectRef(*metaObject, Guid::FromString((const char *)props["value"]));
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<ObjectRef>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<ObjectRef>()), value, desc, PropertyInfo::ReadWrite);
+                auto propInfo = PropertyInfo(name, PropertyTypeID<ObjectRef>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<ObjectRef>()), value, desc, PropertyInfo::Editor);
                 fieldInfos.Append(propInfo);
 #else
                 const char *classname = props["classname"];
                 MetaObject *metaObject = Object::FindMetaObject(classname);
                 if (metaObject) {
-                    fieldInfos.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertyInfo::ReadWrite));
+                    fieldInfos.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertyInfo::Editor));
                 }
 #endif
             }

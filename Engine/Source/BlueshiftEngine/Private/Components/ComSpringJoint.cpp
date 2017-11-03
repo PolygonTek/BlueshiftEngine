@@ -26,22 +26,22 @@ OBJECT_DECLARATION("Spring Joint", ComSpringJoint, ComJoint)
 BEGIN_EVENTS(ComSpringJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComSpringJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
-    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("lowerLimit", "Lower Limit", "", 0.f, PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("upperLimit", "Upper Limit", "", 0.f, PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("stiffness", "Stiffness", "", 2.f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("damping", "Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::Editor),
+    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::Editor),
+    PROPERTY_FLOAT("lowerLimit", "Lower Limit", "", 0.f, PropertyInfo::Editor),
+    PROPERTY_FLOAT("upperLimit", "Upper Limit", "", 0.f, PropertyInfo::Editor),
+    PROPERTY_FLOAT("stiffness", "Stiffness", "", 2.f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("damping", "Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComSpringJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Lower Limit", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Upper Limit", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Lower Limit", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Upper Limit", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
 }
 #endif
 

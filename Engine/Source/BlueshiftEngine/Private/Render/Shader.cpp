@@ -287,7 +287,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
 bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     propInfo.type = PropertyInfo::BadType;
-    propInfo.flags = PropertyInfo::Readable | PropertyInfo::Writable;
+    propInfo.flags = PropertyInfo::Editor;
     propInfo.range = Rangef(0, 0, 1);
     propInfo.metaObject = nullptr;
 

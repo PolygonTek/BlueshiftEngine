@@ -14,7 +14,9 @@
 
 #pragma once
 
+#include "jsoncpp/include/json/json.h"
 #include "Containers/Array.h"
+#include "Containers/StrArray.h"
 #include "Math/Math.h"
 #include "Core/Guid.h"
 #include "Core/MinMaxCurve.h"
@@ -39,6 +41,8 @@ struct ObjectRef {
     /// Test for inequality with another reference.
     bool operator!=(const ObjectRef &rhs) const { return metaObject != rhs.metaObject || objectGuid != rhs.objectGuid; }
 
+    static ObjectRef empty;
+
     const MetaObject *metaObject;
     Guid objectGuid;
 };
@@ -54,6 +58,8 @@ struct ObjectRefArray {
 
     /// Test for inequality with another reference.
     bool operator!=(const ObjectRefArray &rhs) const { return metaObject != rhs.metaObject || objectGuids != rhs.objectGuids; }
+
+    static ObjectRefArray empty;
 
     const MetaObject *metaObject;
     Array<Guid> objectGuids;
@@ -124,7 +130,7 @@ public:
         : type(Type::None) {
     }
 
-    Variant(const Variant &value) 
+    Variant(const Variant &value)
         : type(Type::None) {
         *this = value;
     }
@@ -134,9 +140,19 @@ public:
         *this = value;
     }
 
+    Variant(unsigned int value)
+        : type(Type::None) {
+        *this = (int)value;
+    }
+
     Variant(int64_t value)
         : type(Type::None) {
         *this = value;
+    }
+
+    Variant(uint64_t value)
+        : type(Type::None) {
+        *this = (int64_t)value;
     }
 
     Variant(bool value)
@@ -261,6 +277,7 @@ public:
     void                    Clear();
 
     void                    SetType(Type type);
+    bool                    SetFromString(Type type, const char *str);
 
     Variant &               operator=(const Variant &rhs);
 
@@ -296,11 +313,15 @@ public:
     template <typename T>
     const T &               As() const;
 
+    Json::Value             ToJsonValue() const;
+
     Str                     ToString() const;
-    
+
+    static Variant          FromString(Type type, const char *str);
+
 private:
-    Type                    type;
-    Value                   value;
+    Type                    type;       ///< Variant type
+    Value                   value;      ///< Variant value
 };
 
 BE_INLINE void Variant::Clear() {
@@ -435,7 +456,7 @@ BE_INLINE Variant &Variant::operator=(const Str &rhs) {
 
 BE_INLINE Variant &Variant::operator=(const ObjectRef &rhs) {
     SetType(Type::ObjectRefType);
-    *(reinterpret_cast<ObjectRef *>(value.ptr1)) = rhs;
+    *(reinterpret_cast<ObjectRef *>(&value)) = rhs;
     return *this;
 }
 
@@ -535,6 +556,16 @@ BE_INLINE const Guid &Variant::As() const {
 template <>
 BE_INLINE const Str &Variant::As() const {
     return type == StrType ? *reinterpret_cast<const Str *>(value.ptr1) : Str::empty;
+}
+
+template <>
+BE_INLINE const ObjectRef &Variant::As() const {
+    return type == ObjectRefType ? *reinterpret_cast<const ObjectRef *>(&value) : ObjectRef::empty;
+}
+
+template <>
+BE_INLINE const ObjectRefArray &Variant::As() const {
+    return type == ObjectRefArrayType ? *reinterpret_cast<const ObjectRefArray *>(value.ptr1) : ObjectRefArray::empty;
 }
 
 template <>

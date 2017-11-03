@@ -26,21 +26,21 @@ ABSTRACT_DECLARATION("Mesh Renderer", ComMeshRenderer, ComRenderable)
 BEGIN_EVENTS(ComMeshRenderer)
 END_EVENTS
 BEGIN_PROPERTIES(ComMeshRenderer)
-    PROPERTY_OBJECT("mesh", "Mesh", "mesh", GuidMapper::defaultMeshGuid, MeshAsset::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("materials", "Materials", "List of materials to use when rendering.", GuidMapper::defaultMaterialGuid, MaterialAsset::metaObject, PropertyInfo::ReadWrite | PropertyInfo::IsArray),
-    PROPERTY_BOOL("useLightProbe", "Use Light Probe", "", true, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("useReflectionProbe", "Use Reflection Probe", "", true, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("castShadows", "Cast Shadows", "", true, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("receiveShadows", "Receive Shadows", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("mesh", "Mesh", "mesh", GuidMapper::defaultMeshGuid, MeshAsset::metaObject, PropertyInfo::Editor),
+    PROPERTY_OBJECT("materials", "Materials", "List of materials to use when rendering.", GuidMapper::defaultMaterialGuid, MaterialAsset::metaObject, PropertyInfo::Editor | PropertyInfo::IsArray),
+    PROPERTY_BOOL("useLightProbe", "Use Light Probe", "", true, PropertyInfo::Editor),
+    PROPERTY_BOOL("useReflectionProbe", "Use Reflection Probe", "", true, PropertyInfo::Editor),
+    PROPERTY_BOOL("castShadows", "Cast Shadows", "", true, PropertyInfo::Editor),
+    PROPERTY_BOOL("receiveShadows", "Receive Shadows", "", true, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComMeshRenderer::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Materials", ObjectRefArray, GetMaterialsRef, SetMaterialsRef, ObjectRefArray(MaterialAsset::metaObject, {Guid::zero}), "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, true, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, true, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Materials", ObjectRefArray, GetMaterialsRef, SetMaterialsRef, ObjectRefArray(MaterialAsset::metaObject, {Guid::zero}), "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, true, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, true, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, "", PropertyInfo::Editor);
 }
 #endif
 

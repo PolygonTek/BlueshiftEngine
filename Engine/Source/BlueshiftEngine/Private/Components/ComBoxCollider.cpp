@@ -26,14 +26,14 @@ OBJECT_DECLARATION("Box Collider", ComBoxCollider, ComCollider)
 BEGIN_EVENTS(ComBoxCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComBoxCollider)
-    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
-    PROPERTY_VEC3("extents", "Extents", "", Vec3(1, 1, 1), PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::Editor),
+    PROPERTY_VEC3("extents", "Extents", "", Vec3(1, 1, 1), PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComBoxCollider::RegisterProperties() {
-    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::ReadWrite);
-    REGISTER_PROPERTY("Extents", Vec3, extents, Vec3::one, "", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("Extents", Vec3, extents, Vec3::one, "", PropertyInfo::Editor);
 }
 #endif
 

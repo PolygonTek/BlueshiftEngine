@@ -36,11 +36,6 @@ void Properties::Purge() {
     propertyHashMap.Clear();
 }
 
-const char *Properties::GetName(int index) const {
-    const Str &key = propertyHashMap.GetKey(index);
-    return key.c_str();
-}
-
 bool Properties::GetInfo(const char *name, PropertyInfo &propertyInfo) const {
     char basename[2048];
 
@@ -57,12 +52,6 @@ bool Properties::GetInfo(const char *name, PropertyInfo &propertyInfo) const {
     }
 
     return owner->GetPropertyInfo(realName, propertyInfo);
-}
-
-bool Properties::GetInfo(int index, PropertyInfo &propertyInfo) const {
-    const Str &key = propertyHashMap.GetKey(index);
-    const char *name = key.c_str();
-    return GetInfo(name, propertyInfo);
 }
 
 int Properties::NumElements(const char *name) const {
@@ -121,7 +110,7 @@ bool Properties::GetDefaultValue(const char *name, Variant &out) const {
     return true;
 }
 
-bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
+bool Properties::Get(const char *name, Variant &out) const {
     PropertyInfo propInfo;
 
     if (!GetInfo(name, propInfo)) {
@@ -130,10 +119,6 @@ bool Properties::Get(const char *name, Variant &out, bool forceRead) const {
         return false;
     }
 
-    if (!forceRead && !(propInfo.GetFlags() & PropertyInfo::Readable)) {
-        return false;
-    }
-    
 #ifdef NEW_PROPERTY_SYSTEM
     if (propInfo.accessor) {
         propInfo.accessor->Get(owner, out);
@@ -182,7 +167,7 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
     }
 
     // You can force to write value even though property has read only flag.
-    if (!forceWrite && !(propertyInfo.GetFlags() & PropertyInfo::Writable)) {
+    if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::ReadOnly)) {
         return false;
     }
 
@@ -572,13 +557,13 @@ void Properties::Serialize(Json::Value &out) const {
                 BE1::Str elementName = name + BE1::va("[%d]", elementIndex);
 
                 Variant var;
-                Get(elementName, var, true);
+                Get(elementName, var);
 
                 out[name][elementIndex] = PropertyInfo::ToJsonValue(propInfo.GetType(), var);
             }
         } else {
             Variant var;
-            Get(name, var, true);
+            Get(name, var);
 
             out[name] = PropertyInfo::ToJsonValue(propInfo.GetType(), var);
         }

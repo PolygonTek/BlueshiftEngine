@@ -26,16 +26,16 @@ OBJECT_DECLARATION("Cylinder Collider", ComCylinderCollider, ComCollider)
 BEGIN_EVENTS(ComCylinderCollider)
 END_EVENTS
 BEGIN_PROPERTIES(ComCylinderCollider)
-    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("radius", "Radius", "", 1.0f, PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("height", "Height", "", 1.0f, PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::Editor),
+    PROPERTY_FLOAT("radius", "Radius", "", 1.0f, PropertyInfo::Editor),
+    PROPERTY_FLOAT("height", "Height", "", 1.0f, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComCylinderCollider::RegisterProperties() {
-    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::ReadWrite);
-    REGISTER_PROPERTY("Radius", float, radius, 1.f, "", PropertyInfo::ReadWrite);
-    REGISTER_PROPERTY("Height", float, height, 1.f, "", PropertyInfo::ReadWrite);
+    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("Radius", float, radius, 1.f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("Height", float, height, 1.f, "", PropertyInfo::Editor);
 }
 #endif
 

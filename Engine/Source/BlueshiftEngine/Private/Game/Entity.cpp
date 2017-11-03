@@ -34,24 +34,24 @@ OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
 END_EVENTS
 BEGIN_PROPERTIES(Entity)
-    PROPERTY_OBJECT("parent", "Parent", "parent entity", Guid::zero, Entity::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("prefab", "Prefab", "is prefab ?", false, PropertyInfo::ReadWrite),
-    PROPERTY_OBJECT("prefabSource", "Prefab Source", "prefab source entity", Guid::zero, Entity::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_STRING("name", "Name", "entity name", "Entity", PropertyInfo::ReadWrite),
-    PROPERTY_STRING("tag", "Tag", "Tag", "Untagged", PropertyInfo::ReadWrite),
-    PROPERTY_INT("layer", "Layer", "Layer", 0, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", false, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("parent", "Parent", "parent entity", Guid::zero, Entity::metaObject, PropertyInfo::Editor),
+    PROPERTY_BOOL("prefab", "Prefab", "is prefab ?", false, PropertyInfo::Editor),
+    PROPERTY_OBJECT("prefabSource", "Prefab Source", "prefab source entity", Guid::zero, Entity::metaObject, PropertyInfo::Editor),
+    PROPERTY_STRING("name", "Name", "entity name", "Entity", PropertyInfo::Editor),
+    PROPERTY_STRING("tag", "Tag", "Tag", "Untagged", PropertyInfo::Editor),
+    PROPERTY_INT("layer", "Layer", "Layer", 0, PropertyInfo::Editor),
+    PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", false, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void Entity::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", ObjectRef, GetParentRef, SetParentRef, ObjectRef(Entity::metaObject, Guid::zero), "Parent Entity", PropertyInfo::ReadWrite);
-    REGISTER_PROPERTY("Prefab", bool, prefab, false, "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Prefab Source", ObjectRef, GetPrefabSourceRef, SetPrefabSourceRef, ObjectRef(Entity::metaObject, Guid::zero), "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", ObjectRef, GetParentRef, SetParentRef, ObjectRef(Entity::metaObject, Guid::zero), "Parent Entity", PropertyInfo::Editor);
+    REGISTER_PROPERTY("Prefab", bool, prefab, false, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Prefab Source", ObjectRef, GetPrefabSourceRef, SetPrefabSourceRef, ObjectRef(Entity::metaObject, Guid::zero), "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::Editor);
 }
 #endif
 
@@ -590,29 +590,35 @@ void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &r
     for (int entityIndex = 0; entityIndex < entities.Count(); entityIndex++) {
         Entity *entity = entities[entityIndex];
 
-        for (int propIndex = 0; propIndex < entity->props->Count(); propIndex++) {
-            if (entity->props->GetInfo(propIndex, propInfo)) {
-                if (propInfo.GetType() == PropertyInfo::ObjectType) {
-                    const Guid fromGuid = entity->props->Get(propInfo.GetName()).As<Guid>();
+        BE1::Array<BE1::PropertyInfo> propertyInfos;
+        entity->GetPropertyInfoList(propertyInfos);
 
-                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                        entity->props->Set(propInfo.GetName(), toGuid);
-                    }
+        for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
+            const auto &propInfo = propertyInfos[propIndex];
+            
+            if (propInfo.GetType() == PropertyInfo::ObjectType) {
+                const Guid fromGuid = entity->props->Get(propInfo.GetName()).As<Guid>();
+
+                if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                    entity->props->Set(propInfo.GetName(), toGuid);
                 }
-            }
+            }            
         }
 
         for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
             Component *component = entity->GetComponent(componentIndex);
 
-            for (int propIndex = 0; propIndex < component->props->Count(); propIndex++) {
-                if (component->props->GetInfo(propIndex, propInfo)) {
-                    if (propInfo.GetType() == PropertyInfo::ObjectType) {
-                        const Guid fromGuid = component->props->Get(propInfo.GetName()).As<Guid>();
+            BE1::Array<BE1::PropertyInfo> propertyInfos;
+            component->GetPropertyInfoList(propertyInfos);
 
-                        if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                            component->props->Set(propInfo.GetName(), toGuid);
-                        }
+            for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
+                const auto &propInfo = propertyInfos[propIndex];
+
+                if (propInfo.GetType() == PropertyInfo::ObjectType) {
+                    const Guid fromGuid = component->props->Get(propInfo.GetName()).As<Guid>();
+
+                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                        component->props->Set(propInfo.GetName(), toGuid);
                     }
                 }
             }

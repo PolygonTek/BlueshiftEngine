@@ -20,6 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
+// FIXME: move to Variant::ToJsonValue
 const Json::Value PropertyInfo::ToJsonValue(PropertyInfo::Type type, const Variant &var) {
     Json::Value value;
 
@@ -75,6 +76,7 @@ const Json::Value PropertyInfo::ToJsonValue(PropertyInfo::Type type, const Varia
     return value;
 }
 
+// FIXME: move to Variant::FromString
 Variant PropertyInfo::ToVariant(PropertyInfo::Type type, const char *value) {
     Variant out;
 

@@ -28,14 +28,14 @@ OBJECT_DECLARATION("Particle System", ComParticleSystem, ComRenderable)
 BEGIN_EVENTS(ComParticleSystem)
 END_EVENTS
 BEGIN_PROPERTIES(ComParticleSystem)
-    PROPERTY_OBJECT("particleSystem", "Particle System", "", GuidMapper::defaultParticleSystemGuid, ParticleSystemAsset::metaObject, PropertyInfo::ReadWrite),
-    PROPERTY_BOOL("playOnAwake", "Play On Awake", "", true, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("particleSystem", "Particle System", "", GuidMapper::defaultParticleSystemGuid, ParticleSystemAsset::metaObject, PropertyInfo::Editor),
+    PROPERTY_BOOL("playOnAwake", "Play On Awake", "", true, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComParticleSystem::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Particle System", ObjectRef, GetParticleSystemRef, SetParticleSystemRef, ObjectRef(ParticleSystemAsset::metaObject, GuidMapper::defaultParticleSystemGuid), "", PropertyInfo::ReadWrite);
-    REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, true, "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Particle System", ObjectRef, GetParticleSystemRef, SetParticleSystemRef, ObjectRef(ParticleSystemAsset::metaObject, GuidMapper::defaultParticleSystemGuid), "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, true, "", PropertyInfo::Editor);
 }
 #endif
 

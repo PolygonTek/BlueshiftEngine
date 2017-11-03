@@ -26,12 +26,12 @@ OBJECT_DECLARATION("Socket Joint", ComSocketJoint, ComJoint)
 BEGIN_EVENTS(ComSocketJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComSocketJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComSocketJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
 }
 #endif
 

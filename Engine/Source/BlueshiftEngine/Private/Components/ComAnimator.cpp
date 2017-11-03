@@ -27,12 +27,12 @@ OBJECT_DECLARATION("Animator", ComAnimator, ComMeshRenderer)
 BEGIN_EVENTS(ComAnimator)
 END_EVENTS
 BEGIN_PROPERTIES(ComAnimator)
-    PROPERTY_OBJECT("animController", "Anim Controller", "", GuidMapper::defaultAnimControllerGuid, AnimControllerAsset::metaObject, PropertyInfo::ReadWrite),
+    PROPERTY_OBJECT("animController", "Anim Controller", "", GuidMapper::defaultAnimControllerGuid, AnimControllerAsset::metaObject, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComAnimator::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Anim Controller", ObjectRef, GetAnimControllerRef, SetAnimControllerRef, ObjectRef(AnimControllerAsset::metaObject, GuidMapper::defaultAnimControllerGuid), "", PropertyInfo::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Anim Controller", ObjectRef, GetAnimControllerRef, SetAnimControllerRef, ObjectRef(AnimControllerAsset::metaObject, GuidMapper::defaultAnimControllerGuid), "", PropertyInfo::Editor);
 }
 #endif
 

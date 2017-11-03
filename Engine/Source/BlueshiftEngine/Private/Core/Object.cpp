@@ -246,8 +246,8 @@ const EventDef EV_Destroy("destroy");
 ABSTRACT_DECLARATION("Object", Object, nullptr)
 
 BEGIN_PROPERTIES(Object)
-    PROPERTY_STRING("classname", "Classname", "", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
-    PROPERTY_STRING("guid", "GUID", "GUID", Guid::zero, PropertyInfo::ReadWrite | PropertyInfo::Hidden),
+    PROPERTY_STRING("classname", "Classname", "", "", PropertyInfo::ReadOnly),
+    PROPERTY_STRING("guid", "GUID", "GUID", Guid::zero, PropertyInfo::ReadOnly),
 END_PROPERTIES
 
 BEGIN_EVENTS(Object)
@@ -263,8 +263,8 @@ static PlatformAtomic instanceCounter(0);
 
 #ifdef NEW_PROPERTY_SYSTEM
 void Object::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Classname", Str, ClassName, SetClassName, "Object", "", PropertyInfo::ReadWrite | PropertyInfo::Hidden),
-    REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadWrite | PropertyInfo::Hidden);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Classname", Str, ClassName, SetClassName, "Object", "", PropertyInfo::ReadOnly),
+    REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadOnly);
 }
 #endif
 
@@ -424,6 +424,18 @@ Object *Object::FindInstance(const Guid &guid) {
     }
 
     return instance;
+}
+
+bool Object::GetPropertyInfo(int index, PropertyInfo &propertyInfo) const {
+    Array<PropertyInfo> propertyInfos;
+    GetPropertyInfoList(propertyInfos);
+
+    if (index < 0 || index > propertyInfos.Count() - 1) {
+        return false;
+    }
+
+    propertyInfo = propertyInfos[index];
+    return true;
 }
 
 bool Object::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {

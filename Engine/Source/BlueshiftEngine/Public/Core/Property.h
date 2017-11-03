@@ -26,6 +26,7 @@
 
 BE_NAMESPACE_BEGIN
 
+class Variant;
 class Properties;
 class Object;
 class MetaObject;
@@ -131,41 +132,6 @@ public:
     SetFunctionPtr setFunction;
 };
 
-/// Template implementation of the list property accessor.
-template <typename Class, typename Type, template <typename T> class Trait = PropertyTrait>
-class ListPropertyAccessorImpl : public PropertyAccessor {
-public:
-    using ActualType = typename PropertyTypeTrait<Type>::Type;
-    using GetFunctionPtr = typename Trait<ActualType>::ReturnType(Class::*)(int index) const;
-    using SetFunctionPtr = void (Class::*)(int index, typename Trait<ActualType>::ParameterType);
-
-    /// Construct with function pointers.
-    ListPropertyAccessorImpl(GetFunctionPtr getter, SetFunctionPtr setter) :
-        getFunction(getter), setFunction(setter) {
-        assert(getFunction);
-        assert(setFunction);
-    }
-
-    /// Invoke getter function.
-    virtual void Get(const Object *ptr, int index, Variant &out) const {
-        assert(ptr);
-        const Class *classPtr = static_cast<const Class *>(ptr);
-        out = (classPtr->*getFunction)(index);
-    }
-
-    /// Invoke setter function.
-    virtual void Set(Object *ptr, int index, const Variant &in) {
-        assert(ptr);
-        Class *classPtr = static_cast<Class *>(ptr);
-        (classPtr->*setFunction)(index, in.As<ActualType>());
-    }
-
-    /// Class-specific pointer to getter function.
-    GetFunctionPtr getFunction;
-    /// Class-specific pointer to setter function.
-    SetFunctionPtr setFunction;
-};
-
 class BE_API PropertyInfo {
     friend class Properties;
     friend class MetaObject;
@@ -196,15 +162,15 @@ public:
     /// Property flags
     enum Flag {
         Empty               = 0,
-        Readable            = BIT(0),
-        Writable            = BIT(1),
-        ReadWrite           = Readable | Writable,
-        Hidden              = BIT(2),
+        Editor              = BIT(0),   // Can be appeared in editor
+        Hidden              = BIT(1),   // Hide in editor
+        ReadOnly            = BIT(2),
         SkipSerialization   = BIT(3),
-        Ranged              = BIT(4),
-        MultiLines          = BIT(5),
-        IsArray             = BIT(6),
-        ShaderDefine        = BIT(7),
+        Network             = BIT(4),
+        Ranged              = BIT(5),
+        MultiLines          = BIT(6),
+        IsArray             = BIT(7),
+        ShaderDefine        = BIT(8),
     };
 
     struct Enum {

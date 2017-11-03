@@ -26,38 +26,38 @@ OBJECT_DECLARATION("Character Joint", ComCharacterJoint, ComJoint)
 BEGIN_EVENTS(ComCharacterJoint)
 END_EVENTS
 BEGIN_PROPERTIES(ComCharacterJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
-    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing1LowerLimit", "X Swing Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing1UpperLimit", "X Swing Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("swing1Stiffness", "X Swing Stiffness", "", 0.f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing1Damping", "X Swing Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing2LowerLimit", "Y Swing Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing2UpperLimit", "Y Swing Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("swing2Stiffness", "Y Swing Stiffness", "", 0.f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("swing2Damping", "Y Swing Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("twistLowerLimit", "Twist Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("twistUpperLimit", "Twist Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::ReadWrite),
-    PROPERTY_FLOAT("twistStiffness", "Twist Stiffness", "", 0.f, PropertyInfo::ReadWrite),
-    PROPERTY_RANGED_FLOAT("twistDamping", "Twist Damping", "", Rangef(0, 1, 0.01), 0.2f, PropertyInfo::ReadWrite),
+    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::Editor),
+    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("swing1LowerLimit", "X Swing Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("swing1UpperLimit", "X Swing Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::Editor),
+    PROPERTY_FLOAT("swing1Stiffness", "X Swing Stiffness", "", 0.f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("swing1Damping", "X Swing Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("swing2LowerLimit", "Y Swing Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("swing2UpperLimit", "Y Swing Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::Editor),
+    PROPERTY_FLOAT("swing2Stiffness", "Y Swing Stiffness", "", 0.f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("swing2Damping", "Y Swing Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("twistLowerLimit", "Twist Lower Limit", "", Rangef(-180, 0, 1), -45.f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("twistUpperLimit", "Twist Upper Limit", "", Rangef(0, 180, 1), 45.f, PropertyInfo::Editor),
+    PROPERTY_FLOAT("twistStiffness", "Twist Stiffness", "", 0.f, PropertyInfo::Editor),
+    PROPERTY_RANGED_FLOAT("twistDamping", "Twist Damping", "", Rangef(0, 1, 0.01), 0.2f, PropertyInfo::Editor),
 END_PROPERTIES
 
 #ifdef NEW_PROPERTY_SYSTEM
 void ComCharacterJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::ReadWrite);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("X Swing Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, -45.f, "", PropertyInfo::ReadWrite).SetRange(-180, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("X Swing Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, 45.f, "", PropertyInfo::ReadWrite).SetRange(0, 180, 1);
-    REGISTER_ACCESSOR_PROPERTY("X Swing Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, 0.f, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("X Swing Damping", float, GetSwing1Damping, SetSwing1Damping, 0.2f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Y Swing Lower Limit", float, GetSwing2LowerLimit, SetSwing2LowerLimit, -45.f, "", PropertyInfo::ReadWrite).SetRange(-180, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("Y Swing Upper Limit", float, GetSwing2UpperLimit, SetSwing2UpperLimit, 45.f, "", PropertyInfo::ReadWrite).SetRange(0, 180, 1);
-    REGISTER_ACCESSOR_PROPERTY("Y Swing Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, 0.f, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Y Swing Damping", float, GetSwing2Damping, SetSwing2Damping, 0.2f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Twist Lower Limit", float, GetTwistLowerLimit, SetTwistLowerLimit, -45.f, "", PropertyInfo::ReadWrite).SetRange(-180, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("Twist Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, 45.f, "", PropertyInfo::ReadWrite).SetRange(0, 180, 1);
-    REGISTER_ACCESSOR_PROPERTY("Twist Stiffness", float, GetTwistStiffness, SetTwistStiffness, 0.f, "", PropertyInfo::ReadWrite);
-    REGISTER_ACCESSOR_PROPERTY("Twist Damping", float, GetTwistDamping, SetTwistDamping, 0.2f, "", PropertyInfo::ReadWrite).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, -45.f, "", PropertyInfo::Editor).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, 45.f, "", PropertyInfo::Editor).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("X Swing Damping", float, GetSwing1Damping, SetSwing1Damping, 0.2f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Lower Limit", float, GetSwing2LowerLimit, SetSwing2LowerLimit, -45.f, "", PropertyInfo::Editor).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Upper Limit", float, GetSwing2UpperLimit, SetSwing2UpperLimit, 45.f, "", PropertyInfo::Editor).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Y Swing Damping", float, GetSwing2Damping, SetSwing2Damping, 0.2f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("Twist Lower Limit", float, GetTwistLowerLimit, SetTwistLowerLimit, -45.f, "", PropertyInfo::Editor).SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("Twist Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, 45.f, "", PropertyInfo::Editor).SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("Twist Stiffness", float, GetTwistStiffness, SetTwistStiffness, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("Twist Damping", float, GetTwistDamping, SetTwistDamping, 0.2f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
 }
 #endif
 

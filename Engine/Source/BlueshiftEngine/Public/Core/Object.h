@@ -288,6 +288,9 @@ public:
                                 /// Cancels a event in event queue
     void                        CancelEvents(const EventDef *evdef);
 
+                                /// Gets property info with the given index
+    bool                        GetPropertyInfo(int index, PropertyInfo &propertyInfo) const;
+
                                 /// Gets property info with the given name
     bool                        GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
 
