@@ -629,7 +629,7 @@ void ComScript::SetScriptGuid(const Guid &guid) {
 
     ChangeScript(guid);
 
-    EmitSignal(&Properties::SIG_UpdateUI);
+    EmitSignal(&Properties::SIG_PropertyUpdated);
 }
 
 ObjectRef ComScript::GetScriptRef() const {
@@ -641,7 +641,7 @@ void ComScript::SetScriptRef(const ObjectRef &scriptRef) {
 
     ChangeScript(scriptRef.objectGuid);
 
-    EmitSignal(&Properties::SIG_UpdateUI);
+    EmitSignal(&Properties::SIG_PropertyUpdated);
 }
 
 BE_NAMESPACE_END

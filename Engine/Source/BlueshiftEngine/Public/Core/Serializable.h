@@ -73,12 +73,6 @@ public:
                             /// This function is valid only if property is an array
     void                    SetNumElements(const char *name, int numElements);
 
-                            /// Returns property flag
-    int                     GetFlags(const char *name) const;
-
-                            /// Sets property flag
-    void                    SetFlags(const char *name, int flags);
-
                             /// Gets default value
     bool                    GetDefaultValue(const char *name, Variant &out) const;
 
@@ -102,12 +96,14 @@ public:
 
     static const SignalDef  SIG_PropertyChanged;
     static const SignalDef  SIG_PropertyArrayNumChanged;
-    static const SignalDef  SIG_PropertyFlagsChanged;
-    static const SignalDef  SIG_UpdateUI;
+    static const SignalDef  SIG_PropertyUpdated;
 
 protected:
     Object *                owner;
-    StrHashMap<Property>    propertyHashMap; //
+
+#ifndef NEW_PROPERTY_SYSTEM
+    StrHashMap<Property>    propertyHashMap;
+#endif
 };
 
 BE_INLINE Variant Properties::GetDefaultValue(const char *name) const {

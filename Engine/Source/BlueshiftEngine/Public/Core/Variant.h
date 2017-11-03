@@ -90,10 +90,10 @@ public:
         RectType,
         GuidType,
         StrType,
-        ObjectRefType,
-        ObjectRefArrayType,
         MinMaxCurveType,
         VariantArrayType,
+        ObjectRefType,
+        ObjectRefArrayType,
     };
 
     struct Value {
@@ -250,22 +250,22 @@ public:
         *this = value;
     }
 
+    Variant(const MinMaxCurve &value)
+        : type(Type::None) {
+        *this = value;
+    }
+
+    Variant(const VariantArray &value)
+        : type(Type::None) {
+        *this = value;
+    }
+
     Variant(const ObjectRef &value)
         : type(Type::None) {
         *this = value;
     }
 
     Variant(const ObjectRefArray &value)
-        : type(Type::None) {
-        *this = value;
-    }
-
-    Variant(const MinMaxCurve &value)
-        : type(Type::None) {
-        *this = value;
-    }
-
-    Variant(const VariantArray &value) 
         : type(Type::None) {
         *this = value;
     }
@@ -302,10 +302,10 @@ public:
     Variant &               operator=(const Rect &rhs);
     Variant &               operator=(const Guid &rhs);
     Variant &               operator=(const Str &rhs);
-    Variant &               operator=(const ObjectRef &rhs);
-    Variant &               operator=(const ObjectRefArray &rhs);
     Variant &               operator=(const MinMaxCurve &rhs);
     Variant &               operator=(const VariantArray &rhs);
+    Variant &               operator=(const ObjectRef &rhs);
+    Variant &               operator=(const ObjectRefArray &rhs);
 
     bool                    operator==(const Variant &rhs) const;
     bool                    operator!=(const Variant &rhs) const { return !(*this == rhs); }
@@ -454,18 +454,6 @@ BE_INLINE Variant &Variant::operator=(const Str &rhs) {
     return *this;
 }
 
-BE_INLINE Variant &Variant::operator=(const ObjectRef &rhs) {
-    SetType(Type::ObjectRefType);
-    *(reinterpret_cast<ObjectRef *>(&value)) = rhs;
-    return *this;
-}
-
-BE_INLINE Variant &Variant::operator=(const ObjectRefArray &rhs) {
-    SetType(Type::ObjectRefArrayType);
-    *(reinterpret_cast<ObjectRefArray *>(value.ptr1)) = rhs;
-    return *this;
-}
-
 BE_INLINE Variant &Variant::operator=(const MinMaxCurve &rhs) {
     SetType(Type::MinMaxCurveType);
     *(reinterpret_cast<MinMaxCurve *>(value.ptr1)) = rhs;
@@ -475,6 +463,18 @@ BE_INLINE Variant &Variant::operator=(const MinMaxCurve &rhs) {
 BE_INLINE Variant &Variant::operator=(const VariantArray &rhs) {
     SetType(Type::VariantArrayType);
     *(reinterpret_cast<VariantArray *>(value.ptr1)) = rhs;
+    return *this;
+}
+
+BE_INLINE Variant &Variant::operator=(const ObjectRef &rhs) {
+    SetType(Type::ObjectRefType);
+    *(reinterpret_cast<ObjectRef *>(&value)) = rhs;
+    return *this;
+}
+
+BE_INLINE Variant &Variant::operator=(const ObjectRefArray &rhs) {
+    SetType(Type::ObjectRefArrayType);
+    *(reinterpret_cast<ObjectRefArray *>(value.ptr1)) = rhs;
     return *this;
 }
 
@@ -559,16 +559,6 @@ BE_INLINE const Str &Variant::As() const {
 }
 
 template <>
-BE_INLINE const ObjectRef &Variant::As() const {
-    return type == ObjectRefType ? *reinterpret_cast<const ObjectRef *>(&value) : ObjectRef::empty;
-}
-
-template <>
-BE_INLINE const ObjectRefArray &Variant::As() const {
-    return type == ObjectRefArrayType ? *reinterpret_cast<const ObjectRefArray *>(value.ptr1) : ObjectRefArray::empty;
-}
-
-template <>
 BE_INLINE const MinMaxCurve &Variant::As() const {
     return type == MinMaxCurveType ? *reinterpret_cast<const MinMaxCurve *>(value.ptr1) : MinMaxCurve::empty;
 }
@@ -576,6 +566,16 @@ BE_INLINE const MinMaxCurve &Variant::As() const {
 template <>
 BE_INLINE const VariantArray &Variant::As() const {
     return type == VariantArrayType ? *reinterpret_cast<const VariantArray *>(value.ptr1) : VariantArray();
+}
+
+template <>
+BE_INLINE const ObjectRef &Variant::As() const {
+    return type == ObjectRefType ? *reinterpret_cast<const ObjectRef *>(&value) : ObjectRef::empty;
+}
+
+template <>
+BE_INLINE const ObjectRefArray &Variant::As() const {
+    return type == ObjectRefArrayType ? *reinterpret_cast<const ObjectRefArray *>(value.ptr1) : ObjectRefArray::empty;
 }
 
 BE_NAMESPACE_END

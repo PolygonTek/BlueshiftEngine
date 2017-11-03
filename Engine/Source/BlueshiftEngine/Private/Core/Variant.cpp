@@ -39,14 +39,14 @@ void Variant::SetType(Type type) {
     case Mat4Type:
         delete reinterpret_cast<Mat4 *>(value.ptr1);
         break;
-    case ObjectRefArrayType:
-        delete reinterpret_cast<ObjectRefArray *>(value.ptr1);
-        break;
     case MinMaxCurveType:
         delete reinterpret_cast<MinMaxCurve *>(value.ptr1);
         break;
     case VariantArrayType:
         (reinterpret_cast<VariantArray *>(&value))->~VariantArray();
+        break;
+    case ObjectRefArrayType:
+        (reinterpret_cast<ObjectRefArray *>(&value))->~ObjectRefArray();
         break;
     }
 
@@ -65,14 +65,14 @@ void Variant::SetType(Type type) {
     case Mat4Type:
         value.ptr1 = new Mat4();
         break;
-    case ObjectRefArrayType:
-        value.ptr1 = new ObjectRefArray;
-        break;
     case MinMaxCurveType:
         value.ptr1 = new MinMaxCurve();
         break;
     case VariantArrayType:
         new(reinterpret_cast<VariantArray *>(&value))VariantArray();
+        break;
+    case ObjectRefArrayType:
+        new(reinterpret_cast<ObjectRefArray *>(&value))ObjectRefArray();
         break;
     }
 }
@@ -229,11 +229,11 @@ Variant &Variant::operator=(const Variant &rhs) {
     case MinMaxCurveType:
         *(reinterpret_cast<MinMaxCurve *>(value.ptr1)) = *(reinterpret_cast<const MinMaxCurve *>(rhs.value.ptr1));
         break;
-    case ObjectRefArrayType:
-        *(reinterpret_cast<ObjectRefArray *>(value.ptr1)) = *(reinterpret_cast<const ObjectRefArray *>(rhs.value.ptr1));
-        break;
     case VariantArrayType:
         *(reinterpret_cast<VariantArray *>(value.ptr1)) = *(reinterpret_cast<const VariantArray *>(rhs.value.ptr1));
+        break;
+    case ObjectRefArrayType:
+        *(reinterpret_cast<ObjectRefArray *>(value.ptr1)) = *(reinterpret_cast<const ObjectRefArray *>(rhs.value.ptr1));
         break;
     default:
         value = rhs.value;
@@ -289,14 +289,14 @@ bool Variant::operator==(const Variant &rhs) const {
         return *(reinterpret_cast<const Guid *>(&value)) == *(reinterpret_cast<const Guid *>(&rhs.value));
     case StrType:
         return *(reinterpret_cast<const Str *>(value.ptr1)) == *(reinterpret_cast<const Str *>(rhs.value.ptr1));
-    case ObjectRefType:
-        return *(reinterpret_cast<const ObjectRef *>(&value)) == *(reinterpret_cast<const ObjectRef *>(&rhs.value));
-    case ObjectRefArrayType:
-        return *(reinterpret_cast<const ObjectRefArray *>(value.ptr1)) == *(reinterpret_cast<const ObjectRefArray *>(rhs.value.ptr1));
     case MinMaxCurveType:
         return *(reinterpret_cast<const MinMaxCurve *>(value.ptr1)) == *(reinterpret_cast<const MinMaxCurve *>(rhs.value.ptr1));
     case VariantArrayType:
         return *(reinterpret_cast<const VariantArray *>(value.ptr1)) == *(reinterpret_cast<const VariantArray *>(rhs.value.ptr1));
+    case ObjectRefType:
+        return *(reinterpret_cast<const ObjectRef *>(&value)) == *(reinterpret_cast<const ObjectRef *>(&rhs.value));
+    case ObjectRefArrayType:
+        return *(reinterpret_cast<const ObjectRefArray *>(value.ptr1)) == *(reinterpret_cast<const ObjectRefArray *>(rhs.value.ptr1));
     }
 
     return false;

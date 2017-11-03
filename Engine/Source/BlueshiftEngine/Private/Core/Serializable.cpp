@@ -21,8 +21,7 @@ BE_NAMESPACE_BEGIN
 
 const SignalDef Properties::SIG_PropertyChanged("Properties::PropertyChanged", "ss");
 const SignalDef Properties::SIG_PropertyArrayNumChanged("Properties::PropertyArrayNumChanged", "ss");
-const SignalDef Properties::SIG_PropertyFlagsChanged("Properties::PropertyFlagsChanged", "ss");
-const SignalDef Properties::SIG_UpdateUI("Properties::UpdateUI");
+const SignalDef Properties::SIG_PropertyUpdated("Properties::PropertyUpdated");
 
 Properties::Properties(Object *owner) {
     this->owner = owner;
@@ -70,30 +69,6 @@ void Properties::SetNumElements(const char *name, int numElements) {
         prop.numElements = numElements;
 
         owner->EmitSignal(&SIG_PropertyArrayNumChanged, owner->ClassName(), name);
-    }
-}
-
-int Properties::GetFlags(const char *name) const {
-    const auto entry = propertyHashMap.Get(name);
-    if (!entry) {
-        return 0;
-    }
-
-    return entry->second.flags;
-}
-
-void Properties::SetFlags(const char *name, int flags) {
-    const auto entry = propertyHashMap.Get(name);
-    if (!entry) {
-        return;
-    }
-
-    int oldFlags = entry->second.flags;
-
-    entry->second.flags = flags;
-
-    if (oldFlags != flags) {
-        owner->EmitSignal(&SIG_PropertyFlagsChanged, owner->ClassName(), name);
     }
 }
 
@@ -166,8 +141,9 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
         return false;
     }
 
-    // You can force to write value even though property has read only flag.
+    // You can force to write a value even though a property has read only flag.
     if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::ReadOnly)) {
+        BE_WARNLOG(L"property '%hs' is readonly\n", name);
         return false;
     }
 
@@ -293,27 +269,30 @@ bool Properties::Set(const char *name, const Variant &var, bool forceWrite) {
 #ifdef NEW_PROPERTY_SYSTEM
     if (propertyInfo.accessor) {
         propertyInfo.accessor->Set(owner, newVar);
-        return true;
+    } else {
+        void *dest = reinterpret_cast<byte *>(this) + propertyInfo.offset;
+
+        switch (propertyInfo.GetType()) {
+        case PropertyInfo::IntType:
+        case PropertyInfo::EnumType:    *(reinterpret_cast<int *>(dest)) = newVar.As<int>(); break;
+        case PropertyInfo::BoolType:    *(reinterpret_cast<bool *>(dest)) = newVar.As<bool>(); break;
+        case PropertyInfo::FloatType:   *(reinterpret_cast<float *>(dest)) = newVar.As<float>(); break;
+        case PropertyInfo::StringType:  *(reinterpret_cast<Str *>(dest)) = newVar.As<Str>(); break;
+        case PropertyInfo::PointType:   *(reinterpret_cast<Point *>(dest)) = newVar.As<Point>(); break;
+        case PropertyInfo::RectType:    *(reinterpret_cast<Rect *>(dest)) = newVar.As<Rect>(); break;
+        case PropertyInfo::Vec2Type:    *(reinterpret_cast<Vec2 *>(dest)) = newVar.As<Vec2>(); break;
+        case PropertyInfo::Vec3Type:    *(reinterpret_cast<Vec3 *>(dest)) = newVar.As<Vec3>(); break;
+        case PropertyInfo::Vec4Type:    *(reinterpret_cast<Vec4 *>(dest)) = newVar.As<Vec4>(); break;
+        case PropertyInfo::Color3Type:  *(reinterpret_cast<Color3 *>(dest)) = newVar.As<Color3>(); break;
+        case PropertyInfo::Color4Type:  *(reinterpret_cast<Color4 *>(dest)) = newVar.As<Color4>(); break;
+        case PropertyInfo::AnglesType:  *(reinterpret_cast<Angles *>(dest)) = newVar.As<Angles>(); break;
+        case PropertyInfo::Mat3Type:    *(reinterpret_cast<Mat3 *>(dest)) = newVar.As<Mat3>(); break;
+        case PropertyInfo::ObjectType:  break;
+        }
     }
 
-    void *dest = reinterpret_cast<byte *>(this) + propertyInfo.offset;
-
-    switch (propertyInfo.GetType()) {
-    case PropertyInfo::IntType:
-    case PropertyInfo::EnumType:    *(reinterpret_cast<int *>(dest)) = newVar.As<int>(); break;
-    case PropertyInfo::BoolType:    *(reinterpret_cast<bool *>(dest)) = newVar.As<bool>(); break;
-    case PropertyInfo::FloatType:   *(reinterpret_cast<float *>(dest)) = newVar.As<float>(); break;
-    case PropertyInfo::StringType:  *(reinterpret_cast<Str *>(dest)) = newVar.As<Str>(); break;
-    case PropertyInfo::PointType:   *(reinterpret_cast<Point *>(dest)) = newVar.As<Point>(); break;
-    case PropertyInfo::RectType:    *(reinterpret_cast<Rect *>(dest)) = newVar.As<Rect>(); break;
-    case PropertyInfo::Vec2Type:    *(reinterpret_cast<Vec2 *>(dest)) = newVar.As<Vec2>(); break;
-    case PropertyInfo::Vec3Type:    *(reinterpret_cast<Vec3 *>(dest)) = newVar.As<Vec3>(); break;
-    case PropertyInfo::Vec4Type:    *(reinterpret_cast<Vec4 *>(dest)) = newVar.As<Vec4>(); break;
-    case PropertyInfo::Color3Type:  *(reinterpret_cast<Color3 *>(dest)) = newVar.As<Color3>(); break;
-    case PropertyInfo::Color4Type:  *(reinterpret_cast<Color4 *>(dest)) = newVar.As<Color4>(); break;
-    case PropertyInfo::AnglesType:  *(reinterpret_cast<Angles *>(dest)) = newVar.As<Angles>(); break;
-    case PropertyInfo::Mat3Type:    *(reinterpret_cast<Mat3 *>(dest)) = newVar.As<Mat3>(); break;
-    case PropertyInfo::ObjectType:  break;
+    if (oldVar != newVar) {
+        owner->EmitSignal(&Properties::SIG_PropertyChanged, owner->ClassName(), name);
     }
 
     return true;
