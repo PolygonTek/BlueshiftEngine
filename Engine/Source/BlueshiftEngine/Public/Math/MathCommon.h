@@ -1005,7 +1005,7 @@ BE_INLINE int Lerp(const int p0, const int p1, float t) {
 template <typename T>
 BE_INLINE T	Cerp(const T p0, const T p1, const T p2, const T p3, float t) {
     T a = p3 - 3 * p2 + 3 * p1 - p0;
-    T b = p2 - 2 * p1 + p0 - a;
+    T b = p2 - 2 * p1 + p0 - a; // simplified version of (-p3 + 4 * p2 - 5 * p1 + 2 * p0)
     T c = p2 - p0;
     T d = 2 * p1;
     return (t * (t * (t * a + b) + c) + d) * 0.5f;
