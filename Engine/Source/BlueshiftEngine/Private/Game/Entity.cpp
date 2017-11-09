@@ -478,14 +478,17 @@ Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld) {
 }
 
 Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap) {
+    // Copy entity JSON value
     Json::Value newEntityValue = entityValue;
 
     Guid oldEntityGuid = Guid::FromString(entityValue["guid"].asCString());
     Guid newEntityGuid = Guid::CreateGuid();
 
-    oldToNewGuidMap.Set(oldEntityGuid, newEntityGuid);
-
+    // Replace entity GUID to the new one
     newEntityValue["guid"] = newEntityGuid.ToString();
+
+    // Mark in the GUID hash table
+    oldToNewGuidMap.Set(oldEntityGuid, newEntityGuid);
 
     Json::Value &componentsValue = newEntityValue["components"];
 
@@ -493,9 +496,11 @@ Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<G
         Guid oldComponentGuid = Guid::FromString(componentsValue[i]["guid"].asCString());
         Guid newComponentGuid = Guid::CreateGuid();
 
-        oldToNewGuidMap.Set(oldComponentGuid, newComponentGuid);
-
+        // Replace component GUID to the new one
         componentsValue[i]["guid"] = newComponentGuid.ToString();
+
+        // Mark in the GUID hash table
+        oldToNewGuidMap.Set(oldComponentGuid, newComponentGuid);
     }
 
     return newEntityValue;

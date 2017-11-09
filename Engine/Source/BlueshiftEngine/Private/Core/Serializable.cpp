@@ -1169,11 +1169,12 @@ void Serializable::Serialize(Json::Value &out) const {
 
     for (int i = 0; i < propertyInfos.Count(); i++) {
         const PropertyInfo &propertyInfo = propertyInfos[i];
-        const Str name = propertyInfo.GetName();
 
         if (propertyInfo.GetFlags() & PropertyInfo::SkipSerialization) {
             continue;
         }
+
+        const Str name = propertyInfo.GetName();
 
         if (propertyInfo.GetFlags() & PropertyInfo::IsArray) {
             out[name] = Json::arrayValue;

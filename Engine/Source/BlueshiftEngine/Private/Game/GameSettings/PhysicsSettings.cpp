@@ -25,7 +25,7 @@ END_EVENTS
 
 void PhysicsSettings::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("gravity", "Gravity", Vec3, GetGravity, SetGravity, Vec3(0, 0, -9.8f), "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_LIST_PROPERTY("filterMasks", "Filter Mask", int, GetFilterMaskElement, SetFilterMaskElement, GetFilterMaskCount, SetFilterMaskCount, -1, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_ARRAY_PROPERTY("filterMasks", "Filter Mask", int, GetFilterMaskElement, SetFilterMaskElement, GetFilterMaskCount, SetFilterMaskCount, -1, "", PropertyInfo::Editor);
 }
 
 PhysicsSettings::PhysicsSettings() {

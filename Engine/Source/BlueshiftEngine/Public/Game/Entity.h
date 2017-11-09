@@ -186,7 +186,7 @@ public:
                                 /// Later this have to be initialized by it's properties.
     static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr);
 
-                                /// Makes copy of JSON value of an entity and its children and then replace each GUID of entity/components to the new one
+                                /// Makes copy of JSON value of an entity and then replace each GUIDs of entity/components to the new ones
     static Json::Value          CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap);
 
     static void                 RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &remapGuidMap);

@@ -28,7 +28,7 @@ END_EVENTS
 
 void ComMeshRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, "", PropertyInfo::Editor).SetMetaObject(&MeshAsset::metaObject);
-    REGISTER_MIXED_ACCESSOR_LIST_PROPERTY("materials", "Materials", Guid, GetMaterialGuid, SetMaterialGuid, GetMaterialCount, SetMaterialCount, GuidMapper::defaultMaterialGuid, "List of materials to use when rendering.", PropertyInfo::Editor).SetMetaObject(&MaterialAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("materials", "Materials", Guid, GetMaterialGuid, SetMaterialGuid, GetMaterialCount, SetMaterialCount, GuidMapper::defaultMaterialGuid, "List of materials to use when rendering.", PropertyInfo::Editor).SetMetaObject(&MaterialAsset::metaObject);
     REGISTER_ACCESSOR_PROPERTY("useLightProve", "Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, true, "", PropertyInfo::Editor);
     //REGISTER_ACCESSOR_PROPERTY("useReflectionProbe", "Use Reflection Probe", bool, IsUseReflectionProbe, SetUseReflectionProbe, false, PropertyInfo::Editor),
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Cast Shadows", bool, IsCastShadows, SetCastShadows, true, "", PropertyInfo::Editor);
@@ -104,10 +104,13 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     }
     int numMaterials = materialIndexArray.Count();
 
+    // Get previously used number of materials
+    int oldCount = sceneEntity.materials.Count();
+
     // Resize material slots
     sceneEntity.materials.SetCount(numMaterials);
 
-    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
+    for (int i = oldCount; i < sceneEntity.materials.Count(); i++) {
         sceneEntity.materials[i] = materialManager.GetMaterial("_defaultMaterial");
     }
 

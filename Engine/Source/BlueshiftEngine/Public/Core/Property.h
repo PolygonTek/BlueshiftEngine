@@ -322,7 +322,7 @@ BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Vari
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         offsetof(Class, var), defaultValue, desc, flags))
 
-#define REGISTER_LIST_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
+#define REGISTER_ARRAY_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         offsetof(Class, var), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
@@ -330,7 +330,7 @@ BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Vari
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
-#define REGISTER_ACCESSOR_LIST_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
+#define REGISTER_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         new BE1::ArrayPropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
@@ -338,7 +338,7 @@ BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Vari
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags))
 
-#define REGISTER_MIXED_ACCESSOR_LIST_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
+#define REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         new BE1::ArrayPropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
