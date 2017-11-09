@@ -30,41 +30,23 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Camera", ComCamera, Component)
 BEGIN_EVENTS(ComCamera)
 END_EVENTS
-BEGIN_PROPERTIES(ComCamera)
-    PROPERTY_ENUM("projection", "Projection", "", "Perspective;Orthographic", 0, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(1, 20000, 10), 10.f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), 4096.f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("fov", "Field Of View", "field of view", Rangef(1, 179, 1), 60.f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("size", "Size", "", Rangef(1, 16384, 1), 1000.f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("x", "X", "normalized screen x-coordinate", Rangef(0, 1.0f, 0.01f), 0.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("y", "Y", "normalized screen y-coordinate", Rangef(0, 1.0f, 0.01f), 0.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("w", "W", "normalized screen width", Rangef(0, 1.0f, 0.01f), 1.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("h", "H", "normalized screen height", Rangef(0, 1.0f, 0.01f), 1.0f, PropertyInfo::Editor),
-    PROPERTY_INT("layerMask", "Layer Mask", "", (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), PropertyInfo::Editor),
-    PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color;Skybox", 1, PropertyInfo::Editor),
-    PROPERTY_COLOR3("clearColor", "Clear Color", "", Color3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", 0.f, PropertyInfo::Editor),
-    PROPERTY_INT("order", "Order", "", 0, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComCamera::RegisterProperties() {
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjectionMethod, SetProjectionMethod, 0, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, 10.f, "", PropertyInfo::Editor).SetRange(1, 20000, 10);
-    REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, 8192.f, "", PropertyInfo::Editor).SetRange(1, 20000, 10);
-    REGISTER_PROPERTY("FOV", float, fov, 60.f, "", PropertyInfo::Editor).SetRange(1, 179, 1);
-    REGISTER_PROPERTY("Size", float, size, 1000.f, "", PropertyInfo::Editor).SetRange(1, 16384, 1);
-    REGISTER_PROPERTY("X", float, nx, 0.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("Y", float, ny, 0.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("W", float, nw, 1.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("H", float, nh, 1.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), "", PropertyInfo::Editor);
-    REGISTER_ENUM_ACCESSOR_PROPERTY("Clear", "No Clear;Depth Only;Color", GetClearMethod, SetClearMethod, 1, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Order", int, order, 0, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, "", PropertyInfo::Editor).SetEnumString("Perspective;Orthographic");
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 10.f, "", PropertyInfo::Editor).SetRange(1, 20000, 10);
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 8192.f, "", PropertyInfo::Editor).SetRange(1, 20000, 10);
+    REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, "", PropertyInfo::Editor).SetRange(1, 179, 1);
+    REGISTER_PROPERTY("size", "Size", float, size, 1000.f, "", PropertyInfo::Editor).SetRange(1, 16384, 1);
+    REGISTER_PROPERTY("x", "X", float, nx, 0.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("y", "Y", float, ny, 0.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("w", "W", float, nw, 1.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("h", "H", float, nh, 1.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", SceneView::ClearMethod, GetClearMethod, SetClearMethod, 1, "", PropertyInfo::Editor).SetEnumString("No Clear;Depth Only;Color");
+    REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("order", "Order", int, order, 0, "", PropertyInfo::Editor);
 }
-#endif
 
 ComCamera::ComCamera() {
     memset(&viewParms, 0, sizeof(viewParms));
@@ -73,10 +55,6 @@ ComCamera::ComCamera() {
     spriteHandle = -1;
     spriteMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCamera::PropertyChanged);
-#endif
 }
 
 ComCamera::~ComCamera() {
@@ -122,24 +100,6 @@ void ComCamera::Init() {
     if (!view) {
         view = new SceneView;
     }
-
-#ifndef NEW_PROPERTY_SYSTEM
-    order = props->Get("order").As<int>(); //
-    nx = props->Get("x").As<float>();
-    ny = props->Get("y").As<float>();
-    nw = props->Get("w").As<float>();
-    nh = props->Get("h").As<float>();
-    fov = props->Get("fov").As<float>();
-    size = props->Get("size").As<float>();
-
-    viewParms.layerMask = props->Get("layerMask").As<int>();
-    viewParms.clearMethod = (SceneView::ClearMethod)props->Get("clear").As<int>();
-    viewParms.clearColor.ToColor3() = props->Get("clearColor").As<Color3>();
-    viewParms.clearColor.a = props->Get("clearAlpha").As<float>();
-    viewParms.zNear = props->Get("near").As<float>();
-    viewParms.zFar = props->Get("far").As<float>();
-    viewParms.orthogonal = props->Get("projection").As<int>() == 1 ? true : false;
-#endif
 
     viewParms.flags = SceneView::Flag::TexturedMode | SceneView::Flag::NoSubViews;
     if (!(viewParms.layerMask & BIT(TagLayerSettings::DefaultLayer))) {
@@ -449,90 +409,13 @@ void ComCamera::TransformUpdated(const ComTransform *transform) {
     UpdateVisuals();
 }
 
-void ComCamera::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "projection")) {
-        SetProjectionMethod(props->Get("projection").As<int>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "near")) {
-        SetNear(props->Get("near").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "far")) {
-        SetFar(props->Get("far").As<float>());
-        return;
-    }    
-
-    if (!Str::Cmp(propName, "fov")) {
-        fov = props->Get("fov").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "size")) {
-        size = props->Get("size").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "x")) {
-        nx = props->Get("x").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "y")) {
-        ny = props->Get("y").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "w")) {
-        nw = props->Get("w").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "h")) {
-        nh = props->Get("h").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "layerMask")) {
-        SetLayerMask(props->Get("layerMask").As<int>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "order")) {
-        order = props->Get("order").As<int>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "clear")) {
-        SetClearMethod((SceneView::ClearMethod)props->Get("clear").As<int>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "clearColor")) {
-        SetClearColor(props->Get("clearColor").As<Color3>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "clearAlpha")) {
-        SetClearAlpha(props->Get("clearAlpha").As<float>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
-}
-
 int ComCamera::GetLayerMask() const {
     return viewParms.layerMask;
 }
 
 void ComCamera::SetLayerMask(int layerMask) {
     viewParms.layerMask = layerMask;
+
     UpdateVisuals();
 }
 
@@ -542,33 +425,37 @@ int ComCamera::GetProjectionMethod() const {
 
 void ComCamera::SetProjectionMethod(const int projectionMethod) {
     viewParms.orthogonal = projectionMethod == 1 ? true : false;
+
     UpdateVisuals();
 }
 
 float ComCamera::GetNear() const {
-    return viewParms.clearColor.a;
+    return viewParms.zNear;
 }
 
 void ComCamera::SetNear(float zNear) {
     viewParms.zNear = zNear;
+
     UpdateVisuals();
 }
 
 float ComCamera::GetFar() const {
-    return viewParms.clearColor.a;
+    return viewParms.zFar;
 }
 
 void ComCamera::SetFar(float zFar) {
     viewParms.zFar = zFar;
+
     UpdateVisuals();
 }
 
-int ComCamera::GetClearMethod() const {
+SceneView::ClearMethod ComCamera::GetClearMethod() const {
     return viewParms.clearMethod;
 }
 
-void ComCamera::SetClearMethod(int clearMethod) {
-    viewParms.clearMethod = (SceneView::ClearMethod)clearMethod;
+void ComCamera::SetClearMethod(SceneView::ClearMethod clearMethod) {
+    viewParms.clearMethod = clearMethod;
+
     UpdateVisuals();
 }
 
@@ -578,6 +465,7 @@ const Color3 &ComCamera::GetClearColor() const {
 
 void ComCamera::SetClearColor(const Color3 &clearColor) {
     viewParms.clearColor.ToColor3() = clearColor;
+
     UpdateVisuals();
 }
 
@@ -587,6 +475,7 @@ float ComCamera::GetClearAlpha() const {
 
 void ComCamera::SetClearAlpha(const float clearAlpha) {
     viewParms.clearColor.a = clearAlpha;
+
     UpdateVisuals();
 }
 

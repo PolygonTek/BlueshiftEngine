@@ -28,32 +28,19 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Character Controller", ComCharacterController, Component)
 BEGIN_EVENTS(ComCharacterController)
 END_EVENTS
-BEGIN_PROPERTIES(ComCharacterController)
-    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.1f), 1.f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("capsuleRadius", "Capsule Radius", "", Rangef(0.01, 2, 0.01), 0.5f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("capsuleHeight", "Capsule Height", "", Rangef(0.01, 2, 0.01), 0.8f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("stepOffset", "Step Offset", "", Rangef(0, 1.0, 0.1), 0.5f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("slopeLimit", "Slope Limit Angle", "", Rangef(0, 90, 1), 60.0f, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComCharacterController::RegisterProperties() {
-    REGISTER_PROPERTY("Mass", float, mass, 1.f, "", PropertyInfo::Editor).SetRange(0, 100, 0.1f);
-    REGISTER_ACCESSOR_PROPERTY("Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertyInfo::Editor).SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertyInfo::Editor).SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("Step Offset", float, GetStepOffset, SetStepOffset, 0.5f, "", PropertyInfo::Editor).SetRange(0.0, 1.0, 0.1);
-    REGISTER_ACCESSOR_PROPERTY("Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, "", PropertyInfo::Editor).SetRange(0, 90, 1);
+    REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, "", PropertyInfo::Editor).SetRange(0, 100, 0.1f);
+    REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertyInfo::Editor).SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertyInfo::Editor).SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, 0.5f, "", PropertyInfo::Editor).SetRange(0.0, 1.0, 0.1);
+    REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, "", PropertyInfo::Editor).SetRange(0, 90, 1);
 }
-#endif
 
 ComCharacterController::ComCharacterController() {
     collider = nullptr;
     body = nullptr;
     correctionSensor = nullptr;
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCharacterController::PropertyChanged);
-#endif
 }
 
 ComCharacterController::~ComCharacterController() {
@@ -91,17 +78,6 @@ void ComCharacterController::Purge(bool chainPurge) {
 
 void ComCharacterController::Init() {
     Component::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    //
-    mass = props->Get("mass").As<float>();
-
-    capsuleRadius = MeterToUnit(props->Get("capsuleRadius").As<float>());
-    capsuleHeight = MeterToUnit(props->Get("capsuleHeight").As<float>());
-
-    stepOffset = MeterToUnit(props->Get("stepOffset").As<float>());
-    slopeDotZ = Math::Cos(DEG2RAD(props->Get("slopeLimit").As<float>())); 
-#endif
 
     ComTransform *transform = GetEntity()->GetTransform();
 
@@ -445,39 +421,6 @@ void ComCharacterController::TransformUpdated(const ComTransform *transform) {
         body->SetOrigin(transform->GetOrigin());
         body->SetAxis(transform->GetAxis());
     }
-}
-
-void ComCharacterController::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "mass")) {
-        SetMass(props->Get("mass").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "capsuleRadius")) {
-        SetCapsuleRadius(props->Get("capsuleRadius").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "capsuleHeight")) {
-        SetCapsuleHeight(props->Get("capsuleHeight").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "stepOffset")) {
-        SetStepOffset(props->Get("stepOffset").As<float>());
-        return;
-    } 
-
-    if (!Str::Cmp(propName, "slopeLimit")) {
-        SetSlopeLimit(props->Get("slopeLimit").As<float>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 float ComCharacterController::GetMass() const {

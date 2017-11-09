@@ -69,8 +69,8 @@ public:
     float                   GetFar() const;
     void                    SetFar(const float zFar);
 
-    int                     GetClearMethod() const;
-    void                    SetClearMethod(int clearMethod);
+    SceneView::ClearMethod  GetClearMethod() const;
+    void                    SetClearMethod(SceneView::ClearMethod clearMethod);
 
     const Color3 &          GetClearColor() const;
     void                    SetClearColor(const Color3 &clearColor);
@@ -88,7 +88,6 @@ private:
 protected:
     void                    UpdateVisuals();
 
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     SceneView *             view;

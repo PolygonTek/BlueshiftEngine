@@ -29,16 +29,6 @@ const SignalDef ComRigidBody::SIG_PhysicsUpdated("ComRigidBody::PhysicsUpdated",
 OBJECT_DECLARATION("Rigid Body", ComRigidBody, Component)
 BEGIN_EVENTS(ComRigidBody)
 END_EVENTS
-BEGIN_PROPERTIES(ComRigidBody)
-    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.01f), 1.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("restitution", "Restitution", "parameter for make objects bounce", Rangef(0, 1, 0.01f), 0.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("friction", "Friction", "parameter for make objects slide along each other realistically", Rangef(0, 1, 0.01f), 1.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("rollingFriction", "Rolling Friction", "", Rangef(0, 1, 0.01f), 1.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("linearDamping", "Linear Damping", "reduced amount of linear velocity", Rangef(0, 1, 0.01f), 0.05f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("angularDamping", "Angular Damping", "reduced amount of angular velocity", Rangef(0, 1, 0.01f), 0.01f, PropertyInfo::Editor),
-    PROPERTY_BOOL("kinematic", "Kinematic", "", false, PropertyInfo::Editor),
-    PROPERTY_BOOL("ccd", "CCD", "continuous collision detection", false, PropertyInfo::Editor),
-END_PROPERTIES
 
 class ComRigidBody::CollisionListener : public PhysCollisionListener {
 public:
@@ -80,26 +70,21 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
     }
 }
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComRigidBody::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Mass", float, GetMass, SetMass, 1.f, "", PropertyInfo::Editor).SetRange(0, 200, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Restitution", float, GetRestitution, SetRestitution, 0.f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Friction", float, GetFriction, SetFriction, 1.f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Rolling Friction", float, GetRollingFriction, SetRollingFriction, 1.f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.05f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Kinematic", bool, IsKinematic, SetKinematic, false, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("CCD", bool, IsCCD, SetCCD, false, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 1.f, "Mass in kg", PropertyInfo::Editor).SetRange(0, 200, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.f, "Parameter for make objects bounce", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 1.f, "Parameter for make objects slide along each other realistically", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("rollingFriction", "Rolling Friction", float, GetRollingFriction, SetRollingFriction, 1.f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("linearDamping", "Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.05f, "Reduced amount of linear velocity", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("angularDamping", "Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, "Reduced amount of angular velocity", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("kinematic", "Kinematic", bool, IsKinematic, SetKinematic, false, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCD, SetCCD, false, "Continuous collision detection", PropertyInfo::Editor);
 }
-#endif
 
 ComRigidBody::ComRigidBody() {
     body = nullptr;
     collisionListener = nullptr;
     physicsUpdating = false;
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComRigidBody::PropertyChanged);
-#endif
 }
 
 ComRigidBody::~ComRigidBody() {
@@ -127,17 +112,6 @@ void ComRigidBody::Init() {
 
     physicsDesc.type = PhysCollidable::Type::RigidBody;
     physicsDesc.shapes.Clear();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    physicsDesc.mass            = props->Get("mass").As<float>();
-    physicsDesc.restitution     = props->Get("restitution").As<float>();
-    physicsDesc.friction        = props->Get("friction").As<float>();
-    physicsDesc.rollingFriction = props->Get("rollingFriction").As<float>();
-    physicsDesc.linearDamping   = props->Get("linearDamping").As<float>();
-    physicsDesc.angularDamping  = props->Get("angularDamping").As<float>();
-    physicsDesc.kinematic       = props->Get("kinematic").As<bool>();
-    physicsDesc.ccd             = props->Get("ccd").As<bool>();
-#endif
 
     // static rigid body can't have collision listener
     if (physicsDesc.mass > 0) {
@@ -322,56 +296,8 @@ void ComRigidBody::TransformUpdated(const ComTransform *transform) {
     }
 }
 
-void ComRigidBody::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "mass")) {
-        SetMass(props->Get("mass").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "restitution")) {
-        SetRestitution(props->Get("restitution").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "friction")) {
-        SetFriction(props->Get("friction").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "rollingFriction")) {
-        SetRollingFriction(props->Get("rollingFriction").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "linearDamping")) {
-        SetLinearDamping(props->Get("linearDamping").As<float>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "angularDamping")) {
-        SetAngularDamping(props->Get("angularDamping").As<float>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "kinematic")) {
-        SetKinematic(props->Get("kinematic").As<bool>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "ccd")) {
-        SetCCD(props->Get("ccd").As<bool>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
-}
-
 float ComRigidBody::GetMass() const { 
-    return body ? body->GetMass() : 0;
+    return body ? body->GetMass() : physicsDesc.mass;
 }
 
 void ComRigidBody::SetMass(float mass) { 
@@ -383,7 +309,7 @@ void ComRigidBody::SetMass(float mass) {
 }
 
 float ComRigidBody::GetRestitution() const { 
-    return body ? body->GetRestitution() : 0; 
+    return body ? body->GetRestitution() : physicsDesc.restitution;
 }
 
 void ComRigidBody::SetRestitution(float restitution) {
@@ -395,7 +321,7 @@ void ComRigidBody::SetRestitution(float restitution) {
 }
 
 float ComRigidBody::GetFriction() const { 
-    return body ? body->GetFriction() : 0; 
+    return body ? body->GetFriction() : physicsDesc.friction;
 }
 
 void ComRigidBody::SetFriction(float friction) { 
@@ -406,8 +332,8 @@ void ComRigidBody::SetFriction(float friction) {
     }
 }
 
-float ComRigidBody::GetRollingFriction() const { 
-    return body ? body->GetRollingFriction() : 0; 
+float ComRigidBody::GetRollingFriction() const {
+    return body ? body->GetRollingFriction() : physicsDesc.rollingFriction;
 }
 
 void ComRigidBody::SetRollingFriction(float rollingFriction) {
@@ -419,7 +345,7 @@ void ComRigidBody::SetRollingFriction(float rollingFriction) {
 }
 
 float ComRigidBody::GetLinearDamping() const { 
-    return body ? body->GetLinearDamping() : 0; 
+    return body ? body->GetLinearDamping() : physicsDesc.linearDamping;
 }
 
 void ComRigidBody::SetLinearDamping(float linearDamping) { 
@@ -431,7 +357,7 @@ void ComRigidBody::SetLinearDamping(float linearDamping) {
 }
 
 float ComRigidBody::GetAngularDamping() const { 
-    return body ? body->GetAngularDamping() : 0; 
+    return body ? body->GetAngularDamping() : physicsDesc.angularDamping;
 }
 
 void ComRigidBody::SetAngularDamping(float angularDamping) { 
@@ -443,7 +369,7 @@ void ComRigidBody::SetAngularDamping(float angularDamping) {
 }
 
 bool ComRigidBody::IsKinematic() const { 
-    return body ? body->IsKinematic() : false; 
+    return body ? body->IsKinematic() : physicsDesc.kinematic;
 }
 
 void ComRigidBody::SetKinematic(bool kinematic) {
@@ -455,7 +381,7 @@ void ComRigidBody::SetKinematic(bool kinematic) {
 }
 
 bool ComRigidBody::IsCCD() const { 
-    return body ? body->IsCCD() : false; 
+    return body ? body->IsCCD() : physicsDesc.ccd;
 }
 
 void ComRigidBody::SetCCD(bool enableCcd) { 

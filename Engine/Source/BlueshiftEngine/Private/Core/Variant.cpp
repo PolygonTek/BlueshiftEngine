@@ -18,8 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-ObjectRef ObjectRef::empty;
-ObjectRefArray ObjectRefArray::empty;
+Variant Variant::empty;
 
 void Variant::SetType(Type type) {
     if (this->type == type) {
@@ -42,12 +41,6 @@ void Variant::SetType(Type type) {
     case MinMaxCurveType:
         delete reinterpret_cast<MinMaxCurve *>(value.ptr1);
         break;
-    case VariantArrayType:
-        (reinterpret_cast<VariantArray *>(&value))->~VariantArray();
-        break;
-    case ObjectRefArrayType:
-        (reinterpret_cast<ObjectRefArray *>(&value))->~ObjectRefArray();
-        break;
     }
 
     this->type = type;
@@ -68,12 +61,6 @@ void Variant::SetType(Type type) {
     case MinMaxCurveType:
         value.ptr1 = new MinMaxCurve();
         break;
-    case VariantArrayType:
-        new(reinterpret_cast<VariantArray *>(&value))VariantArray();
-        break;
-    case ObjectRefArrayType:
-        new(reinterpret_cast<ObjectRefArray *>(&value))ObjectRefArray();
-        break;
     }
 }
 
@@ -90,6 +77,9 @@ bool Variant::SetFromString(Type type, const char *str) {
         return true;
     case FloatType:
         *this = Variant((float)atof(str));
+        return true;
+    case DoubleType:
+        *this = Variant(atof(str));
         return true;
     case VoidPtrType:
         *this = Variant((sizeof(void *) == sizeof(uint64_t) ? Str::ToUI64(str) : Str::ToUI32(str)));
@@ -184,25 +174,14 @@ bool Variant::SetFromString(Type type, const char *str) {
         *this = rect;
         return true;
     }
-    case GuidType: {
+    case GuidType:
         *this = Guid::FromString(str);
         return true;
-    }
-    case StrType: {
+    case StrType:
         *this = Str(str);
         return true;
-    }
-    case ObjectRefType: {
-        StrArray values;
-        SplitStringIntoList(values, str, ";");
-        if (values.Count() == 2) {
-            auto *objectRef = reinterpret_cast<ObjectRef *>(&value);
-            objectRef->metaObject = Object::FindMetaObject(values[0]);
-            objectRef->objectGuid.SetFromString(values[1]);
-        }
-        return true;
-    }
     default:
+        // MinMaxCurveType can not support here
         assert(0);
         return false;
     }
@@ -229,12 +208,6 @@ Variant &Variant::operator=(const Variant &rhs) {
     case MinMaxCurveType:
         *(reinterpret_cast<MinMaxCurve *>(value.ptr1)) = *(reinterpret_cast<const MinMaxCurve *>(rhs.value.ptr1));
         break;
-    case VariantArrayType:
-        *(reinterpret_cast<VariantArray *>(value.ptr1)) = *(reinterpret_cast<const VariantArray *>(rhs.value.ptr1));
-        break;
-    case ObjectRefArrayType:
-        *(reinterpret_cast<ObjectRefArray *>(value.ptr1)) = *(reinterpret_cast<const ObjectRefArray *>(rhs.value.ptr1));
-        break;
     default:
         value = rhs.value;
         break;
@@ -257,6 +230,8 @@ bool Variant::operator==(const Variant &rhs) const {
         return value.b1 == rhs.value.b1;
     case FloatType:
         return value.f1 == rhs.value.f1;
+    case DoubleType:
+        return value.d1 == rhs.value.d1;
     case VoidPtrType:
         return value.ptr1 == rhs.value.ptr2;
     case Vec2Type:
@@ -291,12 +266,6 @@ bool Variant::operator==(const Variant &rhs) const {
         return *(reinterpret_cast<const Str *>(value.ptr1)) == *(reinterpret_cast<const Str *>(rhs.value.ptr1));
     case MinMaxCurveType:
         return *(reinterpret_cast<const MinMaxCurve *>(value.ptr1)) == *(reinterpret_cast<const MinMaxCurve *>(rhs.value.ptr1));
-    case VariantArrayType:
-        return *(reinterpret_cast<const VariantArray *>(value.ptr1)) == *(reinterpret_cast<const VariantArray *>(rhs.value.ptr1));
-    case ObjectRefType:
-        return *(reinterpret_cast<const ObjectRef *>(&value)) == *(reinterpret_cast<const ObjectRef *>(&rhs.value));
-    case ObjectRefArrayType:
-        return *(reinterpret_cast<const ObjectRefArray *>(value.ptr1)) == *(reinterpret_cast<const ObjectRefArray *>(rhs.value.ptr1));
     }
 
     return false;
@@ -317,6 +286,9 @@ Json::Value Variant::ToJsonValue() const {
         break;
     case FloatType:
         value = As<float>();
+        break;
+    case DoubleType:
+        value = As<double>();
         break;
     case VoidPtrType:
         value = (intptr_t)As<void *>();
@@ -366,22 +338,8 @@ Json::Value Variant::ToJsonValue() const {
     case StrType:
         value = As<Str>().c_str();
         break;
-    case ObjectRefType: {
-        auto &objectRef = As<ObjectRef>();
-        value[0] = objectRef.metaObject->ClassName();
-        value[1] = objectRef.objectGuid.ToString();
-        break; 
-    }
-    case ObjectRefArrayType: {
-        auto &objectRefArray = As<ObjectRefArray>();
-
-        value.resize(objectRefArray.objectGuids.Count());
-        for (int i = 0; i < objectRefArray.objectGuids.Count(); i++) {
-            value[i] = objectRefArray.objectGuids[i].ToString();
-        }
-        break; 
-    }
     default:
+        // MinMaxCurveType can not support here
         assert(0);
         break;
     }
@@ -407,6 +365,8 @@ Str Variant::ToString() const {
         return Str(value.b1);
     case FloatType:
         return Str(value.f1);
+    case DoubleType:
+        return Str(value.d1);
     case VoidPtrType:
         return Str((intptr_t)value.ptr1);
     case Vec2Type:
@@ -440,6 +400,7 @@ Str Variant::ToString() const {
     case StrType:
         return *(reinterpret_cast<const Str *>(value.ptr1));
     default:
+        // MinMaxCurveType can not support here
         return Str();
     }
 }

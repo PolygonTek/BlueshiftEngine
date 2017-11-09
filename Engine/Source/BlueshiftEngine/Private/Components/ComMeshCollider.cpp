@@ -26,22 +26,14 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Mesh Collider", ComMeshCollider, ComCollider)
 BEGIN_EVENTS(ComMeshCollider)
 END_EVENTS
-BEGIN_PROPERTIES(ComMeshCollider)
-    PROPERTY_BOOL("convex", "Convex", "", true, PropertyInfo::Editor),
-    PROPERTY_OBJECT("mesh", "Mesh", "collision mesh", GuidMapper::defaultMeshGuid, MeshAsset::metaObject, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComMeshCollider::RegisterProperties() {
-    REGISTER_PROPERTY("Convex", bool, convex, true, "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Mesh", ObjectRef, GetMeshRef, SetMeshRef, ObjectRef(MeshAsset::metaObject, GuidMapper::defaultMeshGuid), "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("convex", "Convex", bool, convex, true, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, "", PropertyInfo::Editor).SetMetaObject(&MeshAsset::metaObject);
 }
-#endif
 
 ComMeshCollider::ComMeshCollider() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComMeshCollider::PropertyChanged);
-#endif
+    meshGuid = Guid::zero;
 }
 
 ComMeshCollider::~ComMeshCollider() {
@@ -49,11 +41,6 @@ ComMeshCollider::~ComMeshCollider() {
 
 void ComMeshCollider::Init() {
     ComCollider::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    convex = props->Get("convex").As<bool>();
-    meshGuid = props->Get("mesh").As<Guid>();
-#endif
 
     if (!meshGuid.IsZero()) {
         const Str meshPath = resourceGuidMapper.Get(meshGuid);
@@ -87,24 +74,6 @@ void ComMeshCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selecte
     //collider;
 }
 
-void ComMeshCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "mesh")) {
-        SetMeshGuid(props->Get("mesh").As<Guid>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "convex")) {
-        convex = props->Get("convex").As<bool>();
-        return;
-    }
-
-    ComCollider::PropertyChanged(classname, propName);
-}
-
 Guid ComMeshCollider::GetMeshGuid() const {
     return meshGuid;
 }
@@ -112,22 +81,11 @@ Guid ComMeshCollider::GetMeshGuid() const {
 void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     this->meshGuid = meshGuid;
 
-    if (!meshGuid.IsZero()) {
-        const Str meshPath = resourceGuidMapper.Get(meshGuid);
-        collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
-    }
-}
-
-ObjectRef ComMeshCollider::GetMeshRef() const {
-    return ObjectRef(MeshAsset::metaObject, meshGuid);
-}
-
-void ComMeshCollider::SetMeshRef(const ObjectRef &meshRef) {
-    meshGuid = meshRef.objectGuid;
-
-    if (!meshGuid.IsZero()) {
-        const Str meshPath = resourceGuidMapper.Get(meshGuid);
-        collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
+    if (initialized) {
+        if (!meshGuid.IsZero()) {
+            const Str meshPath = resourceGuidMapper.Get(meshGuid);
+            collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
+        }
     }
 }
 

@@ -13,56 +13,60 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Physics/Physics.h"
-#include "Game/Entity.h"
-#include "Game/GameWorld.h"
 #include "Game/GameSettings/PhysicsSettings.h"
+#include "Game/GameWorld.h"
+#include "Physics/Physics.h"
 
 BE_NAMESPACE_BEGIN
 
 OBJECT_DECLARATION("Physics Settings", PhysicsSettings, GameSettings)
 BEGIN_EVENTS(PhysicsSettings)
 END_EVENTS
-BEGIN_PROPERTIES(PhysicsSettings)
-    PROPERTY_VEC3("gravity", "Gravity", "gravity", Vec3(0, 0, -9.8f), PropertyInfo::Editor),
-    PROPERTY_INT("filterMasks", "Filter Mask", "", -1, PropertyInfo::Editor | PropertyInfo::IsArray),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void PhysicsSettings::RegisterProperties() {
+    REGISTER_MIXED_ACCESSOR_PROPERTY("gravity", "Gravity", Vec3, GetGravity, SetGravity, Vec3(0, 0, -9.8f), "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_LIST_PROPERTY("filterMasks", "Filter Mask", int, GetFilterMaskElement, SetFilterMaskElement, GetFilterMaskCount, SetFilterMaskCount, -1, "", PropertyInfo::Editor);
 }
-#endif
 
 PhysicsSettings::PhysicsSettings() {
+    numFilterMasks = 0;
 }
 
 void PhysicsSettings::Init() {
     GameSettings::Init();
-
-    Vec3 gravity = props->Get("gravity").As<Vec3>();
-    GetGameWorld()->GetPhysicsWorld()->SetGravity(Vec3(MeterToUnit(gravity.x), MeterToUnit(gravity.y), MeterToUnit(gravity.z)));
-
-    int numFilterMasks = props->NumElements("filterMasks");
-    for (int filterIndex = 0; filterIndex < numFilterMasks; filterIndex++) {
-        Str propName = va("filterMasks[%i]", filterIndex);
-
-        int filterMask = props->Get(propName).As<int>();
-        GetGameWorld()->GetPhysicsWorld()->SetCollisionFilterMask(filterIndex, filterMask);
-    }
 }
 
-void PhysicsSettings::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
+Vec3 PhysicsSettings::GetGravity() const {
+    Vec3 gravity = GetGameWorld()->GetPhysicsWorld()->GetGravity();
+    return Vec3(UnitToMeter(gravity.x), UnitToMeter(gravity.y), UnitToMeter(gravity.z));
+}
 
-    if (!Str::Cmp(propName, "gravity")) {
-        Vec3 gravity = props->Get("gravity").As<Vec3>();
-        GetGameWorld()->GetPhysicsWorld()->SetGravity(Vec3(MeterToUnit(gravity.x), MeterToUnit(gravity.y), MeterToUnit(gravity.z)));
-        return;
-    }
+void PhysicsSettings::SetGravity(const Vec3 &gravity) {
+    GetGameWorld()->GetPhysicsWorld()->SetGravity(Vec3(MeterToUnit(gravity.x), MeterToUnit(gravity.y), MeterToUnit(gravity.z)));
+}
 
-    GameSettings::PropertyChanged(classname, propName);
+int PhysicsSettings::GetFilterMaskElement(int index) const {
+    return GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(index);
+}
+
+void PhysicsSettings::SetFilterMaskElement(int index, int mask) {
+    GetGameWorld()->GetPhysicsWorld()->SetCollisionFilterMask(index, mask);
+}
+
+int PhysicsSettings::GetFilterMaskCount() const {
+    return numFilterMasks;
+}
+
+void PhysicsSettings::SetFilterMaskCount(int count) {
+    int oldCount = numFilterMasks;
+
+    numFilterMasks = count;
+
+    if (count > oldCount) {
+        for (int index = oldCount; index < count; index++) {
+            GetGameWorld()->GetPhysicsWorld()->SetCollisionFilterMask(index, -1);
+        }
+    }
 }
 
 BE_NAMESPACE_END

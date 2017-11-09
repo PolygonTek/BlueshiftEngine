@@ -30,17 +30,11 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Skinned Mesh Renderer", ComSkinnedMeshRenderer, ComMeshRenderer)
 BEGIN_EVENTS(ComSkinnedMeshRenderer)
 END_EVENTS
-BEGIN_PROPERTIES(ComSkinnedMeshRenderer)
-    PROPERTY_OBJECT("skeleton", "Skeleton", "", Guid::zero, SkeletonAsset::metaObject, PropertyInfo::Editor),
-    PROPERTY_OBJECT("anim", "Animation", "", Guid::zero, AnimAsset::metaObject, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComSkinnedMeshRenderer::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Skeleton", ObjectRef, GetSkeletonRef, SetSkeletonRef, ObjectRef(SkeletonAsset::metaObject, Guid::zero), "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Animation", ObjectRef, GetAnimRef, SetAnimRef, ObjectRef(AnimAsset::metaObject, Guid::zero), "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&SkeletonAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("anim", "Animation", Guid, GetAnimGuid, SetAnimGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&AnimAsset::metaObject);
 }
-#endif
 
 ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {
     skeletonAsset = nullptr;
@@ -50,10 +44,6 @@ ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {
     anim = nullptr;
 
     jointMats = nullptr;
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSkinnedMeshRenderer::PropertyChanged);
-#endif
 }
 
 ComSkinnedMeshRenderer::~ComSkinnedMeshRenderer() {
@@ -91,19 +81,6 @@ void ComSkinnedMeshRenderer::Purge(bool chainPurge) {
 void ComSkinnedMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
-    const Guid skeletonGuid = props->Get("skeleton").As<Guid>();
-    const Guid animGuid = props->Get("anim").As<Guid>();
-
-    ChangeSkeleton(skeletonGuid);
-        
-    ChangeAnim(animGuid);
-        
-    bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
-        
-    sceneEntity.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
-    sceneEntity.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
-    sceneEntity.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
-        
     playStartTime = GetGameWorld()->GetTime();
 
     // Mark as initialized
@@ -197,7 +174,7 @@ void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
         anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
     }
 
-    playStartTime = GetGameWorld()->GetTime();
+    playStartTime = GetGameWorld() ? GetGameWorld()->GetTime() : 0;
    
     // Need to connect anim asset to be reloaded in Editor
     animAsset = (AnimAsset *)AnimAsset::FindInstance(animGuid);
@@ -242,6 +219,10 @@ void ComSkinnedMeshRenderer::UpdateAnimation(int currentTime) {
 }
 
 void ComSkinnedMeshRenderer::MeshUpdated() {
+    if (!IsInitialized()) {
+        return;
+    }
+
     bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
 
     if (isCompatibleSkeleton) {
@@ -266,34 +247,23 @@ void ComSkinnedMeshRenderer::MeshUpdated() {
 }
 
 void ComSkinnedMeshRenderer::SkeletonReloaded() {
-    SetSkeletonGuid(props->Get("skeleton").As<Guid>());
+    ChangeSkeleton(GetProperty("skeleton").As<Guid>());
+
+    MeshUpdated();
 }
 
 void ComSkinnedMeshRenderer::AnimReloaded() {
-    SetAnimGuid(props->Get("anim").As<Guid>());
-}
+    ChangeAnim(GetProperty("anim").As<Guid>());
 
-void ComSkinnedMeshRenderer::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "skeleton")) {
-        SetSkeletonGuid(props->Get("skeleton").As<Guid>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "anim")) {
-        SetAnimGuid(props->Get("anim").As<Guid>());
-        return;
-    }
-
-    ComMeshRenderer::PropertyChanged(classname, propName);
+    MeshUpdated();
 }
 
 Guid ComSkinnedMeshRenderer::GetSkeletonGuid() const {
-    const Str skeletonPath = skeleton->GetHashName();
-    return resourceGuidMapper.Get(skeletonPath);
+    if (skeleton) {
+        const Str skeletonPath = skeleton->GetHashName();
+        return resourceGuidMapper.Get(skeletonPath);
+    }
+    return Guid();
 }
 
 void ComSkinnedMeshRenderer::SetSkeletonGuid(const Guid &guid) {
@@ -302,35 +272,16 @@ void ComSkinnedMeshRenderer::SetSkeletonGuid(const Guid &guid) {
     MeshUpdated();
 }
 
-ObjectRef ComSkinnedMeshRenderer::GetSkeletonRef() const {
-    const Str skeletonPath = skeleton->GetHashName();
-    return ObjectRef(SkeletonAsset::metaObject, resourceGuidMapper.Get(skeletonPath));
-}
-
-void ComSkinnedMeshRenderer::SetSkeletonRef(const ObjectRef &skeletonRef) {
-    ChangeSkeleton(skeletonRef.objectGuid);
-
-    MeshUpdated();
-}
-
 Guid ComSkinnedMeshRenderer::GetAnimGuid() const {
-    const Str animPath = anim->GetHashName();
-    return resourceGuidMapper.Get(animPath);
+    if (anim) {
+        const Str animPath = anim->GetHashName();
+        return resourceGuidMapper.Get(animPath);
+    }
+    return Guid();
 }
 
 void ComSkinnedMeshRenderer::SetAnimGuid(const Guid &guid) {
     ChangeAnim(guid);
-
-    MeshUpdated();
-}
-
-ObjectRef ComSkinnedMeshRenderer::GetAnimRef() const {
-    const Str animPath = anim->GetHashName();
-    return ObjectRef(AnimAsset::metaObject, resourceGuidMapper.Get(animPath));
-}
-
-void ComSkinnedMeshRenderer::SetAnimRef(const ObjectRef &animRef) {
-    ChangeAnim(animRef.objectGuid);
 
     MeshUpdated();
 }

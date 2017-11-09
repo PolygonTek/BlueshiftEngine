@@ -33,9 +33,6 @@ public:
     virtual void            OnPointerDown() {}
     virtual void            OnPointerUp() {}
     virtual void            OnPointerDrag() {}
-
-protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
 };
 
 BE_NAMESPACE_END

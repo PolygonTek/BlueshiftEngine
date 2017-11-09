@@ -27,53 +27,16 @@ BE_NAMESPACE_BEGIN
 class MetaObject;
 class Variant;
 
-using VariantArray = Array<Variant>;
-
-/// Object reference.
-struct ObjectRef {
-    ObjectRef() : metaObject(nullptr) {}
-    explicit ObjectRef(const MetaObject &meta) : metaObject(&meta) {}
-    explicit ObjectRef(const MetaObject &meta, const Guid &guid) : metaObject(&meta), objectGuid(guid) {}
-
-    /// Test for equality with another reference.
-    bool operator==(const ObjectRef &rhs) const { return metaObject == rhs.metaObject && objectGuid == rhs.objectGuid; }
-
-    /// Test for inequality with another reference.
-    bool operator!=(const ObjectRef &rhs) const { return metaObject != rhs.metaObject || objectGuid != rhs.objectGuid; }
-
-    static ObjectRef empty;
-
-    const MetaObject *metaObject;
-    Guid objectGuid;
-};
-
-/// Object reference array.
-struct ObjectRefArray {
-    ObjectRefArray() : metaObject(nullptr) {}
-    explicit ObjectRefArray(const MetaObject &meta) : metaObject(&meta) {}
-    explicit ObjectRefArray(const MetaObject &meta, const Array<Guid> &guids) : metaObject(&meta), objectGuids(guids) {}
-
-    /// Test for equality with another reference.
-    bool operator==(const ObjectRefArray &rhs) const { return metaObject == rhs.metaObject && objectGuids == rhs.objectGuids; }
-
-    /// Test for inequality with another reference.
-    bool operator!=(const ObjectRefArray &rhs) const { return metaObject != rhs.metaObject || objectGuids != rhs.objectGuids; }
-
-    static ObjectRefArray empty;
-
-    const MetaObject *metaObject;
-    Array<Guid> objectGuids;
-};
-
 /// Variable that supports a fixed set of types.
 class BE_API Variant {
 public:
     enum Type {
-        None = 0,
+        None = -1,
         IntType,
         Int64Type,
         BoolType,
         FloatType,
+        DoubleType,
         VoidPtrType,
         Vec2Type,
         Vec3Type,
@@ -91,9 +54,6 @@ public:
         GuidType,
         StrType,
         MinMaxCurveType,
-        VariantArrayType,
-        ObjectRefType,
-        ObjectRefArrayType,
     };
 
     struct Value {
@@ -101,6 +61,7 @@ public:
             int i1;
             bool b1;
             float f1;
+            double d1;
             void *ptr1;
         };
 
@@ -108,6 +69,7 @@ public:
             int i2;
             bool b2;
             float f2;
+            double d2;
             void *ptr2;
         };
 
@@ -115,6 +77,7 @@ public:
             int i3;
             bool b3;
             float f3;
+            double d3;
             void *ptr3;
         };
 
@@ -122,6 +85,7 @@ public:
             int i4;
             bool b4;
             float f4;
+            double d4;
             void *ptr4;
         };
     };
@@ -161,6 +125,11 @@ public:
     }
 
     Variant(float value)
+        : type(Type::None) {
+        *this = value;
+    }
+
+    Variant(double value)
         : type(Type::None) {
         *this = value;
     }
@@ -255,21 +224,6 @@ public:
         *this = value;
     }
 
-    Variant(const VariantArray &value)
-        : type(Type::None) {
-        *this = value;
-    }
-
-    Variant(const ObjectRef &value)
-        : type(Type::None) {
-        *this = value;
-    }
-
-    Variant(const ObjectRefArray &value)
-        : type(Type::None) {
-        *this = value;
-    }
-
     ~Variant() {
         SetType(Type::None);
     }
@@ -285,6 +239,7 @@ public:
     Variant &               operator=(int64_t rhs);
     Variant &               operator=(bool rhs);
     Variant &               operator=(float rhs);
+    Variant &               operator=(double rhs);
     Variant &               operator=(void *rhs);
     Variant &               operator=(const char *rhs);
     Variant &               operator=(const Vec2 &rhs);
@@ -303,9 +258,6 @@ public:
     Variant &               operator=(const Guid &rhs);
     Variant &               operator=(const Str &rhs);
     Variant &               operator=(const MinMaxCurve &rhs);
-    Variant &               operator=(const VariantArray &rhs);
-    Variant &               operator=(const ObjectRef &rhs);
-    Variant &               operator=(const ObjectRefArray &rhs);
 
     bool                    operator==(const Variant &rhs) const;
     bool                    operator!=(const Variant &rhs) const { return !(*this == rhs); }
@@ -318,6 +270,8 @@ public:
     Str                     ToString() const;
 
     static Variant          FromString(Type type, const char *str);
+
+    static Variant          empty;
 
 private:
     Type                    type;       ///< Variant type
@@ -348,6 +302,12 @@ BE_INLINE Variant &Variant::operator=(bool rhs) {
 
 BE_INLINE Variant &Variant::operator=(float rhs) {
     SetType(Type::FloatType);
+    value.f1 = rhs;
+    return *this;
+}
+
+BE_INLINE Variant &Variant::operator=(double rhs) {
+    SetType(Type::DoubleType);
     value.f1 = rhs;
     return *this;
 }
@@ -460,24 +420,6 @@ BE_INLINE Variant &Variant::operator=(const MinMaxCurve &rhs) {
     return *this;
 }
 
-BE_INLINE Variant &Variant::operator=(const VariantArray &rhs) {
-    SetType(Type::VariantArrayType);
-    *(reinterpret_cast<VariantArray *>(value.ptr1)) = rhs;
-    return *this;
-}
-
-BE_INLINE Variant &Variant::operator=(const ObjectRef &rhs) {
-    SetType(Type::ObjectRefType);
-    *(reinterpret_cast<ObjectRef *>(&value)) = rhs;
-    return *this;
-}
-
-BE_INLINE Variant &Variant::operator=(const ObjectRefArray &rhs) {
-    SetType(Type::ObjectRefArrayType);
-    *(reinterpret_cast<ObjectRefArray *>(value.ptr1)) = rhs;
-    return *this;
-}
-
 template <typename T>
 BE_INLINE const T &Variant::As() const {
     return *reinterpret_cast<const T *>(&value);
@@ -563,19 +505,112 @@ BE_INLINE const MinMaxCurve &Variant::As() const {
     return type == MinMaxCurveType ? *reinterpret_cast<const MinMaxCurve *>(value.ptr1) : MinMaxCurve::empty;
 }
 
-template <>
-BE_INLINE const VariantArray &Variant::As() const {
-    return type == VariantArrayType ? *reinterpret_cast<const VariantArray *>(value.ptr1) : VariantArray();
-}
+template <typename T, typename = void>
+struct VariantType {};
+
+template <typename T>
+struct VariantType<T, typename std::enable_if_t<std::is_enum<T>::value>> {
+    static Variant::Type GetType() { return VariantType<std::underlying_type_t<T>>::GetType(); }
+};
 
 template <>
-BE_INLINE const ObjectRef &Variant::As() const {
-    return type == ObjectRefType ? *reinterpret_cast<const ObjectRef *>(&value) : ObjectRef::empty;
-}
+struct VariantType<int> {
+    static Variant::Type GetType() { return Variant::IntType; }
+};
 
 template <>
-BE_INLINE const ObjectRefArray &Variant::As() const {
-    return type == ObjectRefArrayType ? *reinterpret_cast<const ObjectRefArray *>(value.ptr1) : ObjectRefArray::empty;
-}
+struct VariantType<unsigned> {
+    static Variant::Type GetType() { return Variant::IntType; }
+};
+
+template <>
+struct VariantType<bool> {
+    static Variant::Type GetType() { return Variant::BoolType; }
+};
+
+template <>
+struct VariantType<float> {
+    static Variant::Type GetType() { return Variant::FloatType; }
+};
+
+template <>
+struct VariantType<double> {
+    static Variant::Type GetType() { return Variant::DoubleType; }
+};
+
+template <>
+struct VariantType<Vec2> {
+    static Variant::Type GetType() { return Variant::Vec2Type; }
+};
+
+template <>
+struct VariantType<Vec3> {
+    static Variant::Type GetType() { return Variant::Vec3Type; }
+};
+
+template <>
+struct VariantType<Vec4> {
+    static Variant::Type GetType() { return Variant::Vec4Type; }
+};
+
+template <>
+struct VariantType<Color3> {
+    static Variant::Type GetType() { return Variant::Color3Type; }
+};
+
+template <>
+struct VariantType<Color4> {
+    static Variant::Type GetType() { return Variant::Color4Type; }
+};
+
+template <>
+struct VariantType<Mat2> {
+    static Variant::Type GetType() { return Variant::Mat2Type; }
+};
+
+template <>
+struct VariantType<Mat3> {
+    static Variant::Type GetType() { return Variant::Mat3Type; }
+};
+
+template <>
+struct VariantType<Mat3x4> {
+    static Variant::Type GetType() { return Variant::Mat3x4Type; }
+};
+
+template <>
+struct VariantType<Mat4> {
+    static Variant::Type GetType() { return Variant::Mat4Type; }
+};
+
+template <>
+struct VariantType<Angles> {
+    static Variant::Type GetType() { return Variant::AnglesType; }
+};
+
+template <>
+struct VariantType<Quat> {
+    static Variant::Type GetType() { return Variant::QuatType; }
+};
+
+template <>
+struct VariantType<Point> {
+    static Variant::Type GetType() { return Variant::PointType; }
+};
+
+template <>
+struct VariantType<Rect> {
+    static Variant::Type GetType() { return Variant::RectType; }
+};
+
+template <>
+struct VariantType<Str> {
+    static Variant::Type GetType() { return Variant::StrType; }
+};
+
+template <>
+struct VariantType<Guid> {
+    static Variant::Type GetType() { return Variant::GuidType; }
+};
 
 BE_NAMESPACE_END

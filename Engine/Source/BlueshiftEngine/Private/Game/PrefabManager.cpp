@@ -118,13 +118,13 @@ Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
         prefabEntityValue["prefab"] = true;
         prefabEntityValue["prefabSource"] = Guid::zero.ToString();
 
-        Entity *prefabEntity = Entity::CreateEntity(prefabEntityValue);
+        Entity *prefabEntity = Entity::CreateEntity(prefabEntityValue, nullptr);
         prefabEntity->Init();
 
         prefabEntities.Append(prefabEntity);
 
         // Set the original entity's prefab source
-        originalEntities[i]->GetProperties()->Set("prefabSource", prefabEntity->GetGuid());
+        originalEntities[i]->SetProperty("prefabSource", prefabEntity->GetGuid());
     }
 
     // Remap GUIDs for the cloned entities

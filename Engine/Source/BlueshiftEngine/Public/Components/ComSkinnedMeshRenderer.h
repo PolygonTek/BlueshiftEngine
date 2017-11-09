@@ -42,14 +42,8 @@ public:
     Guid                    GetSkeletonGuid() const;
     void                    SetSkeletonGuid(const Guid &skeletonGuid);
 
-    ObjectRef               GetSkeletonRef() const;
-    void                    SetSkeletonRef(const ObjectRef &skeletonRef);
-
     Guid                    GetAnimGuid() const;
     void                    SetAnimGuid(const Guid &animGuid);
-
-    ObjectRef               GetAnimRef() const;
-    void                    SetAnimRef(const ObjectRef &animRef);
 
     Anim *                  GetAnim() const { return anim; }
 
@@ -66,8 +60,6 @@ protected:
     void                    ChangeSkeleton(const Guid &skeletonGuid);
     void                    SkeletonReloaded();
 
-    void                    PropertyChanged(const char *classname, const char *propName);
-    
     Skeleton *              skeleton;
     SkeletonAsset *         skeletonAsset;
     

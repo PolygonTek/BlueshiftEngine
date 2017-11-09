@@ -27,34 +27,20 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Audio Source", ComAudioSource, Component)
 BEGIN_EVENTS(ComAudioSource)
 END_EVENTS
-BEGIN_PROPERTIES(ComAudioSource)
-    PROPERTY_OBJECT("audioClip", "Audio Clip", "", GuidMapper::defaultSoundGuid, SoundAsset::metaObject, PropertyInfo::Editor),
-    PROPERTY_BOOL("playOnAwake", "Play On Awake", "Play the sound when the map loaded.", false, PropertyInfo::Editor),
-    PROPERTY_BOOL("spatial", "Spatial", "", true, PropertyInfo::Editor),
-    PROPERTY_BOOL("looping", "Looping", "", false, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("volume", "Volume", "", BE1::Rangef(0, 1, 0.1), 1.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("minDistance", "Min Distance", "", BE1::Rangef(0, 10000, 1), 400.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("maxDistance", "Max Distance", "", BE1::Rangef(0, 10000, 1), 1600.0f, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComAudioSource::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Audio Clip", ObjectRef, GetAudioClipRef, SetAudioClipRef, ObjectRef(SoundAsset::metaObject, GuidMapper::defaultSoundGuid), "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, "false", "Play the sound when the map loaded.", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Spatial", bool, spatial, true, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Looping", bool, looping, false, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Volume", float, volume, 1.f, "", PropertyInfo::Editor).SetRange(0, 1, 0.1);
-    REGISTER_PROPERTY("Min Distance", float, minDistance, 4.f, "", PropertyInfo::Editor).SetRange(0, 100, 1);
-    REGISTER_PROPERTY("Max Distance", float, maxDistance, 16.f, "", PropertyInfo::Editor).SetRange(0, 100, 1);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("audioClip", "Audio Clip", Guid, GetAudioClipGuid, SetAudioClipGuid, GuidMapper::defaultSoundGuid, "", PropertyInfo::Editor).SetMetaObject(&SoundAsset::metaObject);
+    REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, false, "Play the sound when the map loaded.", PropertyInfo::Editor);
+    REGISTER_PROPERTY("spatial", "Spatial", bool, spatial, true, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("looping", "Looping", bool, looping, false, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("volume", "Volume", float, volume, 1.f, "", PropertyInfo::Editor).SetRange(0, 1, 0.1);
+    REGISTER_PROPERTY("minDistance", "Min Distance", float, minDistance, 4.f, "", PropertyInfo::Editor).SetRange(0, 100, 1);
+    REGISTER_PROPERTY("maxDistance", "Max Distance", float, maxDistance, 16.f, "", PropertyInfo::Editor).SetRange(0, 100, 1);
 }
-#endif
 
 ComAudioSource::ComAudioSource() {
     referenceSound = nullptr;
     sound = nullptr;
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAudioSource::PropertyChanged);
-#endif
 }
 
 ComAudioSource::~ComAudioSource() {
@@ -79,22 +65,6 @@ void ComAudioSource::Purge(bool chainPurge) {
 
 void ComAudioSource::Init() {
     Component::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    spatial = props->Get("spatial").As<bool>();
-    looping = props->Get("looping").As<bool>();
-    playOnAwake = props->Get("playOnAwake").As<bool>();
-    minDistance = props->Get("minDistance").As<float>();
-    maxDistance = props->Get("maxDistance").As<float>();
-    volume = props->Get("volume").As<float>();
-
-    Guid audioClipGuid = props->Get("audioClip").As<Guid>();
-    Str audioClipPath;
-    if (!audioClipGuid.IsZero()) {
-        audioClipPath = resourceGuidMapper.Get(audioClipGuid);
-    }
-    referenceSound = soundSystem.GetSound(audioClipPath);
-#endif
 
     Stop();
 
@@ -170,21 +140,11 @@ void ComAudioSource::TransformUpdated(const ComTransform *transform) {
     }
 }
 
-void ComAudioSource::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "audioClip")) {
-        SetAudioClipGuid(props->Get("audioClip").As<Guid>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
-}
-
 Guid ComAudioSource::GetAudioClipGuid() const {
-    return referenceSound ? resourceGuidMapper.Get(referenceSound->GetHashName()) : Guid::zero;
+    if (referenceSound) {
+        return resourceGuidMapper.Get(referenceSound->GetHashName());
+    }
+    return Guid();
 }
 
 void ComAudioSource::SetAudioClipGuid(const Guid &guid) {
@@ -192,30 +152,6 @@ void ComAudioSource::SetAudioClipGuid(const Guid &guid) {
 
     if (!guid.IsZero()) {
         audioClipPath = resourceGuidMapper.Get(guid);
-    }
-
-    if (sound) {
-        sound->Stop();
-        sound = nullptr;
-    }
-
-    if (referenceSound) {
-        soundSystem.ReleaseSound(referenceSound);
-        referenceSound = nullptr;
-    }
-
-    referenceSound = soundSystem.GetSound(audioClipPath);
-}
-
-ObjectRef ComAudioSource::GetAudioClipRef() const {
-    return ObjectRef(SoundAsset::metaObject, referenceSound ? resourceGuidMapper.Get(referenceSound->GetHashName()) : Guid::zero);
-}
-
-void ComAudioSource::SetAudioClipRef(const ObjectRef &soundRef) {
-    Str audioClipPath;
-
-    if (!soundRef.objectGuid.IsZero()) {
-        audioClipPath = resourceGuidMapper.Get(soundRef.objectGuid);
     }
 
     if (sound) {

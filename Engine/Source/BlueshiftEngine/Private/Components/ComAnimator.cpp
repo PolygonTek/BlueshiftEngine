@@ -26,22 +26,13 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Animator", ComAnimator, ComMeshRenderer)
 BEGIN_EVENTS(ComAnimator)
 END_EVENTS
-BEGIN_PROPERTIES(ComAnimator)
-    PROPERTY_OBJECT("animController", "Anim Controller", "", GuidMapper::defaultAnimControllerGuid, AnimControllerAsset::metaObject, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComAnimator::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Anim Controller", ObjectRef, GetAnimControllerRef, SetAnimControllerRef, ObjectRef(AnimControllerAsset::metaObject, GuidMapper::defaultAnimControllerGuid), "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("animController", "Anim Controller", Guid, GetAnimControllerGuid, SetAnimControllerGuid, GuidMapper::defaultAnimControllerGuid, "", PropertyInfo::Editor).SetMetaObject(&AnimControllerAsset::metaObject);
 }
-#endif
 
 ComAnimator::ComAnimator() {
     animControllerAsset = nullptr;
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAnimator::PropertyChanged);
-#endif
 }
 
 ComAnimator::~ComAnimator() {
@@ -65,10 +56,6 @@ void ComAnimator::Purge(bool chainPurge) {
 
 void ComAnimator::Init() {
     ComMeshRenderer::Init();
-
-    const Guid animControllerGuid = props->Get("animController").As<Guid>();
-
-    ChangeAnimController(animControllerGuid);
 
     animator.ComputeAnimAABBs(referenceMesh);
 
@@ -144,7 +131,7 @@ void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
     animator.SetAnimController(animControllerPath);
 
     // Reset animator state
-    animator.ResetState(GetGameWorld()->GetTime());
+    animator.ResetState(GetGameWorld() ? GetGameWorld()->GetTime() : 0);
 
     // Need to connect animation controller asset to be reloaded in Editor
     animControllerAsset = (AnimControllerAsset *)AnimControllerAsset::FindInstance(animControllerGuid);
@@ -170,6 +157,10 @@ void ComAnimator::UpdateAnimation(int currentTime) {
 }
 
 void ComAnimator::MeshUpdated() {
+    if (!IsInitialized()) {
+        return;
+    }
+
     const BE1::Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
     bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
 
@@ -193,40 +184,19 @@ void ComAnimator::MeshUpdated() {
 }
 
 void ComAnimator::AnimControllerReloaded() {
-    SetAnimControllerGuid(props->Get("animController").As<Guid>());
-}
-
-void ComAnimator::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "animController")) {
-        SetAnimControllerGuid(props->Get("animController").As<Guid>());
-        return;
-    }
-
-    ComMeshRenderer::PropertyChanged(classname, propName);
+    SetAnimControllerGuid(GetProperty("animController").As<Guid>());
 }
 
 Guid ComAnimator::GetAnimControllerGuid() const {
-    const Str animControllerPath = animator.GetAnimController()->GetHashName();
-    return resourceGuidMapper.Get(animControllerPath);
+    if (animator.GetAnimController()) {
+        const Str animControllerPath = animator.GetAnimController()->GetHashName();
+        return resourceGuidMapper.Get(animControllerPath);
+    }
+    return Guid();
 }
 
 void ComAnimator::SetAnimControllerGuid(const Guid &guid) {
     ChangeAnimController(guid);
-
-    MeshUpdated();
-}
-
-ObjectRef ComAnimator::GetAnimControllerRef() const {
-    const Str animControllerPath = animator.GetAnimController()->GetHashName();
-    return ObjectRef(AnimControllerAsset::metaObject, resourceGuidMapper.Get(animControllerPath));
-}
-
-void ComAnimator::SetAnimControllerRef(const ObjectRef &animControllerRef) {
-    ChangeAnimController(animControllerRef.objectGuid);
 
     MeshUpdated();
 }

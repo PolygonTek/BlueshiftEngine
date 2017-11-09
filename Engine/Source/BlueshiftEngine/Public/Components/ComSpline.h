@@ -40,15 +40,16 @@ public:
     Vec3                    GetCurrentOrigin(float time) const;
     Mat3                    GetCurrentAxis(float time) const;
 
-    ObjectRefArray          GetPointsRef() const;
-    void                    SetPointsRef(const ObjectRefArray &pointsRef);
+    int                     GetPointCount() const;
+    void                    SetPointCount(int count);
+    Guid                    GetPointGuid(int index) const;
+    void                    SetPointGuid(int index, const Guid &pointGuid);
 
     bool                    IsLoop() const;
     void                    SetLoop(bool loop);
 
 protected:
     void                    UpdateCurve();
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    PointTransformUpdated(const ComTransform *transform);
 
     Array<Guid>             pointGuids;

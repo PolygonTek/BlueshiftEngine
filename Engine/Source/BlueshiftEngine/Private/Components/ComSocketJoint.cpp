@@ -25,20 +25,12 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Socket Joint", ComSocketJoint, ComJoint)
 BEGIN_EVENTS(ComSocketJoint)
 END_EVENTS
-BEGIN_PROPERTIES(ComSocketJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComSocketJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
 }
-#endif
 
 ComSocketJoint::ComSocketJoint() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSocketJoint::PropertyChanged);
-#endif
 }
 
 ComSocketJoint::~ComSocketJoint() {
@@ -46,10 +38,6 @@ ComSocketJoint::~ComSocketJoint() {
 
 void ComSocketJoint::Init() {
     ComJoint::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    anchor = props->Get("anchor").As<Vec3>();
-#endif
 
     // Mark as initialized
     SetInitialized(true);
@@ -100,19 +88,6 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(5), worldOrigin + Mat3::identity[0] * CentiToUnit(5), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(5), worldOrigin + Mat3::identity[1] * CentiToUnit(5), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(5), worldOrigin + Mat3::identity[2] * CentiToUnit(5), 1);
-}
-
-void ComSocketJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "anchor")) {
-        SetAnchor(props->Get("anchor").As<Vec3>());
-        return;
-    }
-
-    ComJoint::PropertyChanged(classname, propName);
 }
 
 const Vec3 &ComSocketJoint::GetAnchor() const {

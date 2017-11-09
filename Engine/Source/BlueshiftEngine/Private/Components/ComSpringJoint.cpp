@@ -25,30 +25,17 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Spring Joint", ComSpringJoint, ComJoint)
 BEGIN_EVENTS(ComSpringJoint)
 END_EVENTS
-BEGIN_PROPERTIES(ComSpringJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_FLOAT("lowerLimit", "Lower Limit", "", 0.f, PropertyInfo::Editor),
-    PROPERTY_FLOAT("upperLimit", "Upper Limit", "", 0.f, PropertyInfo::Editor),
-    PROPERTY_FLOAT("stiffness", "Stiffness", "", 2.f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("damping", "Damping", "", Rangef(0, 1, 0.01f), 0.2f, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComSpringJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Lower Limit", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Upper Limit", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("lowerLimit", "Lower Limit", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("upperLimit", "Upper Limit", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("damping", "Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
 }
-#endif
 
 ComSpringJoint::ComSpringJoint() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSpringJoint::PropertyChanged);
-#endif
 }
 
 ComSpringJoint::~ComSpringJoint() {
@@ -56,17 +43,6 @@ ComSpringJoint::~ComSpringJoint() {
 
 void ComSpringJoint::Init() {
     ComJoint::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    anchor = props->Get("anchor").As<Vec3>();
-    axis = props->Get("angles").As<Angles>().ToMat3();
-    axis.FixDegeneracies();
-
-    lowerLimit = props->Get("lowerLimit").As<float>();
-    upperLimit = props->Get("upperLimit").As<float>();
-    stiffness = props->Get("stiffness").As<float>();
-    damping = props->Get("damping").As<float>();
-#endif
 
     // Mark as initialized
     SetInitialized(true);
@@ -123,44 +99,6 @@ void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(5), worldOrigin + Mat3::identity[0] * CentiToUnit(5), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(5), worldOrigin + Mat3::identity[1] * CentiToUnit(5), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(5), worldOrigin + Mat3::identity[2] * CentiToUnit(5), 1);
-}
-
-void ComSpringJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "anchor")) {
-        SetAnchor(props->Get("anchor").As<Vec3>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "angles")) {
-        SetAngles(props->Get("angles").As<Angles>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "lowerLimit")) {
-        SetLowerLimit(props->Get("lowerLimit").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "upperLimit")) {
-        SetUpperLimit(props->Get("upperLimit").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "stiffness")) {
-        SetStiffness(props->Get("stiffness").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "damping")) {
-        SetDamping(props->Get("damping").As<float>());
-        return;
-    }
-
-    ComJoint::PropertyChanged(classname, propName);
 }
 
 const Vec3 &ComSpringJoint::GetAnchor() const {

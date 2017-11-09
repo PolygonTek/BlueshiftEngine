@@ -24,12 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Skeleton", SkeletonAsset, Asset)
 BEGIN_EVENTS(SkeletonAsset)
 END_EVENTS
-BEGIN_PROPERTIES(SkeletonAsset)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void SkeletonAsset::RegisterProperties() {}
-#endif
+void SkeletonAsset::RegisterProperties() {
+}
 
 SkeletonAsset::SkeletonAsset() {
     skeleton = nullptr;

@@ -48,8 +48,6 @@ public:
     void                    SetMaxMotorImpulse(float maxMotorImpulse);
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Vec3                    anchor;
     Mat3                    axis;
     float                   motorSpeed;

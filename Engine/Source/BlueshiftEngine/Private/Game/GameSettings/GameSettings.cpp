@@ -20,13 +20,9 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Game Settings", GameSettings, Object)
 BEGIN_EVENTS(GameSettings)
 END_EVENTS
-BEGIN_PROPERTIES(GameSettings)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void GameSettings::RegisterProperties() {
 }
-#endif
 
 GameSettings::GameSettings() {
 }
@@ -34,9 +30,6 @@ GameSettings::GameSettings() {
 void GameSettings::Init() {
     // Mark as initialized
     SetInitialized(true);
-}
-
-void GameSettings::PropertyChanged(const char *classname, const char *propName) {
 }
 
 BE_NAMESPACE_END

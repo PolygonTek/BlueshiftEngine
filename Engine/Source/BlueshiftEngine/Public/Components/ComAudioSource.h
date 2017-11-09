@@ -46,11 +46,7 @@ public:
     Guid                    GetAudioClipGuid() const;
     void                    SetAudioClipGuid(const Guid &guid);
 
-    ObjectRef               GetAudioClipRef() const;
-    void                    SetAudioClipRef(const ObjectRef &objectRef);
-
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     Sound *                 referenceSound;

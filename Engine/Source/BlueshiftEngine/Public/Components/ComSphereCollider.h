@@ -38,8 +38,6 @@ public:
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Vec3                    center;
     float                   radius;
 };

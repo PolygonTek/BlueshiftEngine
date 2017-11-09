@@ -45,8 +45,8 @@ public:
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
-    int                     GetLightType() const;
-    void                    SetLightType(int type);
+    SceneLight::Type        GetLightType() const;
+    void                    SetLightType(SceneLight::Type type);
 
     bool                    IsPrimaryLight() const;
     void                    SetPrimaryLight(bool isPrimaryLight);
@@ -65,9 +65,6 @@ public:
 
     Guid                    GetMaterialGuid() const;
     void                    SetMaterialGuid(const Guid &material);
-
-    ObjectRef               GetMaterialRef() const;
-    void                    SetMaterialRef(const ObjectRef &materialRef);
 
     Color3                  GetColor() const;
     void                    SetColor(const Color3 &color);
@@ -99,7 +96,6 @@ public:
 protected:
     void                    UpdateVisuals();
 
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    LayerChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 

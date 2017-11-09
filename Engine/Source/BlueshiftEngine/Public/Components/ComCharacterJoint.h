@@ -78,8 +78,6 @@ public:
     void                    SetTwistDamping(float damping);
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Vec3                    anchor;
     Mat3                    axis;
     Vec3                    lowerLimit;

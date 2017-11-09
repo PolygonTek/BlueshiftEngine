@@ -286,7 +286,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 }
 
 bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
-    propInfo.type = PropertyInfo::BadType;
+    propInfo.type = Variant::None;
     propInfo.flags = PropertyInfo::Editor;
     propInfo.range = Rangef(0, 0, 1);
     propInfo.metaObject = nullptr;
@@ -317,43 +317,43 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     }
 
     if (!Str::Cmp(typeStr, "bool")) {
-        propInfo.type = PropertyInfo::BoolType;
+        propInfo.type = Variant::BoolType;
     } else if (!Str::Cmp(typeStr, "int")) {
-        propInfo.type = PropertyInfo::IntType;
+        propInfo.type = Variant::IntType;
     } else if (!Str::Cmp(typeStr, "point")) {
-        propInfo.type = PropertyInfo::PointType;
+        propInfo.type = Variant::PointType;
     } else if (!Str::Cmp(typeStr, "rect")) {
-        propInfo.type = PropertyInfo::RectType;
+        propInfo.type = Variant::RectType;
     } else if (!Str::Cmp(typeStr, "float")) {
-        propInfo.type = PropertyInfo::FloatType;
+        propInfo.type = Variant::FloatType;
     } else if (!Str::Cmp(typeStr, "vec2")) {
-        propInfo.type = PropertyInfo::Vec2Type;
+        propInfo.type = Variant::Vec2Type;
     } else if (!Str::Cmp(typeStr, "vec3")) {
-        propInfo.type = PropertyInfo::Vec3Type;
+        propInfo.type = Variant::Vec3Type;
     } else if (!Str::Cmp(typeStr, "vec4")) {
-        propInfo.type = PropertyInfo::Vec4Type;
+        propInfo.type = Variant::Vec4Type;
     } else if (!Str::Cmp(typeStr, "color3")) {
-        propInfo.type = PropertyInfo::Color3Type;
+        propInfo.type = Variant::Color3Type;
     } else if (!Str::Cmp(typeStr, "color4")) {
-        propInfo.type = PropertyInfo::Color4Type;
+        propInfo.type = Variant::Color4Type;
     } else if (!Str::Cmp(typeStr, "enum")) {
         Str enumSequence;
         if (!lexer.ExpectTokenType(TokenType::TT_STRING, &enumSequence)) {
             return false;
         }
-        propInfo.type = PropertyInfo::EnumType;
+        propInfo.type = Variant::IntType;
         propInfo.enumeration.Clear();
         SplitStringIntoList(propInfo.enumeration, enumSequence, ";");
     } else if (!Str::Cmp(typeStr, "texture")) {
-        propInfo.type = PropertyInfo::ObjectType;
+        propInfo.type = Variant::GuidType;
         propInfo.metaObject = &TextureAsset::metaObject;
     }
 
-    if (propInfo.type == PropertyInfo::IntType ||
-        propInfo.type == PropertyInfo::FloatType ||
-        propInfo.type == PropertyInfo::Vec2Type ||
-        propInfo.type == PropertyInfo::Vec3Type ||
-        propInfo.type == PropertyInfo::Vec4Type) {
+    if (propInfo.type == Variant::IntType ||
+        propInfo.type == Variant::FloatType ||
+        propInfo.type == Variant::Vec2Type ||
+        propInfo.type == Variant::Vec3Type ||
+        propInfo.type == Variant::Vec4Type) {
         Str token;
         lexer.ReadToken(&token, false);
 
@@ -379,7 +379,7 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     if (!Str::Cmp(typeStr, "texture")) {
         propInfo.defaultValue = resourceGuidMapper.Get(defaultValueString);
     } else {
-        propInfo.defaultValue = PropertyInfo::ToVariant(propInfo.type, defaultValueString);
+        propInfo.defaultValue = Variant::FromString(propInfo.type, defaultValueString);
     }
 
     Str token;

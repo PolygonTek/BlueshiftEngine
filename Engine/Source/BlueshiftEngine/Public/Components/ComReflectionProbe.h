@@ -44,7 +44,6 @@ public:
 protected:
     void                    UpdateVisuals();
 
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     SceneEntity::Parms      probe;

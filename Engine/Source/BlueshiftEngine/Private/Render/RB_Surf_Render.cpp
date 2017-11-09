@@ -62,37 +62,43 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
         const Shader::Property &prop = propEntry->second;
 
         switch (propInfo.GetType()) {
-        case PropertyInfo::IntType:
+        case Variant::IntType:
             shader->SetConstant1i(key, prop.data.As<int>());
             break;
-        case PropertyInfo::PointType:
+        case Variant::PointType:
             shader->SetConstant2i(key, prop.data.As<Point>());
             break;
-        case PropertyInfo::RectType:
+        case Variant::RectType:
             shader->SetConstant4i(key, prop.data.As<Rect>());
             break;
-        case PropertyInfo::FloatType:
+        case Variant::FloatType:
             shader->SetConstant1f(key, prop.data.As<float>());
             break;
-        case PropertyInfo::Vec2Type:
+        case Variant::Vec2Type:
             shader->SetConstant2f(key, prop.data.As<Vec2>());
             break;
-        case PropertyInfo::Vec3Type:
+        case Variant::Vec3Type:
             shader->SetConstant3f(key, prop.data.As<Vec3>());
             break;
-        case PropertyInfo::Vec4Type:
+        case Variant::Vec4Type:
             shader->SetConstant4f(key, prop.data.As<Vec4>());
             break;
-        case PropertyInfo::Color3Type:
+        case Variant::Color3Type:
             shader->SetConstant3f(key, prop.data.As<Color3>());
             break;
-        case PropertyInfo::Color4Type:
+        case Variant::Color4Type:
             shader->SetConstant4f(key, prop.data.As<Color4>());
-            break;        
-        case PropertyInfo::Mat3Type:
+            break;
+        case Variant::Mat2Type:
+            shader->SetConstant2x2f(key, true, prop.data.As<Mat2>());
+            break;
+        case Variant::Mat3Type:
             shader->SetConstant3x3f(key, true, prop.data.As<Mat3>());
             break;
-        case PropertyInfo::ObjectType: // 
+        case Variant::Mat4Type:
+            shader->SetConstant4x4f(key, true, prop.data.As<Mat4>());
+            break;
+        case Variant::GuidType: // 
             shader->SetTexture(key, prop.texture);
             break;
         default:
@@ -112,7 +118,7 @@ const Texture *RBSurf::TextureFromShaderProperties(const Material::ShaderPass *m
     }
 
     const auto &propInfo = entry->second;
-    if ((propInfo.GetFlags() & PropertyInfo::ShaderDefine) || (propInfo.GetType() != PropertyInfo::ObjectType)) {
+    if ((propInfo.GetFlags() & PropertyInfo::ShaderDefine) || (propInfo.GetType() != Variant::GuidType)) {
         return nullptr;
     }
 

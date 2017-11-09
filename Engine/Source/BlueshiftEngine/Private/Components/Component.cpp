@@ -22,15 +22,10 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Component", Component, Object)
 BEGIN_EVENTS(Component)
 END_EVENTS
-BEGIN_PROPERTIES(Component)
-    PROPERTY_BOOL("enabled", "Enabled", "is enabled component ?", true, PropertyInfo::Hidden),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void Component::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Enabled", bool, IsEnabled, SetEnable, true, "", PropertyInfo::Hidden);
+    REGISTER_ACCESSOR_PROPERTY("enabled", "Enabled", bool, IsEnabled, SetEnable, true, "", PropertyInfo::Hidden);
 }
-#endif
 
 Component::Component() {
     entity = nullptr;
@@ -71,16 +66,6 @@ GameWorld *Component::GetGameWorld() const {
 }
 
 void Component::Init() {
-#ifndef NEW_PROPERTY_SYSTEM
-    enabled = props->Get("enabled").As<bool>();
-#endif
-}
-
-void Component::PropertyChanged(const char *classname, const char *propName) {
-    if (!Str::Cmp(propName, "enabled")) {
-        SetEnable(props->Get("enabled").As<bool>());
-        return;
-    }
 }
 
 BE_NAMESPACE_END

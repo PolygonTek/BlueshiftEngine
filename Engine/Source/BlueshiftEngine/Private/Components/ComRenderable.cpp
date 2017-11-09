@@ -25,27 +25,16 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Renderable", ComRenderable, Component)
 BEGIN_EVENTS(ComRenderable)
 END_EVENTS
-BEGIN_PROPERTIES(ComRenderable)
-    PROPERTY_COLOR3("color", "Color", "", Color3(1, 1, 1), PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("alpha", "Alpha", "", Rangef(0, 1, 0.01f), 1.f, PropertyInfo::Editor),
-    PROPERTY_BOOL("billboard", "Billboard", "", false, PropertyInfo::Editor),
-    PROPERTY_FLOAT("timeOffset", "Time Offset", "", 0.0f, PropertyInfo::Editor),
-    PROPERTY_FLOAT("timeScale", "Time Scale", "", 1.0f, PropertyInfo::Editor),
-    PROPERTY_FLOAT("maxVisDist", "Max Visible Distance", "max visible distance from viewer", 25000.f, PropertyInfo::Editor),
-    PROPERTY_BOOL("skipSelection", "Skip Selection", "", false, PropertyInfo::SkipSerialization),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComRenderable::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Color", Color3, GetColor, SetColor, Color3::white, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Alpha", float, GetAlpha, SetAlpha, 1.f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("Billboard", bool, IsBillboard, SetBillboard, false, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Time Scale", float, GetTimeScale, SetTimeScale, 1.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 20000.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Skip Selection", bool, IsSkipSelection, SetSkipSelection, false, "", PropertyInfo::SkipSerialization);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("alpha", "Alpha", float, GetAlpha, SetAlpha, 1.f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("billboard", "Billboard", bool, IsBillboard, SetBillboard, false, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("timeOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 20000.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("skipSelection", "Skip Selection", bool, IsSkipSelection, SetSkipSelection, false, "", PropertyInfo::SkipSerialization);
 }
-#endif
 
 ComRenderable::ComRenderable() {
     sceneEntityHandle = -1;
@@ -81,21 +70,6 @@ void ComRenderable::Init() {
 
     sceneEntity.layer = GetEntity()->GetLayer();
     sceneEntity.wireframeColor.Set(1, 1, 1, 1);
-
-#ifndef NEW_PROPERTY_SYSTEM
-    sceneEntity.maxVisDist = props->Get("maxVisDist").As<float>();
-
-    Color3 color = props->Get("color").As<Color3>();
-    sceneEntity.materialParms[SceneEntity::RedParm] = color.r;
-    sceneEntity.materialParms[SceneEntity::GreenParm] = color.g;
-    sceneEntity.materialParms[SceneEntity::BlueParm] = color.b;
-    sceneEntity.materialParms[SceneEntity::AlphaParm] = props->Get("alpha").As<float>();
-    sceneEntity.materialParms[SceneEntity::TimeOffsetParm] = props->Get("timeOffset").As<float>();
-    sceneEntity.materialParms[SceneEntity::TimeScaleParm] = props->Get("timeScale").As<float>();
-
-    sceneEntity.billboard = props->Get("billboard").As<bool>();
-    sceneEntity.skipSelectionBuffer = props->Get("skipSelection").As<bool>();
-#endif
 
     ComTransform *transform = GetEntity()->GetTransform();
     sceneEntity.origin = transform->GetOrigin();
@@ -192,7 +166,7 @@ void ComRenderable::ShowWireframe(SceneEntity::WireframeMode wireframeMode) {
 }
 
 void ComRenderable::LayerChanged(const Entity *entity) {
-    sceneEntity.layer = entity->GetProperties()->Get("layer").As<int>();
+    sceneEntity.layer = entity->GetProperty("layer").As<int>();
     
     UpdateVisuals();
 }
@@ -203,49 +177,6 @@ void ComRenderable::TransformUpdated(const ComTransform *transform) {
     sceneEntity.scale = transform->GetScale();
 
     UpdateVisuals();
-}
-
-void ComRenderable::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "maxVisDist")) {
-        SetMaxVisDist(props->Get("maxVisDist").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "color")) {
-        SetColor(props->Get("color").As<Color3>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "alpha")) {
-        SetAlpha(props->Get("alpha").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "timeOffset")) {
-        SetTimeOffset(props->Get("timeOffset").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "timeScale")) {
-        SetTimeScale(props->Get("timeScale").As<float>());
-        return;
-    } 
-
-    if (!Str::Cmp(propName, "billboard")) {
-        SetBillboard(props->Get("billboard").As<bool>());
-        return;
-    } 
-
-    if (!Str::Cmp(propName, "skipSelection")) {
-        SetSkipSelection(props->Get("skipSelection").As<bool>());
-        return;
-    } 
-
-    Component::PropertyChanged(classname, propName);
 }
 
 float ComRenderable::GetMaxVisDist() const {

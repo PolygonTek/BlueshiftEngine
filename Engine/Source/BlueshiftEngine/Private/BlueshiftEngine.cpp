@@ -66,9 +66,27 @@ void Engine::ShutdownBase() {
     cmdSystem.Shutdown();
 }
 
-#ifdef NEW_PROPERTY_SYSTEM
 static void RegisterEngineObjects() {
     Object::RegisterProperties();
+
+    Asset::RegisterProperties();
+    FolderAsset::RegisterProperties();
+    TextureAsset::RegisterProperties();
+    ShaderAsset::RegisterProperties();
+    MaterialAsset::RegisterProperties();
+    FontAsset::RegisterProperties();
+    SkeletonAsset::RegisterProperties();
+    MeshAsset::RegisterProperties();
+    ParticleSystemAsset::RegisterProperties();
+    AnimAsset::RegisterProperties();
+    FbxAsset::RegisterProperties();
+    JointMaskAsset::RegisterProperties();
+    AnimControllerAsset::RegisterProperties();
+    PrefabAsset::RegisterProperties();
+    SoundAsset::RegisterProperties();
+    MapAsset::RegisterProperties();
+    ScriptAsset::RegisterProperties();
+
     Component::RegisterProperties();
     ComTransform::RegisterProperties();
     ComCollider::RegisterProperties();
@@ -78,6 +96,7 @@ static void RegisterEngineObjects() {
     ComCylinderCollider::RegisterProperties();
     ComMeshCollider::RegisterProperties();
     ComRigidBody::RegisterProperties();
+    ComSensor::RegisterProperties();
     ComConstantForce::RegisterProperties();
     ComJoint::RegisterProperties();
     ComFixedJoint::RegisterProperties();
@@ -90,14 +109,25 @@ static void RegisterEngineObjects() {
     ComMeshRenderer::RegisterProperties();
     ComStaticMeshRenderer::RegisterProperties();
     ComSkinnedMeshRenderer::RegisterProperties();
+    ComAnimator::RegisterProperties();
     ComParticleSystem::RegisterProperties();
     ComTextRenderer::RegisterProperties();
     ComLight::RegisterProperties();
     ComCamera::RegisterProperties();
+    ComSpline::RegisterProperties();
     ComScript::RegisterProperties();
+    ComAudioListener::RegisterProperties();
+    ComAudioSource::RegisterProperties();
+
     Entity::RegisterProperties();
+    Prefab::RegisterProperties();
+    GameWorld::RegisterProperties();
+
+    MapRenderSettings::RegisterProperties();
+    GameSettings::RegisterProperties();
+    TagLayerSettings::RegisterProperties();
+    PhysicsSettings::RegisterProperties();
 }
-#endif
 
 void Engine::Init(const InitParms *initParms) {
     Engine::baseDir = initParms->baseDir;
@@ -112,9 +142,7 @@ void Engine::Init(const InitParms *initParms) {
         fileSystem.SetSearchPath(Engine::searchPath);
     }
 
-#ifdef NEW_PROPERTY_SYSTEM
     RegisterEngineObjects();
-#endif
 
     LuaVM::Init();
 }

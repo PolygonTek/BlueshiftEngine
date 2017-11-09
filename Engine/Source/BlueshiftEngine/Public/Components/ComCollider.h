@@ -42,8 +42,6 @@ public:
     Collider *              GetCollider() const { return collider; }
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Str                     material;
     Collider *              collider;
 };

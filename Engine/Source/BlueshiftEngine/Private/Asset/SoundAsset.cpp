@@ -24,12 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Sound", SoundAsset, Asset)
 BEGIN_EVENTS(SoundAsset)
 END_EVENTS
-BEGIN_PROPERTIES(SoundAsset)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void SoundAsset::RegisterProperties() {}
-#endif
+void SoundAsset::RegisterProperties() {
+}
 
 SoundAsset::SoundAsset() {
     sound = nullptr;

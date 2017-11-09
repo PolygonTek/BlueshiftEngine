@@ -57,9 +57,6 @@ public:
     Guid                    GetParticleSystemGuid() const;
     void                    SetParticleSystemGuid(const Guid &guid);
 
-    ObjectRef               GetParticleSystemRef() const;
-    void                    SetParticleSystemRef(const ObjectRef &particleSystemRef);
-
 protected:
     virtual void            UpdateVisuals() override;
     void                    ChangeParticleSystem(const Guid &particleSystemGuid);
@@ -67,7 +64,6 @@ protected:
     void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float genTimeDelta);
     void                    ComputeTrailPositionFromCustomPath(const ParticleSystem::CustomPathModule &customPathModule, const Particle *particle, float t, Particle::Trail *trail) const;
     void                    ParticleSystemReloaded();
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     bool                    playOnAwake;

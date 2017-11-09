@@ -25,22 +25,13 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Sphere Collider", ComSphereCollider, ComCollider)
 BEGIN_EVENTS(ComSphereCollider)
 END_EVENTS
-BEGIN_PROPERTIES(ComSphereCollider)
-    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_FLOAT("radius", "Radius", "", 1.0f, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComSphereCollider::RegisterProperties() {
-    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Radius", float, radius, 1.0f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.0f, "", PropertyInfo::Editor);
 }
-#endif
 
 ComSphereCollider::ComSphereCollider() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSphereCollider::PropertyChanged);
-#endif
 }
 
 ComSphereCollider::~ComSphereCollider() {
@@ -48,11 +39,6 @@ ComSphereCollider::~ComSphereCollider() {
 
 void ComSphereCollider::Init() {
     ComCollider::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    center = props->Get("center").As<Vec3>();
-    radius = props->Get("radius").As<float>();
-#endif
 
     // Create collider based on transformed sphere
     const ComTransform *transform = GetEntity()->GetTransform();
@@ -96,20 +82,6 @@ void ComSphereCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selec
         renderWorld->SetDebugColor(Color4::orange, Color4::zero);
         renderWorld->DebugSphereSimple(transform->GetWorldMatrix() * center, transform->GetAxis(), scaledRadius + CentiToUnit(0.25f), 1.25f, true);
     }
-}
-
-void ComSphereCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "center") || !Str::Cmp(propName, "radius")) {
-        center = props->Get("center").As<Vec3>();
-        radius = props->Get("radius").As<float>();
-        return;
-    }
-
-    ComCollider::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

@@ -25,18 +25,11 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Fixed Joint", ComFixedJoint, ComJoint)
 BEGIN_EVENTS(ComFixedJoint)
 END_EVENTS
-BEGIN_PROPERTIES(ComFixedJoint)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComFixedJoint::RegisterProperties() {
 }
-#endif
 
 ComFixedJoint::ComFixedJoint() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComFixedJoint::PropertyChanged);
-#endif
 }
 
 ComFixedJoint::~ComFixedJoint() {
@@ -79,14 +72,6 @@ void ComFixedJoint::Start() {
     if (IsEnabled()) {
         genericConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
-}
-
-void ComFixedJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    ComJoint::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

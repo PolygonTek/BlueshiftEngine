@@ -69,7 +69,6 @@ public:
 protected:
     virtual void            UpdateVisuals();
 
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    LayerChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 

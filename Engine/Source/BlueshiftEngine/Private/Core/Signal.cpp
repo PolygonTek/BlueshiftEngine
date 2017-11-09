@@ -64,6 +64,9 @@ SignalDef::SignalDef(const char *command, const char *formatSpec, char returnTyp
         case EventArg::IntType:
             this->argSize += sizeof(int);
             break;
+        case EventArg::BoolType:
+            this->argSize += sizeof(bool);
+            break;
         case EventArg::PointType:
             this->argSize += sizeof(Point);
             break;
@@ -258,6 +261,11 @@ Signal *Signal::Alloc(const SignalDef *sigdef, const SignalCallback callback, in
                 *reinterpret_cast<int *>(dataPtr) = arg->intValue;
             }
             break;
+        case EventArg::BoolType:
+            if (arg->pointer) {
+                *reinterpret_cast<bool *>(dataPtr) = arg->boolValue;
+            }
+            break;
         case EventArg::FloatType:
             if (arg->pointer) {
                 *reinterpret_cast<float *>(dataPtr) = arg->floatValue;
@@ -372,6 +380,9 @@ void Signal::ServiceSignal(Signal *signal) {
         switch (formatSpec[i]) {
         case EventArg::IntType:
             argPtrs[i] = *reinterpret_cast<int *>(&data[offset]);
+            break;
+        case EventArg::BoolType:
+            argPtrs[i] = *reinterpret_cast<bool *>(&data[offset]);
             break;
         case EventArg::FloatType:
             argPtrs[i] = *reinterpret_cast<float *>(&data[offset]);

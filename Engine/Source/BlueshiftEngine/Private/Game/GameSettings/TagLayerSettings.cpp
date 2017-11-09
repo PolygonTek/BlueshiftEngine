@@ -20,15 +20,11 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Tag & Layer Settings", TagLayerSettings, GameSettings)
 BEGIN_EVENTS(TagLayerSettings)
 END_EVENTS
-BEGIN_PROPERTIES(TagLayerSettings)
-    PROPERTY_STRING("tag", "Tag", "tag", "Untagged", PropertyInfo::Editor | PropertyInfo::IsArray),
-    PROPERTY_STRING("layer", "Layer", "layer", "Default", PropertyInfo::Editor | PropertyInfo::IsArray),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void TagLayerSettings::RegisterProperties() {
+    REGISTER_LIST_PROPERTY("tag", "Tag", Str, tags, "Untagged", "", PropertyInfo::Editor);
+    REGISTER_LIST_PROPERTY("layer", "Layer", Str, layers, "Default", "", PropertyInfo::Editor);
 }
-#endif
 
 TagLayerSettings::TagLayerSettings() {
 }
@@ -38,11 +34,8 @@ void TagLayerSettings::Init() {
 }
 
 int32_t TagLayerSettings::FindTag(const char *tagName) const {
-    int numTags = props->NumElements("tag");
-    for (int i = 0; i < numTags; i++) {
-        Str name = va("tag[%i]", i);
-
-        if (props->Get(name).As<Str>() == tagName) {
+    for (int i = 0; i < tags.Count(); i++) {
+        if (tags[i] == tagName) {
             return i;
         }
     }
@@ -50,23 +43,12 @@ int32_t TagLayerSettings::FindTag(const char *tagName) const {
 }
 
 int32_t TagLayerSettings::FindLayer(const char *layerName) const {
-    int numLayers = props->NumElements("layer");
-    for (int i = 0; i < numLayers; i++) {
-        Str name = va("layer[%i]", i);
-
-        if (props->Get(name).As<Str>() == layerName) {
+    for (int i = 0; i < layers.Count(); i++) {
+        if (layers[i] == layerName) {
             return i;
         }
     }
     return -1;
-}
-
-void TagLayerSettings::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    GameSettings::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

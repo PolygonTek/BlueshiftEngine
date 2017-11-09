@@ -166,15 +166,15 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
 
                         Shader::Property shaderProp;
 
-                        if (propInfo.GetType() == PropertyInfo::ObjectType) {
+                        if (propInfo.GetType() == Variant::GuidType) {
                             if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                                shaderProp.data = PropertyInfo::ToVariant(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
+                                shaderProp.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
                                 const Guid textureGuid = shaderProp.data.As<Guid>();
                                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
                                 shaderProp.texture = textureManager.GetTexture(texturePath);
                             }
                         } else {
-                            shaderProp.data = PropertyInfo::ToVariant(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
+                            shaderProp.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
                             shaderProp.texture = nullptr;
                         }
 
@@ -345,7 +345,7 @@ void Material::ChangeShader(Shader *shader) {
         } else {
             Shader::Property prop;
 
-            if (propInfo.GetType() == PropertyInfo::ObjectType) {
+            if (propInfo.GetType() == Variant::GuidType) {
                 if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
                     Texture *defaultTexture = textureManager.FindTexture(propInfo.GetDefaultValue().As<Str>());
                     assert(defaultTexture);
@@ -354,7 +354,7 @@ void Material::ChangeShader(Shader *shader) {
                     prop.data = defaultTextureGuid;
                 }
             } else {
-                prop.data = PropertyInfo::ToVariant(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
+                prop.data = Variant::FromString(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
             }
 
             prop.texture = nullptr;
@@ -391,11 +391,11 @@ void Material::EndShaderPropertiesChanged() {
             const auto *entry = pass->shaderProperties.Get(propName);
             const Shader::Property &shaderProp = entry->second;
 
-            if (propInfo.GetType() == PropertyInfo::BoolType) {
+            if (propInfo.GetType() == Variant::BoolType) {
                 if (shaderProp.data.As<bool>()) {
                     defineArray.Append(Shader::Define(propName, 1));
                 }
-            } else if (propInfo.GetType() == PropertyInfo::EnumType) {
+            } else if (propInfo.GetType() == Variant::IntType && propInfo.GetEnum().Count() > 0) {
                 int enumIndex = shaderProp.data.As<int>();
                 defineArray.Append(Shader::Define(propName, enumIndex));
             }
@@ -411,7 +411,7 @@ void Material::EndShaderPropertiesChanged() {
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
-        if (propInfo.GetType() == PropertyInfo::ObjectType) {
+        if (propInfo.GetType() == Variant::GuidType) {
             if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
                 auto *entry = pass->shaderProperties.Get(propName);
                 Shader::Property &shaderProp = entry->second;
@@ -663,38 +663,37 @@ void Material::Write(const char *filename) {
             const auto &value = shaderPropEntry->second.data;
             
             switch (propInfo.GetType()) {
-            case PropertyInfo::FloatType:
+            case Variant::FloatType:
                 fp->Printf("%s%s \"%.4f\"\n", indentSpace.c_str(), name, value.As<float>());
                 break;
-            case PropertyInfo::IntType:
-            case PropertyInfo::EnumType:
+            case Variant::IntType:
                 fp->Printf("%s%s \"%i\"\n", indentSpace.c_str(), name, value.As<int>());
                 break;
-            case PropertyInfo::ObjectType:
+            case Variant::GuidType:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Guid>().ToString());
                 break;
-            case PropertyInfo::BoolType:
+            case Variant::BoolType:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<bool>() ? "true" : "false");
                 break;
-            case PropertyInfo::PointType:
+            case Variant::PointType:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Point>().ToString());
                 break;
-            case PropertyInfo::RectType:
+            case Variant::RectType:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Rect>().ToString());
                 break;
-            case PropertyInfo::Vec2Type:
+            case Variant::Vec2Type:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec2>().ToString());
                 break;
-            case PropertyInfo::Vec3Type:
+            case Variant::Vec3Type:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec3>().ToString());
                 break;
-            case PropertyInfo::Vec4Type:
+            case Variant::Vec4Type:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec4>().ToString());
                 break;
-            case PropertyInfo::Color3Type:
+            case Variant::Color3Type:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Color3>().ToString());
                 break;
-            case PropertyInfo::Color4Type:
+            case Variant::Color4Type:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Color4>().ToString());
                 break;
             default:

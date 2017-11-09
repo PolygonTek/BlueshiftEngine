@@ -24,32 +24,24 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Reflection Probe", ComReflectionProbe, Component)
 BEGIN_EVENTS(ComReflectionProbe)
 END_EVENTS
-BEGIN_PROPERTIES(ComReflectionProbe)
-    PROPERTY_INT("importance", "Importance", "", 1, PropertyInfo::Editor),
+
+void ComReflectionProbe::RegisterProperties() {
+    /*PROPERTY_INT("importance", "Importance", "", 1, PropertyInfo::Editor),
     PROPERTY_ENUM("resolution", "Resolution", "", "16;32;64;128;256;1024;2048", 3, PropertyInfo::Editor),
     PROPERTY_BOOL("hdr", "HDR", "", true, PropertyInfo::Editor),
-    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", 1, PropertyInfo::Editor), 
+    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", 1, PropertyInfo::Editor),
     PROPERTY_COLOR3("clearColor", "Clear Color", "", Color3(0, 0, 0), PropertyInfo::Editor),
     PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", 0.0f, PropertyInfo::Editor),
     PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(0.01, 20000, 10), 0.3f, PropertyInfo::Editor),
     PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), 1000.f, PropertyInfo::Editor),
     PROPERTY_VEC3("boxOffset", "Box Offset", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_VEC3("boxSize", "Box Size", "", Vec3(10, 10, 10), PropertyInfo::Editor),
-END_PROPERTIES
-
-#ifdef NEW_PROPERTY_SYSTEM
-void ComReflectionProbe::RegisterProperties() {
+    PROPERTY_VEC3("boxSize", "Box Size", "", Vec3(10, 10, 10), PropertyInfo::Editor);*/
 }
-#endif
 
 ComReflectionProbe::ComReflectionProbe() {
     sphereHandle = -1;
     sphereMesh = nullptr;
     memset(&sphere, 0, sizeof(sphere));
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComReflectionProbe::PropertyChanged);
-#endif
 }
 
 ComReflectionProbe::~ComReflectionProbe() {
@@ -180,14 +172,6 @@ void ComReflectionProbe::TransformUpdated(const ComTransform *transform) {
     sphere.origin = transform->GetOrigin();
 
     UpdateVisuals();
-}
-
-void ComReflectionProbe::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

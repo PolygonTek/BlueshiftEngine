@@ -44,13 +44,9 @@ OBJECT_DECLARATION("Game World", GameWorld, Object)
 BEGIN_EVENTS(GameWorld)
     EVENT(EV_RestartGame, GameWorld::Event_RestartGame),
 END_EVENTS
-BEGIN_PROPERTIES(GameWorld)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void GameWorld::RegisterProperties() {
 }
-#endif
 
 GameWorld::GameWorld() {
     memset(entities, 0, sizeof(entities));
@@ -273,7 +269,7 @@ void GameWorld::RegisterEntity(Entity *ent, int spawn_entnum) {
 
     ent->entityNum = spawn_entnum;
 
-    Guid parentGuid = ent->props->Get("parent").As<Guid>();
+    Guid parentGuid = ent->GetProperty("parent").As<Guid>();
     Entity *parent = FindEntityByGuid(parentGuid);
     if (parent) {
         ent->node.SetParent(parent->node);
@@ -317,7 +313,7 @@ void GameWorld::UnregisterEntity(Entity *ent) {
 Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
     EntityPtrArray originalEntities;
 
-    // Get the original entity and all of his children
+    // Get the original entity and all of it's children
     originalEntities.Append(const_cast<Entity *>(originalEntity));
     originalEntity->GetChildren(originalEntities);
 
@@ -332,7 +328,7 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
         
         Json::Value clonedEntityValue = Entity::CloneEntityValue(originalEntityValue, guidMap);
 
-        Entity *clonedEntity = Entity::CreateEntity(clonedEntityValue);
+        Entity *clonedEntity = Entity::CreateEntity(clonedEntityValue, this);
         clonedEntities.Append(clonedEntity);
     }
 
@@ -344,12 +340,10 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
         const Entity *originalEntity = originalEntities[i];
         Entity *clonedEntity = clonedEntities[i];
 
-        clonedEntity->gameWorld = this;
-
         // if the originalEntity is a prefab source
         if (originalEntity->IsPrefabSource()) {
-            clonedEntity->props->Set("prefabSource", originalEntity->GetGuid());
-            clonedEntity->props->Set("prefab", false);
+            clonedEntity->SetProperty("prefabSource", originalEntity->GetGuid());
+            clonedEntity->SetProperty("prefab", false);
         }
 
         clonedEntity->Init();
@@ -367,9 +361,7 @@ Entity *GameWorld::CreateEntity(const char *name) {
     value["components"][0]["origin"] = BE1::Vec3::zero.ToString();
     value["components"][0]["angles"] = BE1::Angles::zero.ToString();
 
-    Entity *entity = Entity::CreateEntity(value);
-
-    entity->gameWorld = this;
+    Entity *entity = Entity::CreateEntity(value, this);
 
     entity->Init();
     entity->InitComponents();
@@ -421,9 +413,7 @@ bool GameWorld::SpawnEntityFromJson(Json::Value &entityValue, Entity **ent) {
 
     int spawn_entnum = entityValue.get("spawn_entnum", -1).asInt();
 
-    Entity *entity = Entity::CreateEntity(entityValue);
-    entity->gameWorld = this;
-
+    Entity *entity = Entity::CreateEntity(entityValue, this);
     entity->Init();
     entity->InitComponents();
 
@@ -561,8 +551,8 @@ void GameWorld::LoadTagLayerSettings(const char *filename) {
 
     if (!Str::Cmp(classname, TagLayerSettings::metaObject.ClassName())) {
         tagLayerSettings = static_cast<TagLayerSettings *>(TagLayerSettings::metaObject.CreateInstance());
-        tagLayerSettings->props->Deserialize(jsonNode);
         tagLayerSettings->SetGameWorld(this);
+        tagLayerSettings->Deserialize(jsonNode);
         tagLayerSettings->Init();
     } else {
         BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
@@ -595,8 +585,8 @@ void GameWorld::LoadPhysicsSettings(const char *filename) {
 
     if (!Str::Cmp(classname, PhysicsSettings::metaObject.ClassName())) {
         physicsSettings = static_cast<PhysicsSettings *>(PhysicsSettings::metaObject.CreateInstance());
-        physicsSettings->GetProperties()->Deserialize(jsonNode);
         physicsSettings->SetGameWorld(this);
+        physicsSettings->Deserialize(jsonNode);
         physicsSettings->Init();
     } else {
         BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
@@ -610,7 +600,7 @@ void GameWorld::SaveSettings() {
 
 void GameWorld::SaveObject(const char *filename, const Object *object) const {
     Json::Value jsonNode;
-    object->GetProperties()->Serialize(jsonNode);
+    object->Serialize(jsonNode);
 
     Json::StyledWriter jsonWriter;
     Str jsonText = jsonWriter.write(jsonNode).c_str();
@@ -622,7 +612,7 @@ void GameWorld::NewMap() {
     Json::Value defaultMapRenderSettingsValue;
     defaultMapRenderSettingsValue["classname"] = MapRenderSettings::metaObject.ClassName();
 
-    mapRenderSettings->GetProperties()->Deserialize(defaultMapRenderSettingsValue);
+    mapRenderSettings->Deserialize(defaultMapRenderSettingsValue);
 
     Reset();
 }
@@ -653,7 +643,7 @@ bool GameWorld::LoadMap(const char *filename) {
     int mapVersion = map["version"].asInt();
 
     // Read map render settings
-    mapRenderSettings->props->Deserialize(map["renderSettings"]);
+    mapRenderSettings->Deserialize(map["renderSettings"]);
     mapRenderSettings->Init();
 
     // Read entities
@@ -808,7 +798,7 @@ void GameWorld::SaveSnapshot() {
 void GameWorld::RestoreSnapshot() {
     BeginMapLoading();
 
-    mapRenderSettings->props->Deserialize(snapshotValues["renderSettings"]);
+    mapRenderSettings->Deserialize(snapshotValues["renderSettings"]);
     mapRenderSettings->Init();
 
     SpawnEntitiesFromJson(snapshotValues["entities"]);

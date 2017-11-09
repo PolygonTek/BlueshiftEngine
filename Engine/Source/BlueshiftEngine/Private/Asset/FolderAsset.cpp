@@ -23,12 +23,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Folder", FolderAsset, Asset)
 BEGIN_EVENTS(FolderAsset)
 END_EVENTS
-BEGIN_PROPERTIES(FolderAsset)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void FolderAsset::RegisterProperties() {}
-#endif
+void FolderAsset::RegisterProperties() {
+}
 
 FolderAsset::FolderAsset() {}
 

@@ -34,20 +34,17 @@ public:
     Str                     GetText() const;
     void                    SetText(const Str &text);
 
-    int                     GetAnchor() const;
-    void                    SetAnchor(int anchor);
+    SceneEntity::TextAnchor GetAnchor() const;
+    void                    SetAnchor(SceneEntity::TextAnchor anchor);
 
-    int                     GetAlignment() const;
-    void                    SetAlignment(int alignment);
+    SceneEntity::TextAlignment GetAlignment() const;
+    void                    SetAlignment(SceneEntity::TextAlignment alignment);
 
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);
 
     Guid                    GetFontGuid() const;
     void                    SetFontGuid(const Guid &fontGuid);
-
-    ObjectRef               GetFontRef() const;
-    void                    SetFontRef(const ObjectRef &objectRef);
 
     int                     GetFontSize() const;
     void                    SetFontSize(int fontSize);
@@ -56,8 +53,6 @@ protected:
     void                    ChangeFont(const Guid &fontGuid, int fontSize);
 
     void                    UpdateAABB();
-
-    void                    PropertyChanged(const char *classname, const char *propName);
 
     int                     fontSize;
 };

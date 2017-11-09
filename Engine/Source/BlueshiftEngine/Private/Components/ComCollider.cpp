@@ -22,13 +22,9 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Collider", ComCollider, Component)
 BEGIN_EVENTS(ComCollider)
 END_EVENTS
-BEGIN_PROPERTIES(ComCollider)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComCollider::RegisterProperties() {
 }
-#endif
 
 ComCollider::ComCollider() {
     collider = nullptr;
@@ -77,14 +73,6 @@ const AABB ComCollider::GetAABB() {
 
 bool ComCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
     return false;
-}
-
-void ComCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-    
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

@@ -22,19 +22,12 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Joint", ComJoint, Component)
 BEGIN_EVENTS(ComJoint)
 END_EVENTS
-BEGIN_PROPERTIES(ComJoint)
-    PROPERTY_OBJECT("connectedBody", "Connected Body", "", Guid::zero, ComRigidBody::metaObject, PropertyInfo::Editor),
-    PROPERTY_BOOL("collisionEnabled", "Collision Enabled", "", true, PropertyInfo::Editor),
-    PROPERTY_FLOAT("breakImpulse", "Break Impulse", "", 1e30f, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComJoint::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Connected Body", ObjectRef, GetConnectedBodyRef, SetConnectedBodyRef, ObjectRef(ComRigidBody::metaObject, Guid::zero), "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("connectedBody", "Connected Body", Guid, GetConnectedBodyGuid, SetConnectedBodyGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&ComRigidBody::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::Editor);
 }
-#endif
 
 ComJoint::ComJoint() {
     constraint = nullptr;
@@ -58,12 +51,6 @@ void ComJoint::Purge(bool chainPurge) {
 
 void ComJoint::Init() {
     Component::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    collisionEnabled = props->Get("collisionEnabled").As<bool>();
-    // FIXME: atof("infinity") parsing 안됨
-    breakImpulse = props->Get("breakImpulse").As<float>();
-#endif
 }
 
 void ComJoint::Start() {
@@ -71,7 +58,7 @@ void ComJoint::Start() {
 
     // Rigid body component will be created after calling Awake() function
     // So we can connect this joint to the connected rigid body in Start() function
-    const Guid guid = props->Get("connectedBody").As<Guid>();
+    const Guid guid = GetProperty("connectedBody").As<Guid>();
     if (!guid.IsZero()) {
         connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
     }
@@ -95,29 +82,6 @@ void ComJoint::SetEnable(bool enable) {
     }
 }
 
-void ComJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "connectedBody")) {
-        SetConnectedBodyGuid(props->Get("connectedBody").As<Guid>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "collisionEnabled")) {
-        SetCollisionEnabled(props->Get("collisionEnabled").As<bool>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "breakImpulse")) {
-        SetBreakImpulse(props->Get("breakImpulse").As<float>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
-}
-
 Guid ComJoint::GetConnectedBodyGuid() const {
     if (connectedBody) {
         return connectedBody->GetGuid();
@@ -128,21 +92,6 @@ Guid ComJoint::GetConnectedBodyGuid() const {
 void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
     if (!guid.IsZero()) {
         connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
-    } else {
-        connectedBody = nullptr;
-    }
-}
-
-ObjectRef ComJoint::GetConnectedBodyRef() const {
-    if (connectedBody) {
-        return ObjectRef(ComRigidBody::metaObject, connectedBody->GetGuid());
-    }
-    return ObjectRef();
-}
-
-void ComJoint::SetConnectedBodyRef(const ObjectRef &bodyRef) {
-    if (!bodyRef.objectGuid.IsZero()) {
-        connectedBody = Object::FindInstance(bodyRef.objectGuid)->Cast<ComRigidBody>();
     } else {
         connectedBody = nullptr;
     }

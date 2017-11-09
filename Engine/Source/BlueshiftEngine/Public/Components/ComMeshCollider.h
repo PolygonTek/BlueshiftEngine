@@ -36,12 +36,7 @@ public:
     Guid                    GetMeshGuid() const;
     void                    SetMeshGuid(const Guid &meshGuid);
 
-    ObjectRef               GetMeshRef() const;
-    void                    SetMeshRef(const ObjectRef &meshRef);
-
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Guid                    meshGuid;
     bool                    convex;
 };

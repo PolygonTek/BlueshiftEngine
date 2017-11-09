@@ -98,8 +98,6 @@ protected:
     void                    SetInitialized(bool init) { initialized = init; }
     void                    SetEntity(Entity *entity) { this->entity = entity; }
 
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Entity *                entity;
     bool                    enabled;
     bool                    initialized;

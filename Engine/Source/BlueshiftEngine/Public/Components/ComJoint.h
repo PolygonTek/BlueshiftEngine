@@ -44,9 +44,6 @@ public:
     Guid                    GetConnectedBodyGuid() const;
     void                    SetConnectedBodyGuid(const Guid &guid);
 
-    ObjectRef               GetConnectedBodyRef() const;
-    void                    SetConnectedBodyRef(const ObjectRef &bodyRef);
-
     bool                    IsCollisionEnabled() const;
     void                    SetCollisionEnabled(bool enabled);
 
@@ -54,8 +51,6 @@ public:
     void                    SetBreakImpulse(float breakImpulse);
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     const ComRigidBody *    connectedBody;
     PhysConstraint *        constraint;
     bool                    collisionEnabled;

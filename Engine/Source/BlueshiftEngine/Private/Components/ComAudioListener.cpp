@@ -24,18 +24,11 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Audio Listener", ComAudioListener, Component)
 BEGIN_EVENTS(ComAudioListener)
 END_EVENTS
-BEGIN_PROPERTIES(ComAudioListener)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComAudioListener::RegisterProperties() {
 }
-#endif
 
 ComAudioListener::ComAudioListener() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComAudioListener::PropertyChanged);
-#endif
 }
 
 ComAudioListener::~ComAudioListener() {
@@ -74,14 +67,6 @@ void ComAudioListener::SetEnable(bool enable) {
 
 void ComAudioListener::TransformUpdated(const ComTransform *transform) {
     soundSystem.PlaceListener(transform->GetOrigin(), transform->GetAxis());
-}
-
-void ComAudioListener::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

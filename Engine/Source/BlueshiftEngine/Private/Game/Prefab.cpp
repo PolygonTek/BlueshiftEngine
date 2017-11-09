@@ -23,12 +23,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Prefab", Prefab, Object)
 BEGIN_EVENTS(Prefab)
 END_EVENTS
-BEGIN_PROPERTIES(Prefab)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void Prefab::RegisterProperties() {}
-#endif
+void Prefab::RegisterProperties() {
+}
 
 void Prefab::Clear() {
     entityHierarchy.RemoveFromHierarchy();
@@ -51,8 +48,8 @@ bool Prefab::Create(const Json::Value &entitiesValue) {
         const char *classname = entityValue["classname"].asCString();
 
         if (!Str::Cmp(classname, Entity::metaObject.ClassName())) {
-            Entity *entity = Entity::CreateEntity(entityValue);
-            assert(entity->props->Get("prefab").As<bool>());
+            Entity *entity = Entity::CreateEntity(entityValue, nullptr);
+            assert(entity->GetProperty("prefab").As<bool>());
             
             const Guid parentGuid = Guid::FromString(entityValue["parent"].asCString());
             if (parentGuid.IsZero()) { // GUID 0 means a root entity

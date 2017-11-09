@@ -26,21 +26,13 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Sensor", ComSensor, Component)
 BEGIN_EVENTS(ComSensor)
 END_EVENTS
-BEGIN_PROPERTIES(ComSensor)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComSensor::RegisterProperties() {
 }
-#endif
 
 ComSensor::ComSensor() {
     memset(&physicsDesc, 0, sizeof(physicsDesc));
     sensor = nullptr;
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSensor::PropertyChanged);
-#endif
 }
 
 ComSensor::~ComSensor() {
@@ -240,14 +232,6 @@ void ComSensor::TransformUpdated(const ComTransform *transform) {
         sensor->SetAxis(transform->GetAxis());
         sensor->Activate();
     }
-}
-
-void ComSensor::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

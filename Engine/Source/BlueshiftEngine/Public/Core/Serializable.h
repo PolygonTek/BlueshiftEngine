@@ -15,107 +15,59 @@
 #pragma once
 
 #include "jsoncpp/include/json/json.h"
+#include "Variant.h"
 #include "Signal.h"
-#include "Core/Variant.h"
-#include "Containers/HashMap.h"
 
 BE_NAMESPACE_BEGIN
 
-class Serializable {
-public:
-};
-
 //-------------------------------------------------------------------------------
 //
-// Properties
+// Serializable
 //
 //-------------------------------------------------------------------------------
 
-class PropertyInfo;
-
-class Property {
-    friend class Properties;
-
+class Serializable : public SignalObject {
 public:
-    enum Flag {
-        Hidden              = BIT(0)
-    };
-
-    Property() : numElements(0), flags(0) {}
-    Property(const Variant &_value, int _flags) : value(_value), numElements(0), flags(_flags) {}
-
-    const Variant &         Value() const { return value; }
-    Variant &               Value() { return value; }
-
-    int                     Flags() const { return flags; }
-       
-private:
-    Variant                 value;
-    int                     numElements;
-    int                     flags;
-};
-
-class Properties {
-public:
-    explicit Properties(Object *owner);
-    ~Properties();
-
-    void                    Purge();
-
-                            /// Returns property info by name.
-    bool                    GetInfo(const char *name, PropertyInfo &propertyInfo) const;
-
-                            /// Returns number of elements of array property
-                            /// This function is valid only if property is an array
-    int                     NumElements(const char *name) const;
-
-                            /// Sets number of elements of array property
-                            /// This function is valid only if property is an array
-    void                    SetNumElements(const char *name, int numElements);
-
-                            /// Gets default value
-    bool                    GetDefaultValue(const char *name, Variant &out) const;
-
-                            /// Returns default value
-    Variant                 GetDefaultValue(const char *name) const;
-
-                            /// Gets property
-    bool                    Get(const char *name, Variant &out) const;
-
-                            /// Gets property, if it is a invalid property, returns 0-set value or "" (empty string)
-    Variant                 Get(const char *name) const;
-
-                            /// Sets property
-    bool                    Set(const char *name, const Variant &value, bool forceWrite = false);
-
-                            /// Deserialize from JSON value
-    void                    Deserialize(const Json::Value &in);
+    explicit Serializable(Object *owner);
 
                             /// Serialize to JSON value
     void                    Serialize(Json::Value &out) const;
 
+                            /// Deserialize from JSON value
+    void                    Deserialize(const Json::Value &in);
+
+                            /// Returns a default value
+    Variant                 GetPropertyDefault(const char *name) const;
+
+                            /// Gets a property value
+    Variant                 GetProperty(const char *name) const;
+
+                            /// Gets a indexed property value
+    Variant                 GetProperty(const char *name, int index) const;
+
+                            /// Sets a property value
+    bool                    SetProperty(const char *name, const Variant &value);
+
+                            /// Sets a indexed property value
+    bool                    SetProperty(const char *name, int index, const Variant &value);
+
+                            /// Returns number of elements of array property
+                            /// This function is valid only if property is an array
+    int                     GetPropertyArrayCount(const char *name) const;
+
+                            /// Sets number of elements of array property
+                            /// This function is valid only if property is an array
+    void                    SetPropertyArrayCount(const char *name, int numElements);
+
     static const SignalDef  SIG_PropertyChanged;
-    static const SignalDef  SIG_PropertyArrayNumChanged;
+    static const SignalDef  SIG_PropertyArrayCountChanged;
     static const SignalDef  SIG_PropertyUpdated;
 
-protected:
+private:
+    bool                    SetPropertyWithoutSignal(const char *name, const Variant &value);
+    bool                    SetPropertyWithoutSignal(const char *name, int index, const Variant &value);
+
     Object *                owner;
-
-#ifndef NEW_PROPERTY_SYSTEM
-    StrHashMap<Property>    propertyHashMap;
-#endif
 };
-
-BE_INLINE Variant Properties::GetDefaultValue(const char *name) const {
-    Variant out;
-    GetDefaultValue(name, out);
-    return out;
-}
-
-BE_INLINE Variant Properties::Get(const char *name) const {
-    Variant out;
-    Get(name, out);
-    return out;
-}
 
 BE_NAMESPACE_END

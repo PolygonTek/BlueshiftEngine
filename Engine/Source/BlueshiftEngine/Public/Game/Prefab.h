@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "Containers/HashMap.h"
 #include "Entity.h"
 
 BE_NAMESPACE_BEGIN

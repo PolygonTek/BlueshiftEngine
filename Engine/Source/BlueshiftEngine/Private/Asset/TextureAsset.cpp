@@ -24,12 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Texture", TextureAsset, Asset)
 BEGIN_EVENTS(TextureAsset)
 END_EVENTS
-BEGIN_PROPERTIES(TextureAsset)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void TextureAsset::RegisterProperties() {}
-#endif
+void TextureAsset::RegisterProperties() {
+}
 
 TextureAsset::TextureAsset() {
     texture = nullptr;

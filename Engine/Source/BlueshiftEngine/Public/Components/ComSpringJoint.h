@@ -54,8 +54,6 @@ protected:
     float                   GetDamping() const;
     void                    SetDamping(float damping);
 
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Vec3                    anchor;
     Mat3                    axis;
     float                   lowerLimit;

@@ -39,8 +39,6 @@ public:
     void                    SetAnchor(const Vec3 &anchor);
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Vec3                    anchor;
 };
 

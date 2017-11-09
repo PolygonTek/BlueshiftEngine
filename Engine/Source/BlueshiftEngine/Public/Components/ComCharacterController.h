@@ -73,7 +73,6 @@ protected:
     void                    RecoverFromPenetration();
     bool                    SlideMove(const Vec3 &moveVector);
 
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     Collider *              collider;

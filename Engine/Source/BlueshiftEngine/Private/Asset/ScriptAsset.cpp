@@ -23,12 +23,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Script", ScriptAsset, Asset)
 BEGIN_EVENTS(ScriptAsset)
 END_EVENTS
-BEGIN_PROPERTIES(ScriptAsset)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void ScriptAsset::RegisterProperties() {}
-#endif
+void ScriptAsset::RegisterProperties() {
+}
 
 ScriptAsset::ScriptAsset() {}
 

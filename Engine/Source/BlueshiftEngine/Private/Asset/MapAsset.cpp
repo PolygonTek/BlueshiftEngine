@@ -23,12 +23,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Map", MapAsset, Asset)
 BEGIN_EVENTS(MapAsset)
 END_EVENTS
-BEGIN_PROPERTIES(MapAsset)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void MapAsset::RegisterProperties() {}
-#endif
+void MapAsset::RegisterProperties() {
+}
 
 MapAsset::MapAsset() {}
 

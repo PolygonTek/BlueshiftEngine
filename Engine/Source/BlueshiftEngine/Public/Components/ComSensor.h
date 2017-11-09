@@ -42,7 +42,6 @@ public:
 
 protected:
     void                    ProcessScriptCallback();
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     PhysSensor *            sensor;

@@ -24,12 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("ParticleSystem", ParticleSystemAsset, Asset)
 BEGIN_EVENTS(ParticleSystemAsset)
 END_EVENTS
-BEGIN_PROPERTIES(ParticleSystemAsset)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void ParticleSystemAsset::RegisterProperties() {}
-#endif
+void ParticleSystemAsset::RegisterProperties() {
+}
 
 ParticleSystemAsset::ParticleSystemAsset() {
     particleSystem = nullptr;

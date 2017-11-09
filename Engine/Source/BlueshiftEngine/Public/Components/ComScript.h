@@ -14,8 +14,9 @@
 
 #pragma once
 
-#include "Script/LuaVM.h"
+#include "Containers/HashMap.h"
 #include "Component.h"
+#include "Script/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -75,9 +76,6 @@ public:
     Guid                    GetScriptGuid() const;
     void                    SetScriptGuid(const Guid &guid);
 
-    ObjectRef               GetScriptRef() const;
-    void                    SetScriptRef(const ObjectRef &scriptRef);
-
 protected:
     void                    InitPropertyInfoImpl(const Guid &scriptGuid);
     bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
@@ -86,17 +84,10 @@ protected:
     void                    ChangeScript(const Guid &scriptGuid);
     void                    ScriptReloaded();
 
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     ScriptAsset *           scriptAsset;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
-
-#ifdef NEW_PROPERTY_SYSTEM
     Array<PropertyInfo>     fieldInfos;
-#else
-    Array<const PropertyInfo *> fieldInfos;
-#endif
     HashMap<Str, Variant>   fieldValues;
 };
 

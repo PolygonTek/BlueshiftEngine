@@ -23,17 +23,11 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Constant Force", ComConstantForce, Component)
 BEGIN_EVENTS(ComConstantForce)
 END_EVENTS
-BEGIN_PROPERTIES(ComConstantForce)
-    PROPERTY_VEC3("force", "Force", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_VEC3("torque", "Torque", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComConstantForce::RegisterProperties() {
-    REGISTER_PROPERTY("Force", Vec3, force, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Torque", Vec3, torque, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("force", "Force", Vec3, force, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("torque", "Torque", Vec3, torque, Vec3::zero, "", PropertyInfo::Editor);
 }
-#endif
 
 ComConstantForce::ComConstantForce() {
 }
@@ -42,11 +36,6 @@ ComConstantForce::~ComConstantForce() {
 }
 
 void ComConstantForce::Init() {
-#ifndef NEW_PROPERTY_SYSTEM
-    force = props->Get("force").As<Vec3>();
-    torque = props->Get("torque").As<Vec3>();
-#endif
-
     // Mark as initialized
     SetInitialized(true);
 }
@@ -61,24 +50,6 @@ void ComConstantForce::Update() {
         rigidBody->GetBody()->ApplyCentralForce(force);
         rigidBody->GetBody()->ApplyTorque(torque);
     }
-}
-
-void ComConstantForce::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "force")) {
-        force = props->Get("force").As<Vec3>();
-        return;
-    }
-
-     if (!Str::Cmp(propName, "torque")) {
-        torque = props->Get("torque").As<Vec3>();
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

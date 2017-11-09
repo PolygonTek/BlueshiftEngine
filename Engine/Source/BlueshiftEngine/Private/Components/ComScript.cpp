@@ -28,42 +28,27 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Script", ComScript, Component)
 BEGIN_EVENTS(ComScript)
 END_EVENTS
-BEGIN_PROPERTIES(ComScript)
-    PROPERTY_OBJECT("script", "Script", "", Guid::zero, ScriptAsset::metaObject, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComScript::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Script", ObjectRef, GetScriptRef, SetScriptRef, ObjectRef(ScriptAsset::metaObject, Guid::zero), "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("script", "Script", Guid, GetScriptGuid, SetScriptGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&ScriptAsset::metaObject);
 }
-#endif
 
 ComScript::ComScript() {
     scriptAsset = nullptr;
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComScript::PropertyChanged);
-#endif
 }
 
 ComScript::~ComScript() {
     Purge(false);
 
-#ifdef NEW_PROPERTY_SYSTEM
     fieldInfos.Clear();
-#else
-    fieldInfos.DeleteContents(true);
-#endif
 }
 
 void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
     Component::GetPropertyInfoList(propInfos);
 
-#ifndef NEW_PROPERTY_SYSTEM
     for (int index = 0; index < fieldInfos.Count(); index++) {
-        propInfos.Append(*fieldInfos[index]);
+        propInfos.Append(fieldInfos[index]);
     }
-#endif
 }
 
 void ComScript::InitPropertyInfo(Json::Value &jsonComponent) {
@@ -104,241 +89,256 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
                 label = name;
             }
 
-            if (!Str::Cmp(type, "string")) {
-#ifdef NEW_PROPERTY_SYSTEM
-                Str value = (const char *)props["value"];
+            if (!Str::Cmp(type, "int")) {
+                int value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Str>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Str>()), value, desc, PropertyInfo::Editor);
-                fieldInfos.Append(propInfo);
-#else
-                Str value = (const char *)props["value"];
-                fieldInfos.Append(new PROPERTY_STRING(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
+                auto pairPtr = fieldValues.Get(name);
+
+                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
+                    float minimum = props["minimum"];
+                    float maximum = props["maximum"];
+                    float step = props["step"];
+
+                    Rangef range(minimum, maximum, step);
+                    if (step == 0.0f) {
+                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
+                    }
+
+                    auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), new PropertyLambdaAccessorImpl<Class, int>(
+                        [pairPtr]() { return pairPtr->second.As<int>(); },
+                        [pairPtr](int value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+                    propInfo.SetRange(minimum, maximum, step);
+
+                    fieldInfos.Append(propInfo);
+                } else {
+                    auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), new PropertyLambdaAccessorImpl<Class, int>(
+                        [pairPtr]() { return pairPtr->second.As<int>(); },
+                        [pairPtr](int value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
+                    fieldInfos.Append(propInfo);
+                }
             } else if (!Str::Cmp(type, "enum")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 int value = props["value"];
                 const char *enumSequence = props["sequence"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyInfo::Enum(enumSequence), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), new PropertyLambdaAccessorImpl<Class, int>(
+                    [pairPtr]() { return pairPtr->second.As<int>(); },
+                    [pairPtr](int value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+                propInfo.SetEnumString(enumSequence);
+
                 fieldInfos.Append(propInfo);
-#else
-                const char *sequence = props["sequence"];
-                Str value = Str((int)props["value"]);
-                fieldInfos.Append(new PROPERTY_ENUM(name, label, desc, sequence, value.c_str(), PropertyInfo::Editor));
-#endif
-            } else if (!Str::Cmp(type, "float")) {
-#ifdef NEW_PROPERTY_SYSTEM
-                float value = props["value"];
-                fieldValues.Set(name, value);
-
-                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
-                    float minimum = props["minimum"];
-                    float maximum = props["maximum"];
-                    float step = props["step"];
-
-                    Rangef range(minimum, maximum, step);
-                    if (step == 0.0f) {
-                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
-                    }
-
-                    auto propInfo = PropertyInfo(name, PropertyTypeID<float>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<float>()), value, desc, PropertyInfo::Editor);
-                    propInfo.SetRange(minimum, maximum, step);
-                    fieldInfos.Append(propInfo);
-                } else {
-                    auto propInfo = PropertyInfo(name, PropertyTypeID<float>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<float>()), value, desc, PropertyInfo::Editor);
-                    fieldInfos.Append(propInfo);
-                }
-#else
-                Str value = Str((float)props["value"]);
-                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
-                    float minimum = props["minimum"];
-                    float maximum = props["maximum"];
-                    float step = props["step"];
-
-                    Rangef range(minimum, maximum, step);
-                    if (step == 0.0f) {
-                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
-                    }
-                    fieldInfos.Append(new PROPERTY_RANGED_FLOAT(name, label, desc, range, value.c_str(), PropertyInfo::Editor));
-                } else {
-                    fieldInfos.Append(new PROPERTY_FLOAT(name, label, desc, value.c_str(), PropertyInfo::Editor));
-                }
-#endif
-            } else if (!Str::Cmp(type, "int")) {
-#ifdef NEW_PROPERTY_SYSTEM
-                int value = props["value"];
-                fieldValues.Set(name, value);
-
-                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
-                    float minimum = props["minimum"];
-                    float maximum = props["maximum"];
-                    float step = props["step"];
-
-                    Rangef range(minimum, maximum, step);
-                    if (step == 0.0f) {
-                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
-                    }
-
-                    auto propInfo = PropertyInfo(name, PropertyTypeID<int>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::Editor);
-                    propInfo.SetRange(minimum, maximum, step);
-                    fieldInfos.Append(propInfo);
-                } else {
-                    auto propInfo = PropertyInfo(name, PropertyTypeID<int>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<int>()), value, desc, PropertyInfo::Editor);
-                    fieldInfos.Append(propInfo);
-                }
-#else
-                Str value = Str((int)props["value"]);
-                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
-                    float minimum = props["minimum"];
-                    float maximum = props["maximum"];
-                    float step = props["step"];
-
-                    Rangef range(minimum, maximum, step);
-                    if (step == 0.0f) {
-                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
-                    }
-                    fieldInfos.Append(new PROPERTY_RANGED_INT(name, label, desc, range, value.c_str(), PropertyInfo::Editor));
-                } else {
-                    fieldInfos.Append(new PROPERTY_INT(name, label, desc, value.c_str(), PropertyInfo::Editor));
-                }
-#endif
             } else if (!Str::Cmp(type, "bool")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 bool value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<bool>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<bool>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<bool>::GetType(), new PropertyLambdaAccessorImpl<Class, bool>(
+                    [pairPtr]() { return pairPtr->second.As<bool>(); },
+                    [pairPtr](bool value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
-                Str value = Str((bool)props["value"]);
-                fieldInfos.Append(new PROPERTY_BOOL(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
-            } else if (!Str::Cmp(type, "point")) {
-#ifdef NEW_PROPERTY_SYSTEM
-                Point value = props["value"];
+            } else if (!Str::Cmp(type, "float")) {
+                float value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Point>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Point>()), value, desc, PropertyInfo::Editor);
-                fieldInfos.Append(propInfo);
-#else
-                Point point = props["value"];
-                Str value = point.ToString();
-                fieldInfos.Append(new PROPERTY_POINT(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
-            } else if (!Str::Cmp(type, "rect")) {
-#ifdef NEW_PROPERTY_SYSTEM
-                Rect value = props["value"];
-                fieldValues.Set(name, value);
+                auto pairPtr = fieldValues.Get(name);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Rect>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Rect>()), value, desc, PropertyInfo::Editor);
-                fieldInfos.Append(propInfo);
-#else
-                Rect rect = props["value"];
-                Str value = rect.ToString();
-                fieldInfos.Append(new PROPERTY_RECT(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
+                if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
+                    float minimum = props["minimum"];
+                    float maximum = props["maximum"];
+                    float step = props["step"];
+
+                    Rangef range(minimum, maximum, step);
+                    if (step == 0.0f) {
+                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
+                    }
+
+                    auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), new PropertyLambdaAccessorImpl<Class, float>(
+                        [pairPtr]() { return pairPtr->second.As<float>(); },
+                        [pairPtr](float value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+                    propInfo.SetRange(minimum, maximum, step);
+
+                    fieldInfos.Append(propInfo);
+                } else {
+                    auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), new PropertyLambdaAccessorImpl<Class, float>(
+                        [pairPtr]() { return pairPtr->second.As<float>(); },
+                        [pairPtr](float value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
+                    fieldInfos.Append(propInfo);
+                }
             } else if (!Str::Cmp(type, "vec2")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 Vec2 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec2>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec2>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Vec2>::GetType(), new PropertyLambdaAccessorImpl<Class, Vec2, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Vec2>(); },
+                    [pairPtr](const Vec2 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
-                Vec2 vec2 = props["value"];
-                Str value = vec2.ToString();
-                fieldInfos.Append(new PROPERTY_VEC2(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
             } else if (!Str::Cmp(type, "vec3")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 Vec3 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec3>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Vec3>::GetType(), new PropertyLambdaAccessorImpl<Class, Vec3, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Vec3>(); },
+                    [pairPtr](const Vec3 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
-                Vec3 vec3 = props["value"];
-                Str value = vec3.ToString();
-                fieldInfos.Append(new PROPERTY_VEC3(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
             } else if (!Str::Cmp(type, "vec4")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 Vec4 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Vec4>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Vec4>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Vec4>::GetType(), new PropertyLambdaAccessorImpl<Class, Vec4, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Vec4>(); },
+                    [pairPtr](const Vec4 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
-                Vec4 vec4 = props["value"];
-                Str value = vec4.ToString();
-                fieldInfos.Append(new PROPERTY_VEC4(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
             } else if (!Str::Cmp(type, "color3")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 Color3 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Color3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Color3>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Color3>::GetType(), new PropertyLambdaAccessorImpl<Class, Color3, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Color3>(); },
+                    [pairPtr](const Color3 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
-                Color3 color3 = props["value"];
-                Str value = color3.ToString();
-                fieldInfos.Append(new PROPERTY_COLOR3(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
             } else if (!Str::Cmp(type, "color4")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 Color4 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Color4>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Color4>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Color4>::GetType(), new PropertyLambdaAccessorImpl<Class, Color4, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Color4>(); },
+                    [pairPtr](const Color4 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
-                Color4 color4 = props["value"];
-                Str value = color4.ToString();
-                fieldInfos.Append(new PROPERTY_COLOR4(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
             } else if (!Str::Cmp(type, "angles")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 Angles value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Angles>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Angles>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Angles>::GetType(), new PropertyLambdaAccessorImpl<Class, Angles, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Angles>(); },
+                    [pairPtr](const Angles &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
-                Angles angles = props["value"];
-                Str value = angles.ToString();
-                fieldInfos.Append(new PROPERTY_ANGLES(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
+            } else if (!Str::Cmp(type, "quat")) {
+                Quat value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Quat>::GetType(), new PropertyLambdaAccessorImpl<Class, Quat, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Quat>(); },
+                    [pairPtr](const Quat &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
+                fieldInfos.Append(propInfo);
+            } else if (!Str::Cmp(type, "mat2")) {
+                Mat2 value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Mat2>::GetType(), new PropertyLambdaAccessorImpl<Class, Mat2, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Mat2>(); },
+                    [pairPtr](const Mat2 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
+                fieldInfos.Append(propInfo);
             } else if (!Str::Cmp(type, "mat3")) {
-#ifdef NEW_PROPERTY_SYSTEM
                 Mat3 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<Mat3>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<Mat3>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Mat3>::GetType(), new PropertyLambdaAccessorImpl<Class, Mat3, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Mat3>(); },
+                    [pairPtr](const Mat3 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
-                Mat3 mat3 = props["value"];
-                Str value = mat3.ToString();
-                fieldInfos.Append(new PROPERTY_MAT3(name, label, desc, value.c_str(), PropertyInfo::Editor));
-#endif
-            } else if (!Str::Cmp(type, "object")) {
-#ifdef NEW_PROPERTY_SYSTEM
-                const char *classname = props["classname"];
-                MetaObject *metaObject = Object::FindMetaObject(classname);
-                ObjectRef value = ObjectRef(*metaObject, Guid::FromString((const char *)props["value"]));
+            } else if (!Str::Cmp(type, "mat3x4")) {
+                Mat3x4 value = props["value"];
                 fieldValues.Set(name, value);
 
-                auto propInfo = PropertyInfo(name, PropertyTypeID<ObjectRef>::GetType(), (size_t)(&fieldValues.Get(name)->second.As<ObjectRef>()), value, desc, PropertyInfo::Editor);
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Mat3x4>::GetType(), new PropertyLambdaAccessorImpl<Class, Mat3x4, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Mat3x4>(); },
+                    [pairPtr](const Mat3x4 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
                 fieldInfos.Append(propInfo);
-#else
+            } else if (!Str::Cmp(type, "mat4")) {
+                Mat4 value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Mat4>::GetType(), new PropertyLambdaAccessorImpl<Class, Mat4, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Mat4>(); },
+                    [pairPtr](const Mat4 &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
+                fieldInfos.Append(propInfo);
+            } else if (!Str::Cmp(type, "point")) {
+                Point value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Point>::GetType(), new PropertyLambdaAccessorImpl<Class, Point, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Point>(); },
+                    [pairPtr](const Point &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
+                fieldInfos.Append(propInfo);
+            } else if (!Str::Cmp(type, "rect")) {
+                Rect value = props["value"];
+                fieldValues.Set(name, value);
+
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Rect>::GetType(), new PropertyLambdaAccessorImpl<Class, Rect, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Rect>(); },
+                    [pairPtr](const Rect &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
+                fieldInfos.Append(propInfo);
+            } else if (!Str::Cmp(type, "string")) {
+                Str value = (const char *)props["value"];
+                fieldValues.Set(name, value);
+
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Str>::GetType(), new PropertyLambdaAccessorImpl<Class, Str, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Str>(); },
+                    [pairPtr](const Str &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+
+                fieldInfos.Append(propInfo);
+            } else if (!Str::Cmp(type, "object")) {
                 const char *classname = props["classname"];
                 MetaObject *metaObject = Object::FindMetaObject(classname);
-                if (metaObject) {
-                    fieldInfos.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertyInfo::Editor));
-                }
-#endif
+                Guid value = Guid::FromString((const char *)props["value"]);
+                fieldValues.Set(name, value);
+
+                auto pairPtr = fieldValues.Get(name);
+
+                auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), new PropertyLambdaAccessorImpl<Class, Guid, MixedPropertyTrait>(
+                    [pairPtr]() { return pairPtr->second.As<Guid>(); },
+                    [pairPtr](const Guid &value) { pairPtr->second = value; }), value, desc, PropertyInfo::Editor);
+                propInfo.SetMetaObject(metaObject);
+
+                fieldInfos.Append(propInfo);
             }
         };
 
@@ -356,12 +356,6 @@ void ComScript::Purge(bool chainPurge) {
 
 void ComScript::Init() {
     Component::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Guid scriptGuid = props->Get("script").As<Guid>();
-
-    ChangeScript(scriptGuid);
-#endif
 
     sandboxName = GetGuid().ToString();
 
@@ -450,58 +444,74 @@ bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxN
 }
 
 void ComScript::SetScriptProperties() {
-#ifndef NEW_PROPERTY_SYSTEM
     LuaCpp::Selector properties = sandbox["properties"];
 
-    for (int i = 0; i < fieldInfos.Count(); ++i) {
-        const BE1::PropertyInfo *propInfo = fieldInfos[i];
+    for (int i = 0; i < fieldInfos.Count(); i++) {
+        const BE1::PropertyInfo *propInfo = &fieldInfos[i];
 
         const char *name = propInfo->GetName();
-        const PropertyInfo::Type type = propInfo->GetType();
+        const Variant::Type type = propInfo->GetType();
         
         switch (type) {
-        case PropertyInfo::StringType:
-            properties[name]["value"] = props->Get(name).As<Str>().c_str();
+        case Variant::IntType:
+            properties[name]["value"] = GetProperty(name).As<int>();
             break;
-        case PropertyInfo::FloatType:
-            properties[name]["value"] = props->Get(name).As<float>();
+        case Variant::Int64Type:
+            properties[name]["value"] = GetProperty(name).As<int64_t>();
             break;
-        case PropertyInfo::IntType:
-        case PropertyInfo::EnumType:
-            properties[name]["value"] = props->Get(name).As<int>();
+        case Variant::BoolType:
+            properties[name]["value"] = GetProperty(name).As<bool>();
             break;
-        case PropertyInfo::BoolType:
-            properties[name]["value"] = props->Get(name).As<bool>();
+        case Variant::FloatType:
+            properties[name]["value"] = GetProperty(name).As<float>();
             break;
-        case PropertyInfo::PointType:
-            (Point &)properties[name]["value"] = props->Get(name).As<Point>();
+        case Variant::DoubleType:
+            properties[name]["value"] = GetProperty(name).As<double>();
             break;
-        case PropertyInfo::RectType:
-            (Rect &)properties[name]["value"] = props->Get(name).As<Rect>();
+        case Variant::Vec2Type:
+            (Vec2 &)properties[name]["value"] = GetProperty(name).As<Vec2>();
             break;
-        case PropertyInfo::Vec2Type:
-            (Vec2 &)properties[name]["value"] = props->Get(name).As<Vec2>();
+        case Variant::Vec3Type:
+            (Vec3 &)properties[name]["value"] = GetProperty(name).As<Vec3>();
             break;
-        case PropertyInfo::Vec3Type:
-            (Vec3 &)properties[name]["value"] = props->Get(name).As<Vec3>();
+        case Variant::Vec4Type:
+            (Vec4 &)properties[name]["value"] = GetProperty(name).As<Vec4>();
             break;
-        case PropertyInfo::Vec4Type:
-            (Vec4 &)properties[name]["value"] = props->Get(name).As<Vec4>();
+        case Variant::Color3Type:
+            (Color3 &)properties[name]["value"] = GetProperty(name).As<Color3>();
             break;
-        case PropertyInfo::Color3Type:
-            (Color3 &)properties[name]["value"] = props->Get(name).As<Color3>();
+        case Variant::Color4Type:
+            (Color4 &)properties[name]["value"] = GetProperty(name).As<Color4>();
             break;
-        case PropertyInfo::Color4Type:
-            (Color4 &)properties[name]["value"] = props->Get(name).As<Color4>();
+        case Variant::AnglesType:
+            (Angles &)properties[name]["value"] = GetProperty(name).As<Angles>();
             break;
-        case PropertyInfo::AnglesType:
-            (Angles &)properties[name]["value"] = props->Get(name).As<Angles>();
+        case Variant::QuatType:
+            (Quat &)properties[name]["value"] = GetProperty(name).As<Quat>();
             break;
-        case PropertyInfo::Mat3Type:
-            (Mat3 &)properties[name]["value"] = props->Get(name).As<Mat3>();
+        case Variant::Mat2Type:
+            (Mat2 &)properties[name]["value"] = GetProperty(name).As<Mat2>();
             break;
-        case PropertyInfo::ObjectType: {
-            Guid objectGuid = props->Get(name).As<Guid>();
+        case Variant::Mat3Type:
+            (Mat3 &)properties[name]["value"] = GetProperty(name).As<Mat3>();
+            break;
+        case Variant::Mat3x4Type:
+            (Mat3x4 &)properties[name]["value"] = GetProperty(name).As<Mat3x4>();
+            break;
+        case Variant::Mat4Type:
+            (Mat4 &)properties[name]["value"] = GetProperty(name).As<Mat4>();
+            break;
+        case Variant::PointType:
+            (Point &)properties[name]["value"] = GetProperty(name).As<Point>();
+            break;
+        case Variant::RectType:
+            (Rect &)properties[name]["value"] = GetProperty(name).As<Rect>();
+            break;
+        case Variant::StrType:
+            properties[name]["value"] = GetProperty(name).As<Str>().c_str();
+            break;
+        case Variant::GuidType: {
+            Guid objectGuid = GetProperty(name).As<Guid>();
             Object *object = Object::FindInstance(objectGuid);
             if (object) {
                 properties[name]["value"] = object;
@@ -519,7 +529,6 @@ void ComScript::SetScriptProperties() {
             break;
         }
     }
-#endif
 }
 
 void ComScript::Awake() {
@@ -601,20 +610,7 @@ void ComScript::OnApplicationPause(bool pause) {
 }
 
 void ComScript::ScriptReloaded() {
-    SetScriptGuid(props->Get("script").As<Guid>());
-}
-
-void ComScript::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "script")) {
-        SetScriptGuid(props->Get("script").As<Guid>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
+    SetScriptGuid(GetProperty("script").As<Guid>());
 }
 
 Guid ComScript::GetScriptGuid() const {
@@ -629,19 +625,9 @@ void ComScript::SetScriptGuid(const Guid &guid) {
 
     ChangeScript(guid);
 
-    EmitSignal(&Properties::SIG_PropertyUpdated);
-}
-
-ObjectRef ComScript::GetScriptRef() const {
-    return ObjectRef(ScriptAsset::metaObject, scriptAsset ? scriptAsset->GetGuid() : Guid::zero);
-}
-
-void ComScript::SetScriptRef(const ObjectRef &scriptRef) {
-    InitPropertyInfoImpl(scriptRef.objectGuid);
-
-    ChangeScript(scriptRef.objectGuid);
-
-    EmitSignal(&Properties::SIG_PropertyUpdated);
+    if (IsInitialized()) {
+        EmitSignal(&Serializable::SIG_PropertyUpdated);
+    }
 }
 
 BE_NAMESPACE_END

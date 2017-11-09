@@ -25,24 +25,14 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Cylinder Collider", ComCylinderCollider, ComCollider)
 BEGIN_EVENTS(ComCylinderCollider)
 END_EVENTS
-BEGIN_PROPERTIES(ComCylinderCollider)
-    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_FLOAT("radius", "Radius", "", 1.0f, PropertyInfo::Editor),
-    PROPERTY_FLOAT("height", "Height", "", 1.0f, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComCylinderCollider::RegisterProperties() {
-    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Radius", float, radius, 1.f, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Height", float, height, 1.f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("height", "Height", float, height, 1.f, "", PropertyInfo::Editor);
 }
-#endif
 
 ComCylinderCollider::ComCylinderCollider() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCylinderCollider::PropertyChanged);
-#endif
 }
 
 ComCylinderCollider::~ComCylinderCollider() {
@@ -50,12 +40,6 @@ ComCylinderCollider::~ComCylinderCollider() {
 
 void ComCylinderCollider::Init() {
     ComCollider::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    center = props->Get("center").As<Vec3>();
-    radius = props->Get("radius").As<float>();
-    height = props->Get("height").As<float>();
-#endif
 
     // Create collider based on transformed cylinder
     ComTransform *transform = GetEntity()->GetTransform();
@@ -103,29 +87,6 @@ void ComCylinderCollider::DrawGizmos(const SceneView::Parms &sceneView, bool sel
         renderWorld->SetDebugColor(Color4::orange, Color4::zero);
         renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + CentiToUnit(0.25f), 1.25f, true);
     }
-}
-
-void ComCylinderCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "center")) {
-        center = props->Get("center").As<Vec3>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "radius")) {
-        radius = props->Get("radius").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "height")) {
-        height = props->Get("height").As<float>();
-        return;
-    }
-
-    ComCollider::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

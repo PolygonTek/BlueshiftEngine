@@ -25,26 +25,15 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Hinge Joint", ComHingeJoint, ComJoint)
 BEGIN_EVENTS(ComHingeJoint)
 END_EVENTS
-BEGIN_PROPERTIES(ComHingeJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_ANGLES("angles", "Angles", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_FLOAT("motorSpeed", "Motor Speed", "", 0.f, PropertyInfo::Editor),
-    PROPERTY_FLOAT("maxMotorImpulse", "Max Motor Impulse", "", 0.f, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComHingeJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("motorSpeed", "Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertyInfo::Editor);
 }
-#endif
 
 ComHingeJoint::ComHingeJoint() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComHingeJoint::PropertyChanged);
-#endif
 }
 
 ComHingeJoint::~ComHingeJoint() {
@@ -52,14 +41,6 @@ ComHingeJoint::~ComHingeJoint() {
 
 void ComHingeJoint::Init() {
     ComJoint::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    anchor = props->Get("anchor").As<Vec3>();
-    axis = props->Get("angles").As<Angles>().ToMat3();
-    axis.FixDegeneracies();
-    motorSpeed = props->Get("motorSpeed").As<float>();
-    maxMotorImpulse = props->Get("maxMotorImpulse").As<float>();
-#endif
 
     // Mark as initialized
     SetInitialized(true);
@@ -112,34 +93,6 @@ void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected)
     renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5), worldOrigin + worldAxis[0] * CentiToUnit(5), 1);
     renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(5), worldOrigin + worldAxis[1] * CentiToUnit(5), 1);
     renderWorld->DebugLine(worldOrigin - worldAxis[2] * CentiToUnit(10), worldOrigin + worldAxis[2] * CentiToUnit(10), 1);
-}
-
-void ComHingeJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "anchor")) {
-        SetAnchor(props->Get("anchor").As<Vec3>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "angles")) {
-        SetAngles(props->Get("angles").As<Angles>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "motorSpeed")) {
-        SetMotorSpeed(props->Get("motorSpeed").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "maxMotorImpulse")) {
-        SetMaxMotorImpulse(props->Get("maxMotorImpulse").As<float>());
-        return;
-    }
-    
-    ComJoint::PropertyChanged(classname, propName);
 }
 
 const Vec3 &ComHingeJoint::GetAnchor() const {

@@ -80,11 +80,8 @@ public:
 
     bool                        IsPrefabSource() const { return prefab; }
 
-    Guid                        GetPrefabSource() const;
-    void                        SetPrefabSource(const Guid &prefabSourceGuid);
-
-    ObjectRef                   GetPrefabSourceRef() const;
-    void                        SetPrefabSourceRef(const ObjectRef &prefabSourceRef);
+    Guid                        GetPrefabSourceGuid() const;
+    void                        SetPrefabSourceGuid(const Guid &prefabSourceGuid);
 
     GameWorld *                 GetGameWorld() const { return gameWorld; }
 
@@ -106,9 +103,6 @@ public:
 
     Guid                        GetParentGuid() const;
     void                        SetParentGuid(const Guid &parentGuid);
-
-    ObjectRef                   GetParentRef() const;
-    void                        SetParentRef(const ObjectRef &parentRef);
 
                                 /// Gets the children by depth first order
     void                        GetChildren(EntityPtrArray &children) const;
@@ -190,7 +184,7 @@ public:
                                 /// Creates an entity by JSON text.
                                 /// Just initialize properties of an entity and it's components.
                                 /// Later this have to be initialized by it's properties.
-    static Entity *             CreateEntity(Json::Value &data);
+    static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr);
 
                                 /// Makes copy of JSON value of an entity and its children and then replace each GUID of entity/components to the new one
     static Json::Value          CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap);
@@ -209,8 +203,6 @@ public:
     
 protected:
     virtual void                Event_ImmediateDestroy() override;
-
-    void                        PropertyChanged(const char *classname, const char *propName);
 
     Str                         name;           // Entity name
     int                         nameHash;       // Hash key for gameWorld->entityHash

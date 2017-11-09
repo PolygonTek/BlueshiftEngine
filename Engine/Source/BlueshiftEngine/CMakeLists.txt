@@ -415,7 +415,6 @@ set(ENGINE_FILES
 
   Private/Core/Event.cpp
   Private/Core/Object.cpp
-  Private/Core/Property.cpp
   Private/Core/Serializable.cpp
   Private/Core/Signal.cpp
   Private/Core/SignalObject.cpp

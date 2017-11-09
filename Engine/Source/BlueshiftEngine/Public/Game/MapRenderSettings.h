@@ -41,15 +41,10 @@ public:
 
     void                        Serialize(Json::Value &value) const;
 
-    Guid                        GetSkyboxMaterial() const;
-    void                        SetSkyboxMaterial(const Guid &materialGuid);
-
-    ObjectRef                   GetSkyboxMaterialRef() const;
-    void                        SetSkyboxMaterialRef(const ObjectRef &materialRef);
+    Guid                        GetSkyboxMaterialGuid() const;
+    void                        SetSkyboxMaterialGuid(const Guid &materialGuid);
 
 protected:
-    void                        PropertyChanged(const char *classname, const char *propName);
-
     void                        ChangeSkyboxMaterial(const Guid &materialGuid);
 
     GameWorld *                 gameWorld;

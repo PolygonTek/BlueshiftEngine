@@ -25,13 +25,8 @@ static MetaObject *             staticTypeList = nullptr;
 static Hierarchy<MetaObject>    classHierarchy;
 static int                      eventCallbackMemory = 0;
 
-#ifdef NEW_PROPERTY_SYSTEM
 MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname, 
     Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap) {
-#else
-MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname,
-    Object *(*CreateInstance)(const Guid &guid), PropertyInfo *propertyInfos, EventInfo<Object> *eventMap) {
-#endif
     this->visualname            = visualname;
     this->classname             = classname;
     this->superclassname        = superclassname;
@@ -39,9 +34,6 @@ MetaObject::MetaObject(const char *visualname, const char *classname, const char
     this->hierarchyIndex        = 0;
     this->lastChildIndex        = 0;
     this->funcCreateInstance    = CreateInstance;
-#ifndef NEW_PROPERTY_SYSTEM
-    this->propertyInfos         = propertyInfos;
-#endif
     this->eventMap              = eventMap;
     this->eventCallbacks        = nullptr;
     this->freeEventCallbacks    = false;
@@ -107,15 +99,6 @@ void MetaObject::Init() {
     }
     
     node.SetOwner(this);
-
-#ifndef NEW_PROPERTY_SYSTEM
-    // property info array 의 hash 를 작성
-    PropertyInfo *propInfo = propertyInfos;
-    for (int i = 0; propInfo->flags != PropertyInfo::Empty; i++, propInfo++) {
-        int hash = propertyInfoHash.GenerateHash(propInfo->name, false);
-        propertyInfoHash.Add(hash, i);
-    }
-#endif
 
     // 각 클래스별로 child 노드 개수를 lastChildIndex 에 담는다
     for (MetaObject *t = super; t != nullptr; t = t->super) {
@@ -204,7 +187,6 @@ void MetaObject::GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const {
     Array<Str> names;
 
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
-#ifdef NEW_PROPERTY_SYSTEM
         for (int index = 0; index < t->propertyInfos.Count(); index++) {
             const PropertyInfo &propInfo = t->propertyInfos[index];
             const char *propName = propInfo.GetName();
@@ -214,20 +196,8 @@ void MetaObject::GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const {
                 propertyInfos.Append(propInfo);
             }
         }
-#else
-        for (const PropertyInfo *propInfo = t->propertyInfos; propInfo->flags != PropertyInfo::Empty; propInfo++) {
-            const char *propName = propInfo->GetName();
-
-            if (!names.Find(propName)) {
-                names.Append(propName);
-                propertyInfos.Append(*propInfo);
-            }
-        }
-#endif
     }
 }
-
-#ifdef NEW_PROPERTY_SYSTEM 
 
 PropertyInfo &MetaObject::RegisterProperty(const PropertyInfo &propInfo) {
     int index = propertyInfos.Append(propInfo);
@@ -236,20 +206,12 @@ PropertyInfo &MetaObject::RegisterProperty(const PropertyInfo &propInfo) {
     return propertyInfos[index];
 }
 
-#endif
-
 //-----------------------------------------------------------------------------------------------
 
 const EventDef EV_ImmediateDestroy("<immediatedestroy>");
 const EventDef EV_Destroy("destroy");
 
 ABSTRACT_DECLARATION("Object", Object, nullptr)
-
-BEGIN_PROPERTIES(Object)
-    PROPERTY_STRING("classname", "Classname", "", "", PropertyInfo::ReadOnly),
-    PROPERTY_STRING("guid", "GUID", "GUID", Guid::zero, PropertyInfo::ReadOnly),
-END_PROPERTIES
-
 BEGIN_EVENTS(Object)
     EVENT(EV_Destroy, Object::Event_Destroy),
     EVENT(EV_ImmediateDestroy, Object::Event_ImmediateDestroy),
@@ -261,12 +223,10 @@ Array<MetaObject *> Object::types;  // alphabetical order
 static HashTable<Guid, Object *> instanceHash;
 static PlatformAtomic instanceCounter(0);
 
-#ifdef NEW_PROPERTY_SYSTEM
 void Object::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Classname", Str, ClassName, SetClassName, "Object", "", PropertyInfo::ReadOnly),
-    REGISTER_PROPERTY("GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadOnly);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnly),
+    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", 0);
 }
-#endif
 
 void Object::InitInstance(Guid guid) {
     if (guid.IsZero()) {
@@ -287,7 +247,6 @@ void Object::InitInstance(Guid guid) {
 
     this->guid = guid;
     this->instanceID = instanceCounter.GetValue();
-    this->props = new Properties(this);
 
     instanceCounter++;
 
@@ -296,7 +255,6 @@ void Object::InitInstance(Guid guid) {
 }
 
 Object::~Object() {
-    SAFE_DELETE(props);
 }
 
 void Object::Init() {

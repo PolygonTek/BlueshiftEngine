@@ -24,12 +24,9 @@ const SignalDef AssetImporter::SIG_ApplyChanged("AssetImporter::ApplyChanged");
 ABSTRACT_DECLARATION("AssetImporter", AssetImporter, Object)
 BEGIN_EVENTS(AssetImporter)
 END_EVENTS
-BEGIN_PROPERTIES(AssetImporter)
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
-void AssetImporter::RegisterProperties() {}
-#endif
+void AssetImporter::RegisterProperties() {
+}
 
 AssetImporter::AssetImporter() {
     asset = nullptr;
@@ -55,7 +52,7 @@ void AssetImporter::RevertChanged() {
 
     if (validRootNode) {
         Json::Value importerValue = metaDataValue["importer"];
-        props->Deserialize(importerValue);
+        Deserialize(importerValue);
     }
 }
 

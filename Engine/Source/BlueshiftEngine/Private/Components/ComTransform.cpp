@@ -24,24 +24,14 @@ const SignalDef ComTransform::SIG_TransformUpdated("ComTransform::TransformUpdat
 OBJECT_DECLARATION("Transform", ComTransform, Component)
 BEGIN_EVENTS(ComTransform)
 END_EVENTS
-BEGIN_PROPERTIES(ComTransform)
-    PROPERTY_VEC3("origin", "Origin", "xyz position in local space", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_ANGLES("angles", "Angles", "yaw, pitch, roll in degree in local space", Angles(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_VEC3("scale", "Scale", "xyz scale in local space", Vec3(1, 1, 1), PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComTransform::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero, "xyz position in local space", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, "yaw, pitch, roll in degree in local space", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one, "xyz scale in local space", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("origin", "Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero, "xyz position in local space", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, "yaw, pitch, roll in degree in local space", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("scale", "Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one, "xyz scale in local space", PropertyInfo::Editor);
 }
-#endif
 
 ComTransform::ComTransform() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComTransform::PropertyChanged);
-#endif
 }
 
 ComTransform::~ComTransform() {
@@ -62,13 +52,6 @@ ComTransform *ComTransform::GetParent() const {
 void ComTransform::Init() {
     Component::Init();
 
-#ifndef NEW_PROPERTY_SYSTEM
-    localOrigin = props->Get("origin").As<Vec3>();
-    localScale = props->Get("scale").As<Vec3>();
-    localAxis = props->Get("angles").As<Angles>().ToMat3();
-    localAxis.FixDegeneracies();
-#endif
-
     localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
     // Re-calculate world matrix from the hierarchy
@@ -88,38 +71,44 @@ void ComTransform::Init() {
 void ComTransform::SetLocalOrigin(const Vec3 &origin) {
     this->localOrigin = origin;
 
-    localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
+    if (IsInitialized()) {
+        localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
-    RecalcWorldMatrix();
+        RecalcWorldMatrix();
 
-    EmitSignal(&SIG_TransformUpdated, this);
+        EmitSignal(&SIG_TransformUpdated, this);
 
-    UpdateChildren();
+        UpdateChildren();
+    }
 }
 
 void ComTransform::SetLocalScale(const Vec3 &scale) {
     this->localScale = scale;
 
-    localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
+    if (IsInitialized()) {
+        localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
-    RecalcWorldMatrix();
+        RecalcWorldMatrix();
 
-    EmitSignal(&SIG_TransformUpdated, this);
+        EmitSignal(&SIG_TransformUpdated, this);
 
-    UpdateChildren();
+        UpdateChildren();
+    }
 }
 
 void ComTransform::SetLocalAxis(const Mat3 &axis) {
     this->localAxis = axis;
     this->localAxis.FixDegeneracies();
 
-    localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
+    if (IsInitialized()) {
+        localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
-    RecalcWorldMatrix();
+        RecalcWorldMatrix();
 
-    EmitSignal(&SIG_TransformUpdated, this);
+        EmitSignal(&SIG_TransformUpdated, this);
 
-    UpdateChildren();
+        UpdateChildren();
+    }
 }
 
 void ComTransform::SetLocalTransform(const Vec3 &origin, const Vec3 &scale, const Mat3 &axis) {
@@ -228,29 +217,6 @@ void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren(true);
-}
-
-void ComTransform::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "origin")) {
-        SetLocalOrigin(props->Get("origin").As<Vec3>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "scale")) { 
-        SetLocalScale(props->Get("scale").As<Vec3>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "angles")) {
-        SetLocalAngles(props->Get("angles").As<Angles>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

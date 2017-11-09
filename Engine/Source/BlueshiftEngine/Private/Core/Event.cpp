@@ -65,6 +65,9 @@ EventDef::EventDef(const char *command, bool guiEvent, const char *formatSpec, c
         case EventArg::IntType:
             this->argSize += sizeof(int);
             break;
+        case EventArg::BoolType:
+            this->argSize += sizeof(bool);
+            break;
         case EventArg::PointType:
             this->argSize += sizeof(Point);
             break;
@@ -264,6 +267,11 @@ Event *Event::Alloc(const EventDef *evdef, int numArgs, va_list args) {
                 *reinterpret_cast<int *>(dataPtr) = *reinterpret_cast<const int *>(arg->pointer);
             }
             break;
+        case EventArg::BoolType:
+            if (arg->pointer) {
+                *reinterpret_cast<bool *>(dataPtr) = *reinterpret_cast<const bool *>(arg->pointer);
+            }
+            break;
         case EventArg::PointType:
             if (arg->pointer) {
                 *reinterpret_cast<Point *>(dataPtr) = *reinterpret_cast<const Point *>(arg->pointer);
@@ -390,6 +398,9 @@ void Event::ServiceEvent(Event *event) {
             break;
         case EventArg::IntType:
             *reinterpret_cast<float **>(&argPtrs[i]) = reinterpret_cast<float *>(&data[offset]);
+            break;
+        case EventArg::BoolType:
+            *reinterpret_cast<bool **>(&argPtrs[i]) = reinterpret_cast<bool *>(&data[offset]);
             break;
         case EventArg::PointType:
             *reinterpret_cast<Point **>(&argPtrs[i]) = reinterpret_cast<Point *>(&data[offset]);

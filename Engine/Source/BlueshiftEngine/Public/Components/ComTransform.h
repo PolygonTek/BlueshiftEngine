@@ -74,7 +74,6 @@ protected:
     void                    RecalcLocalMatrix();
     void                    UpdateChildren(bool ignorePhysicsEntity = false);
     void                    PhysicsUpdated(const PhysRigidBody *body);
-    void                    PropertyChanged(const char *classname, const char *propName);
 
     Vec3                    localOrigin;
     Vec3                    localScale;

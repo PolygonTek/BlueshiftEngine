@@ -27,17 +27,11 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Particle System", ComParticleSystem, ComRenderable)
 BEGIN_EVENTS(ComParticleSystem)
 END_EVENTS
-BEGIN_PROPERTIES(ComParticleSystem)
-    PROPERTY_OBJECT("particleSystem", "Particle System", "", GuidMapper::defaultParticleSystemGuid, ParticleSystemAsset::metaObject, PropertyInfo::Editor),
-    PROPERTY_BOOL("playOnAwake", "Play On Awake", "", true, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComParticleSystem::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Particle System", ObjectRef, GetParticleSystemRef, SetParticleSystemRef, ObjectRef(ParticleSystemAsset::metaObject, GuidMapper::defaultParticleSystemGuid), "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Play On Awake", bool, playOnAwake, true, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("particleSystem", "Particle System", Guid, GetParticleSystemGuid, SetParticleSystemGuid, GuidMapper::defaultParticleSystemGuid, "", PropertyInfo::Editor).SetMetaObject(&ParticleSystemAsset::metaObject);
+    REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, true, "", PropertyInfo::Editor);
 }
-#endif
 
 ComParticleSystem::ComParticleSystem() {
     particleSystemAsset = nullptr;
@@ -45,10 +39,6 @@ ComParticleSystem::ComParticleSystem() {
     spriteHandle = -1;
     spriteReferenceMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComParticleSystem::PropertyChanged);
-#endif
 }
 
 ComParticleSystem::~ComParticleSystem() {
@@ -91,14 +81,6 @@ void ComParticleSystem::Purge(bool chainPurge) {
 
 void ComParticleSystem::Init() {
     ComRenderable::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    playOnAwake = props->Get("playOnAwake").As<bool>();
-
-    const Guid particleSystemGuid = props->Get("particleSystem").As<Guid>();
-
-    ChangeParticleSystem(particleSystemGuid);
-#endif
 
     currentTime = 0;
     stopTime = 0;
@@ -728,45 +710,19 @@ void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComParticleSystem::ParticleSystemReloaded() {
-    SetParticleSystemGuid(props->Get("particleSystem").As<Guid>());
-}
-
-void ComParticleSystem::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "particleSystem")) {
-        SetParticleSystemGuid(props->Get("particleSystem").As<Guid>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "playOnAwake")) {
-        playOnAwake = props->Get("particleSystem").As<bool>();
-        return;
-    }
-
-    ComRenderable::PropertyChanged(classname, propName);
+    SetParticleSystemGuid(GetProperty("particleSystem").As<Guid>());
 }
 
 Guid ComParticleSystem::GetParticleSystemGuid() const {
-    const Str particleSystemPath = sceneEntity.particleSystem->GetHashName();
-    return resourceGuidMapper.Get(particleSystemPath);
+    if (sceneEntity.particleSystem) {
+        const Str particleSystemPath = sceneEntity.particleSystem->GetHashName();
+        return resourceGuidMapper.Get(particleSystemPath);
+    }
+    return Guid();
 }
 
 void ComParticleSystem::SetParticleSystemGuid(const Guid &guid) {
     ChangeParticleSystem(guid);
-
-    UpdateVisuals();
-}
-
-ObjectRef ComParticleSystem::GetParticleSystemRef() const {
-    const Str particleSystemPath = sceneEntity.particleSystem->GetHashName();
-    return ObjectRef(ParticleSystemAsset::metaObject, resourceGuidMapper.Get(particleSystemPath));
-}
-
-void ComParticleSystem::SetParticleSystemRef(const ObjectRef &particleSystemRef) {
-    ChangeParticleSystem(particleSystemRef.objectGuid);
 
     UpdateVisuals();
 }

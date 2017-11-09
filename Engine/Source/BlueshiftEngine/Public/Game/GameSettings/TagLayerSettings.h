@@ -36,7 +36,8 @@ public:
     int32_t                 FindLayer(const char *layerName) const;
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
+    Array<Str>              tags;
+    Array<Str>              layers;
 };
 
 BE_NAMESPACE_END

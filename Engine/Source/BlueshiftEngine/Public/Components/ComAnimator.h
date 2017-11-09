@@ -57,9 +57,6 @@ public:
     Guid                    GetAnimControllerGuid() const;
     void                    SetAnimControllerGuid(const Guid &animControllerGuid);
 
-    ObjectRef               GetAnimControllerRef() const;
-    void                    SetAnimControllerRef(const ObjectRef &animControllerRef);
-
 protected:
     virtual void            UpdateVisuals() override;
 
@@ -67,8 +64,6 @@ protected:
 
     void                    ChangeAnimController(const Guid &animControllerGuid);
     void                    AnimControllerReloaded();
-
-    void                    PropertyChanged(const char *classname, const char *propName);
 
     Animator                animator;
     AnimControllerAsset *   animControllerAsset;

@@ -25,22 +25,13 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Box Collider", ComBoxCollider, ComCollider)
 BEGIN_EVENTS(ComBoxCollider)
 END_EVENTS
-BEGIN_PROPERTIES(ComBoxCollider)
-    PROPERTY_VEC3("center", "Center", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_VEC3("extents", "Extents", "", Vec3(1, 1, 1), PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void ComBoxCollider::RegisterProperties() {
-    REGISTER_PROPERTY("Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Extents", Vec3, extents, Vec3::one, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("extents", "Extents", Vec3, extents, Vec3::one, "", PropertyInfo::Editor);
 }
-#endif
 
 ComBoxCollider::ComBoxCollider() {
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComBoxCollider::PropertyChanged);
-#endif
 }
 
 ComBoxCollider::~ComBoxCollider() {
@@ -48,11 +39,6 @@ ComBoxCollider::~ComBoxCollider() {
 
 void ComBoxCollider::Init() {
     ComCollider::Init();
-
-#ifndef NEW_PROPERTY_SYSTEM
-    center = props->Get("center").As<Vec3>();
-    extents = props->Get("extents").As<Vec3>();
-#endif
 
     // Create collider based on transformed box
     ComTransform *transform = GetEntity()->GetTransform();
@@ -97,24 +83,6 @@ void ComBoxCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selected
         renderWorld->SetDebugColor(Color4::orange, Color4::zero);
         renderWorld->DebugOBB(obb, 1.25f);
     }
-}
-
-void ComBoxCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "center")) { 
-        center = props->Get("center").As<Vec3>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "extents")) {
-        extents = props->Get("extents").As<Vec3>();
-        return;
-    }
-
-    ComCollider::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

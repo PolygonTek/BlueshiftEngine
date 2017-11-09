@@ -33,27 +33,16 @@ const SignalDef Entity::SIG_ComponentRemoved("Entity::ComponentRemoved", "a");
 OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
 END_EVENTS
-BEGIN_PROPERTIES(Entity)
-    PROPERTY_OBJECT("parent", "Parent", "parent entity", Guid::zero, Entity::metaObject, PropertyInfo::Editor),
-    PROPERTY_BOOL("prefab", "Prefab", "is prefab ?", false, PropertyInfo::Editor),
-    PROPERTY_OBJECT("prefabSource", "Prefab Source", "prefab source entity", Guid::zero, Entity::metaObject, PropertyInfo::Editor),
-    PROPERTY_STRING("name", "Name", "entity name", "Entity", PropertyInfo::Editor),
-    PROPERTY_STRING("tag", "Tag", "Tag", "Untagged", PropertyInfo::Editor),
-    PROPERTY_INT("layer", "Layer", "Layer", 0, PropertyInfo::Editor),
-    PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", false, PropertyInfo::Editor),
-END_PROPERTIES
 
-#ifdef NEW_PROPERTY_SYSTEM
 void Entity::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Parent", ObjectRef, GetParentRef, SetParentRef, ObjectRef(Entity::metaObject, Guid::zero), "Parent Entity", PropertyInfo::Editor);
-    REGISTER_PROPERTY("Prefab", bool, prefab, false, "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Prefab Source", ObjectRef, GetPrefabSourceRef, SetPrefabSourceRef, ObjectRef(Entity::metaObject, Guid::zero), "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Name", Str, GetName, SetName, "Entity", "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero, "Parent Entity", PropertyInfo::Editor).SetMetaObject(&Entity::metaObject);
+    REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false, "Is prefab ?", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&Entity::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity", "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::Editor);
 }
-#endif
 
 Entity::Entity() {
     gameWorld = nullptr;
@@ -64,10 +53,6 @@ Entity::Entity() {
     prefab = false;
     prefabSourceGuid = Guid::zero;
     initialized = false;
-
-#ifndef NEW_PROPERTY_SYSTEM
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&Entity::PropertyChanged);
-#endif
 }
 
 Entity::~Entity() {
@@ -106,27 +91,6 @@ void Entity::Event_ImmediateDestroy() {
 }
 
 void Entity::Init() {
-#ifndef NEW_PROPERTY_SYSTEM
-    name = props->Get("name").As<Str>();
-    tag = props->Get("tag").As<Str>();
-    layer = props->Get("layer").As<int>();
-    frozen = props->Get("frozen").As<bool>();
-
-    const Guid parentGuid = props->Get("parent").As<Guid>();
-    if (!parentGuid.IsZero()) {
-        Object *parentObject = Entity::FindInstance(parentGuid);
-        Entity *parent = parentObject ? parentObject->Cast<Entity>() : nullptr;
-        if (!parent) {
-            BE_WARNLOG(L"Couldn't find parent entity %hs of %hs\n", parentGuid.ToString(), name.c_str());
-        } else {
-            node.SetParent(parent->node);
-        }
-    }
-
-    prefab = props->Get("prefab").As<bool>();
-    prefabSourceGuid = props->Get("prefabSource").As<Guid>();
-#endif
-
     initialized = true;
 }
 
@@ -145,7 +109,7 @@ void Entity::InitComponents() {
 
     ComRenderable *renderable = GetComponent<ComRenderable>();
     if (renderable) {
-        renderable->props->Set("skipSelection", frozen);
+        renderable->SetProperty("skipSelection", frozen);
     }
 }
 
@@ -258,14 +222,14 @@ void Entity::OnApplicationPause(bool pause) {
 void Entity::Serialize(Json::Value &value) const {
     Json::Value componentsValue;
 
-    props->Serialize(value);
+    Serializable::Serialize(value);
 
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
             Json::Value componentValue;
-            component->props->Serialize(componentValue);
+            component->Serialize(componentValue);
 
             componentsValue.append(componentValue);
         }
@@ -386,65 +350,30 @@ void Entity::DestroyInstance(Entity *entity) {
     Object::DestroyInstance(entity);
 }
 
-void Entity::PropertyChanged(const char *classname, const char *propName) {
-    if (!initialized) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "name")) {
-        SetName(props->Get("name").As<Str>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "tag")) {
-        SetTag(props->Get("tag").As<Str>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "layer")) {
-        SetLayer(props->Get("tag").As<int>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "parent")) {
-        SetParentGuid(props->Get("parent").As<Guid>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "prefab")) {
-        prefab = props->Get("prefab").As<bool>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "prefabSource")) {
-        SetPrefabSource(props->Get("prefabSource").As<Guid>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "frozen")) {
-        SetFrozen(props->Get("frozen").As<bool>());
-        return;
-    }
-}
-
 void Entity::SetName(const Str &name) {
     this->name = name;
 
-    GetGameWorld()->OnEntityNameChanged(this);
+    if (initialized) {
+        GetGameWorld()->OnEntityNameChanged(this);
 
-    EmitSignal(&SIG_NameChanged, this, name);
+        EmitSignal(&SIG_NameChanged, this, name);
+    }
 }
 
 void Entity::SetTag(const Str &tag) {
     this->tag = tag;
 
-    GetGameWorld()->OnEntityTagChanged(this);
+    if (initialized) {
+        GetGameWorld()->OnEntityTagChanged(this);
+    }
 }
 
 void Entity::SetLayer(int layer) {
     this->layer = layer;
 
-    EmitSignal(&SIG_LayerChanged, this);
+    if (initialized) {
+        EmitSignal(&SIG_LayerChanged, this);
+    }
 }
 
 void Entity::SetParent(Entity *parentEntity) {
@@ -456,7 +385,7 @@ Guid Entity::GetParentGuid() const {
     if (parentEntity) {
         return parentEntity->GetGuid();
     }
-    return Guid::zero;
+    return Guid();
 }
 
 void Entity::SetParentGuid(const Guid &parentGuid) {
@@ -466,50 +395,38 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
     if (parentEntity) {
         node.SetParent(parentEntity->node);
     } else {
-        node.SetParent(gameWorld->GetEntityHierarchy());
+        if (gameWorld) {
+            node.SetParent(gameWorld->GetEntityHierarchy());
+        }
     }
 
-    EmitSignal(&SIG_ParentChanged, this, parentEntity);
+    if (initialized) {
+        EmitSignal(&SIG_ParentChanged, this, parentEntity);
+    }
 }
 
-ObjectRef Entity::GetParentRef() const {
-    Entity *parentEntity = node.GetParent();
-    Guid parentEntityGuid = parentEntity ? parentEntity->GetGuid() : Guid::zero;
-    return ObjectRef(Entity::metaObject, parentEntityGuid);
-}
-
-void Entity::SetParentRef(const ObjectRef &parenteRef) {
-    SetParentGuid(parenteRef.objectGuid);
-}
-
-Guid Entity::GetPrefabSource() const {
+Guid Entity::GetPrefabSourceGuid() const {
     return prefabSourceGuid;
 }
 
-void Entity::SetPrefabSource(const Guid &prefabSourceGuid) {
+void Entity::SetPrefabSourceGuid(const Guid &prefabSourceGuid) {
     this->prefabSourceGuid = prefabSourceGuid;
-}
-
-ObjectRef Entity::GetPrefabSourceRef() const {
-    return ObjectRef(Entity::metaObject, prefabSourceGuid);
-}
-
-void Entity::SetPrefabSourceRef(const ObjectRef &prefabSourceRef) {
-    prefabSourceGuid = prefabSourceRef.objectGuid;
 }
 
 void Entity::SetFrozen(bool frozen) {
     this->frozen = frozen;
 
-    ComRenderable *renderable = GetComponent<ComRenderable>();
-    if (renderable) {
-        renderable->props->Set("skipSelection", frozen);
-    }
+    if (initialized) {
+        ComRenderable *renderable = GetComponent<ComRenderable>();
+        if (renderable) {
+            renderable->SetProperty("skipSelection", frozen);
+        }
 
-    EmitSignal(&SIG_FrozenChanged, this, frozen);
+        EmitSignal(&SIG_FrozenChanged, this, frozen);
+    }
 }
 
-Entity *Entity::CreateEntity(Json::Value &entityValue) {
+Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld) {
     Guid entityGuid = Guid::FromString(entityValue.get("guid", Guid::zero.ToString()).asCString());
     if (entityGuid.IsZero()) {
         entityValue["guid"] = Guid::CreateGuid().ToString();
@@ -518,7 +435,8 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
     entityGuid = Guid::FromString(entityValue["guid"].asCString());
 
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
-    entity->props->Deserialize(entityValue);
+    entity->gameWorld = gameWorld;
+    entity->Deserialize(entityValue);
 
     Json::Value &componentsValue = entityValue["components"];
 
@@ -545,7 +463,7 @@ Entity *Entity::CreateEntity(Json::Value &entityValue) {
                     scriptComponent->InitPropertyInfo(componentValue);
                 }
 
-                component->props->Deserialize(componentValue);
+                component->Deserialize(componentValue);
 
                 entity->AddComponent(component);
             } else {
@@ -596,13 +514,13 @@ void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &r
         for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
             const auto &propInfo = propertyInfos[propIndex];
             
-            if (propInfo.GetType() == PropertyInfo::ObjectType) {
-                const Guid fromGuid = entity->props->Get(propInfo.GetName()).As<Guid>();
+            if (propInfo.GetType() == Variant::GuidType) {
+                const Guid fromGuid = entity->GetProperty(propInfo.GetName()).As<Guid>();
 
                 if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                    entity->props->Set(propInfo.GetName(), toGuid);
+                    entity->SetProperty(propInfo.GetName(), toGuid);
                 }
-            }            
+            }
         }
 
         for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
@@ -614,11 +532,11 @@ void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &r
             for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
                 const auto &propInfo = propertyInfos[propIndex];
 
-                if (propInfo.GetType() == PropertyInfo::ObjectType) {
-                    const Guid fromGuid = component->props->Get(propInfo.GetName()).As<Guid>();
+                if (propInfo.GetType() == Variant::GuidType) {
+                    const Guid fromGuid = component->GetProperty(propInfo.GetName()).As<Guid>();
 
                     if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                        component->props->Set(propInfo.GetName(), toGuid);
+                        component->SetProperty(propInfo.GetName(), toGuid);
                     }
                 }
             }

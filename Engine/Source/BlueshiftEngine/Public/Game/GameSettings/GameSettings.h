@@ -38,8 +38,6 @@ protected:
     void                    SetInitialized(bool init) { initialized = init; }
     void                    SetGameWorld(GameWorld *gameWorld) { this->gameWorld = gameWorld; }
 
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     bool                    initialized;
     GameWorld *             gameWorld;
 };

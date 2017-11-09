@@ -39,15 +39,10 @@ public:
     Guid                    GetMeshGuid() const;
     void                    SetMeshGuid(const Guid &guid);
 
-    ObjectRef               GetMeshRef() const;
-    void                    SetMeshRef(const ObjectRef &meshRef);
-
-    int                     NumMaterials() const;
+    int                     GetMaterialCount() const;
+    void                    SetMaterialCount(int count);
     Guid                    GetMaterialGuid(int index) const;
     void                    SetMaterialGuid(int index, const Guid &materialGuid);
-
-    ObjectRefArray          GetMaterialsRef() const;
-    void                    SetMaterialsRef(const ObjectRefArray &materialsRef);
 
     Material *              GetMaterial(int index) const;
     void                    SetMaterial(int index, const Material *material);
@@ -67,7 +62,6 @@ protected:
     virtual void            MeshUpdated() = 0;
 
     void                    MeshReloaded();
-    void                    PropertyChanged(const char *classname, const char *propName);
 
     MeshAsset *             meshAsset;
     Mesh *                  referenceMesh;

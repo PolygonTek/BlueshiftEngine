@@ -33,6 +33,7 @@ public:
 
     static const char VoidType      = '\0';
     static const char IntType       = 'i';
+    static const char BoolType      = 'b';
     static const char FloatType     = 'f';
     static const char PointType     = 'p';
     static const char RectType      = 'r';
@@ -45,6 +46,7 @@ public:
 
     EventArg() { type = IntType; pointer = 0; };
     EventArg(const int data) { type = IntType; intValue = data; };
+    EventArg(const bool data) { type = BoolType; boolValue = data; };
     EventArg(const float data) { type = FloatType; floatValue = data; };
     EventArg(const Point &data) { type = PointType; pointer = reinterpret_cast<intptr_t>(&data); };
     EventArg(const Rect &data) { type = RectType; pointer = reinterpret_cast<intptr_t>(&data); };
@@ -60,6 +62,7 @@ public:
     int                     type;
     union {
         intptr_t            pointer;        // pointer value
+        bool                boolValue;      // boolean value
         int                 intValue;       // integer value
         float               floatValue;     // float value
     };

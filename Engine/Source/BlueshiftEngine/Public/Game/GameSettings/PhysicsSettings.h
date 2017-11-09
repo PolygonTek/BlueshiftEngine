@@ -26,8 +26,16 @@ public:
 
     virtual void            Init() override;
 
+    Vec3                    GetGravity() const;
+    void                    SetGravity(const Vec3 &gravity);
+
+    int                     GetFilterMaskElement(int index) const;
+    void                    SetFilterMaskElement(int index, int mask);
+    int                     GetFilterMaskCount() const;
+    void                    SetFilterMaskCount(int count);
+
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
+    int                     numFilterMasks;
 };
 
 BE_NAMESPACE_END
