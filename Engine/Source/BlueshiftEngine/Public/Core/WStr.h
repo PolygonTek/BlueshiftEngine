@@ -95,6 +95,8 @@ public:
     explicit WStr(const uint64_t u);
     /// Construct from a float.
     explicit WStr(const float f);
+    /// Construct from a double.
+    explicit WStr(const double d);
     /// Assign a wide string.
     WStr &operator=(const WStr &a);
     /// Move a wide string.
@@ -519,6 +521,14 @@ BE_INLINE WStr::WStr(const uint64_t u) : WStr() {
 BE_INLINE WStr::WStr(const float f) : WStr() {
     wchar_t text[64];
     int l = WStr::snPrintf(text, COUNT_OF(text), L"%f", f);
+    EnsureAlloced(l + 1, false);
+    wcscpy(data, text);
+    len = l;
+}
+
+BE_INLINE WStr::WStr(const double d) : WStr() {
+    wchar_t text[64];
+    int l = WStr::snPrintf(text, COUNT_OF(text), L"%lf", d);
     EnsureAlloced(l + 1, false);
     wcscpy(data, text);
     len = l;

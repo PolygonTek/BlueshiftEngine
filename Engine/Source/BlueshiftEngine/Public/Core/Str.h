@@ -87,6 +87,8 @@ public:
     explicit Str(const uint64_t u);
     /// Constructs from a float.
     explicit Str(const float f);
+    /// Constructs from a double.
+    explicit Str(const double d);
     /// Assign a string.
     Str &operator=(const Str &rhs);
     /// Move a string.
@@ -506,6 +508,14 @@ BE_INLINE Str::Str(const uint64_t u) : Str() {
 BE_INLINE Str::Str(const float f) : Str() {
     char text[64];
     int l = Str::snPrintf(text, sizeof(text), "%f", f);
+    EnsureAlloced(l + 1, false);
+    strcpy(data, text);
+    len = l;
+}
+
+BE_INLINE Str::Str(const double d) : Str() {
+    char text[64];
+    int l = Str::snPrintf(text, sizeof(text), "%lf", d);
     EnsureAlloced(l + 1, false);
     strcpy(data, text);
     len = l;
