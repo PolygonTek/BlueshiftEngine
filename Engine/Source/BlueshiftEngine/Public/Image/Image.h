@@ -182,16 +182,16 @@ public:
     /// Destructor
     ~Image();
 
-                        /// Returns true if image has no pixel data
+                        /// Returns true if image has no pixel data.
     bool                IsEmpty() const { return pic == nullptr; }
 
                         /// Returns image format name.
     const char *        FormatName() const { return Image::FormatName(format); }
 
-                        /// Returns bytes per pixel
+                        /// Returns bytes per pixel.
     int                 BytesPerPixel() const { return Image::BytesPerPixel(format); }
 
-                        /// Returns bytes per block.
+                        /// Returns bytes per block for block compressed image.
     int                 BytesPerBlock() const { return Image::BytesPerBlock(format); }
 
                         /// Returns number of components.
@@ -269,26 +269,26 @@ public:
                         /// Returns pixel data pointer with the given mip level and slice index.
     byte *              GetPixels(int level, int sliceIndex) const;
 
-                        /// Returns Color4 sample with the given 2D coordinates
+                        /// Returns Color4 sample with the given 2D coordinates.
     Color4              Sample2D(const Vec2 &st, SampleWrapMode wrapModeS = ClampMode, SampleWrapMode wrapModeT = ClampMode, int level = 0) const;
 
-                        /// Returns Color4 sample with the given cubemap coordinates
+                        /// Returns Color4 sample with the given cubemap coordinates.
     Color4              SampleCube(const Vec3 &str, int level = 0) const;
 
-                        /// Returns number of pixels with given mipmap levels
+                        /// Returns number of pixels with given mipmap levels.
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
 
-                        /// Returns number of bytes with given mipmap levels
+                        /// Returns number of bytes with given mipmap levels.
     int                 GetSize(int firstLevel = 0, int numLevels = 1) const;
 
-                        /// Returns number of bytes of a slice with given mipmap levels
-                        /// A slice means single cubemap face or single texture of an array texture 
+                        /// Returns number of bytes of a slice with given mipmap levels.
+                        /// A slice means single cubemap face or single texture of an array texture.
     int                 GetSliceSize(int firstLevel = 0, int numLevels = 1) const;
                         
-                        /// Clears allocated pixel data
+                        /// Clears allocated pixel data.
     void                Clear();
 
-                        /// Creates an image with the given memory
+                        /// Creates an image with the given memory.
     Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, byte *data, int flags);
 
                         /// Creates an image.
@@ -300,17 +300,17 @@ public:
     Image &             CreateCube(int size, int numMipmaps, Image::Format format, const byte *data, int flags);
     Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags);
 
-                        /// Creates an cubic image from six square images
+                        /// Creates an cubic image from six square images.
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
 
-                        /// Creates an cubic image from single equirectangular spherical image
+                        /// Creates an cubic image from single equirectangular spherical image.
     Image &             CreateCubeFromEquirectangular(const Image &equirectangularImage, int faceSize);
 
-                        /// Creates an equirectangular spherical image from cubic image
+                        /// Creates an equirectangular spherical image from cubic image.
     Image &             CreateEquirectangularFromCube(const Image &cubeImage);
 
                         /// Copy image data from another.
-                        /// Nothing happen if source image dimensions are not match with this image
+                        /// Nothing happen if source image dimensions are not match with this image.
     Image &             CopyFrom(const Image &srcImage, int firstLevel = 0, int numLevels = 1);
     
                         /// Generates full mipmaps if this image has
@@ -328,22 +328,22 @@ public:
                         /// Resizes this image in-places.
     bool                ResizeSelf(int width, int height, Image::ResampleFilter resampleFilter);
 
-                        /// Flips vertically
+                        /// Flips vertically.
     Image &             FlipX();
 
-                        /// Flips horizontally
+                        /// Flips horizontally.
     Image &             FlipY();
 
     Image &             AdjustBrightness(float factor);
     Image &             GammaCorrectRGB888(uint16_t ramp[768]);
 
-                        /// Swaps the component red with alpha
+                        /// Swaps the component red with alpha.
     Image &             SwapRedAlphaRGBA8888();
 
-                        /// Makes height map to normal map
+                        /// Makes height map to normal map.
     Image               MakeNormalMapRGBA8888(float bumpiness) const;
 
-                        /// Adds normal map to another normal map
+                        /// Adds normal map to another normal map.
     Image &             AddNormalMapRGBA8888(const Image &normalMap);
 
                         /// Loads image from the file.
