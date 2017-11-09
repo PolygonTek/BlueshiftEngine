@@ -26,8 +26,8 @@ endif ()
 project(${project_name})
 
 set(VERSION_MAJOR 0 CACHE STRING "Project major version number.")
-set(VERSION_MINOR 2 CACHE STRING "Project minor version number.")
-set(VERSION_PATCH 2 CACHE STRING "Project patch version number.")
+set(VERSION_MINOR 3 CACHE STRING "Project minor version number.")
+set(VERSION_PATCH 0 CACHE STRING "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
