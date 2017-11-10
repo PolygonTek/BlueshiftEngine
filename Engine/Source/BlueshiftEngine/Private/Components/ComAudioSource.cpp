@@ -112,7 +112,7 @@ void ComAudioSource::Play() {
         sound = referenceSound->Instantiate();
 
         if (spatial) {
-            sound->Play3D(transform->GetOrigin(), minDistance, maxDistance, volume * (IsEnabled() ? 1.0f : 0.0f), looping);
+            sound->Play3D(transform->GetOrigin(), MeterToUnit(minDistance), MeterToUnit(maxDistance), volume * (IsEnabled() ? 1.0f : 0.0f), looping);
         } else {
             sound->Play2D(volume, looping);
         }
