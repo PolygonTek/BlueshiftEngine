@@ -408,7 +408,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     sandbox = LuaVM::State()[sandboxName];
 }
 
-static BE1::CVar lua_path(L"lua_path", L"", BE1::CVar::Archive, L"lua project path for debugging");
+static CVar lua_path(L"lua_path", L"", CVar::Archive, L"lua project path for debugging");
 
 bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxName) {
     char *data;
@@ -447,7 +447,7 @@ void ComScript::SetScriptProperties() {
     LuaCpp::Selector properties = sandbox["properties"];
 
     for (int i = 0; i < fieldInfos.Count(); i++) {
-        const BE1::PropertyInfo *propInfo = &fieldInfos[i];
+        const PropertyInfo *propInfo = &fieldInfos[i];
 
         const char *name = propInfo->GetName();
         const Variant::Type type = propInfo->GetType();

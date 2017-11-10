@@ -98,7 +98,7 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     referenceMesh = meshManager.GetMesh(meshPath);
 
     // Get number of materials
-    BE1::Array<int> materialIndexArray;
+    Array<int> materialIndexArray;
     for (int i = 0; i < referenceMesh->NumSurfaces(); i++) {
         materialIndexArray.AddUnique(referenceMesh->GetSurface(i)->materialIndex);
     }

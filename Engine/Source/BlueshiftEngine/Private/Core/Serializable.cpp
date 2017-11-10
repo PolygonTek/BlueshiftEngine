@@ -54,8 +54,8 @@ void Serializable::Serialize(Json::Value &out) const {
 
     GetPropertyInfoList(propertyInfos);
 
-    for (int i = 0; i < propertyInfos.Count(); i++) {
-        const PropertyInfo &propertyInfo = propertyInfos[i];
+    for (int propertyIndex = 0; propertyIndex < propertyInfos.Count(); propertyIndex++) {
+        const PropertyInfo &propertyInfo = propertyInfos[propertyIndex];
 
         if (propertyInfo.GetFlags() & PropertyInfo::SkipSerialization) {
             continue;
@@ -66,15 +66,17 @@ void Serializable::Serialize(Json::Value &out) const {
         if (propertyInfo.GetFlags() & PropertyInfo::IsArray) {
             out[name] = Json::arrayValue;
 
-            for (int elementIndex = 0; elementIndex < GetPropertyArrayCount(name); elementIndex++) {
-                Variant var = GetProperty(name, elementIndex);
+            for (int elementIndex = 0; elementIndex < GetPropertyArrayCount(propertyIndex); elementIndex++) {
+                Variant value;
+                GetArrayProperty(propertyInfo, elementIndex, value);
 
-                out[name][elementIndex] = var.ToJsonValue();
+                out[name][elementIndex] = value.ToJsonValue();
             }
         } else {
-            Variant var = GetProperty(name);
+            Variant value;
+            GetProperty(propertyInfo, value);
 
-            out[name] = var.ToJsonValue();
+            out[name] = value.ToJsonValue();
         }
     }
 }
@@ -84,8 +86,8 @@ void Serializable::Deserialize(const Json::Value &node) {
 
     GetPropertyInfoList(propertyInfos);
 
-    for (int i = 0; i < propertyInfos.Count(); i++) {
-        const PropertyInfo &propertyInfo = propertyInfos[i];
+    for (int propertyIndex = 0; propertyIndex < propertyInfos.Count(); propertyIndex++) {
+        const PropertyInfo &propertyInfo = propertyInfos[propertyIndex];
 
         if (propertyInfo.GetFlags() & PropertyInfo::ReadOnly) {
             continue;
@@ -98,28 +100,28 @@ void Serializable::Deserialize(const Json::Value &node) {
         if (propertyInfo.GetFlags() & PropertyInfo::IsArray) {
             const Json::Value subNode = node.get(name.c_str(), Json::Value());
 
-            SetPropertyArrayCount(name, subNode.size());
+            SetPropertyArrayCount(propertyIndex, subNode.size());
 
             for (int elementIndex = 0; elementIndex < subNode.size(); elementIndex++) {
                 switch (type) {
                 case Variant::IntType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<int>());
-                    SetProperty(name, elementIndex, value.asInt());
+                    SetArrayProperty(propertyIndex, elementIndex, value.asInt());
                     break;
                 }
                 case Variant::Int64Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<int64_t>());
-                    SetProperty(name, elementIndex, value.asInt64());
+                    SetArrayProperty(propertyIndex, elementIndex, value.asInt64());
                     break;
                 }
                 case Variant::BoolType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<bool>());
-                    SetProperty(name, elementIndex, value.asBool());
+                    SetArrayProperty(propertyIndex, elementIndex, value.asBool());
                     break; 
                 }
                 case Variant::FloatType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<float>());
-                    SetProperty(name, elementIndex, value.asFloat());
+                    SetArrayProperty(propertyIndex, elementIndex, value.asFloat());
                     break; 
                 }
                 case Variant::Vec2Type: {
@@ -127,7 +129,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Vec2 v;
                     sscanf(s, "%f %f", &v.x, &v.y);
-                    SetProperty(name, elementIndex, v);
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Vec3Type: {
@@ -135,7 +137,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Vec3 v;
                     sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
-                    SetProperty(name, elementIndex, v);
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Vec4Type: {
@@ -143,7 +145,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Vec4 v;
                     sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
-                    SetProperty(name, elementIndex, v);
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Color3Type: {
@@ -151,7 +153,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Color3 v;
                     sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
-                    SetProperty(name, elementIndex, v);
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Color4Type: {
@@ -159,7 +161,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Color4 v;
                     sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
-                    SetProperty(name, elementIndex, v);
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Mat2Type: {
@@ -167,7 +169,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Mat2 m;
                     sscanf(s, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);
-                    SetProperty(name, elementIndex, m);
+                    SetArrayProperty(propertyIndex, elementIndex, m);
                     break;
                 }
                 case Variant::Mat3Type: {
@@ -175,7 +177,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Mat3 m;
                     sscanf(s, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
-                    SetProperty(name, elementIndex, m);
+                    SetArrayProperty(propertyIndex, elementIndex, m);
                     break;
                 }
                 case Variant::Mat3x4Type: {
@@ -183,7 +185,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Mat3x4 m;
                     sscanf(s, "%f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w);
-                    SetProperty(name, elementIndex, m);
+                    SetArrayProperty(propertyIndex, elementIndex, m);
                     break;
                 }
                 case Variant::Mat4Type: {
@@ -191,7 +193,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Mat4 m;
                     sscanf(s, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w, &m[3].x, &m[3].y, &m[3].z, &m[3].w);
-                    SetProperty(name, elementIndex, m);
+                    SetArrayProperty(propertyIndex, elementIndex, m);
                     break;
                 }
                 case Variant::AnglesType: {
@@ -199,7 +201,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Angles a;
                     sscanf(s, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
-                    SetProperty(name, elementIndex, a);
+                    SetArrayProperty(propertyIndex, elementIndex, a);
                     break; 
                 }
                 case Variant::QuatType: {
@@ -207,7 +209,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Quat q;
                     sscanf(s, "%f %f %f %f", &q.x, &q.y, &q.z, &q.w);
-                    SetProperty(name, elementIndex, q);
+                    SetArrayProperty(propertyIndex, elementIndex, q);
                     break;
                 }
                 case Variant::PointType: {
@@ -215,7 +217,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Point p;
                     sscanf(s, "%i %i", &p.x, &p.y);
-                    SetProperty(name, elementIndex, p);
+                    SetArrayProperty(propertyIndex, elementIndex, p);
                     break;
                 }
                 case Variant::RectType: {
@@ -223,18 +225,18 @@ void Serializable::Deserialize(const Json::Value &node) {
                     const char *s = value.asCString();
                     Rect r;
                     sscanf(s, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
-                    SetProperty(name, elementIndex, r);
+                    SetArrayProperty(propertyIndex, elementIndex, r);
                     break;
                 }
                 case Variant::GuidType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Guid>().ToString());
                     Guid guid = Guid::FromString(value.asCString());
-                    SetProperty(name, elementIndex, guid);
+                    SetArrayProperty(propertyIndex, elementIndex, guid);
                     break;
                 }
                 case Variant::StrType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Str>().c_str());
-                    SetProperty(name, elementIndex, Str(value.asCString()));
+                    SetArrayProperty(propertyIndex, elementIndex, Str(value.asCString()));
                     break;
                 }
                 default:
@@ -243,119 +245,119 @@ void Serializable::Deserialize(const Json::Value &node) {
                 }
             }
         } else {
-            const Json::Value value = node.get(name, defaultValue.ToJsonValue());
+            const Json::Value value = node.get(name.c_str(), defaultValue.ToJsonValue());
 
             switch (type) {
             case Variant::IntType:
-                SetProperty(name, value.asInt());
+                SetProperty(propertyIndex, value.asInt());
                 break;
             case Variant::Int64Type:
-                SetProperty(name, value.asInt64());
+                SetProperty(propertyIndex, value.asInt64());
                 break;
             case Variant::BoolType:
-                SetProperty(name, value.asBool());
+                SetProperty(propertyIndex, value.asBool());
                 break;
             case Variant::FloatType:
-                SetProperty(name, value.asFloat());
+                SetProperty(propertyIndex, value.asFloat());
                 break;
             case Variant::Vec2Type: {
                 const char *s = value.asCString();
                 Vec2 v;
                 sscanf(s, "%f %f", &v.x, &v.y);
-                SetProperty(name, v);
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Vec3Type: {
                 const char *s = value.asCString();
                 Vec3 v;
                 sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
-                SetProperty(name, v);
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Vec4Type: {
                 const char *s = value.asCString();
                 Vec4 v;
                 sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
-                SetProperty(name, v);
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Color3Type: {
                 const char *s = value.asCString();
                 Color3 v;
                 sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
-                SetProperty(name, v);
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Color4Type: {
                 const char *s = value.asCString();
                 Color4 v;
                 sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
-                SetProperty(name, v);
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Mat2Type: {
                 const char *s = value.asCString();
                 Mat2 m;
                 sscanf(s, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);
-                SetProperty(name, m);
+                SetProperty(propertyIndex, m);
                 break;
             }
             case Variant::Mat3Type: {
                 const char *s = value.asCString();
                 Mat3 m;
                 sscanf(s, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
-                SetProperty(name, m);
+                SetProperty(propertyIndex, m);
                 break;
             }
             case Variant::Mat3x4Type: {
                 const char *s = value.asCString();
                 Mat3x4 m;
                 sscanf(s, "%f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w);
-                SetProperty(name, m);
+                SetProperty(propertyIndex, m);
                 break;
             }
             case Variant::Mat4Type: {
                 const char *s = value.asCString();
                 Mat4 m;
                 sscanf(s, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w, &m[3].x, &m[3].y, &m[3].z, &m[3].w);
-                SetProperty(name, m);
+                SetProperty(propertyIndex, m);
                 break;
             }
             case Variant::AnglesType: {
                 const char *s = value.asCString();
                 Angles a;
                 sscanf(s, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
-                SetProperty(name, a);
+                SetProperty(propertyIndex, a);
                 break;
             }
             case Variant::QuatType: {
                 const char *s = value.asCString();
                 Quat q;
                 sscanf(s, "%f %f %f %f", &q.x, &q.y, &q.z, &q.w);
-                SetProperty(name, q);
+                SetProperty(propertyIndex, q);
                 break;
             }
             case Variant::PointType: {
                 const char *s = value.asCString();
                 Point p;
                 sscanf(s, "%i %i", &p.x, &p.y);
-                SetProperty(name, p);
+                SetProperty(propertyIndex, p);
                 break;
             }
             case Variant::RectType: {
                 const char *s = value.asCString();
                 Rect r;
                 sscanf(s, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
-                SetProperty(name, r);
+                SetProperty(propertyIndex, r);
                 break;
             }
             case Variant::GuidType: {
                 Guid guid = Guid::FromString(value.asCString());
-                SetProperty(name, guid);
+                SetProperty(propertyIndex, guid);
                 break;
             }
             case Variant::StrType:
-                SetProperty(name, Str(value.asCString()));
+                SetProperty(propertyIndex, Str(value.asCString()));
                 break;
             default:
                 assert(0);
@@ -378,6 +380,32 @@ Variant Serializable::GetPropertyDefault(const char *name) const {
     return out;
 }
 
+Variant Serializable::GetPropertyDefault(int index) const {
+    PropertyInfo propertyInfo;
+    Variant out;
+
+    if (!GetPropertyInfo(index, propertyInfo)) {
+        BE_WARNLOG(L"Serializable::GetPropertyDefault: invalid property index %i\n", index);
+        return out;
+    }
+
+    out = propertyInfo.GetDefaultValue();
+    return out;
+}
+
+Variant Serializable::GetProperty(int index) const {
+    PropertyInfo propertyInfo;
+    Variant out;
+
+    if (!GetPropertyInfo(index, propertyInfo)) {
+        BE_WARNLOG(L"Serializable::GetProperty: invalid property index %i\n", index);
+        return out;
+    }
+
+    GetProperty(propertyInfo, out);
+    return out;
+}
+
 Variant Serializable::GetProperty(const char *name) const {
     PropertyInfo propertyInfo;
     Variant out;
@@ -387,9 +415,14 @@ Variant Serializable::GetProperty(const char *name) const {
         return out;
     }
 
+    GetProperty(propertyInfo, out);
+    return out;
+}
+
+void Serializable::GetProperty(const PropertyInfo &propertyInfo, Variant &out) const {
     if (propertyInfo.accessor) {
         propertyInfo.accessor->Get(this, out);
-        return out;
+        return;
     }
 
     const void *src = reinterpret_cast<const byte *>(this) + propertyInfo.offset;
@@ -454,359 +487,143 @@ Variant Serializable::GetProperty(const char *name) const {
         break;
     }
 
+    return;
+}
+
+Variant Serializable::GetArrayProperty(int index, int elementIndex) const {
+    PropertyInfo propertyInfo;
+    Variant out;
+
+    if (!GetPropertyInfo(index, propertyInfo)) {
+        BE_WARNLOG(L"Serializable::GetArrayProperty: invalid property index %i\n", index);
+        return out;
+    }
+
+    GetArrayProperty(propertyInfo, elementIndex, out);
     return out;
 }
 
-Variant Serializable::GetProperty(const char *name, int index) const {
+Variant Serializable::GetArrayProperty(const char *name, int elementIndex) const {
     PropertyInfo propertyInfo;
     Variant out;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetProperty: invalid property name '%hs'\n", name);
+        BE_WARNLOG(L"Serializable::GetArrayProperty: invalid property name '%hs'\n", name);
         return out;
     }
 
+    GetArrayProperty(propertyInfo, elementIndex, out);
+    return out;
+}
+
+void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, Variant &out) const {
     if (!(propertyInfo.flags & PropertyInfo::IsArray)) {
-        BE_WARNLOG(L"Serializable::GetProperty: property '%hs' is not array\n", name);
-        return out;
+        BE_WARNLOG(L"Serializable::GetArrayProperty: property '%hs' is not array\n", propertyInfo.name.c_str());
+        return;
     }
 
     if (propertyInfo.accessor) {
-        propertyInfo.accessor->Get(this, index, out);
-        return out;
+        propertyInfo.accessor->Get(this, elementIndex, out);
+        return;
     }
 
     const void *src = reinterpret_cast<const byte *>(this) + propertyInfo.offset;
 
     switch (propertyInfo.GetType()) {
     case Variant::IntType:
-        out = (*reinterpret_cast<const Array<int> *>(src))[index];
+        out = (*reinterpret_cast<const Array<int> *>(src))[elementIndex];
         break;
     case Variant::Int64Type:
-        out = (*reinterpret_cast<const Array<int64_t> *>(src))[index];
+        out = (*reinterpret_cast<const Array<int64_t> *>(src))[elementIndex];
         break;
     case Variant::BoolType:
-        out = (*reinterpret_cast<const Array<bool> *>(src))[index];
+        out = (*reinterpret_cast<const Array<bool> *>(src))[elementIndex];
         break;
     case Variant::FloatType:
-        out = (*reinterpret_cast<const Array<float> *>(src))[index];
+        out = (*reinterpret_cast<const Array<float> *>(src))[elementIndex];
         break;
     case Variant::Vec2Type:
-        out = (*reinterpret_cast<const Array<Vec2> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Vec2> *>(src))[elementIndex];
         break;
     case Variant::Vec3Type:
-        out = (*reinterpret_cast<const Array<Vec3> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Vec3> *>(src))[elementIndex];
         break;
     case Variant::Vec4Type:
-        out = (*reinterpret_cast<const Array<Vec4> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Vec4> *>(src))[elementIndex];
         break;
     case Variant::Color3Type:
-        out = (*reinterpret_cast<const Array<Color3> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Color3> *>(src))[elementIndex];
         break;
     case Variant::Color4Type:
-        out = (*reinterpret_cast<const Array<Color4> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Color4> *>(src))[elementIndex];
         break;
     case Variant::AnglesType:
-        out = (*reinterpret_cast<const Array<Angles> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Angles> *>(src))[elementIndex];
         break;
     case Variant::Mat2Type:
-        out = (*reinterpret_cast<const Array<Mat2> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Mat2> *>(src))[elementIndex];
         break;
     case Variant::Mat3Type:
-        out = (*reinterpret_cast<const Array<Mat3> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Mat3> *>(src))[elementIndex];
         break;
     case Variant::Mat3x4Type:
-        out = (*reinterpret_cast<const Array<Mat3x4> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Mat3x4> *>(src))[elementIndex];
         break;
     case Variant::Mat4Type:
-        out = (*reinterpret_cast<const Array<Mat4> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Mat4> *>(src))[elementIndex];
         break;
     case Variant::PointType:
-        out = (*reinterpret_cast<const Array<Point> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Point> *>(src))[elementIndex];
         break;
     case Variant::RectType:
-        out = (*reinterpret_cast<const Array<Rect> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Rect> *>(src))[elementIndex];
         break;
     case Variant::GuidType:
-        out = (*reinterpret_cast<const Array<Guid> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Guid> *>(src))[elementIndex];
         break;
     case Variant::StrType:
-        out = (*reinterpret_cast<const Array<Str> *>(src))[index];
+        out = (*reinterpret_cast<const Array<Str> *>(src))[elementIndex];
         break;
     case Variant::MinMaxCurveType:
-        out = (*reinterpret_cast<const Array<MinMaxCurve> *>(src))[index];
+        out = (*reinterpret_cast<const Array<MinMaxCurve> *>(src))[elementIndex];
         break;
     }
-
-    return out;
 }
 
-bool Serializable::SetPropertyWithoutSignal(const char *name, const Variant &var) {
+bool Serializable::SetProperty(const char *name, const Variant &value, bool skipSignal) {
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: invalid property name '%hs'\n", name);
+        BE_WARNLOG(L"Serializable::SetProperty: invalid property name '%hs'\n", name);
         return false;
     }
 
-    // You can force to write a value even though a property has read only flag.
-    if (propertyInfo.GetFlags() & PropertyInfo::ReadOnly) {
-        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: property '%hs' is readonly\n", name);
-        return false;
-    }
-
-    Variant newVar;
-    float minValue;
-    float maxValue;
-
-    if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-        minValue = propertyInfo.GetMinValue();
-        maxValue = propertyInfo.GetMaxValue();
-    }
-
-    switch (propertyInfo.GetType()) {
-    case Variant::IntType: {
-        int i = var.As<int>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(i, (int)minValue, (int)maxValue);
-        }
-        newVar = i;
-        break; 
-    }
-    case Variant::Int64Type: {
-        int64_t i = var.As<int64_t>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(i, (int64_t)minValue, (int64_t)maxValue);
-        }
-        newVar = i;
-        break;
-    }
-    case Variant::BoolType:
-        newVar = var.As<bool>();
-        break;
-    case Variant::FloatType: {
-        float f = var.As<float>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(f, minValue, maxValue);
-        }
-        newVar = f;
-        break;
-    }
-    case Variant::Vec2Type: {
-        Vec2 vec2 = var.As<Vec2>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(vec2.x, minValue, maxValue);
-            Clamp(vec2.y, minValue, maxValue);
-        }
-        newVar = vec2;
-        break; 
-    }
-    case Variant::Vec3Type: {
-        Vec3 vec3 = var.As<Vec3>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(vec3.x, minValue, maxValue);
-            Clamp(vec3.y, minValue, maxValue);
-            Clamp(vec3.z, minValue, maxValue);
-        }
-        newVar = vec3;
-        break; 
-    }
-    case Variant::Vec4Type: {
-        Vec4 vec4 = var.As<Vec4>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(vec4.x, minValue, maxValue);
-            Clamp(vec4.y, minValue, maxValue);
-            Clamp(vec4.z, minValue, maxValue);
-            Clamp(vec4.w, minValue, maxValue);
-        }
-        newVar = vec4;
-        break; 
-    }
-    case Variant::Color3Type: {
-        Color3 color3 = var.As<Color3>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(color3.r, minValue, maxValue);
-            Clamp(color3.g, minValue, maxValue);
-            Clamp(color3.b, minValue, maxValue);
-        }
-        newVar = color3;
-        break; 
-    }
-    case Variant::Color4Type: {
-        Color4 color4 = var.As<Color4>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(color4.r, minValue, maxValue);
-            Clamp(color4.g, minValue, maxValue);
-            Clamp(color4.b, minValue, maxValue);
-            Clamp(color4.a, minValue, maxValue);
-        }
-        newVar = color4;
-        break; 
-    }
-    case Variant::Mat2Type:
-        newVar = var.As<Mat2>();
-        break;
-    case Variant::Mat3Type:
-        newVar = var.As<Mat3>();
-        break;
-    case Variant::Mat3x4Type:
-        newVar = var.As<Mat3x4>();
-        break;
-    case Variant::Mat4Type:
-        newVar = var.As<Mat4>();
-        break;
-    case Variant::AnglesType: {
-        Angles angles = var.As<Angles>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(angles[0], minValue, maxValue);
-            Clamp(angles[1], minValue, maxValue);
-            Clamp(angles[2], minValue, maxValue);
-        }
-        newVar = angles;
-        break;
-    }
-    case Variant::PointType: {
-        Point pt = var.As<Point>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(pt.x, (int)minValue, (int)maxValue);
-            Clamp(pt.y, (int)minValue, (int)maxValue);
-        }
-        newVar = pt;
-        break;
-    }
-    case Variant::RectType: {
-        Rect rect = var.As<Rect>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
-            Clamp(rect.x, (int)minValue, (int)maxValue);
-            Clamp(rect.y, (int)minValue, (int)maxValue);
-            Clamp(rect.w, (int)minValue, (int)maxValue);
-            Clamp(rect.h, (int)minValue, (int)maxValue);
-        }
-        newVar = rect;
-        break;
-    }
-    case Variant::GuidType:
-        newVar = var.As<Guid>();
-        break;
-    case Variant::StrType:
-        newVar = var.As<Str>();
-        break;
-    case Variant::MinMaxCurveType:
-        newVar = var.As<MinMaxCurve>();
-        break;
-    default:
-        assert(0);
-        break;
-    }
-
-    if (propertyInfo.accessor) {
-        propertyInfo.accessor->Set(this, newVar);
-    } else {
-        void *dest = reinterpret_cast<byte *>(this) + propertyInfo.offset;
-
-        switch (propertyInfo.GetType()) {
-        case Variant::IntType:
-            *(reinterpret_cast<int *>(dest)) = newVar.As<int>();
-            break;
-        case Variant::Int64Type:
-            *(reinterpret_cast<int64_t *>(dest)) = newVar.As<int64_t>();
-            break;
-        case Variant::BoolType: 
-            *(reinterpret_cast<bool *>(dest)) = newVar.As<bool>();
-            break;
-        case Variant::FloatType:
-            *(reinterpret_cast<float *>(dest)) = newVar.As<float>();
-            break;
-        case Variant::Vec2Type:
-            *(reinterpret_cast<Vec2 *>(dest)) = newVar.As<Vec2>();
-            break;
-        case Variant::Vec3Type:
-            *(reinterpret_cast<Vec3 *>(dest)) = newVar.As<Vec3>();
-            break;
-        case Variant::Vec4Type:
-            *(reinterpret_cast<Vec4 *>(dest)) = newVar.As<Vec4>();
-            break;
-        case Variant::Color3Type:
-            *(reinterpret_cast<Color3 *>(dest)) = newVar.As<Color3>();
-            break;
-        case Variant::Color4Type:
-            *(reinterpret_cast<Color4 *>(dest)) = newVar.As<Color4>();
-            break;
-        case Variant::Mat2Type: 
-            *(reinterpret_cast<Mat2 *>(dest)) = newVar.As<Mat2>();
-            break;
-        case Variant::Mat3Type:
-            *(reinterpret_cast<Mat3 *>(dest)) = newVar.As<Mat3>();
-            break;
-        case Variant::Mat3x4Type:
-            *(reinterpret_cast<Mat3x4 *>(dest)) = newVar.As<Mat3x4>();
-            break;
-        case Variant::Mat4Type:
-            *(reinterpret_cast<Mat4 *>(dest)) = newVar.As<Mat4>();
-            break;
-        case Variant::AnglesType:
-            *(reinterpret_cast<Angles *>(dest)) = newVar.As<Angles>();
-            break;
-        case Variant::QuatType: 
-            *(reinterpret_cast<Quat *>(dest)) = newVar.As<Quat>();
-            break;
-        case Variant::PointType:
-            *(reinterpret_cast<Point *>(dest)) = newVar.As<Point>();
-            break;
-        case Variant::RectType:
-            *(reinterpret_cast<Rect *>(dest)) = newVar.As<Rect>();
-            break;
-        case Variant::GuidType:
-            *(reinterpret_cast<Guid *>(dest)) = newVar.As<Guid>();
-            break;
-        case Variant::StrType:
-            *(reinterpret_cast<Str *>(dest)) = newVar.As<Str>();
-            break;
-        case Variant::MinMaxCurveType:
-            *(reinterpret_cast<MinMaxCurve *>(dest)) = newVar.As<MinMaxCurve>();
-            break;
-        }
-    }
-
-    return true;
-}
-
-bool Serializable::SetProperty(const char *name, const Variant &var) {
-    if (SetPropertyWithoutSignal(name, var)) {
+    if (SetProperty(propertyInfo, value, skipSignal)) {
         EmitSignal(&Serializable::SIG_PropertyChanged, name, -1);
         return true;
     }
     return false;
 }
 
-bool Serializable::SetProperty(const char *name, int index, const Variant &var) {
-    if (SetPropertyWithoutSignal(name, index, var)) {
-        EmitSignal(&Serializable::SIG_PropertyChanged, name, index);
-        return true;
-    }
-
-    return false;
-}
-
-bool Serializable::SetPropertyWithoutSignal(const char *name, int index, const Variant &var) {
+bool Serializable::SetProperty(int index, const Variant &value, bool skipSignal) {
     PropertyInfo propertyInfo;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: invalid property name '%hs'\n", name);
+    if (!GetPropertyInfo(index, propertyInfo)) {
+        BE_WARNLOG(L"Serializable::SetProperty: invalid property index %i\n", index);
         return false;
     }
 
-    if (!(propertyInfo.flags & PropertyInfo::IsArray)) {
-        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: property '%hs' is not array\n", name);
-        return false;
-    }
+    return SetProperty(propertyInfo, value, skipSignal);
+}
 
+bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &value, bool skipSignal) {
+    // You can force to write a value even though a property has read only flag.
     if (propertyInfo.GetFlags() & PropertyInfo::ReadOnly) {
-        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: property '%hs' is readonly\n", name);
+        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: property '%hs' is readonly\n", propertyInfo.name.c_str());
         return false;
     }
 
-    Variant newVar;
+    Variant newValue;
     float minValue;
     float maxValue;
 
@@ -817,133 +634,133 @@ bool Serializable::SetPropertyWithoutSignal(const char *name, int index, const V
 
     switch (propertyInfo.GetType()) {
     case Variant::IntType: {
-        int i = var.As<int>();
+        int i = value.As<int>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(i, (int)minValue, (int)maxValue);
         }
-        newVar = i;
+        newValue = i;
         break; 
     }
     case Variant::Int64Type: {
-        int64_t i = var.As<int64_t>();
+        int64_t i = value.As<int64_t>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(i, (int64_t)minValue, (int64_t)maxValue);
         }
-        newVar = i;
+        newValue = i;
         break;
     }
     case Variant::BoolType:
-        newVar = var.As<bool>();
+        newValue = value.As<bool>();
         break;
     case Variant::FloatType: {
-        float f = var.As<float>();
+        float f = value.As<float>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(f, minValue, maxValue);
         }
-        newVar = f;
+        newValue = f;
         break;
     }
     case Variant::Vec2Type: {
-        Vec2 vec2 = var.As<Vec2>();
+        Vec2 vec2 = value.As<Vec2>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(vec2.x, minValue, maxValue);
             Clamp(vec2.y, minValue, maxValue);
         }
-        newVar = vec2;
+        newValue = vec2;
         break; 
     }
     case Variant::Vec3Type: {
-        Vec3 vec3 = var.As<Vec3>();
+        Vec3 vec3 = value.As<Vec3>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(vec3.x, minValue, maxValue);
             Clamp(vec3.y, minValue, maxValue);
             Clamp(vec3.z, minValue, maxValue);
         }
-        newVar = vec3;
+        newValue = vec3;
         break; 
     }
     case Variant::Vec4Type: {
-        Vec4 vec4 = var.As<Vec4>();
+        Vec4 vec4 = value.As<Vec4>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(vec4.x, minValue, maxValue);
             Clamp(vec4.y, minValue, maxValue);
             Clamp(vec4.z, minValue, maxValue);
             Clamp(vec4.w, minValue, maxValue);
         }
-        newVar = vec4;
+        newValue = vec4;
         break; 
     }
     case Variant::Color3Type: {
-        Color3 color3 = var.As<Color3>();
+        Color3 color3 = value.As<Color3>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(color3.r, minValue, maxValue);
             Clamp(color3.g, minValue, maxValue);
             Clamp(color3.b, minValue, maxValue);
         }
-        newVar = color3;
+        newValue = color3;
         break; 
     }
     case Variant::Color4Type: {
-        Color4 color4 = var.As<Color4>();
+        Color4 color4 = value.As<Color4>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(color4.r, minValue, maxValue);
             Clamp(color4.g, minValue, maxValue);
             Clamp(color4.b, minValue, maxValue);
             Clamp(color4.a, minValue, maxValue);
         }
-        newVar = color4;
+        newValue = color4;
         break; 
     }
     case Variant::Mat2Type:
-        newVar = var.As<Mat2>();
+        newValue = value.As<Mat2>();
         break;
     case Variant::Mat3Type:
-        newVar = var.As<Mat3>();
+        newValue = value.As<Mat3>();
         break;
     case Variant::Mat3x4Type:
-        newVar = var.As<Mat3x4>();
+        newValue = value.As<Mat3x4>();
         break;
     case Variant::Mat4Type:
-        newVar = var.As<Mat4>();
+        newValue = value.As<Mat4>();
         break;
     case Variant::AnglesType: {
-        Angles angles = var.As<Angles>();
+        Angles angles = value.As<Angles>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(angles[0], minValue, maxValue);
             Clamp(angles[1], minValue, maxValue);
             Clamp(angles[2], minValue, maxValue);
         }
-        newVar = angles;
+        newValue = angles;
         break;
     }
     case Variant::PointType: {
-        Point pt = var.As<Point>();
+        Point pt = value.As<Point>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(pt.x, (int)minValue, (int)maxValue);
             Clamp(pt.y, (int)minValue, (int)maxValue);
         }
-        newVar = pt;
+        newValue = pt;
         break;
     }
     case Variant::RectType: {
-        Rect rect = var.As<Rect>();
+        Rect rect = value.As<Rect>();
         if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
             Clamp(rect.x, (int)minValue, (int)maxValue);
             Clamp(rect.y, (int)minValue, (int)maxValue);
             Clamp(rect.w, (int)minValue, (int)maxValue);
             Clamp(rect.h, (int)minValue, (int)maxValue);
         }
-        newVar = rect;
+        newValue = rect;
         break;
     }
     case Variant::GuidType:
-        newVar = var.As<Guid>();
+        newValue = value.As<Guid>();
         break;
     case Variant::StrType:
-        newVar = var.As<Str>();
+        newValue = value.As<Str>();
         break;
     case Variant::MinMaxCurveType:
-        newVar = var.As<MinMaxCurve>();
+        newValue = value.As<MinMaxCurve>();
         break;
     default:
         assert(0);
@@ -951,74 +768,330 @@ bool Serializable::SetPropertyWithoutSignal(const char *name, int index, const V
     }
 
     if (propertyInfo.accessor) {
-        propertyInfo.accessor->Set(this, index, newVar);
+        propertyInfo.accessor->Set(this, newValue);
     } else {
         void *dest = reinterpret_cast<byte *>(this) + propertyInfo.offset;
 
         switch (propertyInfo.GetType()) {
         case Variant::IntType:
-            (*reinterpret_cast<Array<int> *>(dest))[index] = newVar.As<int>();
+            *(reinterpret_cast<int *>(dest)) = newValue.As<int>();
             break;
         case Variant::Int64Type:
-            (*reinterpret_cast<Array<int64_t> *>(dest))[index] = newVar.As<int64_t>();
+            *(reinterpret_cast<int64_t *>(dest)) = newValue.As<int64_t>();
             break;
-        case Variant::BoolType:
-            (*reinterpret_cast<Array<bool> *>(dest))[index] = newVar.As<bool>();
+        case Variant::BoolType: 
+            *(reinterpret_cast<bool *>(dest)) = newValue.As<bool>();
             break;
         case Variant::FloatType:
-            (*reinterpret_cast<Array<float> *>(dest))[index] = newVar.As<float>();
+            *(reinterpret_cast<float *>(dest)) = newValue.As<float>();
             break;
         case Variant::Vec2Type:
-            (*reinterpret_cast<Array<Vec2> *>(dest))[index] = newVar.As<Vec2>();
+            *(reinterpret_cast<Vec2 *>(dest)) = newValue.As<Vec2>();
             break;
         case Variant::Vec3Type:
-            (*reinterpret_cast<Array<Vec3> *>(dest))[index] = newVar.As<Vec3>();
+            *(reinterpret_cast<Vec3 *>(dest)) = newValue.As<Vec3>();
             break;
         case Variant::Vec4Type:
-            (*reinterpret_cast<Array<Vec4> *>(dest))[index] = newVar.As<Vec4>();
+            *(reinterpret_cast<Vec4 *>(dest)) = newValue.As<Vec4>();
             break;
         case Variant::Color3Type:
-            (*reinterpret_cast<Array<Color3> *>(dest))[index] = newVar.As<Color3>();
+            *(reinterpret_cast<Color3 *>(dest)) = newValue.As<Color3>();
             break;
         case Variant::Color4Type:
-            (*reinterpret_cast<Array<Color4> *>(dest))[index] = newVar.As<Color4>();
+            *(reinterpret_cast<Color4 *>(dest)) = newValue.As<Color4>();
             break;
         case Variant::Mat2Type: 
-            (*reinterpret_cast<Array<Mat2> *>(dest))[index] = newVar.As<Mat2>();
+            *(reinterpret_cast<Mat2 *>(dest)) = newValue.As<Mat2>();
             break;
         case Variant::Mat3Type:
-            (*reinterpret_cast<Array<Mat3> *>(dest))[index] = newVar.As<Mat3>();
+            *(reinterpret_cast<Mat3 *>(dest)) = newValue.As<Mat3>();
             break;
         case Variant::Mat3x4Type:
-            (*reinterpret_cast<Array<Mat3x4> *>(dest))[index] = newVar.As<Mat3x4>();
+            *(reinterpret_cast<Mat3x4 *>(dest)) = newValue.As<Mat3x4>();
             break;
         case Variant::Mat4Type:
-            (*reinterpret_cast<Array<Mat4> *>(dest))[index] = newVar.As<Mat4>();
+            *(reinterpret_cast<Mat4 *>(dest)) = newValue.As<Mat4>();
             break;
         case Variant::AnglesType:
-            (*reinterpret_cast<Array<Angles> *>(dest))[index] = newVar.As<Angles>();
+            *(reinterpret_cast<Angles *>(dest)) = newValue.As<Angles>();
             break;
         case Variant::QuatType: 
-            (*reinterpret_cast<Array<Quat> *>(dest))[index] = newVar.As<Quat>();
+            *(reinterpret_cast<Quat *>(dest)) = newValue.As<Quat>();
             break;
         case Variant::PointType:
-            (*reinterpret_cast<Array<Point> *>(dest))[index] = newVar.As<Point>();
+            *(reinterpret_cast<Point *>(dest)) = newValue.As<Point>();
             break;
         case Variant::RectType:
-            (*reinterpret_cast<Array<Rect> *>(dest))[index] = newVar.As<Rect>();
+            *(reinterpret_cast<Rect *>(dest)) = newValue.As<Rect>();
             break;
         case Variant::GuidType:
-            (*reinterpret_cast<Array<Guid> *>(dest))[index] = newVar.As<Guid>();
+            *(reinterpret_cast<Guid *>(dest)) = newValue.As<Guid>();
             break;
         case Variant::StrType:
-            (*reinterpret_cast<Array<Str> *>(dest))[index] = newVar.As<Str>();
+            *(reinterpret_cast<Str *>(dest)) = newValue.As<Str>();
             break;
         case Variant::MinMaxCurveType:
-            (*reinterpret_cast<Array<MinMaxCurve> *>(dest))[index] = newVar.As<MinMaxCurve>();
+            *(reinterpret_cast<MinMaxCurve *>(dest)) = newValue.As<MinMaxCurve>();
             break;
         }
     }
 
+    if (!skipSignal) {
+        EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), -1);
+    }
+
+    return true;
+}
+
+bool Serializable::SetArrayProperty(const char *name, int elementIndex, const Variant &value, bool skipSignal) {
+    PropertyInfo propertyInfo;
+
+    if (!GetPropertyInfo(name, propertyInfo)) {
+        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: invalid property name '%hs'\n", name);
+        return false;
+    }
+
+    return SetArrayProperty(propertyInfo, elementIndex, value, skipSignal);
+}
+
+bool Serializable::SetArrayProperty(int index, int elementIndex, const Variant &value, bool skipSignal) {
+    PropertyInfo propertyInfo;
+
+    if (!GetPropertyInfo(index, propertyInfo)) {
+        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: invalid property index %i\n", index);
+        return false;
+    }
+
+    return SetArrayProperty(propertyInfo, elementIndex, value, skipSignal);
+}
+
+bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, const Variant &value, bool skipSignal) {
+    if (!(propertyInfo.flags & PropertyInfo::IsArray)) {
+        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: property '%hs' is not array\n", propertyInfo.name.c_str());
+        return false;
+    }
+
+    if (propertyInfo.GetFlags() & PropertyInfo::ReadOnly) {
+        BE_WARNLOG(L"Serializable::SetPropertyWithoutSignal: property '%hs' is readonly\n", propertyInfo.name.c_str());
+        return false;
+    }
+
+    Variant newValue;
+    float minValue;
+    float maxValue;
+
+    if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        minValue = propertyInfo.GetMinValue();
+        maxValue = propertyInfo.GetMaxValue();
+    }
+
+    switch (propertyInfo.GetType()) {
+    case Variant::IntType: {
+        int i = value.As<int>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(i, (int)minValue, (int)maxValue);
+        }
+        newValue = i;
+        break; 
+    }
+    case Variant::Int64Type: {
+        int64_t i = value.As<int64_t>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(i, (int64_t)minValue, (int64_t)maxValue);
+        }
+        newValue = i;
+        break;
+    }
+    case Variant::BoolType:
+        newValue = value.As<bool>();
+        break;
+    case Variant::FloatType: {
+        float f = value.As<float>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(f, minValue, maxValue);
+        }
+        newValue = f;
+        break;
+    }
+    case Variant::Vec2Type: {
+        Vec2 vec2 = value.As<Vec2>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(vec2.x, minValue, maxValue);
+            Clamp(vec2.y, minValue, maxValue);
+        }
+        newValue = vec2;
+        break; 
+    }
+    case Variant::Vec3Type: {
+        Vec3 vec3 = value.As<Vec3>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(vec3.x, minValue, maxValue);
+            Clamp(vec3.y, minValue, maxValue);
+            Clamp(vec3.z, minValue, maxValue);
+        }
+        newValue = vec3;
+        break; 
+    }
+    case Variant::Vec4Type: {
+        Vec4 vec4 = value.As<Vec4>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(vec4.x, minValue, maxValue);
+            Clamp(vec4.y, minValue, maxValue);
+            Clamp(vec4.z, minValue, maxValue);
+            Clamp(vec4.w, minValue, maxValue);
+        }
+        newValue = vec4;
+        break; 
+    }
+    case Variant::Color3Type: {
+        Color3 color3 = value.As<Color3>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(color3.r, minValue, maxValue);
+            Clamp(color3.g, minValue, maxValue);
+            Clamp(color3.b, minValue, maxValue);
+        }
+        newValue = color3;
+        break; 
+    }
+    case Variant::Color4Type: {
+        Color4 color4 = value.As<Color4>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(color4.r, minValue, maxValue);
+            Clamp(color4.g, minValue, maxValue);
+            Clamp(color4.b, minValue, maxValue);
+            Clamp(color4.a, minValue, maxValue);
+        }
+        newValue = color4;
+        break; 
+    }
+    case Variant::Mat2Type:
+        newValue = value.As<Mat2>();
+        break;
+    case Variant::Mat3Type:
+        newValue = value.As<Mat3>();
+        break;
+    case Variant::Mat3x4Type:
+        newValue = value.As<Mat3x4>();
+        break;
+    case Variant::Mat4Type:
+        newValue = value.As<Mat4>();
+        break;
+    case Variant::AnglesType: {
+        Angles angles = value.As<Angles>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(angles[0], minValue, maxValue);
+            Clamp(angles[1], minValue, maxValue);
+            Clamp(angles[2], minValue, maxValue);
+        }
+        newValue = angles;
+        break;
+    }
+    case Variant::PointType: {
+        Point pt = value.As<Point>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(pt.x, (int)minValue, (int)maxValue);
+            Clamp(pt.y, (int)minValue, (int)maxValue);
+        }
+        newValue = pt;
+        break;
+    }
+    case Variant::RectType: {
+        Rect rect = value.As<Rect>();
+        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+            Clamp(rect.x, (int)minValue, (int)maxValue);
+            Clamp(rect.y, (int)minValue, (int)maxValue);
+            Clamp(rect.w, (int)minValue, (int)maxValue);
+            Clamp(rect.h, (int)minValue, (int)maxValue);
+        }
+        newValue = rect;
+        break;
+    }
+    case Variant::GuidType:
+        newValue = value.As<Guid>();
+        break;
+    case Variant::StrType:
+        newValue = value.As<Str>();
+        break;
+    case Variant::MinMaxCurveType:
+        newValue = value.As<MinMaxCurve>();
+        break;
+    default:
+        assert(0);
+        break;
+    }
+
+    if (propertyInfo.accessor) {
+        propertyInfo.accessor->Set(this, elementIndex, newValue);
+    } else {
+        void *dest = reinterpret_cast<byte *>(this) + propertyInfo.offset;
+
+        switch (propertyInfo.GetType()) {
+        case Variant::IntType:
+            (*reinterpret_cast<Array<int> *>(dest))[elementIndex] = newValue.As<int>();
+            break;
+        case Variant::Int64Type:
+            (*reinterpret_cast<Array<int64_t> *>(dest))[elementIndex] = newValue.As<int64_t>();
+            break;
+        case Variant::BoolType:
+            (*reinterpret_cast<Array<bool> *>(dest))[elementIndex] = newValue.As<bool>();
+            break;
+        case Variant::FloatType:
+            (*reinterpret_cast<Array<float> *>(dest))[elementIndex] = newValue.As<float>();
+            break;
+        case Variant::Vec2Type:
+            (*reinterpret_cast<Array<Vec2> *>(dest))[elementIndex] = newValue.As<Vec2>();
+            break;
+        case Variant::Vec3Type:
+            (*reinterpret_cast<Array<Vec3> *>(dest))[elementIndex] = newValue.As<Vec3>();
+            break;
+        case Variant::Vec4Type:
+            (*reinterpret_cast<Array<Vec4> *>(dest))[elementIndex] = newValue.As<Vec4>();
+            break;
+        case Variant::Color3Type:
+            (*reinterpret_cast<Array<Color3> *>(dest))[elementIndex] = newValue.As<Color3>();
+            break;
+        case Variant::Color4Type:
+            (*reinterpret_cast<Array<Color4> *>(dest))[elementIndex] = newValue.As<Color4>();
+            break;
+        case Variant::Mat2Type: 
+            (*reinterpret_cast<Array<Mat2> *>(dest))[elementIndex] = newValue.As<Mat2>();
+            break;
+        case Variant::Mat3Type:
+            (*reinterpret_cast<Array<Mat3> *>(dest))[elementIndex] = newValue.As<Mat3>();
+            break;
+        case Variant::Mat3x4Type:
+            (*reinterpret_cast<Array<Mat3x4> *>(dest))[elementIndex] = newValue.As<Mat3x4>();
+            break;
+        case Variant::Mat4Type:
+            (*reinterpret_cast<Array<Mat4> *>(dest))[elementIndex] = newValue.As<Mat4>();
+            break;
+        case Variant::AnglesType:
+            (*reinterpret_cast<Array<Angles> *>(dest))[elementIndex] = newValue.As<Angles>();
+            break;
+        case Variant::QuatType: 
+            (*reinterpret_cast<Array<Quat> *>(dest))[elementIndex] = newValue.As<Quat>();
+            break;
+        case Variant::PointType:
+            (*reinterpret_cast<Array<Point> *>(dest))[elementIndex] = newValue.As<Point>();
+            break;
+        case Variant::RectType:
+            (*reinterpret_cast<Array<Rect> *>(dest))[elementIndex] = newValue.As<Rect>();
+            break;
+        case Variant::GuidType:
+            (*reinterpret_cast<Array<Guid> *>(dest))[elementIndex] = newValue.As<Guid>();
+            break;
+        case Variant::StrType:
+            (*reinterpret_cast<Array<Str> *>(dest))[elementIndex] = newValue.As<Str>();
+            break;
+        case Variant::MinMaxCurveType:
+            (*reinterpret_cast<Array<MinMaxCurve> *>(dest))[elementIndex] = newValue.As<MinMaxCurve>();
+            break;
+        }
+    }
+
+    if (!skipSignal) {
+        EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), elementIndex);
+    }
     return true;
 }
 
@@ -1030,8 +1103,23 @@ int Serializable::GetPropertyArrayCount(const char *name) const {
         return 0;
     }
 
+    return GetPropertyArrayCount(propertyInfo);
+}
+
+int Serializable::GetPropertyArrayCount(int index) const {
+    PropertyInfo propertyInfo;
+
+    if (!GetPropertyInfo(index, propertyInfo)) {
+        BE_WARNLOG(L"Serializable::GetPropertyArrayCount: invalid property index %i\n", index);
+        return 0;
+    }
+
+    return GetPropertyArrayCount(propertyInfo);
+}
+
+int Serializable::GetPropertyArrayCount(const PropertyInfo &propertyInfo) const {
     if (!(propertyInfo.flags & PropertyInfo::IsArray)) {
-        BE_WARNLOG(L"Serializable::GetPropertyArrayCount: property '%hs' is not array\n", name);
+        BE_WARNLOG(L"Serializable::GetPropertyArrayCount: property '%hs' is not array\n", propertyInfo.name.c_str());
         return 0;
     }
 
@@ -1051,8 +1139,23 @@ void Serializable::SetPropertyArrayCount(const char *name, int count) {
         return;
     }
 
+    SetPropertyArrayCount(propertyInfo, count);
+}
+
+void Serializable::SetPropertyArrayCount(int index, int count) {
+    PropertyInfo propertyInfo;
+
+    if (!GetPropertyInfo(index, propertyInfo)) {
+        BE_WARNLOG(L"Serializable::SetPropertyArrayCount: invalid property index %i'\n", index);
+        return;
+    }
+
+    SetPropertyArrayCount(propertyInfo, count);
+}
+
+void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int count) {
     if (!(propertyInfo.flags & PropertyInfo::IsArray)) {
-        BE_WARNLOG(L"Serializable::SetPropertyArrayCount: property '%hs' is not array\n", name);
+        BE_WARNLOG(L"Serializable::SetPropertyArrayCount: property '%hs' is not array\n", propertyInfo.name.c_str());
         return;
     }
 
@@ -1205,13 +1308,13 @@ void Serializable::SetPropertyArrayCount(const char *name, int count) {
         }
 
         if (count > oldCount) {
-            for (int index = oldCount; index < count; index++) {
-                SetPropertyWithoutSignal(name, index, propertyInfo.defaultValue);
+            for (int elementIndex = oldCount; elementIndex < count; elementIndex++) {
+                SetArrayProperty(propertyInfo, elementIndex, propertyInfo.defaultValue, true);
             }
         }
     }
 
-    EmitSignal(&SIG_PropertyArrayCountChanged, name);
+    EmitSignal(&SIG_PropertyArrayCountChanged, propertyInfo.name.c_str());
 }
 
 BE_NAMESPACE_END

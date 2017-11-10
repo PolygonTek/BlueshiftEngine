@@ -253,7 +253,7 @@ void ComSpline::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
     renderWorld->SetDebugColor(Color4::blue, Color4::cyan);
 
     for (int pointIndex = 0; pointIndex < GetPropertyArrayCount("points"); pointIndex++) {
-        const Guid pointTransformGuid = GetProperty("points", pointIndex).As<Guid>();
+        const Guid pointTransformGuid = GetArrayProperty("points", pointIndex).As<Guid>();
         if (pointTransformGuid.IsZero()) {
             continue;
         }
@@ -284,7 +284,7 @@ void ComSpline::PointTransformUpdated(const ComTransform *transform) {
     }
 
     for (int pointIndex = 0; pointIndex < GetPropertyArrayCount("points"); pointIndex++) {
-        if (GetProperty("points", pointIndex).As<Guid>() == transform->GetGuid()) {
+        if (GetArrayProperty("points", pointIndex).As<Guid>() == transform->GetGuid()) {
             const Vec3 origin = transform->GetLocalOrigin();
             originCurve->SetValue(pointIndex, origin);
 

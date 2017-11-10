@@ -16,7 +16,7 @@
 
 BE_NAMESPACE_BEGIN
 
-// indexes are based on BE1::Vec4Color::table
+// indexes are based on Vec4Color::table
 
 // color escape character
 const int C_COLOR_ESCAPE        = '^';

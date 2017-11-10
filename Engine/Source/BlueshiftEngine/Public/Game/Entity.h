@@ -143,6 +143,9 @@ public:
                                 /// Inserts a component after the index to the entity
     void                        InsertComponent(Component *component, int index);
 
+                                /// Removes a component
+    bool                        RemoveComponent(Component *component);
+
     bool                        HasRenderEntity(int renderEntityHandle) const;
 
                                 /// Purges all the data in this entity.

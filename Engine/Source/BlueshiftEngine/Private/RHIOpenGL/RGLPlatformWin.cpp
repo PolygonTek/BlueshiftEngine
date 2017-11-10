@@ -506,7 +506,7 @@ static LRESULT CALLBACK NewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
     case WM_PAINT:
         hdc = BeginPaint(hwnd, &ps);
         if (ctx->onDemandDrawing) {
-            BE1::rhi.DisplayContext(ctx->handle);
+            rhi.DisplayContext(ctx->handle);
         }
         EndPaint(hwnd, &ps);
         break;

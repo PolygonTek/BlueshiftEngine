@@ -357,9 +357,9 @@ Entity *GameWorld::CreateEntity(const char *name) {
     Json::Value value;
     value["name"] = name;
 
-    value["components"][0]["classname"] = BE1::ComTransform::metaObject.ClassName();
-    value["components"][0]["origin"] = BE1::Vec3::zero.ToString();
-    value["components"][0]["angles"] = BE1::Angles::zero.ToString();
+    value["components"][0]["classname"] = ComTransform::metaObject.ClassName();
+    value["components"][0]["origin"] = Vec3::zero.ToString();
+    value["components"][0]["angles"] = Angles::zero.ToString();
 
     Entity *entity = Entity::CreateEntity(value, this);
 
@@ -735,15 +735,15 @@ void GameWorld::ProcessPointerInput() {
     }
 }
 
-BE1::Entity *GameWorld::RayIntersection(const BE1::Vec3 &start, const BE1::Vec3 &dir, const BE1::Array<BE1::Entity *> &excludingArray, float *scale) const {
-    BE1::Entity *minEntity = nullptr;
+Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, const Array<Entity *> &excludingArray, float *scale) const {
+    Entity *minEntity = nullptr;
 
     float minScale = FLT_MAX;
     if (scale) {
         *scale = minScale;
     }
 
-    for (BE1::Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
+    for (Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
         if (excludingArray.Find(ent)) {
             continue;
         }

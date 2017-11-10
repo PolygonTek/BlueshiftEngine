@@ -59,7 +59,7 @@ void ComAnimator::Init() {
 
     animator.ComputeAnimAABBs(referenceMesh);
 
-    const BE1::Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
+    const Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
     bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
 
     // Set SceneEntity parameters
@@ -143,7 +143,7 @@ void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
 void ComAnimator::UpdateAnimation(int currentTime) {
     animator.ComputeFrame(currentTime);
 
-    BE1::Mat3x4 *jointMats = animator.GetFrame();
+    Mat3x4 *jointMats = animator.GetFrame();
 
     // Modify jointMats for IK here !
 
@@ -161,7 +161,7 @@ void ComAnimator::MeshUpdated() {
         return;
     }
 
-    const BE1::Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
+    const Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
     bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
 
     if (isCompatibleSkeleton) {

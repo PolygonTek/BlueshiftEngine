@@ -77,19 +77,19 @@ void LuaVM::Init() {
 }
 
 extern "C" int luaopen_socket_core(lua_State *L);
-static BE1::CVar lua_server(L"lua_server", L"127.0.0.1", BE1::CVar::Archive, L"lua server for debugging");
+static CVar lua_server(L"lua_server", L"127.0.0.1", CVar::Archive, L"lua server for debugging");
 
 void LuaVM::EnableDebug() {
     char *server = tombs(lua_server.GetString());
     if (server[0] == 0)
         return;
     
-    BE1::File *f = BE1::fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
+    File *f = fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
     if (!f)
         return;
     fileSystem.CloseFile(f);
     state->Require("socket.core", luaopen_socket_core);
-    char *cmd = BE1::va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
+    char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
     (*state)(cmd);
 }
 

@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-struct MinMaxCurve {
+struct BE_API MinMaxCurve {
     enum Type {
         InvalidType = -1,
         ConstantType = 0,

@@ -172,6 +172,10 @@ void Entity::InsertComponent(Component *component, int index) {
     EmitSignal(&SIG_ComponentInserted, component, index);
 }
 
+bool Entity::RemoveComponent(Component *component) {
+    return components.Remove(component);
+}
+
 void Entity::GetChildren(EntityPtrArray &children) const {
     for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
         children.Append(child);
@@ -513,17 +517,27 @@ void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &r
     for (int entityIndex = 0; entityIndex < entities.Count(); entityIndex++) {
         Entity *entity = entities[entityIndex];
 
-        BE1::Array<BE1::PropertyInfo> propertyInfos;
+        Array<PropertyInfo> propertyInfos;
         entity->GetPropertyInfoList(propertyInfos);
 
         for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
             const auto &propInfo = propertyInfos[propIndex];
             
             if (propInfo.GetType() == Variant::GuidType) {
-                const Guid fromGuid = entity->GetProperty(propInfo.GetName()).As<Guid>();
+                if (propInfo.GetFlags() & PropertyInfo::IsArray) {
+                    for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+                        const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
-                if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                    entity->SetProperty(propInfo.GetName(), toGuid);
+                        if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                            entity->SetArrayProperty(propIndex, arrayIndex, toGuid);
+                        }
+                    }
+                } else {
+                    const Guid fromGuid = entity->GetProperty(propIndex).As<Guid>();
+
+                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                        entity->SetProperty(propIndex, toGuid);
+                    }
                 }
             }
         }
@@ -531,17 +545,27 @@ void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &r
         for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
             Component *component = entity->GetComponent(componentIndex);
 
-            BE1::Array<BE1::PropertyInfo> propertyInfos;
+            Array<PropertyInfo> propertyInfos;
             component->GetPropertyInfoList(propertyInfos);
 
             for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
                 const auto &propInfo = propertyInfos[propIndex];
 
                 if (propInfo.GetType() == Variant::GuidType) {
-                    const Guid fromGuid = component->GetProperty(propInfo.GetName()).As<Guid>();
+                    if (propInfo.GetFlags() & PropertyInfo::IsArray) {
+                        for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+                            const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
-                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                        component->SetProperty(propInfo.GetName(), toGuid);
+                            if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                                component->SetArrayProperty(propIndex, arrayIndex, toGuid);
+                            }
+                        }
+                    } else {
+                        const Guid fromGuid = component->GetProperty(propIndex).As<Guid>();
+
+                        if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                            component->SetProperty(propIndex, toGuid);
+                        }
                     }
                 }
             }

@@ -240,7 +240,7 @@ const AABB ComCamera::GetAABB() {
 }
 
 float ComCamera::GetAspectRatio() const {
-    const BE1::RenderContext *ctx = BE1::renderSystem.GetMainRenderContext();
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
 
     const int screenWidth = ctx->GetScreenWidth();
     const int screenHeight = ctx->GetScreenHeight();
@@ -249,7 +249,7 @@ float ComCamera::GetAspectRatio() const {
 }
 
 const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
-    const BE1::RenderContext *mainRenderContext = BE1::renderSystem.GetMainRenderContext();
+    const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
 
     const int screenWidth = mainRenderContext->GetScreenWidth();
     const int screenHeight = mainRenderContext->GetScreenHeight();
@@ -283,7 +283,7 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
 }
 
 const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
-    const BE1::RenderContext *mainRenderContext = BE1::renderSystem.GetMainRenderContext();
+    const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
 
     const int screenWidth = mainRenderContext->GetScreenWidth();
     const int screenHeight = mainRenderContext->GetScreenHeight();

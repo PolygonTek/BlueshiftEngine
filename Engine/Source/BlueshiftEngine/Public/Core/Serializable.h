@@ -22,53 +22,71 @@ BE_NAMESPACE_BEGIN
 
 class PropertyInfo;
 
+/// Interface for objects with automatic serialization through properties.
 class BE_API Serializable : public SignalObject {
 public:
                             /// Gets property info with the given property name.
     bool                    GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
-
                             /// Gets property info with the given property index.
     bool                    GetPropertyInfo(int index, PropertyInfo &propertyInfo) const;
-
                             /// Gets property info array.
     virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const = 0;
 
                             /// Serialize to JSON value.
     void                    Serialize(Json::Value &out) const;
-
                             /// Deserialize from JSON value.
     void                    Deserialize(const Json::Value &in);
 
-                            /// Gets a property value by name. Returns empty variant if not found.
-    Variant                 GetProperty(const char *name) const;
-
-                            /// Gets a indexed property value by name. Returns empty variant if not found.
-    Variant                 GetProperty(const char *name, int index) const;
-
                             /// Returns a property default value by name. Returns empty variant if not found.
     Variant                 GetPropertyDefault(const char *name) const;
+                            /// Returns a property default value by index. Returns empty variant if not found.
+    Variant                 GetPropertyDefault(int index) const;
+    
+                            /// Gets a property value by name. Returns empty variant if not found.
+    Variant                 GetProperty(const char *name) const;
+                            /// Gets a property value by index. Returns empty variant if not found.
+    Variant                 GetProperty(int index) const;
+                            /// Gets a property value by property info
+    void                    GetProperty(const PropertyInfo &propertyInfo, Variant &out) const;
 
                             /// Sets a property value by name. Returns true if successfully set.
-    bool                    SetProperty(const char *name, const Variant &value);
+    bool                    SetProperty(const char *name, const Variant &value, bool skipSignal = false);
+                            /// Sets a property value by index. Returns true if successfully set.
+    bool                    SetProperty(int index, const Variant &value, bool skipSignal = false);
+                            /// Sets a property value by property info.
+    bool                    SetProperty(const PropertyInfo &propertyInfo, const Variant &value, bool skipSignal = false);
+    
+                            /// Gets a indexed property value by name. Returns empty variant if not found.
+    Variant                 GetArrayProperty(const char *name, int elementIndex) const;
+                            /// Gets a indexed property value by index. Returns empty variant if not found.
+    Variant                 GetArrayProperty(int index, int elementIndex) const;
+                            /// Gets a indexed property value by property info
+    void                    GetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, Variant &out) const;
 
-                            /// Sets a indexed property value. Returns true if successfully set.
-    bool                    SetProperty(const char *name, int index, const Variant &value);
-
-                            /// Returns number of elements of array property.
-                            /// This function is valid only if property is an array.
+                            /// Returns property array count by name. This function is valid only if property is an array.
     int                     GetPropertyArrayCount(const char *name) const;
+                            /// Returns property array count by index. This function is valid only if property is an array.
+    int                     GetPropertyArrayCount(int index) const;
+                            /// Returns property array count by property info. This function is valid only if property is an array.
+    int                     GetPropertyArrayCount(const PropertyInfo &propertyInfo) const;
 
-                            /// Sets number of elements of array property.
-                            /// This function is valid only if property is an array.
+                            /// Sets a indexed property value by name. Returns true if successfully set.
+    bool                    SetArrayProperty(const char *name, int elementIndex, const Variant &value, bool skipSignal = false);
+                            /// Sets a indexed property value by index. Returns true if successfully set.
+    bool                    SetArrayProperty(int index, int elementIndex, const Variant &value, bool skipSignal = false);
+                            /// Sets a indexed property value by property info.
+    bool                    SetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, const Variant &value, bool skipSignal = false);
+
+                            /// Sets property array count by name. This function is valid only if property is an array.
     void                    SetPropertyArrayCount(const char *name, int numElements);
+                            /// Sets property array count by index. This function is valid only if property is an array.
+    void                    SetPropertyArrayCount(int index, int numElements);
+                            /// Sets property array count by property info. This function is valid only if property is an array.
+    void                    SetPropertyArrayCount(const PropertyInfo &propertyInfo, int numElements);
 
     static const SignalDef  SIG_PropertyChanged;
     static const SignalDef  SIG_PropertyArrayCountChanged;
     static const SignalDef  SIG_PropertyUpdated;
-
-private:
-    bool                    SetPropertyWithoutSignal(const char *name, const Variant &value);
-    bool                    SetPropertyWithoutSignal(const char *name, int index, const Variant &value);
 };
 
 BE_NAMESPACE_END

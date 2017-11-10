@@ -66,10 +66,10 @@ protected:
     Anim *                  anim;
     AnimAsset *             animAsset;
 
-    BE1::Array<int>         jointIndexes;
-    BE1::Array<int>         jointParents;
+    Array<int>              jointIndexes;
+    Array<int>              jointParents;
     Mat3x4 *                jointMats;
-    BE1::Array<AABB>        frameAABBs;
+    Array<AABB>             frameAABBs;
 
     int                     playStartTime;
 };

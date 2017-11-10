@@ -454,25 +454,25 @@ void GameClient::DrawText(const Rect &rect, int marginX, int marginY, const wcha
 }
 
 void GameClient::DrawConsole() {
-    Font *oldFont = BE1::gameClient.GetFont();
+    Font *oldFont = gameClient.GetFont();
 
     SetFont(nullptr);
-    SetTextColor(BE1::Color4::grey);
+    SetTextColor(Color4::grey);
 
     if (cl_showFps.GetBool()) {
-        SetTextColor(BE1::Color4::white);
-        DrawString(0, 0, BE1::wva(L"%ifps", fps), -1, DTF_RIGHT | DTF_DROPSHADOW);
+        SetTextColor(Color4::white);
+        DrawString(0, 0, wva(L"%ifps", fps), -1, DTF_RIGHT | DTF_DROPSHADOW);
     }
 
     if (cl_showTimer.GetBool()) {
-        SetTextColor(BE1::Color4::white);
+        SetTextColor(Color4::white);
 
         int ts = (int)(time * 0.001f);
         int hours = (ts / 3600) % 24;
         int minutes = (ts / 60) % 60;
         int seconds = ts % 60;
         
-        DrawString(0, CONSOLE_FONT_HEIGHT, BE1::wva(L"%02i:%02i:%02i", hours, minutes, seconds), -1, DTF_RIGHT | DTF_DROPSHADOW);
+        DrawString(0, CONSOLE_FONT_HEIGHT, wva(L"%02i:%02i:%02i", hours, minutes, seconds), -1, DTF_RIGHT | DTF_DROPSHADOW);
     }
 
     if (consoleHeight > 0.0f) {

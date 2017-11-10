@@ -200,7 +200,7 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
 void ComSkinnedMeshRenderer::UpdateAnimation(int currentTime) {
     if (anim) {
         int time = currentTime - playStartTime;
-        BE1::Anim::FrameInterpolation frameInterpolation;
+        Anim::FrameInterpolation frameInterpolation;
         anim->TimeToFrameInterpolation(time, frameInterpolation);
 
         JointPose *jointFrame = (JointPose *)_alloca16(skeleton->NumJoints() * sizeof(jointFrame[0]));
