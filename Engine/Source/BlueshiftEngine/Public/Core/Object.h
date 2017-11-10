@@ -43,12 +43,12 @@ using EventCallback = void (Object::*)();
 
 template <typename T>
 struct EventInfo {
-    const EventDef *    eventDef;
-    EventCallback       function;
+    const EventDef *eventDef;
+    EventCallback function;
 };
 
-extern const EventDef   EV_Destroy;
-extern const EventDef   EV_ImmediateDestroy;
+extern const EventDef EV_Destroy;
+extern const EventDef EV_ImmediateDestroy;
 
 // 이 매크로는 Object class 를 상속받는 추상 클래스의 prototype 에 선언해야 한다.
 // 객체화하는데 필요한 type 정보와 run-time type checking 기능을 제공한다. 
@@ -109,8 +109,7 @@ class BE_API MetaObject {
     friend class Object;
 
 public:
-    MetaObject(const char *visualname, const char *classname, const char *superclassname,
-        Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap);
+    MetaObject(const char *visualname, const char *classname, const char *superclassname, Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap);
     ~MetaObject();
 
     void                        Init();
@@ -155,6 +154,7 @@ private:
     int                         lastChildIndex;     // last grandchild node hierarchy index
     MetaObject *                super;
     MetaObject *                next;
+
     Array<PropertyInfo>         propertyInfos;
     HashIndex                   propertyInfoHash;
 
@@ -167,13 +167,13 @@ class BE_API Object : public Serializable {
 public:
     ABSTRACT_PROTOTYPE(Object);
 
-    Object() : Serializable(this) {}
+    Object() = default;
     virtual ~Object();
 
-                                /// Returns class name
+                                /// Returns class name.
     Str                         ClassName() const;
 
-                                /// Returns super class name
+                                /// Returns super class name.
     Str                         SuperClassName() const;
 
     virtual Str                 ToString() const { return ""; }
@@ -183,34 +183,34 @@ public:
     template <typename T> 
     const T *                   Cast() const;
 
-                                /// Returns true if meta object of this object is a meta object metaObject
+                                /// Returns true if meta object of this object is a meta object metaObject.
     bool                        IsTypeOf(const MetaObject &metaObject) const;
     template <typename T>
     bool                        IsTypeOf() const { return IsTypeOf(T::metaObject); }
 
-                                /// Returns true if this object is a instance of meta object metaObject
+                                /// Returns true if this object is a instance of meta object metaObject.
     bool                        IsInstanceOf(const MetaObject &metaObject) const;
     template <typename T>
     bool                        IsInstanceOf() const { return IsInstanceOf(T::metaObject); }
 
-                                /// Returns true if this object can be respondable event evdef
+                                /// Returns true if this object can be respondable event evdef.
     bool                        IsRespondsTo(const EventDef &evdef) const;
 
-                                /// Returns GUID of the object
+                                /// Returns GUID of the object.
     const Guid &                GetGuid() const { return guid; }
 
-                                /// Returns instance ID of the object
+                                /// Returns instance ID of the object.
     int                         GetInstanceID() const { return instanceID; }
 
-                                /// Post a event
+                                /// Post a event.
     template <typename... Args>
     bool                        PostEvent(const EventDef *evdef, Args&&... args);
 
-                                /// Post a event that will be executed after given milliseconds
+                                /// Post a event that will be executed after given milliseconds.
     template <typename... Args>
     bool                        PostEventMS(const EventDef *evdef, int milliseconds, Args&&... args);
 
-                                /// Post a event that will be executed after given seconds
+                                /// Post a event that will be executed after given seconds.
     template <typename... Args>
     bool                        PostEventSec(const EventDef *evdef, int seconds, Args&&... args);
 
@@ -218,22 +218,16 @@ public:
     bool                        ProcessEvent(const EventDef *evdef, Args&&... args);
     bool                        ProcessEventArgPtr(const EventDef *evdef, intptr_t *data);
 
-                                /// Cancels a event in event queue
+                                /// Cancels a event in event queue.
     void                        CancelEvents(const EventDef *evdef);
 
-                                /// Gets property info with the given index
-    bool                        GetPropertyInfo(int index, PropertyInfo &propertyInfo) const;
-
-                                /// Gets property info with the given name
-    bool                        GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
-
-                                /// Gets full list of property info
+                                /// Gets full list of property info.
     virtual void                GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const { GetMetaObject()->GetPropertyInfoList(propertyInfos); }
     
     static void                 Init();
     static void                 Shutdown();
 
-                                /// Finds meta object with the given name
+                                /// Finds meta object with the given name.
     static MetaObject *         FindMetaObject(const char *name);
 
     static Object *             CreateInstance(const char *name, const Guid &guid = Guid::zero);
@@ -260,7 +254,7 @@ private:
     void                        Event_Destroy();
 
     static bool                 initialized;
-    static Array<MetaObject *>  types;          // alphabetical order
+    static Array<MetaObject *>  types;          // in alphabetical order
 };
 
 BE_INLINE bool Object::IsTypeOf(const MetaObject &metaObject) const {

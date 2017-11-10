@@ -231,6 +231,7 @@ public:
     void                    Clear();
 
     void                    SetType(Type type);
+
     bool                    SetFromString(Type type, const char *str);
 
     Variant &               operator=(const Variant &rhs);

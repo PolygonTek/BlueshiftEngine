@@ -384,32 +384,6 @@ Object *Object::FindInstance(const Guid &guid) {
     return instance;
 }
 
-bool Object::GetPropertyInfo(int index, PropertyInfo &propertyInfo) const {
-    Array<PropertyInfo> propertyInfos;
-    GetPropertyInfoList(propertyInfos);
-
-    if (index < 0 || index > propertyInfos.Count() - 1) {
-        return false;
-    }
-
-    propertyInfo = propertyInfos[index];
-    return true;
-}
-
-bool Object::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
-    Array<PropertyInfo> propertyInfos;
-    GetPropertyInfoList(propertyInfos);
-
-    for (int i = 0; i < propertyInfos.Count(); i++) {
-        if (!Str::Cmp(propertyInfos[i].GetName(), name)) {
-            propertyInfo = propertyInfos[i];
-            return true;
-        }
-    }
-
-    return false;
-}
-
 void Object::ListClasses(const CmdArgs &args) {
     BE_LOG(L"%-24hs %-24hs %-6hs %-6hs\n", "ClassName", "SuperClass", "Type", "SubClasses");
     BE_LOG(L"----------------------------------------------------------------------\n");

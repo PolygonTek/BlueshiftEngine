@@ -26,7 +26,6 @@ BE_NAMESPACE_BEGIN
 
 class Variant;
 class Serializable;
-class Object;
 class MetaObject;
 class Lexer;
 
@@ -89,25 +88,25 @@ struct MixedPropertyTrait {
 };
 
 /// Abstract base class for invoking property getter/setter functions.
-class PropertyAccessor {
+class BE_API PropertyAccessor {
 public:
     /// Get the property.
-    virtual void Get(const Object *ptr, Variant &dest) const {}
+    virtual void Get(const Serializable *ptr, Variant &dest) const = 0;
 
     /// Get the element of the property array.
-    virtual void Get(const Object *ptr, int index, Variant &dest) const {}
+    virtual void Get(const Serializable *ptr, int index, Variant &dest) const = 0;
 
     /// Set the property.
-    virtual void Set(Object *ptr, const Variant &src) {}
+    virtual void Set(Serializable *ptr, const Variant &src) = 0;
 
     /// Set the element of the property array.
-    virtual void Set(Object *ptr, int index, const Variant &src) {}
+    virtual void Set(Serializable *ptr, int index, const Variant &src) = 0;
 
     /// Get the count of the property array.
-    virtual int GetCount(const Object *ptr) const { return 0; }
+    virtual int GetCount(const Serializable *ptr) const = 0;
 
     /// Set the count of the property array.
-    virtual void SetCount(Object *ptr, int count) {}
+    virtual void SetCount(Serializable *ptr, int count) = 0;
 };
 
 /// Template implementation of the property accessor.
@@ -130,17 +129,38 @@ public:
     }
 
     /// Invoke getter function.
-    virtual void Get(const Object *ptr, Variant &out) const override {
+    virtual void Get(const Serializable *ptr, Variant &out) const override {
         assert(ptr);
         const Class *classPtr = static_cast<const Class *>(ptr);
         out = (classPtr->*getFunction)();
     }
 
+    /// Get the element of the property array.
+    virtual void Get(const Serializable *ptr, int index, Variant &dest) const override {
+        assert(0);
+    }
+
     /// Invoke setter function.
-    virtual void Set(Object *ptr, const Variant &in) override {
+    virtual void Set(Serializable *ptr, const Variant &in) override {
         assert(ptr);
         Class *classPtr = static_cast<Class *>(ptr);
         (classPtr->*setFunction)(in.As<Type>());
+    }
+
+    /// Set the element of the property array.
+    virtual void Set(Serializable *ptr, int index, const Variant &src) override {
+        assert(0);
+    }
+
+    /// Get the count of the property array.
+    virtual int GetCount(const Serializable *ptr) const override { 
+        assert(0);
+        return 0; 
+    }
+
+    /// Set the count of the property array.
+    virtual void SetCount(Serializable *ptr, int count) override {
+        assert(0);
     }
 };
 
@@ -162,13 +182,34 @@ public:
     }
 
     /// Invoke getter lambda.
-    virtual void Get(const Object *ptr, Variant &out) const override {
+    virtual void Get(const Serializable *ptr, Variant &out) const override {
         out = getFunction();
     }
 
+    /// Get the element of the property array.
+    virtual void Get(const Serializable *ptr, int index, Variant &dest) const override {
+        assert(0);
+    }
+
     /// Invoke setter lambda.
-    virtual void Set(Object *ptr, const Variant &in) override {
+    virtual void Set(Serializable *ptr, const Variant &in) override {
         setFunction(in.As<Type>());
+    }
+
+    /// Set the element of the property array.
+    virtual void Set(Serializable *ptr, int index, const Variant &src) override {
+        assert(0);
+    }
+
+    /// Get the count of the property array.
+    virtual int GetCount(const Serializable *ptr) const override {
+        assert(0);
+        return 0;
+    }
+
+    /// Set the count of the property array.
+    virtual void SetCount(Serializable *ptr, int count) override {
+        assert(0);
     }
 };
 
@@ -189,30 +230,40 @@ public:
         assert(getCountFunction);
         assert(setCountFunction);
     }
-    
+
     /// Invoke getter function.
-    virtual void Get(const Object *ptr, int index, Variant &out) const override {
+    virtual void Get(const Serializable *ptr, Variant &out) const override {
+        assert(0);
+    }
+
+    /// Invoke getter function.
+    virtual void Get(const Serializable *ptr, int index, Variant &out) const override {
         assert(ptr);
         const Class *classPtr = static_cast<const Class *>(ptr);
         out = (classPtr->*getFunction)(index);
     }
 
     /// Invoke setter function.
-    virtual void Set(Object *ptr, int index, const Variant &in) override {
+    virtual void Set(Serializable *ptr, const Variant &src) override {
+        assert(0);
+    }
+
+    /// Invoke setter function.
+    virtual void Set(Serializable *ptr, int index, const Variant &in) override {
         assert(ptr);
         Class *classPtr = static_cast<Class *>(ptr);
         (classPtr->*setFunction)(index, in.As<Type>());
     }
 
     /// Invoke get count function.
-    virtual int GetCount(const Object *ptr) const override {
+    virtual int GetCount(const Serializable *ptr) const override {
         assert(ptr);
         const Class *classPtr = static_cast<const Class *>(ptr);
         return (classPtr->*getCountFunction)();
     }
 
     /// Invoke set count function.
-    virtual void SetCount(Object *ptr, int count) override {
+    virtual void SetCount(Serializable *ptr, int count) override {
         assert(ptr);
         Class *classPtr = static_cast<Class *>(ptr);
         (classPtr->*setCountFunction)(count);
@@ -232,18 +283,20 @@ class BE_API PropertyInfo {
     friend class Serializable;
     friend class MetaObject;
 
+    using PropertyAccessorPtr = std::shared_ptr<PropertyAccessor>;
+
 public:
     /// Property flags
     enum Flag {
         Empty               = 0,
         Editor              = BIT(0),   // Can be appeared in editor
         Hidden              = BIT(1),   // Hide in editor
-        ReadOnly            = BIT(2),
+        ReadOnly            = BIT(2),   // Don't allow to set
         SkipSerialization   = BIT(3),
         Network             = BIT(4),   // Not used yet
         Ranged              = BIT(5),
         MultiLines          = BIT(6),   // Str type in multiline
-        IsArray             = BIT(7),
+        IsArray             = BIT(7),   // Is array property ?
         ShaderDefine        = BIT(8),
     };
 
@@ -278,19 +331,18 @@ private:
     Str                     label;              ///< Label in Editor
     Str                     desc;               ///< Description in Editor
     int                     offset;             ///< Byte offset from start of object
-    std::shared_ptr<PropertyAccessor> accessor;
+    PropertyAccessorPtr     accessor;
     Rangef                  range;
     Array<Str>              enumeration;        ///< Enumeration string list for enumeration type
     const MetaObject *      metaObject;         ///< MetaObject pointer for object type
     int                     flags;
 };
 
-BE_INLINE PropertyInfo::PropertyInfo() {
-    this->type = Variant::None;
-    this->offset = 0;
-    this->range = Rangef(0, 0, 1);
-    this->metaObject = nullptr;
-    this->flags = Empty;
+BE_INLINE PropertyInfo::PropertyInfo() :
+    type(Variant::None),
+    offset(0),
+    metaObject(nullptr),
+    flags(Empty) {
 }
 
 BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, int _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
@@ -332,14 +384,17 @@ BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Vari
 
 #define REGISTER_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        new BE1::ArrayPropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
+        new BE1::ArrayPropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
+        defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), defaultValue, desc, flags))
+        new BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), \
+        defaultValue, desc, flags))
 
 #define REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        new BE1::ArrayPropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
+        new BE1::ArrayPropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
+        defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
 
 BE_NAMESPACE_END

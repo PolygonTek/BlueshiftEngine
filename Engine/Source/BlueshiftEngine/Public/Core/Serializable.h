@@ -20,43 +20,46 @@
 
 BE_NAMESPACE_BEGIN
 
-//-------------------------------------------------------------------------------
-//
-// Serializable
-//
-//-------------------------------------------------------------------------------
+class PropertyInfo;
 
-class Serializable : public SignalObject {
+class BE_API Serializable : public SignalObject {
 public:
-    explicit Serializable(Object *owner);
+                            /// Gets property info with the given property name.
+    bool                    GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
 
-                            /// Serialize to JSON value
+                            /// Gets property info with the given property index.
+    bool                    GetPropertyInfo(int index, PropertyInfo &propertyInfo) const;
+
+                            /// Gets property info array.
+    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const = 0;
+
+                            /// Serialize to JSON value.
     void                    Serialize(Json::Value &out) const;
 
-                            /// Deserialize from JSON value
+                            /// Deserialize from JSON value.
     void                    Deserialize(const Json::Value &in);
 
-                            /// Returns a default value
-    Variant                 GetPropertyDefault(const char *name) const;
-
-                            /// Gets a property value
+                            /// Gets a property value by name. Returns empty variant if not found.
     Variant                 GetProperty(const char *name) const;
 
-                            /// Gets a indexed property value
+                            /// Gets a indexed property value by name. Returns empty variant if not found.
     Variant                 GetProperty(const char *name, int index) const;
 
-                            /// Sets a property value
+                            /// Returns a property default value by name. Returns empty variant if not found.
+    Variant                 GetPropertyDefault(const char *name) const;
+
+                            /// Sets a property value by name. Returns true if successfully set.
     bool                    SetProperty(const char *name, const Variant &value);
 
-                            /// Sets a indexed property value
+                            /// Sets a indexed property value. Returns true if successfully set.
     bool                    SetProperty(const char *name, int index, const Variant &value);
 
-                            /// Returns number of elements of array property
-                            /// This function is valid only if property is an array
+                            /// Returns number of elements of array property.
+                            /// This function is valid only if property is an array.
     int                     GetPropertyArrayCount(const char *name) const;
 
-                            /// Sets number of elements of array property
-                            /// This function is valid only if property is an array
+                            /// Sets number of elements of array property.
+                            /// This function is valid only if property is an array.
     void                    SetPropertyArrayCount(const char *name, int numElements);
 
     static const SignalDef  SIG_PropertyChanged;
@@ -66,8 +69,6 @@ public:
 private:
     bool                    SetPropertyWithoutSignal(const char *name, const Variant &value);
     bool                    SetPropertyWithoutSignal(const char *name, int index, const Variant &value);
-
-    Object *                owner;
 };
 
 BE_NAMESPACE_END
