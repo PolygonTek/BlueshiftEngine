@@ -184,7 +184,7 @@ void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
         const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
         float w = ctx->GetRenderingWidth() * nw;
         float h = ctx->GetRenderingHeight() * nh;
-        float aspectRatio = 1;//w / h;
+        float aspectRatio = w / h;
 
         if (viewParms.orthogonal) {
             viewParms.sizeX = size;
@@ -242,8 +242,8 @@ const AABB ComCamera::GetAABB() {
 float ComCamera::GetAspectRatio() const {
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
 
-    const int screenWidth = ctx->GetScreenWidth();
-    const int screenHeight = ctx->GetScreenHeight();
+    const int screenWidth = ctx->GetDeviceWidth();
+    const int screenHeight = ctx->GetDeviceHeight();
 
     return (float)screenWidth / screenHeight;
 }
@@ -251,8 +251,8 @@ float ComCamera::GetAspectRatio() const {
 const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
     const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
 
-    const int screenWidth = mainRenderContext->GetScreenWidth();
-    const int screenHeight = mainRenderContext->GetScreenHeight();
+    const int screenWidth = mainRenderContext->GetDeviceWidth();
+    const int screenHeight = mainRenderContext->GetDeviceHeight();
 
     Vec3 localPos = viewParms.axis.TransposedMulVec(worldPos - viewParms.origin);
     Point screenPoint;
@@ -285,8 +285,8 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
 const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
     const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
 
-    const int screenWidth = mainRenderContext->GetScreenWidth();
-    const int screenHeight = mainRenderContext->GetScreenHeight();
+    const int screenWidth = mainRenderContext->GetDeviceWidth();
+    const int screenHeight = mainRenderContext->GetDeviceHeight();
 
     Rect screenRect;
     screenRect.x = screenWidth * nx;
@@ -369,8 +369,8 @@ void ComCamera::RenderScene() {
     viewParms.renderRect.w = renderingWidth * nw;
     viewParms.renderRect.h = renderingHeight * nh;
 
-    // Get the aspect ratio from screen size (logical screen size)
-    float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
+    // Get the aspect ratio from device screen size
+    float aspectRatio = (float)ctx->GetDeviceWidth() / ctx->GetDeviceHeight();
 
     if (viewParms.orthogonal) {
         // Compute viewport rectangle size in orthogonal projection
