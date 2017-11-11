@@ -37,13 +37,14 @@ void ComSkinnedMeshRenderer::RegisterProperties() {
 }
 
 ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {
+    jointMats = nullptr;
+
     skeletonAsset = nullptr;
     skeleton = nullptr;
 
     animAsset = nullptr;
     anim = nullptr;
-
-    jointMats = nullptr;
+    animGuid = Guid::zero;
 }
 
 ComSkinnedMeshRenderer::~ComSkinnedMeshRenderer() {
@@ -81,7 +82,16 @@ void ComSkinnedMeshRenderer::Purge(bool chainPurge) {
 void ComSkinnedMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
-    playStartTime = GetGameWorld()->GetTime();
+    if (!anim) {
+        ChangeAnim(animGuid);
+    }
+
+    bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
+
+    // Set SceneEntity parameters
+    sceneEntity.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
+    sceneEntity.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
+    sceneEntity.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
 
     // Mark as initialized
     SetInitialized(true);
@@ -143,6 +153,11 @@ void ComSkinnedMeshRenderer::ChangeSkeleton(const Guid &skeletonGuid) {
 }
 
 void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
+    if (!referenceMesh) {
+        this->animGuid = animGuid;
+        return;
+    }
+
     // Disconnect with previously connected anim asset
     if (animAsset) {
         animAsset->Disconnect(&Asset::SIG_Reloaded, this);

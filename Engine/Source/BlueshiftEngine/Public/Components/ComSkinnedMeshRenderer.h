@@ -65,6 +65,7 @@ protected:
     
     Anim *                  anim;
     AnimAsset *             animAsset;
+    Guid                    animGuid;
 
     Array<int>              jointIndexes;
     Array<int>              jointParents;
