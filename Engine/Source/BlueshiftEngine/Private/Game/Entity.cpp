@@ -272,7 +272,7 @@ void Entity::SetActive(bool active) {
 
 const AABB Entity::GetAABB() const {
     AABB aabb;
-    aabb.Clear();
+    aabb.SetZero();
 
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];

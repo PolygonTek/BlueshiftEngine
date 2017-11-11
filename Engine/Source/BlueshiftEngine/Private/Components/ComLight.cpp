@@ -166,11 +166,15 @@ void ComLight::SetEnable(bool enable) {
         }
     } else {
         if (IsEnabled()) {
-            renderWorld->RemoveLight(sceneLightHandle);
-            sceneLightHandle = -1;
+            if (sceneLightHandle != -1) {
+                renderWorld->RemoveLight(sceneLightHandle);
+                sceneLightHandle = -1;
+            }
 
-            renderWorld->RemoveEntity(spriteHandle);
-            spriteHandle = -1;
+            if (spriteHandle != -1) {
+                renderWorld->RemoveEntity(spriteHandle);
+                spriteHandle = -1;
+            }
 
             Component::SetEnable(false);
         }

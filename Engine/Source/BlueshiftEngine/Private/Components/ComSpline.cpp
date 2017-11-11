@@ -32,6 +32,7 @@ void ComSpline::RegisterProperties() {
 ComSpline::ComSpline() {
     originCurve = nullptr;
     anglesCurve = nullptr;
+
     curveUpdated = false;
 }
 
@@ -110,7 +111,9 @@ Guid ComSpline::GetPointGuid(int index) const {
 void ComSpline::SetPointGuid(int index, const Guid &pointGuid) {
     pointGuids[index] = pointGuid;
 
-    UpdateCurve();
+    if (initialized) {
+        UpdateCurve();
+    }
 }
 
 void ComSpline::UpdateCurve() {
@@ -275,7 +278,9 @@ bool ComSpline::IsLoop() const {
 void ComSpline::SetLoop(bool loop) {
     this->loop = loop;
 
-    UpdateCurve();
+    if (initialized) {
+        UpdateCurve();
+    }
 }
 
 void ComSpline::PointTransformUpdated(const ComTransform *transform) {

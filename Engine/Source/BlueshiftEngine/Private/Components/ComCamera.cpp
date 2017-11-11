@@ -153,8 +153,10 @@ void ComCamera::SetEnable(bool enable) {
         }
     } else {
         if (IsEnabled()) {
-            renderWorld->RemoveEntity(spriteHandle);
-            spriteHandle = -1;
+            if (spriteHandle != -1) {
+                renderWorld->RemoveEntity(spriteHandle);
+                spriteHandle = -1;
+            }
 
             Component::SetEnable(false);
         }
