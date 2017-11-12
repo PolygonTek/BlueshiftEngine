@@ -186,7 +186,8 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
         }
 
         physicsWorld->dynamicsWorld->addRigidBody(rigidBody, filterGroup, filterMask);
-        break; }
+        break; 
+    }
     case Type::Character:
         physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::CharacterFilter, 
             btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger | btBroadphaseProxy::CharacterFilter);

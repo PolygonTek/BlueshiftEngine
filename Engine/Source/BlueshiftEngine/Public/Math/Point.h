@@ -33,6 +33,15 @@ public:
     Point() = default;
     /// Constructs a Point with the value (x, y).
     Point(int x, int y);
+
+#ifdef QPOINT_H
+    /// Constructs from a QPoint.
+    Point(const QPoint &qpoint) {
+        this->x = qpoint.x();
+        this->y = qpoint.y();
+    }
+#endif
+
     /// Constructs a Point from a C array, to the value (data[0], data[1]).
     explicit Point(int data[2]);
     /// Copy constructor
@@ -74,7 +83,11 @@ public:
     float               Distance(const Point &other) const;
     float               DistanceSqr(const Point &other) const;
 
-    const Vec2          ToVec2() const { return Vec2(x, y); }
+    Vec2                ToVec2() const { return Vec2(x, y); }
+
+#ifdef QPOINT_H
+    QPoint              ToQPoint() const { return QPoint(x, y); }
+#endif
 
                         /// Returns "x y".
     const char *        ToString() const;

@@ -35,6 +35,17 @@ public:
     Rect() = default;
     /// Constructs from coordinates.
     Rect(int x, int y, int w, int h);
+
+#ifdef QRECT_H
+    /// Constructs from a QPoint.
+    Rect(const QRect &qrect) {
+        this->x = qrect.x();
+        this->y = qrect.y();
+        this->w = qrect.width();
+        this->h = qrect.height();
+    }
+#endif
+
     /// Constructs from a point.
     explicit Rect(const Point &p);
 
@@ -103,6 +114,10 @@ public:
 
                         /// Returns "x y w h"
     const char *        ToString() const;
+
+#ifdef QRECT_H
+    QRect               ToQRect() const { return QRect(x, y, w, h); }
+#endif
 
     static const Rect   empty;
 

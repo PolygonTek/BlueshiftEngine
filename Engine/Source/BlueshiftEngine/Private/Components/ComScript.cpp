@@ -523,7 +523,8 @@ void ComScript::SetScriptProperties() {
                     }
                 }
             }
-            break; }
+            break; 
+        }
         default:
             assert(0);
             break;
