@@ -223,6 +223,9 @@ static void ShutdownInstance() {
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
     MSG msg;
 
+    // Disable automatic DPI scaling.
+    SetProcessDPIAware();
+
     // Initialize global strings
     LoadString(hInstance, IDS_APP_TITLE, szTitle, COUNT_OF(szTitle));
 
@@ -301,7 +304,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
         EndPaint(hWnd, &ps);
-        return 0; }*/
+        return 0; 
+    }*/
     case WM_SIZE:
         if (wParam == SIZE_MINIMIZED) {
         }
@@ -402,7 +406,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         } else if (button == 2) {
             BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse5, true, 0, NULL);
         }
-        return 0; }
+        return 0; 
+    }
     case WM_LBUTTONUP:
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse1, false, 0, NULL);
         return 0;
@@ -419,13 +424,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         } else if (button == 2) {
             BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse5, false, 0, NULL);
         }
-        return 0; }
+        return 0; 
+    }
     case WM_MOUSEMOVE: {
         const int x = GET_X_LPARAM(lParam);
         const int y = GET_Y_LPARAM(lParam);
 
         BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, x, y, 0, NULL);
-        return 0; }
+        return 0; 
+    }
     case WM_MOUSEWHEEL:
         if ((short)HIWORD(wParam) > 0) {
             BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelUp, true, 0, NULL);

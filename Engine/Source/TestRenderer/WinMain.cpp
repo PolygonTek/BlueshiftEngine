@@ -256,6 +256,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    // Disable automatic DPI scaling.
+    SetProcessDPIAware();
+
     MSG msg;
     HACCEL hAccelTable;
 
@@ -338,7 +341,8 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
             DestroyWindow(hwnd);
             return 0;
         }
-        break; }
+        break; 
+    }
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
