@@ -242,6 +242,18 @@ void Entity::Serialize(Json::Value &value) const {
     value["components"] = componentsValue;
 }
 
+void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue) {
+    Json::Value entityValue;
+
+    entity->Serialize(entityValue);
+
+    entitiesValue.append(entityValue);
+
+    for (Entity *child = entity->GetNode().GetChild(); child; child = child->GetNode().GetNextSibling()) {
+        Entity::SerializeHierarchy(child, entitiesValue);
+    }
+}
+
 bool Entity::IsActiveSelf() const {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
@@ -510,62 +522,67 @@ Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<G
     return newEntityValue;
 }
 
-void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &remapGuidMap) {
+Json::Value Entity::CloneEntitiesValue(const Json::Value &entitiesValue, HashTable<Guid, Guid> &oldToNewGuidMap) {
+    Json::Value clonedEntitiesValue;
+
+    for (int i = 0; i < entitiesValue.size(); i++) {
+        clonedEntitiesValue.append(CloneEntityValue(entitiesValue[i], oldToNewGuidMap));
+    }
+    return clonedEntitiesValue;
+}
+
+void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMap) {
     PropertyInfo propInfo;
     Guid toGuid;
 
-    for (int entityIndex = 0; entityIndex < entities.Count(); entityIndex++) {
-        Entity *entity = entities[entityIndex];
+    Array<PropertyInfo> propertyInfos;
+    entity->GetPropertyInfoList(propertyInfos);
 
-        Array<PropertyInfo> propertyInfos;
-        entity->GetPropertyInfoList(propertyInfos);
-
-        for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
-            const auto &propInfo = propertyInfos[propIndex];
+    for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
+        const auto &propInfo = propertyInfos[propIndex];
             
-            if (propInfo.GetType() == Variant::GuidType) {
-                if (propInfo.GetFlags() & PropertyInfo::IsArray) {
-                    for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
-                        const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
-
-                        if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                            entity->SetArrayProperty(propIndex, arrayIndex, toGuid);
-                        }
-                    }
-                } else {
-                    const Guid fromGuid = entity->GetProperty(propIndex).As<Guid>();
+        if (propInfo.GetType() == Variant::GuidType) {
+            if (propInfo.GetFlags() & PropertyInfo::IsArray) {
+                for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+                    const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
                     if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                        entity->SetProperty(propIndex, toGuid);
+                        entity->SetArrayProperty(propIndex, arrayIndex, toGuid);
                     }
+                }
+            } else {
+                const Guid fromGuid = entity->GetProperty(propIndex).As<Guid>();
+
+                if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                    entity->SetProperty(propIndex, toGuid);
                 }
             }
         }
+    }
 
-        for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
-            Component *component = entity->GetComponent(componentIndex);
+    for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
+        Component *component = entity->GetComponent(componentIndex);
 
-            Array<PropertyInfo> propertyInfos;
-            component->GetPropertyInfoList(propertyInfos);
+        Array<PropertyInfo> propertyInfos;
+        component->GetPropertyInfoList(propertyInfos);
 
-            for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
-                const auto &propInfo = propertyInfos[propIndex];
+        for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
+            const auto &propInfo = propertyInfos[propIndex];
 
-                if (propInfo.GetType() == Variant::GuidType) {
-                    if (propInfo.GetFlags() & PropertyInfo::IsArray) {
-                        for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
-                            const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
-
-                            if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                                component->SetArrayProperty(propIndex, arrayIndex, toGuid);
-                            }
-                        }
-                    } else {
-                        const Guid fromGuid = component->GetProperty(propIndex).As<Guid>();
+            if (propInfo.GetType() == Variant::GuidType) {
+                if (propInfo.GetFlags() & PropertyInfo::IsArray) {
+                    for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+                        const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
                         if (remapGuidMap.Get(fromGuid, &toGuid)) {
-                            component->SetProperty(propIndex, toGuid);
+                            component->SetArrayProperty(propIndex, arrayIndex, toGuid);
                         }
+                    }
+                } else {
+                    const Guid fromGuid = component->GetProperty(propIndex).As<Guid>();
+
+                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                        component->SetProperty(propIndex, toGuid);
                     }
                 }
             }

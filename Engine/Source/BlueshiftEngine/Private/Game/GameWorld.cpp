@@ -268,14 +268,6 @@ void GameWorld::RegisterEntity(Entity *ent, int spawn_entnum) {
     spawnIds[spawn_entnum] = spawnCount++; // spawn ID 는 따로 관리
 
     ent->entityNum = spawn_entnum;
-
-    Guid parentGuid = ent->GetProperty("parent").As<Guid>();
-    Entity *parent = FindEntityByGuid(parentGuid);
-    if (parent) {
-        ent->node.SetParent(parent->node);
-    } else {
-        ent->node.SetParent(entityHierarchy);
-    }
     
     if (gameStarted && !isMapLoading) {
         ent->Awake();
@@ -311,38 +303,27 @@ void GameWorld::UnregisterEntity(Entity *ent) {
 }
 
 Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
-    EntityPtrArray originalEntities;
+    // Serialize source entity and it's children
+    Json::Value originalEntitiesValue;
+    BE1::Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
 
-    // Get the original entity and all of it's children
-    originalEntities.Append(const_cast<Entity *>(originalEntity));
-    originalEntity->GetChildren(originalEntities);
-
+    // Clone entities value which is replaced by new GUIDs
     HashTable<Guid, Guid> guidMap;
+    Json::Value clonedEntitiesValue = Entity::CloneEntitiesValue(originalEntitiesValue, guidMap);
+
     EntityPtrArray clonedEntities;
 
-    int numEntities = originalEntities.Count();
-
-    for (int i = 0; i < numEntities; i++) {
-        Json::Value originalEntityValue;
-        originalEntities[i]->Serialize(originalEntityValue);
-        
-        Json::Value clonedEntityValue = Entity::CloneEntityValue(originalEntityValue, guidMap);
-
-        Entity *clonedEntity = Entity::CreateEntity(clonedEntityValue, this);
+    for (int i = 0; i < clonedEntitiesValue.size(); i++) {
+        // Create cloned entity
+        Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this);
         clonedEntities.Append(clonedEntity);
-    }
 
-    // Remap GUIDs for the cloned entities
-    Entity::RemapGuids(clonedEntities, guidMap);
+        // Remap all GUID references to newly created
+        Entity::RemapGuids(clonedEntity, guidMap);
 
-    // Initialize & register cloned entities
-    for (int i = 0; i < numEntities; i++) {
-        const Entity *originalEntity = originalEntities[i];
-        Entity *clonedEntity = clonedEntities[i];
-
-        // if the originalEntity is a prefab source
-        if (originalEntity->IsPrefabSource()) {
-            clonedEntity->SetProperty("prefabSource", originalEntity->GetGuid());
+        // If source entity is prefab source, mark cloned entity originated from prefab entity
+        if (originalEntitiesValue[i]["prefab"].asBool()) {
+            clonedEntity->SetProperty("prefabSource", Guid::FromString(originalEntitiesValue[i]["guid"].asCString()));
             clonedEntity->SetProperty("prefab", false);
         }
 
@@ -353,7 +334,7 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
     return clonedEntities[0];
 }
 
-Entity *GameWorld::CreateEntity(const char *name) {
+Entity *GameWorld::CreateEmptyEntity(const char *name) {
     Json::Value value;
     value["name"] = name;
 
@@ -656,19 +637,6 @@ bool GameWorld::LoadMap(const char *filename) {
     return true;
 }
 
-void GameWorld::SerializeEntityHierarchy(const Hierarchy<Entity> &entityHierarchy, Json::Value &entitiesValue) {
-    Json::Value entityValue;
-
-    Entity *ent = entityHierarchy.Owner();
-    ent->Serialize(entityValue);
-
-    entitiesValue.append(entityValue);
-
-    for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), entitiesValue);
-    }
-}
-
 void GameWorld::SaveMap(const char *filename) {
     BE_LOG(L"Saving map '%hs'...\n", filename);
 
@@ -682,7 +650,7 @@ void GameWorld::SaveMap(const char *filename) {
 
     // Write entities
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), map["entities"]);
+        Entity::SerializeHierarchy(child, map["entities"]);
     }
 
     Json::StyledWriter jsonWriter;
@@ -789,7 +757,7 @@ void GameWorld::SaveSnapshot() {
     mapRenderSettings->Serialize(snapshotValues["renderSettings"]);
 
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), snapshotValues["entities"]);
+        Entity::SerializeHierarchy(child, snapshotValues["entities"]);
     }
 
     //BE_LOG(L"%i entities snapshot saved\n", snapshotValues["entities"].size());

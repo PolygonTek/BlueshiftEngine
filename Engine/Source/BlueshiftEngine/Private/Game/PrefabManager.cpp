@@ -94,44 +94,42 @@ void PrefabManager::RenamePrefab(Prefab *prefab, const Str &newName) {
 Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
     assert(!originalEntity->IsPrefabSource());
 
-    // Get the original entity and all of it's children
-    EntityPtrArray originalEntities;
-    originalEntities.Append(const_cast<Entity *>(originalEntity));
-    originalEntity->GetChildren(originalEntities);
+    // Serialize source entity and it's children
+    Json::Value originalEntitiesValue;
+    BE1::Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
+
+    // Clone entities value which is replaced by new GUIDs
+    HashTable<Guid, Guid> guidMap;
+    Json::Value prefabEntitiesValue = Entity::CloneEntitiesValue(originalEntitiesValue, guidMap);
+
+    int numEntities = originalEntitiesValue.size();
 
     EntityPtrArray prefabEntities;
-    HashTable<Guid, Guid> guidMap;
-
-    int numEntities = originalEntities.Count();
 
     for (int i = 0; i < numEntities; i++) {
-        Json::Value value;
-        originalEntities[i]->Serialize(value);
-
-        Json::Value prefabEntityValue = Entity::CloneEntityValue(value, guidMap);
-
         if (i == 0) {
             // Clear parent of this prefab root entity
-            prefabEntityValue["parent"] = Guid::zero.ToString();
+            prefabEntitiesValue[i]["parent"] = Guid::zero.ToString();
         }
 
-        prefabEntityValue["prefab"] = true;
-        prefabEntityValue["prefabSource"] = Guid::zero.ToString();
+        prefabEntitiesValue[i]["prefab"] = true;
+        prefabEntitiesValue[i]["prefabSource"] = Guid::zero.ToString();
 
-        Entity *prefabEntity = Entity::CreateEntity(prefabEntityValue, nullptr);
+        Entity *prefabEntity = Entity::CreateEntity(prefabEntitiesValue[i], nullptr);
         prefabEntity->Init();
 
         prefabEntities.Append(prefabEntity);
 
+        // Remap all GUID references to newly created
+        Entity::RemapGuids(prefabEntity, guidMap);
+
         // Set the original entity's prefab source
-        originalEntities[i]->SetProperty("prefabSource", prefabEntity->GetGuid());
+        originalEntitiesValue[i]["prefabSource"] = prefabEntity->GetGuid().ToString();
     }
 
-    // Remap GUIDs for the cloned entities
-    Entity::RemapGuids(prefabEntities, guidMap);
+    prefabEntitiesValue.clear();
 
     // Serialize prefab entities
-    Json::Value prefabEntitiesValue;
     for (int i = 0; i < numEntities; i++) {
         Json::Value value;
         prefabEntities[i]->Serialize(value);

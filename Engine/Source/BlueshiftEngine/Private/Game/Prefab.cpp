@@ -93,8 +93,9 @@ bool Prefab::Load(const char *filename) {
 }
 
 void Prefab::Write(const char *filename) {
+    // Serialize root entity and it's children
     Json::Value entitiesValue;
-    GameWorld::SerializeEntityHierarchy(entityHierarchy.GetChild()->GetNode(), entitiesValue);
+    Entity::SerializeHierarchy(entityHierarchy.GetChild(), entitiesValue);
 
     Json::StyledWriter jsonWriter;
     Str jsonText = jsonWriter.write(entitiesValue).c_str();

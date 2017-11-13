@@ -95,15 +95,13 @@ public:
     void                        UnregisterEntity(Entity *ent);
 
                                 // Create an entity that has no components but transform component
-    Entity *                    CreateEntity(const char *name);
+    Entity *                    CreateEmptyEntity(const char *name);
 
     Entity *                    InstantiateEntity(const Entity *originalEntity);
     Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Angles &angles);
 
     bool                        SpawnEntityFromJson(Json::Value &entityValue, Entity **ent = nullptr);
     void                        SpawnEntitiesFromJson(Json::Value &entitiesValue);
-
-    static void                 SerializeEntityHierarchy(const Hierarchy<Entity> &entityHierarchy, Json::Value &entitiesValue);
 
     void                        SaveSnapshot();
     void                        RestoreSnapshot();

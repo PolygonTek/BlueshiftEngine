@@ -173,6 +173,8 @@ public:
                                 /// Serializes entity to JSON value
     void                        Serialize(Json::Value &data) const;
 
+    static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue);
+
     bool                        IsActiveSelf() const;
     void                        SetActive(bool active);
 
@@ -191,8 +193,11 @@ public:
 
                                 /// Makes copy of JSON value of an entity and then replace each GUIDs of entity/components to the new ones
     static Json::Value          CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap);
+                                /// Makes copy of JSON value of entities and then replace each GUIDs of entity/components to the new ones
+    static Json::Value          CloneEntitiesValue(const Json::Value &entitiesValue, HashTable<Guid, Guid> &oldToNewGuidMap);
 
-    static void                 RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &remapGuidMap);
+                                /// Replaces GUIDs of an entity (including components) using GUID map
+    static void                 RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMap);
 
     static void                 DestroyInstance(Entity *entity);
 
