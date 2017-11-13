@@ -101,7 +101,7 @@ private:
     Str                     name;               ///< Property name
     Str                     label;              ///< Label in Editor
     Str                     desc;               ///< Description in Editor
-    int                     offset;             ///< Byte offset from start of object
+    int                     offset;             ///< Byte offsets from start of object
     PropertyAccessorPtr     accessor;
     Rangef                  range;
     Array<Str>              enumeration;        ///< Enumeration string list for enumeration type

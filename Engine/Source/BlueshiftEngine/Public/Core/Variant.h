@@ -227,6 +227,7 @@ public:
 
     void                    Clear();
 
+    Type                    GetType() const { return type; }
     void                    SetType(Type type);
 
     bool                    SetFromString(Type type, const char *str);
