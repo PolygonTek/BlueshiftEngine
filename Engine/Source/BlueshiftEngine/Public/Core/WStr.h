@@ -199,7 +199,7 @@ public:
                         /// Returns a string which is the result of concatenating s1 and s2.
     friend WStr         operator+(const wchar_t *s1, const WStr &s2);
                         /// Returns a string which is the result of concatenating the string s and the character ch.
-    friend WStr         operator+(const WStr &s, const wchar_t ch);                        
+    friend WStr         operator+(const WStr &s, const wchar_t ch);
 
                         /// Make string in lowercase.
     void                ToLower();

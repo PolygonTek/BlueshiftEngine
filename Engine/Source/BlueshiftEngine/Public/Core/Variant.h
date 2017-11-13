@@ -24,9 +24,6 @@
 
 BE_NAMESPACE_BEGIN
 
-class MetaObject;
-class Variant;
-
 /// Variable that supports a fixed set of types.
 class BE_API Variant {
 public:

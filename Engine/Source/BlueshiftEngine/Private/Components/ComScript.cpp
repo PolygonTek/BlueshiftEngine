@@ -627,7 +627,7 @@ void ComScript::SetScriptGuid(const Guid &guid) {
     ChangeScript(guid);
 
     if (IsInitialized()) {
-        EmitSignal(&Serializable::SIG_PropertyUpdated);
+        EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
     }
 }
 

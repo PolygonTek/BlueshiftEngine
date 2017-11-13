@@ -429,10 +429,10 @@ Angles Mat3::ToAngles() const {
 //  
 //-------------------------------------------------------------------------------------------
 Rotation Mat3::ToRotation() const {
-    Rotation    r;
-    float       s, t;
-    int         i, j, k;
-    static int  next[3] = { 1, 2, 0 };
+    static constexpr int next[3] = { 1, 2, 0 };
+    Rotation r;
+    float s, t;
+    int i, j, k;
 
     // trace == 2c + 1
     float trace = mat[0][0] + mat[1][1] + mat[2][2];
@@ -533,9 +533,9 @@ Rotation Mat3::ToRotation() const {
 //
 //-------------------------------------------------------------------------------------------
 Quat Mat3::ToQuat() const {
-    static int  next[3] = { 1, 2, 0 };
-    float       s, t;
-    Quat        q;
+    static constexpr int next[3] = { 1, 2, 0 };
+    float s, t;
+    Quat q;
 
     float trace = mat[0][0] + mat[1][1] + mat[2][2];
 

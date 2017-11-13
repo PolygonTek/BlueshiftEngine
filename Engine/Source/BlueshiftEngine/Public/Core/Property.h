@@ -29,64 +29,6 @@ class Serializable;
 class MetaObject;
 class Lexer;
 
-/// Property type trait (default use const reference for object type).
-template <typename T, typename = void> 
-struct PropertyTrait {
-    /// Get function return type.
-    using ReturnType = const T &;
-    /// Set function parameter type.
-    using ParameterType = const T &;
-};
-
-/// Enum property trait.
-template <typename T>
-struct PropertyTrait<T, typename std::enable_if_t<std::is_enum<T>::value>> {
-    using ReturnType = T;
-    using ParameterType = T;
-};
-
-/// Int property trait.
-template <> 
-struct PropertyTrait<int> {
-    using ReturnType = int;
-    using ParameterType = int;
-};
-
-/// unsigned property trait.
-template <> 
-struct PropertyTrait<unsigned> {
-    using ReturnType = unsigned;
-    using ParameterType = unsigned;
-};
-
-/// Bool property trait.
-template <> 
-struct PropertyTrait<bool> {
-    using ReturnType = bool;
-    using ParameterType = bool;
-};
-
-/// Float property trait.
-template <> 
-struct PropertyTrait<float> {
-    using ReturnType = float;
-    using ParameterType = float;
-};
-
-/// Double property trait.
-template <>
-struct PropertyTrait<double> {
-    using ReturnType = double;
-    using ParameterType = double;
-};
-
-/// Mixed property trait (use const reference for set function only).
-template <typename T> 
-struct MixedPropertyTrait {
-    using ReturnType = T;
-    using ParameterType = const T &;
-};
-
 /// Abstract base class for invoking property getter/setter functions.
 class BE_API PropertyAccessor {
 public:
@@ -109,11 +51,159 @@ public:
     virtual void SetCount(Serializable *ptr, int count) = 0;
 };
 
+class BE_API PropertyInfo {
+    friend class Serializable;
+
+    using PropertyAccessorPtr = std::shared_ptr<PropertyAccessor>;
+
+public:
+    /// Property flags
+    enum Flag {
+        Empty               = 0,
+        Editor              = BIT(0),   // Can be appeared in editor
+        Hidden              = BIT(1),   // Hide in editor
+        ReadOnly            = BIT(2),   // Don't allow to set
+        SkipSerialization   = BIT(3),
+        Network             = BIT(4),   // Not used yet
+        Ranged              = BIT(5),
+        MultiLines          = BIT(6),   // Str type in multiline
+        IsArray             = BIT(7),   // Is array property ?
+        ShaderDefine        = BIT(8),
+    };
+
+    PropertyInfo();
+    PropertyInfo(const char *name, const char *label, Variant::Type type, int offset, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, const char *label, Variant::Type type, PropertyAccessor *accessor, const Variant &defaultValue, const char *desc, int flags);
+
+    Variant::Type           GetType() const { return type; }
+    const char *            GetName() const { return name; }
+    const Variant &         GetDefaultValue() const { return defaultValue; }
+    const char *            GetLabel() const { return label; }
+    const char *            GetDescription() const { return desc; }
+    int                     GetFlags() const { return flags; }
+    float                   GetMinValue() const { return range.minValue; }
+    float                   GetMaxValue() const { return range.maxValue; }
+    float                   GetStep() const { return range.step; }
+    const Array<Str> &      GetEnum() const { return enumeration; }
+    const MetaObject *      GetMetaObject() const { return metaObject; }
+
+    void                    SetRange(float minValue, float maxValue, float step) { range = Rangef(minValue, maxValue, step); }
+
+    void                    SetEnumString(const Str &enumString) { SplitStringIntoList(enumeration, enumString, ";"); }
+
+    void                    SetMetaObject(const MetaObject *metaObject) { this->metaObject = metaObject; }
+
+    friend bool             ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo);
+
+private:
+    Variant::Type           type;               ///< Property type
+    Variant                 defaultValue;       ///< Default value
+    Str                     name;               ///< Property name
+    Str                     label;              ///< Label in Editor
+    Str                     desc;               ///< Description in Editor
+    int                     offset;             ///< Byte offset from start of object
+    PropertyAccessorPtr     accessor;
+    Rangef                  range;
+    Array<Str>              enumeration;        ///< Enumeration string list for enumeration type
+    const MetaObject *      metaObject;         ///< MetaObject pointer for object type
+    int                     flags;
+};
+
+BE_INLINE PropertyInfo::PropertyInfo() :
+    type(Variant::None),
+    offset(0),
+    metaObject(nullptr),
+    flags(Empty) {
+}
+
+BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, int _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
+    type(_type),
+    name(_name),
+    label(_label),
+    defaultValue(_defaultValue),
+    offset(_offset),
+    desc(_desc),
+    range(Rangef(0, 0, 1)),
+    metaObject(nullptr),
+    flags(_flags) {
+}
+
+BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, PropertyAccessor *_accessor, const Variant &_defaultValue, const char *_desc, int _flags) :
+    type(_type),
+    name(_name),
+    label(_label),
+    defaultValue(_defaultValue),
+    offset(0),
+    accessor(_accessor),
+    desc(_desc),
+    range(Rangef(0, 0, 1)),
+    metaObject(nullptr),
+    flags(_flags) {
+}
+
+/// Property type trait (default use const reference for object type).
+template <typename T, typename = void>
+struct PropertyTrait {
+    /// Get function return type.
+    using ReturnType = const T &;
+    /// Set function parameter type.
+    using ParameterType = const T &;
+};
+
+/// Enum property trait.
+template <typename T>
+struct PropertyTrait<T, typename std::enable_if_t<std::is_enum<T>::value>> {
+    using ReturnType = T;
+    using ParameterType = T;
+};
+
+/// Int property trait.
+template <>
+struct PropertyTrait<int> {
+    using ReturnType = int;
+    using ParameterType = int;
+};
+
+/// unsigned property trait.
+template <>
+struct PropertyTrait<unsigned> {
+    using ReturnType = unsigned;
+    using ParameterType = unsigned;
+};
+
+/// Bool property trait.
+template <>
+struct PropertyTrait<bool> {
+    using ReturnType = bool;
+    using ParameterType = bool;
+};
+
+/// Float property trait.
+template <>
+struct PropertyTrait<float> {
+    using ReturnType = float;
+    using ParameterType = float;
+};
+
+/// Double property trait.
+template <>
+struct PropertyTrait<double> {
+    using ReturnType = double;
+    using ParameterType = double;
+};
+
+/// Mixed property trait (use const reference for set function only).
+template <typename T>
+struct MixedPropertyTrait {
+    using ReturnType = T;
+    using ParameterType = const T &;
+};
+
 /// Template implementation of the property accessor.
-template <typename Class, typename Type, template <typename T, typename...> class Trait = PropertyTrait> 
+template <typename Class, typename Type, template <typename T, typename...> class Trait = PropertyTrait>
 class PropertyAccessorImpl : public PropertyAccessor {
 public:
-    using GetFunctionPtr = typename Trait<Type>::ReturnType (Class::*)() const;
+    using GetFunctionPtr = typename Trait<Type>::ReturnType(Class::*)() const;
     using SetFunctionPtr = void (Class::*)(typename Trait<Type>::ParameterType);
 
     /// Class-specific pointer to getter function.
@@ -153,9 +243,9 @@ public:
     }
 
     /// Get the count of the property array.
-    virtual int GetCount(const Serializable *ptr) const override { 
+    virtual int GetCount(const Serializable *ptr) const override {
         assert(0);
-        return 0; 
+        return 0;
     }
 
     /// Set the count of the property array.
@@ -278,97 +368,6 @@ public:
     /// Class-specific pointer to set count function.
     SetCountFunctionPtr setCountFunction;
 };
-
-class BE_API PropertyInfo {
-    friend class Serializable;
-    friend class MetaObject;
-
-    using PropertyAccessorPtr = std::shared_ptr<PropertyAccessor>;
-
-public:
-    /// Property flags
-    enum Flag {
-        Empty               = 0,
-        Editor              = BIT(0),   // Can be appeared in editor
-        Hidden              = BIT(1),   // Hide in editor
-        ReadOnly            = BIT(2),   // Don't allow to set
-        SkipSerialization   = BIT(3),
-        Network             = BIT(4),   // Not used yet
-        Ranged              = BIT(5),
-        MultiLines          = BIT(6),   // Str type in multiline
-        IsArray             = BIT(7),   // Is array property ?
-        ShaderDefine        = BIT(8),
-    };
-
-    PropertyInfo();
-    PropertyInfo(const char *name, const char *label, Variant::Type type, int offset, const Variant &defaultValue, const char *desc, int flags);
-    PropertyInfo(const char *name, const char *label, Variant::Type type, PropertyAccessor *accessor, const Variant &defaultValue, const char *desc, int flags);
-
-    Variant::Type           GetType() const { return type; }
-    const char *            GetName() const { return name; }
-    const Variant &         GetDefaultValue() const { return defaultValue; }
-    const char *            GetLabel() const { return label; }
-    const char *            GetDescription() const { return desc; }
-    int                     GetFlags() const { return flags; }
-    float                   GetMinValue() const { return range.minValue; }
-    float                   GetMaxValue() const { return range.maxValue; }
-    float                   GetStep() const { return range.step; }
-    const Array<Str> &      GetEnum() const { return enumeration; }
-    const MetaObject *      GetMetaObject() const { return metaObject; }
-
-    void                    SetRange(float minValue, float maxValue, float step) { range = Rangef(minValue, maxValue, step); }
-
-    void                    SetEnumString(const Str &enumString) { SplitStringIntoList(enumeration, enumString, ";"); }
-
-    void                    SetMetaObject(const MetaObject *metaObject) { this->metaObject = metaObject; }
-
-    friend bool             ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo);
-
-private:
-    Variant::Type           type;               ///< Property type
-    Variant                 defaultValue;       ///< Default value
-    Str                     name;               ///< Property name
-    Str                     label;              ///< Label in Editor
-    Str                     desc;               ///< Description in Editor
-    int                     offset;             ///< Byte offset from start of object
-    PropertyAccessorPtr     accessor;
-    Rangef                  range;
-    Array<Str>              enumeration;        ///< Enumeration string list for enumeration type
-    const MetaObject *      metaObject;         ///< MetaObject pointer for object type
-    int                     flags;
-};
-
-BE_INLINE PropertyInfo::PropertyInfo() :
-    type(Variant::None),
-    offset(0),
-    metaObject(nullptr),
-    flags(Empty) {
-}
-
-BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, int _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
-    type(_type),
-    name(_name),
-    label(_label),
-    defaultValue(_defaultValue),
-    offset(_offset),
-    desc(_desc),
-    range(Rangef(0, 0, 1)),
-    metaObject(nullptr),
-    flags(_flags) {
-}
-
-BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, PropertyAccessor *_accessor, const Variant &_defaultValue, const char *_desc, int _flags) :
-    type(_type),
-    name(_name),
-    label(_label),
-    defaultValue(_defaultValue),
-    offset(0),
-    accessor(_accessor),
-    desc(_desc),
-    range(Rangef(0, 0, 1)),
-    metaObject(nullptr),
-    flags(_flags) {
-}
 
 #define REGISTER_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \

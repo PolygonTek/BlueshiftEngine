@@ -25,8 +25,7 @@ static MetaObject *             staticTypeList = nullptr;
 static Hierarchy<MetaObject>    classHierarchy;
 static int                      eventCallbackMemory = 0;
 
-MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname, 
-    Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap) {
+MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname, Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap) {
     this->visualname            = visualname;
     this->classname             = classname;
     this->superclassname        = superclassname;
@@ -173,7 +172,7 @@ bool MetaObject::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) c
     
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
         for (int i = t->propertyInfoHash.First(hash); i != -1; i = t->propertyInfoHash.Next(i)) {
-            if (!Str::Icmp(t->propertyInfos[i].name, name)) {
+            if (!Str::Icmp(t->propertyInfos[i].GetName(), name)) {
                 propertyInfo = t->propertyInfos[i];
                 return true;
             }
@@ -225,7 +224,7 @@ static PlatformAtomic instanceCounter(0);
 
 void Object::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnly),
-    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", 0);
+    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadOnly);
 }
 
 void Object::InitInstance(Guid guid) {
