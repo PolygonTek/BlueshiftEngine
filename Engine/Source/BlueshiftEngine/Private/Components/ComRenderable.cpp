@@ -92,8 +92,10 @@ void ComRenderable::SetEnable(bool enable) {
         if (IsEnabled()) {
             Component::SetEnable(false);
 
-            renderWorld->RemoveEntity(sceneEntityHandle);
-            sceneEntityHandle = -1;
+            if (sceneEntityHandle != -1) {
+                renderWorld->RemoveEntity(sceneEntityHandle);
+                sceneEntityHandle = -1;
+            }
         }
     }
 }
