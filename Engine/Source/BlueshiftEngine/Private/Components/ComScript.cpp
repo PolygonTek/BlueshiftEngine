@@ -39,8 +39,6 @@ ComScript::ComScript() {
 
 ComScript::~ComScript() {
     Purge(false);
-
-    fieldInfos.Clear();
 }
 
 void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
@@ -51,18 +49,47 @@ void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
     }
 }
 
-void ComScript::InitPropertyInfo(Json::Value &jsonComponent) {
+void ComScript::Purge(bool chainPurge) {
+    LuaVM::State().SetToNil(sandbox.Name().c_str());
+
+    fieldInfos.Clear();
+
+    if (chainPurge) {
+        Component::Purge();
+    }
+}
+
+void ComScript::Init() {
+    Component::Init();
+
+    if (sandbox.IsValid()) {
+        auto &owner = sandbox["owner"];
+
+        owner["game_world"] = GetGameWorld();
+        owner["entity"] = GetEntity();
+        owner["name"] = GetEntity()->GetName().c_str();
+        owner["transform"] = GetEntity()->GetTransform();
+
+        LuaVM::State().Run();
+    }
+
+    // Mark as initialized
+    SetInitialized(true);
+}
+
+void ComScript::InitScriptPropertyInfo(Json::Value &jsonComponent) {
     const Str scriptGuidString = jsonComponent.get("script", Guid::zero.ToString()).asCString();
     const Guid scriptGuid = Guid::FromString(scriptGuidString);
 
-    InitPropertyInfoImpl(scriptGuid);
+    // Sandbox name is same as GUID in string
+    sandboxName = GetGuid().ToString();
+
+    InitScriptPropertyInfoImpl(scriptGuid);
 }
 
-void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
+void ComScript::InitScriptPropertyInfoImpl(const Guid &scriptGuid) {
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
 
-    const Str sandboxName = GetGuid().ToString();
-    
     // Load a script with sandboxed on current Lua state
     LoadScriptWithSandbox(scriptPath, sandboxName);
 
@@ -73,7 +100,7 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
     LuaVM::State().Run();
 
     fieldInfos.Clear();
-    
+
     fieldValues.Clear();
 
     // Get the script property informations with this sandboxed script
@@ -346,43 +373,12 @@ void ComScript::InitPropertyInfoImpl(const Guid &scriptGuid) {
     }
 }
 
-void ComScript::Purge(bool chainPurge) {
-    LuaVM::State().SetToNil(sandbox.Name().c_str());
-
-    if (chainPurge) {
-        Component::Purge();
-    }
-}
-
-void ComScript::Init() {
-    Component::Init();
-
-    sandboxName = GetGuid().ToString();
-
-    if (sandbox.IsValid()) {
-        auto &owner = sandbox["owner"];
-
-        owner["game_world"] = GetGameWorld();
-        owner["entity"] = GetEntity();
-        owner["name"] = GetEntity()->GetName().c_str();
-        owner["transform"] = GetEntity()->GetTransform();
-
-        LuaVM::State().Run();
-    }
-
-    // Mark as initialized
-    SetInitialized(true);
-}
-
 void ComScript::ChangeScript(const Guid &scriptGuid) {
     // Disconnect with previously connected script asset
     if (scriptAsset) {
         scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
         scriptAsset = nullptr;
     }
-
-    // Sandboxes with component GUID string
-    const Str sandboxName = GetGuid().ToString();
 
     LuaVM::State().SetToNil(sandboxName.c_str());
 
@@ -418,7 +414,7 @@ bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxN
     }
 
     Str name;
-#if 1
+#if 0
     // NOTE: absolute file path is needed for Lua debugging
     char *path = tombs(lua_path.GetString());
 
@@ -450,68 +446,70 @@ void ComScript::SetScriptProperties() {
         const PropertyInfo *propInfo = &fieldInfos[i];
 
         const char *name = propInfo->GetName();
+        const Variant value = GetProperty(name);
         const Variant::Type type = propInfo->GetType();
-        
+        //assert(type == value.GetType());
+
         switch (type) {
         case Variant::IntType:
-            properties[name]["value"] = GetProperty(name).As<int>();
+            properties[name]["value"] = value.As<int>();
             break;
         case Variant::Int64Type:
-            properties[name]["value"] = GetProperty(name).As<int64_t>();
+            properties[name]["value"] = value.As<int64_t>();
             break;
         case Variant::BoolType:
-            properties[name]["value"] = GetProperty(name).As<bool>();
+            properties[name]["value"] = value.As<bool>();
             break;
         case Variant::FloatType:
-            properties[name]["value"] = GetProperty(name).As<float>();
+            properties[name]["value"] = value.As<float>();
             break;
         case Variant::DoubleType:
-            properties[name]["value"] = GetProperty(name).As<double>();
+            properties[name]["value"] = value.As<double>();
             break;
         case Variant::Vec2Type:
-            (Vec2 &)properties[name]["value"] = GetProperty(name).As<Vec2>();
+            (Vec2 &)properties[name]["value"] = value.As<Vec2>();
             break;
         case Variant::Vec3Type:
-            (Vec3 &)properties[name]["value"] = GetProperty(name).As<Vec3>();
+            (Vec3 &)properties[name]["value"] = value.As<Vec3>();
             break;
         case Variant::Vec4Type:
-            (Vec4 &)properties[name]["value"] = GetProperty(name).As<Vec4>();
+            (Vec4 &)properties[name]["value"] = value.As<Vec4>();
             break;
         case Variant::Color3Type:
-            (Color3 &)properties[name]["value"] = GetProperty(name).As<Color3>();
+            (Color3 &)properties[name]["value"] = value.As<Color3>();
             break;
         case Variant::Color4Type:
-            (Color4 &)properties[name]["value"] = GetProperty(name).As<Color4>();
+            (Color4 &)properties[name]["value"] = value.As<Color4>();
             break;
         case Variant::AnglesType:
-            (Angles &)properties[name]["value"] = GetProperty(name).As<Angles>();
+            (Angles &)properties[name]["value"] = value.As<Angles>();
             break;
         case Variant::QuatType:
-            (Quat &)properties[name]["value"] = GetProperty(name).As<Quat>();
+            (Quat &)properties[name]["value"] = value.As<Quat>();
             break;
         case Variant::Mat2Type:
-            (Mat2 &)properties[name]["value"] = GetProperty(name).As<Mat2>();
+            (Mat2 &)properties[name]["value"] = value.As<Mat2>();
             break;
         case Variant::Mat3Type:
-            (Mat3 &)properties[name]["value"] = GetProperty(name).As<Mat3>();
+            (Mat3 &)properties[name]["value"] = value.As<Mat3>();
             break;
         case Variant::Mat3x4Type:
-            (Mat3x4 &)properties[name]["value"] = GetProperty(name).As<Mat3x4>();
+            (Mat3x4 &)properties[name]["value"] = value.As<Mat3x4>();
             break;
         case Variant::Mat4Type:
-            (Mat4 &)properties[name]["value"] = GetProperty(name).As<Mat4>();
+            (Mat4 &)properties[name]["value"] = value.As<Mat4>();
             break;
         case Variant::PointType:
-            (Point &)properties[name]["value"] = GetProperty(name).As<Point>();
+            (Point &)properties[name]["value"] = value.As<Point>();
             break;
         case Variant::RectType:
-            (Rect &)properties[name]["value"] = GetProperty(name).As<Rect>();
+            (Rect &)properties[name]["value"] = value.As<Rect>();
             break;
         case Variant::StrType:
-            properties[name]["value"] = GetProperty(name).As<Str>().c_str();
+            properties[name]["value"] = value.As<Str>().c_str();
             break;
         case Variant::GuidType: {
-            Guid objectGuid = GetProperty(name).As<Guid>();
+            Guid objectGuid = value.As<Guid>();
             Object *object = Object::FindInstance(objectGuid);
             if (object) {
                 properties[name]["value"] = object;
@@ -622,11 +620,14 @@ Guid ComScript::GetScriptGuid() const {
 }
 
 void ComScript::SetScriptGuid(const Guid &guid) {
-    InitPropertyInfoImpl(guid);
+    if (!IsInitialized()) {
+        ChangeScript(guid);
+    } else {
+        InitScriptPropertyInfoImpl(guid);
 
-    ChangeScript(guid);
+        ChangeScript(guid);
 
-    if (IsInitialized()) {
+        // Update editor UI
         EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
     }
 }

@@ -461,10 +461,10 @@ Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld) {
 
                 Component *component = static_cast<Component *>(metaComponent->CreateInstance(componentGuid));
 
-                // Initialize property infos for script a component
+                // Initialize property infos for script component
                 if (metaComponent->IsTypeOf(ComScript::metaObject)) {
                     ComScript *scriptComponent = component->Cast<ComScript>();
-                    scriptComponent->InitPropertyInfo(componentValue);
+                    scriptComponent->InitScriptPropertyInfo(componentValue);
                 }
 
                 component->Deserialize(componentValue);
