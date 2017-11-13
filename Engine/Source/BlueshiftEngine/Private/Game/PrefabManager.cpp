@@ -102,39 +102,36 @@ Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
     HashTable<Guid, Guid> guidMap;
     Json::Value prefabEntitiesValue = Entity::CloneEntitiesValue(originalEntitiesValue, guidMap);
 
-    int numEntities = originalEntitiesValue.size();
-
     EntityPtrArray prefabEntities;
 
-    for (int i = 0; i < numEntities; i++) {
+    for (int i = 0; i < originalEntitiesValue.size(); i++) {
         if (i == 0) {
             // Clear parent of this prefab root entity
-            prefabEntitiesValue[i]["parent"] = Guid::zero.ToString();
+            prefabEntitiesValue[0]["parent"] = Guid::zero.ToString();
         }
 
         prefabEntitiesValue[i]["prefab"] = true;
         prefabEntitiesValue[i]["prefabSource"] = Guid::zero.ToString();
 
         Entity *prefabEntity = Entity::CreateEntity(prefabEntitiesValue[i], nullptr);
-        prefabEntity->Init();
-
         prefabEntities.Append(prefabEntity);
 
         // Remap all GUID references to newly created
         Entity::RemapGuids(prefabEntity, guidMap);
 
+        prefabEntity->Init();
+        //prefabEntity->InitComponents();
+
+        // Serialize prefab entity
+        Json::Value value;
+        prefabEntity->Serialize(value);
+        prefabEntitiesValue[i] = value;
+
         // Set the original entity's prefab source
         originalEntitiesValue[i]["prefabSource"] = prefabEntity->GetGuid().ToString();
     }
-
-    prefabEntitiesValue.clear();
-
-    // Serialize prefab entities
-    for (int i = 0; i < numEntities; i++) {
-        Json::Value value;
-        prefabEntities[i]->Serialize(value);
-        prefabEntitiesValue.append(value);
-
+    
+    for (int i = 0; i < prefabEntities.Count(); i++) {
         Entity::DestroyInstanceImmediate(prefabEntities[i]);
     }
 
