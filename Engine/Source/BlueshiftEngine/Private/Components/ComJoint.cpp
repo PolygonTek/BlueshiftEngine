@@ -24,7 +24,7 @@ BEGIN_EVENTS(ComJoint)
 END_EVENTS
 
 void ComJoint::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("connectedBody", "Connected Body", Guid, GetConnectedBodyGuid, SetConnectedBodyGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&ComRigidBody::metaObject);
+    REGISTER_PROPERTY("connectedBody", "Connected Body", Guid, connectedBodyGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&ComRigidBody::metaObject);
     REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::Editor);
     REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::Editor);
 }
@@ -58,9 +58,8 @@ void ComJoint::Start() {
 
     // Rigid body component will be created after calling Awake() function
     // So we can connect this joint to the connected rigid body in Start() function
-    const Guid guid = GetProperty("connectedBody").As<Guid>();
-    if (!guid.IsZero()) {
-        connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
+    if (!connectedBodyGuid.IsZero()) {
+        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
     }
 }
 
@@ -79,21 +78,6 @@ void ComJoint::SetEnable(bool enable) {
             }
             Component::SetEnable(false);
         }
-    }
-}
-
-Guid ComJoint::GetConnectedBodyGuid() const {
-    if (connectedBody) {
-        return connectedBody->GetGuid();
-    }
-    return Guid();
-}
-
-void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
-    if (!guid.IsZero()) {
-        connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
-    } else {
-        connectedBody = nullptr;
     }
 }
 
