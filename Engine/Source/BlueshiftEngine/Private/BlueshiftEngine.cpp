@@ -156,8 +156,6 @@ void Engine::Shutdown() {
 }
 
 void Engine::RunFrame(int elapsedMsec) {
-    LuaVM::State().ForceGC();
-
     common.RunFrame(elapsedMsec);
 }
 
