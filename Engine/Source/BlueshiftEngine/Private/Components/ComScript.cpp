@@ -355,8 +355,8 @@ void ComScript::InitScriptPropertyInfoImpl(const Guid &scriptGuid) {
             } else if (!Str::Cmp(type, "object")) {
                 const char *classname = props["classname"];
                 MetaObject *metaObject = Object::FindMetaObject(classname);
-                Guid value = Guid::FromString((const char *)props["value"]);
-                fieldValues.Set(name, value);
+                Str value = (const char *)props["value"];
+                fieldValues.Set(name, Guid::FromString(value));
 
                 auto pairPtr = fieldValues.Get(name);
 
