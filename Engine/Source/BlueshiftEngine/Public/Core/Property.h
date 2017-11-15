@@ -65,7 +65,6 @@ public:
         ReadOnlyFlag        = BIT(2),   // Don't allow to set
         SkipSerializationFlag = BIT(3),
         NetworkFlag         = BIT(4),   // Not used yet
-        RangedFlag          = BIT(5),
         MultiLinesFlag      = BIT(6),   // Str type in multiline
         ArrayFlag           = BIT(7),   // Is array property ?
         ShaderDefineFlag    = BIT(8),
@@ -83,6 +82,7 @@ public:
     int                     GetFlags() const { return flags; }
     bool                    IsArray() const { return !!(flags & Flag::ArrayFlag); }
     bool                    IsReadOnly() const { return !!(flags & Flag::ReadOnlyFlag); }
+    bool                    IsRanged() const { return range.IsValid(); }
     float                   GetMinValue() const { return range.minValue; }
     float                   GetMaxValue() const { return range.maxValue; }
     float                   GetStep() const { return range.step; }

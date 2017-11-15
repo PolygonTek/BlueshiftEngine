@@ -358,7 +358,6 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         lexer.ReadToken(&token, false);
 
         if (token == "range") {
-            propInfo.flags |= PropertyInfo::RangedFlag;
             propInfo.range.minValue = lexer.ParseNumber();
             propInfo.range.maxValue = lexer.ParseNumber();
             propInfo.range.step = lexer.ParseNumber();

@@ -21,6 +21,8 @@ struct Range {
     Range() {}
     Range(const T &minValue, const T &maxValue, const T &step); 
 
+    bool IsValid() const { return (maxValue >= minValue && step != 0) ? true : false }
+
     const T &Clamp(const T &value) const;
 
     T minValue, maxValue, step;
