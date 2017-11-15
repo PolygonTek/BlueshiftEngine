@@ -60,13 +60,12 @@ public:
     /// Property flags
     enum Flag {
         Empty               = 0,
-        EditorFlag          = BIT(0),   // Can be appeared in editor
-        HiddenFlag          = BIT(1),   // Hide in editor
-        ReadOnlyFlag        = BIT(2),   // Don't allow to set
-        SkipSerializationFlag = BIT(3),
-        NetworkFlag         = BIT(4),   // Not used yet
-        MultiLinesFlag      = BIT(6),   // Str type in multiline
-        ArrayFlag           = BIT(7),   // Is array property ?
+        ReadOnlyFlag        = BIT(1),   // Don't allow to set
+        SkipSerializationFlag = BIT(2), // Don't serialize
+        EditorFlag          = BIT(3),   // Used in editor
+        MultiLinesFlag      = BIT(5),   // Str type in multilines
+        ArrayFlag           = BIT(6),   // Is array property ?
+        NetworkFlag         = BIT(7),   // Not used yet
         ShaderDefineFlag    = BIT(8),
     };
 
@@ -80,13 +79,17 @@ public:
     const char *            GetLabel() const { return label; }
     const char *            GetDescription() const { return desc; }
     int                     GetFlags() const { return flags; }
+
     bool                    IsArray() const { return !!(flags & Flag::ArrayFlag); }
     bool                    IsReadOnly() const { return !!(flags & Flag::ReadOnlyFlag); }
     bool                    IsRanged() const { return range.IsValid(); }
+
     float                   GetMinValue() const { return range.minValue; }
     float                   GetMaxValue() const { return range.maxValue; }
     float                   GetStep() const { return range.step; }
+
     const Array<Str> &      GetEnum() const { return enumeration; }
+
     const MetaObject *      GetMetaObject() const { return metaObject; }
 
     void                    SetRange(float minValue, float maxValue, float step) { range = Rangef(minValue, maxValue, step); }
@@ -125,7 +128,6 @@ BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Vari
     defaultValue(_defaultValue),
     offset(_offset),
     desc(_desc),
-    range(Rangef(0, 0, 1)),
     metaObject(nullptr),
     flags(_flags) {
 }
@@ -138,7 +140,6 @@ BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Vari
     offset(0),
     accessor(_accessor),
     desc(_desc),
-    range(Rangef(0, 0, 1)),
     metaObject(nullptr),
     flags(_flags) {
 }

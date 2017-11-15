@@ -387,8 +387,6 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         while (lexer.ReadToken(&token, false)) {
             if (token == ")") {
                 break;
-            } else if (token == "hidden") {
-                propInfo.flags |= PropertyInfo::HiddenFlag;
             } else if (token == "shaderDefine") {
                 propInfo.flags |= PropertyInfo::ShaderDefineFlag;
             } else {
