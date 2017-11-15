@@ -18,10 +18,10 @@ BE_NAMESPACE_BEGIN
 
 template <typename T> 
 struct Range {
-    Range() {}
-    Range(const T &minValue, const T &maxValue, const T &step); 
+    Range() { step = 0; }
+    Range(const T &minValue, const T &maxValue, const T &step);
 
-    bool IsValid() const { return (maxValue >= minValue && step != 0) ? true : false }
+    bool IsValid() const { return (maxValue >= minValue && step != 0) ? true : false; }
 
     const T &Clamp(const T &value) const;
 
