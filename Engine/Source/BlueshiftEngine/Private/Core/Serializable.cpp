@@ -598,11 +598,7 @@ bool Serializable::SetProperty(const char *name, const Variant &value, bool forc
         return false;
     }
 
-    if (SetProperty(propertyInfo, value, forceWrite)) {
-        EmitSignal(&Serializable::SIG_PropertyChanged, name, -1);
-        return true;
-    }
-    return false;
+    return SetProperty(propertyInfo, value, forceWrite);
 }
 
 bool Serializable::SetProperty(int index, const Variant &value, bool forceWrite) {
@@ -836,10 +832,8 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         }
     }
 
-    if (!forceWrite) {
-        EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), -1);
-    }
-
+    EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), -1);
+    
     return true;
 }
 
@@ -1089,9 +1083,8 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         }
     }
 
-    if (!forceWrite) {
-        EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), elementIndex);
-    }
+    EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), elementIndex);
+
     return true;
 }
 
