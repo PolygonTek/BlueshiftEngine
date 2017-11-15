@@ -27,9 +27,9 @@ BEGIN_EVENTS(ComCylinderCollider)
 END_EVENTS
 
 void ComCylinderCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.f, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("height", "Height", float, height, 1.f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.f, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("height", "Height", float, height, 1.f, "", PropertyInfo::EditorFlag);
 }
 
 ComCylinderCollider::ComCylinderCollider() {

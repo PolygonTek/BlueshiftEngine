@@ -27,7 +27,7 @@ BEGIN_EVENTS(ComSocketJoint)
 END_EVENTS
 
 void ComSocketJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::EditorFlag);
 }
 
 ComSocketJoint::ComSocketJoint() {

@@ -27,8 +27,8 @@ BEGIN_EVENTS(ComSphereCollider)
 END_EVENTS
 
 void ComSphereCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.0f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.0f, "", PropertyInfo::EditorFlag);
 }
 
 ComSphereCollider::ComSphereCollider() {

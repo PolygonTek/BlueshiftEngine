@@ -33,9 +33,9 @@ public:
     virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const = 0;
 
                             /// Serialize to JSON value.
-    void                    Serialize(Json::Value &out) const;
+    virtual void            Serialize(Json::Value &out) const;
                             /// Deserialize from JSON value.
-    void                    Deserialize(const Json::Value &in);
+    virtual void            Deserialize(const Json::Value &in);
 
                             /// Returns a property default value by name. Returns empty variant if not found.
     Variant                 GetPropertyDefault(const char *name) const;

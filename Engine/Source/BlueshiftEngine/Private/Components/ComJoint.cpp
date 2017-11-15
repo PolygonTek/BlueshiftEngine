@@ -24,9 +24,9 @@ BEGIN_EVENTS(ComJoint)
 END_EVENTS
 
 void ComJoint::RegisterProperties() {
-    REGISTER_PROPERTY("connectedBody", "Connected Body", Guid, connectedBodyGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&ComRigidBody::metaObject);
-    REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("connectedBody", "Connected Body", Guid, connectedBodyGuid, Guid::zero, "", PropertyInfo::EditorFlag).SetMetaObject(&ComRigidBody::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::EditorFlag);
 }
 
 ComJoint::ComJoint() {

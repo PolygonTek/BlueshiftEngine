@@ -223,8 +223,8 @@ static HashTable<Guid, Object *> instanceHash;
 static PlatformAtomic instanceCounter(0);
 
 void Object::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnly),
-    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadOnly);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnlyFlag),
+    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadOnlyFlag);
 }
 
 void Object::InitInstance(Guid guid) {

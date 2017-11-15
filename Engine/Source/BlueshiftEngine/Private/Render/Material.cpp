@@ -387,7 +387,7 @@ void Material::EndShaderPropertiesChanged() {
         const auto &propInfo = entry->second;
 
         // property propInfo with shaderDefine allows only bool/enum type
-        if (propInfo.GetFlags() & PropertyInfo::ShaderDefine) {
+        if (propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) {
             const auto *entry = pass->shaderProperties.Get(propName);
             const Shader::Property &shaderProp = entry->second;
 

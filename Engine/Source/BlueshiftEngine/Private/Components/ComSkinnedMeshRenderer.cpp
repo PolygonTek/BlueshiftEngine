@@ -32,8 +32,8 @@ BEGIN_EVENTS(ComSkinnedMeshRenderer)
 END_EVENTS
 
 void ComSkinnedMeshRenderer::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&SkeletonAsset::metaObject);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("anim", "Animation", Guid, GetAnimGuid, SetAnimGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&AnimAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero, "", PropertyInfo::EditorFlag).SetMetaObject(&SkeletonAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("anim", "Animation", Guid, GetAnimGuid, SetAnimGuid, Guid::zero, "", PropertyInfo::EditorFlag).SetMetaObject(&AnimAsset::metaObject);
 }
 
 ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {

@@ -39,8 +39,6 @@ public:
 
     void                        Init();
 
-    void                        Serialize(Json::Value &value) const;
-
     Guid                        GetSkyboxMaterialGuid() const;
     void                        SetSkyboxMaterialGuid(const Guid &materialGuid);
 

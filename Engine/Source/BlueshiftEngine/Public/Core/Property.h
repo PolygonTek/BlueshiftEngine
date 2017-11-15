@@ -60,15 +60,15 @@ public:
     /// Property flags
     enum Flag {
         Empty               = 0,
-        Editor              = BIT(0),   // Can be appeared in editor
-        Hidden              = BIT(1),   // Hide in editor
-        ReadOnly            = BIT(2),   // Don't allow to set
-        SkipSerialization   = BIT(3),
-        Network             = BIT(4),   // Not used yet
-        Ranged              = BIT(5),
-        MultiLines          = BIT(6),   // Str type in multiline
-        IsArray             = BIT(7),   // Is array property ?
-        ShaderDefine        = BIT(8),
+        EditorFlag          = BIT(0),   // Can be appeared in editor
+        HiddenFlag          = BIT(1),   // Hide in editor
+        ReadOnlyFlag        = BIT(2),   // Don't allow to set
+        SkipSerializationFlag = BIT(3),
+        NetworkFlag         = BIT(4),   // Not used yet
+        RangedFlag          = BIT(5),
+        MultiLinesFlag      = BIT(6),   // Str type in multiline
+        ArrayFlag           = BIT(7),   // Is array property ?
+        ShaderDefineFlag    = BIT(8),
     };
 
     PropertyInfo();
@@ -81,6 +81,8 @@ public:
     const char *            GetLabel() const { return label; }
     const char *            GetDescription() const { return desc; }
     int                     GetFlags() const { return flags; }
+    bool                    IsArray() const { return !!(flags & Flag::ArrayFlag); }
+    bool                    IsReadOnly() const { return !!(flags & Flag::ReadOnlyFlag); }
     float                   GetMinValue() const { return range.minValue; }
     float                   GetMaxValue() const { return range.maxValue; }
     float                   GetStep() const { return range.step; }
@@ -375,7 +377,7 @@ public:
 
 #define REGISTER_ARRAY_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        offsetof(Class, var), defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
+        offsetof(Class, var), defaultValue, desc, flags | BE1::PropertyInfo::ArrayFlag))
 
 #define REGISTER_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
@@ -384,7 +386,7 @@ public:
 #define REGISTER_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         new BE1::ArrayPropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
-        defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
+        defaultValue, desc, flags | BE1::PropertyInfo::ArrayFlag))
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
@@ -394,6 +396,6 @@ public:
 #define REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         new BE1::ArrayPropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
-        defaultValue, desc, flags | BE1::PropertyInfo::IsArray))
+        defaultValue, desc, flags | BE1::PropertyInfo::ArrayFlag))
 
 BE_NAMESPACE_END

@@ -35,13 +35,13 @@ BEGIN_EVENTS(Entity)
 END_EVENTS
 
 void Entity::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero, "Parent Entity", PropertyInfo::Editor).SetMetaObject(&Entity::metaObject);
-    REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false, "Is prefab ?", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&Entity::metaObject);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity", "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::Editor);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero, "Parent Entity", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+    REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false, "Is prefab ?", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero, "", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity", "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::EditorFlag);
 }
 
 Entity::Entity() {
@@ -240,6 +240,37 @@ void Entity::Serialize(Json::Value &value) const {
     }
 
     value["components"] = componentsValue;
+}
+
+void Entity::Deserialize(const Json::Value &entityValue) {
+    Serializable::Deserialize(entityValue);
+
+    const Json::Value &componentsValue = entityValue["components"];
+
+    for (int i = 0; i < componentsValue.size(); i++) {
+        const Json::Value &componentValue = componentsValue[i];
+
+        const char *classname = componentValue["classname"].asCString();
+        MetaObject *metaComponent = Object::FindMetaObject(classname);
+
+        if (metaComponent) {
+            if (metaComponent->IsTypeOf(Component::metaObject)) {
+                Guid componentGuid = Guid::FromString(componentValue.get("guid", Guid::zero.ToString()).asCString());
+                if (componentGuid.IsZero()) {
+                    componentGuid = Guid::CreateGuid();
+                }
+
+                Component *component = static_cast<Component *>(metaComponent->CreateInstance(componentGuid));
+                component->Deserialize(componentValue);
+
+                AddComponent(component);
+            } else {
+                BE_WARNLOG(L"'%hs' is not a component class\n", classname);
+            }
+        } else {
+            BE_WARNLOG(L"Unknown component class '%hs'\n", classname);
+        }
+    }
 }
 
 void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue) {
@@ -445,50 +476,12 @@ void Entity::SetFrozen(bool frozen) {
 Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld) {
     Guid entityGuid = Guid::FromString(entityValue.get("guid", Guid::zero.ToString()).asCString());
     if (entityGuid.IsZero()) {
-        entityValue["guid"] = Guid::CreateGuid().ToString();
+        entityGuid = Guid::CreateGuid();
     }
-
-    entityGuid = Guid::FromString(entityValue["guid"].asCString());
 
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
     entity->gameWorld = gameWorld;
     entity->Deserialize(entityValue);
-
-    Json::Value &componentsValue = entityValue["components"];
-
-    for (int i = 0; i < componentsValue.size(); i++) {
-        Json::Value &componentValue = componentsValue[i];
-
-        const char *classname = componentValue["classname"].asCString();
-        MetaObject *metaComponent = Object::FindMetaObject(classname);
-
-        if (metaComponent) {
-            if (metaComponent->IsTypeOf(Component::metaObject)) {
-                Guid componentGuid = Guid::FromString(componentValue.get("guid", Guid::zero.ToString()).asCString());
-                if (componentGuid.IsZero()) {
-                    componentValue["guid"] = Guid::CreateGuid().ToString();
-                }
-
-                componentGuid = Guid::FromString(componentValue["guid"].asCString());
-
-                Component *component = static_cast<Component *>(metaComponent->CreateInstance(componentGuid));
-
-                // Initialize property infos for script component
-                if (metaComponent->IsTypeOf(ComScript::metaObject)) {
-                    ComScript *scriptComponent = component->Cast<ComScript>();
-                    scriptComponent->InitScriptPropertyInfo(componentValue);
-                }
-
-                component->Deserialize(componentValue);
-
-                entity->AddComponent(component);
-            } else {
-                BE_WARNLOG(L"'%hs' is not a component class\n", classname);
-            }
-        } else {
-            BE_WARNLOG(L"Unknown component class '%hs'\n", classname);
-        }
-    }
 
     return entity;
 }
@@ -542,7 +535,7 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
         const auto &propInfo = propertyInfos[propIndex];
             
         if (propInfo.GetType() == Variant::GuidType) {
-            if (propInfo.GetFlags() & PropertyInfo::IsArray) {
+            if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
                 for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
                     const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
@@ -570,7 +563,7 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
             const auto &propInfo = propertyInfos[propIndex];
 
             if (propInfo.GetType() == Variant::GuidType) {
-                if (propInfo.GetFlags() & PropertyInfo::IsArray) {
+                if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
                     for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
                         const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 

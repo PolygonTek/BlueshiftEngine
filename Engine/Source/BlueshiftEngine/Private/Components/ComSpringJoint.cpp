@@ -27,12 +27,12 @@ BEGIN_EVENTS(ComSpringJoint)
 END_EVENTS
 
 void ComSpringJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("lowerLimit", "Lower Limit", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("upperLimit", "Upper Limit", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("damping", "Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("lowerLimit", "Lower Limit", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("upperLimit", "Upper Limit", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("damping", "Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
 }
 
 ComSpringJoint::ComSpringJoint() {

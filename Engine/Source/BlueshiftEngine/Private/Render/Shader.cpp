@@ -287,7 +287,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
 bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     propInfo.type = Variant::None;
-    propInfo.flags = PropertyInfo::Editor;
+    propInfo.flags = PropertyInfo::EditorFlag;
     propInfo.range = Rangef(0, 0, 1);
     propInfo.metaObject = nullptr;
 
@@ -358,7 +358,7 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         lexer.ReadToken(&token, false);
 
         if (token == "range") {
-            propInfo.flags |= PropertyInfo::Ranged;
+            propInfo.flags |= PropertyInfo::RangedFlag;
             propInfo.range.minValue = lexer.ParseNumber();
             propInfo.range.maxValue = lexer.ParseNumber();
             propInfo.range.step = lexer.ParseNumber();
@@ -389,9 +389,9 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
             if (token == ")") {
                 break;
             } else if (token == "hidden") {
-                propInfo.flags |= PropertyInfo::Hidden;
+                propInfo.flags |= PropertyInfo::HiddenFlag;
             } else if (token == "shaderDefine") {
-                propInfo.flags |= PropertyInfo::ShaderDefine;
+                propInfo.flags |= PropertyInfo::ShaderDefineFlag;
             } else {
                 return false;
             }

@@ -25,7 +25,7 @@ BEGIN_EVENTS(ComStaticMeshRenderer)
 END_EVENTS
 
 void ComStaticMeshRenderer::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("occluder", "Occluder", bool, IsOccluder, SetOccluder, false, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("occluder", "Occluder", bool, IsOccluder, SetOccluder, false, "", PropertyInfo::EditorFlag);
 }
 
 ComStaticMeshRenderer::ComStaticMeshRenderer() {

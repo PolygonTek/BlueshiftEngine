@@ -30,11 +30,11 @@ BEGIN_EVENTS(ComCharacterController)
 END_EVENTS
 
 void ComCharacterController::RegisterProperties() {
-    REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, "", PropertyInfo::Editor).SetRange(0, 100, 0.1f);
-    REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertyInfo::Editor).SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertyInfo::Editor).SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, 0.5f, "", PropertyInfo::Editor).SetRange(0.0, 1.0, 0.1);
-    REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, "", PropertyInfo::Editor).SetRange(0, 90, 1);
+    REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.1f);
+    REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertyInfo::EditorFlag).SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertyInfo::EditorFlag).SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, 0.5f, "", PropertyInfo::EditorFlag).SetRange(0.0, 1.0, 0.1);
+    REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, "", PropertyInfo::EditorFlag).SetRange(0, 90, 1);
 }
 
 ComCharacterController::ComCharacterController() {

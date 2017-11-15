@@ -27,9 +27,9 @@ BEGIN_EVENTS(ComCapsuleCollider)
 END_EVENTS
 
 void ComCapsuleCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.0f, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("height", "Height", float, height, 1.0f, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.0f, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("height", "Height", float, height, 1.0f, "", PropertyInfo::EditorFlag);
 }
 
 ComCapsuleCollider::ComCapsuleCollider() {

@@ -25,8 +25,8 @@ BEGIN_EVENTS(ComSpline)
 END_EVENTS
 
 void ComSpline::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("loop", "Loop", bool, IsLoop, SetLoop, false, "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("points", "Points", Guid, GetPointGuid, SetPointGuid, GetPointCount, SetPointCount, Guid::zero, "", PropertyInfo::Editor).SetMetaObject(&ComTransform::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("loop", "Loop", bool, IsLoop, SetLoop, false, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("points", "Points", Guid, GetPointGuid, SetPointGuid, GetPointCount, SetPointCount, Guid::zero, "", PropertyInfo::EditorFlag).SetMetaObject(&ComTransform::metaObject);
 }
 
 ComSpline::ComSpline() {

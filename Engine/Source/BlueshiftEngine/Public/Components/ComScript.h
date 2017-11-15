@@ -30,9 +30,11 @@ public:
     ComScript();
     virtual ~ComScript();
 
-    void                    InitScriptPropertyInfo(Json::Value &jsonComponent);
+    void                    InitScriptPropertyInfo(const Json::Value &jsonComponent);
 
     virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const override;
+
+    virtual void            Deserialize(const Json::Value &in) override;
 
     virtual bool            AllowSameComponent() const override { return true; }
 

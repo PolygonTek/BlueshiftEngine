@@ -27,8 +27,8 @@ BEGIN_EVENTS(ComBoxCollider)
 END_EVENTS
 
 void ComBoxCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("extents", "Extents", Vec3, extents, Vec3::one, "", PropertyInfo::Editor);
+    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("extents", "Extents", Vec3, extents, Vec3::one, "", PropertyInfo::EditorFlag);
 }
 
 ComBoxCollider::ComBoxCollider() {

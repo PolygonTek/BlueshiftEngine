@@ -170,8 +170,10 @@ public:
     void                        OnApplicationTerminate();
     void                        OnApplicationPause(bool pause);
 
-                                /// Serializes entity to JSON value
-    void                        Serialize(Json::Value &data) const;
+                                /// Serializes entity to JSON value.
+    virtual void                Serialize(Json::Value &data) const override;
+                                /// Deserializes entity from JSON value.
+    virtual void                Deserialize(const Json::Value &data) override;
 
     static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue);
 

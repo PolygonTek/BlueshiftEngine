@@ -32,20 +32,20 @@ BEGIN_EVENTS(ComCamera)
 END_EVENTS
 
 void ComCamera::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, "", PropertyInfo::Editor).SetEnumString("Perspective;Orthographic");
-    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 10.f, "", PropertyInfo::Editor).SetRange(1, 20000, 10);
-    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 8192.f, "", PropertyInfo::Editor).SetRange(1, 20000, 10);
-    REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, "", PropertyInfo::Editor).SetRange(1, 179, 1);
-    REGISTER_PROPERTY("size", "Size", float, size, 1000.f, "", PropertyInfo::Editor).SetRange(1, 16384, 1);
-    REGISTER_PROPERTY("x", "X", float, nx, 0.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("y", "Y", float, ny, 0.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("w", "W", float, nw, 1.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("h", "H", float, nh, 1.f, "", PropertyInfo::Editor).SetRange(0, 1.0f, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", SceneView::ClearMethod, GetClearMethod, SetClearMethod, 1, "", PropertyInfo::Editor).SetEnumString("No Clear;Depth Only;Color");
-    REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertyInfo::Editor);
-    REGISTER_PROPERTY("order", "Order", int, order, 0, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, "", PropertyInfo::EditorFlag).SetEnumString("Perspective;Orthographic");
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 10.f, "", PropertyInfo::EditorFlag).SetRange(1, 20000, 10);
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 8192.f, "", PropertyInfo::EditorFlag).SetRange(1, 20000, 10);
+    REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, "", PropertyInfo::EditorFlag).SetRange(1, 179, 1);
+    REGISTER_PROPERTY("size", "Size", float, size, 1000.f, "", PropertyInfo::EditorFlag).SetRange(1, 16384, 1);
+    REGISTER_PROPERTY("x", "X", float, nx, 0.f, "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("y", "Y", float, ny, 0.f, "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("w", "W", float, nw, 1.f, "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("h", "H", float, nh, 1.f, "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", SceneView::ClearMethod, GetClearMethod, SetClearMethod, 1, "", PropertyInfo::EditorFlag).SetEnumString("No Clear;Depth Only;Color");
+    REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("order", "Order", int, order, 0, "", PropertyInfo::EditorFlag);
 }
 
 ComCamera::ComCamera() {

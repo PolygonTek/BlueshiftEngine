@@ -27,7 +27,7 @@ BEGIN_EVENTS(MapRenderSettings)
 END_EVENTS
 
 void MapRenderSettings::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("skyboxMaterial", "Skybox Material", Guid, GetSkyboxMaterialGuid, SetSkyboxMaterialGuid, GuidMapper::defaultSkyboxMaterialGuid, "", PropertyInfo::Editor).SetMetaObject(&MaterialAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("skyboxMaterial", "Skybox Material", Guid, GetSkyboxMaterialGuid, SetSkyboxMaterialGuid, GuidMapper::defaultSkyboxMaterialGuid, "", PropertyInfo::EditorFlag).SetMetaObject(&MaterialAsset::metaObject);
 }
 
 MapRenderSettings::MapRenderSettings() {
@@ -61,12 +61,6 @@ void MapRenderSettings::ChangeSkyboxMaterial(const Guid &materialGuid) {
     skyboxMaterial = materialManager.GetMaterial(materialPath);
 
     gameWorld->GetRenderWorld()->SetSkyboxMaterial(skyboxMaterial);
-}
-
-void MapRenderSettings::Serialize(Json::Value &value) const {
-    Serializable::Serialize(value);
-
-    value["classname"] = MapRenderSettings::metaObject.ClassName();
 }
 
 Guid MapRenderSettings::GetSkyboxMaterialGuid() const {

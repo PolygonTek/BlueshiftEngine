@@ -26,16 +26,16 @@ BEGIN_EVENTS(ComReflectionProbe)
 END_EVENTS
 
 void ComReflectionProbe::RegisterProperties() {
-    /*PROPERTY_INT("importance", "Importance", "", 1, PropertyInfo::Editor),
-    PROPERTY_ENUM("resolution", "Resolution", "", "16;32;64;128;256;1024;2048", 3, PropertyInfo::Editor),
-    PROPERTY_BOOL("hdr", "HDR", "", true, PropertyInfo::Editor),
-    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", 1, PropertyInfo::Editor),
-    PROPERTY_COLOR3("clearColor", "Clear Color", "", Color3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", 0.0f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(0.01, 20000, 10), 0.3f, PropertyInfo::Editor),
-    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), 1000.f, PropertyInfo::Editor),
-    PROPERTY_VEC3("boxOffset", "Box Offset", "", Vec3(0, 0, 0), PropertyInfo::Editor),
-    PROPERTY_VEC3("boxSize", "Box Size", "", Vec3(10, 10, 10), PropertyInfo::Editor);*/
+    /*PROPERTY_INT("importance", "Importance", "", 1, PropertyInfo::EditorFlag),
+    PROPERTY_ENUM("resolution", "Resolution", "", "16;32;64;128;256;1024;2048", 3, PropertyInfo::EditorFlag),
+    PROPERTY_BOOL("hdr", "HDR", "", true, PropertyInfo::EditorFlag),
+    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", 1, PropertyInfo::EditorFlag),
+    PROPERTY_COLOR3("clearColor", "Clear Color", "", Color3(0, 0, 0), PropertyInfo::EditorFlag),
+    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", 0.0f, PropertyInfo::EditorFlag),
+    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(0.01, 20000, 10), 0.3f, PropertyInfo::EditorFlag),
+    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), 1000.f, PropertyInfo::EditorFlag),
+    PROPERTY_VEC3("boxOffset", "Box Offset", "", Vec3(0, 0, 0), PropertyInfo::EditorFlag),
+    PROPERTY_VEC3("boxSize", "Box Size", "", Vec3(10, 10, 10), PropertyInfo::EditorFlag);*/
 }
 
 ComReflectionProbe::ComReflectionProbe() {

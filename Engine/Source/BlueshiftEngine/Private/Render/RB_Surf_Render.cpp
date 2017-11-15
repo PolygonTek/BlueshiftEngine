@@ -49,7 +49,7 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
         const auto &propInfo = entry->second;
 
         // Skip if it is a shader define
-        if (propInfo.GetFlags() & PropertyInfo::ShaderDefine) {
+        if (propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) {
             continue;
         }
 
@@ -118,7 +118,7 @@ const Texture *RBSurf::TextureFromShaderProperties(const Material::ShaderPass *m
     }
 
     const auto &propInfo = entry->second;
-    if ((propInfo.GetFlags() & PropertyInfo::ShaderDefine) || (propInfo.GetType() != Variant::GuidType)) {
+    if ((propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) || (propInfo.GetType() != Variant::GuidType)) {
         return nullptr;
     }
 

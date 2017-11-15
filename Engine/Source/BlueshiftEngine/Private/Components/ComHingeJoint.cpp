@@ -27,10 +27,10 @@ BEGIN_EVENTS(ComHingeJoint)
 END_EVENTS
 
 void ComHingeJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("motorSpeed", "Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertyInfo::Editor);
-    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertyInfo::Editor);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("motorSpeed", "Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertyInfo::EditorFlag);
 }
 
 ComHingeJoint::ComHingeJoint() {

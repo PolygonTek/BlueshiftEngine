@@ -57,13 +57,13 @@ void Serializable::Serialize(Json::Value &out) const {
     for (int propertyIndex = 0; propertyIndex < propertyInfos.Count(); propertyIndex++) {
         const PropertyInfo &propertyInfo = propertyInfos[propertyIndex];
 
-        if (propertyInfo.GetFlags() & PropertyInfo::SkipSerialization) {
+        if (propertyInfo.GetFlags() & PropertyInfo::SkipSerializationFlag) {
             continue;
         }
 
         const char *name = propertyInfo.name.c_str();
 
-        if (propertyInfo.GetFlags() & PropertyInfo::IsArray) {
+        if (propertyInfo.GetFlags() & PropertyInfo::ArrayFlag) {
             out[name] = Json::arrayValue;
 
             for (int elementIndex = 0; elementIndex < GetPropertyArrayCount(propertyIndex); elementIndex++) {
@@ -89,7 +89,7 @@ void Serializable::Deserialize(const Json::Value &node) {
     for (int propertyIndex = 0; propertyIndex < propertyInfos.Count(); propertyIndex++) {
         const PropertyInfo &propertyInfo = propertyInfos[propertyIndex];
 
-        if (propertyInfo.GetFlags() & PropertyInfo::ReadOnly) {
+        if (propertyInfo.GetFlags() & PropertyInfo::ReadOnlyFlag) {
             continue;
         }
 
@@ -97,7 +97,7 @@ void Serializable::Deserialize(const Json::Value &node) {
         const Variant::Type type = propertyInfo.GetType();
         const Variant defaultValue = propertyInfo.GetDefaultValue();
 
-        if (propertyInfo.GetFlags() & PropertyInfo::IsArray) {
+        if (propertyInfo.GetFlags() & PropertyInfo::ArrayFlag) {
             const Json::Value subNode = node.get(name, Json::Value());
 
             SetPropertyArrayCount(propertyIndex, subNode.size());
@@ -517,7 +517,7 @@ Variant Serializable::GetArrayProperty(const char *name, int elementIndex) const
 }
 
 void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, Variant &out) const {
-    if (!(propertyInfo.GetFlags() & PropertyInfo::IsArray)) {
+    if (!(propertyInfo.GetFlags() & PropertyInfo::ArrayFlag)) {
         BE_WARNLOG(L"Serializable::GetArrayProperty: property '%hs' is not array\n", propertyInfo.name.c_str());
         return;
     }
@@ -618,7 +618,7 @@ bool Serializable::SetProperty(int index, const Variant &value, bool forceWrite)
 
 bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &value, bool forceWrite) {
     // You can force to write a value even though a property has read only flag.
-    if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::ReadOnly)) {
+    if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::ReadOnlyFlag)) {
         BE_WARNLOG(L"Serializable::SetProperty: property '%hs' is readonly\n", propertyInfo.name.c_str());
         return false;
     }
@@ -627,7 +627,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     float minValue;
     float maxValue;
 
-    if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+    if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
         minValue = propertyInfo.GetMinValue();
         maxValue = propertyInfo.GetMaxValue();
     }
@@ -635,7 +635,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     switch (propertyInfo.GetType()) {
     case Variant::IntType: {
         int i = value.As<int>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(i, (int)minValue, (int)maxValue);
         }
         newValue = i;
@@ -643,7 +643,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
     case Variant::Int64Type: {
         int64_t i = value.As<int64_t>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(i, (int64_t)minValue, (int64_t)maxValue);
         }
         newValue = i;
@@ -654,7 +654,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         break;
     case Variant::FloatType: {
         float f = value.As<float>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(f, minValue, maxValue);
         }
         newValue = f;
@@ -662,7 +662,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
     case Variant::Vec2Type: {
         Vec2 vec2 = value.As<Vec2>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(vec2.x, minValue, maxValue);
             Clamp(vec2.y, minValue, maxValue);
         }
@@ -671,7 +671,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
     case Variant::Vec3Type: {
         Vec3 vec3 = value.As<Vec3>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(vec3.x, minValue, maxValue);
             Clamp(vec3.y, minValue, maxValue);
             Clamp(vec3.z, minValue, maxValue);
@@ -681,7 +681,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
     case Variant::Vec4Type: {
         Vec4 vec4 = value.As<Vec4>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(vec4.x, minValue, maxValue);
             Clamp(vec4.y, minValue, maxValue);
             Clamp(vec4.z, minValue, maxValue);
@@ -692,7 +692,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
     case Variant::Color3Type: {
         Color3 color3 = value.As<Color3>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(color3.r, minValue, maxValue);
             Clamp(color3.g, minValue, maxValue);
             Clamp(color3.b, minValue, maxValue);
@@ -702,7 +702,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
     case Variant::Color4Type: {
         Color4 color4 = value.As<Color4>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(color4.r, minValue, maxValue);
             Clamp(color4.g, minValue, maxValue);
             Clamp(color4.b, minValue, maxValue);
@@ -725,7 +725,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         break;
     case Variant::AnglesType: {
         Angles angles = value.As<Angles>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(angles[0], minValue, maxValue);
             Clamp(angles[1], minValue, maxValue);
             Clamp(angles[2], minValue, maxValue);
@@ -735,7 +735,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
     case Variant::PointType: {
         Point pt = value.As<Point>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(pt.x, (int)minValue, (int)maxValue);
             Clamp(pt.y, (int)minValue, (int)maxValue);
         }
@@ -744,7 +744,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
     case Variant::RectType: {
         Rect rect = value.As<Rect>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(rect.x, (int)minValue, (int)maxValue);
             Clamp(rect.y, (int)minValue, (int)maxValue);
             Clamp(rect.w, (int)minValue, (int)maxValue);
@@ -866,12 +866,12 @@ bool Serializable::SetArrayProperty(int index, int elementIndex, const Variant &
 }
 
 bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, const Variant &value, bool forceWrite) {
-    if (!(propertyInfo.GetFlags() & PropertyInfo::IsArray)) {
+    if (!(propertyInfo.GetFlags() & PropertyInfo::ArrayFlag)) {
         BE_WARNLOG(L"Serializable::SetArrayProperty: property '%hs' is not array\n", propertyInfo.name.c_str());
         return false;
     }
 
-    if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::ReadOnly)) {
+    if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::ReadOnlyFlag)) {
         BE_WARNLOG(L"Serializable::SetArrayProperty: property '%hs' is readonly\n", propertyInfo.name.c_str());
         return false;
     }
@@ -880,7 +880,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     float minValue;
     float maxValue;
 
-    if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+    if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
         minValue = propertyInfo.GetMinValue();
         maxValue = propertyInfo.GetMaxValue();
     }
@@ -888,7 +888,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     switch (propertyInfo.GetType()) {
     case Variant::IntType: {
         int i = value.As<int>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(i, (int)minValue, (int)maxValue);
         }
         newValue = i;
@@ -896,7 +896,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
     case Variant::Int64Type: {
         int64_t i = value.As<int64_t>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(i, (int64_t)minValue, (int64_t)maxValue);
         }
         newValue = i;
@@ -907,7 +907,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         break;
     case Variant::FloatType: {
         float f = value.As<float>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(f, minValue, maxValue);
         }
         newValue = f;
@@ -915,7 +915,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
     case Variant::Vec2Type: {
         Vec2 vec2 = value.As<Vec2>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(vec2.x, minValue, maxValue);
             Clamp(vec2.y, minValue, maxValue);
         }
@@ -924,7 +924,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
     case Variant::Vec3Type: {
         Vec3 vec3 = value.As<Vec3>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(vec3.x, minValue, maxValue);
             Clamp(vec3.y, minValue, maxValue);
             Clamp(vec3.z, minValue, maxValue);
@@ -934,7 +934,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
     case Variant::Vec4Type: {
         Vec4 vec4 = value.As<Vec4>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(vec4.x, minValue, maxValue);
             Clamp(vec4.y, minValue, maxValue);
             Clamp(vec4.z, minValue, maxValue);
@@ -945,7 +945,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
     case Variant::Color3Type: {
         Color3 color3 = value.As<Color3>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(color3.r, minValue, maxValue);
             Clamp(color3.g, minValue, maxValue);
             Clamp(color3.b, minValue, maxValue);
@@ -955,7 +955,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
     case Variant::Color4Type: {
         Color4 color4 = value.As<Color4>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(color4.r, minValue, maxValue);
             Clamp(color4.g, minValue, maxValue);
             Clamp(color4.b, minValue, maxValue);
@@ -978,7 +978,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         break;
     case Variant::AnglesType: {
         Angles angles = value.As<Angles>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(angles[0], minValue, maxValue);
             Clamp(angles[1], minValue, maxValue);
             Clamp(angles[2], minValue, maxValue);
@@ -988,7 +988,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
     case Variant::PointType: {
         Point pt = value.As<Point>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(pt.x, (int)minValue, (int)maxValue);
             Clamp(pt.y, (int)minValue, (int)maxValue);
         }
@@ -997,7 +997,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
     case Variant::RectType: {
         Rect rect = value.As<Rect>();
-        if (propertyInfo.GetFlags() & PropertyInfo::Ranged) {
+        if (propertyInfo.GetFlags() & PropertyInfo::RangedFlag) {
             Clamp(rect.x, (int)minValue, (int)maxValue);
             Clamp(rect.y, (int)minValue, (int)maxValue);
             Clamp(rect.w, (int)minValue, (int)maxValue);
@@ -1118,7 +1118,7 @@ int Serializable::GetPropertyArrayCount(int index) const {
 }
 
 int Serializable::GetPropertyArrayCount(const PropertyInfo &propertyInfo) const {
-    if (!(propertyInfo.GetFlags() & PropertyInfo::IsArray)) {
+    if (!(propertyInfo.GetFlags() & PropertyInfo::ArrayFlag)) {
         BE_WARNLOG(L"Serializable::GetPropertyArrayCount: property '%hs' is not array\n", propertyInfo.name.c_str());
         return 0;
     }
@@ -1154,12 +1154,12 @@ void Serializable::SetPropertyArrayCount(int index, int count) {
 }
 
 void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int count) {
-    if (!(propertyInfo.GetFlags() & PropertyInfo::IsArray)) {
+    if (!(propertyInfo.GetFlags() & PropertyInfo::ArrayFlag)) {
         BE_WARNLOG(L"Serializable::SetPropertyArrayCount: property '%hs' is not array\n", propertyInfo.name.c_str());
         return;
     }
 
-    if (propertyInfo.GetFlags() & PropertyInfo::ReadOnly) {
+    if (propertyInfo.GetFlags() & PropertyInfo::ReadOnlyFlag) {
         BE_WARNLOG(L"Serializable::SetPropertyArrayCount: property '%hs' is readonly\n", propertyInfo.name.c_str());
         return;
     }
