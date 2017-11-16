@@ -278,17 +278,17 @@ BE_INLINE bool StaticArray<T, capacity>::operator==(const StaticArray<T, capacit
 
 template <typename T, int capacity>
 BE_INLINE bool StaticArray<T, capacity>::operator!=(const StaticArray<T, capacity> &rhs) const {
-    if (count == rhs.count) {
-        return false;
+    if (count != rhs.count) {
+        return true;
     }
 
     for (int i = 0; i < count; i++) {
-        if (elements[i] == rhs.elements[i]) {
-            return false;
+        if (elements[i] != rhs.elements[i]) {
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 template <typename T, int capacity>

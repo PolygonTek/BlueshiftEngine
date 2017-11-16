@@ -482,17 +482,17 @@ BE_INLINE bool Array<T>::operator==(const Array<T> &rhs) const {
 
 template <typename T>
 BE_INLINE bool Array<T>::operator!=(const Array<T> &rhs) const {
-    if (count == rhs.count) {
-        return false;
+    if (count != rhs.count) {
+        return true;
     }
 
     for (int i = 0; i < count; i++) {
-        if (elements[i] == rhs.elements[i]) {
-            return false;
+        if (elements[i] != rhs.elements[i]) {
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 template <typename T>
