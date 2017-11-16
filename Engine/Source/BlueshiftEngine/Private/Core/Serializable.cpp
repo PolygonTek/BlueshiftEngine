@@ -24,24 +24,24 @@ const SignalDef Serializable::SIG_PropertyArrayCountChanged("Serializable::Prope
 const SignalDef Serializable::SIG_PropertyInfoUpdated("Serializable::PropertyInfoUpdated");
 
 bool Serializable::GetPropertyInfo(int index, PropertyInfo &propertyInfo) const {
-    Array<PropertyInfo> propertyInfos;
-    GetPropertyInfoList(propertyInfos);
+    Array<PropertyInfo> propertyInfoList;
+    GetPropertyInfoList(propertyInfoList);
 
-    if (index < 0 || index > propertyInfos.Count() - 1) {
+    if (index < 0 || index > propertyInfoList.Count() - 1) {
         return false;
     }
 
-    propertyInfo = propertyInfos[index];
+    propertyInfo = propertyInfoList[index];
     return true;
 }
 
 bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
-    Array<PropertyInfo> propertyInfos;
-    GetPropertyInfoList(propertyInfos);
+    Array<PropertyInfo> propertyInfoList;
+    GetPropertyInfoList(propertyInfoList);
 
-    for (int i = 0; i < propertyInfos.Count(); i++) {
-        if (!Str::Cmp(propertyInfos[i].GetName(), name)) {
-            propertyInfo = propertyInfos[i];
+    for (int i = 0; i < propertyInfoList.Count(); i++) {
+        if (!Str::Cmp(propertyInfoList[i].GetName(), name)) {
+            propertyInfo = propertyInfoList[i];
             return true;
         }
     }
@@ -50,12 +50,12 @@ bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo)
 }
 
 void Serializable::Serialize(Json::Value &out) const {
-    Array<PropertyInfo> propertyInfos;
+    Array<PropertyInfo> propertyInfoList;
 
-    GetPropertyInfoList(propertyInfos);
+    GetPropertyInfoList(propertyInfoList);
 
-    for (int propertyIndex = 0; propertyIndex < propertyInfos.Count(); propertyIndex++) {
-        const PropertyInfo &propertyInfo = propertyInfos[propertyIndex];
+    for (int propertyIndex = 0; propertyIndex < propertyInfoList.Count(); propertyIndex++) {
+        const PropertyInfo &propertyInfo = propertyInfoList[propertyIndex];
 
         if (propertyInfo.GetFlags() & PropertyInfo::SkipSerializationFlag) {
             continue;
@@ -82,12 +82,12 @@ void Serializable::Serialize(Json::Value &out) const {
 }
 
 void Serializable::Deserialize(const Json::Value &node) {
-    Array<PropertyInfo> propertyInfos;
+    Array<PropertyInfo> propertyInfoList;
 
-    GetPropertyInfoList(propertyInfos);
+    GetPropertyInfoList(propertyInfoList);
 
-    for (int propertyIndex = 0; propertyIndex < propertyInfos.Count(); propertyIndex++) {
-        const PropertyInfo &propertyInfo = propertyInfos[propertyIndex];
+    for (int propertyIndex = 0; propertyIndex < propertyInfoList.Count(); propertyIndex++) {
+        const PropertyInfo &propertyInfo = propertyInfoList[propertyIndex];
 
         if (propertyInfo.GetFlags() & PropertyInfo::ReadOnlyFlag) {
             continue;

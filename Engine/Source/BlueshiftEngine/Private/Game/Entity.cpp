@@ -528,11 +528,11 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
     PropertyInfo propInfo;
     Guid toGuid;
 
-    Array<PropertyInfo> propertyInfos;
-    entity->GetPropertyInfoList(propertyInfos);
+    Array<PropertyInfo> propertyInfoList;
+    entity->GetPropertyInfoList(propertyInfoList);
 
-    for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
-        const auto &propInfo = propertyInfos[propIndex];
+    for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
+        const auto &propInfo = propertyInfoList[propIndex];
             
         if (propInfo.GetType() == Variant::GuidType) {
             if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
@@ -556,11 +556,11 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
     for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
         Component *component = entity->GetComponent(componentIndex);
 
-        Array<PropertyInfo> propertyInfos;
-        component->GetPropertyInfoList(propertyInfos);
+        Array<PropertyInfo> propertyInfoList;
+        component->GetPropertyInfoList(propertyInfoList);
 
-        for (int propIndex = 0; propIndex < propertyInfos.Count(); propIndex++) {
-            const auto &propInfo = propertyInfos[propIndex];
+        for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
+            const auto &propInfo = propertyInfoList[propIndex];
 
             if (propInfo.GetType() == Variant::GuidType) {
                 if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {

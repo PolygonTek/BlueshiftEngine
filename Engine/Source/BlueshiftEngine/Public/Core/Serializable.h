@@ -30,7 +30,7 @@ public:
                             /// Gets property info by index. Returns false if not found.
     bool                    GetPropertyInfo(int index, PropertyInfo &propertyInfo) const;
                             /// Gets property info array.
-    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const = 0;
+    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const = 0;
 
                             /// Serialize to JSON value.
     virtual void            Serialize(Json::Value &out) const;

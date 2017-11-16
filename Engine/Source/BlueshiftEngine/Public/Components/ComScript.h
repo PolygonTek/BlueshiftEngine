@@ -32,7 +32,7 @@ public:
 
     void                    InitScriptPropertyInfo(const Json::Value &jsonComponent);
 
-    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const override;
+    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const override;
 
     virtual void            Deserialize(const Json::Value &in) override;
 

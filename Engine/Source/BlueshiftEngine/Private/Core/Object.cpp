@@ -172,8 +172,8 @@ bool MetaObject::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) c
     
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
         for (int i = t->propertyInfoHash.First(hash); i != -1; i = t->propertyInfoHash.Next(i)) {
-            if (!Str::Icmp(t->propertyInfos[i].GetName(), name)) {
-                propertyInfo = t->propertyInfos[i];
+            if (!Str::Icmp(t->propertyInfoList[i].GetName(), name)) {
+                propertyInfo = t->propertyInfoList[i];
                 return true;
             }
         }
@@ -182,27 +182,27 @@ bool MetaObject::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) c
     return false;
 }
 
-void MetaObject::GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const {
+void MetaObject::GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const {
     Array<Str> names;
 
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
-        for (int index = 0; index < t->propertyInfos.Count(); index++) {
-            const PropertyInfo &propInfo = t->propertyInfos[index];
+        for (int index = 0; index < t->propertyInfoList.Count(); index++) {
+            const PropertyInfo &propInfo = t->propertyInfoList[index];
             const char *propName = propInfo.GetName();
 
             if (!names.Find(propName)) {
                 names.Append(propName);
-                propertyInfos.Append(propInfo);
+                propertyInfoList.Append(propInfo);
             }
         }
     }
 }
 
 PropertyInfo &MetaObject::RegisterProperty(const PropertyInfo &propInfo) {
-    int index = propertyInfos.Append(propInfo);
+    int index = propertyInfoList.Append(propInfo);
     int hash = propertyInfoHash.GenerateHash(propInfo.GetName(), false);
     propertyInfoHash.Add(hash, index);
-    return propertyInfos[index];
+    return propertyInfoList[index];
 }
 
 //-----------------------------------------------------------------------------------------------

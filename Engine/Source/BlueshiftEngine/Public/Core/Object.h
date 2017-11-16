@@ -138,7 +138,7 @@ public:
     bool                        GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
 
                                 /// Returns property info list including parent meta object.
-    void                        GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const;
+    void                        GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const;
 
                                 /// 
     PropertyInfo &              RegisterProperty(const PropertyInfo &propertyInfo);
@@ -155,7 +155,7 @@ private:
     MetaObject *                super;
     MetaObject *                next;
 
-    Array<PropertyInfo>         propertyInfos;
+    Array<PropertyInfo>         propertyInfoList;
     HashIndex                   propertyInfoHash;
 
     EventInfo<Object> *         eventMap;
@@ -222,7 +222,7 @@ public:
     void                        CancelEvents(const EventDef *evdef);
 
                                 /// Gets full list of property info.
-    virtual void                GetPropertyInfoList(Array<PropertyInfo> &propertyInfos) const { GetMetaObject()->GetPropertyInfoList(propertyInfos); }
+    virtual void                GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const { GetMetaObject()->GetPropertyInfoList(propertyInfoList); }
     
     static void                 Init();
     static void                 Shutdown();
