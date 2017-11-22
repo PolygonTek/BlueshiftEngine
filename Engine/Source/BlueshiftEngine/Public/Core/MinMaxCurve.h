@@ -60,10 +60,10 @@ BE_INLINE bool MinMaxCurve::operator==(const MinMaxCurve &rhs) const {
 }
 
 BE_INLINE bool MinMaxCurve::operator!=(const MinMaxCurve &rhs) const {
-    if (type == rhs.type && scalar == rhs.scalar && minCurve == rhs.minCurve && maxCurve == rhs.maxCurve) {
-        return false;
+    if (type != rhs.type || scalar != rhs.scalar || minCurve != rhs.minCurve || maxCurve != rhs.maxCurve) {
+        return true;
     }
-    return true;
+    return false;
 }
 
 BE_INLINE void MinMaxCurve::Reset(Type type) {

@@ -276,6 +276,11 @@ BE_INLINE Array<T>::Array(const Array<T> &array) {
 
 template <typename T>
 BE_INLINE Array<T> &Array<T>::operator=(const Array<T> &rhs) {
+    // In case of self-assignment do nothing
+    if (&rhs == this) {
+        return *this;
+    }
+
     Clear();
 
     count = rhs.count;
