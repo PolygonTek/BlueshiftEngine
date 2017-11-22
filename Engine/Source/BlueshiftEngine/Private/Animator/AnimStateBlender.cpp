@@ -141,7 +141,7 @@ void AnimStateBlender::BlendOut(int currentTime, int blendDuration) {
 }
 
 void AnimStateBlender::CallEvents(Entity *entity, int fromTime, int toTime) {
-    ComponentPtrArray scriptComponents = entity->GetComponents(ComScript::metaObject);
+    ComponentPtrArray scriptComponents = entity->GetComponents(&ComScript::metaObject);
     if (scriptComponents.Count() == 0) {
         return;
     }

@@ -342,7 +342,7 @@ void ComCamera::ProcessPointerInput(const Point &screenPoint) {
 #endif
 
     if (hitEntity) {
-        ComponentPtrArray scriptComponents = hitEntity->GetComponents(ComScript::metaObject);
+        ComponentPtrArray scriptComponents = hitEntity->GetComponents(&ComScript::metaObject);
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 

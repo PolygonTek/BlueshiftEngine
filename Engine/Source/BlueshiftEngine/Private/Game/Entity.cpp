@@ -176,6 +176,10 @@ bool Entity::RemoveComponent(Component *component) {
     return components.Remove(component);
 }
 
+bool Entity::HasChildren() const {
+    return node.GetChild() ? true : false;
+}
+
 void Entity::GetChildren(EntityPtrArray &children) const {
     for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
         children.Append(child);
@@ -206,7 +210,7 @@ bool Entity::HasRenderEntity(int renderEntityHandle) const {
 }
 
 void Entity::OnApplicationTerminate() {
-    ComponentPtrArray scriptComponents = GetComponents(ComScript::metaObject);
+    ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
     for (int i = 0; i < scriptComponents.Count(); i++) {
         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
         
@@ -215,7 +219,7 @@ void Entity::OnApplicationTerminate() {
 }
 
 void Entity::OnApplicationPause(bool pause) {
-    ComponentPtrArray scriptComponents = GetComponents(ComScript::metaObject);
+    ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
     for (int i = 0; i < scriptComponents.Count(); i++) {
         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
         

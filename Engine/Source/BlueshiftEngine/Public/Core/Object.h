@@ -39,6 +39,9 @@ class PropertyInfo;
 class Object;
 class EventDef;
 
+using ObjectPtr = Object*;
+using ObjectPtrArray = Array<ObjectPtr>;
+
 using EventCallback = void (Object::*)();
 
 template <typename T>
@@ -79,7 +82,7 @@ extern const EventDef EV_ImmediateDestroy;
 // 이 매크로는 static 멤버 변수를 초기화할 수 있는 곳에 정의되어야 한다.
 // abstract 클래스에만 사용할 것
 #define ABSTRACT_DECLARATION(visualname, classname, superclassname) \
-    BE1::MetaObject *classname::GetMetaObject() const { return &(classname::metaObject); } \
+    BE1::MetaObject *classname::GetMetaObject() const { return &classname::metaObject; } \
     BE1::Object *classname::CreateInstance(const BE1::Guid &guid) { \
         BE_LOG(L"Cannot instanciate abstract class %hs.", #classname); \
         return nullptr; \
@@ -90,7 +93,7 @@ extern const EventDef EV_ImmediateDestroy;
 // 이 매크로는 static 멤버 변수를 초기화할 수 있는 곳에 정의되어야 한다.
 // concrete 클래스에만 사용할 것
 #define OBJECT_DECLARATION(visualname, classname, superclassname) \
-    BE1::MetaObject *classname::GetMetaObject() const { return &(classname::metaObject); } \
+    BE1::MetaObject *classname::GetMetaObject() const { return &classname::metaObject; } \
     BE1::Object *classname::CreateInstance(const BE1::Guid &guid) { \
         classname *ptr = new classname; \
         ptr->InitInstance(guid); \

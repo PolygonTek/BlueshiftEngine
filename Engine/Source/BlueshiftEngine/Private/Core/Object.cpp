@@ -308,7 +308,7 @@ void Object::Shutdown() {
 }
 
 Str Object::ClassName() const {
-    MetaObject *meta = GetMetaObject();
+    const MetaObject *meta = GetMetaObject();
     return meta->classname;
 }
 
@@ -317,7 +317,7 @@ void Object::SetClassName(const Str &classname) {
 }
 
 Str Object::SuperClassName() const {
-    MetaObject *meta = GetMetaObject();
+    const MetaObject *meta = GetMetaObject();
     return meta->superclassname;
 }
 
@@ -455,7 +455,7 @@ bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
         Event::CancelEvents(this);
     }
     
-    MetaObject *meta = GetMetaObject();
+    const MetaObject *meta = GetMetaObject();
     int num = evdef->GetEventNum();
     if (!meta->eventCallbacks[num]) {
         // we don't respond to this event, so ignore it

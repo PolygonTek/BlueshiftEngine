@@ -198,7 +198,7 @@ void ComTransform::RecalcLocalMatrix() {
 
 void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
     for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        if (ignorePhysicsEntity && childEntity->GetComponent(ComRigidBody::metaObject)) {
+        if (ignorePhysicsEntity && childEntity->GetComponent(&ComRigidBody::metaObject)) {
             continue;
         }
 

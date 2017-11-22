@@ -24,6 +24,10 @@
 
 BE_NAMESPACE_BEGIN
 
+class Variant;
+
+using VariantArray = Array<Variant>;
+
 /// Variable that supports a fixed set of types.
 class BE_API Variant {
 public:

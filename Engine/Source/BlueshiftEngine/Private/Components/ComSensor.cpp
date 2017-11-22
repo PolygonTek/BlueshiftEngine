@@ -91,7 +91,7 @@ void ComSensor::Awake() {
         physicsDesc.origin = transform->GetOrigin();
         physicsDesc.axis = transform->GetAxis();
 
-        ComponentPtrArray colliders = entity->GetComponents(ComCollider::metaObject);
+        ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
         if (colliders.Count() > 0) {
             for (int i = 0; i < colliders.Count(); i++) {
                 ComCollider *collider = colliders[i]->Cast<ComCollider>();
@@ -134,7 +134,7 @@ void ComSensor::Update() {
 }
 
 void ComSensor::ProcessScriptCallback() {
-    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
+    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(&ComScript::metaObject);
     if (scriptComponents.Count() == 0) {
         return;
     }

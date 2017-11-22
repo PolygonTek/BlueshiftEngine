@@ -104,6 +104,8 @@ public:
     Guid                        GetParentGuid() const;
     void                        SetParentGuid(const Guid &parentGuid);
 
+    bool                        HasChildren() const;
+
                                 /// Gets the children by depth first order
     void                        GetChildren(EntityPtrArray &children) const;
     
@@ -114,10 +116,10 @@ public:
     int                         NumComponents() const { return components.Count(); }
 
                                 /// Checks if component exist by the given meta object
-    bool                        HasComponent(const MetaObject &type) const;
+    bool                        HasComponent(const MetaObject *type) const;
 
                                 /// Returns a component pointer that is conflicting with other components
-    Component *                 GetConflictingComponent(const MetaObject &type) const;
+    Component *                 GetConflictingComponent(const MetaObject *type) const;
 
                                 /// Returns index of the component pointer
     int                         GetComponentIndex(const Component *component) const;
@@ -126,19 +128,19 @@ public:
     Component *                 GetComponent(int index) const { return components[index]; }
 
                                 /// Returns a component pointer by the given meta object
-    Component *                 GetComponent(const MetaObject &type) const;
+    Component *                 GetComponent(const MetaObject *type) const;
 
                                 /// Returns a component pointer by the given type T
     template <typename T> T *   GetComponent() const;
 
                                 /// Returns a component pointer array by the given meta object
-    ComponentPtrArray           GetComponents(const MetaObject &type) const;
+    ComponentPtrArray           GetComponents(const MetaObject *type) const;
 
                                 /// Returns a transform component
     ComTransform *              GetTransform() const;
 
                                 /// Adds a component to the entity
-    void                        AddComponent(Component *component);
+    void                        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
 
                                 /// Inserts a component after the index to the entity
     void                        InsertComponent(Component *component, int index);
@@ -234,7 +236,7 @@ protected:
 
 template <typename T>
 BE_INLINE T *Entity::GetComponent() const {
-    Component *component = GetComponent(T::metaObject);
+    Component *component = GetComponent(&T::metaObject);
     if (component) {
         return component->Cast<T>();
     }
@@ -242,7 +244,7 @@ BE_INLINE T *Entity::GetComponent() const {
     return nullptr;
 }
 
-BE_INLINE bool Entity::HasComponent(const MetaObject &type) const {
+BE_INLINE bool Entity::HasComponent(const MetaObject *type) const {
     if (GetComponent(type)) {
         return true;
     }
@@ -253,10 +255,10 @@ BE_INLINE int Entity::GetComponentIndex(const Component *component) const {
     return components.FindIndex(const_cast<Component *>(component));
 }
 
-BE_INLINE Component *Entity::GetComponent(const MetaObject &type) const {
+BE_INLINE Component *Entity::GetComponent(const MetaObject *type) const {
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
-        if (component->GetMetaObject()->IsTypeOf(type)) {
+        if (component->GetMetaObject()->IsTypeOf(*type)) {
             return component;
         }
     }
@@ -264,13 +266,13 @@ BE_INLINE Component *Entity::GetComponent(const MetaObject &type) const {
     return nullptr;
 }
 
-BE_INLINE ComponentPtrArray Entity::GetComponents(const MetaObject &type) const {
+BE_INLINE ComponentPtrArray Entity::GetComponents(const MetaObject *type) const {
     ComponentPtrArray subComponents;
 
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
 
-        if (component->GetMetaObject()->IsTypeOf(type)) {
+        if (component->GetMetaObject()->IsTypeOf(*type)) {
             subComponents.Append(component);
         }
     }
@@ -278,19 +280,15 @@ BE_INLINE ComponentPtrArray Entity::GetComponents(const MetaObject &type) const 
     return subComponents;
 }
 
-BE_INLINE Component *Entity::GetConflictingComponent(const MetaObject &type) const {
+BE_INLINE Component *Entity::GetConflictingComponent(const MetaObject *type) const {
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
-        if (component->IsConflictComponent(type)) {
+        if (component->IsConflictComponent(*type)) {
             return component;
         }
     }
 
     return nullptr;
-}
-
-BE_INLINE void Entity::AddComponent(Component *component) {
-    InsertComponent(component, components.Count());
 }
 
 BE_INLINE Entity *Entity::GetRoot() const {
