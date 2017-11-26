@@ -29,6 +29,7 @@ const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ab");
 const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
 const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
 const SignalDef Entity::SIG_ComponentRemoved("Entity::ComponentRemoved", "a");
+const SignalDef Entity::SIG_ComponentSwapped("Entity::ComponentSwapped", "ii");
 
 OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
@@ -174,6 +175,19 @@ void Entity::InsertComponent(Component *component, int index) {
 
 bool Entity::RemoveComponent(Component *component) {
     return components.Remove(component);
+}
+
+bool Entity::SwapComponent(int fromIndex, int toIndex) {
+    Clamp(fromIndex, 1, components.Count());
+    Clamp(toIndex, 1, components.Count());
+
+    if (fromIndex != toIndex) {
+        Swap(components[fromIndex], components[toIndex]);
+
+        EmitSignal(&SIG_ComponentSwapped, fromIndex, toIndex);
+        return true;
+    }
+    return false;
 }
 
 bool Entity::HasChildren() const {

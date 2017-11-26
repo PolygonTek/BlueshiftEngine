@@ -151,6 +151,9 @@ public:
                                 /// Removes a component
     bool                        RemoveComponent(Component *component);
 
+                                /// Swap two components
+    bool                        SwapComponent(int fromIndex, int toIndex);
+
     bool                        HasRenderEntity(int renderEntityHandle) const;
 
                                 /// Purges all the data in this entity.
@@ -215,7 +218,8 @@ public:
     static const SignalDef      SIG_ParentChanged;
     static const SignalDef      SIG_ComponentInserted;
     static const SignalDef      SIG_ComponentRemoved;
-    
+    static const SignalDef      SIG_ComponentSwapped;
+
 protected:
     virtual void                Event_ImmediateDestroy() override;
 
