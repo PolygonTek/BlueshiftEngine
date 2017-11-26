@@ -133,6 +133,9 @@ public:
                                 /// Returns a component pointer by the given type T
     template <typename T> T *   GetComponent() const;
 
+                                /// Returns a component pointer array of all
+    ComponentPtrArray &         GetComponents() { return components; }
+
                                 /// Returns a component pointer array by the given meta object
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
 
