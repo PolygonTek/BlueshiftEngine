@@ -35,6 +35,8 @@ enum IOSDevice {
     IOS_IPhone6,
     IOS_IPhone6S,
     IOS_IPhone7,
+    IOS_IPhone8,
+    IOS_IPhoneX,
     IOS_IPodTouch4,
     IOS_IPodTouch5,
     IOS_IPodTouch6,
@@ -157,8 +159,14 @@ static IOSDevice GetIOSDeviceType() {
             deviceType = IOS_IPhone6;
         } else if (major == 8) {
             deviceType = IOS_IPhone6S;
-        } else if (major >= 9) {
+        } else if (major == 9) {
             deviceType = IOS_IPhone7;
+        } else if (major == 10) {
+            if (minor == 3 || minor == 6) {
+                deviceType = IOS_IPhoneX;
+            } else {
+                deviceType = IOS_IPhone8;
+            }
         }
     } else if ([deviceIDString hasPrefix:@"x86"]) { // simulator
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
