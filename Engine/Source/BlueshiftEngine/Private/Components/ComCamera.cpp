@@ -42,7 +42,7 @@ void ComCamera::RegisterProperties() {
     REGISTER_PROPERTY("w", "W", float, nw, 1.f, "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("h", "H", float, nh, 1.f, "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", SceneView::ClearMethod, GetClearMethod, SetClearMethod, 1, "", PropertyInfo::EditorFlag).SetEnumString("No Clear;Depth Only;Color");
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", SceneView::ClearMethod, GetClearMethod, SetClearMethod, 1, "", PropertyInfo::EditorFlag).SetEnumString("No Clear;Depth Only;Color;Skybox");
     REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertyInfo::EditorFlag);
     REGISTER_PROPERTY("order", "Order", int, order, 0, "", PropertyInfo::EditorFlag);
