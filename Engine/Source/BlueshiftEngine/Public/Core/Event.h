@@ -72,19 +72,25 @@ class BE_API EventDef {
 public:
     enum { MaxEvents = 4096 };
 
-    explicit EventDef(const char *command, bool guiEvent = false, const char *formatSpec = nullptr, char returnType = 0);
+    explicit EventDef(const char *name, bool guiEvent = false, const char *formatSpec = nullptr, char returnType = 0);
 
+                            /// Returns event def name
     const char *            GetName() const { return name; }
     const char *            GetArgFormat() const { return formatSpec; }
-    bool                    IsGuiEvent() const { return guiEvent; }
     char                    GetReturnType() const { return returnType; }
-    int                     GetEventNum() const { return eventnum; }
+    int                     GetEventNum() const { return eventNum; }
     int                     GetNumArgs() const { return numArgs; }
     size_t                  GetArgSize() const { return argSize; }
     int                     GetArgOffset(int arg) const { assert((arg >= 0) && (arg < EventArg::MaxArgs)); return argOffset[arg]; }
+    bool                    IsGuiEvent() const { return guiEvent; }
 
-    static int              NumEvents();
-    static const EventDef * GetEvent(int eventnum);
+                            /// Returns number of event defs
+    static int              NumEvents() { return numEventDefs; }
+
+                            /// Returns event def by event number
+    static const EventDef * GetEvent(int eventNum) { return eventDefs[eventNum]; }
+
+                            /// Returns event def by name
     static const EventDef * FindEvent(const char *name);
 
 private:
@@ -95,16 +101,17 @@ private:
     int                     numArgs;
     size_t                  argSize;
     int                     argOffset[EventArg::MaxArgs];
-    int                     eventnum;
+    int                     eventNum;
 
-    static EventDef *       eventDefList[MaxEvents];
+    static EventDef *       eventDefs[MaxEvents];
     static int              numEventDefs;
 };
 
 class BE_API Event {
 public:
+    Event() = default;
     ~Event();
-    
+
     void                    Free();
     void                    Schedule(Object *sender, int time);
     byte *                  GetData() { return data; }
@@ -121,7 +128,7 @@ public:
     static void             ServiceEvent(Event *event);
     static void             ServiceEvents();
     static void             ServiceGuiEvents();
-    static void             ClearEventList();
+    static void             ClearEvents();
 
     static bool             initialized;
 
@@ -132,10 +139,10 @@ private:
     Object *                sender;
     LinkList<Event>         node;
 
+    static Event            eventPool[EventDef::MaxEvents];
     static LinkList<Event>  freeEvents;
     static LinkList<Event>  eventQueue;
     static LinkList<Event>  guiEventQueue;
-    static Event            eventPool[EventDef::MaxEvents];
 };
 
 BE_NAMESPACE_END

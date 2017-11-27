@@ -338,7 +338,7 @@ void ComScript::InitScriptPropertyInfoImpl(const Guid &scriptGuid) {
                 fieldInfos.Append(propInfo);
             } else if (!Str::Cmp(type, "object")) {
                 const char *classname = props["classname"];
-                MetaObject *metaObject = Object::FindMetaObject(classname);
+                const MetaObject *metaObject = Object::FindMetaObject(classname);
 
                 auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), new PropertyLambdaAccessorImpl<Class, Guid, MixedPropertyTrait>(
                     [pairPtr]() { return pairPtr->second.As<Guid>(); },
@@ -429,7 +429,6 @@ void ComScript::SetScriptProperties() {
         const char *name = propInfo->GetName();
         const Variant value = GetProperty(name);
         const Variant::Type type = propInfo->GetType();
-        //assert(type == value.GetType());
 
         switch (type) {
         case Variant::IntType:
