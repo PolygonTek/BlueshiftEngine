@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(BlueshiftEngine)
 
+configure_file (
+  "${PROJECT_SOURCE_DIR}/Version.h.in"
+  "${PROJECT_SOURCE_DIR}/Version.h")
+
 set(ENGINE_FILES
   Precompiled.h
   Precompiled.cpp
@@ -16,6 +20,7 @@ set(ENGINE_FILES
   Public/Core/Range.h
   Public/Core/Str.h
   Public/Core/Variant.h
+  Public/Core/VariantArg.h
   Public/Core/Guid.h
   Public/Core/WStr.h
   Public/Core/ByteOrder.h
