@@ -26,7 +26,7 @@ static const int    MaxSignalsPerFrame = 4096;
 static bool         signalErrorOccured = false;
 static char         signalErrorMsg[128];
 
-SignalDef *         SignalDef::signalDefs[SignalDef::MaxSignals];
+SignalDef *         SignalDef::signalDefs[SignalDef::MaxSignalDefs];
 int                 SignalDef::numSignalDefs = 0;
 
 SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) {
@@ -43,9 +43,9 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
     this->formatSpec = formatSpec;
     this->returnType = returnType;
     this->numArgs = (int)strlen(formatSpec);
-    assert(this->numArgs <= EventArg::MaxArgs);
+    assert(this->numArgs <= EventDef::MaxArgs);
 
-    if (this->numArgs > EventArg::MaxArgs) {
+    if (this->numArgs > EventDef::MaxArgs) {
         signalErrorOccured = true;
         ::sprintf(signalErrorMsg, "SignalDef::SignalDef : Too many args for '%s' event.", name);
         return;
@@ -59,40 +59,40 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
         this->argOffset[i] = (int)this->argSize;
 
         switch (this->formatSpec[i]) {
-        case EventArg::IntType:
+        case VariantArg::IntType:
             this->argSize += sizeof(int);
             break;
-        case EventArg::BoolType:
+        case VariantArg::BoolType:
             this->argSize += sizeof(bool);
             break;
-        case EventArg::FloatType:
+        case VariantArg::FloatType:
             this->argSize += sizeof(float);
             break;
-        case EventArg::PointerType:
+        case VariantArg::PointerType:
             this->argSize += sizeof(void *);
             break;
-        case EventArg::PointType:
+        case VariantArg::PointType:
             this->argSize += sizeof(Point);
             break;
-        case EventArg::RectType:
+        case VariantArg::RectType:
             this->argSize += sizeof(Rect);
             break;
-        case EventArg::Vec3Type:
+        case VariantArg::Vec3Type:
             this->argSize += sizeof(Vec3);
             break;
-        case EventArg::Mat3x3Type:
+        case VariantArg::Mat3x3Type:
             this->argSize += sizeof(Mat3);
             break;
-        case EventArg::Mat4x4Type:
+        case VariantArg::Mat4x4Type:
             this->argSize += sizeof(Mat4);
             break;
-        case EventArg::GuidType:
+        case VariantArg::GuidType:
             this->argSize += sizeof(Guid);
             break;
-        case EventArg::StringType:
+        case VariantArg::StringType:
             this->argSize += MaxSignalStringLen * sizeof(char);
             break;
-        case EventArg::WStringType:
+        case VariantArg::WStringType:
             this->argSize += MaxSignalStringLen * sizeof(wchar_t);
             break;
         default:
@@ -125,9 +125,9 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
         }
     }
 
-    if (this->numSignalDefs >= MaxSignals) {
+    if (this->numSignalDefs >= MaxSignalDefs) {
         signalErrorOccured = true;
-        ::sprintf(signalErrorMsg, "numSignalDefs >= MaxSignals");
+        ::sprintf(signalErrorMsg, "numSignalDefs >= MaxSignalDefs");
         return;
     }
 
@@ -154,7 +154,7 @@ const SignalDef *SignalDef::FindSignal(const char *name) {
 bool                SignalSystem::initialized = false;
 LinkList<Signal>    SignalSystem::freeSignals;
 LinkList<Signal>    SignalSystem::signalQueue;
-Signal              SignalSystem::signalPool[SignalDef::MaxSignals];
+Signal              SignalSystem::signalPool[SignalSystem::MaxSignals];
 
 Signal::~Signal() {
     SignalSystem::FreeSignal(this);
@@ -164,7 +164,7 @@ void SignalSystem::Clear() {
     freeSignals.Clear();
     signalQueue.Clear();
 
-    for (int i = 0; i < SignalDef::MaxSignals; i++) {
+    for (int i = 0; i < SignalSystem::MaxSignals; i++) {
         FreeSignal(&signalPool[i]);
     }
 }
@@ -240,7 +240,7 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
     // Copy arguments to signal data
     const char *format = sigdef->GetArgFormat();
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
-        EventArg *arg = va_arg(args, EventArg *);
+        VariantArg *arg = va_arg(args, VariantArg *);
         if (format[argIndex] != arg->type) {
             BE_ERRLOG(L"SignalSystem::AllocSignal: Wrong type passed in for arg #%d on '%hs' signal.\n", argIndex, sigdef->GetName());
         }
@@ -248,60 +248,60 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
         byte *dataPtr = &newSignal->data[sigdef->GetArgOffset(argIndex)];
 
         switch (format[argIndex]) {
-        case EventArg::IntType:
+        case VariantArg::IntType:
             if (arg->pointer) {
                 *reinterpret_cast<int *>(dataPtr) = arg->intValue;
             }
             break;
-        case EventArg::BoolType:
+        case VariantArg::BoolType:
             if (arg->pointer) {
                 *reinterpret_cast<bool *>(dataPtr) = arg->boolValue;
             }
             break;
-        case EventArg::FloatType:
+        case VariantArg::FloatType:
             if (arg->pointer) {
                 *reinterpret_cast<float *>(dataPtr) = arg->floatValue;
             }
             break;
-        case EventArg::PointerType:
+        case VariantArg::PointerType:
             *reinterpret_cast<void **>(dataPtr) = reinterpret_cast<void *>(arg->pointer);
             break;
-        case EventArg::PointType:
+        case VariantArg::PointType:
             if (arg->pointer) {
                 *reinterpret_cast<Point *>(dataPtr) = *reinterpret_cast<const Point *>(arg->pointer);
             }
             break;
-        case EventArg::RectType:
+        case VariantArg::RectType:
             if (arg->pointer) {
                 *reinterpret_cast<Rect *>(dataPtr) = *reinterpret_cast<const Rect *>(arg->pointer);
             }
             break;
-        case EventArg::Vec3Type:
+        case VariantArg::Vec3Type:
             if (arg->pointer) {
                 *reinterpret_cast<Vec3 *>(dataPtr) = *reinterpret_cast<const Vec3 *>(arg->pointer);
             }
             break;
-        case EventArg::Mat3x3Type:
+        case VariantArg::Mat3x3Type:
             if (arg->pointer) {
                 *reinterpret_cast<Mat3 *>(dataPtr) = *reinterpret_cast<const Mat3 *>(arg->pointer);
             }
             break;
-        case EventArg::Mat4x4Type:
+        case VariantArg::Mat4x4Type:
             if (arg->pointer) {
                 *reinterpret_cast<Mat4 *>(dataPtr) = *reinterpret_cast<const Mat4 *>(arg->pointer);
             }
             break;
-        case EventArg::GuidType:
+        case VariantArg::GuidType:
             if (arg->pointer) {
                 *reinterpret_cast<Guid *>(dataPtr) = *reinterpret_cast<const Guid *>(arg->pointer);
             }
             break;
-        case EventArg::StringType:
+        case VariantArg::StringType:
             if (arg->pointer) {
                 Str::Copynz(reinterpret_cast<char *>(dataPtr), reinterpret_cast<const char *>(arg->pointer), MaxSignalStringLen);
             }
             break;
-        case EventArg::WStringType:
+        case VariantArg::WStringType:
             if (arg->pointer) {
                 WStr::Copynz(reinterpret_cast<wchar_t *>(dataPtr), reinterpret_cast<const wchar_t *>(arg->pointer), MaxSignalStringLen);
             }
@@ -315,7 +315,7 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
     return newSignal;
 }
 
-void SignalSystem::CopyArgPtrs(const SignalDef *sigdef, int numArgs, va_list args, intptr_t argPtrs[EventArg::MaxArgs]) {
+void SignalSystem::CopyArgPtrs(const SignalDef *sigdef, int numArgs, va_list args, intptr_t argPtrs[EventDef::MaxArgs]) {
     if (numArgs != sigdef->GetNumArgs()) { 
         BE_ERRLOG(L"SignalSystem::CopyArgPtrs: Wrong number of args for '%hs' signal.\n", sigdef->GetName());
     }
@@ -323,7 +323,7 @@ void SignalSystem::CopyArgPtrs(const SignalDef *sigdef, int numArgs, va_list arg
     const char *format = sigdef->GetArgFormat();
 
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
-        EventArg *arg = va_arg(args, EventArg *);
+        VariantArg *arg = va_arg(args, VariantArg *);
         if (format[argIndex] != arg->type) {
             BE_ERRLOG(L"SignalSystem::CopyArgPtrs: Wrong type passed in for arg #%d on '%hs' signal.\n", argIndex, sigdef->GetName());
         }
@@ -363,7 +363,7 @@ void SignalSystem::CancelSignal(const SignalObject *receiver, const SignalDef *s
 }
 
 void SignalSystem::ServiceSignal(Signal *signal) {
-    intptr_t argPtrs[EventArg::MaxArgs];
+    intptr_t argPtrs[EventDef::MaxArgs];
 
     // copy the data into the local argPtrs array and set up pointers
     const SignalDef *sigdef = signal->signalDef;
@@ -376,40 +376,40 @@ void SignalSystem::ServiceSignal(Signal *signal) {
         byte *data = signal->data;
 
         switch (formatSpec[i]) {
-        case EventArg::IntType:
+        case VariantArg::IntType:
             argPtrs[i] = *reinterpret_cast<int *>(&data[offset]);
             break;
-        case EventArg::BoolType:
+        case VariantArg::BoolType:
             argPtrs[i] = *reinterpret_cast<bool *>(&data[offset]);
             break;
-        case EventArg::FloatType:
+        case VariantArg::FloatType:
             argPtrs[i] = *reinterpret_cast<float *>(&data[offset]);
             break; 
-        case EventArg::PointerType:
+        case VariantArg::PointerType:
             *reinterpret_cast<void **>(&argPtrs[i]) = *reinterpret_cast<void **>(&data[offset]);
             break;
-        case EventArg::PointType:
+        case VariantArg::PointType:
             *reinterpret_cast<Point **>(argPtrs[i]) = reinterpret_cast<Point *>(&data[offset]);
             break;
-        case EventArg::RectType:
+        case VariantArg::RectType:
             *reinterpret_cast<Rect **>(&argPtrs[i]) = reinterpret_cast<Rect *>(&data[offset]);
             break;
-        case EventArg::Vec3Type:
+        case VariantArg::Vec3Type:
             *reinterpret_cast<Vec3 **>(&argPtrs[i]) = reinterpret_cast<Vec3 *>(&data[offset]);
             break;
-        case EventArg::Mat3x3Type:
+        case VariantArg::Mat3x3Type:
             *reinterpret_cast<Mat3 **>(&argPtrs[i]) = reinterpret_cast<Mat3 *>(&data[offset]);
             break;
-        case EventArg::Mat4x4Type:
+        case VariantArg::Mat4x4Type:
             *reinterpret_cast<Mat4 **>(&argPtrs[i]) = reinterpret_cast<Mat4 *>(&data[offset]);
             break;
-        case EventArg::GuidType:
+        case VariantArg::GuidType:
             *reinterpret_cast<Guid **>(&argPtrs[i]) = reinterpret_cast<Guid *>(&data[offset]);
             break;
-        case EventArg::StringType:
+        case VariantArg::StringType:
             *reinterpret_cast<const char **>(&argPtrs[i]) = reinterpret_cast<const char *>(&data[offset]);
             break;
-        case EventArg::WStringType:
+        case VariantArg::WStringType:
             *reinterpret_cast<const wchar_t **>(&argPtrs[i]) = reinterpret_cast<const wchar_t *>(&data[offset]);
             break;
         default:

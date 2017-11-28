@@ -433,7 +433,7 @@ bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
         return false;
     }
 
-    intptr_t argPtrs[EventArg::MaxArgs];
+    intptr_t argPtrs[EventDef::MaxArgs];
     
     // Copy arguments to array of intptr_t
     va_list args;
@@ -449,7 +449,7 @@ bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
 bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
     assert(evdef);
     assert(EventSystem::initialized);
-    assert(EventArg::MaxArgs == 8);
+    assert(EventDef::MaxArgs == 8);
 
     if (evdef == &EV_ImmediateDestroy) {
         EventSystem::CancelEvents(this);

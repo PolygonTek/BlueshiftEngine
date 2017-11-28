@@ -25,7 +25,7 @@ static const int    MaxEventsPerFrame = 4096;
 static bool         eventErrorOccured = false;
 static char         eventErrorMsg[128];
 
-EventDef *          EventDef::eventDefs[EventDef::MaxEvents];
+EventDef *          EventDef::eventDefs[EventDef::MaxEventDefs];
 int                 EventDef::numEventDefs = 0;
 
 EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char returnType) {
@@ -44,7 +44,7 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
     this->numArgs = Str::Length(formatSpec);
     this->guiEvent = guiEvent;
 
-    if (this->numArgs > EventArg::MaxArgs) {
+    if (this->numArgs > MaxArgs) {
         eventErrorOccured = true;
         ::sprintf(eventErrorMsg, "EventDef::EventDef: Too many args for '%s' event.", name);
         return;
@@ -58,40 +58,40 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
         this->argOffset[argIndex] = (int)this->argSize;
 
         switch (this->formatSpec[argIndex]) {
-        case EventArg::IntType:
+        case VariantArg::IntType:
             this->argSize += sizeof(int);
             break;
-        case EventArg::BoolType:
+        case VariantArg::BoolType:
             this->argSize += sizeof(bool);
             break;
-        case EventArg::FloatType:
+        case VariantArg::FloatType:
             this->argSize += sizeof(float);
             break;
-        case EventArg::PointerType:
+        case VariantArg::PointerType:
             this->argSize += sizeof(void *);
             break;
-        case EventArg::PointType:
+        case VariantArg::PointType:
             this->argSize += sizeof(Point);
             break;
-        case EventArg::RectType:
+        case VariantArg::RectType:
             this->argSize += sizeof(Rect);
             break;
-        case EventArg::Vec3Type:
+        case VariantArg::Vec3Type:
             this->argSize += sizeof(Vec3);
             break;
-        case EventArg::Mat3x3Type:
+        case VariantArg::Mat3x3Type:
             this->argSize += sizeof(Mat3);
             break;
-        case EventArg::Mat4x4Type:
+        case VariantArg::Mat4x4Type:
             this->argSize += sizeof(Mat4);
             break;
-        case EventArg::GuidType:
+        case VariantArg::GuidType:
             this->argSize += sizeof(Guid);
             break;
-        case EventArg::StringType:
+        case VariantArg::StringType:
             this->argSize += MaxEventStringLen * sizeof(char);
             break;
-        case EventArg::WStringType:
+        case VariantArg::WStringType:
             this->argSize += MaxEventStringLen * sizeof(wchar_t);
             break;
         default:
@@ -125,9 +125,9 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
         }
     }
 
-    if (EventDef::numEventDefs >= MaxEvents) {
+    if (EventDef::numEventDefs >= EventDef::MaxEventDefs) {
         eventErrorOccured = true;
-        ::sprintf(eventErrorMsg, "numEventDefs >= MaxEvents");
+        ::sprintf(eventErrorMsg, "numEventDefs >= MaxEventDefs");
         return;
     }
 
@@ -151,7 +151,7 @@ const EventDef *EventDef::FindEvent(const char *name) {
 //-----------------------------------------------------------------------------------------
 
 bool                EventSystem::initialized = false;
-Event               EventSystem::eventPool[EventDef::MaxEvents];
+Event               EventSystem::eventPool[EventSystem::MaxEvents];
 LinkList<Event>     EventSystem::freeEvents;
 LinkList<Event>     EventSystem::eventQueue;
 LinkList<Event>     EventSystem::guiEventQueue;
@@ -165,7 +165,7 @@ void EventSystem::Clear() {
     eventQueue.Clear();
     guiEventQueue.Clear();
 
-    for (int i = 0; i < EventDef::MaxEvents; i++) {
+    for (int i = 0; i < EventSystem::MaxEvents; i++) {
         FreeEvent(&eventPool[i]);
     }
 }
@@ -240,7 +240,7 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
     // Copy arguments to event data
     const char *format = evdef->GetArgFormat();
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
-        const EventArg *arg = va_arg(args, EventArg *);
+        const VariantArg *arg = va_arg(args, VariantArg *);
 
         if (arg->type != format[argIndex]) {
             BE_ERRLOG(L"EventSystem::AllocEvent: Wrong type passed in for arg #%d on '%hs' event.\n", argIndex, evdef->GetName());
@@ -249,60 +249,60 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
         byte *dataPtr = &newEvent->data[evdef->GetArgOffset(argIndex)];
 
         switch (format[argIndex]) {
-        case EventArg::IntType:
+        case VariantArg::IntType:
             if (arg->pointer) {
                 *reinterpret_cast<int *>(dataPtr) = *reinterpret_cast<const int *>(arg->pointer);
             }
             break;
-        case EventArg::BoolType:
+        case VariantArg::BoolType:
             if (arg->pointer) {
                 *reinterpret_cast<bool *>(dataPtr) = *reinterpret_cast<const bool *>(arg->pointer);
             }
             break;
-        case EventArg::FloatType:
+        case VariantArg::FloatType:
             if (arg->pointer) {
                 *reinterpret_cast<float *>(dataPtr) = *reinterpret_cast<const float *>(arg->pointer);
             }
             break;
-        case EventArg::PointerType:
+        case VariantArg::PointerType:
             *reinterpret_cast<void **>(dataPtr) = reinterpret_cast<void *>(arg->pointer);
             break;
-        case EventArg::PointType:
+        case VariantArg::PointType:
             if (arg->pointer) {
                 *reinterpret_cast<Point *>(dataPtr) = *reinterpret_cast<const Point *>(arg->pointer);
             }
             break;
-        case EventArg::RectType:
+        case VariantArg::RectType:
             if (arg->pointer) {
                 *reinterpret_cast<Rect *>(dataPtr) = *reinterpret_cast<const Rect *>(arg->pointer);
             }
             break;
-        case EventArg::Vec3Type:
+        case VariantArg::Vec3Type:
             if (arg->pointer) {
                 *reinterpret_cast<Vec3 *>(dataPtr) = *reinterpret_cast<const Vec3 *>(arg->pointer);
             }
             break;
-        case EventArg::Mat3x3Type:
+        case VariantArg::Mat3x3Type:
             if (arg->pointer) {
                 *reinterpret_cast<Mat3 *>(dataPtr) = *reinterpret_cast<const Mat3 *>(arg->pointer);
             }
             break;
-        case EventArg::Mat4x4Type:
+        case VariantArg::Mat4x4Type:
             if (arg->pointer) {
                 *reinterpret_cast<Mat4 *>(dataPtr) = *reinterpret_cast<const Mat4 *>(arg->pointer);
             }
             break;
-        case EventArg::GuidType:
+        case VariantArg::GuidType:
             if (arg->pointer) {
                 *reinterpret_cast<Guid *>(dataPtr) = *reinterpret_cast<const Guid *>(arg->pointer);
             }
             break;
-        case EventArg::StringType:
+        case VariantArg::StringType:
             if (arg->pointer) {
                 Str::Copynz(reinterpret_cast<char *>(dataPtr), reinterpret_cast<const char *>(arg->pointer), MaxEventStringLen);
             }
             break;
-        case EventArg::WStringType:
+        case VariantArg::WStringType:
             if (arg->pointer) {
                 WStr::Copynz(reinterpret_cast<wchar_t *>(dataPtr), reinterpret_cast<const wchar_t *>(arg->pointer), MaxEventStringLen);
             }
@@ -316,7 +316,7 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
     return newEvent;
 }
 
-void EventSystem::CopyArgPtrs(const EventDef *evdef, int numArgs, va_list args, intptr_t argPtrs[EventArg::MaxArgs]) {
+void EventSystem::CopyArgPtrs(const EventDef *evdef, int numArgs, va_list args, intptr_t argPtrs[EventDef::MaxArgs]) {
     if (numArgs != evdef->GetNumArgs()) {
         BE_ERRLOG(L"EventSystem::CopyArgPtrs: Wrong number of args for '%hs' event.\n", evdef->GetName());
     }
@@ -324,7 +324,7 @@ void EventSystem::CopyArgPtrs(const EventDef *evdef, int numArgs, va_list args, 
     const char *format = evdef->GetArgFormat();
 
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
-        EventArg *arg = va_arg(args, EventArg *);
+        VariantArg *arg = va_arg(args, VariantArg *);
         if (format[argIndex] != arg->type) {
             BE_ERRLOG(L"EventSystem::CopyArgPtrs: Wrong type passed in for arg #%d on '%hs' event.\n", argIndex, evdef->GetName());
         }
@@ -377,7 +377,7 @@ void EventSystem::CancelEvents(const Object *sender, const EventDef *evdef) {
 }
 
 void EventSystem::ServiceEvent(Event *event) {
-    intptr_t argPtrs[EventArg::MaxArgs];
+    intptr_t argPtrs[EventDef::MaxArgs];
 
     // copy the data into the local argPtrs array and set up pointers
     const EventDef *evdef = event->eventDef;
@@ -389,40 +389,40 @@ void EventSystem::ServiceEvent(Event *event) {
         byte *data = event->data;
 
         switch (formatSpec[argIndex]) {
-        case EventArg::IntType:
+        case VariantArg::IntType:
             *reinterpret_cast<int **>(&argPtrs[argIndex]) = reinterpret_cast<int *>(&data[offset]);
             break;
-        case EventArg::BoolType:
+        case VariantArg::BoolType:
             *reinterpret_cast<bool **>(&argPtrs[argIndex]) = reinterpret_cast<bool *>(&data[offset]);
             break;
-        case EventArg::FloatType:
+        case VariantArg::FloatType:
             *reinterpret_cast<float **>(&argPtrs[argIndex]) = reinterpret_cast<float *>(&data[offset]);
             break;
-        case EventArg::PointerType:
+        case VariantArg::PointerType:
             *reinterpret_cast<void **>(&argPtrs[argIndex]) = *reinterpret_cast<void **>(&data[offset]);
             break;
-        case EventArg::PointType:
+        case VariantArg::PointType:
             *reinterpret_cast<Point **>(&argPtrs[argIndex]) = reinterpret_cast<Point *>(&data[offset]);
             break;
-        case EventArg::RectType:
+        case VariantArg::RectType:
             *reinterpret_cast<Rect **>(&argPtrs[argIndex]) = reinterpret_cast<Rect *>(&data[offset]);
             break;
-        case EventArg::Vec3Type:
+        case VariantArg::Vec3Type:
             *reinterpret_cast<Vec3 **>(&argPtrs[argIndex]) = reinterpret_cast<Vec3 *>(&data[offset]);
             break;
-        case EventArg::Mat3x3Type:
+        case VariantArg::Mat3x3Type:
             *reinterpret_cast<Mat3 **>(&argPtrs[argIndex]) = reinterpret_cast<Mat3 *>(&data[offset]);
             break;
-        case EventArg::Mat4x4Type:
+        case VariantArg::Mat4x4Type:
             *reinterpret_cast<Mat4 **>(&argPtrs[argIndex]) = reinterpret_cast<Mat4 *>(&data[offset]);
             break;
-        case EventArg::GuidType:
+        case VariantArg::GuidType:
             *reinterpret_cast<Guid **>(&argPtrs[argIndex]) = reinterpret_cast<Guid *>(&data[offset]);
             break;
-        case EventArg::StringType:
+        case VariantArg::StringType:
             *reinterpret_cast<const char **>(&argPtrs[argIndex]) = reinterpret_cast<const char *>(&data[offset]);
             break;
-        case EventArg::WStringType:
+        case VariantArg::WStringType:
             *reinterpret_cast<const wchar_t **>(&argPtrs[argIndex]) = reinterpret_cast<const wchar_t *>(&data[offset]);
             break;
         default:

@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Containers/Array.h"
+#include "VariantArg.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -90,8 +91,8 @@ BE_INLINE SignalObject::SignalObject() {
 
 template <typename... Args>
 BE_INLINE bool SignalObject::EmitSignal(const SignalDef *sigdef, Args&&... args) {
-    static_assert(is_assignable_all<EventArg, Args...>::value, "args is not assignable to EventArg");
-    return EmitSignalArgs(sigdef, sizeof...(args), address_of(EventArg(std::forward<Args>(args)))...);
+    static_assert(is_assignable_all<VariantArg, Args...>::value, "args is not assignable to VariantArg");
+    return EmitSignalArgs(sigdef, sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
 }
 
 BE_NAMESPACE_END

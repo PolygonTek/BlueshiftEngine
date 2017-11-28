@@ -23,7 +23,7 @@ class SignalObject;
 
 class BE_API SignalDef {
 public:
-    static const int MaxSignals = 4096;
+    static const int MaxSignalDefs = 4096;
     
     explicit SignalDef(const char *name, const char *formatSpec = nullptr, char returnType = 0);
     /// Prevents copy constructor
@@ -38,7 +38,7 @@ public:
     int                         GetSignalNum() const { return signalNum; }
     int                         GetNumArgs() const { return numArgs; }
     size_t                      GetArgSize() const { return argSize; }
-    int                         GetArgOffset(int arg) const { assert((arg >= 0) && (arg < EventArg::MaxArgs)); return argOffset[arg]; }
+    int                         GetArgOffset(int arg) const { assert((arg >= 0) && (arg < EventDef::MaxArgs)); return argOffset[arg]; }
 
     static int                  NumSignals() { return numSignalDefs; }
     static const SignalDef *    GetSignal(int signalNum) { return signalDefs[signalNum]; }
@@ -50,10 +50,10 @@ private:
     int                         returnType;
     int                         numArgs;
     size_t                      argSize;
-    int                         argOffset[EventArg::MaxArgs];
+    int                         argOffset[EventDef::MaxArgs];
     int                         signalNum;
     
-    static SignalDef *          signalDefs[MaxSignals];
+    static SignalDef *          signalDefs[MaxSignalDefs];
     static int                  numSignalDefs;
 };
 
@@ -75,6 +75,8 @@ private:
 
 class BE_API SignalSystem {
 public:
+    static const int MaxSignals = 4096;
+
     static void                 Init();
     static void                 Shutdown();
 
@@ -84,7 +86,7 @@ public:
     static Signal *             AllocSignal(const SignalDef *signalDef, const SignalCallback callback, int numArgs, va_list args);
     static void                 FreeSignal(Signal *signal);
 
-    static void                 CopyArgPtrs(const SignalDef *signalDef, int numArgs, va_list args, intptr_t data[EventArg::MaxArgs]);
+    static void                 CopyArgPtrs(const SignalDef *signalDef, int numArgs, va_list args, intptr_t data[EventDef::MaxArgs]);
 
     static void                 ScheduleSignal(Signal *signal, SignalObject *receiver);
 
@@ -96,7 +98,7 @@ public:
     static bool                 initialized;
 
 private:
-    static Signal               signalPool[SignalDef::MaxSignals];
+    static Signal               signalPool[MaxSignals];
     static LinkList<Signal>     freeSignals;
     static LinkList<Signal>     signalQueue;
 };

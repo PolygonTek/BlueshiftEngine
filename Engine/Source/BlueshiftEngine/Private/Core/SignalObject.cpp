@@ -159,7 +159,7 @@ bool SignalObject::EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...) {
         return false;
     }
 
-    intptr_t argPtrs[EventArg::MaxArgs];
+    intptr_t argPtrs[EventDef::MaxArgs];
 
     va_list args;
     va_start(args, numArgs);

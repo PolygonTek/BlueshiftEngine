@@ -288,26 +288,26 @@ BE_INLINE const T *Object::Cast() const {
 
 template <typename... Args>
 BE_INLINE bool Object::PostEvent(const EventDef *evdef, Args&&... args) {
-    static_assert(is_assignable_all<EventArg, Args...>::value, "args is not assignable to EventArg");
-    return PostEventArgs(evdef, 0, sizeof...(args), address_of(EventArg(std::forward<Args>(args)))...);
+    static_assert(is_assignable_all<VariantArg, Args...>::value, "args is not assignable to VariantArg");
+    return PostEventArgs(evdef, 0, sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
 }
 
 template <typename... Args>
 BE_INLINE bool Object::PostEventMS(const EventDef *evdef, int milliseconds, Args&&... args) {
-    static_assert(is_assignable_all<EventArg, Args...>::value, "args is not assignable to EventArg");
-    return PostEventArgs(evdef, milliseconds, sizeof...(args), address_of(EventArg(std::forward<Args>(args)))...);
+    static_assert(is_assignable_all<VariantArg, Args...>::value, "args is not assignable to VariantArg");
+    return PostEventArgs(evdef, milliseconds, sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
 }
 
 template <typename... Args>
 BE_INLINE bool Object::PostEventSec(const EventDef *evdef, int seconds, Args&&... args) {
-    static_assert(is_assignable_all<EventArg, Args...>::value, "args is not assignable to EventArg");
-    return PostEventArgs(evdef, SEC2MS(seconds), sizeof...(args), address_of(EventArg(std::forward<Args>(args)))...);
+    static_assert(is_assignable_all<VariantArg, Args...>::value, "args is not assignable to VariantArg");
+    return PostEventArgs(evdef, SEC2MS(seconds), sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
 }
 
 template <typename... Args>
 BE_INLINE bool Object::ProcessEvent(const EventDef *evdef, Args&&... args) {
-    static_assert(is_assignable_all<EventArg, Args...>::value, "args is not assignable to EventArg");
-    return ProcessEventArgs(evdef, sizeof...(args), address_of(EventArg(std::forward<Args>(args)))...);
+    static_assert(is_assignable_all<VariantArg, Args...>::value, "args is not assignable to VariantArg");
+    return ProcessEventArgs(evdef, sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
 }
 
 BE_NAMESPACE_END
