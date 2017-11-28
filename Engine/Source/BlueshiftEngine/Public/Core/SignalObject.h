@@ -26,6 +26,7 @@ using SignalCallback = void (SignalObject::*)();
 
 class BE_API SignalObject {
     friend class Signal;
+    friend class SignalSystem;
 
 public:
     /// Signal connection type

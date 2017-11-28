@@ -30,7 +30,7 @@ int                 EventDef::numEventDefs = 0;
 
 EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char returnType) {
     assert(name);
-    assert(!Event::initialized);
+    assert(!EventSystem::initialized);
 
     // Allow NULL to indicate no args, but always store it as ""
     // so we don't have to check for it.
@@ -50,7 +50,7 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
         return;
     }
 
-    // Calculate the offsets for each arguments
+    // Calculate the offsets for each argument
     memset(this->argOffset, 0, sizeof(this->argOffset));
     this->argSize = 0;
 
@@ -67,6 +67,9 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
         case EventArg::FloatType:
             this->argSize += sizeof(float);
             break;
+        case EventArg::PointerType:
+            this->argSize += sizeof(void *);
+            break;
         case EventArg::PointType:
             this->argSize += sizeof(Point);
             break;
@@ -82,14 +85,14 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
         case EventArg::Mat4x4Type:
             this->argSize += sizeof(Mat4);
             break;
+        case EventArg::GuidType:
+            this->argSize += sizeof(Guid);
+            break;
         case EventArg::StringType:
             this->argSize += MaxEventStringLen * sizeof(char);
             break;
         case EventArg::WStringType:
             this->argSize += MaxEventStringLen * sizeof(wchar_t);
-            break;
-        case EventArg::PointerType:
-            this->argSize += sizeof(void *);
             break;
         default:
             eventErrorOccured = true;
@@ -98,7 +101,7 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
         }
     }
 
-    // Check if same name event def exist
+    // Check if same name event def already exist
     for (int i = 0; i < this->numEventDefs; i++) {
         EventDef *evdef = this->eventDefs[i];
 
@@ -147,34 +150,34 @@ const EventDef *EventDef::FindEvent(const char *name) {
 
 //-----------------------------------------------------------------------------------------
 
-bool                Event::initialized = false;
-Event               Event::eventPool[EventDef::MaxEvents];
-LinkList<Event>     Event::freeEvents;
-LinkList<Event>     Event::eventQueue;
-LinkList<Event>     Event::guiEventQueue;
+bool                EventSystem::initialized = false;
+Event               EventSystem::eventPool[EventDef::MaxEvents];
+LinkList<Event>     EventSystem::freeEvents;
+LinkList<Event>     EventSystem::eventQueue;
+LinkList<Event>     EventSystem::guiEventQueue;
 
 Event::~Event() {
-    Free();
+    EventSystem::FreeEvent(this);
 }
 
-void Event::ClearEvents() {
+void EventSystem::Clear() {
     freeEvents.Clear();
     eventQueue.Clear();
     guiEventQueue.Clear();
 
     for (int i = 0; i < EventDef::MaxEvents; i++) {
-        eventPool[i].Free();
+        FreeEvent(&eventPool[i]);
     }
 }
 
-void Event::Init() {
+void EventSystem::Init() {
     BE_LOG(L"Initializing event system\n");
 
     if (eventErrorOccured) {
         BE_ERRLOG(L"%hs", eventErrorMsg);
     }
 
-    ClearEvents();
+    Clear();
 
     if (initialized) {
         BE_LOG(L"...already initialized\n");
@@ -186,7 +189,7 @@ void Event::Init() {
     initialized = true;
 }
 
-void Event::Shutdown() {
+void EventSystem::Shutdown() {
     BE_LOG(L"Shutdown event system\n");
 
     if (!initialized) {
@@ -194,26 +197,26 @@ void Event::Shutdown() {
         return;
     }
 
-    ClearEvents();
+    Clear();
 
     initialized = false;
 }
 
-void Event::Free() {
-    if (data) {
-        Mem_Free(data);
-        data = nullptr;
+void EventSystem::FreeEvent(Event *event) {
+    if (event->data) {
+        Mem_Free(event->data);
+        event->data = nullptr;
     }
 
-    this->eventDef = nullptr;
-    this->time = 0;
-    this->sender = nullptr;
+    event->eventDef = nullptr;
+    event->time = 0;
+    event->sender = nullptr;
 
-    node.SetOwner(this);
-    node.AddToEnd(Event::freeEvents);
+    event->node.SetOwner(event);
+    event->node.AddToEnd(EventSystem::freeEvents);
 }
 
-Event *Event::Alloc(const EventDef *evdef, int numArgs, va_list args) {
+Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args) {
     if (freeEvents.IsListEmpty()) {
         BE_ERRLOG(L"Event::Alloc: No more free events\n");
     }
@@ -223,7 +226,7 @@ Event *Event::Alloc(const EventDef *evdef, int numArgs, va_list args) {
     newEvent->eventDef = evdef;
 
     if (numArgs != evdef->GetNumArgs()) {
-        BE_ERRLOG(L"Event::Alloc: Wrong number of args for '%hs' event.\n", evdef->GetName());
+        BE_ERRLOG(L"Event::AllocEvent: Wrong number of args for '%hs' event.\n", evdef->GetName());
     }
 
     size_t size = evdef->GetArgSize();
@@ -240,7 +243,7 @@ Event *Event::Alloc(const EventDef *evdef, int numArgs, va_list args) {
         const EventArg *arg = va_arg(args, EventArg *);
 
         if (arg->type != format[argIndex]) {
-            BE_ERRLOG(L"Event::Alloc: Wrong type passed in for arg #%d on '%hs' event.\n", argIndex, evdef->GetName());
+            BE_ERRLOG(L"EventSystem::AllocEvent: Wrong type passed in for arg #%d on '%hs' event.\n", argIndex, evdef->GetName());
         }
 
         byte *dataPtr = &newEvent->data[evdef->GetArgOffset(argIndex)];
@@ -260,6 +263,9 @@ Event *Event::Alloc(const EventDef *evdef, int numArgs, va_list args) {
             if (arg->pointer) {
                 *reinterpret_cast<float *>(dataPtr) = *reinterpret_cast<const float *>(arg->pointer);
             }
+            break;
+        case EventArg::PointerType:
+            *reinterpret_cast<void **>(dataPtr) = reinterpret_cast<void *>(arg->pointer);
             break;
         case EventArg::PointType:
             if (arg->pointer) {
@@ -286,6 +292,11 @@ Event *Event::Alloc(const EventDef *evdef, int numArgs, va_list args) {
                 *reinterpret_cast<Mat4 *>(dataPtr) = *reinterpret_cast<const Mat4 *>(arg->pointer);
             }
             break;
+        case EventArg::GuidType:
+            if (arg->pointer) {
+                *reinterpret_cast<Guid *>(dataPtr) = *reinterpret_cast<const Guid *>(arg->pointer);
+            }
+            break;
         case EventArg::StringType:
             if (arg->pointer) {
                 Str::Copynz(reinterpret_cast<char *>(dataPtr), reinterpret_cast<const char *>(arg->pointer), MaxEventStringLen);
@@ -296,11 +307,8 @@ Event *Event::Alloc(const EventDef *evdef, int numArgs, va_list args) {
                 WStr::Copynz(reinterpret_cast<wchar_t *>(dataPtr), reinterpret_cast<const wchar_t *>(arg->pointer), MaxEventStringLen);
             }
             break;
-        case EventArg::PointerType:
-            *reinterpret_cast<void **>(dataPtr) = reinterpret_cast<void *>(arg->pointer);
-            break;
         default:
-            BE_ERRLOG(L"Event::Alloc: Invalid arg format '%hs' string for '%hs' event.\n", format, evdef->GetName());
+            BE_ERRLOG(L"EventSystem::AllocEvent: Invalid arg format '%hs' string for '%hs' event.\n", format, evdef->GetName());
             break;
         }
     }
@@ -308,49 +316,49 @@ Event *Event::Alloc(const EventDef *evdef, int numArgs, va_list args) {
     return newEvent;
 }
 
-void Event::CopyArgPtrs(const EventDef *evdef, int numArgs, va_list args, intptr_t argPtrs[EventArg::MaxArgs]) {
-    const char *format = evdef->GetArgFormat();
+void EventSystem::CopyArgPtrs(const EventDef *evdef, int numArgs, va_list args, intptr_t argPtrs[EventArg::MaxArgs]) {
     if (numArgs != evdef->GetNumArgs()) {
-        BE_ERRLOG(L"Event::CopyArgPtrs: Wrong number of args for '%hs' event.\n", evdef->GetName());
+        BE_ERRLOG(L"EventSystem::CopyArgPtrs: Wrong number of args for '%hs' event.\n", evdef->GetName());
     }
 
-    for (int i = 0; i < numArgs; i++) {
+    const char *format = evdef->GetArgFormat();
+
+    for (int argIndex = 0; argIndex < numArgs; argIndex++) {
         EventArg *arg = va_arg(args, EventArg *);
-        if (format[i] != arg->type) {
-            BE_ERRLOG(L"Event::CopyArgPtrs: Wrong type passed in for arg # %d on '%hs' event.\n", i, evdef->GetName());
+        if (format[argIndex] != arg->type) {
+            BE_ERRLOG(L"EventSystem::CopyArgPtrs: Wrong type passed in for arg #%d on '%hs' event.\n", argIndex, evdef->GetName());
         }
 
-        argPtrs[i] = arg->pointer;
+        argPtrs[argIndex] = arg->pointer;
     }
 }
 
-void Event::Schedule(Object *sender, int time) {
+void EventSystem::ScheduleEvent(Event *event, Object *sender, int time) {
     assert(initialized);
     if (!initialized) {
         return;
     }
 
-    this->sender = sender;
-    this->time = common.realTime + time;
+    event->sender = sender;
+    event->time = common.realTime + time;
+    event->node.Remove();
 
-    node.Remove();
-
-    LinkList<Event> &queue = eventDef->IsGuiEvent() ? guiEventQueue : eventQueue;
+    LinkList<Event> &queue = event->eventDef->IsGuiEvent() ? guiEventQueue : eventQueue;
 
     // event queue 는 시간 순으로 정렬되어 있다.
-    Event *event = queue.Next();
-    while (event && (this->time >= event->time)) {
-        event = event->node.Next();
+    Event *ev = queue.Next();
+    while (ev && (event->time >= ev->time)) {
+        ev = ev->node.Next();
     }
 
-    if (event) {
-        node.InsertBefore(event->node);
+    if (ev) {
+        event->node.InsertBefore(ev->node);
     } else {
-        node.AddToEnd(queue);
+        event->node.AddToEnd(queue);
     }
 }
 
-void Event::CancelEvents(const Object *sender, const EventDef *evdef) {
+void EventSystem::CancelEvents(const Object *sender, const EventDef *evdef) {
     if (!initialized) {
         return;
     }
@@ -362,13 +370,13 @@ void Event::CancelEvents(const Object *sender, const EventDef *evdef) {
         next = event->node.Next();
         if (event->sender == sender) {
             if (!evdef || (evdef == event->eventDef)) {
-                event->Free();
+                FreeEvent(event);
             }
         }
     }
 }
 
-void Event::ServiceEvent(Event *event) {
+void EventSystem::ServiceEvent(Event *event) {
     intptr_t argPtrs[EventArg::MaxArgs];
 
     // copy the data into the local argPtrs array and set up pointers
@@ -390,6 +398,9 @@ void Event::ServiceEvent(Event *event) {
         case EventArg::FloatType:
             *reinterpret_cast<float **>(&argPtrs[argIndex]) = reinterpret_cast<float *>(&data[offset]);
             break;
+        case EventArg::PointerType:
+            *reinterpret_cast<void **>(&argPtrs[argIndex]) = *reinterpret_cast<void **>(&data[offset]);
+            break;
         case EventArg::PointType:
             *reinterpret_cast<Point **>(&argPtrs[argIndex]) = reinterpret_cast<Point *>(&data[offset]);
             break;
@@ -405,17 +416,17 @@ void Event::ServiceEvent(Event *event) {
         case EventArg::Mat4x4Type:
             *reinterpret_cast<Mat4 **>(&argPtrs[argIndex]) = reinterpret_cast<Mat4 *>(&data[offset]);
             break;
+        case EventArg::GuidType:
+            *reinterpret_cast<Guid **>(&argPtrs[argIndex]) = reinterpret_cast<Guid *>(&data[offset]);
+            break;
         case EventArg::StringType:
             *reinterpret_cast<const char **>(&argPtrs[argIndex]) = reinterpret_cast<const char *>(&data[offset]);
             break;
         case EventArg::WStringType:
             *reinterpret_cast<const wchar_t **>(&argPtrs[argIndex]) = reinterpret_cast<const wchar_t *>(&data[offset]);
             break;
-        case EventArg::PointerType:
-            *reinterpret_cast<void **>(&argPtrs[argIndex]) = *reinterpret_cast<void **>(&data[offset]);
-            break;
         default:
-            BE_ERRLOG(L"Event::ServiceEvent : Invalid arg format '%hs' string for '%hs' event.\n", formatSpec, evdef->GetName());
+            BE_ERRLOG(L"EventSystem::ServiceEvent : Invalid arg format '%hs' string for '%hs' event.\n", formatSpec, evdef->GetName());
         }
     }
 
@@ -427,10 +438,10 @@ void Event::ServiceEvent(Event *event) {
     event->sender->ProcessEventArgPtr(evdef, argPtrs);
 
     // return the event to the free list
-    event->Free();
+    FreeEvent(event);
 }
 
-void Event::ServiceEvents() {
+void EventSystem::ServiceEvents() {
     int processedCount = 0;
 
     while (!eventQueue.IsListEmpty()) {
@@ -452,7 +463,7 @@ void Event::ServiceEvents() {
     }
 }
 
-void Event::ServiceGuiEvents() {
+void EventSystem::ServiceGuiEvents() {
     int processedCount = 0;
 
     while (!guiEventQueue.IsListEmpty()) {

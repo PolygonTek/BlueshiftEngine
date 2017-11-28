@@ -200,9 +200,9 @@ void GameClient::RunFrame() {
 
     physicsSystem.CheckModifiedCVars();
 
-    Event::ServiceEvents();
+    EventSystem::ServiceEvents();
 
-    Signal::ServiceSignals();
+    SignalSystem::ServiceSignals();
 }
 
 void GameClient::EndFrame() {

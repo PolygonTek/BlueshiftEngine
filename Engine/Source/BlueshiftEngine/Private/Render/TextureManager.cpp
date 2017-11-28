@@ -21,15 +21,15 @@
 BE_NAMESPACE_BEGIN
 
 static const struct {
-    const char *                name;
-    RHI::TextureFilter     filter;
+    const char *        name;
+    RHI::TextureFilter  filter;
 } textureFilterNames[] = {
-    { "Nearest",                RHI::Nearest }, 
-    { "Linear",                 RHI::Linear }, 
-    { "NearestMipmapNearest",   RHI::NearestMipmapNearest }, 
-    { "LinearMipmapNearest",    RHI::LinearMipmapNearest }, 
-    { "NearestMipmapLinear",    RHI::NearestMipmapLinear }, 
-    { "LinearMipmapLinear",     RHI::LinearMipmapLinear }, 
+    { "Nearest", RHI::Nearest }, 
+    { "Linear", RHI::Linear }, 
+    { "NearestMipmapNearest", RHI::NearestMipmapNearest }, 
+    { "LinearMipmapNearest", RHI::LinearMipmapNearest }, 
+    { "NearestMipmapLinear", RHI::NearestMipmapLinear }, 
+    { "LinearMipmapLinear", RHI::LinearMipmapLinear }, 
 };
 
 TextureManager textureManager;

@@ -72,7 +72,7 @@ MetaObject::~MetaObject() {
 }
 
 bool MetaObject::IsRespondsTo(const EventDef &ev) const {
-    assert(Event::initialized);
+    assert(EventSystem::initialized);
     if (!eventCallbacks[ev.GetEventNum()]) {
         return false;
     }
@@ -351,7 +351,7 @@ MetaObject *Object::FindMetaObject(const char *name) {
 }
 
 bool Object::IsRespondsTo(const EventDef &ev) const {
-    assert(Event::initialized);
+    assert(EventSystem::initialized);
     const MetaObject *meta = GetMetaObject();
     return meta->IsRespondsTo(ev);
 }
@@ -396,11 +396,11 @@ void Object::ListClasses(const CmdArgs &args) {
 }
 
 void Object::CancelEvents(const EventDef *evdef) {
-    Event::CancelEvents(this, evdef);
+    EventSystem::CancelEvents(this, evdef);
 }
 
 bool Object::PostEventArgs(const EventDef *evdef, int time, int numArgs, ...) {
-    if (!Event::initialized) {
+    if (!EventSystem::initialized) {
         return false;
     }
 
@@ -414,17 +414,17 @@ bool Object::PostEventArgs(const EventDef *evdef, int time, int numArgs, ...) {
     
     va_list args;
     va_start(args, numArgs);
-    Event *event = Event::Alloc(evdef, numArgs, args);
+    Event *event = EventSystem::AllocEvent(evdef, numArgs, args);
     va_end(args);
 
-    event->Schedule(this, time);
+    EventSystem::ScheduleEvent(event, this, time);
 
     return true;
 }
 
 bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
     assert(evdef);
-    assert(Event::initialized);
+    assert(EventSystem::initialized);
 
     MetaObject *meta = GetMetaObject();
     int num = evdef->GetEventNum();
@@ -433,12 +433,12 @@ bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
         return false;
     }
 
-    va_list args;
     intptr_t argPtrs[EventArg::MaxArgs];
     
-    // Copy EventArgs to array of intptr_t
+    // Copy arguments to array of intptr_t
+    va_list args;
     va_start(args, numArgs);
-    Event::CopyArgPtrs(evdef, numArgs, args, argPtrs);
+    EventSystem::CopyArgPtrs(evdef, numArgs, args, argPtrs);
     va_end(args);
 
     ProcessEventArgPtr(evdef, argPtrs);
@@ -448,11 +448,11 @@ bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
 
 bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
     assert(evdef);
-    assert(Event::initialized);
+    assert(EventSystem::initialized);
     assert(EventArg::MaxArgs == 8);
 
     if (evdef == &EV_ImmediateDestroy) {
-        Event::CancelEvents(this);
+        EventSystem::CancelEvents(this);
     }
     
     const MetaObject *meta = GetMetaObject();

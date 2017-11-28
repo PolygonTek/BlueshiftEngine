@@ -105,8 +105,10 @@ static void Common_Error(const int errLevel, const wchar_t *msg) {
 void Common::Init(const char *baseDir) {
     Engine::InitBase(baseDir, forceGenericSIMD.GetBool(), (const streamOutFunc_t)Common_Log, (const streamOutFunc_t)Common_Error);
 
-    Event::Init();
-    Signal::Init();
+    EventSystem::Init();
+    
+    SignalSystem::Init();
+    
     Object::Init();
     
     console.Init();
@@ -141,8 +143,10 @@ void Common::Shutdown() {
     console.Shutdown();
 
     Object::Shutdown();
-    Event::Shutdown();
-    Signal::Shutdown();
+
+    EventSystem::Shutdown();
+    
+    SignalSystem::Shutdown();
 
     Engine::ShutdownBase();
 }
