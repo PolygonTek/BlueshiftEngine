@@ -146,7 +146,8 @@ static IOSDevice GetIOSDeviceType() {
         }
     } else if ([deviceIDString hasPrefix:@"iPhone"]) {
         int major = [deviceIDString characterAtIndex:6] - '0';
-        
+        int minor = [deviceIDString characterAtIndex:8] - '0';
+
         if (major == 3) {
             deviceType = IOS_IPhone4;
         } else if (major == 4) {

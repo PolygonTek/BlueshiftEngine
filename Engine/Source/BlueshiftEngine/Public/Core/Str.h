@@ -1043,11 +1043,11 @@ BE_INLINE bool Str::IsAlpha(const char *s) {
 }
 
 BE_INLINE int32_t Str::ToI32(const char *s) {
-    return strtol(s, nullptr, 10);
+    return (int32_t)strtol(s, nullptr, 10);
 }
 
 BE_INLINE uint32_t Str::ToUI32(const char *s) {
-    return strtoul(s, nullptr, 10);
+    return (uint32_t)strtoul(s, nullptr, 10);
 }
 
 BE_INLINE int64_t Str::ToI64(const char *s) {

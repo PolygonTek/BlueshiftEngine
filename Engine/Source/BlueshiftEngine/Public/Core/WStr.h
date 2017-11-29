@@ -949,11 +949,11 @@ BE_INLINE int WStr::LineCount(const wchar_t *s) {
 #ifndef __ANDROID__
 
 BE_INLINE int32_t WStr::ToI32(const wchar_t *s) {
-    return wcstol(s, nullptr, 10);
+    return (int32_t)wcstol(s, nullptr, 10);
 }
 
 BE_INLINE uint32_t WStr::ToUI32(const wchar_t *s) {
-    return wcstoul(s, nullptr, 10);
+    return (uint32_t)wcstoul(s, nullptr, 10);
 }
 
 BE_INLINE int64_t WStr::ToI64(const wchar_t *s) {

@@ -171,7 +171,7 @@ void ComRigidBody::Awake() {
         }
 
         if (physicsDesc.shapes.Count() == 0) {
-            BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName());
+            BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
             return;
         }
 

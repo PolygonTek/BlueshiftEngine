@@ -55,7 +55,7 @@ void ComScript::Init() {
     Component::Init();
 
     if (sandbox.IsValid()) {
-        auto &owner = sandbox["owner"];
+        auto owner = sandbox["owner"];
 
         owner["game_world"] = GetGameWorld();
         owner["entity"] = GetEntity();

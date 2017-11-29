@@ -32,6 +32,8 @@ class Lexer;
 /// Abstract base class for invoking property getter/setter functions.
 class BE_API PropertyAccessor {
 public:
+    virtual ~PropertyAccessor() = default;
+    
     /// Get the property.
     virtual void Get(const Serializable *ptr, Variant &dest) const = 0;
 
@@ -70,7 +72,7 @@ public:
     };
 
     PropertyInfo();
-    PropertyInfo(const char *name, const char *label, Variant::Type type, int offset, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, const char *label, Variant::Type type, intptr_t offset, const Variant &defaultValue, const char *desc, int flags);
     PropertyInfo(const char *name, const char *label, Variant::Type type, PropertyAccessor *accessor, const Variant &defaultValue, const char *desc, int flags);
 
     Variant::Type           GetType() const { return type; }
@@ -106,7 +108,7 @@ private:
     Str                     name;               ///< Property name
     Str                     label;              ///< Label in Editor
     Str                     desc;               ///< Description in Editor
-    int                     offset;             ///< Byte offsets from start of object
+    intptr_t                offset;             ///< Byte offsets from start of object
     PropertyAccessorPtr     accessor;
     Rangef                  range;
     Array<Str>              enumeration;        ///< Enumeration string list for enumeration type
@@ -121,7 +123,7 @@ BE_INLINE PropertyInfo::PropertyInfo() :
     flags(Empty) {
 }
 
-BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, int _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
+BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, intptr_t _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
     type(_type),
     name(_name),
     label(_label),
@@ -268,8 +270,8 @@ public:
 
     /// Construct with lambdas.
     template <typename Getter, typename Setter>
-    PropertyLambdaAccessorImpl(Getter &getter, Setter &setter) :
-        getFunction(getter), setFunction(setter) {
+    PropertyLambdaAccessorImpl(Getter &&getter, Setter &&setter) :
+    getFunction(std::forward<Getter>(getter)), setFunction(std::forward<Setter>(setter)) {
         assert(getFunction);
         assert(setFunction);
     }
@@ -312,8 +314,8 @@ class ArrayPropertyAccessorImpl : public PropertyAccessor {
 public:
     using GetFunctionPtr = typename Trait<Type>::ReturnType(Class::*)(int index) const;
     using SetFunctionPtr = void (Class::*)(int index, typename Trait<Type>::ParameterType);
-    using GetCountFunctionPtr = typename int(Class::*)() const;
-    using SetCountFunctionPtr = typename void(Class::*)(int count);
+    using GetCountFunctionPtr = int(Class::*)() const;
+    using SetCountFunctionPtr = void(Class::*)(int count);
 
     /// Construct with function pointers.
     ArrayPropertyAccessorImpl(GetFunctionPtr getter, SetFunctionPtr setter, GetCountFunctionPtr getCount, SetCountFunctionPtr setCount) :
@@ -374,11 +376,11 @@ public:
 
 #define REGISTER_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        offsetof(Class, var), defaultValue, desc, flags))
+        ::offset_of(&Class::var), defaultValue, desc, flags))
 
 #define REGISTER_ARRAY_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        offsetof(Class, var), defaultValue, desc, flags | BE1::PropertyInfo::ArrayFlag))
+        ::offset_of(&Class::var), defaultValue, desc, flags | BE1::PropertyInfo::ArrayFlag))
 
 #define REGISTER_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \

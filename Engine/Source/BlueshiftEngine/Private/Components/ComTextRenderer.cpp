@@ -68,7 +68,7 @@ void ComTextRenderer::Init() {
 }
 
 Str ComTextRenderer::GetText() const {
-    return Str(sceneEntity.text);
+    return Str(sceneEntity.text.c_str());
 }
 
 void ComTextRenderer::SetText(const Str &text) {

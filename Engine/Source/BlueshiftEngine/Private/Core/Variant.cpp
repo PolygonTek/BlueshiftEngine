@@ -41,6 +41,8 @@ void Variant::SetType(Type type) {
     case MinMaxCurveType:
         delete reinterpret_cast<MinMaxCurve *>(value.ptr1);
         break;
+    default:
+        break;
     }
 
     this->type = type;
@@ -60,6 +62,8 @@ void Variant::SetType(Type type) {
         break;
     case MinMaxCurveType:
         value.ptr1 = new MinMaxCurve();
+        break;
+    default:
         break;
     }
 }
@@ -266,6 +270,9 @@ bool Variant::operator==(const Variant &rhs) const {
         return *(reinterpret_cast<const Str *>(value.ptr1)) == *(reinterpret_cast<const Str *>(rhs.value.ptr1));
     case MinMaxCurveType:
         return *(reinterpret_cast<const MinMaxCurve *>(value.ptr1)) == *(reinterpret_cast<const MinMaxCurve *>(rhs.value.ptr1));
+    default:
+        assert(0);
+        return false;
     }
 
     return false;
@@ -290,9 +297,12 @@ Json::Value Variant::ToJsonValue() const {
     case DoubleType:
         value = As<double>();
         break;
-    case VoidPtrType:
-        value = (intptr_t)As<void *>();
+    case VoidPtrType: {
+        char addr[32];
+        snprintf(addr, sizeof(addr), "%p", As<void *>());
+        value = addr;
         break;
+    }
     case Vec2Type:
         value = As<Vec2>().ToString();
         break;
@@ -367,8 +377,11 @@ Str Variant::ToString() const {
         return Str(value.f1);
     case DoubleType:
         return Str(value.d1);
-    case VoidPtrType:
-        return Str((intptr_t)value.ptr1);
+    case VoidPtrType: {
+        char str[32];
+        sscanf(str, "%p", (void **)&value.ptr1);
+        return Str(str);
+    }
     case Vec2Type:
         return (reinterpret_cast<const Vec2 *>(&value))->ToString();
     case Vec3Type:

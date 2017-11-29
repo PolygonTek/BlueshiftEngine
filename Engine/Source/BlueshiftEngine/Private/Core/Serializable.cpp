@@ -440,6 +440,9 @@ void Serializable::GetProperty(const PropertyInfo &propertyInfo, Variant &out) c
     case Variant::FloatType:
         out = *(reinterpret_cast<const float *>(src));
         break;
+    case Variant::DoubleType:
+        out = *(reinterpret_cast<const double *>(src));
+        break;
     case Variant::Vec2Type:
         out = *(reinterpret_cast<const Vec2 *>(src));
         break;
@@ -457,6 +460,9 @@ void Serializable::GetProperty(const PropertyInfo &propertyInfo, Variant &out) c
         break;
     case Variant::AnglesType:
         out = *(reinterpret_cast<const Angles *>(src));
+        break;
+    case Variant::QuatType:
+        out = *(reinterpret_cast<const Quat *>(src));
         break;
     case Variant::Mat2Type:
         out = *(reinterpret_cast<const Mat2 *>(src));
@@ -484,6 +490,9 @@ void Serializable::GetProperty(const PropertyInfo &propertyInfo, Variant &out) c
         break;
     case Variant::MinMaxCurveType:
         out = *(reinterpret_cast<const MinMaxCurve *>(src));
+        break;
+    default:
+        assert(0);
         break;
     }
 
@@ -542,6 +551,9 @@ void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     case Variant::FloatType:
         out = (*reinterpret_cast<const Array<float> *>(src))[elementIndex];
         break;
+    case Variant::DoubleType:
+        out = (*reinterpret_cast<const Array<double> *>(src))[elementIndex];
+        break;
     case Variant::Vec2Type:
         out = (*reinterpret_cast<const Array<Vec2> *>(src))[elementIndex];
         break;
@@ -559,6 +571,9 @@ void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         break;
     case Variant::AnglesType:
         out = (*reinterpret_cast<const Array<Angles> *>(src))[elementIndex];
+        break;
+    case Variant::QuatType:
+        out = (*reinterpret_cast<const Array<Quat> *>(src))[elementIndex];
         break;
     case Variant::Mat2Type:
         out = (*reinterpret_cast<const Array<Mat2> *>(src))[elementIndex];
@@ -586,6 +601,9 @@ void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         break;
     case Variant::MinMaxCurveType:
         out = (*reinterpret_cast<const Array<MinMaxCurve> *>(src))[elementIndex];
+        break;
+    default:
+        assert(0);
         break;
     }
 }
@@ -783,6 +801,9 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         case Variant::FloatType:
             *(reinterpret_cast<float *>(dest)) = newValue.As<float>();
             break;
+        case Variant::DoubleType:
+            *(reinterpret_cast<double *>(dest)) = newValue.As<double>();
+            break;
         case Variant::Vec2Type:
             *(reinterpret_cast<Vec2 *>(dest)) = newValue.As<Vec2>();
             break;
@@ -830,6 +851,9 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
             break;
         case Variant::MinMaxCurveType:
             *(reinterpret_cast<MinMaxCurve *>(dest)) = newValue.As<MinMaxCurve>();
+            break;
+        default:
+            assert(0);
             break;
         }
     }
@@ -1036,6 +1060,9 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         case Variant::FloatType:
             (*reinterpret_cast<Array<float> *>(dest))[elementIndex] = newValue.As<float>();
             break;
+        case Variant::DoubleType:
+            (*reinterpret_cast<Array<double> *>(dest))[elementIndex] = newValue.As<double>();
+            break;
         case Variant::Vec2Type:
             (*reinterpret_cast<Array<Vec2> *>(dest))[elementIndex] = newValue.As<Vec2>();
             break;
@@ -1083,6 +1110,9 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
             break;
         case Variant::MinMaxCurveType:
             (*reinterpret_cast<Array<MinMaxCurve> *>(dest))[elementIndex] = newValue.As<MinMaxCurve>();
+            break;
+        default:
+            assert(0);
             break;
         }
     }
@@ -1202,6 +1232,13 @@ void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int c
             }
             reinterpret_cast<Array<float> *>(src)->SetCount(count);
             break;
+        case Variant::DoubleType:
+            oldCount = reinterpret_cast<Array<double> *>(src)->Count();
+            if (oldCount == count) {
+                return;
+            }
+            reinterpret_cast<Array<double> *>(src)->SetCount(count);
+            break;
         case Variant::Vec2Type:
             oldCount = reinterpret_cast<Array<Vec2> *>(src)->Count();
             if (oldCount == count) {
@@ -1243,6 +1280,13 @@ void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int c
                 return;
             }
             reinterpret_cast<Array<Angles> *>(src)->SetCount(count);
+            break;
+        case Variant::QuatType:
+            oldCount = reinterpret_cast<Array<Quat> *>(src)->Count();
+            if (oldCount == count) {
+                return;
+            }
+            reinterpret_cast<Array<Quat> *>(src)->SetCount(count);
             break;
         case Variant::Mat2Type:
             oldCount = reinterpret_cast<Array<Mat2> *>(src)->Count();
@@ -1306,6 +1350,9 @@ void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int c
                 return;
             }
             reinterpret_cast<Array<MinMaxCurve> *>(src)->SetCount(count);
+            break;
+        default:
+            assert(0);
             break;
         }
 

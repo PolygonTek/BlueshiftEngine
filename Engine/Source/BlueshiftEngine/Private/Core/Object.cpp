@@ -239,7 +239,7 @@ void Object::InitInstance(Guid guid) {
 #if 1
     Object *sameGuidObject;
     if (instanceHash.Get(guid, &sameGuidObject)) {
-        BE_WARNLOG(L"Conflicts GUID (%hs) for object type '%hs'\n", guid.ToString(), sameGuidObject->ClassName());
+        BE_WARNLOG(L"Conflicts GUID (%hs) for object type '%hs'\n", guid.ToString(), sameGuidObject->ClassName().c_str());
         assert(0);
     }
 #endif

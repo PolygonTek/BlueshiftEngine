@@ -274,6 +274,13 @@ struct is_same_all : static_all_of<std::is_same<typename std::decay<Ts>::type, T
 template <typename T, typename... Ts>
 struct is_assignable_all : static_all_of<std::is_assignable<T, Ts>::value...> {};
 
+template <typename T1, typename T2>
+inline const ptrdiff_t offset_of(T1 T2::*member) {
+    static char obj_dummy[sizeof(T2)];
+    const T2 *obj = reinterpret_cast<T2 *>(obj_dummy);
+    return ptrdiff_t(intptr_t(&(obj->*member)) - intptr_t(obj));
+}
+
 //----------------------------------------------------------------------------------------------
 // Win32
 //----------------------------------------------------------------------------------------------
