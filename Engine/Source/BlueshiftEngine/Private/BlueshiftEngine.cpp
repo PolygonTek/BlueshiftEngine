@@ -93,6 +93,7 @@ static void RegisterEngineObjects() {
     ComBoxCollider::RegisterProperties();
     ComSphereCollider::RegisterProperties();
     ComCapsuleCollider::RegisterProperties();
+    ComConeCollider::RegisterProperties();
     ComCylinderCollider::RegisterProperties();
     ComMeshCollider::RegisterProperties();
     ComRigidBody::RegisterProperties();

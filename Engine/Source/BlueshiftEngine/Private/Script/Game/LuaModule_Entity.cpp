@@ -21,6 +21,7 @@
 #include "Components/ComBoxCollider.h"
 #include "Components/ComSphereCollider.h"
 #include "Components/ComCapsuleCollider.h"
+#include "Components/ComConeCollider.h"
 #include "Components/ComCylinderCollider.h"
 #include "Components/ComMeshCollider.h"
 #include "Components/ComRigidBody.h"
@@ -75,6 +76,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "box_collider", static_cast<ComBoxCollider*(Entity::*)()const>(&Entity::GetComponent<ComBoxCollider>),
         "sphere_collider", static_cast<ComSphereCollider*(Entity::*)()const>(&Entity::GetComponent<ComSphereCollider>),
         "capsule_collider", static_cast<ComCapsuleCollider*(Entity::*)()const>(&Entity::GetComponent<ComCapsuleCollider>),
+        "cone_collider", static_cast<ComConeCollider*(Entity::*)()const>(&Entity::GetComponent<ComConeCollider>),
         "cylinder_collider", static_cast<ComCylinderCollider*(Entity::*)()const>(&Entity::GetComponent<ComCylinderCollider>),
         "mesh_collider", static_cast<ComMeshCollider*(Entity::*)()const>(&Entity::GetComponent<ComMeshCollider>),
         "rigid_body", static_cast<ComRigidBody*(Entity::*)()const>(&Entity::GetComponent<ComRigidBody>),

@@ -136,6 +136,7 @@
 #include "Components/ComBoxCollider.h"
 #include "Components/ComSphereCollider.h"
 #include "Components/ComCapsuleCollider.h"
+#include "Components/ComConeCollider.h"
 #include "Components/ComCylinderCollider.h"
 #include "Components/ComMeshCollider.h"
 #include "Components/ComRigidBody.h"

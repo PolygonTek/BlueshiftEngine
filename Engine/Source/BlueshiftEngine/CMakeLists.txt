@@ -162,6 +162,7 @@ set(ENGINE_FILES
   Public/Components/ComCharacterController.h
   Public/Components/ComCharacterJoint.h
   Public/Components/ComCollider.h
+  Public/Components/ComConeCollider.h
   Public/Components/ComConstantForce.h
   Public/Components/ComCylinderCollider.h
   Public/Components/ComFixedJoint.h
@@ -377,12 +378,13 @@ set(ENGINE_FILES
   Private/Components/ComAnimator.cpp
   Private/Components/ComAudioListener.cpp
   Private/Components/ComAudioSource.cpp
-  Private/Components/ComBoxCollider.cpp
+  Private/Components/ComBoxCollider.cpp  
   Private/Components/ComCamera.cpp
   Private/Components/ComCapsuleCollider.cpp
   Private/Components/ComCharacterController.cpp
   Private/Components/ComCharacterJoint.cpp
   Private/Components/ComCollider.cpp
+  Private/Components/ComConeCollider.cpp
   Private/Components/ComConstantForce.cpp
   Private/Components/ComCylinderCollider.cpp
   Private/Components/ComFixedJoint.cpp
