@@ -275,7 +275,7 @@ void Object::Init() {
 
     // number the types according to the class hierarchy so we can quickly determine if a class is a subclass of another
     num = 0;
-    for (MetaObject *t = classHierarchy.GetNext(); t != nullptr; t = t->node.GetNext(), num++)	{
+    for (MetaObject *t = classHierarchy.GetNext(); t != nullptr; t = t->node.GetNext(), num++) {
         t->hierarchyIndex = num;
         t->lastChildIndex += num;
     }

@@ -14,7 +14,7 @@
 
 #pragma once
 
-#define B_ENGINE_NAME           "Blueshift Engine"
+#define B_ENGINE_NAME "Blueshift Engine"
 
 #include "Version.h"
 
