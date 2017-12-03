@@ -30,7 +30,7 @@ public:
     ComScript();
     virtual ~ComScript();
 
-    void                    InitScriptPropertyInfo(const Json::Value &jsonComponent);
+    void                    InitScriptPropertyInfo(const Guid &scriptGuid);
 
     virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const override;
 
@@ -79,7 +79,6 @@ public:
     void                    SetScriptGuid(const Guid &guid);
 
 protected:
-    void                    InitScriptPropertyInfoImpl(const Guid &scriptGuid);
     bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
     void                    SetScriptProperties();
 

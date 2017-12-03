@@ -78,40 +78,35 @@ void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
 }
 
 void ComScript::Deserialize(const Json::Value &in) {
-    InitScriptPropertyInfo(in);
+    const Str scriptGuidString = in.get("script", Guid::zero.ToString()).asCString();
+    const Guid scriptGuid = Guid::FromString(scriptGuidString);
+
+    InitScriptPropertyInfo(scriptGuid);
 
     Serializable::Deserialize(in);
 }
 
-void ComScript::InitScriptPropertyInfo(const Json::Value &jsonComponent) {
-    const Str scriptGuidString = jsonComponent.get("script", Guid::zero.ToString()).asCString();
-    const Guid scriptGuid = Guid::FromString(scriptGuidString);
-
-    // Sandbox name is same as GUID in string
+void ComScript::InitScriptPropertyInfo(const Guid &scriptGuid) {
+    // Sandbox name is same as component GUID in string
     sandboxName = GetGuid().ToString();
 
-    InitScriptPropertyInfoImpl(scriptGuid);
-}
-
-void ComScript::InitScriptPropertyInfoImpl(const Guid &scriptGuid) {
-    const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
-
     // Load a script with sandboxed on current Lua state
+    const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
     LoadScriptWithSandbox(scriptPath, sandboxName);
-
+    
     // Get the state of current loaded script
     sandbox = LuaVM::State()[sandboxName];
 
-    // Run this 
+    // Run this script
     LuaVM::State().Run();
 
     fieldInfos.Clear();
-
     fieldValues.Clear();
 
     // Get the script property informations with this sandboxed script
     if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
-        auto fieldEnumerator1 = [this](LuaCpp::Selector &selector) {
+        // Get property default values to list up fieldValues
+        auto fieldValueEnumerator = [this](LuaCpp::Selector &selector) {
             const char *name = selector;
             auto props = sandbox["properties"][name];
             const char *type = props["type"];
@@ -176,7 +171,8 @@ void ComScript::InitScriptPropertyInfoImpl(const Guid &scriptGuid) {
             }
         };
 
-        auto fieldEnumerator2 = [this](LuaCpp::Selector &selector) {
+        // Create all the property info
+        auto fieldInfoEnumerator = [this](LuaCpp::Selector &selector) {
             const char *name = selector;
             auto props = sandbox["properties"][name];
             const char *label = props["label"];
@@ -349,8 +345,8 @@ void ComScript::InitScriptPropertyInfoImpl(const Guid &scriptGuid) {
             }
         };
 
-        sandbox["property_names"].Enumerate(fieldEnumerator1);
-        sandbox["property_names"].Enumerate(fieldEnumerator2);
+        sandbox["property_names"].Enumerate(fieldValueEnumerator);
+        sandbox["property_names"].Enumerate(fieldInfoEnumerator);
     }
 }
 
@@ -589,7 +585,13 @@ void ComScript::OnApplicationPause(bool pause) {
 }
 
 void ComScript::ScriptReloaded() {
-    SetScriptGuid(GetProperty("script").As<Guid>());
+    Json::Value value;
+    Serializable::Serialize(value);
+
+    Deserialize(value);
+
+    // Update editor UI
+    EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
 }
 
 Guid ComScript::GetScriptGuid() const {
@@ -603,12 +605,14 @@ void ComScript::SetScriptGuid(const Guid &guid) {
     if (!IsInitialized()) {
         ChangeScript(guid);
     } else {
-        InitScriptPropertyInfoImpl(guid);
+        if (guid != GetScriptGuid()) {
+            InitScriptPropertyInfo(guid);
 
-        ChangeScript(guid);
+            ChangeScript(guid);
 
-        // Update editor UI
-        EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
+            // Update editor UI
+            EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
+        }
     }
 }
 
