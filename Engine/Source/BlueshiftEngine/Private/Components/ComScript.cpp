@@ -25,7 +25,7 @@
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Script", ComScript, Component)
+OBJECT_DECLARATION("Script", ComScript, ComLogic)
 BEGIN_EVENTS(ComScript)
 END_EVENTS
 
@@ -426,74 +426,76 @@ void ComScript::SetScriptProperties() {
         const Variant value = GetProperty(name);
         const Variant::Type type = propInfo->GetType();
 
+        auto property = properties[name];
+
         switch (type) {
         case Variant::IntType:
-            properties[name]["value"] = value.As<int>();
+            property["value"] = value.As<int>();
             break;
         case Variant::Int64Type:
-            properties[name]["value"] = value.As<int64_t>();
+            property["value"] = value.As<int64_t>();
             break;
         case Variant::BoolType:
-            properties[name]["value"] = value.As<bool>();
+            property["value"] = value.As<bool>();
             break;
         case Variant::FloatType:
-            properties[name]["value"] = value.As<float>();
+            property["value"] = value.As<float>();
             break;
         case Variant::DoubleType:
-            properties[name]["value"] = value.As<double>();
+            property["value"] = value.As<double>();
             break;
         case Variant::Vec2Type:
-            (Vec2 &)properties[name]["value"] = value.As<Vec2>();
+            (Vec2 &)property["value"] = value.As<Vec2>();
             break;
         case Variant::Vec3Type:
-            (Vec3 &)properties[name]["value"] = value.As<Vec3>();
+            (Vec3 &)property["value"] = value.As<Vec3>();
             break;
         case Variant::Vec4Type:
-            (Vec4 &)properties[name]["value"] = value.As<Vec4>();
+            (Vec4 &)property["value"] = value.As<Vec4>();
             break;
         case Variant::Color3Type:
-            (Color3 &)properties[name]["value"] = value.As<Color3>();
+            (Color3 &)property["value"] = value.As<Color3>();
             break;
         case Variant::Color4Type:
-            (Color4 &)properties[name]["value"] = value.As<Color4>();
+            (Color4 &)property["value"] = value.As<Color4>();
             break;
         case Variant::AnglesType:
-            (Angles &)properties[name]["value"] = value.As<Angles>();
+            (Angles &)property["value"] = value.As<Angles>();
             break;
         case Variant::QuatType:
-            (Quat &)properties[name]["value"] = value.As<Quat>();
+            (Quat &)property["value"] = value.As<Quat>();
             break;
         case Variant::Mat2Type:
-            (Mat2 &)properties[name]["value"] = value.As<Mat2>();
+            (Mat2 &)property["value"] = value.As<Mat2>();
             break;
         case Variant::Mat3Type:
-            (Mat3 &)properties[name]["value"] = value.As<Mat3>();
+            (Mat3 &)property["value"] = value.As<Mat3>();
             break;
         case Variant::Mat3x4Type:
-            (Mat3x4 &)properties[name]["value"] = value.As<Mat3x4>();
+            (Mat3x4 &)property["value"] = value.As<Mat3x4>();
             break;
         case Variant::Mat4Type:
-            (Mat4 &)properties[name]["value"] = value.As<Mat4>();
+            (Mat4 &)property["value"] = value.As<Mat4>();
             break;
         case Variant::PointType:
-            (Point &)properties[name]["value"] = value.As<Point>();
+            (Point &)property["value"] = value.As<Point>();
             break;
         case Variant::RectType:
-            (Rect &)properties[name]["value"] = value.As<Rect>();
+            (Rect &)property["value"] = value.As<Rect>();
             break;
         case Variant::StrType:
-            properties[name]["value"] = value.As<Str>().c_str();
+            property["value"] = value.As<Str>().c_str();
             break;
         case Variant::GuidType: {
             Guid objectGuid = value.As<Guid>();
             Object *object = Object::FindInstance(objectGuid);
             if (object) {
-                properties[name]["value"] = object;
+                property["value"] = object;
             } else {
                 if (propInfo->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
                     if (!objectGuid.IsZero()) {
                         object = propInfo->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
-                        properties[name]["value"] = object;
+                        property["value"] = object;
                     }
                 }
             }
@@ -506,82 +508,186 @@ void ComScript::SetScriptProperties() {
     }
 }
 
+void ComScript::CacheFunction(const char *funcname) {
+    LuaCpp::Selector function = sandbox[funcname];
+    if (function.IsFunction()) {
+        functions.Set(funcname, function);
+    }
+}
+
+void ComScript::UpdateFunctionMap() {
+    CacheFunction("awake");
+    CacheFunction("start");
+    CacheFunction("update");
+    CacheFunction("late_update");
+    CacheFunction("fixed_update");
+    CacheFunction("fixed_late_update");
+    CacheFunction("on_pointer_enter");
+    CacheFunction("on_pointer_exit");
+    CacheFunction("on_pointer_over");
+    CacheFunction("on_pointer_down");
+    CacheFunction("on_pointer_up");
+    CacheFunction("on_pointer_drag");
+    CacheFunction("on_collision_enter");
+    CacheFunction("on_collision_exit");
+    CacheFunction("on_collision_stay");
+    CacheFunction("on_sensor_enter");
+    CacheFunction("on_sensor_exit");
+    CacheFunction("on_sensor_stay");
+    CacheFunction("on_particle_collision");
+    CacheFunction("on_application_terminate");
+    CacheFunction("on_application_pause");
+}
+
 void ComScript::Awake() {
     SetScriptProperties();
 
-    CallFunc("awake");
+    UpdateFunctionMap();
+
+    auto functionPtr = functions.Get("awake");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::Start() {
-    CallFunc("start");
+    auto functionPtr = functions.Get("start");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::Update() {
-    CallFunc("update");
+    auto functionPtr = functions.Get("update");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::LateUpdate() {
-    CallFunc("late_update");
+    auto functionPtr = functions.Get("late_update");
+    if (functionPtr) {
+        functionPtr->second();
+    }
+}
+
+void ComScript::FixedUpdate() {
+    auto functionPtr = functions.Get("fixed_update");
+    if (functionPtr) {
+        functionPtr->second();
+    }
+}
+
+void ComScript::FixedLateUpdate() {
+    auto functionPtr = functions.Get("fixed_late_update");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::OnPointerEnter() {
-    CallFunc("on_pointer_enter");
+    auto functionPtr = functions.Get("on_pointer_enter");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::OnPointerExit() {
-    CallFunc("on_pointer_exit");
+    auto functionPtr = functions.Get("on_pointer_exit");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::OnPointerOver() {
-    CallFunc("on_pointer_over");
+    auto functionPtr = functions.Get("on_pointer_over");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::OnPointerDown() {
-    CallFunc("on_pointer_down");
+    auto functionPtr = functions.Get("on_pointer_down");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::OnPointerUp() {
-    CallFunc("on_pointer_up");
+    auto functionPtr = functions.Get("on_pointer_up");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::OnPointerDrag() {
-    CallFunc("on_pointer_drag");
+    auto functionPtr = functions.Get("on_pointer_drag");
+    if (functionPtr) {
+        functionPtr->second();
+    }
 }
 
 void ComScript::OnCollisionEnter(const Collision &collision) {
-    CallFunc("on_collision_enter", collision);
+    auto functionPtr = functions.Get("on_collision_enter");
+    if (functionPtr) {
+        functionPtr->second(collision);
+    }
 }
 
 void ComScript::OnCollisionExit(const Collision &collision) {
-    CallFunc("on_collision_exit", entity);
+    auto functionPtr = functions.Get("on_collision_exit");
+    if (functionPtr) {
+        functionPtr->second(entity);
+    }
 }
 
 void ComScript::OnCollisionStay(const Collision &collision) {
-    CallFunc("on_collision_stay", entity);
+    auto functionPtr = functions.Get("on_collision_stay");
+    if (functionPtr) {
+        functionPtr->second(entity);
+    }
 }
 
 void ComScript::OnSensorEnter(const Entity *entity) {
-    CallFunc("on_sensor_enter", entity);
+    auto functionPtr = functions.Get("on_sensor_enter");
+    if (functionPtr) {
+        functionPtr->second(entity);
+    }
 }
 
 void ComScript::OnSensorExit(const Entity *entity) {
-    CallFunc("on_sensor_exit", entity);
+    auto functionPtr = functions.Get("on_sensor_exit");
+    if (functionPtr) {
+        functionPtr->second(entity);
+    }
 }
 
 void ComScript::OnSensorStay(const Entity *entity) {
-    CallFunc("on_sensor_stay", entity);
+    auto functionPtr = functions.Get("on_sensor_stay");
+    if (functionPtr) {
+        functionPtr->second(entity);
+    }
 }
 
 void ComScript::OnParticleCollision(const Entity *entity) {
-    CallFunc("on_particle_collision", entity);
+    auto functionPtr = functions.Get("on_particle_collision");
+    if (functionPtr) {
+        functionPtr->second(entity);
+    }
 }
 
 void ComScript::OnApplicationTerminate() {
-    CallFunc("on_application_terminate");
+    auto functionPtr = functions.Get("on_application_terminate");
+    if (functionPtr) {
+        functionPtr->second(entity);
+    }
 }
 
 void ComScript::OnApplicationPause(bool pause) {
-    CallFunc("on_application_pause", pause);
+    auto functionPtr = functions.Get("on_application_pause");
+    if (functionPtr) {
+        functionPtr->second(pause);
+    }
 }
 
 void ComScript::ScriptReloaded() {

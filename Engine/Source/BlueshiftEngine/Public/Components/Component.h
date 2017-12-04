@@ -77,11 +77,17 @@ public:
                             ///
     virtual void            Start() {}
 
-                            ///
+                            /// Called on scene update, variable timestep.
     virtual void            Update() {}
 
-                            ///
+                            /// Called on scene post-update, variable timestep.
     virtual void            LateUpdate() {}
+
+                            /// Called on physics update, fixed timestep.
+    virtual void            FixedUpdate() {}
+
+                            /// Called on physics post-update, fixed timestep.
+    virtual void            FixedLateUpdate() {}
 
                             ///
     virtual const AABB      GetAABB() { return AABB::zero; }

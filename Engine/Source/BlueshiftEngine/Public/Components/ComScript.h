@@ -15,7 +15,7 @@
 #pragma once
 
 #include "Containers/HashMap.h"
-#include "Component.h"
+#include "ComLogic.h"
 #include "Script/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
@@ -23,7 +23,7 @@ BE_NAMESPACE_BEGIN
 class Collision;
 class ScriptAsset;
 
-class ComScript : public Component {
+class ComScript : public ComLogic {
 public:
     OBJECT_PROTOTYPE(ComScript);
 
@@ -43,17 +43,12 @@ public:
     virtual void            Init() override;
 
     virtual void            Awake() override;
-
     virtual void            Start() override;
 
     virtual void            Update() override;
-
     virtual void            LateUpdate() override;
-
-    const char *            GetSandboxName() const { return sandboxName.c_str(); }
-
-    template <typename... Args>
-    void                    CallFunc(const char *funcName, Args&&... args);
+    virtual void            FixedUpdate() override;
+    virtual void            FixedLateUpdate() override;
 
     virtual void            OnPointerEnter();
     virtual void            OnPointerExit();
@@ -78,9 +73,16 @@ public:
     Guid                    GetScriptGuid() const;
     void                    SetScriptGuid(const Guid &guid);
 
+    const char *            GetSandboxName() const { return sandboxName.c_str(); }
+
+    template <typename... Args>
+    void                    CallFunc(const char *funcName, Args&&... args);
+
 protected:
     bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
     void                    SetScriptProperties();
+    void                    CacheFunction(const char *funcname);
+    void                    UpdateFunctionMap();
 
     void                    ChangeScript(const Guid &scriptGuid);
     void                    ScriptReloaded();
@@ -90,6 +92,7 @@ protected:
     LuaCpp::Selector        sandbox;
     Array<PropertyInfo>     fieldInfos;
     HashMap<Str, Variant>   fieldValues;
+    HashMap<Str, LuaCpp::Selector> functions;
 };
 
 template <typename... Args>

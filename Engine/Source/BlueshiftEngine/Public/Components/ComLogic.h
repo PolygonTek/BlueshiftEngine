@@ -26,13 +26,6 @@ public:
     virtual ~ComLogic() = 0;
 
     virtual bool            AllowSameComponent() const override { return true; }
-
-    virtual void            OnPointerEnter() {}
-    virtual void            OnPointerExit() {}
-    virtual void            OnPointerOver() {}
-    virtual void            OnPointerDown() {}
-    virtual void            OnPointerUp() {}
-    virtual void            OnPointerDrag() {}
 };
 
 BE_NAMESPACE_END
