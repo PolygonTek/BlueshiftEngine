@@ -129,7 +129,7 @@ PhysicsWorld::~PhysicsWorld() {
 void PhysicsWorld::ClearScene() {
     // cleanup in the reverse order of creation/initialization
     for (int i = dynamicsWorld->getNumConstraints() - 1; i >= 0; i--) {
-        btTypedConstraint *constraint = dynamicsWorld->getConstraint(i);	
+        btTypedConstraint *constraint = dynamicsWorld->getConstraint(i);
         PhysConstraint *userConstraint = (PhysConstraint *)constraint->getUserConstraintPtr();
 
         userConstraint->RemoveFromWorld();

@@ -82,8 +82,8 @@ public:
     void                    ClearScene();
     void                    StepSimulation(int frameTime);
 
-    int                     GetFrameRate() const;
-    void                    SetFrameRate(int frameRate);
+    int                     GetFrameRate() const { return frameRate; }
+    void                    SetFrameRate(int frameRate) { this->frameRate = frameRate; }
 
     const Vec3              GetGravity() const;
     void                    SetGravity(const Vec3 &gravityAcceleration);
