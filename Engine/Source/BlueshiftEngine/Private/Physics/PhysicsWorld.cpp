@@ -109,7 +109,9 @@ PhysicsWorld::PhysicsWorld() {
 
     timeDelta = 0;
     time = 0;
-    frameRate = 60;
+
+    frameRate = 50;
+    maximumAllowedTimeStep = 1.0f / 5;
 
     SetGravity(Vec3(0, 0, 0));
 }
@@ -162,20 +164,8 @@ void PhysicsWorld::StepSimulation(int frameTime) {
 
     const float h = 1.0f / frameRate;
 
-#if 0
-    int steps = Math::Floor(timeDelta / h);
-    if (steps > 0) {
-        int maxSubSteps = Min(steps, MAX_SUBSTEPS);
-        float timeStep = steps * h;
+    int maxSubSteps = Math::Ceil(frameRate * maximumAllowedTimeStep);
 
-        dynamicsWorld->stepSimulation(timeStep, maxSubSteps, h);
-    
-        timeDelta -= timeStep;
-    }
-#else
-    int steps = Math::Ceil(timeDelta / h);
-    int maxSubSteps = Max(1, Min(steps, MAX_SUBSTEPS));
-    
     // The btDiscreteDynamicsWorld is guaranteed to call setWorldTransform() once per substep 
     // for every btRigidBody that : has a MotionState AND is active AND is not KINEMATIC or STATIC.
 
@@ -183,7 +173,6 @@ void PhysicsWorld::StepSimulation(int frameTime) {
     dynamicsWorld->stepSimulation(timeDelta, maxSubSteps, h);
     
     timeDelta = 0.0f;
-#endif
 
     //fc.frameTime = PlatformTime::Milliseconds() - startFrameMsec;
 }

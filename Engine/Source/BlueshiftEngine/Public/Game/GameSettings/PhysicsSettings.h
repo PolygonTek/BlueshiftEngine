@@ -26,6 +26,12 @@ public:
 
     virtual void            Init() override;
 
+    int                     GetFrameRate() const;
+    void                    SetFrameRate(int frameRate);
+
+    float                   GetMaximumAllowedTimeStep() const;
+    void                    SetMaximumAllowedTimeStep(float timeStep);
+
     Vec3                    GetGravity() const;
     void                    SetGravity(const Vec3 &gravity);
 

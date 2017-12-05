@@ -82,8 +82,17 @@ public:
     void                    ClearScene();
     void                    StepSimulation(int frameTime);
 
+                            /// Returns fixed frame rate in physics simulation
     int                     GetFrameRate() const { return frameRate; }
+
+                            /// Sets fixed frame rate in physics simulation
     void                    SetFrameRate(int frameRate) { this->frameRate = frameRate; }
+
+                            /// Returns maximum allowed time step
+    float                   GetMaximumAllowedTimeStep() const { return maximumAllowedTimeStep; }
+
+                            /// Set maximum allowed time step
+    void                    SetMaximumAllowedTimeStep(float maximumAllowedTimeStep) { this->maximumAllowedTimeStep = maximumAllowedTimeStep; }
 
     const Vec3              GetGravity() const;
     void                    SetGravity(const Vec3 &gravityAcceleration);
@@ -113,6 +122,7 @@ private:
     float                   time;
     float                   timeDelta;
     int                     frameRate;
+    float                   maximumAllowedTimeStep;
     uint32_t                filterMasks[32];
     btDefaultCollisionConfiguration *collisionConfiguration;
     btCollisionDispatcher *  collisionDispatcher;
