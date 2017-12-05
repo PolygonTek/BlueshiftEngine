@@ -84,10 +84,10 @@ public:
     virtual void            LateUpdate() {}
 
                             /// Called on physics update, fixed timestep.
-    virtual void            FixedUpdate() {}
+    virtual void            FixedUpdate(float timeStep) {}
 
                             /// Called on physics post-update, fixed timestep.
-    virtual void            FixedLateUpdate() {}
+    virtual void            FixedLateUpdate(float timeStep) {}
 
                             ///
     virtual const AABB      GetAABB() { return AABB::zero; }

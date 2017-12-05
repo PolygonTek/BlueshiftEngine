@@ -171,8 +171,9 @@ public:
                                 // game 중이라면 spawn 된 후 바로 실행한다.
     void                        Start();
 
+    void                        FixedUpdate(float timeStep);
+    void                        FixedLateUpdate(float timeStep);
     void                        Update();
-
     void                        LateUpdate();
     
     void                        OnApplicationTerminate();

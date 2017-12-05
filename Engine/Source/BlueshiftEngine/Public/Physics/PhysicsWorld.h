@@ -25,6 +25,7 @@ class btGhostPairCallback;
 struct btOverlapFilterCallback;
 class btDiscreteDynamicsWorld;
 
+#include "Core/SignalObject.h"
 #include "Containers/HashTable.h"
 #include "PhysicsCollidable.h"
 #include "PhysicsCollisionListener.h"
@@ -68,7 +69,7 @@ struct PhysConstraintDesc {
     float                   breakImpulse;
 };
 
-class PhysicsWorld {
+class PhysicsWorld : public SignalObject {
     friend class PhysicsSystem;
     friend class PhysCollidable;
     friend class PhysConstraint;
@@ -91,11 +92,16 @@ public:
     bool                    RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, Array<CastResult> &traceList) const;
     bool                    ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const;
 
-    void                    ProcessPostTickCallback(float timeStep);
+    void                    PreStep(float timeStep);
+    void                    PostStep(float timeStep);
 
     void                    DebugDraw();
 
+    static const SignalDef  SIG_PreStep;
+    static const SignalDef  SIG_PostStep;
+
 private:
+    void                    ProcessCollision();
     bool                    ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, CastResult &trace) const;
     bool                    AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, Array<CastResult> &traceList) const;
     bool                    ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, CastResult &trace) const;

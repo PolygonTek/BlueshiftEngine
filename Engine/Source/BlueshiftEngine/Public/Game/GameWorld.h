@@ -141,7 +141,10 @@ private:
     Entity *                    CloneEntity(const Entity *originalEntity);
     void                        SaveObject(const char *filename, const Object *object) const;
     void                        ClearAllEntities();
-    void                        UpdateEntities();   
+    void                        FixedUpdateEntities(float timeStep);
+    void                        FixedLateUpdateEntities(float timeStep);
+    void                        UpdateEntities();
+    void                        LateUpdateEntities();
 
     Entity *                    entities[MaxEntities];
     HashIndex                   entityHash;

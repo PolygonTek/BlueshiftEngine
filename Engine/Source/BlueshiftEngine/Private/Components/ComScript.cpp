@@ -348,6 +348,39 @@ void ComScript::InitScriptPropertyInfo(const Guid &scriptGuid) {
         sandbox["property_names"].Enumerate(fieldValueEnumerator);
         sandbox["property_names"].Enumerate(fieldInfoEnumerator);
     }
+    
+    UpdateFunctionMap();
+}
+
+void ComScript::CacheFunction(const char *funcname) {
+    LuaCpp::Selector function = sandbox[funcname];
+    if (function.IsFunction()) {
+        functions.Set(funcname, function);
+    }
+}
+
+void ComScript::UpdateFunctionMap() {
+    CacheFunction("awake");
+    CacheFunction("start");
+    CacheFunction("update");
+    CacheFunction("late_update");
+    CacheFunction("fixed_update");
+    CacheFunction("fixed_late_update");
+    CacheFunction("on_pointer_enter");
+    CacheFunction("on_pointer_exit");
+    CacheFunction("on_pointer_over");
+    CacheFunction("on_pointer_down");
+    CacheFunction("on_pointer_up");
+    CacheFunction("on_pointer_drag");
+    CacheFunction("on_collision_enter");
+    CacheFunction("on_collision_exit");
+    CacheFunction("on_collision_stay");
+    CacheFunction("on_sensor_enter");
+    CacheFunction("on_sensor_exit");
+    CacheFunction("on_sensor_stay");
+    CacheFunction("on_particle_collision");
+    CacheFunction("on_application_terminate");
+    CacheFunction("on_application_pause");
 }
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {
@@ -508,41 +541,8 @@ void ComScript::SetScriptProperties() {
     }
 }
 
-void ComScript::CacheFunction(const char *funcname) {
-    LuaCpp::Selector function = sandbox[funcname];
-    if (function.IsFunction()) {
-        functions.Set(funcname, function);
-    }
-}
-
-void ComScript::UpdateFunctionMap() {
-    CacheFunction("awake");
-    CacheFunction("start");
-    CacheFunction("update");
-    CacheFunction("late_update");
-    CacheFunction("fixed_update");
-    CacheFunction("fixed_late_update");
-    CacheFunction("on_pointer_enter");
-    CacheFunction("on_pointer_exit");
-    CacheFunction("on_pointer_over");
-    CacheFunction("on_pointer_down");
-    CacheFunction("on_pointer_up");
-    CacheFunction("on_pointer_drag");
-    CacheFunction("on_collision_enter");
-    CacheFunction("on_collision_exit");
-    CacheFunction("on_collision_stay");
-    CacheFunction("on_sensor_enter");
-    CacheFunction("on_sensor_exit");
-    CacheFunction("on_sensor_stay");
-    CacheFunction("on_particle_collision");
-    CacheFunction("on_application_terminate");
-    CacheFunction("on_application_pause");
-}
-
 void ComScript::Awake() {
     SetScriptProperties();
-
-    UpdateFunctionMap();
 
     auto functionPtr = functions.Get("awake");
     if (functionPtr) {
@@ -571,17 +571,17 @@ void ComScript::LateUpdate() {
     }
 }
 
-void ComScript::FixedUpdate() {
+void ComScript::FixedUpdate(float timeStep) {
     auto functionPtr = functions.Get("fixed_update");
     if (functionPtr) {
-        functionPtr->second();
+        functionPtr->second(timeStep);
     }
 }
 
-void ComScript::FixedLateUpdate() {
+void ComScript::FixedLateUpdate(float timeStep) {
     auto functionPtr = functions.Get("fixed_late_update");
     if (functionPtr) {
-        functionPtr->second();
+        functionPtr->second(timeStep);
     }
 }
 

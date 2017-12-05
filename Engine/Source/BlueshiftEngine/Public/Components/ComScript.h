@@ -47,8 +47,8 @@ public:
 
     virtual void            Update() override;
     virtual void            LateUpdate() override;
-    virtual void            FixedUpdate() override;
-    virtual void            FixedLateUpdate() override;
+    virtual void            FixedUpdate(float timeStep) override;
+    virtual void            FixedLateUpdate(float timeStep) override;
 
     virtual void            OnPointerEnter();
     virtual void            OnPointerExit();

@@ -13,20 +13,27 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Signal.h"
 #include "Physics/Physics.h"
 #include "Physics/Collider.h"
 #include "ColliderInternal.h"
 #include "PhysicsInternal.h"
 
 BE_NAMESPACE_BEGIN
-    
+
+const SignalDef PhysicsWorld::SIG_PreStep("PhysicsWorld::PreStep", "f");
+const SignalDef PhysicsWorld::SIG_PostStep("PhysicsWorld::PostStep", "f");
+
 //#define USE_MLCP_SOLVER
 
-static const int MAX_SUBSTEPS   = 10;
+static const int MAX_SUBSTEPS = 10;
+
+static void PreTickCallback(btDynamicsWorld *world, btScalar timeStep) {
+    static_cast<PhysicsWorld *>(world->getWorldUserInfo())->PreStep(timeStep);
+}
 
 static void PostTickCallback(btDynamicsWorld *world, btScalar timeStep) {
-    PhysicsWorld *pw = static_cast<PhysicsWorld *>(world->getWorldUserInfo());
-    pw->ProcessPostTickCallback(timeStep);
+    static_cast<PhysicsWorld *>(world->getWorldUserInfo())->PostStep(timeStep);
 }
 
 class CollisionFilterCallback : public btOverlapFilterCallback {
@@ -80,17 +87,21 @@ PhysicsWorld::PhysicsWorld() {
     dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; // for direct solver it is better to have a small A matrix 
 #endif
     
-    // the polyhedral contact clipping can use either GJK or SAT test to find the separating axis	
+    // the polyhedral contact clipping can use either GJK or SAT test to find the separating axis
     //dynamicsWorld->getDispatchInfo().m_enableSatConvex = false;
 
     // NOTE: Bullet will clear all forces after the post-tick call
-    dynamicsWorld->setInternalTickCallback(PostTickCallback, static_cast<void *>(this));
+    dynamicsWorld->setInternalTickCallback(PreTickCallback, static_cast<void *>(this), true);
+    dynamicsWorld->setInternalTickCallback(PostTickCallback, static_cast<void *>(this), false);
 
     ghostPairCallback = new btGhostPairCallback();
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(ghostPairCallback);
 
     filterCallback = new CollisionFilterCallback();
     dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
+
+    dynamicsWorld->getSolverInfo().m_splitImpulse = false;
+    //dynamicsWorld->setSynchronizeAllMotionStates(true);
 
     dynamicsWorld->setDebugDrawer(&physicsDebugDraw);
 
@@ -486,9 +497,19 @@ void PhysicsWorld::DebugDraw() {
     dynamicsWorld->debugDrawWorld();
 }
 
-void PhysicsWorld::ProcessPostTickCallback(float timeStep) {
+void PhysicsWorld::PreStep(float timeStep) {
+    EmitSignal(&SIG_PreStep, timeStep);
+}
+
+void PhysicsWorld::PostStep(float timeStep) {
     time += timeStep;
 
+    ProcessCollision();
+
+    EmitSignal(&SIG_PostStep, timeStep);
+}
+
+void PhysicsWorld::ProcessCollision() {
     int numManifolds = dynamicsWorld->getDispatcher()->getNumManifolds();
     for (int i = 0; i < numManifolds; i++) {
         btPersistentManifold *contactManifold = dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);

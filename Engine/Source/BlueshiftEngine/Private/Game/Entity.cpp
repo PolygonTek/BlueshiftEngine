@@ -134,6 +134,26 @@ void Entity::Start() {
     }
 }
 
+void Entity::FixedUpdate(float timeStep) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component && component->IsEnabled()) {
+            component->FixedUpdate(timeStep);
+        }
+    }
+}
+
+void Entity::FixedLateUpdate(float timeStep) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component && component->IsEnabled()) {
+            component->FixedLateUpdate(timeStep);
+        }
+    }
+}
+
 void Entity::Update() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];

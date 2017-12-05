@@ -458,12 +458,18 @@ void GameWorld::StartGame() {
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Start();
     }
+
+    physicsWorld->Connect(&PhysicsWorld::SIG_PreStep, this, (SignalCallback)&GameWorld::FixedUpdateEntities);
+    physicsWorld->Connect(&PhysicsWorld::SIG_PostStep, this, (SignalCallback)&GameWorld::FixedLateUpdateEntities);
 }
 
 void GameWorld::StopGame() {
     gameStarted = false;
 
     soundSystem.StopAllSounds();
+
+    physicsWorld->Disconnect(&PhysicsWorld::SIG_PreStep, this);
+    physicsWorld->Disconnect(&PhysicsWorld::SIG_PostStep, this);
 }
 
 void GameWorld::RestartGame(const char *mapName) {
@@ -670,15 +676,34 @@ void GameWorld::Update(int elapsedTime) {
         physicsWorld->StepSimulation(scaledElapsedTime);
 
         UpdateEntities();
+
+        LateUpdateEntities();
+    }
+}
+
+void GameWorld::FixedUpdateEntities(float timeStep) {
+    // Call fixed update function for each entities in depth-first order
+    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
+        ent->FixedUpdate(timeStep * timeScale);
+    }
+}
+
+void GameWorld::FixedLateUpdateEntities(float timeStep) {
+    // Call fixed post-update function for each entities in depth-first order
+    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
+        ent->FixedLateUpdate(timeStep * timeScale);
     }
 }
 
 void GameWorld::UpdateEntities() {
-    // depth-first order  
+    // Call update function for each entities in depth-first order
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Update();
     }
+}
 
+void GameWorld::LateUpdateEntities() {
+    // Call post-update function for each entities in depth-first order
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->LateUpdate();
     }
