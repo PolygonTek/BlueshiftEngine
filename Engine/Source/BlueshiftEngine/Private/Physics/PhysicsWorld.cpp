@@ -100,6 +100,7 @@ PhysicsWorld::PhysicsWorld() {
     filterCallback = new CollisionFilterCallback();
     dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
 
+    //dynamicsWorld->getSolverInfo().m_numIterations = 10;
     dynamicsWorld->getSolverInfo().m_splitImpulse = false;
     //dynamicsWorld->setSynchronizeAllMotionStates(true);
 
@@ -164,7 +165,20 @@ void PhysicsWorld::StepSimulation(int frameTime) {
 
     const float h = 1.0f / frameRate;
 
-    int maxSubSteps = Math::Ceil(frameRate * maximumAllowedTimeStep);
+#if 0
+    int steps = Math::Floor(timeDelta / h);
+    if (steps > 0) {
+        int maxSubSteps = Min(steps, MAX_SUBSTEPS);
+        float timeStep = steps * h;
+        int maxSubSteps = Math::Ceil(frameRate * maximumAllowedTimeStep);
+
+        dynamicsWorld->stepSimulation(timeStep, maxSubSteps, h);
+
+        timeDelta -= timeStep;
+    }
+#else
+    int steps = Math::Ceil(timeDelta / h);
+    int maxSubSteps = Max(1, (int)Math::Ceil(frameRate * maximumAllowedTimeStep));
 
     // The btDiscreteDynamicsWorld is guaranteed to call setWorldTransform() once per substep 
     // for every btRigidBody that : has a MotionState AND is active AND is not KINEMATIC or STATIC.
@@ -173,6 +187,7 @@ void PhysicsWorld::StepSimulation(int frameTime) {
     dynamicsWorld->stepSimulation(timeDelta, maxSubSteps, h);
     
     timeDelta = 0.0f;
+#endif
 
     //fc.frameTime = PlatformTime::Milliseconds() - startFrameMsec;
 }
