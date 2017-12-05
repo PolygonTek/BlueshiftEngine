@@ -27,7 +27,6 @@ BE_NAMESPACE_BEGIN
 */
 
 extern CVar         physics_enable;
-extern CVar         physics_frameRate;
 extern CVar         physics_showWireframe;
 extern CVar         physics_showAABB;
 extern CVar         physics_showContactPoints;

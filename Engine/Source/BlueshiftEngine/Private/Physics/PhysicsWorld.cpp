@@ -26,7 +26,7 @@ const SignalDef PhysicsWorld::SIG_PostStep("PhysicsWorld::PostStep", "f");
 
 //#define USE_MLCP_SOLVER
 
-static const int MAX_SUBSTEPS = 10;
+static const int MAX_SUBSTEPS = 16;
 
 static void PreTickCallback(btDynamicsWorld *world, btScalar timeStep) {
     static_cast<PhysicsWorld *>(world->getWorldUserInfo())->PreStep(timeStep);
@@ -109,6 +109,7 @@ PhysicsWorld::PhysicsWorld() {
 
     timeDelta = 0;
     time = 0;
+    frameRate = 60;
 
     SetGravity(Vec3(0, 0, 0));
 }
@@ -159,7 +160,7 @@ void PhysicsWorld::StepSimulation(int frameTime) {
 
     timeDelta += frameTime * 0.001f;
 
-    const float h = 1.0f / physics_frameRate.GetFloat();
+    const float h = 1.0f / frameRate;
 
 #if 0
     int steps = Math::Floor(timeDelta / h);

@@ -82,6 +82,9 @@ public:
     void                    ClearScene();
     void                    StepSimulation(int frameTime);
 
+    int                     GetFrameRate() const;
+    void                    SetFrameRate(int frameRate);
+
     const Vec3              GetGravity() const;
     void                    SetGravity(const Vec3 &gravityAcceleration);
 
@@ -109,6 +112,7 @@ private:
 
     float                   time;
     float                   timeDelta;
+    int                     frameRate;
     uint32_t                filterMasks[32];
     btDefaultCollisionConfiguration *collisionConfiguration;
     btCollisionDispatcher *  collisionDispatcher;
