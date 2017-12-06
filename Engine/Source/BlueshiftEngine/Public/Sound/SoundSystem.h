@@ -166,6 +166,9 @@ public:
                             /// Is currently playing ?
     bool                    IsPlaying() const;
 
+                            /// Returns volume in [0, 1]
+    float                   GetVolume() const { return volume; }
+
                             /// Sets volume in [0, 1]
     void                    SetVolume(float volume);
 
@@ -248,6 +251,9 @@ public:
     void                    PlaceListener(const Vec3 &pos, const Mat3 &axis);
 
     void                    StopAllSounds();
+
+    float                   GetMasterVolume() const;
+    void                    SetMasterVolume(float volume);
 
     Sound *                 defaultSound;
 
