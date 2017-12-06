@@ -51,6 +51,17 @@ void ComScript::Purge(bool chainPurge) {
     }
 }
 
+void ComScript::SetEnable(bool enable) {
+    ComLogic::SetEnable(enable);
+
+    if (initialized) {
+        auto functionPtr = functions.Get(enable ? "on_enable" : "on_disable");
+        if (functionPtr) {
+            functionPtr->second();
+        }
+    }
+}
+
 void ComScript::Init() {
     Component::Init();
 
@@ -366,6 +377,8 @@ void ComScript::UpdateFunctionMap() {
     CacheFunction("late_update");
     CacheFunction("fixed_update");
     CacheFunction("fixed_late_update");
+    CacheFunction("on_enable");
+    CacheFunction("on_disable");
     CacheFunction("on_pointer_enter");
     CacheFunction("on_pointer_exit");
     CacheFunction("on_pointer_over");
