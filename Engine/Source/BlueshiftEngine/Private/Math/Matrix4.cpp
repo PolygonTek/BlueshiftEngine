@@ -65,7 +65,7 @@ float Mat4::Determinant() const {
 bool Mat4::InverseSelf() {
 #if 0
     // 84+4+16 = 104 multiplications
-    //			   1 division
+    //             1 division
     double det, invDet;
 
     // 2x2 sub-determinants required to calculate 4x4 determinant
@@ -121,7 +121,7 @@ bool Mat4::InverseSelf() {
     float det3_301_023 = mat[3][0] * det2_01_23 - mat[3][2] * det2_01_03 + mat[3][3] * det2_01_02;
     float det3_301_123 = mat[3][1] * det2_01_23 - mat[3][2] * det2_01_13 + mat[3][3] * det2_01_12;
 
-    mat[0][0] =	- det3_213_123 * invDet;
+    mat[0][0] = - det3_213_123 * invDet;
     mat[1][0] = + det3_213_023 * invDet;
     mat[2][0] = - det3_213_013 * invDet;
     mat[3][0] = + det3_213_012 * invDet;
@@ -144,7 +144,7 @@ bool Mat4::InverseSelf() {
     return true;
 #elif 0
     // 4*18 = 72 multiplications
-    //		   4 divisions
+    //         4 divisions
     float *mat = reinterpret_cast<float *>(this);
     float s;
     double d, di;
@@ -240,8 +240,8 @@ bool Mat4::InverseSelf() {
 
     return (s != 0.0f && !FLOAT_IS_NAN(s));
 #else
-    //	6*8+2*6 = 60 multiplications
-    //		2*1 =  2 divisions
+    //  6*8+2*6 = 60 multiplications
+    //      2*1 =  2 divisions
     Mat2 r0, r1, r2, r3;
     float a, det, invDet;
     float *mat = reinterpret_cast<float *>(this);
@@ -328,8 +328,8 @@ bool Mat4::InverseSelf() {
 }
 
 bool Mat4::AffineInverseSelf() {
-    Mat4	invMat;
-    Vec3	t;
+    Mat4    invMat;
+    Vec3    t;
 
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
@@ -339,7 +339,7 @@ bool Mat4::AffineInverseSelf() {
     // The translation components of the original matrix
     t.x = mat[0][3];
     t.y = mat[1][3];
-    t.z = mat[2][3];	
+    t.z = mat[2][3];
 
     // The rotational part of the matrix should be inverted
     Mat3 r = ToMat3();
@@ -365,9 +365,9 @@ bool Mat4::AffineInverseSelf() {
 }
 
 bool Mat4::EuclideanInverseSelf() {
-    Mat4	invMat;
-    Vec3	t;
-    float	temp;
+    Mat4    invMat;
+    Vec3    t;
+    float   temp;
     
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
@@ -377,7 +377,7 @@ bool Mat4::EuclideanInverseSelf() {
     // The translation components of the original matrix
     t.x = mat[0][3];
     t.y = mat[1][3];
-    t.z = mat[2][3];	
+    t.z = mat[2][3];
 
     // The rotational part of the matrix is simply the transpose of the original matrix
     temp = mat[0][1];
@@ -388,7 +388,7 @@ bool Mat4::EuclideanInverseSelf() {
     mat[2][0] = temp;
     temp = mat[1][2];
     mat[1][2] = mat[2][1];
-    mat[2][1] = temp;	
+    mat[2][1] = temp;
 
     // -(Rt * T)
     mat[0][3] = -(mat[0].x * t.x + mat[0].y * t.y + mat[0].z * t.z);
@@ -590,7 +590,7 @@ void Mat4::SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &o
     mat[3][0] = 0.0f;
     mat[3][1] = 0.0f;
     mat[3][2] = 0.0f;
-    mat[3][3] = 1.0f;	
+    mat[3][3] = 1.0f;
 }
 
 BE_NAMESPACE_END

@@ -234,6 +234,8 @@ public:
     
                         /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
+                        /// Returns scale part.
+    Vec3                ToScaleVec3() const;
                         /// Returns translation vector part.
     Vec3                ToTranslationVec3() const;
 
@@ -638,10 +640,6 @@ BE_INLINE Mat4 Mat4::EuclideanInverse() const {
     return invMat;
 }
 
-BE_INLINE Vec3 Mat4::ToTranslationVec3() const {
-    return Vec3(mat[0][3], 	mat[1][3], 	mat[2][3]);
-}
-
 BE_INLINE Mat3 Mat4::ToMat3() const {
     return Mat3(
         mat[0][0], mat[1][0], mat[2][0], 
@@ -655,6 +653,17 @@ BE_INLINE Mat4 Mat3::ToMat4() const {
         mat[0][1], mat[1][1], mat[2][1], 0.0f, 
         mat[0][2], mat[1][2], mat[2][2], 0.0f, 
         0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+BE_INLINE Vec3 Mat4::ToScaleVec3() const {
+    return Vec3(
+        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
+        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
+        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
+}
+
+BE_INLINE Vec3 Mat4::ToTranslationVec3() const {
+    return Vec3(mat[0][3], mat[1][3], mat[2][3]);
 }
 
 BE_INLINE const char *Mat4::ToString(int precision) const {
