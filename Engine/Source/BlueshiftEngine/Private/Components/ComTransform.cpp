@@ -71,8 +71,10 @@ void ComTransform::Init() {
 void ComTransform::SetLocalOrigin(const Vec3 &origin) {
     this->localOrigin = origin;
 
+#ifdef DIRTY_UPDATE
+    MarkDirty();
+#else
     if (IsInitialized()) {
-        // Update localMatrix -> Update worldMatrix -> Update children
         localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
         RecalcWorldMatrix();
@@ -81,11 +83,15 @@ void ComTransform::SetLocalOrigin(const Vec3 &origin) {
 
         UpdateChildren();
     }
+#endif
 }
 
 void ComTransform::SetLocalScale(const Vec3 &scale) {
     this->localScale = scale;
 
+#ifdef DIRTY_UPDATE
+    MarkDirty();
+#else
     if (IsInitialized()) {
         // Update localMatrix -> Update worldMatrix -> Update children
         localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
@@ -96,14 +102,17 @@ void ComTransform::SetLocalScale(const Vec3 &scale) {
 
         UpdateChildren();
     }
+#endif
 }
 
 void ComTransform::SetLocalAxis(const Mat3 &axis) {
     this->localAxis = axis;
     this->localAxis.FixDegeneracies();
 
+#ifdef DIRTY_UPDATE
+    MarkDirty();
+#else
     if (IsInitialized()) {
-        // Update localMatrix -> Update worldMatrix -> Update children
         localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
         RecalcWorldMatrix();
@@ -112,6 +121,7 @@ void ComTransform::SetLocalAxis(const Mat3 &axis) {
 
         UpdateChildren();
     }
+#endif
 }
 
 void ComTransform::SetLocalTransform(const Vec3 &origin, const Vec3 &scale, const Mat3 &axis) {
@@ -120,7 +130,9 @@ void ComTransform::SetLocalTransform(const Vec3 &origin, const Vec3 &scale, cons
     this->localAxis.FixDegeneracies();
     this->localOrigin = origin;
 
-    // Update localMatrix -> Update worldMatrix -> Update children
+#ifdef DIRTY_UPDATE
+    MarkDirty();
+#else
     localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
     RecalcWorldMatrix();
@@ -128,31 +140,46 @@ void ComTransform::SetLocalTransform(const Vec3 &origin, const Vec3 &scale, cons
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren();
+#endif
 }
 
 Vec3 ComTransform::GetOrigin() const {
+#ifdef DIRTY_UPDATE
+    if (dirty) {
+        UpdateWorldTransform();
+    }
+#endif
+
     return worldMatrix.ToTranslationVec3();
 }
 
 Mat3 ComTransform::GetAxis() const {
+#ifdef DIRTY_UPDATE
+    if (dirty) {
+        UpdateWorldTransform();
+    }
+#endif
     Mat3 axis = worldMatrix.ToMat3();
     axis.OrthoNormalizeSelf();
     return axis;
 }
 
 Vec3 ComTransform::GetScale() const {
-    Mat3 axis = worldMatrix.ToMat3();
-    Vec3 scale;
-    scale.x = axis[0].Length();
-    scale.y = axis[1].Length();
-    scale.z = axis[2].Length();
-    return scale;
+#ifdef DIRTY_UPDATE
+    if (dirty) {
+        UpdateWorldTransform();
+    }
+#endif
+    return worldMatrix.ToScaleVec3();
 }
 
 void ComTransform::SetOrigin(const Vec3 &origin) {
-    worldMatrix.SetLinearTransform(GetAxis(), GetScale(), origin);
+#ifdef DIRTY_UPDATE
+    const ComTransform *parent = GetParent();
+    SetLocalOrigin(parent ? parent->worldMatrix.AffineInverse() * origin : origin);
+#else
+    worldMatrix.SetTranslation(origin);
 
-    // Update worldMatrix -> recalc localMatrix -> Update children
     RecalcLocalMatrix();
 
     localOrigin = localMatrix.ToTranslationVec3();
@@ -160,12 +187,16 @@ void ComTransform::SetOrigin(const Vec3 &origin) {
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren();
+#endif
 }
 
 void ComTransform::SetAxis(const Mat3 &axis) {
+#ifdef DIRTY_UPDATE
+    const ComTransform *parent = GetParent();
+    SetLocalAxis(parent ? parent->worldMatrix.AffineInverse() * axis : axis);
+#else
     worldMatrix.SetLinearTransform(axis, GetScale(), GetOrigin());
 
-    // Update worldMatrix -> recalc localMatrix -> Update children
     RecalcLocalMatrix();
 
     localAxis = localMatrix.ToMat3();
@@ -174,6 +205,17 @@ void ComTransform::SetAxis(const Mat3 &axis) {
     EmitSignal(&SIG_TransformUpdated, this);
 
     UpdateChildren();
+#endif
+}
+
+const Mat3x4 &ComTransform::GetWorldMatrix() const {
+#ifdef DIRTY_UPDATE
+    if (dirty) {
+        UpdateWorldMatrix();
+    }
+#endif
+
+    return worldMatrix;
 }
 
 void ComTransform::Translate(const Vec3 &translation) {
@@ -186,20 +228,12 @@ void ComTransform::Rotate(const Vec3 &axis, float angle) {
 
 void ComTransform::RecalcWorldMatrix() {
     const ComTransform *parent = GetParent();
-    if (parent) {
-        worldMatrix = parent->worldMatrix * localMatrix;
-    } else {
-        worldMatrix = localMatrix;
-    }
+    worldMatrix = parent ? parent->GetWorldMatrix() * localMatrix : localMatrix;
 }
 
 void ComTransform::RecalcLocalMatrix() {
     const ComTransform *parent = GetParent();
-    if (parent) {
-        localMatrix = parent->worldMatrix.AffineInverse() * worldMatrix;
-    } else {
-        localMatrix = worldMatrix;
-    }
+    localMatrix = parent ? parent->GetWorldMatrix().Inverse() * worldMatrix : worldMatrix;
 }
 
 void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
@@ -210,7 +244,7 @@ void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
 
         ComTransform *childTransform = childEntity->GetTransform();
 
-        childTransform->worldMatrix = worldMatrix * childTransform->localMatrix;
+        childTransform->worldMatrix = GetWorldMatrix() * childTransform->localMatrix;
         childTransform->EmitSignal(&SIG_TransformUpdated, childTransform);
 
         childTransform->UpdateChildren();
