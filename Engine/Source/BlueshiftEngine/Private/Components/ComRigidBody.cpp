@@ -200,16 +200,16 @@ void ComRigidBody::Update() {
         return;
     }
 
-    if (!body->IsStatic() && body->IsActive()) {
+    if (!body->IsStatic() && !body->IsKinematic() && body->IsActive()) {
         // Block SIG_TransformUpdated during SIG_PhysicsUpdated
         physicsUpdating = true;
 
         EmitSignal(&SIG_PhysicsUpdated, body);
-        
-        physicsUpdating = false;
 
-        ProcessScriptCallback();
+        physicsUpdating = false;
     }
+
+    ProcessScriptCallback();
 }
 
 void ComRigidBody::ProcessScriptCallback() {
@@ -288,8 +288,7 @@ void ComRigidBody::TransformUpdated(const ComTransform *transform) {
     }
 
     if (body) {
-        body->SetOrigin(transform->GetOrigin());
-        body->SetAxis(transform->GetAxis());
+        body->SetTransform(transform->GetAxis(), transform->GetOrigin());
         body->ClearForces();
         body->ClearVelocities();
         body->Activate();
@@ -393,4 +392,3 @@ void ComRigidBody::SetCCD(bool enableCcd) {
 }
 
 BE_NAMESPACE_END
-
