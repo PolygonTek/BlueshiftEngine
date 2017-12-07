@@ -46,7 +46,7 @@ public:
     int                         cycle;
 
     Vec3                        direction;
-    Mat4                        worldMatrix;
+    Mat3x4                      worldMatrix;
 
     Vec3                        initialPosition;
     float                       initialSpeed;

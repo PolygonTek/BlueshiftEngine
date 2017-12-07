@@ -94,6 +94,20 @@ public:
                         /// This function is identical to the member function MulScalar().
     Mat3x4              operator*(const float rhs) const;
 
+                        /// Transforms the given vector by this matrix
+    Vec4                MulVec(const Vec4 &v) const { return *this * v; }
+    Vec3                MulVec(const Vec3 &v) const { return *this * v; }
+                        /// Returns this->Transpose() * v
+    Vec4                TransposedMulVec(const Vec4 &v) const;
+    Vec3                TransposedMulVec(const Vec3 &v) const;
+                        /// Transforms the given vector by this matrix.
+                        /// This function is identical to the member function MulVec().
+    Vec4                operator*(const Vec4 &rhs) const;
+    Vec3                operator*(const Vec3 &rhs) const;
+                        /// Transforms the given vector by the given matrix m.
+    friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
+    friend Vec3         operator*(const Vec3 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
+
                         /// Adds a matrix to this matrix, in-place.
     Mat3x4 &            AddSelf(const Mat3x4 &m) { *this += m; return *this; }
                         /// Adds a matrix to this matrix, in-place.
@@ -138,6 +152,8 @@ public:
     void                SetScaleRotation(const Vec3 &s, const Mat3 &m);
                         /// Sets the translation part of this matrix.
     void                SetTranslation(const Vec3 &t);
+                        /// Sets linear transformation matrix.
+    void                SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &origin);
 
                         /// Inverts this matrix.
     Mat3x4              Inverse() const;
@@ -151,8 +167,13 @@ public:
 
     Mat3x4 &            UntransformSelf(const Mat3x4 &a);
 
+                        /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
+                        /// Returns 4x4 square matrix.
     Mat4                ToMat4() const;
+                        /// Returns scale part.
+    Vec3                ToScaleVec3() const;
+                        /// Returns translation vector part.
     Vec3                ToTranslationVec3() const;
 
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23".
@@ -228,26 +249,46 @@ BE_INLINE Mat3x4::Mat3x4(const Mat4 &m) {
     mat[2][3] = m[2][3];
 }
 
+BE_INLINE Mat3x4::Mat3x4(const float *data) {
+    memcpy(mat, data, sizeof(float) * Rows * Cols);
+}
+
 BE_INLINE void Mat3x4::SetScaleRotation(const Vec3 &s, const Mat3 &m) {
     mat[0][0] = m[0][0] * s[0];
     mat[0][1] = m[1][0] * s[1];
     mat[0][2] = m[2][0] * s[2];
+
     mat[1][0] = m[0][1] * s[0];
     mat[1][1] = m[1][1] * s[1];
     mat[1][2] = m[2][1] * s[2];
+
     mat[2][0] = m[0][2] * s[0];
     mat[2][1] = m[1][2] * s[1];
     mat[2][2] = m[2][2] * s[2];
-}
-
-BE_INLINE Mat3x4::Mat3x4(const float *data) {
-    memcpy(mat, data, sizeof(float) * Rows * Cols);
 }
 
 BE_INLINE void Mat3x4::SetTranslation(const Vec3 &t) {
     mat[0][3] = t[0];
     mat[1][3] = t[1];
     mat[2][3] = t[2];
+}
+
+BE_INLINE void Mat3x4::SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &origin) {
+    // T * R * S
+    mat[0][0] = axis[0].x * scale.x;
+    mat[0][1] = axis[1].x * scale.y;
+    mat[0][2] = axis[2].x * scale.z;
+    mat[0][3] = origin.x;
+
+    mat[1][0] = axis[0].y * scale.x;
+    mat[1][1] = axis[1].y * scale.y;
+    mat[1][2] = axis[2].y * scale.z;
+    mat[1][3] = origin.y;
+
+    mat[2][0] = axis[0].z * scale.x;
+    mat[2][1] = axis[1].z * scale.y;
+    mat[2][2] = axis[2].z * scale.z;
+    mat[2][3] = origin.z;
 }
 
 BE_INLINE const Vec4 &Mat3x4::operator[](int index) const {
@@ -368,6 +409,36 @@ BE_INLINE Mat3x4 Mat3x4::operator*(const float rhs) const {
         mat[2][0] * rhs, mat[2][1] * rhs, mat[2][2] * rhs, mat[2][3] * rhs);
 }
 
+BE_INLINE Vec4 Mat3x4::operator*(const Vec4 &vec) const {
+    return Vec4(
+        mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w,
+        mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w,
+        mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w,
+        vec.w);
+}
+
+BE_INLINE Vec3 Mat3x4::operator*(const Vec3 &vec) const {
+    return Vec3(
+        mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w,
+        mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w,
+        mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w);
+}
+
+BE_INLINE Vec4 Mat3x4::TransposedMulVec(const Vec4 &vec) const {
+    return Vec4(
+        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
+        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
+        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z,
+        mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + vec.w);
+}
+
+BE_INLINE Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
+    return Vec3(
+        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
+        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
+        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z);
+}
+
 BE_INLINE Mat3x4 &Mat3x4::operator+=(const Mat3x4 &rhs) {
     mat[0][0] += rhs.mat[0][0];
     mat[0][1] += rhs.mat[0][1];
@@ -464,6 +535,13 @@ BE_INLINE Mat4 Mat3x4::ToMat4() const {
         mat[1][0], mat[1][1], mat[1][2], mat[1][3],
         mat[2][0], mat[2][1], mat[2][2], mat[2][3],
         0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+BE_INLINE Vec3 Mat3x4::ToScaleVec3() const {
+    return Vec3(
+        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
+        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
+        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
 }
 
 BE_INLINE Vec3 Mat3x4::ToTranslationVec3() const {

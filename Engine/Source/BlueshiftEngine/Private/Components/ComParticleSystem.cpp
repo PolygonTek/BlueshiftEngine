@@ -252,7 +252,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
     sceneEntity.aabb.SetZero();
 
-    const Mat4 worldMatrix = GetEntity()->GetTransform()->GetWorldMatrix();
+    const Mat3x4 worldMatrix = GetEntity()->GetTransform()->GetWorldMatrix();
 
     bool simulationEnded = true;
     
@@ -481,9 +481,9 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
 }
 
 void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float particleAge) {
-    Mat4 offsetMatrix;
+    Mat3x4 offsetMatrix;
     if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
-        offsetMatrix = GetEntity()->GetTransform()->GetWorldMatrix().AffineInverse() * particle->worldMatrix;
+        offsetMatrix = GetEntity()->GetTransform()->GetWorldMatrix().Inverse() * particle->worldMatrix;
     }
     
     int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;

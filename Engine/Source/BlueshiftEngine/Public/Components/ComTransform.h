@@ -16,6 +16,8 @@
 
 #include "Component.h"
 
+//#define DIRTY_UPDATE
+
 BE_NAMESPACE_BEGIN
 
 class PhysRigidBody;
@@ -61,8 +63,8 @@ public:
     void                    SetAxis(const Mat3 &axis);
     void                    SetAngles(const Angles &angles) { SetAxis(angles.ToMat3()); }
 
-    Mat4                    GetLocalMatrix() const { return localMatrix; }
-    Mat4                    GetWorldMatrix() const { return worldMatrix; }
+    const Mat3x4 &          GetLocalMatrix() const { return localMatrix; }
+    const Mat3x4 &          GetWorldMatrix() const;
 
     void                    Translate(const Vec3 &translation);
     void                    Rotate(const Vec3 &axis, float angle);
@@ -79,8 +81,8 @@ protected:
     Vec3                    localScale;
     Mat3                    localAxis;
 
-    Mat4                    localMatrix;
-    Mat4                    worldMatrix;
+    Mat3x4                  localMatrix;
+    Mat3x4                  worldMatrix;
 };
 
 BE_NAMESPACE_END
