@@ -91,9 +91,11 @@ void PhysRigidBody::SetOrigin(const Vec3 &origin) {
         motionTransform.setOrigin(transform.getOrigin());
         rigidBody->getMotionState()->setWorldTransform(motionTransform);
 
-        btTransform interpTransform = rigidBody->getInterpolationWorldTransform();
-        interpTransform.setOrigin(transform.getOrigin());
-        rigidBody->setInterpolationWorldTransform(interpTransform);
+        if (!IsKinematic()) { // HACK
+            btTransform interpTransform = rigidBody->getInterpolationWorldTransform();
+            interpTransform.setOrigin(transform.getOrigin());
+            rigidBody->setInterpolationWorldTransform(interpTransform);
+        }
     }
 }
 
@@ -114,9 +116,11 @@ void PhysRigidBody::SetAxis(const Mat3 &axis) {
         motionTransform.setBasis(transform.getBasis());
         rigidBody->getMotionState()->setWorldTransform(motionTransform);
 
-        btTransform interpTransform = rigidBody->getInterpolationWorldTransform();
-        interpTransform.setBasis(transform.getBasis());
-        rigidBody->setInterpolationWorldTransform(interpTransform);
+        if (!IsKinematic()) { // HACK
+            btTransform interpTransform = rigidBody->getInterpolationWorldTransform();
+            interpTransform.setBasis(transform.getBasis());
+            rigidBody->setInterpolationWorldTransform(interpTransform);
+        }
     }
 }
 
