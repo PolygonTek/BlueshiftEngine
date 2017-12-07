@@ -22,7 +22,7 @@ PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA
     PhysConstraint(bodyA, nullptr) { 
     Vec3 _anchorInA = anchorInA - bodyA->centroid;
     
-    btPoint2PointConstraint *point2PointConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z));
+    btPoint2PointConstraint *point2PointConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), ToBtVector3(_anchorInA));
     point2PointConstraint->setUserConstraintPtr(this);
 
     constraint = point2PointConstraint;
@@ -34,7 +34,7 @@ PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA
     Vec3 _anchorInB = anchorInB - bodyB->centroid;
 
     btPoint2PointConstraint *point2PointConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(),
-        btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z), btVector3(_anchorInB.x, _anchorInB.y, _anchorInB.z));
+        ToBtVector3(_anchorInA), ToBtVector3(_anchorInB));
     point2PointConstraint->setUserConstraintPtr(this);
 
     constraint = point2PointConstraint;
@@ -49,7 +49,7 @@ const Vec3 PhysP2PConstraint::GetAnchorA() const {
 void PhysP2PConstraint::SetAnchorA(const Vec3 &anchorInA) {
     Vec3 _anchorInA = anchorInA - bodyA->centroid;
 
-    ((btPoint2PointConstraint *)constraint)->setPivotA(btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z));
+    ((btPoint2PointConstraint *)constraint)->setPivotA(ToBtVector3(_anchorInA));
 }
 
 const Vec3 PhysP2PConstraint::GetAnchorB() const {
@@ -61,7 +61,7 @@ const Vec3 PhysP2PConstraint::GetAnchorB() const {
 void PhysP2PConstraint::SetAnchorB(const Vec3 &anchorInB) {
     Vec3 _anchorInB = anchorInB - bodyA->centroid;
 
-    ((btPoint2PointConstraint *)constraint)->setPivotB(btVector3(_anchorInB.x, _anchorInB.y, _anchorInB.z));
+    ((btPoint2PointConstraint *)constraint)->setPivotB(ToBtVector3(_anchorInB));
 }
 
 BE_NAMESPACE_END

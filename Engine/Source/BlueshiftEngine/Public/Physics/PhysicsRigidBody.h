@@ -25,17 +25,18 @@ class PhysRigidBody : public PhysCollidable {
     friend class PhysGenericSpringConstraint;
     friend class PhysP2PConstraint;
     friend class PhysHingeConstraint;
-    friend class PhysConeTwistConstraint;
 
 public:
     PhysRigidBody(btRigidBody *rididBody, const Vec3 &centroid);
     virtual ~PhysRigidBody();
-    
+
     virtual const Vec3      GetOrigin() const override;
     virtual void            SetOrigin(const Vec3 &origin) override;
 
     virtual const Mat3      GetAxis() const override;
     virtual void            SetAxis(const Mat3 &axis) override;
+
+    void                    SetTransform(const Mat3 &axis, const Vec3 &origin);
 
     float                   GetMass() const;
     void                    SetMass(float mass);

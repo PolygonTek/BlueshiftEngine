@@ -75,6 +75,8 @@ public:
     virtual const Mat3      GetAxis() const;
     virtual void            SetAxis(const Mat3 &axis);
 
+    virtual void            SetTransform(const Mat3 &axis, const Vec3 &origin);
+
     float                   GetRestitution() const;
     void                    SetRestitution(float rest);
 

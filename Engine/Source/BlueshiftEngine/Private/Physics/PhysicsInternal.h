@@ -26,6 +26,22 @@
 
 BE_NAMESPACE_BEGIN
 
+BE_INLINE btVector3 ToBtVector3(const Vec3 &vector) {
+    return btVector3(vector.x, vector.y, vector.z);
+}
+
+BE_INLINE btQuaternion ToBtQuaternion(const Quat &quaternion) {
+    return btQuaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+}
+
+BE_INLINE Vec3 ToVec3(const btVector3 &vector) {
+    return Vec3(vector.x(), vector.y(), vector.z());
+}
+
+BE_INLINE Quat ToQuat(const btQuaternion &quaternion) {
+    return Quat(quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z());
+}
+
 class PhysDebugDraw : public btIDebugDraw {
 public:
     PhysDebugDraw() { debugMode = 0; }

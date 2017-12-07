@@ -48,7 +48,15 @@ public:
 
         const PhysicsWorld *pw = userColObj0->physicsWorld;
 
-        return !!(pw->GetCollisionFilterMask(userColObj0->customFilterIndex) & BIT(userColObj1->customFilterIndex));
+        if (pw->GetCollisionFilterMask(userColObj0->customFilterIndex) & BIT(userColObj1->customFilterIndex)) {
+            return true;
+        }
+
+        /*if (pw->GetCollisionFilterMask(userColObj1->customFilterIndex) & BIT(userColObj0->customFilterIndex)) {
+            return true;
+        }*/
+
+        return false;
     }
 };
 
@@ -206,7 +214,7 @@ void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
         return;
     }
 
-    dynamicsWorld->setGravity(btVector3(gravityAcceleration.x, gravityAcceleration.y, gravityAcceleration.z));
+    dynamicsWorld->setGravity(ToBtVector3(gravityAcceleration));
 }
 
 uint32_t PhysicsWorld::GetCollisionFilterMask(int index) const {
@@ -246,7 +254,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
         const Vec3 centroid = collider->GetCentroid();
     
         shapeTransform.setIdentity();
-        shapeTransform.setOrigin(btVector3(centroid.x, centroid.y, centroid.z));
+        shapeTransform.setOrigin(ToBtVector3(centroid));
     }
 
     if (!shape->isConvex()) {
@@ -448,13 +456,13 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
     Quat q = axis.ToQuat();
 
     btTransform fromTrans;
-    fromTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
-    fromTrans.setOrigin(btVector3(origin.x, origin.y, origin.z));
+    fromTrans.setRotation(ToBtQuaternion(q));
+    fromTrans.setOrigin(ToBtVector3(origin));
     fromTrans.mult(shapeTransform, fromTrans);
 
     btTransform toTrans;
-    toTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));	
-    toTrans.setOrigin(btVector3(dest.x, dest.y, dest.z));
+    toTrans.setRotation(ToBtQuaternion(q));
+    toTrans.setOrigin(ToBtVector3(dest));
     toTrans.mult(shapeTransform, toTrans);
 
     MyClosestConvexResultCallback cb(me, fromTrans.getOrigin(), toTrans.getOrigin());
@@ -529,6 +537,10 @@ void PhysicsWorld::ProcessCollision() {
 
             //const short colMaskA = a->GetCollisionFilterMask();
             //const short colMaskB = b->GetCollisionFilterMask();
+
+            /*if (!(GetCollisionFilterMask(a->customFilterIndex) & BIT(b->customFilterIndex))) {
+                continue;
+            }*/
 
             PhysCollisionPair pair = PhysCollisionPair(a, b);
 

@@ -25,7 +25,7 @@ PhysGenericConstraint::PhysGenericConstraint(PhysRigidBody *bodyA, const Vec3 &a
     btTransform frameA(btMatrix3x3(
         axisInA[0][0], axisInA[1][0], axisInA[2][0],
         axisInA[0][1], axisInA[1][1], axisInA[2][1],
-        axisInA[0][2], axisInA[1][2], axisInA[2][2]), btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z));
+        axisInA[0][2], axisInA[1][2], axisInA[2][2]), ToBtVector3(_anchorInA));
 
     btGeneric6DofConstraint *generic6DofConstraint = new btGeneric6DofConstraint(*bodyA->GetRigidBody(), frameA, true);
     generic6DofConstraint->setUserConstraintPtr(this);
@@ -41,12 +41,12 @@ PhysGenericConstraint::PhysGenericConstraint(PhysRigidBody *bodyA, const Vec3 &a
     btTransform frameA(btMatrix3x3(
         axisInA[0][0], axisInA[1][0], axisInA[2][0],
         axisInA[0][1], axisInA[1][1], axisInA[2][1],
-        axisInA[0][2], axisInA[1][2], axisInA[2][2]), btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z));
+        axisInA[0][2], axisInA[1][2], axisInA[2][2]), ToBtVector3(_anchorInA));
 
     btTransform frameB(btMatrix3x3(
         axisInB[0][0], axisInB[1][0], axisInB[2][0],
         axisInB[0][1], axisInB[1][1], axisInB[2][1],
-        axisInB[0][2], axisInB[1][2], axisInB[2][2]), btVector3(_anchorInB.x, _anchorInB.y, _anchorInB.z));
+        axisInB[0][2], axisInB[1][2], axisInB[2][2]), ToBtVector3(_anchorInB));
 
     btGeneric6DofConstraint *generic6DofConstraint = new btGeneric6DofConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, true);
     generic6DofConstraint->setUserConstraintPtr(this);
@@ -60,7 +60,7 @@ void PhysGenericConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA
     btTransform frameA(btMatrix3x3(
         axisInA[0][0], axisInA[1][0], axisInA[2][0],
         axisInA[0][1], axisInA[1][1], axisInA[2][1],
-        axisInA[0][2], axisInA[1][2], axisInA[2][2]), btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z));
+        axisInA[0][2], axisInA[1][2], axisInA[2][2]), ToBtVector3(_anchorInA));
 
     btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
     genericConstraint->setFrames(frameA, genericConstraint->getFrameOffsetB());
@@ -72,7 +72,7 @@ void PhysGenericConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB
     btTransform frameB(btMatrix3x3(
         axisInB[0][0], axisInB[1][0], axisInB[2][0],
         axisInB[0][1], axisInB[1][1], axisInB[2][1],
-        axisInB[0][2], axisInB[1][2], axisInB[2][2]), btVector3(_anchorInB.x, _anchorInB.y, _anchorInB.z));
+        axisInB[0][2], axisInB[1][2], axisInB[2][2]), ToBtVector3(_anchorInB));
 
     btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
     genericConstraint->setFrames(genericConstraint->getFrameOffsetA(), frameB);
@@ -85,7 +85,7 @@ const Vec3 PhysGenericConstraint::GetAngularLowerLimit() const {
 }
 
 void PhysGenericConstraint::SetAngularLowerLimit(const Vec3 &lower) {
-    ((btGeneric6DofConstraint *)constraint)->setAngularLowerLimit(btVector3(lower.x, lower.y, lower.z));
+    ((btGeneric6DofConstraint *)constraint)->setAngularLowerLimit(ToBtVector3(lower));
 }
 
 const Vec3 PhysGenericConstraint::GetAngularUpperLimit() const {
@@ -95,7 +95,7 @@ const Vec3 PhysGenericConstraint::GetAngularUpperLimit() const {
 }
 
 void PhysGenericConstraint::SetAngularUpperLimit(const Vec3 &upper) {
-    ((btGeneric6DofConstraint *)constraint)->setAngularUpperLimit(btVector3(upper.x, upper.y, upper.z));
+    ((btGeneric6DofConstraint *)constraint)->setAngularUpperLimit(ToBtVector3(upper));
 }
 
 const Vec3 PhysGenericConstraint::GetLinearLowerLimit() const {
@@ -105,7 +105,7 @@ const Vec3 PhysGenericConstraint::GetLinearLowerLimit() const {
 }
 
 void PhysGenericConstraint::SetLinearLowerLimit(const Vec3 &lower) {
-    ((btGeneric6DofConstraint *)constraint)->setLinearLowerLimit(btVector3(lower.x, lower.y, lower.z));
+    ((btGeneric6DofConstraint *)constraint)->setLinearLowerLimit(ToBtVector3(lower));
 }
 
 const Vec3 PhysGenericConstraint::GetLinearUpperLimit() const {
@@ -115,7 +115,7 @@ const Vec3 PhysGenericConstraint::GetLinearUpperLimit() const {
 }
 
 void PhysGenericConstraint::SetLinearUpperLimit(const Vec3 &upper) {
-    ((btGeneric6DofConstraint *)constraint)->setLinearUpperLimit(btVector3(upper.x, upper.y, upper.z));
+    ((btGeneric6DofConstraint *)constraint)->setLinearUpperLimit(ToBtVector3(upper));
 }
 
 BE_NAMESPACE_END

@@ -46,7 +46,7 @@ ComTransform *ComTransform::GetParent() const {
     if (!parent) {
         return nullptr;
     }
-    return parent->GetTransform(); 
+    return parent->GetTransform();
 }
 
 void ComTransform::Init() {
@@ -72,6 +72,7 @@ void ComTransform::SetLocalOrigin(const Vec3 &origin) {
     this->localOrigin = origin;
 
     if (IsInitialized()) {
+        // Update localMatrix -> Update worldMatrix -> Update children
         localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
         RecalcWorldMatrix();
@@ -86,6 +87,7 @@ void ComTransform::SetLocalScale(const Vec3 &scale) {
     this->localScale = scale;
 
     if (IsInitialized()) {
+        // Update localMatrix -> Update worldMatrix -> Update children
         localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
         RecalcWorldMatrix();
@@ -101,6 +103,7 @@ void ComTransform::SetLocalAxis(const Mat3 &axis) {
     this->localAxis.FixDegeneracies();
 
     if (IsInitialized()) {
+        // Update localMatrix -> Update worldMatrix -> Update children
         localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
         RecalcWorldMatrix();
@@ -117,6 +120,7 @@ void ComTransform::SetLocalTransform(const Vec3 &origin, const Vec3 &scale, cons
     this->localAxis.FixDegeneracies();
     this->localOrigin = origin;
 
+    // Update localMatrix -> Update worldMatrix -> Update children
     localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
 
     RecalcWorldMatrix();
@@ -148,6 +152,7 @@ Vec3 ComTransform::GetScale() const {
 void ComTransform::SetOrigin(const Vec3 &origin) {
     worldMatrix.SetLinearTransform(GetAxis(), GetScale(), origin);
 
+    // Update worldMatrix -> recalc localMatrix -> Update children
     RecalcLocalMatrix();
 
     localOrigin = localMatrix.ToTranslationVec3();
@@ -160,6 +165,7 @@ void ComTransform::SetOrigin(const Vec3 &origin) {
 void ComTransform::SetAxis(const Mat3 &axis) {
     worldMatrix.SetLinearTransform(axis, GetScale(), GetOrigin());
 
+    // Update worldMatrix -> recalc localMatrix -> Update children
     RecalcLocalMatrix();
 
     localAxis = localMatrix.ToMat3();
@@ -213,6 +219,11 @@ void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
 
 void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
     worldMatrix.SetLinearTransform(body->GetAxis(), GetScale(), body->GetOrigin());
+
+    RecalcLocalMatrix();
+
+    localOrigin = localMatrix.ToTranslationVec3();
+    localAxis = localMatrix.ToMat3();
 
     EmitSignal(&SIG_TransformUpdated, this);
 
