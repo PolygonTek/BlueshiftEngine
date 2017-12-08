@@ -151,7 +151,7 @@ void Common::Shutdown() {
     Engine::ShutdownBase();
 }
 
-void Common::SaveConfig(const char *filename) {	
+void Common::SaveConfig(const char *filename) {
     Str configFilename = filename;
     configFilename.DefaultFileExtension("cfg");
 
