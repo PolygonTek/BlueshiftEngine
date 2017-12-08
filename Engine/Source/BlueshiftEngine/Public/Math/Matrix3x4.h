@@ -43,6 +43,7 @@ public:
            const float yx, const float yy, const float yz, const float ty,
            const float zx, const float zy, const float zz, const float tz);
     Mat3x4(const Vec3 &s, const Mat3 &rot, const Vec3 &pos);
+    Mat3x4(const Mat3 &m);
     Mat3x4(const Mat4 &m);
     /// Constructs a Mat3x4 from a C array, to the value.
     explicit Mat3x4(const float *data);
@@ -230,6 +231,23 @@ BE_INLINE Mat3x4::Mat3x4(const Vec3 &s, const Mat3 &rot, const Vec3 &pos) {
     mat[2][1] = rot[1][2] * s[1];
     mat[2][2] = rot[2][2] * s[2];
     mat[2][3] = pos[2];
+}
+
+BE_INLINE Mat3x4::Mat3x4(const Mat3 &m) {
+    mat[0][0] = m[0][0];
+    mat[0][1] = m[1][0];
+    mat[0][2] = m[2][0];
+    mat[0][3] = 0;
+
+    mat[1][0] = m[0][1];
+    mat[1][1] = m[1][1];
+    mat[1][2] = m[2][1];
+    mat[1][3] = 0;
+
+    mat[2][0] = m[0][2];
+    mat[2][1] = m[1][2];
+    mat[2][2] = m[2][2];
+    mat[2][3] = 0;
 }
 
 BE_INLINE Mat3x4::Mat3x4(const Mat4 &m) {
