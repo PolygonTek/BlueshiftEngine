@@ -144,12 +144,12 @@ void ComCamera::Init() {
     UpdateVisuals();
 }
 
-void ComCamera::SetEnable(bool enable) {
+void ComCamera::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             UpdateVisuals();
 
-            Component::SetEnable(true);
+            Component::SetEnabled(true);
         }
     } else {
         if (IsEnabled()) {
@@ -158,7 +158,7 @@ void ComCamera::SetEnable(bool enable) {
                 spriteHandle = -1;
             }
 
-            Component::SetEnable(false);
+            Component::SetEnabled(false);
         }
     }
 }

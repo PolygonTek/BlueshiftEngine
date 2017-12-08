@@ -87,20 +87,20 @@ void ComAudioSource::Update() {
     }
 }
 
-void ComAudioSource::SetEnable(bool enable) {
+void ComAudioSource::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             if (sound) {
                 sound->SetVolume(volume);
             }
-            Component::SetEnable(true);
+            Component::SetEnabled(true);
         }
     } else {
         if (IsEnabled()) {
             if (sound) {
                 sound->SetVolume(0);
             }
-            Component::SetEnable(false);
+            Component::SetEnabled(false);
         }
     }
 }

@@ -28,7 +28,7 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    virtual void            SetEnable(bool enable) override;
+    virtual void            SetEnabled(bool enable) override;
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 

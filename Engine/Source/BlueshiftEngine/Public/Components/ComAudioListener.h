@@ -37,7 +37,7 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-    virtual void            SetEnable(bool enable) override;
+    virtual void            SetEnabled(bool enable) override;
 
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;

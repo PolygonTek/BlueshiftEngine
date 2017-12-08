@@ -157,10 +157,10 @@ void ComLight::Init() {
     UpdateVisuals();
 }
 
-void ComLight::SetEnable(bool enable) {
+void ComLight::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
-            Component::SetEnable(true);
+            Component::SetEnabled(true);
 
             UpdateVisuals();
         }
@@ -176,7 +176,7 @@ void ComLight::SetEnable(bool enable) {
                 spriteHandle = -1;
             }
 
-            Component::SetEnable(false);
+            Component::SetEnabled(false);
         }
     }
 }

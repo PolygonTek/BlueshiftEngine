@@ -51,17 +51,17 @@ void ComMeshCollider::Init() {
     SetInitialized(true);
 }
 
-void ComMeshCollider::SetEnable(bool enable) {
+void ComMeshCollider::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             //UpdateVisuals();
-            Component::SetEnable(true);
+            Component::SetEnabled(true);
         }
     } else {
         if (IsEnabled()) {
             //renderWorld->RemoveEntity(renderEntityHandle);
             //renderEntityHandle = -1;
-            Component::SetEnable(false);
+            Component::SetEnabled(false);
         }
     }
 }

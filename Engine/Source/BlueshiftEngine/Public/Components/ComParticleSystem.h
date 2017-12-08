@@ -36,7 +36,7 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-    virtual void            SetEnable(bool enable) override;
+    virtual void            SetEnabled(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 

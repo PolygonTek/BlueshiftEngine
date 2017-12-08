@@ -81,16 +81,16 @@ void ComRenderable::Init() {
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
 }
 
-void ComRenderable::SetEnable(bool enable) {
+void ComRenderable::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
-            Component::SetEnable(true);
+            Component::SetEnabled(true);
 
             UpdateVisuals();
         }
     } else {
         if (IsEnabled()) {
-            Component::SetEnable(false);
+            Component::SetEnabled(false);
 
             if (sceneEntityHandle != -1) {
                 renderWorld->RemoveEntity(sceneEntityHandle);

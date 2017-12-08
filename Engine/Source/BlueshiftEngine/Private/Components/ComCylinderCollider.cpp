@@ -54,17 +54,17 @@ void ComCylinderCollider::Init() {
     SetInitialized(true);
 }
 
-void ComCylinderCollider::SetEnable(bool enable) {
+void ComCylinderCollider::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             //UpdateVisuals();
-            Component::SetEnable(true);
+            Component::SetEnabled(true);
         }
     } else {
         if (IsEnabled()) {
             //renderWorld->RemoveEntity(renderEntityHandle);
             //renderEntityHandle = -1;
-            Component::SetEnable(false);
+            Component::SetEnabled(false);
         }
     }
 }

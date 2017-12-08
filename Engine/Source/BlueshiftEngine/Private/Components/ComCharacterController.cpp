@@ -162,7 +162,7 @@ void ComCharacterController::Update() {
     GetEntity()->GetTransform()->SetOrigin(origin);
 }
 
-void ComCharacterController::SetEnable(bool enable) {
+void ComCharacterController::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             if (body) {
@@ -171,7 +171,7 @@ void ComCharacterController::SetEnable(bool enable) {
             if (correctionSensor) {
                 correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
             }
-            Component::SetEnable(true);
+            Component::SetEnabled(true);
         }
     } else {
         if (IsEnabled()) {
@@ -181,7 +181,7 @@ void ComCharacterController::SetEnable(bool enable) {
             if (correctionSensor) {
                 correctionSensor->RemoveFromWorld();
             }
-            Component::SetEnable(false);
+            Component::SetEnabled(false);
         }
     }
 }

@@ -51,8 +51,8 @@ void ComScript::Purge(bool chainPurge) {
     }
 }
 
-void ComScript::SetEnable(bool enable) {
-    ComLogic::SetEnable(enable);
+void ComScript::SetEnabled(bool enable) {
+    ComLogic::SetEnabled(enable);
 
     if (initialized) {
         auto functionPtr = functions.Get(enable ? "on_enable" : "on_disable");

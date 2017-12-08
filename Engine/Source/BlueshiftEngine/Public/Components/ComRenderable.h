@@ -35,7 +35,7 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    virtual void            SetEnable(bool enable) override;
+    virtual void            SetEnabled(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 

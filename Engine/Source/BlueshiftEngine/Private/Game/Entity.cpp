@@ -120,7 +120,7 @@ void Entity::Awake() {
 
         if (component) {
             component->Awake();
-            component->SetEnable(component->IsEnabled());
+            component->SetEnabled(component->IsEnabled());
         }
     }
 }
@@ -343,7 +343,7 @@ void Entity::SetActive(bool active) {
         Component *component = components[componentIndex];
 
         if (component) {
-            component->SetEnable(active);
+            component->SetEnabled(active);
         }
     }
 

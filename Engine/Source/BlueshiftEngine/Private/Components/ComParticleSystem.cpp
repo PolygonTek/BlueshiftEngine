@@ -180,11 +180,11 @@ void ComParticleSystem::Awake() {
     }
 }
 
-void ComParticleSystem::SetEnable(bool enable) {
+void ComParticleSystem::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
             ResetParticles();
-            ComRenderable::SetEnable(true);
+            ComRenderable::SetEnabled(true);
         }
     } else {
         if (IsEnabled()) {
@@ -192,7 +192,7 @@ void ComParticleSystem::SetEnable(bool enable) {
                 renderWorld->RemoveEntity(spriteHandle);
                 spriteHandle = -1;
             }
-            ComRenderable::SetEnable(false);
+            ComRenderable::SetEnabled(false);
         }
     }
 }

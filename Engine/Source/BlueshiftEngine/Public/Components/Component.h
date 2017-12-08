@@ -46,7 +46,6 @@ public:
 
                             /// Same component is allowed in a entity ?
     virtual bool            AllowSameComponent() const { return false; }
-
                             /// Is conflict with specific component ?
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const { return false; }
 
@@ -58,34 +57,27 @@ public:
 
                             /// Can disable ?
     virtual bool            CanDisable() const { return true; }
-
                             /// Is enabled ?
     bool                    IsEnabled() const { return enabled; }
-
-                            /// Enable/Disable this component
-    virtual void            SetEnable(bool enable) { enabled = enable; }
+                            /// Set enabled/disabled this component
+    virtual void            SetEnabled(bool enable) { enabled = enable; }
 
                             /// Purge all the resources in this component
     virtual void            Purge(bool chainPurge = true);
 
                             /// Initializes this component. Called after deserialization.
     virtual void            Init();
-
                             ///
     virtual void            Awake() {}
-    
                             ///
     virtual void            Start() {}
 
                             /// Called on scene update, variable timestep.
     virtual void            Update() {}
-
                             /// Called on scene post-update, variable timestep.
     virtual void            LateUpdate() {}
-
                             /// Called on physics update, fixed timestep.
     virtual void            FixedUpdate(float timeStep) {}
-
                             /// Called on physics post-update, fixed timestep.
     virtual void            FixedLateUpdate(float timeStep) {}
 

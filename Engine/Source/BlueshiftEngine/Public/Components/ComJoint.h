@@ -42,7 +42,7 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
-    virtual void            SetEnable(bool enable) override;
+    virtual void            SetEnabled(bool enable) override;
 
     bool                    IsCollisionEnabled() const;
     void                    SetCollisionEnabled(bool enabled);
