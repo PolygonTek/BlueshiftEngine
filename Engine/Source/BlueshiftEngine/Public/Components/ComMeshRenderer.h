@@ -30,6 +30,7 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
     const Mesh *            GetReferenceMesh() const { return referenceMesh; }

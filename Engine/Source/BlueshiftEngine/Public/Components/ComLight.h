@@ -33,12 +33,14 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
     virtual void            SetEnable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
     virtual const AABB      GetAABB() override;

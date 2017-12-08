@@ -94,7 +94,6 @@ public:
 
                                 /// Returns root entity
     Entity *                    GetRoot() const;
-
                                 /// Is root entity ?
     bool                        IsRoot() const { return GetRoot() == this; }
 
@@ -105,37 +104,27 @@ public:
     void                        SetParentGuid(const Guid &parentGuid);
 
     bool                        HasChildren() const;
-
                                 /// Gets the children by depth first order
-    void                        GetChildren(EntityPtrArray &children) const;
-    
+    void                        GetChildren(EntityPtrArray &children) const;    
                                 /// Finds a child entity with the given name
     Entity *                    FindChild(const char *name) const;
     
                                 /// Returns number of components
     int                         NumComponents() const { return components.Count(); }
-
                                 /// Checks if component exist by the given meta object
     bool                        HasComponent(const MetaObject *type) const;
-
                                 /// Returns a component pointer that is conflicting with other components
     Component *                 GetConflictingComponent(const MetaObject *type) const;
-
                                 /// Returns index of the component pointer
     int                         GetComponentIndex(const Component *component) const;
-
                                 /// Returns a component pointer by the given comopnent index
     Component *                 GetComponent(int index) const { return components[index]; }
-
                                 /// Returns a component pointer by the given meta object
     Component *                 GetComponent(const MetaObject *type) const;
-
                                 /// Returns a component pointer by the given type T
     template <typename T> T *   GetComponent() const;
-
                                 /// Returns a component pointer array of all
     ComponentPtrArray &         GetComponents() { return components; }
-
                                 /// Returns a component pointer array by the given meta object
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
 
@@ -144,19 +133,16 @@ public:
 
                                 /// Adds a component to the entity
     void                        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
-
                                 /// Inserts a component after the index to the entity
     void                        InsertComponent(Component *component, int index);
-
                                 /// Removes a component
     bool                        RemoveComponent(Component *component);
-
                                 /// Swap two components
     bool                        SwapComponent(int fromIndex, int toIndex);
 
     bool                        HasRenderEntity(int renderEntityHandle) const;
 
-                                /// Purges all the data in this entity.
+                                /// Purges all of the data
     void                        Purge();
 
                                 /// Initializes this entity. Always parent entities will be initialized first.
@@ -165,16 +151,21 @@ public:
                                 /// Initializes components
     void                        InitComponents();
 
+                                /// Called once when game started before Start()
+                                /// When game already started, called immediately after spawned
     void                        Awake();
-
-                                // game 이 시작되어 update loop 에 들어가면 처음 한번만 실행된다. 
-                                // game 중이라면 spawn 된 후 바로 실행한다.
+                                /// Called once when game started.
+                                /// When game already started, called immediately after spawned
     void                        Start();
 
-    void                        FixedUpdate(float timeStep);
-    void                        FixedLateUpdate(float timeStep);
+                                /// Called on game world update, variable timestep.
     void                        Update();
+                                /// Called on game world late-update, variable timestep.
     void                        LateUpdate();
+                                /// Called on physics update, fixed timestep.
+    void                        FixedUpdate(float timeStep);
+                                /// Called on physics late-update, fixed timestep.
+    void                        FixedLateUpdate(float timeStep);
     
     void                        OnApplicationTerminate();
     void                        OnApplicationPause(bool pause);
@@ -193,6 +184,7 @@ public:
     const AABB                  GetWorldAABB() const;
     const Vec3                  GetWorldPosition(WorldPosEnum pos = Pivot) const;
 
+                                /// Visualize the component in editor
     virtual void                DrawGizmos(const SceneView::Parms &sceneView, bool selected);
 
     virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;

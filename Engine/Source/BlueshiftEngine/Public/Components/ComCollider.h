@@ -31,6 +31,7 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
     virtual void            SetEnable(bool enable) override;

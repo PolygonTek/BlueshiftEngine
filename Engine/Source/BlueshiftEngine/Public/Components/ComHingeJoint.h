@@ -29,10 +29,14 @@ public:
     ComHingeJoint();
     virtual ~ComHingeJoint();
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
     const Vec3 &            GetAnchor() const;

@@ -42,14 +42,24 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() override;
+
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
+                            /// Called on game world late-update, variable timestep.
     virtual void            LateUpdate() override;
+                            /// Called on physics update, fixed timestep.
     virtual void            FixedUpdate(float timeStep) override;
+                            /// Called on physics late-update, fixed timestep.
     virtual void            FixedLateUpdate(float timeStep) override;
 
     virtual void            OnPointerEnter();

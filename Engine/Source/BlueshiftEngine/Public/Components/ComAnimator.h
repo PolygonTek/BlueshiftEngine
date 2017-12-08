@@ -32,8 +32,10 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
     void                    UpdateAnimation(int time);

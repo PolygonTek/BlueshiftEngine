@@ -68,7 +68,7 @@ public:
                             /// Purge all the resources in this component
     virtual void            Purge(bool chainPurge = true);
 
-                            /// Called after deserialization.
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init();
 
                             ///

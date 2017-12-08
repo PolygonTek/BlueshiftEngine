@@ -29,16 +29,21 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
     virtual void            SetEnable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
     void                    UpdateSimulation(int currentTime);

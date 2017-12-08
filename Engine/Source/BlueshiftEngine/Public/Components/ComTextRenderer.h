@@ -27,6 +27,7 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
     void                    SetTextCString(const char *text);

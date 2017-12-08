@@ -29,7 +29,7 @@ public:
     ComTransform();
     virtual ~ComTransform();
 
-                            /// Called after deserialization.
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
                             /// Transform component cannot be disabled.
@@ -101,6 +101,7 @@ public:
     static const SignalDef  SIG_TransformUpdated;
 
 protected:
+                            /// Mark this component and children to need world transform recalculation.
     void                    MarkDirty();
     void                    UpdateWorldTransform() const;
     void                    PhysicsUpdated(const PhysRigidBody *body);
