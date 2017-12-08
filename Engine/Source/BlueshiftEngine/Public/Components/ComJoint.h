@@ -42,6 +42,7 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
+                            /// Set enabled/disabled this component
     virtual void            SetEnabled(bool enable) override;
 
     bool                    IsCollisionEnabled() const;

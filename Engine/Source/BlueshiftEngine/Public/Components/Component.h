@@ -67,9 +67,12 @@ public:
 
                             /// Initializes this component. Called after deserialization.
     virtual void            Init();
-                            ///
+
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() {}
-                            ///
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() {}
 
                             /// Called on scene update, variable timestep.
@@ -87,7 +90,7 @@ public:
                             ///
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const { return false; }
 
-                            ///
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) {}
 
 protected:

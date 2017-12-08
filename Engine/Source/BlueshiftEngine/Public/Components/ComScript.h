@@ -38,6 +38,7 @@ public:
 
     virtual bool            AllowSameComponent() const override { return true; }
 
+                            /// Set enabled/disabled this component
     virtual void            SetEnabled(bool enable) override;
 
     virtual void            Purge(bool chainPurge = true) override;

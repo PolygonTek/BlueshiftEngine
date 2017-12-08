@@ -37,6 +37,7 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
+                            /// Set enabled/disabled this component
     virtual void            SetEnabled(bool enable) override;
 
                             /// Called on game world update, variable timestep.
