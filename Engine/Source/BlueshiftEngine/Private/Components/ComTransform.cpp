@@ -218,14 +218,6 @@ const Mat3x4 &ComTransform::GetWorldMatrix() const {
     return worldMatrix;
 }
 
-void ComTransform::Translate(const Vec3 &translation) {
-    SetOrigin(GetOrigin() + translation);
-}
-
-void ComTransform::Rotate(const Vec3 &axis, float angle) {
-    SetAxis(Rotation(Vec3::zero, axis, angle).ToMat3() * GetAxis());
-}
-
 void ComTransform::RecalcWorldMatrix() {
     const ComTransform *parent = GetParent();
     worldMatrix = parent ? parent->GetWorldMatrix() * localMatrix : localMatrix;
@@ -244,6 +236,13 @@ void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
 
         ComTransform *childTransform = childEntity->GetTransform();
 
+#ifdef DIRTY_UPDATE
+        if (dirty) {
+            return;
+        }
+
+        dirty = true;
+#endif
         childTransform->worldMatrix = GetWorldMatrix() * childTransform->localMatrix;
         childTransform->EmitSignal(&SIG_TransformUpdated, childTransform);
 
@@ -251,6 +250,7 @@ void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
     }
 }
 
+// Called by ComRigidBody::Update()
 void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
     worldMatrix.SetLinearTransform(body->GetAxis(), GetScale(), body->GetOrigin());
 

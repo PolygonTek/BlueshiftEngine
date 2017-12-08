@@ -66,8 +66,8 @@ public:
     const Mat3x4 &          GetLocalMatrix() const { return localMatrix; }
     const Mat3x4 &          GetWorldMatrix() const;
 
-    void                    Translate(const Vec3 &translation);
-    void                    Rotate(const Vec3 &axis, float angle);
+    void                    Translate(const Vec3 &translation) { SetOrigin(GetOrigin() + translation); }
+    void                    Rotate(const Vec3 &axis, float angle) { SetAxis(Rotation(Vec3::zero, axis, angle).ToMat3() * GetAxis()); }
 
     static const SignalDef  SIG_TransformUpdated;
 
