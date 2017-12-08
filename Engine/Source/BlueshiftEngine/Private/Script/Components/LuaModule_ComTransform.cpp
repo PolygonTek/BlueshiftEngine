@@ -47,6 +47,11 @@ void LuaVM::RegisterTransformComponent(LuaCpp::Module &module) {
         "rotate", &ComTransform::Rotate);
 
     _ComTransform["meta_object"] = ComTransform::metaObject;
+
+    LuaCpp::Selector _ComTransform_TransformSpace = _ComTransform["TransformSpace"];
+    _ComTransform_TransformSpace.SetClass<ComTransform::TransformSpace>();
+    _ComTransform_TransformSpace["LocalSpace"] = ComTransform::TransformSpace::LocalSpace;
+    _ComTransform_TransformSpace["WorldSpace"] = ComTransform::TransformSpace::WorldSpace;
 }
 
 BE_NAMESPACE_END
