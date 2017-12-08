@@ -32,13 +32,15 @@ void ComTransform::RegisterProperties() {
 }
 
 ComTransform::ComTransform() {
+    localOrigin = Vec3::zero;
+    localScale = Vec3::one;
+    localAxis = Mat3::identity;
+    worldMatrix = Mat3x4::identity;
+    dirty = false;
+    physicsUpdating = false;
 }
 
 ComTransform::~ComTransform() {
-}
-
-bool ComTransform::CanDisable() const {
-    return false;
 }
 
 ComTransform *ComTransform::GetParent() const { 
@@ -52,11 +54,7 @@ ComTransform *ComTransform::GetParent() const {
 void ComTransform::Init() {
     Component::Init();
 
-    localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
-
-    // Re-calculate world matrix from the hierarchy
-    // For the correct world matrix calculation, this should be called in depth first order
-    RecalcWorldMatrix();
+    UpdateWorldTransform();
 
     // If this entity has a rigid body component, connect it to update the transform due to the physics simulation.
     ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
@@ -71,197 +69,155 @@ void ComTransform::Init() {
 void ComTransform::SetLocalOrigin(const Vec3 &origin) {
     this->localOrigin = origin;
 
-#ifdef DIRTY_UPDATE
-    MarkDirty();
-#else
     if (IsInitialized()) {
-        localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
-
-        RecalcWorldMatrix();
-
-        EmitSignal(&SIG_TransformUpdated, this);
-
-        UpdateChildren();
+        MarkDirty();
     }
-#endif
 }
 
 void ComTransform::SetLocalScale(const Vec3 &scale) {
     this->localScale = scale;
 
-#ifdef DIRTY_UPDATE
-    MarkDirty();
-#else
     if (IsInitialized()) {
-        // Update localMatrix -> Update worldMatrix -> Update children
-        localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
-
-        RecalcWorldMatrix();
-
-        EmitSignal(&SIG_TransformUpdated, this);
-
-        UpdateChildren();
+        MarkDirty();
     }
-#endif
 }
 
 void ComTransform::SetLocalAxis(const Mat3 &axis) {
     this->localAxis = axis;
-    this->localAxis.FixDegeneracies();
 
-#ifdef DIRTY_UPDATE
-    MarkDirty();
-#else
     if (IsInitialized()) {
-        localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
-
-        RecalcWorldMatrix();
-
-        EmitSignal(&SIG_TransformUpdated, this);
-
-        UpdateChildren();
+        MarkDirty();
     }
-#endif
 }
 
-void ComTransform::SetLocalTransform(const Vec3 &origin, const Vec3 &scale, const Mat3 &axis) {
-    this->localScale = scale;
-    this->localAxis = axis;
-    this->localAxis.FixDegeneracies();
+void ComTransform::SetLocalTransform(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
     this->localOrigin = origin;
+    this->localAxis = axis;
+    this->localScale = scale;
 
-#ifdef DIRTY_UPDATE
-    MarkDirty();
-#else
-    localMatrix.SetLinearTransform(localAxis, localScale, localOrigin);
-
-    RecalcWorldMatrix();
-
-    EmitSignal(&SIG_TransformUpdated, this);
-
-    UpdateChildren();
-#endif
+    if (IsInitialized()) {
+        MarkDirty();
+    }
 }
 
 Vec3 ComTransform::GetOrigin() const {
-#ifdef DIRTY_UPDATE
     if (dirty) {
         UpdateWorldTransform();
     }
-#endif
-
     return worldMatrix.ToTranslationVec3();
 }
 
 Mat3 ComTransform::GetAxis() const {
-#ifdef DIRTY_UPDATE
     if (dirty) {
         UpdateWorldTransform();
     }
-#endif
     Mat3 axis = worldMatrix.ToMat3();
     axis.OrthoNormalizeSelf();
     return axis;
 }
 
 Vec3 ComTransform::GetScale() const {
-#ifdef DIRTY_UPDATE
     if (dirty) {
         UpdateWorldTransform();
     }
-#endif
     return worldMatrix.ToScaleVec3();
 }
 
-void ComTransform::SetOrigin(const Vec3 &origin) {
-#ifdef DIRTY_UPDATE
-    const ComTransform *parent = GetParent();
-    SetLocalOrigin(parent ? parent->worldMatrix.AffineInverse() * origin : origin);
-#else
-    worldMatrix.SetTranslation(origin);
-
-    RecalcLocalMatrix();
-
-    localOrigin = localMatrix.ToTranslationVec3();
-
-    EmitSignal(&SIG_TransformUpdated, this);
-
-    UpdateChildren();
-#endif
-}
-
-void ComTransform::SetAxis(const Mat3 &axis) {
-#ifdef DIRTY_UPDATE
-    const ComTransform *parent = GetParent();
-    SetLocalAxis(parent ? parent->worldMatrix.AffineInverse() * axis : axis);
-#else
-    worldMatrix.SetLinearTransform(axis, GetScale(), GetOrigin());
-
-    RecalcLocalMatrix();
-
-    localAxis = localMatrix.ToMat3();
-    localAxis.OrthoNormalizeSelf();
-
-    EmitSignal(&SIG_TransformUpdated, this);
-
-    UpdateChildren();
-#endif
-}
-
-const Mat3x4 &ComTransform::GetWorldMatrix() const {
-#ifdef DIRTY_UPDATE
+const Mat3x4 &ComTransform::GetTransform() const {
     if (dirty) {
-        UpdateWorldMatrix();
+        UpdateWorldTransform();
     }
-#endif
-
     return worldMatrix;
 }
 
-void ComTransform::RecalcWorldMatrix() {
+void ComTransform::SetOrigin(const Vec3 &origin) {
     const ComTransform *parent = GetParent();
-    worldMatrix = parent ? parent->GetWorldMatrix() * localMatrix : localMatrix;
+    SetLocalOrigin(parent ? parent->GetTransform().Inverse() * origin : origin);
 }
 
-void ComTransform::RecalcLocalMatrix() {
+void ComTransform::SetAxis(const Mat3 &axis) {
     const ComTransform *parent = GetParent();
-    localMatrix = parent ? parent->GetWorldMatrix().Inverse() * worldMatrix : worldMatrix;
+    SetLocalAxis(parent ? parent->GetAxis().Transpose() * axis : axis);
 }
 
-void ComTransform::UpdateChildren(bool ignorePhysicsEntity) {
-    for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        if (ignorePhysicsEntity && childEntity->GetComponent(&ComRigidBody::metaObject)) {
-            continue;
-        }
+void ComTransform::SetScale(const Vec3 &scale) {
+    const ComTransform *parent = GetParent();
+    SetLocalScale(parent ? scale / parent->GetScale() : scale);
+}
 
-        ComTransform *childTransform = childEntity->GetTransform();
+void ComTransform::SetTransform(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
+    SetOrigin(origin);
+    SetScale(scale);
+    SetAxis(axis);
+}
 
-#ifdef DIRTY_UPDATE
-        if (dirty) {
-            return;
-        }
+void ComTransform::TranslateLocal(const Vec3 &translation) {
+    SetLocalOrigin(GetLocalOrigin() + translation);
+}
 
-        dirty = true;
-#endif
-        childTransform->worldMatrix = GetWorldMatrix() * childTransform->localMatrix;
-        childTransform->EmitSignal(&SIG_TransformUpdated, childTransform);
+void ComTransform::RotateLocal(const Vec3 &axis, float angle) {
+    Mat3 rotation = Rotation(Vec3::zero, axis, angle).ToMat3();
+    SetLocalAxis(rotation * GetLocalAxis());
+}
 
-        childTransform->UpdateChildren();
+void ComTransform::Translate(const Vec3 &translation) {
+    SetOrigin(GetOrigin() + translation);
+}
+
+void ComTransform::Rotate(const Vec3 &axis, float angle) { 
+    Mat3 rotation = Rotation(Vec3::zero, axis, angle).ToMat3();
+    SetAxis(rotation * GetAxis()); 
+}
+
+void ComTransform::MarkDirty() {
+    // Precondition:
+    // a) whenever a transform is marked dirty, all its children are marked dirty as well.
+    // b) whenever a transform is cleared from being dirty, all its parents must have been
+    //    cleared as well.
+    if (dirty) {
+        return;
     }
+    dirty = true;
+
+    // World matrix should be updated so we emit this signal
+    EmitSignal(&SIG_TransformUpdated, this);
+
+    if (physicsUpdating) {
+        for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+            if (childEntity->GetComponent(&ComRigidBody::metaObject)) {
+                continue;
+            }
+
+            childEntity->GetTransform()->MarkDirty();
+        }
+    } else {
+        for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+            childEntity->GetTransform()->MarkDirty();
+        }
+    }
+}
+
+void ComTransform::UpdateWorldTransform() const {
+    Mat3x4 localTransform = GetLocalTransform();
+
+    ComTransform *parent = GetParent();
+
+    if (parent) {
+        worldMatrix = parent->GetTransform() * localTransform;
+    } else {
+        worldMatrix = localTransform;
+    }
+
+    dirty = false;
 }
 
 // Called by ComRigidBody::Update()
 void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
-    worldMatrix.SetLinearTransform(body->GetAxis(), GetScale(), body->GetOrigin());
+    physicsUpdating = true;
 
-    RecalcLocalMatrix();
+    SetTransform(body->GetOrigin(), body->GetAxis(), GetScale());
 
-    localOrigin = localMatrix.ToTranslationVec3();
-    localAxis = localMatrix.ToMat3();
-
-    EmitSignal(&SIG_TransformUpdated, this);
-
-    UpdateChildren(true);
+    physicsUpdating = false;
 }
 
 BE_NAMESPACE_END

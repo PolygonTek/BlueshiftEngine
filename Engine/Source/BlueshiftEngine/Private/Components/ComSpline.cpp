@@ -75,7 +75,7 @@ Vec3 ComSpline::GetCurrentOrigin(float time) const {
         Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
-    return transform->GetWorldMatrix() * originCurve->GetCurrentValue(time);
+    return transform->GetTransform() * originCurve->GetCurrentValue(time);
 }
 
 Mat3 ComSpline::GetCurrentAxis(float time) const {
@@ -85,7 +85,7 @@ Mat3 ComSpline::GetCurrentAxis(float time) const {
         Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
-    return transform->GetWorldMatrix().ToMat3() * anglesCurve->GetCurrentValue(time).ToMat3();
+    return transform->GetTransform().ToMat3() * anglesCurve->GetCurrentValue(time).ToMat3();
 }
 
 int ComSpline::GetPointCount() const {
@@ -232,13 +232,13 @@ void ComSpline::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
             break;
         }
 
-        Vec3 p0 = transform->GetWorldMatrix() * originCurve->GetCurrentValue(t);
-        Vec3 p1 = transform->GetWorldMatrix() * originCurve->GetCurrentValue(t + dt);
+        Vec3 p0 = transform->GetTransform() * originCurve->GetCurrentValue(t);
+        Vec3 p1 = transform->GetTransform() * originCurve->GetCurrentValue(t + dt);
 
         renderWorld->SetDebugColor(Color4::white, Color4::orange);
         renderWorld->DebugLine(p0, p1, 2, true);
 
-        Mat3 axis = transform->GetWorldMatrix().ToMat3() * anglesCurve->GetCurrentValue(t).ToMat3();
+        Mat3 axis = transform->GetTransform().ToMat3() * anglesCurve->GetCurrentValue(t).ToMat3();
 
         renderWorld->SetDebugColor(Color4::red, Color4::orange);
         renderWorld->DebugLine(p0, p0 + axis[0] * 30, 2, true);

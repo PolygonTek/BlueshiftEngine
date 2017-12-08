@@ -41,8 +41,8 @@ void LuaVM::RegisterTransformComponent(LuaCpp::Module &module) {
         "set_origin", &ComTransform::SetOrigin,
         "set_axis", &ComTransform::SetAxis,
         "set_angles", &ComTransform::SetAngles,
-        "local_matrix", &ComTransform::GetLocalMatrix,
-        "world_matrix", &ComTransform::GetWorldMatrix,
+        "local_transform", &ComTransform::GetLocalTransform,
+        "transform", &ComTransform::GetTransform,
         "translate", &ComTransform::Translate,
         "rotate", &ComTransform::Rotate);
 

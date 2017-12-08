@@ -196,7 +196,7 @@ void ComCharacterController::DrawGizmos(const SceneView::Parms &sceneView, bool 
         float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
         float scaledHeight = transform->GetScale().z * capsuleHeight;
 
-        Vec3 worldCenter = transform->GetWorldMatrix() * center;
+        Vec3 worldCenter = transform->GetTransform() * center;
 
         renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
         renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);

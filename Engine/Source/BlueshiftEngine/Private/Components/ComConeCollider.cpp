@@ -82,7 +82,7 @@ void ComConeCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selecte
         float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
         float scaledHeight = transform->GetScale().z * height;
 
-        Vec3 worldOrigin = transform->GetWorldMatrix() * center - transform->GetAxis()[2] * scaledHeight * 0.5f;
+        Vec3 worldOrigin = transform->GetTransform() * center - transform->GetAxis()[2] * scaledHeight * 0.5f;
 
         renderWorld->SetDebugColor(Color4::orange, Color4::zero);
         renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius, false, 1.25f);

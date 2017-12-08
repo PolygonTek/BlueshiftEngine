@@ -82,7 +82,7 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
-    Vec3 worldOrigin = transform->GetWorldMatrix() * anchor;
+    Vec3 worldOrigin = transform->GetTransform() * anchor;
     
     renderWorld->SetDebugColor(Color4::red, Color4::zero);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(5), worldOrigin + Mat3::identity[0] * CentiToUnit(5), 1);

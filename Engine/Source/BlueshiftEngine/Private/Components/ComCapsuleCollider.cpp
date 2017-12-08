@@ -82,7 +82,7 @@ void ComCapsuleCollider::DrawGizmos(const SceneView::Parms &sceneView, bool sele
         float scaledRadius = (transform->GetScale() * radius).MaxComponent();
         float scaledHeight = transform->GetScale().z * height;
 
-        Vec3 worldCenter = transform->GetWorldMatrix() * center;
+        Vec3 worldCenter = transform->GetTransform() * center;
 
         renderWorld->SetDebugColor(Color4::orange, Color4::zero);
         renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + CentiToUnit(0.25f), 1.25f, true);

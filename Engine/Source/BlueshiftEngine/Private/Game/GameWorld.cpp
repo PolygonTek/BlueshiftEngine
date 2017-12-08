@@ -371,7 +371,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
     Entity *clonedEntity = CloneEntity(originalEntity);
     
     ComTransform *transform = clonedEntity->GetTransform();
-    transform->SetLocalTransform(origin, Vec3::one, angles.ToMat3());
+    transform->SetLocalTransform(origin, angles.ToMat3(), Vec3::one);
 
     RegisterEntity(clonedEntity);
 

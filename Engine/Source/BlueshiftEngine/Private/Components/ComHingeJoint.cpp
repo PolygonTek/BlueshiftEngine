@@ -86,7 +86,7 @@ void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected)
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
-    Vec3 worldOrigin = transform->GetWorldMatrix() * anchor;
+    Vec3 worldOrigin = transform->GetTransform() * anchor;
     Mat3 worldAxis = transform->GetAxis() * axis;
     
     renderWorld->SetDebugColor(Color4::red, Color4::zero);

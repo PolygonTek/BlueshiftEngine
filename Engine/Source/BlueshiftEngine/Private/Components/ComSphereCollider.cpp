@@ -80,7 +80,7 @@ void ComSphereCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selec
         float scaledRadius = (transform->GetScale() * radius).MaxComponent();
 
         renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-        renderWorld->DebugSphereSimple(transform->GetWorldMatrix() * center, transform->GetAxis(), scaledRadius + CentiToUnit(0.25f), 1.25f, true);
+        renderWorld->DebugSphereSimple(transform->GetTransform() * center, transform->GetAxis(), scaledRadius + CentiToUnit(0.25f), 1.25f, true);
     }
 }
 
