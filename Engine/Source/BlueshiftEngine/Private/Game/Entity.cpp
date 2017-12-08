@@ -325,7 +325,7 @@ void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue
 }
 
 bool Entity::IsActiveSelf() const {
-    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
@@ -339,7 +339,7 @@ bool Entity::IsActiveSelf() const {
 }
 
 void Entity::SetActive(bool active) {
-    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
