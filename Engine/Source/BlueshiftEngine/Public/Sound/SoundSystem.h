@@ -168,13 +168,11 @@ public:
 
                             /// Returns volume in [0, 1]
     float                   GetVolume() const { return volume; }
-
                             /// Sets volume in [0, 1]
     void                    SetVolume(float volume);
 
                             /// Gets current playing time in milliseconds
     uint32_t                GetPlayingTime() const;
-
                             /// Sets current playing time in milliseconds
     void                    SetPlayingTime(uint32_t time);
 

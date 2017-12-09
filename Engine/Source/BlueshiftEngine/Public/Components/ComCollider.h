@@ -45,7 +45,7 @@ public:
     Collider *              GetCollider() const { return collider; }
 
 protected:
-    Str                     material;
+    Str                     material; // TODO: implement physics material
     Collider *              collider;
 };
 

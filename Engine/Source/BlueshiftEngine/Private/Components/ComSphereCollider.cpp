@@ -17,7 +17,6 @@
 #include "Physics/Collider.h"
 #include "Components/ComTransform.h"
 #include "Components/ComSphereCollider.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN

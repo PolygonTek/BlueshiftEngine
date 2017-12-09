@@ -52,13 +52,10 @@ void ComCollider::Init() {
 void ComCollider::SetEnabled(bool enable) {
     if (enable) {
         if (!IsEnabled()) {
-            //UpdateVisuals();
             Component::SetEnabled(true);
         }
     } else {
         if (IsEnabled()) {
-            //renderWorld->RemoveEntity(renderEntityHandle);
-            //renderEntityHandle = -1;
             Component::SetEnabled(false);
         }
     }

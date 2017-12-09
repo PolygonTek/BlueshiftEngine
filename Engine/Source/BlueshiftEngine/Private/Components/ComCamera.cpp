@@ -20,7 +20,6 @@
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
 #include "Components/ComCamera.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Game/CastResult.h"
 #include "Game/GameSettings/TagLayerSettings.h"

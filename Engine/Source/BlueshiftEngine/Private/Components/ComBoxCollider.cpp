@@ -17,7 +17,6 @@
 #include "Render/Render.h"
 #include "Components/ComTransform.h"
 #include "Components/ComBoxCollider.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN
@@ -41,7 +40,7 @@ void ComBoxCollider::Init() {
     ComCollider::Init();
 
     // Create collider based on transformed box
-    ComTransform *transform = GetEntity()->GetTransform();
+    const ComTransform *transform = GetEntity()->GetTransform();
     Vec3 scaledCenter = transform->GetScale() * center;
     Vec3 scaledExtents = transform->GetScale() * extents;
 

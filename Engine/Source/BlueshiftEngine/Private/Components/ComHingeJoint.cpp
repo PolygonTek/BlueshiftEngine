@@ -17,7 +17,6 @@
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComHingeJoint.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN

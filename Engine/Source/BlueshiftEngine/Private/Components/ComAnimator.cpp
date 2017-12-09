@@ -16,7 +16,6 @@
 #include "Render/Render.h"
 #include "AnimController/AnimController.h"
 #include "Components/ComAnimator.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"

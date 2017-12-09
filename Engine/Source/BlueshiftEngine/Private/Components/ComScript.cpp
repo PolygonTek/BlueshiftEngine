@@ -16,7 +16,6 @@
 #include "Components/ComScript.h"
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"

@@ -18,7 +18,6 @@
 #include "Components/ComSensor.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComScript.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN
@@ -71,7 +70,7 @@ static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &s
         return;
     }
 
-    ComTransform *transform = entity->GetTransform();
+    const ComTransform *transform = entity->GetTransform();
 
     PhysShapeDesc &shapeDesc = shapes.Alloc();
     shapeDesc.collider = collider->GetCollider();

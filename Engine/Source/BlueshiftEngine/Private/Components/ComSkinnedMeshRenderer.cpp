@@ -18,7 +18,6 @@
 #include "Components/ComTransform.h"
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"

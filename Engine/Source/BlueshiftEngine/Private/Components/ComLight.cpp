@@ -17,7 +17,6 @@
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComLight.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Game/GameSettings/TagLayerSettings.h"
 #include "Asset/Asset.h"

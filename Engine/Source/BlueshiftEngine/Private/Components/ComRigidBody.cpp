@@ -19,7 +19,6 @@
 #include "Components/ComCharacterController.h"
 #include "Components/ComSensor.h"
 #include "Components/ComScript.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN

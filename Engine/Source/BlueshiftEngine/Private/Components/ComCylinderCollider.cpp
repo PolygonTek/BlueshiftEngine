@@ -17,7 +17,6 @@
 #include "Physics/Collider.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCylinderCollider.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN
@@ -42,7 +41,7 @@ void ComCylinderCollider::Init() {
     ComCollider::Init();
 
     // Create collider based on transformed cylinder
-    ComTransform *transform = GetEntity()->GetTransform();
+    const ComTransform *transform = GetEntity()->GetTransform();
     Vec3 scaledCenter = transform->GetScale() * center;
     float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
     float scaledHeight = transform->GetScale().z * height;

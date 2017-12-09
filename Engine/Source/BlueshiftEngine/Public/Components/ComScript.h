@@ -30,13 +30,14 @@ public:
     ComScript();
     virtual ~ComScript();
 
-    void                    InitScriptPropertyInfo(const Guid &scriptGuid);
+                            /// Returns true if same component is allowed
+    virtual bool            AllowSameComponent() const override { return true; }
 
+                            /// Gets full list of property info including script properties.
     virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const override;
 
+                            /// Deserialize from JSON value.
     virtual void            Deserialize(const Json::Value &in) override;
-
-    virtual bool            AllowSameComponent() const override { return true; }
 
                             /// Set enabled/disabled this component
     virtual void            SetEnabled(bool enable) override;
@@ -92,6 +93,7 @@ public:
     void                    CallFunc(const char *funcName, Args&&... args);
 
 protected:
+    void                    InitScriptPropertyInfo(const Guid &scriptGuid);
     bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
     void                    SetScriptProperties();
     void                    CacheFunction(const char *funcname);
