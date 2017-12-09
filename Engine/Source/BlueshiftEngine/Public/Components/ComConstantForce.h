@@ -25,6 +25,7 @@ public:
     ComConstantForce();
     virtual ~ComConstantForce();
 
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
 
                             /// Initializes this component. Called after deserialization.

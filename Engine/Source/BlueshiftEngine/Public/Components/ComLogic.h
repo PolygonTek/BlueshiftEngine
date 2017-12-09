@@ -25,6 +25,7 @@ public:
     ComLogic();
     virtual ~ComLogic() = 0;
 
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
 };
 

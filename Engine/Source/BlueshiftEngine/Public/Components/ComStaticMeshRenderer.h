@@ -25,6 +25,7 @@ public:
     ComStaticMeshRenderer();
     virtual ~ComStaticMeshRenderer();
 
+                            /// Returns true if this component conflicts with the given component
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const override;
 
     virtual void            Purge(bool chainPurge = true) override;

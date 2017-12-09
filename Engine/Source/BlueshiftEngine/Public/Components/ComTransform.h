@@ -104,6 +104,7 @@ public:
 protected:
                             /// Mark this component and children to need world transform recalculation.
     void                    InvalidateWorldMatrix();
+                            /// Recalculate world matrix
     void                    UpdateWorldMatrix() const;
     void                    PhysicsUpdated(const PhysRigidBody *body);
 

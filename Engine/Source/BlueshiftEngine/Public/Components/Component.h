@@ -23,8 +23,8 @@ class Entity;
 class GameWorld;
 class Component;
 
-using ComponentPtr          = Component*;
-using ComponentPtrArray     = Array<ComponentPtr>;
+using ComponentPtr = Component*;
+using ComponentPtrArray = Array<ComponentPtr>;
   
 class Component : public Object {
     friend class Entity;
@@ -41,12 +41,12 @@ public:
                             /// Get the entity that own this component
     Entity *                GetEntity() const { return entity; }
     
-                            /// Get the object GameWorld
+                            /// Get the game world object
     GameWorld *             GetGameWorld() const;
 
-                            /// Same component is allowed in a entity ?
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const { return false; }
-                            /// Is conflict with specific component ?
+                            /// Returns true if this component conflicts with the given component
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const { return false; }
 
                             /// Returns true if this component have render entity by checking renderEntityHandle
@@ -62,7 +62,7 @@ public:
                             /// Set enabled/disabled this component
     virtual void            SetEnabled(bool enable) { enabled = enable; }
 
-                            /// Purge all the resources in this component
+                            /// Purges all the resources of the component, chainPurge for parent class
     virtual void            Purge(bool chainPurge = true);
 
                             /// Initializes this component. Called after deserialization.
