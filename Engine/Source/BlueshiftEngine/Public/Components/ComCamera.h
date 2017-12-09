@@ -106,6 +106,9 @@ protected:
     Mesh *                  spriteMesh;
     SceneEntity::Parms      sprite;
     int                     spriteHandle;
+
+    Guid                    oldHoverEntityGuid;
+    Guid                    captureEntityGuid;
 };
 
 BE_NAMESPACE_END

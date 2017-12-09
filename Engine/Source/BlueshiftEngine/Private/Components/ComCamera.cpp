@@ -54,6 +54,9 @@ ComCamera::ComCamera() {
     spriteHandle = -1;
     spriteMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
+
+    oldHoverEntityGuid = Guid::zero;
+    captureEntityGuid = Guid::zero;
 }
 
 ComCamera::~ComCamera() {
@@ -312,47 +315,75 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
 }
 
 void ComCamera::ProcessPointerInput(const Point &screenPoint) {
+    Entity *oldHoverEntity = (Entity *)Entity::FindInstance(oldHoverEntityGuid);
+    Entity *hoverEntity = nullptr;
+
     Ray ray = ScreenToRay(screenPoint);
 
-    Entity *hitEntity = nullptr;
-    float minScale = MeterToUnit(100000);
-
-#if 1
     CastResultEx castResult;
-    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(minScale),
+    // FIXME: ray cast against corresponding layer entities
+    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(100000)),
         PhysCollidable::DefaultGroup, 
         PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::CharacterGroup, castResult)) {
         ComRigidBody *hitRigidBody = castResult.GetRigidBody();
         if (hitRigidBody) {
-            hitEntity = hitRigidBody->GetEntity();
+            hoverEntity = hitRigidBody->GetEntity();
         }
     }
-#else
-    for (Entity *ent = GetGameWorld()->GetEntityHierarchy().GetChild(); ent; ent = ent->GetNode().GetNext()) {
-        bool hasColliderComponent = ent->HasComponent(ComCollider::metaObject);
-        if (!hasColliderComponent) {
-            continue;
+
+    Entity *captureEntity = (Entity *)Entity::FindInstance(captureEntityGuid);
+
+    if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
+        if (captureEntity) {
+            ComponentPtrArray scriptComponents = captureEntity->GetComponents(&ComScript::metaObject);
+            for (int i = 0; i < scriptComponents.Count(); i++) {
+                ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+
+                scriptComponent->OnPointerUp();
+
+                if (hoverEntity == captureEntity) {
+                    scriptComponent->OnPointerClick();
+                }
+            }
         }
 
-        if (ent->RayIntersection(rayOrigin, rayDir, true, minScale)) {
-            hitEntity = ent;
-        }
+        captureEntityGuid = Guid::zero;
     }
-#endif
 
-    if (hitEntity) {
-        ComponentPtrArray scriptComponents = hitEntity->GetComponents(&ComScript::metaObject);
+    if (oldHoverEntity) {
+        ComponentPtrArray scriptComponents = oldHoverEntity->GetComponents(&ComScript::metaObject);
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
+            if (oldHoverEntity == hoverEntity) {
+                scriptComponent->OnPointerOver();
+            } else {
+                scriptComponent->OnPointerExit();
+            }
+        }
+    }
+
+    if (hoverEntity) {
+        ComponentPtrArray scriptComponents = hoverEntity->GetComponents(&ComScript::metaObject);
+        for (int i = 0; i < scriptComponents.Count(); i++) {
+            ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+
+            if (hoverEntity != oldHoverEntity) {
+                scriptComponent->OnPointerEnter();
+            }
+
             if (inputSystem.IsKeyDown(KeyCode::Mouse1)) {
                 scriptComponent->OnPointerDown();
-            } else if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
-                scriptComponent->OnPointerUp();
+
+                captureEntityGuid = hoverEntity->GetGuid();
             } else if (inputSystem.IsKeyPressed(KeyCode::Mouse1)) {
                 scriptComponent->OnPointerDrag();
             }
         }
+
+        oldHoverEntityGuid = hoverEntity->GetGuid();
+    } else {
+        oldHoverEntityGuid = Guid::zero;
     }
 }
 

@@ -70,6 +70,7 @@ public:
     virtual void            OnPointerDown();
     virtual void            OnPointerUp();
     virtual void            OnPointerDrag();
+    virtual void            OnPointerClick();
 
     virtual void            OnCollisionEnter(const Collision &collision);
     virtual void            OnCollisionExit(const Collision &collision);

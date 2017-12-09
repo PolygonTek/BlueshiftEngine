@@ -384,6 +384,7 @@ void ComScript::UpdateFunctionMap() {
     CacheFunction("on_pointer_down");
     CacheFunction("on_pointer_up");
     CacheFunction("on_pointer_drag");
+    CacheFunction("on_pointer_click");
     CacheFunction("on_collision_enter");
     CacheFunction("on_collision_exit");
     CacheFunction("on_collision_stay");
@@ -634,6 +635,13 @@ void ComScript::OnPointerUp() {
 
 void ComScript::OnPointerDrag() {
     auto functionPtr = functions.Get("on_pointer_drag");
+    if (functionPtr) {
+        functionPtr->second();
+    }
+}
+
+void ComScript::OnPointerClick() {
+    auto functionPtr = functions.Get("on_pointer_click");
     if (functionPtr) {
         functionPtr->second();
     }
