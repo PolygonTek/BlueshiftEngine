@@ -111,10 +111,10 @@ set(ENGINE_FILES
   Public/SIMD/Simd_SSE4.h
   Public/SIMD/smmintrin_emu.h
   Public/SIMD/immintrin_emu.h
-  #Public/SIMD/AVX/avx.h
-  #Public/SIMD/AVX/avxb.h
-  #Public/SIMD/AVX/avxf.h
-  #Public/SIMD/AVX/avxi.h
+  Public/SIMD/AVX/avx.h
+  Public/SIMD/AVX/avxb.h
+  Public/SIMD/AVX/avxf.h
+  Public/SIMD/AVX/avxi.h
   Public/SIMD/SSE/sse.h
   Public/SIMD/SSE/sseb.h
   Public/SIMD/SSE/ssef.h
