@@ -297,7 +297,7 @@ namespace detail {
                 [](lua_State *l, int index) { luaL_checknumber(l, index); }, index
             };
         }
-        return res;
+        return (float)res;
     }
 
     // Check read a lua_Number value from the stack
