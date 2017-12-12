@@ -211,6 +211,7 @@ if (BUILD_PLAYER)
 endif ()
 
 if (BUILD_EDITOR)
+  add_subdirectory(Source/Dependencies/ToolWindowManager)  
   add_subdirectory(Source/BlueshiftEditor)
 endif ()
 
