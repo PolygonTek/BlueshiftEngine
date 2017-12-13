@@ -223,6 +223,9 @@ public:
    */
   void removeToolWindow(QWidget* toolWindow);
 
+  /*!
+   * Returns if \a toolWindow is floating instead of being docked.
+   */
   bool isFloating(QWidget* toolWindow);
 
   /*!

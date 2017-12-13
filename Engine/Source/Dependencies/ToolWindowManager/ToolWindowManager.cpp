@@ -387,11 +387,11 @@ void ToolWindowManager::removeToolWindow(QWidget *toolWindow) {
 }
 
 bool ToolWindowManager::isFloating(QWidget* toolWindow) {
-    ToolWindowManagerWrapper *wrapper = wrapperOf(toolWindow);
-    if (wrapper) {
-        return wrapper->floating();
-    }
-    return false;
+  ToolWindowManagerWrapper *wrapper = wrapperOf(toolWindow);
+  if (wrapper) {
+      return wrapper->floating();
+  }
+  return false;
 }
 
 ToolWindowManager* ToolWindowManager::managerOf(QWidget* toolWindow) {
