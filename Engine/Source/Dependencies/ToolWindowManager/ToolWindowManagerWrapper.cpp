@@ -149,6 +149,9 @@ void ToolWindowManagerWrapper::updateTitle() {
 }
 
 void ToolWindowManagerWrapper::closeEvent(QCloseEvent *event) {
+  // abort dragging caused by QEvent::NonClientAreaMouseButtonPress in eventFilter function
+  m_manager->abortDrag();
+
   QList<QWidget*> toolWindows;
   foreach(ToolWindowManagerArea* tabWidget, findChildren<ToolWindowManagerArea*>()) {
     if (ToolWindowManager::managerOf(tabWidget) == m_manager) {
@@ -377,6 +380,9 @@ void ToolWindowManagerWrapper::paintEvent(QPaintEvent *) {
 
 void ToolWindowManagerWrapper::resizeEvent(QResizeEvent *)
 {
+  // abort dragging caused by QEvent::NonClientAreaMouseButtonPress in eventFilter function
+  m_manager->abortDrag();
+
   QStyleOptionDockWidget option;
 
   option.initFrom(this);
