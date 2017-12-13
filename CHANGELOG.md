@@ -7,6 +7,7 @@ Version History
 - Added support for undo/redo in play mode
 - Fixed a potential crash when using undo/redo
 - Added component icons in editor for each component widgets
+- New Dock widgets
 - Refined editor look and feel
 
 ### 0.2.2
