@@ -134,11 +134,11 @@ ToolWindowManager::ToolWindowProperty ToolWindowManager::toolWindowProperties(QW
   return m_toolWindowProperties[toolWindow];
 }
 
-void ToolWindowManager::addToolWindow(QWidget *toolWindow, const AreaReference &area) {
-  addToolWindows(QList<QWidget*>() << toolWindow, area);
+void ToolWindowManager::addToolWindow(QWidget *toolWindow, const AreaReference &area, ToolWindowManager::ToolWindowProperty properties) {
+  addToolWindows(QList<QWidget*>() << toolWindow, area, properties);
 }
 
-void ToolWindowManager::addToolWindows(QList<QWidget *> toolWindows, const ToolWindowManager::AreaReference &area) {
+void ToolWindowManager::addToolWindows(QList<QWidget *> toolWindows, const ToolWindowManager::AreaReference &area, ToolWindowManager::ToolWindowProperty properties) {
   foreach(QWidget* toolWindow, toolWindows) {
     if (!toolWindow) {
       qWarning("cannot add null widget");
@@ -151,8 +151,8 @@ void ToolWindowManager::addToolWindows(QList<QWidget *> toolWindows, const ToolW
     toolWindow->hide();
     toolWindow->setParent(0);
     m_toolWindows << toolWindow;
-    m_toolWindowProperties[toolWindow] = ToolWindowProperty(0);
-    QObject::connect(toolWindow, &QWidget::windowTitleChanged, this, &ToolWindowManager::windowTitleChanged);
+    m_toolWindowProperties[toolWindow] = properties;
+    QObject::connect(toolWindow, &QWidget::windowTitleChanged, this, &ToolWindowManager::windowTitleChanged);    
   }
   moveToolWindows(toolWindows, area);
 }
@@ -387,11 +387,11 @@ void ToolWindowManager::removeToolWindow(QWidget *toolWindow) {
 }
 
 bool ToolWindowManager::isFloating(QWidget* toolWindow) {
-  ToolWindowManagerWrapper *wrapper = wrapperOf(toolWindow);
-  if (wrapper) {
-      return wrapper->floating();
-  }
-  return false;
+    ToolWindowManagerWrapper *wrapper = wrapperOf(toolWindow);
+    if (wrapper) {
+        return wrapper->floating();
+    }
+    return false;
 }
 
 ToolWindowManager* ToolWindowManager::managerOf(QWidget* toolWindow) {
@@ -597,6 +597,7 @@ void ToolWindowManager::simplifyLayout() {
       if (area == m_lastUsedArea) { m_lastUsedArea = 0; }
       //QTimer::singleShot(1000, area, SLOT(deleteLater()));
       area->deleteLater();
+      simplifyLayout();
     }
   }
 }

@@ -172,7 +172,7 @@ public:
    * Adds \a toolWindow to the manager and moves it to the position specified by
    * \a area. This function is a shortcut for ToolWindowManager::addToolWindows.
    */
-  void addToolWindow(QWidget* toolWindow, const AreaReference& area);
+  void addToolWindow(QWidget* toolWindow, const AreaReference& area, ToolWindowProperty properties = ToolWindowProperty(0));
 
   /*!
    * Sets the set of \a properties on \a toolWindow that is already added to the manager.
@@ -196,7 +196,7 @@ public:
    * and ToolWindowManager::restoreState functions, you must set objectName() of each added
    * tool window to a non-empty unique string.
    */
-  void addToolWindows(QList<QWidget*> toolWindows, const AreaReference& area);
+  void addToolWindows(QList<QWidget*> toolWindows, const AreaReference& area, ToolWindowProperty properties = ToolWindowProperty(0));
 
   /*!
    * Returns area that contains \a toolWindow, or 0 if \a toolWindow is hidden.
@@ -224,8 +224,8 @@ public:
   void removeToolWindow(QWidget* toolWindow);
 
   /*!
-   * Returns if \a toolWindow is floating instead of being docked.
-   */
+  * Returns if \a toolWindow is floating instead of being docked.
+  */
   bool isFloating(QWidget* toolWindow);
 
   /*!
