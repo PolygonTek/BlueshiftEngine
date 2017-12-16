@@ -20,7 +20,8 @@ class DrawSurf {
 public:
     enum Flag {
         AmbientVisible      = BIT(0),           ///< means visible surface (can be invisible for shadow caster surface)
-        ShowWires           = BIT(1)            ///< means to draw wireframes
+        ShowWires           = BIT(1),           ///< means to draw wireframes
+        SkipSelection       = BIT(2)
     };
 
     void                    MakeSortKey(int entityIdx, const Material *material);

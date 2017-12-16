@@ -308,7 +308,7 @@ void RenderWorld::AddParticleMeshes(view_t *view) {
             continue;
         }
 
-        int flags = DrawSurf::AmbientVisible;
+        int flags = DrawSurf::AmbientVisible | DrawSurf::SkipSelection;
         if (entityParms.wireframeMode != SceneEntity::WireframeMode::ShowNone || r_showWireframe.GetInteger() > 0) {
             flags |= DrawSurf::ShowWires;
         }

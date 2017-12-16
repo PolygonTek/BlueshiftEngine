@@ -80,7 +80,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
+        if ((surf->flags & DrawSurf::SkipSelection) || !(surf->flags & DrawSurf::AmbientVisible)) {
             continue;
         }
 
