@@ -657,10 +657,6 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
 }
 
 void ComParticleSystem::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
-    if (selected) {
-        UpdateSimulation(currentTime); // FIXME
-    }
-
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
 
