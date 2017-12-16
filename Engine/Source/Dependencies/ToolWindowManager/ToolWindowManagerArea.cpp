@@ -95,9 +95,12 @@ QList<QWidget *> ToolWindowManagerArea::toolWindows() {
 void ToolWindowManagerArea::updateToolWindow(QWidget* toolWindow) {
   int index = indexOf(toolWindow);
   if(index >= 0) {
+    ToolWindowManagerTabBar *tb = static_cast<ToolWindowManagerTabBar *>(tabBar());
     if(m_manager->toolWindowProperties(toolWindow) & ToolWindowManager::HideCloseButton) {
+      tb->setTabsClosable(false);
       showCloseButton(tabBar(), index, false);
     } else {
+      tb->setTabsClosable(true);
       showCloseButton(tabBar(), index, true);
     }
     tabBar()->setTabText(index, toolWindow->windowTitle());

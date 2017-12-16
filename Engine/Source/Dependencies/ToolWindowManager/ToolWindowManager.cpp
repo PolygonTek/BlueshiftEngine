@@ -592,7 +592,7 @@ void ToolWindowManager::simplifyLayout() {
       invalidSplitter->deleteLater();
     }
     if (area->count() == 0) {
-      area->hide();
+      area->hide(); 
       area->setParent(0);
       if (area == m_lastUsedArea) { m_lastUsedArea = 0; }
       //QTimer::singleShot(1000, area, SLOT(deleteLater()));
