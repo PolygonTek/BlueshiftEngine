@@ -76,11 +76,13 @@ void ComBoxCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     if (selected) {
         ComTransform *transform = GetEntity()->GetTransform();
 
-        Vec3 scaledExtents = transform->GetScale() * extents;
-        OBB obb(transform->GetTransform() * center, scaledExtents + Vec3(CentiToUnit(0.25f)), transform->GetAxis());
+        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 scaledExtents = transform->GetScale() * extents;
+            OBB obb(transform->GetTransform() * center, scaledExtents + Vec3(CentiToUnit(0.25f)), transform->GetAxis());
 
-        renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-        renderWorld->DebugOBB(obb, 1.25f);
+            renderWorld->SetDebugColor(Color4::orange, Color4::zero);
+            renderWorld->DebugOBB(obb, 1.25f);
+        }
     }
 }
 

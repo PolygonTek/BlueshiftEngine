@@ -191,14 +191,16 @@ void ComCharacterController::DrawGizmos(const SceneView::Parms &sceneView, bool 
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
-        float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
-        float scaledHeight = transform->GetScale().z * capsuleHeight;
+        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
+            float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
+            float scaledHeight = transform->GetScale().z * capsuleHeight;
 
-        Vec3 worldCenter = transform->GetTransform() * center;
+            Vec3 worldCenter = transform->GetTransform() * center;
 
-        renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
-        renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);
+            renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
+            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);
+        }
     }
 }
 
