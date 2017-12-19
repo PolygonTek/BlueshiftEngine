@@ -360,7 +360,7 @@ void RenderWorld::AddTextMeshes(view_t *view) {
 
         textMesh.Clear();
         textMesh.SetColor(Color4(&entityParms.materialParms[SceneEntity::RedParm]));
-        textMesh.Draw(entityParms.font, entityParms.textAnchor, entityParms.textAlignment, entityParms.lineSpacing, entityParms.textScale, entityParms.text);        
+        textMesh.Draw(entityParms.font, entityParms.textAnchor, entityParms.textAlignment, entityParms.lineSpacing, entityParms.textScale, entityParms.text);
         textMesh.CacheIndexes();
 
         for (int surfaceIndex = 0; surfaceIndex < textMesh.NumSurfaces(); surfaceIndex++) {
