@@ -41,9 +41,16 @@ ComScript::~ComScript() {
 }
 
 void ComScript::Purge(bool chainPurge) {
-    LuaVM::State().SetToNil(sandbox.Name().c_str());
+    if (sandbox.IsValid()) {
+        LuaVM::State().SetToNil(sandbox.Name().c_str());
+
+        sandbox = LuaCpp::Selector();
+    }
 
     fieldInfos.Clear();
+    fieldValues.Clear();
+
+    functions.Clear();
 
     if (chainPurge) {
         Component::Purge();
@@ -92,20 +99,29 @@ void ComScript::Deserialize(const Json::Value &in) {
     const Guid scriptGuid = Guid::FromString(scriptGuidString);
 
     InitScriptPropertyInfo(scriptGuid);
-
+    
     Serializable::Deserialize(in);
 }
 
 void ComScript::InitScriptPropertyInfo(const Guid &scriptGuid) {
+    if (scriptGuid.IsZero()) {
+        return;
+    }
+
     // Sandbox name is same as component GUID in string
     sandboxName = GetGuid().ToString();
 
     // Load a script with sandboxed on current Lua state
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
-    LoadScriptWithSandbox(scriptPath, sandboxName);
+    if (!LoadScriptWithSandbox(scriptPath, sandboxName)) {
+        return;
+    }
     
     // Get the state of current loaded script
     sandbox = LuaVM::State()[sandboxName];
+    if (!sandbox.IsValid()) {
+        return;
+    }
 
     // Run this script
     LuaVM::State().Run();
@@ -370,6 +386,8 @@ void ComScript::CacheFunction(const char *funcname) {
 }
 
 void ComScript::UpdateFunctionMap() {
+    functions.Clear();
+
     CacheFunction("awake");
     CacheFunction("start");
     CacheFunction("update");
@@ -404,6 +422,8 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     }
 
     LuaVM::State().SetToNil(sandboxName.c_str());
+
+    sandbox = LuaCpp::Selector();
 
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
     if (scriptPath.IsEmpty()) {
@@ -463,6 +483,10 @@ bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxN
 }
 
 void ComScript::SetScriptProperties() {
+    if (!sandbox.IsValid()) {
+        return;
+    }
+
     LuaCpp::Selector properties = sandbox["properties"];
 
     for (int i = 0; i < fieldInfos.Count(); i++) {
