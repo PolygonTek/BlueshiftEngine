@@ -97,7 +97,7 @@ protected:
     void                    InitScriptPropertyInfo(const Guid &scriptGuid);
     bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
     void                    SetScriptProperties();
-    void                    CacheFunction(const char *funcname);
+    LuaCpp::Selector        CacheFunction(const char *funcname);
     void                    UpdateFunctionMap();
 
     void                    ChangeScript(const Guid &scriptGuid);
@@ -106,9 +106,34 @@ protected:
     ScriptAsset *           scriptAsset;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
+
     Array<PropertyInfo>     fieldInfos;
     HashMap<Str, Variant>   fieldValues;
-    HashMap<Str, LuaCpp::Selector> functions;
+
+    LuaCpp::Selector        awakeFunc;
+    LuaCpp::Selector        startFunc;
+    LuaCpp::Selector        updateFunc;
+    LuaCpp::Selector        lateUpdateFunc;
+    LuaCpp::Selector        fixedUpdateFunc;
+    LuaCpp::Selector        fixedLateUpdateFunc;
+    LuaCpp::Selector        onEnableFunc;
+    LuaCpp::Selector        onDisableFunc;
+    LuaCpp::Selector        onPointerEnterFunc;
+    LuaCpp::Selector        onPointerExitFunc;
+    LuaCpp::Selector        onPointerOverFunc;
+    LuaCpp::Selector        onPointerDownFunc;
+    LuaCpp::Selector        onPointerUpFunc;
+    LuaCpp::Selector        onPointerDragFunc;
+    LuaCpp::Selector        onPointerClickFunc;
+    LuaCpp::Selector        onCollisionEnterFunc;
+    LuaCpp::Selector        onCollisionExitFunc;
+    LuaCpp::Selector        onCollisionStayFunc;
+    LuaCpp::Selector        onSensorEnterFunc;
+    LuaCpp::Selector        onSensorExitFunc;
+    LuaCpp::Selector        onSensorStayFunc;
+    LuaCpp::Selector        onParticleCollisionFunc;
+    LuaCpp::Selector        onApplicationTerminateFunc;
+    LuaCpp::Selector        onApplicationPauseFunc;
 };
 
 template <typename... Args>

@@ -50,8 +50,6 @@ void ComScript::Purge(bool chainPurge) {
     fieldInfos.Clear();
     fieldValues.Clear();
 
-    functions.Clear();
-
     if (chainPurge) {
         Component::Purge();
     }
@@ -61,9 +59,9 @@ void ComScript::SetEnabled(bool enable) {
     ComLogic::SetEnabled(enable);
 
     if (initialized) {
-        auto functionPtr = functions.Get(enable ? "on_enable" : "on_disable");
-        if (functionPtr) {
-            functionPtr->second();
+        auto &function = enable ? onEnableFunc : onDisableFunc;
+        if (function.IsValid()) {
+            function();
         }
     }
 }
@@ -136,64 +134,48 @@ void ComScript::InitScriptPropertyInfo(const Guid &scriptGuid) {
             const char *name = selector;
             auto props = sandbox["properties"][name];
             const char *type = props["type"];
+            LuaCpp::Selector value = props["value"];
 
             if (!Str::Cmp(type, "int")) {
-                int value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (int)value);
             } else if (!Str::Cmp(type, "enum")) {
-                int value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (int)value);
             } else if (!Str::Cmp(type, "bool")) {
-                bool value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (bool)value);
             } else if (!Str::Cmp(type, "float")) {
-                float value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (float)value);
             } else if (!Str::Cmp(type, "vec2")) {
-                Vec2 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Vec2)value);
             } else if (!Str::Cmp(type, "vec3")) {
-                Vec3 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Vec3)value);
             } else if (!Str::Cmp(type, "vec4")) {
-                Vec4 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Vec4)value);
             } else if (!Str::Cmp(type, "color3")) {
-                Color3 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Color3)value);
             } else if (!Str::Cmp(type, "color4")) {
-                Color4 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Color4)value);
             } else if (!Str::Cmp(type, "angles")) {
-                Angles value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Angles)value);
             } else if (!Str::Cmp(type, "quat")) {
-                Quat value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Quat)value);
             } else if (!Str::Cmp(type, "mat2")) {
-                Mat2 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Mat2)value);
             } else if (!Str::Cmp(type, "mat3")) {
-                Mat3 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Mat3)value);
             } else if (!Str::Cmp(type, "mat3x4")) {
-                Mat3x4 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Mat3x4)value);
             } else if (!Str::Cmp(type, "mat4")) {
-                Mat4 value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Mat4)value);
             } else if (!Str::Cmp(type, "point")) {
-                Point value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Point)value);
             } else if (!Str::Cmp(type, "rect")) {
-                Rect value = props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, (Rect)value);
             } else if (!Str::Cmp(type, "string")) {
-                Str value = (const char *)props["value"];
-                fieldValues.Set(name, value);
+                fieldValues.Set(name, Str((const char *)value));
             } else if (!Str::Cmp(type, "object")) {
-                Str value = (const char *)props["value"];
-                fieldValues.Set(name, Guid::FromString(value));
+                fieldValues.Set(name, Guid::FromString((const char *)value));
+            } else {
+                BE_WARNLOG(L"Invalid property type '%hs' for %hs\n", type, name);
             }
         };
 
@@ -378,40 +360,39 @@ void ComScript::InitScriptPropertyInfo(const Guid &scriptGuid) {
     UpdateFunctionMap();
 }
 
-void ComScript::CacheFunction(const char *funcname) {
+LuaCpp::Selector ComScript::CacheFunction(const char *funcname) {
     LuaCpp::Selector function = sandbox[funcname];
     if (function.IsFunction()) {
-        functions.Set(funcname, function);
+        return function;
     }
+    return LuaCpp::Selector();
 }
 
 void ComScript::UpdateFunctionMap() {
-    functions.Clear();
-
-    CacheFunction("awake");
-    CacheFunction("start");
-    CacheFunction("update");
-    CacheFunction("late_update");
-    CacheFunction("fixed_update");
-    CacheFunction("fixed_late_update");
-    CacheFunction("on_enable");
-    CacheFunction("on_disable");
-    CacheFunction("on_pointer_enter");
-    CacheFunction("on_pointer_exit");
-    CacheFunction("on_pointer_over");
-    CacheFunction("on_pointer_down");
-    CacheFunction("on_pointer_up");
-    CacheFunction("on_pointer_drag");
-    CacheFunction("on_pointer_click");
-    CacheFunction("on_collision_enter");
-    CacheFunction("on_collision_exit");
-    CacheFunction("on_collision_stay");
-    CacheFunction("on_sensor_enter");
-    CacheFunction("on_sensor_exit");
-    CacheFunction("on_sensor_stay");
-    CacheFunction("on_particle_collision");
-    CacheFunction("on_application_terminate");
-    CacheFunction("on_application_pause");
+    awakeFunc = CacheFunction("awake");
+    startFunc = CacheFunction("start");
+    updateFunc = CacheFunction("update");
+    lateUpdateFunc = CacheFunction("late_update");
+    fixedUpdateFunc = CacheFunction("fixed_update");
+    fixedLateUpdateFunc = CacheFunction("fixed_late_update");
+    onEnableFunc = CacheFunction("on_enable");
+    onDisableFunc = CacheFunction("on_disable");
+    onPointerEnterFunc = CacheFunction("on_pointer_enter");
+    onPointerExitFunc = CacheFunction("on_pointer_exit");
+    onPointerOverFunc = CacheFunction("on_pointer_over");
+    onPointerDownFunc = CacheFunction("on_pointer_down");
+    onPointerUpFunc = CacheFunction("on_pointer_up");
+    onPointerDragFunc = CacheFunction("on_pointer_drag");
+    onPointerClickFunc = CacheFunction("on_pointer_click");
+    onCollisionEnterFunc = CacheFunction("on_collision_enter");
+    onCollisionExitFunc = CacheFunction("on_collision_exit");
+    onCollisionStayFunc = CacheFunction("on_collision_stay");
+    onSensorEnterFunc = CacheFunction("on_sensor_enter");
+    onSensorExitFunc = CacheFunction("on_sensor_exit");
+    onSensorStayFunc = CacheFunction("on_sensor_stay");
+    onParticleCollisionFunc = CacheFunction("on_particle_collision");
+    onApplicationTerminateFunc = CacheFunction("on_application_terminate");
+    onApplicationPauseFunc = CacheFunction("on_application_pause");
 }
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {
@@ -581,156 +562,134 @@ void ComScript::SetScriptProperties() {
 void ComScript::Awake() {
     SetScriptProperties();
 
-    auto functionPtr = functions.Get("awake");
-    if (functionPtr) {
-        functionPtr->second();
+    if (awakeFunc.IsValid()) {
+        awakeFunc();
     }
 }
 
 void ComScript::Start() {
-    auto functionPtr = functions.Get("start");
-    if (functionPtr) {
-        functionPtr->second();
+    if (startFunc.IsValid()) {
+        startFunc();
     }
 }
 
 void ComScript::Update() {
-    auto functionPtr = functions.Get("update");
-    if (functionPtr) {
-        functionPtr->second();
+    if (updateFunc.IsValid()) {
+        updateFunc();
     }
 }
 
 void ComScript::LateUpdate() {
-    auto functionPtr = functions.Get("late_update");
-    if (functionPtr) {
-        functionPtr->second();
+    if (lateUpdateFunc.IsValid()) {
+        lateUpdateFunc();
     }
 }
 
 void ComScript::FixedUpdate(float timeStep) {
-    auto functionPtr = functions.Get("fixed_update");
-    if (functionPtr) {
-        functionPtr->second(timeStep);
+    if (fixedUpdateFunc.IsValid()) {
+        fixedUpdateFunc(timeStep);
     }
 }
 
 void ComScript::FixedLateUpdate(float timeStep) {
-    auto functionPtr = functions.Get("fixed_late_update");
-    if (functionPtr) {
-        functionPtr->second(timeStep);
+    if (fixedLateUpdateFunc.IsValid()) {
+        fixedLateUpdateFunc(timeStep);
     }
 }
 
 void ComScript::OnPointerEnter() {
-    auto functionPtr = functions.Get("on_pointer_enter");
-    if (functionPtr) {
-        functionPtr->second();
+    if (onPointerEnterFunc.IsValid()) {
+        onPointerEnterFunc();
     }
 }
 
 void ComScript::OnPointerExit() {
-    auto functionPtr = functions.Get("on_pointer_exit");
-    if (functionPtr) {
-        functionPtr->second();
+    if (onPointerExitFunc.IsValid()) {
+        onPointerExitFunc();
     }
 }
 
 void ComScript::OnPointerOver() {
-    auto functionPtr = functions.Get("on_pointer_over");
-    if (functionPtr) {
-        functionPtr->second();
+    if (onPointerOverFunc.IsValid()) {
+        onPointerOverFunc();
     }
 }
 
 void ComScript::OnPointerDown() {
-    auto functionPtr = functions.Get("on_pointer_down");
-    if (functionPtr) {
-        functionPtr->second();
+    if (onPointerDownFunc.IsValid()) {
+        onPointerDownFunc();
     }
 }
 
 void ComScript::OnPointerUp() {
-    auto functionPtr = functions.Get("on_pointer_up");
-    if (functionPtr) {
-        functionPtr->second();
+    if (onPointerUpFunc.IsValid()) {
+        onPointerUpFunc();
     }
 }
 
 void ComScript::OnPointerDrag() {
-    auto functionPtr = functions.Get("on_pointer_drag");
-    if (functionPtr) {
-        functionPtr->second();
+    if (onPointerDragFunc.IsValid()) {
+        onPointerDragFunc();
     }
 }
 
 void ComScript::OnPointerClick() {
-    auto functionPtr = functions.Get("on_pointer_click");
-    if (functionPtr) {
-        functionPtr->second();
+    if (onPointerClickFunc.IsValid()) {
+        onPointerClickFunc();
     }
 }
 
 void ComScript::OnCollisionEnter(const Collision &collision) {
-    auto functionPtr = functions.Get("on_collision_enter");
-    if (functionPtr) {
-        functionPtr->second(collision);
+    if (onCollisionEnterFunc.IsValid()) {
+        onCollisionEnterFunc(collision);
     }
 }
 
 void ComScript::OnCollisionExit(const Collision &collision) {
-    auto functionPtr = functions.Get("on_collision_exit");
-    if (functionPtr) {
-        functionPtr->second(entity);
+    if (onCollisionExitFunc.IsValid()) {
+        onCollisionExitFunc(collision);
     }
 }
 
 void ComScript::OnCollisionStay(const Collision &collision) {
-    auto functionPtr = functions.Get("on_collision_stay");
-    if (functionPtr) {
-        functionPtr->second(entity);
+    if (onCollisionStayFunc.IsValid()) {
+        onCollisionStayFunc(collision);
     }
 }
 
 void ComScript::OnSensorEnter(const Entity *entity) {
-    auto functionPtr = functions.Get("on_sensor_enter");
-    if (functionPtr) {
-        functionPtr->second(entity);
+    if (onSensorEnterFunc.IsValid()) {
+        onSensorEnterFunc(entity);
     }
 }
 
 void ComScript::OnSensorExit(const Entity *entity) {
-    auto functionPtr = functions.Get("on_sensor_exit");
-    if (functionPtr) {
-        functionPtr->second(entity);
+    if (onSensorExitFunc.IsValid()) {
+        onSensorExitFunc(entity);
     }
 }
 
 void ComScript::OnSensorStay(const Entity *entity) {
-    auto functionPtr = functions.Get("on_sensor_stay");
-    if (functionPtr) {
-        functionPtr->second(entity);
+    if (onSensorStayFunc.IsValid()) {
+        onSensorStayFunc(entity);
     }
 }
 
 void ComScript::OnParticleCollision(const Entity *entity) {
-    auto functionPtr = functions.Get("on_particle_collision");
-    if (functionPtr) {
-        functionPtr->second(entity);
+    if (onParticleCollisionFunc.IsValid()) {
+        onParticleCollisionFunc(entity);
     }
 }
 
 void ComScript::OnApplicationTerminate() {
-    auto functionPtr = functions.Get("on_application_terminate");
-    if (functionPtr) {
-        functionPtr->second(entity);
+    if (onApplicationTerminateFunc.IsValid()) {
+        onApplicationTerminateFunc(entity);
     }
 }
 
 void ComScript::OnApplicationPause(bool pause) {
-    auto functionPtr = functions.Get("on_application_pause");
-    if (functionPtr) {
-        functionPtr->second(pause);
+    if (onApplicationPauseFunc.IsValid()) {
+        onApplicationPauseFunc(entity);
     }
 }
 
