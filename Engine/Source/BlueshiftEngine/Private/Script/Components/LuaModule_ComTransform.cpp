@@ -29,6 +29,7 @@ void LuaVM::RegisterTransformComponent(LuaCpp::Module &module) {
         "local_scale", &ComTransform::GetLocalScale,
         "local_axis", &ComTransform::GetLocalAxis,
         "local_angles", &ComTransform::GetLocalAngles,
+        "local_transform", &ComTransform::GetLocalTransform,
         "set_local_origin", &ComTransform::SetLocalOrigin,
         "set_local_scale", &ComTransform::SetLocalScale,
         "set_local_axis", &ComTransform::SetLocalAxis,
@@ -38,12 +39,12 @@ void LuaVM::RegisterTransformComponent(LuaCpp::Module &module) {
         "scale", &ComTransform::GetScale,
         "axis", &ComTransform::GetAxis,
         "angles", &ComTransform::GetAngles,
+        "transform", &ComTransform::GetTransform,
         "set_origin", &ComTransform::SetOrigin,
         "set_scale", &ComTransform::SetScale,
         "set_axis", &ComTransform::SetAxis,
         "set_angles", &ComTransform::SetAngles,
-        "local_transform", &ComTransform::GetLocalTransform,
-        "transform", &ComTransform::GetTransform,
+        "set_transform", &ComTransform::SetTransform,
         "translate", &ComTransform::Translate,
         "rotate", &ComTransform::Rotate);
 
