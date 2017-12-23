@@ -69,17 +69,22 @@ void ComScript::SetEnabled(bool enable) {
 void ComScript::Init() {
     Component::Init();
 
-    if (sandbox.IsValid()) {
-        auto owner = sandbox["owner"];
-
-        owner["game_world"] = GetGameWorld();
-        owner["entity"] = GetEntity();
-        owner["name"] = GetEntity()->GetName().c_str();
-        owner["transform"] = GetEntity()->GetTransform();
-    }
-
+    SetOwnerValues();
+    
     // Mark as initialized
     SetInitialized(true);
+}
+
+void ComScript::SetOwnerValues() {
+    if (!sandbox.IsValid()) {
+        return;
+    }
+
+    auto owner = sandbox["owner"];
+    owner["game_world"] = GetGameWorld();
+    owner["entity"] = GetEntity();
+    owner["name"] = GetEntity()->GetName().c_str();
+    owner["transform"] = GetEntity()->GetTransform();
 }
 
 void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
@@ -764,6 +769,8 @@ void ComScript::ScriptReloaded() {
     Serializable::Serialize(value);
 
     Deserialize(value);
+
+    SetOwnerValues();
 
     // Update editor UI
     EmitSignal(&Serializable::SIG_PropertyInfoUpdated);

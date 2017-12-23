@@ -100,6 +100,7 @@ protected:
     LuaCpp::Selector        CacheFunction(const char *funcname);
     void                    UpdateFunctionMap();
     void                    ScriptReloaded();
+    void                    SetOwnerValues();
 
     ScriptAsset *           scriptAsset;
     Str                     sandboxName;
