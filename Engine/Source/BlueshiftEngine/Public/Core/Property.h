@@ -271,7 +271,7 @@ public:
     /// Construct with lambdas.
     template <typename Getter, typename Setter>
     PropertyLambdaAccessorImpl(Getter &&getter, Setter &&setter) :
-    getFunction(std::forward<Getter>(getter)), setFunction(std::forward<Setter>(setter)) {
+        getFunction(std::forward<Getter>(getter)), setFunction(std::forward<Setter>(setter)) {
         assert(getFunction);
         assert(setFunction);
     }
