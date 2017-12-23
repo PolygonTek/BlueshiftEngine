@@ -100,6 +100,7 @@ BE_INLINE Rotation &Rotation::operator=(const Rotation &rhs) {
     angle = rhs.angle;
     axis = rhs.axis;
     axisValid = rhs.axisValid;
+    return *this;
 }
 
 BE_INLINE void Rotation::Set(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle) {
