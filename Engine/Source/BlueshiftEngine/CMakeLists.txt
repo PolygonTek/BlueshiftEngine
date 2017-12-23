@@ -535,6 +535,7 @@ set(ENGINE_FILES
   Private/Script/Math/LuaModule_Color4.cpp
   Private/Script/Math/LuaModule_Mat2.cpp
   Private/Script/Math/LuaModule_Mat3.cpp
+  Private/Script/Math/LuaModule_Mat3x4.cpp
   Private/Script/Math/LuaModule_Mat4.cpp
   Private/Script/Math/LuaModule_Quaternion.cpp
   Private/Script/Math/LuaModule_Angles.cpp

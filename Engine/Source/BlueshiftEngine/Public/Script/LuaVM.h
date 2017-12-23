@@ -42,6 +42,7 @@ private:
     static void             RegisterColor4(LuaCpp::Module &module);
     static void             RegisterMat2(LuaCpp::Module &module);
     static void             RegisterMat3(LuaCpp::Module &module);
+    static void             RegisterMat3x4(LuaCpp::Module &module);
     static void             RegisterMat4(LuaCpp::Module &module);
     static void             RegisterQuaternion(LuaCpp::Module &module);
     static void             RegisterAngles(LuaCpp::Module &module);

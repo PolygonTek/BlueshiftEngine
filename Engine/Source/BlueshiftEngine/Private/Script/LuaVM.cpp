@@ -115,6 +115,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterColor4(module);
         RegisterMat2(module);
         RegisterMat3(module);
+        RegisterMat3x4(module);
         RegisterMat4(module);
         RegisterQuaternion(module);
         RegisterAngles(module);
