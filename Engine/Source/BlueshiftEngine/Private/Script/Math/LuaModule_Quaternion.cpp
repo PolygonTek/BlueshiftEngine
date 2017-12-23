@@ -29,6 +29,7 @@ void LuaVM::RegisterQuaternion(LuaCpp::Module &module) {
         "z", &Quat::z,
         "w", &Quat::w,
         "element", static_cast<float &(Quat::*)(int)>(&Quat::operator[]), // index start from zero
+        "assign", static_cast<Quat&(Quat::*)(const Quat&)>(&Quat::operator=),
         "set", &Quat::Set,
         "set_identity", &Quat::SetIdentity,
         "to_string", static_cast<const char*(Quat::*)()const>(&Quat::ToString),

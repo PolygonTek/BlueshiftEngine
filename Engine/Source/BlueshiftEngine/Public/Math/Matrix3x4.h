@@ -109,6 +109,9 @@ public:
     friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
     friend Vec3         operator*(const Vec3 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
 
+                        /// Assign from another matrix.
+    Mat3x4 &            operator=(const Mat3x4 &rhs);
+
                         /// Adds a matrix to this matrix, in-place.
     Mat3x4 &            AddSelf(const Mat3x4 &m) { *this += m; return *this; }
                         /// Adds a matrix to this matrix, in-place.
@@ -455,6 +458,25 @@ BE_INLINE Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
         mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
         mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
         mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z);
+}
+
+BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3x4 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[0][1];
+    mat[0][2] = rhs[0][2];
+    mat[0][3] = rhs[0][3];
+
+    mat[1][0] = rhs[1][0];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[1][2];
+    mat[1][3] = rhs[1][3];
+
+    mat[2][0] = rhs[2][0];
+    mat[2][1] = rhs[2][1];
+    mat[2][2] = rhs[2][2];
+    mat[2][3] = rhs[2][3];
+
+    return *this;
 }
 
 BE_INLINE Mat3x4 &Mat3x4::operator+=(const Mat3x4 &rhs) {

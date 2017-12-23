@@ -116,6 +116,9 @@ public:
 
     Vec3                TransformNormal(const Vec3 &n) const;
 
+                        /// Assign from another matrix.
+    Mat4 &              operator=(const Mat4 &rhs);
+
                         /// Adds a matrix to this matrix, in-place.
     Mat4 &              AddSelf(const Mat4 &m) { *this += m; return *this; }
                         /// Adds a matrix to this matrix, in-place.
@@ -456,6 +459,30 @@ BE_INLINE Vec3 Mat4::TransposedMulVec(const Vec3 &vec) const {
             (mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y) * rhw,
             (mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z) * rhw);
     }
+}
+
+BE_INLINE Mat4 &Mat4::operator=(const Mat4 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[0][1];
+    mat[0][2] = rhs[0][2];
+    mat[0][3] = rhs[0][3];
+
+    mat[1][0] = rhs[1][0];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[1][2];
+    mat[1][3] = rhs[1][3];
+
+    mat[2][0] = rhs[2][0];
+    mat[2][1] = rhs[2][1];
+    mat[2][2] = rhs[2][2];
+    mat[2][3] = rhs[2][3];
+
+    mat[3][0] = rhs[3][0];
+    mat[3][1] = rhs[3][1];
+    mat[3][2] = rhs[3][2];
+    mat[3][3] = rhs[3][3];
+
+    return *this;
 }
 
 BE_INLINE Mat4 &Mat4::operator+=(const Mat4 &a) {

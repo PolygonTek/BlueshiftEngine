@@ -108,6 +108,9 @@ public:
                         /// Transforms the given vector by the given matrix rhs.
     friend Vec3         operator*(const Vec3 &lhs, const Mat3 &rhs) { return rhs * lhs; }
 
+                        /// Assign from another matrix.
+    Mat3 &              operator=(const Mat3 &rhs);
+
                         /// Adds a matrix to this matrix, in-place.
     Mat3 &              AddSelf(const Mat3 &m) { *this += m; return *this; }
                         /// Adds a matrix to this matrix, in-place.
@@ -336,6 +339,22 @@ BE_INLINE Mat3 Mat3::operator*(float a) const {
         mat[0].x * a, mat[0].y * a, mat[0].z * a,
         mat[1].x * a, mat[1].y * a, mat[1].z * a,
         mat[2].x * a, mat[2].y * a, mat[2].z * a);
+}
+
+BE_INLINE Mat3 &Mat3::operator=(const Mat3 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[0][1];
+    mat[0][2] = rhs[0][2];
+
+    mat[1][0] = rhs[1][0];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[1][2];
+
+    mat[2][0] = rhs[2][0];
+    mat[2][1] = rhs[2][1];
+    mat[2][2] = rhs[2][2];
+
+    return *this;
 }
 
 BE_INLINE Mat3 &Mat3::operator+=(const Mat3 &a) {

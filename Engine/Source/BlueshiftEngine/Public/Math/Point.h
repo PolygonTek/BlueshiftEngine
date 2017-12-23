@@ -33,6 +33,8 @@ public:
     Point() = default;
     /// Constructs a Point with the value (x, y).
     Point(int x, int y);
+    /// Assignment operator
+    Point &operator=(const Point &rhs);
 
 #ifdef QPOINT_H
     /// Constructs from a QPoint.
@@ -104,13 +106,19 @@ BE_INLINE Point::Point(int x, int y) {
 }
 
 BE_INLINE Point::Point(int data[2]) {
-    this->x = data[0];
-    this->y = data[1];
+    x = data[0];
+    y = data[1];
 }
 
 BE_INLINE Point::Point(const Vec2 &v) {
-    this->x = (int)v.x;
-    this->y = (int)v.y;
+    x = (int)v.x;
+    y = (int)v.y;
+}
+
+BE_INLINE Point &Point::operator=(const Point &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    return *this;
 }
 
 BE_INLINE int Point::operator[](int index) const {

@@ -120,6 +120,9 @@ public:
                         /// Divides vector (s, s, s, s) by a vector v, element-wise.
     friend Vec3         operator/(float lhs, const Vec3 &rhs) { return Vec3(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
     
+                        /// Assign from another vector.
+    Vec3 &              operator=(const Vec3 &rhs);
+
                         /// Adds a vector to this vector, in-place.
     Vec3 &              AddSelf(const Vec3 &v) { *this += v; return *this; }
                         /// Adds a vector to this vector, in-place.
@@ -346,6 +349,13 @@ BE_INLINE float Vec3::operator[](int index) const {
 BE_INLINE float &Vec3::operator[](int index) {
     assert(index >= 0 && index < Size);
     return ((float *)this)[index];
+}
+
+BE_INLINE Vec3 &Vec3::operator=(const Vec3 &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    z = rhs.z;
+    return *this;
 }
 
 BE_INLINE Vec3 &Vec3::operator+=(const Vec3 &rhs) {

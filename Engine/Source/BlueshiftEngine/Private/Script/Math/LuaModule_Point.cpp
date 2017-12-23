@@ -31,6 +31,7 @@ void LuaVM::RegisterPoint(LuaCpp::Module &module) {
         "__add", static_cast<Point(Point::*)(const Point&)const>(&Point::operator+),
         "__sub", static_cast<Point(Point::*)(const Point&)const>(&Point::operator-),
         "element", static_cast<int &(Point::*)(int)>(&Point::operator[]), // index start from zero
+        "assign", static_cast<Point&(Point::*)(const Point&)>(&Point::operator=),
         "set", &Point::Set,
         "add_self", static_cast<Point&(Point::*)(const Point&)>(&Point::operator+=),
         "sub_self", static_cast<Point&(Point::*)(const Point&)>(&Point::operator-=),

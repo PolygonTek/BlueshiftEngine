@@ -25,6 +25,7 @@ void LuaVM::RegisterMat4(LuaCpp::Module &module) {
     _Mat4.AddClassCtor<Mat4, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float>();
     _Mat4.AddClassMembers<Mat4>(
         "at", static_cast<Vec4&(Mat4::*)(int)>(&Mat4::At), // index start from zero
+        "assign", static_cast<Mat4&(Mat4::*)(const Mat4&)>(&Mat4::operator=),
         "add", &Mat4::Add,
         "add_self", &Mat4::AddSelf,
         "sub", &Mat4::Sub,

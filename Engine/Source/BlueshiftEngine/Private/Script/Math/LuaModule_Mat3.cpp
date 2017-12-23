@@ -25,6 +25,7 @@ void LuaVM::RegisterMat3(LuaCpp::Module &module) {
     _Mat3.AddClassCtor<Mat3, float, float, float, float, float, float, float, float, float>();
     _Mat3.AddClassMembers<Mat3>(
         "at", static_cast<Vec3&(Mat3::*)(int)>(&Mat3::At), // index start from zero
+        "assign", static_cast<Mat3&(Mat3::*)(const Mat3&)>(&Mat3::operator=),
         "add", &Mat3::Add,
         "add_self", &Mat3::AddSelf,
         "sub", &Mat3::Sub,

@@ -31,6 +31,8 @@ public:
     /// The default constructor does not initialize any members of this class.
     Rotation() {}
     Rotation(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle);
+    /// Assignment operator
+    Rotation &operator=(const Rotation &rhs);
 
     void                Set(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle);
     void                SetOrigin(const Vec3 &rotOrigin);
@@ -90,6 +92,14 @@ BE_INLINE Rotation::Rotation(const Vec3 &rotOrigin, const Vec3 &rotVec, const fl
     origin(rotOrigin), vec(rotVec), angle(rotAngle) {
     vec.Normalize();
     axisValid = false;
+}
+
+BE_INLINE Rotation &Rotation::operator=(const Rotation &rhs) {
+    origin = rhs.origin;
+    vec = rhs.vec;
+    angle = rhs.angle;
+    axis = rhs.axis;
+    axisValid = rhs.axisValid;
 }
 
 BE_INLINE void Rotation::Set(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle) {

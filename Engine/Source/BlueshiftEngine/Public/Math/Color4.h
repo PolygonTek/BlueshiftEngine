@@ -100,6 +100,9 @@ public:
                         /// This function is identical to the member function Div().
     Color4              operator/(float rhs) const { float inv = 1.f / rhs; return Color4(r * inv, g * inv, b * inv, a * inv); }
 
+                        /// Assign from another color.
+    Color4 &            operator=(const Color4 &rhs);
+
                         /// Multiplies this color by a scalar, in-place.
     Color4 &            MulSelf(float s) { *this *= s; return *this; }
                         /// Multiplies this color by a scalar, in-place.
@@ -219,6 +222,14 @@ BE_INLINE float Color4::operator[](int index) const {
 BE_INLINE float &Color4::operator[](int index) {
     assert(index >= 0 && index < Size);
     return ((float *)this)[index];
+}
+
+BE_INLINE Color4 &Color4::operator=(const Color4 &rhs) {
+    r = rhs.r;
+    g = rhs.g;
+    b = rhs.b;
+    a = rhs.a;
+    return *this;
 }
 
 BE_INLINE Color4 &Color4::operator*=(float rhs) {

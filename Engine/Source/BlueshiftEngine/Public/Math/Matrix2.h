@@ -106,6 +106,9 @@ public:
                         /// Transforms the given vector by the given matrix.
     friend Vec2         operator*(const Vec2 &lhs, const Mat2 &rhs) { return rhs * lhs; }
 
+                        /// Assign from another matrix.
+    Mat2 &              operator=(const Mat2 &rhs);
+
                         /// Adds a matrix to this matrix, in-place.
     Mat2 &              AddSelf(const Mat2 &m) { *this += m; return *this; }
                         /// Adds a matrix to this matrix, in-place.
@@ -276,6 +279,16 @@ BE_INLINE Vec2 Mat2::TransposedMulVec(const Vec2 &vec) const {
     return Vec2(
         mat[0].x * vec.x + mat[1].x * vec.y,
         mat[0].y * vec.x + mat[1].y * vec.y);
+}
+
+BE_INLINE Mat2 &Mat2::operator=(const Mat2 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[0][1];
+
+    mat[1][0] = rhs[1][0];
+    mat[1][1] = rhs[1][1];
+
+    return *this;
 }
 
 BE_INLINE Mat2 &Mat2::operator+=(const Mat2 &a) {

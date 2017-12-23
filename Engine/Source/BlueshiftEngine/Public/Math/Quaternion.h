@@ -184,16 +184,16 @@ BE_INLINE Quat Quat::operator-() const {
     return Quat(-x, -y, -z, -w);
 }
 
-BE_INLINE Quat &Quat::operator=(const Quat &a) {
-    x = a.x;
-    y = a.y;
-    z = a.z;
-    w = a.w;
-    return *this;
-}
-
 BE_INLINE Quat Quat::operator+(const Quat &a) const {
     return Quat(x + a.x, y + a.y, z + a.z, w + a.w);
+}
+
+BE_INLINE Quat &Quat::operator=(const Quat &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    z = rhs.z;
+    w = rhs.w;
+    return *this;
 }
 
 BE_INLINE Quat& Quat::operator+=(const Quat &a) {

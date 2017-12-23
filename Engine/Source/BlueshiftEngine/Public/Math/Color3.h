@@ -61,6 +61,9 @@ public:
                         /// This function is identical to the member function Div().
     Color3              operator/(float rhs) const { float inv = 1.f / rhs; return Color3(r * inv, g * inv, b * inv); }
 
+                        /// Assign from another color.
+    Color3 &            operator=(const Color3 &rhs);
+
                         /// Multiplies this color by a scalar, in-place.
     Color3 &            MulSelf(float s) { *this *= s; return *this; }
                         /// Multiplies this color by a scalar, in-place.
@@ -172,6 +175,12 @@ BE_INLINE float &Color3::operator[](int index) {
     return ((float *)this)[index];
 }
 
+BE_INLINE Color3 &Color3::operator=(const Color3 &rhs) {
+    r = rhs.r;
+    g = rhs.g;
+    b = rhs.b;
+    return *this;
+}
 
 BE_INLINE Color3 &Color3::operator*=(float rhs) {
     r *= rhs;
