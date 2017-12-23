@@ -94,13 +94,11 @@ public:
     void                    CallFunc(const char *funcName, Args&&... args);
 
 protected:
-    void                    InitScriptPropertyInfo(const Guid &scriptGuid);
+    void                    ChangeScript(const Guid &scriptGuid);
     bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
     void                    SetScriptProperties();
     LuaCpp::Selector        CacheFunction(const char *funcname);
     void                    UpdateFunctionMap();
-
-    void                    ChangeScript(const Guid &scriptGuid);
     void                    ScriptReloaded();
 
     ScriptAsset *           scriptAsset;
