@@ -28,6 +28,10 @@ void LuaVM::RegisterColor3(LuaCpp::Module &module) {
         "g", &Color3::g,
         "b", &Color3::b,
         "at", &Color3::At, // index start from zero
+        "add", &Color3::Add,
+        "add_self", &Color3::AddSelf,
+        "sub", &Color3::Sub,
+        "sub_self", &Color3::SubSelf,
         "mul", &Color3::Mul,
         "mul_self", &Color3::MulSelf,
         "div", &Color3::Div,

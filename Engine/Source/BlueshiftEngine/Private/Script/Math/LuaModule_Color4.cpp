@@ -29,6 +29,10 @@ void LuaVM::RegisterColor4(LuaCpp::Module &module) {
         "b", &Color4::b,
         "a", &Color4::a,
         "at", &Color4::At, // index start from zero
+        "add", &Color4::Add,
+        "add_self", &Color4::AddSelf,
+        "sub", &Color4::Sub,
+        "sub_self", &Color4::SubSelf,
         "mul", &Color4::Mul,
         "mul_self", &Color4::MulSelf,
         "div", &Color4::Div,

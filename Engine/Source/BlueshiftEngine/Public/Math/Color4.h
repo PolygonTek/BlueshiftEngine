@@ -103,6 +103,18 @@ public:
                         /// Assign from another color.
     Color4 &            operator=(const Color4 &rhs);
 
+                        /// Adds a color to this color, in-place.
+    Color4 &            AddSelf(const Color4 &v) { *this += v; return *this; }
+                        /// Adds a color to this color, in-place.
+                        /// This function is identical to the member function AddSelf().
+    Color4 &            operator+=(const Color4 &rhs);
+
+                        /// Subtracts a color from this color, in-place.
+    Color4 &            SubSelf(const Color4 &v) { *this -= v; return *this; }
+                        /// Subtracts a color from this color, in-place.
+                        /// This function is identical to the member function SubSelf().
+    Color4 &            operator-=(const Color4 &rhs);
+
                         /// Multiplies this color by a scalar, in-place.
     Color4 &            MulSelf(float s) { *this *= s; return *this; }
                         /// Multiplies this color by a scalar, in-place.
@@ -232,6 +244,22 @@ BE_INLINE Color4 &Color4::operator=(const Color4 &rhs) {
     g = rhs.g;
     b = rhs.b;
     a = rhs.a;
+    return *this;
+}
+
+BE_INLINE Color4 &Color4::operator+=(const Color4 &rhs) {
+    r += rhs.r;
+    g += rhs.g;
+    b += rhs.b;
+    a += rhs.a;
+    return *this;
+}
+
+BE_INLINE Color4 &Color4::operator-=(const Color4 &rhs) {
+    r -= rhs.r;
+    g -= rhs.g;
+    b -= rhs.b;
+    a -= rhs.a;
     return *this;
 }
 
