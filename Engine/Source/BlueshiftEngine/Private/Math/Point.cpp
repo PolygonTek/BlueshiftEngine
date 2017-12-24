@@ -22,7 +22,7 @@ const Point Point::zero = Point(0, 0);
 Point Point::FromString(const char *str) {
     Point p;
     sscanf(str, "%i %i", &p.x, &p.y);
-    return p
+    return p;
 }
 
 BE_NAMESPACE_END

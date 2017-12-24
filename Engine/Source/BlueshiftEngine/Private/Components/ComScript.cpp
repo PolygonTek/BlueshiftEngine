@@ -788,6 +788,8 @@ void ComScript::SetScriptGuid(const Guid &guid) {
         if (guid != GetScriptGuid()) {
             ChangeScript(guid);
 
+            SetOwnerValues();
+
             // Update editor UI
             EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
         }
