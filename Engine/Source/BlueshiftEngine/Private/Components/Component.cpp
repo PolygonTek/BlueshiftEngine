@@ -29,8 +29,8 @@ void Component::RegisterProperties() {
 
 Component::Component() {
     entity = nullptr;
-    initialized = false;
     enabled = true;
+    initialized = false;
 }
 
 Component::~Component() {
@@ -39,6 +39,47 @@ Component::~Component() {
 
 void Component::Purge(bool chainPurge) {
     initialized = false;
+}
+
+Str Component::ToString() const { 
+    return entity->ToString(); 
+}
+
+void Component::Init() {
+}
+
+bool Component::IsActiveInHierarchy() const {
+    if (!IsEnabled() || !GetEntity()->IsActiveInHierarchy()) {
+        return false;
+    }
+    return true;
+}
+
+void Component::SetEnabled(bool enable) {
+    if (enable) {
+        if (!enabled) {
+            enabled = true;
+
+            if (GetEntity()->IsActiveInHierarchy()) {
+                OnActive();
+            }
+        }
+    } else {
+        if (enabled) {
+            enabled = false;
+
+            if (GetEntity()->IsActiveInHierarchy()) {
+                OnInactive();
+            }
+        }
+    }
+}
+
+GameWorld *Component::GetGameWorld() const {
+    if (entity) {
+        return entity->GetGameWorld();
+    }
+    return nullptr;
 }
 
 void Component::Event_ImmediateDestroy() {
@@ -52,20 +93,6 @@ void Component::Event_ImmediateDestroy() {
     }
 
     Object::Event_ImmediateDestroy();
-}
-
-Str Component::ToString() const { 
-    return entity->ToString(); 
-}
-
-GameWorld *Component::GetGameWorld() const {
-    if (entity) {
-        return entity->GetGameWorld();
-    }
-    return nullptr;
-}
-
-void Component::Init() {
 }
 
 BE_NAMESPACE_END

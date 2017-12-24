@@ -63,21 +63,15 @@ void ComJoint::Start() {
     }
 }
 
-void ComJoint::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (constraint) {
-                constraint->SetEnabled(true);
-            }
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (constraint) {
-                constraint->SetEnabled(false);
-            }
-            Component::SetEnabled(false);
-        }
+void ComJoint::OnActive() {
+    if (constraint) {
+        constraint->SetEnabled(true);
+    }
+}
+
+void ComJoint::OnInactive() {
+    if (constraint) {
+        constraint->SetEnabled(false);
     }
 }
 

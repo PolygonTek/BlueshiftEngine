@@ -146,22 +146,14 @@ void ComCamera::Init() {
     UpdateVisuals();
 }
 
-void ComCamera::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            UpdateVisuals();
+void ComCamera::OnActive() {
+    UpdateVisuals();
+}
 
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (spriteHandle != -1) {
-                renderWorld->RemoveEntity(spriteHandle);
-                spriteHandle = -1;
-            }
-
-            Component::SetEnabled(false);
-        }
+void ComCamera::OnInactive() {
+    if (spriteHandle != -1) {
+        renderWorld->RemoveEntity(spriteHandle);
+        spriteHandle = -1;
     }
 }
 
@@ -421,7 +413,7 @@ void ComCamera::RenderScene() {
 }
 
 void ComCamera::UpdateVisuals() {
-    if (!IsInitialized() || !IsEnabled()) {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
     }
 

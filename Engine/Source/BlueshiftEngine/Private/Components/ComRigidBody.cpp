@@ -179,7 +179,7 @@ void ComRigidBody::Awake() {
         body->SetCustomCollisionFilterIndex(entity->GetLayer());
         body->SetCollisionListener(collisionListener);
 
-        if (IsEnabled()) {
+        if (IsActiveInHierarchy()) {
             body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
 
@@ -191,7 +191,7 @@ void ComRigidBody::Awake() {
 }
 
 void ComRigidBody::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -260,25 +260,18 @@ void ComRigidBody::ProcessScriptCallback() {
     collisions.Clear();
 }
 
-void ComRigidBody::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (body) {
-                body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-            }
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (body) {
-                body->RemoveFromWorld();
-            }
-            collisions.Clear();
-            oldCollisions.Clear();
-
-            Component::SetEnabled(false);
-        }
+void ComRigidBody::OnActive() {
+    if (body) {
+        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
+}
+
+void ComRigidBody::OnInactive() {
+    if (body) {
+        body->RemoveFromWorld();
+    }
+    collisions.Clear();
+    oldCollisions.Clear();
 }
 
 void ComRigidBody::TransformUpdated(const ComTransform *transform) {

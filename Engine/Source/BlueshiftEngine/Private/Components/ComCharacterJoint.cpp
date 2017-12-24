@@ -91,7 +91,7 @@ void ComCharacterJoint::Start() {
     genericSpringConstraint->SetAngularStiffness(stiffness);
     genericSpringConstraint->SetAngularDamping(damping);
 
-    if (IsEnabled()) {
+    if (IsActiveInHierarchy()) {
         genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }

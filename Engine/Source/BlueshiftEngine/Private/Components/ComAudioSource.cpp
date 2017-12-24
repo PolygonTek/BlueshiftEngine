@@ -82,26 +82,20 @@ void ComAudioSource::Awake() {
 }
 
 void ComAudioSource::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 }
 
-void ComAudioSource::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (sound) {
-                sound->SetVolume(volume);
-            }
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (sound) {
-                sound->SetVolume(0);
-            }
-            Component::SetEnabled(false);
-        }
+void ComAudioSource::OnActive() {
+    if (sound) {
+        sound->SetVolume(volume);
+    }
+}
+
+void ComAudioSource::OnInactive() {
+    if (sound) {
+        sound->SetVolume(0);
     }
 }
 
@@ -112,7 +106,8 @@ void ComAudioSource::Play() {
         sound = referenceSound->Instantiate();
 
         if (spatial) {
-            sound->Play3D(transform->GetOrigin(), MeterToUnit(minDistance), MeterToUnit(maxDistance), volume * (IsEnabled() ? 1.0f : 0.0f), looping);
+            sound->Play3D(transform->GetOrigin(), MeterToUnit(minDistance), MeterToUnit(maxDistance), 
+                volume * (IsActiveInHierarchy() ? 1.0f : 0.0f), looping);
         } else {
             sound->Play2D(volume, looping);
         }

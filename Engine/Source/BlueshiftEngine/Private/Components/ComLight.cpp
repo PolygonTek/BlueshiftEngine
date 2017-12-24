@@ -156,27 +156,19 @@ void ComLight::Init() {
     UpdateVisuals();
 }
 
-void ComLight::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            Component::SetEnabled(true);
+void ComLight::OnActive() {
+    UpdateVisuals();
+}
 
-            UpdateVisuals();
-        }
-    } else {
-        if (IsEnabled()) {
-            if (sceneLightHandle != -1) {
-                renderWorld->RemoveLight(sceneLightHandle);
-                sceneLightHandle = -1;
-            }
+void ComLight::OnInactive() {
+    if (sceneLightHandle != -1) {
+        renderWorld->RemoveLight(sceneLightHandle);
+        sceneLightHandle = -1;
+    }
 
-            if (spriteHandle != -1) {
-                renderWorld->RemoveEntity(spriteHandle);
-                spriteHandle = -1;
-            }
-
-            Component::SetEnabled(false);
-        }
+    if (spriteHandle != -1) {
+        renderWorld->RemoveEntity(spriteHandle);
+        spriteHandle = -1;
     }
 }
 
@@ -255,7 +247,7 @@ bool ComLight::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFace
 }
 
 void ComLight::UpdateVisuals() {
-    if (!IsInitialized() || !IsEnabled()) {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
     }
 

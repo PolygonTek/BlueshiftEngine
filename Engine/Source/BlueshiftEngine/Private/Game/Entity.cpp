@@ -23,6 +23,7 @@
 
 BE_NAMESPACE_BEGIN
 
+const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ab");
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
 const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
 const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ab");
@@ -42,6 +43,8 @@ void Entity::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity", "", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("active", "Active", bool, IsActiveSelf, SetActive, true, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("activeInHierarchy", "Active In Hierarchy", bool, activeInHierarchy, true, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::EditorFlag);
 }
 
@@ -53,6 +56,8 @@ Entity::Entity() {
     frozen = false;
     prefab = false;
     prefabSourceGuid = Guid::zero;
+    activeSelf = true;
+    activeInHierarchy = true;
     initialized = false;
 }
 
@@ -120,7 +125,7 @@ void Entity::Awake() {
 
         if (component) {
             component->Awake();
-            component->SetEnabled(component->IsEnabled());
+            //component->SetEnabled(component->IsEnabled()); //
         }
     }
 }
@@ -139,7 +144,7 @@ void Entity::FixedUpdate(float timeStep) {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
-        if (component && component->IsEnabled()) {
+        if (component && component->IsActiveInHierarchy()) {
             component->FixedUpdate(timeStep);
         }
     }
@@ -149,7 +154,7 @@ void Entity::FixedLateUpdate(float timeStep) {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
-        if (component && component->IsEnabled()) {
+        if (component && component->IsActiveInHierarchy()) {
             component->FixedLateUpdate(timeStep);
         }
     }
@@ -159,7 +164,7 @@ void Entity::Update() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
-        if (component && component->IsEnabled()) {
+        if (component && component->IsActiveInHierarchy()) {
             component->Update();
         }
     }
@@ -169,7 +174,7 @@ void Entity::LateUpdate() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
-        if (component && component->IsEnabled()) {
+        if (component && component->IsActiveInHierarchy()) {
             component->LateUpdate();
         }
     }
@@ -300,9 +305,9 @@ void Entity::Deserialize(const Json::Value &entityValue) {
                 }
 
                 Component *component = static_cast<Component *>(metaComponent->CreateInstance(componentGuid));
-                component->Deserialize(componentValue);
-
                 AddComponent(component);
+
+                component->Deserialize(componentValue);
             } else {
                 BE_WARNLOG(L"'%hs' is not a component class\n", classname);
             }
@@ -324,31 +329,45 @@ void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue
     }
 }
 
-bool Entity::IsActiveSelf() const {
+void Entity::SetActive(bool active) {
+    if (active == activeSelf) {
+        return;
+    }
+
+    activeSelf = active;
+
+    const Entity *parentEntity = node.GetParent();
+
+    if (!parentEntity || parentEntity->activeInHierarchy) {
+        SetActiveInHierarchy(active);
+    }
+
+    EmitSignal(&SIG_ActiveChanged, this, active);
+}
+
+void Entity::SetActiveInHierarchy(bool active) {
+    if (activeInHierarchy == active) {
+        return;
+    }
+
+    activeInHierarchy = active;
+
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
-        if (component) {
+        if (activeInHierarchy) {
             if (component->IsEnabled()) {
-                return true;
+                component->OnActive();
+            }
+        } else {
+            if (component->IsEnabled()) {
+                component->OnInactive();
             }
         }
     }
 
-    return false;
-}
-
-void Entity::SetActive(bool active) {
-    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
-        Component *component = components[componentIndex];
-
-        if (component) {
-            component->SetEnabled(active);
-        }
-    }
-
     for (Entity *childEnt = node.GetChild(); childEnt; childEnt = childEnt->node.GetNextSibling()) {
-        childEnt->SetActive(active);
+        childEnt->SetActiveInHierarchy(active);
     }
 }
 
@@ -401,7 +420,7 @@ void Entity::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
-        if (component && component->IsEnabled()) {
+        if (component && component->IsActiveInHierarchy()) {
             component->DrawGizmos(sceneView, selected);
         }
     }
@@ -413,7 +432,7 @@ bool Entity::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCu
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
-        if (component && component->IsEnabled()) {
+        if (component && component->IsActiveInHierarchy()) {
             component->RayIntersection(start, dir, backFaceCull, s);
         }
     }

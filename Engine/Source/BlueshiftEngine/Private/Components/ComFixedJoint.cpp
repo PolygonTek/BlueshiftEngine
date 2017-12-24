@@ -68,7 +68,7 @@ void ComFixedJoint::Start() {
     genericConstraint->SetAngularLowerLimit(Vec3::zero);
     genericConstraint->SetAngularUpperLimit(Vec3::zero);
 
-    if (IsEnabled()) {
+    if (IsActiveInHierarchy()) {
         genericConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }

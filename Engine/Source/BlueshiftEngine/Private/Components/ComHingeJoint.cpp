@@ -76,7 +76,7 @@ void ComHingeJoint::Start() {
     hingeConstraint->EnableMotor(motorSpeed != 0.0f ? true : false);
     hingeConstraint->SetMotor(motorSpeed, maxMotorImpulse);
 
-    if (IsEnabled()) {
+    if (IsActiveInHierarchy()) {
         hingeConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }

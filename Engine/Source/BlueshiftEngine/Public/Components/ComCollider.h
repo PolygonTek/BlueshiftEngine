@@ -35,9 +35,6 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) override;
-
     virtual const AABB      GetAABB() override;
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;

@@ -177,7 +177,9 @@ public:
 
     static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue);
 
-    bool                        IsActiveSelf() const;
+    bool                        IsActiveSelf() const { return activeSelf; }
+    bool                        IsActiveInHierarchy() const { return activeInHierarchy; }
+
     void                        SetActive(bool active);
 
     virtual const AABB          GetAABB() const;
@@ -205,6 +207,7 @@ public:
     static void                 DestroyInstance(Entity *entity);
 
                                 // FIXME: Don't emit these signals in player mode
+    static const SignalDef      SIG_ActiveChanged;
     static const SignalDef      SIG_NameChanged;
     static const SignalDef      SIG_LayerChanged;
     static const SignalDef      SIG_FrozenChanged;
@@ -214,6 +217,8 @@ public:
     static const SignalDef      SIG_ComponentSwapped;
 
 protected:
+    void                        SetActiveInHierarchy(bool active);
+
     virtual void                Event_ImmediateDestroy() override;
 
     Str                         name;           // Entity name
@@ -226,6 +231,8 @@ protected:
     Guid                        prefabSourceGuid;
 
     bool                        initialized;
+    bool                        activeSelf;
+    bool                        activeInHierarchy;
     bool                        prefab;
     bool                        frozen;
 

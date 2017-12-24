@@ -137,7 +137,7 @@ void ComCharacterController::Awake() {
         correctionSensor = (PhysSensor *)physicsSystem.CreateCollidable(&desc);
         correctionSensor->SetDebugDraw(false);
 
-        if (IsEnabled()) {
+        if (IsActiveInHierarchy()) {
             body->SetIgnoreCollisionCheck(*correctionSensor, true);
 
             body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
@@ -148,7 +148,7 @@ void ComCharacterController::Awake() {
 }
 
 void ComCharacterController::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -161,27 +161,21 @@ void ComCharacterController::Update() {
     GetEntity()->GetTransform()->SetOrigin(origin);
 }
 
-void ComCharacterController::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (body) {
-                body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-            }
-            if (correctionSensor) {
-                correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-            }
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (body) {
-                body->RemoveFromWorld();
-            }
-            if (correctionSensor) {
-                correctionSensor->RemoveFromWorld();
-            }
-            Component::SetEnabled(false);
-        }
+void ComCharacterController::OnActive() {
+    if (body) {
+        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+    if (correctionSensor) {
+        correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+}
+
+void ComCharacterController::OnInactive() {
+    if (body) {
+        body->RemoveFromWorld();
+    }
+    if (correctionSensor) {
+        correctionSensor->RemoveFromWorld();
     }
 }
 
@@ -397,7 +391,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
 }
 
 bool ComCharacterController::Move(const Vec3 &moveVector) {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return false;
     }
 

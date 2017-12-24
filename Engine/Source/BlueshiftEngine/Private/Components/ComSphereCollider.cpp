@@ -51,21 +51,6 @@ void ComSphereCollider::Init() {
     SetInitialized(true);
 }
 
-void ComSphereCollider::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            //UpdateVisuals();
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            //renderWorld->RemoveEntity(renderEntityHandle);
-            //renderEntityHandle = -1;
-            Component::SetEnabled(false);
-        }
-    }
-}
-
 bool ComSphereCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
     return false;
 }

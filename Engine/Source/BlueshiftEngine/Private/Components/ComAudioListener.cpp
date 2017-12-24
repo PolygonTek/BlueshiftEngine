@@ -56,13 +56,9 @@ void ComAudioListener::Awake() {
 }
 
 void ComAudioListener::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
-}
-
-void ComAudioListener::SetEnabled(bool enable) {
-    Component::SetEnabled(enable);
 }
 
 void ComAudioListener::TransformUpdated(const ComTransform *transform) {

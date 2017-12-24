@@ -32,9 +32,6 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) override;
-
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
@@ -45,6 +42,9 @@ public:
     virtual const AABB      GetAABB() override;
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    UpdateVisuals();
 
     void                    TransformUpdated(const ComTransform *transform);

@@ -60,7 +60,9 @@ public:
                             /// Is enabled ?
     bool                    IsEnabled() const { return enabled; }
                             /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) { enabled = enable; }
+    void                    SetEnabled(bool enable);
+
+    bool                    IsActiveInHierarchy() const;
 
                             /// Purges all the resources of the component, chainPurge for parent class
     virtual void            Purge(bool chainPurge = true);
@@ -94,6 +96,9 @@ public:
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) {}
 
 protected:
+    virtual void            OnActive() {}
+    virtual void            OnInactive() {}
+
     virtual void            Event_ImmediateDestroy() override;
 
     void                    SetInitialized(bool init) { initialized = init; }

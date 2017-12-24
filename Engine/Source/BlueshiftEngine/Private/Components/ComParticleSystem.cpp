@@ -179,21 +179,19 @@ void ComParticleSystem::Awake() {
     }
 }
 
-void ComParticleSystem::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            ResetParticles();
-            ComRenderable::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (spriteHandle != -1) {
-                renderWorld->RemoveEntity(spriteHandle);
-                spriteHandle = -1;
-            }
-            ComRenderable::SetEnabled(false);
-        }
+void ComParticleSystem::OnActive() {
+    ResetParticles();
+
+    ComRenderable::OnActive();
+}
+
+void ComParticleSystem::OnInactive() {
+    if (spriteHandle != -1) {
+        renderWorld->RemoveEntity(spriteHandle);
+        spriteHandle = -1;
     }
+
+    ComRenderable::OnInactive();
 }
 
 bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
@@ -201,7 +199,7 @@ bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
         return true;
     }
 
-    return ComRenderable::HasRenderEntity(renderEntityHandle);;
+    return ComRenderable::HasRenderEntity(renderEntityHandle);
 }
 
 int ComParticleSystem::GetAliveParticleCount() const {
@@ -229,7 +227,7 @@ int ComParticleSystem::GetAliveParticleCount() const {
 }
 
 void ComParticleSystem::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -687,7 +685,7 @@ void ComParticleSystem::Pause() {
 }
 
 void ComParticleSystem::UpdateVisuals() {
-    if (!IsInitialized() || !IsEnabled()) {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
     }
 

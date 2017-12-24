@@ -80,22 +80,14 @@ void ComRenderable::Init() {
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
 }
 
-void ComRenderable::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            Component::SetEnabled(true);
+void ComRenderable::OnActive() {
+    UpdateVisuals();
+}
 
-            UpdateVisuals();
-        }
-    } else {
-        if (IsEnabled()) {
-            Component::SetEnabled(false);
-
-            if (sceneEntityHandle != -1) {
-                renderWorld->RemoveEntity(sceneEntityHandle);
-                sceneEntityHandle = -1;
-            }
-        }
+void ComRenderable::OnInactive() {
+    if (sceneEntityHandle != -1) {
+        renderWorld->RemoveEntity(sceneEntityHandle);
+        sceneEntityHandle = -1;
     }
 }
 
@@ -108,7 +100,7 @@ bool ComRenderable::HasRenderEntity(int sceneEntityHandle) const {
 }
 
 void ComRenderable::UpdateVisuals() {
-    if (!IsInitialized() || !IsEnabled()) {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
     }
 

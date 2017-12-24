@@ -40,9 +40,6 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) override;
-
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
                             /// Called on game world update, variable timestep.
@@ -90,6 +87,9 @@ private:
     void                    RenderScene();
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    UpdateVisuals();
 
     void                    TransformUpdated(const ComTransform *transform);

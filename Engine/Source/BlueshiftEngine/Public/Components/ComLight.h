@@ -36,9 +36,6 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) override;
-
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
                             /// Visualize the component in editor
@@ -97,6 +94,9 @@ public:
     void                    SetRadius(const Vec3 &radius);
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    UpdateVisuals();
 
     void                    LayerChanged(const Entity *entity);

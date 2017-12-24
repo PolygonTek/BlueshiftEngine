@@ -108,19 +108,13 @@ void ComReflectionProbe::Init() {
     UpdateVisuals();
 }
 
-void ComReflectionProbe::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            UpdateVisuals();
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            renderWorld->RemoveEntity(sphereHandle);
-            sphereHandle = -1;
-            Component::SetEnabled(false);
-        }
-    }
+void ComReflectionProbe::OnActive() {
+    UpdateVisuals();
+}
+
+void ComReflectionProbe::OnInactive() {
+    renderWorld->RemoveEntity(sphereHandle);
+    sphereHandle = -1;
 }
 
 bool ComReflectionProbe::HasRenderEntity(int renderEntityHandle) const {
@@ -154,7 +148,7 @@ const AABB ComReflectionProbe::GetAABB() {
 }
 
 void ComReflectionProbe::UpdateVisuals() {
-    if (!IsInitialized() || !IsEnabled()) {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
     }
 

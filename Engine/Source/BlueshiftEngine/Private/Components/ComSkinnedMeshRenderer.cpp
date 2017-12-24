@@ -202,7 +202,7 @@ void ComSkinnedMeshRenderer::Update() {
 }
 
 void ComSkinnedMeshRenderer::UpdateVisuals() {
-    if (!IsInitialized() || !IsEnabled()) {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
     }
 

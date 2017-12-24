@@ -83,7 +83,7 @@ void ComSpringJoint::Start() {
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, stiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
 
-    if (IsEnabled()) {
+    if (IsActiveInHierarchy()) {
         genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }

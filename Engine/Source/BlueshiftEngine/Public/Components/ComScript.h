@@ -39,9 +39,6 @@ public:
                             /// Deserialize from JSON value.
     virtual void            Deserialize(const Json::Value &in) override;
 
-                            /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) override;
-
     virtual void            Purge(bool chainPurge = true) override;
 
                             /// Initializes this component. Called after deserialization.
@@ -94,6 +91,9 @@ public:
     void                    CallFunc(const char *funcName, Args&&... args);
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    ChangeScript(const Guid &scriptGuid);
     bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
     void                    SetScriptProperties();

@@ -49,18 +49,6 @@ void ComCollider::Init() {
     Component::Init();
 }
 
-void ComCollider::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            Component::SetEnabled(false);
-        }
-    }
-}
-
 const AABB ComCollider::GetAABB() {
     if (collider) {
         return collider->GetAABB();

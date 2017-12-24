@@ -53,9 +53,6 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-                            /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) override;
-
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
@@ -117,6 +114,9 @@ public:
     static const SignalDef  SIG_PhysicsUpdated;
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    ProcessScriptCallback();
     void                    TransformUpdated(const ComTransform *transform);
 

@@ -43,9 +43,6 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
-                            /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) override;
-
     bool                    IsCollisionEnabled() const;
     void                    SetCollisionEnabled(bool enabled);
 
@@ -53,6 +50,9 @@ public:
     void                    SetBreakImpulse(float breakImpulse);
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     Guid                    connectedBodyGuid;
     const ComRigidBody *    connectedBody;
     PhysConstraint *        constraint;

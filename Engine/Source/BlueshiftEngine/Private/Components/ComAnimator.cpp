@@ -89,7 +89,7 @@ void ComAnimator::TransitAnimState(int layerNum, const char *stateName, int blen
 }
 
 void ComAnimator::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) { 
         return;
     }
 
@@ -109,7 +109,7 @@ void ComAnimator::Update() {
 }
 
 void ComAnimator::UpdateVisuals() {
-    if (!IsInitialized() || !IsEnabled()) {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
     }
 

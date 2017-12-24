@@ -72,7 +72,7 @@ void ComSocketJoint::Start() {
 
     PhysP2PConstraint *p2pConstraint = static_cast<PhysP2PConstraint *>(constraint);
 
-    if (IsEnabled()) {
+    if (IsActiveInHierarchy()) {
         p2pConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }

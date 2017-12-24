@@ -35,9 +35,6 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Set enabled/disabled this component
-    virtual void            SetEnabled(bool enable) override;
-
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
     virtual const AABB      GetAABB() override;
@@ -69,6 +66,9 @@ public:
     void                    SetSkipSelection(bool skip);
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     virtual void            UpdateVisuals();
 
     void                    LayerChanged(const Entity *entity);

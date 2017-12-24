@@ -114,7 +114,7 @@ void ComSensor::Awake() {
         sensor->SetUserPointer(this);
         sensor->SetCustomCollisionFilterIndex(entity->GetLayer());
 
-        if (IsEnabled()) {
+        if (IsActiveInHierarchy()) {
             sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
 
@@ -125,7 +125,7 @@ void ComSensor::Awake() {
 }
 
 void ComSensor::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -198,21 +198,15 @@ void ComSensor::ProcessScriptCallback() {
     oldColliders.Swap(newColliders);
 }
 
-void ComSensor::SetEnabled(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (sensor) {
-                sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-            }
-            Component::SetEnabled(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (sensor) {
-                sensor->RemoveFromWorld();
-            }
-            Component::SetEnabled(false);
-        }
+void ComSensor::OnActive() {
+    if (sensor) {
+        sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+}
+
+void ComSensor::OnInactive() {
+    if (sensor) {
+        sensor->RemoveFromWorld();
     }
 }
 

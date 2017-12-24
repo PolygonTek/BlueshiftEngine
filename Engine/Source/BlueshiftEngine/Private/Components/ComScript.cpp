@@ -55,13 +55,18 @@ void ComScript::Purge(bool chainPurge) {
     }
 }
 
-void ComScript::SetEnabled(bool enable) {
-    ComLogic::SetEnabled(enable);
+void ComScript::OnActive() {
+    if (IsInitialized()) {
+        if (onEnableFunc.IsValid()) {
+            onEnableFunc();
+        }
+    }
+}
 
-    if (initialized) {
-        auto &function = enable ? onEnableFunc : onDisableFunc;
-        if (function.IsValid()) {
-            function();
+void ComScript::OnInactive() {
+    if (IsInitialized()) {
+        if (onDisableFunc.IsValid()) {
+            onDisableFunc();
         }
     }
 }

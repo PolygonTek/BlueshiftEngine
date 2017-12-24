@@ -41,7 +41,7 @@ void ComConstantForce::Init() {
 }
 
 void ComConstantForce::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
