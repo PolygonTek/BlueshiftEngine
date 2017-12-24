@@ -94,6 +94,9 @@ public:
                         /// Returns "x y".
     const char *        ToString() const;
 
+                        /// Creates from the string
+    static Point        FromString(const char *str);
+
     static const Point  zero;
 
     int                 x;

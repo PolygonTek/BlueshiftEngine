@@ -126,105 +126,79 @@ void Serializable::Deserialize(const Json::Value &node) {
                 }
                 case Variant::Vec2Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec2>().ToString());
-                    const char *s = value.asCString();
-                    Vec2 v;
-                    sscanf(s, "%f %f", &v.x, &v.y);
+                    Vec2 v = Vec2::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Vec3Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec3>().ToString());
-                    const char *s = value.asCString();
-                    Vec3 v;
-                    sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
+                    Vec3 v = Vec3::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Vec4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec4>().ToString());
-                    const char *s = value.asCString();
-                    Vec4 v;
-                    sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
+                    Vec4 v = Vec4::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Color3Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Color3>().ToString());
-                    const char *s = value.asCString();
-                    Color3 v;
-                    sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
+                    Color3 v = Color3::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Color4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Color4>().ToString());
-                    const char *s = value.asCString();
-                    Color4 v;
-                    sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
+                    Color4 v = Color4::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Mat2Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat2>().ToString());
-                    const char *s = value.asCString();
-                    Mat2 m;
-                    sscanf(s, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);
+                    Mat2 m = Mat2::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, m);
                     break;
                 }
                 case Variant::Mat3Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat3>().ToString());
-                    const char *s = value.asCString();
-                    Mat3 m;
-                    sscanf(s, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
+                    Mat3 m = Mat3::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, m);
                     break;
                 }
                 case Variant::Mat3x4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat3x4>().ToString());
-                    const char *s = value.asCString();
-                    Mat3x4 m;
-                    sscanf(s, "%f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w);
+                    Mat3x4 m = Mat3x4::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, m);
                     break;
                 }
                 case Variant::Mat4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat4>().ToString());
-                    const char *s = value.asCString();
-                    Mat4 m;
-                    sscanf(s, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w, &m[3].x, &m[3].y, &m[3].z, &m[3].w);
+                    Mat4 m = Mat4::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, m);
                     break;
                 }
                 case Variant::AnglesType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Angles>().ToString());
-                    const char *s = value.asCString();
-                    Angles a;
-                    sscanf(s, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
+                    Angles a = Angles::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, a);
                     break; 
                 }
                 case Variant::QuatType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Quat>().ToString());
-                    const char *s = value.asCString();
-                    Quat q;
-                    sscanf(s, "%f %f %f %f", &q.x, &q.y, &q.z, &q.w);
+                    Quat q = Quat::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, q);
                     break;
                 }
                 case Variant::PointType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Point>().ToString());
-                    const char *s = value.asCString();
-                    Point p;
-                    sscanf(s, "%i %i", &p.x, &p.y);
+                    Point p = Point::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, p);
                     break;
                 }
                 case Variant::RectType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Rect>().ToString());
-                    const char *s = value.asCString();
-                    Rect r;
-                    sscanf(s, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
+                    Rect r = Rect::FromString(value.asCString());
                     SetArrayProperty(propertyIndex, elementIndex, r);
                     break;
                 }
@@ -261,93 +235,67 @@ void Serializable::Deserialize(const Json::Value &node) {
                 SetProperty(propertyIndex, value.asFloat());
                 break;
             case Variant::Vec2Type: {
-                const char *s = value.asCString();
-                Vec2 v;
-                sscanf(s, "%f %f", &v.x, &v.y);
+                Vec2 v = Vec2::FromString(value.asCString());
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Vec3Type: {
-                const char *s = value.asCString();
-                Vec3 v;
-                sscanf(s, "%f %f %f", &v.x, &v.y, &v.z);
+                Vec3 v = Vec3::FromString(value.asCString());
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Vec4Type: {
-                const char *s = value.asCString();
-                Vec4 v;
-                sscanf(s, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
+                Vec4 v = Vec4::FromString(value.asCString());
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Color3Type: {
-                const char *s = value.asCString();
-                Color3 v;
-                sscanf(s, "%f %f %f", &v.r, &v.g, &v.b);
+                Color3 v = Color3::FromString(value.asCString());
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Color4Type: {
-                const char *s = value.asCString();
-                Color4 v;
-                sscanf(s, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
+                Color4 v = Color4::FromString(value.asCString());
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Mat2Type: {
-                const char *s = value.asCString();
-                Mat2 m;
-                sscanf(s, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);
+                Mat2 m = Mat2::FromString(value.asCString());
                 SetProperty(propertyIndex, m);
                 break;
             }
             case Variant::Mat3Type: {
-                const char *s = value.asCString();
-                Mat3 m;
-                sscanf(s, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
+                Mat3 m = Mat3::FromString(value.asCString());
                 SetProperty(propertyIndex, m);
                 break;
             }
             case Variant::Mat3x4Type: {
-                const char *s = value.asCString();
-                Mat3x4 m;
-                sscanf(s, "%f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w);
+                Mat3x4 m = Mat3x4::FromString(value.asCString());
                 SetProperty(propertyIndex, m);
                 break;
             }
             case Variant::Mat4Type: {
-                const char *s = value.asCString();
-                Mat4 m;
-                sscanf(s, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w, &m[3].x, &m[3].y, &m[3].z, &m[3].w);
+                Mat4 m = Mat4::FromString(value.asCString());
                 SetProperty(propertyIndex, m);
                 break;
             }
             case Variant::AnglesType: {
-                const char *s = value.asCString();
-                Angles a;
-                sscanf(s, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
+                Angles a = Angles::FromString(value.asCString());
                 SetProperty(propertyIndex, a);
                 break;
             }
             case Variant::QuatType: {
-                const char *s = value.asCString();
-                Quat q;
-                sscanf(s, "%f %f %f %f", &q.x, &q.y, &q.z, &q.w);
+                Quat q = Quat::FromString(value.asCString());
                 SetProperty(propertyIndex, q);
                 break;
             }
             case Variant::PointType: {
-                const char *s = value.asCString();
-                Point p;
-                sscanf(s, "%i %i", &p.x, &p.y);
+                Point p = Point::FromString(value.asCString());
                 SetProperty(propertyIndex, p);
                 break;
             }
             case Variant::RectType: {
-                const char *s = value.asCString();
-                Rect r;
-                sscanf(s, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
+                Rect r = Rect::FromString(value.asCString());
                 SetProperty(propertyIndex, r);
                 break;
             }

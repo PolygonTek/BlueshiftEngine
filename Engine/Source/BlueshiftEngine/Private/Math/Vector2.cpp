@@ -23,6 +23,12 @@ const Vec2 Vec2::one(1.0f, 1.0f);
 const Vec2 Vec2::unitX(1.0f, 0.0f);
 const Vec2 Vec2::unitY(0.0f, 1.0f);
 
+Vec2 Vec2::FromString(const char *str) {
+    Vec2 v;
+    sscanf(str, "%f %f", &v.x, &v.y);
+    return v;
+}
+
 // Mapping unit square to the point on unit disk (filled circle)
 Vec2 Vec2::FromUniformSampleDisk(float u1, float u2) {
     float r = Math::Sqrt(u1);

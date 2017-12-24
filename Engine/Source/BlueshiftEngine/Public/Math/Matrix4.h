@@ -247,6 +247,9 @@ public:
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23 _30 _31 _32 _33" with the given precisions.
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Mat4         FromString(const char *str);
+
                         /// Returns dimension of this type
     int                 GetDimension() const { return Rows * Cols; }
 

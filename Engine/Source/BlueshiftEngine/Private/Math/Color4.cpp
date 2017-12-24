@@ -63,4 +63,10 @@ uint32_t Color4::ToUInt32() const {
     return (a << 24) | (b << 16) | (g << 8) | r;
 }
 
+Color4 Color4::FromString(const char *str) {
+    Color4 v;
+    sscanf(str, "%f %f %f", &v.r, &v.g, &v.b, &v.a);
+    return v;
+}
+
 BE_NAMESPACE_END

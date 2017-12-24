@@ -117,4 +117,10 @@ Mat3x4 &Mat3x4::UntransformSelf(const Mat3x4 &a) {
     return *this;
 }
 
+Mat3x4 Mat3x4::FromString(const char *str) {
+    Mat3x4 m;
+    sscanf(str, "%f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w);
+    return m;
+}
+
 BE_NAMESPACE_END

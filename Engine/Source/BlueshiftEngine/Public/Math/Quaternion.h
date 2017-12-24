@@ -137,6 +137,9 @@ public:
                         /// Returns "x y z w" with the given precision.
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Quat         FromString(const char *str);
+
                         /// Returns dimension of this type
     int                 GetDimension() const { return 4; }
 

@@ -214,6 +214,9 @@ public:
                         /// Returns "x y z" with the given precision
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Vec4         FromString(const char *str);
+
                         /// Casts this Vec4 to a Vec2.
     const Vec2 &        ToVec2() const;
     Vec2 &              ToVec2();

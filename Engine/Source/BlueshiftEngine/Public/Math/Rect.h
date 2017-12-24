@@ -117,6 +117,9 @@ public:
                         /// Returns "x y w h"
     const char *        ToString() const;
 
+                        /// Creates from the string
+    static Rect         FromString(const char *str);
+
 #ifdef QRECT_H
     QRect               ToQRect() const { return QRect(x, y, w, h); }
 #endif

@@ -137,6 +137,9 @@ public:
                         /// Returns "r g b a" with the given precision
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Color4       FromString(const char *str);
+
                         /// Casts this Color4 to a Color3.
     const Color3 &      ToColor3() const;
     Color3 &            ToColor3();

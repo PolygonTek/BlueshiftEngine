@@ -236,6 +236,9 @@ public:
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Vec2         FromString(const char *str);
+
                         /// Converts to the polar coordinates.
     float               ToPolar(float &theta) const;
 

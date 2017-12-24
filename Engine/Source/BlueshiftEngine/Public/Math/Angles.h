@@ -114,6 +114,9 @@ public:
                         /// Returns "yaw pitch roll" with the given precision.
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Angles       FromString(const char *str);
+
                         /// Returns dimension of this type
     int                 GetDimension() const { return Size; }
 

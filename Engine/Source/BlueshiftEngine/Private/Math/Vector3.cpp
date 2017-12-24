@@ -121,6 +121,12 @@ void Vec3::SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
     (*this) = (v1 * scale0 + v2 * scale1);
 }
 
+Vec3 Vec3::FromString(const char *str) {
+    Vec3 v;
+    sscanf(str, "%f %f %f", &v.x, &v.y, &v.z);
+    return v;
+}
+
 // Mapping unit square to the point on unit sphere 
 //
 // Spherical uniform PDF = pdf(w) = 1/4pi

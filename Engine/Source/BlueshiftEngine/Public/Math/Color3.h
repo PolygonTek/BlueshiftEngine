@@ -98,6 +98,9 @@ public:
                         /// Returns "r g b" with the given precision
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Color3       FromString(const char *str);
+
                         /// Casts this Color3 to a Vec3.
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();

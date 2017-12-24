@@ -183,6 +183,9 @@ public:
                         /// Returns "_00 _01 _10 _11" with the given precision.
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Mat2         FromString(const char *str);
+
     /// Returns dimension of this type
     int                 GetDimension() const { return Rows * Cols; }
 

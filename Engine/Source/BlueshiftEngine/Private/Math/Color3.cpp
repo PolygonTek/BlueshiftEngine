@@ -54,6 +54,12 @@ uint32_t Color3::ToUInt32() const {
     return (255 << 24) | (b << 16) | (g << 8) | r;
 }
 
+Color3 Color3::FromString(const char *str) {
+    Color3 v;
+    sscanf(str, "%f %f %f", &v.r, &v.g, &v.b);
+    return v;
+}
+
 // RGB 를 HSL 로 변환
 Color3 Color3::ToHSL() const {
     float h, s, l;
