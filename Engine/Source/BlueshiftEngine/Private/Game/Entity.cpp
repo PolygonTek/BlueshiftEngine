@@ -24,6 +24,7 @@
 BE_NAMESPACE_BEGIN
 
 const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ab");
+const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyChanged", "ab");
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
 const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
 const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ab");
@@ -336,13 +337,13 @@ void Entity::SetActive(bool active) {
 
     activeSelf = active;
 
+    EmitSignal(&SIG_ActiveChanged, this, active);
+
     const Entity *parentEntity = node.GetParent();
 
     if (!parentEntity || parentEntity->activeInHierarchy) {
         SetActiveInHierarchy(active);
     }
-
-    EmitSignal(&SIG_ActiveChanged, this, active);
 }
 
 void Entity::SetActiveInHierarchy(bool active) {
@@ -351,6 +352,8 @@ void Entity::SetActiveInHierarchy(bool active) {
     }
 
     activeInHierarchy = active;
+
+    EmitSignal(&SIG_ActiveInHierarchyChanged, this, active);
 
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];

@@ -208,6 +208,7 @@ public:
 
                                 // FIXME: Don't emit these signals in player mode
     static const SignalDef      SIG_ActiveChanged;
+    static const SignalDef      SIG_ActiveInHierarchyChanged;
     static const SignalDef      SIG_NameChanged;
     static const SignalDef      SIG_LayerChanged;
     static const SignalDef      SIG_FrozenChanged;
