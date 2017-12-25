@@ -355,12 +355,10 @@ void Entity::SetActiveInHierarchy(bool active) {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
-        if (activeInHierarchy) {
-            if (component->IsEnabled()) {
+        if (component->IsEnabled()) {
+            if (activeInHierarchy) {
                 component->OnActive();
-            }
-        } else {
-            if (component->IsEnabled()) {
+            } else {
                 component->OnInactive();
             }
         }

@@ -56,21 +56,17 @@ bool Component::IsActiveInHierarchy() const {
 }
 
 void Component::SetEnabled(bool enable) {
-    if (enable) {
-        if (!enabled) {
-            enabled = true;
+    if (enable == enabled) {
+        return;
+    }
 
-            if (GetEntity()->IsActiveInHierarchy()) {
-                OnActive();
-            }
-        }
-    } else {
-        if (enabled) {
-            enabled = false;
+    enabled = enable;
 
-            if (GetEntity()->IsActiveInHierarchy()) {
-                OnInactive();
-            }
+    if (GetEntity()->IsActiveInHierarchy()) {
+        if (enable) {
+            OnActive();
+        } else {
+            OnInactive();
         }
     }
 }
