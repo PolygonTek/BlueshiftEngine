@@ -168,7 +168,8 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
 
                         if (propInfo.GetType() == Variant::GuidType) {
                             if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                                shaderProp.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
+                                Str name = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
+                                shaderProp.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, name));
                                 const Guid textureGuid = shaderProp.data.As<Guid>();
                                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
                                 shaderProp.texture = textureManager.GetTexture(texturePath);
@@ -347,7 +348,8 @@ void Material::ChangeShader(Shader *shader) {
 
             if (propInfo.GetType() == Variant::GuidType) {
                 if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                    Texture *defaultTexture = textureManager.FindTexture(propInfo.GetDefaultValue().As<Str>());
+                    Str name = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
+                    Texture *defaultTexture = textureManager.FindTexture(name);
                     assert(defaultTexture);
                     const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
 
