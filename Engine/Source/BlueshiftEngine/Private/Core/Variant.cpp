@@ -88,96 +88,45 @@ bool Variant::SetFromString(Type type, const char *str) {
     case VoidPtrType:
         *this = Variant((sizeof(void *) == sizeof(uint64_t) ? Str::ToUI64(str) : Str::ToUI32(str)));
         return true;
-    case Vec2Type: {
-        Vec2 vec2;
-        sscanf(str, "%f %f", &vec2.x, &vec2.y);
-        *this = vec2;
+    case Vec2Type:
+        *this = Vec2::FromString(str);
         return true;
-    }
-    case Vec3Type: {
-        Vec3 vec3;
-        sscanf(str, "%f %f %f", &vec3.x, &vec3.y, &vec3.z);
-        *this = vec3;
+    case Vec3Type:
+        *this = Vec3::FromString(str);
         return true;
-    }
-    case Vec4Type: {
-        Vec4 vec4;
-        sscanf(str, "%f %f %f %f", &vec4.x, &vec4.y, &vec4.z, &vec4.w);
-        *this = vec4;
+    case Vec4Type:
+        *this = Vec4::FromString(str);
         return true;
-    }
-    case Color3Type: {
-        Color3 color3;
-        sscanf(str, "%f %f %f", &color3.r, &color3.g, &color3.b);
-        *this = color3;
+    case Color3Type:
+        *this = Color3::FromString(str);
         return true;
-    }
-    case Color4Type: {
-        Color4 color4;
-        sscanf(str, "%f %f %f %f", &color4.r, &color4.g, &color4.b, &color4.a);
-        *this = color4;
+    case Color4Type:
+        *this = Color4::FromString(str);
         return true;
-    }
-    case Mat2Type: {
-        Mat2 mat2;
-        sscanf(str, "%f %f %f %f",
-            &mat2[0].x, &mat2[0].y,
-            &mat2[1].x, &mat2[1].y);
-        *this = mat2;
+    case Mat2Type:
+        *this = Mat2::FromString(str);
         return true;
-    }
-    case Mat3Type: {
-        Mat3 mat3;
-        sscanf(str, "%f %f %f %f %f %f %f %f %f",
-            &mat3[0].x, &mat3[0].y, &mat3[0].z,
-            &mat3[1].x, &mat3[1].y, &mat3[1].z,
-            &mat3[2].x, &mat3[2].y, &mat3[2].z);
-        *this = mat3;
+    case Mat3Type:
+        *this = Mat3::FromString(str);
         return true;
-    }
-    case Mat4Type: {
-        Mat4 mat4;
-        sscanf(str, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
-            &mat4[0].x, &mat4[0].y, &mat4[0].z, &mat4[0].w,
-            &mat4[1].x, &mat4[1].y, &mat4[1].z, &mat4[1].w,
-            &mat4[2].x, &mat4[2].y, &mat4[2].z, &mat4[2].w,
-            &mat4[3].x, &mat4[3].y, &mat4[3].z, &mat4[3].w);
-        *this = mat4;
+    case Mat4Type:
+        *this = Mat4::FromString(str);
         return true;
-    }
-    case Mat3x4Type: {
-        Mat3x4 mat3x4;
-        sscanf(str, "%f %f %f %f %f %f %f %f %f %f %f %f",
-            &mat3x4[0].x, &mat3x4[0].y, &mat3x4[0].z, &mat3x4[0].w,
-            &mat3x4[1].x, &mat3x4[1].y, &mat3x4[1].z, &mat3x4[1].w,
-            &mat3x4[2].x, &mat3x4[2].y, &mat3x4[2].z, &mat3x4[2].w);
-        *this = mat3x4;
+    case Mat3x4Type:
+        *this = Mat3x4::FromString(str);
         return true;
-    }
-    case AnglesType: {
-        Angles angles;
-        sscanf(str, "%f %f %f", &angles[0], &angles[1], &angles[2]);
-        *this = angles;
+    case AnglesType:
+        *this = Angles::FromString(str);
         return true;
-    }
-    case QuatType: {
-        Quat quat;
-        sscanf(str, "%f %f %f %f", &quat[0], &quat[1], &quat[2], &quat[3]);
-        *this = quat;
+    case QuatType:
+        *this = Quat::FromString(str);
         return true;
-    }
-    case PointType: {
-        Point point;
-        sscanf(str, "%i %i", &point.x, &point.y);
-        *this = point;
+    case PointType:
+        *this = Point::FromString(str);
         return true;
-    }
-    case RectType: {
-        Rect rect;
-        sscanf(str, "%i %i %i %i", &rect.x, &rect.y, &rect.w, &rect.h);
-        *this = rect;
+    case RectType:
+        *this = Rect::FromString(str);
         return true;
-    }
     case GuidType:
         *this = Guid::FromString(str);
         return true;
