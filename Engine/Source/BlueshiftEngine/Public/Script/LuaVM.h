@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "Core/CmdArgs.h"
 #include "LuaCpp/LuaCpp.h"
 
 BE_NAMESPACE_BEGIN
@@ -32,6 +33,8 @@ public:
     static void             EnableDebug();
 
 private:
+    static void             Cmd_LuaVersion(const CmdArgs &args);
+    static void             Cmd_LuaMemory(const CmdArgs &args);
 
     static void             RegisterMath(LuaCpp::Module &module);
     static void             RegisterComplex(LuaCpp::Module &module);

@@ -18,6 +18,7 @@
 #include "File/FileSystem.h"
 #include "File/File.h"
 #include "Core/CVars.h"
+#include "Core/Cmds.h"
 
 extern int luaopen_file(lua_State *L);
 
@@ -27,6 +28,9 @@ LuaCpp::State *     LuaVM::state = nullptr;
 const GameWorld *   LuaVM::gameWorld = nullptr;
 
 void LuaVM::Init() {
+    cmdSystem.AddCommand(L"lua_version", Cmd_LuaVersion);
+    cmdSystem.AddCommand(L"lua_mem", Cmd_LuaMemory);
+
     state = new LuaCpp::State(true);
 
     BE_LOG(L"Lua version %.1f\n", state->Version());
@@ -194,7 +198,22 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 }
 
 void LuaVM::Shutdown() {
+    cmdSystem.RemoveCommand(L"lua_version");
+    cmdSystem.RemoveCommand(L"lua_mem");
+
     SAFE_DELETE(state);
+}
+
+void LuaVM::Cmd_LuaVersion(const CmdArgs &args) {
+    float version = state->Version();
+
+    BE_LOG(L"%.1f\n", version);
+}
+
+void LuaVM::Cmd_LuaMemory(const CmdArgs &args) {
+    Str strBytes = Str::FormatBytes(state->GetGCKb() * 1024);
+
+    BE_LOG(L"%hs used by Lua\n", strBytes.c_str());
 }
 
 BE_NAMESPACE_END
