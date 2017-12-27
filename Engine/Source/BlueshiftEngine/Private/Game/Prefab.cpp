@@ -48,7 +48,7 @@ bool Prefab::Create(const Json::Value &entitiesValue) {
         const char *classname = entityValue["classname"].asCString();
 
         if (!Str::Cmp(classname, Entity::metaObject.ClassName())) {
-            Entity *entity = Entity::CreateEntity(entityValue, nullptr);
+            Entity *entity = Entity::CreateEntity(entityValue, prefabManager.GetPrefabWorld());
             assert(entity->GetProperty("prefab").As<bool>());
             
             const Guid parentGuid = Guid::FromString(entityValue["parent"].asCString());

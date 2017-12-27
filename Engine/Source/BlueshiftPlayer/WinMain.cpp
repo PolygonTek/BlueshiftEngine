@@ -251,8 +251,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
                 DispatchMessage(&msg);
             }
         }
-
-        BE1::LuaVM::State().ForceGC();
         
         BE1::Engine::RunFrame(elapsedMsec);
 

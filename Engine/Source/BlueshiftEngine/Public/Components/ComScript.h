@@ -103,6 +103,7 @@ protected:
     void                    SetOwnerValues();
 
     ScriptAsset *           scriptAsset;
+    LuaCpp::State *         state;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
 

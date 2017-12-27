@@ -23,6 +23,7 @@
 */
 
 #include "Entity.h"
+#include "Script/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -54,6 +55,8 @@ public:
 
     RenderWorld *               GetRenderWorld() const { return renderWorld; }
     PhysicsWorld *              GetPhysicsWorld() const { return physicsWorld; }
+
+    LuaVM &                     GetLuaVM() { return luaVM; }
 
     int                         GetTime() const { return time; }
     int                         GetPrevTime() const { return prevTime; }
@@ -155,6 +158,8 @@ private:
     Hierarchy<Entity>           entityHierarchy;
 
     Json::Value                 snapshotValues;
+
+    LuaVM                       luaVM;
 
     Str                         mapName;
 

@@ -80,6 +80,8 @@ private:
 
 class PrefabManager {
 public:
+    PrefabManager() : initialized(false) {}
+
     void                        Init();
     void                        Shutdown();
 
@@ -91,8 +93,13 @@ public:
 
     static Json::Value          CreatePrefabValue(const Entity *entity);
 
+    GameWorld *                 GetPrefabWorld() { return prefabWorld; }
+
 private:
     StrIHashMap<Prefab *>       prefabHashMap;
+    GameWorld *                 prefabWorld;
+
+    bool                        initialized;
 };
 
 extern PrefabManager            prefabManager;

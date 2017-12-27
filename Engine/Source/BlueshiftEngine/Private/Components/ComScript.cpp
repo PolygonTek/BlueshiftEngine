@@ -33,6 +33,7 @@ void ComScript::RegisterProperties() {
 }
 
 ComScript::ComScript() {
+    state = nullptr;
     scriptAsset = nullptr;
 }
 
@@ -42,7 +43,7 @@ ComScript::~ComScript() {
 
 void ComScript::Purge(bool chainPurge) {
     if (!sandboxName.IsEmpty()) {
-        LuaVM::State().SetToNil(sandboxName.c_str());
+        (*state).SetToNil(sandboxName.c_str());
         sandboxName = "";
     }
 
@@ -105,6 +106,8 @@ void ComScript::Deserialize(const Json::Value &in) {
     const Str scriptGuidString = in.get("script", Guid::zero.ToString()).asCString();
     const Guid scriptGuid = Guid::FromString(scriptGuidString);
 
+    state = &GetGameWorld()->GetLuaVM().State();
+
     ChangeScript(scriptGuid);
     
     Serializable::Deserialize(in);
@@ -118,7 +121,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     }
 
     if (!sandboxName.IsEmpty()) {
-        LuaVM::State().SetToNil(sandboxName.c_str());
+        (*state).SetToNil(sandboxName.c_str());
         sandboxName = "";
     }
 
@@ -141,13 +144,13 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     }
     
     // Get the state of current loaded script
-    sandbox = LuaVM::State()[sandboxName];
+    sandbox = (*state)[sandboxName];
     if (!sandbox.IsValid()) {
         return;
     }
 
     // Run this script
-    LuaVM::State().Run();
+    (*state).Run();
 
     fieldInfos.Clear();
     fieldValues.Clear();
@@ -535,7 +538,7 @@ bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxN
     name = filename;
 #endif
 
-    if (!LuaVM::State().LoadBuffer(name.c_str(), data, size, sandboxName)) {
+    if (!(*state).LoadBuffer(name.c_str(), data, size, sandboxName)) {
         fileSystem.FreeFile(data);
         return false;
     }
@@ -642,7 +645,7 @@ void ComScript::SetScriptProperties() {
 
 void ComScript::Awake() {
     // Get the state of current loaded script
-    sandbox = LuaVM::State()[sandboxName];
+    sandbox = (*state)[sandboxName];
     if (!sandbox.IsValid()) {
         return;
     }

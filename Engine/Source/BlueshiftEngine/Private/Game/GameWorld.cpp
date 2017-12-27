@@ -98,7 +98,7 @@ void GameWorld::Reset() {
     ClearAllEntities();
 
     // Reset Lua scripting engine
-    LuaVM::Init(this);
+    luaVM.Init(this);
 
     time = 0;
     prevTime = 0;
@@ -682,6 +682,8 @@ void GameWorld::Update(int elapsedTime) {
         UpdateEntities();
 
         LateUpdateEntities();
+
+        luaVM.State().ForceGC();
     }
 }
 

@@ -23,10 +23,22 @@ BE_NAMESPACE_BEGIN
 PrefabManager   prefabManager;
 
 void PrefabManager::Init() {
+    if (initialized) {
+        Shutdown();
+    }
+
     prefabHashMap.Init(1024, 64, 64);
+
+    prefabWorld = (GameWorld *)GameWorld::CreateInstance();
+
+    initialized = true;
 }
 
 void PrefabManager::Shutdown() {
+    if (!initialized) {
+        return;
+    }
+
     for (int i = 0; i < prefabHashMap.Count(); i++) {
         const auto *entry = prefabHashMap.GetByIndex(i);
         Prefab *prefab = entry->second;
@@ -34,7 +46,14 @@ void PrefabManager::Shutdown() {
         Prefab::DestroyInstanceImmediate(prefab);
     }
 
+    if (prefabWorld) {
+        GameWorld::DestroyInstanceImmediate(prefabWorld);
+        prefabWorld = nullptr;
+    }
+
     prefabHashMap.Clear();
+
+    initialized = false;
 }
 
 Prefab *PrefabManager::FindPrefab(const char *hashName) const {

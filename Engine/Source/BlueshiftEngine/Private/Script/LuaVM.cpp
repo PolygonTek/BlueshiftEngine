@@ -25,18 +25,12 @@ extern "C" int luaopen_socket_core(lua_State *L);
 
 BE_NAMESPACE_BEGIN
 
-LuaCpp::State *     LuaVM::state = nullptr;
-const GameWorld *   LuaVM::gameWorld = nullptr;
-
-static CVar         lua_server(L"lua_server", L"127.0.0.1", CVar::Archive, L"lua server for debugging");
+static CVar lua_server(L"lua_server", L"127.0.0.1", CVar::Archive, L"lua server for debugging");
 
 void LuaVM::Init(const GameWorld *gameWorld) {
     if (state) {
         Shutdown();
     }
-
-    cmdSystem.AddCommand(L"lua_version", Cmd_LuaVersion);
-    cmdSystem.AddCommand(L"lua_mem", Cmd_LuaMemory);
 
     state = new LuaCpp::State(true);
 
@@ -66,7 +60,7 @@ void LuaVM::Init(const GameWorld *gameWorld) {
         BE_ERRLOG(L"%hs - %hs\n", statusStr, msg.c_str());
     });
 
-    state->RegisterSearcher([](const std::string &name) {
+    state->RegisterSearcher([this](const std::string &name) {
         Str filename = name.c_str();
         filename.DefaultFileExtension(".lua");
 
@@ -83,6 +77,7 @@ void LuaVM::Init(const GameWorld *gameWorld) {
     });
 
     state->Require("blueshift.io", luaopen_file);
+
 #if defined __IOS__ || defined __ANDROID__
     EnableDebug();
 #endif
@@ -93,7 +88,7 @@ void LuaVM::Init(const GameWorld *gameWorld) {
 void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
     LuaVM::gameWorld = gameWorld;
 
-    state->RegisterModule("blueshift", [](LuaCpp::Module &module) {
+    state->RegisterModule("blueshift", [this](LuaCpp::Module &module) {
         module["log"].SetFunc([](const std::string &msg) {
             BE_LOG(L"%hs\n", msg.c_str());
         });
@@ -191,9 +186,6 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 }
 
 void LuaVM::Shutdown() {
-    cmdSystem.RemoveCommand(L"lua_version");
-    cmdSystem.RemoveCommand(L"lua_mem");
-
     SAFE_DELETE(state);
 }
 
@@ -209,18 +201,6 @@ void LuaVM::EnableDebug() {
     state->Require("socket.core", luaopen_socket_core);
     char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
     (*state)(cmd);
-}
-
-void LuaVM::Cmd_LuaVersion(const CmdArgs &args) {
-    float version = state->Version();
-
-    BE_LOG(L"%.1f\n", version);
-}
-
-void LuaVM::Cmd_LuaMemory(const CmdArgs &args) {
-    Str strBytes = Str::FormatBytes(state->GetGCKb() * 1024);
-
-    BE_LOG(L"%hs used by Lua\n", strBytes.c_str());
 }
 
 BE_NAMESPACE_END
