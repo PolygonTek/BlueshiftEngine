@@ -41,9 +41,12 @@ ComScript::~ComScript() {
 }
 
 void ComScript::Purge(bool chainPurge) {
-    if (sandbox.IsValid()) {
-        LuaVM::State().SetToNil(sandbox.Name().c_str());
+    if (!sandboxName.IsEmpty()) {
+        LuaVM::State().SetToNil(sandboxName.c_str());
+        sandboxName = "";
+    }
 
+    if (sandbox.IsValid()) {
         sandbox = LuaCpp::Selector();
     }
 
@@ -74,8 +77,6 @@ void ComScript::OnInactive() {
 void ComScript::Init() {
     Component::Init();
 
-    SetOwnerValues();
-    
     // Mark as initialized
     SetInitialized(true);
 }
@@ -116,9 +117,12 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         scriptAsset = nullptr;
     }
 
-    if (sandbox.IsValid()) {
+    if (!sandboxName.IsEmpty()) {
         LuaVM::State().SetToNil(sandboxName.c_str());
+        sandboxName = "";
+    }
 
+    if (sandbox.IsValid()) {
         sandbox = LuaCpp::Selector();
     }
 
@@ -132,6 +136,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     // Load a script with sandboxed on current Lua state
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
     if (!LoadScriptWithSandbox(scriptPath, sandboxName)) {
+        sandboxName = "";
         return;
     }
     
@@ -456,8 +461,8 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         sandbox["property_names"].Enumerate(fieldValueEnumerator);
         sandbox["property_names"].Enumerate(fieldInfoEnumerator);
     }
-    
-    UpdateFunctionMap();
+
+    sandbox = LuaCpp::Selector();
 
     // Need to script asset to be reloaded in editor
     Object *scriptObject = ScriptAsset::FindInstance(scriptGuid);
@@ -636,7 +641,17 @@ void ComScript::SetScriptProperties() {
 }
 
 void ComScript::Awake() {
+    // Get the state of current loaded script
+    sandbox = LuaVM::State()[sandboxName];
+    if (!sandbox.IsValid()) {
+        return;
+    }
+
+    SetOwnerValues();
+
     SetScriptProperties();
+
+    UpdateFunctionMap();
 
     if (awakeFunc.IsValid()) {
         awakeFunc();
@@ -775,8 +790,6 @@ void ComScript::ScriptReloaded() {
 
     Deserialize(value);
 
-    SetOwnerValues();
-
     // Update editor UI
     EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
 }
@@ -792,8 +805,6 @@ void ComScript::SetScriptGuid(const Guid &guid) {
     if (IsInitialized()) {
         if (guid != GetScriptGuid()) {
             ChangeScript(guid);
-
-            SetOwnerValues();
 
             // Update editor UI
             EmitSignal(&Serializable::SIG_PropertyInfoUpdated);

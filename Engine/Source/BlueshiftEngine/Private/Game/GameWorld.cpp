@@ -32,6 +32,7 @@
 #include "Game/GameSettings/PhysicsSettings.h"
 #include "Containers/StaticArray.h"
 #include "File/FileSystem.h"
+#include "Script/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -95,6 +96,9 @@ GameWorld::~GameWorld() {
 
 void GameWorld::Reset() {
     ClearAllEntities();
+
+    // Reset Lua scripting engine
+    LuaVM::Init(this);
 
     time = 0;
     prevTime = 0;

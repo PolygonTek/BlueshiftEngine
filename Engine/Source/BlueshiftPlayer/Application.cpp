@@ -25,8 +25,6 @@ void Application::Init() {
 
     gameWorld = (BE1::GameWorld *)BE1::GameWorld::CreateInstance();
 
-    BE1::LuaVM::InitEngineModule(gameWorld);
-
     gameWorld->LoadSettings();
     
     gameState = GAMESTATE_NOMAP;

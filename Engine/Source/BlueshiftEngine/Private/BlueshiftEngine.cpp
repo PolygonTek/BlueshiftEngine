@@ -144,13 +144,9 @@ void Engine::Init(const InitParms *initParms) {
     }
 
     RegisterEngineObjects();
-
-    LuaVM::Init();
 }
 
 void Engine::Shutdown() {
-    LuaVM::Shutdown();
-
     common.Shutdown();
 
     Platform::Shutdown();

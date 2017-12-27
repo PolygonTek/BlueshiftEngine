@@ -21,19 +21,26 @@
 #include "Core/Cmds.h"
 
 extern int luaopen_file(lua_State *L);
+extern "C" int luaopen_socket_core(lua_State *L);
 
 BE_NAMESPACE_BEGIN
 
 LuaCpp::State *     LuaVM::state = nullptr;
 const GameWorld *   LuaVM::gameWorld = nullptr;
 
-void LuaVM::Init() {
+static CVar         lua_server(L"lua_server", L"127.0.0.1", CVar::Archive, L"lua server for debugging");
+
+void LuaVM::Init(const GameWorld *gameWorld) {
+    if (state) {
+        Shutdown();
+    }
+
     cmdSystem.AddCommand(L"lua_version", Cmd_LuaVersion);
     cmdSystem.AddCommand(L"lua_mem", Cmd_LuaMemory);
 
     state = new LuaCpp::State(true);
 
-    BE_LOG(L"Lua version %.1f\n", state->Version());
+    //BE_LOG(L"Lua version %.1f\n", state->Version());
 
     state->HandleExceptionsWith([](int status, std::string msg, std::exception_ptr exception) {
         const char *statusStr = "";
@@ -74,27 +81,13 @@ void LuaVM::Init() {
         fileSystem.FreeFile(data);
         return true;
     });
-   state->Require("blueshift.io", luaopen_file);
+
+    state->Require("blueshift.io", luaopen_file);
 #if defined __IOS__ || defined __ANDROID__
     EnableDebug();
 #endif
-}
 
-extern "C" int luaopen_socket_core(lua_State *L);
-static CVar lua_server(L"lua_server", L"127.0.0.1", CVar::Archive, L"lua server for debugging");
-
-void LuaVM::EnableDebug() {
-    char *server = tombs(lua_server.GetString());
-    if (server[0] == 0)
-        return;
-    
-    File *f = fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
-    if (!f)
-        return;
-    fileSystem.CloseFile(f);
-    state->Require("socket.core", luaopen_socket_core);
-    char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
-    (*state)(cmd);
+    InitEngineModule(gameWorld);
 }
 
 void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
@@ -202,6 +195,20 @@ void LuaVM::Shutdown() {
     cmdSystem.RemoveCommand(L"lua_mem");
 
     SAFE_DELETE(state);
+}
+
+void LuaVM::EnableDebug() {
+    char *server = tombs(lua_server.GetString());
+    if (server[0] == 0)
+        return;
+
+    File *f = fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
+    if (!f)
+        return;
+    fileSystem.CloseFile(f);
+    state->Require("socket.core", luaopen_socket_core);
+    char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
+    (*state)(cmd);
 }
 
 void LuaVM::Cmd_LuaVersion(const CmdArgs &args) {

@@ -23,18 +23,15 @@ class GameWorld;
 
 class LuaVM {
 public:
-    static void             Init();
+    static void             Init(const GameWorld *gameWorld);
     static void             Shutdown();
-
-    static void             InitEngineModule(const GameWorld *gameWorld);
 
     static LuaCpp::State &  State() { return *state; }
 
     static void             EnableDebug();
 
 private:
-    static void             Cmd_LuaVersion(const CmdArgs &args);
-    static void             Cmd_LuaMemory(const CmdArgs &args);
+    static void             InitEngineModule(const GameWorld *gameWorld);
 
     static void             RegisterMath(LuaCpp::Module &module);
     static void             RegisterComplex(LuaCpp::Module &module);
@@ -118,6 +115,9 @@ private:
 
     static void             RegisterEntity(LuaCpp::Module &module);
     static void             RegisterGameWorld(LuaCpp::Module &module);
+
+    static void             Cmd_LuaVersion(const CmdArgs &args);
+    static void             Cmd_LuaMemory(const CmdArgs &args);
 
     static LuaCpp::State *  state;
 
