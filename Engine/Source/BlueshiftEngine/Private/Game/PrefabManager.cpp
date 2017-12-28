@@ -132,7 +132,7 @@ Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
         prefabEntitiesValue[i]["prefab"] = true;
         prefabEntitiesValue[i]["prefabSource"] = Guid::zero.ToString();
 
-        Entity *prefabEntity = Entity::CreateEntity(prefabEntitiesValue[i], nullptr);
+        Entity *prefabEntity = Entity::CreateEntity(prefabEntitiesValue[i], prefabManager.GetPrefabWorld());
         prefabEntities.Append(prefabEntity);
 
         // Remap all GUID references to newly created
