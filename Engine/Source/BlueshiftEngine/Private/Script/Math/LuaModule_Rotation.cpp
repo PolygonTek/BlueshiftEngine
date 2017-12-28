@@ -40,7 +40,7 @@ void LuaVM::RegisterRotation(LuaCpp::Module &module) {
         "scale_self", static_cast<Rotation&(Rotation::*)(const float)>(&Rotation::operator*=),
         "rotate_point", &Rotation::RotatePoint,
         "normalize180", &Rotation::Normalize180,
-        "normalize360", &Rotation::Normalize360        
+        "normalize360", &Rotation::Normalize360
     );
     _Rotation.AddClassMembers<Rotation>(
         "__unm", static_cast<Rotation(Rotation::*)() const>(&Rotation::operator-)
