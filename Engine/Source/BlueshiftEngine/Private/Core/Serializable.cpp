@@ -126,91 +126,92 @@ void Serializable::Deserialize(const Json::Value &node) {
                 }
                 case Variant::Vec2Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec2>().ToString());
-                    Vec2 v = Vec2::FromString(value.asCString());
+                    Vec2 v = value.type() == Json::stringValue ? Vec2::FromString(value.asCString()) : defaultValue.As<Vec2>();
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Vec3Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec3>().ToString());
-                    Vec3 v = Vec3::FromString(value.asCString());
+                    Vec3 v = value.type() == Json::stringValue ? Vec3::FromString(value.asCString()) : defaultValue.As<Vec3>();
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Vec4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Vec4>().ToString());
-                    Vec4 v = Vec4::FromString(value.asCString());
+                    Vec4 v = value.type() == Json::stringValue ? Vec4::FromString(value.asCString()) : defaultValue.As<Vec4>();
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Color3Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Color3>().ToString());
-                    Color3 v = Color3::FromString(value.asCString());
+                    Color3 v = value.type() == Json::stringValue ? Color3::FromString(value.asCString()) : defaultValue.As<Color3>();
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Color4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Color4>().ToString());
-                    Color4 v = Color4::FromString(value.asCString());
+                    Color4 v = value.type() == Json::stringValue ? Color4::FromString(value.asCString()) : defaultValue.As<Color4>();
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::Mat2Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat2>().ToString());
-                    Mat2 m = Mat2::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, m);
+                    Mat2 v = value.type() == Json::stringValue ? Mat2::FromString(value.asCString()) : defaultValue.As<Mat2>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 case Variant::Mat3Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat3>().ToString());
-                    Mat3 m = Mat3::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, m);
+                    Mat3 v = value.type() == Json::stringValue ? Mat3::FromString(value.asCString()) : defaultValue.As<Mat3>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 case Variant::Mat3x4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat3x4>().ToString());
-                    Mat3x4 m = Mat3x4::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, m);
+                    Mat3x4 v = value.type() == Json::stringValue ? Mat3x4::FromString(value.asCString()) : defaultValue.As<Mat3x4>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 case Variant::Mat4Type: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Mat4>().ToString());
-                    Mat4 m = Mat4::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, m);
+                    Mat4 v = value.type() == Json::stringValue ? Mat4::FromString(value.asCString()) : defaultValue.As<Mat4>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 case Variant::AnglesType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Angles>().ToString());
-                    Angles a = Angles::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, a);
+                    Angles v = value.type() == Json::stringValue ? Angles::FromString(value.asCString()) : defaultValue.As<Angles>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break; 
                 }
                 case Variant::QuatType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Quat>().ToString());
-                    Quat q = Quat::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, q);
+                    Quat v = value.type() == Json::stringValue ? Quat::FromString(value.asCString()) : defaultValue.As<Quat>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 case Variant::PointType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Point>().ToString());
-                    Point p = Point::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, p);
+                    Point v = value.type() == Json::stringValue ? Point::FromString(value.asCString()) : defaultValue.As<Point>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 case Variant::RectType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Rect>().ToString());
-                    Rect r = Rect::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, r);
+                    Rect v = value.type() == Json::stringValue ? Rect::FromString(value.asCString()) : defaultValue.As<Rect>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 case Variant::GuidType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Guid>().ToString());
-                    Guid guid = Guid::FromString(value.asCString());
-                    SetArrayProperty(propertyIndex, elementIndex, guid);
+                    Guid v = value.type() == Json::stringValue ? Guid::FromString(value.asCString()) : defaultValue.As<Guid>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 case Variant::StrType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Str>().c_str());
-                    SetArrayProperty(propertyIndex, elementIndex, Str(value.asCString()));
+                    Str v = value.type() == Json::stringValue ? value.asCString() : defaultValue.As<Str>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
                 default:
@@ -235,78 +236,80 @@ void Serializable::Deserialize(const Json::Value &node) {
                 SetProperty(propertyIndex, value.asFloat());
                 break;
             case Variant::Vec2Type: {
-                Vec2 v = Vec2::FromString(value.asCString());
+                Vec2 v = value.type() == Json::stringValue ? Vec2::FromString(value.asCString()) : defaultValue.As<Vec2>();
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Vec3Type: {
-                Vec3 v = Vec3::FromString(value.asCString());
+                Vec3 v = value.type() == Json::stringValue ? Vec3::FromString(value.asCString()) : defaultValue.As<Vec3>();
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Vec4Type: {
-                Vec4 v = Vec4::FromString(value.asCString());
+                Vec4 v = value.type() == Json::stringValue ? Vec4::FromString(value.asCString()) : defaultValue.As<Vec4>();
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Color3Type: {
-                Color3 v = Color3::FromString(value.asCString());
+                Color3 v = value.type() == Json::stringValue ? Color3::FromString(value.asCString()) : defaultValue.As<Color3>();
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Color4Type: {
-                Color4 v = Color4::FromString(value.asCString());
+                Color4 v = value.type() == Json::stringValue ? Color4::FromString(value.asCString()) : defaultValue.As<Color4>();
                 SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Mat2Type: {
-                Mat2 m = Mat2::FromString(value.asCString());
-                SetProperty(propertyIndex, m);
+                Mat2 v = value.type() == Json::stringValue ? Mat2::FromString(value.asCString()) : defaultValue.As<Mat2>();
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Mat3Type: {
-                Mat3 m = Mat3::FromString(value.asCString());
-                SetProperty(propertyIndex, m);
+                Mat3 v = value.type() == Json::stringValue ? Mat3::FromString(value.asCString()) : defaultValue.As<Mat3>();
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Mat3x4Type: {
-                Mat3x4 m = Mat3x4::FromString(value.asCString());
-                SetProperty(propertyIndex, m);
+                Mat3x4 v = value.type() == Json::stringValue ? Mat3x4::FromString(value.asCString()) : defaultValue.As<Mat3x4>();
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::Mat4Type: {
-                Mat4 m = Mat4::FromString(value.asCString());
-                SetProperty(propertyIndex, m);
+                Mat4 v = value.type() == Json::stringValue ? Mat4::FromString(value.asCString()) : defaultValue.As<Mat4>();
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::AnglesType: {
-                Angles a = Angles::FromString(value.asCString());
-                SetProperty(propertyIndex, a);
+                Angles v = value.type() == Json::stringValue ? Angles::FromString(value.asCString()) : defaultValue.As<Angles>();
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::QuatType: {
-                Quat q = Quat::FromString(value.asCString());
-                SetProperty(propertyIndex, q);
+                Quat v = value.type() == Json::stringValue ? Quat::FromString(value.asCString()) : defaultValue.As<Quat>();
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::PointType: {
-                Point p = Point::FromString(value.asCString());
-                SetProperty(propertyIndex, p);
+                Point v = value.type() == Json::stringValue ? Point::FromString(value.asCString()) : defaultValue.As<Point>();
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::RectType: {
-                Rect r = Rect::FromString(value.asCString());
-                SetProperty(propertyIndex, r);
+                Rect v = value.type() == Json::stringValue ? Rect::FromString(value.asCString()) : defaultValue.As<Rect>();
+                SetProperty(propertyIndex, v);
                 break;
             }
             case Variant::GuidType: {
-                Guid guid = Guid::FromString(value.asCString());
-                SetProperty(propertyIndex, guid);
+                Guid v = value.type() == Json::stringValue ? Guid::FromString(value.asCString()) : defaultValue.As<Guid>();
+                SetProperty(propertyIndex, v);
                 break;
             }
-            case Variant::StrType:
-                SetProperty(propertyIndex, Str(value.asCString()));
+            case Variant::StrType: {
+                Str v = value.type() == Json::stringValue ? value.asCString() : defaultValue.As<Str>();
+                SetProperty(propertyIndex, v);
                 break;
+            }
             default:
                 assert(0);
                 break;
