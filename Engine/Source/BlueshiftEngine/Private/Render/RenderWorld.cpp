@@ -320,6 +320,10 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     memset(&entityParms, 0, sizeof(entityParms));
     entityParms.scale       = Vec3::one;
     entityParms.axis        = Mat3::identity;
+    entityParms.materialParms[SceneEntity::RedParm] = 1.0f;
+    entityParms.materialParms[SceneEntity::GreenParm] = 1.0f;
+    entityParms.materialParms[SceneEntity::BlueParm] = 1.0f;
+    entityParms.materialParms[SceneEntity::AlphaParm] = 1.0f;
     entityParms.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
     
     static SceneEntity sceneEntity;
