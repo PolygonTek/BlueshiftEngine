@@ -117,8 +117,10 @@ public:
 
     bool                        IsGameStarted() const { return gameStarted; }
     void                        StartGame();
-    void                        StopGame();
+    void                        StopGame(bool stopAllSounds = true);
     void                        RestartGame(const char *mapName);
+
+    void                        StopAllSounds();
 
     TagLayerSettings *          GetTagLayerSettings() { return tagLayerSettings; }
 
