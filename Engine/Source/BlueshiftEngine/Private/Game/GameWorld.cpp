@@ -467,10 +467,12 @@ void GameWorld::StartGame() {
     physicsWorld->Connect(&PhysicsWorld::SIG_PostStep, this, (SignalCallback)&GameWorld::FixedLateUpdateEntities);
 }
 
-void GameWorld::StopGame() {
+void GameWorld::StopGame(bool stopAllSounds) {
     gameStarted = false;
 
-    soundSystem.StopAllSounds();
+    if (stopAllSounds) {
+        soundSystem.StopAllSounds();
+    }
 
     physicsWorld->Disconnect(&PhysicsWorld::SIG_PreStep, this);
     physicsWorld->Disconnect(&PhysicsWorld::SIG_PostStep, this);
@@ -478,6 +480,10 @@ void GameWorld::StopGame() {
 
 void GameWorld::RestartGame(const char *mapName) {
     PostEvent(&EV_RestartGame, mapName);
+}
+
+void GameWorld::StopAllSounds() {
+    soundSystem.StopAllSounds();
 }
 
 void GameWorld::Event_RestartGame(const char *mapName) {
@@ -726,7 +732,7 @@ void GameWorld::ProcessPointerInput() {
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ComCamera *camera = ent->GetComponent<ComCamera>();
-        if (!camera) {
+        if (!camera || !camera->IsActiveInHierarchy()) {
             continue;
         }
 
@@ -763,7 +769,7 @@ void GameWorld::RenderCamera() {
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ComCamera *camera = ent->GetComponent<ComCamera>();
-        if (!camera) {
+        if (!camera || !camera->IsActiveInHierarchy()) {
             continue;
         }
 

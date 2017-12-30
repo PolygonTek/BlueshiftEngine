@@ -126,7 +126,6 @@ void Entity::Awake() {
 
         if (component) {
             component->Awake();
-            //component->SetEnabled(component->IsEnabled()); //
         }
     }
 }
