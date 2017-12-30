@@ -659,6 +659,10 @@ void ComScript::Awake() {
     if (awakeFunc.IsValid()) {
         awakeFunc();
     }
+
+    if (onEnableFunc.IsValid()) {
+        onEnableFunc();
+    }
 }
 
 void ComScript::Start() {
