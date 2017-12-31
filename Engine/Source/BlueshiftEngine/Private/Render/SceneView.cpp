@@ -368,15 +368,15 @@ double SceneView::GetDepthFromViewZ(float viewz) const {
     return (clipz / clipw + 1.0) * 0.5;
 }
 
-bool SceneView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, float *depthMin, float *depthMax) const {
+bool SceneView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     float localMin = Math::Infinity;
     float localMax = -Math::Infinity;
 
     for (int i = 0; i < numPoints; i++) {
         const Vec3 &v = points[i];
 
-        float cz = v[0] * viewProjMatrix[2][0] + v[1] * viewProjMatrix[2][1] + v[2] * viewProjMatrix[2][2] + viewProjMatrix[2][3];
-        float cw = v[0] * viewProjMatrix[3][0] + v[1] * viewProjMatrix[3][1] + v[2] * viewProjMatrix[3][2] + viewProjMatrix[3][3];
+        float cz = v[0] * mvp[2][0] + v[1] * mvp[2][1] + v[2] * mvp[2][2] + mvp[2][3];
+        float cw = v[0] * mvp[3][0] + v[1] * mvp[3][1] + v[2] * mvp[3][2] + mvp[3][3];
 
         if (cw > Math::FloatSmallestNonDenormal) {
             cz = cz / cw;
@@ -388,7 +388,7 @@ bool SceneView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, floa
         localMax = Max(localMax, cz);
     }
 
-    if (localMin < localMax && (localMin >= -1.0 || localMax <= 1.0)) {
+    if (localMin <= localMax && (localMin >= -1.0 || localMax <= 1.0)) {
         *depthMin = localMin * 0.5f + 0.5f;
         *depthMax = localMax * 0.5f + 0.5f;
         return true;
@@ -397,12 +397,12 @@ bool SceneView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, floa
     return false;
 }
 
-bool SceneView::GetDepthBoundsFromSphere(const Sphere &sphere, float *depthMin, float *depthMax) const {
+bool SceneView::GetDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const {
 #if 1
     Vec3 points[2];
     points[0] = sphere.Origin() + parms.axis[0] * sphere.Radius();
     points[1] = sphere.Origin() - parms.axis[0] * sphere.Radius();
-    return GetDepthBoundsFromPoints(2, points, depthMin, depthMax);
+    return GetDepthBoundsFromPoints(2, points, mvp, depthMin, depthMax);
 #else
     float wz = viewMatrix[2][0] * sphere.origin[0] + viewMatrix[2][1] * sphere.origin[1] + viewMatrix[2][2] * sphere.origin[2] + viewMatrix[2][3];
 
@@ -426,21 +426,21 @@ bool SceneView::GetDepthBoundsFromSphere(const Sphere &sphere, float *depthMin, 
 #endif
 }
 
-bool SceneView::GetDepthBoundsFromAABB(const AABB &aabb, float *depthMin, float *depthMax) const {
+bool SceneView::GetDepthBoundsFromAABB(const AABB &aabb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
 #if 1
     Vec3 points[8];
     aabb.ToPoints(points);
-    return GetDepthBoundsFromPoints(8, points, depthMin, depthMax);
+    return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 #else
     return GetDepthBoundsFromOBB(OBB(bounds, Vec3::origin, Mat3::identity), depthMin, depthMax);
 #endif
 }
 
-bool SceneView::GetDepthBoundsFromOBB(const OBB &obb, float *depthMin, float *depthMax) const {
+bool SceneView::GetDepthBoundsFromOBB(const OBB &obb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
 #if 1
     Vec3 points[8];
     obb.ToPoints(points);
-    return GetDepthBoundsFromPoints(8, points, depthMin, depthMax);
+    return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 #else
     float zmin, zmax;
 
@@ -465,11 +465,11 @@ bool SceneView::GetDepthBoundsFromOBB(const OBB &obb, float *depthMin, float *de
 #endif
 }
 
-bool SceneView::GetDepthBoundsFromFrustum(const Frustum &frustum, float *depthMin, float *depthMax) const {
+bool SceneView::GetDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const {
 #if 1
     Vec3 points[8];
     frustum.ToPoints(points);
-    return GetDepthBoundsFromPoints(8, points, depthMin, depthMax);
+    return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 #else
     float zmin, zmax;
 
@@ -494,23 +494,23 @@ bool SceneView::GetDepthBoundsFromFrustum(const Frustum &frustum, float *depthMi
 #endif
 }
 
-bool SceneView::GetDepthBoundsFromLight(const SceneLight *light, float *depthMin, float *depthMax) const {
+bool SceneView::GetDepthBoundsFromLight(const SceneLight *light, const Mat4 &viewProjMatrix, float *depthMin, float *depthMax) const {
     if (light->parms.type == SceneLight::DirectionalLight) {
-        if (!GetDepthBoundsFromOBB(light->obb, depthMin, depthMax)) {
+        if (!GetDepthBoundsFromOBB(light->obb, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
     } else if (light->parms.type == SceneLight::PointLight) {
         if (light->IsRadiusUniform()) {
-            if (!GetDepthBoundsFromSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), depthMin, depthMax)) {
+            if (!GetDepthBoundsFromSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), viewProjMatrix, depthMin, depthMax)) {
                 return false;
             }
         } else {
-            if (!GetDepthBoundsFromOBB(light->obb, depthMin, depthMax)) {
+            if (!GetDepthBoundsFromOBB(light->obb, viewProjMatrix, depthMin, depthMax)) {
                 return false;
             }
         }
     } else if (light->parms.type == SceneLight::SpotLight) {
-        if (!GetDepthBoundsFromFrustum(light->frustum, depthMin, depthMax)) {
+        if (!GetDepthBoundsFromFrustum(light->frustum, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
     } else {

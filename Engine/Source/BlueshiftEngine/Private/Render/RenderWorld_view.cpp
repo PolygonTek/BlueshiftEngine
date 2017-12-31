@@ -815,13 +815,11 @@ void RenderWorld::AddDrawSurf(view_t *view, viewEntity_t *viewEntity, const Mate
     uint64_t materialIndex = materialManager.GetIndexByMaterial(realMaterial);
     uint64_t depthDist = 0;
     
-    if (materialSort == Material::TranslucentSort) {
+    if (materialSort == Material::TranslucentSort || materialSort == Material::OverlaySort) {
         float depthMin = 0.0f;
         float depthMax = 1.0f;
 
-        OBB subMeshObb(subMesh->GetAABB() * viewEntity->def->parms.scale, viewEntity->def->parms.origin, viewEntity->def->parms.axis);
-
-        view->def->GetDepthBoundsFromOBB(subMeshObb, &depthMin, &depthMax);
+        view->def->GetDepthBoundsFromAABB(subMesh->GetAABB(), viewEntity->modelViewProjMatrix, &depthMin, &depthMax);
 
         depthDist = Math::Ftoui16((1.0f - depthMin) * 0xFFFF);
     }
