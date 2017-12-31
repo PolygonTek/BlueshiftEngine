@@ -89,11 +89,12 @@ public:
     bool                GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const;
 
     double              GetDepthFromViewZ(float viewz) const;
-    bool                GetDepthBoundsFromSphere(const Sphere &sphere, double *depthMin, double *depthMax) const;
-    bool                GetDepthBoundsFromAABB(const AABB &bounds, double *depthMin, double *depthMax) const;
-    bool                GetDepthBoundsFromOBB(const OBB &box, double *depthMin, double *depthMax) const;
-    bool                GetDepthBoundsFromFrustum(const Frustum &frustum, double *depthMin, double *depthMax) const;
-    bool                GetDepthBoundsFromLight(const SceneLight *light, double *depthMin, double *depthMax) const;
+    bool                GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, float *depthMin, float *depthMax) const;
+    bool                GetDepthBoundsFromSphere(const Sphere &sphere, float *depthMin, float *depthMax) const;
+    bool                GetDepthBoundsFromAABB(const AABB &bounds, float *depthMin, float *depthMax) const;
+    bool                GetDepthBoundsFromOBB(const OBB &box, float *depthMin, float *depthMax) const;
+    bool                GetDepthBoundsFromFrustum(const Frustum &frustum, float *depthMin, float *depthMax) const;
+    bool                GetDepthBoundsFromLight(const SceneLight *light, float *depthMin, float *depthMax) const;
 
     static void         ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
