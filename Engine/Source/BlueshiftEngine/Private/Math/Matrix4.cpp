@@ -46,39 +46,53 @@ Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
 
 Mat4 Mat4::operator*(const Mat3x4 &a) const {
     Mat4 dst;
-    float *dstPtr = dst.Ptr();
-    const float *m1Ptr = Ptr();
-    const float *m2Ptr = a.Ptr();
 
-    for (int c = 0; c < Cols; c++) {
-        for (int r = 0; r < Rows; r++) {
-            *dstPtr =
-                m1Ptr[0] * m2Ptr[0 * Cols + r] +
-                m1Ptr[1] * m2Ptr[1 * Cols + r] +
-                m1Ptr[2] * m2Ptr[2 * Cols + r];
-            dstPtr++;
-        }
-        m1Ptr += Cols;
-    }
+    dst[0][0] = mat[0][0] * a[0][0] + mat[0][1] * a[1][0] + mat[0][2] * a[2][0];
+    dst[0][1] = mat[0][0] * a[0][1] + mat[0][1] * a[1][1] + mat[0][2] * a[2][1];
+    dst[0][2] = mat[0][0] * a[0][2] + mat[0][1] * a[1][2] + mat[0][2] * a[2][2];
+    dst[0][3] = mat[0][0] * a[0][3] + mat[0][1] * a[1][3] + mat[0][2] * a[2][3] + mat[0][3];
+
+    dst[1][0] = mat[1][0] * a[0][0] + mat[1][1] * a[1][0] + mat[1][2] * a[2][0];
+    dst[1][1] = mat[1][0] * a[0][1] + mat[1][1] * a[1][1] + mat[1][2] * a[2][1];
+    dst[1][2] = mat[1][0] * a[0][2] + mat[1][1] * a[1][2] + mat[1][2] * a[2][2];
+    dst[1][3] = mat[1][0] * a[0][3] + mat[1][1] * a[1][3] + mat[1][2] * a[2][3] + mat[1][3];
+
+    dst[2][0] = mat[2][0] * a[0][0] + mat[2][1] * a[1][0] + mat[2][2] * a[2][0];
+    dst[2][1] = mat[2][0] * a[0][1] + mat[2][1] * a[1][1] + mat[2][2] * a[2][1];
+    dst[2][2] = mat[2][0] * a[0][2] + mat[2][1] * a[1][2] + mat[2][2] * a[2][2];
+    dst[2][3] = mat[2][0] * a[0][3] + mat[2][1] * a[1][3] + mat[2][2] * a[2][3] + mat[2][3];
+
+    dst[3][0] = mat[3][0] * a[0][0] + mat[3][1] * a[1][0] + mat[3][2] * a[2][0];
+    dst[3][1] = mat[3][0] * a[0][1] + mat[3][1] * a[1][1] + mat[3][2] * a[2][1];
+    dst[3][2] = mat[3][0] * a[0][2] + mat[3][1] * a[1][2] + mat[3][2] * a[2][2];
+    dst[3][3] = mat[3][0] * a[0][3] + mat[3][1] * a[1][3] + mat[3][2] * a[2][3] + mat[3][3];
+
     return dst;
 }
 
 Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
     Mat4 dst;
-    float *dstPtr = dst.Ptr();
-    const float *m1Ptr = Ptr();
-    const float *m2Ptr = a.Ptr();
 
-    for (int c = 0; c < Cols; c++) {
-        for (int r = 0; r < Rows; r++) {
-            *dstPtr =
-                m1Ptr[0 * Cols] * m2Ptr[0 * Cols + r] +
-                m1Ptr[1 * Cols] * m2Ptr[1 * Cols + r] +
-                m1Ptr[2 * Cols] * m2Ptr[2 * Cols + r];
-            dstPtr++;
-        }
-        m1Ptr += 1;
-    }
+    dst[0][0] = mat[0][0] * a[0][0] + mat[0][1] * a[0][1] + mat[0][2] * a[0][2] + mat[0][3] * a[0][3];
+    dst[0][1] = mat[0][0] * a[1][0] + mat[0][1] * a[1][1] + mat[0][2] * a[1][2] + mat[1][3] * a[1][3];
+    dst[0][2] = mat[0][0] * a[2][0] + mat[0][1] * a[2][1] + mat[0][2] * a[2][2] + mat[2][3] * a[2][3];
+    dst[0][3] = mat[0][3];
+
+    dst[1][0] = mat[1][0] * a[0][0] + mat[1][1] * a[0][1] + mat[1][2] * a[0][2] + mat[1][3] * a[0][3];
+    dst[1][1] = mat[1][0] * a[1][0] + mat[1][1] * a[1][1] + mat[1][2] * a[1][2] + mat[1][3] * a[1][3];
+    dst[1][2] = mat[1][0] * a[2][0] + mat[1][1] * a[2][1] + mat[1][2] * a[2][2] + mat[1][3] * a[2][3];
+    dst[1][3] = mat[1][3];
+
+    dst[2][0] = mat[2][0] * a[0][0] + mat[2][1] * a[0][1] + mat[2][2] * a[0][2] + mat[2][3] * a[0][3];
+    dst[2][1] = mat[2][0] * a[1][0] + mat[2][1] * a[1][1] + mat[2][2] * a[1][2] + mat[2][3] * a[1][3];
+    dst[2][2] = mat[2][0] * a[2][0] + mat[2][1] * a[2][1] + mat[2][2] * a[2][2] + mat[2][3] * a[2][3];
+    dst[2][3] = mat[2][3];
+
+    dst[3][0] = mat[3][0] * a[0][0] + mat[3][1] * a[0][1] + mat[3][2] * a[0][2] + mat[3][3] * a[0][3];
+    dst[3][1] = mat[3][0] * a[1][0] + mat[3][1] * a[1][1] + mat[3][2] * a[1][2] + mat[3][3] * a[1][3];
+    dst[3][2] = mat[3][0] * a[2][0] + mat[3][1] * a[2][1] + mat[3][2] * a[2][2] + mat[3][3] * a[2][3];
+    dst[3][3] = mat[3][3];
+    
     return dst;
 }
 
