@@ -350,24 +350,6 @@ bool SceneView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) c
     return true;
 }
 
-double SceneView::GetDepthFromViewZ(float viewz) const {
-    double clipz, clipw;
-
-    if (viewz >= 0.0f) {
-        return 0.0;
-    }
-
-    /*	if (isInfiniteProjection) {
-    clipz = infiniteProjMatrix[2][2] * viewz + infiniteProjMatrix[2][3];
-    clipw = infiniteProjMatrix[3][2] * viewz + infiniteProjMatrix[3][3];
-    } else {*/
-    clipz = projMatrix[2][2] * viewz + projMatrix[2][3];
-    clipw = projMatrix[3][2] * viewz + projMatrix[3][3];
-    //	}
-
-    return (clipz / clipw + 1.0) * 0.5;
-}
-
 bool SceneView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     float localMin = Math::Infinity;
     float localMax = -Math::Infinity;
@@ -398,100 +380,28 @@ bool SceneView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, cons
 }
 
 bool SceneView::GetDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const {
-#if 1
     Vec3 points[2];
     points[0] = sphere.Origin() + parms.axis[0] * sphere.Radius();
     points[1] = sphere.Origin() - parms.axis[0] * sphere.Radius();
     return GetDepthBoundsFromPoints(2, points, mvp, depthMin, depthMax);
-#else
-    float wz = viewMatrix[2][0] * sphere.origin[0] + viewMatrix[2][1] * sphere.origin[1] + viewMatrix[2][2] * sphere.origin[2] + viewMatrix[2][3];
-
-    float zmin = wz + sphere.radius;
-    float zmax = wz - sphere.radius;
-
-    double dmin = GetDepthFromViewZ(zmin);
-    Clamp(dmin, 0.0, 0.999999);
-
-    double dmax = GetDepthFromViewZ(zmax);
-    Clamp(dmax, 0.0, 0.999999);
-
-    if (dmax - dmin <= 0.0) {
-        return false;
-    }
-
-    *depthMin = dmin;
-    *depthMax = dmax;
-
-    return true;
-#endif
 }
 
 bool SceneView::GetDepthBoundsFromAABB(const AABB &aabb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
-#if 1
     Vec3 points[8];
     aabb.ToPoints(points);
     return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
-#else
-    return GetDepthBoundsFromOBB(OBB(bounds, Vec3::origin, Mat3::identity), depthMin, depthMax);
-#endif
 }
 
 bool SceneView::GetDepthBoundsFromOBB(const OBB &obb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
-#if 1
     Vec3 points[8];
     obb.ToPoints(points);
     return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
-#else
-    float zmin, zmax;
-
-    OBB b = box.Translate(-parms.origin);
-    // x 축으로 투영했을때의 view 깊이 좌표값 min, max
-    b.AxisProjection(-parms.axis[0], zmax, zmin);
-
-    double dmin = GetDepthFromViewZ(zmin);
-    Clamp(dmin, 0.0, 0.999999);
-
-    double dmax = GetDepthFromViewZ(zmax);
-    Clamp(dmax, 0.0, 0.999999);
-
-    if (dmax - dmin <= 0.0) {
-        return false;
-    }
-
-    *depthMin = dmin;
-    *depthMax = dmax;
-
-    return true;
-#endif
 }
 
 bool SceneView::GetDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const {
-#if 1
     Vec3 points[8];
     frustum.ToPoints(points);
     return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
-#else
-    float zmin, zmax;
-
-    Frustum f = frustum.Translate(-parms.origin);
-    // x 축으로 투영했을때의 view 깊이 좌표값 min, max
-    f.AxisProjection(-parms.axis[0], zmax, zmin);
-
-    double dmin = GetDepthFromViewZ(zmin);
-    Clamp(dmin, 0.0, 0.999999);
-
-    double dmax = GetDepthFromViewZ(zmax);
-    Clamp(dmax, 0.0, 0.999999);
-
-    if (dmax - dmin <= 0.0) {
-        return false;
-    }
-
-    *depthMin = dmin;
-    *depthMax = dmax;
-
-    return true;
-#endif
 }
 
 bool SceneView::GetDepthBoundsFromLight(const SceneLight *light, const Mat4 &viewProjMatrix, float *depthMin, float *depthMax) const {

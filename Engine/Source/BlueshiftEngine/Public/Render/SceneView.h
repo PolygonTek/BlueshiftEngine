@@ -88,7 +88,6 @@ public:
     
     bool                GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const;
 
-    double              GetDepthFromViewZ(float viewz) const;
     bool                GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                GetDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                GetDepthBoundsFromAABB(const AABB &bounds, const Mat4 &mvp, float *depthMin, float *depthMax) const;
