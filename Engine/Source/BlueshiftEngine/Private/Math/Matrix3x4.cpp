@@ -26,18 +26,18 @@ void Mat3x4::Translate(float tx, float ty, float tz) {
     mat[2][3] = mat[2][0] * tx + mat[2][1] * ty + mat[2][2] * tz + mat[2][3];
 }
 
+//---------------------------------------------------
+//
+//        | sx   0   0 | | m00  m01  m02  m03 |
+// S M  = |  0  sy   0 | | m10  m11  m12  m13 |
+//        |  0   0  sz | | m20  m21  m22  m23 |
+//
+//---------------------------------------------------
+
 void Mat3x4::Scale(float sx, float sy, float sz) {
-    mat[0][0] *= sx;
-    mat[0][1] *= sy;
-    mat[0][2] *= sz;
-
-    mat[1][0] *= sx;
-    mat[1][1] *= sy;
-    mat[1][2] *= sz;
-
-    mat[2][0] *= sx;
-    mat[2][1] *= sy;
-    mat[2][2] *= sz;
+    mat[0] *= sx;
+    mat[1] *= sy;
+    mat[2] *= sz;
 }
 
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {

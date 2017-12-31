@@ -201,6 +201,10 @@ public:
                         /// Scales by the given factors, in-place
     Mat3                Scale(const Vec3 &scale) const;
 
+                        /// Returns scaling matrix
+    static Mat3         FromScale(float sx, float sy, float sz);
+    static Mat3         FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
+
     Mat4                ToMat4() const;
     Angles              ToAngles() const;
     Rotation            ToRotation() const;
@@ -535,6 +539,22 @@ BE_INLINE Mat3 &Mat3::TransposeSelf() {
     mat[2][1] = tmp2;
 
     return *this;
+}
+
+BE_INLINE Mat3 Mat3::FromScale(float sx, float sy, float sz) {
+    Mat3 m;
+    m.mat[0][0] = sx;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = 0;
+
+    m.mat[0][0] = 0;
+    m.mat[0][1] = sy;
+    m.mat[0][2] = 0;
+
+    m.mat[0][0] = 0;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = sz;
+    return m;
 }
 
 BE_INLINE const char *Mat3::ToString(int precision) const {

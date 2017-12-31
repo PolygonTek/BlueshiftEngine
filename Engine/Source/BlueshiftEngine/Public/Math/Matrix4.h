@@ -231,10 +231,19 @@ public:
     void                Translate(float tx, float ty, float tz);
 
                         /// Scales by the given factors, in-place.
-    void                Scale(const Vec3 &s) { Scale(s.x, s.y, s.z); }
     void                Scale(float sx, float sy, float sz);
+    void                Scale(const Vec3 &s) { Scale(s.x, s.y, s.z); }
+
                         /// Performs uniform scaling by the given amout, in-place.
     void                UniformScale(const float s) { Scale(s, s, s); }
+
+                        /// Returns translation matrix
+    static Mat4         FromTranslation(float tx, float ty, float tz);
+    static Mat4         FromTranslation(const Vec3 &t) { return FromTranslation(t.x, t.y, t.z); }
+
+                        /// Returns scaling matrix
+    static Mat4         FromScale(float sx, float sy, float sz);
+    static Mat4         FromScale(const Vec3 &s) { return FromTranslation(s.x, s.y, s.z); }
 
                         /// LU decomposition, in-place.
     bool                DecompLU();
@@ -730,6 +739,54 @@ BE_INLINE Vec3 Mat4::ToScaleVec3() const {
 
 BE_INLINE Vec3 Mat4::ToTranslationVec3() const {
     return Vec3(mat[0][3], mat[1][3], mat[2][3]);
+}
+
+BE_INLINE Mat4 Mat4::FromTranslation(float tx, float ty, float tz) {
+    Mat4 m;
+    m.mat[0][0] = 1;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = 0;
+    m.mat[0][3] = tx;
+
+    m.mat[1][0] = 0;
+    m.mat[1][1] = 1;
+    m.mat[1][2] = 0;
+    m.mat[1][3] = ty;
+
+    m.mat[2][0] = 0;
+    m.mat[2][1] = 0;
+    m.mat[2][2] = 1;
+    m.mat[2][3] = tz;
+
+    m.mat[3][0] = 0;
+    m.mat[3][1] = 0;
+    m.mat[3][2] = 0;
+    m.mat[3][3] = 1;
+    return m;
+}
+
+BE_INLINE Mat4 Mat4::FromScale(float sx, float sy, float sz) {
+    Mat4 m;
+    m.mat[0][0] = sx;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = 0;
+    m.mat[0][3] = 0;
+
+    m.mat[0][0] = 0;
+    m.mat[0][1] = sy;
+    m.mat[0][2] = 0;
+    m.mat[0][3] = 0;
+
+    m.mat[0][0] = 0;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = sz;
+    m.mat[0][3] = 0;
+
+    m.mat[3][0] = 0;
+    m.mat[3][1] = 0;
+    m.mat[3][2] = 0;
+    m.mat[3][3] = 1;
+    return m;
 }
 
 BE_INLINE const char *Mat4::ToString(int precision) const {

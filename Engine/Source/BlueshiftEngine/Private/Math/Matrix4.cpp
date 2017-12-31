@@ -516,18 +516,19 @@ void Mat4::Translate(float tx, float ty, float tz) {
     mat[3][3] = mat[3][0] * tx + mat[3][1] * ty + mat[3][2] * tz + mat[3][3];
 }
 
-void Mat4::Scale(float sx, float sy, float sz) {
-    mat[0][0] *= sx;
-    mat[0][1] *= sy;
-    mat[0][2] *= sz;
-    
-    mat[1][0] *= sx;
-    mat[1][1] *= sy;
-    mat[1][2] *= sz;
+//---------------------------------------------------
+//
+//        | sx   0   0  0 | | m00  m01  m02  m03 |
+// S M  = |  0  sy   0  0 | | m10  m11  m12  m13 |
+//        |  0   0  sz  0 | | m20  m21  m22  m23 |
+//        |  0   0   0  1 | | m30  m31  m32  m33 |
+//
+//---------------------------------------------------
 
-    mat[2][0] *= sx;
-    mat[2][1] *= sy;
-    mat[2][2] *= sz;
+void Mat4::Scale(float sx, float sy, float sz) {
+    mat[0] *= sx;
+    mat[1] *= sy;
+    mat[2] *= sz;
 }
 
 void Mat4::SetFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
