@@ -165,6 +165,16 @@ public:
                         /// Inverts this matrix, in-place.
     void                InverseSelf();
 
+                        /// Translates by the given offset, in-place.
+    void                Translate(const Vec3 &t) { Translate(t.x, t.y, t.z); }
+    void                Translate(float tx, float ty, float tz);
+
+                        /// Scales by the given factors, in-place.
+    void                Scale(const Vec3 &s) { Scale(s.x, s.y, s.z); }
+    void                Scale(float sx, float sy, float sz);
+                        /// Performs uniform scaling by the given amout, in-place.
+    void                UniformScale(const float s) { Scale(s, s, s); }
+
     Vec3                Transform(const Vec3 &v) const;
     Vec3                Transform(const Vec4 &v) const;
     Vec3                TransformNormal(const Vec3 &v) const;

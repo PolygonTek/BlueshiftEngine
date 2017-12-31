@@ -20,6 +20,26 @@ BE_NAMESPACE_BEGIN
 const Mat3x4 Mat3x4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
 const Mat3x4 Mat3x4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0));
 
+void Mat3x4::Translate(float tx, float ty, float tz) {
+    mat[0][3] = mat[0][0] * tx + mat[0][1] * ty + mat[0][2] * tz + mat[0][3];
+    mat[1][3] = mat[1][0] * tx + mat[1][1] * ty + mat[1][2] * tz + mat[1][3];
+    mat[2][3] = mat[2][0] * tx + mat[2][1] * ty + mat[2][2] * tz + mat[2][3];
+}
+
+void Mat3x4::Scale(float sx, float sy, float sz) {
+    mat[0][0] *= sx;
+    mat[0][1] *= sy;
+    mat[0][2] *= sz;
+
+    mat[1][0] *= sx;
+    mat[1][1] *= sy;
+    mat[1][2] *= sz;
+
+    mat[2][0] *= sx;
+    mat[2][1] *= sy;
+    mat[2][2] *= sz;
+}
+
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
     Mat3x4 dst;
 

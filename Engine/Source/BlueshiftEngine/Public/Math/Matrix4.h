@@ -138,9 +138,11 @@ public:
     
                         /// Multiplies this matrix with the given matrix, in-place
     Mat4 &              MulSelf(const Mat4 &m) { *this *= m; return *this; }
+    Mat4 &              MulSelf(const Mat3x4 &m) { *this *= m; return *this; }
                         /// Multiplies this matrix with the given matrix, in-place
                         /// This function is identical to the member function MulSelf().
     Mat4 &              operator*=(const Mat4 &rhs);
+    Mat4 &              operator*=(const Mat3x4 &rhs);
     
                         /// Multiplies this matrix with the given scalar, in-place
     Mat4 &              MulScalarSelf(float s) { *this *= s; return *this; }
@@ -224,12 +226,6 @@ public:
                         /// Inverts a euclidean matrix, in-place.
     bool                EuclideanInverseSelf();
 
-                        /// LU decomposition, in-place.
-    bool                DecompLU();
-
-                        /// Solve Ax = b with LU decomposition.
-    Vec4                SolveLU(const Vec4 &b) const;
-
                         /// Translates by the given offset, in-place.
     void                Translate(const Vec3 &t) { Translate(t.x, t.y, t.z); }
     void                Translate(float tx, float ty, float tz);
@@ -238,7 +234,13 @@ public:
     void                Scale(const Vec3 &s) { Scale(s.x, s.y, s.z); }
     void                Scale(float sx, float sy, float sz);
                         /// Performs uniform scaling by the given amout, in-place.
-    void                UniformScale(const float s);
+    void                UniformScale(const float s) { Scale(s, s, s); }
+
+                        /// LU decomposition, in-place.
+    bool                DecompLU();
+
+                        /// Solve Ax = b with LU decomposition.
+    Vec4                SolveLU(const Vec4 &b) const;
     
                         /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
@@ -566,6 +568,11 @@ BE_INLINE Mat4 &Mat4::operator-=(const Mat4 &a) {
 }
 
 BE_INLINE Mat4 &Mat4::operator*=(const Mat4 &a) {
+    *this = (*this) * a;
+    return *this;
+}
+
+BE_INLINE Mat4 &Mat4::operator*=(const Mat3x4 &a) {
     *this = (*this) * a;
     return *this;
 }

@@ -517,13 +517,17 @@ void Mat4::Translate(float tx, float ty, float tz) {
 }
 
 void Mat4::Scale(float sx, float sy, float sz) {
-    mat[0] *= sx;
-    mat[1] *= sy;
-    mat[2] *= sz;
-}
+    mat[0][0] *= sx;
+    mat[0][1] *= sy;
+    mat[0][2] *= sz;
+    
+    mat[1][0] *= sx;
+    mat[1][1] *= sy;
+    mat[1][2] *= sz;
 
-void Mat4::UniformScale(const float s) {
-    Scale(s, s, s);
+    mat[2][0] *= sx;
+    mat[2][1] *= sy;
+    mat[2][2] *= sz;
 }
 
 void Mat4::SetFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
