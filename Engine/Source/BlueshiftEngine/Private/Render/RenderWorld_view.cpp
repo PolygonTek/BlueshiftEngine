@@ -165,7 +165,7 @@ void RenderWorld::FindViewLightsAndEntities(view_t *view) {
             Swap(inverse[0], inverse[2]);
             Swap(inverse[1], inverse[2]);
 
-            Mat4 billboardMatrix = inverse.Scale(sceneEntity->parms.scale).ToMat4();
+            Mat3 billboardMatrix = inverse * Mat3::FromScale(sceneEntity->parms.scale);
             viewEntity->modelViewMatrix *= billboardMatrix;
             viewEntity->modelViewProjMatrix *= billboardMatrix;
         }
@@ -706,6 +706,18 @@ static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
 }
 
 void RenderWorld::SortDrawSurfs(view_t *view) {
+    /*uint64_t *indices = (uint64_t *)_alloca16(view->numDrawSurfs * sizeof(indices[0]));
+
+    for (int i = 0; i < view->numDrawSurfs; i++) {
+        DrawSurf *surf = view->drawSurfs[i];
+
+        if (surf->flags & DrawSurf::AmbientVisible) {
+            //AABB surfBounds = surf->space->modelViewMatrix * surf->subMesh->GetAABB();
+        }
+
+        //indices[i] = 
+    }*/
+
     qsort(view->drawSurfs, view->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);
 }
 

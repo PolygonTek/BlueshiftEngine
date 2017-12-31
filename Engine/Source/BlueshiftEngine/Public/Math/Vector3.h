@@ -244,16 +244,16 @@ public:
                         /// Sets from spherical linear interpolation between the vector v1 and the vector v2.
     void                SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t);
 
-                        /// Sets this vector on the unit sphere has uniform distribution with the given random variables u1, u2 [0, 1].
+                        /// Returns vector on the unit sphere has uniform distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromUniformSampleSphere(float u1, float u2);
 
-                        /// Sets this vector on the unit hemisphere has uniform distribution with the given random variables u1, u2 [0, 1].
+                        /// Returns vector on the unit hemisphere has uniform distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromUniformSampleHemisphere(float u1, float u2);
 
-                        /// Sets this vector on the unit hemisphere has cosine weighted distribution with the given random variables u1, u2 [0, 1].
+                        /// Returns vector on the unit hemisphere has cosine weighted distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromCosineSampleHemisphere(float u1, float u2);
 
-                        /// Sets this vector on the unit hemisphere has powered cosine weighted distribution with the given random variables u1, u2 [0, 1].
+                        /// Returns vector on the unit hemisphere has powered cosine weighted distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromPowerCosineSampleHemisphere(float u1, float u2, float power);
 
                         /// Compute yaw angle in degree looking from the viewpoint of 2D view in x-y plane.
