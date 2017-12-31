@@ -295,6 +295,12 @@ public:
     static int                  Ftoi(float f);
                                 /// Fast float to int conversion but uses current FPU round mode (default round nearest)
     static int                  FtoiFast(float f);
+                                /// Float to char conversion
+    static int8_t               Ftoi8(float f);
+                                /// Float to short conversion
+    static int16_t              Ftoi16(float f);
+                                /// Float to unsigned short conversion
+    static uint16_t             Ftoui16(float f);
                                 /// Float to byte conversion, the result is clamped to the range [0-255]
     static byte                 Ftob(float f);
 
@@ -913,6 +919,53 @@ BE_INLINE int Math::FtoiFast(float f) {
     // If a converted result is larger than the maximum signed doubleword integer the result is undefined.
     return C_FLOAT_TO_INT(f);
 #endif
+}
+
+BE_INLINE int8_t Math::Ftoi8(float f) {
+#ifdef BE_WIN_X86_SSE_INTRIN
+    __m128 x = _mm_load_ss(&f);
+    x = _mm_max_ss(x, SIMD_SP_min_char);
+    x = _mm_min_ss(x, SIMD_SP_max_char);
+    return static_cast<int8_t>(_mm_cvttss_si32(x));
+#else
+    // The converted result is clamped to the range [-128, 127].
+    int i = C_FLOAT_TO_INT(f);
+    if (i < -128) {
+        return -128;
+    } else if (i > 127) {
+        return 127;
+    }
+    return static_cast<int8_t>(i);
+#endif
+}
+
+BE_INLINE int16_t Math::Ftoi16(float f) {
+#ifdef BE_WIN_X86_SSE_INTRIN
+    __m128 x = _mm_load_ss(&f);
+    x = _mm_max_ss(x, SIMD_SP_min_short);
+    x = _mm_min_ss(x, SIMD_SP_max_short);
+    return static_cast<int16_t>(_mm_cvttss_si32(x));
+#else
+    // The converted result is clamped to the range [-32768, 32767].
+    int i = C_FLOAT_TO_INT(f);
+    if (i < -32768) {
+        return -32768;
+    } else if (i > 32767) {
+        return 32767;
+    }
+    return static_cast<int16_t>(i);
+#endif
+}
+
+BE_INLINE uint16_t Math::Ftoui16(float f) {
+    // The converted result is clamped to the range [0, 65535].
+    int i = C_FLOAT_TO_INT(f);
+    if (i < 0) {
+        return 0;
+    } else if (i > 65535) {
+        return 65535;
+    }
+    return static_cast<uint16_t>(i);
 }
 
 BE_INLINE byte Math::Ftob(float f) {

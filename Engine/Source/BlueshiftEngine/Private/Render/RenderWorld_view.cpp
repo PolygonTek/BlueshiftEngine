@@ -706,18 +706,6 @@ static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
 }
 
 void RenderWorld::SortDrawSurfs(view_t *view) {
-    /*uint64_t *indices = (uint64_t *)_alloca16(view->numDrawSurfs * sizeof(indices[0]));
-
-    for (int i = 0; i < view->numDrawSurfs; i++) {
-        DrawSurf *surf = view->drawSurfs[i];
-
-        if (surf->flags & DrawSurf::AmbientVisible) {
-            //AABB surfBounds = surf->space->modelViewMatrix * surf->subMesh->GetAABB();
-        }
-
-        //indices[i] = 
-    }*/
-
     qsort(view->drawSurfs, view->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);
 }
 
@@ -822,7 +810,30 @@ void RenderWorld::AddDrawSurf(view_t *view, viewEntity_t *viewEntity, const Mate
     drawSurf->subMesh           = subMesh;
     drawSurf->flags             = flags;
 
-    drawSurf->MakeSortKey(viewEntity->def->index, realMaterial);
+    uint64_t materialSort = realMaterial->GetSort();
+    uint64_t entityIndex = viewEntity->def->index;
+    uint64_t materialIndex = materialManager.GetIndexByMaterial(realMaterial);
+    uint64_t depthDist = 0;
+    
+    if (materialSort == Material::TranslucentSort) {
+        float depthMin = 0.0f;
+        float depthMax = 1.0f;
+
+        OBB subMeshObb(subMesh->GetAABB() * viewEntity->def->parms.scale, viewEntity->def->parms.origin, viewEntity->def->parms.axis);
+
+        view->def->GetDepthBoundsFromOBB(subMeshObb, &depthMin, &depthMax);
+
+        depthDist = Math::Ftoui16((1.0f - depthMin) * 0xFFFF);
+    }
+
+    //---------------------------------------------------
+    // sortKey bits:
+    // 0xFFFF000000000000 (0~65535) : material sort
+    // 0x0000FFFF00000000 (0~65535) : depth dist
+    // 0x00000000FFFF0000 (0~65535) : entity index
+    // 0x000000000000FFFF (0~65535) : material index
+    //---------------------------------------------------
+    drawSurf->sortKey = ((materialSort << 48) | (depthDist << 32) | (entityIndex << 16) | materialIndex);
     
     view->drawSurfs[view->numDrawSurfs++] = drawSurf;
 }

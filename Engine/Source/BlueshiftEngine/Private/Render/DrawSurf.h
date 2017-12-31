@@ -24,8 +24,6 @@ public:
         SkipSelection       = BIT(2)
     };
 
-    void                    MakeSortKey(int entityIdx, const Material *material);
-
     uint64_t                sortKey;
     uint32_t                flags;
     const viewEntity_t *    space;              ///< entity of this surface
@@ -33,15 +31,5 @@ public:
     const float *           materialRegisters;
     SubMesh *               subMesh;
 };
-
-//---------------------------------------------------
-// sortKey bits:
-// 0x0000FFFF00000000 (0~65535) : material sort
-// 0x00000000FFFF0000 (0~65535) : entity index
-// 0x000000000000FFFF (0~65535) : material index
-//---------------------------------------------------
-BE_INLINE void DrawSurf::MakeSortKey(int entityIdx, const Material *material) {
-    sortKey = (((uint64_t)material->GetSort() << 32) | ((uint64_t)entityIdx << 16) | (uint64_t)materialManager.GetIndexByMaterial(material));
-}
 
 BE_NAMESPACE_END
