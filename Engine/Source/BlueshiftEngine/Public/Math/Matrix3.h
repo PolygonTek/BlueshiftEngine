@@ -547,13 +547,13 @@ BE_INLINE Mat3 Mat3::FromScale(float sx, float sy, float sz) {
     m.mat[0][1] = 0;
     m.mat[0][2] = 0;
 
-    m.mat[0][0] = 0;
-    m.mat[0][1] = sy;
-    m.mat[0][2] = 0;
+    m.mat[1][0] = 0;
+    m.mat[1][1] = sy;
+    m.mat[1][2] = 0;
 
-    m.mat[0][0] = 0;
-    m.mat[0][1] = 0;
-    m.mat[0][2] = sz;
+    m.mat[2][0] = 0;
+    m.mat[2][1] = 0;
+    m.mat[2][2] = sz;
     return m;
 }
 
