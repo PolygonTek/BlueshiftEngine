@@ -280,11 +280,27 @@ void Mat3::Rotate(const Vec3 &axis, const float degree) {
     *this = rot.ToMat3() * *this;
 }
 
+//------------------------------------------------
+//
+//        | sx   0   0 | | m00  m10  m20 |
+// S M  = |  0  sy   0 | | m01  m11  m21 |
+//        |  0   0  sz | | m02  m12  m22 |
+//
+//------------------------------------------------
+
 Mat3 Mat3::Scale(const Vec3 &scale) const {
     Mat3 m;
-    m[0] = mat[0] * scale.x;
-    m[1] = mat[1] * scale.y;
-    m[2] = mat[2] * scale.z;
+    m[0][0] = mat[0][0] * scale.x;
+    m[0][1] = mat[0][1] * scale.y;
+    m[0][2] = mat[0][2] * scale.z;
+
+    m[1][0] = mat[1][0] * scale.x;
+    m[1][1] = mat[1][1] * scale.y;
+    m[1][2] = mat[1][2] * scale.z;
+
+    m[2][0] = mat[2][0] * scale.x;
+    m[2][1] = mat[2][1] * scale.y;
+    m[2][2] = mat[2][2] * scale.z;
     return m;
 }
 
