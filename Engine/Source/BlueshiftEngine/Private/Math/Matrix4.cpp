@@ -20,6 +20,68 @@ BE_NAMESPACE_BEGIN
 const Mat4 Mat4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
 const Mat4 Mat4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0), Vec4(0, 0, 0, 1));
 
+Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[0][1];
+    mat[0][2] = rhs[0][2];
+    mat[0][3] = rhs[0][3];
+
+    mat[1][0] = rhs[1][0];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[1][2];
+    mat[1][3] = rhs[1][3];
+
+    mat[2][0] = rhs[2][0];
+    mat[2][1] = rhs[2][1];
+    mat[2][2] = rhs[2][2];
+    mat[2][3] = rhs[2][3];
+
+    mat[3][0] = 0;
+    mat[3][1] = 0;
+    mat[3][2] = 0;
+    mat[3][3] = 1;
+
+    return *this;
+}
+
+Mat4 Mat4::operator*(const Mat3x4 &a) const {
+    Mat4 dst;
+    float *dstPtr = dst.Ptr();
+    const float *m1Ptr = Ptr();
+    const float *m2Ptr = a.Ptr();
+
+    for (int c = 0; c < Cols; c++) {
+        for (int r = 0; r < Rows; r++) {
+            *dstPtr =
+                m1Ptr[0] * m2Ptr[0 * Cols + r] +
+                m1Ptr[1] * m2Ptr[1 * Cols + r] +
+                m1Ptr[2] * m2Ptr[2 * Cols + r];
+            dstPtr++;
+        }
+        m1Ptr += Cols;
+    }
+    return dst;
+}
+
+Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
+    Mat4 dst;
+    float *dstPtr = dst.Ptr();
+    const float *m1Ptr = Ptr();
+    const float *m2Ptr = a.Ptr();
+
+    for (int c = 0; c < Cols; c++) {
+        for (int r = 0; r < Rows; r++) {
+            *dstPtr =
+                m1Ptr[0 * Cols] * m2Ptr[0 * Cols + r] +
+                m1Ptr[1 * Cols] * m2Ptr[1 * Cols + r] +
+                m1Ptr[2 * Cols] * m2Ptr[2 * Cols + r];
+            dstPtr++;
+        }
+        m1Ptr += 1;
+    }
+    return dst;
+}
+
 Mat4 Mat4::Transpose() const {
     Mat4 transpose;
     

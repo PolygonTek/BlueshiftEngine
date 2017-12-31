@@ -111,6 +111,7 @@ public:
 
                         /// Assign from another matrix.
     Mat3x4 &            operator=(const Mat3x4 &rhs);
+    Mat3x4 &            operator=(const Mat3 &rhs);
 
                         /// Adds a matrix to this matrix, in-place.
     Mat3x4 &            AddSelf(const Mat3x4 &m) { *this += m; return *this; }
@@ -478,6 +479,25 @@ BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3x4 &rhs) {
     mat[2][1] = rhs[2][1];
     mat[2][2] = rhs[2][2];
     mat[2][3] = rhs[2][3];
+
+    return *this;
+}
+
+BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[1][0];
+    mat[0][2] = rhs[2][0];
+    mat[0][3] = 0;
+
+    mat[1][0] = rhs[0][1];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[2][1];
+    mat[1][3] = 0;
+
+    mat[2][0] = rhs[0][2];
+    mat[2][1] = rhs[1][2];
+    mat[2][2] = rhs[2][2];
+    mat[2][3] = 0;
 
     return *this;
 }

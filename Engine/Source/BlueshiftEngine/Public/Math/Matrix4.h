@@ -86,11 +86,14 @@ public:
 
                         /// Multiplies a matrix to this matrix.
     Mat4                Mul(const Mat4 &m) const { return *this * m; }
+    Mat4                Mul(const Mat3x4 &m) const { return *this * m; }
                         /// Returns this->Transpose() * m
     Mat4                TransposedMul(const Mat4 &m) const;
+    Mat4                TransposedMul(const Mat3x4 &m) const;
                         /// Multiplies a matrix to this matrix.
                         /// This function is identical to the member function Mul().
     Mat4                operator*(const Mat4 &rhs) const;
+    Mat4                operator*(const Mat3x4 &rhs) const;
 
                         /// Multiplies this matrix by a scalar.
     Mat4                MulScalar(float s) const { return *this * s; }
@@ -118,6 +121,8 @@ public:
 
                         /// Assign from another matrix.
     Mat4 &              operator=(const Mat4 &rhs);
+    Mat4 &              operator=(const Mat3x4 &rhs);
+    Mat4 &              operator=(const Mat3 &rhs);
 
                         /// Adds a matrix to this matrix, in-place.
     Mat4 &              AddSelf(const Mat4 &m) { *this += m; return *this; }
@@ -484,6 +489,30 @@ BE_INLINE Mat4 &Mat4::operator=(const Mat4 &rhs) {
     mat[3][1] = rhs[3][1];
     mat[3][2] = rhs[3][2];
     mat[3][3] = rhs[3][3];
+
+    return *this;
+}
+
+BE_INLINE Mat4 &Mat4::operator=(const Mat3 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[1][0];
+    mat[0][2] = rhs[2][0];
+    mat[0][3] = 0;
+
+    mat[1][0] = rhs[0][1];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[2][1];
+    mat[1][3] = 0;
+
+    mat[2][0] = rhs[0][2];
+    mat[2][1] = rhs[1][2];
+    mat[2][2] = rhs[2][2];
+    mat[2][3] = 0;
+
+    mat[3][0] = 0;
+    mat[3][1] = 0;
+    mat[3][2] = 0;
+    mat[3][3] = 1;
 
     return *this;
 }
