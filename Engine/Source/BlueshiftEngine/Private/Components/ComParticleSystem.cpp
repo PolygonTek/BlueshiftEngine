@@ -665,7 +665,7 @@ bool ComParticleSystem::IsAlive() const {
     return simulationStarted;
 }
 
-void ComParticleSystem::Start() {
+void ComParticleSystem::Play() {
     simulationStarted = true;
     currentTime = 0;
     stopTime = 0;

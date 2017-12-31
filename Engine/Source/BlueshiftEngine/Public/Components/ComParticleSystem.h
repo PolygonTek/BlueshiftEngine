@@ -48,7 +48,7 @@ public:
 
     bool                    IsAlive() const;
 
-    void                    Start();
+    void                    Play();
     void                    Stop();
     void                    Resume();
     void                    Pause();
