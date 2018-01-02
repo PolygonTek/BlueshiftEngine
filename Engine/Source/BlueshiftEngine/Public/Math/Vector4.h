@@ -119,7 +119,7 @@ public:
                         /// This function is identical to the member function DivComp().
                         /// Divides this vector by a vector, element-wise.
     Vec4                operator/(const Vec4 &rhs) const { return Vec4(x / rhs.x, y / rhs.y, z / rhs.z, w / rhs.w); }
-                        /// Divides vector (s, s, s, s) by a vector v, element-wise.
+                        /// Divides vector (s, s, s, s) by a vector, element-wise.
     friend Vec4         operator/(float lhs, const Vec4 &rhs) { return Vec4(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z, lhs / rhs.w); }
     
                         /// Assign from another vector.
