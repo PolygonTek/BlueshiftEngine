@@ -13,25 +13,20 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformTime.h"
+#include "File/FileSystem.h"
 #include "Render/Render.h"
 #include "Physics/Collider.h"
 #include "Physics/Physics.h"
 #include "Input/InputSystem.h"
 #include "Sound/SoundSystem.h"
 #include "AnimController/AnimController.h"
-#include "Components/Component.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
-#include "Components/ComRigidBody.h"
-#include "Components/ComSensor.h"
 #include "Game/Entity.h"
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 #include "Game/GameSettings/TagLayerSettings.h"
 #include "Game/GameSettings/PhysicsSettings.h"
-#include "Containers/StaticArray.h"
-#include "File/FileSystem.h"
 #include "Script/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
@@ -113,24 +108,29 @@ int GameWorld::GetDeltaTime() const {
 }
 
 void GameWorld::ClearAllEntities() {
-    // list entities in depth first order
+    // List up all of the destructable entities in depth first order
     EntityPtrArray entityList;
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         entityList.Append(ent);
     }
 
-    // delete entities in reverse depth first order
+    // Delete entities in reverse depth first order
     for (int i = entityList.Count() - 1; i >= 0; i--) {
-        Entity::DestroyInstanceImmediate(entityList[i]);
-    }
+        Entity *ent = entityList[i];
 
-    memset(entities, 0, sizeof(entities));
+        int entityNum = ent->entityNum;
+
+        ent->node.RemoveFromHierarchy();
+
+        Entity::DestroyInstanceImmediate(ent);
+
+        entities[entityNum] = nullptr;
+    }
 
     firstFreeIndex = 16; // TEMP
 
     entityHash.Free();
     entityTagHash.Free();
-    entityHierarchy.RemoveFromHierarchy();
 
     physicsWorld->ClearScene();
 
@@ -415,8 +415,6 @@ void GameWorld::SpawnEntitiesFromJson(Json::Value &entitiesValue) {
 
 void GameWorld::BeginMapLoading() {
     isMapLoading = true;
-
-    Reset();
 }
 
 void GameWorld::FinishMapLoading() {
@@ -605,6 +603,8 @@ void GameWorld::NewMap() {
 bool GameWorld::LoadMap(const char *filename) {
     BE_LOG(L"Loading map '%hs'...\n", filename);
 
+    Reset();
+
     BeginMapLoading();
 
     char *text = nullptr;
@@ -789,6 +789,8 @@ void GameWorld::SaveSnapshot() {
 }
 
 void GameWorld::RestoreSnapshot() {
+    Reset();
+
     BeginMapLoading();
 
     mapRenderSettings->Deserialize(snapshotValues["renderSettings"]);

@@ -65,38 +65,49 @@ public:
     float                       GetTimeScale() const { return timeScale; }
     void                        SetTimeScale(float timeScale) { this->timeScale = timeScale; }
     
-                                // Reset all entities in this game world
+                                /// Reset all entities in this game world
     void                        Reset();
 
-                                // Simulate physics system and update all registered entities 
+                                /// Simulates physics system and update all registered entities 
     void                        Update(int elapsedTime);
 
-                                // Process mouse (touch) input feedback for all responsive entities
+                                /// Process mouse (touch) input feedback for all responsive entities
     void                        ProcessPointerInput();
 
-                                // Ray intersection test for all entities
+                                /// Ray intersection test for all entities
     Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, const Array<Entity *> &excludingList, float *scale) const;
 
-                                // Render camera component from all registered entities
+                                /// Render camera component from all registered entities
     void                        RenderCamera();
     
+                                /// Returns entity hierarchy.
     Hierarchy<Entity> &         GetEntityHierarchy() { return entityHierarchy; }
+
+                                /// Returns the entity with the given entity index.
     Entity *                    GetEntity(int index) const { return entities[index]; }
 
+                                /// Returns the entity that have given name.
     Entity *                    FindEntity(const char *name) const;
+                                /// Returns the entity that have given GUID.
     Entity *                    FindEntityByGuid(const Guid &guid) const;
+                                /// Returns the entity that have given tag.
     Entity *                    FindEntityByTag(const char *tag) const;
+                                /// Returns all of the entities that match given tag.
     const EntityPtrArray        FindEntitiesByTag(const char *tag) const;
+                                /// Returns an entity by render entity handle.
     Entity *                    FindEntityByRenderEntity(int renderEntityHandle) const;
 
+                                /// Called when entity name changed.
     void                        OnEntityNameChanged(Entity *ent);
+
+                                /// Called when entity tag changed.
     void                        OnEntityTagChanged(Entity *ent);
 
     bool                        IsRegisteredEntity(const Entity *ent) const;
     void                        RegisterEntity(Entity *ent, int spawn_entnum = -1);
     void                        UnregisterEntity(Entity *ent);
 
-                                // Create an entity that has no components but transform component
+                                /// Creates an entity that has no components but transform component
     Entity *                    CreateEmptyEntity(const char *name);
 
     Entity *                    InstantiateEntity(const Entity *originalEntity);
@@ -107,9 +118,6 @@ public:
 
     void                        SaveSnapshot();
     void                        RestoreSnapshot();
-
-    void                        BeginMapLoading();
-    void                        FinishMapLoading();
     
     void                        OnApplicationPause(bool pause);
     void                        OnApplicationTerminate();
@@ -142,6 +150,8 @@ public:
 private:
     void                        Event_RestartGame(const char *mapName);
 
+    void                        BeginMapLoading();
+    void                        FinishMapLoading();
     Entity *                    CloneEntity(const Entity *originalEntity);
     void                        SaveObject(const char *filename, const Object *object) const;
     void                        ClearAllEntities();

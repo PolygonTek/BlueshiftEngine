@@ -100,7 +100,7 @@ public:
                     /// Adds hash/index pair for a inserted element
     void            InsertIndex(const int hash, const int index);
 
-                    /// Remove hash/index pair for a removed element
+                    /// Removes hash/index pair for a removed element
     void            RemoveIndex(const int hash, const int index);
 
                     // hash table 에 분산된 index 개수에 대한 표준 편차를 구한다.

@@ -59,23 +59,24 @@ public:
 
     virtual Str                 ToString() const override { return GetName(); }
     
-                                /// Returns entity name
+                                /// Returns name.
     Str                         GetName() const { return name; }
-                                /// Sets entity name
+                                /// Sets name.
     void                        SetName(const Str &name);
 
-                                /// Returns tag name
+                                /// Returns tag name.
     Str                         GetTag() const { return tag; }
-                                /// Sets tag name
+                                /// Sets tag name.
     void                        SetTag(const Str &tag);
 
-                                /// Returns layer index
+                                /// Returns layer index.
     int                         GetLayer() const { return layer; }
-                                /// Sets layer index
+                                /// Sets layer index.
     void                        SetLayer(int layer);
 
-                                // frozen entity is not selectable in editor
+                                /// Returns if this entity is frozen. Frozen entity will not be selectable in editor.
     bool                        IsFrozen() const { return frozen; }
+                                /// Sets this entity frozen.
     void                        SetFrozen(bool frozen);
 
     bool                        IsPrefabSource() const { return prefab; }
@@ -87,66 +88,70 @@ public:
 
     int                         GetEntityNum() const { return entityNum; }
 
-                                /// Returns hierarchy node
+                                /// Returns hierarchy node.
     const Hierarchy<Entity> &   GetNode() const { return node; }
 
-                                /// Returns root entity
+                                /// Returns root entity.
     Entity *                    GetRoot() const;
                                 /// Is root entity ?
     bool                        IsRoot() const { return GetRoot() == this; }
 
+                                /// Returns parent entity.
     Entity *                    GetParent() const;
+                                /// Sets parent entity.
     void                        SetParent(Entity *parentEntity);
 
+                                /// Returns parent entity GUID.
     Guid                        GetParentGuid() const;
+                                /// Sets parent entity by GUID.
     void                        SetParentGuid(const Guid &parentGuid);
 
+                                /// Returns true if this entity have any children.
     bool                        HasChildren() const;
-                                /// Gets the children by depth first order
-    void                        GetChildren(EntityPtrArray &children) const;    
-                                /// Finds a child entity with the given name
+                                /// Gets the children by depth first order.
+    void                        GetChildren(EntityPtrArray &children) const;
+                                /// Finds a child entity with the given name.
     Entity *                    FindChild(const char *name) const;
     
-                                /// Returns number of components
+                                /// Returns number of components.
     int                         NumComponents() const { return components.Count(); }
-                                /// Checks if component exist by the given meta object
+                                /// Checks if component exist by the given meta object.
     bool                        HasComponent(const MetaObject *type) const;
-                                /// Returns a component pointer that is conflicting with other components
+                                /// Returns a component pointer that is conflicting with other components.
     Component *                 GetConflictingComponent(const MetaObject *type) const;
-                                /// Returns index of the component pointer
+                                /// Returns index of the component pointer.
     int                         GetComponentIndex(const Component *component) const;
-                                /// Returns a component pointer by the given comopnent index
+                                /// Returns a component pointer by the given comopnent index.
     Component *                 GetComponent(int index) const { return components[index]; }
-                                /// Returns a component pointer by the given meta object
+                                /// Returns a component pointer by the given meta object.
     Component *                 GetComponent(const MetaObject *type) const;
-                                /// Returns a component pointer by the given type T
+                                /// Returns a component pointer by the given type T.
     template <typename T> T *   GetComponent() const;
-                                /// Returns a component pointer array of all
+                                /// Returns a component pointer array of all.
     ComponentPtrArray &         GetComponents() { return components; }
-                                /// Returns a component pointer array by the given meta object
+                                /// Returns a component pointer array by the given meta object.
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
 
-                                /// Returns a transform component
+                                /// Returns a transform component.
     ComTransform *              GetTransform() const;
 
-                                /// Adds a component to the entity
+                                /// Adds a component to the entity.
     void                        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
-                                /// Inserts a component after the index to the entity
+                                /// Inserts a component after the index to the entity.
     void                        InsertComponent(Component *component, int index);
-                                /// Removes a component
+                                /// Removes a component.
     bool                        RemoveComponent(Component *component);
-                                /// Swap two components
+                                /// Swap two components.
     bool                        SwapComponent(int fromIndex, int toIndex);
 
     bool                        HasRenderEntity(int renderEntityHandle) const;
 
-                                /// Purges all of the data
+                                /// Purges all of the data.
     void                        Purge();
 
                                 /// Initializes this entity. Always parent entities will be initialized first.
     void                        Init();
-
-                                /// Initializes components
+                                /// Initializes components.
     void                        InitComponents();
 
                                 /// Called once when game started before Start()
@@ -184,22 +189,20 @@ public:
     const AABB                  GetWorldAABB() const;
     const Vec3                  GetWorldPosition(WorldPosEnum pos = Pivot) const;
 
-                                /// Visualize the component in editor
+                                /// Visualizes the component in editor.
     virtual void                DrawGizmos(const SceneView::Parms &sceneView, bool selected);
 
     virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
 
                                 /// Creates an entity by JSON text.
-                                /// Just initialize properties of an entity and it's components.
-                                /// Later this have to be initialized by it's properties.
     static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr);
 
-                                /// Makes copy of JSON value of an entity and then replace each GUIDs of entity/components to the new ones
+                                /// Makes copy of JSON value of an entity and then replace each GUIDs of entity/components to the new ones.
     static Json::Value          CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap);
-                                /// Makes copy of JSON value of entities and then replace each GUIDs of entity/components to the new ones
+                                /// Makes copy of JSON value of entities and then replace each GUIDs of entity/components to the new ones.
     static Json::Value          CloneEntitiesValue(const Json::Value &entitiesValue, HashTable<Guid, Guid> &oldToNewGuidMap);
 
-                                /// Replaces GUIDs of an entity (including components) using GUID map
+                                /// Replaces GUIDs of an entity (including components) using GUID map.
     static void                 RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMap);
 
     static void                 DestroyInstance(Entity *entity);
@@ -220,12 +223,12 @@ protected:
 
     virtual void                Event_ImmediateDestroy() override;
 
-    Str                         name;           // Entity name
-    int                         nameHash;       // Hash key for gameWorld->entityHash
-    Str                         tag;            // Tag name
-    int                         tagHash;        // Hash key for gameWorld->entityTagHash
-    int                         entityNum;      // Index for gameWorld->entities
-    int                         layer;
+    Str                         name;               ///< Entity name
+    int                         nameHash;           ///< Hash key for GameWorld::entityHash
+    Str                         tag;                ///< Tag name
+    int                         tagHash;            ///< Hash key for GameWorld::entityTagHash
+    int                         entityNum;          ///< Index for GameWorld::entities
+    int                         layer;              ///< Layer number
     Hierarchy<Entity>           node;
     Guid                        prefabSourceGuid;
 
@@ -237,7 +240,7 @@ protected:
 
     GameWorld *                 gameWorld;
 
-    ComponentPtrArray           components;     ///< 0'th component is always transform component
+    ComponentPtrArray           components;         ///< 0'th component is always transform component
 };
 
 template <typename T>
