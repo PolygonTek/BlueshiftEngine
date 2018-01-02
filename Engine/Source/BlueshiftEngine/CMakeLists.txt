@@ -127,6 +127,7 @@ set(ENGINE_FILES
   Public/Platform/PlatformFile.h
   Public/Platform/PlatformThread.h
   Public/Platform/PlatformTime.h
+  Public/Platform/PlatformSystem.h
 
   Public/File/File.h
   Public/File/FileSystem.h
@@ -311,6 +312,7 @@ set(ENGINE_FILES
   Private/Platform/PlatformBaseFile.cpp
   Private/Platform/PlatformBaseThread.cpp
   Private/Platform/PlatformBaseTime.cpp
+  Private/Platform/PlatformBaseSystem.cpp
   Private/File/File.cpp
   Private/File/FileSystem.cpp
   Private/File/FileMapping.cpp
@@ -609,8 +611,10 @@ if (ANDROID)
   list(APPEND ENGINE_FILES
     Public/Platform/Posix/PlatformPosixProcess.h
     Public/Platform/Posix/PlatformPosixTime.h
+    Public/Platform/Posix/PlatformPosixSystem.h
     Private/Platform/Posix/PlatformPosixProcess.cpp
     Private/Platform/Posix/PlatformPosixTime.cpp
+    Private/Platform/Posix/PlatformPosixSystem.cpp
     Public/Platform/Linux/PlatformLinuxProcess.h
     Public/Platform/Linux/PlatformLinuxTime.h
     Private/Platform/Linux/PlatformLinuxProcess.cpp
@@ -632,10 +636,12 @@ elseif (WIN32)
     Public/Platform/Windows/PlatformWinFile.h
     Public/Platform/Windows/PlatformWinThread.h
     Public/Platform/Windows/PlatformWinTime.h
+    Public/Platform/Windows/PlatformWinSystem.h
     Private/Platform/Windows/PlatformWinProcess.cpp
     Private/Platform/Windows/PlatformWinFile.cpp
     Private/Platform/Windows/PlatformWinThread.cpp
     Private/Platform/Windows/PlatformWinTime.cpp
+    Private/Platform/Windows/PlatformWinSystem.cpp
     Private/Platform/PlatformWin.h
     Private/Platform/PlatformWin.cpp
     Private/Sound/SoundSystemDS.cpp
@@ -654,10 +660,12 @@ elseif (UNIX)
     Public/Platform/Posix/PlatformPosixFile.h
     Public/Platform/Posix/PlatformPosixThread.h
     Public/Platform/Posix/PlatformPosixTime.h
+    Public/Platform/Posix/PlatformPosixSystem.h
     Private/Platform/Posix/PlatformPosixProcess.cpp
     Private/Platform/Posix/PlatformPosixFile.cpp
     Private/Platform/Posix/PlatformPosixThread.cpp
     Private/Platform/Posix/PlatformPosixTime.cpp
+    Private/Platform/Posix/PlatformPosixSystem.cpp
     Private/Sound/SoundSystemAL.cpp
     Private/Sound/SoundBufferAL.cpp
     Private/Sound/SoundSourceAL.cpp)
@@ -666,21 +674,27 @@ elseif (UNIX)
     list(APPEND ENGINE_FILES
       Public/Platform/Apple/PlatformAppleTime.h
       Public/Platform/Apple/PlatformAppleProcess.h
+      Public/Platform/Apple/PlatformAppleSystem.h
       Private/Platform/Apple/PlatformAppleTime.cpp
-      Private/Platform/Apple/PlatformAppleProcess.mm)
+      Private/Platform/Apple/PlatformAppleProcess.mm
+      Private/Platform/Apple/PlatformAppleSystem.mm)
     
     if (IOS)
       list(APPEND ENGINE_FILES
         Public/Platform/IOS/PlatformIOSFile.h
         Public/Platform/IOS/PlatformIOSProcess.h
+        Public/Platform/IOS/PlatformIOSSystem.h
         Private/Platform/IOS/PlatformIOSFile.mm
         Private/Platform/IOS/PlatformIOSProcess.mm
+        Private/Platform/IOS/PlatformIOSSystem.mm
         Private/Platform/PlatformIOS.h
         Private/Platform/PlatformIOS.mm)
     else ()
       list(APPEND ENGINE_FILES
         Public/Platform/MacOS/PlatformMacOSProcess.h
+        Public/Platform/MacOS/PlatformMacOSSystem.h
         Private/Platform/MacOS/PlatformMacOSProcess.mm
+        Private/Platform/MacOS/PlatformMacOSSystem.mm
         Private/Platform/PlatformMacOS.h
         Private/Platform/PlatformMacOS.mm
         Public/Network/Socket.h
