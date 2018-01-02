@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(BlueshiftEngine)
 
-configure_file (
+configure_file(
   "${PROJECT_SOURCE_DIR}/Version.h.in"
   "${PROJECT_SOURCE_DIR}/Version.h")
 
