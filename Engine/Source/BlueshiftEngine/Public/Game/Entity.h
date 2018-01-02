@@ -87,8 +87,6 @@ public:
 
     int                         GetEntityNum() const { return entityNum; }
 
-    int                         GetSpawnId() const;
-
                                 /// Returns hierarchy node
     const Hierarchy<Entity> &   GetNode() const { return node; }
 

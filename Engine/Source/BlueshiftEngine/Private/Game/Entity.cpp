@@ -180,11 +180,6 @@ void Entity::LateUpdate() {
     }
 }
 
-int Entity::GetSpawnId() const {
-    assert(gameWorld);
-    return gameWorld->GetEntitySpawnId(this);
-}
-
 ComTransform *Entity::GetTransform() const {
     ComTransform *transform = static_cast<ComTransform *>(GetComponent(0));
     assert(transform);

@@ -126,19 +126,15 @@ void GameWorld::ClearAllEntities() {
 
     memset(entities, 0, sizeof(entities));
 
+    firstFreeIndex = 16; // TEMP
+
+    entityHash.Free();
+    entityTagHash.Free();
+    entityHierarchy.RemoveFromHierarchy();
+
     physicsWorld->ClearScene();
 
     renderWorld->ClearScene();
-
-    firstFreeIndex = 16; // TEMP
-    
-    entityHash.Free();
-    entityTagHash.Free();
-
-    entityHierarchy.RemoveFromHierarchy();
-
-    memset(spawnIds, -1, sizeof(spawnIds));
-    spawnCount = 0;
 }
 
 Entity *GameWorld::FindEntity(const char *name) const {
@@ -235,12 +231,6 @@ void GameWorld::OnEntityTagChanged(Entity *ent) {
     entityHash.Add(tagHash, ent->entityNum);
 }
 
-int GameWorld::GetEntitySpawnId(const Entity *ent) {
-    assert(ent);
-    assert(ent->entityNum >= 0 && ent->entityNum < MaxEntities);
-    return spawnIds[ent->entityNum];
-}
-
 bool GameWorld::IsRegisteredEntity(const Entity *ent) const {
     return ent->entityNum == BadEntityNum ? false : true;
 }
@@ -269,7 +259,6 @@ void GameWorld::RegisterEntity(Entity *ent, int spawn_entnum) {
     entityTagHash.Add(tagHash, spawn_entnum);
 
     entities[spawn_entnum] = ent;
-    spawnIds[spawn_entnum] = spawnCount++; // spawn ID 는 따로 관리
 
     ent->entityNum = spawn_entnum;
     
@@ -301,7 +290,6 @@ void GameWorld::UnregisterEntity(Entity *ent) {
     int index = ent->entityNum;
     ent->entityNum = BadEntityNum;
     entities[index] = nullptr;
-    spawnIds[index] = -1;
 
     EmitSignal(&SIG_EntityUnregistered, ent);
 }

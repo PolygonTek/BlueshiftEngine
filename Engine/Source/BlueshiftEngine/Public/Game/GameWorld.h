@@ -82,7 +82,6 @@ public:
     
     Hierarchy<Entity> &         GetEntityHierarchy() { return entityHierarchy; }
     Entity *                    GetEntity(int index) const { return entities[index]; }
-    int                         GetEntitySpawnId(const Entity *ent);
 
     Entity *                    FindEntity(const char *name) const;
     Entity *                    FindEntityByGuid(const Guid &guid) const;
@@ -155,8 +154,6 @@ private:
     HashIndex                   entityHash;
     HashIndex                   entityTagHash;
     int                         firstFreeIndex;
-    int                         spawnIds[MaxEntities];
-    int                         spawnCount;
     Hierarchy<Entity>           entityHierarchy;
 
     Json::Value                 snapshotValues;
