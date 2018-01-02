@@ -93,12 +93,24 @@ public:
     Color4              operator*(float rhs) const { return Color4(r * rhs, g * rhs, b * rhs, a * rhs); }
                         /// Multiplies color v by a scalar.
     friend Color4       operator*(float lhs, const Color4 &rhs) { return Color4(lhs * rhs.r, lhs * rhs.g, lhs * rhs.b, lhs * rhs.a); }
+                        /// Multiplies this color by a color, element-wise.
+    Color4              MulComp(const Color4 &v) const { return *this * v; }
+                        /// Multiplies this color by a color, element-wise.
+                        /// This function is identical to the member function MulComp().
+    Color4              operator*(const Color4 &rhs) const { return Color4(r * rhs.r, g * rhs.g, b * rhs.b, a * rhs.a); }
 
                         /// Divides this color by a scalar.
     Color4              Div(float s) const { return *this / s; }
                         /// Divides this color by a scalar.
                         /// This function is identical to the member function Div().
     Color4              operator/(float rhs) const { float inv = 1.f / rhs; return Color4(r * inv, g * inv, b * inv, a * inv); }
+                        /// Divides this color by a color, element-wise.
+    Color4              DivComp(const Color4 &v) const { return *this / v; }
+                        /// This function is identical to the member function DivComp().
+                        /// Divides this color by a color, element-wise.
+    Color4              operator/(const Color4 &rhs) const { return Color4(r / rhs.r, g / rhs.g, b / rhs.b, a / rhs.a); }
+                        /// Divides color (s, s, s, s) by a color, element-wise.
+    friend Color4       operator/(float lhs, const Color4 &rhs) { return Color4(lhs / rhs.r, lhs / rhs.g, lhs / rhs.b, lhs / rhs.a); }
 
                         /// Assign from another color.
     Color4 &            operator=(const Color4 &rhs);
@@ -121,11 +133,23 @@ public:
                         /// This function is identical to the member function MulSelf().
     Color4 &            operator*=(float rhs);
 
+                        /// Multiplies this color by a color, element-wise, in-place.
+    Color4 &            MulCompSelf(const Color4 &v) { *this *= v; return *this; }
+                        /// Multiplies this color by a color, element-wise, in-place.
+                        /// This function is identical to the member function MulCompSelf().
+    Color4 &            operator*=(const Color4 &rhs);
+
                         /// Divides this color by a scalar, in-place.
     Color4 &            DivSelf(float s) { *this /= s; return *this; }
                         /// Divides this color by a scalar, in-place.
                         /// This function is identical to the member function DivSelf().
     Color4 &            operator/=(float rhs);
+
+                        /// Divides this color by a color, element-wise, in-place.
+    Color4 &            DivCompSelf(const Color4 &v) { *this /= v; return *this; }
+                        /// Divides this color by a color, element-wise, in-place.
+                        /// This function is identical to the member function DivCompSelf().
+    Color4 &            operator/=(const Color4 &rhs);
 
                         /// Exact compare, no epsilon
     bool                Equals(const Color4 &c) const;
@@ -271,6 +295,14 @@ BE_INLINE Color4 &Color4::operator*=(float rhs) {
     return *this;
 }
 
+BE_INLINE Color4 &Color4::operator*=(const Color4 &rhs) {
+    r *= rhs.r;
+    g *= rhs.g;
+    b *= rhs.b;
+    a *= rhs.a;
+    return *this;
+};
+
 BE_INLINE Color4 &Color4::operator/=(float rhs) {
     float inv = 1.0f / rhs;
     r *= inv;
@@ -279,6 +311,14 @@ BE_INLINE Color4 &Color4::operator/=(float rhs) {
     a *= inv;
     return *this;
 }
+
+BE_INLINE Color4 &Color4::operator/=(const Color4 &rhs) {
+    r /= rhs.r;
+    g /= rhs.g;
+    b /= rhs.b;
+    a /= rhs.a;
+    return *this;
+};
 
 BE_INLINE bool Color4::Equals(const Color4 &c) const {
     return ((r == c.r) && (g == c.g) && (b == c.b) && (a == c.a));

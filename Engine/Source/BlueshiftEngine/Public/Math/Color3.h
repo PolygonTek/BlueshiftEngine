@@ -80,12 +80,24 @@ public:
     Color3              operator*(float rhs) const { return Color3(r * rhs, g * rhs, b * rhs); }
                         /// Multiplies color v by a scalar.
     friend Color3       operator*(float lhs, const Color3 &rhs) { return Color3(lhs * rhs.r, lhs * rhs.g, lhs * rhs.b); }
+                        /// Multiplies this color by a color, element-wise.
+    Color3              MulComp(const Color3 &v) const { return *this * v; }
+                        /// Multiplies this color by a color, element-wise.
+                        /// This function is identical to the member function MulComp().
+    Color3              operator*(const Color3 &rhs) const { return Color3(r * rhs.r, g * rhs.g, b * rhs.b); }
 
                         /// Divides this color by a scalar.
     Color3              Div(float s) const { return *this / s; }
                         /// Divides this color by a scalar.
                         /// This function is identical to the member function Div().
     Color3              operator/(float rhs) const { float inv = 1.f / rhs; return Color3(r * inv, g * inv, b * inv); }
+                        /// Divides this color by a color, element-wise.
+    Color3              DivComp(const Color3 &v) const { return *this / v; }
+                        /// This function is identical to the member function DivComp().
+                        /// Divides this color by a color, element-wise.
+    Color3              operator/(const Color3 &rhs) const { return Color3(r / rhs.r, g / rhs.g, b / rhs.b); }
+                        /// Divides color (s, s, s, s) by a color, element-wise.
+    friend Color3       operator/(float lhs, const Color3 &rhs) { return Color3(lhs / rhs.r, lhs / rhs.g, lhs / rhs.b); }
 
                         /// Assign from another color.
     Color3 &            operator=(const Color3 &rhs);
@@ -108,11 +120,23 @@ public:
                         /// This function is identical to the member function MulSelf().
     Color3 &            operator*=(float rhs);
 
+                        /// Multiplies this color by a color, element-wise, in-place.
+    Color3 &            MulCompSelf(const Color3 &v) { *this *= v; return *this; }
+                        /// Multiplies this color by a color, element-wise, in-place.
+                        /// This function is identical to the member function MulCompSelf().
+    Color3 &            operator*=(const Color3 &rhs);
+
                         /// Divides this color by a scalar, in-place.
     Color3 &            DivSelf(float s) { *this /= s; return *this; }
                         /// Divides this color by a scalar, in-place.
                         /// This function is identical to the member function DivSelf().
     Color3 &            operator/=(float rhs);
+
+                        /// Divides this color by a color, element-wise, in-place.
+    Color3 &            DivCompSelf(const Color3 &v) { *this /= v; return *this; }
+                        /// Divides this color by a color, element-wise, in-place.
+                        /// This function is identical to the member function DivCompSelf().
+    Color3 &            operator/=(const Color3 &rhs);
 
                         /// Exact compare, no epsilon
     bool                Equals(const Color3 &c) const;
@@ -244,6 +268,13 @@ BE_INLINE Color3 &Color3::operator*=(float rhs) {
     return *this;
 }
 
+BE_INLINE Color3 &Color3::operator*=(const Color3 &rhs) {
+    r *= rhs.r;
+    g *= rhs.g;
+    b *= rhs.b;
+    return *this;
+};
+
 BE_INLINE Color3 &Color3::operator/=(float rhs) {
     float inv = 1.0f / rhs;
     r *= inv;
@@ -251,6 +282,13 @@ BE_INLINE Color3 &Color3::operator/=(float rhs) {
     b *= inv;
     return *this;
 }
+
+BE_INLINE Color3 &Color3::operator/=(const Color3 &rhs) {
+    r /= rhs.r;
+    g /= rhs.g;
+    b /= rhs.b;
+    return *this;
+};
 
 BE_INLINE bool Color3::Equals(const Color3 &rhs) const {
     return ((r == rhs.r) && (g == rhs.g) && (b == rhs.b));
