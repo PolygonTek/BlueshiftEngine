@@ -19,6 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 class Guid;
+class Object;
 
 class BE_API File {
     friend class FileSystem;
@@ -64,6 +65,7 @@ public:
     size_t                  ReadDouble(double &value);
     size_t                  ReadString(Str &value);
     size_t                  ReadGuid(Guid &guid);
+    size_t                  ReadObject(Object &object);
 
     size_t                  WriteChar(const char value);
     size_t                  WriteUChar(const unsigned char value);
@@ -77,6 +79,7 @@ public:
     size_t                  WriteDouble(const double value);
     size_t                  WriteString(const char *value);
     size_t                  WriteGuid(const Guid &guid);
+    size_t                  WriteObject(const Object &object);
 };
 
 class BE_API FileReal : public File {
