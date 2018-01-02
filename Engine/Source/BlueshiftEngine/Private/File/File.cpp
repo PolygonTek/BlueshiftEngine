@@ -246,7 +246,7 @@ size_t File::WriteObject(const Object &object) {
     Json::Value jsonValue;
     object.Serialize(jsonValue);
 
-    Json::StyledWriter jsonWriter;
+    Json::FastWriter jsonWriter;
     Str jsonText = jsonWriter.write(jsonValue).c_str();
 
     return WriteString(jsonText);
