@@ -65,12 +65,15 @@ void LuaVM::Init(const GameWorld *gameWorld) {
         filename.DefaultFileExtension(".lua");
 
         char *data;
-        size_t size = fileSystem.LoadFile(filename.c_str(), true, (void **)&data);
+        size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
         if (!data) {
-            return false;
+            size = fileSystem.LoadFile("Scripts/" + filename, true, (void **)&data);
+            if (!data) {
+                return false;
+            }
         }
 
-        state->RunBuffer(filename.c_str(), data, size);
+        state->RunBuffer(name, data, size, name.c_str());
 
         fileSystem.FreeFile(data);
         return true;
