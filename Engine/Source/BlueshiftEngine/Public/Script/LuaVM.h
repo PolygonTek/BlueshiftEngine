@@ -72,6 +72,9 @@ private:
 
     void                    RegisterStr(LuaCpp::Module &module);
 
+    void                    RegisterFile(LuaCpp::Module &module);
+    void                    RegisterFileSystem(LuaCpp::Module &module);
+
     void                    RegisterObject(LuaCpp::Module &module);
 
     void                    RegisterAsset(LuaCpp::Module &module);

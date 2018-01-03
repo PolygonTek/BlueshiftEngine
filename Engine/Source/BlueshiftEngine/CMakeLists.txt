@@ -557,6 +557,8 @@ set(ENGINE_FILES
   Private/Script/Physics/LuaModule_Physics.cpp
   Private/Script/Core/LuaModule_Str.cpp
   Private/Script/Core/LuaModule_Object.cpp
+  Private/Script/File/LuaModule_FileSystem.cpp
+  Private/Script/File/LuaModule_File.cpp
   Private/Script/Asset/LuaModule_Asset.cpp
   Private/Script/Asset/LuaModule_TextureAsset.cpp
   Private/Script/Asset/LuaModule_ShaderAsset.cpp
