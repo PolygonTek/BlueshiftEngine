@@ -18,28 +18,20 @@
 
 BE_NAMESPACE_BEGIN
 
-class GameWorld;
-
-class GameSettings : public Object {
-    friend class GameWorld;
+class PlayerSettings : public Object {
+    friend class GameSettings;
 
 public:
-    ABSTRACT_PROTOTYPE(GameSettings);
+    OBJECT_PROTOTYPE(PlayerSettings);
 
-    GameSettings();
+    PlayerSettings();
 
-    bool                    IsInitialized() const { return initialized; }
+    bool                        Load(const char *filename);
+    void                        Save(const char *filename);
 
-    GameWorld *             GetGameWorld() const { return gameWorld; }
-
-    virtual void            Init();
-
-protected:
-    void                    SetInitialized(bool init) { initialized = init; }
-    void                    SetGameWorld(GameWorld *gameWorld) { this->gameWorld = gameWorld; }
-
-    bool                    initialized;
-    GameWorld *             gameWorld;
+private:
+    Str                         companyName;
+    Str                         productName;
 };
 
 BE_NAMESPACE_END

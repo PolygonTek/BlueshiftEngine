@@ -18,7 +18,7 @@
 #include "Components/ComRigidBody.h"
 #include "Components/ComLight.h"
 #include "Game/GameWorld.h"
-#include "Game/GameSettings/TagLayerSettings.h"
+#include "Game/TagLayerSettings.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"
 

@@ -125,7 +125,6 @@ static void RegisterEngineObjects() {
     GameWorld::RegisterProperties();
 
     MapRenderSettings::RegisterProperties();
-    GameSettings::RegisterProperties();
     TagLayerSettings::RegisterProperties();
     PhysicsSettings::RegisterProperties();
     PlayerSettings::RegisterProperties();

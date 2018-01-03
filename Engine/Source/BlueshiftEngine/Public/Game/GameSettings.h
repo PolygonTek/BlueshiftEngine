@@ -14,21 +14,25 @@
 
 #pragma once
 
-#include "Game/GameSettings/GameSettings.h"
+#include "TagLayerSettings.h"
+#include "PhysicsSettings.h"
+#include "PlayerSettings.h"
 
 BE_NAMESPACE_BEGIN
 
-class PlayerSettings : public GameSettings {
+class GameWorld;
+
+class GameSettings {
 public:
-    OBJECT_PROTOTYPE(PlayerSettings);
+    static void                 Init();
+    static void                 Shutdown();
 
-    PlayerSettings();
+    static void                 LoadSettings(GameWorld *gameWorld);
+    static void                 SaveSettings();
 
-    virtual void            Init() override;
-
-private:
-    Str                     companyName;
-    Str                     productName;
+    static TagLayerSettings *   tagLayerSettings;
+    static PhysicsSettings *    physicsSettings;
+    static PlayerSettings *     playerSettings;
 };
 
 BE_NAMESPACE_END

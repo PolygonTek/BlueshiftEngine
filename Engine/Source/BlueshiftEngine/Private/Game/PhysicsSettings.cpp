@@ -13,13 +13,13 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Game/GameSettings/PhysicsSettings.h"
-#include "Game/GameWorld.h"
+#include "File/FileSystem.h"
+#include "Game/PhysicsSettings.h"
 #include "Physics/Physics.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Physics Settings", PhysicsSettings, GameSettings)
+OBJECT_DECLARATION("Physics Settings", PhysicsSettings, Object)
 BEGIN_EVENTS(PhysicsSettings)
 END_EVENTS
 
@@ -34,41 +34,37 @@ PhysicsSettings::PhysicsSettings() {
     numFilterMasks = 0;
 }
 
-void PhysicsSettings::Init() {
-    GameSettings::Init();
-}
-
 int PhysicsSettings::GetFrameRate() const {
-    return GetGameWorld()->GetPhysicsWorld()->GetFrameRate();
+    return physicsWorld->GetFrameRate();
 }
 
 void PhysicsSettings::SetFrameRate(int frameRate) {
-    return GetGameWorld()->GetPhysicsWorld()->SetFrameRate(frameRate);
+    return physicsWorld->SetFrameRate(frameRate);
 }
 
 float PhysicsSettings::GetMaximumAllowedTimeStep() const {
-    return GetGameWorld()->GetPhysicsWorld()->GetMaximumAllowedTimeStep();
+    return physicsWorld->GetMaximumAllowedTimeStep();
 }
 
 void PhysicsSettings::SetMaximumAllowedTimeStep(float timeStep) {
-    return GetGameWorld()->GetPhysicsWorld()->SetMaximumAllowedTimeStep(timeStep);
+    return physicsWorld->SetMaximumAllowedTimeStep(timeStep);
 }
 
 Vec3 PhysicsSettings::GetGravity() const {
-    Vec3 gravity = GetGameWorld()->GetPhysicsWorld()->GetGravity();
+    Vec3 gravity = physicsWorld->GetGravity();
     return Vec3(UnitToMeter(gravity.x), UnitToMeter(gravity.y), UnitToMeter(gravity.z));
 }
 
 void PhysicsSettings::SetGravity(const Vec3 &gravity) {
-    GetGameWorld()->GetPhysicsWorld()->SetGravity(Vec3(MeterToUnit(gravity.x), MeterToUnit(gravity.y), MeterToUnit(gravity.z)));
+    physicsWorld->SetGravity(Vec3(MeterToUnit(gravity.x), MeterToUnit(gravity.y), MeterToUnit(gravity.z)));
 }
 
 int PhysicsSettings::GetFilterMaskElement(int index) const {
-    return GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(index);
+    return physicsWorld->GetCollisionFilterMask(index);
 }
 
 void PhysicsSettings::SetFilterMaskElement(int index, int mask) {
-    GetGameWorld()->GetPhysicsWorld()->SetCollisionFilterMask(index, mask);
+    physicsWorld->SetCollisionFilterMask(index, mask);
 }
 
 int PhysicsSettings::GetFilterMaskCount() const {
@@ -82,9 +78,52 @@ void PhysicsSettings::SetFilterMaskCount(int count) {
 
     if (count > oldCount) {
         for (int index = oldCount; index < count; index++) {
-            GetGameWorld()->GetPhysicsWorld()->SetCollisionFilterMask(index, -1);
+            physicsWorld->SetCollisionFilterMask(index, -1);
         }
     }
+}
+
+bool PhysicsSettings::Load(const char *filename) {
+    Json::Value jsonNode;
+    Json::Reader jsonReader;
+    bool failedToParse = false;
+
+    char *text = nullptr;
+    fileSystem.LoadFile(filename, true, (void **)&text);
+    if (text) {
+        if (!jsonReader.parse(text, jsonNode)) {
+            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
+            failedToParse = true;
+        }
+
+        fileSystem.FreeFile(text);
+    } else {
+        failedToParse = true;
+    }
+
+    if (failedToParse) {
+        jsonNode["classname"] = PhysicsSettings::metaObject.ClassName();
+    }
+
+    const char *classname = jsonNode["classname"].asCString();
+
+    if (Str::Cmp(classname, PhysicsSettings::metaObject.ClassName())) {
+        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
+        return false;
+    }
+
+    Deserialize(jsonNode);
+    return true;
+}
+
+void PhysicsSettings::Save(const char *filename) {
+    Json::Value jsonNode;
+    Serialize(jsonNode);
+
+    Json::StyledWriter jsonWriter;
+    Str jsonText = jsonWriter.write(jsonNode).c_str();
+
+    fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }
 
 BE_NAMESPACE_END

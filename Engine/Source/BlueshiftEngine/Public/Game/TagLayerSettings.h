@@ -14,11 +14,13 @@
 
 #pragma once
 
-#include "Game/GameSettings/GameSettings.h"
+#include "Core/Object.h"
 
 BE_NAMESPACE_BEGIN
 
-class TagLayerSettings : public GameSettings {
+class TagLayerSettings : public Object {
+    friend class GameSettings;
+
 public:
     enum {
         DefaultLayer,
@@ -30,14 +32,15 @@ public:
 
     TagLayerSettings();
 
-    virtual void            Init() override;
+    int32_t                     FindTag(const char *tagName) const;
+    int32_t                     FindLayer(const char *layerName) const;
 
-    int32_t                 FindTag(const char *tagName) const;
-    int32_t                 FindLayer(const char *layerName) const;
+    bool                        Load(const char *filename);
+    void                        Save(const char *filename);
 
-protected:
-    Array<Str>              tags;
-    Array<Str>              layers;
+private:
+    Array<Str>                  tags;
+    Array<Str>                  layers;
 };
 
 BE_NAMESPACE_END

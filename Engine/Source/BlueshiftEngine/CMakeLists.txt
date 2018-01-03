@@ -194,10 +194,10 @@ set(ENGINE_FILES
   Public/Game/MapRenderSettings.h
   Public/Game/GameWorld.h
   Public/Game/CastResult.h
-  Public/Game/GameSettings/GameSettings.h
-  Public/Game/GameSettings/TagLayerSettings.h
-  Public/Game/GameSettings/PhysicsSettings.h
-  Public/Game/GameSettings/PlayerSettings.h
+  Public/Game/GameSettings.h
+  Public/Game/TagLayerSettings.h
+  Public/Game/PhysicsSettings.h
+  Public/Game/PlayerSettings.h
     
   Public/Physics/Collider.h
   Public/Physics/Physics.h
@@ -418,11 +418,11 @@ set(ENGINE_FILES
   Private/Game/PrefabManager.cpp
   Private/Game/MapRenderSettings.cpp
   Private/Game/GameWorld.cpp
-  Private/Game/CastResult.cpp
-  Private/Game/GameSettings/GameSettings.cpp
-  Private/Game/GameSettings/TagLayerSettings.cpp
-  Private/Game/GameSettings/PhysicsSettings.cpp
-  Private/Game/GameSettings/PlayerSettings.cpp
+  Private/Game/CastResult.cpp  
+  Private/Game/GameSettings.cpp
+  Private/Game/TagLayerSettings.cpp
+  Private/Game/PhysicsSettings.cpp
+  Private/Game/PlayerSettings.cpp
 
   Private/Core/Event.cpp
   Private/Core/Object.cpp

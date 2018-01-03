@@ -19,13 +19,15 @@ Application app;
 
 void Application::Init() {
     BE1::cmdSystem.AddCommand(L"map", Cmd_Map_f);
+
+    BE1::GameSettings::Init();
     
     gameFont = nullptr;
     //gameFont = BE1::fontManager.GetFont("fonts/NanumGothic.ttf");
 
     gameWorld = (BE1::GameWorld *)BE1::GameWorld::CreateInstance();
 
-    gameWorld->LoadSettings();
+    BE1::GameSettings::LoadSettings(gameWorld);
     
     gameState = GAMESTATE_NOMAP;
 
@@ -42,8 +44,9 @@ void Application::Shutdown() {
     BE1::GameWorld::DestroyInstance(gameWorld, true);
     gameWorld = nullptr;
 
-    SAFE_DELETE(gameFont);
     //BE1::fontManager.ReleaseFont(gameFont);
+
+    BE1::GameSettings::Shutdown();
 
     BE1::cmdSystem.RemoveCommand(L"map");
 }

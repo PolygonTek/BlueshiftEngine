@@ -167,10 +167,7 @@
 #include "Components/ComAudioSource.h"
 
 // GameSettings
-#include "Game/GameSettings/GameSettings.h"
-#include "Game/GameSettings/TagLayerSettings.h"
-#include "Game/GameSettings/PhysicsSettings.h"
-#include "Game/GameSettings/PlayerSettings.h"
+#include "Game/GameSettings.h"
 
 // GameWorld
 #include "Game/Entity.h"

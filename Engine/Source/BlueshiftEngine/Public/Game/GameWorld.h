@@ -129,18 +129,7 @@ public:
     void                        RestartGame(const char *mapName);
 
     void                        StopAllSounds();
-
-    TagLayerSettings *          GetTagLayerSettings() { return tagLayerSettings; }
-    PlayerSettings *            GetPlayerSettings() { return playerSettings; }
-
-    void                        LoadSettings();
-    void                        SaveSettings();
-
-    void                        LoadTagLayerSettings(const char *filename);
-    void                        LoadInputSettings(const char *filename);
-    void                        LoadPhysicsSettings(const char *filename);
-    void                        LoadPlayerSettings(const char *filename);
-
+        
     const char *                MapName() const { return mapName.c_str(); }
 
     void                        NewMap();
@@ -176,10 +165,7 @@ private:
     Str                         mapName;
 
     MapRenderSettings *         mapRenderSettings;
-    TagLayerSettings *          tagLayerSettings; 
-    PhysicsSettings *           physicsSettings;
-    PlayerSettings *            playerSettings;
-        
+
     RenderWorld *               renderWorld;
     PhysicsWorld *              physicsWorld;
 

@@ -17,7 +17,7 @@
 #include "Components/ComTransform.h"
 #include "Components/ComReflectionProbe.h"
 #include "Game/GameWorld.h"
-#include "Game/GameSettings/TagLayerSettings.h"
+#include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
 

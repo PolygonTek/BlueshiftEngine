@@ -25,9 +25,7 @@
 #include "Game/Entity.h"
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
-#include "Game/GameSettings/TagLayerSettings.h"
-#include "Game/GameSettings/PhysicsSettings.h"
-#include "Game/GameSettings/PlayerSettings.h"
+#include "Game/GameSettings.h"
 #include "Script/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
@@ -48,10 +46,6 @@ void GameWorld::RegisterProperties() {
 GameWorld::GameWorld() {
     memset(entities, 0, sizeof(entities));
 
-    tagLayerSettings = nullptr;
-    physicsSettings = nullptr;
-    playerSettings = nullptr;
-
     // Create render settings
     mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
     mapRenderSettings->gameWorld = this;
@@ -71,14 +65,6 @@ GameWorld::GameWorld() {
 
 GameWorld::~GameWorld() {
     ClearAllEntities();
-
-    if (tagLayerSettings) {
-        TagLayerSettings::DestroyInstanceImmediate(tagLayerSettings);
-    }
-
-    if (physicsSettings) {
-        PhysicsSettings::DestroyInstanceImmediate(physicsSettings);
-    }
 
     if (mapRenderSettings) {
         MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
@@ -480,157 +466,6 @@ void GameWorld::Event_RestartGame(const char *mapName) {
     LoadMap(mapName);
     
     StartGame();
-}
-
-void GameWorld::LoadSettings() {
-    if (tagLayerSettings) {
-        TagLayerSettings::DestroyInstanceImmediate(tagLayerSettings);
-        tagLayerSettings = nullptr;
-    }
-
-    if (physicsSettings) {
-        PhysicsSettings::DestroyInstanceImmediate(physicsSettings);
-        physicsSettings = nullptr;
-    }
-
-    if (playerSettings) {
-        PlayerSettings::DestroyInstanceImmediate(playerSettings);
-        playerSettings = nullptr;
-    }
-
-    // Load all project settings
-    LoadTagLayerSettings("ProjectSettings/tagLayer.settings");
-    //LoadInputSettings("ProjectSettings/input.settings");
-    LoadPhysicsSettings("ProjectSettings/physics.settings");
-    //LoadRendererSettings("ProjectSettings/renderer.settings");
-    LoadPlayerSettings("ProjectSettings/player.settings");
-}
-
-void GameWorld::LoadTagLayerSettings(const char *filename) {
-    Json::Value jsonNode;
-    Json::Reader jsonReader;
-    bool failedToParse = false;
-
-    char *text = nullptr;
-    fileSystem.LoadFile(filename, true, (void **)&text);
-    if (text) {
-        if (!jsonReader.parse(text, jsonNode)) {
-            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
-            failedToParse = true;
-        }
-
-        fileSystem.FreeFile(text);
-    } else {
-        failedToParse = true;
-    }
-
-    if (failedToParse) {
-        jsonNode["classname"] = TagLayerSettings::metaObject.ClassName();
-
-        // default tags
-        jsonNode["tag"][0] = "Untagged";
-        jsonNode["tag"][1] = "MainCamera";
-        jsonNode["tag"][2] = "Player";
-
-        // default layers
-        jsonNode["layer"][0] = "Default";
-        jsonNode["layer"][1] = "UI";
-        jsonNode["layer"][2] = "Editor";
-    }
-
-    const char *classname = jsonNode["classname"].asCString();
-
-    if (!Str::Cmp(classname, TagLayerSettings::metaObject.ClassName())) {
-        tagLayerSettings = static_cast<TagLayerSettings *>(TagLayerSettings::metaObject.CreateInstance());
-        tagLayerSettings->SetGameWorld(this);
-        tagLayerSettings->Deserialize(jsonNode);
-        tagLayerSettings->Init();
-    } else {
-        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-    }
-}
-
-void GameWorld::LoadPhysicsSettings(const char *filename) {
-    Json::Value jsonNode;
-    Json::Reader jsonReader;
-    bool failedToParse = false;
-
-    char *text = nullptr;
-    fileSystem.LoadFile(filename, true, (void **)&text);
-    if (text) {
-        if (!jsonReader.parse(text, jsonNode)) {
-            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
-            failedToParse = true;
-        }
-
-        fileSystem.FreeFile(text);
-    } else {
-        failedToParse = true;
-    }
-
-    if (failedToParse) {
-        jsonNode["classname"] = PhysicsSettings::metaObject.ClassName();
-    }
-
-    const char *classname = jsonNode["classname"].asCString();
-
-    if (!Str::Cmp(classname, PhysicsSettings::metaObject.ClassName())) {
-        physicsSettings = static_cast<PhysicsSettings *>(PhysicsSettings::metaObject.CreateInstance());
-        physicsSettings->SetGameWorld(this);
-        physicsSettings->Deserialize(jsonNode);
-        physicsSettings->Init();
-    } else {
-        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-    }
-}
-
-void GameWorld::LoadPlayerSettings(const char *filename) {
-    Json::Value jsonNode;
-    Json::Reader jsonReader;
-    bool failedToParse = false;
-
-    char *text = nullptr;
-    fileSystem.LoadFile(filename, true, (void **)&text);
-    if (text) {
-        if (!jsonReader.parse(text, jsonNode)) {
-            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
-            failedToParse = true;
-        }
-
-        fileSystem.FreeFile(text);
-    } else {
-        failedToParse = true;
-    }
-
-    if (failedToParse) {
-        jsonNode["classname"] = PlayerSettings::metaObject.ClassName();
-    }
-
-    const char *classname = jsonNode["classname"].asCString();
-
-    if (!Str::Cmp(classname, PlayerSettings::metaObject.ClassName())) {
-        playerSettings = static_cast<PlayerSettings *>(PlayerSettings::metaObject.CreateInstance());
-        playerSettings->Deserialize(jsonNode);
-        playerSettings->Init();
-    } else {
-        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-    }
-}
-
-void GameWorld::SaveSettings() {
-    SaveObject("ProjectSettings/tagLayer.settings", tagLayerSettings);
-    SaveObject("ProjectSettings/physics.settings", physicsSettings);
-    SaveObject("ProjectSettings/player.settings", playerSettings);
-}
-
-void GameWorld::SaveObject(const char *filename, const Object *object) const {
-    Json::Value jsonNode;
-    object->Serialize(jsonNode);
-
-    Json::StyledWriter jsonWriter;
-    Str jsonText = jsonWriter.write(jsonNode).c_str();
-
-    fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }
 
 void GameWorld::NewMap() {

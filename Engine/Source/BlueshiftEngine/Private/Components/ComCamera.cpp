@@ -22,7 +22,7 @@
 #include "Components/ComCamera.h"
 #include "Game/GameWorld.h"
 #include "Game/CastResult.h"
-#include "Game/GameSettings/TagLayerSettings.h"
+#include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
 
