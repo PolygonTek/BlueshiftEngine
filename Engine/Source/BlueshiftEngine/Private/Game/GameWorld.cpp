@@ -27,6 +27,7 @@
 #include "Game/GameWorld.h"
 #include "Game/GameSettings/TagLayerSettings.h"
 #include "Game/GameSettings/PhysicsSettings.h"
+#include "Game/GameSettings/PlayerSettings.h"
 #include "Script/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
@@ -49,6 +50,7 @@ GameWorld::GameWorld() {
 
     tagLayerSettings = nullptr;
     physicsSettings = nullptr;
+    playerSettings = nullptr;
 
     // Create render settings
     mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
@@ -491,11 +493,17 @@ void GameWorld::LoadSettings() {
         physicsSettings = nullptr;
     }
 
+    if (playerSettings) {
+        PlayerSettings::DestroyInstanceImmediate(playerSettings);
+        playerSettings = nullptr;
+    }
+
     // Load all project settings
     LoadTagLayerSettings("ProjectSettings/tagLayer.settings");
     //LoadInputSettings("ProjectSettings/input.settings");
     LoadPhysicsSettings("ProjectSettings/physics.settings");
     //LoadRendererSettings("ProjectSettings/renderer.settings");
+    LoadPlayerSettings("ProjectSettings/player.settings");
 }
 
 void GameWorld::LoadTagLayerSettings(const char *filename) {
@@ -576,9 +584,43 @@ void GameWorld::LoadPhysicsSettings(const char *filename) {
     }
 }
 
+void GameWorld::LoadPlayerSettings(const char *filename) {
+    Json::Value jsonNode;
+    Json::Reader jsonReader;
+    bool failedToParse = false;
+
+    char *text = nullptr;
+    fileSystem.LoadFile(filename, true, (void **)&text);
+    if (text) {
+        if (!jsonReader.parse(text, jsonNode)) {
+            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
+            failedToParse = true;
+        }
+
+        fileSystem.FreeFile(text);
+    } else {
+        failedToParse = true;
+    }
+
+    if (failedToParse) {
+        jsonNode["classname"] = PlayerSettings::metaObject.ClassName();
+    }
+
+    const char *classname = jsonNode["classname"].asCString();
+
+    if (!Str::Cmp(classname, PlayerSettings::metaObject.ClassName())) {
+        playerSettings = static_cast<PlayerSettings *>(PlayerSettings::metaObject.CreateInstance());
+        playerSettings->Deserialize(jsonNode);
+        playerSettings->Init();
+    } else {
+        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
+    }
+}
+
 void GameWorld::SaveSettings() {
     SaveObject("ProjectSettings/tagLayer.settings", tagLayerSettings);
     SaveObject("ProjectSettings/physics.settings", physicsSettings);
+    SaveObject("ProjectSettings/player.settings", playerSettings);
 }
 
 void GameWorld::SaveObject(const char *filename, const Object *object) const {

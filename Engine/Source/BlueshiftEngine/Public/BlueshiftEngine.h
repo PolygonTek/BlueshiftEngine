@@ -170,6 +170,7 @@
 #include "Game/GameSettings/GameSettings.h"
 #include "Game/GameSettings/TagLayerSettings.h"
 #include "Game/GameSettings/PhysicsSettings.h"
+#include "Game/GameSettings/PlayerSettings.h"
 
 // GameWorld
 #include "Game/Entity.h"

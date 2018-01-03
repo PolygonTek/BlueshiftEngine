@@ -128,6 +128,7 @@ static void RegisterEngineObjects() {
     GameSettings::RegisterProperties();
     TagLayerSettings::RegisterProperties();
     PhysicsSettings::RegisterProperties();
+    PlayerSettings::RegisterProperties();
 }
 
 void Engine::Init(const InitParms *initParms) {

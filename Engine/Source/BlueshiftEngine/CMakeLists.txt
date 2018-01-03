@@ -197,6 +197,7 @@ set(ENGINE_FILES
   Public/Game/GameSettings/GameSettings.h
   Public/Game/GameSettings/TagLayerSettings.h
   Public/Game/GameSettings/PhysicsSettings.h
+  Public/Game/GameSettings/PlayerSettings.h
     
   Public/Physics/Collider.h
   Public/Physics/Physics.h
@@ -421,6 +422,7 @@ set(ENGINE_FILES
   Private/Game/GameSettings/GameSettings.cpp
   Private/Game/GameSettings/TagLayerSettings.cpp
   Private/Game/GameSettings/PhysicsSettings.cpp
+  Private/Game/GameSettings/PlayerSettings.cpp
 
   Private/Core/Event.cpp
   Private/Core/Object.cpp

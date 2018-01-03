@@ -34,6 +34,7 @@ class Prefab;
 class TagLayerSettings;
 class PhysicsSettings;
 class MapRenderSettings;
+class PlayerSettings;
 
 class GameWorld : public Object {
     friend class GameEdit;
@@ -130,6 +131,7 @@ public:
     void                        StopAllSounds();
 
     TagLayerSettings *          GetTagLayerSettings() { return tagLayerSettings; }
+    PlayerSettings *            GetPlayerSettings() { return playerSettings; }
 
     void                        LoadSettings();
     void                        SaveSettings();
@@ -137,6 +139,7 @@ public:
     void                        LoadTagLayerSettings(const char *filename);
     void                        LoadInputSettings(const char *filename);
     void                        LoadPhysicsSettings(const char *filename);
+    void                        LoadPlayerSettings(const char *filename);
 
     const char *                MapName() const { return mapName.c_str(); }
 
@@ -175,6 +178,7 @@ private:
     MapRenderSettings *         mapRenderSettings;
     TagLayerSettings *          tagLayerSettings; 
     PhysicsSettings *           physicsSettings;
+    PlayerSettings *            playerSettings;
         
     RenderWorld *               renderWorld;
     PhysicsWorld *              physicsWorld;
