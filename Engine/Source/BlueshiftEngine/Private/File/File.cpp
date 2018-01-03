@@ -25,34 +25,7 @@ BE_NAMESPACE_BEGIN
 // File
 //---------------------------------------------------------------
 
-const char *File::GetFilePath() const {
-    return "";
-}
-
-size_t File::Size() const {
-    return 0;
-}
-
-int File::Tell() const {
-    return 0;
-}
-
-int File::Seek(long offset) {
-    return -1;
-}
-
-int File::SeekFromEnd(long offset) {
-    return -1;
-}
-
-size_t File::Read(void *buffer, size_t bytesToRead) const {
-    BE_FATALERROR(L"File::Read: cannot read from File");
-    return 0;
-}
-
-bool File::Write(const void *buffer, size_t bytesToWrite) {
-    BE_FATALERROR(L"File::Write: cannot write from File");
-    return false;
+File::~File() {
 }
 
 bool File::Printf(const char *format, ...) {
@@ -276,7 +249,7 @@ int FileReal::Tell() const {
     return pf->Tell();
 }
 
-int FileReal::Seek(long offset) {
+int FileReal::Seek(int64_t offset) {
     if (!pf) {
         return 0;
     }
@@ -284,7 +257,7 @@ int FileReal::Seek(long offset) {
     return pf->Seek(offset, PlatformFile::Start);
 }
 
-int FileReal::SeekFromEnd(long offset) {
+int FileReal::SeekFromEnd(int64_t offset) {
     if (!pf) {
         return 0;
     }
@@ -329,12 +302,12 @@ int FileInZip::Tell() const {
     return (int)unztell(pointer);
 }
 
-int FileInZip::Seek(long offset) {
+int FileInZip::Seek(int64_t offset) {
     BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
     return 0;
 }
 
-int FileInZip::SeekFromEnd(long offset) {
+int FileInZip::SeekFromEnd(int64_t offset) {
     BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
     return 0;
 }
