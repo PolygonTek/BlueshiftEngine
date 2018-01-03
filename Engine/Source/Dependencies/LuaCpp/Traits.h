@@ -39,6 +39,16 @@ namespace detail {
     };
 
     template <>
+    struct is_primitive<int64_t> {
+        static constexpr bool value = true;
+    };
+
+    template <>
+    struct is_primitive<uint64_t> {
+        static constexpr bool value = true;
+    };
+
+    template <>
     struct is_primitive<bool> {
         static constexpr bool value = true;
     };
