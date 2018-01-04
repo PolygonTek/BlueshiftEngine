@@ -60,6 +60,9 @@ public:
 
     bool                    IsUpdated() const;
 
+    void                    ClearKeyEvents();
+    void                    ClearTouches();
+
     bool                    IsKeyDown(KeyCode::Enum keynum) const;
     bool                    IsKeyUp(KeyCode::Enum keynum) const;
     bool                    IsKeyPressed(KeyCode::Enum keynum) const;
