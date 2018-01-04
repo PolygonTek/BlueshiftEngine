@@ -79,6 +79,12 @@ void ComTextRenderer::SetText(const Str &text) {
     }
 }
 
+const char *ComTextRenderer::GetTextCString() const {
+    static Str text;
+    text = GetText();
+    return text.c_str();
+}
+
 void ComTextRenderer::SetTextCString(const char *text) {
     SetText(Str(text));
 }

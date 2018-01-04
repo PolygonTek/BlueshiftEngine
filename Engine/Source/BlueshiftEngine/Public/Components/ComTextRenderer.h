@@ -30,6 +30,7 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+    const char *            GetTextCString() const;
     void                    SetTextCString(const char *text);
 
     Str                     GetText() const;
