@@ -357,6 +357,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
     if (simulationEnded) {
         simulationStarted = false;
+        stopTime = 0;
         return;
     }
 
@@ -678,7 +679,9 @@ void ComParticleSystem::Play() {
 }
 
 void ComParticleSystem::Stop() {
-    stopTime = currentTime;
+    if (stopTime == 0) {
+        stopTime = currentTime;
+    }
 }
 
 void ComParticleSystem::Resume() {
