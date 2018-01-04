@@ -277,7 +277,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
         }
 
         if (stopTime != 0) {
-            if (currentTime > stopTime + cycleDuration) {
+            if (time > MS2SEC(stopTime) + cycleDuration) {
                 continue;
             }
         }
@@ -327,6 +327,12 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
                         particle->cycle = curCycles - 1;
 
                         regenerate = true;
+                    }
+                }
+
+                if (stopTime > 0) {
+                    if (particleGenTime + particle->cycle * cycleDuration > MS2SEC(stopTime)) {
+                        continue;
                     }
                 }
 
@@ -672,7 +678,6 @@ void ComParticleSystem::Play() {
 }
 
 void ComParticleSystem::Stop() {
-    simulationStarted = false;
     stopTime = currentTime;
 }
 
