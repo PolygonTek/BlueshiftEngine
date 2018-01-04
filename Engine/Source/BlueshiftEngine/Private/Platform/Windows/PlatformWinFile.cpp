@@ -19,6 +19,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shlobj.h>
 #include <errno.h>
 #include <float.h>
 #include <fcntl.h>
@@ -385,7 +386,7 @@ const char *PlatformWinFile::ExecutablePath() {
     return path;
 }
 
-const char *PlatformWinFile::HomePath() {
+const char *PlatformWinFile::UserHomeDir() {
     static char path[1024] = "";
     
     const char *userProfile = getenv("USERPROFILE");
@@ -398,6 +399,24 @@ const char *PlatformWinFile::HomePath() {
         strcat(path, homePath);
     }
     
+    return path;
+}
+
+const char *PlatformWinFile::UserDocumentDir() {
+    static char path[1024] = "";
+
+    if (!SHGetSpecialFolderPathA(0, path, CSIDL_PERSONAL, 0)) {
+        return nullptr;
+    }
+    return path;
+}
+
+const char *PlatformWinFile::UserAppDataDir() {
+    static char path[1024] = "";
+
+    if (!SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, 0, path))) {
+        return nullptr;
+    }
     return path;
 }
 

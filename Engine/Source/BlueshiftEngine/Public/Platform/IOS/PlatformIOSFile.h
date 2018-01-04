@@ -39,7 +39,10 @@ public:
     static bool             MoveFile(const char *srcFilename, const char *dstFilename);
 
     static const char *     ExecutablePath();
-    static const char *     HomePath();
+
+    static const char *     UserHomeDir();
+    static const char *     UserDocumentDir();
+    static const char *     UserAppDataDir();
     
     static Str              ConvertToIOSPath(const Str &filename, bool forWrite);
 };

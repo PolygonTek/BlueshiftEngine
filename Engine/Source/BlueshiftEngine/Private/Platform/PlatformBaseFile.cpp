@@ -159,7 +159,15 @@ const char *PlatformBaseFile::ExecutablePath() {
     return "";
 }
 
-const char *PlatformBaseFile::HomePath() {
+const char *PlatformBaseFile::UserHomeDir() {
+    return "";
+}
+
+const char *PlatformBaseFile::UserDocumentDir() {
+    return "";
+}
+
+const char *PlatformBaseFile::UserAppDataDir() {
     return "";
 }
 
