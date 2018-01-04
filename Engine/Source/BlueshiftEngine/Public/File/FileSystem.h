@@ -100,7 +100,10 @@ public:
     bool                ReadDict(const char *filename, Dict &dict);
     bool                WriteDict(const char *filename, const Dict &dict);
     
-    int                 ListFiles(const char *findPath, const char *nameFilter, FileArray &fileArray, bool searchDirs = true, bool includeSubDir = false, bool sort = false, bool recursive=true);
+    int                 ListFiles(const char *findPath, const char *nameFilter, FileArray &fileArray, bool searchDirs = true, bool includeSubDir = false, bool sort = false, bool recursive = true);
+
+    Str                 GetDocumentDir() const;
+    Str                 GetAppDataDir(const char *org, const char *app) const;
     
 private:
     struct SearchPath {

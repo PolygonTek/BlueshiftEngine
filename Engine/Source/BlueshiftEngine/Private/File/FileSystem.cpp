@@ -909,6 +909,18 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
     return fileArray.NumFiles();
 }
 
+Str FileSystem::GetDocumentDir() const {
+    Str dir = PlatformFile::UserDocumentDir();
+    return dir;
+}
+
+Str FileSystem::GetAppDataDir(const char *org, const char *app) const {
+    Str dir = PlatformFile::UserAppDataDir();
+    dir.AppendPath(org);
+    dir.AppendPath(app);
+    return dir;
+}
+
 //--------------------------------------------------------------------------------------------------
 
 void FileSystem::Cmd_Dir(const CmdArgs &args) {
@@ -919,7 +931,7 @@ void FileSystem::Cmd_Dir(const CmdArgs &args) {
         return;
     }
 
-    char directory[1024];	
+    char directory[1024];
     Str::Copynz(directory, tombs(args.Argv(1)), COUNT_OF(directory));
 
     char nameFilter[256] = "";

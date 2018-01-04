@@ -25,7 +25,8 @@ void LuaVM::RegisterCommon(LuaCpp::Module &module) {
     _Common.AddObjMembers(common,
         "real_time", &Common::realTime,
         "frame_time", &Common::frameTime,
-        "frame_sec", &Common::frameSec);
+        "frame_sec", &Common::frameSec,
+        "preference_dir", &Common::GetAppPreferenceDir);
 }
 
 BE_NAMESPACE_END

@@ -482,17 +482,17 @@ void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
     char    picname[16];
     int     i;
 
-    const char *homePath = PlatformFile::HomePath();
+    const char *documentDir = PlatformFile::UserDocumentDir();
     
     if (args.Argc() > 1) {
-        Str::snPrintf(path, sizeof(path), "%s/Screenshots/%ls", homePath, args.Argv(1));
+        Str::snPrintf(path, sizeof(path), "%s/Screenshots/%ls", documentDir, args.Argv(1));
     } else {
         strcpy(picname, "shot000.png");
         for (i = 0; i <= 999; i++) {
             picname[4] = '0' + i/100;
             picname[5] = '0' + i%100/10;
             picname[6] = '0' + i%10;
-            Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", homePath, picname);
+            Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir, picname);
             
             if (!fileSystem.FileExists(path)) {
                 break;

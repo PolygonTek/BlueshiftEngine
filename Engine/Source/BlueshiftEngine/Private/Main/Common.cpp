@@ -26,6 +26,7 @@
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
 #include "File/FileSystem.h"
+#include "Game/GameSettings.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -172,6 +173,12 @@ void Common::RunFrame(int frameMsec) {
     ProcessPlatformEvent();
 
     cmdSystem.ExecuteCommandBuffer();
+}
+
+Str Common::GetAppPreferenceDir() const {
+    Str companyName = GameSettings::playerSettings->GetProperty("companyName").As<Str>();
+    Str productName = GameSettings::playerSettings->GetProperty("productName").As<Str>();
+    return fileSystem.GetAppDataDir(companyName, productName);
 }
 
 int Common::ProcessPlatformEvent() {
