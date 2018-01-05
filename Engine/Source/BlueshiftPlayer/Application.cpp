@@ -20,6 +20,8 @@ Application app;
 void Application::Init() {
     BE1::cmdSystem.AddCommand(L"map", Cmd_Map_f);
 
+    BE1::prefabManager.Init();
+
     BE1::GameSettings::Init();
     
     gameFont = nullptr;
@@ -38,8 +40,10 @@ void Application::Shutdown() {
     if (gameWorld->IsGameStarted()) {
         gameWorld->StopGame();
     }
-    
+
     gameState = GAMESTATE_SHUTDOWN;
+
+    BE1::prefabManager.Shutdown();
 
     BE1::GameWorld::DestroyInstance(gameWorld, true);
     gameWorld = nullptr;
