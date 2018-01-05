@@ -51,8 +51,8 @@ const char *PlatformIOSSystem::UserDocumentDir() {
 const char *PlatformIOSSystem::UserAppDataDir() {
     static char path[1024] = "";
     if (!path[0]) {
-        NSString *applicationSupportDir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
-        strcpy(path, (const char *)[applicationSupportDir cStringUsingEncoding:NSUTF8StringEncoding]);
+        NSString *libraryDir = [NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
+        strcpy(path, (const char *)[libraryDir cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return path;
 }
