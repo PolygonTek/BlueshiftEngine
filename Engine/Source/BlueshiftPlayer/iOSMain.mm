@@ -57,7 +57,7 @@ enum IOSDevice {
 };
 
 static bool IsIPhone(IOSDevice deviceType) {
-    return deviceType >= IOS_IPhone4 && deviceType <= IOS_IPhone7;
+    return deviceType >= IOS_IPhone4 && deviceType <= IOS_IPhoneX;
 }
 
 static bool IsIPod(IOSDevice deviceType) {
