@@ -919,6 +919,7 @@ Str FileSystem::GetAppDataDir(const char *org, const char *app) const {
     Str dir = PlatformSystem::UserAppDataDir();
     dir.AppendPath(org);
     dir.AppendPath(app);
+    CreateDirectory(dir, true);
     return dir;
 }
 

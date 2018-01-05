@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "File/FileSystem.h"
 #include "Platform/PlatformFile.h"
 #include <unistd.h>
 #include <sys/stat.h>
@@ -43,7 +44,7 @@ int PlatformPosixFile::Size() const {
         return -1;
     }
 
-    return fileInfo.st_size;
+    return (int)fileInfo.st_size;
 }
 
 int PlatformPosixFile::Seek(long offset, Origin origin) {
@@ -109,8 +110,13 @@ bool PlatformPosixFile::Write(const void *buffer, size_t bytesToWrite) {
 //-------------------------------------------------------------------------------------------
 
 Str PlatformPosixFile::NormalizeFilename(const char *filename) {
-    Str normalizedFilename(basePath);
-    normalizedFilename.AppendPath(filename);
+    Str normalizedFilename;
+    if (FileSystem::IsAbsolutePath(filename)) {
+        normalizedFilename = filename;
+    } else {
+        normalizedFilename = basePath;
+        normalizedFilename.AppendPath(filename);
+    }
     normalizedFilename.CleanPath('/');
     //normalizedFilename.BackSlashesToSlashes();
 
@@ -118,8 +124,13 @@ Str PlatformPosixFile::NormalizeFilename(const char *filename) {
 }
 
 Str PlatformPosixFile::NormalizeDirectoryName(const char *dirname) {
-    Str normalizedDirname(basePath);
-    normalizedDirname.AppendPath(dirname);
+    Str normalizedDirname;
+    if (FileSystem::IsAbsolutePath(dirname)) {
+        normalizedDirname = dirname;
+    } else {
+        normalizedDirname = basePath;
+        normalizedDirname.AppendPath(dirname);
+    }
     normalizedDirname.CleanPath('/');
     //normalizedDirname.BackSlashesToSlashes();
 

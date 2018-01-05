@@ -58,7 +58,7 @@ int PhysCollisionPair::Compare(const PhysCollisionPair &other) const {
 }
 
 int PhysCollisionPair::Hash(const PhysCollisionPair &pair) {
-    return (intptr_t)(pair.a) + (intptr_t)(pair.b);
+    return (int)((intptr_t)(pair.a) + (intptr_t)(pair.b));
 }
 
 BE_NAMESPACE_END

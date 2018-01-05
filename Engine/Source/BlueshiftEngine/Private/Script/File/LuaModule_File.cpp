@@ -24,6 +24,7 @@ void LuaVM::RegisterFile(LuaCpp::Module &module) {
     LuaCpp::Selector _File = module["File"];
 
     _File.SetClass<File>();
+    _File.AddClassCtor<File>();
     _File.AddClassMembers<File>(
         "size", &File::Size,
         "tell", &File::Tell,

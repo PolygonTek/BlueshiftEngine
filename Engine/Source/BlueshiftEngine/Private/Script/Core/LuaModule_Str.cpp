@@ -22,6 +22,7 @@ void LuaVM::RegisterStr(LuaCpp::Module &module) {
     LuaCpp::Selector _Str = module["Str"];
 
     _Str.SetClass<Str>();
+    _Str.AddClassCtor<Str>();
     _Str.AddClassMembers<Str>(
         "c_str", &Str::c_str,
         "is_empty", &Str::IsEmpty,

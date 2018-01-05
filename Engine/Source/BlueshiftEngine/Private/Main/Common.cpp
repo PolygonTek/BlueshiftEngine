@@ -125,7 +125,7 @@ void Common::Init(const char *baseDir) {
 
     random.SetSeed(0);
 
-    srand(time(nullptr));
+    srand((unsigned int)time(nullptr));
 }
 
 void Common::Shutdown() {
@@ -198,19 +198,19 @@ int Common::ProcessPlatformEvent() {
             gameClient.KeyEvent((KeyCode::Enum)ev.value, ev.value2 ? true : false);
             break;
         case Platform::CharEvent:
-            gameClient.CharEvent(ev.value);
+            gameClient.CharEvent((wchar_t)ev.value);
             break;
         case Platform::CompositionEvent:
-            gameClient.CompositionEvent(ev.value);
+            gameClient.CompositionEvent((int)ev.value);
             break;
         case Platform::MouseDeltaEvent:
-            gameClient.MouseDeltaEvent(ev.value, ev.value2, ev.time);
+            gameClient.MouseDeltaEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
         case Platform::MouseMoveEvent:
-            gameClient.MouseMoveEvent(ev.value, ev.value2, ev.time);
+            gameClient.MouseMoveEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
         case Platform::JoyAxisEvent:
-            gameClient.JoyAxisEvent(ev.value, ev.value2, ev.time);
+            gameClient.JoyAxisEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
         case Platform::TouchBeganEvent:
             gameClient.TouchEvent(InputSystem::Touch::Started, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);

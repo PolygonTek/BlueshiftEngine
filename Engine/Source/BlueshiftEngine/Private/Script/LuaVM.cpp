@@ -188,7 +188,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterGameWorld(module);
     });
 
-    state->Require("blueshift");
+    //state->Require("blueshift");
 }
 
 void LuaVM::Shutdown() {
