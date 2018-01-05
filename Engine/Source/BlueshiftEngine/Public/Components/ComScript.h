@@ -96,12 +96,14 @@ protected:
 
     void                    ChangeScript(const Guid &scriptGuid);
     bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
+    void                    InitScriptFields();
     void                    SetScriptProperties();
     LuaCpp::Selector        CacheFunction(const char *funcname);
     void                    UpdateFunctionMap();
     void                    ScriptReloaded();
     void                    SetOwnerValues();
 
+    Guid                    scriptGuid;
     ScriptAsset *           scriptAsset;
     LuaCpp::State *         state;
     Str                     sandboxName;
