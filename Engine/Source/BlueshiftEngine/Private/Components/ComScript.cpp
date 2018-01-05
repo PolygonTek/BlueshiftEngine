@@ -173,31 +173,31 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
             } else if (!Str::Cmp(type, "float")) {
                 fieldValues.Set(name, (float)value);
             } else if (!Str::Cmp(type, "vec2")) {
-                fieldValues.Set(name, (Vec2)value);
+                fieldValues.Set(name, (Vec2 &)value);
             } else if (!Str::Cmp(type, "vec3")) {
-                fieldValues.Set(name, (Vec3)value);
+                fieldValues.Set(name, (Vec3 &)value);
             } else if (!Str::Cmp(type, "vec4")) {
-                fieldValues.Set(name, (Vec4)value);
+                fieldValues.Set(name, (Vec4 &)value);
             } else if (!Str::Cmp(type, "color3")) {
-                fieldValues.Set(name, (Color3)value);
+                fieldValues.Set(name, (Color3 &)value);
             } else if (!Str::Cmp(type, "color4")) {
-                fieldValues.Set(name, (Color4)value);
+                fieldValues.Set(name, (Color4 &)value);
             } else if (!Str::Cmp(type, "angles")) {
-                fieldValues.Set(name, (Angles)value);
+                fieldValues.Set(name, (Angles &)value);
             } else if (!Str::Cmp(type, "quat")) {
-                fieldValues.Set(name, (Quat)value);
+                fieldValues.Set(name, (Quat &)value);
             } else if (!Str::Cmp(type, "mat2")) {
-                fieldValues.Set(name, (Mat2)value);
+                fieldValues.Set(name, (Mat2 &)value);
             } else if (!Str::Cmp(type, "mat3")) {
-                fieldValues.Set(name, (Mat3)value);
+                fieldValues.Set(name, (Mat3 &)value);
             } else if (!Str::Cmp(type, "mat3x4")) {
-                fieldValues.Set(name, (Mat3x4)value);
+                fieldValues.Set(name, (Mat3x4 &)value);
             } else if (!Str::Cmp(type, "mat4")) {
-                fieldValues.Set(name, (Mat4)value);
+                fieldValues.Set(name, (Mat4 &)value);
             } else if (!Str::Cmp(type, "point")) {
-                fieldValues.Set(name, (Point)value);
+                fieldValues.Set(name, (Point &)value);
             } else if (!Str::Cmp(type, "rect")) {
-                fieldValues.Set(name, (Rect)value);
+                fieldValues.Set(name, (Rect &)value);
             } else if (!Str::Cmp(type, "string")) {
                 fieldValues.Set(name, Str((const char *)value));
             } else if (!Str::Cmp(type, "object")) {

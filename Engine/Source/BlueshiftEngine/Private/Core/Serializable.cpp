@@ -210,7 +210,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                 }
                 case Variant::StrType: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Str>().c_str());
-                    Str v = value.type() == Json::stringValue ? value.asCString() : defaultValue.As<Str>();
+                    Str v = value.type() == Json::stringValue ? Str(value.asCString()) : defaultValue.As<Str>();
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
@@ -306,7 +306,7 @@ void Serializable::Deserialize(const Json::Value &node) {
                 break;
             }
             case Variant::StrType: {
-                Str v = value.type() == Json::stringValue ? value.asCString() : defaultValue.As<Str>();
+                Str v = value.type() == Json::stringValue ? Str(value.asCString()) : defaultValue.As<Str>();
                 SetProperty(propertyIndex, v);
                 break;
             }

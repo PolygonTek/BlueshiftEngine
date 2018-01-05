@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+struct TransformSpace {};
+
 void LuaVM::RegisterTransformComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComTransform = module["ComTransform"];
 
@@ -51,7 +53,7 @@ void LuaVM::RegisterTransformComponent(LuaCpp::Module &module) {
     _ComTransform["meta_object"] = ComTransform::metaObject;
 
     LuaCpp::Selector _ComTransform_TransformSpace = _ComTransform["TransformSpace"];
-    _ComTransform_TransformSpace.SetClass<ComTransform::TransformSpace>();
+    _ComTransform_TransformSpace.SetClass<TransformSpace>();
     _ComTransform_TransformSpace["LocalSpace"] = ComTransform::TransformSpace::LocalSpace;
     _ComTransform_TransformSpace["WorldSpace"] = ComTransform::TransformSpace::WorldSpace;
 }
