@@ -8,37 +8,42 @@ namespace detail {
         intptr_t addr;
         int flags;
     };
-
-    // Read a boolean value from the stack
-    inline bool _get(_id<bool>, lua_State *l, const int index) {
-        return lua_toboolean(l, index) != 0;
-    }
-
-    // Read a integer value from the stack
-    inline int64_t _get(_id<int64_t>, lua_State *l, const int index) {
-        return static_cast<int64_t>(lua_tointeger(l, index));
-    }
-
-    // Read a unsigned integer value from the stack
-    inline uint64_t _get(_id<uint64_t>, lua_State *l, const int index) {
-#if LUA_VERSION_NUM >= 502 && LUA_VERSION_NUM < 503
-        return static_cast<uint64_t>(lua_tounsigned(l, index));
-#else
-        return static_cast<uint64_t>(lua_tointeger(l, index));
-#endif
-    }
-
+    
     // Read a integer value from the stack
     inline int _get(_id<int>, lua_State *l, const int index) {
         return static_cast<int>(lua_tointeger(l, index));
     }
-
+    
     // Read a unsigned integer value from the stack
     inline unsigned int _get(_id<unsigned int>, lua_State *l, const int index) {
 #if LUA_VERSION_NUM >= 502 && LUA_VERSION_NUM < 503
         return static_cast<unsigned int>(lua_tounsigned(l, index));
 #else
         return static_cast<unsigned int>(lua_tointeger(l, index));
+#endif
+    }
+
+    // Read a boolean value from the stack
+    inline bool _get(_id<bool>, lua_State *l, const int index) {
+        return lua_toboolean(l, index) != 0;
+    }
+    
+    // Read a integer value from the stack
+    inline char _get(_id<char>, lua_State *l, const int index) {
+        return static_cast<char>(lua_tointeger(l, index));
+    }
+    
+    // Read a integer value from the stack
+    inline signed char _get(_id<signed char>, lua_State *l, const int index) {
+        return static_cast<signed char>(lua_tointeger(l, index));
+    }
+    
+    // Read a integer value from the stack
+    inline unsigned char _get(_id<unsigned char>, lua_State *l, const int index) {
+#if LUA_VERSION_NUM >= 502 && LUA_VERSION_NUM < 503
+        return static_cast<unsigned char>(lua_tounsigned(l, index));
+#else
+        return static_cast<unsigned char>(lua_tointeger(l, index));
 #endif
     }
 
@@ -55,19 +60,24 @@ namespace detail {
         return static_cast<unsigned short>(lua_tointeger(l, index));
 #endif
     }
-
+    
     // Read a integer value from the stack
-    inline char _get(_id<char>, lua_State *l, const int index) {
-        return static_cast<char>(lua_tointeger(l, index));
+    inline int64_t _get(_id<int64_t>, lua_State *l, const int index) {
+        return static_cast<int64_t>(lua_tointeger(l, index));
     }
-
-    // Read a integer value from the stack
-    inline unsigned char _get(_id<unsigned char>, lua_State *l, const int index) {
+    
+    // Read a unsigned integer value from the stack
+    inline uint64_t _get(_id<uint64_t>, lua_State *l, const int index) {
 #if LUA_VERSION_NUM >= 502 && LUA_VERSION_NUM < 503
-        return static_cast<unsigned char>(lua_tounsigned(l, index));
+        return static_cast<uint64_t>(lua_tounsigned(l, index));
 #else
-        return static_cast<unsigned char>(lua_tointeger(l, index));
+        return static_cast<uint64_t>(lua_tointeger(l, index));
 #endif
+    }
+    
+    // Read a integer value from the stack
+    inline size_t _get(_id<size_t>, lua_State *l, const int index) {
+        return static_cast<size_t>(lua_tointeger(l, index));
     }
 
     // Read a float value from the stack
@@ -148,67 +158,8 @@ namespace detail {
     struct GetParameterFromLuaTypeError {
         _lua_check_get checked_get;
         int index;
-    };    
-
-    // Check read a boolean value from the stack
-    inline bool _check_get(_id<bool>, lua_State *l, const int index) {
-        return lua_toboolean(l, index) != 0;
-    }
-
-    // Check read a integer value from the stack
-    inline int64_t _check_get(_id<int64_t>, lua_State *l, const int index) {
-        int isNum = 0;
-#if LUA_VERSION_NUM >= 502
-        auto res = static_cast<int64_t>(lua_tointegerx(l, index, &isNum));
-#else
-        auto res = lua_tointeger(l, index);
-        isNum = (res != 0 || lua_isnumber(l, index));
-#endif
-        if (!isNum) {
-            throw GetParameterFromLuaTypeError{
-#if LUA_VERSION_NUM >= 503
-                [](lua_State *l, int index) { luaL_checkinteger(l, index); },
-#else
-                [](lua_State *l, int index) { luaL_checkint(l, index); },
-#endif
-                index
-            };
-        }
-        return res;
-    }
-
-    // Check read a unsigned integer value from the stack
-    inline uint64_t _check_get(_id<uint64_t>, lua_State *l, const int index) {
-        int isNum = 0;
-#if LUA_VERSION_NUM >= 503
-        auto res = static_cast<uint64_t>(lua_tointegerx(l, index, &isNum));
-        if (!isNum) {
-            throw GetParameterFromLuaTypeError{
-                [](lua_State *l, int index) { luaL_checkinteger(l, index); },
-                index
-            };
-        }
-#elif LUA_VERSION_NUM >= 502
-        auto res = static_cast<uint64_t>(lua_tounsignedx(l, index, &isNum));
-        if (!isNum) {
-            throw GetParameterFromLuaTypeError{
-                [](lua_State *l, int index) { luaL_checkunsigned(l, index); },
-                index
-            };
-        }
-#else
-        auto res = static_cast<uint64_t>(lua_tointeger(l, index));
-        isNum = (res != 0 || lua_isnumber(l, index));
-        if (!isNum) {
-            throw GetParameterFromLuaTypeError{
-                [](lua_State *l, int index) { luaL_checkinteger(l, index); },
-                index
-            };
-        }
-#endif
-        return res;
-    }
-
+    };
+    
     // Check read a integer value from the stack
     inline int _check_get(_id<int>, lua_State *l, const int index) {
         int isNum = 0;
@@ -230,7 +181,7 @@ namespace detail {
         }
         return res;
     }
-
+    
     // Check read a unsigned integer value from the stack
     inline unsigned int _check_get(_id<unsigned int>, lua_State *l, const int index) {
         int isNum = 0;
@@ -263,24 +214,93 @@ namespace detail {
         return res;
     }
 
-    // Check read a integer value from the stack
-    inline short _check_get(_id<short>, lua_State *l, const int index) {
-        return (short)_check_get(_id<int>(), l, index);
+    // Check read a boolean value from the stack
+    inline bool _check_get(_id<bool>, lua_State *l, const int index) {
+        return lua_toboolean(l, index) != 0;
     }
-
-    // Check read a unsigned integer value from the stack
-    inline unsigned short _check_get(_id<unsigned short>, lua_State *l, const int index) {
-        return (unsigned short)_check_get(_id<unsigned int>(), l, index);
-    }
-
+    
     // Check read a integer value from the stack
     inline char _check_get(_id<char>, lua_State *l, const int index) {
         return (char)_check_get(_id<int>(), l, index);
     }
-
+    
+    // Check read a integer value from the stack
+    inline signed char _check_get(_id<signed char>, lua_State *l, const int index) {
+        return (signed char)_check_get(_id<int>(), l, index);
+    }
+    
     // Check read a unsigned integer value from the stack
     inline unsigned char _check_get(_id<unsigned char>, lua_State *l, const int index) {
         return (unsigned char)_check_get(_id<unsigned int>(), l, index);
+    }
+    
+    // Check read a integer value from the stack
+    inline short _check_get(_id<short>, lua_State *l, const int index) {
+        return (short)_check_get(_id<int>(), l, index);
+    }
+    
+    // Check read a unsigned integer value from the stack
+    inline unsigned short _check_get(_id<unsigned short>, lua_State *l, const int index) {
+        return (unsigned short)_check_get(_id<unsigned int>(), l, index);
+    }
+    
+    // Check read a integer value from the stack
+    inline int64_t _check_get(_id<int64_t>, lua_State *l, const int index) {
+        int isNum = 0;
+#if LUA_VERSION_NUM >= 502
+        auto res = static_cast<int64_t>(lua_tointegerx(l, index, &isNum));
+#else
+        auto res = lua_tointeger(l, index);
+        isNum = (res != 0 || lua_isnumber(l, index));
+#endif
+        if (!isNum) {
+            throw GetParameterFromLuaTypeError{
+#if LUA_VERSION_NUM >= 503
+                [](lua_State *l, int index) { luaL_checkinteger(l, index); },
+#else
+                [](lua_State *l, int index) { luaL_checkint(l, index); },
+#endif
+                index
+            };
+        }
+        return res;
+    }
+    
+    // Check read a unsigned integer value from the stack
+    inline uint64_t _check_get(_id<uint64_t>, lua_State *l, const int index) {
+        int isNum = 0;
+#if LUA_VERSION_NUM >= 503
+        auto res = static_cast<uint64_t>(lua_tointegerx(l, index, &isNum));
+        if (!isNum) {
+            throw GetParameterFromLuaTypeError{
+                [](lua_State *l, int index) { luaL_checkinteger(l, index); },
+                index
+            };
+        }
+#elif LUA_VERSION_NUM >= 502
+        auto res = static_cast<uint64_t>(lua_tounsignedx(l, index, &isNum));
+        if (!isNum) {
+            throw GetParameterFromLuaTypeError{
+                [](lua_State *l, int index) { luaL_checkunsigned(l, index); },
+                index
+            };
+        }
+#else
+        auto res = static_cast<uint64_t>(lua_tointeger(l, index));
+        isNum = (res != 0 || lua_isnumber(l, index));
+        if (!isNum) {
+            throw GetParameterFromLuaTypeError{
+                [](lua_State *l, int index) { luaL_checkinteger(l, index); },
+                index
+            };
+        }
+#endif
+        return res;
+    }
+    
+    // Check read a integer value from the stack
+    inline size_t _check_get(_id<size_t>, lua_State *l, const int index) {
+        return (size_t)_check_get(_id<int64_t>(), l, index);
     }
 
     // Check read a lua_Number value from the stack
