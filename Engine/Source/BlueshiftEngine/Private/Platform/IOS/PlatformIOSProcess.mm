@@ -16,4 +16,23 @@
 
 BE_NAMESPACE_BEGIN
 
+cosnt wchar_t *PlatformIOSProcess::ExecutableFileName() {
+    static wchar_t filename[512] = "";
+    if (!Result[0]) {
+        NSString *nsExeName = [[[NSBundle mainBundle] executablePath] lastPathComponent];
+        CFStringToWideString((__bridge CFStringRef)nsExeName, filename);
+    }
+    return filename;
+}
+
+const wchar_t *PlatformIOSProcess::ComputerName() {
+    static wchar_t name[256] = "";
+    if (!name[0]) {
+        char temp[ARRAY_COUNT(name)];
+        gethostname(temp, ARRAY_COUNT(name));
+        wcscpy(name, ToWStr(temp).c_str());
+    }
+    return name;
+}
+
 BE_NAMESPACE_END
