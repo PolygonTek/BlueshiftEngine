@@ -49,6 +49,8 @@ public:
     Quat() = default;
     /// Constructs a Quat with the value (x, y, z, w).
     Quat(float x, float y, float z, float w);
+    /// Constructs a Quat from a C array, to the value (data[0], data[1], data[2], data[3]).
+    explicit Quat(const float data[4]);
     /// Assignment operator
     Quat &operator=(const Quat &rhs);
     
@@ -156,6 +158,13 @@ BE_INLINE Quat::Quat(float x, float y, float z, float w) {
     this->y = y;
     this->z = z;
     this->w = w;
+}
+
+BE_INLINE Quat::Quat(const float data[4]) {
+    this->x = data[0];
+    this->y = data[1];
+    this->z = data[2];
+    this->w = data[3];
 }
 
 BE_INLINE void Quat::Set(float x, float y, float z, float w) {
