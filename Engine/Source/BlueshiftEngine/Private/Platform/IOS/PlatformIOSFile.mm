@@ -146,9 +146,12 @@ bool PlatformIOSFile::MoveFile(const char *srcFilename, const char *dstFilename)
 }
 
 const char *PlatformIOSFile::ExecutablePath() {
-    static NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
-    static const char *cstr = (const char *)[bundlePath cStringUsingEncoding:NSUTF8StringEncoding];
-    return cstr;
+    static char path[512] = "";
+    if (!path[0]) {
+        NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
+        strcpy(path, (const char *)[bundlePath cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
 }
 
 Str PlatformIOSFile::ConvertToIOSPath(const Str &filename, bool forWrite) {

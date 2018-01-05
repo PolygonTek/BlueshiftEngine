@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
-#include "Platform/IOS/PlatformIOSSystem.h"
+#include <sys/sysctl.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -52,7 +52,7 @@ const char *PlatformIOSSystem::UserAppDataDir() {
     static char path[1024] = "";
     if (!path[0]) {
         NSString *applicationSupportDir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
-        strcpy(path, (const char *)[documentDir cStringUsingEncoding:NSUTF8StringEncoding]);
+        strcpy(path, (const char *)[applicationSupportDir cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return path;
 }

@@ -21,8 +21,8 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformIOSSystem : public PlatformAppleSystem {
 public:
-    static const wchar_t *  ComputerName();
-    static const wchar_t *  UserName();
+    static void             GetEnvVar(const char *variableName, char *result, uint32_t resultLength);
+    static void             SetEnvVar(const char *variableName, const char *value);
 
     static const char *     UserDir();
     static const char *     UserDocumentDir();
