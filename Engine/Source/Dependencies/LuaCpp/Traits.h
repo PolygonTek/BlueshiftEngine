@@ -44,17 +44,22 @@ namespace detail {
     };
 
     template <>
-    struct is_primitive<int64_t> {
+    struct is_primitive<long> {
         static constexpr bool value = true;
     };
 
     template <>
-    struct is_primitive<uint64_t> {
+    struct is_primitive<unsigned long> {
         static constexpr bool value = true;
     };
-    
+
     template <>
-    struct is_primitive<size_t> {
+    struct is_primitive<long long> {
+        static constexpr bool value = true;
+    };
+
+    template <>
+    struct is_primitive<unsigned long long> {
         static constexpr bool value = true;
     };
     
