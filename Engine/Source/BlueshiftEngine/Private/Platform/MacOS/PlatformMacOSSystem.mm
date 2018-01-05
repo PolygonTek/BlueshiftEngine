@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Str.h"
 #include "Platform/PlatformSystem.h"
+#include <sys/sysctl.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -61,7 +62,7 @@ const char *PlatformMacOSSystem::UserAppDataDir() {
     static char path[1024] = "";
     if (!path[0]) {
         NSString *applicationSupportDir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
-        strcpy(path, (const char *)[documentDir cStringUsingEncoding:NSUTF8StringEncoding]);
+        strcpy(path, (const char *)[applicationSupportDir cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return path;
 }
@@ -86,7 +87,7 @@ int32_t PlatformMacOSSystem::NumCPUCores() {
     return numCores;
 }
 
-int32 PlatformMacOSSystem::NumCPUCoresIncludingHyperthreads() {
+int32_t PlatformMacOSSystem::NumCPUCoresIncludingHyperthreads() {
     static int32_t numCores = -1;
     if (numCores == -1) {
         size_t size = sizeof(int32_t);
