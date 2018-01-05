@@ -39,4 +39,62 @@ void PlatformMacOSSystem::SetEnvVar(const char *varName, const char *value) {
     }
 }
 
+const char *PlatformMacOSSystem::UserDir() {
+    static char path[1024] = "";
+    if (!path[0]) {
+        NSString *userDir = [NSSearchPathForDirectoriesInDomains(NSUserDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+        strcpy(path, (const char *)[userDir cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
+}
+
+const char *PlatformMacOSSystem::UserDocumentDir() {
+    static char path[1024] = "";
+    if (!path[0]) {
+        NSString *documentDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
+        strcpy(path, (const char *)[documentDir cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
+}
+
+const char *PlatformMacOSSystem::UserAppDataDir() {
+    static char path[1024] = "";
+    if (!path[0]) {
+        NSString *applicationSupportDir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
+        strcpy(path, (const char *)[documentDir cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
+}
+
+const char *PlatformMacOSSystem::UserTempDir() {
+    static char path[1024] = "";
+    if (!path[0]) {
+        NSString *tempDir = NSTemporaryDirectory();
+        strcpy(path, (const char *)[tempDir cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
+}
+
+int32_t PlatformMacOSSystem::NumCPUCores() {
+    static int32_t numCores = -1;
+    if (numCores == -1) {
+        size_t size = sizeof(int32_t);
+        if (sysctlbyname("hw.physicalcpu", &numCores, &size, nullptr, 0) != 0) {
+            numCores = 1;
+        }
+    }
+    return numCores;
+}
+
+int32 PlatformMacOSSystem::NumCPUCoresIncludingHyperthreads() {
+    static int32_t numCores = -1;
+    if (numCores == -1) {
+        size_t size = sizeof(int32_t);
+        if (sysctlbyname("hw.ncpu", &numCores, &size, nullptr, 0) != 0) {
+            numCores = 1;
+        }
+    }
+    return numCores;
+}
+
 BE_NAMESPACE_END

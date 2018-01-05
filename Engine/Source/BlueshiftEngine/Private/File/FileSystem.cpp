@@ -16,6 +16,7 @@
 #include "Core/Heap.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
+#include "Platform/PlatformSystem.h"
 #include "Platform/PlatformProcess.h"
 #include "File/FileSystem.h"
 #include "minizip/zip.h"
@@ -910,12 +911,12 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
 }
 
 Str FileSystem::GetDocumentDir() const {
-    Str dir = PlatformFile::UserDocumentDir();
+    Str dir = PlatformSystem::UserDocumentDir();
     return dir;
 }
 
 Str FileSystem::GetAppDataDir(const char *org, const char *app) const {
-    Str dir = PlatformFile::UserAppDataDir();
+    Str dir = PlatformSystem::UserAppDataDir();
     dir.AppendPath(org);
     dir.AppendPath(app);
     return dir;

@@ -13,31 +13,4 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/WStr.h"
 #include "Platform/PlatformSystem.h"
-
-BE_NAMESPACE_BEGIN
-
-void PlatformBaseSystem::GetEnvVar(const char *variableName, char *result, uint32_t resultLength) {
-}
-
-void PlatformBaseSystem::SetEnvVar(const char *variableName, const char *value) {
-}
-
-const char *PlatformBaseSystem::UserDir() {
-    return "";
-}
-
-const char *PlatformBaseSystem::UserDocumentDir() {
-    return "";
-}
-
-const char *PlatformBaseSystem::UserAppDataDir() {
-    return "";
-}
-
-const char *PlatformBaseSystem::UserTempDir() {
-    return "";
-}
-
-BE_NAMESPACE_END

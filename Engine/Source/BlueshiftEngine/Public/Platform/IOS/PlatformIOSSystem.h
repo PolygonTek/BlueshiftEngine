@@ -14,23 +14,24 @@
 
 #pragma once
 
-#define USE_BASE_PLATFORM_APPLE_PROCESS
-#include "../Apple/PlatformAppleProcess.h"
+#define USE_BASE_PLATFORM_APPLE_SYSTEM
+#include "../Apple/PlatformAppleSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-struct ProcessHandle {
-    ProcessHandle(void *task = NULL) { }
-    bool IsValid() const { return false; }
-    void Close();
-};
-
-class BE_API PlatformIOSProcess : public PlatformAppleProcess {
+class BE_API PlatformIOSSystem : public PlatformAppleSystem {
 public:
-    static const wchar_t *		ComputerName();
-    static const wchar_t *		UserName();
+    static const wchar_t *  ComputerName();
+    static const wchar_t *  UserName();
+
+    static const char *     UserDir();
+    static const char *     UserDocumentDir();
+    static const char *     UserAppDataDir();
+    static const char *     UserTempDir();
+
+    static int32_t          NumCPUCores();
 };
 
-typedef PlatformIOSProcess      PlatformProcess;
+typedef PlatformIOSSystem   PlatformSystem;
 
 BE_NAMESPACE_END

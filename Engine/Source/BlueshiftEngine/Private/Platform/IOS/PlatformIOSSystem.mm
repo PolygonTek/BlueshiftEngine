@@ -30,4 +30,51 @@ void PlatformIOSSystem::GetEnvVar(const char *varName, char *result, uint32_t re
 void PlatformIOSSystem::SetEnvVar(const char *varName, const char *value) {
 }
 
+const char *PlatformIOSSystem::UserDir() {
+    static char path[1024] = "";
+    if (!path[0]) {
+        NSString *userDir = [NSSearchPathForDirectoriesInDomains(NSUserDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+        strcpy(path, (const char *)[userDir cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
+}
+
+const char *PlatformIOSSystem::UserDocumentDir() {
+    static char path[1024] = "";
+    if (!path[0]) {
+        NSString *documentDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
+        strcpy(path, (const char *)[documentDir cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
+}
+
+const char *PlatformIOSSystem::UserAppDataDir() {
+    static char path[1024] = "";
+    if (!path[0]) {
+        NSString *applicationSupportDir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
+        strcpy(path, (const char *)[documentDir cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
+}
+
+const char *PlatformIOSSystem::UserTempDir() {
+    static char path[1024] = "";
+    if (!path[0]) {
+        NSString *tempDir = NSTemporaryDirectory();
+        strcpy(path, (const char *)[tempDir cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
+    return path;
+}
+
+int32_t PlatformIOSSystem::NumCPUCores() {
+    static int32_t numCores = -1;
+    if (numCores == -1) {
+        size_t size = sizeof(int32_t);
+        if (sysctlbyname("hw.ncpu", &numCores, &size, nullptr, 0) != 0) {
+            numCores = 1;
+        }
+    }
+    return numCores;
+}
+
 BE_NAMESPACE_END

@@ -18,6 +18,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixSystem : public PlatformBaseSystem {
 public:
+    static const char *         UserDir();
 };
 
 #ifndef USE_BASE_PLATFORM_POSIX_SYSTEM

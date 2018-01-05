@@ -17,4 +17,19 @@
 
 BE_NAMESPACE_BEGIN
 
+const char *PlatformPosixSystem::UserDir() {
+    static char path[1024] = "";
+
+    if (!path[0]) {
+        struct passwd *pwd = getpwuid(getuid());
+        if (pwd) {
+            strcpy(path, pwd->pw_dir);
+        } else {
+            // try the $HOME environment variable
+            strcpy(path, getenv("HOME"));
+        }
+    }
+    return path;
+}
+
 BE_NAMESPACE_END

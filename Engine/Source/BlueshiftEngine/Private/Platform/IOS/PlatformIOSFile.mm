@@ -151,24 +151,6 @@ const char *PlatformIOSFile::ExecutablePath() {
     return cstr;
 }
 
-const char *PlatformIOSFile::UserHomeDir() {
-    static NSString *documentPath = [NSSearchPathForDirectoriesInDomains(NSUserDirectory, NSUserDomainMask, YES) objectAtIndex:0];
-    static const char *cstr = (const char *)[documentPath cStringUsingEncoding:NSUTF8StringEncoding];
-    return cstr;
-}
-
-const char *PlatformIOSFile::UserDocumentDir() {
-    static NSString *documentPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
-    static const char *cstr = (const char *)[documentPath cStringUsingEncoding:NSUTF8StringEncoding];
-    return cstr;
-}
-
-const char *PlatformIOSFile::UserAppDataDir() {
-    static NSString *documentPath = [NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0];
-    static const char *cstr = (const char *)[documentPath cStringUsingEncoding:NSUTF8StringEncoding];
-    return cstr;
-}
-
 Str PlatformIOSFile::ConvertToIOSPath(const Str &filename, bool forWrite) {
     Str result;
     

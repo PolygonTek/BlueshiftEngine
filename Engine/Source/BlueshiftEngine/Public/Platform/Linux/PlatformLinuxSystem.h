@@ -12,32 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "Precompiled.h"
-#include "Core/WStr.h"
-#include "Platform/PlatformSystem.h"
+#pragma once
+
+#define USE_BASE_PLATFORM_POSIX_SYSTEM
+#include "../Posix/PlatformPosixSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-void PlatformBaseSystem::GetEnvVar(const char *variableName, char *result, uint32_t resultLength) {
-}
+class BE_API PlatformLinuxSystem : public PlatformPosixSystem {
+public:
+};
 
-void PlatformBaseSystem::SetEnvVar(const char *variableName, const char *value) {
-}
-
-const char *PlatformBaseSystem::UserDir() {
-    return "";
-}
-
-const char *PlatformBaseSystem::UserDocumentDir() {
-    return "";
-}
-
-const char *PlatformBaseSystem::UserAppDataDir() {
-    return "";
-}
-
-const char *PlatformBaseSystem::UserTempDir() {
-    return "";
-}
+typedef PlatformLinuxSystem   PlatformSystem;
 
 BE_NAMESPACE_END

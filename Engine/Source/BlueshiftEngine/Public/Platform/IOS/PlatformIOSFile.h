@@ -40,9 +40,10 @@ public:
 
     static const char *     ExecutablePath();
 
-    static const char *     UserHomeDir();
+    static const char *     UserDir();
     static const char *     UserDocumentDir();
     static const char *     UserAppDataDir();
+    static const char *     UserTempDir();
     
     static Str              ConvertToIOSPath(const Str &filename, bool forWrite);
 };

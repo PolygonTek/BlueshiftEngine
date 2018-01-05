@@ -60,8 +60,6 @@ public:
     static const char *     Cwd();
     static bool             SetCwd(const char *dirname);
     static const char *     ExecutablePath();
-
-    static const char *     UserHomeDir();
     
     static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
     

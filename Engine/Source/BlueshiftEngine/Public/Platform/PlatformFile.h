@@ -85,10 +85,6 @@ public:
 
     static const char *     ExecutablePath();
 
-    static const char *     UserHomeDir();
-    static const char *     UserDocumentDir();
-    static const char *     UserAppDataDir();
-    
     static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
 
 protected:

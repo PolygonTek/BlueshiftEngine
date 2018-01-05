@@ -159,18 +159,6 @@ const char *PlatformBaseFile::ExecutablePath() {
     return "";
 }
 
-const char *PlatformBaseFile::UserHomeDir() {
-    return "";
-}
-
-const char *PlatformBaseFile::UserDocumentDir() {
-    return "";
-}
-
-const char *PlatformBaseFile::UserAppDataDir() {
-    return "";
-}
-
 int PlatformBaseFile::ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files) {
     files.Clear();
     return 0;

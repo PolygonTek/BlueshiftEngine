@@ -21,10 +21,18 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformMacOSSystem : public PlatformAppleSystem {
 public:
-    static void         GetEnvVar(const char *variableName, char *result, uint32_t resultLength);
-    static void         SetEnvVar(const char *variableName, const char *value);
+    static void             GetEnvVar(const char *variableName, char *result, uint32_t resultLength);
+    static void             SetEnvVar(const char *variableName, const char *value);
+
+    static const char *     UserDir();
+    static const char *     UserDocumentDir();
+    static const char *     UserAppDataDir();
+    static const char *     UserTempDir();
+
+    static int32_t          NumCPUCores();
+    static int32_t          NumCPUCoresIncludingHyperthreads();
 };
 
-typedef PlatformMacOSSystem     PlatformSystem;
+typedef PlatformMacOSSystem PlatformSystem;
 
 BE_NAMESPACE_END

@@ -328,20 +328,6 @@ const char *PlatformPosixFile::ExecutablePath() {
     return Cwd();
 }
 
-const char *PlatformPosixFile::UserHomeDir() {
-    static char path[1024] = "";
-    
-    struct passwd *pwd = getpwuid(getuid());
-    if (pwd) {
-        strcpy(path, pwd->pw_dir);
-    } else {
-        // try the $HOME environment variable
-        strcpy(path, getenv("HOME"));
-    }
-
-    return path;
-}
-
 static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
     char		path[MaxAbsolutePath];
