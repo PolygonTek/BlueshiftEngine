@@ -14,7 +14,7 @@
 
 #pragma once
 
-#define USE_BASE_PLATFORM_APPLE_PROCESS
+#define USE_BASE_PLATFORM_APPLE_SYSTEM
 #include "../Apple/PlatformAppleSystem.h"
 
 BE_NAMESPACE_BEGIN

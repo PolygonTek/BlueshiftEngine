@@ -328,7 +328,7 @@ const char *PlatformPosixFile::ExecutablePath() {
     return Cwd();
 }
 
-const char *PlatformPosixFile::UserHomePath() {
+const char *PlatformPosixFile::UserHomeDir() {
     static char path[1024] = "";
     
     struct passwd *pwd = getpwuid(getuid());

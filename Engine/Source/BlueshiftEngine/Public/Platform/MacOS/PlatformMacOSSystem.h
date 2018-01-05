@@ -19,12 +19,12 @@
 
 BE_NAMESPACE_BEGIN
 
-class BE_API PlatformMacOSSystem : public PlatformBaseSystem {
+class BE_API PlatformMacOSSystem : public PlatformAppleSystem {
 public:
     static void         GetEnvVar(const char *variableName, char *result, uint32_t resultLength);
     static void         SetEnvVar(const char *variableName, const char *value);
 };
 
-typedef PlatformMacOSSystem PlatformSystem;
+typedef PlatformMacOSSystem     PlatformSystem;
 
 BE_NAMESPACE_END

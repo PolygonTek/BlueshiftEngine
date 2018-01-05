@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Str.h"
 #include "Platform/PlatformSystem.h"
-#include "Platform/MacOS/PlatformMacOSSystem.h"
 
 BE_NAMESPACE_BEGIN
 

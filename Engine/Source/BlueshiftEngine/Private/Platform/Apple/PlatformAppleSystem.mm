@@ -12,26 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#include "Precompiled.h"
+#include "Platform/PlatformSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-class BE_API PlatformBaseSystem {
-public:
-    static void         GetEnvVar(const char *variableName, char *result, uint32_t resultLength);
-    static void         SetEnvVar(const char *variableName, const char *value);
-};
-
 BE_NAMESPACE_END
-
-#ifdef __WIN32__
-#include "Windows/PlatformWinSystem.h"
-#elif defined(__MACOSX__)
-#include "MacOS/PlatformMacOSSystem.h"
-#elif defined(__IOS__)
-#include "IOS/PlatformIOSSystem.h"
-#elif defined(__LINUX__)
-#include "Linux/PlatformLinuxSystem.h"
-#elif defined(__UNIX__)
-#include "Posix/PlatformPosixSystem.h"
-#endif

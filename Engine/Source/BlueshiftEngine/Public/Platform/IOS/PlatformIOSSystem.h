@@ -14,24 +14,23 @@
 
 #pragma once
 
+#define USE_BASE_PLATFORM_APPLE_PROCESS
+#include "../Apple/PlatformAppleProcess.h"
+
 BE_NAMESPACE_BEGIN
 
-class BE_API PlatformBaseSystem {
-public:
-    static void         GetEnvVar(const char *variableName, char *result, uint32_t resultLength);
-    static void         SetEnvVar(const char *variableName, const char *value);
+struct ProcessHandle {
+    ProcessHandle(void *task = NULL) { }
+    bool IsValid() const { return false; }
+    void Close();
 };
 
-BE_NAMESPACE_END
+class BE_API PlatformIOSProcess : public PlatformAppleProcess {
+public:
+    static const wchar_t *		ComputerName();
+    static const wchar_t *		UserName();
+};
 
-#ifdef __WIN32__
-#include "Windows/PlatformWinSystem.h"
-#elif defined(__MACOSX__)
-#include "MacOS/PlatformMacOSSystem.h"
-#elif defined(__IOS__)
-#include "IOS/PlatformIOSSystem.h"
-#elif defined(__LINUX__)
-#include "Linux/PlatformLinuxSystem.h"
-#elif defined(__UNIX__)
-#include "Posix/PlatformPosixSystem.h"
-#endif
+typedef PlatformIOSProcess      PlatformProcess;
+
+BE_NAMESPACE_END
