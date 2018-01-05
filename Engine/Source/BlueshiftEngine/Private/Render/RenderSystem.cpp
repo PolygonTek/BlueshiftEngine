@@ -478,28 +478,29 @@ void RenderSystem::CheckModifiedCVars() {
 //--------------------------------------------------------------------------------------------------
 
 void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
-    char    path[1024];
-    char    picname[16];
-    int     i;
+    char path[1024];
 
-    const char *documentDir = PlatformFile::UserDocumentDir();
+    Str documentDir = fileSystem.GetDocumentDir();
     
     if (args.Argc() > 1) {
-        Str::snPrintf(path, sizeof(path), "%s/Screenshots/%ls", documentDir, args.Argv(1));
+        Str::snPrintf(path, sizeof(path), "%s/Screenshots/%ls", documentDir.c_str(), args.Argv(1));
     } else {
-        strcpy(picname, "shot000.png");
-        for (i = 0; i <= 999; i++) {
-            picname[4] = '0' + i/100;
-            picname[5] = '0' + i%100/10;
-            picname[6] = '0' + i%10;
-            Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir, picname);
+        char filename[16];
+        strcpy(filename, "shot000.png");
+
+        int index;
+        for (index = 0; index <= 999; index++) {
+            filename[4] = '0' + index / 100;
+            filename[5] = '0' + (index % 100) / 10;
+            filename[6] = '0' + index % 10;
+            Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir.c_str(), filename);
             
             if (!fileSystem.FileExists(path)) {
                 break;
             }
         }
 
-        if (i == 1000) {
+        if (index == 1000) {
             BE_WARNLOG(L"too many screenshot exist\n");
             return;
         }
