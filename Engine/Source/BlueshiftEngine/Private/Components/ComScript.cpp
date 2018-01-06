@@ -787,7 +787,7 @@ void ComScript::OnApplicationTerminate() {
 
 void ComScript::OnApplicationPause(bool pause) {
     if (onApplicationPauseFunc.IsValid()) {
-        onApplicationPauseFunc(entity);
+        onApplicationPauseFunc(pause);
     }
 }
 
