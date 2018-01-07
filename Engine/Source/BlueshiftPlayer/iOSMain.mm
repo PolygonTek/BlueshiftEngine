@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http ://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,11 +19,11 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
 
-#define SuppressPerformSelectorLeakWarning(Stuff) \
+#define SuppressPerformSelectorLeakWarning(stuff) \
     do { \
         _Pragma("clang diagnostic push") \
         _Pragma("clang diagnostic ignored \"-Warc-performSelector-leaks\"") \
-        Stuff; \
+        stuff; \
         _Pragma("clang diagnostic pop") \
     } while (0)
 
@@ -33,9 +33,14 @@ enum IOSDevice {
     IOS_IPhone5, // also the iPhone5c
     IOS_IPhone5S,
     IOS_IPhone6,
+    IOS_IPhone6Plus
     IOS_IPhone6S,
+    IOS_IPhone6SPlus,
+    IOS_IPhoneSE,
     IOS_IPhone7,
+    IOS_IPhone7Plus,
     IOS_IPhone8,
+    IOS_IPhone8Plus,
     IOS_IPhoneX,
     IOS_IPodTouch4,
     IOS_IPodTouch5,
@@ -86,12 +91,12 @@ static IOSDevice GetIOSDeviceType() {
     sysctlbyname("hw.machine", deviceID, &deviceIDLen, NULL, 0);
     
     // convert to NSString
-    NSString *deviceIDString = [NSString stringWithCString:deviceID encoding:NSUTF8StringEncoding];
+    BE1::Str deviceIDString([NSString stringWithCString:deviceID encoding:NSUTF8StringEncoding]);
     free(deviceID);
     
-    if ([deviceIDString hasPrefix:@"iPod"]) {
+    if (!deviceIDString.Cmpn("iPod", 4)) {
         // get major revision number
-        int major = [deviceIDString characterAtIndex:4] - '0';
+        int major = deviceIDString[4] - '0';
         
         if (major == 4) {
             deviceType = IOS_IPodTouch4;
@@ -100,10 +105,10 @@ static IOSDevice GetIOSDeviceType() {
         } else if (major >= 7) {
             deviceType = IOS_IPodTouch6;
         }
-    } else if ([deviceIDString hasPrefix:@"iPad"]) {
+    } else if (!deviceIDString.Cmpn("iPad", 4)) {
         // get major revision number
-        int major = [deviceIDString characterAtIndex:4] - '0';
-        int minor = [deviceIDString characterAtIndex:6] - '0';
+        int major = deviceIDString[4] - '0';
+        int minor = deviceIDString[6] - '0';
         
         if (major == 2) {
             if (minor >= 5) {
@@ -144,10 +149,11 @@ static IOSDevice GetIOSDeviceType() {
                 deviceType = IOS_IPadPro2_12_9;
             }
         }
-    } else if ([deviceIDString hasPrefix:@"iPhone"]) {
-        int major = [deviceIDString characterAtIndex:6] - '0';
-        int minor = [deviceIDString characterAtIndex:8] - '0';
-
+    } else if (!deviceIDString.Cmpn("iPhone", 6)) {
+        int major = atoi(&deviceIDString[6]);
+        int commaIndex = deviceIDString.Find(',');
+        int minor = deviceIDString[commaIndex + 1] - '0';
+        
         if (major == 3) {
             deviceType = IOS_IPhone4;
         } else if (major == 4) {
@@ -157,19 +163,43 @@ static IOSDevice GetIOSDeviceType() {
         } else if (major == 6) {
             deviceType = IOS_IPhone5S;
         } else if (major == 7) {
-            deviceType = IOS_IPhone6;
+            if (minor == 1) {
+                deviceType = IOS_IPhone6Plus;
+            } else if (minor == 2) {
+                deviceType = IOS_IPhone6;
+            }
         } else if (major == 8) {
-            deviceType = IOS_IPhone6S;
+            if (minor == 1) {
+                deviceType = IOS_IPhone6S;
+            } else if (minor == 2) {
+                deviceType = IOS_IPhone6SPlus;
+            } else if (minor == 4) {
+                deviceType = IOS_IPhoneSE;
+            }
         } else if (major == 9) {
-            deviceType = IOS_IPhone7;
+            if (minor == 1 || minor == 3) {
+                deviceType = IOS_IPhone7;
+            } else if (minor == 2 || minor == 4) {
+                deviceType = IOS_IPhone7Plus;
+            }
         } else if (major == 10) {
-            if (minor == 3 || minor == 6) {
+            if (minor == 1 || minor == 4) {
+                deviceType = IOS_IPhone8;
+            } else if (minor == 2 || minor == 5) {
+                deviceType = IOS_IPhone8Plus;
+            } else if (minor == 3 || minor == 6) {
                 deviceType = IOS_IPhoneX;
+            }
+        } else if (major >= 10) {
+            // for going forward into unknown devices (like 8/8+?), we can't use minor,
+            // so treat devices with a scale > 2.5 to be 6SPlus type devices, < 2.5 to be 6S type devices
+            if ([UIScreen mainScreen].scale > 2.5f) {
+                deviceType = IOS_IPhone8Plus;
             } else {
                 deviceType = IOS_IPhone8;
             }
         }
-    } else if ([deviceIDString hasPrefix:@"x86"]) { // simulator
+    } else if (!deviceIDString.Cmpn("x86", 3)) { // simulator
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
             CGSize result = [[UIScreen mainScreen] bounds].size;
             if (result.height >= 586) {
@@ -188,7 +218,8 @@ static IOSDevice GetIOSDeviceType() {
     
     // if this is unknown at this point, we have a problem
     if (deviceType == IOS_Unknown) {
-        BE_ERRLOG(L"This IOS device type is not supported by UE4 [%s]\n", BE1::WStr(deviceIDString).c_str());
+        // TODO: engine is not initialized yet. so we need to popup NSAlert
+        BE_ERRLOG(L"This IOS device type is not supported %hs\n", deviceIDString.c_str());
     }
     
     return deviceType;
@@ -212,7 +243,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     
     int t = BE1::PlatformTime::Milliseconds();
     int elapsedMsec = t - t0;
-
+    
     BE1::Engine::RunFrame(elapsedMsec);
     
     BE1::gameClient.RunFrame();
@@ -243,14 +274,6 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 // Notifies that its view is about to be removed from a view hierarchy.
 - (void)viewWillDisappear:(BOOL)animated {
 }
-
-/*- (NSUInteger)supportedInterfaceOrientations {
-    return UIInterfaceOrientationMaskLandscape;
-}
-
-- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
-    return UIInterfaceOrientationLandscapeRight;
-}*/
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
@@ -283,7 +306,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, true, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, location.x, location.y, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::TouchBeganEvent, touchId, locationQword, 0, NULL);
-
+        
         touch = [enumerator nextObject];
     }
 }
@@ -297,10 +320,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         CGPoint location = [touch locationInView:_eaglView];
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
-
+        
         BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, location.x, location.y, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::TouchMovedEvent, touchId, locationQword, 0, NULL);
-
+        
         touch = [enumerator nextObject];
     }
 }
@@ -314,10 +337,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         CGPoint location = [touch locationInView:_eaglView];
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
-
+        
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::TouchEndedEvent, touchId, locationQword, 0, NULL);
-
+        
         touch = [enumerator nextObject];
     }
 }
@@ -333,7 +356,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::TouchCanceledEvent, touchId, 0, 0, NULL);
-
+        
         touch = [enumerator nextObject];
     }
 }
@@ -368,7 +391,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     // -------------------------------
     
     BE1::resourceGuidMapper.Read("Data/guidmap");
-        
+    
     // mainWindow(UIWindow) - rootViewController.view(UIView) - eaglView(EAGLView)
     CGRect screenBounds = [[UIScreen mainScreen] bounds];
     mainWindow = [[UIWindow alloc] initWithFrame:screenBounds];
@@ -378,9 +401,9 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     mainWindow.rootViewController = rootViewController;
     
     [mainWindow makeKeyAndVisible];
-
+    
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
-        
+    
     float retinaScale = [[UIScreen mainScreen] scale];
     int renderWidth = screenBounds.size.width * retinaScale;
     int renderHeight = screenBounds.size.height * retinaScale;
@@ -401,7 +424,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
     app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[rootViewController view],
-                                 renderWidth, renderHeight, DisplayContext, NULL);    
+                                renderWidth, renderHeight, DisplayContext, NULL);
     
     app.Init();
     
@@ -410,13 +433,13 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 - (void)shutdownInstance {
     app.Shutdown();
-
+    
     app.mainRenderContext->Shutdown();
     
     BE1::renderSystem.FreeRenderContext(app.mainRenderContext);
     
     BE1::gameClient.Shutdown();
-        
+    
     BE1::Engine::Shutdown();
 }
 
@@ -471,3 +494,4 @@ int main(int argc, char *argv[]) {
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
     }
 }
+
