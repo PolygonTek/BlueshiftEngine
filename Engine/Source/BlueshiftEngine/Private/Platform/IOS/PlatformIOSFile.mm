@@ -13,7 +13,9 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/WStr.h"
 #include "Platform/PlatformFile.h"
+#include "File/FileSystem.h"
 #include <sys/stat.h>
 
 BE_NAMESPACE_BEGIN
@@ -25,15 +27,25 @@ PlatformIOSFile::~PlatformIOSFile() {
 }
 
 Str PlatformIOSFile::NormalizeFilename(const char *filename) {
-    Str normalizedFilename = PlatformFile::GetBasePath();
-    normalizedFilename.AppendPath(filename);
+    Str normalizedFilename;
+    if (FileSystem::IsAbsolutePath(filename)) {
+        normalizedFilename = filename;
+    } else {
+        normalizedFilename = PlatformFile::GetBasePath();
+        normalizedFilename.AppendPath(filename);
+    }
     normalizedFilename.BackSlashesToSlashes();
     return normalizedFilename;
 }
 
 Str PlatformIOSFile::NormalizeDirectoryName(const char *dirname) {
-    Str normalizedDirname = PlatformFile::GetBasePath();
-    normalizedDirname.AppendPath(dirname);
+    Str normalizedDirname;
+    if (FileSystem::IsAbsolutePath(dirname)) {
+        normalizedDirname = dirname;
+    } else {
+        normalizedDirname = PlatformFile::GetBasePath();
+        normalizedDirname.AppendPath(dirname);
+    }
     normalizedDirname.BackSlashesToSlashes();
     
     int length = normalizedDirname.Length();
@@ -145,6 +157,33 @@ bool PlatformIOSFile::MoveFile(const char *srcFilename, const char *dstFilename)
     return rename(normalizedSrcFilename, normalizedDstFilename) != -1;
 }
 
+bool PlatformIOSFile::DirectoryExists(const char *dirname) {
+    struct stat fileInfo;
+    Str normalizedDirname = NormalizeFilename(dirname);
+    if (stat(ConvertToIOSPath(normalizedDirname, false), &fileInfo) == -1) {
+        if (stat(ConvertToIOSPath(normalizedDirname, true), &fileInfo) == -1) {
+            return false;
+        }
+    }
+    return S_ISDIR(fileInfo.st_mode);
+}
+
+bool PlatformIOSFile::CreateDirectory(const char *dirname) {
+    WStr normalizedDirname = WStr(ConvertToIOSPath(NormalizeFilename(dirname), true).c_str());
+    CFStringRef directory = WideStringToCFString(normalizedDirname.c_str());
+    bool Result = [[NSFileManager defaultManager] createDirectoryAtPath:(__bridge NSString *)directory
+                                            withIntermediateDirectories:true
+                                                             attributes:nil
+                                                                  error:nil];
+    CFRelease(directory);
+    return Result;
+}
+
+bool PlatformIOSFile::RemoveDirectory(const char *dirname) {
+    Str normalizedDirname = ConvertToIOSPath(NormalizeFilename(dirname), true);
+    return rmdir(normalizedDirname) == 0;
+}
+
 const char *PlatformIOSFile::ExecutablePath() {
     static char path[512] = "";
     if (!path[0]) {
@@ -155,8 +194,11 @@ const char *PlatformIOSFile::ExecutablePath() {
 }
 
 Str PlatformIOSFile::ConvertToIOSPath(const Str &filename, bool forWrite) {
-    Str result;
+    if (FileSystem::IsAbsolutePath(filename)) {
+        return filename;
+    }
     
+    Str result;
     Str appPath = PlatformFile::ExecutablePath();
     Str relFilename = filename.ToRelativePath(appPath);
     
