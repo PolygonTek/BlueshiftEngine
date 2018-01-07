@@ -657,14 +657,19 @@ void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHe
 
     if (windowWidth || windowHeight || backingWidth || backingHeight) {
         RECT rc;
-
+#if 0
         // Number of pixels per logical inch along the screen size.
         // In a system with multiple display monitors, this value is the same for all monitors.
         int dpiX = GetDeviceCaps(ctx->hdc, LOGPIXELSX);
         int dpiY = GetDeviceCaps(ctx->hdc, LOGPIXELSY);
         
+        // Same as DPI settings in Windows
         float dpiScaleX = dpiX / 96.0f;
         float dpiScaleY = dpiY / 96.0f;
+#else
+        float dpiScaleX = 1.0f;
+        float dpiScaleY = 1.0f;
+#endif
 
         GetClientRect(ctx->hwnd, &rc);
         if (windowWidth) {

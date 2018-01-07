@@ -238,8 +238,8 @@ const AABB ComCamera::GetAABB() {
 float ComCamera::GetAspectRatio() const {
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
 
-    const int screenWidth = ctx->GetDeviceWidth();
-    const int screenHeight = ctx->GetDeviceHeight();
+    const int screenWidth = ctx->GetScreenWidth();
+    const int screenHeight = ctx->GetScreenHeight();
 
     return (float)screenWidth / screenHeight;
 }
@@ -247,8 +247,8 @@ float ComCamera::GetAspectRatio() const {
 const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
     const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
 
-    const int screenWidth = mainRenderContext->GetDeviceWidth();
-    const int screenHeight = mainRenderContext->GetDeviceHeight();
+    const int screenWidth = mainRenderContext->GetScreenWidth();
+    const int screenHeight = mainRenderContext->GetScreenHeight();
 
     Vec3 localPos = viewParms.axis.TransposedMulVec(worldPos - viewParms.origin);
     Point screenPoint;
@@ -281,8 +281,8 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
 const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
     const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
 
-    const int screenWidth = mainRenderContext->GetDeviceWidth();
-    const int screenHeight = mainRenderContext->GetDeviceHeight();
+    const int screenWidth = mainRenderContext->GetScreenWidth();
+    const int screenHeight = mainRenderContext->GetScreenHeight();
 
     Rect screenRect;
     screenRect.x = screenWidth * nx;
@@ -394,7 +394,7 @@ void ComCamera::RenderScene() {
     viewParms.renderRect.h = renderingHeight * nh;
 
     // Get the aspect ratio from device screen size
-    float aspectRatio = (float)ctx->GetDeviceWidth() / ctx->GetDeviceHeight();
+    float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
 
     if (viewParms.orthogonal) {
         // Compute viewport rectangle size in orthogonal projection
