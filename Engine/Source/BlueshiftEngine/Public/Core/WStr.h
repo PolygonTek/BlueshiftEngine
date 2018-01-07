@@ -56,6 +56,7 @@ public:
             }
             // for non-UTF-8 encodings this may not be terminated with a nullptr!
             data[l] = '\0';
+            len = l;
         }
     }
 #endif

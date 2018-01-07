@@ -58,6 +58,7 @@ public:
         if (l > 0) {
             memcpy(data, [nsstr cStringUsingEncoding:NSUTF8StringEncoding], l);
             data[l] = '\0';
+            len = l;
         }
     }
 #endif
