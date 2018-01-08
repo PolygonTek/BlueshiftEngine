@@ -126,6 +126,10 @@ void Common::Init(const char *baseDir) {
     random.SetSeed(0);
 
     srand((unsigned int)time(nullptr));
+
+    realTime = 0;
+    frameTime = 0;
+    frameSec = 0;
 }
 
 void Common::Shutdown() {

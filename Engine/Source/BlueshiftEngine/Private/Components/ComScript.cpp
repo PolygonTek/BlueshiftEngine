@@ -43,7 +43,7 @@ ComScript::~ComScript() {
 
 void ComScript::Purge(bool chainPurge) {
     if (!sandboxName.IsEmpty()) {
-        (*state).SetToNil(sandboxName.c_str());
+        state->SetToNil(sandboxName.c_str());
         sandboxName = "";
     }
 
@@ -121,7 +121,8 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     }
 
     if (!sandboxName.IsEmpty()) {
-        (*state).SetToNil(sandboxName.c_str());
+        state->SetToNil(sandboxName.c_str());
+        //state->ForceGC();
         sandboxName = "";
     }
 
@@ -154,7 +155,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     }
 
     // Run this script
-    (*state).Run();
+    state->Run();
 
     UpdateFunctionMap();
 
@@ -546,7 +547,7 @@ bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxN
     name = filename;
 #endif
 
-    if (!(*state).LoadBuffer(name.c_str(), data, size, sandboxName)) {
+    if (!state->LoadBuffer(name.c_str(), data, size, sandboxName)) {
         fileSystem.FreeFile(data);
         return false;
     }
