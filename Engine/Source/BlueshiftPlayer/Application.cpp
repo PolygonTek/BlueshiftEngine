@@ -44,7 +44,7 @@ void Application::Init() {
 
     BE1::GameSettings::LoadSettings(gameWorld);
 
-    LoadAppScript();
+    LoadAppScript("Application");
 
     StartAppScript();
 }
@@ -63,7 +63,7 @@ void Application::Shutdown() {
     BE1::cmdSystem.RemoveCommand(L"map");
 }
 
-bool Application::LoadAppScript() {
+bool Application::LoadAppScript(const char *sandboxName) {
     state = &gameWorld->GetLuaVM().State();
 
     const BE1::Guid appScriptGuid = BE1::GameSettings::playerSettings->GetProperty("appScript").As<BE1::Guid>();
@@ -77,7 +77,7 @@ bool Application::LoadAppScript() {
 
     BE1::Str name = appScriptPath;
 
-    if (!state->LoadBuffer(name.c_str(), data, size)) {
+    if (!state->LoadBuffer(name.c_str(), data, size, sandboxName)) {
         BE1::fileSystem.FreeFile(data);
         return false;
     }
@@ -85,12 +85,14 @@ bool Application::LoadAppScript() {
     BE1::fileSystem.FreeFile(data);
 
     state->Run();
+    
+    sandbox = (*state)[sandboxName];
 
     return true;
 }
 
 void Application::StartAppScript() {
-    LuaCpp::Selector startFunc = (*state)["start"];
+    LuaCpp::Selector startFunc = sandbox["start"];
     if (startFunc.IsFunction()) {
         startFunc();
     }

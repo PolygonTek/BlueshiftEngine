@@ -27,7 +27,7 @@ public:
 
     void                    LoadMap(const char *mapName);
 
-    bool                    LoadAppScript();
+    bool                    LoadAppScript(const char *sandboxName);
     void                    StartAppScript();
     
     void                    OnApplicationPause(bool pause);
@@ -38,6 +38,7 @@ public:
     BE1::GameWorld *        gameWorld;
 
     LuaCpp::State *         state;
+    LuaCpp::Selector        sandbox;
     
     static void             Cmd_Map_f(const BE1::CmdArgs &args);
 };
