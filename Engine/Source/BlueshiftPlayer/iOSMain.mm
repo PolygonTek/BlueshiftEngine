@@ -18,6 +18,7 @@
 #include <sys/sysctl.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
+#include "iOSDevice.h"
 
 #define SuppressPerformSelectorLeakWarning(stuff) \
     do { \
@@ -26,204 +27,6 @@
         stuff; \
         _Pragma("clang diagnostic pop") \
     } while (0)
-
-enum IOSDevice {
-    IOS_IPhone4,
-    IOS_IPhone4S,
-    IOS_IPhone5, // also the iPhone5c
-    IOS_IPhone5S,
-    IOS_IPhone6,
-    IOS_IPhone6Plus,
-    IOS_IPhone6S,
-    IOS_IPhone6SPlus,
-    IOS_IPhoneSE,
-    IOS_IPhone7,
-    IOS_IPhone7Plus,
-    IOS_IPhone8,
-    IOS_IPhone8Plus,
-    IOS_IPhoneX,
-    IOS_IPodTouch4,
-    IOS_IPodTouch5,
-    IOS_IPodTouch6,
-    IOS_IPad2,
-    IOS_IPadMini,
-    IOS_IPad3,
-    IOS_IPad4,
-    IOS_IPadAir, // also the IPad Mini Retina
-    IOS_IPadMini2,
-    IOS_IPadMini3,
-    IOS_IPadAir2,
-    IOS_IPadMini4,
-    IOS_IPadPro_9_7, // iPad Pro 9.7 inch
-    IOS_IPadPro_12_9, // iPad Pro 12.9 inch
-    IOS_IPadPro2_12_9,
-    IOS_IPadPro2_10_5,
-    IOS_Unknown,
-};
-
-static bool IsIPhone(IOSDevice deviceType) {
-    return deviceType >= IOS_IPhone4 && deviceType <= IOS_IPhoneX;
-}
-
-static bool IsIPod(IOSDevice deviceType) {
-    return deviceType >= IOS_IPodTouch4 && deviceType <= IOS_IPodTouch6;
-}
-
-static bool IsIPad(IOSDevice deviceType) {
-    return deviceType >= IOS_IPad2 && deviceType <= IOS_IPadPro2_10_5;
-}
-
-static IOSDevice GetIOSDeviceType() {
-    // default to unknown
-    static IOSDevice deviceType = IOS_Unknown;
-    
-    // if we've already figured it out, return it
-    if (deviceType != IOS_Unknown) {
-        return deviceType;
-    }
-    
-    // get the device hardware type string length
-    size_t deviceIDLen;
-    sysctlbyname("hw.machine", NULL, &deviceIDLen, NULL, 0);
-    
-    // get the device hardware type
-    char *deviceID = (char *)malloc(deviceIDLen);
-    sysctlbyname("hw.machine", deviceID, &deviceIDLen, NULL, 0);
-    
-    // convert to NSString
-    BE1::Str deviceIDString([NSString stringWithCString:deviceID encoding:NSUTF8StringEncoding]);
-    free(deviceID);
-    
-    if (!deviceIDString.Cmpn("iPod", 4)) {
-        // get major revision number
-        int major = deviceIDString[4] - '0';
-        
-        if (major == 4) {
-            deviceType = IOS_IPodTouch4;
-        } else if (major == 5) {
-            deviceType = IOS_IPodTouch5;
-        } else if (major >= 7) {
-            deviceType = IOS_IPodTouch6;
-        }
-    } else if (!deviceIDString.Cmpn("iPad", 4)) {
-        // get major revision number
-        int major = deviceIDString[4] - '0';
-        int minor = deviceIDString[6] - '0';
-        
-        if (major == 2) {
-            if (minor >= 5) {
-                deviceType = IOS_IPadMini;
-            } else {
-                deviceType = IOS_IPad2;
-            }
-        } else if (major == 3) {
-            if (minor <= 3) {
-                deviceType = IOS_IPad3;
-            } else if (minor >= 4) {
-                deviceType = IOS_IPad4;
-            }
-        } else if (major == 4) {
-            if (minor >= 8) {
-                deviceType = IOS_IPadMini3;
-            } else if (minor >= 4) {
-                deviceType = IOS_IPadMini2;
-            } else {
-                deviceType = IOS_IPadAir;
-            }
-        } else if (major == 5) {
-            if (minor >= 3) {
-                deviceType = IOS_IPadAir2;
-            } else {
-                deviceType = IOS_IPadMini4;
-            }
-        } else if (major == 6) {
-            if (minor >= 7) {
-                deviceType = IOS_IPadPro_12_9;
-            } else {
-                deviceType = IOS_IPadPro_9_7;
-            }
-        } else if (major >= 7) { // Default to highest settings currently available for any future device
-            if (minor >= 3) {
-                deviceType = IOS_IPadPro2_10_5;
-            } else {
-                deviceType = IOS_IPadPro2_12_9;
-            }
-        }
-    } else if (!deviceIDString.Cmpn("iPhone", 6)) {
-        int major = atoi(&deviceIDString[6]);
-        int commaIndex = deviceIDString.Find(',');
-        int minor = deviceIDString[commaIndex + 1] - '0';
-        
-        if (major == 3) {
-            deviceType = IOS_IPhone4;
-        } else if (major == 4) {
-            deviceType = IOS_IPhone4S;
-        } else if (major == 5) {
-            deviceType = IOS_IPhone5;
-        } else if (major == 6) {
-            deviceType = IOS_IPhone5S;
-        } else if (major == 7) {
-            if (minor == 1) {
-                deviceType = IOS_IPhone6Plus;
-            } else if (minor == 2) {
-                deviceType = IOS_IPhone6;
-            }
-        } else if (major == 8) {
-            if (minor == 1) {
-                deviceType = IOS_IPhone6S;
-            } else if (minor == 2) {
-                deviceType = IOS_IPhone6SPlus;
-            } else if (minor == 4) {
-                deviceType = IOS_IPhoneSE;
-            }
-        } else if (major == 9) {
-            if (minor == 1 || minor == 3) {
-                deviceType = IOS_IPhone7;
-            } else if (minor == 2 || minor == 4) {
-                deviceType = IOS_IPhone7Plus;
-            }
-        } else if (major == 10) {
-            if (minor == 1 || minor == 4) {
-                deviceType = IOS_IPhone8;
-            } else if (minor == 2 || minor == 5) {
-                deviceType = IOS_IPhone8Plus;
-            } else if (minor == 3 || minor == 6) {
-                deviceType = IOS_IPhoneX;
-            }
-        } else if (major >= 10) {
-            // for going forward into unknown devices (like 8/8+?), we can't use minor,
-            // so treat devices with a scale > 2.5 to be 6SPlus type devices, < 2.5 to be 6S type devices
-            if ([UIScreen mainScreen].scale > 2.5f) {
-                deviceType = IOS_IPhone8Plus;
-            } else {
-                deviceType = IOS_IPhone8;
-            }
-        }
-    } else if (!deviceIDString.Cmpn("x86", 3)) { // simulator
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
-            CGSize result = [[UIScreen mainScreen] bounds].size;
-            if (result.height >= 586) {
-                deviceType = IOS_IPhone5;
-            } else {
-                deviceType = IOS_IPhone4S;
-            }
-        } else {
-            if ([[UIScreen mainScreen] scale] > 1.0f) {
-                deviceType = IOS_IPad3;
-            } else {
-                deviceType = IOS_IPad2;
-            }
-        }
-    }
-    
-    // if this is unknown at this point, we have a problem
-    if (deviceType == IOS_Unknown) {
-        // TODO: engine is not initialized yet. so we need to popup NSAlert
-        BE_ERRLOG(L"This IOS device type is not supported %hs\n", deviceIDString.c_str());
-    }
-    
-    return deviceType;
-}
 
 @interface RootViewController : UIViewController {
 }
@@ -376,7 +179,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 @implementation AppDelegate
 
 - (void)initInstance {
-    IOSDevice deviceType = GetIOSDeviceType();
+    IOSDevice::Type deviceType = IOSDevice::GetIOSDeviceType();
+    if (deviceType == IOSDevice::IOS_Unknown) {
+        assert(0);
+    }
     
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
@@ -409,9 +215,9 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     int renderHeight = screenBounds.size.height * retinaScale;
     
     BE1::Vec2 screenScaleFactor;
-    if ((IsIPhone(deviceType) && deviceType >= IOS_IPhone6) ||
-        (IsIPod(deviceType) && deviceType >= IOS_IPodTouch6) ||
-        (IsIPad(deviceType) && deviceType >= IOS_IPadAir2)) {
+    if ((IOSDevice::IsIPhone(deviceType) && deviceType >= IOSDevice::IOS_IPhone6) ||
+        (IOSDevice::IsIPod(deviceType) && deviceType >= IOSDevice::IOS_IPodTouch6) ||
+        (IOSDevice::IsIPad(deviceType) && deviceType >= IOSDevice::IOS_IPadAir2)) {
         screenScaleFactor.x = BE1::Min(1920.0f / renderWidth, 1.0f);
         screenScaleFactor.y = BE1::Min(1080.0f / renderHeight, 1.0f);
     } else {
