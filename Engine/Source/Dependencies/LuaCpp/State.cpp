@@ -32,8 +32,9 @@ void State::SetToNil(const char *name) {
     ResetStackOnScopeExit savedStack(_l);
     lua_getglobal(_l, name);
     if (lua_type(_l, -1) != LUA_TNIL) {
+        lua_pop(_l, 1);
         lua_pushnil(_l);
-        lua_rawset(_l, -2);
+        lua_setglobal(_l, name);
     }
 }
 
