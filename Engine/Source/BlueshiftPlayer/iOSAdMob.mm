@@ -19,6 +19,8 @@
 RewardBasedVideoAd rewardBasedVideoAd;
 
 void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state, UIViewController<GADRewardBasedVideoAdDelegate> *viewController) {
+    rewardBasedVideoAd.viewController = viewController;
+
     state->RegisterModule("admob", [](LuaCpp::Module &module) {
         LuaCpp::Selector _RewardBasedVideoAd = module["RewardBasedVideoAd"];
         
@@ -28,9 +30,6 @@ void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state, UIViewControlle
                                           "is_ready", &RewardBasedVideoAd::IsReady,
                                           "present", &RewardBasedVideoAd::Present);
     });
-    
-    rewardBasedVideoAd.selector = (*state)["admob"]["RewardBasedVideoAd"];
-    rewardBasedVideoAd.viewController = viewController;
 }
 
 void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
@@ -67,52 +66,4 @@ void RewardBasedVideoAd::Present() {
     [[GADRewardBasedVideoAd sharedInstance] presentFromRootViewController:viewController];
 }
 
-void RewardBasedVideoAd::DidRewardUser(const char *rewardType, int rewardAmount) {
-    LuaCpp::Selector function = selector["did_reward_user"];
-    if (function.IsFunction()) {
-        function(rewardType, rewardAmount);
-    }
-}
-
-void RewardBasedVideoAd::DidReceiveAd() {
-    LuaCpp::Selector function = selector["did_receive_ad"];
-    if (function.IsFunction()) {
-        function();
-    }
-}
-
-void RewardBasedVideoAd::DidOpen() {
-    LuaCpp::Selector function = selector["did_open"];
-    if (function.IsFunction()) {
-        function();
-    }
-}
-
-void RewardBasedVideoAd::DidStartPlaying() {
-    LuaCpp::Selector function = selector["did_start_playing"];
-    if (function.IsFunction()) {
-        function();
-    }
-}
-
-void RewardBasedVideoAd::DidClose() {
-    LuaCpp::Selector function = selector["did_close"];
-    if (function.IsFunction()) {
-        function();
-    }
-}
-
-void RewardBasedVideoAd::WillLeaveApplication() {
-    LuaCpp::Selector function = selector["will_leave_application"];
-    if (function.IsFunction()) {
-        function();
-    }
-}
-
-void RewardBasedVideoAd::DidFailToLoad(const char *errorDescription) {
-    LuaCpp::Selector function = selector["did_fail_to_load"];
-    if (function.IsFunction()) {
-        function(errorDescription);
-    }
-}
 

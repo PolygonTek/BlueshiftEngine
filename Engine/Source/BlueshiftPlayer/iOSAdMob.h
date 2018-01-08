@@ -23,18 +23,9 @@ public:
     
     void Present();
     
-    void DidRewardUser(const char *rewardType, int rewardAmount);
-    void DidReceiveAd();
-    void DidOpen();
-    void DidStartPlaying();
-    void DidClose();
-    void WillLeaveApplication();
-    void DidFailToLoad(const char *errorDescription);
-    
     static void RegisterLuaModule(LuaCpp::State *state, UIViewController<GADRewardBasedVideoAdDelegate> *viewController);
     
 private:
-    LuaCpp::Selector selector;
     UIViewController<GADRewardBasedVideoAdDelegate> *viewController;
 };
 

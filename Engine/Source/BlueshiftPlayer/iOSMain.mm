@@ -19,8 +19,7 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
 #include "iOSDevice.h"
-#define USE_ADMOB_REWARD_BASED_VIDEO_AD
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
 #include "iOSAdMob.h"
 #endif
 
@@ -32,7 +31,7 @@
         _Pragma("clang diagnostic pop") \
     } while (0)
 
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
 @interface RootViewController : UIViewController<GADRewardBasedVideoAdDelegate> {
 #else
 @interface RootViewController : UIViewController {
@@ -172,45 +171,60 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     }
 }
 
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
 
 - (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd
    didRewardUserWithReward:(GADAdReward *)reward {
     const char *rewardType = (const char *)[reward.type cStringUsingEncoding:NSUTF8StringEncoding];
     int rewardAmount = [reward.amount intValue];
-    ::rewardBasedVideoAd.DidRewardUser(rewardType, rewardAmount);
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
+    if (function.IsFunction()) {
+       function(rewardType, rewardAmount);
+    }
 }
 
 - (void)rewardBasedVideoAdDidReceiveAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    //NSLog(@"Reward based video ad is received.");
-    ::rewardBasedVideoAd.DidReceiveAd();
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_receive_ad"];
+    if (function.IsFunction()) {
+        function();
+    }
 }
 
 - (void)rewardBasedVideoAdDidOpen:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    //NSLog(@"Opened reward based video ad.");
-    ::rewardBasedVideoAd.DidOpen();
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_open"];
+    if (function.IsFunction()) {
+        function();
+    }
 }
 
 - (void)rewardBasedVideoAdDidStartPlaying:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    //NSLog(@"Reward based video ad started playing.");
-    ::rewardBasedVideoAd.DidStartPlaying();
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_start_playing"];
+    if (function.IsFunction()) {
+        function();
+    }
 }
 
 - (void)rewardBasedVideoAdDidClose:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    //NSLog(@"Reward based video ad is closed.");
-    ::rewardBasedVideoAd.DidClose();
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_close"];
+    if (function.IsFunction()) {
+        function();
+    }
 }
 
 - (void)rewardBasedVideoAdWillLeaveApplication:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    //NSLog(@"Reward based video ad will leave application.");
-    ::rewardBasedVideoAd.WillLeaveApplication();
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["will_leave_application"];
+    if (function.IsFunction()) {
+        function();
+    }
 }
 
 - (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd
     didFailToLoadWithError:(NSError *)error {
-    //NSLog(@"Reward based video ad failed to load.");
     const char *errorDescription = (const char *)[error.description cStringUsingEncoding:NSUTF8StringEncoding];
-    ::rewardBasedVideoAd.DidFailToLoad(errorDescription);
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
+    if (function.IsFunction()) {
+        function(errorDescription);
+    }
 }
 
 #endif
@@ -285,7 +299,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     
     app.Init();
     
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
     RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
 #endif
     
