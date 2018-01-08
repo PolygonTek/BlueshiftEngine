@@ -33,7 +33,7 @@ enum IOSDevice {
     IOS_IPhone5, // also the iPhone5c
     IOS_IPhone5S,
     IOS_IPhone6,
-    IOS_IPhone6Plus
+    IOS_IPhone6Plus,
     IOS_IPhone6S,
     IOS_IPhone6SPlus,
     IOS_IPhoneSE,
