@@ -204,7 +204,9 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
 
     app.Init();
 
-    //BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Append, L"exec \"autoexec.cfg\"\n");
+    app.LoadAppScript("Application");
+    
+    app.StartAppScript();
 }
 
 static void ShutdownInstance() {

@@ -456,7 +456,9 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     
     app.Init();
     
-    //BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Append, L"exec \"autoexec.cfg\"\n");
+    app.LoadAppScript("Application");
+    
+    app.StartAppScript();
 }
 
 - (void)shutdownInstance {

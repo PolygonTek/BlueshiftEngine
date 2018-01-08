@@ -43,10 +43,6 @@ void Application::Init() {
     gameWorld->GetLuaVM().InitEngineModule(gameWorld);
 
     BE1::GameSettings::LoadSettings(gameWorld);
-
-    LoadAppScript("Application");
-
-    StartAppScript();
 }
 
 void Application::Shutdown() {

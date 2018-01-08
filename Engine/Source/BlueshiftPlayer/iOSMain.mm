@@ -19,10 +19,10 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
 #include "iOSDevice.h"
-//#define USE_ADMOB_REWARD_BASED_VIDEO_AD
+#define USE_ADMOB_REWARD_BASED_VIDEO_AD
 #ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
 #include "iOSAdMob.h"
-#ebduf
+#endif
 
 #define SuppressPerformSelectorLeakWarning(stuff) \
     do { \
@@ -288,6 +288,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 #ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
     RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
 #endif
+    
+    app.LoadAppScript("Application");
+    
+    app.StartAppScript();
 }
 
 - (void)shutdownInstance {
