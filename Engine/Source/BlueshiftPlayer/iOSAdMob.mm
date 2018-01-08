@@ -33,15 +33,21 @@ void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state, UIViewControlle
     rewardBasedVideoAd.viewController = viewController;
 }
 
-void RewardBasedVideoAd::Request(const char *unitID, int numTestDevices, const char *testDevices[]) {
-    NSString *nsTestDevices[64];
-    for (int i = 0; i < numTestDevices; i++) {
-        nsTestDevices[i] = [[NSString alloc] initWithBytes:testDevices[i] length:strlen(testDevices[i]) encoding:NSUTF8StringEncoding];
+void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
+    int numTestDevices = 0;
+    const char *ptr = strtok(testDevices, " ");
+    while (ptr) {
+        numTestDevices++;
+        nsTestDevices[i] = [[NSString alloc] initWithBytes:ptr length:strlen(ptr) encoding:NSUTF8StringEncoding];
+        ptr = strtok(ptr, " ");
     }
+    NSString *nsTestDevices[64];
     GADRequest *request = [GADRequest request];
-    request.testDevices = [NSArray arrayWithObjects:nsTestDevices count:numTestDevices]; //@[@"684e00567d950ffd10f284ce38d1eaa2"];
+    request.testDevices = [NSArray arrayWithObjects:nsTestDevices count:numTestDevices];
     
-    //NSString *nsTestUnitID = @"ca-app-pub-3940256099942544/1712485313";
+    if (!unitID || !unitID[0]) {
+        unitID = @"ca-app-pub-3940256099942544/1712485313";
+    }
     NSString *nsUnitID = [[NSString alloc] initWithBytes:unitID length:strlen(unitID) encoding:NSUTF8StringEncoding];
     // Set up event notification
     // Required to set the delegate prior to loading an ad.

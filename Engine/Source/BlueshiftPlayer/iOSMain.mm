@@ -19,6 +19,10 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
 #include "iOSDevice.h"
+//#define USE_ADMOB_REWARD_BASED_VIDEO_AD
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
+#include "iOSAdMob.h"
+#ebduf
 
 #define SuppressPerformSelectorLeakWarning(stuff) \
     do { \
@@ -28,7 +32,11 @@
         _Pragma("clang diagnostic pop") \
     } while (0)
 
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
+@interface RootViewController : UIViewController<GADRewardBasedVideoAdDelegate> {
+#else
 @interface RootViewController : UIViewController {
+#endif
 }
 
 @property(nonatomic, weak) UIView *eaglView;
@@ -164,6 +172,49 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     }
 }
 
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
+
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd
+   didRewardUserWithReward:(GADAdReward *)reward {
+    const char *rewardType = (const char *)[reward.type cStringUsingEncoding:NSUTF8StringEncoding];
+    int rewardAmount = [reward.amount intValue];
+    ::rewardBasedVideoAd.DidRewardUser(rewardType, rewardAmount);
+}
+
+- (void)rewardBasedVideoAdDidReceiveAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    //NSLog(@"Reward based video ad is received.");
+    ::rewardBasedVideoAd.DidReceiveAd();
+}
+
+- (void)rewardBasedVideoAdDidOpen:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    //NSLog(@"Opened reward based video ad.");
+    ::rewardBasedVideoAd.DidOpen();
+}
+
+- (void)rewardBasedVideoAdDidStartPlaying:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    //NSLog(@"Reward based video ad started playing.");
+    ::rewardBasedVideoAd.DidStartPlaying();
+}
+
+- (void)rewardBasedVideoAdDidClose:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    //NSLog(@"Reward based video ad is closed.");
+    ::rewardBasedVideoAd.DidClose();
+}
+
+- (void)rewardBasedVideoAdWillLeaveApplication:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    //NSLog(@"Reward based video ad will leave application.");
+    ::rewardBasedVideoAd.WillLeaveApplication();
+}
+
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd
+    didFailToLoadWithError:(NSError *)error {
+    //NSLog(@"Reward based video ad failed to load.");
+    const char *errorDescription = (const char *)[error.description cStringUsingEncoding:NSUTF8StringEncoding];
+    ::rewardBasedVideoAd.DidFailToLoad(errorDescription);
+}
+
+#endif
+
 @end // @implementation RootViewController
 
 //---------------------------------------------------------------------------------------
@@ -234,7 +285,9 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     
     app.Init();
     
-    //BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Append, L"exec \"autoexec.cfg\"\n");
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO_AD
+    RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
+#endif
 }
 
 - (void)shutdownInstance {
