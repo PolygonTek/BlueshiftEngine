@@ -31,10 +31,10 @@ bool IOSDevice::IsIPad(IOSDevice::Type deviceType) {
 
 IOSDevice::Type IOSDevice::GetIOSDeviceType() {
     // default to unknown
-    static IOSDevice deviceType = IOS_Unknown;
+    static IOSDevice::Type deviceType = IOSDevice::Type::IOS_Unknown;
     
     // if we've already figured it out, return it
-    if (deviceType != IOS_Unknown) {
+    if (deviceType != IOSDevice::Type::IOS_Unknown) {
         return deviceType;
     }
     
