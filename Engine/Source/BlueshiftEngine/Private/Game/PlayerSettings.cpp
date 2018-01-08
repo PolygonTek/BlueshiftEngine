@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "File/FileSystem.h"
 #include "Game/PlayerSettings.h"
+#include "Asset/Asset.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -25,6 +26,7 @@ END_EVENTS
 void PlayerSettings::RegisterProperties() {
     REGISTER_PROPERTY("companyName", "Company Name", Str, companyName, "DefaultCompany", "", PropertyInfo::EditorFlag);
     REGISTER_PROPERTY("productName", "Product Name", Str, productName, "MyApp", "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("appScript", "App Script", Guid, appScriptGuid, Guid::zero, "", PropertyInfo::EditorFlag).SetMetaObject(&ScriptAsset::metaObject);
 }
 
 PlayerSettings::PlayerSettings() {

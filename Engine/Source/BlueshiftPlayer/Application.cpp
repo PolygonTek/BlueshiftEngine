@@ -17,23 +17,36 @@
 
 Application app;
 
+Application::Application() {
+    mainRenderContext = nullptr;
+    gameWorld = nullptr;
+    state = nullptr;
+}
+
+static void RegisterApp(LuaCpp::Module &module) {
+    LuaCpp::Selector _App = module["App"];
+
+    _App.SetObj(app);
+    _App.AddObjMembers(app,
+        "load_map", &Application::LoadMap);
+}
+
 void Application::Init() {
     BE1::cmdSystem.AddCommand(L"map", Cmd_Map_f);
 
     BE1::prefabManager.Init();
 
     BE1::GameSettings::Init();
-    
-    gameFont = nullptr;
-    //gameFont = BE1::fontManager.GetFont("fonts/NanumGothic.ttf");
 
     gameWorld = (BE1::GameWorld *)BE1::GameWorld::CreateInstance();
+    gameWorld->GetLuaVM().RegisterEngineModuleCallback(RegisterApp);
+    gameWorld->GetLuaVM().InitEngineModule(gameWorld);
 
     BE1::GameSettings::LoadSettings(gameWorld);
-    
-    gameState = GAMESTATE_NOMAP;
 
-    LoadMap("Contents/Maps/title.map");
+    LoadAppScript();
+
+    StartAppScript();
 }
 
 void Application::Shutdown() {
@@ -41,18 +54,46 @@ void Application::Shutdown() {
         gameWorld->StopGame();
     }
 
-    gameState = GAMESTATE_SHUTDOWN;
-
     BE1::prefabManager.Shutdown();
 
     BE1::GameWorld::DestroyInstance(gameWorld, true);
-    gameWorld = nullptr;
-
-    //BE1::fontManager.ReleaseFont(gameFont);
 
     BE1::GameSettings::Shutdown();
 
     BE1::cmdSystem.RemoveCommand(L"map");
+}
+
+bool Application::LoadAppScript() {
+    state = &gameWorld->GetLuaVM().State();
+
+    const BE1::Guid appScriptGuid = BE1::GameSettings::playerSettings->GetProperty("appScript").As<BE1::Guid>();
+    const BE1::Str appScriptPath = BE1::resourceGuidMapper.Get(appScriptGuid);
+
+    char *data;
+    size_t size = BE1::fileSystem.LoadFile(appScriptPath, true, (void **)&data);
+    if (!data) {
+        return false;
+    }
+
+    BE1::Str name = appScriptPath;
+
+    if (!state->LoadBuffer(name.c_str(), data, size)) {
+        BE1::fileSystem.FreeFile(data);
+        return false;
+    }
+
+    BE1::fileSystem.FreeFile(data);
+
+    state->Run();
+
+    return true;
+}
+
+void Application::StartAppScript() {
+    LuaCpp::Selector startFunc = (*state)["start"];
+    if (startFunc.IsFunction()) {
+        startFunc();
+    }
 }
 
 void Application::OnApplicationTerminate() {
@@ -87,15 +128,9 @@ void Application::Draw() {
 }
 
 void Application::LoadMap(const char *mapName) {
-    gameState = GAMESTATE_STARTUP;
-
-    this->mapName = mapName;
-
     gameWorld->LoadMap(mapName);
 
     gameWorld->StartGame();
-
-    gameState = GAMESTATE_ACTIVE;
 }
 
 void Application::Cmd_Map_f(const BE1::CmdArgs &args) {
@@ -108,5 +143,5 @@ void Application::Cmd_Map_f(const BE1::CmdArgs &args) {
     filename.sPrintf("maps/%s", BE1::WStr::ToStr(args.Argv(1)).c_str());
     filename.DefaultFileExtension(".map");
 
-    app.LoadMap(filename.c_str());	
+    app.LoadMap(filename.c_str());
 }

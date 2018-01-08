@@ -30,6 +30,7 @@ void PrefabManager::Init() {
     prefabHashMap.Init(1024, 64, 64);
 
     prefabWorld = (GameWorld *)GameWorld::CreateInstance();
+    prefabWorld->GetLuaVM().InitEngineModule(prefabWorld);
 
     initialized = true;
 }

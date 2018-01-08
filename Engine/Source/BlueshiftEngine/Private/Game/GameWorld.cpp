@@ -60,6 +60,8 @@ GameWorld::GameWorld() {
 
     timeScale = 1.0f;
 
+    luaVM.Init();
+
     Reset();
 }
 
@@ -75,13 +77,12 @@ GameWorld::~GameWorld() {
 
     // Free physics world
     physicsSystem.FreePhysicsWorld(physicsWorld);
+
+    luaVM.Shutdown();
 }
 
 void GameWorld::Reset() {
     ClearAllEntities();
-
-    // Reset Lua scripting engine
-    luaVM.Init(this);
 
     time = 0;
     prevTime = 0;

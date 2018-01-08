@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 
 static CVar lua_server(L"lua_server", L"127.0.0.1", CVar::Archive, L"lua server for debugging");
 
-void LuaVM::Init(const GameWorld *gameWorld) {
+void LuaVM::Init() {
     if (state) {
         Shutdown();
     }
@@ -84,8 +84,6 @@ void LuaVM::Init(const GameWorld *gameWorld) {
 #if defined __IOS__ || defined __ANDROID__
     EnableDebug();
 #endif
-
-    InitEngineModule(gameWorld);
 }
 
 void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
@@ -186,13 +184,23 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         // Game World
         RegisterEntity(module);
         RegisterGameWorld(module);
+
+        for (int i = 0; i < engineModuleCallbacks.Count(); i++) {
+            engineModuleCallbacks[i](module);
+        }
     });
 
     //state->Require("blueshift");
 }
 
 void LuaVM::Shutdown() {
+    engineModuleCallbacks.Clear();
+
     SAFE_DELETE(state);
+}
+
+void LuaVM::RegisterEngineModuleCallback(EngineModuleCallback callback) {
+    engineModuleCallbacks.Append(callback);
 }
 
 void LuaVM::EnableDebug() {

@@ -32,6 +32,7 @@ public:
 private:
     Str                         companyName;
     Str                         productName;
+    Guid                        appScriptGuid;
 };
 
 BE_NAMESPACE_END

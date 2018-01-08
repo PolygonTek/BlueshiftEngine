@@ -15,17 +15,20 @@
 #pragma once
 
 #include "Core/CmdArgs.h"
+#include "Containers/Array.h"
 #include "LuaCpp/LuaCpp.h"
 
 BE_NAMESPACE_BEGIN
 
 class GameWorld;
 
+using EngineModuleCallback = void (*)(LuaCpp::Module &);
+
 class LuaVM {
 public:
     LuaVM();
 
-    void                    Init(const GameWorld *gameWorld);
+    void                    Init();
     void                    Shutdown();
 
     LuaCpp::State &         State() { return *state; }
@@ -35,9 +38,11 @@ public:
 
     void                    EnableDebug();
 
-private:
+    void                    RegisterEngineModuleCallback(EngineModuleCallback callback);
+
     void                    InitEngineModule(const GameWorld *gameWorld);
 
+private:
     void                    RegisterMath(LuaCpp::Module &module);
     void                    RegisterComplex(LuaCpp::Module &module);
     void                    RegisterVec2(LuaCpp::Module &module);
@@ -125,6 +130,8 @@ private:
     void                    RegisterGameWorld(LuaCpp::Module &module);
 
     LuaCpp::State *         state;
+
+    Array<EngineModuleCallback> engineModuleCallbacks;
 
     const GameWorld *       gameWorld;
 };
