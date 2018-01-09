@@ -279,16 +279,17 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     int renderWidth = screenBounds.size.width * retinaScale;
     int renderHeight = screenBounds.size.height * retinaScale;
     
-    BE1::Vec2 screenScaleFactor;
-    if ((IOSDevice::IsIPhone(deviceType) && deviceType >= IOSDevice::IOS_IPhone6) ||
-        (IOSDevice::IsIPod(deviceType) && deviceType >= IOSDevice::IOS_IPodTouch6) ||
-        (IOSDevice::IsIPad(deviceType) && deviceType >= IOSDevice::IOS_IPadAir2)) {
-        screenScaleFactor.x = BE1::Min(1920.0f / renderWidth, 1.0f);
-        screenScaleFactor.y = BE1::Min(1080.0f / renderHeight, 1.0f);
-    } else {
-        //
-        screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
-        screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
+    BE1::Vec2 screenScaleFactor(1.0f, 1.0f);
+    int deviceWidth;
+    int deviceHeight;
+    if (IOSDevice::IsIPad(deviceType)) {
+        if (deviceType < IOSDevice::IOS_IPadAir2) {
+            screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
+            screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
+        } else {
+            screenScaleFactor.x = BE1::Min(2048.0f / renderWidth, 1.0f);
+            screenScaleFactor.y = BE1::Min(1536.0f / renderHeight, 1.0f);
+        }
     }
     renderWidth = renderWidth * screenScaleFactor.x;
     renderHeight = renderHeight * screenScaleFactor.y;

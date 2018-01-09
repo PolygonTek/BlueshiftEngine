@@ -29,6 +29,70 @@ bool IOSDevice::IsIPad(IOSDevice::Type deviceType) {
     return deviceType >= IOS_IPad2 && deviceType <= IOS_IPadPro2_10_5;
 }
 
+void IOSDevice::GetDeviceResolution(IOSDevice::Type deviceType, int &width, int &height) {
+    switch (deviceType) {
+        case IOS_IPhone4:
+        case IOS_IPhone4S:
+        case IOS_IPodTouch4:
+            width = 960;
+            height = 640;
+            break;
+        case IOS_IPhone5:
+        case IOS_IPhone5S:
+        case IOS_IPhoneSE:
+        case IOS_IPodTouch5:
+        case IOS_IPodTouch6:
+            width = 1136;
+            height = 640;
+            break;
+        case IOS_IPhone6:
+        case IOS_IPhone6S:
+        case IOS_IPhone7:
+        case IOS_IPhone8:
+            width = 1334;
+            height = 750;
+            break;
+        case IOS_IPhone6Plus:
+        case IOS_IPhone6SPlus:
+        case IOS_IPhone7Plus:
+        case IOS_IPhone8Plus:
+            width = 1920;
+            height = 1080;
+            break;
+        case IOS_IPhoneX:
+            width = 2436;
+            height = 1125;
+            break;
+        case IOS_IPad2:
+        case IOS_IPadMini:
+            width = 1024;
+            height = 768;
+            break;
+        case IOS_IPad3:
+        case IOS_IPad4:
+        case IOS_IPadMini2:
+        case IOS_IPadMini3:
+        case IOS_IPadMini4:
+        case IOS_IPadAir:
+        case IOS_IPadAir2:
+        case IOS_IPadPro_9_7:
+            width = 2048;
+            height = 1536;
+            break;
+        case IOS_IPadPro_12_9:
+        case IOS_IPadPro2_12_9:
+            width = 2732;
+            height = 2048;
+            break;
+        case IOS_IPadPro2_10_5:
+            width = 2224;
+            height = 1668;
+            break;
+        default:
+            break;
+    }
+}
+
 IOSDevice::Type IOSDevice::GetIOSDeviceType() {
     // default to unknown
     static IOSDevice::Type deviceType = IOSDevice::Type::IOS_Unknown;

@@ -15,12 +15,12 @@
 class IOSDevice {
 public:
     enum Type {
-        IOS_IPhone4,
+        IOS_IPhone4,        // (960x640)
         IOS_IPhone4S,
-        IOS_IPhone5, // also the iPhone5c
+        IOS_IPhone5,        // also the iPhone5c (1136x640)
         IOS_IPhone5S,
-        IOS_IPhone6,
-        IOS_IPhone6Plus,
+        IOS_IPhone6,        // (1334x750)
+        IOS_IPhone6Plus,    // (1920x1080)
         IOS_IPhone6S,
         IOS_IPhone6SPlus,
         IOS_IPhoneSE,
@@ -28,29 +28,34 @@ public:
         IOS_IPhone7Plus,
         IOS_IPhone8,
         IOS_IPhone8Plus,
-        IOS_IPhoneX,
-        IOS_IPodTouch4,
-        IOS_IPodTouch5,
+        IOS_IPhoneX,        // (2436x1125)
+        
+        IOS_IPodTouch4,     // (960x640)
+        IOS_IPodTouch5,     // (1136x640)
         IOS_IPodTouch6,
-        IOS_IPad2,
+        
+        IOS_IPad2,          // (1024x768)
         IOS_IPadMini,
         IOS_IPad3,
         IOS_IPad4,
-        IOS_IPadAir, // also the IPad Mini Retina
+        IOS_IPadAir,        // also the IPad Mini Retina (2048x1536)
         IOS_IPadMini2,
         IOS_IPadMini3,
         IOS_IPadAir2,
         IOS_IPadMini4,
-        IOS_IPadPro_9_7, // iPad Pro 9.7 inch
-        IOS_IPadPro_12_9, // iPad Pro 12.9 inch
+
+        IOS_IPadPro_9_7,    // iPad Pro 9.7 inch
+        IOS_IPadPro_12_9,   // iPad Pro 12.9 inch (2732x2048)
         IOS_IPadPro2_12_9,
-        IOS_IPadPro2_10_5,
+        IOS_IPadPro2_10_5,  // iPad Pro 10.5 inch (2224x1668)
         IOS_Unknown,
     };
 
     static bool IsIPhone(Type deviceType);
     static bool IsIPod(Type deviceType);
     static bool IsIPad(Type deviceType);
+    
+    static void GetDeviceResolution(Type deviceType, int &width, int &height);
    
     static Type GetIOSDeviceType();
 };
