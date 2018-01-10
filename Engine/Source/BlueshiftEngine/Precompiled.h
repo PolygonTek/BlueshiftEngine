@@ -291,7 +291,7 @@ inline const ptrdiff_t offset_of(T1 T2::*member) {
 
 #define BE_CDECL
 
-#define BE_FORCE_INLINE	            __forceinline
+#define BE_FORCE_INLINE             __forceinline
 #define BE_INLINE                   inline
 
 #define CURRENT_FUNC                __FUNCTION__
@@ -363,6 +363,7 @@ inline const ptrdiff_t offset_of(T1 T2::*member) {
 #include <malloc.h>         // no malloc.h on mac or unix
 #include <crtdbg.h>
 #include <tchar.h>
+#include <intrin.h>
 
 #endif
 
