@@ -645,7 +645,17 @@ File *FileSystem::OpenFileWrite(const char *filename) {
     
     PlatformFile *pf = PlatformFile::OpenFileWrite(filename);
     if (!pf) {
-        return nullptr;
+        if (PlatformFile::FileExists(filename)) {
+            int fileMode = PlatformFile::GetFileMode(filename);
+            if (!(fileMode & S_IWUSR)) {
+                PlatformFile::SetFileMode(filename, fileMode | S_IWUSR);
+                pf = PlatformFile::OpenFileWrite(filename);
+            }
+        }
+        
+        if (!pf) {
+            return nullptr;
+        }
     }
 
     FileReal *file = new FileReal(filename, pf);
