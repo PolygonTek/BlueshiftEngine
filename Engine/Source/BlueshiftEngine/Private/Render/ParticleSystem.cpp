@@ -862,7 +862,7 @@ bool ParticleSystem::Load(const char *filename) {
     BE_LOG(L"Loading particle system '%hs'...\n", filename);
 
     char *data;
-    size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
+    int size = (int)fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
         return false;
     }

@@ -155,7 +155,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
         }
 
         // guarantee 8 bytes aligned read
-        int offset = (intptr_t)ptr;
+        long offset = (intptr_t)ptr;
         ptr += AlignUp(offset, 8) - offset;
     }
 
