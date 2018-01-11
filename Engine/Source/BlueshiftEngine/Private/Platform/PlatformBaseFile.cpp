@@ -83,11 +83,10 @@ bool PlatformBaseFile::MoveFile(const char *srcFilename, const char *dstFilename
 }
 
 int PlatformBaseFile::GetFileMode(const char *filename) {
-    return -1;
+    return 0;
 }
 
-int PlatformBaseFile::SetFileMode(const char *filename, int mode) {
-    return -1;
+void PlatformBaseFile::SetFileMode(const char *filename, int mode) {
 }
 
 DateTime GetTimeStamp(const char *filename) {

@@ -915,7 +915,7 @@ bool Material::ShaderPass::GetTextureMatrix(const float *evalShaderRegisters, fl
 
 bool Material::Load(const char *hashName) {
     char *data;
-    size_t size = fileSystem.LoadFile(hashName, true, (void **)&data);
+    int size = (int)fileSystem.LoadFile(hashName, true, (void **)&data);
     if (!data) {
         return false;
     }

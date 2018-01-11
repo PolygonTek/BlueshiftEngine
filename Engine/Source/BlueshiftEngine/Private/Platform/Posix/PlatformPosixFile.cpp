@@ -253,11 +253,31 @@ int PlatformPosixFile::GetFileMode(const char *filename) {
     if (stat(NormalizeFilename(filename), &fileInfo) != 0) {
         return -1;
     }
-    return fileInfo.st_mode;
+    int fileMode = 0;
+    if (fileInfo.st_mode & S_IRUSR) {
+    	fileMode |= Readable;
+    }
+    if (fileInfo.st_mode & S_IWUSR) {
+    	fileMode |= Writable;
+    }
+    if (fileInfo.st_mode & S_IXUSR) {
+    	fileMode |= Executable;
+    }
+    return fileMode;
 }
 
-int PlatformPosixFile::SetFileMode(const char *filename, int mode) {
-    return chmod(NormalizeFilename(filename), mode);
+void PlatformPosixFile::SetFileMode(const char *filename, int fileMode) {
+	int mode = 0;
+    if (fileMode & Readable) {
+        mode |= S_IRUSR;
+    }
+    if (fileMode & Writable) {
+        mode |= S_IWUSR;
+    }
+    if (fileMode & Executable) {
+        mode |= S_IXUSR;
+    }
+    chmod(NormalizeFilename(filename), mode);
 }
 
 DateTime PlatformPosixFile::GetTimeStamp(const char *filename) {
