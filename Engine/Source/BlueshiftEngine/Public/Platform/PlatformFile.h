@@ -38,6 +38,12 @@ public:
     enum Origin {
         Start, Current, End
     };
+
+    enum Mode {
+        Writable            = BIT(0),
+        Readable            = BIT(1),
+        Executable          = BIT(2)
+    };
     
     virtual ~PlatformBaseFile() = 0;
 
@@ -69,7 +75,7 @@ public:
     static bool             RemoveFile(const char *filename);
     static bool             MoveFile(const char *srcFilename, const char *dstFilename);
     static int              GetFileMode(const char *filename);
-    static int              SetFileMode(const char *filename, int mode);
+    static void             SetFileMode(const char *filename, int mode);
     
     static DateTime         GetTimeStamp(const char *filename);
     static void             SetTimeStamp(const char *filename, const DateTime &timeStamp);

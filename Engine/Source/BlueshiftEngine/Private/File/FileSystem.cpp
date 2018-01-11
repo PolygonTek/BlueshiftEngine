@@ -647,8 +647,8 @@ File *FileSystem::OpenFileWrite(const char *filename) {
     if (!pf) {
         if (PlatformFile::FileExists(filename)) {
             int fileMode = PlatformFile::GetFileMode(filename);
-            if (!(fileMode & S_IWUSR)) {
-                PlatformFile::SetFileMode(filename, fileMode | S_IWUSR);
+            if (!(fileMode & PlatformFile::Writable)) {
+                PlatformFile::SetFileMode(filename, fileMode | PlatformFile::Writable);
                 pf = PlatformFile::OpenFileWrite(filename);
             }
         }

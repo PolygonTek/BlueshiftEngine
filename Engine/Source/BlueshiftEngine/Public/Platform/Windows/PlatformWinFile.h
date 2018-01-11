@@ -46,6 +46,8 @@ public:
     static bool             SetReadOnly(const char *filename, bool readOnly);
     static bool             RemoveFile(const char *filename);
     static bool             MoveFile(const char *oldname, const char *newname);
+    static int              GetFileMode(const char *filename);
+    static void             SetFileMode(const char *filename, int mode);
     
     static DateTime         GetTimeStamp(const char *filename);
     static void             SetTimeStamp(const char *filename, const DateTime &timeStamp);
