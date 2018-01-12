@@ -150,7 +150,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
+      <Command>md ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -159,7 +159,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
+      <Command>md ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

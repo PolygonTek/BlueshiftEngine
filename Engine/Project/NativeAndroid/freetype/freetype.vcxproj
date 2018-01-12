@@ -169,7 +169,7 @@
       <PreprocessorDefinitions>FT2_BUILD_LIBRARY;</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
+      <Command>md ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -181,7 +181,7 @@
       <PreprocessorDefinitions>FT2_BUILD_LIBRARY;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
+      <Command>md ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
