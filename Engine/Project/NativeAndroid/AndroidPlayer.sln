@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.4
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AndroidPlayer", "AndroidPlayer", "{ADE7E898-1446-4BBE-A461-CD031F198709}"
 EndProject
@@ -431,5 +431,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{1F6673FC-B3DE-4280-A307-856EFB2CBDAB} = {ADE7E898-1446-4BBE-A461-CD031F198709}
 		{98213E15-8AAB-446C-A90D-5F040E0869AD} = {ADE7E898-1446-4BBE-A461-CD031F198709}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F1912B9E-9FD0-4848-93D1-72EEF56572C7}
 	EndGlobalSection
 EndGlobal

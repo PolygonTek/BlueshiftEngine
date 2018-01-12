@@ -116,6 +116,9 @@ Engine::Engine(NvEGLUtil& egl, struct android_app* app) :
 #if _ENGINE
 
 	bool bDebugAndroid = 0;
+#ifdef DEBUG
+	bDebugAndroid = true;
+#endif
 	jclass contextClass = (app->appThreadEnv)->FindClass("android/content/Context");
 	jmethodID midGetPackageName = (app->appThreadEnv)->GetMethodID(contextClass, "getPackageName", "()Ljava/lang/String;");
 	jstring packageName = (jstring)(app->appThreadEnv)->CallObjectMethod(app->activity->clazz, midGetPackageName);

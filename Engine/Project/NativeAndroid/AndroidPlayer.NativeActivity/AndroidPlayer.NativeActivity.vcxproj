@@ -158,7 +158,7 @@
       <PreprocessorDefinitions>DEBUG</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <LibraryDependencies>android;GLESv3;EGL;OpenSLES;m;%(LibraryDependencies)</LibraryDependencies>
+      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;android;GLESv3;EGL;OpenSLES;m;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalLibraryDirectories>../../../Library/NativeAndroid/$(Platform)/$(Configuration);%(AdditionalLibraryDirectories);$(ToolchainPrebuiltPath)\lib\gcc\$(ToolchainName)\$(ToolchainVersion)\$(PlatformShortName);$(StlLibraryPath)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -173,7 +173,7 @@
       <CppLanguageStandard>c++1y</CppLanguageStandard>
     </ClCompile>
     <Link>
-      <LibraryDependencies>android;GLESv3;EGL;OpenSLES;m;%(LibraryDependencies)</LibraryDependencies>
+      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;android;GLESv3;EGL;OpenSLES;m;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalLibraryDirectories>../../../Library/NativeAndroid/$(Platform)/$(Configuration);%(AdditionalLibraryDirectories);$(ToolchainPrebuiltPath)\lib\gcc\$(ToolchainName)\$(ToolchainVersion)\$(PlatformShortName);$(StlLibraryPath)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -231,62 +231,6 @@
     <ClInclude Include="pch.h" />
     <ClCompile Include="nv_main\engine.cpp" />
     <ClCompile Include="nv_main\main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\BlueshiftEngine\BlueshiftEngine.vcxproj">
-      <Project>{518e6acc-5917-4219-b55b-d2f049209bfc}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Bullet\Bullet.vcxproj">
-      <Project>{261d74f3-26f5-427b-9347-3abc76a52ee0}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Etc2CompLib\Etc2CompLib.vcxproj">
-      <Project>{61d113f6-3253-4ccd-b4e8-9b633782a8b5}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\etcpack_lib\etcpack_lib.vcxproj">
-      <Project>{624dba3d-1fc3-4c11-b560-7e6a98979644}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\freetype\freetype.vcxproj">
-      <Project>{311bed0e-a5c6-4e49-80f5-efac46fd0103}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\HACD\HACD.vcxproj">
-      <Project>{059a8891-e02d-4913-88bb-fdc3fbafa20a}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\jsoncpp\jsoncpp.vcxproj">
-      <Project>{03ae3aab-8c91-4171-ac32-61cf2c8dc595}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\libjpeg\libjpeg.vcxproj">
-      <Project>{75b40209-a329-4a10-bb1d-047df17179d7}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\libpng\libpng.vcxproj">
-      <Project>{308bdb2c-9805-49d5-8807-5ab596fd7c20}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\libpvrt\libpvrt.vcxproj">
-      <Project>{478b8321-c227-4d08-bff0-65a4727bd655}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\libvorbis\libvorbis.vcxproj">
-      <Project>{84d8f5bf-bfff-4966-9874-c7d47f1892fb}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\LuaCpp\LuaCpp.vcxproj">
-      <Project>{5e7ac5d9-265f-4248-9c1a-b8a4a253e5e4}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\luasocket\luasocket.vcxproj">
-      <Project>{b1f9247e-5bda-4a7f-880a-95f765826180}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\lua\lua.vcxproj">
-      <Project>{2b101bc5-b22b-4431-b8c4-5db37469115c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\minizip\minizip.vcxproj">
-      <Project>{cc0ece02-7f05-4610-8306-ef257481fa4d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\nvidia\nvidia.vcxproj">
-      <Project>{ab048d9f-65dc-4b68-a692-0d47c6c668b0}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\NvTriStrip\NvTriStrip.vcxproj">
-      <Project>{bf775122-e281-4522-914a-14903b2b3436}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\zlib\zlib.vcxproj">
-      <Project>{76b0314c-8312-4fc7-88fa-447e720136f7}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
