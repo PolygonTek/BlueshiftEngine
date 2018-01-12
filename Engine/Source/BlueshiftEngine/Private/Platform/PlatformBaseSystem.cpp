@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Core/WStr.h"
 #include "Platform/PlatformSystem.h"
+#include "Platform/PlatformFile.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -25,19 +26,19 @@ void PlatformBaseSystem::SetEnvVar(const char *variableName, const char *value) 
 }
 
 const char *PlatformBaseSystem::UserDir() {
-    return "";
+    return PlatformFile::ExecutablePath();
 }
 
 const char *PlatformBaseSystem::UserDocumentDir() {
-    return "";
+    return PlatformFile::ExecutablePath();
 }
 
 const char *PlatformBaseSystem::UserAppDataDir() {
-    return "";
+    return PlatformFile::ExecutablePath();
 }
 
 const char *PlatformBaseSystem::UserTempDir() {
-    return "";
+    return PlatformFile::ExecutablePath();
 }
 
 BE_NAMESPACE_END
