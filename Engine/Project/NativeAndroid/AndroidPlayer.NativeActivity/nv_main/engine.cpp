@@ -261,10 +261,11 @@ bool Engine::initUI()
 		app.mainRenderContext->Init(&mEgl, w, h, DisplayContext, 0);
 	}
 
-	//app.Init();
-	app.Init();
+    app.Init();
 
-	////BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Append, L"exec \"autoexec.cfg\"\n");
+    app.LoadAppScript("Application");
+
+    app.StartAppScript();
 #endif 
 	m_uiInitialized = true;
 	return true;
