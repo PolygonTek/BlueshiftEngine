@@ -443,6 +443,7 @@ QRect ToolWindowManagerWrapper::titleRect()
 
 QVariantMap ToolWindowManagerWrapper::saveState()
 {
+  m_manager->simplifyLayout();
   if(layout()->count() > 2)
   {
     qWarning("too many children for wrapper");
