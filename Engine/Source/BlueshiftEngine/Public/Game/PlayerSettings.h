@@ -26,8 +26,7 @@ public:
 
     PlayerSettings();
 
-    bool                        Load(const char *filename);
-    void                        Save(const char *filename);
+    static PlayerSettings *     Load(const char *filename);
 
 private:
     Str                         companyName;

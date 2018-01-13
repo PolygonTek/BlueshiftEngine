@@ -48,7 +48,7 @@ int32_t TagLayerSettings::FindLayer(const char *layerName) const {
     return -1;
 }
 
-bool TagLayerSettings::Load(const char *filename) {
+TagLayerSettings *TagLayerSettings::Load(const char *filename) {
     Json::Value jsonNode;
     Json::Reader jsonReader;
     bool failedToParse = false;
@@ -84,21 +84,15 @@ bool TagLayerSettings::Load(const char *filename) {
 
     if (Str::Cmp(classname, TagLayerSettings::metaObject.ClassName())) {
         BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-        return false;
+        return nullptr;
     }
 
-    Deserialize(jsonNode);
-    return true;
-}
+    const Guid guid = Guid::FromString(jsonNode["guid"].asCString());
 
-void TagLayerSettings::Save(const char *filename) {
-    Json::Value jsonNode;
-    Serialize(jsonNode);
+    TagLayerSettings *tagLayerSettings = (TagLayerSettings *)TagLayerSettings::CreateInstance(guid);
+    tagLayerSettings->Deserialize(jsonNode);
 
-    Json::StyledWriter jsonWriter;
-    Str jsonText = jsonWriter.write(jsonNode).c_str();
-
-    fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
+    return tagLayerSettings;
 }
 
 BE_NAMESPACE_END

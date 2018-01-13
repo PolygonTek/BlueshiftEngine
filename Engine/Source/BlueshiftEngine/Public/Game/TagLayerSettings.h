@@ -35,8 +35,7 @@ public:
     int32_t                     FindTag(const char *tagName) const;
     int32_t                     FindLayer(const char *layerName) const;
 
-    bool                        Load(const char *filename);
-    void                        Save(const char *filename);
+    static TagLayerSettings *   Load(const char *filename);
 
 private:
     Array<Str>                  tags;

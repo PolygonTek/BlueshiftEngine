@@ -85,7 +85,7 @@ void PhysicsSettings::SetFilterMaskCount(int count) {
     }
 }
 
-bool PhysicsSettings::Load(const char *filename) {
+PhysicsSettings *PhysicsSettings::Load(const char *filename, PhysicsWorld *physicsWorld) {
     Json::Value jsonNode;
     Json::Reader jsonReader;
     bool failedToParse = false;
@@ -111,21 +111,16 @@ bool PhysicsSettings::Load(const char *filename) {
 
     if (Str::Cmp(classname, PhysicsSettings::metaObject.ClassName())) {
         BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-        return false;
+        return nullptr;
     }
 
-    Deserialize(jsonNode);
-    return true;
-}
+    const Guid guid = Guid::FromString(jsonNode["guid"].asCString());
 
-void PhysicsSettings::Save(const char *filename) {
-    Json::Value jsonNode;
-    Serialize(jsonNode);
+    PhysicsSettings *physicsSettings = (PhysicsSettings *)PhysicsSettings::CreateInstance(guid);
+    physicsSettings->physicsWorld = physicsWorld;
+    physicsSettings->Deserialize(jsonNode);
 
-    Json::StyledWriter jsonWriter;
-    Str jsonText = jsonWriter.write(jsonNode).c_str();
-
-    fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
+    return physicsSettings;
 }
 
 BE_NAMESPACE_END

@@ -42,8 +42,7 @@ public:
     int                         GetFilterMaskCount() const;
     void                        SetFilterMaskCount(int count);
 
-    bool                        Load(const char *filename);
-    void                        Save(const char *filename);
+    static PhysicsSettings *    Load(const char *filename, PhysicsWorld *physicsWorld);
 
 private:
     PhysicsWorld *              physicsWorld;

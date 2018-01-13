@@ -33,6 +33,9 @@ public:
     static TagLayerSettings *   tagLayerSettings;
     static PhysicsSettings *    physicsSettings;
     static PlayerSettings *     playerSettings;
+
+private:
+    static void                 SaveObject(Object *object, const char *filename);
 };
 
 BE_NAMESPACE_END

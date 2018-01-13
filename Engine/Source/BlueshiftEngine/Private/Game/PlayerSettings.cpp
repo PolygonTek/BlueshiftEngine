@@ -33,7 +33,7 @@ void PlayerSettings::RegisterProperties() {
 PlayerSettings::PlayerSettings() {
 }
 
-bool PlayerSettings::Load(const char *filename) {
+PlayerSettings *PlayerSettings::Load(const char *filename) {
     Json::Value jsonNode;
     Json::Reader jsonReader;
     bool failedToParse = false;
@@ -59,21 +59,15 @@ bool PlayerSettings::Load(const char *filename) {
 
     if (Str::Cmp(classname, PlayerSettings::metaObject.ClassName())) {
         BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-        return false;
+        return nullptr;
     }
 
-    Deserialize(jsonNode);
-    return true;
-}
+    const Guid guid = Guid::FromString(jsonNode["guid"].asCString());
 
-void PlayerSettings::Save(const char *filename) {
-    Json::Value jsonNode;
-    Serialize(jsonNode);
+    PlayerSettings *playerSettings = (PlayerSettings *)PlayerSettings::CreateInstance(guid);
+    playerSettings->Deserialize(jsonNode);
 
-    Json::StyledWriter jsonWriter;
-    Str jsonText = jsonWriter.write(jsonNode).c_str();
-
-    fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
+    return playerSettings;
 }
 
 BE_NAMESPACE_END

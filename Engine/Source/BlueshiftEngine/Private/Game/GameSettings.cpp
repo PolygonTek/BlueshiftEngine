@@ -18,6 +18,7 @@
 #include "Game/TagLayerSettings.h"
 #include "Game/PhysicsSettings.h"
 #include "Game/PlayerSettings.h"
+#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -26,9 +27,6 @@ PhysicsSettings *   GameSettings::physicsSettings = nullptr;
 PlayerSettings *    GameSettings::playerSettings = nullptr;
 
 void GameSettings::Init() {
-    tagLayerSettings = static_cast<TagLayerSettings *>(TagLayerSettings::CreateInstance());
-    physicsSettings = static_cast<PhysicsSettings *>(PhysicsSettings::CreateInstance());
-    playerSettings = static_cast<PlayerSettings *>(PlayerSettings::CreateInstance());
 }
 
 void GameSettings::Shutdown() {
@@ -36,10 +34,12 @@ void GameSettings::Shutdown() {
         TagLayerSettings::DestroyInstanceImmediate(tagLayerSettings);
         tagLayerSettings = nullptr;
     }
+
     if (physicsSettings) {
         PhysicsSettings::DestroyInstanceImmediate(physicsSettings);
         physicsSettings = nullptr;
     }
+
     if (playerSettings) {
         PlayerSettings::DestroyInstanceImmediate(playerSettings);
         playerSettings = nullptr;
@@ -47,20 +47,27 @@ void GameSettings::Shutdown() {
 }
 
 void GameSettings::LoadSettings(GameWorld *gameWorld) {
-    tagLayerSettings->Load("ProjectSettings/tagLayer.settings");
-    //inputSettings->Load("ProjectSettings/input.settings");
+    Shutdown();
 
-    physicsSettings->physicsWorld = gameWorld->GetPhysicsWorld();
-    physicsSettings->Load("ProjectSettings/physics.settings");
-
-    //rendererSettings->Load("ProjectSettings/renderer.settings");
-    playerSettings->Load("ProjectSettings/player.settings");
+    tagLayerSettings = TagLayerSettings::Load("ProjectSettings/tagLayer.settings");
+    physicsSettings = PhysicsSettings::Load("ProjectSettings/physics.settings", gameWorld->GetPhysicsWorld());
+    playerSettings = PlayerSettings::Load("ProjectSettings/player.settings");
 }
 
 void GameSettings::SaveSettings() {
-    tagLayerSettings->Save("ProjectSettings/tagLayer.settings");
-    physicsSettings->Save("ProjectSettings/physics.settings");
-    playerSettings->Save("ProjectSettings/player.settings");
+    SaveObject(tagLayerSettings, "ProjectSettings/tagLayer.settings");
+    SaveObject(physicsSettings, "ProjectSettings/physics.settings");
+    SaveObject(playerSettings, "ProjectSettings/player.settings");
+}
+
+void GameSettings::SaveObject(Object *object, const char *filename) {
+    Json::Value jsonNode;
+    object->Serialize(jsonNode);
+
+    Json::StyledWriter jsonWriter;
+    Str jsonText = jsonWriter.write(jsonNode).c_str();
+
+    fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }
 
 BE_NAMESPACE_END
