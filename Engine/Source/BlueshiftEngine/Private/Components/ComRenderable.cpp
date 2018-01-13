@@ -27,7 +27,8 @@ END_EVENTS
 
 void ComRenderable::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("alpha", "Alpha", float, GetAlpha, SetAlpha, 1.f, "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("alpha", "Alpha", float, GetAlpha, SetAlpha, 1.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("billboard", "Billboard", bool, IsBillboard, SetBillboard, false, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("timeOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, "", PropertyInfo::EditorFlag);

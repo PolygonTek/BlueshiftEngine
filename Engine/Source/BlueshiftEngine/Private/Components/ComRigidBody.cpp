@@ -70,12 +70,18 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
 }
 
 void ComRigidBody::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 1.f, "Mass in kg", PropertyInfo::EditorFlag).SetRange(0, 200, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.f, "Parameter for make objects bounce", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 1.f, "Parameter for make objects slide along each other realistically", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("rollingFriction", "Rolling Friction", float, GetRollingFriction, SetRollingFriction, 1.f, "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("linearDamping", "Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.05f, "Reduced amount of linear velocity", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("angularDamping", "Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, "Reduced amount of angular velocity", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 1.f, "Mass in kg", PropertyInfo::EditorFlag)
+        .SetRange(0, 200, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.f, "Parameter for make objects bounce", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 1.f, "Parameter for make objects slide along each other realistically", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("rollingFriction", "Rolling Friction", float, GetRollingFriction, SetRollingFriction, 1.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("linearDamping", "Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.05f, "Reduced amount of linear velocity", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("angularDamping", "Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, "Reduced amount of angular velocity", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("kinematic", "Kinematic", bool, IsKinematic, SetKinematic, false, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCD, SetCCD, false, "Continuous collision detection", PropertyInfo::EditorFlag);
 }

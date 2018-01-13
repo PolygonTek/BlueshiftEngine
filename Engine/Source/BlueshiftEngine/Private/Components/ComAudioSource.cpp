@@ -29,13 +29,17 @@ BEGIN_EVENTS(ComAudioSource)
 END_EVENTS
 
 void ComAudioSource::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("audioClip", "Audio Clip", Guid, GetAudioClipGuid, SetAudioClipGuid, GuidMapper::defaultSoundGuid, "", PropertyInfo::EditorFlag).SetMetaObject(&SoundAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("audioClip", "Audio Clip", Guid, GetAudioClipGuid, SetAudioClipGuid, GuidMapper::defaultSoundGuid, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&SoundAsset::metaObject);
     REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, false, "Play the sound when the map loaded.", PropertyInfo::EditorFlag);
     REGISTER_PROPERTY("spatial", "Spatial", bool, spatial, true, "", PropertyInfo::EditorFlag);
     REGISTER_PROPERTY("looping", "Looping", bool, looping, false, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("volume", "Volume", float, volume, 1.f, "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.1);
-    REGISTER_PROPERTY("minDistance", "Min Distance", float, minDistance, 4.f, "", PropertyInfo::EditorFlag).SetRange(0, 100, 1);
-    REGISTER_PROPERTY("maxDistance", "Max Distance", float, maxDistance, 16.f, "", PropertyInfo::EditorFlag).SetRange(0, 100, 1);
+    REGISTER_PROPERTY("volume", "Volume", float, volume, 1.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.1);
+    REGISTER_PROPERTY("minDistance", "Min Distance", float, minDistance, 4.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 100, 1);
+    REGISTER_PROPERTY("maxDistance", "Max Distance", float, maxDistance, 16.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 100, 1);
 }
 
 ComAudioSource::ComAudioSource() {

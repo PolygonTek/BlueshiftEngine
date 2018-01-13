@@ -29,7 +29,8 @@ BEGIN_EVENTS(ComScript)
 END_EVENTS
 
 void ComScript::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("script", "Script", Guid, GetScriptGuid, SetScriptGuid, Guid::zero, "", PropertyInfo::EditorFlag).SetMetaObject(&ScriptAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("script", "Script", Guid, GetScriptGuid, SetScriptGuid, Guid::zero, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&ScriptAsset::metaObject);
 }
 
 ComScript::ComScript() {

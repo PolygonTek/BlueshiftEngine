@@ -38,9 +38,11 @@ BEGIN_EVENTS(Entity)
 END_EVENTS
 
 void Entity::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero, "Parent Entity", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero, "Parent Entity", PropertyInfo::EditorFlag)
+        .SetMetaObject(&Entity::metaObject);
     REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false, "Is prefab ?", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero, "", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&Entity::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity", "", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::EditorFlag);

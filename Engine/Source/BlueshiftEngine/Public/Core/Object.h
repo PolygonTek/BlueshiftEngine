@@ -25,7 +25,6 @@
 */
 
 #include "Core/Guid.h"
-#include "Math/Math.h"
 #include "Containers/Hierarchy.h"
 #include "Containers/HashIndex.h"
 #include "Event.h"
