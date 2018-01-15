@@ -989,12 +989,12 @@ float WStr::FuzzyScore(const wchar_t *s1, const wchar_t *s2, float fuzziness) {
 // Safe strncpy that ensures a trailing zero
 void WStr::Copynz(wchar_t *dest, const wchar_t *src, int destsize) {
     if (!src) {
-        BE_WARNLOG(L"WStr::Copynz: nullptr src");
+        BE_WARNLOG(L"WStr::Copynz: nullptr src\n");
         return;
     }
 
     if (destsize < 1) {
-        BE_WARNLOG(L"WStr::Copynz: destsize < 1"); 
+        BE_WARNLOG(L"WStr::Copynz: destsize < 1\n"); 
         return;
     }
 
@@ -1006,7 +1006,7 @@ void WStr::Copynz(wchar_t *dest, const wchar_t *src, int destsize) {
 void WStr::Append(wchar_t *dest, int size, const wchar_t *src) {
     int l1 = (int)wcslen(dest);
     if (l1 >= size) {
-        BE_ERRLOG(L"WStr::Append: already overflowed");
+        BE_ERRLOG(L"WStr::Append: already overflowed\n");
     }
 
     WStr::Copynz(dest + l1, src, size - l1);
