@@ -31,8 +31,8 @@ You can build Blueshift Engine but Blueshift Editor is **not** open source yet.
 ### Prerequisite
 
   * [MS Visual Studio 2017](https://www.visualstudio.com/downloads/)
-	select "Mobile development with c++"
-	select "Mobile development with .NET"
+     ** select "Mobile development with c++"
+     ** select "Mobile development with .NET"
   * [CMake](https://cmake.org/download/)
 
 ### Instruction
