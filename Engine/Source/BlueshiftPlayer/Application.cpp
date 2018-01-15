@@ -50,6 +50,8 @@ void Application::Shutdown() {
         gameWorld->StopGame();
     }
 
+    sandbox = LuaCpp::Selector();
+
     BE1::prefabManager.Shutdown();
 
     BE1::GameWorld::DestroyInstance(gameWorld, true);
