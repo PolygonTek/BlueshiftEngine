@@ -8,7 +8,7 @@
 
 ### Instruction (only for C++ debugging)
 
-  1. Open `Engine\Project\Android\AndroidPlayer.sln`
+  1. Open `Engine\Project\NativeAndroid\NativeAndroid.sln`
 
-  2. Build with target `Debug Tegra-Android`
+  2. Build with target `Debug ARM`
 
