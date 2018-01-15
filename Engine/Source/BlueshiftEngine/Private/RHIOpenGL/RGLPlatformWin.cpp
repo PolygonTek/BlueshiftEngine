@@ -656,27 +656,23 @@ void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHe
     GLContext *ctx = contextList[ctxHandle];
 
     if (windowWidth || windowHeight || backingWidth || backingHeight) {
-        RECT rc;
 #if 0
+        //DPI_AWARENESS dpiAwareness = GetAwarenessFromDpiAwarenessContext(GetWindowDpiAwarenessContext(ctx->hwnd));
         // Number of pixels per logical inch along the screen size.
         // In a system with multiple display monitors, this value is the same for all monitors.
-        int dpiX = GetDeviceCaps(ctx->hdc, LOGPIXELSX);
-        int dpiY = GetDeviceCaps(ctx->hdc, LOGPIXELSY);
-        
-        // Same as DPI settings in Windows
-        float dpiScaleX = dpiX / 96.0f;
-        float dpiScaleY = dpiY / 96.0f;
+        //int dpi = GetDpiForWindow(ctx->hwnd);
+        int dpi = GetDeviceCaps(ctx->hdc, LOGPIXELSX);
+        float dpiScale = Math::Rint(dpi / 96.0f);
 #else
-        float dpiScaleX = 1.0f;
-        float dpiScaleY = 1.0f;
+        float dpiScale = 1.0f;
 #endif
-
+        RECT rc;
         GetClientRect(ctx->hwnd, &rc);
         if (windowWidth) {
-            *windowWidth = rc.right / dpiScaleX;
+            *windowWidth = rc.right / dpiScale;
         }
         if (windowHeight) {
-            *windowHeight = rc.bottom / dpiScaleY;
+            *windowHeight = rc.bottom / dpiScale;
         }
         if (backingWidth) {
             *backingWidth = rc.right;
