@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+Str Str::empty;
+
 void Str::ReAllocate(int amount, bool keepOld) {
     assert(amount > 0);
 
@@ -1152,12 +1154,12 @@ float Str::FuzzyScore(const char *s1, const char *s2, float fuzziness) {
 // Safe strncpy that ensures a trailing zero
 void Str::Copynz(char *dest, const char *src, int destsize) {
     if (!src) {
-        BE_WARNLOG(L"Str::Copynz: nullptr src");
+        BE_WARNLOG(L"Str::Copynz: nullptr src\n");
         return;
     }
 
     if (destsize < 1) {
-        BE_WARNLOG(L"Str::Copynz: destsize < 1"); 
+        BE_WARNLOG(L"Str::Copynz: destsize < 1\n");
         return;
     }
 
@@ -1169,7 +1171,7 @@ void Str::Copynz(char *dest, const char *src, int destsize) {
 void Str::Append(char *dest, int size, const char *src) {
     int l1 = (int)strlen(dest);
     if (l1 >= size) {
-        BE_ERRLOG(L"Str::Append: already overflowed");
+        BE_ERRLOG(L"Str::Append: already overflowed\n");
     }
     
     Str::Copynz(dest + l1, src, size - l1);

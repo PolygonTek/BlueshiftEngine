@@ -24,6 +24,7 @@ void LuaVM::RegisterRotation(LuaCpp::Module &module) {
     _Rotation.SetClass<Rotation>();
     _Rotation.AddClassCtor<Rotation, const Vec3 &, const Vec3 &, float>();
     _Rotation.AddClassMembers<Rotation>(
+        "assign", static_cast<Rotation&(Rotation::*)(const Rotation&)>(&Rotation::operator=),
         "set", &Rotation::Set,
         "set_origin", &Rotation::SetOrigin,
         "set_vec", static_cast<void(Rotation::*)(const float, const float, const float)>(&Rotation::SetVec),
@@ -39,7 +40,7 @@ void LuaVM::RegisterRotation(LuaCpp::Module &module) {
         "scale_self", static_cast<Rotation&(Rotation::*)(const float)>(&Rotation::operator*=),
         "rotate_point", &Rotation::RotatePoint,
         "normalize180", &Rotation::Normalize180,
-        "normalize360", &Rotation::Normalize360        
+        "normalize360", &Rotation::Normalize360
     );
     _Rotation.AddClassMembers<Rotation>(
         "__unm", static_cast<Rotation(Rotation::*)() const>(&Rotation::operator-)

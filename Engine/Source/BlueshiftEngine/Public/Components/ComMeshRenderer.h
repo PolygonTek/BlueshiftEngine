@@ -30,16 +30,18 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
     const Mesh *            GetReferenceMesh() const { return referenceMesh; }
 
     bool                    GetClosestVertex(const SceneView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const;
 
-    Guid                    GetMesh() const;
-    void                    SetMesh(const Guid &guid);
+    Guid                    GetMeshGuid() const;
+    void                    SetMeshGuid(const Guid &guid);
 
-    int                     NumMaterials() const;
+    int                     GetMaterialCount() const;
+    void                    SetMaterialCount(int count);
     Guid                    GetMaterialGuid(int index) const;
     void                    SetMaterialGuid(int index, const Guid &materialGuid);
 
@@ -57,12 +59,10 @@ public:
 
 protected:
     void                    ChangeMesh(const Guid &meshGuid);
-    void                    ChangeMaterial(int index, const Guid &materialGuid);
 
     virtual void            MeshUpdated() = 0;
 
     void                    MeshReloaded();
-    void                    PropertyChanged(const char *classname, const char *propName);
 
     MeshAsset *             meshAsset;
     Mesh *                  referenceMesh;

@@ -66,6 +66,11 @@ void MeshManager::Init() {
     defaultGeoSphereMesh->CreateGeosphere(Vec3::origin, MeterToUnit(0.5), 3);
 
     // Create default cylinder mesh
+    //defaultConeMesh = AllocMesh("_defaultConeMesh");
+    //defaultConeMesh->permanence = true;
+    //defaultConeMesh->CreateCone(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(2), 32);
+
+    // Create default cylinder mesh
     defaultCylinderMesh = AllocMesh("_defaultCylinderMesh");
     defaultCylinderMesh->permanence = true;
     defaultCylinderMesh->CreateCylinder(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(2), 32);

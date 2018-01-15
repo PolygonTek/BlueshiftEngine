@@ -38,6 +38,7 @@
 
 BE_NAMESPACE_BEGIN
 
+// HashBucket class template
 template <typename KeyT, class ValueT> 
 class HashBucket {
 public:
@@ -65,6 +66,7 @@ public:
     HashBucket<KeyT, ValueT> *next;
 };
 
+// HashBucket class template specialization with hash key type is given Guid
 template <typename ValueT>
 class HashBucket<Guid, ValueT> {
 public:
@@ -91,6 +93,29 @@ public:
     HashBucket<Guid, ValueT> *next;
 };
 
+// HashBucket class template specialization with hash key type is given Str
+template <typename ValueT>
+class HashBucket<Str, ValueT> {
+public:
+    HashBucket() {}
+    HashBucket(const Str &key, const ValueT &value, HashBucket *next)
+        : key(key), value(value), next(next) {}
+
+    static int GenerateHash(const Str &key, const int tableMask) {
+        return Str::Hash(key) & tableMask;
+    }
+
+    static int Compare(const Str &key1, const Str &key2) {
+        return Str::Icmp(key1, key2);
+    }
+
+public:
+    Str                     key;
+    ValueT                  value;
+    HashBucket<Str, ValueT> *next;
+};
+
+// HashBucket class template specialization with hash key type is given string pointer
 template <typename ValueT>
 class HashBucket<const char *, ValueT> {
 public:
@@ -112,28 +137,7 @@ public:
     HashBucket<Str, ValueT> *next;
 };
 
-template <typename ValueT>
-class HashBucket<Str, ValueT> {
-public:
-    HashBucket() {}
-    HashBucket(const Str &key, const ValueT &value, HashBucket *next)
-        : key(key), value(value), next(next) {
-    }
-
-    static int GenerateHash(const Str &key, const int tableMask) {
-        return Str::Hash(key) & tableMask;
-    }
-
-    static int Compare(const Str &key1, const Str &key2) {
-        return Str::Icmp(key1, key2);
-    }
-
-public:
-    Str                     key;
-    ValueT                  value;
-    HashBucket<Str, ValueT> * next;
-};
-
+// HashBucket class template specialization with hash key type is given WStr
 template <typename ValueT>
 class HashBucket<WStr, ValueT> {
 public:
@@ -156,6 +160,7 @@ public:
     HashBucket<WStr, ValueT> *next;
 };
 
+// HashBucket class template specialization with hash key type is given wide string pointer
 template <typename ValueT>
 class HashBucket<const wchar_t *, ValueT> {
 public:

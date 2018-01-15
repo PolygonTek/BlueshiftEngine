@@ -31,7 +31,7 @@ public:
     Asset();
     virtual ~Asset() = 0;
 
-    virtual const Str           ToString() const override { return name; }
+    virtual Str                 ToString() const override { return name; }
 
     bool                        IsStoredInDisk() const { return isStoredInDisk; }
     bool                        IsRedundantAsset() const { return isRedundantAsset;  }
@@ -75,6 +75,7 @@ public:
 protected:
     AssetImporter *             assetImporter;
     Str                         name;
+    Str                         timeStamp;
     Hierarchy<Asset>            node;
     bool                        isStoredInDisk;
     bool                        isRedundantAsset;

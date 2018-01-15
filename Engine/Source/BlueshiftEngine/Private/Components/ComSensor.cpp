@@ -18,7 +18,6 @@
 #include "Components/ComSensor.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComScript.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN
@@ -26,16 +25,13 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Sensor", ComSensor, Component)
 BEGIN_EVENTS(ComSensor)
 END_EVENTS
-BEGIN_PROPERTIES(ComSensor)
-END_PROPERTIES
 
 void ComSensor::RegisterProperties() {
 }
 
 ComSensor::ComSensor() {
+    memset(&physicsDesc, 0, sizeof(physicsDesc));
     sensor = nullptr;
-
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSensor::PropertyChanged);
 }
 
 ComSensor::~ComSensor() {
@@ -54,14 +50,13 @@ void ComSensor::Purge(bool chainPurge) {
 }
 
 void ComSensor::Init() {
-    Purge();
-
     Component::Init();
 
-    memset(&physicsDesc, 0, sizeof(physicsDesc));
     physicsDesc.type = PhysCollidable::Sensor;
-
     physicsDesc.shapes.Clear();
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &shapes) {
@@ -75,7 +70,7 @@ static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &s
         return;
     }
 
-    ComTransform *transform = entity->GetTransform();
+    const ComTransform *transform = entity->GetTransform();
 
     PhysShapeDesc &shapeDesc = shapes.Alloc();
     shapeDesc.collider = collider->GetCollider();
@@ -95,7 +90,7 @@ void ComSensor::Awake() {
         physicsDesc.origin = transform->GetOrigin();
         physicsDesc.axis = transform->GetAxis();
 
-        ComponentPtrArray colliders = entity->GetComponents(ComCollider::metaObject);
+        ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
         if (colliders.Count() > 0) {
             for (int i = 0; i < colliders.Count(); i++) {
                 ComCollider *collider = colliders[i]->Cast<ComCollider>();
@@ -119,7 +114,7 @@ void ComSensor::Awake() {
         sensor->SetUserPointer(this);
         sensor->SetCustomCollisionFilterIndex(entity->GetLayer());
 
-        if (IsEnabled()) {
+        if (IsActiveInHierarchy()) {
             sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
 
@@ -130,7 +125,7 @@ void ComSensor::Awake() {
 }
 
 void ComSensor::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -138,7 +133,7 @@ void ComSensor::Update() {
 }
 
 void ComSensor::ProcessScriptCallback() {
-    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
+    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(&ComScript::metaObject);
     if (scriptComponents.Count() == 0) {
         return;
     }
@@ -203,21 +198,15 @@ void ComSensor::ProcessScriptCallback() {
     oldColliders.Swap(newColliders);
 }
 
-void ComSensor::Enable(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (sensor) {
-                sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-            }
-            Component::Enable(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (sensor) {
-                sensor->RemoveFromWorld();
-            }
-            Component::Enable(false);
-        }
+void ComSensor::OnActive() {
+    if (sensor) {
+        sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+}
+
+void ComSensor::OnInactive() {
+    if (sensor) {
+        sensor->RemoveFromWorld();
     }
 }
 
@@ -236,14 +225,6 @@ void ComSensor::TransformUpdated(const ComTransform *transform) {
         sensor->SetAxis(transform->GetAxis());
         sensor->Activate();
     }
-}
-
-void ComSensor::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

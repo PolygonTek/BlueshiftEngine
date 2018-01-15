@@ -15,129 +15,78 @@
 #pragma once
 
 #include "jsoncpp/include/json/json.h"
+#include "Variant.h"
 #include "Signal.h"
-#include "Core/Variant.h"
-#include "Containers/HashMap.h"
 
 BE_NAMESPACE_BEGIN
 
-class Serializable {
+class PropertyInfo;
+
+/// Interface for objects with automatic serialization through properties.
+class BE_API Serializable : public SignalObject {
 public:
+                            /// Gets property info by name. Returns false if not found.
+    bool                    GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
+                            /// Gets property info by index. Returns false if not found.
+    bool                    GetPropertyInfo(int index, PropertyInfo &propertyInfo) const;
+                            /// Gets property info array.
+    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const = 0;
+
+                            /// Serialize to JSON value.
+    virtual void            Serialize(Json::Value &out) const;
+                            /// Deserialize from JSON value.
+    virtual void            Deserialize(const Json::Value &in);
+
+                            /// Returns a property default value by name. Returns empty variant if not found.
+    Variant                 GetPropertyDefault(const char *name) const;
+                            /// Returns a property default value by index. Returns empty variant if not found.
+    Variant                 GetPropertyDefault(int index) const;
+    
+                            /// Gets a property value by name. Returns empty variant if not found.
+    Variant                 GetProperty(const char *name) const;
+                            /// Gets a property value by index. Returns empty variant if not found.
+    Variant                 GetProperty(int index) const;
+                            /// Gets a property value by property info.
+    void                    GetProperty(const PropertyInfo &propertyInfo, Variant &out) const;
+
+                            /// Sets a property value by name. Returns true if successfully set.
+    bool                    SetProperty(const char *name, const Variant &value, bool forceWrite = false);
+                            /// Sets a property value by index. Returns true if successfully set.
+    bool                    SetProperty(int index, const Variant &value, bool forceWrite = false);
+                            /// Sets a property value by property info. Returns true if successfully set.
+    bool                    SetProperty(const PropertyInfo &propertyInfo, const Variant &value, bool forceWrite = false);
+    
+                            /// Gets a indexed property value by name. Returns empty variant if not found.
+    Variant                 GetArrayProperty(const char *name, int elementIndex) const;
+                            /// Gets a indexed property value by index. Returns empty variant if not found.
+    Variant                 GetArrayProperty(int index, int elementIndex) const;
+                            /// Gets a indexed property value by property info.
+    void                    GetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, Variant &out) const;
+
+                            /// Sets a indexed property value by name. Returns true if successfully set.
+    bool                    SetArrayProperty(const char *name, int elementIndex, const Variant &value, bool forceWrite = false);
+                            /// Sets a indexed property value by index. Returns true if successfully set.
+    bool                    SetArrayProperty(int index, int elementIndex, const Variant &value, bool forceWrite = false);
+                            /// Sets a indexed property value by property info.
+    bool                    SetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, const Variant &value, bool forceWrite = false);
+
+                            /// Returns property array count by name. This function is valid only if property is an array.
+    int                     GetPropertyArrayCount(const char *name) const;
+                            /// Returns property array count by index. This function is valid only if property is an array.
+    int                     GetPropertyArrayCount(int index) const;
+                            /// Returns property array count by property info. This function is valid only if property is an array.
+    int                     GetPropertyArrayCount(const PropertyInfo &propertyInfo) const;
+
+                            /// Sets property array count by name. This function is valid only if property is an array.
+    void                    SetPropertyArrayCount(const char *name, int numElements);
+                            /// Sets property array count by index. This function is valid only if property is an array.
+    void                    SetPropertyArrayCount(int index, int numElements);
+                            /// Sets property array count by property info. This function is valid only if property is an array.
+    void                    SetPropertyArrayCount(const PropertyInfo &propertyInfo, int numElements);
+
+    static const SignalDef  SIG_PropertyChanged;            ///< A signal emitted when a property value changed.
+    static const SignalDef  SIG_PropertyArrayCountChanged;  ///< A signal emitted when a property array count changed.
+    static const SignalDef  SIG_PropertyInfoUpdated;        ///< A signal emitted when property info list updated.
 };
-
-//-------------------------------------------------------------------------------
-//
-// Properties
-//
-//-------------------------------------------------------------------------------
-
-class PropertySpec;
-
-class Property {
-    friend class Properties;
-
-public:
-    enum Flag {
-        Hidden              = BIT(0)
-    };
-
-    Property() : numElements(0), flags(0) { value.SetEmpty(); }
-    Property(const Variant &_value, int _flags) : value(_value), numElements(0), flags(_flags) {}
-
-    const Variant &         Value() const { return value; }
-    Variant &               Value() { return value; }
-
-    int                     Flags() const { return flags; }
-       
-private:
-    Variant                 value;
-    int                     numElements;
-    int                     flags;
-};
-
-class Properties {
-public:
-    explicit Properties(Object *owner);
-    ~Properties();
-
-    void                    Init(const Properties *props);
-    void                    Init(const Json::Value &node);
-
-    void                    Purge();
-
-                            /// Returns number of properties.
-    int                     Count() const { return propertyHashMap.Count(); }
-
-                            /// Returns property name by index.
-    const char *            GetName(int index) const;
-
-                            /// Returns property spec by index.
-    const PropertySpec *    GetSpec(int index) const;
-
-                            /// Returns property spec by spec name.
-    const PropertySpec *    GetSpec(const char *name) const;
-
-                            /// Returns number of elements of array property
-                            /// This function is valid only if property is an array
-    int                     NumElements(const char *name) const;
-
-                            /// Sets number of elements of array property
-                            /// This function is valid only if property is an array
-    void                    SetNumElements(const char *name, int numElements);
-
-                            /// Returns property flag
-    int                     GetFlags(const char *name) const;
-
-                            /// Sets property flag
-    void                    SetFlags(const char *name, int flags);
-
-                            /// Gets default value
-    bool                    GetDefaultValue(const char *name, Variant &out) const;
-
-                            /// Returns default value
-    Variant                 GetDefaultValue(const char *name) const;
-
-                            /// Gets property
-    bool                    Get(const char *name, Variant &out, bool forceRead = false) const;
-
-                            /// Gets property, if it is a invalid property, returns 0-set value or "" (empty string)
-    Variant                 Get(const char *name) const;
-
-                            /// Gets property with vargs (name1, variant_ptr1, name2, variant_ptr2, ...)
-    bool                    GetVa(const char *name, ...) const;
-
-                            /// Sets property
-    bool                    Set(const char *name, const Variant &value, bool forceWrite = false);
-
-                            /// Sets property with vargs (name1, variant_ptr1, name2, variant_ptr2, ...)
-    bool                    SetVa(const char *name, ...);
-        
-                            /// Deserialize to Json::Value
-    const Json::Value       Deserialize() const;
-
-                            /// Serialize to JSON node
-    void                    Serialize(Json::Value &out) const;
-
-    static const SignalDef  SIG_PropertyChanged;
-    static const SignalDef  SIG_PropertyArrayNumChanged;
-    static const SignalDef  SIG_PropertyFlagsChanged;
-    static const SignalDef  SIG_UpdateUI;
-
-protected:
-    Object *                owner;
-    StrHashMap<Property>    propertyHashMap; //
-};
-
-BE_INLINE Variant Properties::GetDefaultValue(const char *name) const {
-    Variant out;
-    GetDefaultValue(name, out);
-    return out;
-}
-
-BE_INLINE Variant Properties::Get(const char *name) const {
-    Variant out;
-    Get(name, out);
-    return out;
-}
 
 BE_NAMESPACE_END

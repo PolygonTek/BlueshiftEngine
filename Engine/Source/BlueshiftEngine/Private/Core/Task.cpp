@@ -30,7 +30,7 @@ TaskScheduler::TaskScheduler(int numThreads) {
     finishMutex = PlatformMutex::Create();
     finishCondition = PlatformCondition::Create();
 
-#ifdef    __WIN32__
+#ifdef __WIN32__
     if (numThreads < 0) {
         // Get thread count as number of logical processors
         numThreads = PlatformProcess::NumberOfLogicalProcessors();

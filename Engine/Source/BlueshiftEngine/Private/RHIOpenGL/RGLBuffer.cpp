@@ -187,7 +187,7 @@ int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *dat
         // glMapBufferRange 함수는 buffer alloc 되어 있지 않다면 GL_INVALID_VALUE error 발생
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
         void *ptr = gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-        BE1::simdProcessor->Memcpy(ptr, data, size);
+        simdProcessor->Memcpy(ptr, data, size);
         gglUnmapBuffer(buffer->target);
     } else {
         // buffer respecification using glBufferData
@@ -231,7 +231,7 @@ int OpenGLRHI::BufferWrite(Handle bufferHandle, int alignSize, int size, const v
     if (data) {
         /*if (gglMapBufferRange) {
             byte *ptr = (byte *)gglMapBufferRange(buffer->target, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-            BE1::simdProcessor->Memcpy(ptr, data, size);
+            simdProcessor->Memcpy(ptr, data, size);
             gglUnmapBuffer(buffer->target);
         }*/
         gglBufferSubData(writeBuffer->target, base, size, data);

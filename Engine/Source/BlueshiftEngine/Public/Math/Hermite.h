@@ -54,6 +54,10 @@ public:
     Hermite();
     ~Hermite() = default;
 
+                        /// Compare with another
+    bool                operator==(const Hermite<T> &rhs) const;
+    bool                operator!=(const Hermite<T> &rhs) const;
+
                         /// Clears all data
     void                Clear();
 
@@ -140,6 +144,20 @@ private:
         T               inSlope;            // incoming slope on each segment (first one should be ignored)
         T               outSlope;           // outgoing slope on each segment (last one should be ignored)
         int             tangentModeFlags;
+
+        bool operator==(const Key &rhs) const {
+            if (time == rhs.time && point == rhs.point && inSlope == rhs.inSlope && outSlope == rhs.outSlope && tangentModeFlags == rhs.tangentModeFlags) {
+                return true;
+            }
+            return false;
+        }
+
+        bool operator!=(const Key &rhs) const {
+            if (time == rhs.time && point == rhs.point && inSlope == rhs.inSlope && outSlope == rhs.outSlope && tangentModeFlags == rhs.tangentModeFlags) {
+                return false;
+            }
+            return true;
+        }
     };
 
     float               WrapTime(float t) const;
@@ -159,6 +177,22 @@ BE_INLINE Hermite<T>::Hermite() {
     changed = false;
     timeWrapModes[0] = TimeWrapMode::Clamp;
     timeWrapModes[1] = TimeWrapMode::Clamp;
+}
+
+template <typename T>
+BE_INLINE bool Hermite<T>::operator==(const Hermite<T> &rhs) const {
+    if (keys == rhs.keys && timeWrapModes[0] == rhs.timeWrapModes[0] && timeWrapModes[1] == timeWrapModes[1]) {
+        return true;
+    }
+    return false;
+}
+
+template <typename T>
+BE_INLINE bool Hermite<T>::operator!=(const Hermite<T> &rhs) const {
+    if (keys == rhs.keys && timeWrapModes[0] == rhs.timeWrapModes[0] && timeWrapModes[1] == timeWrapModes[1]) {
+        return false;
+    }
+    return true;
 }
 
 template <typename T>

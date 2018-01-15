@@ -23,16 +23,12 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Static Mesh Renderer", ComStaticMeshRenderer, ComMeshRenderer)
 BEGIN_EVENTS(ComStaticMeshRenderer)
 END_EVENTS
-BEGIN_PROPERTIES(ComStaticMeshRenderer)
-    PROPERTY_BOOL("occluder", "Occluder", "", "false", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComStaticMeshRenderer::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Occluder", bool, IsOccluder, SetOccluder, "false", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("occluder", "Occluder", bool, IsOccluder, SetOccluder, false, "", PropertyInfo::EditorFlag);
 }
 
 ComStaticMeshRenderer::ComStaticMeshRenderer() {
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComStaticMeshRenderer::PropertyChanged);
 }
 
 ComStaticMeshRenderer::~ComStaticMeshRenderer() {
@@ -55,9 +51,10 @@ void ComStaticMeshRenderer::Purge(bool chainPurge) {
 void ComStaticMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
-    // Set SceneEntity parameters
     sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-    sceneEntity.occluder = props->Get("occluder").As<bool>();
+
+    // Mark as initialized
+    SetInitialized(true);
 
     UpdateVisuals();
 }
@@ -66,6 +63,10 @@ void ComStaticMeshRenderer::Update() {
 }
 
 void ComStaticMeshRenderer::MeshUpdated() {
+    if (!IsInitialized()) {
+        return;
+    }
+
     sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
     sceneEntity.aabb = referenceMesh->GetAABB();
     // temp code
@@ -76,18 +77,13 @@ void ComStaticMeshRenderer::MeshUpdated() {
     UpdateVisuals();
 }
 
-void ComStaticMeshRenderer::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
+bool ComStaticMeshRenderer::IsOccluder() const {
+    return sceneEntity.occluder;
+}
 
-    if (!Str::Cmp(propName, "occluder")) {
-        sceneEntity.occluder = props->Get("occluder").As<bool>();
-        UpdateVisuals();
-        return;
-    }
-
-    ComMeshRenderer::PropertyChanged(classname, propName);
+void ComStaticMeshRenderer::SetOccluder(bool occluder) {
+    sceneEntity.occluder = occluder;
+    UpdateVisuals();
 }
 
 BE_NAMESPACE_END

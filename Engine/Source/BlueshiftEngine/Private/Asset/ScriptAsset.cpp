@@ -23,8 +23,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Script", ScriptAsset, Asset)
 BEGIN_EVENTS(ScriptAsset)
 END_EVENTS
-BEGIN_PROPERTIES(ScriptAsset)
-END_PROPERTIES
+
+void ScriptAsset::RegisterProperties() {
+}
 
 ScriptAsset::ScriptAsset() {}
 

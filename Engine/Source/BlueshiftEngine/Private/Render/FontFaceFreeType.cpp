@@ -24,7 +24,7 @@
 // http://freetype.sourceforge.net/freetype2/docs/reference/ft2-base_interface.html
 
 BE_NAMESPACE_BEGIN
-    
+
 // NOTE: LCD 모드로 렌더링이 안되는 font 도 존재하기 때문에,
 // 나중에 RGBA 텍스쳐로 통합해서, 되는 폰트만 LCD 로 하는 편이 나을 수도 있겠다
 //#define LCD_MODE_RENDERING

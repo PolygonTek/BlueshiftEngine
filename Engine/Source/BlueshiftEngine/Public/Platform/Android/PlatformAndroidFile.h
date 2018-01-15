@@ -61,8 +61,8 @@ public:
     static bool             RemoveDirectoryTree(const char *dirname);
 
     static const char *     Cwd();
+    
     static const char *     ExecutablePath();
-    static const char *     HomePath();
 
     static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
 
@@ -96,7 +96,6 @@ public:
 
     static const char *     ExecutablePath();
     static void					SetExecutablePath(const Str &path);
-    static const char *     HomePath();
     
     static Str              ConvertToAndroidPath(const Str &filename, bool forWrite);
     static AAssetManager*	s_manager;

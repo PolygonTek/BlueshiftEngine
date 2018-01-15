@@ -112,6 +112,12 @@ public:
         lua_gc(_l, LUA_GCCOLLECT, 0);
     }
 
+    int GetGCKb() {
+        // Returns the current amount of memory (in Kbytes) in use by Lua.
+        int kb = lua_gc(_l, LUA_GCCOUNT, 0);
+        return kb;
+    }
+
     void EnterInteractiveMode() {
         luaL_dostring(_l, "debug.debug()");
     }

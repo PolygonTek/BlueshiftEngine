@@ -9,35 +9,60 @@ namespace detail {
     };
 
     template <>
-    struct is_primitive<int8_t> {
+    struct is_primitive<char> {
+        static constexpr bool value = true;
+    };
+    
+    template <>
+    struct is_primitive<signed char> {
         static constexpr bool value = true;
     };
 
     template <>
-    struct is_primitive<uint8_t> {
+    struct is_primitive<unsigned char> {
         static constexpr bool value = true;
     };
 
     template <>
-    struct is_primitive<int16_t> {
+    struct is_primitive<short> {
         static constexpr bool value = true;
     };
 
     template <>
-    struct is_primitive<uint16_t> {
+    struct is_primitive<unsigned short> {
         static constexpr bool value = true;
     };
 
     template <>
-    struct is_primitive<int32_t> {
+    struct is_primitive<int> {
         static constexpr bool value = true;
     };
 
     template <>
-    struct is_primitive<uint32_t> {
+    struct is_primitive<unsigned int> {
         static constexpr bool value = true;
     };
 
+    template <>
+    struct is_primitive<long> {
+        static constexpr bool value = true;
+    };
+
+    template <>
+    struct is_primitive<unsigned long> {
+        static constexpr bool value = true;
+    };
+
+    template <>
+    struct is_primitive<long long> {
+        static constexpr bool value = true;
+    };
+
+    template <>
+    struct is_primitive<unsigned long long> {
+        static constexpr bool value = true;
+    };
+    
     template <>
     struct is_primitive<bool> {
         static constexpr bool value = true;

@@ -22,8 +22,8 @@ BE_NAMESPACE_BEGIN
 class BE_API PlatformAppleProcess : public PlatformPosixProcess {
 public:
     static const wchar_t *      ExecutableFileName();
-    static const wchar_t *		ComputerName();
-    static const wchar_t *		UserName();
+    static const wchar_t *      ComputerName();
+    static const wchar_t *      UserName();
 };
 
 #ifndef USE_BASE_PLATFORM_APPLE_PROCESS

@@ -19,6 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 class Guid;
+class Object;
 
 class BE_API File {
     friend class FileSystem;
@@ -30,23 +31,23 @@ public:
         AppendMode
     };
     
-    virtual ~File() {}
+    virtual ~File() = 0;
 
-    virtual const char *    GetFilePath() const;
+    virtual const char *    GetFilePath() const = 0;
 
                             /// Returns size of a file
-    virtual size_t          Size() const;
+    virtual size_t          Size() const = 0;
                             /// Returns offset in file.
-    virtual int             Tell() const;
+    virtual int             Tell() const = 0;
                             /// Seek from the start on a file.
-    virtual int             Seek(long offset);
+    virtual int             Seek(int64_t offset) = 0;
                             /// Seek from the end on a file
-    virtual int             SeekFromEnd(long offset);
+    virtual int             SeekFromEnd(int64_t offset) = 0;
     
                             /// Read data from the file to the buffer.
-    virtual size_t          Read(void *buffer, size_t bytesToRead) const;
+    virtual size_t          Read(void *buffer, size_t bytesToRead) const = 0;
                             /// Write data from the buffer to the file.
-    virtual bool            Write(const void *buffer, size_t bytesToWrite);
+    virtual bool            Write(const void *buffer, size_t bytesToWrite) = 0;
                             /// Like fprintf
     virtual bool            Printf(const char *format, ...);
                             /// Like fprintf with wchar_t
@@ -64,6 +65,7 @@ public:
     size_t                  ReadDouble(double &value);
     size_t                  ReadString(Str &value);
     size_t                  ReadGuid(Guid &guid);
+    size_t                  ReadObject(Object &object);
 
     size_t                  WriteChar(const char value);
     size_t                  WriteUChar(const unsigned char value);
@@ -77,6 +79,7 @@ public:
     size_t                  WriteDouble(const double value);
     size_t                  WriteString(const char *value);
     size_t                  WriteGuid(const Guid &guid);
+    size_t                  WriteObject(const Object &object);
 };
 
 class BE_API FileReal : public File {
@@ -86,21 +89,21 @@ public:
     FileReal(const char *filename, PlatformFile *pf);
     virtual ~FileReal();
     
-    virtual const char *    GetFilePath() const { return filename; }
+    virtual const char *    GetFilePath() const override { return filename; }
     
                             /// Returns size of a file 
-    virtual size_t          Size() const;
+    virtual size_t          Size() const override;
                             /// Returns offset in file.
-    virtual int             Tell() const;
+    virtual int             Tell() const override;
                             /// Seek from the start on a file.
-    virtual int             Seek(long offset);
+    virtual int             Seek(int64_t offset) override;
                             /// Seek from the end on a file
-    virtual int             SeekFromEnd(long offset);
+    virtual int             SeekFromEnd(int64_t offset) override;
     
                             /// Read data from the file to the buffer.
-    virtual size_t          Read(void *buffer, size_t bytesToRead) const;
+    virtual size_t          Read(void *buffer, size_t bytesToRead) const override;
                             /// Write data from the buffer to the file.
-    virtual bool            Write(const void *buffer, size_t bytesToWrite);
+    virtual bool            Write(const void *buffer, size_t bytesToWrite) override;
     
 protected:
     char                    filename[MaxAbsolutePath];
@@ -115,20 +118,20 @@ public:
     FileInZip(const char *filename, void *pointer);
     virtual ~FileInZip();
     
-    virtual const char *    GetFilePath() const { return filename; }
+    virtual const char *    GetFilePath() const override { return filename; }
     
-    virtual size_t          Size() const;
+    virtual size_t          Size() const override;
                             /// Returns offset in file.
-    virtual int             Tell() const;
+    virtual int             Tell() const override;
                             /// Seek from the start on a file.
-    virtual int             Seek(long offset);
+    virtual int             Seek(int64_t offset) override;
                             /// Seek from the end on a file
-    virtual int             SeekFromEnd(long offset);
+    virtual int             SeekFromEnd(int64_t offset) override;
     
                             /// Read data from the file to the buffer.
-    virtual size_t          Read(void *buffer, size_t bytesToRead) const;
+    virtual size_t          Read(void *buffer, size_t bytesToRead) const override;
                             /// Write data from the buffer to the file.
-    virtual bool            Write(const void *buffer, size_t bytesToWrite);
+    virtual bool            Write(const void *buffer, size_t bytesToWrite) override;
     
 protected:
     char                    filename[MaxAbsolutePath];

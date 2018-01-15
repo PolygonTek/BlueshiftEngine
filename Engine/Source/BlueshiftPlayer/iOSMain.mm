@@ -1,11 +1,11 @@
 // Copyright(c) 2017 POLYGONTEK
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http ://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,174 +18,24 @@
 #include <sys/sysctl.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
+#include "iOSDevice.h"
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+#include "iOSAdMob.h"
+#endif
 
-#define SuppressPerformSelectorLeakWarning(Stuff) \
+#define SuppressPerformSelectorLeakWarning(stuff) \
     do { \
         _Pragma("clang diagnostic push") \
         _Pragma("clang diagnostic ignored \"-Warc-performSelector-leaks\"") \
-        Stuff; \
+        stuff; \
         _Pragma("clang diagnostic pop") \
     } while (0)
 
-enum IOSDevice {
-    IOS_IPhone4,
-    IOS_IPhone4S,
-    IOS_IPhone5, // also the iPhone5c
-    IOS_IPhone5S,
-    IOS_IPhone6,
-    IOS_IPhone6S,
-    IOS_IPhone7,
-    IOS_IPodTouch4,
-    IOS_IPodTouch5,
-    IOS_IPodTouch6,
-    IOS_IPad2,
-    IOS_IPadMini,
-    IOS_IPad3,
-    IOS_IPad4,
-    IOS_IPadAir, // also the IPad Mini Retina
-    IOS_IPadMini2,
-    IOS_IPadMini3,
-    IOS_IPadAir2,
-    IOS_IPadMini4,
-    IOS_IPadPro_9_7, // iPad Pro 9.7 inch
-    IOS_IPadPro_12_9, // iPad Pro 12.9 inch
-    IOS_IPadPro2_12_9,
-    IOS_IPadPro2_10_5,
-    IOS_Unknown,
-};
-
-static bool IsIPhone(IOSDevice deviceType) {
-    return deviceType >= IOS_IPhone4 && deviceType <= IOS_IPhone7;
-}
-
-static bool IsIPod(IOSDevice deviceType) {
-    return deviceType >= IOS_IPodTouch4 && deviceType <= IOS_IPodTouch6;
-}
-
-static bool IsIPad(IOSDevice deviceType) {
-    return deviceType >= IOS_IPad2 && deviceType <= IOS_IPadPro2_10_5;
-}
-
-static IOSDevice GetIOSDeviceType() {
-    // default to unknown
-    static IOSDevice deviceType = IOS_Unknown;
-    
-    // if we've already figured it out, return it
-    if (deviceType != IOS_Unknown) {
-        return deviceType;
-    }
-    
-    // get the device hardware type string length
-    size_t deviceIDLen;
-    sysctlbyname("hw.machine", NULL, &deviceIDLen, NULL, 0);
-    
-    // get the device hardware type
-    char *deviceID = (char *)malloc(deviceIDLen);
-    sysctlbyname("hw.machine", deviceID, &deviceIDLen, NULL, 0);
-    
-    // convert to NSString
-    NSString *deviceIDString = [NSString stringWithCString:deviceID encoding:NSUTF8StringEncoding];
-    free(deviceID);
-    
-    if ([deviceIDString hasPrefix:@"iPod"]) {
-        // get major revision number
-        int major = [deviceIDString characterAtIndex:4] - '0';
-        
-        if (major == 4) {
-            deviceType = IOS_IPodTouch4;
-        } else if (major == 5) {
-            deviceType = IOS_IPodTouch5;
-        } else if (major >= 7) {
-            deviceType = IOS_IPodTouch6;
-        }
-    } else if ([deviceIDString hasPrefix:@"iPad"]) {
-        // get major revision number
-        int major = [deviceIDString characterAtIndex:4] - '0';
-        int minor = [deviceIDString characterAtIndex:6] - '0';
-        
-        if (major == 2) {
-            if (minor >= 5) {
-                deviceType = IOS_IPadMini;
-            } else {
-                deviceType = IOS_IPad2;
-            }
-        } else if (major == 3) {
-            if (minor <= 3) {
-                deviceType = IOS_IPad3;
-            } else if (minor >= 4) {
-                deviceType = IOS_IPad4;
-            }
-        } else if (major == 4) {
-            if (minor >= 8) {
-                deviceType = IOS_IPadMini3;
-            } else if (minor >= 4) {
-                deviceType = IOS_IPadMini2;
-            } else {
-                deviceType = IOS_IPadAir;
-            }
-        } else if (major == 5) {
-            if (minor >= 3) {
-                deviceType = IOS_IPadAir2;
-            } else {
-                deviceType = IOS_IPadMini4;
-            }
-        } else if (major == 6) {
-            if (minor >= 7) {
-                deviceType = IOS_IPadPro_12_9;
-            } else {
-                deviceType = IOS_IPadPro_9_7;
-            }
-        } else if (major >= 7) { // Default to highest settings currently available for any future device
-            if (minor >= 3) {
-                deviceType = IOS_IPadPro2_10_5;
-            } else {
-                deviceType = IOS_IPadPro2_12_9;
-            }
-        }
-    } else if ([deviceIDString hasPrefix:@"iPhone"]) {
-        int major = [deviceIDString characterAtIndex:6] - '0';
-        
-        if (major == 3) {
-            deviceType = IOS_IPhone4;
-        } else if (major == 4) {
-            deviceType = IOS_IPhone4S;
-        } else if (major == 5) {
-            deviceType = IOS_IPhone5;
-        } else if (major == 6) {
-            deviceType = IOS_IPhone5S;
-        } else if (major == 7) {
-            deviceType = IOS_IPhone6;
-        } else if (major == 8) {
-            deviceType = IOS_IPhone6S;
-        } else if (major >= 9) {
-            deviceType = IOS_IPhone7;
-        }
-    } else if ([deviceIDString hasPrefix:@"x86"]) { // simulator
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
-            CGSize result = [[UIScreen mainScreen] bounds].size;
-            if (result.height >= 586) {
-                deviceType = IOS_IPhone5;
-            } else {
-                deviceType = IOS_IPhone4S;
-            }
-        } else {
-            if ([[UIScreen mainScreen] scale] > 1.0f) {
-                deviceType = IOS_IPad3;
-            } else {
-                deviceType = IOS_IPad2;
-            }
-        }
-    }
-    
-    // if this is unknown at this point, we have a problem
-    if (deviceType == IOS_Unknown) {
-        BE_ERRLOG(L"This IOS device type is not supported by UE4 [%s]\n", BE1::WStr(deviceIDString).c_str());
-    }
-    
-    return deviceType;
-}
-
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+@interface RootViewController : UIViewController<GADRewardBasedVideoAdDelegate> {
+#else
 @interface RootViewController : UIViewController {
+#endif
 }
 
 @property(nonatomic, weak) UIView *eaglView;
@@ -203,7 +53,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     
     int t = BE1::PlatformTime::Milliseconds();
     int elapsedMsec = t - t0;
-
+    
     BE1::Engine::RunFrame(elapsedMsec);
     
     BE1::gameClient.RunFrame();
@@ -234,14 +84,6 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 // Notifies that its view is about to be removed from a view hierarchy.
 - (void)viewWillDisappear:(BOOL)animated {
 }
-
-/*- (NSUInteger)supportedInterfaceOrientations {
-    return UIInterfaceOrientationMaskLandscape;
-}
-
-- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
-    return UIInterfaceOrientationLandscapeRight;
-}*/
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
@@ -274,7 +116,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, true, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, location.x, location.y, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::TouchBeganEvent, touchId, locationQword, 0, NULL);
-
+        
         touch = [enumerator nextObject];
     }
 }
@@ -288,10 +130,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         CGPoint location = [touch locationInView:_eaglView];
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
-
+        
         BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, location.x, location.y, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::TouchMovedEvent, touchId, locationQword, 0, NULL);
-
+        
         touch = [enumerator nextObject];
     }
 }
@@ -305,10 +147,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         CGPoint location = [touch locationInView:_eaglView];
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
-
+        
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::TouchEndedEvent, touchId, locationQword, 0, NULL);
-
+        
         touch = [enumerator nextObject];
     }
 }
@@ -324,10 +166,68 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, NULL);
         BE1::platform->QueEvent(BE1::Platform::TouchCanceledEvent, touchId, 0, 0, NULL);
-
+        
         touch = [enumerator nextObject];
     }
 }
+
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd
+   didRewardUserWithReward:(GADAdReward *)reward {
+    const char *rewardType = (const char *)[reward.type cStringUsingEncoding:NSUTF8StringEncoding];
+    int rewardAmount = [reward.amount intValue];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
+    if (function.IsFunction()) {
+       function(rewardType, rewardAmount);
+    }
+}
+
+- (void)rewardBasedVideoAdDidReceiveAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_receive_ad"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAdDidOpen:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_open"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAdDidStartPlaying:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_start_playing"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAdDidClose:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_close"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAdWillLeaveApplication:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["will_leave_application"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd
+    didFailToLoadWithError:(NSError *)error {
+    const char *errorDescription = (const char *)[error.description cStringUsingEncoding:NSUTF8StringEncoding];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
+    if (function.IsFunction()) {
+        function(errorDescription);
+    }
+}
+
+#endif
 
 @end // @implementation RootViewController
 
@@ -344,7 +244,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 @implementation AppDelegate
 
 - (void)initInstance {
-    IOSDevice deviceType = GetIOSDeviceType();
+    IOSDevice::Type deviceType = IOSDevice::GetIOSDeviceType();
+    if (deviceType == IOSDevice::IOS_Unknown) {
+        assert(0);
+    }
     
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
@@ -359,7 +262,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     // -------------------------------
     
     BE1::resourceGuidMapper.Read("Data/guidmap");
-        
+    
     // mainWindow(UIWindow) - rootViewController.view(UIView) - eaglView(EAGLView)
     CGRect screenBounds = [[UIScreen mainScreen] bounds];
     mainWindow = [[UIWindow alloc] initWithFrame:screenBounds];
@@ -369,45 +272,52 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     mainWindow.rootViewController = rootViewController;
     
     [mainWindow makeKeyAndVisible];
-
+    
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
-        
+    
     float retinaScale = [[UIScreen mainScreen] scale];
     int renderWidth = screenBounds.size.width * retinaScale;
     int renderHeight = screenBounds.size.height * retinaScale;
     
-    BE1::Vec2 screenScaleFactor;
-    if ((IsIPhone(deviceType) && deviceType >= IOS_IPhone6) ||
-        (IsIPod(deviceType) && deviceType >= IOS_IPodTouch6) ||
-        (IsIPad(deviceType) && deviceType >= IOS_IPadAir2)) {
-        screenScaleFactor.x = BE1::Min(1920.0f / renderWidth, 1.0f);
-        screenScaleFactor.y = BE1::Min(1080.0f / renderHeight, 1.0f);
-    } else {
-        //
-        screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
-        screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
+    BE1::Vec2 screenScaleFactor(1.0f, 1.0f);
+    int deviceWidth;
+    int deviceHeight;
+    if (IOSDevice::IsIPad(deviceType)) {
+        if (deviceType < IOSDevice::IOS_IPadAir2) {
+            screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
+            screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
+        } else {
+            screenScaleFactor.x = BE1::Min(2048.0f / renderWidth, 1.0f);
+            screenScaleFactor.y = BE1::Min(1536.0f / renderHeight, 1.0f);
+        }
     }
     renderWidth = renderWidth * screenScaleFactor.x;
     renderHeight = renderHeight * screenScaleFactor.y;
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
     app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[rootViewController view],
-                                 renderWidth, renderHeight, DisplayContext, NULL);    
+                                renderWidth, renderHeight, DisplayContext, NULL);
     
     app.Init();
     
-    //BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Append, L"exec \"autoexec.cfg\"\n");
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+    RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
+#endif
+    
+    app.LoadAppScript("Application");
+    
+    app.StartAppScript();
 }
 
 - (void)shutdownInstance {
     app.Shutdown();
-
+    
     app.mainRenderContext->Shutdown();
     
     BE1::renderSystem.FreeRenderContext(app.mainRenderContext);
     
     BE1::gameClient.Shutdown();
-        
+    
     BE1::Engine::Shutdown();
 }
 
@@ -462,3 +372,4 @@ int main(int argc, char *argv[]) {
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
     }
 }
+

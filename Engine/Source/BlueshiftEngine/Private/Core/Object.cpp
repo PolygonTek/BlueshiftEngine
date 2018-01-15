@@ -25,16 +25,14 @@ static MetaObject *             staticTypeList = nullptr;
 static Hierarchy<MetaObject>    classHierarchy;
 static int                      eventCallbackMemory = 0;
 
-MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname, 
-    Object *(*CreateInstance)(const Guid &guid), PropertySpec *pspecMap, EventInfo<Object> *eventMap) {
+MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname, Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap) {
     this->visualname            = visualname;
     this->classname             = classname;
     this->superclassname        = superclassname;
-    this->super                 = Object::GetMetaObject(superclassname);
+    this->super                 = Object::FindMetaObject(superclassname);
     this->hierarchyIndex        = 0;
     this->lastChildIndex        = 0;
     this->funcCreateInstance    = CreateInstance;
-    this->pspecMap              = pspecMap;
     this->eventMap              = eventMap;
     this->eventCallbacks        = nullptr;
     this->freeEventCallbacks    = false;
@@ -51,8 +49,12 @@ MetaObject::MetaObject(const char *visualname, const char *classname, const char
     // classname 을 알파벳 순서로 링크드리스트에 소팅하면서 insert
     MetaObject **insert;
     for (insert = &staticTypeList; *insert; insert = &(*insert)->next) {
-        assert(Str::Cmp(classname, (*insert)->classname) != 0);
-        if (Str::Cmp(classname, (*insert)->classname) < 0) {
+        int cmpResult = Str::Cmp(classname, (*insert)->classname);
+        
+        // classname conflicts
+        assert(cmpResult != 0);
+
+        if (cmpResult < 0) {
             next = *insert;
             *insert = this;
             break;
@@ -70,7 +72,7 @@ MetaObject::~MetaObject() {
 }
 
 bool MetaObject::IsRespondsTo(const EventDef &ev) const {
-    assert(Event::initialized);
+    assert(EventSystem::initialized);
     if (!eventCallbacks[ev.GetEventNum()]) {
         return false;
     }
@@ -96,13 +98,6 @@ void MetaObject::Init() {
     }
     
     node.SetOwner(this);
-
-    // property spec array 의 hash 를 작성
-    PropertySpec *pspec = pspecMap;
-    for (int i = 0; pspec->flags != PropertySpec::Empty; i++, pspec++) {
-        int hash = pspecHash.GenerateHash(pspec->name, false);
-        pspecHash.Add(hash, i);
-    }
 
     // 각 클래스별로 child 노드 개수를 lastChildIndex 에 담는다
     for (MetaObject *t = super; t != nullptr; t = t->super) {
@@ -168,43 +163,46 @@ void MetaObject::Shutdown() {
     lastChildIndex = 0;
 }
 
-const PropertySpec *MetaObject::FindPropertySpec(const char *name) const {
+bool MetaObject::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
     if (!name || !name[0]) {
-        return nullptr;
+        return false;
     }
 
-    int hash = pspecHash.GenerateHash(name, false);
+    int hash = propertyInfoHash.GenerateHash(name, false);
     
-    for (const MetaObject *t = this; t != nullptr; t = t->super) {	
-        for (int i = t->pspecHash.First(hash); i != -1; i = t->pspecHash.Next(i)) {
-            if (!Str::Icmp(t->pspecMap[i].name, name)) {
-                return &t->pspecMap[i];
+    for (const MetaObject *t = this; t != nullptr; t = t->super) {
+        for (int i = t->propertyInfoHash.First(hash); i != -1; i = t->propertyInfoHash.Next(i)) {
+            if (!Str::Icmp(t->propertyInfoList[i].GetName(), name)) {
+                propertyInfo = t->propertyInfoList[i];
+                return true;
             }
         }
     }
 
-    return nullptr;
+    return false;
 }
 
-void MetaObject::GetPropertySpecList(Array<const PropertySpec *> &pspecs) const {
+void MetaObject::GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const {
     Array<Str> names;
 
-    pspecs.Clear();
-
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
-        for (const PropertySpec *pspec = t->pspecMap; pspec->flags != PropertySpec::Empty; pspec++) {            
-            if (!names.Find(pspec->GetName())) {
-                names.Append(pspec->GetName());
-                pspecs.Append(pspec);
+        for (int index = 0; index < t->propertyInfoList.Count(); index++) {
+            const PropertyInfo &propInfo = t->propertyInfoList[index];
+            const char *propName = propInfo.GetName();
+
+            if (!names.Find(propName)) {
+                names.Append(propName);
+                propertyInfoList.Append(propInfo);
             }
         }
     }
 }
 
-void MetaObject::RegisterProperty(const PropertySpec &propertySpec) {
-    int index = pspecs.Append(propertySpec);
-    int hash = pspecHash.GenerateHash(propertySpec.GetName(), false);
-    pspecHash.Add(hash, index);
+PropertyInfo &MetaObject::RegisterProperty(const PropertyInfo &propInfo) {
+    int index = propertyInfoList.Append(propInfo);
+    int hash = propertyInfoHash.GenerateHash(propInfo.GetName(), false);
+    propertyInfoHash.Add(hash, index);
+    return propertyInfoList[index];
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -213,11 +211,6 @@ const EventDef EV_ImmediateDestroy("<immediatedestroy>");
 const EventDef EV_Destroy("destroy");
 
 ABSTRACT_DECLARATION("Object", Object, nullptr)
-
-BEGIN_PROPERTIES(Object)
-    PROPERTY_STRING("classname", "Classname", "", "", PropertySpec::ReadWrite | PropertySpec::Hidden),
-END_PROPERTIES
-
 BEGIN_EVENTS(Object)
     EVENT(EV_Destroy, Object::Event_Destroy),
     EVENT(EV_ImmediateDestroy, Object::Event_ImmediateDestroy),
@@ -228,6 +221,11 @@ Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
 static PlatformAtomic instanceCounter(0);
+
+void Object::RegisterProperties() {
+    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnlyFlag),
+    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadOnlyFlag);
+}
 
 void Object::InitInstance(Guid guid) {
     if (guid.IsZero()) {
@@ -241,14 +239,13 @@ void Object::InitInstance(Guid guid) {
 #if 1
     Object *sameGuidObject;
     if (instanceHash.Get(guid, &sameGuidObject)) {
-        BE_WARNLOG(L"Conflicts GUID (%hs) for object type '%hs'\n", guid.ToString(), sameGuidObject->ClassName());
+        BE_WARNLOG(L"Conflicts GUID (%hs) for object type '%hs'\n", guid.ToString(), sameGuidObject->ClassName().c_str());
         assert(0);
     }
 #endif
 
     this->guid = guid;
     this->instanceID = instanceCounter.GetValue();
-    this->props = new Properties(this);
 
     instanceCounter++;
 
@@ -257,7 +254,6 @@ void Object::InitInstance(Guid guid) {
 }
 
 Object::~Object() {
-    SAFE_DELETE(props);
 }
 
 void Object::Init() {
@@ -279,7 +275,7 @@ void Object::Init() {
 
     // number the types according to the class hierarchy so we can quickly determine if a class is a subclass of another
     num = 0;
-    for (MetaObject *t = classHierarchy.GetNext(); t != nullptr; t = t->node.GetNext(), num++)	{
+    for (MetaObject *t = classHierarchy.GetNext(); t != nullptr; t = t->node.GetNext(), num++) {
         t->hierarchyIndex = num;
         t->lastChildIndex += num;
     }
@@ -311,17 +307,21 @@ void Object::Shutdown() {
     initialized = false;
 }
 
-const char *Object::ClassName() const {
-    MetaObject *meta = GetMetaObject();
+Str Object::ClassName() const {
+    const MetaObject *meta = GetMetaObject();
     return meta->classname;
 }
 
-const char *Object::SuperClassName() const {
-    MetaObject *meta = GetMetaObject();
+void Object::SetClassName(const Str &classname) {
+    BE_ERRLOG(L"not allowed to call SetClassName()");
+}
+
+Str Object::SuperClassName() const {
+    const MetaObject *meta = GetMetaObject();
     return meta->superclassname;
 }
 
-MetaObject *Object::GetMetaObject(const char *name) {
+MetaObject *Object::FindMetaObject(const char *name) {
     if (!initialized) {
         // Object::Init hasn't been called yet, so do a slow lookup
         for (MetaObject *c = staticTypeList; c != nullptr; c = c->next) {
@@ -351,13 +351,13 @@ MetaObject *Object::GetMetaObject(const char *name) {
 }
 
 bool Object::IsRespondsTo(const EventDef &ev) const {
-    assert(Event::initialized);
+    assert(EventSystem::initialized);
     const MetaObject *meta = GetMetaObject();
     return meta->IsRespondsTo(ev);
 }
 
 Object *Object::CreateInstance(const char *name, const Guid &guid) {
-    const MetaObject *metaObject = Object::GetMetaObject(name);
+    const MetaObject *metaObject = Object::FindMetaObject(name);
     if (!metaObject) {
         return nullptr;
     }
@@ -383,19 +383,6 @@ Object *Object::FindInstance(const Guid &guid) {
     return instance;
 }
 
-const PropertySpec *Object::FindPropertySpec(const char *name) const {
-    Array<const PropertySpec *> pspecs;
-    GetPropertySpecList(pspecs);
-
-    for (int i = 0; i < pspecs.Count(); i++) {
-        if (!Str::Cmp(pspecs[i]->GetName(), name)) {
-            return pspecs[i];
-        }
-    }
-
-    return nullptr;
-}
-
 void Object::ListClasses(const CmdArgs &args) {
     BE_LOG(L"%-24hs %-24hs %-6hs %-6hs\n", "ClassName", "SuperClass", "Type", "SubClasses");
     BE_LOG(L"----------------------------------------------------------------------\n");
@@ -409,11 +396,11 @@ void Object::ListClasses(const CmdArgs &args) {
 }
 
 void Object::CancelEvents(const EventDef *evdef) {
-    Event::CancelEvents(this, evdef);
+    EventSystem::CancelEvents(this, evdef);
 }
 
 bool Object::PostEventArgs(const EventDef *evdef, int time, int numArgs, ...) {
-    if (!Event::initialized) {
+    if (!EventSystem::initialized) {
         return false;
     }
 
@@ -427,17 +414,17 @@ bool Object::PostEventArgs(const EventDef *evdef, int time, int numArgs, ...) {
     
     va_list args;
     va_start(args, numArgs);
-    Event *event = Event::Alloc(evdef, numArgs, args);
+    Event *event = EventSystem::AllocEvent(evdef, numArgs, args);
     va_end(args);
 
-    event->Schedule(this, time);
+    EventSystem::ScheduleEvent(event, this, time);
 
     return true;
 }
 
 bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
     assert(evdef);
-    assert(Event::initialized);
+    assert(EventSystem::initialized);
 
     MetaObject *meta = GetMetaObject();
     int num = evdef->GetEventNum();
@@ -446,12 +433,12 @@ bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
         return false;
     }
 
-    va_list args;
-    intptr_t argPtrs[EventArg::MaxArgs];
+    intptr_t argPtrs[EventDef::MaxArgs];
     
-    // Copy EventArgs to array of intptr_t
+    // Copy arguments to array of intptr_t
+    va_list args;
     va_start(args, numArgs);
-    Event::CopyArgPtrs(evdef, numArgs, args, argPtrs);
+    EventSystem::CopyArgPtrs(evdef, numArgs, args, argPtrs);
     va_end(args);
 
     ProcessEventArgPtr(evdef, argPtrs);
@@ -461,14 +448,14 @@ bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
 
 bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
     assert(evdef);
-    assert(Event::initialized);
-    assert(EventArg::MaxArgs == 8);
+    assert(EventSystem::initialized);
+    assert(EventDef::MaxArgs == 8);
 
     if (evdef == &EV_ImmediateDestroy) {
-        Event::CancelEvents(this);
+        EventSystem::CancelEvents(this);
     }
     
-    MetaObject *meta = GetMetaObject();
+    const MetaObject *meta = GetMetaObject();
     int num = evdef->GetEventNum();
     if (!meta->eventCallbacks[num]) {
         // we don't respond to this event, so ignore it

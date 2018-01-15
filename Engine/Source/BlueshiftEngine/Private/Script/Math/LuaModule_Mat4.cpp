@@ -25,12 +25,13 @@ void LuaVM::RegisterMat4(LuaCpp::Module &module) {
     _Mat4.AddClassCtor<Mat4, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float>();
     _Mat4.AddClassMembers<Mat4>(
         "at", static_cast<Vec4&(Mat4::*)(int)>(&Mat4::At), // index start from zero
+        "assign", static_cast<Mat4&(Mat4::*)(const Mat4&)>(&Mat4::operator=),
         "add", &Mat4::Add,
         "add_self", &Mat4::AddSelf,
         "sub", &Mat4::Sub,
         "sub_self", &Mat4::SubSelf,
-        "mul", &Mat4::Mul,
-        "mul_self", &Mat4::MulSelf,
+        "mul", static_cast<Mat4(Mat4::*)(const Mat4&)const>(&Mat4::Mul),
+        "mul_self", static_cast<Mat4&(Mat4::*)(const Mat4&)>(&Mat4::MulSelf),
         "mul_scalar", &Mat4::MulScalar,
         "mul_scalar_self", &Mat4::MulScalarSelf,
         "mul_vec4", static_cast<Vec4(Mat4::*)(const Vec4&)const>(&Mat4::MulVec),
@@ -74,7 +75,7 @@ void LuaVM::RegisterMat4(LuaCpp::Module &module) {
         "__unm", static_cast<Mat4(Mat4::*)(void)const>(&Mat4::operator-),
         "__add", &Mat4::Add,
         "__sub", &Mat4::Sub,
-        "__mul", &Mat4::Mul,
+        "__mul", static_cast<Mat4(Mat4::*)(const Mat4 &)const>(&Mat4::Mul),
         "__eq", static_cast<bool(Mat4::*)(const Mat4&)const>(&Mat4::operator==)
     );
     

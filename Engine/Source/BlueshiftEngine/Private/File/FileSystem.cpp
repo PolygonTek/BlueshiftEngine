@@ -16,6 +16,7 @@
 #include "Core/Heap.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
+#include "Platform/PlatformSystem.h"
 #include "Platform/PlatformProcess.h"
 #include "File/FileSystem.h"
 #include "minizip/zip.h"
@@ -644,7 +645,17 @@ File *FileSystem::OpenFileWrite(const char *filename) {
     
     PlatformFile *pf = PlatformFile::OpenFileWrite(filename);
     if (!pf) {
-        return nullptr;
+        if (PlatformFile::FileExists(filename)) {
+            int fileMode = PlatformFile::GetFileMode(filename);
+            if (!(fileMode & PlatformFile::Writable)) {
+                PlatformFile::SetFileMode(filename, fileMode | PlatformFile::Writable);
+                pf = PlatformFile::OpenFileWrite(filename);
+            }
+        }
+        
+        if (!pf) {
+            return nullptr;
+        }
     }
 
     FileReal *file = new FileReal(filename, pf);
@@ -909,6 +920,19 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
     return fileArray.NumFiles();
 }
 
+Str FileSystem::GetDocumentDir() const {
+    Str dir = PlatformSystem::UserDocumentDir();
+    return dir;
+}
+
+Str FileSystem::GetAppDataDir(const char *org, const char *app) const {
+    Str dir = PlatformSystem::UserAppDataDir();
+    dir.AppendPath(org);
+    dir.AppendPath(app);
+    CreateDirectory(dir, true);
+    return dir;
+}
+
 //--------------------------------------------------------------------------------------------------
 
 void FileSystem::Cmd_Dir(const CmdArgs &args) {
@@ -919,7 +943,7 @@ void FileSystem::Cmd_Dir(const CmdArgs &args) {
         return;
     }
 
-    char directory[1024];	
+    char directory[1024];
     Str::Copynz(directory, tombs(args.Argv(1)), COUNT_OF(directory));
 
     char nameFilter[256] = "";

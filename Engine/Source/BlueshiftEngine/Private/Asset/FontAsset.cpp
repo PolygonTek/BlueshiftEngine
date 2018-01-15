@@ -23,8 +23,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Font", FontAsset, Asset)
 BEGIN_EVENTS(FontAsset)
 END_EVENTS
-BEGIN_PROPERTIES(FontAsset)
-END_PROPERTIES
+
+void FontAsset::RegisterProperties() {
+}
 
 FontAsset::FontAsset() {}
 

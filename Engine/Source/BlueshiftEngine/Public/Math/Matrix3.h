@@ -108,6 +108,9 @@ public:
                         /// Transforms the given vector by the given matrix rhs.
     friend Vec3         operator*(const Vec3 &lhs, const Mat3 &rhs) { return rhs * lhs; }
 
+                        /// Assign from another matrix.
+    Mat3 &              operator=(const Mat3 &rhs);
+
                         /// Adds a matrix to this matrix, in-place.
     Mat3 &              AddSelf(const Mat3 &m) { *this += m; return *this; }
                         /// Adds a matrix to this matrix, in-place.
@@ -198,6 +201,10 @@ public:
                         /// Scales by the given factors, in-place
     Mat3                Scale(const Vec3 &scale) const;
 
+                        /// Returns scaling matrix
+    static Mat3         FromScale(float sx, float sy, float sz);
+    static Mat3         FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
+
     Mat4                ToMat4() const;
     Angles              ToAngles() const;
     Rotation            ToRotation() const;
@@ -207,6 +214,9 @@ public:
     const char *        ToString() const { return ToString(4); }
                         /// Returns "_00 _01 _02 _10 _11 _12 _20 _21 _22" with the given precisions.
     const char *        ToString(int precision) const;
+
+                        /// Creates from the string
+    static Mat3         FromString(const char *str);
 
                         /// Returns dimension of this type
     int                 GetDimension() const { return Rows * Cols; }
@@ -336,6 +346,22 @@ BE_INLINE Mat3 Mat3::operator*(float a) const {
         mat[0].x * a, mat[0].y * a, mat[0].z * a,
         mat[1].x * a, mat[1].y * a, mat[1].z * a,
         mat[2].x * a, mat[2].y * a, mat[2].z * a);
+}
+
+BE_INLINE Mat3 &Mat3::operator=(const Mat3 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[0][1];
+    mat[0][2] = rhs[0][2];
+
+    mat[1][0] = rhs[1][0];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[1][2];
+
+    mat[2][0] = rhs[2][0];
+    mat[2][1] = rhs[2][1];
+    mat[2][2] = rhs[2][2];
+
+    return *this;
 }
 
 BE_INLINE Mat3 &Mat3::operator+=(const Mat3 &a) {
@@ -513,6 +539,22 @@ BE_INLINE Mat3 &Mat3::TransposeSelf() {
     mat[2][1] = tmp2;
 
     return *this;
+}
+
+BE_INLINE Mat3 Mat3::FromScale(float sx, float sy, float sz) {
+    Mat3 m;
+    m.mat[0][0] = sx;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = 0;
+
+    m.mat[1][0] = 0;
+    m.mat[1][1] = sy;
+    m.mat[1][2] = 0;
+
+    m.mat[2][0] = 0;
+    m.mat[2][1] = 0;
+    m.mat[2][2] = sz;
+    return m;
 }
 
 BE_INLINE const char *Mat3::ToString(int precision) const {

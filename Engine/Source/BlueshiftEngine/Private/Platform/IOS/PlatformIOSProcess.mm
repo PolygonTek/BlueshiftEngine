@@ -13,7 +13,29 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Str.h"
+#include "Core/WStr.h"
+#include "Platform/PlatformProcess.h"
 
 BE_NAMESPACE_BEGIN
+
+const wchar_t *PlatformIOSProcess::ExecutableFileName() {
+    static wchar_t filename[512] = L"";
+    if (!filename[0]) {
+        NSString *executablePath = [[[NSBundle mainBundle] executablePath] lastPathComponent];
+        CFStringToWideString((__bridge CFStringRef)executablePath, filename);
+    }
+    return filename;
+}
+
+const wchar_t *PlatformIOSProcess::ComputerName() {
+    static wchar_t name[256] = L"";
+    if (!name[0]) {
+        char temp[COUNT_OF(name)];
+        gethostname(temp, COUNT_OF(name));
+        wcscpy(name, Str::ToWStr(temp).c_str());
+    }
+    return name;
+}
 
 BE_NAMESPACE_END

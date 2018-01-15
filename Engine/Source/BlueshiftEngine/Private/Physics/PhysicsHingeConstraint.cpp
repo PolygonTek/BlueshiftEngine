@@ -25,7 +25,7 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     btTransform frameA(btMatrix3x3(
         axisInA[0][0], axisInA[1][0], axisInA[2][0],
         axisInA[0][1], axisInA[1][1], axisInA[2][1],
-        axisInA[0][2], axisInA[1][2], axisInA[2][2]), btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z));
+        axisInA[0][2], axisInA[1][2], axisInA[2][2]), ToBtVector3(_anchorInA));
 
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), frameA);
     hingeConstraint->setUserConstraintPtr(this);
@@ -41,12 +41,12 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     btTransform frameA(btMatrix3x3(
         axisInA[0][0], axisInA[1][0], axisInA[2][0],
         axisInA[0][1], axisInA[1][1], axisInA[2][1],
-        axisInA[0][2], axisInA[1][2], axisInA[2][2]), btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z));
+        axisInA[0][2], axisInA[1][2], axisInA[2][2]), ToBtVector3(_anchorInA));
 
     btTransform frameB(btMatrix3x3(
         axisInB[0][0], axisInB[1][0], axisInB[2][0],
         axisInB[0][1], axisInB[1][1], axisInB[2][1],
-        axisInB[0][2], axisInB[1][2], axisInB[2][2]), btVector3(_anchorInB.x, _anchorInB.y, _anchorInB.z));
+        axisInB[0][2], axisInB[1][2], axisInB[2][2]), ToBtVector3(_anchorInB));
 
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB);
     hingeConstraint->setUserConstraintPtr(this);
@@ -60,7 +60,7 @@ void PhysHingeConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) 
     btTransform frameA(btMatrix3x3(
         axisInA[0][0], axisInA[1][0], axisInA[2][0],
         axisInA[0][1], axisInA[1][1], axisInA[2][1],
-        axisInA[0][2], axisInA[1][2], axisInA[2][2]), btVector3(_anchorInA.x, _anchorInA.y, _anchorInA.z));
+        axisInA[0][2], axisInA[1][2], axisInA[2][2]), ToBtVector3(_anchorInA));
 
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
     hingeConstraint->setFrames(frameA, hingeConstraint->getFrameOffsetB());
@@ -72,7 +72,7 @@ void PhysHingeConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) 
     btTransform frameB(btMatrix3x3(
         axisInB[0][0], axisInB[1][0], axisInB[2][0],
         axisInB[0][1], axisInB[1][1], axisInB[2][1],
-        axisInB[0][2], axisInB[1][2], axisInB[2][2]), btVector3(_anchorInB.x, _anchorInB.y, _anchorInB.z));
+        axisInB[0][2], axisInB[1][2], axisInB[2][2]), ToBtVector3(_anchorInB));
 
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
     hingeConstraint->setFrames(hingeConstraint->getFrameOffsetA(), frameB);

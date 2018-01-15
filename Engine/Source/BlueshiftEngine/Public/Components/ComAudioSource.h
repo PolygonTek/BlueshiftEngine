@@ -31,28 +31,31 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-    virtual void            Enable(bool enable) override;
-
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
     void                    Play();
     void                    Stop();
     bool                    IsPlaying() const;
 
-protected:
-    const Guid              GetAudioClip() const;
-    void                    SetAudioClip(const Guid &guid);
+    Guid                    GetAudioClipGuid() const;
+    void                    SetAudioClipGuid(const Guid &guid);
 
-    void                    PropertyChanged(const char *classname, const char *propName);
+protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    TransformUpdated(const ComTransform *transform);
 
     Sound *                 referenceSound;
     Sound *                 sound;
-    Str                     audioClipPath;
     bool                    playOnAwake;
     float                   minDistance;
     float                   maxDistance;

@@ -23,8 +23,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("JointMask", JointMaskAsset, Asset)
 BEGIN_EVENTS(JointMaskAsset)
 END_EVENTS
-BEGIN_PROPERTIES(JointMaskAsset)
-END_PROPERTIES
+
+void JointMaskAsset::RegisterProperties() {
+}
 
 JointMaskAsset::JointMaskAsset() {}
 

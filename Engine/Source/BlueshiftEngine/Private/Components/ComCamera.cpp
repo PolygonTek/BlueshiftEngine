@@ -20,57 +20,53 @@
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
 #include "Components/ComCamera.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Game/CastResult.h"
-#include "Game/GameSettings/TagLayerSettings.h"
+#include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
 
 OBJECT_DECLARATION("Camera", ComCamera, Component)
 BEGIN_EVENTS(ComCamera)
 END_EVENTS
-BEGIN_PROPERTIES(ComCamera)
-    PROPERTY_ENUM("projection", "Projection", "", "Perspective;Orthographic", "0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(1, 20000, 10), "10", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), "4096", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("fov", "Field Of View", "field of view", Rangef(1, 179, 1), "60", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("size", "Size", "", Rangef(1, 16384, 1), "1000", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("x", "X", "normalized screen x-coordinate", Rangef(0, 1.0f, 0.01f), "0.0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("y", "Y", "normalized screen y-coordinate", Rangef(0, 1.0f, 0.01f), "0.0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("w", "W", "normalized screen width", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("h", "H", "normalized screen height", Rangef(0, 1.0f, 0.01f), "1.0", PropertySpec::ReadWrite),
-    PROPERTY_INT("layerMask", "Layer Mask", "", Str(BIT(TagLayerSettings::DefaultLayer)), PropertySpec::ReadWrite),
-    PROPERTY_ENUM("clear", "Clear", "", "No Clear;Depth Only;Color;Skybox", "1", PropertySpec::ReadWrite),
-    PROPERTY_COLOR3("clearColor", "Clear Color", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", "0", PropertySpec::ReadWrite),
-    PROPERTY_INT("order", "Order", "", "0", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComCamera::RegisterProperties() {
-    //REGISTER_ENUM_ACCESSOR_PROPERTY("Projection", "Perspective;Orthographic", GetProjection, SetProjection, "0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Near", float, GetNear, SetNear, "10", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
-    //REGISTER_ACCESSOR_PROPERTY("Far", float, GetFar, SetFar, "8192", PropertySpec::ReadWrite).SetRange(1, 20000, 10);
-    //REGISTER_PROPERTY("FOV", float, fov, "60", PropertySpec::ReadWrite).SetRange(1, 179, 1);
-    //REGISTER_PROPERTY("Size", float, size, "1000", PropertySpec::ReadWrite).SetRange(1, 16384, 1);
-    //REGISTER_PROPERTY("X", float, nx, "0", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    //REGISTER_PROPERTY("Y", float, ny, "0", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    //REGISTER_PROPERTY("W", float, nw, "1", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    //REGISTER_PROPERTY("H", float, nh, "1", PropertySpec::ReadWrite).SetRange(0, 1.0f, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Layer Mask", int, GetLayerMask, SetLayerMask, Str(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), PropertySpec::ReadWrite);
-    //REGISTER_ENUM_ACCESSOR_PROPERTY("Clear", "No Clear;Depth Only;Color", GetClear, SetClear, "1", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Clear Color", Color3, GetClearColor, SetClearColor, "0 0 0", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Clear Alpha", float, GetClearAlpha, SetClearAlpha, "0", PropertySpec::ReadWrite);
-    //REGISTER_PROPERTY("Order", int, order, "0", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, "", PropertyInfo::EditorFlag)
+        .SetEnumString("Perspective;Orthographic");
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 10.f, "", PropertyInfo::EditorFlag)
+        .SetRange(1, 20000, 10);
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 8192.f, "", PropertyInfo::EditorFlag)
+        .SetRange(1, 20000, 10);
+    REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, "", PropertyInfo::EditorFlag)
+        .SetRange(1, 179, 1);
+    REGISTER_PROPERTY("size", "Size", float, size, 1000.f, "", PropertyInfo::EditorFlag)
+        .SetRange(1, 16384, 1);
+    REGISTER_PROPERTY("x", "X", float, nx, 0.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("y", "Y", float, ny, 0.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("w", "W", float, nw, 1.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1.0f, 0.01f);
+    REGISTER_PROPERTY("h", "H", float, nh, 1.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1.0f, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", SceneView::ClearMethod, GetClearMethod, SetClearMethod, 1, "", PropertyInfo::EditorFlag)
+        .SetEnumString("No Clear;Depth Only;Color;Skybox");
+    REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("order", "Order", int, order, 0, "", PropertyInfo::EditorFlag);
 }
 
 ComCamera::ComCamera() {
+    memset(&viewParms, 0, sizeof(viewParms));
+    view = nullptr;
+
     spriteHandle = -1;
     spriteMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
-    view = nullptr;
 
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCamera::PropertyChanged);
+    oldHoverEntityGuid = Guid::zero;
+    captureEntityGuid = Guid::zero;
 }
 
 ComCamera::~ComCamera() {
@@ -83,10 +79,10 @@ void ComCamera::Purge(bool chainPurge) {
         view = nullptr;
     }
 
-    for (int i = 0; i < sprite.customMaterials.Count(); i++) {
-        materialManager.ReleaseMaterial(sprite.customMaterials[i]);
+    for (int i = 0; i < sprite.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sprite.materials[i]);
     }
-    sprite.customMaterials.Clear();
+    sprite.materials.Clear();
 
     if (sprite.mesh) {
         meshManager.ReleaseMesh(sprite.mesh);
@@ -109,51 +105,25 @@ void ComCamera::Purge(bool chainPurge) {
 }
 
 void ComCamera::Init() {
-    Purge();
-
     Component::Init();
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    view = new SceneView;
-
-    memset(&viewParms, 0, sizeof(viewParms));
-
-    //
-    order = props->Get("order").As<int>();
-
-    nx = props->Get("x").As<float>();
-    ny = props->Get("y").As<float>();
-    nw = props->Get("w").As<float>();
-    nh = props->Get("h").As<float>();
-
-    viewParms.layerMask = props->Get("layerMask").As<int>();
+    if (!view) {
+        view = new SceneView;
+    }
 
     viewParms.flags = SceneView::Flag::TexturedMode | SceneView::Flag::NoSubViews;
     if (!(viewParms.layerMask & BIT(TagLayerSettings::DefaultLayer))) {
         viewParms.flags |= SceneView::Flag::NoShadows | SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess;
     }
-
-    viewParms.clearMethod = (SceneView::ClearMethod)props->Get("clear").As<int>();
-
-    viewParms.clearColor.ToColor3() = props->Get("clearColor").As<Color3>();
-    viewParms.clearColor.a = props->Get("clearAlpha").As<float>();
-
-    viewParms.zNear = props->Get("near").As<float>();
-    viewParms.zFar = props->Get("far").As<float>();
-
-    viewParms.orthogonal = props->Get("projection").As<int>() == 1 ? true : false;
-
-    fov = props->Get("fov").As<float>();
-        
-    size = props->Get("size").As<float>();
     
     ComTransform *transform = GetEntity()->GetTransform();
     
     viewParms.origin = transform->GetOrigin();
     viewParms.axis = transform->GetAxis();
 
-    // 3d sprite
+    // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
     memset(&sprite, 0, sizeof(sprite));
@@ -162,8 +132,8 @@ void ComCamera::Init() {
     sprite.billboard = true;
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
-    sprite.customMaterials.SetCount(1);
-    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.materials.SetCount(1);
+    sprite.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
     
     sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
@@ -180,21 +150,20 @@ void ComCamera::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
 
+    // Mark as initialized
+    SetInitialized(true);
+
     UpdateVisuals();
 }
 
-void ComCamera::Enable(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            UpdateVisuals();
-            Component::Enable(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            renderWorld->RemoveEntity(spriteHandle);
-            spriteHandle = -1;
-            Component::Enable(false);
-        }
+void ComCamera::OnActive() {
+    UpdateVisuals();
+}
+
+void ComCamera::OnInactive() {
+    if (spriteHandle != -1) {
+        renderWorld->RemoveEntity(spriteHandle);
+        spriteHandle = -1;
     }
 }
 
@@ -221,7 +190,7 @@ void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
         const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
         float w = ctx->GetRenderingWidth() * nw;
         float h = ctx->GetRenderingHeight() * nh;
-        float aspectRatio = 1;//w / h;
+        float aspectRatio = w / h;
 
         if (viewParms.orthogonal) {
             viewParms.sizeX = size;
@@ -269,7 +238,7 @@ void ComCamera::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
 
-    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
+    sprite.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComCamera::GetAABB() {
@@ -277,7 +246,7 @@ const AABB ComCamera::GetAABB() {
 }
 
 float ComCamera::GetAspectRatio() const {
-    const BE1::RenderContext *ctx = BE1::renderSystem.GetMainRenderContext();
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
 
     const int screenWidth = ctx->GetScreenWidth();
     const int screenHeight = ctx->GetScreenHeight();
@@ -286,7 +255,7 @@ float ComCamera::GetAspectRatio() const {
 }
 
 const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
-    const BE1::RenderContext *mainRenderContext = BE1::renderSystem.GetMainRenderContext();
+    const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
 
     const int screenWidth = mainRenderContext->GetScreenWidth();
     const int screenHeight = mainRenderContext->GetScreenHeight();
@@ -320,7 +289,7 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
 }
 
 const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
-    const BE1::RenderContext *mainRenderContext = BE1::renderSystem.GetMainRenderContext();
+    const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
 
     const int screenWidth = mainRenderContext->GetScreenWidth();
     const int screenHeight = mainRenderContext->GetScreenHeight();
@@ -348,47 +317,75 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
 }
 
 void ComCamera::ProcessPointerInput(const Point &screenPoint) {
+    Entity *oldHoverEntity = (Entity *)Entity::FindInstance(oldHoverEntityGuid);
+    Entity *hoverEntity = nullptr;
+
     Ray ray = ScreenToRay(screenPoint);
 
-    Entity *hitEntity = nullptr;
-    float minScale = MeterToUnit(100000);
-
-#if 1
     CastResultEx castResult;
-    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(minScale),
+    // FIXME: ray cast against corresponding layer entities
+    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(100000)),
         PhysCollidable::DefaultGroup, 
         PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::CharacterGroup, castResult)) {
         ComRigidBody *hitRigidBody = castResult.GetRigidBody();
         if (hitRigidBody) {
-            hitEntity = hitRigidBody->GetEntity();
+            hoverEntity = hitRigidBody->GetEntity();
         }
     }
-#else
-    for (Entity *ent = GetGameWorld()->GetEntityHierarchy().GetChild(); ent; ent = ent->GetNode().GetNext()) {
-        bool hasColliderComponent = ent->HasComponent(ComCollider::metaObject);
-        if (!hasColliderComponent) {
-            continue;
+
+    Entity *captureEntity = (Entity *)Entity::FindInstance(captureEntityGuid);
+
+    if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
+        if (captureEntity) {
+            ComponentPtrArray scriptComponents = captureEntity->GetComponents(&ComScript::metaObject);
+            for (int i = 0; i < scriptComponents.Count(); i++) {
+                ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+
+                scriptComponent->OnPointerUp();
+
+                if (hoverEntity == captureEntity) {
+                    scriptComponent->OnPointerClick();
+                }
+            }
         }
 
-        if (ent->RayIntersection(rayOrigin, rayDir, true, minScale)) {
-            hitEntity = ent;
-        }
+        captureEntityGuid = Guid::zero;
     }
-#endif
 
-    if (hitEntity) {
-        ComponentPtrArray scriptComponents = hitEntity->GetComponents(ComScript::metaObject);
+    if (oldHoverEntity) {
+        ComponentPtrArray scriptComponents = oldHoverEntity->GetComponents(&ComScript::metaObject);
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
+            if (oldHoverEntity == hoverEntity) {
+                scriptComponent->OnPointerOver();
+            } else {
+                scriptComponent->OnPointerExit();
+            }
+        }
+    }
+
+    if (hoverEntity) {
+        ComponentPtrArray scriptComponents = hoverEntity->GetComponents(&ComScript::metaObject);
+        for (int i = 0; i < scriptComponents.Count(); i++) {
+            ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+
+            if (hoverEntity != oldHoverEntity) {
+                scriptComponent->OnPointerEnter();
+            }
+
             if (inputSystem.IsKeyDown(KeyCode::Mouse1)) {
                 scriptComponent->OnPointerDown();
-            } else if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
-                scriptComponent->OnPointerUp();
+
+                captureEntityGuid = hoverEntity->GetGuid();
             } else if (inputSystem.IsKeyPressed(KeyCode::Mouse1)) {
                 scriptComponent->OnPointerDrag();
             }
         }
+
+        oldHoverEntityGuid = hoverEntity->GetGuid();
+    } else {
+        oldHoverEntityGuid = Guid::zero;
     }
 }
 
@@ -406,7 +403,7 @@ void ComCamera::RenderScene() {
     viewParms.renderRect.w = renderingWidth * nw;
     viewParms.renderRect.h = renderingHeight * nh;
 
-    // Get the aspect ratio from screen size (logical screen size)
+    // Get the aspect ratio from device screen size
     float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
 
     if (viewParms.orthogonal) {
@@ -426,6 +423,10 @@ void ComCamera::RenderScene() {
 }
 
 void ComCamera::UpdateVisuals() {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
+        return;
+    }
+
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddEntity(&sprite);
     } else {
@@ -442,126 +443,53 @@ void ComCamera::TransformUpdated(const ComTransform *transform) {
     UpdateVisuals();
 }
 
-void ComCamera::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "projection")) {
-        SetProjectionMethod(props->Get("projection").As<int>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "near")) {
-        SetNear(props->Get("near").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "far")) {
-        SetFar(props->Get("far").As<float>());
-        return;
-    }    
-
-    if (!Str::Cmp(propName, "fov")) {
-        fov = props->Get("fov").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "size")) {
-        size = props->Get("size").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "x")) {
-        nx = props->Get("x").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "y")) {
-        ny = props->Get("y").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "w")) {
-        nw = props->Get("w").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "h")) {
-        nh = props->Get("h").As<float>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "layerMask")) {
-        SetLayerMask(props->Get("layerMask").As<int>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "order")) {
-        order = props->Get("order").As<int>();
-        return;
-    }
-
-    if (!Str::Cmp(propName, "clear")) {
-        SetClearMethod((SceneView::ClearMethod)props->Get("clear").As<int>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "clearColor")) {
-        SetClearColor(props->Get("clearColor").As<Color3>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "clearAlpha")) {
-        SetClearAlpha(props->Get("clearAlpha").As<float>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
-}
-
-const int ComCamera::GetLayerMask() const {
+int ComCamera::GetLayerMask() const {
     return viewParms.layerMask;
 }
 
-void ComCamera::SetLayerMask(const int layerMask) {
+void ComCamera::SetLayerMask(int layerMask) {
     viewParms.layerMask = layerMask;
+
     UpdateVisuals();
 }
 
-const int ComCamera::GetProjectionMethod() const {
+int ComCamera::GetProjectionMethod() const {
     return viewParms.orthogonal ? 1 : 0;
 }
 
 void ComCamera::SetProjectionMethod(const int projectionMethod) {
     viewParms.orthogonal = projectionMethod == 1 ? true : false;
+
     UpdateVisuals();
 }
 
-const float ComCamera::GetNear() const {
-    return viewParms.clearColor.a;
+float ComCamera::GetNear() const {
+    return viewParms.zNear;
 }
 
-void ComCamera::SetNear(const float zNear) {
+void ComCamera::SetNear(float zNear) {
     viewParms.zNear = zNear;
+
     UpdateVisuals();
 }
 
-const float ComCamera::GetFar() const {
-    return viewParms.clearColor.a;
+float ComCamera::GetFar() const {
+    return viewParms.zFar;
 }
 
-void ComCamera::SetFar(const float zFar) {
+void ComCamera::SetFar(float zFar) {
     viewParms.zFar = zFar;
+
     UpdateVisuals();
 }
 
-const int ComCamera::GetClearMethod() const {
+SceneView::ClearMethod ComCamera::GetClearMethod() const {
     return viewParms.clearMethod;
 }
 
-void ComCamera::SetClearMethod(const int clearMethod) {
-    viewParms.clearMethod = (SceneView::ClearMethod)clearMethod;
+void ComCamera::SetClearMethod(SceneView::ClearMethod clearMethod) {
+    viewParms.clearMethod = clearMethod;
+
     UpdateVisuals();
 }
 
@@ -571,15 +499,17 @@ const Color3 &ComCamera::GetClearColor() const {
 
 void ComCamera::SetClearColor(const Color3 &clearColor) {
     viewParms.clearColor.ToColor3() = clearColor;
+
     UpdateVisuals();
 }
 
-const float ComCamera::GetClearAlpha() const {
+float ComCamera::GetClearAlpha() const {
     return viewParms.clearColor.a;
 }
 
 void ComCamera::SetClearAlpha(const float clearAlpha) {
     viewParms.clearColor.a = clearAlpha;
+
     UpdateVisuals();
 }
 

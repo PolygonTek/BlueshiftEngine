@@ -40,6 +40,7 @@ void LuaVM::RegisterVec2(LuaCpp::Module &module) {
         "div_comp", &Vec2::DivComp,
         "div_comp_self", &Vec2::DivCompSelf,
         "equals", static_cast<bool(Vec2::*)(const Vec2&, const float)const>(&Vec2::Equals),
+        "assign", static_cast<Vec2&(Vec2::*)(const Vec2&)>(&Vec2::operator=),
         "set", &Vec2::Set,
         "set_from_scalar", &Vec2::SetFromScalar,
         "length", &Vec2::Length,

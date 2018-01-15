@@ -13,45 +13,38 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformTime.h"
+#include "File/FileSystem.h"
 #include "Render/Render.h"
 #include "Physics/Collider.h"
 #include "Physics/Physics.h"
 #include "Input/InputSystem.h"
 #include "Sound/SoundSystem.h"
 #include "AnimController/AnimController.h"
-#include "Components/Component.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
-#include "Components/ComRigidBody.h"
-#include "Components/ComSensor.h"
 #include "Game/Entity.h"
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
-#include "Game/GameSettings/TagLayerSettings.h"
-#include "Game/GameSettings/PhysicsSettings.h"
-#include "Containers/StaticArray.h"
-#include "File/FileSystem.h"
+#include "Game/GameSettings.h"
+#include "Script/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
 
 const EventDef EV_RestartGame("restartGame", false, "s");
 
-const SignalDef GameWorld::SIG_EntityRegistered("entityRegistered", "a");
-const SignalDef GameWorld::SIG_EntityUnregistered("entityUnregistered", "a");
+const SignalDef GameWorld::SIG_EntityRegistered("GameWorld::EntityRegistered", "a");
+const SignalDef GameWorld::SIG_EntityUnregistered("GameWorld::EntityUnregistered", "a");
 
 OBJECT_DECLARATION("Game World", GameWorld, Object)
 BEGIN_EVENTS(GameWorld)
     EVENT(EV_RestartGame, GameWorld::Event_RestartGame),
 END_EVENTS
-BEGIN_PROPERTIES(GameWorld)
-END_PROPERTIES
+
+void GameWorld::RegisterProperties() {
+}
 
 GameWorld::GameWorld() {
     memset(entities, 0, sizeof(entities));
-
-    tagLayerSettings = nullptr;
-    physicsSettings = nullptr;
 
     // Create render settings
     mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
@@ -67,19 +60,13 @@ GameWorld::GameWorld() {
 
     timeScale = 1.0f;
 
+    luaVM.Init();
+
     Reset();
 }
 
 GameWorld::~GameWorld() {
     ClearAllEntities();
-
-    if (tagLayerSettings) {
-        TagLayerSettings::DestroyInstanceImmediate(tagLayerSettings);
-    }
-
-    if (physicsSettings) {
-        PhysicsSettings::DestroyInstanceImmediate(physicsSettings);
-    }
 
     if (mapRenderSettings) {
         MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
@@ -90,6 +77,8 @@ GameWorld::~GameWorld() {
 
     // Free physics world
     physicsSystem.FreePhysicsWorld(physicsWorld);
+
+    luaVM.Shutdown();
 }
 
 void GameWorld::Reset() {
@@ -108,32 +97,33 @@ int GameWorld::GetDeltaTime() const {
 }
 
 void GameWorld::ClearAllEntities() {
-    // list entities in depth first order
+    // List up all of the destructable entities in depth first order
     EntityPtrArray entityList;
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         entityList.Append(ent);
     }
 
-    // delete entities in reverse depth first order
+    // Delete entities in reverse depth first order
     for (int i = entityList.Count() - 1; i >= 0; i--) {
-        Entity::DestroyInstanceImmediate(entityList[i]);
+        Entity *ent = entityList[i];
+
+        int entityNum = ent->entityNum;
+
+        ent->node.RemoveFromHierarchy();
+
+        Entity::DestroyInstanceImmediate(ent);
+
+        entities[entityNum] = nullptr;
     }
 
-    memset(entities, 0, sizeof(entities));
+    firstFreeIndex = 16; // TEMP
+
+    entityHash.Free();
+    entityTagHash.Free();
 
     physicsWorld->ClearScene();
 
     renderWorld->ClearScene();
-
-    firstFreeIndex = 16; // TEMP
-    
-    entityHash.Free();
-    entityTagHash.Free();
-
-    entityHierarchy.RemoveFromHierarchy();
-
-    memset(spawnIds, -1, sizeof(spawnIds));
-    spawnCount = 0;
 }
 
 Entity *GameWorld::FindEntity(const char *name) const {
@@ -230,12 +220,6 @@ void GameWorld::OnEntityTagChanged(Entity *ent) {
     entityHash.Add(tagHash, ent->entityNum);
 }
 
-int GameWorld::GetEntitySpawnId(const Entity *ent) {
-    assert(ent);
-    assert(ent->entityNum >= 0 && ent->entityNum < MaxEntities);
-    return spawnIds[ent->entityNum];
-}
-
 bool GameWorld::IsRegisteredEntity(const Entity *ent) const {
     return ent->entityNum == BadEntityNum ? false : true;
 }
@@ -264,17 +248,8 @@ void GameWorld::RegisterEntity(Entity *ent, int spawn_entnum) {
     entityTagHash.Add(tagHash, spawn_entnum);
 
     entities[spawn_entnum] = ent;
-    spawnIds[spawn_entnum] = spawnCount++; // spawn ID 는 따로 관리
 
     ent->entityNum = spawn_entnum;
-
-    Guid parentGuid = ent->props->Get("parent").As<Guid>();
-    Entity *parent = FindEntityByGuid(parentGuid);
-    if (parent) {
-        ent->node.SetParent(parent->node);
-    } else {
-        ent->node.SetParent(entityHierarchy);
-    }
     
     if (gameStarted && !isMapLoading) {
         ent->Awake();
@@ -304,70 +279,54 @@ void GameWorld::UnregisterEntity(Entity *ent) {
     int index = ent->entityNum;
     ent->entityNum = BadEntityNum;
     entities[index] = nullptr;
-    spawnIds[index] = -1;
 
     EmitSignal(&SIG_EntityUnregistered, ent);
 }
 
 Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
-    EntityPtrArray originalEntities;
+    // Serialize source entity and it's children
+    Json::Value originalEntitiesValue;
+    BE1::Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
 
-    // Get the original entity and all of his children
-    originalEntities.Append(const_cast<Entity *>(originalEntity));
-    originalEntity->GetChildren(originalEntities);
-
+    // Clone entities value which is replaced by new GUIDs
     HashTable<Guid, Guid> guidMap;
+    Json::Value clonedEntitiesValue = Entity::CloneEntitiesValue(originalEntitiesValue, guidMap);
+
     EntityPtrArray clonedEntities;
 
-    int numEntities = originalEntities.Count();
-
-    for (int i = 0; i < numEntities; i++) {
-        Json::Value originalEntityValue;
-        originalEntities[i]->Serialize(originalEntityValue);
-        
-        Json::Value clonedEntityValue = Entity::CloneEntityValue(originalEntityValue, guidMap);
-
-        Entity *clonedEntity = Entity::CreateEntity(clonedEntityValue);
+    for (int i = 0; i < clonedEntitiesValue.size(); i++) {
+        // Create cloned entity
+        Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this);
         clonedEntities.Append(clonedEntity);
-    }
 
-    // Remap GUIDs for the cloned entities
-    Entity::RemapGuids(clonedEntities, guidMap);
+        // Remap all GUID references to newly created
+        Entity::RemapGuids(clonedEntity, guidMap);
 
-    // Initialize & register cloned entities
-    for (int i = 0; i < numEntities; i++) {
-        const Entity *originalEntity = originalEntities[i];
-        Entity *clonedEntity = clonedEntities[i];
-
-        clonedEntity->gameWorld = this;
-
-        // if the originalEntity is a prefab parent
-        if (originalEntity->IsPrefabParent()) {
-            clonedEntity->props->Set("prefabParent", originalEntity->GetGuid());
-            clonedEntity->props->Set("isPrefabParent", false);
+        // If source entity is prefab source, mark cloned entity originated from prefab entity
+        if (originalEntitiesValue[i]["prefab"].asBool()) {
+            clonedEntity->SetProperty("prefabSource", Guid::FromString(originalEntitiesValue[i]["guid"].asCString()));
+            clonedEntity->SetProperty("prefab", false);
         }
 
-        clonedEntity->InitHierarchy();
         clonedEntity->Init();
+        clonedEntity->InitComponents();
     }
 
     return clonedEntities[0];
 }
 
-Entity *GameWorld::CreateEntity(const char *name) {
+Entity *GameWorld::CreateEmptyEntity(const char *name) {
     Json::Value value;
     value["name"] = name;
 
-    value["components"][0]["classname"] = BE1::ComTransform::metaObject.ClassName();
-    value["components"][0]["origin"] = BE1::Vec3::zero.ToString();
-    value["components"][0]["angles"] = BE1::Angles::zero.ToString();
+    value["components"][0]["classname"] = ComTransform::metaObject.ClassName();
+    value["components"][0]["origin"] = Vec3::zero.ToString();
+    value["components"][0]["angles"] = Angles::zero.ToString();
 
-    Entity *entity = Entity::CreateEntity(value);
+    Entity *entity = Entity::CreateEntity(value, this);
 
-    entity->gameWorld = this;
-
-    entity->InitHierarchy();
     entity->Init();
+    entity->InitComponents();
 
     RegisterEntity(entity);
 
@@ -393,7 +352,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
     Entity *clonedEntity = CloneEntity(originalEntity);
     
     ComTransform *transform = clonedEntity->GetTransform();
-    transform->SetLocalTransform(origin, Vec3::one, angles.ToMat3());
+    transform->SetLocalTransform(origin, angles.ToMat3(), Vec3::one);
 
     RegisterEntity(clonedEntity);
 
@@ -416,11 +375,9 @@ bool GameWorld::SpawnEntityFromJson(Json::Value &entityValue, Entity **ent) {
 
     int spawn_entnum = entityValue.get("spawn_entnum", -1).asInt();
 
-    Entity *entity = Entity::CreateEntity(entityValue);
-    entity->gameWorld = this;
-
-    entity->InitHierarchy();
+    Entity *entity = Entity::CreateEntity(entityValue, this);
     entity->Init();
+    entity->InitComponents();
 
     RegisterEntity(entity, spawn_entnum);
 
@@ -447,8 +404,6 @@ void GameWorld::SpawnEntitiesFromJson(Json::Value &entitiesValue) {
 
 void GameWorld::BeginMapLoading() {
     isMapLoading = true;
-
-    Reset();
 }
 
 void GameWorld::FinishMapLoading() {
@@ -482,16 +437,28 @@ void GameWorld::StartGame() {
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Start();
     }
+
+    physicsWorld->Connect(&PhysicsWorld::SIG_PreStep, this, (SignalCallback)&GameWorld::FixedUpdateEntities);
+    physicsWorld->Connect(&PhysicsWorld::SIG_PostStep, this, (SignalCallback)&GameWorld::FixedLateUpdateEntities);
 }
 
-void GameWorld::StopGame() {
+void GameWorld::StopGame(bool stopAllSounds) {
     gameStarted = false;
 
-    soundSystem.StopAllSounds();
+    if (stopAllSounds) {
+        soundSystem.StopAllSounds();
+    }
+
+    physicsWorld->Disconnect(&PhysicsWorld::SIG_PreStep, this);
+    physicsWorld->Disconnect(&PhysicsWorld::SIG_PostStep, this);
 }
 
 void GameWorld::RestartGame(const char *mapName) {
     PostEvent(&EV_RestartGame, mapName);
+}
+
+void GameWorld::StopAllSounds() {
+    soundSystem.StopAllSounds();
 }
 
 void GameWorld::Event_RestartGame(const char *mapName) {
@@ -502,128 +469,19 @@ void GameWorld::Event_RestartGame(const char *mapName) {
     StartGame();
 }
 
-void GameWorld::LoadSettings() {
-    if (tagLayerSettings) {
-        TagLayerSettings::DestroyInstanceImmediate(tagLayerSettings);
-        tagLayerSettings = nullptr;
-    }
-
-    if (physicsSettings) {
-        PhysicsSettings::DestroyInstanceImmediate(physicsSettings);
-        physicsSettings = nullptr;
-    }
-
-    // Load all project settings
-    LoadTagLayerSettings("ProjectSettings/tagLayer.settings");
-    //LoadInputSettings("ProjectSettings/input.settings");
-    LoadPhysicsSettings("ProjectSettings/physics.settings");
-    //LoadRendererSettings("ProjectSettings/renderer.settings");
-}
-
-void GameWorld::LoadTagLayerSettings(const char *filename) {
-    Json::Value jsonNode;
-    Json::Reader jsonReader;
-    bool failedToParse = false;
-
-    char *text = nullptr;
-    fileSystem.LoadFile(filename, true, (void **)&text);
-    if (text) {
-        if (!jsonReader.parse(text, jsonNode)) {
-            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
-            failedToParse = true;
-        }
-
-        fileSystem.FreeFile(text);
-    } else {
-        failedToParse = true;
-    }
-
-    if (failedToParse) {
-        jsonNode["classname"] = TagLayerSettings::metaObject.ClassName();
-
-        // default tags
-        jsonNode["tag"][0] = "Untagged";
-        jsonNode["tag"][1] = "MainCamera";
-        jsonNode["tag"][2] = "Player";
-
-        // default layers
-        jsonNode["layer"][0] = "Default";
-        jsonNode["layer"][1] = "UI";
-        jsonNode["layer"][2] = "Editor";
-    }
-
-    const char *classname = jsonNode["classname"].asCString();
-
-    if (!Str::Cmp(classname, TagLayerSettings::metaObject.ClassName())) {
-        tagLayerSettings = static_cast<TagLayerSettings *>(TagLayerSettings::metaObject.CreateInstance());
-        tagLayerSettings->props->Init(jsonNode);
-        tagLayerSettings->SetGameWorld(this);
-        tagLayerSettings->Init();
-    } else {
-        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-    }
-}
-
-void GameWorld::LoadPhysicsSettings(const char *filename) {
-    Json::Value jsonNode;
-    Json::Reader jsonReader;
-    bool failedToParse = false;
-
-    char *text = nullptr;
-    fileSystem.LoadFile(filename, true, (void **)&text);
-    if (text) {
-        if (!jsonReader.parse(text, jsonNode)) {
-            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
-            failedToParse = true;
-        }
-
-        fileSystem.FreeFile(text);
-    } else {
-        failedToParse = true;
-    }
-
-    if (failedToParse) {
-        jsonNode["classname"] = PhysicsSettings::metaObject.ClassName();
-    }
-
-    const char *classname = jsonNode["classname"].asCString();
-
-    if (!Str::Cmp(classname, PhysicsSettings::metaObject.ClassName())) {
-        physicsSettings = static_cast<PhysicsSettings *>(PhysicsSettings::metaObject.CreateInstance());
-        physicsSettings->props->Init(jsonNode);
-        physicsSettings->SetGameWorld(this);
-        physicsSettings->Init();
-    } else {
-        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-    }
-}
-
-void GameWorld::SaveSettings() {
-    SaveObject("ProjectSettings/tagLayer.settings", tagLayerSettings);
-    SaveObject("ProjectSettings/physics.settings", physicsSettings);
-}
-
-void GameWorld::SaveObject(const char *filename, const Object *object) const {
-    Json::Value jsonNode;
-    object->props->Serialize(jsonNode);
-
-    Json::StyledWriter jsonWriter;
-    Str jsonText = jsonWriter.write(jsonNode).c_str();
-
-    fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
-}
-
 void GameWorld::NewMap() {
     Json::Value defaultMapRenderSettingsValue;
     defaultMapRenderSettingsValue["classname"] = MapRenderSettings::metaObject.ClassName();
 
-    mapRenderSettings->props->Init(defaultMapRenderSettingsValue);
+    mapRenderSettings->Deserialize(defaultMapRenderSettingsValue);
 
     Reset();
 }
 
 bool GameWorld::LoadMap(const char *filename) {
     BE_LOG(L"Loading map '%hs'...\n", filename);
+
+    Reset();
 
     BeginMapLoading();
 
@@ -648,7 +506,7 @@ bool GameWorld::LoadMap(const char *filename) {
     int mapVersion = map["version"].asInt();
 
     // Read map render settings
-    mapRenderSettings->props->Init(map["renderSettings"]);
+    mapRenderSettings->Deserialize(map["renderSettings"]);
     mapRenderSettings->Init();
 
     // Read entities
@@ -659,19 +517,6 @@ bool GameWorld::LoadMap(const char *filename) {
     FinishMapLoading();
 
     return true;
-}
-
-void GameWorld::SerializeEntityHierarchy(const Hierarchy<Entity> &entityHierarchy, Json::Value &entitiesValue) {
-    Json::Value entityValue;
-
-    Entity *ent = entityHierarchy.Owner();
-    ent->Serialize(entityValue);
-
-    entitiesValue.append(entityValue);
-
-    for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), entitiesValue);
-    }
 }
 
 void GameWorld::SaveMap(const char *filename) {
@@ -687,7 +532,7 @@ void GameWorld::SaveMap(const char *filename) {
 
     // Write entities
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), map["entities"]);
+        Entity::SerializeHierarchy(child, map["entities"]);
     }
 
     Json::StyledWriter jsonWriter;
@@ -707,15 +552,36 @@ void GameWorld::Update(int elapsedTime) {
         physicsWorld->StepSimulation(scaledElapsedTime);
 
         UpdateEntities();
+
+        LateUpdateEntities();
+
+        luaVM.State().ForceGC();
+    }
+}
+
+void GameWorld::FixedUpdateEntities(float timeStep) {
+    // Call fixed update function for each entities in depth-first order
+    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
+        ent->FixedUpdate(timeStep * timeScale);
+    }
+}
+
+void GameWorld::FixedLateUpdateEntities(float timeStep) {
+    // Call fixed post-update function for each entities in depth-first order
+    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
+        ent->FixedLateUpdate(timeStep * timeScale);
     }
 }
 
 void GameWorld::UpdateEntities() {
-    // depth-first order  
+    // Call update function for each entities in depth-first order
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Update();
     }
+}
 
+void GameWorld::LateUpdateEntities() {
+    // Call post-update function for each entities in depth-first order
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->LateUpdate();
     }
@@ -732,7 +598,7 @@ void GameWorld::ProcessPointerInput() {
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ComCamera *camera = ent->GetComponent<ComCamera>();
-        if (!camera) {
+        if (!camera || !camera->IsActiveInHierarchy()) {
             continue;
         }
 
@@ -740,15 +606,15 @@ void GameWorld::ProcessPointerInput() {
     }
 }
 
-BE1::Entity *GameWorld::RayIntersection(const BE1::Vec3 &start, const BE1::Vec3 &dir, const BE1::Array<BE1::Entity *> &excludingArray, float *scale) const {
-    BE1::Entity *minEntity = nullptr;
+Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, const Array<Entity *> &excludingArray, float *scale) const {
+    Entity *minEntity = nullptr;
 
     float minScale = FLT_MAX;
     if (scale) {
         *scale = minScale;
     }
 
-    for (BE1::Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
+    for (Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
         if (excludingArray.Find(ent)) {
             continue;
         }
@@ -769,7 +635,7 @@ void GameWorld::RenderCamera() {
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ComCamera *camera = ent->GetComponent<ComCamera>();
-        if (!camera) {
+        if (!camera || !camera->IsActiveInHierarchy()) {
             continue;
         }
 
@@ -794,16 +660,18 @@ void GameWorld::SaveSnapshot() {
     mapRenderSettings->Serialize(snapshotValues["renderSettings"]);
 
     for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        GameWorld::SerializeEntityHierarchy(child->GetNode(), snapshotValues["entities"]);
+        Entity::SerializeHierarchy(child, snapshotValues["entities"]);
     }
 
     //BE_LOG(L"%i entities snapshot saved\n", snapshotValues["entities"].size());
 }
 
 void GameWorld::RestoreSnapshot() {
+    Reset();
+
     BeginMapLoading();
 
-    mapRenderSettings->props->Init(snapshotValues["renderSettings"]);
+    mapRenderSettings->Deserialize(snapshotValues["renderSettings"]);
     mapRenderSettings->Init();
 
     SpawnEntitiesFromJson(snapshotValues["entities"]);

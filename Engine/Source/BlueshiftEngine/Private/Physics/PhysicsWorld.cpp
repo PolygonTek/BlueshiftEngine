@@ -13,20 +13,27 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Signal.h"
 #include "Physics/Physics.h"
 #include "Physics/Collider.h"
 #include "ColliderInternal.h"
 #include "PhysicsInternal.h"
 
 BE_NAMESPACE_BEGIN
-    
+
+const SignalDef PhysicsWorld::SIG_PreStep("PhysicsWorld::PreStep", "f");
+const SignalDef PhysicsWorld::SIG_PostStep("PhysicsWorld::PostStep", "f");
+
 //#define USE_MLCP_SOLVER
 
-static const int MAX_SUBSTEPS   = 10;
+static const int MAX_SUBSTEPS = 16;
+
+static void PreTickCallback(btDynamicsWorld *world, btScalar timeStep) {
+    static_cast<PhysicsWorld *>(world->getWorldUserInfo())->PreStep(timeStep);
+}
 
 static void PostTickCallback(btDynamicsWorld *world, btScalar timeStep) {
-    PhysicsWorld *pw = static_cast<PhysicsWorld *>(world->getWorldUserInfo());
-    pw->ProcessPostTickCallback(timeStep);
+    static_cast<PhysicsWorld *>(world->getWorldUserInfo())->PostStep(timeStep);
 }
 
 class CollisionFilterCallback : public btOverlapFilterCallback {
@@ -41,7 +48,15 @@ public:
 
         const PhysicsWorld *pw = userColObj0->physicsWorld;
 
-        return !!(pw->GetCollisionFilterMask(userColObj0->customFilterIndex) & BIT(userColObj1->customFilterIndex));
+        if (pw->GetCollisionFilterMask(userColObj0->customFilterIndex) & BIT(userColObj1->customFilterIndex)) {
+            return true;
+        }
+
+        /*if (pw->GetCollisionFilterMask(userColObj1->customFilterIndex) & BIT(userColObj0->customFilterIndex)) {
+            return true;
+        }*/
+
+        return false;
     }
 };
 
@@ -80,11 +95,12 @@ PhysicsWorld::PhysicsWorld() {
     dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; // for direct solver it is better to have a small A matrix 
 #endif
     
-    // the polyhedral contact clipping can use either GJK or SAT test to find the separating axis	
+    // the polyhedral contact clipping can use either GJK or SAT test to find the separating axis
     //dynamicsWorld->getDispatchInfo().m_enableSatConvex = false;
 
     // NOTE: Bullet will clear all forces after the post-tick call
-    dynamicsWorld->setInternalTickCallback(PostTickCallback, static_cast<void *>(this));
+    dynamicsWorld->setInternalTickCallback(PreTickCallback, static_cast<void *>(this), true);
+    dynamicsWorld->setInternalTickCallback(PostTickCallback, static_cast<void *>(this), false);
 
     ghostPairCallback = new btGhostPairCallback();
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(ghostPairCallback);
@@ -92,12 +108,19 @@ PhysicsWorld::PhysicsWorld() {
     filterCallback = new CollisionFilterCallback();
     dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
 
+    //dynamicsWorld->getSolverInfo().m_numIterations = 10;
+    dynamicsWorld->getSolverInfo().m_splitImpulse = false;
+    //dynamicsWorld->setSynchronizeAllMotionStates(true);
+
     dynamicsWorld->setDebugDrawer(&physicsDebugDraw);
 
     memset(filterMasks, 0xFFFFFFFF, sizeof(filterMasks));
 
     timeDelta = 0;
     time = 0;
+
+    frameRate = 50;
+    maximumAllowedTimeStep = 1.0f / 5;
 
     SetGravity(Vec3(0, 0, 0));
 }
@@ -117,7 +140,7 @@ PhysicsWorld::~PhysicsWorld() {
 void PhysicsWorld::ClearScene() {
     // cleanup in the reverse order of creation/initialization
     for (int i = dynamicsWorld->getNumConstraints() - 1; i >= 0; i--) {
-        btTypedConstraint *constraint = dynamicsWorld->getConstraint(i);	
+        btTypedConstraint *constraint = dynamicsWorld->getConstraint(i);
         PhysConstraint *userConstraint = (PhysConstraint *)constraint->getUserConstraintPtr();
 
         userConstraint->RemoveFromWorld();
@@ -148,22 +171,23 @@ void PhysicsWorld::StepSimulation(int frameTime) {
 
     timeDelta += frameTime * 0.001f;
 
-    const float h = 1.0f / physics_frameRate.GetFloat();
+    const float h = 1.0f / frameRate;
 
 #if 0
     int steps = Math::Floor(timeDelta / h);
     if (steps > 0) {
         int maxSubSteps = Min(steps, MAX_SUBSTEPS);
         float timeStep = steps * h;
+        int maxSubSteps = Math::Ceil(frameRate * maximumAllowedTimeStep);
 
         dynamicsWorld->stepSimulation(timeStep, maxSubSteps, h);
-    
+
         timeDelta -= timeStep;
     }
 #else
     int steps = Math::Ceil(timeDelta / h);
-    int maxSubSteps = Max(1, Min(steps, MAX_SUBSTEPS));
-    
+    int maxSubSteps = Max(1, (int)Math::Ceil(frameRate * maximumAllowedTimeStep));
+
     // The btDiscreteDynamicsWorld is guaranteed to call setWorldTransform() once per substep 
     // for every btRigidBody that : has a MotionState AND is active AND is not KINEMATIC or STATIC.
 
@@ -190,7 +214,7 @@ void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
         return;
     }
 
-    dynamicsWorld->setGravity(btVector3(gravityAcceleration.x, gravityAcceleration.y, gravityAcceleration.z));
+    dynamicsWorld->setGravity(ToBtVector3(gravityAcceleration));
 }
 
 uint32_t PhysicsWorld::GetCollisionFilterMask(int index) const {
@@ -230,7 +254,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
         const Vec3 centroid = collider->GetCentroid();
     
         shapeTransform.setIdentity();
-        shapeTransform.setOrigin(btVector3(centroid.x, centroid.y, centroid.z));
+        shapeTransform.setOrigin(ToBtVector3(centroid));
     }
 
     if (!shape->isConvex()) {
@@ -432,13 +456,13 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
     Quat q = axis.ToQuat();
 
     btTransform fromTrans;
-    fromTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
-    fromTrans.setOrigin(btVector3(origin.x, origin.y, origin.z));
+    fromTrans.setRotation(ToBtQuaternion(q));
+    fromTrans.setOrigin(ToBtVector3(origin));
     fromTrans.mult(shapeTransform, fromTrans);
 
     btTransform toTrans;
-    toTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));	
-    toTrans.setOrigin(btVector3(dest.x, dest.y, dest.z));
+    toTrans.setRotation(ToBtQuaternion(q));
+    toTrans.setOrigin(ToBtVector3(dest));
     toTrans.mult(shapeTransform, toTrans);
 
     MyClosestConvexResultCallback cb(me, fromTrans.getOrigin(), toTrans.getOrigin());
@@ -486,9 +510,19 @@ void PhysicsWorld::DebugDraw() {
     dynamicsWorld->debugDrawWorld();
 }
 
-void PhysicsWorld::ProcessPostTickCallback(float timeStep) {
+void PhysicsWorld::PreStep(float timeStep) {
+    EmitSignal(&SIG_PreStep, timeStep);
+}
+
+void PhysicsWorld::PostStep(float timeStep) {
     time += timeStep;
 
+    ProcessCollision();
+
+    EmitSignal(&SIG_PostStep, timeStep);
+}
+
+void PhysicsWorld::ProcessCollision() {
     int numManifolds = dynamicsWorld->getDispatcher()->getNumManifolds();
     for (int i = 0; i < numManifolds; i++) {
         btPersistentManifold *contactManifold = dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
@@ -503,6 +537,10 @@ void PhysicsWorld::ProcessPostTickCallback(float timeStep) {
 
             //const short colMaskA = a->GetCollisionFilterMask();
             //const short colMaskB = b->GetCollisionFilterMask();
+
+            /*if (!(GetCollisionFilterMask(a->customFilterIndex) & BIT(b->customFilterIndex))) {
+                continue;
+            }*/
 
             PhysCollisionPair pair = PhysCollisionPair(a, b);
 

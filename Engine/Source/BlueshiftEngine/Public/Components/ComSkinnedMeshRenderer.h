@@ -14,55 +14,41 @@
 
 #pragma once
 
-#include "Animator/Animator.h"
 #include "ComMeshRenderer.h"
 
 BE_NAMESPACE_BEGIN
 
-class AnimControllerAsset;
 class SkeletonAsset;
 class AnimAsset;
 class Anim;
 
 class ComSkinnedMeshRenderer : public ComMeshRenderer {
 public:
-    enum AnimationType {
-        AnimationControllerType,
-        SimpleAnimationType
-    };
-
     OBJECT_PROTOTYPE(ComSkinnedMeshRenderer);
 
     ComSkinnedMeshRenderer();
     virtual ~ComSkinnedMeshRenderer();
 
+                            /// Returns true if this component conflicts with the given component
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const override;
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
     void                    UpdateAnimation(int time);
 
-    Vec3                    GetTranslation(int currentTime) const;
+    Guid                    GetSkeletonGuid() const;
+    void                    SetSkeletonGuid(const Guid &skeletonGuid);
 
-    Vec3                    GetTranslationDelta(int fromTime, int toTime) const;
+    Guid                    GetAnimGuid() const;
+    void                    SetAnimGuid(const Guid &animGuid);
 
-    Mat3                    GetRotationDelta(int fromTime, int toTime) const;
-
-    void                    SetAnimParameter(const char *parm, float value);
-
-    const char *            GetCurrentAnimState(int layerNum) const;
-
-    void                    ResetAnimState();
-
-    void                    TransitAnimState(int layerNum, const char *stateName, int blendOffset, int blendDuration, bool isAtomic);
-
-    Animator &              GetAnimator() { return animator; }
-
-    const Anim *            GetAnim() const { return anim; }
+    Anim *                  GetAnim() const { return anim; }
 
     int                     GetPlayStartTime() const { return playStartTime; }
 
@@ -71,58 +57,25 @@ protected:
 
     virtual void            MeshUpdated() override;
 
-    void                    ChangeAnimationType();
-
-    void                    ChangeAnimController();
-    void                    AnimControllerReloaded();
-
-    void                    ChangeAnim();
+    void                    ChangeAnim(const Guid &animGuid);
     void                    AnimReloaded();
 
-    void                    ChangeSkeleton();
+    void                    ChangeSkeleton(const Guid &skeletonGuid);
     void                    SkeletonReloaded();
-
-    void                    PropertyChanged(const char *classname, const char *propName);
-    
-    AnimationType           animationType;
-
-    Animator                animator;
-    AnimControllerAsset *   animControllerAsset;
 
     Skeleton *              skeleton;
     SkeletonAsset *         skeletonAsset;
     
     Anim *                  anim;
     AnimAsset *             animAsset;
+    Guid                    animGuid;
 
-    BE1::Array<int>         jointIndexes;
-    BE1::Array<int>         jointParents;
+    Array<int>              jointIndexes;
+    Array<int>              jointParents;
     Mat3x4 *                jointMats;
-    BE1::Array<AABB>        frameAABBs;
+    Array<AABB>             frameAABBs;
 
     int                     playStartTime;
 };
-
-BE_INLINE Vec3 ComSkinnedMeshRenderer::GetTranslation(int currentTime) const { 
-    Vec3 translation = Vec3::zero;
-    animator.GetTranslation(currentTime, translation); 
-    return translation;
-}
-
-BE_INLINE Vec3 ComSkinnedMeshRenderer::GetTranslationDelta(int fromTime, int toTime) const { 
-    Vec3 delta = Vec3::zero;
-    animator.GetTranslationDelta(fromTime, toTime, delta); 
-    return delta;
-}
-
-BE_INLINE Mat3 ComSkinnedMeshRenderer::GetRotationDelta(int fromTime, int toTime) const { 
-    Mat3 delta = Mat3::identity;
-    animator.GetRotationDelta(fromTime, toTime, delta); 
-    return delta;
-}
-
-BE_INLINE void ComSkinnedMeshRenderer::SetAnimParameter(const char *parm, float value) {
-    animator.SetParameterValue(parm, value);
-}
 
 BE_NAMESPACE_END

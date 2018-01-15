@@ -45,7 +45,7 @@ public:
     static bool             SupportsCompressedGenMipmaps() { return true; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
     
-    static void             APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
+    static void APIENTRY    DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
     static void             PolygonMode(GLenum face, GLenum mode) { gglPolygonMode(face, mode); }
     static void             ClearDepth(GLdouble depth) { gglClearDepth(depth); }

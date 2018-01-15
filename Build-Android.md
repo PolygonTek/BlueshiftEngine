@@ -4,11 +4,11 @@
 ### Prerequisite
 
   * Android part of [README.md](README.md)
-  * [NVIDIA CodeWorks for Android](https://developer.nvidia.com/rdp/assets/codeworksforandroid-1r6-windows) (NVIDIA developer account required)
+  * Visual Studio 2017/Tools/Options/Cross Platform/C++/Android/Android NDK: /C:\ProgramData\Microsoft\AndroidNDK64\android-ndk-r13b
 
 ### Instruction (only for C++ debugging)
 
-  1. Open `Engine\Project\Android\AndroidPlayer.sln`
+  1. Open `Engine\Project\NativeAndroid\NativeAndroid.sln`
 
-  2. Build with target `Debug Tegra-Android`
+  2. Build with target `Debug ARM`
 

@@ -241,6 +241,38 @@ bool PlatformWinFile::MoveFile(const char *from, const char *to) {
     return !!MoveFileA(normalizedFrom, normalizedTo);
 }
 
+int PlatformWinFile::GetFileMode(const char *filename) {
+    struct _stat fileInfo;
+    if (_stat(NormalizeFilename(filename), &fileInfo) != 0) {
+        return -1;
+    }
+    int fileMode = 0;
+    if (fileInfo.st_mode & _S_IREAD) {
+        fileMode |= Readable;
+    }
+    if (fileInfo.st_mode & _S_IWRITE) {
+        fileMode |= Writable;
+    }
+    if (fileInfo.st_mode & _S_IEXEC) {
+        fileMode |= Executable;
+    }
+    return fileMode;
+}
+
+void PlatformWinFile::SetFileMode(const char *filename, int fileMode) {
+    int mode = 0;
+    if (fileMode & Readable) {
+        mode |= _S_IREAD;
+    }
+    if (fileMode & Writable) {
+        mode |= _S_IWRITE;
+    }
+    if (fileMode & Executable) {
+        mode |= _S_IEXEC;
+    }
+    _chmod(NormalizeFilename(filename), mode);
+}
+
 DateTime PlatformWinFile::GetTimeStamp(const char *filename) {
     static const DateTime epoch(1970, 1, 1);
     struct _stat fileInfo;
@@ -382,22 +414,6 @@ const char *PlatformWinFile::ExecutablePath() {
             break;
         }
     }
-    return path;
-}
-
-const char *PlatformWinFile::HomePath() {
-    static char path[1024] = "";
-    
-    const char *userProfile = getenv("USERPROFILE");
-    if (userProfile) {
-        strcpy(path, userProfile);
-    } else {
-        const char *homeDrive = getenv("HOMEDRIVE");
-        const char *homePath = getenv("HOMEPATH");
-        strcpy(path, homeDrive);
-        strcat(path, homePath);
-    }
-    
     return path;
 }
 

@@ -25,6 +25,7 @@ class btGhostPairCallback;
 struct btOverlapFilterCallback;
 class btDiscreteDynamicsWorld;
 
+#include "Core/SignalObject.h"
 #include "Containers/HashTable.h"
 #include "PhysicsCollidable.h"
 #include "PhysicsCollisionListener.h"
@@ -68,7 +69,7 @@ struct PhysConstraintDesc {
     float                   breakImpulse;
 };
 
-class PhysicsWorld {
+class PhysicsWorld : public SignalObject {
     friend class PhysicsSystem;
     friend class PhysCollidable;
     friend class PhysConstraint;
@@ -81,6 +82,18 @@ public:
     void                    ClearScene();
     void                    StepSimulation(int frameTime);
 
+                            /// Returns fixed frame rate in physics simulation
+    int                     GetFrameRate() const { return frameRate; }
+
+                            /// Sets fixed frame rate in physics simulation
+    void                    SetFrameRate(int frameRate) { this->frameRate = frameRate; }
+
+                            /// Returns maximum allowed time step
+    float                   GetMaximumAllowedTimeStep() const { return maximumAllowedTimeStep; }
+
+                            /// Set maximum allowed time step
+    void                    SetMaximumAllowedTimeStep(float maximumAllowedTimeStep) { this->maximumAllowedTimeStep = maximumAllowedTimeStep; }
+
     const Vec3              GetGravity() const;
     void                    SetGravity(const Vec3 &gravityAcceleration);
 
@@ -91,11 +104,16 @@ public:
     bool                    RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, Array<CastResult> &traceList) const;
     bool                    ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const;
 
-    void                    ProcessPostTickCallback(float timeStep);
+    void                    PreStep(float timeStep);
+    void                    PostStep(float timeStep);
 
     void                    DebugDraw();
 
+    static const SignalDef  SIG_PreStep;
+    static const SignalDef  SIG_PostStep;
+
 private:
+    void                    ProcessCollision();
     bool                    ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, CastResult &trace) const;
     bool                    AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, Array<CastResult> &traceList) const;
     bool                    ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, CastResult &trace) const;
@@ -103,6 +121,8 @@ private:
 
     float                   time;
     float                   timeDelta;
+    int                     frameRate;
+    float                   maximumAllowedTimeStep;
     uint32_t                filterMasks[32];
     btDefaultCollisionConfiguration *collisionConfiguration;
     btCollisionDispatcher *  collisionDispatcher;

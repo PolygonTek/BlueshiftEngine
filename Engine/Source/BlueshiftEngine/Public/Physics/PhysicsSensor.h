@@ -21,8 +21,6 @@ class btPairCachingGhostObject;
 
 BE_NAMESPACE_BEGIN
 
-class Vec3;
-
 class PhysSensor : public PhysCollidable {
     friend class PhysicsSystem;
 

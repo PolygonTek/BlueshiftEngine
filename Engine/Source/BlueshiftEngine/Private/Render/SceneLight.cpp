@@ -42,10 +42,10 @@ SceneLight::~SceneLight() {
 void SceneLight::Update(const SceneLight::Parms *renderLight) {
     this->parms = *renderLight;
 
-    Clamp(parms.materialParms[SceneEntity::RedParm], 0.0f, 1.0f);
-    Clamp(parms.materialParms[SceneEntity::GreenParm], 0.0f, 1.0f);
-    Clamp(parms.materialParms[SceneEntity::BlueParm], 0.0f, 1.0f);
-    Clamp(parms.materialParms[SceneEntity::AlphaParm], 0.0f, 1.0f);
+    BE1::Clamp(parms.materialParms[SceneEntity::RedParm], 0.0f, 1.0f);
+    BE1::Clamp(parms.materialParms[SceneEntity::GreenParm], 0.0f, 1.0f);
+    BE1::Clamp(parms.materialParms[SceneEntity::BlueParm], 0.0f, 1.0f);
+    BE1::Clamp(parms.materialParms[SceneEntity::AlphaParm], 0.0f, 1.0f);
 
     // 라이트 타입 별 처리
     if (parms.type == PointLight) {
@@ -138,12 +138,12 @@ static bool DirLight_ShadowBVFromCaster(const SceneLight *light, const OBB &cast
         return false;
     }
 
-    b1[0].x = Max(b1[0].x, b2[0].x);
-    b1[0].y = Max(b1[0].y, b2[0].y);
-    b1[0].z = Max(b1[0].z, b2[0].z);
+    b1[0].x = BE1::Max(b1[0].x, b2[0].x);
+    b1[0].y = BE1::Max(b1[0].y, b2[0].y);
+    b1[0].z = BE1::Max(b1[0].z, b2[0].z);
     b1[1].x = b2[1].x; // light maximum x
-    b1[1].y = Min(b1[1].y, b2[1].y);
-    b1[1].z = Min(b1[1].z, b2[1].z);
+    b1[1].y = BE1::Min(b1[1].y, b2[1].y);
+    b1[1].z = BE1::Min(b1[1].z, b2[1].z);
 
     shadowOBB = OBB(b1, Vec3::origin, light->parms.axis);
     return true;

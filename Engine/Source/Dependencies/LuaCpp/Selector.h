@@ -99,42 +99,42 @@ public:
     // Set the element to a int8_t value
     void operator=(int8_t i) const {
         _evaluate_store([this, i]() {
-            detail::_push(_l, i);
+            detail::_push(_l, (int)i);
         });
     }
 
     // Set the element to a uint8_t value
     void operator=(uint8_t i) const {
         _evaluate_store([this, i]() {
-            detail::_push(_l, i);
+            detail::_push(_l, (unsigned int)i);
         });
     }
 
     // Set the element to a int16_t value
     void operator=(int16_t i) const {
         _evaluate_store([this, i]() {
-            detail::_push(_l, i);
+            detail::_push(_l, (int)i);
         });
     }
 
     // Set the element to a uint16_t value
     void operator=(uint16_t i) const {
         _evaluate_store([this, i]() {
-            detail::_push(_l, i);
+            detail::_push(_l, (unsigned int)i);
         });
     }
 
     // Set the element to a int32_t value
     void operator=(int32_t i) const {
         _evaluate_store([this, i]() {
-            detail::_push(_l, i);
+            detail::_push(_l, (int)i);
         });
     }
 
     // Set the element to a uint32_t value
     void operator=(uint32_t i) const {
         _evaluate_store([this, i]() {
-            detail::_push(_l, i);
+            detail::_push(_l, (unsigned int)i);
         });
     }
 

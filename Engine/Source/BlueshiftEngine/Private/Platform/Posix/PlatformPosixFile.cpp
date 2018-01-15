@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "File/FileSystem.h"
 #include "Platform/PlatformFile.h"
 #include <unistd.h>
 #include <sys/stat.h>
@@ -43,7 +44,7 @@ int PlatformPosixFile::Size() const {
         return -1;
     }
 
-    return fileInfo.st_size;
+    return (int)fileInfo.st_size;
 }
 
 int PlatformPosixFile::Seek(long offset, Origin origin) {
@@ -109,8 +110,13 @@ bool PlatformPosixFile::Write(const void *buffer, size_t bytesToWrite) {
 //-------------------------------------------------------------------------------------------
 
 Str PlatformPosixFile::NormalizeFilename(const char *filename) {
-    Str normalizedFilename(basePath);
-    normalizedFilename.AppendPath(filename);
+    Str normalizedFilename;
+    if (FileSystem::IsAbsolutePath(filename)) {
+        normalizedFilename = filename;
+    } else {
+        normalizedFilename = basePath;
+        normalizedFilename.AppendPath(filename);
+    }
     normalizedFilename.CleanPath('/');
     //normalizedFilename.BackSlashesToSlashes();
 
@@ -118,8 +124,13 @@ Str PlatformPosixFile::NormalizeFilename(const char *filename) {
 }
 
 Str PlatformPosixFile::NormalizeDirectoryName(const char *dirname) {
-    Str normalizedDirname(basePath);
-    normalizedDirname.AppendPath(dirname);
+    Str normalizedDirname;
+    if (FileSystem::IsAbsolutePath(dirname)) {
+        normalizedDirname = dirname;
+    } else {
+        normalizedDirname = basePath;
+        normalizedDirname.AppendPath(dirname);
+    }
     normalizedDirname.CleanPath('/');
     //normalizedDirname.BackSlashesToSlashes();
 
@@ -242,11 +253,31 @@ int PlatformPosixFile::GetFileMode(const char *filename) {
     if (stat(NormalizeFilename(filename), &fileInfo) != 0) {
         return -1;
     }
-    return fileInfo.st_mode;
+    int fileMode = 0;
+    if (fileInfo.st_mode & S_IRUSR) {
+    	fileMode |= Readable;
+    }
+    if (fileInfo.st_mode & S_IWUSR) {
+    	fileMode |= Writable;
+    }
+    if (fileInfo.st_mode & S_IXUSR) {
+    	fileMode |= Executable;
+    }
+    return fileMode;
 }
 
-int PlatformPosixFile::SetFileMode(const char *filename, int mode) {
-    return chmod(NormalizeFilename(filename), mode);
+void PlatformPosixFile::SetFileMode(const char *filename, int fileMode) {
+	int mode = 0;
+    if (fileMode & Readable) {
+        mode |= S_IRUSR;
+    }
+    if (fileMode & Writable) {
+        mode |= S_IWUSR;
+    }
+    if (fileMode & Executable) {
+        mode |= S_IXUSR;
+    }
+    chmod(NormalizeFilename(filename), mode);
 }
 
 DateTime PlatformPosixFile::GetTimeStamp(const char *filename) {
@@ -326,20 +357,6 @@ bool PlatformPosixFile::SetCwd(const char *dirname) {
 
 const char *PlatformPosixFile::ExecutablePath() {
     return Cwd();
-}
-
-const char *PlatformPosixFile::HomePath() {
-    static char path[1024] = "";
-    
-    struct passwd *pwd = getpwuid(getuid());
-    if (pwd) {
-        strcpy(path, pwd->pw_dir);
-    } else {
-        // try the $HOME environment variable
-        strcpy(path, getenv("HOME"));
-    }
-
-    return path;
 }
 
 static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {

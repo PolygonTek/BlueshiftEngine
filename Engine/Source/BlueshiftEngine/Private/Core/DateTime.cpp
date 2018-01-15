@@ -126,7 +126,7 @@ DateTime DateTime::Now() {
     int32_t dayOfWeek;
     Time time;
     
-    BE1::PlatformTime::LocalTime(date.year, date.month, dayOfWeek, date.day, time.hour, time.minute, time.second, time.millisecond);
+    PlatformTime::LocalTime(date.year, date.month, dayOfWeek, date.day, time.hour, time.minute, time.second, time.millisecond);
     
     return DateTime(date.year, date.month, date.day, time.hour, time.minute, time.second, time.millisecond);
 }
@@ -136,7 +136,7 @@ DateTime DateTime::UtcNow() {
     int32_t dayOfWeek;
     Time time;
     
-    BE1::PlatformTime::UtcTime(date.year, date.month, dayOfWeek, date.day, time.hour, time.minute, time.second, time.millisecond);
+    PlatformTime::UtcTime(date.year, date.month, dayOfWeek, date.day, time.hour, time.minute, time.second, time.millisecond);
     
     return DateTime(date.year, date.month, date.day, time.hour, time.minute, time.second, time.millisecond);
 }

@@ -18,18 +18,23 @@
 #include "File/FileSystem.h"
 #include "File/File.h"
 #include "Core/CVars.h"
+#include "Core/Cmds.h"
 
 extern int luaopen_file(lua_State *L);
+extern "C" int luaopen_socket_core(lua_State *L);
 
 BE_NAMESPACE_BEGIN
 
-LuaCpp::State *     LuaVM::state = nullptr;
-const GameWorld *   LuaVM::gameWorld = nullptr;
+static CVar lua_server(L"lua_server", L"127.0.0.1", CVar::Archive, L"lua server for debugging");
 
 void LuaVM::Init() {
+    if (state) {
+        Shutdown();
+    }
+
     state = new LuaCpp::State(true);
 
-    BE_LOG(L"Lua version %.1f\n", state->Version());
+    //BE_LOG(L"Lua version %.1f\n", state->Version());
 
     state->HandleExceptionsWith([](int status, std::string msg, std::exception_ptr exception) {
         const char *statusStr = "";
@@ -55,48 +60,36 @@ void LuaVM::Init() {
         BE_ERRLOG(L"%hs - %hs\n", statusStr, msg.c_str());
     });
 
-    state->RegisterSearcher([](const std::string &name) {
+    state->RegisterSearcher([this](const std::string &name) {
         Str filename = name.c_str();
         filename.DefaultFileExtension(".lua");
 
         char *data;
-        size_t size = fileSystem.LoadFile(filename.c_str(), true, (void **)&data);
+        size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
         if (!data) {
-            return false;
+            size = fileSystem.LoadFile("Scripts/" + filename, true, (void **)&data);
+            if (!data) {
+                return false;
+            }
         }
 
-        state->RunBuffer(filename.c_str(), data, size);
+        state->RunBuffer(name, data, size, name.c_str());
 
         fileSystem.FreeFile(data);
         return true;
     });
-   state->Require("blueshift.io", luaopen_file);
+
+    state->Require("blueshift.io", luaopen_file);
+
 #if defined __IOS__ || defined __ANDROID__
     EnableDebug();
 #endif
 }
 
-extern "C" int luaopen_socket_core(lua_State *L);
-static BE1::CVar lua_server(L"lua_server", L"127.0.0.1", BE1::CVar::Archive, L"lua server for debugging");
-
-void LuaVM::EnableDebug() {
-    char *server = tombs(lua_server.GetString());
-    if (server[0] == 0)
-        return;
-    
-    BE1::File *f = BE1::fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
-    if (!f)
-        return;
-    fileSystem.CloseFile(f);
-    state->Require("socket.core", luaopen_socket_core);
-    char *cmd = BE1::va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
-    (*state)(cmd);
-}
-
 void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
     LuaVM::gameWorld = gameWorld;
 
-    state->RegisterModule("blueshift", [](LuaCpp::Module &module) {
+    state->RegisterModule("blueshift", [this](LuaCpp::Module &module) {
         module["log"].SetFunc([](const std::string &msg) {
             BE_LOG(L"%hs\n", msg.c_str());
         });
@@ -115,6 +108,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterColor4(module);
         RegisterMat2(module);
         RegisterMat3(module);
+        RegisterMat3x4(module);
         RegisterMat4(module);
         RegisterQuaternion(module);
         RegisterAngles(module);
@@ -136,6 +130,11 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterScreen(module);
         // Physics
         RegisterPhysics(module);
+        // Str
+        RegisterStr(module);
+        // File
+        RegisterFile(module);
+        RegisterFileSystem(module);
         // Object
         RegisterObject(module);
         // Asset
@@ -173,6 +172,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterMeshRendererComponent(module);
         RegisterStaticMeshRendererComponent(module);
         RegisterSkinnedMeshRendererComponent(module);
+        RegisterAnimatorComponent(module);
         RegisterTextRendererComponent(module);
         RegisterParticleSystemComponent(module);
         RegisterCameraComponent(module);
@@ -184,13 +184,37 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         // Game World
         RegisterEntity(module);
         RegisterGameWorld(module);
+
+        for (int i = 0; i < engineModuleCallbacks.Count(); i++) {
+            engineModuleCallbacks[i](module);
+        }
     });
 
-    state->Require("blueshift");
+    //state->Require("blueshift");
 }
 
 void LuaVM::Shutdown() {
+    engineModuleCallbacks.Clear();
+
     SAFE_DELETE(state);
+}
+
+void LuaVM::RegisterEngineModuleCallback(EngineModuleCallback callback) {
+    engineModuleCallbacks.Append(callback);
+}
+
+void LuaVM::EnableDebug() {
+    char *server = tombs(lua_server.GetString());
+    if (server[0] == 0)
+        return;
+
+    File *f = fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
+    if (!f)
+        return;
+    fileSystem.CloseFile(f);
+    state->Require("socket.core", luaopen_socket_core);
+    char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
+    (*state)(cmd);
 }
 
 BE_NAMESPACE_END

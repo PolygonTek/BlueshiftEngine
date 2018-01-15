@@ -45,7 +45,7 @@ public:
 
     const char *        ToString(Format format = Digits) const;
 
-    static Guid         ParseString(const char *str);
+    static Guid         FromString(const char *str);
 
     static int          Hash(const Guid &guid) { return guid[0] + guid[1] + guid[2] + guid[3]; }
 

@@ -24,8 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("AnimController", AnimControllerAsset, Asset)
 BEGIN_EVENTS(AnimControllerAsset)
 END_EVENTS
-BEGIN_PROPERTIES(AnimControllerAsset)
-END_PROPERTIES
+
+void AnimControllerAsset::RegisterProperties() {
+}
 
 AnimControllerAsset::AnimControllerAsset() {
     animController = nullptr;

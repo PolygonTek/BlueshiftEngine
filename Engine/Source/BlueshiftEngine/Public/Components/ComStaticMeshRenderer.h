@@ -25,18 +25,22 @@ public:
     ComStaticMeshRenderer();
     virtual ~ComStaticMeshRenderer();
 
+                            /// Returns true if this component conflicts with the given component
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const override;
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
+
+    bool                    IsOccluder() const;
+    void                    SetOccluder(bool occluder);
 
 protected:
     virtual void            MeshUpdated() override;
-
-    void                    PropertyChanged(const char *classname, const char *propName);
 };
 
 BE_NAMESPACE_END

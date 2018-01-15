@@ -497,7 +497,7 @@ void RenderContext::OnResize(int width, int height) {
 }
 
 void RenderContext::Display() {
-    BE1::rhi.DisplayContext(contextHandle);
+    rhi.DisplayContext(contextHandle);
 }
 
 void RenderContext::BeginFrame() {

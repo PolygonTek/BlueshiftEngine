@@ -84,8 +84,9 @@ static void ResizeImageBilinear(const T *src, int srcWidth, int srcHeight, T *ds
 
                 float p0 = Lerp<float>(srcPtrY[0][index0], srcPtrY[0][index1], fracX);
                 float p1 = Lerp<float>(srcPtrY[1][index0], srcPtrY[1][index1], fracX);
+                float po = Lerp<float>(p0, p1, fracY);
 
-                *dst++ = Lerp<float>(p0, p1, fracY);
+                *dst++ = po;
             }
         }
     }
@@ -142,8 +143,9 @@ static void ResizeImageBicubic(const T *src, int srcWidth, int srcHeight, T *dst
                 float p1 = Cerp<float>(srcPtrY[1][index0], srcPtrY[1][index1], srcPtrY[1][index2], srcPtrY[1][index3], fracX);
                 float p2 = Cerp<float>(srcPtrY[2][index0], srcPtrY[2][index1], srcPtrY[2][index2], srcPtrY[2][index3], fracX);
                 float p3 = Cerp<float>(srcPtrY[3][index0], srcPtrY[3][index1], srcPtrY[3][index2], srcPtrY[3][index3], fracX);
+                float po = Cerp<float>(p0, p1, p2, p3, fracY);
 
-                *dst++ = Cerp<float>(p0, p1, p2, p3, fracY);
+                *dst++ = ClampFloat(std::numeric_limits<T>::min(), std::numeric_limits<T>::max(), po);
             }
         }
     }
@@ -168,8 +170,13 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
     assert(width && height);
     assert(dstWidth && dstHeight);
     
-    if (IsPacked() || IsCompressed() || depth != 1) {
-        BE_WARNLOG(L"Cannot be resized format %hs\n", FormatName());
+    if (IsPacked() || IsCompressed()) {
+        BE_WARNLOG(L"Couldn't resize from source image format %hs\n", FormatName());
+        return false;
+    }
+
+    if (depth != 1) {
+        BE_WARNLOG(L"Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
         return false;
     }
 
@@ -197,9 +204,14 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
 bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter) {
     assert(width && height);
     assert(dstWidth && dstHeight);
-    
-    if (IsPacked() || IsCompressed() || depth != 1) {
-        BE_WARNLOG(L"Couldn't resize with format %hs\n", FormatName());
+
+    if (IsPacked() || IsCompressed()) {
+        BE_WARNLOG(L"Couldn't resize from source image format %hs\n", FormatName());
+        return false;
+    }
+
+    if (depth != 1) {
+        BE_WARNLOG(L"Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
         return false;
     }
 

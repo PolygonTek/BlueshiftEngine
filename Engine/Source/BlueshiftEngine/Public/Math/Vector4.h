@@ -119,9 +119,12 @@ public:
                         /// This function is identical to the member function DivComp().
                         /// Divides this vector by a vector, element-wise.
     Vec4                operator/(const Vec4 &rhs) const { return Vec4(x / rhs.x, y / rhs.y, z / rhs.z, w / rhs.w); }
-                        /// Divides vector (s, s, s, s) by a vector v, element-wise.
+                        /// Divides vector (s, s, s, s) by a vector, element-wise.
     friend Vec4         operator/(float lhs, const Vec4 &rhs) { return Vec4(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z, lhs / rhs.w); }
     
+                        /// Assign from another vector.
+    Vec4 &              operator=(const Vec4 &rhs);
+
                         /// Adds a vector to this vector, in-place.
     Vec4 &              AddSelf(const Vec4 &v) { *this += v; return *this; }
                         /// Adds a vector to this vector, in-place.
@@ -211,6 +214,9 @@ public:
                         /// Returns "x y z" with the given precision
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Vec4         FromString(const char *str);
+
                         /// Casts this Vec4 to a Vec2.
     const Vec2 &        ToVec2() const;
     Vec2 &              ToVec2();
@@ -290,6 +296,14 @@ BE_INLINE float Vec4::operator[](int index) const {
 BE_INLINE float &Vec4::operator[](int index) {
     assert(index >= 0 && index < Size);
     return ((float *)this)[index];
+}
+
+BE_INLINE Vec4 &Vec4::operator=(const Vec4 &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    z = rhs.z;
+    w = rhs.w;
+    return *this;
 }
 
 BE_INLINE Vec4 &Vec4::operator+=(const Vec4 &rhs) {

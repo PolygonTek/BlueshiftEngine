@@ -17,7 +17,6 @@
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComSocketJoint.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN
@@ -25,16 +24,12 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Socket Joint", ComSocketJoint, ComJoint)
 BEGIN_EVENTS(ComSocketJoint)
 END_EVENTS
-BEGIN_PROPERTIES(ComSocketJoint)
-    PROPERTY_VEC3("anchor", "Anchor", "", "0 0 0", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComSocketJoint::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Anchor", Vec3, GetAnchor, SetAnchor, "0 0 0", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::EditorFlag);
 }
 
 ComSocketJoint::ComSocketJoint() {
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSocketJoint::PropertyChanged);
 }
 
 ComSocketJoint::~ComSocketJoint() {
@@ -43,7 +38,8 @@ ComSocketJoint::~ComSocketJoint() {
 void ComSocketJoint::Init() {
     ComJoint::Init();
 
-    anchor = props->Get("anchor").As<Vec3>();
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComSocketJoint::Start() {
@@ -53,6 +49,7 @@ void ComSocketJoint::Start() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
+    // Fill up a constraint description 
     PhysConstraintDesc desc;
     desc.type           = PhysConstraint::Point2Point;
     desc.bodyA          = rigidBody->GetBody();
@@ -69,11 +66,13 @@ void ComSocketJoint::Start() {
 
     desc.collision      = collisionEnabled;
     desc.breakImpulse   = breakImpulse;
+
+    // Create a constraint by description
     constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysP2PConstraint *p2pConstraint = static_cast<PhysP2PConstraint *>(constraint);
 
-    if (IsEnabled()) {
+    if (IsActiveInHierarchy()) {
         p2pConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
@@ -82,25 +81,12 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
-    Vec3 worldOrigin = transform->GetWorldMatrix() * anchor;
+    Vec3 worldOrigin = transform->GetTransform() * anchor;
     
     renderWorld->SetDebugColor(Color4::red, Color4::zero);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(5), worldOrigin + Mat3::identity[0] * CentiToUnit(5), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(5), worldOrigin + Mat3::identity[1] * CentiToUnit(5), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(5), worldOrigin + Mat3::identity[2] * CentiToUnit(5), 1);
-}
-
-void ComSocketJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "anchor")) {
-        SetAnchor(props->Get("anchor").As<Vec3>());
-        return;
-    }
-
-    ComJoint::PropertyChanged(classname, propName);
 }
 
 const Vec3 &ComSocketJoint::GetAnchor() const {

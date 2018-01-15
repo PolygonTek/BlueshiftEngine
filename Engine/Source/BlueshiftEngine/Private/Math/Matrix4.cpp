@@ -20,6 +20,82 @@ BE_NAMESPACE_BEGIN
 const Mat4 Mat4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
 const Mat4 Mat4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0), Vec4(0, 0, 0, 1));
 
+Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[0][1];
+    mat[0][2] = rhs[0][2];
+    mat[0][3] = rhs[0][3];
+
+    mat[1][0] = rhs[1][0];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[1][2];
+    mat[1][3] = rhs[1][3];
+
+    mat[2][0] = rhs[2][0];
+    mat[2][1] = rhs[2][1];
+    mat[2][2] = rhs[2][2];
+    mat[2][3] = rhs[2][3];
+
+    mat[3][0] = 0;
+    mat[3][1] = 0;
+    mat[3][2] = 0;
+    mat[3][3] = 1;
+
+    return *this;
+}
+
+Mat4 Mat4::operator*(const Mat3x4 &a) const {
+    Mat4 dst;
+
+    dst[0][0] = mat[0][0] * a[0][0] + mat[0][1] * a[1][0] + mat[0][2] * a[2][0];
+    dst[0][1] = mat[0][0] * a[0][1] + mat[0][1] * a[1][1] + mat[0][2] * a[2][1];
+    dst[0][2] = mat[0][0] * a[0][2] + mat[0][1] * a[1][2] + mat[0][2] * a[2][2];
+    dst[0][3] = mat[0][0] * a[0][3] + mat[0][1] * a[1][3] + mat[0][2] * a[2][3] + mat[0][3];
+
+    dst[1][0] = mat[1][0] * a[0][0] + mat[1][1] * a[1][0] + mat[1][2] * a[2][0];
+    dst[1][1] = mat[1][0] * a[0][1] + mat[1][1] * a[1][1] + mat[1][2] * a[2][1];
+    dst[1][2] = mat[1][0] * a[0][2] + mat[1][1] * a[1][2] + mat[1][2] * a[2][2];
+    dst[1][3] = mat[1][0] * a[0][3] + mat[1][1] * a[1][3] + mat[1][2] * a[2][3] + mat[1][3];
+
+    dst[2][0] = mat[2][0] * a[0][0] + mat[2][1] * a[1][0] + mat[2][2] * a[2][0];
+    dst[2][1] = mat[2][0] * a[0][1] + mat[2][1] * a[1][1] + mat[2][2] * a[2][1];
+    dst[2][2] = mat[2][0] * a[0][2] + mat[2][1] * a[1][2] + mat[2][2] * a[2][2];
+    dst[2][3] = mat[2][0] * a[0][3] + mat[2][1] * a[1][3] + mat[2][2] * a[2][3] + mat[2][3];
+
+    dst[3][0] = mat[3][0] * a[0][0] + mat[3][1] * a[1][0] + mat[3][2] * a[2][0];
+    dst[3][1] = mat[3][0] * a[0][1] + mat[3][1] * a[1][1] + mat[3][2] * a[2][1];
+    dst[3][2] = mat[3][0] * a[0][2] + mat[3][1] * a[1][2] + mat[3][2] * a[2][2];
+    dst[3][3] = mat[3][0] * a[0][3] + mat[3][1] * a[1][3] + mat[3][2] * a[2][3] + mat[3][3];
+
+    return dst;
+}
+
+Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
+    Mat4 dst;
+
+    dst[0][0] = mat[0][0] * a[0][0] + mat[0][1] * a[0][1] + mat[0][2] * a[0][2] + mat[0][3] * a[0][3];
+    dst[0][1] = mat[0][0] * a[1][0] + mat[0][1] * a[1][1] + mat[0][2] * a[1][2] + mat[1][3] * a[1][3];
+    dst[0][2] = mat[0][0] * a[2][0] + mat[0][1] * a[2][1] + mat[0][2] * a[2][2] + mat[2][3] * a[2][3];
+    dst[0][3] = mat[0][3];
+
+    dst[1][0] = mat[1][0] * a[0][0] + mat[1][1] * a[0][1] + mat[1][2] * a[0][2] + mat[1][3] * a[0][3];
+    dst[1][1] = mat[1][0] * a[1][0] + mat[1][1] * a[1][1] + mat[1][2] * a[1][2] + mat[1][3] * a[1][3];
+    dst[1][2] = mat[1][0] * a[2][0] + mat[1][1] * a[2][1] + mat[1][2] * a[2][2] + mat[1][3] * a[2][3];
+    dst[1][3] = mat[1][3];
+
+    dst[2][0] = mat[2][0] * a[0][0] + mat[2][1] * a[0][1] + mat[2][2] * a[0][2] + mat[2][3] * a[0][3];
+    dst[2][1] = mat[2][0] * a[1][0] + mat[2][1] * a[1][1] + mat[2][2] * a[1][2] + mat[2][3] * a[1][3];
+    dst[2][2] = mat[2][0] * a[2][0] + mat[2][1] * a[2][1] + mat[2][2] * a[2][2] + mat[2][3] * a[2][3];
+    dst[2][3] = mat[2][3];
+
+    dst[3][0] = mat[3][0] * a[0][0] + mat[3][1] * a[0][1] + mat[3][2] * a[0][2] + mat[3][3] * a[0][3];
+    dst[3][1] = mat[3][0] * a[1][0] + mat[3][1] * a[1][1] + mat[3][2] * a[1][2] + mat[3][3] * a[1][3];
+    dst[3][2] = mat[3][0] * a[2][0] + mat[3][1] * a[2][1] + mat[3][2] * a[2][2] + mat[3][3] * a[2][3];
+    dst[3][3] = mat[3][3];
+    
+    return dst;
+}
+
 Mat4 Mat4::Transpose() const {
     Mat4 transpose;
     
@@ -65,7 +141,7 @@ float Mat4::Determinant() const {
 bool Mat4::InverseSelf() {
 #if 0
     // 84+4+16 = 104 multiplications
-    //			   1 division
+    //             1 division
     double det, invDet;
 
     // 2x2 sub-determinants required to calculate 4x4 determinant
@@ -121,7 +197,7 @@ bool Mat4::InverseSelf() {
     float det3_301_023 = mat[3][0] * det2_01_23 - mat[3][2] * det2_01_03 + mat[3][3] * det2_01_02;
     float det3_301_123 = mat[3][1] * det2_01_23 - mat[3][2] * det2_01_13 + mat[3][3] * det2_01_12;
 
-    mat[0][0] =	- det3_213_123 * invDet;
+    mat[0][0] = - det3_213_123 * invDet;
     mat[1][0] = + det3_213_023 * invDet;
     mat[2][0] = - det3_213_013 * invDet;
     mat[3][0] = + det3_213_012 * invDet;
@@ -144,7 +220,7 @@ bool Mat4::InverseSelf() {
     return true;
 #elif 0
     // 4*18 = 72 multiplications
-    //		   4 divisions
+    //         4 divisions
     float *mat = reinterpret_cast<float *>(this);
     float s;
     double d, di;
@@ -240,8 +316,8 @@ bool Mat4::InverseSelf() {
 
     return (s != 0.0f && !FLOAT_IS_NAN(s));
 #else
-    //	6*8+2*6 = 60 multiplications
-    //		2*1 =  2 divisions
+    //  6*8+2*6 = 60 multiplications
+    //      2*1 =  2 divisions
     Mat2 r0, r1, r2, r3;
     float a, det, invDet;
     float *mat = reinterpret_cast<float *>(this);
@@ -328,8 +404,8 @@ bool Mat4::InverseSelf() {
 }
 
 bool Mat4::AffineInverseSelf() {
-    Mat4	invMat;
-    Vec3	t;
+    Mat4    invMat;
+    Vec3    t;
 
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
@@ -339,7 +415,7 @@ bool Mat4::AffineInverseSelf() {
     // The translation components of the original matrix
     t.x = mat[0][3];
     t.y = mat[1][3];
-    t.z = mat[2][3];	
+    t.z = mat[2][3];
 
     // The rotational part of the matrix should be inverted
     Mat3 r = ToMat3();
@@ -365,9 +441,9 @@ bool Mat4::AffineInverseSelf() {
 }
 
 bool Mat4::EuclideanInverseSelf() {
-    Mat4	invMat;
-    Vec3	t;
-    float	temp;
+    Mat4    invMat;
+    Vec3    t;
+    float   temp;
     
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
@@ -377,7 +453,7 @@ bool Mat4::EuclideanInverseSelf() {
     // The translation components of the original matrix
     t.x = mat[0][3];
     t.y = mat[1][3];
-    t.z = mat[2][3];	
+    t.z = mat[2][3];
 
     // The rotational part of the matrix is simply the transpose of the original matrix
     temp = mat[0][1];
@@ -388,7 +464,7 @@ bool Mat4::EuclideanInverseSelf() {
     mat[2][0] = temp;
     temp = mat[1][2];
     mat[1][2] = mat[2][1];
-    mat[2][1] = temp;	
+    mat[2][1] = temp;
 
     // -(Rt * T)
     mat[0][3] = -(mat[0].x * t.x + mat[0].y * t.y + mat[0].z * t.z);
@@ -454,14 +530,19 @@ void Mat4::Translate(float tx, float ty, float tz) {
     mat[3][3] = mat[3][0] * tx + mat[3][1] * ty + mat[3][2] * tz + mat[3][3];
 }
 
+//---------------------------------------------------
+//
+//        | sx   0   0  0 | | m00  m01  m02  m03 |
+// S M  = |  0  sy   0  0 | | m10  m11  m12  m13 |
+//        |  0   0  sz  0 | | m20  m21  m22  m23 |
+//        |  0   0   0  1 | | m30  m31  m32  m33 |
+//
+//---------------------------------------------------
+
 void Mat4::Scale(float sx, float sy, float sz) {
     mat[0] *= sx;
     mat[1] *= sy;
     mat[2] *= sz;
-}
-
-void Mat4::UniformScale(const float s) {
-    Scale(s, s, s);
 }
 
 void Mat4::SetFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
@@ -590,7 +671,13 @@ void Mat4::SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &o
     mat[3][0] = 0.0f;
     mat[3][1] = 0.0f;
     mat[3][2] = 0.0f;
-    mat[3][3] = 1.0f;	
+    mat[3][3] = 1.0f;
+}
+
+Mat4 Mat4::FromString(const char *str) {
+    Mat4 m;
+    sscanf(str, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w, &m[3].x, &m[3].y, &m[3].z, &m[3].w);
+    return m;
 }
 
 BE_NAMESPACE_END

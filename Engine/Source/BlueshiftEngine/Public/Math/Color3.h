@@ -47,6 +47,32 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
+                        /// Adds a color to this color.
+    Color3              Add(const Color3 &v) const { return *this + v; }
+                        /// Adds a color to this color.
+                        /// This function is identical to the member function Add().
+    Color3              operator+(const Color3 &rhs) const { return Color3(r + rhs.r, g + rhs.g, b + rhs.b); }
+                        /// Adds the color (s, s, s, s) to this color.
+    Color3              AddScalar(float s) const { return *this + s; }
+                        /// Adds the color (s, s, s, s) to this color.
+                        /// This function is identical to the member function AddScalar().
+    Color3              operator+(float rhs) const { return Color3(r + rhs, g + rhs, b + rhs); }
+                        /// Adds the color v to color (s, s, s, s).
+    friend Color3       operator+(float lhs, const Color3 &rhs) { return Color3(lhs + rhs.r, lhs + rhs.g, lhs + rhs.b); }
+
+                        /// Subtracts a color from this color.
+    Color3              Sub(const Color3 &v) const { return *this - v; }
+                        /// Subtracts the given color from this color.
+                        /// This function is identical to the member function Sub()
+    Color3              operator-(const Color3 &rhs) const { return Color3(r - rhs.r, g - rhs.g, b - rhs.b); }
+                        /// Subtracts the color (s, s, s, s) from this color.
+    Color3              SubScalar(float s) const { return *this - s; }
+                        /// Subtracts the color (s, s, s, s) from this color.
+                        /// This function is identical to the member function SubScalar()
+    Color3              operator-(float rhs) const { return Color3(r - rhs, g - rhs, b - rhs); }
+                        /// Subtracts the color v from color (s, s, s, s).
+    friend Color3       operator-(float lhs, const Color3 &rhs) { return Color3(lhs - rhs.r, lhs - rhs.g, lhs - rhs.b); }
+
                         /// Multiplies this color by a scalar.
     Color3              Mul(float s) const { return *this * s; }
                         /// Multiplies this color by a scalar.
@@ -54,12 +80,39 @@ public:
     Color3              operator*(float rhs) const { return Color3(r * rhs, g * rhs, b * rhs); }
                         /// Multiplies color v by a scalar.
     friend Color3       operator*(float lhs, const Color3 &rhs) { return Color3(lhs * rhs.r, lhs * rhs.g, lhs * rhs.b); }
+                        /// Multiplies this color by a color, element-wise.
+    Color3              MulComp(const Color3 &v) const { return *this * v; }
+                        /// Multiplies this color by a color, element-wise.
+                        /// This function is identical to the member function MulComp().
+    Color3              operator*(const Color3 &rhs) const { return Color3(r * rhs.r, g * rhs.g, b * rhs.b); }
 
                         /// Divides this color by a scalar.
     Color3              Div(float s) const { return *this / s; }
                         /// Divides this color by a scalar.
                         /// This function is identical to the member function Div().
     Color3              operator/(float rhs) const { float inv = 1.f / rhs; return Color3(r * inv, g * inv, b * inv); }
+                        /// Divides this color by a color, element-wise.
+    Color3              DivComp(const Color3 &v) const { return *this / v; }
+                        /// This function is identical to the member function DivComp().
+                        /// Divides this color by a color, element-wise.
+    Color3              operator/(const Color3 &rhs) const { return Color3(r / rhs.r, g / rhs.g, b / rhs.b); }
+                        /// Divides color (s, s, s, s) by a color, element-wise.
+    friend Color3       operator/(float lhs, const Color3 &rhs) { return Color3(lhs / rhs.r, lhs / rhs.g, lhs / rhs.b); }
+
+                        /// Assign from another color.
+    Color3 &            operator=(const Color3 &rhs);
+
+                        /// Adds a color to this color, in-place.
+    Color3 &            AddSelf(const Color3 &v) { *this += v; return *this; }
+                        /// Adds a color to this color, in-place.
+                        /// This function is identical to the member function AddSelf().
+    Color3 &            operator+=(const Color3 &rhs);
+
+                        /// Subtracts a color from this color, in-place.
+    Color3 &            SubSelf(const Color3 &v) { *this -= v; return *this; }
+                        /// Subtracts a color from this color, in-place.
+                        /// This function is identical to the member function SubSelf().
+    Color3 &            operator-=(const Color3 &rhs);
 
                         /// Multiplies this color by a scalar, in-place.
     Color3 &            MulSelf(float s) { *this *= s; return *this; }
@@ -67,11 +120,23 @@ public:
                         /// This function is identical to the member function MulSelf().
     Color3 &            operator*=(float rhs);
 
+                        /// Multiplies this color by a color, element-wise, in-place.
+    Color3 &            MulCompSelf(const Color3 &v) { *this *= v; return *this; }
+                        /// Multiplies this color by a color, element-wise, in-place.
+                        /// This function is identical to the member function MulCompSelf().
+    Color3 &            operator*=(const Color3 &rhs);
+
                         /// Divides this color by a scalar, in-place.
     Color3 &            DivSelf(float s) { *this /= s; return *this; }
                         /// Divides this color by a scalar, in-place.
                         /// This function is identical to the member function DivSelf().
     Color3 &            operator/=(float rhs);
+
+                        /// Divides this color by a color, element-wise, in-place.
+    Color3 &            DivCompSelf(const Color3 &v) { *this /= v; return *this; }
+                        /// Divides this color by a color, element-wise, in-place.
+                        /// This function is identical to the member function DivCompSelf().
+    Color3 &            operator/=(const Color3 &rhs);
 
                         /// Exact compare, no epsilon
     bool                Equals(const Color3 &c) const;
@@ -95,6 +160,9 @@ public:
                         /// Returns "r g b" with the given precision
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Color3       FromString(const char *str);
+
                         /// Casts this Color3 to a Vec3.
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();
@@ -115,6 +183,7 @@ public:
                         /// Returns dimension of this type
     int                 GetDimension() const { return Size; }
 
+    static const Color3 zero;       ///< (0.0, 0.0, 0.0)
     static const Color3 black;      ///< (0.0, 0.0, 0.0)
     static const Color3 white;      ///< (1.0, 1.0, 1.0)
     static const Color3 red;        ///< (1.0, 0.0, 0.0)
@@ -171,6 +240,26 @@ BE_INLINE float &Color3::operator[](int index) {
     return ((float *)this)[index];
 }
 
+BE_INLINE Color3 &Color3::operator=(const Color3 &rhs) {
+    r = rhs.r;
+    g = rhs.g;
+    b = rhs.b;
+    return *this;
+}
+
+BE_INLINE Color3 &Color3::operator+=(const Color3 &rhs) {
+    r += rhs.r;
+    g += rhs.g;
+    b += rhs.b;
+    return *this;
+}
+
+BE_INLINE Color3 &Color3::operator-=(const Color3 &rhs) {
+    r -= rhs.r;
+    g -= rhs.g;
+    b -= rhs.b;
+    return *this;
+}
 
 BE_INLINE Color3 &Color3::operator*=(float rhs) {
     r *= rhs;
@@ -179,6 +268,13 @@ BE_INLINE Color3 &Color3::operator*=(float rhs) {
     return *this;
 }
 
+BE_INLINE Color3 &Color3::operator*=(const Color3 &rhs) {
+    r *= rhs.r;
+    g *= rhs.g;
+    b *= rhs.b;
+    return *this;
+};
+
 BE_INLINE Color3 &Color3::operator/=(float rhs) {
     float inv = 1.0f / rhs;
     r *= inv;
@@ -186,6 +282,13 @@ BE_INLINE Color3 &Color3::operator/=(float rhs) {
     b *= inv;
     return *this;
 }
+
+BE_INLINE Color3 &Color3::operator/=(const Color3 &rhs) {
+    r /= rhs.r;
+    g /= rhs.g;
+    b /= rhs.b;
+    return *this;
+};
 
 BE_INLINE bool Color3::Equals(const Color3 &rhs) const {
     return ((r == rhs.r) && (g == rhs.g) && (b == rhs.b));

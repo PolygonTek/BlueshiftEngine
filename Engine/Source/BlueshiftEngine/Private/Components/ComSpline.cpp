@@ -23,20 +23,18 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Spline", ComSpline, Component)
 BEGIN_EVENTS(ComSpline)
 END_EVENTS
-BEGIN_PROPERTIES(ComSpline)
-    PROPERTY_BOOL("loop", "Loop", "", "false", PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("points", "Points", "points", Guid::zero.ToString(), ComTransform::metaObject, PropertySpec::ReadWrite | PropertySpec::IsArray),
-END_PROPERTIES
 
 void ComSpline::RegisterProperties() {
+    REGISTER_ACCESSOR_PROPERTY("loop", "Loop", bool, IsLoop, SetLoop, false, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("points", "Points", Guid, GetPointGuid, SetPointGuid, GetPointCount, SetPointCount, Guid::zero, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&ComTransform::metaObject);
 }
 
 ComSpline::ComSpline() {
     originCurve = nullptr;
     anglesCurve = nullptr;
-    curveUpdated = false;
 
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComSpline::PropertyChanged);
+    curveUpdated = false;
 }
 
 ComSpline::~ComSpline() {
@@ -47,18 +45,24 @@ void ComSpline::Purge(bool chainPurge) {
     SAFE_DELETE(originCurve);
     SAFE_DELETE(anglesCurve);
 
+    pointGuids.Clear();
+
     curveUpdated = false;
 }
 
 void ComSpline::Init() {
-    Purge();
-
     Component::Init();
 
-    originCurve = new Curve_BSpline<Vec3>();
-    anglesCurve = new Curve_BSpline<Angles>();
+    if (!originCurve) {
+        originCurve = new Curve_BSpline<Vec3>();
+    }
 
-    loop = props->Get("loop").As<bool>();
+    if (!anglesCurve) {
+        anglesCurve = new Curve_BSpline<Angles>();
+    }
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComSpline::Awake() {
@@ -72,7 +76,7 @@ Vec3 ComSpline::GetCurrentOrigin(float time) const {
         Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
-    return transform->GetWorldMatrix() * originCurve->GetCurrentValue(time);
+    return transform->GetTransform() * originCurve->GetCurrentValue(time);
 }
 
 Mat3 ComSpline::GetCurrentAxis(float time) const {
@@ -82,13 +86,42 @@ Mat3 ComSpline::GetCurrentAxis(float time) const {
         Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
-    return transform->GetWorldMatrix().ToMat3() * anglesCurve->GetCurrentValue(time).ToMat3();
+    return transform->GetTransform().ToMat3() * anglesCurve->GetCurrentValue(time).ToMat3();
+}
+
+int ComSpline::GetPointCount() const {
+    return pointGuids.Count();
+}
+
+void ComSpline::SetPointCount(int count) {
+    int oldCount = pointGuids.Count();
+
+    pointGuids.SetCount(count);
+
+    if (count > oldCount) {
+        for (int index = oldCount; index < count; index++) {
+            pointGuids[index] = Guid::zero;
+        }
+    }
+}
+
+Guid ComSpline::GetPointGuid(int index) const {
+    return pointGuids[index];
+}
+
+void ComSpline::SetPointGuid(int index, const Guid &pointGuid) {
+    pointGuids[index] = pointGuid;
+
+    if (initialized) {
+        UpdateCurve();
+    }
 }
 
 void ComSpline::UpdateCurve() {
     originCurve->Clear();
     anglesCurve->Clear();
 
+    // Disconnect with previously connected points
     for (int pointIndex = 0; pointIndex < pointGuids.Count(); pointIndex++) {
         const Guid pointTransformGuid = pointGuids[pointIndex];
         if (pointTransformGuid.IsZero()) {
@@ -103,23 +136,15 @@ void ComSpline::UpdateCurve() {
         pointTransform->Disconnect(&ComTransform::SIG_TransformUpdated, this);
     }
 
-    int numPoints = props->NumElements("points");
-
-    pointGuids.SetCount(numPoints);
-
-    if (numPoints > 1) {
+    if (pointGuids.Count() > 1) {
         // incremental time just used for key ordering
         float t = loop ? 0 : 100;
 
-        for (int pointIndex = 0; pointIndex < numPoints; pointIndex++, t += 100) {
-            Str propName = va("points[%i]", pointIndex);
-
-            const Guid pointTransformGuid = props->Get(propName).As<Guid>();
+        for (int pointIndex = 0; pointIndex < pointGuids.Count(); pointIndex++, t += 100) {
+            const Guid pointTransformGuid = pointGuids[pointIndex];
             if (pointTransformGuid.IsZero()) {
                 continue;
             }
-
-            pointGuids[pointIndex] = pointTransformGuid;
 
             ComTransform *pointTransform = (ComTransform *)ComTransform::FindInstance(pointTransformGuid);
             if (!pointTransform) {
@@ -208,13 +233,13 @@ void ComSpline::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
             break;
         }
 
-        Vec3 p0 = transform->GetWorldMatrix() * originCurve->GetCurrentValue(t);
-        Vec3 p1 = transform->GetWorldMatrix() * originCurve->GetCurrentValue(t + dt);
+        Vec3 p0 = transform->GetTransform() * originCurve->GetCurrentValue(t);
+        Vec3 p1 = transform->GetTransform() * originCurve->GetCurrentValue(t + dt);
 
         renderWorld->SetDebugColor(Color4::white, Color4::orange);
         renderWorld->DebugLine(p0, p1, 2, true);
 
-        Mat3 axis = transform->GetWorldMatrix().ToMat3() * anglesCurve->GetCurrentValue(t).ToMat3();
+        Mat3 axis = transform->GetTransform().ToMat3() * anglesCurve->GetCurrentValue(t).ToMat3();
 
         renderWorld->SetDebugColor(Color4::red, Color4::orange);
         renderWorld->DebugLine(p0, p0 + axis[0] * 30, 2, true);
@@ -231,10 +256,8 @@ void ComSpline::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
     // Draw transform points
     renderWorld->SetDebugColor(Color4::blue, Color4::cyan);
 
-    for (int pointIndex = 0; pointIndex < props->NumElements("points"); pointIndex++) {
-        Str propName = va("points[%i]", pointIndex);
-
-        const Guid pointTransformGuid = props->Get(propName).As<Guid>();
+    for (int pointIndex = 0; pointIndex < GetPropertyArrayCount("points"); pointIndex++) {
+        const Guid pointTransformGuid = GetArrayProperty("points", pointIndex).As<Guid>();
         if (pointTransformGuid.IsZero()) {
             continue;
         }
@@ -249,23 +272,16 @@ void ComSpline::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
     }
 }
 
-void ComSpline::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
+bool ComSpline::IsLoop() const {
+    return loop;
+}
 
-    if (!Str::Cmp(propName, "loop")) {
-        loop = props->Get(propName).As<bool>();
+void ComSpline::SetLoop(bool loop) {
+    this->loop = loop;
+
+    if (initialized) {
         UpdateCurve();
-        return;
     }
-
-    if (!Str::Cmpn(propName, "points", 6)) {
-        UpdateCurve();
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 void ComSpline::PointTransformUpdated(const ComTransform *transform) {
@@ -273,10 +289,8 @@ void ComSpline::PointTransformUpdated(const ComTransform *transform) {
         UpdateCurve();
     }
 
-    for (int pointIndex = 0; pointIndex < props->NumElements("points"); pointIndex++) {
-        Str propName = va("points[%i]", pointIndex);
-
-        if (props->Get(propName).As<Guid>() == transform->GetGuid()) {
+    for (int pointIndex = 0; pointIndex < GetPropertyArrayCount("points"); pointIndex++) {
+        if (GetArrayProperty("points", pointIndex).As<Guid>() == transform->GetGuid()) {
             const Vec3 origin = transform->GetLocalOrigin();
             originCurve->SetValue(pointIndex, origin);
 

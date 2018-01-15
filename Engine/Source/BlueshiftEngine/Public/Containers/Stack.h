@@ -83,7 +83,7 @@ BE_INLINE T &Stack<T>::operator[](int index) {
 }
 
 template <typename T>
-BE_INLINE int Stack<T>::Count() const { 
+BE_INLINE int Stack<T>::Count() const {
     return stack.Count(); 
 }
 

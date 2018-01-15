@@ -14,10 +14,10 @@
 
 #pragma once
 
-#define B_ENGINE_NAME           "Blueshift Engine"
-#define B_ENGINE_VERSION_MAJOR  0
-#define B_ENGINE_VERSION_MINOR  2
-#define B_ENGINE_VERSION_PATCH  0
+#define B_ENGINE_NAME "Blueshift Engine"
+
+#include "Version.h"
+
 #define B_STRINGIZE(x) #x
 #define B_ENGINE_VERSION_STRING B_STRINGIZE(B_ENGINE_VERSION_MAJOR) B_STRINGIZE(B_ENGINE_VERSION_MINOR) B_STRINGIZE(B_ENGINE_VERSION_PATCH) 
 
@@ -174,9 +174,9 @@
 
 #define BE_STATIC_LINK
 
-#if defined (BE_STATIC_LINK) || !defined (__WIN32__)
+#if defined(BE_STATIC_LINK) || !defined(__WIN32__)
 #define BE_API
-#elif defined (BE_EXPORTS)
+#elif defined(BE_EXPORTS)
 #define BE_API __declspec (dllexport)
 #else 
 #define BE_API __declspec (dllimport)
@@ -274,6 +274,13 @@ struct is_same_all : static_all_of<std::is_same<typename std::decay<Ts>::type, T
 template <typename T, typename... Ts>
 struct is_assignable_all : static_all_of<std::is_assignable<T, Ts>::value...> {};
 
+template <typename T1, typename T2>
+inline const ptrdiff_t offset_of(T1 T2::*member) {
+    static char obj_dummy[sizeof(T2)];
+    const T2 *obj = reinterpret_cast<T2 *>(obj_dummy);
+    return ptrdiff_t(intptr_t(&(obj->*member)) - intptr_t(obj));
+}
+
 //----------------------------------------------------------------------------------------------
 // Win32
 //----------------------------------------------------------------------------------------------
@@ -284,7 +291,7 @@ struct is_assignable_all : static_all_of<std::is_assignable<T, Ts>::value...> {}
 
 #define BE_CDECL
 
-#define BE_FORCE_INLINE	            __forceinline
+#define BE_FORCE_INLINE             __forceinline
 #define BE_INLINE                   inline
 
 #define CURRENT_FUNC                __FUNCTION__
@@ -356,6 +363,7 @@ struct is_assignable_all : static_all_of<std::is_assignable<T, Ts>::value...> {}
 #include <malloc.h>         // no malloc.h on mac or unix
 #include <crtdbg.h>
 #include <tchar.h>
+#include <intrin.h>
 
 #endif
 
@@ -427,6 +435,9 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 }
 
 #endif // __APPLE__
+#ifdef __ANDROID__
+#include <sys/stat.h>
+#endif
 //----------------------------------------------------------------------------------------------
 
 typedef void (*streamOutFunc_t)(const int level, const wchar_t *msg);
@@ -513,13 +524,13 @@ BE_FORCE_INLINE void Clamp(T &v, const T &min, const T &max) { v = (v > max) ? m
 
 /// Returns the clamped number to a range.
 template <typename T>
-BE_FORCE_INLINE T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
+BE_FORCE_INLINE constexpr T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
 
 /// Returns remainder of the division operation x / y.
 template <typename T>
-BE_FORCE_INLINE T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
+BE_FORCE_INLINE constexpr T Mod(const T &x, const T &y) { return std::fmod((T)x, (T)y); }
 template <>
-BE_FORCE_INLINE int Mod(const int &x, const int &y) { return x % y; }
+BE_FORCE_INLINE constexpr int Mod(const int &x, const int &y) { return x % y; }
 
 /// Wraps a number to a range.
 template <typename T>
@@ -530,7 +541,7 @@ BE_FORCE_INLINE void Wrap(T &v, const T &min, const T &max) {
 
 /// Returns the wrapped number to a range.
 template <typename T>
-BE_FORCE_INLINE T Wrap(const T &v, const T &min, const T &max) {
+BE_FORCE_INLINE constexpr T Wrap(const T &v, const T &min, const T &max) {
     if (v > max) return min + Mod(v - min, max - min);
     if (v < min) return max - Mod(min - v, max - min);
     return v;

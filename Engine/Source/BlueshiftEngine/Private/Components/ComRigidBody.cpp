@@ -19,26 +19,15 @@
 #include "Components/ComCharacterController.h"
 #include "Components/ComSensor.h"
 #include "Components/ComScript.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef ComRigidBody::SIG_PhysicsUpdated("physicsUpdated", "a");
+const SignalDef ComRigidBody::SIG_PhysicsUpdated("ComRigidBody::PhysicsUpdated", "a");
 
 OBJECT_DECLARATION("Rigid Body", ComRigidBody, Component)
 BEGIN_EVENTS(ComRigidBody)
 END_EVENTS
-BEGIN_PROPERTIES(ComRigidBody)
-    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.01f), "1", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("restitution", "Restitution", "parameter for make objects bounce", Rangef(0, 1, 0.01f), "0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("friction", "Friction", "parameter for make objects slide along each other realistically", Rangef(0, 1, 0.01f), "1", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("rollingFriction", "Rolling Friction", "", Rangef(0, 1, 0.01f), "1", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("linearDamping", "Linear Damping", "reduced amount of linear velocity", Rangef(0, 1, 0.01f), "0.05", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("angularDamping", "Angular Damping", "reduced amount of angular velocity", Rangef(0, 1, 0.01f), "0.01", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("kinematic", "Kinematic", "", "false", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("ccd", "CCD", "continuous collision detection", "false", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 class ComRigidBody::CollisionListener : public PhysCollisionListener {
 public:
@@ -81,21 +70,26 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
 }
 
 void ComRigidBody::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Mass", float, GetMass, SetMass, "1", PropertySpec::ReadWrite).SetRange(0, 200, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Restitution", float, GetRestitution, SetRestitution, "0", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Friction", float, GetFriction, SetFriction, "1", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Rolling Friction", float, GetRollingFriction, SetRollingFriction, "1", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Linear Damping", float, GetLinearDamping, SetLinearDamping, "0.05", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Angular Damping", float, GetAngularDamping, SetAngularDamping, "0.01", PropertySpec::ReadWrite).SetRange(0, 1, 0.01f);
-    //REGISTER_ACCESSOR_PROPERTY("Kinematic", bool, IsKinematic, SetKinematic, "false", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("CCD", bool, IsCCD, SetCCD, "false", PropertySpec::ReadWrite);
+    REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 1.f, "Mass in kg", PropertyInfo::EditorFlag)
+        .SetRange(0, 200, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.f, "Parameter for make objects bounce", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 1.f, "Parameter for make objects slide along each other realistically", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("rollingFriction", "Rolling Friction", float, GetRollingFriction, SetRollingFriction, 1.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("linearDamping", "Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.05f, "Reduced amount of linear velocity", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("angularDamping", "Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, "Reduced amount of angular velocity", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("kinematic", "Kinematic", bool, IsKinematic, SetKinematic, false, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCD, SetCCD, false, "Continuous collision detection", PropertyInfo::EditorFlag);
 }
 
 ComRigidBody::ComRigidBody() {
     body = nullptr;
     collisionListener = nullptr;
     physicsUpdating = false;
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComRigidBody::PropertyChanged);
 }
 
 ComRigidBody::~ComRigidBody() {
@@ -119,26 +113,18 @@ void ComRigidBody::Purge(bool chainPurge) {
 }
 
 void ComRigidBody::Init() {
-    Purge();
-
     Component::Init();
 
-    physicsDesc.type            = PhysCollidable::Type::RigidBody;
-    physicsDesc.mass            = props->Get("mass").As<float>();
-    physicsDesc.restitution     = props->Get("restitution").As<float>();
-    physicsDesc.friction        = props->Get("friction").As<float>();
-    physicsDesc.rollingFriction = props->Get("rollingFriction").As<float>();
-    physicsDesc.linearDamping   = props->Get("linearDamping").As<float>();
-    physicsDesc.angularDamping  = props->Get("angularDamping").As<float>();
-    physicsDesc.kinematic       = props->Get("kinematic").As<bool>();
-    physicsDesc.ccd             = props->Get("ccd").As<bool>();
-
+    physicsDesc.type = PhysCollidable::Type::RigidBody;
     physicsDesc.shapes.Clear();
 
     // static rigid body can't have collision listener
     if (physicsDesc.mass > 0) {
         collisionListener = new CollisionListener(this);
     }
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &shapes) {
@@ -171,7 +157,7 @@ void ComRigidBody::Awake() {
         physicsDesc.origin = transform->GetOrigin();
         physicsDesc.axis = transform->GetAxis();
 
-        ComponentPtrArray colliders = entity->GetComponents(ComCollider::metaObject);
+        ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
         if (colliders.Count() > 0) {
             for (int i = 0; i < colliders.Count(); i++) {
                 ComCollider *collider = colliders[i]->Cast<ComCollider>();
@@ -190,7 +176,7 @@ void ComRigidBody::Awake() {
         }
 
         if (physicsDesc.shapes.Count() == 0) {
-            BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName());
+            BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
             return;
         }
 
@@ -199,7 +185,7 @@ void ComRigidBody::Awake() {
         body->SetCustomCollisionFilterIndex(entity->GetLayer());
         body->SetCollisionListener(collisionListener);
 
-        if (IsEnabled()) {
+        if (IsActiveInHierarchy()) {
             body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
 
@@ -211,7 +197,7 @@ void ComRigidBody::Awake() {
 }
 
 void ComRigidBody::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -219,20 +205,20 @@ void ComRigidBody::Update() {
         return;
     }
 
-    if (!body->IsStatic() && body->IsActive()) {
+    if (!body->IsStatic() && !body->IsKinematic() && body->IsActive()) {
         // Block SIG_TransformUpdated during SIG_PhysicsUpdated
         physicsUpdating = true;
 
         EmitSignal(&SIG_PhysicsUpdated, body);
-        
-        physicsUpdating = false;
 
-        ProcessScriptCallback();
+        physicsUpdating = false;
     }
+
+    ProcessScriptCallback();
 }
 
 void ComRigidBody::ProcessScriptCallback() {
-    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(ComScript::metaObject);
+    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(&ComScript::metaObject);
     if (scriptComponents.Count() == 0) {
         return;
     }
@@ -280,25 +266,18 @@ void ComRigidBody::ProcessScriptCallback() {
     collisions.Clear();
 }
 
-void ComRigidBody::Enable(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (body) {
-                body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-            }
-            Component::Enable(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (body) {
-                body->RemoveFromWorld();
-            }
-            collisions.Clear();
-            oldCollisions.Clear();
-
-            Component::Enable(false);
-        }
+void ComRigidBody::OnActive() {
+    if (body) {
+        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
+}
+
+void ComRigidBody::OnInactive() {
+    if (body) {
+        body->RemoveFromWorld();
+    }
+    collisions.Clear();
+    oldCollisions.Clear();
 }
 
 void ComRigidBody::TransformUpdated(const ComTransform *transform) {
@@ -307,61 +286,107 @@ void ComRigidBody::TransformUpdated(const ComTransform *transform) {
     }
 
     if (body) {
-        body->SetOrigin(transform->GetOrigin());
-        body->SetAxis(transform->GetAxis());
+        body->SetTransform(transform->GetAxis(), transform->GetOrigin());
         body->ClearForces();
         body->ClearVelocities();
         body->Activate();
     }
 }
 
-void ComRigidBody::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "mass")) {
-        SetMass(props->Get("mass").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "restitution")) {
-        SetRestitution(props->Get("restitution").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "friction")) {
-        SetFriction(props->Get("friction").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "rollingFriction")) {
-        SetRollingFriction(props->Get("rollingFriction").As<float>());
-        return;
-    } 
-    
-    if (!Str::Cmp(propName, "linearDamping")) {
-        SetLinearDamping(props->Get("linearDamping").As<float>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "angularDamping")) {
-        SetAngularDamping(props->Get("angularDamping").As<float>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "kinematic")) {
-        SetKinematic(props->Get("kinematic").As<bool>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "ccd")) {
-        SetCCD(props->Get("ccd").As<bool>());
-        return;
-    }
+float ComRigidBody::GetMass() const { 
+    return body ? body->GetMass() : physicsDesc.mass;
+}
 
-    Component::PropertyChanged(classname, propName);
+void ComRigidBody::SetMass(float mass) { 
+    if (body) {
+        body->SetMass(mass);
+    } else {
+        physicsDesc.mass = mass;
+    }
+}
+
+float ComRigidBody::GetRestitution() const { 
+    return body ? body->GetRestitution() : physicsDesc.restitution;
+}
+
+void ComRigidBody::SetRestitution(float restitution) {
+    if (body) {
+        body->SetRestitution(restitution);
+    } else {
+        physicsDesc.restitution = restitution;
+    }
+}
+
+float ComRigidBody::GetFriction() const { 
+    return body ? body->GetFriction() : physicsDesc.friction;
+}
+
+void ComRigidBody::SetFriction(float friction) { 
+    if (body) {
+        body->SetFriction(friction);
+    } else {
+        physicsDesc.friction = friction;
+    }
+}
+
+float ComRigidBody::GetRollingFriction() const {
+    return body ? body->GetRollingFriction() : physicsDesc.rollingFriction;
+}
+
+void ComRigidBody::SetRollingFriction(float rollingFriction) {
+    if (body) {
+        body->SetRollingFriction(rollingFriction);
+    } else {
+        physicsDesc.rollingFriction = rollingFriction;
+    }
+}
+
+float ComRigidBody::GetLinearDamping() const { 
+    return body ? body->GetLinearDamping() : physicsDesc.linearDamping;
+}
+
+void ComRigidBody::SetLinearDamping(float linearDamping) { 
+    if (body) {
+        body->SetLinearDamping(linearDamping);
+    } else {
+        physicsDesc.linearDamping = linearDamping;
+    }
+}
+
+float ComRigidBody::GetAngularDamping() const { 
+    return body ? body->GetAngularDamping() : physicsDesc.angularDamping;
+}
+
+void ComRigidBody::SetAngularDamping(float angularDamping) { 
+    if (body) {
+        body->SetAngularDamping(angularDamping);
+    } else {
+        physicsDesc.angularDamping = angularDamping;
+    }
+}
+
+bool ComRigidBody::IsKinematic() const { 
+    return body ? body->IsKinematic() : physicsDesc.kinematic;
+}
+
+void ComRigidBody::SetKinematic(bool kinematic) {
+    if (body) {
+        body->SetKinematic(kinematic);
+    } else {
+        physicsDesc.kinematic = kinematic;
+    }
+}
+
+bool ComRigidBody::IsCCD() const { 
+    return body ? body->IsCCD() : physicsDesc.ccd;
+}
+
+void ComRigidBody::SetCCD(bool enableCcd) { 
+    if (body) {
+        body->SetCCD(enableCcd);
+    } else {
+        physicsDesc.ccd = enableCcd;
+    }
 }
 
 BE_NAMESPACE_END
-

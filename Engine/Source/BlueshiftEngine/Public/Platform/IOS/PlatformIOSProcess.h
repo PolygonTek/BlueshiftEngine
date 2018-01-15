@@ -27,6 +27,7 @@ struct ProcessHandle {
 
 class BE_API PlatformIOSProcess : public PlatformAppleProcess {
 public:
+    static const wchar_t *      ExecutableFileName();
     static const wchar_t *		ComputerName();
     static const wchar_t *		UserName();
 };

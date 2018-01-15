@@ -23,8 +23,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("FBX", FbxAsset, Asset)
 BEGIN_EVENTS(FbxAsset)
 END_EVENTS
-BEGIN_PROPERTIES(FbxAsset)
-END_PROPERTIES
+
+void FbxAsset::RegisterProperties() {
+}
 
 FbxAsset::FbxAsset() {
     isRedundantAsset = true;

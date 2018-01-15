@@ -23,220 +23,163 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef Entity::SIG_ComponentInserted("componentInserted", "ai");
-const SignalDef Entity::SIG_ComponentRemoved("componentRemoved", "a");
-const SignalDef Entity::SIG_LayerChanged("layerChanged", "a");
+const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ab");
+const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyChanged", "ab");
+const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
+const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
+const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ab");
+const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
+const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
+const SignalDef Entity::SIG_ComponentRemoved("Entity::ComponentRemoved", "a");
+const SignalDef Entity::SIG_ComponentSwapped("Entity::ComponentSwapped", "ii");
 
 OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
 END_EVENTS
-BEGIN_PROPERTIES(Entity)
-    PROPERTY_OBJECT("guid", "GUID", "entity GUID", Guid::zero.ToString(), Entity::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("parent", "Parent Entity", "parent entity", Guid::zero.ToString(), Entity::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_BOOL("isPrefabParent", "Is prefab Parent", "is prefab parent ?", "false", PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("prefabParent", "Prefab Parent", "prefab parent entity", Guid::zero.ToString(), Entity::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_STRING("name", "Name", "entity name", "", PropertySpec::ReadWrite),
-    PROPERTY_STRING("tag", "Tag", "Tag", "Untagged", PropertySpec::ReadWrite),
-    PROPERTY_INT("layer", "Layer", "Layer", "0", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("frozen", "Frozen", "is frozen ?", "false", PropertySpec::ReadWrite),
-END_PROPERTIES
+
+void Entity::RegisterProperties() {
+    REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero, "Parent Entity", PropertyInfo::EditorFlag)
+        .SetMetaObject(&Entity::metaObject);
+    REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false, "Is prefab ?", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&Entity::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity", "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged", "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("active", "Active", bool, IsActiveSelf, SetActive, true, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("activeInHierarchy", "Active In Hierarchy", bool, activeInHierarchy, true, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false, "", PropertyInfo::EditorFlag);
+}
 
 Entity::Entity() {
     gameWorld = nullptr;
     entityNum = GameWorld::BadEntityNum;
     node.SetOwner(this);
+    layer = 0;
     frozen = false;
+    prefab = false;
+    prefabSourceGuid = Guid::zero;
+    activeSelf = true;
+    activeInHierarchy = true;
     initialized = false;
-
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&Entity::PropertyChanged);
 }
 
 Entity::~Entity() {
     Purge();
 }
 
-Entity *Entity::CreateEntity(Json::Value &entityValue) {
-    Guid entityGuid = Guid::ParseString(entityValue.get("guid", Guid::zero.ToString()).asCString());
-    if (entityGuid.IsZero()) {
-        entityValue["guid"] = Guid::CreateGuid().ToString();
-    }
-
-    entityGuid = Guid::ParseString(entityValue["guid"].asCString());
-
-    Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
-    entity->props->Init(entityValue);
-
-    entity->name = entity->props->Get("name").As<Str>();
-    entity->tag = entity->props->Get("tag").As<Str>();
-    
-    Json::Value &componentsValue = entityValue["components"];
-
-    for (int i = 0; i < componentsValue.size(); i++) {
-        Json::Value &componentValue = componentsValue[i];
-
-        const char *classname = componentValue["classname"].asCString();
-        MetaObject *metaComponent = Object::GetMetaObject(classname);
-
-        if (metaComponent) {
-            if (metaComponent->IsTypeOf(Component::metaObject)) {
-                Guid componentGuid = Guid::ParseString(componentValue.get("guid", Guid::zero.ToString()).asCString());
-                if (componentGuid.IsZero()) {
-                    componentValue["guid"] = Guid::CreateGuid().ToString();
-                }
-
-                componentGuid = Guid::ParseString(componentValue["guid"].asCString());
-
-                Component *component = static_cast<Component *>(metaComponent->CreateInstance(componentGuid));
-
-                if (metaComponent->IsTypeOf(ComScript::metaObject)) {
-                    ComScript *scriptComponent = component->Cast<ComScript>();
-                    scriptComponent->InitPropertySpec(componentValue);
-                }
-
-                component->props->Init(componentValue);
-
-                entity->AddComponent(component);
-            } else {
-                BE_WARNLOG(L"'%hs' is not a component class\n", classname);
-            }
-        } else {
-            BE_WARNLOG(L"Unknown component class '%hs'\n", classname);
+void Entity::Purge() {
+    // Purge all the components in opposite order
+    for (int componentIndex = components.Count() - 1; componentIndex >= 0; componentIndex--) {
+        Component *component = components[componentIndex];
+        if (component) {
+            component->Purge();
         }
     }
 
-    return entity;
+    initialized = false;
 }
 
-Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap) {
-    Json::Value newEntityValue = entityValue;
-
-    Guid oldEntityGuid = Guid::ParseString(entityValue["guid"].asCString());
-    Guid newEntityGuid = Guid::CreateGuid();
-
-    //BE_LOG(L"NewGUID %hs: %hs -> %hs\n", entityValue["name"].asCString(), oldEntityGuid.ToString(), newEntityGuid.ToString());
-
-    oldToNewGuidMap.Set(oldEntityGuid, newEntityGuid);
-
-    newEntityValue["guid"] = newEntityGuid.ToString();
-
-    Json::Value &componentsValue = newEntityValue["components"];
-
-    for (int i = 0; i < componentsValue.size(); i++) {
-        Guid oldComponentGuid = Guid::ParseString(componentsValue[i]["guid"].asCString());
-        Guid newComponentGuid = Guid::CreateGuid();
-
-        oldToNewGuidMap.Set(oldComponentGuid, newComponentGuid);
-
-        componentsValue[i]["guid"] = newComponentGuid.ToString();
+void Entity::Event_ImmediateDestroy() {
+    if (gameWorld) {
+        if (gameWorld->IsRegisteredEntity(this)) {
+            gameWorld->UnregisterEntity(this);
+        }
     }
 
-    return newEntityValue;
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        component->entity = nullptr;
+        Component::DestroyInstanceImmediate(component);
+    }
+
+    components.Clear();
+
+    Object::Event_ImmediateDestroy();
 }
 
-void Entity::RemapGuids(EntityPtrArray &entities, const HashTable<Guid, Guid> &guidMap) {
-    for (int i = 0; i < entities.Count(); i++) {
-        Entity *ent = entities[i];
+void Entity::Init() {
+    initialized = true;
+}
 
-        for (int propIndex = 0; propIndex < ent->props->Count(); propIndex++) {
-            const PropertySpec *spec = ent->props->GetSpec(propIndex);
+void Entity::InitComponents() {
+    assert(gameWorld);
 
-            if (spec->GetType() == PropertySpec::ObjectType) {
-                const Guid objectGuid = ent->props->Get(spec->GetName()).As<Guid>();
-                Guid mappedGuid;
-
-                if (guidMap.Get(objectGuid, &mappedGuid)) {
-                    //BE_LOG(L"Remap %hs %hs: %hs -> %hs\n", ent->GetName(), spec->GetName(), objectGuid.ToString(), mappedGuidPtr->ToString());
-
-                    ent->props->Set(spec->GetName(), mappedGuid);
-                }
-            }
-        }
-
-        for (int componentIndex = 0; componentIndex < ent->NumComponents(); componentIndex++) {
-            Component *component = ent->GetComponent(componentIndex);
-
-            for (int propIndex = 0; propIndex < component->props->Count(); propIndex++) {
-                const PropertySpec *spec = component->props->GetSpec(propIndex);
-
-                if (spec->GetType() == PropertySpec::ObjectType) {
-                    const Guid objectGuid = component->props->Get(spec->GetName()).As<Guid>();
-                    Guid mappedGuid;
-
-                    if (guidMap.Get(objectGuid, &mappedGuid)) {
-                        component->props->Set(spec->GetName(), mappedGuid);
-                    }
-                }
+    // Initialize components
+    for (int i = 0; i < components.Count(); i++) {
+        Component *component = components[i];
+        if (component) {
+            if (!component->IsInitialized()) {
+                component->Init();
             }
         }
     }
-}
 
-int Entity::GetSpawnId() const {
-    return gameWorld->GetEntitySpawnId(this); 
-}
-
-bool Entity::IsPrefabParent() const {
-    bool isPrefabParent = props->Get("isPrefabParent").As<bool>();
-    return isPrefabParent;
-}
-
-bool Entity::IsPrefabInstance() const {
-    Guid prefabParentGuid = props->Get("prefabParent").As<Guid>();
-    return !prefabParentGuid.IsZero();
-}
-
-Entity *Entity::GetPrefabParent() const {
-    Guid prefabParentGuid = props->Get("prefabParent").As<Guid>();
-    Object *prefabParentObj = Entity::FindInstance(prefabParentGuid);
-    Entity *prefabParent = prefabParentObj ? prefabParentObj->Cast<Entity>() : nullptr;
-    return prefabParent;
-}
-
-bool Entity::HasComponent(const MetaObject &type) const {
-    if (GetComponent(type)) {
-        return true;
+    ComRenderable *renderable = GetComponent<ComRenderable>();
+    if (renderable) {
+        renderable->SetProperty("skipSelection", frozen);
     }
-    return false;
 }
 
-Component *Entity::GetConflictingComponent(const MetaObject &type) const {
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component->IsConflictComponent(type)) {
-            return component;
+void Entity::Awake() {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component) {
+            component->Awake();
         }
     }
-
-    return nullptr;
 }
 
-int Entity::GetComponentIndex(const Component *component) const {
-    return components.FindIndex(const_cast<Component *>(component));
-}
+void Entity::Start() {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
 
-Component *Entity::GetComponent(const MetaObject &type) const {
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component->GetMetaObject()->IsTypeOf(type)) {
-            return component;
+        if (component) {
+            component->Start();
         }
     }
-
-    return nullptr;
 }
 
-ComponentPtrArray Entity::GetComponents(const MetaObject &type) const {
-    ComponentPtrArray subComponents;
+void Entity::FixedUpdate(float timeStep) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
 
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-
-        if (component->GetMetaObject()->IsTypeOf(type)) {
-            subComponents.Append(component);
+        if (component && component->IsActiveInHierarchy()) {
+            component->FixedUpdate(timeStep);
         }
     }
+}
 
-    return subComponents;
+void Entity::FixedLateUpdate(float timeStep) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component && component->IsActiveInHierarchy()) {
+            component->FixedLateUpdate(timeStep);
+        }
+    }
+}
+
+void Entity::Update() {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component && component->IsActiveInHierarchy()) {
+            component->Update();
+        }
+    }
+}
+
+void Entity::LateUpdate() {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component && component->IsActiveInHierarchy()) {
+            component->LateUpdate();
+        }
+    }
 }
 
 ComTransform *Entity::GetTransform() const {
@@ -245,16 +188,33 @@ ComTransform *Entity::GetTransform() const {
     return transform;
 }
 
-void Entity::AddComponent(Component *component) {
-    InsertComponent(component, components.Count());
-}
-
 void Entity::InsertComponent(Component *component, int index) {
     component->SetEntity(this);
 
     components.Insert(component, index);
 
     EmitSignal(&SIG_ComponentInserted, component, index);
+}
+
+bool Entity::RemoveComponent(Component *component) {
+    return components.Remove(component);
+}
+
+bool Entity::SwapComponent(int fromIndex, int toIndex) {
+    Clamp(fromIndex, 1, components.Count());
+    Clamp(toIndex, 1, components.Count());
+
+    if (fromIndex != toIndex) {
+        Swap(components[fromIndex], components[toIndex]);
+
+        EmitSignal(&SIG_ComponentSwapped, fromIndex, toIndex);
+        return true;
+    }
+    return false;
+}
+
+bool Entity::HasChildren() const {
+    return node.GetChild() ? true : false;
 }
 
 void Entity::GetChildren(EntityPtrArray &children) const {
@@ -274,8 +234,9 @@ Entity *Entity::FindChild(const char *name) const {
 }
 
 bool Entity::HasRenderEntity(int renderEntityHandle) const {
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
+    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
         if (component) {
             if (component->HasRenderEntity(renderEntityHandle)) {
                 return true;
@@ -285,140 +246,8 @@ bool Entity::HasRenderEntity(int renderEntityHandle) const {
     return false;
 }
 
-void Entity::SetParent(Entity *parentEntity) {
-    props->Set("parent", parentEntity->GetGuid());
-}
-
-void Entity::PurgeJointComponents() {
-    for (int i = components.Count() - 1; i >= 0; i--) {
-        Component *component = components[i];
-        if (component && component->IsTypeOf<ComJoint>()) {
-            component->Purge();
-        }
-    }
-}
-
-void Entity::Purge() {
-    for (int i = components.Count() - 1; i >= 0; i--) {
-        Component *component = components[i];
-        if (component) {
-            component->Purge();
-        }
-    }
-
-    initialized = false;
-}
-
-void Entity::Event_ImmediateDestroy() {
-    if (gameWorld) {
-        if (gameWorld->IsRegisteredEntity(this)) {
-            gameWorld->UnregisterEntity(this);
-        }
-    }
-
-    for (int i = 0; i < components.Count(); i++) {
-        components[i]->entity = nullptr;
-        Component::DestroyInstanceImmediate(components[i]);
-    }
-
-    components.Clear();
-    
-    Object::Event_ImmediateDestroy();
-}
-
-void Entity::InitHierarchy() {
-    Entity *parent = nullptr;
-
-    const Guid parentGuid = props->Get("parent").As<Guid>();
-    if (!parentGuid.IsZero()) {
-        Object *parentObj = Entity::FindInstance(parentGuid);
-        parent = parentObj ? parentObj->Cast<Entity>() : nullptr;
-        if (!parent) {
-            BE_WARNLOG(L"Couldn't find parent entity %hs of %hs\n", parentGuid.ToString(), name.c_str());
-        }
-    }
-
-    if (parent) {
-        node.SetParent(parent->node);
-    } 
-}
-
-void Entity::Init() {
-    if (!gameWorld) {
-        return;
-    }
-
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component && !component->IsInitalized()) {
-            component->Init();
-        }
-    }
-
-    frozen = props->Get("frozen").As<bool>();
-
-    ComRenderable *renderable = GetComponent<ComRenderable>();
-    if (renderable) {
-        renderable->props->Set("skipSelection", frozen);
-    }
-
-    initialized = true;
-}
-
-void Entity::Awake() {
-    if (!gameWorld) {
-        return;
-    }
-
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component) {
-            component->Awake();
-        }
-    }
-}
-
-void Entity::Start() {
-    if (!gameWorld) {
-        return;
-    }
-
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component) {
-            component->Start();
-        }
-    }
-}
-
-void Entity::Update() {
-    if (!gameWorld) {
-        return;
-    }
-
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component && component->IsEnabled()) {
-            component->Update();
-        }
-    }
-}
-
-void Entity::LateUpdate() {
-    if (!gameWorld) {
-        return;
-    }
-
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component && component->IsEnabled()) {
-            component->LateUpdate();
-        }
-    }
-}
-
 void Entity::OnApplicationTerminate() {
-    ComponentPtrArray scriptComponents = GetComponents(ComScript::metaObject);
+    ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
     for (int i = 0; i < scriptComponents.Count(); i++) {
         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
         
@@ -427,7 +256,7 @@ void Entity::OnApplicationTerminate() {
 }
 
 void Entity::OnApplicationPause(bool pause) {
-    ComponentPtrArray scriptComponents = GetComponents(ComScript::metaObject);
+    ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
     for (int i = 0; i < scriptComponents.Count(); i++) {
         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
         
@@ -435,56 +264,117 @@ void Entity::OnApplicationPause(bool pause) {
     }
 }
 
-void Entity::Serialize(Json::Value &jsonEntity) const {
-    Json::Value jsonComponents;
+void Entity::Serialize(Json::Value &value) const {
+    Json::Value componentsValue;
 
-    props->Serialize(jsonEntity);
+    Serializable::Serialize(value);
 
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
         if (component) {
-            Json::Value jsonComponent;
-            component->props->Serialize(jsonComponent);
+            Json::Value componentValue;
+            component->Serialize(componentValue);
 
-            jsonComponents.append(jsonComponent);
+            componentsValue.append(componentValue);
         }
     }
 
-    jsonEntity["components"] = jsonComponents;
+    value["components"] = componentsValue;
 }
 
-bool Entity::IsActiveSelf() const {
-    for (int i = 1; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component) {
-            if (component->IsEnabled()) {
-                return true;
+void Entity::Deserialize(const Json::Value &entityValue) {
+    Serializable::Deserialize(entityValue);
+
+    const Json::Value &componentsValue = entityValue["components"];
+
+    for (int i = 0; i < componentsValue.size(); i++) {
+        const Json::Value &componentValue = componentsValue[i];
+
+        const char *classname = componentValue["classname"].asCString();
+        MetaObject *metaComponent = Object::FindMetaObject(classname);
+
+        if (metaComponent) {
+            if (metaComponent->IsTypeOf(Component::metaObject)) {
+                Guid componentGuid = Guid::FromString(componentValue.get("guid", Guid::zero.ToString()).asCString());
+                if (componentGuid.IsZero()) {
+                    componentGuid = Guid::CreateGuid();
+                }
+
+                Component *component = static_cast<Component *>(metaComponent->CreateInstance(componentGuid));
+                AddComponent(component);
+
+                component->Deserialize(componentValue);
+            } else {
+                BE_WARNLOG(L"'%hs' is not a component class\n", classname);
+            }
+        } else {
+            BE_WARNLOG(L"Unknown component class '%hs'\n", classname);
+        }
+    }
+}
+
+void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue) {
+    Json::Value entityValue;
+
+    entity->Serialize(entityValue);
+
+    entitiesValue.append(entityValue);
+
+    for (Entity *child = entity->GetNode().GetChild(); child; child = child->GetNode().GetNextSibling()) {
+        Entity::SerializeHierarchy(child, entitiesValue);
+    }
+}
+
+void Entity::SetActive(bool active) {
+    if (active == activeSelf) {
+        return;
+    }
+
+    activeSelf = active;
+
+    EmitSignal(&SIG_ActiveChanged, this, active);
+
+    const Entity *parentEntity = node.GetParent();
+
+    if (!parentEntity || parentEntity->activeInHierarchy) {
+        SetActiveInHierarchy(active);
+    }
+}
+
+void Entity::SetActiveInHierarchy(bool active) {
+    if (activeInHierarchy == active) {
+        return;
+    }
+
+    activeInHierarchy = active;
+
+    EmitSignal(&SIG_ActiveInHierarchyChanged, this, active);
+
+    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component->IsEnabled()) {
+            if (activeInHierarchy) {
+                component->OnActive();
+            } else {
+                component->OnInactive();
             }
         }
     }
 
-    return false;
-}
-
-void Entity::SetActive(bool active) {
-    for (int i = 1; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component) {
-            component->Enable(active);
-        }
-    }
-
     for (Entity *childEnt = node.GetChild(); childEnt; childEnt = childEnt->node.GetNextSibling()) {
-        childEnt->SetActive(active);
+        childEnt->SetActiveInHierarchy(active);
     }
 }
 
 const AABB Entity::GetAABB() const {
     AABB aabb;
-    aabb.Clear();
+    aabb.SetZero();
 
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
+    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
         if (component) {
             aabb.AddAABB(component->GetAABB());
         }
@@ -524,9 +414,10 @@ const Vec3 Entity::GetWorldPosition(WorldPosEnum pos) const {
 }
 
 void Entity::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component && component->IsEnabled()) {
+    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component && component->IsActiveInHierarchy()) {
             component->DrawGizmos(sceneView, selected);
         }
     }
@@ -535,9 +426,10 @@ void Entity::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
 bool Entity::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
     float s = lastScale;
 
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component && component->IsEnabled()) {
+    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+        Component *component = components[componentIndex];
+
+        if (component && component->IsActiveInHierarchy()) {
             component->RayIntersection(start, dir, backFaceCull, s);
         }
     }
@@ -560,66 +452,189 @@ void Entity::DestroyInstance(Entity *entity) {
     Object::DestroyInstance(entity);
 }
 
-void Entity::PropertyChanged(const char *classname, const char *propName) {
-    if (!initialized) {
-        return;
-    }
+void Entity::SetName(const Str &name) {
+    this->name = name;
 
-    if (!Str::Cmp(propName, "name")) {
-        name = props->Get("name").As<Str>();
+    if (initialized) {
         GetGameWorld()->OnEntityNameChanged(this);
-        return;
-    }
 
-    if (!Str::Cmp(propName, "tag")) {
-        tag = props->Get("tag").As<Str>();
+        EmitSignal(&SIG_NameChanged, this, name);
+    }
+}
+
+void Entity::SetTag(const Str &tag) {
+    this->tag = tag;
+
+    if (initialized) {
         GetGameWorld()->OnEntityTagChanged(this);
-        return;
     }
+}
 
-    if (!Str::Cmp(propName, "layer")) {
+void Entity::SetLayer(int layer) {
+    this->layer = layer;
+
+    if (initialized) {
         EmitSignal(&SIG_LayerChanged, this);
-        return;
     }
+}
 
-    if (!Str::Cmp(propName, "parent")) {
-        Guid parentGuid = props->Get("parent").As<Guid>();
-        Object *parentObj = Entity::FindInstance(parentGuid);
-        Entity *parent = parentObj ? parentObj->Cast<Entity>() : nullptr;
-        ComTransform *transform = GetTransform();
-        Mat4 localMatrix;
+void Entity::SetParent(Entity *parentEntity) {
+    SetParentGuid(parentEntity->GetGuid());
+}
 
-        if (parent) {
-            node.SetParent(parent->node);
+Guid Entity::GetParentGuid() const {
+    Entity *parentEntity = node.GetParent();
+    if (parentEntity) {
+        return parentEntity->GetGuid();
+    }
+    return Guid();
+}
 
-            localMatrix = parent->GetTransform()->GetWorldMatrix().AffineInverse() * transform->GetWorldMatrix();           
-        } else {
+void Entity::SetParentGuid(const Guid &parentGuid) {
+    Object *parentObject = Entity::FindInstance(parentGuid);
+    Entity *parentEntity = parentObject ? parentObject->Cast<Entity>() : nullptr;
+    
+    if (parentEntity) {
+        node.SetParent(parentEntity->node);
+    } else {
+        if (gameWorld) {
             node.SetParent(gameWorld->GetEntityHierarchy());
-
-            localMatrix = transform->GetWorldMatrix();
         }
-
-        Mat3 axis = localMatrix.ToMat3();
-        Vec3 scale;
-        scale.x = axis[0].Length();
-        scale.y = axis[1].Length();
-        scale.z = axis[2].Length();
-        axis.OrthoNormalizeSelf();
-
-        transform->props->Set("origin", localMatrix.ToTranslationVec3());
-        transform->props->Set("scale", scale);
-        transform->props->Set("angles", axis.ToAngles());
-        return;
     }
 
-    if (!Str::Cmp(propName, "frozen")) {
-        frozen = props->Get("frozen").As<bool>();
+    if (initialized) {
+        EmitSignal(&SIG_ParentChanged, this, parentEntity);
+    }
+}
 
+Guid Entity::GetPrefabSourceGuid() const {
+    return prefabSourceGuid;
+}
+
+void Entity::SetPrefabSourceGuid(const Guid &prefabSourceGuid) {
+    this->prefabSourceGuid = prefabSourceGuid;
+}
+
+void Entity::SetFrozen(bool frozen) {
+    this->frozen = frozen;
+
+    if (initialized) {
         ComRenderable *renderable = GetComponent<ComRenderable>();
         if (renderable) {
-            renderable->props->Set("skipSelection", frozen);
+            renderable->SetProperty("skipSelection", frozen);
         }
-        return;
+
+        EmitSignal(&SIG_FrozenChanged, this, frozen);
+    }
+}
+
+Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld) {
+    Guid entityGuid = Guid::FromString(entityValue.get("guid", Guid::zero.ToString()).asCString());
+    if (entityGuid.IsZero()) {
+        entityGuid = Guid::CreateGuid();
+    }
+
+    Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
+    entity->gameWorld = gameWorld;
+    entity->Deserialize(entityValue);
+
+    return entity;
+}
+
+Json::Value Entity::CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap) {
+    // Copy entity JSON value
+    Json::Value newEntityValue = entityValue;
+
+    Guid oldEntityGuid = Guid::FromString(entityValue["guid"].asCString());
+    Guid newEntityGuid = Guid::CreateGuid();
+
+    // Replace entity GUID to the new one
+    newEntityValue["guid"] = newEntityGuid.ToString();
+
+    // Mark in the GUID hash table
+    oldToNewGuidMap.Set(oldEntityGuid, newEntityGuid);
+
+    Json::Value &componentsValue = newEntityValue["components"];
+
+    for (int i = 0; i < componentsValue.size(); i++) {
+        Guid oldComponentGuid = Guid::FromString(componentsValue[i]["guid"].asCString());
+        Guid newComponentGuid = Guid::CreateGuid();
+
+        // Replace component GUID to the new one
+        componentsValue[i]["guid"] = newComponentGuid.ToString();
+
+        // Mark in the GUID hash table
+        oldToNewGuidMap.Set(oldComponentGuid, newComponentGuid);
+    }
+
+    return newEntityValue;
+}
+
+Json::Value Entity::CloneEntitiesValue(const Json::Value &entitiesValue, HashTable<Guid, Guid> &oldToNewGuidMap) {
+    Json::Value clonedEntitiesValue;
+
+    for (int i = 0; i < entitiesValue.size(); i++) {
+        clonedEntitiesValue.append(CloneEntityValue(entitiesValue[i], oldToNewGuidMap));
+    }
+    return clonedEntitiesValue;
+}
+
+void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMap) {
+    PropertyInfo propInfo;
+    Guid toGuid;
+
+    Array<PropertyInfo> propertyInfoList;
+    entity->GetPropertyInfoList(propertyInfoList);
+
+    for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
+        const auto &propInfo = propertyInfoList[propIndex];
+            
+        if (propInfo.GetType() == Variant::GuidType) {
+            if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
+                for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+                    const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
+
+                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                        entity->SetArrayProperty(propIndex, arrayIndex, toGuid);
+                    }
+                }
+            } else {
+                const Guid fromGuid = entity->GetProperty(propIndex).As<Guid>();
+
+                if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                    entity->SetProperty(propIndex, toGuid);
+                }
+            }
+        }
+    }
+
+    for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
+        Component *component = entity->GetComponent(componentIndex);
+
+        Array<PropertyInfo> propertyInfoList;
+        component->GetPropertyInfoList(propertyInfoList);
+
+        for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
+            const auto &propInfo = propertyInfoList[propIndex];
+
+            if (propInfo.GetType() == Variant::GuidType) {
+                if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
+                    for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+                        const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
+
+                        if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                            component->SetArrayProperty(propIndex, arrayIndex, toGuid);
+                        }
+                    }
+                } else {
+                    const Guid fromGuid = component->GetProperty(propIndex).As<Guid>();
+
+                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                        component->SetProperty(propIndex, toGuid);
+                    }
+                }
+            }
+        }
     }
 }
 

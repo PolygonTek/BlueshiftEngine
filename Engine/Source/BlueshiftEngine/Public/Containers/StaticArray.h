@@ -29,6 +29,8 @@ BE_NAMESPACE_BEGIN
 /// Templated static array
 template <typename T, int capacity>
 class StaticArray {
+    static_assert(std::is_default_constructible<T>::value, "StaticArray requires default-constructible elements");
+
 public:
     /// Constructs empty array.
     StaticArray();
@@ -90,6 +92,7 @@ public:
 
                     /// Compares with another array.
     bool            operator==(const StaticArray<T, capacity> &rhs) const;
+    bool            operator!=(const StaticArray<T, capacity> &rhs) const;
 
                     /// Removes all the elements from the array.
     void            Clear();
@@ -271,6 +274,21 @@ BE_INLINE bool StaticArray<T, capacity>::operator==(const StaticArray<T, capacit
     }
 
     return true;
+}
+
+template <typename T, int capacity>
+BE_INLINE bool StaticArray<T, capacity>::operator!=(const StaticArray<T, capacity> &rhs) const {
+    if (count != rhs.count) {
+        return true;
+    }
+
+    for (int i = 0; i < count; i++) {
+        if (elements[i] != rhs.elements[i]) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 template <typename T, int capacity>

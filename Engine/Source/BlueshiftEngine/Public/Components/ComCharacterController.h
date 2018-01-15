@@ -35,45 +35,51 @@ public:
     ComCharacterController();
     virtual ~ComCharacterController();
 
+                            /// Returns true if this component conflicts with the given component
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const override;
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-    virtual void            Enable(bool enable) override;
-
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
     bool                    IsOnGround() const { return onGround; }
 
     bool                    Move(const Vec3 &moveVector);
 
+    float                   GetMass() const;
+    void                    SetMass(const float mass);
+    
+    float                   GetCapsuleRadius() const;
+    void                    SetCapsuleRadius(const float capsuleRadius);
+    
+    float                   GetCapsuleHeight() const;
+    void                    SetCapsuleHeight(const float capsuleHeight);
+    
+    float                   GetStepOffset() const;
+    void                    SetStepOffset(const float stepOffset);
+        
+    float                   GetSlopeLimit() const;
+    void                    SetSlopeLimit(const float slopeLimit);
+
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    GroundTrace();
     void                    RecoverFromPenetration();
     bool                    SlideMove(const Vec3 &moveVector);
 
-    float                   GetMass() const;
-    void                    SetMass(const float mass);
-
-    float                   GetCapsuleRadius() const;
-    void                    SetCapsuleRadius(const float capsuleRadius);
-
-    float                   GetCapsuleHeight() const;
-    void                    SetCapsuleHeight(const float capsuleHeight);
-
-    float                   GetStepOffset() const;
-    void                    SetStepOffset(const float stepOffset);
-
-    float                   GetSlopeLimit() const;
-    void                    SetSlopeLimit(const float slopeLimit);
-
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     Collider *              collider;

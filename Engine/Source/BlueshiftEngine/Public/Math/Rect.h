@@ -35,6 +35,19 @@ public:
     Rect() = default;
     /// Constructs from coordinates.
     Rect(int x, int y, int w, int h);
+    /// Assignment operator
+    Rect &operator=(const Rect &rhs);
+
+#ifdef QRECT_H
+    /// Constructs from a QPoint.
+    Rect(const QRect &qrect) {
+        this->x = qrect.x();
+        this->y = qrect.y();
+        this->w = qrect.width();
+        this->h = qrect.height();
+    }
+#endif
+
     /// Constructs from a point.
     explicit Rect(const Point &p);
 
@@ -104,6 +117,13 @@ public:
                         /// Returns "x y w h"
     const char *        ToString() const;
 
+                        /// Creates from the string
+    static Rect         FromString(const char *str);
+
+#ifdef QRECT_H
+    QRect               ToQRect() const { return QRect(x, y, w, h); }
+#endif
+
     static const Rect   empty;
 
     int                 x;
@@ -120,10 +140,18 @@ BE_INLINE Rect::Rect(int x, int y, int w, int h) {
 }
 
 BE_INLINE Rect::Rect(const Point &p) {
-    this->x = p.x;
-    this->y = p.y;
-    this->w = 1;
-    this->h = 1;
+    x = p.x;
+    y = p.y;
+    w = 1;
+    h = 1;
+}
+
+BE_INLINE Rect &Rect::operator=(const Rect &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    w = rhs.w;
+    h = rhs.h;
+    return *this;
 }
 
 BE_INLINE int Rect::operator[](int index) const {

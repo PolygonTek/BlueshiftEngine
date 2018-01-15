@@ -22,9 +22,6 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Collider", ComCollider, Component)
 BEGIN_EVENTS(ComCollider)
 END_EVENTS
-BEGIN_PROPERTIES(ComCollider)
-    PROPERTY_STRING("material", "Physics Material", "", "", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComCollider::RegisterProperties() {
 }
@@ -49,24 +46,7 @@ void ComCollider::Purge(bool chainPurge) {
 }
 
 void ComCollider::Init() {
-    Purge();
-
     Component::Init();
-}
-
-void ComCollider::Enable(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            //UpdateVisuals();
-            Component::Enable(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            //renderWorld->RemoveEntity(renderEntityHandle);
-            //renderEntityHandle = -1;
-            Component::Enable(false);
-        }
-    }
 }
 
 const AABB ComCollider::GetAABB() {
@@ -78,19 +58,6 @@ const AABB ComCollider::GetAABB() {
 
 bool ComCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
     return false;
-}
-
-void ComCollider::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "material")) {
-        material = props->Get("material").As<Str>();
-        return;
-    } 
-
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

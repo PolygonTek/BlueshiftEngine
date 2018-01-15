@@ -49,6 +49,8 @@ public:
     Quat() = default;
     /// Constructs a Quat with the value (x, y, z, w).
     Quat(float x, float y, float z, float w);
+    /// Constructs a Quat from a C array, to the value (data[0], data[1], data[2], data[3]).
+    explicit Quat(const float data[4]);
     /// Assignment operator
     Quat &operator=(const Quat &rhs);
     
@@ -137,6 +139,9 @@ public:
                         /// Returns "x y z w" with the given precision.
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Quat         FromString(const char *str);
+
                         /// Returns dimension of this type
     int                 GetDimension() const { return 4; }
 
@@ -153,6 +158,13 @@ BE_INLINE Quat::Quat(float x, float y, float z, float w) {
     this->y = y;
     this->z = z;
     this->w = w;
+}
+
+BE_INLINE Quat::Quat(const float data[4]) {
+    this->x = data[0];
+    this->y = data[1];
+    this->z = data[2];
+    this->w = data[3];
 }
 
 BE_INLINE void Quat::Set(float x, float y, float z, float w) {
@@ -184,16 +196,16 @@ BE_INLINE Quat Quat::operator-() const {
     return Quat(-x, -y, -z, -w);
 }
 
-BE_INLINE Quat &Quat::operator=(const Quat &a) {
-    x = a.x;
-    y = a.y;
-    z = a.z;
-    w = a.w;
-    return *this;
-}
-
 BE_INLINE Quat Quat::operator+(const Quat &a) const {
     return Quat(x + a.x, y + a.y, z + a.z, w + a.w);
+}
+
+BE_INLINE Quat &Quat::operator=(const Quat &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    z = rhs.z;
+    w = rhs.w;
+    return *this;
 }
 
 BE_INLINE Quat& Quat::operator+=(const Quat &a) {

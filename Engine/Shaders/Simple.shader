@@ -1,6 +1,6 @@
 shader "Simple" {
     properties {
-        albedoMap("Albedo Map") : object TextureAsset = "_whiteTexture"
+        albedoMap("Albedo Map") : texture = "_whiteTexture"
     }
 
     glsl_vp {

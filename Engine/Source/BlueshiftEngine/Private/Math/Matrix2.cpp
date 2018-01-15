@@ -20,6 +20,12 @@ BE_NAMESPACE_BEGIN
 const Mat2 Mat2::zero(Vec2(0, 0), Vec2(0, 0));
 const Mat2 Mat2::identity(Vec2(1, 0), Vec2(0, 1));
 
+Mat2 Mat2::FromString(const char *str) {
+    Mat2 m;
+    sscanf(str, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);
+    return m;
+}
+
 bool Mat2::InverseSelf() {
 #if 1
     // 2+4 = 6 multiplications

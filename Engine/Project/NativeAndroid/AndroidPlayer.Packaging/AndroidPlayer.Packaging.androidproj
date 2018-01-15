@@ -98,6 +98,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <AntPackage>
       <AndroidAppLibName>$(RootNamespace)</AndroidAppLibName>
+      <AntTarget>release</AntTarget>
     </AntPackage>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -121,7 +122,10 @@
     </AntPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Content Include="res\values\strings.xml" />
+    <Content Include="res\drawable\icon.png" />
+    <Content Include="res\values\strings.xml">
+      <SubType>Designer</SubType>
+    </Content>
     <AntBuildXml Include="build.xml">
       <SubType>Designer</SubType>
     </AntBuildXml>
@@ -134,6 +138,9 @@
     <ProjectReference Include="..\AndroidPlayer.NativeActivity\AndroidPlayer.NativeActivity.vcxproj">
       <Project>{9f45ed62-d9ec-45ac-a5cb-7ae1c76547dd}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="assets\" />
   </ItemGroup>
   <Import Project="$(AndroidTargetsPath)\Android.targets" />
   <ImportGroup Label="ExtensionTargets" />

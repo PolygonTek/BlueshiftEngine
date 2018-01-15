@@ -14,43 +14,52 @@
 
 #pragma once
 
+#include "Containers/HashMap.h"
+#include "ComLogic.h"
 #include "Script/LuaVM.h"
-#include "Component.h"
 
 BE_NAMESPACE_BEGIN
 
 class Collision;
 class ScriptAsset;
 
-class ComScript : public Component {
+class ComScript : public ComLogic {
 public:
     OBJECT_PROTOTYPE(ComScript);
 
     ComScript();
     virtual ~ComScript();
 
-    void                    InitPropertySpec(Json::Value &jsonComponent);
-
-    virtual void            GetPropertySpecList(Array<const PropertySpec *> &pspecs) const override;
-
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
+
+                            /// Gets full list of property info including script properties.
+    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const override;
+
+                            /// Deserialize from JSON value.
+    virtual void            Deserialize(const Json::Value &in) override;
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
-
+                            /// Called on game world late-update, variable timestep.
     virtual void            LateUpdate() override;
-
-    const char *            GetSandboxName() const { return sandboxName.c_str(); }
-
-    template <typename... Args>
-    void                    CallFunc(const char *funcName, Args&&... args);
+                            /// Called on physics update, fixed timestep.
+    virtual void            FixedUpdate(float timeStep) override;
+                            /// Called on physics late-update, fixed timestep.
+    virtual void            FixedLateUpdate(float timeStep) override;
 
     virtual void            OnPointerEnter();
     virtual void            OnPointerExit();
@@ -58,6 +67,7 @@ public:
     virtual void            OnPointerDown();
     virtual void            OnPointerUp();
     virtual void            OnPointerDrag();
+    virtual void            OnPointerClick();
 
     virtual void            OnCollisionEnter(const Collision &collision);
     virtual void            OnCollisionExit(const Collision &collision);
@@ -72,24 +82,60 @@ public:
     void                    OnApplicationTerminate();
     void                    OnApplicationPause(bool pause);
 
+    Guid                    GetScriptGuid() const;
+    void                    SetScriptGuid(const Guid &guid);
+
+    const char *            GetSandboxName() const { return sandboxName.c_str(); }
+
+    template <typename... Args>
+    void                    CallFunc(const char *funcName, Args&&... args);
+
 protected:
-    void                    InitPropertySpecImpl(const Guid &scriptGuid);
-    bool                    LoadScriptWithSandboxed(const char *filename, const char *sandboxName);
-    void                    SetScriptProperties();
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
 
     void                    ChangeScript(const Guid &scriptGuid);
+    bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
+    void                    InitScriptFields();
+    void                    SetScriptProperties();
+    LuaCpp::Selector        CacheFunction(const char *funcname);
+    void                    UpdateFunctionMap();
     void                    ScriptReloaded();
+    void                    SetOwnerValues();
 
-    const Guid              GetScript() const;
-    void                    SetScript(const Guid &guid);
-
-    void                    PropertyChanged(const char *classname, const char *propName);
-
+    Guid                    scriptGuid;
     ScriptAsset *           scriptAsset;
+    LuaCpp::State *         state;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
 
-    Array<const PropertySpec *> scriptPropertySpecs;
+    Array<PropertyInfo>     fieldInfos;
+    HashMap<Str, Variant>   fieldValues;
+
+    LuaCpp::Selector        awakeFunc;
+    LuaCpp::Selector        startFunc;
+    LuaCpp::Selector        updateFunc;
+    LuaCpp::Selector        lateUpdateFunc;
+    LuaCpp::Selector        fixedUpdateFunc;
+    LuaCpp::Selector        fixedLateUpdateFunc;
+    LuaCpp::Selector        onEnableFunc;
+    LuaCpp::Selector        onDisableFunc;
+    LuaCpp::Selector        onPointerEnterFunc;
+    LuaCpp::Selector        onPointerExitFunc;
+    LuaCpp::Selector        onPointerOverFunc;
+    LuaCpp::Selector        onPointerDownFunc;
+    LuaCpp::Selector        onPointerUpFunc;
+    LuaCpp::Selector        onPointerDragFunc;
+    LuaCpp::Selector        onPointerClickFunc;
+    LuaCpp::Selector        onCollisionEnterFunc;
+    LuaCpp::Selector        onCollisionExitFunc;
+    LuaCpp::Selector        onCollisionStayFunc;
+    LuaCpp::Selector        onSensorEnterFunc;
+    LuaCpp::Selector        onSensorExitFunc;
+    LuaCpp::Selector        onSensorStayFunc;
+    LuaCpp::Selector        onParticleCollisionFunc;
+    LuaCpp::Selector        onApplicationTerminateFunc;
+    LuaCpp::Selector        onApplicationPauseFunc;
 };
 
 template <typename... Args>

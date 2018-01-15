@@ -25,6 +25,7 @@ void LuaVM::RegisterMat2(LuaCpp::Module &module) {
     _Mat2.AddClassCtor<Mat2, float, float, float, float>();
     _Mat2.AddClassMembers<Mat2>(
         "at", static_cast<Vec2&(Mat2::*)(int)>(&Mat2::At), // index start from zero
+        "assign", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::operator=),
         "add", static_cast<Mat2(Mat2::*)(const Mat2&)const>(&Mat2::operator+),
         "add_self", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::operator+=),
         "subtract", static_cast<Mat2(Mat2::*)(const Mat2&)const>(&Mat2::operator-),

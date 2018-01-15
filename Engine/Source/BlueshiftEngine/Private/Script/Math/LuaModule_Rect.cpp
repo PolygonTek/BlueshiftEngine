@@ -30,6 +30,7 @@ void LuaVM::RegisterRect(LuaCpp::Module &module) {
         "h", &Rect::h,
         "__tostring", static_cast<const char*(Rect::*)(void)const>(&Rect::ToString),
         "element", static_cast<int &(Rect::*)(int)>(&Rect::operator[]), // index start from zero
+        "assign", static_cast<Rect&(Rect::*)(const Rect&)>(&Rect::operator=),
         "set", &Rect::Set,
         "set_4coords", &Rect::SetFrom4Coords,
         "is_empty", &Rect::IsEmpty,

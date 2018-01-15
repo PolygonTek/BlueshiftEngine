@@ -29,23 +29,26 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() override;
-
-    virtual void            Enable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
     void                    UpdateSimulation(int currentTime);
 
     bool                    IsAlive() const;
 
-    void                    Start();
+    void                    Play();
     void                    Stop();
     void                    Resume();
     void                    Pause();
@@ -54,27 +57,30 @@ public:
 
     void                    ResetParticles();
 
+    Guid                    GetParticleSystemGuid() const;
+    void                    SetParticleSystemGuid(const Guid &guid);
+
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     virtual void            UpdateVisuals() override;
     void                    ChangeParticleSystem(const Guid &particleSystemGuid);
     void                    InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFraction) const;
     void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float genTimeDelta);
     void                    ComputeTrailPositionFromCustomPath(const ParticleSystem::CustomPathModule &customPathModule, const Particle *particle, float t, Particle::Trail *trail) const;
     void                    ParticleSystemReloaded();
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
-    Guid                    GetParticleSystem() const;
-    void                    SetParticleSystem(const Guid &guid);
-
+    bool                    playOnAwake;
     ParticleSystemAsset *   particleSystemAsset;
     bool                    simulationStarted;
     int                     currentTime;
     int                     stopTime;
 
-    Mesh *                  spriteMesh;
     SceneEntity::Parms      sprite;
     int                     spriteHandle;
+    Mesh *                  spriteReferenceMesh;
 };
 
 BE_NAMESPACE_END

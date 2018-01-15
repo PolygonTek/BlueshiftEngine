@@ -152,6 +152,9 @@
  %(AdditionalOptions)</AdditionalOptions>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
@@ -165,6 +168,9 @@
  %(AdditionalOptions)</AdditionalOptions>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Precompiled.h" />
@@ -177,6 +183,7 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\Range.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\Str.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\Variant.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\VariantArg.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\Guid.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\WStr.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\ByteOrder.h" />
@@ -263,6 +270,10 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\Simd_SSE4.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\smmintrin_emu.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\immintrin_emu.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\AVX\avx.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\AVX\avxb.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\AVX\avxf.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\AVX\avxi.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\SSE\sse.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\SSE\sseb.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Simd\SSE\ssef.h" />
@@ -274,6 +285,7 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\PlatformFile.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\PlatformThread.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\PlatformTime.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\PlatformSystem.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\File\File.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\File\FileSystem.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\File\FileMapping.h" />
@@ -302,6 +314,7 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Components\ComCharacterController.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Components\ComCharacterJoint.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Components\ComCollider.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Components\ComConeCollider.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Components\ComConstantForce.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Components\ComCylinderCollider.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Components\ComFixedJoint.h" />
@@ -331,9 +344,10 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\MapRenderSettings.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\GameWorld.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\CastResult.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\GameSettings\GameSettings.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\GameSettings\TagLayerSettings.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\GameSettings\PhysicsSettings.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\GameSettings.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\TagLayerSettings.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\PhysicsSettings.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\PlayerSettings.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Physics\Collider.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Physics\Physics.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Physics\PhysicsCollidable.h" />
@@ -397,8 +411,10 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Private\Platform\PlatformGeneric.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Posix\PlatformPosixProcess.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Posix\PlatformPosixTime.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Posix\PlatformPosixSystem.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Linux\PlatformLinuxProcess.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Linux\PlatformLinuxTime.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Linux\PlatformLinuxSystem.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Android\PlatformAndroidProcess.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Android\PlatformAndroidThread.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Android\PlatformAndroidFile.h" />
@@ -473,6 +489,7 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\PlatformBaseFile.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\PlatformBaseThread.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\PlatformBaseTime.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\PlatformBaseSystem.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\File\File.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\File\FileSystem.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\File\FileMapping.cpp" />
@@ -485,9 +502,11 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\DateTime.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Dict.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Expr.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\MinMaxCurve.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Lexer.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\WLexer.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Task.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Variant.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\RHIOpenGL\OpenGL\OpenGL.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\RHIOpenGL\RGLBuffer.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\RHIOpenGL\RGLCommon.cpp" />
@@ -536,6 +555,7 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Components\ComCharacterController.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Components\ComCharacterJoint.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Components\ComCollider.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Components\ComConeCollider.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Components\ComConstantForce.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Components\ComCylinderCollider.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Components\ComFixedJoint.cpp" />
@@ -566,12 +586,12 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\MapRenderSettings.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\GameWorld.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\CastResult.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\GameSettings\GameSettings.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\GameSettings\TagLayerSettings.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\GameSettings\PhysicsSettings.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\GameSettings.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\TagLayerSettings.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\PhysicsSettings.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Game\PlayerSettings.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Event.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Object.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Property.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Serializable.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Signal.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\SignalObject.cpp" />
@@ -662,6 +682,7 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Color4.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Mat2.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Mat3.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Mat3x4.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Mat4.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Quaternion.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Angles.cpp" />
@@ -679,7 +700,10 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Input\LuaModule_InputSystem.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Screen\LuaModule_Screen.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Physics\LuaModule_Physics.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Core\LuaModule_Str.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Core\LuaModule_Object.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\File\LuaModule_FileSystem.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\File\LuaModule_File.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Asset\LuaModule_Asset.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Asset\LuaModule_TextureAsset.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Asset\LuaModule_ShaderAsset.cpp" />
@@ -713,6 +737,7 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComMeshRenderer.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComStaticMeshRenderer.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComSkinnedMeshRenderer.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComAnimator.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComTextRenderer.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComParticleSystem.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComLight.cpp" />
@@ -728,8 +753,10 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Vec4Color.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Posix\PlatformPosixProcess.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Posix\PlatformPosixTime.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Posix\PlatformPosixSystem.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Linux\PlatformLinuxProcess.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Linux\PlatformLinuxTime.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Linux\PlatformLinuxSystem.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Android\PlatformAndroidProcess.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Android\PlatformAndroidThread.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Android\PlatformAndroidFile.cpp" />

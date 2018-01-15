@@ -25,17 +25,8 @@ public:
     ComLogic();
     virtual ~ComLogic() = 0;
 
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
-
-    virtual void            OnPointerEnter() {}
-    virtual void            OnPointerExit() {}
-    virtual void            OnPointerOver() {}
-    virtual void            OnPointerDown() {}
-    virtual void            OnPointerUp() {}
-    virtual void            OnPointerDrag() {}
-
-protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
 };
 
 BE_NAMESPACE_END

@@ -47,7 +47,7 @@ public:
     static bool             RemoveFile(const char *filename);
     static bool             MoveFile(const char *srcFilename, const char *dstFilename);
     static int              GetFileMode(const char *filename);
-    static int              SetFileMode(const char *filename, int mode);
+    static void             SetFileMode(const char *filename, int mode);
     
     static DateTime         GetTimeStamp(const char *filename);
     static void             SetTimeStamp(const char *filename, const DateTime &timeStamp);
@@ -60,7 +60,6 @@ public:
     static const char *     Cwd();
     static bool             SetCwd(const char *dirname);
     static const char *     ExecutablePath();
-    static const char *     HomePath();
     
     static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
     

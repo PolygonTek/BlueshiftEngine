@@ -118,15 +118,15 @@ void RB_ForwardAdditivePass(viewLight_t *viewLights) {
         }
 
         if (r_useDepthBoundTest.GetBool()) {
-            double lightDepthMin, lightDepthMax;
+            float lightDepthMin, lightDepthMax;
 
-            if (!backEnd.view->def->GetDepthBoundsFromLight(light, &lightDepthMin, &lightDepthMax)) {
+            if (!backEnd.view->def->GetDepthBoundsFromLight(light, backEnd.view->def->viewProjMatrix, &lightDepthMin, &lightDepthMax)) {
                 continue;
             }
 
-            double visSurfDepthMin, visSurfDepthMax;
+            float visSurfDepthMin, visSurfDepthMax;
 
-            if (backEnd.view->def->GetDepthBoundsFromAABB(viewLight->litSurfsAABB, &visSurfDepthMin, &visSurfDepthMax)) {
+            if (backEnd.view->def->GetDepthBoundsFromAABB(viewLight->litSurfsAABB, backEnd.view->def->viewProjMatrix, &visSurfDepthMin, &visSurfDepthMax)) {
                 // FIXME:
                 visSurfDepthMin = Max(visSurfDepthMin - 0.001, 0.0);
                 visSurfDepthMax = Min(visSurfDepthMax + 0.001, 1.0);

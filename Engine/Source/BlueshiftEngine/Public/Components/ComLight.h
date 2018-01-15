@@ -33,20 +33,17 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
-
-    virtual void            Enable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
     virtual const AABB      GetAABB() override;
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
-
-protected:
-    void                    UpdateVisuals();
 
     SceneLight::Type        GetLightType() const;
     void                    SetLightType(SceneLight::Type type);
@@ -66,8 +63,8 @@ protected:
     float                   GetMaxVisDist() const;
     void                    SetMaxVisDist(float maxVisDist);
 
-    Guid                    GetMaterial() const;
-    void                    SetMaterial(const Guid &material);
+    Guid                    GetMaterialGuid() const;
+    void                    SetMaterialGuid(const Guid &material);
 
     Color3                  GetColor() const;
     void                    SetColor(const Color3 &color);
@@ -96,7 +93,12 @@ protected:
     const Vec3 &            GetRadius() const;
     void                    SetRadius(const Vec3 &radius);
 
-    void                    PropertyChanged(const char *classname, const char *propName);
+protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
+    void                    UpdateVisuals();
+
     void                    LayerChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 

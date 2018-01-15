@@ -46,43 +46,42 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-    virtual void            Enable(bool enable) override;
-
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-    const Vec3              GetOrigin() const { return body ? body->GetOrigin() : Vec3::origin; }
-    void                    SetOrigin(const Vec3 &origin) { if (body) body->SetOrigin(origin); }
+    float                   GetMass() const;
+    void                    SetMass(float mass);
 
-    const Mat3              GetAxis() const { return body ? body->GetAxis() : Mat3::identity; }
-    void                    SetAxis(const Mat3 &axis) { if (body) body->SetAxis(axis); }
+    float                   GetRestitution() const;
+    void                    SetRestitution(float restitution);
 
-    float                   GetMass() const { return body ? body->GetMass() : 0; }
-    void                    SetMass(float mass) { if (body) body->SetMass(mass); }
+    float                   GetFriction() const;
+    void                    SetFriction(float friction);
 
-    float                   GetRestitution() const { return body ? body->GetRestitution() : 0; }
-    void                    SetRestitution(float rest) { if (body) body->SetRestitution(rest); }
+    float                   GetRollingFriction() const;
+    void                    SetRollingFriction(float rollingFriction);
 
-    float                   GetFriction() const { return body ? body->GetFriction() : 0; }
-    void                    SetFriction(float friction) { if (body) body->SetFriction(friction); }
+    float                   GetLinearDamping() const;
+    void                    SetLinearDamping(float linearDamping);
 
-    float                   GetRollingFriction() const { return body ? body->GetRollingFriction() : 0; }
-    void                    SetRollingFriction(float friction) { if (body) body->SetRollingFriction(friction); }
+    float                   GetAngularDamping() const;
+    void                    SetAngularDamping(float angularDamping);
 
-    bool                    IsKinematic() const { return body ? body->IsKinematic() : false; }
-    void                    SetKinematic(bool kinematic) { if (body) body->SetKinematic(kinematic); }
+    bool                    IsKinematic() const;
+    void                    SetKinematic(bool kinematic);
+
+    bool                    IsCCD() const;
+    void                    SetCCD(bool enableCcd);
 
     const Vec3              GetGravity() const { return body ? body->GetGravity() : Vec3::zero; }
     void                    SetGravity(const Vec3 &gravityAcceleration) { if (body) body->SetGravity(gravityAcceleration); }
-
-    float                   GetLinearDamping() const { return body ? body->GetLinearDamping() : 0; }
-    void                    SetLinearDamping(float linearDamping) { if (body) body->SetLinearDamping(linearDamping); }
-
-    float                   GetAngularDamping() const { return body ? body->GetAngularDamping() : 0; }
-    void                    SetAngularDamping(float angularDamping) { if (body) body->SetAngularDamping(angularDamping); }
 
     const Vec3              GetLinearVelocity() const { return body ? body->GetLinearVelocity() : Vec3::zero; }
     void                    SetLinearVelocity(const Vec3 &linearVelocity) { if (body) body->SetLinearVelocity(linearVelocity); }
@@ -98,9 +97,6 @@ public:
 
     const Vec3              GetTotalForce() const { return body ? body->GetTotalForce() : Vec3::zero; }
     const Vec3              GetTotalTorque() const { return body ? body->GetTotalTorque() : Vec3::zero; }
-
-    bool                    IsCCD() const { return body ? body->IsCCD() : false; }
-    void                    SetCCD(bool enableCcd) { if (body) body->SetCCD(enableCcd); }
 
     void                    ClearForces() { body->ClearForces(); }
     void                    ClearVelocities() { body->ClearVelocities(); }
@@ -118,8 +114,10 @@ public:
     static const SignalDef  SIG_PhysicsUpdated;
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    ProcessScriptCallback();
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     class CollisionListener;

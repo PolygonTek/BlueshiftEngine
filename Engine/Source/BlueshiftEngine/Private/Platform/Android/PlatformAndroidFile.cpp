@@ -376,21 +376,6 @@ bool _PlatformAndroidFile::RemoveDirectoryTree(const char *dirname) {
 //	return Cwd();
 //}
 //
-//const char *_PlatformAndroidFile::HomePath() {
-//	static char path[1024] = "";
-//
-//	struct passwd *pwd = getpwuid(getuid());
-//	if (pwd) {
-//		strcpy(path, pwd->pw_dir);
-//	}
-//	else {
-//		// try the $HOME environment variable
-//		strcpy(path, getenv("HOME"));
-//	}
-//
-//	return path;
-//}
-//
 static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
 	FileInfo    fileInfo;
 	char		path[MaxAbsolutePath];
@@ -664,14 +649,6 @@ void	PlatformAndroidFile::SetExecutablePath(const Str &path)
 {
 	_ExecutablePath = path;
 }
-
-const char *PlatformAndroidFile::HomePath() {
-    //static NSString *documentPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
-    //static const char *cstr = (const char *)[documentPath cStringUsingEncoding:NSUTF8StringEncoding];
-    //return cstr;
-	assert(0);; return 0;
-}
-
 
 Str PlatformAndroidFile::ConvertToAndroidPath(const Str &filename, bool forWrite) {
 	//Str result;

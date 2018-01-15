@@ -22,14 +22,9 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Component", Component, Object)
 BEGIN_EVENTS(Component)
 END_EVENTS
-BEGIN_PROPERTIES(Component)
-    PROPERTY_OBJECT("guid", "GUID", "component GUID", Guid::zero.ToString(), Component::metaObject, PropertySpec::ReadWrite | PropertySpec::Hidden),
-    PROPERTY_BOOL("enabled", "Enabled", "is enabled component ?", "true", PropertySpec::ReadWrite | PropertySpec::Hidden),
-END_PROPERTIES
 
 void Component::RegisterProperties() {
-    //REGISTER_PROPERTY("GUID", Component, guid, Guid::zero.ToString(), PropertySpec::ReadWrite | PropertySpec::Hidden);
-    //REGISTER_ACCESSOR_PROPERTY("Enabled", bool, IsEnabled, SetEnabled, "true", PropertySpec::ReadWrite | PropertySpec::Hidden);
+    REGISTER_ACCESSOR_PROPERTY("enabled", "Enabled", bool, IsEnabled, SetEnabled, true, "", 0);
 }
 
 Component::Component() {
@@ -46,6 +41,43 @@ void Component::Purge(bool chainPurge) {
     initialized = false;
 }
 
+Str Component::ToString() const { 
+    return entity->ToString(); 
+}
+
+void Component::Init() {
+}
+
+bool Component::IsActiveInHierarchy() const {
+    if (!IsEnabled() || !GetEntity()->IsActiveInHierarchy()) {
+        return false;
+    }
+    return true;
+}
+
+void Component::SetEnabled(bool enable) {
+    if (enable == enabled) {
+        return;
+    }
+
+    enabled = enable;
+
+    if (GetEntity()->IsActiveInHierarchy()) {
+        if (enable) {
+            OnActive();
+        } else {
+            OnInactive();
+        }
+    }
+}
+
+GameWorld *Component::GetGameWorld() const {
+    if (entity) {
+        return entity->GetGameWorld();
+    }
+    return nullptr;
+}
+
 void Component::Event_ImmediateDestroy() {
     if (entity) {
         if (!entity->components.Remove(this)) {
@@ -57,38 +89,6 @@ void Component::Event_ImmediateDestroy() {
     }
 
     Object::Event_ImmediateDestroy();
-}
-
-const Str Component::ToString() const { 
-    return entity->ToString(); 
-}
-
-GameWorld *Component::GetGameWorld() const {
-    if (entity) {
-        return entity->GetGameWorld();
-    }
-    return nullptr;
-}
-
-void Component::Init() {
-    SetInitialized(true);
-
-    //
-    enabled = props->Get("enabled").As<bool>();
-    //
-}
-
-void Component::Reload() {
-    Purge();
-
-    Init();
-}
-
-void Component::PropertyChanged(const char *classname, const char *propName) {
-    if (!Str::Cmp(propName, "enabled")) {
-        Enable(props->Get("enabled").As<bool>());
-        return;
-    }
 }
 
 BE_NAMESPACE_END

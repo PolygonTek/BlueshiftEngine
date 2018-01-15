@@ -28,6 +28,8 @@ public:
 
     void            RunFrame(int frameMsec);
 
+    Str             GetAppPreferenceDir() const;
+
     Random          random;
 
     int             realTime;       // absolute time in milliseconds

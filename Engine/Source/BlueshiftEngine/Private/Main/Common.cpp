@@ -26,6 +26,7 @@
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
 #include "File/FileSystem.h"
+#include "Game/GameSettings.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -105,8 +106,10 @@ static void Common_Error(const int errLevel, const wchar_t *msg) {
 void Common::Init(const char *baseDir) {
     Engine::InitBase(baseDir, forceGenericSIMD.GetBool(), (const streamOutFunc_t)Common_Log, (const streamOutFunc_t)Common_Error);
 
-    Event::Init();
-    Signal::Init();
+    EventSystem::Init();
+    
+    SignalSystem::Init();
+    
     Object::Init();
     
     console.Init();
@@ -122,7 +125,11 @@ void Common::Init(const char *baseDir) {
 
     random.SetSeed(0);
 
-    srand(time(nullptr));
+    srand((unsigned int)time(nullptr));
+
+    realTime = 0;
+    frameTime = 0;
+    frameSec = 0;
 }
 
 void Common::Shutdown() {
@@ -141,13 +148,15 @@ void Common::Shutdown() {
     console.Shutdown();
 
     Object::Shutdown();
-    Event::Shutdown();
-    Signal::Shutdown();
+
+    EventSystem::Shutdown();
+    
+    SignalSystem::Shutdown();
 
     Engine::ShutdownBase();
 }
 
-void Common::SaveConfig(const char *filename) {	
+void Common::SaveConfig(const char *filename) {
     Str configFilename = filename;
     configFilename.DefaultFileExtension("cfg");
 
@@ -170,6 +179,12 @@ void Common::RunFrame(int frameMsec) {
     cmdSystem.ExecuteCommandBuffer();
 }
 
+Str Common::GetAppPreferenceDir() const {
+    Str companyName = GameSettings::playerSettings->GetProperty("companyName").As<Str>();
+    Str productName = GameSettings::playerSettings->GetProperty("productName").As<Str>();
+    return fileSystem.GetAppDataDir(companyName, productName);
+}
+
 int Common::ProcessPlatformEvent() {
     Platform::Event	ev;
 
@@ -187,19 +202,19 @@ int Common::ProcessPlatformEvent() {
             gameClient.KeyEvent((KeyCode::Enum)ev.value, ev.value2 ? true : false);
             break;
         case Platform::CharEvent:
-            gameClient.CharEvent(ev.value);
+            gameClient.CharEvent((wchar_t)ev.value);
             break;
         case Platform::CompositionEvent:
-            gameClient.CompositionEvent(ev.value);
+            gameClient.CompositionEvent((int)ev.value);
             break;
         case Platform::MouseDeltaEvent:
-            gameClient.MouseDeltaEvent(ev.value, ev.value2, ev.time);
+            gameClient.MouseDeltaEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
         case Platform::MouseMoveEvent:
-            gameClient.MouseMoveEvent(ev.value, ev.value2, ev.time);
+            gameClient.MouseMoveEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
         case Platform::JoyAxisEvent:
-            gameClient.JoyAxisEvent(ev.value, ev.value2, ev.time);
+            gameClient.JoyAxisEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
         case Platform::TouchBeganEvent:
             gameClient.TouchEvent(InputSystem::Touch::Started, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);

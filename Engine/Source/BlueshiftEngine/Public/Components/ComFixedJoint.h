@@ -25,12 +25,12 @@ public:
     ComFixedJoint();
     virtual ~ComFixedJoint();
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() override;
-
-protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
 };
 
 BE_NAMESPACE_END

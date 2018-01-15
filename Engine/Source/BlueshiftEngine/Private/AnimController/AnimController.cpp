@@ -583,7 +583,7 @@ bool AnimController::ParseSkeleton(Lexer &lexer) {
         return false;
     }
 
-    const Guid skeletonGuid = Guid::ParseString(token);
+    const Guid skeletonGuid = Guid::FromString(token);
     const Str skeletonPath = resourceGuidMapper.Get(skeletonGuid);
     
     skeleton = skeletonManager.GetSkeleton(skeletonPath);

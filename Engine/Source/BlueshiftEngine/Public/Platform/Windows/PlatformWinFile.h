@@ -46,6 +46,8 @@ public:
     static bool             SetReadOnly(const char *filename, bool readOnly);
     static bool             RemoveFile(const char *filename);
     static bool             MoveFile(const char *oldname, const char *newname);
+    static int              GetFileMode(const char *filename);
+    static void             SetFileMode(const char *filename, int mode);
     
     static DateTime         GetTimeStamp(const char *filename);
     static void             SetTimeStamp(const char *filename, const DateTime &timeStamp);
@@ -57,8 +59,8 @@ public:
 
     static const char *     Cwd();
     static bool             SetCwd(const char *dirname);
+
     static const char *     ExecutablePath();
-    static const char *     HomePath();
     
     static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &list);
     

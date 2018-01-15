@@ -25,63 +25,96 @@ class ComTransform : public Component {
 
 public:
     OBJECT_PROTOTYPE(ComTransform);
+
+    enum TransformSpace {
+        LocalSpace,
+        WorldSpace
+    };
     
     ComTransform();
     virtual ~ComTransform();
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    virtual bool            CanDisable() const override;
+                            /// Transform component cannot be disabled.
+    virtual bool            CanDisable() const override { return false; }
 
+                            /// Returns parent transform component.
     ComTransform *          GetParent() const;
 
-                            // origin/scale/axis in local space 
-    const Vec3              GetLocalOrigin() const { return localOrigin; }
-    const Vec3              GetLocalScale() const { return localScale; }
-    const Mat3              GetLocalAxis() const { return localAxis; }
-    const Angles            GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
+                            /// Returns position in local space.
+    const Vec3 &            GetLocalOrigin() const { return localOrigin; }
+                            /// Returns scale in local space.
+    const Vec3 &            GetLocalScale() const { return localScale; }
+                            /// Returns rotation axis in local space.
+    const Mat3 &            GetLocalAxis() const { return localAxis; }
+                            /// Returns rotation angles in local space.
+    Angles                  GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
+                            /// Returns local space transform matrix.
+    Mat3x4                  GetLocalTransform() const { return Mat3x4(localScale, localAxis, localOrigin); }
 
+                            /// Sets position in local space.
     void                    SetLocalOrigin(const Vec3 &origin);
+                            /// Sets scale in local space.
     void                    SetLocalScale(const Vec3 &scale);
+                            /// Sets rotation axis in local space.
     void                    SetLocalAxis(const Mat3 &axis);
+                            /// Sets rotation angles in local space.
     void                    SetLocalAngles(const Angles &localAngles) { SetLocalAxis(localAngles.ToMat3()); }
-    void                    SetLocalTransform(const Vec3 &origin, const Vec3 &scale, const Mat3 &axis);
+                            /// Sets position, rotation and scale in local space as an atomic operation.
+    void                    SetLocalTransform(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale = Vec3::one);
 
-                            // origin/scale/axis in world space
-    const Vec3              GetOrigin() const;
-    const Vec3              GetScale() const;
-    const Mat3              GetAxis() const;
-    const Angles            GetAngles() const { return GetAxis().ToAngles(); }
+                            /// Returns position in world space.
+    Vec3                    GetOrigin() const;
+                            /// Returns scale in world space.
+    Vec3                    GetScale() const;
+                            /// Returns rotation axis in world space.
+    Mat3                    GetAxis() const;
+                            /// Returns rotation angles in world space.
+    Angles                  GetAngles() const { return GetAxis().ToAngles(); }
+                            /// Returns world space transform matrix.
+    const Mat3x4 &          GetTransform() const;
 
-    const Vec3              Forward() const { return GetAxis()[0]; }
-    const Vec3              Right() const { return GetAxis()[1]; }
-    const Vec3              Up() const { return GetAxis()[2]; }
-
+                            /// Sets position in world space.
     void                    SetOrigin(const Vec3 &origin);
+                            /// Sets scale in world space.
+    void                    SetScale(const Vec3 &scale);
+                            /// Sets rotation axis in world space.
     void                    SetAxis(const Mat3 &axis);
+                            /// Sets position angles in world space.
     void                    SetAngles(const Angles &angles) { SetAxis(angles.ToMat3()); }
+                            /// Sets position, rotation and scale in world space as an atomic operation.
+    void                    SetTransform(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale = Vec3::one);
 
-    const Mat4              GetLocalMatrix() const { return localMatrix; }
-    const Mat4              GetWorldMatrix() const { return worldMatrix; }
+                            /// Returns forward direction in the choosen transform space.
+    Vec3                    Forward(TransformSpace space = WorldSpace) const;
+                            /// Returns right direction in the choosen transform space.
+    Vec3                    Right(TransformSpace space = WorldSpace) const;
+                            /// Returns up direction in the choosen transform space.
+    Vec3                    Up(TransformSpace space = WorldSpace) const;
 
-    void                    Translate(const Vec3 &translation);
-    void                    Rotate(const Vec3 &axis, float angle);
+                            /// Move in the chosen transform space.
+    void                    Translate(const Vec3 &translation, TransformSpace space = WorldSpace);
+                            /// Rotate with given vector and angle in the choosen transform space.
+    void                    Rotate(const Vec3 &rotVec, float angle, TransformSpace space = WorldSpace);
 
     static const SignalDef  SIG_TransformUpdated;
 
 protected:
-    void                    RecalcWorldMatrix();
-    void                    RecalcLocalMatrix();
-    void                    UpdateChildren(bool ignorePhysicsEntity = false);
+                            /// Mark this component and children to need world transform recalculation.
+    void                    InvalidateWorldMatrix();
+                            /// Recalculate world matrix
+    void                    UpdateWorldMatrix() const;
     void                    PhysicsUpdated(const PhysRigidBody *body);
-    void                    PropertyChanged(const char *classname, const char *propName);
 
-    Vec3                    localOrigin;
-    Vec3                    localScale;
-    Mat3                    localAxis;
+    Vec3                    localOrigin;            ///< Position in local space.
+    Vec3                    localScale;             ///< Scale in local space.
+    Mat3                    localAxis;              ///< Rotation axis in local space.
 
-    Mat4                    localMatrix;
-    Mat4                    worldMatrix;
+    mutable Mat3x4          worldMatrix;
+    mutable bool            worldMatrixInvalidated;
+    bool                    physicsUpdating;
 };
 
 BE_NAMESPACE_END

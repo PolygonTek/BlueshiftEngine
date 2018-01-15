@@ -86,11 +86,14 @@ public:
 
                         /// Multiplies a matrix to this matrix.
     Mat4                Mul(const Mat4 &m) const { return *this * m; }
+    Mat4                Mul(const Mat3x4 &m) const { return *this * m; }
                         /// Returns this->Transpose() * m
     Mat4                TransposedMul(const Mat4 &m) const;
+    Mat4                TransposedMul(const Mat3x4 &m) const;
                         /// Multiplies a matrix to this matrix.
                         /// This function is identical to the member function Mul().
     Mat4                operator*(const Mat4 &rhs) const;
+    Mat4                operator*(const Mat3x4 &rhs) const;
 
                         /// Multiplies this matrix by a scalar.
     Mat4                MulScalar(float s) const { return *this * s; }
@@ -116,6 +119,11 @@ public:
 
     Vec3                TransformNormal(const Vec3 &n) const;
 
+                        /// Assign from another matrix.
+    Mat4 &              operator=(const Mat4 &rhs);
+    Mat4 &              operator=(const Mat3x4 &rhs);
+    Mat4 &              operator=(const Mat3 &rhs);
+
                         /// Adds a matrix to this matrix, in-place.
     Mat4 &              AddSelf(const Mat4 &m) { *this += m; return *this; }
                         /// Adds a matrix to this matrix, in-place.
@@ -130,9 +138,11 @@ public:
     
                         /// Multiplies this matrix with the given matrix, in-place
     Mat4 &              MulSelf(const Mat4 &m) { *this *= m; return *this; }
+    Mat4 &              MulSelf(const Mat3x4 &m) { *this *= m; return *this; }
                         /// Multiplies this matrix with the given matrix, in-place
                         /// This function is identical to the member function MulSelf().
     Mat4 &              operator*=(const Mat4 &rhs);
+    Mat4 &              operator*=(const Mat3x4 &rhs);
     
                         /// Multiplies this matrix with the given scalar, in-place
     Mat4 &              MulScalarSelf(float s) { *this *= s; return *this; }
@@ -216,24 +226,35 @@ public:
                         /// Inverts a euclidean matrix, in-place.
     bool                EuclideanInverseSelf();
 
-                        /// LU decomposition, in-place.
-    bool                DecompLU();
-
-                        /// Solve Ax = b with LU decomposition.
-    Vec4                SolveLU(const Vec4 &b) const;
-
                         /// Translates by the given offset, in-place.
     void                Translate(const Vec3 &t) { Translate(t.x, t.y, t.z); }
     void                Translate(float tx, float ty, float tz);
 
                         /// Scales by the given factors, in-place.
-    void                Scale(const Vec3 &s) { Scale(s.x, s.y, s.z); }
     void                Scale(float sx, float sy, float sz);
+    void                Scale(const Vec3 &s) { Scale(s.x, s.y, s.z); }
+
                         /// Performs uniform scaling by the given amout, in-place.
-    void                UniformScale(const float s);
+    void                UniformScale(const float s) { Scale(s, s, s); }
+
+                        /// Returns translation matrix
+    static Mat4         FromTranslation(float tx, float ty, float tz);
+    static Mat4         FromTranslation(const Vec3 &t) { return FromTranslation(t.x, t.y, t.z); }
+
+                        /// Returns scaling matrix
+    static Mat4         FromScale(float sx, float sy, float sz);
+    static Mat4         FromScale(const Vec3 &s) { return FromTranslation(s.x, s.y, s.z); }
+
+                        /// LU decomposition, in-place.
+    bool                DecompLU();
+
+                        /// Solve Ax = b with LU decomposition.
+    Vec4                SolveLU(const Vec4 &b) const;
     
                         /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
+                        /// Returns scale part.
+    Vec3                ToScaleVec3() const;
                         /// Returns translation vector part.
     Vec3                ToTranslationVec3() const;
 
@@ -241,6 +262,9 @@ public:
     const char *        ToString() const { return ToString(4); }
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23 _30 _31 _32 _33" with the given precisions.
     const char *        ToString(int precision) const;
+
+                        /// Creates from the string
+    static Mat4         FromString(const char *str);
 
                         /// Returns dimension of this type
     int                 GetDimension() const { return Rows * Cols; }
@@ -456,6 +480,54 @@ BE_INLINE Vec3 Mat4::TransposedMulVec(const Vec3 &vec) const {
     }
 }
 
+BE_INLINE Mat4 &Mat4::operator=(const Mat4 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[0][1];
+    mat[0][2] = rhs[0][2];
+    mat[0][3] = rhs[0][3];
+
+    mat[1][0] = rhs[1][0];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[1][2];
+    mat[1][3] = rhs[1][3];
+
+    mat[2][0] = rhs[2][0];
+    mat[2][1] = rhs[2][1];
+    mat[2][2] = rhs[2][2];
+    mat[2][3] = rhs[2][3];
+
+    mat[3][0] = rhs[3][0];
+    mat[3][1] = rhs[3][1];
+    mat[3][2] = rhs[3][2];
+    mat[3][3] = rhs[3][3];
+
+    return *this;
+}
+
+BE_INLINE Mat4 &Mat4::operator=(const Mat3 &rhs) {
+    mat[0][0] = rhs[0][0];
+    mat[0][1] = rhs[1][0];
+    mat[0][2] = rhs[2][0];
+    mat[0][3] = 0;
+
+    mat[1][0] = rhs[0][1];
+    mat[1][1] = rhs[1][1];
+    mat[1][2] = rhs[2][1];
+    mat[1][3] = 0;
+
+    mat[2][0] = rhs[0][2];
+    mat[2][1] = rhs[1][2];
+    mat[2][2] = rhs[2][2];
+    mat[2][3] = 0;
+
+    mat[3][0] = 0;
+    mat[3][1] = 0;
+    mat[3][2] = 0;
+    mat[3][3] = 1;
+
+    return *this;
+}
+
 BE_INLINE Mat4 &Mat4::operator+=(const Mat4 &a) {
     mat[0].x += a[0].x;
     mat[0].y += a[0].y;
@@ -505,6 +577,11 @@ BE_INLINE Mat4 &Mat4::operator-=(const Mat4 &a) {
 }
 
 BE_INLINE Mat4 &Mat4::operator*=(const Mat4 &a) {
+    *this = (*this) * a;
+    return *this;
+}
+
+BE_INLINE Mat4 &Mat4::operator*=(const Mat3x4 &a) {
     *this = (*this) * a;
     return *this;
 }
@@ -638,10 +715,6 @@ BE_INLINE Mat4 Mat4::EuclideanInverse() const {
     return invMat;
 }
 
-BE_INLINE Vec3 Mat4::ToTranslationVec3() const {
-    return Vec3(mat[0][3], 	mat[1][3], 	mat[2][3]);
-}
-
 BE_INLINE Mat3 Mat4::ToMat3() const {
     return Mat3(
         mat[0][0], mat[1][0], mat[2][0], 
@@ -655,6 +728,65 @@ BE_INLINE Mat4 Mat3::ToMat4() const {
         mat[0][1], mat[1][1], mat[2][1], 0.0f, 
         mat[0][2], mat[1][2], mat[2][2], 0.0f, 
         0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+BE_INLINE Vec3 Mat4::ToScaleVec3() const {
+    return Vec3(
+        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
+        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
+        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
+}
+
+BE_INLINE Vec3 Mat4::ToTranslationVec3() const {
+    return Vec3(mat[0][3], mat[1][3], mat[2][3]);
+}
+
+BE_INLINE Mat4 Mat4::FromTranslation(float tx, float ty, float tz) {
+    Mat4 m;
+    m.mat[0][0] = 1;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = 0;
+    m.mat[0][3] = tx;
+
+    m.mat[1][0] = 0;
+    m.mat[1][1] = 1;
+    m.mat[1][2] = 0;
+    m.mat[1][3] = ty;
+
+    m.mat[2][0] = 0;
+    m.mat[2][1] = 0;
+    m.mat[2][2] = 1;
+    m.mat[2][3] = tz;
+
+    m.mat[3][0] = 0;
+    m.mat[3][1] = 0;
+    m.mat[3][2] = 0;
+    m.mat[3][3] = 1;
+    return m;
+}
+
+BE_INLINE Mat4 Mat4::FromScale(float sx, float sy, float sz) {
+    Mat4 m;
+    m.mat[0][0] = sx;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = 0;
+    m.mat[0][3] = 0;
+
+    m.mat[0][0] = 0;
+    m.mat[0][1] = sy;
+    m.mat[0][2] = 0;
+    m.mat[0][3] = 0;
+
+    m.mat[0][0] = 0;
+    m.mat[0][1] = 0;
+    m.mat[0][2] = sz;
+    m.mat[0][3] = 0;
+
+    m.mat[3][0] = 0;
+    m.mat[3][1] = 0;
+    m.mat[3][2] = 0;
+    m.mat[3][3] = 1;
+    return m;
 }
 
 BE_INLINE const char *Mat4::ToString(int precision) const {

@@ -29,10 +29,14 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
     float                   Length();
@@ -40,9 +44,16 @@ public:
     Vec3                    GetCurrentOrigin(float time) const;
     Mat3                    GetCurrentAxis(float time) const;
 
+    int                     GetPointCount() const;
+    void                    SetPointCount(int count);
+    Guid                    GetPointGuid(int index) const;
+    void                    SetPointGuid(int index, const Guid &pointGuid);
+
+    bool                    IsLoop() const;
+    void                    SetLoop(bool loop);
+
 protected:
     void                    UpdateCurve();
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    PointTransformUpdated(const ComTransform *transform);
 
     Array<Guid>             pointGuids;

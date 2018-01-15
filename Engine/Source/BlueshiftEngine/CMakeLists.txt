@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(BlueshiftEngine)
 
-if (WIN32)
-  include(FindOpenAL)
-endif ()
+configure_file(
+  "${PROJECT_SOURCE_DIR}/Version.h.in"
+  "${PROJECT_SOURCE_DIR}/Version.h")
 
 set(ENGINE_FILES
   Precompiled.h
@@ -20,6 +20,7 @@ set(ENGINE_FILES
   Public/Core/Range.h
   Public/Core/Str.h
   Public/Core/Variant.h
+  Public/Core/VariantArg.h
   Public/Core/Guid.h
   Public/Core/WStr.h
   Public/Core/ByteOrder.h
@@ -110,10 +111,10 @@ set(ENGINE_FILES
   Public/SIMD/Simd_SSE4.h
   Public/SIMD/smmintrin_emu.h
   Public/SIMD/immintrin_emu.h
-  #Public/SIMD/AVX/avx.h
-  #Public/SIMD/AVX/avxb.h
-  #Public/SIMD/AVX/avxf.h
-  #Public/SIMD/AVX/avxi.h
+  Public/SIMD/AVX/avx.h
+  Public/SIMD/AVX/avxb.h
+  Public/SIMD/AVX/avxf.h
+  Public/SIMD/AVX/avxi.h
   Public/SIMD/SSE/sse.h
   Public/SIMD/SSE/sseb.h
   Public/SIMD/SSE/ssef.h
@@ -126,6 +127,7 @@ set(ENGINE_FILES
   Public/Platform/PlatformFile.h
   Public/Platform/PlatformThread.h
   Public/Platform/PlatformTime.h
+  Public/Platform/PlatformSystem.h
 
   Public/File/File.h
   Public/File/FileSystem.h
@@ -161,6 +163,7 @@ set(ENGINE_FILES
   Public/Components/ComCharacterController.h
   Public/Components/ComCharacterJoint.h
   Public/Components/ComCollider.h
+  Public/Components/ComConeCollider.h
   Public/Components/ComConstantForce.h
   Public/Components/ComCylinderCollider.h
   Public/Components/ComFixedJoint.h
@@ -191,9 +194,10 @@ set(ENGINE_FILES
   Public/Game/MapRenderSettings.h
   Public/Game/GameWorld.h
   Public/Game/CastResult.h
-  Public/Game/GameSettings/GameSettings.h
-  Public/Game/GameSettings/TagLayerSettings.h
-  Public/Game/GameSettings/PhysicsSettings.h
+  Public/Game/GameSettings.h
+  Public/Game/TagLayerSettings.h
+  Public/Game/PhysicsSettings.h
+  Public/Game/PlayerSettings.h
     
   Public/Physics/Collider.h
   Public/Physics/Physics.h
@@ -309,6 +313,7 @@ set(ENGINE_FILES
   Private/Platform/PlatformBaseFile.cpp
   Private/Platform/PlatformBaseThread.cpp
   Private/Platform/PlatformBaseTime.cpp
+  Private/Platform/PlatformBaseSystem.cpp
   Private/File/File.cpp
   Private/File/FileSystem.cpp
   Private/File/FileMapping.cpp
@@ -321,9 +326,11 @@ set(ENGINE_FILES
   Private/Core/DateTime.cpp
   Private/Core/Dict.cpp
   Private/Core/Expr.cpp
+  Private/Core/MinMaxCurve.cpp
   Private/Core/Lexer.cpp
   Private/Core/WLexer.cpp
   Private/Core/Task.cpp
+  Private/Core/Variant.cpp
 
   Private/RHIOpenGL/OpenGL/OpenGL.h
   Private/RHIOpenGL/OpenGL/OpenGL.cpp
@@ -374,12 +381,13 @@ set(ENGINE_FILES
   Private/Components/ComAnimator.cpp
   Private/Components/ComAudioListener.cpp
   Private/Components/ComAudioSource.cpp
-  Private/Components/ComBoxCollider.cpp
+  Private/Components/ComBoxCollider.cpp  
   Private/Components/ComCamera.cpp
   Private/Components/ComCapsuleCollider.cpp
   Private/Components/ComCharacterController.cpp
   Private/Components/ComCharacterJoint.cpp
   Private/Components/ComCollider.cpp
+  Private/Components/ComConeCollider.cpp
   Private/Components/ComConstantForce.cpp
   Private/Components/ComCylinderCollider.cpp
   Private/Components/ComFixedJoint.cpp
@@ -410,14 +418,14 @@ set(ENGINE_FILES
   Private/Game/PrefabManager.cpp
   Private/Game/MapRenderSettings.cpp
   Private/Game/GameWorld.cpp
-  Private/Game/CastResult.cpp
-  Private/Game/GameSettings/GameSettings.cpp
-  Private/Game/GameSettings/TagLayerSettings.cpp
-  Private/Game/GameSettings/PhysicsSettings.cpp
+  Private/Game/CastResult.cpp  
+  Private/Game/GameSettings.cpp
+  Private/Game/TagLayerSettings.cpp
+  Private/Game/PhysicsSettings.cpp
+  Private/Game/PlayerSettings.cpp
 
   Private/Core/Event.cpp
   Private/Core/Object.cpp
-  Private/Core/Property.cpp
   Private/Core/Serializable.cpp
   Private/Core/Signal.cpp
   Private/Core/SignalObject.cpp
@@ -531,6 +539,7 @@ set(ENGINE_FILES
   Private/Script/Math/LuaModule_Color4.cpp
   Private/Script/Math/LuaModule_Mat2.cpp
   Private/Script/Math/LuaModule_Mat3.cpp
+  Private/Script/Math/LuaModule_Mat3x4.cpp
   Private/Script/Math/LuaModule_Mat4.cpp
   Private/Script/Math/LuaModule_Quaternion.cpp
   Private/Script/Math/LuaModule_Angles.cpp
@@ -548,7 +557,10 @@ set(ENGINE_FILES
   Private/Script/Input/LuaModule_InputSystem.cpp
   Private/Script/Screen/LuaModule_Screen.cpp
   Private/Script/Physics/LuaModule_Physics.cpp
+  Private/Script/Core/LuaModule_Str.cpp
   Private/Script/Core/LuaModule_Object.cpp
+  Private/Script/File/LuaModule_FileSystem.cpp
+  Private/Script/File/LuaModule_File.cpp
   Private/Script/Asset/LuaModule_Asset.cpp
   Private/Script/Asset/LuaModule_TextureAsset.cpp
   Private/Script/Asset/LuaModule_ShaderAsset.cpp
@@ -582,6 +594,7 @@ set(ENGINE_FILES
   Private/Script/Components/LuaModule_ComMeshRenderer.cpp
   Private/Script/Components/LuaModule_ComStaticMeshRenderer.cpp
   Private/Script/Components/LuaModule_ComSkinnedMeshRenderer.cpp
+  Private/Script/Components/LuaModule_ComAnimator.cpp
   Private/Script/Components/LuaModule_ComTextRenderer.cpp
   Private/Script/Components/LuaModule_ComParticleSystem.cpp
   Private/Script/Components/LuaModule_ComLight.cpp
@@ -602,12 +615,16 @@ if (ANDROID)
   list(APPEND ENGINE_FILES
     Public/Platform/Posix/PlatformPosixProcess.h
     Public/Platform/Posix/PlatformPosixTime.h
+    Public/Platform/Posix/PlatformPosixSystem.h
     Private/Platform/Posix/PlatformPosixProcess.cpp
     Private/Platform/Posix/PlatformPosixTime.cpp
+    Private/Platform/Posix/PlatformPosixSystem.cpp
     Public/Platform/Linux/PlatformLinuxProcess.h
     Public/Platform/Linux/PlatformLinuxTime.h
+    Public/Platform/Linux/PlatformLinuxSystem.h
     Private/Platform/Linux/PlatformLinuxProcess.cpp
     Private/Platform/Linux/PlatformLinuxTime.cpp
+    Private/Platform/Linux/PlatformLinuxSystem.cpp
     Public/Platform/Android/PlatformAndroidProcess.h
     Public/Platform/Android/PlatformAndroidThread.h
     Public/Platform/Android/PlatformAndroidFile.h
@@ -625,10 +642,12 @@ elseif (WIN32)
     Public/Platform/Windows/PlatformWinFile.h
     Public/Platform/Windows/PlatformWinThread.h
     Public/Platform/Windows/PlatformWinTime.h
+    Public/Platform/Windows/PlatformWinSystem.h
     Private/Platform/Windows/PlatformWinProcess.cpp
     Private/Platform/Windows/PlatformWinFile.cpp
     Private/Platform/Windows/PlatformWinThread.cpp
     Private/Platform/Windows/PlatformWinTime.cpp
+    Private/Platform/Windows/PlatformWinSystem.cpp
     Private/Platform/PlatformWin.h
     Private/Platform/PlatformWin.cpp
     Private/Sound/SoundSystemDS.cpp
@@ -647,10 +666,12 @@ elseif (UNIX)
     Public/Platform/Posix/PlatformPosixFile.h
     Public/Platform/Posix/PlatformPosixThread.h
     Public/Platform/Posix/PlatformPosixTime.h
+    Public/Platform/Posix/PlatformPosixSystem.h
     Private/Platform/Posix/PlatformPosixProcess.cpp
     Private/Platform/Posix/PlatformPosixFile.cpp
     Private/Platform/Posix/PlatformPosixThread.cpp
     Private/Platform/Posix/PlatformPosixTime.cpp
+    Private/Platform/Posix/PlatformPosixSystem.cpp
     Private/Sound/SoundSystemAL.cpp
     Private/Sound/SoundBufferAL.cpp
     Private/Sound/SoundSourceAL.cpp)
@@ -659,21 +680,27 @@ elseif (UNIX)
     list(APPEND ENGINE_FILES
       Public/Platform/Apple/PlatformAppleTime.h
       Public/Platform/Apple/PlatformAppleProcess.h
+      Public/Platform/Apple/PlatformAppleSystem.h
       Private/Platform/Apple/PlatformAppleTime.cpp
-      Private/Platform/Apple/PlatformAppleProcess.mm)
+      Private/Platform/Apple/PlatformAppleProcess.mm
+      Private/Platform/Apple/PlatformAppleSystem.mm)
     
     if (IOS)
       list(APPEND ENGINE_FILES
         Public/Platform/IOS/PlatformIOSFile.h
         Public/Platform/IOS/PlatformIOSProcess.h
+        Public/Platform/IOS/PlatformIOSSystem.h
         Private/Platform/IOS/PlatformIOSFile.mm
         Private/Platform/IOS/PlatformIOSProcess.mm
+        Private/Platform/IOS/PlatformIOSSystem.mm
         Private/Platform/PlatformIOS.h
         Private/Platform/PlatformIOS.mm)
     else ()
       list(APPEND ENGINE_FILES
         Public/Platform/MacOS/PlatformMacOSProcess.h
+        Public/Platform/MacOS/PlatformMacOSSystem.h
         Private/Platform/MacOS/PlatformMacOSProcess.mm
+        Private/Platform/MacOS/PlatformMacOSSystem.mm
         Private/Platform/PlatformMacOS.h
         Private/Platform/PlatformMacOS.mm
         Public/Network/Socket.h
@@ -728,24 +755,20 @@ endif ()
 if (IOS)
   set(GGL_FILES
     Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
-  )
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
 elseif (ANDROID)
   set(GGL_FILES
     Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
-  )
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
 else ()
   set(GGL_FILES
     Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
-  )
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h)
 
   if (WIN32)
     list(APPEND GGL_FILES
       Private/RHIOpenGL/OpenGL/GGL/gwgl.c
-      Private/RHIOpenGL/OpenGL/GGL/gwgl.h
-    )
+      Private/RHIOpenGL/OpenGL/GGL/gwgl.h)
   endif ()
 endif ()
 
@@ -765,6 +788,7 @@ include_directories(
 )
 
 if (WIN32)
+  include(FindOpenAL)
   include_directories(${OPENAL_INCLUDE_DIR})
 endif ()
 
@@ -833,6 +857,5 @@ target_link_libraries(${PROJECT_NAME}
   zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
 
 if (ANDROID)
-	target_link_libraries(${PROJECT_NAME} nvidia)
+  target_link_libraries(${PROJECT_NAME} nvidia)
 endif ()
-

@@ -19,23 +19,23 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef     SIG_ApplyChanged("applyChanged");
-    
+const SignalDef AssetImporter::SIG_ApplyChanged("AssetImporter::ApplyChanged");
+
 ABSTRACT_DECLARATION("AssetImporter", AssetImporter, Object)
 BEGIN_EVENTS(AssetImporter)
 END_EVENTS
-BEGIN_PROPERTIES(AssetImporter)
-END_PROPERTIES
+
+void AssetImporter::RegisterProperties() {
+}
 
 AssetImporter::AssetImporter() {
     asset = nullptr;
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&AssetImporter::PropertyChanged);
 }
 
 AssetImporter::~AssetImporter() {
 }
 
-const Str AssetImporter::ToString() const {
+Str AssetImporter::ToString() const {
     return asset->ToString();
 }
 
@@ -52,7 +52,7 @@ void AssetImporter::RevertChanged() {
 
     if (validRootNode) {
         Json::Value importerValue = metaDataValue["importer"];
-        props->Init(importerValue);
+        Deserialize(importerValue);
     }
 }
 
@@ -64,9 +64,6 @@ void AssetImporter::ApplyChanged() {
     asset->WriteMetaDataFile();
 
     EmitSignal(&SIG_ApplyChanged);
-}
-
-void AssetImporter::PropertyChanged(const char *classname, const char *propName) {
 }
 
 BE_NAMESPACE_END

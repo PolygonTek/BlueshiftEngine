@@ -21,7 +21,7 @@ struct viewEntity_t {
 
     viewEntity_t *          next;
 
-    Mat4                    modelViewMatrix;
+    Mat3x4                  modelViewMatrix;
     Mat4                    modelViewProjMatrix;
 
     bool                    ambientVisible;

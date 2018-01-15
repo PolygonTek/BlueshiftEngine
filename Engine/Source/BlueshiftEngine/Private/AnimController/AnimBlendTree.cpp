@@ -166,13 +166,13 @@ void AnimBlendTree::RemoveChild(int childIndex) {
 
 int AnimBlendTree::BlendTypeDimensions(BlendType blendType) {
     switch (blendType) {
-    case BE1::AnimBlendTree::BlendType::BlendAngle:
-    case BE1::AnimBlendTree::BlendType::Blend1D:
+    case AnimBlendTree::BlendType::BlendAngle:
+    case AnimBlendTree::BlendType::Blend1D:
         return 1;
-    case BE1::AnimBlendTree::BlendType::Blend2DDirectional:
-    case BE1::AnimBlendTree::BlendType::Blend2DBarycentric:
+    case AnimBlendTree::BlendType::Blend2DDirectional:
+    case AnimBlendTree::BlendType::Blend2DBarycentric:
         return 2;
-    case BE1::AnimBlendTree::BlendType::Blend3DBarycentric:
+    case AnimBlendTree::BlendType::Blend3DBarycentric:
         return 3;
     }
 

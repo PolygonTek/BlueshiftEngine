@@ -27,16 +27,36 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    void                    SetText(const char *text);
+    const char *            GetTextCString() const;
+    void                    SetTextCString(const char *text);
+
+    Str                     GetText() const;
+    void                    SetText(const Str &text);
+
+    SceneEntity::TextAnchor GetAnchor() const;
+    void                    SetAnchor(SceneEntity::TextAnchor anchor);
+
+    SceneEntity::TextAlignment GetAlignment() const;
+    void                    SetAlignment(SceneEntity::TextAlignment alignment);
+
+    float                   GetLineSpacing() const;
+    void                    SetLineSpacing(float lineSpacing);
+
+    Guid                    GetFontGuid() const;
+    void                    SetFontGuid(const Guid &fontGuid);
+
+    int                     GetFontSize() const;
+    void                    SetFontSize(int fontSize);
 
 protected:
     void                    ChangeFont(const Guid &fontGuid, int fontSize);
 
     void                    UpdateAABB();
 
-    void                    PropertyChanged(const char *classname, const char *propName);
+    int                     fontSize;
 };
 
 BE_NAMESPACE_END

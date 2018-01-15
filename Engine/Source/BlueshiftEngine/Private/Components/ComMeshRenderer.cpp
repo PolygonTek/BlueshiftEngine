@@ -25,28 +25,21 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Mesh Renderer", ComMeshRenderer, ComRenderable)
 BEGIN_EVENTS(ComMeshRenderer)
 END_EVENTS
-BEGIN_PROPERTIES(ComMeshRenderer)
-    PROPERTY_OBJECT("mesh", "Mesh", "mesh", GuidMapper::defaultMeshGuid.ToString(), MeshAsset::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_OBJECT("materials", "Materials", "List of materials to use when rendering.", GuidMapper::defaultMaterialGuid.ToString(), MaterialAsset::metaObject, PropertySpec::ReadWrite | PropertySpec::IsArray),
-    PROPERTY_BOOL("useLightProbe", "Use Light Probe", "", "true", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("useReflectionProbe", "Use Reflection Probe", "", "true", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("castShadows", "Cast Shadows", "", "true", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("receiveShadows", "Receive Shadows", "", "true", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComMeshRenderer::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Mesh", MeshAsset, GetMesh, SetMesh, GuidMapper::defaultMeshGuid.ToString(), "", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Materials", MaterialAsset, GetMaterial, SetMaterial, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, "", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Cast Shadows", bool, IsCastShadows, SetCastShadows, "", PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&MeshAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("materials", "Materials", Guid, GetMaterialGuid, SetMaterialGuid, GetMaterialCount, SetMaterialCount, GuidMapper::defaultMaterialGuid, "List of materials to use when rendering.", PropertyInfo::EditorFlag)
+        .SetMetaObject(&MaterialAsset::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("useLightProve", "Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, true, "", PropertyInfo::EditorFlag);
+    //REGISTER_ACCESSOR_PROPERTY("useReflectionProbe", "Use Reflection Probe", bool, IsUseReflectionProbe, SetUseReflectionProbe, false, PropertyInfo::EditorFlag),
+    REGISTER_ACCESSOR_PROPERTY("castShadows", "Cast Shadows", bool, IsCastShadows, SetCastShadows, true, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("receiveShadows", "Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, "", PropertyInfo::EditorFlag);
 }
 
 ComMeshRenderer::ComMeshRenderer() {
     meshAsset = nullptr;
     referenceMesh = nullptr;
-
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComMeshRenderer::PropertyChanged);
 }
 
 ComMeshRenderer::~ComMeshRenderer() {
@@ -72,37 +65,34 @@ void ComMeshRenderer::Purge(bool chainPurge) {
 void ComMeshRenderer::Init() {
     ComRenderable::Init();
 
-    ChangeMesh(props->Get("mesh").As<Guid>());
+    sceneEntity.aabb = referenceMesh->GetAABB();
 
-    // Set SceneEntity parameters
-    sceneEntity.mesh            = nullptr;
-    sceneEntity.aabb            = referenceMesh->GetAABB();
-    sceneEntity.customSkin      = nullptr;
-    sceneEntity.castShadows     = props->Get("castShadows").As<bool>();
-    sceneEntity.receiveShadows  = props->Get("receiveShadows").As<bool>();
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
-    // Disconnect from old mesh asset
+    // Disconnect with previously connected mesh asset
     if (meshAsset) {
         meshAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        meshAsset = nullptr;
     }
 
-    // Release the previous used instantiated mesh
+    // Release the previously used instantiated mesh
     if (sceneEntity.mesh) {
         meshManager.ReleaseMesh(sceneEntity.mesh);
         sceneEntity.mesh = nullptr;
     }
 
-    // Release the previous used reference mesh
+    // Release the previously used reference mesh
     if (referenceMesh) {
         meshManager.ReleaseMesh(referenceMesh);
         referenceMesh = nullptr;
     }
 
-    // Release previous used materials
-    for (int i = 0; i < sceneEntity.customMaterials.Count(); i++) {
-        materialManager.ReleaseMaterial(sceneEntity.customMaterials[i]);
+    // Release previously used materials
+    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sceneEntity.materials[i]);
     }
 
     // Get the new reference mesh
@@ -110,113 +100,84 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     referenceMesh = meshManager.GetMesh(meshPath);
 
     // Get number of materials
-    BE1::Array<int> materialIndexArray;
+    Array<int> materialIndexArray;
     for (int i = 0; i < referenceMesh->NumSurfaces(); i++) {
         materialIndexArray.AddUnique(referenceMesh->GetSurface(i)->materialIndex);
     }
     int numMaterials = materialIndexArray.Count();
 
+    // Get previously used number of materials
+    int oldCount = sceneEntity.materials.Count();
+
     // Resize material slots
-    sceneEntity.customMaterials.SetCount(numMaterials);
+    sceneEntity.materials.SetCount(numMaterials);
 
-    props->SetNumElements("materials", numMaterials);
-
-    // Get all of the new materials
-    for (int i = 0; i < numMaterials; i++) {
-        Str name = va("materials[%i]", i);
-
-        //const MeshSurf *surf = referenceMesh->GetSurface(i);
-        const Guid materialGuid = props->Get(name).As<Guid>();
-        const Str materialPath = resourceGuidMapper.Get(materialGuid);
-
-        sceneEntity.customMaterials[i] = materialManager.GetMaterial(materialPath);
+    for (int i = oldCount; i < sceneEntity.materials.Count(); i++) {
+        sceneEntity.materials[i] = materialManager.GetMaterial("_defaultMaterial");
     }
 
-    // Need to mesh asset to be reloaded in Editor
+    // Need mesh asset to be reloaded in editor
     meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
     if (meshAsset) {
         meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
     }
 }
 
-void ComMeshRenderer::ChangeMaterial(int index, const Guid &materialGuid) {
-    if (index >= 0 && index < props->NumElements("materials")) {
-        // Release the previous used material
-        if (sceneEntity.customMaterials[index]) {
-            materialManager.ReleaseMaterial(sceneEntity.customMaterials[index]);
-        }
-
-        // Get the new material
-        const Str materialPath = resourceGuidMapper.Get(materialGuid);
-        sceneEntity.customMaterials[index] = materialManager.GetMaterial(materialPath);
-    }
-}
-
 void ComMeshRenderer::MeshReloaded() {
-    SetMesh(props->Get("mesh").As<Guid>());
+    ChangeMesh(GetProperty("mesh").As<Guid>());
+
+    MeshUpdated();
 }
 
-void ComMeshRenderer::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
+Guid ComMeshRenderer::GetMeshGuid() const {
+    if (referenceMesh) {
+        const Str meshPath = referenceMesh->GetHashName();
+        return resourceGuidMapper.Get(meshPath);
     }
-
-    if (!Str::Cmp(propName, "mesh")) {
-        SetMesh(props->Get("mesh").As<Guid>());
-        return;
-    }
-
-    if (!Str::Cmpn(propName, "materials", 9)) {
-        int index;
-        sscanf(propName, "materials[%i]", &index);
-        const Guid materialGuid = props->Get(propName).As<Guid>();
-        SetMaterialGuid(index, materialGuid);
-        return;
-    }
-
-    if (!Str::Cmp(propName, "useLightProbe")) {
-        SetUseLightProbe(props->Get("useLightProbe").As<bool>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "castShadows")) {
-        SetCastShadows(props->Get("castShadows").As<bool>());
-        return;
-    }
-    
-    if (!Str::Cmp(propName, "receiveShadows")) {
-        SetReceiveShadows(props->Get("receiveShadows").As<bool>());
-        return;
-    }
-
-    ComRenderable::PropertyChanged(classname, propName);
+    return Guid();
 }
 
-Guid ComMeshRenderer::GetMesh() const {
-    const Str meshPath = referenceMesh->GetHashName();
-    return resourceGuidMapper.Get(meshPath);
-}
-
-void ComMeshRenderer::SetMesh(const Guid &guid) {
+void ComMeshRenderer::SetMeshGuid(const Guid &guid) {
     ChangeMesh(guid);
 
     MeshUpdated();
 }
 
-int ComMeshRenderer::NumMaterials() const {
-    return sceneEntity.customMaterials.Count();
+int ComMeshRenderer::GetMaterialCount() const {
+    return sceneEntity.materials.Count();
+}
+
+void ComMeshRenderer::SetMaterialCount(int count) {
+    int oldCount = sceneEntity.materials.Count();
+
+    sceneEntity.materials.SetCount(count);
+
+    if (count > oldCount) {
+        for (int index = oldCount; index < count; index++) {
+            sceneEntity.materials[index] = materialManager.GetMaterial("_defaultMaterial");
+        }
+    }
 }
 
 Guid ComMeshRenderer::GetMaterialGuid(int index) const {
-    if (index >= 0 && index < sceneEntity.customMaterials.Count()) {
-        const Str materialPath = sceneEntity.customMaterials[index]->GetHashName();
+    if (index >= 0 && index < sceneEntity.materials.Count()) {
+        const Str materialPath = sceneEntity.materials[index]->GetHashName();
         return resourceGuidMapper.Get(materialPath);
     }
     return Guid();
 }
 
 void ComMeshRenderer::SetMaterialGuid(int index, const Guid &materialGuid) {
-    ChangeMaterial(index, materialGuid);
+    if (index >= 0 && index < sceneEntity.materials.Count()) {
+        // Release the previously used material
+        if (sceneEntity.materials[index]) {
+            materialManager.ReleaseMaterial(sceneEntity.materials[index]);
+        }
+
+        // Get the new material
+        const Str materialPath = resourceGuidMapper.Get(materialGuid);
+        sceneEntity.materials[index] = materialManager.GetMaterial(materialPath);
+    }
 
     UpdateVisuals();
 }
@@ -233,6 +194,7 @@ Material *ComMeshRenderer::GetMaterial(int index) const {
 
 void ComMeshRenderer::SetMaterial(int index, const Material *material) {
     const Guid materialGuid = resourceGuidMapper.Get(material->GetHashName());
+
     SetMaterialGuid(index, materialGuid);
 }
 
@@ -242,6 +204,7 @@ bool ComMeshRenderer::IsUseLightProbe() const {
 
 void ComMeshRenderer::SetUseLightProbe(bool useLightProbe) {
     sceneEntity.useLightProbe = useLightProbe;
+
     UpdateVisuals();
 }
 
@@ -251,6 +214,7 @@ bool ComMeshRenderer::IsCastShadows() const {
 
 void ComMeshRenderer::SetCastShadows(bool castShadows) {
     sceneEntity.castShadows = castShadows;
+    
     UpdateVisuals();
 }
 
@@ -260,6 +224,7 @@ bool ComMeshRenderer::IsReceiveShadows() const {
 
 void ComMeshRenderer::SetReceiveShadows(bool receiveShadows) {
     sceneEntity.receiveShadows = receiveShadows;
+
     UpdateVisuals();
 }
 
@@ -276,8 +241,8 @@ bool ComMeshRenderer::GetClosestVertex(const SceneView *view, const Point &mouse
             Vec3 localPosition = v->GetPosition();
             Vec3 localNormal = v->GetNormal();
 
-            Vec3 worldPosition = transform->GetWorldMatrix() * localPosition;
-            Vec3 worldNormal = transform->GetWorldMatrix().TransformNormal(localNormal);
+            Vec3 worldPosition = transform->GetTransform() * localPosition;
+            Vec3 worldNormal = transform->GetTransform().TransformNormal(localNormal);
 
             bool isBackface;
             // Ignore backface vertices 

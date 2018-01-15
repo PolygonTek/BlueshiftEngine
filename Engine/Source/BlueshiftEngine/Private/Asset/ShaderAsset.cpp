@@ -24,8 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Shader", ShaderAsset, Asset)
 BEGIN_EVENTS(ShaderAsset)
 END_EVENTS
-BEGIN_PROPERTIES(ShaderAsset)
-END_PROPERTIES
+
+void ShaderAsset::RegisterProperties() {
+}
 
 ShaderAsset::ShaderAsset() {
     shader = nullptr;

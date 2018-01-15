@@ -49,7 +49,7 @@ void LuaVM::RegisterInput(LuaCpp::Module &module) {
     _Input_Touch.AddClassMembers<InputSystem::Touch>(
         "id", &InputSystem::Touch::id,
         "phase", &InputSystem::Touch::phase,
-        "position", &InputSystem::Touch::position);    
+        "position", &InputSystem::Touch::position);
 }
 
 BE_NAMESPACE_END

@@ -46,7 +46,9 @@ public:
                     /// Exact compare, no epsilon
     bool            operator!=(const Sphere &rhs) const { return !Equals(rhs); }
 
+                    /// Clear to undefined state.
     void            Clear();
+
     void            SetZero();
     void            SetOrigin(const Vec3 &origin) { this->origin = origin; }
     void            SetRadius(float radius) { this->radius = radius; }

@@ -67,14 +67,37 @@ void Engine::ShutdownBase() {
 }
 
 static void RegisterEngineObjects() {
+    Object::RegisterProperties();
+
+    Asset::RegisterProperties();
+    FolderAsset::RegisterProperties();
+    TextureAsset::RegisterProperties();
+    ShaderAsset::RegisterProperties();
+    MaterialAsset::RegisterProperties();
+    FontAsset::RegisterProperties();
+    SkeletonAsset::RegisterProperties();
+    MeshAsset::RegisterProperties();
+    ParticleSystemAsset::RegisterProperties();
+    AnimAsset::RegisterProperties();
+    FbxAsset::RegisterProperties();
+    JointMaskAsset::RegisterProperties();
+    AnimControllerAsset::RegisterProperties();
+    PrefabAsset::RegisterProperties();
+    SoundAsset::RegisterProperties();
+    MapAsset::RegisterProperties();
+    ScriptAsset::RegisterProperties();
+
+    Component::RegisterProperties();
     ComTransform::RegisterProperties();
     ComCollider::RegisterProperties();
     ComBoxCollider::RegisterProperties();
     ComSphereCollider::RegisterProperties();
     ComCapsuleCollider::RegisterProperties();
+    ComConeCollider::RegisterProperties();
     ComCylinderCollider::RegisterProperties();
     ComMeshCollider::RegisterProperties();
     ComRigidBody::RegisterProperties();
+    ComSensor::RegisterProperties();
     ComConstantForce::RegisterProperties();
     ComJoint::RegisterProperties();
     ComFixedJoint::RegisterProperties();
@@ -87,11 +110,24 @@ static void RegisterEngineObjects() {
     ComMeshRenderer::RegisterProperties();
     ComStaticMeshRenderer::RegisterProperties();
     ComSkinnedMeshRenderer::RegisterProperties();
+    ComAnimator::RegisterProperties();
     ComParticleSystem::RegisterProperties();
     ComTextRenderer::RegisterProperties();
     ComLight::RegisterProperties();
     ComCamera::RegisterProperties();
+    ComSpline::RegisterProperties();
     ComScript::RegisterProperties();
+    ComAudioListener::RegisterProperties();
+    ComAudioSource::RegisterProperties();
+
+    Entity::RegisterProperties();
+    Prefab::RegisterProperties();
+    GameWorld::RegisterProperties();
+
+    MapRenderSettings::RegisterProperties();
+    TagLayerSettings::RegisterProperties();
+    PhysicsSettings::RegisterProperties();
+    PlayerSettings::RegisterProperties();
 }
 
 void Engine::Init(const InitParms *initParms) {
@@ -108,21 +144,15 @@ void Engine::Init(const InitParms *initParms) {
     }
 
     RegisterEngineObjects();
-
-    LuaVM::Init();
 }
 
 void Engine::Shutdown() {
-    LuaVM::Shutdown();
-
     common.Shutdown();
 
     Platform::Shutdown();
 }
 
 void Engine::RunFrame(int elapsedMsec) {
-    LuaVM::State().ForceGC();
-
     common.RunFrame(elapsedMsec);
 }
 

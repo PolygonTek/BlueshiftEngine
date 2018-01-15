@@ -7,9 +7,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 include(BlueshiftCommon)
 
-option(BUILD_ENGINE "Build entire Blueshift engine" OFF)
-option(BUILD_PLAYER "Build a Blueshift player only" OFF)
-option(BUILD_EDITOR "Build Blueshift editor" OFF)
+option(BUILD_ENGINE "Build Blueshift Engine" OFF)
+option(BUILD_PLAYER "Build Blueshift Player" OFF)
+option(BUILD_EDITOR "Build Blueshift Editor" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 
 if (BUILD_ENGINE)
@@ -26,7 +26,7 @@ endif ()
 project(${project_name})
 
 set(VERSION_MAJOR 0 CACHE STRING "Project major version number.")
-set(VERSION_MINOR 1 CACHE STRING "Project minor version number.")
+set(VERSION_MINOR 3 CACHE STRING "Project minor version number.")
 set(VERSION_PATCH 0 CACHE STRING "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
@@ -89,7 +89,13 @@ if (MSVC)
     add_definitions(-D_UNICODE -DUNICODE)
 
     # Enable Function-Level Linking
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+    
+    # Force Synchronous PDB Writes
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+    
     # Remove RTTI
     string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
@@ -111,23 +117,7 @@ if (XAMARIN)
 		set(ENGINE_BUILD_PLATFORM_DIR "XamarinIOS$(EFFECTIVE_PLATFORM_NAME)${WITHDEBUG_POSTFIX}")
       endif ()
     endif ()
-else ()
-    if (MSVC)
-      set(ENGINE_BUILD_PLATFORM_DIR "Win64")
-    elseif (APPLE)
-      if (IOS)
-        set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
-      else ()
-        set(ENGINE_BUILD_PLATFORM_DIR "macOS")
-      endif ()
-    elseif (ANDROID)
-      set(ENGINE_BUILD_PLATFORM_DIR "Android")
-    else ()
-      set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
-    endif ()
-endif ()
-
-if (XAMARIN)
+    
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__XAMARIN__")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__XAMARIN__")
     if (APPLE)
@@ -144,6 +134,20 @@ if (XAMARIN)
 
 		#set(CMAKE_OSX_ARCHITECTURES "armv7;arm64;i386")
 		set(CMAKE_OSX_ARCHITECTURES "armv7;arm64")
+    endif ()
+else ()
+    if (MSVC)
+      set(ENGINE_BUILD_PLATFORM_DIR "Win64")
+    elseif (APPLE)
+      if (IOS)
+        set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
+      else ()
+        set(ENGINE_BUILD_PLATFORM_DIR "macOS")
+      endif ()
+    elseif (ANDROID)
+      set(ENGINE_BUILD_PLATFORM_DIR "Android")
+    else ()
+      set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
     endif ()
 endif ()
 
@@ -185,12 +189,15 @@ if (BUILD_ENGINE)
   add_subdirectory(Source/Dependencies/NvTriStrip)
   add_subdirectory(Source/Dependencies/Bullet)
   add_subdirectory(Source/Dependencies/HACD)
+  
   if (ANDROID)
 	add_subdirectory(Source/Dependencies/nvidia)
   endif()
+  
   if (NOT USE_LUAJIT)
     add_subdirectory(Source/Dependencies/lua)
   endif ()
+  
   add_subdirectory(Source/Dependencies/LuaCpp)
   add_subdirectory(Source/Dependencies/luasocket)
 
@@ -204,6 +211,7 @@ if (BUILD_PLAYER)
 endif ()
 
 if (BUILD_EDITOR)
+  add_subdirectory(Source/Dependencies/ToolWindowManager)  
   add_subdirectory(Source/BlueshiftEditor)
 endif ()
 

@@ -37,6 +37,16 @@ void InputSystem::Shutdown() {
 }
 
 void InputSystem::EndFrame() {
+    ClearKeyEvents();
+
+    ClearTouches();
+
+    axisDelta.Set(0, 0);
+
+    inputUpdated = false;
+}
+
+void InputSystem::ClearKeyEvents() {
     while (1) {
         KeyEv *keyEvent = keyEventQueue.RemoveFirst();
         if (!keyEvent) {
@@ -44,18 +54,6 @@ void InputSystem::EndFrame() {
         }
         keyEventAllocator.Free(keyEvent);
     }
-    
-    while (1) {
-        TouchEv *touchEvent = touchEventQueue.RemoveFirst();
-        if (!touchEvent) {
-            break;
-        }
-        touchEventAllocator.Free(touchEvent);
-    }
-
-    axisDelta.Set(0, 0);
-
-    inputUpdated = false;
 }
 
 void InputSystem::KeyEvent(KeyCode::Enum key, bool down) {
@@ -93,7 +91,7 @@ void InputSystem::JoyAxisEvent(int dx, int dy, int time) {
 
 void InputSystem::TouchEvent(InputSystem::Touch::Phase phase, uint64_t id, int x, int y) {
     TouchEv *newEvent = touchEventAllocator.Alloc();
-    newEvent->touch.id = id;
+    newEvent->touch.id = (int32_t)id;
     newEvent->touch.phase = phase;
     newEvent->touch.position = Point(x, y);
     newEvent->node.SetOwner(newEvent);
@@ -124,6 +122,16 @@ bool InputSystem::IsKeyUp(KeyCode::Enum keynum) const {
         }
     }
     return count > 0;
+}
+
+void InputSystem::ClearTouches() {
+    while (1) {
+        TouchEv *touchEvent = touchEventQueue.RemoveFirst();
+        if (!touchEvent) {
+            break;
+        }
+        touchEventAllocator.Free(touchEvent);
+    }
 }
 
 int InputSystem::GetTouchCount() const {

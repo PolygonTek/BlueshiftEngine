@@ -23,13 +23,13 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Asset", Asset, Object)
 BEGIN_EVENTS(Asset)
 END_EVENTS
-BEGIN_PROPERTIES(Asset)
-    PROPERTY_OBJECT("guid", "GUID", "GUID", Guid::zero.ToString(), Object::metaObject, PropertySpec::ReadWrite | PropertySpec::Hidden),
-    PROPERTY_STRING("timeStamp", "Time Stamp", "Timestamp", "0", PropertySpec::ReadWrite | PropertySpec::Hidden),
-END_PROPERTIES
 
-const SignalDef Asset::SIG_Reloaded("reloaded");
-const SignalDef Asset::SIG_Modified("modified", "i");
+const SignalDef Asset::SIG_Reloaded("Asset::Reloaded");
+const SignalDef Asset::SIG_Modified("Asset::Modified", "i");
+
+void Asset::RegisterProperties() {
+    REGISTER_PROPERTY("timeStamp", "Time Stamp", Str, timeStamp, "0", "", 0);
+}
 
 Asset::Asset() {
     node.SetOwner(this);
@@ -112,11 +112,11 @@ void Asset::WriteMetaDataFile() const {
     Str metaFilename = Asset::GetMetaFilenameFromAssetPath(GetAssetFilename());
 
     Json::Value metaDataValue;
-    props->Serialize(metaDataValue);
+    Serialize(metaDataValue);
 
     if (assetImporter) {
         Json::Value importerValue;
-        assetImporter->props->Serialize(importerValue);
+        assetImporter->Serialize(importerValue);
 
         metaDataValue["importer"] = importerValue;
     }

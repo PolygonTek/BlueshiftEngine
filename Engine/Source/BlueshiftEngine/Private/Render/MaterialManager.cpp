@@ -63,6 +63,7 @@ void MaterialManager::Init() {
     blendMaterial->Create(va(
         "pass {\n"
         "   renderingMode alphaBlend\n"
+        "   useOwnerColor\n"
         "   blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
         "   shader \"%s\" {\n"
         "       albedoMap \"%s\"\n"

@@ -23,8 +23,8 @@ class Entity;
 class GameWorld;
 class Component;
 
-using ComponentPtr          = Component*;
-using ComponentPtrArray     = Array<ComponentPtr>;
+using ComponentPtr = Component*;
+using ComponentPtrArray = Array<ComponentPtr>;
   
 class Component : public Object {
     friend class Entity;
@@ -36,70 +36,73 @@ public:
     virtual ~Component() = 0;
 
                             /// Components share the same name with the entity
-    virtual const Str       ToString() const override;
+    virtual Str             ToString() const override;
     
                             /// Get the entity that own this component
     Entity *                GetEntity() const { return entity; }
     
-                            /// Get the object GameWorld
+                            /// Get the game world object
     GameWorld *             GetGameWorld() const;
 
-                            /// Same component is allowed in a entity ?
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const { return false; }
-
-                            /// Is conflict with specific component ?
+                            /// Returns true if this component conflicts with the given component
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const { return false; }
 
-                            //
+                            /// Returns true if this component have render entity by checking renderEntityHandle
     virtual bool            HasRenderEntity(int renderEntityHandle) const { return false; }
 
-                            //
-    bool                    IsInitalized() const { return initialized; }
+                            /// Is initialized ? (initialized should be set to true after calling Init function)
+    bool                    IsInitialized() const { return initialized; }
 
                             /// Can disable ?
     virtual bool            CanDisable() const { return true; }
-
                             /// Is enabled ?
     bool                    IsEnabled() const { return enabled; }
+                            /// Set enabled/disabled this component
+    void                    SetEnabled(bool enable);
 
-                            /// Enable/Disable this component
-    virtual void            Enable(bool enable) { enabled = enable; }
+    bool                    IsActiveInHierarchy() const;
 
-                            /// Purge all the resources in this component    
+                            /// Purges all the resources of the component, chainPurge for parent class
     virtual void            Purge(bool chainPurge = true);
 
-                            /// Called in initialization
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init();
 
-                            //
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
     virtual void            Awake() {}
-    
-                            //
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() {}
 
-                            //
+                            /// Called on scene update, variable timestep.
     virtual void            Update() {}
-
-                            //
+                            /// Called on scene post-update, variable timestep.
     virtual void            LateUpdate() {}
+                            /// Called on physics update, fixed timestep.
+    virtual void            FixedUpdate(float timeStep) {}
+                            /// Called on physics post-update, fixed timestep.
+    virtual void            FixedLateUpdate(float timeStep) {}
 
-                            //
+                            ///
     virtual const AABB      GetAABB() { return AABB::zero; }
 
-                            //
+                            ///
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const { return false; }
 
-                            //
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) {}
 
 protected:
+    virtual void            OnActive() {}
+    virtual void            OnInactive() {}
+
     virtual void            Event_ImmediateDestroy() override;
 
     void                    SetInitialized(bool init) { initialized = init; }
     void                    SetEntity(Entity *entity) { this->entity = entity; }
-
-    void                    Reload();
-    void                    PropertyChanged(const char *classname, const char *propName);
 
     Entity *                entity;
     bool                    enabled;

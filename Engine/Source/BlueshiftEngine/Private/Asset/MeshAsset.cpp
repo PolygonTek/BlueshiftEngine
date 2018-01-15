@@ -24,8 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Mesh", MeshAsset, Asset)
 BEGIN_EVENTS(MeshAsset)
 END_EVENTS
-BEGIN_PROPERTIES(MeshAsset)
-END_PROPERTIES
+
+void MeshAsset::RegisterProperties() {
+}
 
 MeshAsset::MeshAsset() {
     mesh = nullptr;

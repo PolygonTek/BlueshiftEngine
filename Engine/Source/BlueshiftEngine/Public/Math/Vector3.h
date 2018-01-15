@@ -117,9 +117,12 @@ public:
                         /// This function is identical to the member function DivComp().
                         /// Divides this vector by a vector, element-wise.
     Vec3                operator/(const Vec3 &rhs) const { return Vec3(x / rhs.x, y / rhs.y, z / rhs.z); }
-                        /// Divides vector (s, s, s, s) by a vector v, element-wise.
+                        /// Divides vector (s, s, s, s) by a vector, element-wise.
     friend Vec3         operator/(float lhs, const Vec3 &rhs) { return Vec3(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
     
+                        /// Assign from another vector.
+    Vec3 &              operator=(const Vec3 &rhs);
+
                         /// Adds a vector to this vector, in-place.
     Vec3 &              AddSelf(const Vec3 &v) { *this += v; return *this; }
                         /// Adds a vector to this vector, in-place.
@@ -241,16 +244,16 @@ public:
                         /// Sets from spherical linear interpolation between the vector v1 and the vector v2.
     void                SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t);
 
-                        /// Sets this vector on the unit sphere has uniform distribution with the given random variables u1, u2 [0, 1].
+                        /// Returns vector on the unit sphere has uniform distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromUniformSampleSphere(float u1, float u2);
 
-                        /// Sets this vector on the unit hemisphere has uniform distribution with the given random variables u1, u2 [0, 1].
+                        /// Returns vector on the unit hemisphere has uniform distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromUniformSampleHemisphere(float u1, float u2);
 
-                        /// Sets this vector on the unit hemisphere has cosine weighted distribution with the given random variables u1, u2 [0, 1].
+                        /// Returns vector on the unit hemisphere has cosine weighted distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromCosineSampleHemisphere(float u1, float u2);
 
-                        /// Sets this vector on the unit hemisphere has powered cosine weighted distribution with the given random variables u1, u2 [0, 1].
+                        /// Returns vector on the unit hemisphere has powered cosine weighted distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromPowerCosineSampleHemisphere(float u1, float u2, float power);
 
                         /// Compute yaw angle in degree looking from the viewpoint of 2D view in x-y plane.
@@ -262,6 +265,9 @@ public:
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
+
+                        /// Creates from the string
+    static Vec3         FromString(const char *str);
         
                         /// Casts this Vec3 to a Vec2.
     const Vec2 &        ToVec2() const;
@@ -346,6 +352,13 @@ BE_INLINE float Vec3::operator[](int index) const {
 BE_INLINE float &Vec3::operator[](int index) {
     assert(index >= 0 && index < Size);
     return ((float *)this)[index];
+}
+
+BE_INLINE Vec3 &Vec3::operator=(const Vec3 &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    z = rhs.z;
+    return *this;
 }
 
 BE_INLINE Vec3 &Vec3::operator+=(const Vec3 &rhs) {

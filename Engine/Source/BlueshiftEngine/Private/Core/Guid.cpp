@@ -100,7 +100,7 @@ bool Guid::SetFromString(const char *s) {
     return true;
 }
 
-Guid Guid::ParseString(const char *s) {
+Guid Guid::FromString(const char *s) {
     Guid guid;
     if (!guid.SetFromString(s)) {
         return Guid();

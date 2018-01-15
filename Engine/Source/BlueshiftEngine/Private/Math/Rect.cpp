@@ -147,4 +147,10 @@ Rect &Rect::ExpandSelf(int ax, int ay) {
     return *this;
 }
 
+Rect Rect::FromString(const char *str) {
+    Rect r;
+    sscanf(str, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
+    return r;
+}
+
 BE_NAMESPACE_END

@@ -202,7 +202,7 @@ public:
     bool                    Load(const char *filename);
     bool                    Reload();
 
-    const StrHashMap<PropertySpec> &GetSpecHashMap() const;
+    const StrHashMap<PropertyInfo> &GetPropertyInfoHashMap() const;
 
 private:
     bool                    ParseProperties(Lexer &lexer);
@@ -250,7 +250,7 @@ private:
     Shader *                pointShadowVersion;
     Shader *                gpuSkinningVersion[3];
 
-    StrHashMap<PropertySpec> specHashMap;
+    StrHashMap<PropertyInfo> propertyInfoHashMap;
 };
 
 BE_INLINE Shader::Shader() {

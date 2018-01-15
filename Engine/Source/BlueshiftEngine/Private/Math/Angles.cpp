@@ -52,6 +52,12 @@ Angles &Angles::Normalize180() {
     return *this;
 }
 
+Angles Angles::FromString(const char *str) {
+    Angles a;
+    sscanf(str, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
+    return a;
+}
+
 //---------------------------------------------------------------------------------
 //
 // * Euler 회전행렬을 만들어 x, y, z 기저축 벡터들을 구한다

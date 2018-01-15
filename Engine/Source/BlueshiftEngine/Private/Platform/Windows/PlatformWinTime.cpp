@@ -67,13 +67,13 @@ void PlatformWinTime::Shutdown() {
 }
 
 float PlatformWinTime::Seconds() {
-    static int			first = 1;
-    static int			sametimecount;
-    static unsigned int	oldcount;
-    unsigned int		count, d;
-    LARGE_INTEGER		performanceCount;
-    double				time;
-    double				lasttime;
+    static int first = 1;
+    static int sametimecount;
+    static unsigned int oldcount;
+    unsigned int count, d;
+    LARGE_INTEGER performanceCount;
+    double time;
+    double lasttime;
 
     QueryPerformanceCounter(&performanceCount);
 

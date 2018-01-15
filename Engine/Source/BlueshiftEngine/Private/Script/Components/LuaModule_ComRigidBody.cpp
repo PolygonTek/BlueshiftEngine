@@ -25,10 +25,6 @@ void LuaVM::RegisterRigidBodyComponent(LuaCpp::Module &module) {
 
     _ComRigidBody.SetClass<ComRigidBody>(module["Component"]);
     _ComRigidBody.AddClassMembers<ComRigidBody>(
-        "origin", &ComRigidBody::GetOrigin,
-        "set_origin", &ComRigidBody::SetOrigin,
-        "axis", &ComRigidBody::GetAxis,
-        "set_axis", &ComRigidBody::SetAxis,
         "mass", &ComRigidBody::GetMass,
         "set_mass", &ComRigidBody::SetMass,
         "gravity", &ComRigidBody::GetGravity,

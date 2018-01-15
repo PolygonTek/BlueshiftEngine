@@ -150,6 +150,11 @@ static void TestObject(LuaCpp::State &lua) {
         "z", &Base::z
     );
     lua("print('TEST.base:y() == ', TEST.base:y())");
+
+    lua("TEST.base.testfunc = function() print('hello') end");
+    if (lua["TEST"]["base"]["testfunc"].IsFunction()) {
+        lua["TEST"]["base"]["testfunc"]();
+    }
 }
 
 struct XXX {

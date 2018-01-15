@@ -17,6 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
+const Color3  Color3::zero      = Color3(0.0f, 0.0f, 0.0f);
 const Color3  Color3::black     = Color3(0.0f, 0.0f, 0.0f);
 const Color3  Color3::white     = Color3(1.0f, 1.0f, 1.0f);
 const Color3  Color3::red       = Color3(1.0f, 0.0f, 0.0f);
@@ -51,6 +52,12 @@ uint32_t Color3::ToUInt32() const {
     uint32_t g = (uint32_t)Clamp(((int)(this->g * 255.0f)), 0, 255);
     uint32_t b = (uint32_t)Clamp(((int)(this->b * 255.0f)), 0, 255);
     return (255 << 24) | (b << 16) | (g << 8) | r;
+}
+
+Color3 Color3::FromString(const char *str) {
+    Color3 v;
+    sscanf(str, "%f %f %f", &v.r, &v.g, &v.b);
+    return v;
 }
 
 // RGB 를 HSL 로 변환

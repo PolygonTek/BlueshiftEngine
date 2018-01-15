@@ -362,7 +362,7 @@ bool AnimLayer::ParseState(Lexer &lexer) {
                 return false;
             }
 
-            const Guid animGuid = Guid::ParseString(token2);
+            const Guid animGuid = Guid::FromString(token2);
             AnimClip *animClip = animController->LoadAnimClip(animGuid);
             
             state->SetAnimClip(animClip);
@@ -496,7 +496,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
                 return false;
             }
 
-            const Guid animGuid = Guid::ParseString(token2);
+            const Guid animGuid = Guid::FromString(token2);
             AnimClip *animClip = animController->LoadAnimClip(animGuid);
 
             blendTree->AddChildClip(animClip, blendSpacePoint);

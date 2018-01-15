@@ -19,7 +19,6 @@
 #include "Components/ComCollider.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComCharacterController.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Game/CastResult.h"
 
@@ -28,28 +27,24 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Character Controller", ComCharacterController, Component)
 BEGIN_EVENTS(ComCharacterController)
 END_EVENTS
-BEGIN_PROPERTIES(ComCharacterController)
-    PROPERTY_RANGED_FLOAT("mass", "Mass", "kg", Rangef(0, 100, 0.1f), "10", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("capsuleRadius", "Capsule Radius", "", Rangef(0.01, 2, 0.01), "0.5", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("capsuleHeight", "Capsule Height", "", Rangef(0.01, 2, 0.01), "0.8", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("stepOffset", "Step Offset", "", Rangef(0, 1.0, 0.1), "0.5", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("slopeLimit", "Slope Limit Angle", "", Rangef(0, 90, 1), "60", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComCharacterController::RegisterProperties() {
-    //REGISTER_PROPERTY("Mass", float, mass, "10", PropertySpec::ReadWrite).SetRange(0, 100, 0.1f);
-    //REGISTER_ACCESSOR_PROPERTY("Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, "0.5", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
-    //REGISTER_ACCESSOR_PROPERTY("Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, "0.8", PropertySpec::ReadWrite).SetRange(0.01, 2, 0.01);
-    //REGISTER_ACCESSOR_PROPERTY("Step Offset", float, GetStepOffset, SetStepOffset, "0.8", PropertySpec::ReadWrite).SetRange(0.0, 1.0, 0.1);
-    //REGISTER_ACCESSOR_PROPERTY("Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, "0.8", PropertySpec::ReadWrite).SetRange(0, 90, 1);
+    REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 100, 0.1f);
+    REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertyInfo::EditorFlag)
+        .SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertyInfo::EditorFlag)
+        .SetRange(0.01, 2, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, 0.5f, "", PropertyInfo::EditorFlag)
+        .SetRange(0.0, 1.0, 0.1);
+    REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 90, 1);
 }
 
 ComCharacterController::ComCharacterController() {
     collider = nullptr;
     body = nullptr;
     correctionSensor = nullptr;
-
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComCharacterController::PropertyChanged);
 }
 
 ComCharacterController::~ComCharacterController() {
@@ -86,23 +81,14 @@ void ComCharacterController::Purge(bool chainPurge) {
 }
 
 void ComCharacterController::Init() {
-    Purge();
-
     Component::Init();
-
-    //
-    mass = props->Get("mass").As<float>();
-
-    capsuleRadius = MeterToUnit(props->Get("capsuleRadius").As<float>());
-    capsuleHeight = MeterToUnit(props->Get("capsuleHeight").As<float>());
-
-    stepOffset = MeterToUnit(props->Get("stepOffset").As<float>());
-    slopeDotZ = Math::Cos(DEG2RAD(props->Get("slopeLimit").As<float>())); 
-    //
 
     ComTransform *transform = GetEntity()->GetTransform();
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::Unique);
+
+    // Mark as initialized
+    SetInitialized(true);
 }
 
 void ComCharacterController::Awake() {
@@ -156,7 +142,7 @@ void ComCharacterController::Awake() {
         correctionSensor = (PhysSensor *)physicsSystem.CreateCollidable(&desc);
         correctionSensor->SetDebugDraw(false);
 
-        if (IsEnabled()) {
+        if (IsActiveInHierarchy()) {
             body->SetIgnoreCollisionCheck(*correctionSensor, true);
 
             body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
@@ -167,7 +153,7 @@ void ComCharacterController::Awake() {
 }
 
 void ComCharacterController::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -180,27 +166,21 @@ void ComCharacterController::Update() {
     GetEntity()->GetTransform()->SetOrigin(origin);
 }
 
-void ComCharacterController::Enable(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (body) {
-                body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-            }
-            if (correctionSensor) {
-                correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-            }
-            Component::Enable(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (body) {
-                body->RemoveFromWorld();
-            }
-            if (correctionSensor) {
-                correctionSensor->RemoveFromWorld();
-            }
-            Component::Enable(false);
-        }
+void ComCharacterController::OnActive() {
+    if (body) {
+        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+    if (correctionSensor) {
+        correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+}
+
+void ComCharacterController::OnInactive() {
+    if (body) {
+        body->RemoveFromWorld();
+    }
+    if (correctionSensor) {
+        correctionSensor->RemoveFromWorld();
     }
 }
 
@@ -210,14 +190,16 @@ void ComCharacterController::DrawGizmos(const SceneView::Parms &sceneView, bool 
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
-        float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
-        float scaledHeight = transform->GetScale().z * capsuleHeight;
+        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
+            float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
+            float scaledHeight = transform->GetScale().z * capsuleHeight;
 
-        Vec3 worldCenter = transform->GetWorldMatrix() * center;
+            Vec3 worldCenter = transform->GetTransform() * center;
 
-        renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
-        renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);
+            renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
+            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);
+        }
     }
 }
 
@@ -414,7 +396,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
 }
 
 bool ComCharacterController::Move(const Vec3 &moveVector) {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return false;
     }
 
@@ -439,39 +421,6 @@ void ComCharacterController::TransformUpdated(const ComTransform *transform) {
         body->SetOrigin(transform->GetOrigin());
         body->SetAxis(transform->GetAxis());
     }
-}
-
-void ComCharacterController::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "mass")) {
-        SetMass(props->Get("mass").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "capsuleRadius")) {
-        SetCapsuleRadius(props->Get("capsuleRadius").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "capsuleHeight")) {    
-        SetCapsuleHeight(props->Get("capsuleHeight").As<float>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "stepOffset")) {
-        SetStepOffset(props->Get("stepOffset").As<float>());
-        return;
-    } 
-
-    if (!Str::Cmp(propName, "slopeLimit")) {
-        SetSlopeLimit(props->Get("slopeLimit").As<float>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 float ComCharacterController::GetMass() const {

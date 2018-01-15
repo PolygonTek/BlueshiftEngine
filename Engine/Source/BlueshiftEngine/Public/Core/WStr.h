@@ -56,6 +56,7 @@ public:
             }
             // for non-UTF-8 encodings this may not be terminated with a nullptr!
             data[l] = '\0';
+            len = l;
         }
     }
 #endif
@@ -63,16 +64,21 @@ public:
 #ifdef QSTRING_H
     /// Constructs from a QString.
     WStr(const QString &qstr) : WStr() {
+#if 1
         int l = qstr.length();
         EnsureAlloced(l + 1, false);
         qstr.toWCharArray(data);
-        //QTextCodec *codec = QTextCodec::codecForName(sizeof(wchar_t) == 4 ? "UTF-32" : "UTF-16");
-        //QTextEncoder *encoderWithoutBom = codec->makeEncoder(QTextCodec::IgnoreHeader);
-
-        //int l = qstr.length();
-        //QByteArray bytes = encoderWithoutBom->fromUnicode(qstr);
-        //wcscpy(data, (const wchar_t *)bytes.constData());
         len = l;
+#else
+        static QTextCodec *codec = QTextCodec::codecForName(sizeof(wchar_t) == 4 ? "UTF-32" : "UTF-16");
+        static QTextEncoder *encoderWithoutBom = codec->makeEncoder(QTextCodec::IgnoreHeader);
+
+        int l = qstr.length();
+        EnsureAlloced(l + 1, false);
+        QByteArray bytes = encoderWithoutBom->fromUnicode(qstr);
+        wcscpy(data, (const wchar_t *)bytes.constData());
+        len = l;
+#endif
     }
 #endif
 
@@ -82,10 +88,16 @@ public:
     explicit WStr(const wchar_t c);
     /// Construct from an integer.
     explicit WStr(const int i);
+    /// Construct from an 64 bits integer.
+    explicit WStr(const int64_t i);
     /// Construct from an unsigned integer.
     explicit WStr(const unsigned u);
+    /// Construct from an unsigned 64 bits integer.
+    explicit WStr(const uint64_t u);
     /// Construct from a float.
     explicit WStr(const float f);
+    /// Construct from a double.
+    explicit WStr(const double d);
     /// Assign a wide string.
     WStr &operator=(const WStr &a);
     /// Move a wide string.
@@ -188,7 +200,7 @@ public:
                         /// Returns a string which is the result of concatenating s1 and s2.
     friend WStr         operator+(const wchar_t *s1, const WStr &s2);
                         /// Returns a string which is the result of concatenating the string s and the character ch.
-    friend WStr         operator+(const WStr &s, const wchar_t ch);                        
+    friend WStr         operator+(const WStr &s, const wchar_t ch);
 
                         /// Make string in lowercase.
     void                ToLower();
@@ -307,6 +319,8 @@ public:
 
     static int          Length(const wchar_t *s);
     static int          LineCount(const wchar_t *s);
+    static int32_t      ToI32(const wchar_t *s);
+    static uint32_t     ToUI32(const wchar_t *s);
     static int64_t      ToI64(const wchar_t *s);
     static uint64_t     ToUI64(const wchar_t *s);
     static WStr         FormatBytes(int bytes);
@@ -377,6 +391,8 @@ public:
     
     void                ReAllocate(int amount, bool keepOld);
     void                FreeData();
+
+    static WStr         empty;
 
 private:
                         /// Ensures string data buffer is large enough.
@@ -479,6 +495,14 @@ BE_INLINE WStr::WStr(const int i) : WStr() {
     len = l;
 }
 
+BE_INLINE WStr::WStr(const int64_t i) : WStr() {
+    wchar_t text[64];
+    int l = WStr::snPrintf(text, COUNT_OF(text), L"%lli", i);
+    EnsureAlloced(l + 1, false);
+    wcscpy(data, text);
+    len = l;
+}
+
 BE_INLINE WStr::WStr(const unsigned u) : WStr() {
     wchar_t text[64];
     int l = WStr::snPrintf(text, COUNT_OF(text), L"%u", u);
@@ -487,9 +511,25 @@ BE_INLINE WStr::WStr(const unsigned u) : WStr() {
     len = l;
 }
 
+BE_INLINE WStr::WStr(const uint64_t u) : WStr() {
+    wchar_t text[64];
+    int l = WStr::snPrintf(text, COUNT_OF(text), L"%llu", u);
+    EnsureAlloced(l + 1, false);
+    wcscpy(data, text);
+    len = l;
+}
+
 BE_INLINE WStr::WStr(const float f) : WStr() {
     wchar_t text[64];
     int l = WStr::snPrintf(text, COUNT_OF(text), L"%f", f);
+    EnsureAlloced(l + 1, false);
+    wcscpy(data, text);
+    len = l;
+}
+
+BE_INLINE WStr::WStr(const double d) : WStr() {
+    wchar_t text[64];
+    int l = WStr::snPrintf(text, COUNT_OF(text), L"%lf", d);
     EnsureAlloced(l + 1, false);
     wcscpy(data, text);
     len = l;
@@ -908,6 +948,14 @@ BE_INLINE int WStr::LineCount(const wchar_t *s) {
 }
 
 #ifndef __ANDROID__
+
+BE_INLINE int32_t WStr::ToI32(const wchar_t *s) {
+    return (int32_t)wcstol(s, nullptr, 10);
+}
+
+BE_INLINE uint32_t WStr::ToUI32(const wchar_t *s) {
+    return (uint32_t)wcstoul(s, nullptr, 10);
+}
 
 BE_INLINE int64_t WStr::ToI64(const wchar_t *s) {
     return wcstoll(s, nullptr, 10);

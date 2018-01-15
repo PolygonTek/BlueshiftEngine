@@ -24,8 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Prefab", PrefabAsset, Asset)
 BEGIN_EVENTS(PrefabAsset)
 END_EVENTS
-BEGIN_PROPERTIES(PrefabAsset)
-END_PROPERTIES
+
+void PrefabAsset::RegisterProperties() {
+}
 
 PrefabAsset::PrefabAsset() {
     prefab = nullptr;

@@ -23,20 +23,38 @@ BE_NAMESPACE_BEGIN
 PrefabManager   prefabManager;
 
 void PrefabManager::Init() {
+    if (initialized) {
+        Shutdown();
+    }
+
     prefabHashMap.Init(1024, 64, 64);
+
+    prefabWorld = (GameWorld *)GameWorld::CreateInstance();
+    prefabWorld->GetLuaVM().InitEngineModule(prefabWorld);
+
+    initialized = true;
 }
 
 void PrefabManager::Shutdown() {
+    if (!initialized) {
+        return;
+    }
+
     for (int i = 0; i < prefabHashMap.Count(); i++) {
         const auto *entry = prefabHashMap.GetByIndex(i);
         Prefab *prefab = entry->second;
 
-        //prefab->Write(prefab->hashName);
-
         Prefab::DestroyInstanceImmediate(prefab);
     }
 
+    if (prefabWorld) {
+        GameWorld::DestroyInstanceImmediate(prefabWorld);
+        prefabWorld = nullptr;
+    }
+
     prefabHashMap.Clear();
+
+    initialized = false;
 }
 
 Prefab *PrefabManager::FindPrefab(const char *hashName) const {
@@ -94,49 +112,46 @@ void PrefabManager::RenamePrefab(Prefab *prefab, const Str &newName) {
 }
 
 Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
-    assert(!originalEntity->IsPrefabParent());
+    assert(!originalEntity->IsPrefabSource());
 
-    // Get the original entity and all of it's children
-    EntityPtrArray originalEntities;
-    originalEntities.Append(const_cast<Entity *>(originalEntity));
-    originalEntity->GetChildren(originalEntities);
+    // Serialize source entity and it's children
+    Json::Value originalEntitiesValue;
+    BE1::Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
+
+    // Clone entities value which is replaced by new GUIDs
+    HashTable<Guid, Guid> guidMap;
+    Json::Value prefabEntitiesValue = Entity::CloneEntitiesValue(originalEntitiesValue, guidMap);
 
     EntityPtrArray prefabEntities;
-    HashTable<Guid, Guid> guidMap;
 
-    int numEntities = originalEntities.Count();
-
-    for (int i = 0; i < numEntities; i++) {
-        Json::Value value;
-        originalEntities[i]->Serialize(value);
-
-        Json::Value prefabEntityValue = Entity::CloneEntityValue(value, guidMap);
-
+    for (int i = 0; i < originalEntitiesValue.size(); i++) {
         if (i == 0) {
             // Clear parent of this prefab root entity
-            prefabEntityValue["parent"] = Guid::zero.ToString();
+            prefabEntitiesValue[0]["parent"] = Guid::zero.ToString();
         }
 
-        prefabEntityValue["isPrefabParent"] = true;
-        prefabEntityValue["prefabParent"] = Guid::zero.ToString();
+        prefabEntitiesValue[i]["prefab"] = true;
+        prefabEntitiesValue[i]["prefabSource"] = Guid::zero.ToString();
 
-        Entity *prefabEntity = Entity::CreateEntity(prefabEntityValue);
+        Entity *prefabEntity = Entity::CreateEntity(prefabEntitiesValue[i], prefabManager.GetPrefabWorld());
         prefabEntities.Append(prefabEntity);
 
-        // Set the original entity's prefab parent
-        originalEntities[i]->props->Set("prefabParent", prefabEntity->GetGuid());
-    }
+        // Remap all GUID references to newly created
+        Entity::RemapGuids(prefabEntity, guidMap);
 
-    // Remap GUIDs for the cloned entities
-    Entity::RemapGuids(prefabEntities, guidMap);
+        prefabEntity->Init();
+        //prefabEntity->InitComponents();
 
-    // Serialize prefab entities
-    Json::Value prefabEntitiesValue;
-    for (int i = 0; i < numEntities; i++) {
+        // Serialize prefab entity
         Json::Value value;
-        prefabEntities[i]->Serialize(value);
-        prefabEntitiesValue.append(value);
+        prefabEntity->Serialize(value);
+        prefabEntitiesValue[i] = value;
 
+        // Set the original entity's prefab source
+        originalEntitiesValue[i]["prefabSource"] = prefabEntity->GetGuid().ToString();
+    }
+    
+    for (int i = 0; i < prefabEntities.Count(); i++) {
         Entity::DestroyInstanceImmediate(prefabEntities[i]);
     }
 

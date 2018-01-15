@@ -28,6 +28,7 @@ void LuaVM::RegisterAngles(LuaCpp::Module &module) {
         "pitch", &Angles::pitch,
         "roll", &Angles::roll,
         "element", static_cast<float(Angles::*)(int)const>(&Angles::operator[]), // index start from zero
+        "assign", static_cast<Angles&(Angles::*)(const Angles&)>(&Angles::operator=),
         "set", &Angles::Set,
         "set_yaw", &Angles::SetYaw,
         "set_pitch", &Angles::SetPitch,
@@ -51,7 +52,7 @@ void LuaVM::RegisterAngles(LuaCpp::Module &module) {
         "inv_scale_self", static_cast<Angles&(Angles::*)(const float)>(&Angles::operator/=),
         "normalize360", &Angles::Normalize360,
         "normalize180", &Angles::Normalize180,
-        "clamp", &Angles::Clamp        
+        "clamp", &Angles::Clamp
     );
     _Angles.AddClassMembers<Angles>(
         "__tostring", static_cast<const char*(Angles::*)(void)const>(&Angles::ToString),

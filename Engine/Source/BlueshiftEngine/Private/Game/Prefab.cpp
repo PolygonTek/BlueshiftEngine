@@ -23,16 +23,17 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Prefab", Prefab, Object)
 BEGIN_EVENTS(Prefab)
 END_EVENTS
-BEGIN_PROPERTIES(Prefab)
-END_PROPERTIES
+
+void Prefab::RegisterProperties() {
+}
 
 void Prefab::Clear() {
     entityHierarchy.RemoveFromHierarchy();
 
-    for (int i = 0; i < entities.Count(); i++) {
-        Entity *ent = entities[i];
-        Entity::DestroyInstanceImmediate(ent);
-        entities[i] = nullptr;
+    for (int entityIndex = 0; entityIndex < entities.Count(); entityIndex++) {
+        Entity *entity = entities[entityIndex];
+        Entity::DestroyInstanceImmediate(entity);
+        entities[entityIndex] = nullptr;
     }
 
     entities.Clear();
@@ -41,23 +42,21 @@ void Prefab::Clear() {
 bool Prefab::Create(const Json::Value &entitiesValue) {
     Clear();
 
-    for (int i = 0; i < entitiesValue.size(); i++) {
-        Json::Value entityValue = entitiesValue[i];
+    for (int entityIndex = 0; entityIndex < entitiesValue.size(); entityIndex++) {
+        Json::Value entityValue = entitiesValue[entityIndex];
+
         const char *classname = entityValue["classname"].asCString();
 
         if (!Str::Cmp(classname, Entity::metaObject.ClassName())) {
-            Entity *entity = Entity::CreateEntity(entityValue);
-
-            // all of the entities in the prefab have this property
-            assert(entity->props->Get("isPrefabParent").As<bool>());
+            Entity *entity = Entity::CreateEntity(entityValue, prefabManager.GetPrefabWorld());
+            assert(entity->GetProperty("prefab").As<bool>());
             
-            const Guid parentGuid = Guid::ParseString(entityValue["parent"].asCString());
-            if (parentGuid.IsZero()) {
-                // guid 0 means a root entity
+            const Guid parentGuid = Guid::FromString(entityValue["parent"].asCString());
+            if (parentGuid.IsZero()) { // GUID 0 means a root entity
                 entity->node.SetParent(entityHierarchy);
             }
 
-            entity->InitHierarchy();
+            entity->Init();
 
             entities.Append(entity);
         } else {
@@ -94,8 +93,9 @@ bool Prefab::Load(const char *filename) {
 }
 
 void Prefab::Write(const char *filename) {
+    // Serialize root entity and it's children
     Json::Value entitiesValue;
-    GameWorld::SerializeEntityHierarchy(entityHierarchy.GetChild()->GetNode(), entitiesValue);
+    Entity::SerializeHierarchy(entityHierarchy.GetChild(), entitiesValue);
 
     Json::StyledWriter jsonWriter;
     Str jsonText = jsonWriter.write(entitiesValue).c_str();

@@ -153,8 +153,8 @@ const float userContentScaleFactor = 2.0f;
     }
     
     displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(drawView:)];
-    //[displayLink setFrameInterval:displayLinkFrameInterval];
-    [displayLink setPreferredFramesPerSecond:60];
+    [displayLink setFrameInterval:displayLinkFrameInterval];
+    //[displayLink setPreferredFramesPerSecond:60];
     [displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
     
     displayLinkStarted = YES;

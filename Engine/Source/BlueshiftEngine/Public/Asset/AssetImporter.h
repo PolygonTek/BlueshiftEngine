@@ -20,7 +20,7 @@ BE_NAMESPACE_BEGIN
 
 class Asset;
 
-class AssetImporter : public BE1::Object {
+class AssetImporter : public Object {
     friend class ::AssetDatabase;
 
 public:
@@ -31,9 +31,9 @@ public:
 
     const Asset *           GetAsset() const { return asset;  }
 
-    virtual const BE1::Str  ToString() const override;
+    virtual Str             ToString() const override;
 
-    virtual const BE1::Str  GetCacheFilename() const = 0;
+    virtual Str             GetCacheFilename() const = 0;
 
     virtual void            Import() = 0;
     
@@ -41,12 +41,10 @@ public:
 
     void                    RevertChanged();
 
-protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
+    static const SignalDef  SIG_ApplyChanged;
 
+protected:
     Asset *                 asset;
 };
-
-extern const BE1::SignalDef	SIG_ApplyChanged;
 
 BE_NAMESPACE_END

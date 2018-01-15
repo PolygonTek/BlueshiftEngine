@@ -25,15 +25,16 @@ public:
     ComConstantForce();
     virtual ~ComConstantForce();
 
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
     Vec3                    force;
     Vec3                    torque;
 };

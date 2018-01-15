@@ -37,9 +37,17 @@ public:
     static bool             IsReadOnly(const char *filename);
     static bool             RemoveFile(const char *filename);
     static bool             MoveFile(const char *srcFilename, const char *dstFilename);
+    
+    static bool             DirectoryExists(const char *dirname);
+    static bool             CreateDirectory(const char *dirname);
+    static bool             RemoveDirectory(const char *dirname);
 
     static const char *     ExecutablePath();
-    static const char *     HomePath();
+
+    static const char *     UserDir();
+    static const char *     UserDocumentDir();
+    static const char *     UserAppDataDir();
+    static const char *     UserTempDir();
     
     static Str              ConvertToIOSPath(const Str &filename, bool forWrite);
 };

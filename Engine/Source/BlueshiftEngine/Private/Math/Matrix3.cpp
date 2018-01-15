@@ -280,11 +280,27 @@ void Mat3::Rotate(const Vec3 &axis, const float degree) {
     *this = rot.ToMat3() * *this;
 }
 
+//------------------------------------------------
+//
+//        | sx   0   0 | | m00  m10  m20 |
+// S M  = |  0  sy   0 | | m01  m11  m21 |
+//        |  0   0  sz | | m02  m12  m22 |
+//
+//------------------------------------------------
+
 Mat3 Mat3::Scale(const Vec3 &scale) const {
     Mat3 m;
-    m[0] = mat[0] * scale.x;
-    m[1] = mat[1] * scale.y;
-    m[2] = mat[2] * scale.z;
+    m[0][0] = mat[0][0] * scale.x;
+    m[0][1] = mat[0][1] * scale.y;
+    m[0][2] = mat[0][2] * scale.z;
+
+    m[1][0] = mat[1][0] * scale.x;
+    m[1][1] = mat[1][1] * scale.y;
+    m[1][2] = mat[1][2] * scale.z;
+
+    m[2][0] = mat[2][0] * scale.x;
+    m[2][1] = mat[2][1] * scale.y;
+    m[2][2] = mat[2][2] * scale.z;
     return m;
 }
 
@@ -429,10 +445,10 @@ Angles Mat3::ToAngles() const {
 //  
 //-------------------------------------------------------------------------------------------
 Rotation Mat3::ToRotation() const {
-    Rotation    r;
-    float       s, t;
-    int         i, j, k;
-    static int  next[3] = { 1, 2, 0 };
+    static constexpr int next[3] = { 1, 2, 0 };
+    Rotation r;
+    float s, t;
+    int i, j, k;
 
     // trace == 2c + 1
     float trace = mat[0][0] + mat[1][1] + mat[2][2];
@@ -533,9 +549,9 @@ Rotation Mat3::ToRotation() const {
 //
 //-------------------------------------------------------------------------------------------
 Quat Mat3::ToQuat() const {
-    static int  next[3] = { 1, 2, 0 };
-    float       s, t;
-    Quat        q;
+    static constexpr int next[3] = { 1, 2, 0 };
+    float s, t;
+    Quat q;
 
     float trace = mat[0][0] + mat[1][1] + mat[2][2];
 
@@ -571,6 +587,12 @@ Quat Mat3::ToQuat() const {
     }
 
     return q;
+}
+
+Mat3 Mat3::FromString(const char *str) {
+    Mat3 m;
+    sscanf(str, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);    
+    return m;
 }
 
 BE_NAMESPACE_END

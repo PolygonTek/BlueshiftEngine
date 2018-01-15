@@ -33,6 +33,17 @@ public:
     Point() = default;
     /// Constructs a Point with the value (x, y).
     Point(int x, int y);
+    /// Assignment operator
+    Point &operator=(const Point &rhs);
+
+#ifdef QPOINT_H
+    /// Constructs from a QPoint.
+    Point(const QPoint &qpoint) {
+        this->x = qpoint.x();
+        this->y = qpoint.y();
+    }
+#endif
+
     /// Constructs a Point from a C array, to the value (data[0], data[1]).
     explicit Point(int data[2]);
     /// Copy constructor
@@ -74,10 +85,17 @@ public:
     float               Distance(const Point &other) const;
     float               DistanceSqr(const Point &other) const;
 
-    const Vec2          ToVec2() const { return Vec2(x, y); }
+    Vec2                ToVec2() const { return Vec2(x, y); }
+
+#ifdef QPOINT_H
+    QPoint              ToQPoint() const { return QPoint(x, y); }
+#endif
 
                         /// Returns "x y".
     const char *        ToString() const;
+
+                        /// Creates from the string
+    static Point        FromString(const char *str);
 
     static const Point  zero;
 
@@ -91,13 +109,19 @@ BE_INLINE Point::Point(int x, int y) {
 }
 
 BE_INLINE Point::Point(int data[2]) {
-    this->x = data[0];
-    this->y = data[1];
+    x = data[0];
+    y = data[1];
 }
 
 BE_INLINE Point::Point(const Vec2 &v) {
-    this->x = (int)v.x;
-    this->y = (int)v.y;
+    x = (int)v.x;
+    y = (int)v.y;
+}
+
+BE_INLINE Point &Point::operator=(const Point &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    return *this;
 }
 
 BE_INLINE int Point::operator[](int index) const {

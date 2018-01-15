@@ -104,9 +104,9 @@ public:
         Array<Particle *>   stageParticles;
         Array<float>        stageStartDelay;
         
-        Array<Material *>   customMaterials;
-        Skin *              customSkin;
+        Array<Material *>   materials;
         float               materialParms[MaxMaterialParms];
+        Skin *              customSkin;
         WireframeMode       wireframeMode;
         Color4              wireframeColor;
 

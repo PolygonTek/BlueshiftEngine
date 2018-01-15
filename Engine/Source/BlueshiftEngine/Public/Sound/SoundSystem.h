@@ -166,12 +166,13 @@ public:
                             /// Is currently playing ?
     bool                    IsPlaying() const;
 
+                            /// Returns volume in [0, 1]
+    float                   GetVolume() const { return volume; }
                             /// Sets volume in [0, 1]
     void                    SetVolume(float volume);
 
                             /// Gets current playing time in milliseconds
     uint32_t                GetPlayingTime() const;
-
                             /// Sets current playing time in milliseconds
     void                    SetPlayingTime(uint32_t time);
 
@@ -248,6 +249,9 @@ public:
     void                    PlaceListener(const Vec3 &pos, const Mat3 &axis);
 
     void                    StopAllSounds();
+
+    float                   GetMasterVolume() const;
+    void                    SetMasterVolume(float volume);
 
     Sound *                 defaultSound;
 

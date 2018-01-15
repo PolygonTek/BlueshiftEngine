@@ -31,28 +31,29 @@ public:
     ComJoint();
     virtual ~ComJoint() = 0;
 
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
-    virtual void            Enable(bool enable) override;
+    bool                    IsCollisionEnabled() const;
+    void                    SetCollisionEnabled(bool enabled);
+
+    float                   GetBreakImpulse() const;
+    void                    SetBreakImpulse(float breakImpulse);
 
 protected:
-    const Guid              GetConnectedBody() const;
-    void                    SetConnectedBody(const Guid &guid);
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
 
-    const bool              IsCollisionEnabled() const;
-    void                    SetCollisionEnabled(const bool enabled);
-
-    const float             GetBreakImpulse() const;
-    void                    SetBreakImpulse(const float breakImpulse);
-
-    void                    PropertyChanged(const char *classname, const char *propName);
-
+    Guid                    connectedBodyGuid;
     const ComRigidBody *    connectedBody;
     PhysConstraint *        constraint;
     bool                    collisionEnabled;

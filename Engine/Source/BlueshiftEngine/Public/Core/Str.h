@@ -58,6 +58,7 @@ public:
         if (l > 0) {
             memcpy(data, [nsstr cStringUsingEncoding:NSUTF8StringEncoding], l);
             data[l] = '\0';
+            len = l;
         }
     }
 #endif
@@ -65,7 +66,7 @@ public:
 #ifdef QSTRING_H
     /// Constructs from a QString.
     Str(const QString &qstr) : Str() {
-        const QByteArray bytes = qstr.toLatin1();
+        const QByteArray bytes = qstr.toLatin1(); // qstr.toUtf8();
         int l = bytes.length();
         EnsureAlloced(l + 1, false);
         strcpy(data, (const char *)bytes.constData());
@@ -79,10 +80,16 @@ public:
     explicit Str(const char c);
     /// Constructs from an integer.
     explicit Str(const int i);
+    /// Constructs from an 64 bits integer.
+    explicit Str(const int64_t i);
     /// Constructs from an unsigned integer.
     explicit Str(const unsigned u);
+    /// Constructs from an unsigned 64 bits integer.
+    explicit Str(const uint64_t u);
     /// Constructs from a float.
     explicit Str(const float f);
+    /// Constructs from a double.
+    explicit Str(const double d);
     /// Assign a string.
     Str &operator=(const Str &rhs);
     /// Move a string.
@@ -314,6 +321,8 @@ public:
     static char *       ToUpper(char *s);
     static bool         IsNumeric(const char *s);
     static bool         IsAlpha(const char *s);
+    static int32_t      ToI32(const char *s);
+    static uint32_t     ToUI32(const char *s);
     static int64_t      ToI64(const char *s);
     static uint64_t     ToUI64(const char *s);
     static Str          FormatBytes(int bytes);
@@ -389,6 +398,8 @@ public:
 
     void                ReAllocate(int amount, bool keepOld);
     void                FreeData();
+
+    static Str          empty;
 
 private:
                         /// Ensures string data buffer is large enough.
@@ -471,6 +482,14 @@ BE_INLINE Str::Str(const int i) : Str() {
     len = l;
 }
 
+BE_INLINE Str::Str(const int64_t i) : Str() {
+    char text[64];
+    int l = Str::snPrintf(text, sizeof(text), "%lli", i);
+    EnsureAlloced(l + 1, false);
+    strcpy(data, text);
+    len = l;
+}
+
 BE_INLINE Str::Str(const unsigned u) : Str() {
     char text[64];
     int l = Str::snPrintf(text, sizeof(text), "%u", u);
@@ -479,9 +498,25 @@ BE_INLINE Str::Str(const unsigned u) : Str() {
     len = l;
 }
 
+BE_INLINE Str::Str(const uint64_t u) : Str() {
+    char text[64];
+    int l = Str::snPrintf(text, sizeof(text), "%llu", u);
+    EnsureAlloced(l + 1, false);
+    strcpy(data, text);
+    len = l;
+}
+
 BE_INLINE Str::Str(const float f) : Str() {
     char text[64];
     int l = Str::snPrintf(text, sizeof(text), "%f", f);
+    EnsureAlloced(l + 1, false);
+    strcpy(data, text);
+    len = l;
+}
+
+BE_INLINE Str::Str(const double d) : Str() {
+    char text[64];
+    int l = Str::snPrintf(text, sizeof(text), "%lf", d);
     EnsureAlloced(l + 1, false);
     strcpy(data, text);
     len = l;
@@ -1006,6 +1041,14 @@ BE_INLINE bool Str::IsAlpha(const char *s) {
     }
 
     return true;
+}
+
+BE_INLINE int32_t Str::ToI32(const char *s) {
+    return (int32_t)strtol(s, nullptr, 10);
+}
+
+BE_INLINE uint32_t Str::ToUI32(const char *s) {
+    return (uint32_t)strtoul(s, nullptr, 10);
 }
 
 BE_INLINE int64_t Str::ToI64(const char *s) {

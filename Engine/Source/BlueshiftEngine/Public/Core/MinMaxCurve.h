@@ -18,13 +18,19 @@
 
 BE_NAMESPACE_BEGIN
 
-struct MinMaxCurve {
+struct BE_API MinMaxCurve {
     enum Type {
-        ConstantType,
+        InvalidType = -1,
+        ConstantType = 0,
         CurveType,
         RandomBetweenTwoConstantsType,
         RandomBetweenTwoCurvesType
     };
+
+    MinMaxCurve();
+
+    bool                    operator==(const MinMaxCurve &rhs) const;
+    bool                    operator!=(const MinMaxCurve &rhs) const;
 
     void                    Reset(Type type);
     void                    Reset(Type type, float scalar, float minValue, float maxValue);
@@ -33,11 +39,32 @@ struct MinMaxCurve {
 
     float                   Integrate(float random, float t) const;
 
+    static MinMaxCurve      empty;
+
     Type                    type;
     float                   scalar;
     Hermite<float>          minCurve;
     Hermite<float>          maxCurve;
 };
+
+BE_INLINE MinMaxCurve::MinMaxCurve() {
+    type = InvalidType;
+    scalar = 1.0f;
+}
+
+BE_INLINE bool MinMaxCurve::operator==(const MinMaxCurve &rhs) const {
+    if (type == rhs.type && scalar == rhs.scalar && minCurve == rhs.minCurve && maxCurve == rhs.maxCurve) {
+        return true;
+    }
+    return false;
+}
+
+BE_INLINE bool MinMaxCurve::operator!=(const MinMaxCurve &rhs) const {
+    if (type != rhs.type || scalar != rhs.scalar || minCurve != rhs.minCurve || maxCurve != rhs.maxCurve) {
+        return true;
+    }
+    return false;
+}
 
 BE_INLINE void MinMaxCurve::Reset(Type type) {
     this->type = type;

@@ -38,6 +38,8 @@ BE_NAMESPACE_BEGIN
 /// Templated dynamic array
 template <typename T>
 class Array {
+    static_assert(std::is_default_constructible<T>::value, "Array requires default-constructible elements");
+
 public:
     static constexpr int DefaultGranularity = 16;
 
@@ -113,6 +115,7 @@ public:
 
                     /// Compares with another array.
     bool            operator==(const Array<T> &rhs) const;
+    bool            operator!=(const Array<T> &rhs) const;
 
                     /// Removes all the elements from the array.
                     /// This also released the memory used by the array.
@@ -273,6 +276,11 @@ BE_INLINE Array<T>::Array(const Array<T> &array) {
 
 template <typename T>
 BE_INLINE Array<T> &Array<T>::operator=(const Array<T> &rhs) {
+    // In case of self-assignment do nothing
+    if (&rhs == this) {
+        return *this;
+    }
+
     Clear();
 
     count = rhs.count;
@@ -475,6 +483,21 @@ BE_INLINE bool Array<T>::operator==(const Array<T> &rhs) const {
     }
 
     return true;
+}
+
+template <typename T>
+BE_INLINE bool Array<T>::operator!=(const Array<T> &rhs) const {
+    if (count != rhs.count) {
+        return true;
+    }
+
+    for (int i = 0; i < count; i++) {
+        if (elements[i] != rhs.elements[i]) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 template <typename T>

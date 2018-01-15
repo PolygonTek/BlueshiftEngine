@@ -27,13 +27,13 @@ public:
     ComCollider();
     virtual ~ComCollider() = 0;
 
+                            /// Returns true if same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
-
-    virtual void            Enable(bool enable) override;
 
     virtual const AABB      GetAABB() override;
 
@@ -42,9 +42,7 @@ public:
     Collider *              GetCollider() const { return collider; }
 
 protected:
-    void                    PropertyChanged(const char *classname, const char *propName);
-
-    Str                     material;
+    Str                     material; // TODO: implement physics material
     Collider *              collider;
 };
 

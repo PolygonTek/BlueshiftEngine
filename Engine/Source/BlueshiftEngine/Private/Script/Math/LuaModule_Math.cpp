@@ -45,8 +45,8 @@ void LuaVM::RegisterMath(LuaCpp::Module &module) {
     _Math["ftoi"].SetFunc(Math::Ftoi);
     _Math["ftob"].SetFunc(Math::Ftob);
     _Math["factorial"].SetFunc(Math::Factorial);
-    _Math["to_radian"].SetFunc([](float degree) { return DEG2RAD(degree); });
-    _Math["to_degree"].SetFunc([](float radian) { return RAD2DEG(radian); });
+    _Math["to_radian"].SetFunc([](float degree) -> float { return DEG2RAD(degree); });
+    _Math["to_degree"].SetFunc([](float radian) -> float { return RAD2DEG(radian); });
     _Math["angle_normalize_360"].SetFunc(Math::AngleNormalize360);
     _Math["angle_normalize_180"].SetFunc(Math::AngleNormalize180);
     _Math["angle_delta"].SetFunc(Math::AngleDelta);

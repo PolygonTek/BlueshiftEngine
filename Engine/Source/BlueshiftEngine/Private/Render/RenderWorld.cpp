@@ -320,6 +320,10 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     memset(&entityParms, 0, sizeof(entityParms));
     entityParms.scale       = Vec3::one;
     entityParms.axis        = Mat3::identity;
+    entityParms.materialParms[SceneEntity::RedParm] = 1.0f;
+    entityParms.materialParms[SceneEntity::GreenParm] = 1.0f;
+    entityParms.materialParms[SceneEntity::BlueParm] = 1.0f;
+    entityParms.materialParms[SceneEntity::AlphaParm] = 1.0f;
     entityParms.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
     
     static SceneEntity sceneEntity;
@@ -414,10 +418,12 @@ void RenderWorld::DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &u
 
     if (debugFillColor[3] > 0) {
         Vec3 *fv = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, 4, debugFillColor, 0, twoSided, depthTest, lifeTime);
-        fv[0] = v[0];
-        fv[1] = v[1];
-        fv[2] = v[2];
-        fv[3] = v[3];
+        if (fv) {
+            fv[0] = v[0];
+            fv[1] = v[1];
+            fv[2] = v[2];
+            fv[3] = v[3];
+        }
     }
 
     if (lineWidth > 0 && debugLineColor[3] > 0) {
@@ -438,11 +444,13 @@ void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float r
 
     if (debugFillColor[3] > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
-        *fvptr++ = origin;
+        if (fvptr) {
+            *fvptr++ = origin;
 
-        for (int i = 0; i <= numSteps; i++) {
-            float a = Math::TwoPi * i / numSteps;
-            *fvptr++ = origin + Math::Cos16(a) * left + Math::Sin16(a) * up;
+            for (int i = 0; i <= numSteps; i++) {
+                float a = Math::TwoPi * i / numSteps;
+                *fvptr++ = origin + Math::Cos16(a) * left + Math::Sin16(a) * up;
+            }
         }
     }
 
@@ -475,11 +483,13 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
 
     if (drawSector && debugFillColor[3] > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
-        *fvptr++ = origin;
+        if (fvptr) {
+            *fvptr++ = origin;
 
-        for (int i = 0; i <= numSteps; i++) {
-            float a = theta1 + delta * i / numSteps;
-            *fvptr++ = origin + Math::Cos16(a) * rx + Math::Sin16(a) * ry;
+            for (int i = 0; i <= numSteps; i++) {
+                float a = theta1 + delta * i / numSteps;
+                *fvptr++ = origin + Math::Cos16(a) * rx + Math::Sin16(a) * ry;
+            }
         }
     }
 
@@ -512,11 +522,13 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
 
     if (debugFillColor[3] > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
-        *fvptr++ = origin;
+        if (fvptr) {
+            *fvptr++ = origin;
 
-        for (int i = 0; i <= numSteps; i++) {
-            float a = Math::TwoPi * i / numSteps;
-            *fvptr++ = origin + Math::Cos16(a) * rx + Math::Sin16(a) * ry;
+            for (int i = 0; i <= numSteps; i++) {
+                float a = Math::TwoPi * i / numSteps;
+                *fvptr++ = origin + Math::Cos16(a) * rx + Math::Sin16(a) * ry;
+            }
         }
     }
 
@@ -541,31 +553,32 @@ void RenderWorld::DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float ra
 
     if (debugFillColor[3] > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (num + 1) * 2 * (num / 4), debugFillColor, 0, twoSided, depthTest, lifeTime);
-
-        lastArray[0] = origin + axis[2] * radius;
-        for (int n = 1; n < num; n++) {
-            lastArray[n] = lastArray[0];
-        }
-
-        for (int i = 15; i <= 90; i += 15) {
-            float cr = Math::Cos16(DEG2RAD(i)) * radius;
-            float sr = Math::Sin16(DEG2RAD(i)) * radius;
-
-            last0 = lastArray[0];
-
-            int j = 15;
-            for (int n = 0; j <= 360; j += 15, n++) {
-                raxis = axis[0] * Math::Cos16(DEG2RAD(j)) + axis[1] * Math::Sin16(DEG2RAD(j));
-                p = origin + cr * axis[2] + sr * raxis;
-
-                *fvptr++ = lastArray[n];
-                *fvptr++ = p;
-
-                lastArray[n] = p;
+        if (fvptr) {
+            lastArray[0] = origin + axis[2] * radius;
+            for (int n = 1; n < num; n++) {
+                lastArray[n] = lastArray[0];
             }
 
-            *fvptr++ = last0;
-            *fvptr++ = lastArray[0];
+            for (int i = 15; i <= 90; i += 15) {
+                float cr = Math::Cos16(DEG2RAD(i)) * radius;
+                float sr = Math::Sin16(DEG2RAD(i)) * radius;
+
+                last0 = lastArray[0];
+
+                int j = 15;
+                for (int n = 0; j <= 360; j += 15, n++) {
+                    raxis = axis[0] * Math::Cos16(DEG2RAD(j)) + axis[1] * Math::Sin16(DEG2RAD(j));
+                    p = origin + cr * axis[2] + sr * raxis;
+
+                    *fvptr++ = lastArray[n];
+                    *fvptr++ = p;
+
+                    lastArray[n] = p;
+                }
+
+                *fvptr++ = last0;
+                *fvptr++ = lastArray[0];
+            }
         }
     }
 
@@ -610,31 +623,32 @@ void RenderWorld::DebugSphere(const Vec3 &origin, const Mat3 &axis, float radius
 
     if (debugFillColor[3] > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (num + 1) * 2 * (num / 2), debugFillColor, 0, twoSided, depthTest, lifeTime);
-
-        lastArray[0] = origin + axis[2] * radius;
-        for (int n = 1; n < num; n++) {
-            lastArray[n] = lastArray[0];
-        }
-
-        for (int i = 15; i <= 180; i += 15) {
-            float cr = Math::Cos16(DEG2RAD(i)) * radius;
-            float sr = Math::Sin16(DEG2RAD(i)) * radius;
-
-            last0 = lastArray[0];
-
-            int j = 15;
-            for (int n = 0; j <= 360; j += 15, n++) {
-                raxis = axis[0] * Math::Cos16(DEG2RAD(j)) + axis[1] * Math::Sin16(DEG2RAD(j));
-                p = origin + cr * axis[2] + sr * raxis;
-
-                *fvptr++ = lastArray[n];
-                *fvptr++ = p;
-
-                lastArray[n] = p;
+        if (fvptr) {
+            lastArray[0] = origin + axis[2] * radius;
+            for (int n = 1; n < num; n++) {
+                lastArray[n] = lastArray[0];
             }
 
-            *fvptr++ = last0;
-            *fvptr++ = lastArray[0];
+            for (int i = 15; i <= 180; i += 15) {
+                float cr = Math::Cos16(DEG2RAD(i)) * radius;
+                float sr = Math::Sin16(DEG2RAD(i)) * radius;
+
+                last0 = lastArray[0];
+
+                int j = 15;
+                for (int n = 0; j <= 360; j += 15, n++) {
+                    raxis = axis[0] * Math::Cos16(DEG2RAD(j)) + axis[1] * Math::Sin16(DEG2RAD(j));
+                    p = origin + cr * axis[2] + sr * raxis;
+
+                    *fvptr++ = lastArray[n];
+                    *fvptr++ = p;
+
+                    lastArray[n] = p;
+                }
+
+                *fvptr++ = last0;
+                *fvptr++ = lastArray[0];
+            }
         }
     }
 
@@ -687,23 +701,25 @@ void RenderWorld::DebugAABB(const AABB &aabb, float lineWidth, bool twoSided, bo
 
     if (debugFillColor[3] > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
-        *fvptr++ = v[7];
-        *fvptr++ = v[4];
-        *fvptr++ = v[6];
-        *fvptr++ = v[5];
+        if (fvptr) {
+            *fvptr++ = v[7];
+            *fvptr++ = v[4];
+            *fvptr++ = v[6];
+            *fvptr++ = v[5];
 
-        *fvptr++ = v[1];
-        *fvptr++ = v[4];
-        *fvptr++ = v[0];
-        *fvptr++ = v[7];
+            *fvptr++ = v[1];
+            *fvptr++ = v[4];
+            *fvptr++ = v[0];
+            *fvptr++ = v[7];
 
-        *fvptr++ = v[3];
-        *fvptr++ = v[6];
-        *fvptr++ = v[2];
-        *fvptr++ = v[1];
+            *fvptr++ = v[3];
+            *fvptr++ = v[6];
+            *fvptr++ = v[2];
+            *fvptr++ = v[1];
 
-        *fvptr++ = v[3];
-        *fvptr++ = v[0];
+            *fvptr++ = v[3];
+            *fvptr++ = v[0];
+        }
     }
 
     if (lineWidth > 0 && debugLineColor[3] > 0) {
@@ -722,23 +738,25 @@ void RenderWorld::DebugOBB(const OBB &obb, float lineWidth, bool depthTest, bool
 
     if (debugFillColor[3] > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
-        *fvptr++ = v[7];
-        *fvptr++ = v[4];
-        *fvptr++ = v[6];
-        *fvptr++ = v[5];
+        if (fvptr) {
+            *fvptr++ = v[7];
+            *fvptr++ = v[4];
+            *fvptr++ = v[6];
+            *fvptr++ = v[5];
 
-        *fvptr++ = v[1];
-        *fvptr++ = v[4];
-        *fvptr++ = v[0];
-        *fvptr++ = v[7];
+            *fvptr++ = v[1];
+            *fvptr++ = v[4];
+            *fvptr++ = v[0];
+            *fvptr++ = v[7];
 
-        *fvptr++ = v[3];
-        *fvptr++ = v[6];
-        *fvptr++ = v[2];
-        *fvptr++ = v[1];
+            *fvptr++ = v[3];
+            *fvptr++ = v[6];
+            *fvptr++ = v[2];
+            *fvptr++ = v[1];
 
-        *fvptr++ = v[3];
-        *fvptr++ = v[0];
+            *fvptr++ = v[3];
+            *fvptr++ = v[0];
+        }
     }
 
     if (lineWidth > 0 && debugLineColor[3] > 0) {
@@ -757,23 +775,25 @@ void RenderWorld::DebugFrustum(const Frustum &frustum, const bool showFromOrigin
 
     if (debugFillColor[3] > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, 24, debugFillColor, 0, twoSided, depthTest, lifeTime);
-        *fvptr++ = v[7];
-        *fvptr++ = v[4];
-        *fvptr++ = v[6];
-        *fvptr++ = v[5];
+        if (fvptr) {
+            *fvptr++ = v[7];
+            *fvptr++ = v[4];
+            *fvptr++ = v[6];
+            *fvptr++ = v[5];
 
-        *fvptr++ = v[1];
-        *fvptr++ = v[4];
-        *fvptr++ = v[0];
-        *fvptr++ = v[7];
+            *fvptr++ = v[1];
+            *fvptr++ = v[4];
+            *fvptr++ = v[0];
+            *fvptr++ = v[7];
 
-        *fvptr++ = v[3];
-        *fvptr++ = v[6];
-        *fvptr++ = v[2];
-        *fvptr++ = v[1];
+            *fvptr++ = v[3];
+            *fvptr++ = v[6];
+            *fvptr++ = v[2];
+            *fvptr++ = v[1];
 
-        *fvptr++ = v[3];
-        *fvptr++ = v[0];
+            *fvptr++ = v[3];
+            *fvptr++ = v[0];
+        }
     }
 
     if (lineWidth > 0 && debugLineColor[3] > 0) {
@@ -808,20 +828,22 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
     if (radius1 == 0.0f) {
         if (debugFillColor[3] > 0) {
             fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
-            *fvptr++ = apex;
-
-            for (int i = 0; i <= 360; i += 15) {
-                d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
-                *fvptr++ = origin + d * radius2;
-            }
-
-            if (drawCap) {
-                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
-                *fvptr++ = origin;
+            if (fvptr) {
+                *fvptr++ = apex;
 
                 for (int i = 0; i <= 360; i += 15) {
-                    d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
+                    d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
                     *fvptr++ = origin + d * radius2;
+                }
+
+                if (drawCap) {
+                    fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+                    *fvptr++ = origin;
+
+                    for (int i = 0; i <= 360; i += 15) {
+                        d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
+                        *fvptr++ = origin + d * radius2;
+                    }
                 }
             }
         }
@@ -837,35 +859,37 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                 lastp2 = p2;
             }
         }
-    } else {	
+    } else {
         Vec3 lastp1 = apex + radius1 * axis[0];
 
         if (debugFillColor[3] > 0) {
             fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleStripPrim, (360 / 15) * 2 + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
-            *fvptr++ = lastp1;
-            *fvptr++ = lastp2;
+            if (fvptr) {
+                *fvptr++ = lastp1;
+                *fvptr++ = lastp2;
 
-            for (int i = 15; i <= 360; i += 15) {
-                d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
-                *fvptr++ = apex + d * radius1;
-                *fvptr++ = origin + d * radius2;
-            }
-
-            if (drawCap) {
-                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
-                *fvptr++ = apex;
-
-                for (int i = 0; i <= 360; i += 15) {
-                    d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
+                for (int i = 15; i <= 360; i += 15) {
+                    d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
                     *fvptr++ = apex + d * radius1;
+                    *fvptr++ = origin + d * radius2;
                 }
 
-                fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);	
-                *fvptr++ = origin;
+                if (drawCap) {
+                    fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+                    *fvptr++ = apex;
 
-                for (int i = 0; i <= 360; i += 15) {
-                    d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
-                    *fvptr++ = origin + d * radius2;
+                    for (int i = 0; i <= 360; i += 15) {
+                        d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
+                        *fvptr++ = apex + d * radius1;
+                    }
+
+                    fvptr = RB_ReserveDebugPrimsVerts(RHI::TriangleFanPrim, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+                    *fvptr++ = origin;
+
+                    for (int i = 0; i <= 360; i += 15) {
+                        d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
+                        *fvptr++ = origin + d * radius2;
+                    }
                 }
             }
         }

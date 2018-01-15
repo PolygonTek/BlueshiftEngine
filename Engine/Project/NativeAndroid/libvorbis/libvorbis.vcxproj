@@ -146,6 +146,9 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\libvorbis\lib;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\libogg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
@@ -153,6 +156,9 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\libvorbis\lib;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\libogg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\NativeAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Dependencies\libvorbis\lib\backends.h" />
@@ -219,11 +225,6 @@
     <ClCompile Include="..\..\..\Source\Dependencies\libvorbis\lib\vorbisenc.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\libvorbis\lib\window.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\libvorbis\lib\vorbisfile.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\libogg\libogg.vcxproj">
-      <Project>{c2b44a48-7789-4b17-9c32-453d4ac7b10d}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

@@ -22,16 +22,12 @@ BE_NAMESPACE_BEGIN
 ABSTRACT_DECLARATION("Joint", ComJoint, Component)
 BEGIN_EVENTS(ComJoint)
 END_EVENTS
-BEGIN_PROPERTIES(ComJoint)
-    PROPERTY_OBJECT("connectedBody", "Connected Body", "", Guid::zero.ToString(), ComRigidBody::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_BOOL("collisionEnabled", "Collision Enabled", "", "true", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("breakImpulse", "Break Impulse", "", "1e30f", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComJoint::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Connected Body", ComRigidBody, GetConnectedBody, SetConnectedBody, Guid::zero.ToString(), PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, PropertySpec::ReadWrite);
-    //REGISTER_ACCESSOR_PROPERTY("Break Impulse", float, GetBreakImpulse, SetBreakImpulse, PropertySpec::ReadWrite);
+    REGISTER_PROPERTY("connectedBody", "Connected Body", Guid, connectedBodyGuid, Guid::zero, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&ComRigidBody::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, true, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::EditorFlag);
 }
 
 ComJoint::ComJoint() {
@@ -55,96 +51,50 @@ void ComJoint::Purge(bool chainPurge) {
 }
 
 void ComJoint::Init() {
-    Purge();
-
     Component::Init();
-
-    collisionEnabled = props->Get("collisionEnabled").As<bool>();
-    // FIXME: atof("infinity") parsing 안됨
-    breakImpulse = props->Get("breakImpulse").As<float>();
 }
 
 void ComJoint::Start() {
     connectedBody = nullptr;
-    const Guid guid = props->Get("connectedBody").As<Guid>();
-    if (!guid.IsZero()) {
-        connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
+
+    // Rigid body component will be created after calling Awake() function
+    // So we can connect this joint to the connected rigid body in Start() function
+    if (!connectedBodyGuid.IsZero()) {
+        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
     }
 }
 
-void ComJoint::Enable(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            if (constraint) {
-                constraint->SetEnabled(true);
-            }
-            Component::Enable(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            if (constraint) {
-                constraint->SetEnabled(false);
-            }
-            Component::Enable(false);
-        }
+void ComJoint::OnActive() {
+    if (constraint) {
+        constraint->SetEnabled(true);
     }
 }
 
-void ComJoint::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "connectedBody")) {        
-        SetConnectedBody(props->Get("connectedBody").As<Guid>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "collisionEnabled")) {
-        SetCollisionEnabled(props->Get("collisionEnabled").As<bool>());
-        return;
-    }
-
-    if (!Str::Cmp(propName, "breakImpulse")) {
-        SetBreakImpulse(props->Get("breakImpulse").As<float>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
-}
-
-const Guid ComJoint::GetConnectedBody() const {
-    if (connectedBody) {
-        return connectedBody->GetGuid();
-    }
-    return Guid();
-}
-
-void ComJoint::SetConnectedBody(const Guid &guid) {
-    if (!guid.IsZero()) {
-        connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
-    } else {
-        connectedBody = nullptr;
+void ComJoint::OnInactive() {
+    if (constraint) {
+        constraint->SetEnabled(false);
     }
 }
 
-const bool ComJoint::IsCollisionEnabled() const {
+bool ComJoint::IsCollisionEnabled() const {
     return collisionEnabled;
 }
 
-void ComJoint::SetCollisionEnabled(const bool enabled) {
+void ComJoint::SetCollisionEnabled(bool enabled) {
     collisionEnabled = enabled;
+
     if (constraint) {
         constraint->EnableCollision(collisionEnabled);
     }
 }
 
-const float ComJoint::GetBreakImpulse() const {
+float ComJoint::GetBreakImpulse() const {
     return breakImpulse;
 }
 
-void ComJoint::SetBreakImpulse(const float breakImpulse) {
+void ComJoint::SetBreakImpulse(float breakImpulse) {
     this->breakImpulse = breakImpulse;
+
     if (constraint) {
         constraint->SetBreakImpulse(breakImpulse);
     }

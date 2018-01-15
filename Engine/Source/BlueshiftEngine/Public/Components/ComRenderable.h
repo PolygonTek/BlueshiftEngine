@@ -32,9 +32,8 @@ public:
 
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
-
-    virtual void            Enable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
@@ -67,9 +66,11 @@ public:
     void                    SetSkipSelection(bool skip);
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     virtual void            UpdateVisuals();
 
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    LayerChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 

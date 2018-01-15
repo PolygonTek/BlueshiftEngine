@@ -29,7 +29,7 @@ SignalObject::~SignalObject() {
         con->sender->Disconnect(con->signalDef, con->receiver, con->function);
     }
 
-    Signal::CancelSignal(this);
+    SignalSystem::CancelSignal(this);
 }
 
 bool SignalObject::IsConnected(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function) const {
@@ -152,18 +152,18 @@ bool SignalObject::Disconnect(const SignalDef *sigdef) {
 }
 
 bool SignalObject::EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...) {
-    va_list	args;
-    intptr_t argPtrs[EventArg::MaxArgs];
-
     assert(sigdef);
-    assert(Event::initialized);
+    assert(SignalSystem::initialized);
 
     if (signalBlocked) {
         return false;
     }
 
+    intptr_t argPtrs[EventDef::MaxArgs];
+
+    va_list args;
     va_start(args, numArgs);
-    Signal::CopyArgPtrs(sigdef, numArgs, args, argPtrs);
+    SignalSystem::CopyArgPtrs(sigdef, numArgs, args, argPtrs);
     va_end(args);
 
     for (int i = 0; i < publications.Count(); i++) {
@@ -175,10 +175,10 @@ bool SignalObject::EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...) {
 
         if (con->connectionType & Queued) {
             va_start(args, numArgs);
-            Signal *signal = Signal::Alloc(sigdef, con->function, numArgs, args);
+            Signal *signal = SignalSystem::AllocSignal(sigdef, con->function, numArgs, args);
             va_end(args);
 
-            signal->Schedule(con->receiver);
+            SignalSystem::ScheduleSignal(signal, con->receiver);
             continue;
         }
 

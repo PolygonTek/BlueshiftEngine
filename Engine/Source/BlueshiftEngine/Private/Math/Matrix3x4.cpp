@@ -20,6 +20,26 @@ BE_NAMESPACE_BEGIN
 const Mat3x4 Mat3x4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
 const Mat3x4 Mat3x4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0));
 
+void Mat3x4::Translate(float tx, float ty, float tz) {
+    mat[0][3] = mat[0][0] * tx + mat[0][1] * ty + mat[0][2] * tz + mat[0][3];
+    mat[1][3] = mat[1][0] * tx + mat[1][1] * ty + mat[1][2] * tz + mat[1][3];
+    mat[2][3] = mat[2][0] * tx + mat[2][1] * ty + mat[2][2] * tz + mat[2][3];
+}
+
+//---------------------------------------------------
+//
+//        | sx   0   0 | | m00  m01  m02  m03 |
+// S M  = |  0  sy   0 | | m10  m11  m12  m13 |
+//        |  0   0  sz | | m20  m21  m22  m23 |
+//
+//---------------------------------------------------
+
+void Mat3x4::Scale(float sx, float sy, float sz) {
+    mat[0] *= sx;
+    mat[1] *= sy;
+    mat[2] *= sz;
+}
+
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
     Mat3x4 dst;
 
@@ -115,6 +135,12 @@ Mat3x4 &Mat3x4::UntransformSelf(const Mat3x4 &a) {
     mat[2][3] = dst[2];
 
     return *this;
+}
+
+Mat3x4 Mat3x4::FromString(const char *str) {
+    Mat3x4 m;
+    sscanf(str, "%f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w);
+    return m;
 }
 
 BE_NAMESPACE_END

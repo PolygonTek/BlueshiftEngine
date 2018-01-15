@@ -29,27 +29,29 @@ public:
     ComHingeJoint();
     virtual ~ComHingeJoint();
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-protected:
     const Vec3 &            GetAnchor() const;
     void                    SetAnchor(const Vec3 &anchor);
 
-    const Angles            GetAngles() const;
+    Angles                  GetAngles() const;
     void                    SetAngles(const Angles &angles);
 
-    const float             GetMotorSpeed() const;
-    void                    SetMotorSpeed(const float motorSpeed);
+    float                   GetMotorSpeed() const;
+    void                    SetMotorSpeed(float motorSpeed);
 
-    const float             GetMaxMotorImpulse() const;
-    void                    SetMaxMotorImpulse(const float maxMotorImpulse);
+    float                   GetMaxMotorImpulse() const;
+    void                    SetMaxMotorImpulse(float maxMotorImpulse);
 
-    void                    PropertyChanged(const char *classname, const char *propName);
-
+protected:
     Vec3                    anchor;
     Mat3                    axis;
     float                   motorSpeed;

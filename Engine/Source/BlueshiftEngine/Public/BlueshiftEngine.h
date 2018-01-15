@@ -136,6 +136,7 @@
 #include "Components/ComBoxCollider.h"
 #include "Components/ComSphereCollider.h"
 #include "Components/ComCapsuleCollider.h"
+#include "Components/ComConeCollider.h"
 #include "Components/ComCylinderCollider.h"
 #include "Components/ComMeshCollider.h"
 #include "Components/ComRigidBody.h"
@@ -155,6 +156,7 @@
 #include "Components/ComMeshRenderer.h"
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
+#include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
 #include "Components/ComParticleSystem.h"
 #include "Components/ComSpline.h"
@@ -165,9 +167,7 @@
 #include "Components/ComAudioSource.h"
 
 // GameSettings
-#include "Game/GameSettings/GameSettings.h"
-#include "Game/GameSettings/TagLayerSettings.h"
-#include "Game/GameSettings/PhysicsSettings.h"
+#include "Game/GameSettings.h"
 
 // GameWorld
 #include "Game/Entity.h"

@@ -174,6 +174,14 @@ void SoundSystem::StopAllSounds() {
     }
 }
 
+float SoundSystem::GetMasterVolume() const {
+    return s_volume.GetFloat();
+}
+
+void SoundSystem::SetMasterVolume(float volume) {
+    s_volume.SetFloat(volume);
+}
+
 Sound *SoundSystem::AllocSound(const char *hashName) {
     if (soundHashMap.Get(hashName)) {
         BE_FATALERROR(L"'%hs' sound buffer already allocated", hashName);
@@ -387,7 +395,7 @@ void SoundSystem::Update() {
         for (int soundIndex = 0; soundIndex < Min(sources.Count(), prioritySounds.Count()); soundIndex++) {
             Sound *playSound = prioritySounds[soundIndex];
 
-            playSound->soundSource->SetVolume(playSound->volume * s_volume.GetFloat());
+            playSound->SetVolume(playSound->volume);
         }
     }
 

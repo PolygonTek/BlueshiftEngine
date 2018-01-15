@@ -16,7 +16,6 @@
 #include "Components/ComScript.h"
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"
@@ -25,217 +24,508 @@
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Script", ComScript, Component)
+OBJECT_DECLARATION("Script", ComScript, ComLogic)
 BEGIN_EVENTS(ComScript)
 END_EVENTS
-BEGIN_PROPERTIES(ComScript)
-    PROPERTY_OBJECT("script", "Script", "", Guid::zero.ToString(), ScriptAsset::metaObject, PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComScript::RegisterProperties() {
-    //REGISTER_ACCESSOR_PROPERTY("Script", ScriptAsset, GetScript, SetScript, Guid::zero.ToString(), "", PropertySpec::ReadWrite);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("script", "Script", Guid, GetScriptGuid, SetScriptGuid, Guid::zero, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&ScriptAsset::metaObject);
 }
 
 ComScript::ComScript() {
+    state = nullptr;
     scriptAsset = nullptr;
-
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComScript::PropertyChanged);
 }
 
 ComScript::~ComScript() {
     Purge(false);
-
-    scriptPropertySpecs.DeleteContents(true);
-}
-
-void ComScript::GetPropertySpecList(Array<const PropertySpec *> &pspecs) const {
-    Component::GetPropertySpecList(pspecs);
-
-    pspecs.AppendList(scriptPropertySpecs);
-}
-
-void ComScript::InitPropertySpec(Json::Value &jsonComponent) {
-    const Guid scriptGuid = Guid::ParseString(jsonComponent.get("script", Guid::zero.ToString()).asCString());
-
-    InitPropertySpecImpl(scriptGuid);
-}
-
-void ComScript::InitPropertySpecImpl(const Guid &scriptGuid) {
-    const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
-
-    sandboxName = GetGuid().ToString();
-
-    LoadScriptWithSandboxed(scriptPath, sandboxName);
-
-    sandbox = LuaVM::State()[sandboxName];
-
-    LuaVM::State().Run();
-
-    scriptPropertySpecs.Clear();
-
-    if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
-        auto enumerator = [this](LuaCpp::Selector &selector) {
-            const char *name = selector;
-            auto prop = sandbox["properties"][name];
-            const char *label = prop["label"];
-            const char *desc = prop["description"];
-            const char *type = prop["type"];
-
-            if (!label) {
-                label = name;
-            }
-
-            if (!Str::Cmp(type, "string")) {
-                const char *value = prop["value"];
-                scriptPropertySpecs.Append(new PROPERTY_STRING(name, label, desc, value, PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "enum")) {
-                const char *sequence = prop["sequence"];
-                Str value = Str((int)prop["value"]);
-                scriptPropertySpecs.Append(new PROPERTY_ENUM(name, label, desc, sequence, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "float")) {
-                Str value = Str((float)prop["value"]);
-                if (prop["minimum"].LuaType() == LUA_TNUMBER && prop["maximum"].LuaType() == LUA_TNUMBER) {
-                    float minimum = prop["minimum"];
-                    float maximum = prop["maximum"];
-                    float step = prop["step"];
-
-                    Rangef range(minimum, maximum, step);
-                    if (step == 0.0f) {
-                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
-                    }
-                    scriptPropertySpecs.Append(new PROPERTY_RANGED_FLOAT(name, label, desc, range, value.c_str(), PropertySpec::ReadWrite));
-                } else {
-                    scriptPropertySpecs.Append(new PROPERTY_FLOAT(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-                }
-            } else if (!Str::Cmp(type, "int")) {
-                Str value = Str((int)prop["value"]);
-                if (prop["minimum"].LuaType() == LUA_TNUMBER && prop["maximum"].LuaType() == LUA_TNUMBER) {
-                    float minimum = prop["minimum"];
-                    float maximum = prop["maximum"];
-                    float step = prop["step"];
-
-                    Rangef range(minimum, maximum, step);
-                    if (step == 0.0f) {
-                        range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
-                    }
-                    scriptPropertySpecs.Append(new PROPERTY_RANGED_INT(name, label, desc, range, value.c_str(), PropertySpec::ReadWrite));
-                } else {
-                    scriptPropertySpecs.Append(new PROPERTY_INT(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-                }
-            } else if (!Str::Cmp(type, "bool")) {
-                Str value = Str((bool)prop["value"]);
-                scriptPropertySpecs.Append(new PROPERTY_BOOL(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "point")) {
-                Point point = prop["value"];
-                Str value = point.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_POINT(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "rect")) {
-                Rect rect = prop["value"];
-                Str value = rect.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_RECT(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "vec2")) {
-                Vec2 vec2 = prop["value"];
-                Str value = vec2.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_VEC2(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "vec3")) {
-                Vec3 vec3 = prop["value"];
-                Str value = vec3.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_VEC3(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "vec4")) {
-                Vec4 vec4 = prop["value"];
-                Str value = vec4.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_VEC4(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "color3")) {
-                Color3 color3 = prop["value"];
-                Str value = color3.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_COLOR3(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "color4")) {
-                Color4 color4 = prop["value"];
-                Str value = color4.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_COLOR4(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "angles")) {
-                Angles angles = prop["value"];
-                Str value = angles.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_ANGLES(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "mat3")) {
-                Mat3 mat3 = prop["value"];
-                Str value = mat3.ToString();
-                scriptPropertySpecs.Append(new PROPERTY_MAT3(name, label, desc, value.c_str(), PropertySpec::ReadWrite));
-            } else if (!Str::Cmp(type, "object")) {
-                const char *classname = prop["classname"];
-                MetaObject *metaObject = Object::GetMetaObject(classname);
-                if (metaObject) {
-                    scriptPropertySpecs.Append(new PROPERTY_OBJECT(name, label, desc, Guid::zero.ToString(), *metaObject, PropertySpec::ReadWrite));
-                }
-            }
-        };
-
-        sandbox["property_names"].Enumerate(enumerator);
-    }
 }
 
 void ComScript::Purge(bool chainPurge) {
-    LuaVM::State().SetToNil(sandbox.Name().c_str());
+    if (!sandboxName.IsEmpty()) {
+        state->SetToNil(sandboxName.c_str());
+        sandboxName = "";
+    }
+
+    if (sandbox.IsValid()) {
+        sandbox = LuaCpp::Selector();
+    }
+
+    fieldInfos.Clear();
+    fieldValues.Clear();
 
     if (chainPurge) {
         Component::Purge();
     }
 }
 
-void ComScript::Init() {
-    Purge();
-
-    Component::Init();
-
-    // Sandboxes with component GUID string
-    sandboxName = GetGuid().ToString();
-
-    ChangeScript(props->Get("script").As<Guid>());
-
-    if (sandbox.IsValid()) {
-        sandbox["owner"]["game_world"] = GetGameWorld();
-        sandbox["owner"]["entity"] = GetEntity();
-        sandbox["owner"]["name"] = GetEntity()->GetName();
-        sandbox["owner"]["transform"] = GetEntity()->GetTransform();
-
-        LuaVM::State().Run();
+void ComScript::OnActive() {
+    if (IsInitialized()) {
+        if (onEnableFunc.IsValid()) {
+            onEnableFunc();
+        }
     }
 }
 
+void ComScript::OnInactive() {
+    if (IsInitialized()) {
+        if (onDisableFunc.IsValid()) {
+            onDisableFunc();
+        }
+    }
+}
+
+void ComScript::Init() {
+    Component::Init();
+
+    // Mark as initialized
+    SetInitialized(true);
+}
+
+void ComScript::SetOwnerValues() {
+    if (!sandbox.IsValid()) {
+        return;
+    }
+
+    auto owner = sandbox["owner"];
+    owner["game_world"] = GetGameWorld();
+    owner["entity"] = GetEntity();
+    owner["name"] = GetEntity()->GetName().c_str();
+    owner["transform"] = GetEntity()->GetTransform();
+}
+
+void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
+    Component::GetPropertyInfoList(propInfos);
+
+    for (int index = 0; index < fieldInfos.Count(); index++) {
+        propInfos.Append(fieldInfos[index]);
+    }
+}
+
+void ComScript::Deserialize(const Json::Value &in) {
+    const Str scriptGuidString = in.get("script", Guid::zero.ToString()).asCString();
+    const Guid scriptGuid = Guid::FromString(scriptGuidString);
+
+    state = &GetGameWorld()->GetLuaVM().State();
+
+    ChangeScript(scriptGuid);
+
+    Serializable::Deserialize(in);
+}
+
 void ComScript::ChangeScript(const Guid &scriptGuid) {
-    // Disconnect from old script asset
+    // Disconnect with previously connected script asset
     if (scriptAsset) {
         scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        scriptAsset = nullptr;
     }
 
-    LuaVM::State().SetToNil(sandboxName.c_str());
+    if (!sandboxName.IsEmpty()) {
+        state->SetToNil(sandboxName.c_str());
+        //state->ForceGC();
+        sandboxName = "";
+    }
 
+    if (sandbox.IsValid()) {
+        sandbox = LuaCpp::Selector();
+    }
+
+    this->scriptGuid = scriptGuid;
+
+    if (scriptGuid.IsZero()) {
+        return;
+    }
+
+    // Sandbox name is same as component GUID in string
+    sandboxName = GetGuid().ToString();
+
+    // Load a script with sandboxed on current Lua state
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
-    if (scriptPath.IsEmpty()) {
+    if (!LoadScriptWithSandbox(scriptPath, sandboxName)) {
+        sandboxName = "";
+        BE_WARNLOG(L"ComScript::ChangeScript: Failed to load script '%hs'\n", scriptPath.c_str());
+        return;
+    }
+    
+    // Get the state of current loaded script
+    sandbox = (*state)[sandboxName];
+    if (!sandbox.IsValid()) {
+        BE_WARNLOG(L"ComScript::ChangeScript: Invalid sandbox '%hs'\n", sandboxName.c_str());
         return;
     }
 
-    if (!LoadScriptWithSandboxed(scriptPath, sandboxName)) {
-        return;
+    // Run this script
+    state->Run();
+
+    UpdateFunctionMap();
+
+    fieldInfos.Clear();
+    fieldValues.Clear();
+
+    // Get the script property informations with this sandboxed script
+    if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
+        InitScriptFields();
     }
 
-    // Need to script asset to be reloaded in Editor
+    // Need to script asset to be reloaded in editor
     Object *scriptObject = ScriptAsset::FindInstance(scriptGuid);
     if (scriptObject) {
         scriptAsset = scriptObject->Cast<ScriptAsset>();
-        
+
         if (scriptAsset) {
             scriptAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::Queued);
         }
     }
-
-    sandbox = LuaVM::State()[sandboxName];
 }
 
+void ComScript::InitScriptFields() {
+    // Get property default values to list up fieldValues
+    auto fieldValueEnumerator = [this](LuaCpp::Selector &selector) {
+        const char *name = selector;
+        auto props = sandbox["properties"][name];
+        const char *type = props["type"];
+        LuaCpp::Selector value = props["value"];
 
-static BE1::CVar lua_path(L"lua_path", L"", BE1::CVar::Archive, L"lua project path for debugging");
+        if (!Str::Cmp(type, "int")) {
+            fieldValues.Set(name, (int)value);
+        } else if (!Str::Cmp(type, "enum")) {
+            fieldValues.Set(name, (int)value);
+        } else if (!Str::Cmp(type, "bool")) {
+            fieldValues.Set(name, (bool)value);
+        } else if (!Str::Cmp(type, "float")) {
+            fieldValues.Set(name, (float)value);
+        } else if (!Str::Cmp(type, "vec2")) {
+            fieldValues.Set(name, (Vec2 &)value);
+        } else if (!Str::Cmp(type, "vec3")) {
+            fieldValues.Set(name, (Vec3 &)value);
+        } else if (!Str::Cmp(type, "vec4")) {
+            fieldValues.Set(name, (Vec4 &)value);
+        } else if (!Str::Cmp(type, "color3")) {
+            fieldValues.Set(name, (Color3 &)value);
+        } else if (!Str::Cmp(type, "color4")) {
+            fieldValues.Set(name, (Color4 &)value);
+        } else if (!Str::Cmp(type, "angles")) {
+            fieldValues.Set(name, (Angles &)value);
+        } else if (!Str::Cmp(type, "quat")) {
+            fieldValues.Set(name, (Quat &)value);
+        } else if (!Str::Cmp(type, "mat2")) {
+            fieldValues.Set(name, (Mat2 &)value);
+        } else if (!Str::Cmp(type, "mat3")) {
+            fieldValues.Set(name, (Mat3 &)value);
+        } else if (!Str::Cmp(type, "mat3x4")) {
+            fieldValues.Set(name, (Mat3x4 &)value);
+        } else if (!Str::Cmp(type, "mat4")) {
+            fieldValues.Set(name, (Mat4 &)value);
+        } else if (!Str::Cmp(type, "point")) {
+            fieldValues.Set(name, (Point &)value);
+        } else if (!Str::Cmp(type, "rect")) {
+            fieldValues.Set(name, (Rect &)value);
+        } else if (!Str::Cmp(type, "string")) {
+            fieldValues.Set(name, Str((const char *)value));
+        } else if (!Str::Cmp(type, "object")) {
+            fieldValues.Set(name, Guid::FromString((const char *)value));
+        } else {
+            BE_WARNLOG(L"Invalid property type '%hs' for %hs\n", type, name);
+        }
+    };
 
-bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandboxName) {
+    // Create all the property info
+    auto fieldInfoEnumerator = [this](LuaCpp::Selector &selector) {
+        const char *name = selector;
+        auto props = sandbox["properties"][name];
+        const char *label = props["label"];
+        const char *desc = props["description"];
+        const char *type = props["type"];
+
+        if (!label) {
+            label = name;
+        }
+
+        auto pairPtr = fieldValues.Get(name);
+
+        if (!Str::Cmp(type, "int")) {
+            if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
+                float minimum = props["minimum"];
+                float maximum = props["maximum"];
+                float step = props["step"];
+
+                Rangef range(minimum, maximum, step);
+                if (step == 0.0f) {
+                    range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
+                }
+
+                auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), new PropertyLambdaAccessorImpl<Class, int>(
+                    [pairPtr]() {
+                    return pairPtr->second.As<int>();
+                },
+                    [pairPtr](int value) {
+                    pairPtr->second = value;
+                }), pairPtr->second.As<int>(), desc, PropertyInfo::EditorFlag);
+                propInfo.SetRange(minimum, maximum, step);
+
+                fieldInfos.Append(propInfo);
+            } else {
+                auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), new PropertyLambdaAccessorImpl<Class, int>(
+                    [pairPtr]() {
+                    return pairPtr->second.As<int>();
+                },
+                    [pairPtr](int value) {
+                    pairPtr->second = value;
+                }), pairPtr->second.As<int>(), desc, PropertyInfo::EditorFlag);
+
+                fieldInfos.Append(propInfo);
+            }
+        } else if (!Str::Cmp(type, "enum")) {
+            const char *enumSequence = props["sequence"];
+
+            auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), new PropertyLambdaAccessorImpl<Class, int>(
+                [pairPtr]() {
+                return pairPtr->second.As<int>();
+            },
+                [pairPtr](int value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<int>(), desc, PropertyInfo::EditorFlag);
+            propInfo.SetEnumString(enumSequence);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "bool")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<bool>::GetType(), new PropertyLambdaAccessorImpl<Class, bool>(
+                [pairPtr]() {
+                return pairPtr->second.As<bool>();
+            },
+                [pairPtr](bool value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<bool>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "float")) {
+            if (props["minimum"].LuaType() == LUA_TNUMBER && props["maximum"].LuaType() == LUA_TNUMBER) {
+                float minimum = props["minimum"];
+                float maximum = props["maximum"];
+                float step = props["step"];
+
+                Rangef range(minimum, maximum, step);
+                if (step == 0.0f) {
+                    range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
+                }
+
+                auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), new PropertyLambdaAccessorImpl<Class, float>(
+                    [pairPtr]() {
+                    return pairPtr->second.As<float>();
+                },
+                    [pairPtr](float value) {
+                    pairPtr->second = value;
+                }), pairPtr->second.As<float>(), desc, PropertyInfo::EditorFlag);
+                propInfo.SetRange(minimum, maximum, step);
+
+                fieldInfos.Append(propInfo);
+            } else {
+                auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), new PropertyLambdaAccessorImpl<Class, float>(
+                    [pairPtr]() {
+                    return pairPtr->second.As<float>();
+                },
+                    [pairPtr](float value) {
+                    pairPtr->second = value;
+                }), pairPtr->second.As<float>(), desc, PropertyInfo::EditorFlag);
+
+                fieldInfos.Append(propInfo);
+            }
+        } else if (!Str::Cmp(type, "vec2")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Vec2>::GetType(), new PropertyLambdaAccessorImpl<Class, Vec2, MixedPropertyTrait>(
+                [pairPtr]() { return pairPtr->second.As<Vec2>(); },
+                [pairPtr](const Vec2 &value) { pairPtr->second = value; }), pairPtr->second.As<Vec2>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "vec3")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Vec3>::GetType(), new PropertyLambdaAccessorImpl<Class, Vec3, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Vec3>();
+            },
+                [pairPtr](const Vec3 &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Vec3>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "vec4")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Vec4>::GetType(), new PropertyLambdaAccessorImpl<Class, Vec4, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Vec4>();
+            },
+                [pairPtr](const Vec4 &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Vec4>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "color3")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Color3>::GetType(), new PropertyLambdaAccessorImpl<Class, Color3, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Color3>();
+            },
+                [pairPtr](const Color3 &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Color3>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "color4")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Color4>::GetType(), new PropertyLambdaAccessorImpl<Class, Color4, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Color4>();
+            },
+                [pairPtr](const Color4 &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Color4>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "angles")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Angles>::GetType(), new PropertyLambdaAccessorImpl<Class, Angles, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Angles>();
+            },
+                [pairPtr](const Angles &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Angles>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "quat")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Quat>::GetType(), new PropertyLambdaAccessorImpl<Class, Quat, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Quat>();
+            },
+                [pairPtr](const Quat &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Quat>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "mat2")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Mat2>::GetType(), new PropertyLambdaAccessorImpl<Class, Mat2, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Mat2>();
+            },
+                [pairPtr](const Mat2 &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Mat2>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "mat3")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Mat3>::GetType(), new PropertyLambdaAccessorImpl<Class, Mat3, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Mat3>();
+            },
+                [pairPtr](const Mat3 &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Mat3>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "mat3x4")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Mat3x4>::GetType(), new PropertyLambdaAccessorImpl<Class, Mat3x4, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Mat3x4>();
+            },
+                [pairPtr](const Mat3x4 &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Mat3x4>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "mat4")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Mat4>::GetType(), new PropertyLambdaAccessorImpl<Class, Mat4, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Mat4>();
+            },
+                [pairPtr](const Mat4 &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Mat4>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "point")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Point>::GetType(), new PropertyLambdaAccessorImpl<Class, Point, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Point>();
+            },
+                [pairPtr](const Point &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Point>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "rect")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Rect>::GetType(), new PropertyLambdaAccessorImpl<Class, Rect, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Rect>();
+            },
+                [pairPtr](const Rect &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Rect>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "string")) {
+            auto propInfo = PropertyInfo(name, label, VariantType<Str>::GetType(), new PropertyLambdaAccessorImpl<Class, Str, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Str>();
+            },
+                [pairPtr](const Str &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Str>(), desc, PropertyInfo::EditorFlag);
+
+            fieldInfos.Append(propInfo);
+        } else if (!Str::Cmp(type, "object")) {
+            const char *classname = props["classname"];
+            const MetaObject *metaObject = Object::FindMetaObject(classname);
+
+            auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), new PropertyLambdaAccessorImpl<Class, Guid, MixedPropertyTrait>(
+                [pairPtr]() {
+                return pairPtr->second.As<Guid>();
+            },
+                [pairPtr](const Guid &value) {
+                pairPtr->second = value;
+            }), pairPtr->second.As<Guid>(), desc, PropertyInfo::EditorFlag);
+            propInfo.SetMetaObject(metaObject);
+
+            fieldInfos.Append(propInfo);
+        }
+    };
+
+    sandbox["property_names"].Enumerate(fieldValueEnumerator);
+    sandbox["property_names"].Enumerate(fieldInfoEnumerator);
+}
+
+LuaCpp::Selector ComScript::CacheFunction(const char *funcname) {
+    LuaCpp::Selector function = sandbox[funcname];
+    if (function.IsFunction()) {
+        return function;
+    }
+    return LuaCpp::Selector();
+}
+
+void ComScript::UpdateFunctionMap() {
+    awakeFunc = CacheFunction("awake");
+    startFunc = CacheFunction("start");
+    updateFunc = CacheFunction("update");
+    lateUpdateFunc = CacheFunction("late_update");
+    fixedUpdateFunc = CacheFunction("fixed_update");
+    fixedLateUpdateFunc = CacheFunction("fixed_late_update");
+    onEnableFunc = CacheFunction("on_enable");
+    onDisableFunc = CacheFunction("on_disable");
+    onPointerEnterFunc = CacheFunction("on_pointer_enter");
+    onPointerExitFunc = CacheFunction("on_pointer_exit");
+    onPointerOverFunc = CacheFunction("on_pointer_over");
+    onPointerDownFunc = CacheFunction("on_pointer_down");
+    onPointerUpFunc = CacheFunction("on_pointer_up");
+    onPointerDragFunc = CacheFunction("on_pointer_drag");
+    onPointerClickFunc = CacheFunction("on_pointer_click");
+    onCollisionEnterFunc = CacheFunction("on_collision_enter");
+    onCollisionExitFunc = CacheFunction("on_collision_exit");
+    onCollisionStayFunc = CacheFunction("on_collision_stay");
+    onSensorEnterFunc = CacheFunction("on_sensor_enter");
+    onSensorExitFunc = CacheFunction("on_sensor_exit");
+    onSensorStayFunc = CacheFunction("on_sensor_stay");
+    onParticleCollisionFunc = CacheFunction("on_particle_collision");
+    onApplicationTerminateFunc = CacheFunction("on_application_terminate");
+    onApplicationPauseFunc = CacheFunction("on_application_pause");
+}
+
+static CVar lua_path(L"lua_path", L"", CVar::Archive, L"lua project path for debugging");
+
+bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxName) {
     char *data;
     size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
@@ -243,8 +533,8 @@ bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandbo
     }
 
     Str name;
-#if 1
-    // NOTE: absolute file path is needed for Lua debugging    
+#if 0
+    // NOTE: absolute file path is needed for Lua debugging
     char *path = tombs(lua_path.GetString());
 
     if (path[0]) {
@@ -258,7 +548,7 @@ bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandbo
     name = filename;
 #endif
 
-    if (!LuaVM::State().LoadBuffer(name.c_str(), data, size, sandboxName)) {
+    if (!state->LoadBuffer(name.c_str(), data, size, sandboxName)) {
         fileSystem.FreeFile(data);
         return false;
     }
@@ -269,65 +559,93 @@ bool ComScript::LoadScriptWithSandboxed(const char *filename, const char *sandbo
 }
 
 void ComScript::SetScriptProperties() {
+    if (!sandbox.IsValid()) {
+        return;
+    }
+
     LuaCpp::Selector properties = sandbox["properties"];
 
-    for (int i = 0; i < scriptPropertySpecs.Count(); ++i) {
-        const BE1::PropertySpec *spec = scriptPropertySpecs[i];
+    for (int i = 0; i < fieldInfos.Count(); i++) {
+        const PropertyInfo *propInfo = &fieldInfos[i];
+        const char *name = propInfo->GetName();
+        const Variant::Type type = propInfo->GetType();
+        const Variant value = GetProperty(name);
 
-        const char *name = spec->GetName();
-        const PropertySpec::Type type = spec->GetType();
-        
+        auto property = properties[name];
+
         switch (type) {
-        case PropertySpec::StringType:
-            properties[name]["value"] = props->Get(name).As<Str>().c_str();
+        case Variant::IntType:
+            property["value"] = value.As<int>();
             break;
-        case PropertySpec::FloatType:
-            properties[name]["value"] = props->Get(name).As<float>();
+        case Variant::Int64Type:
+            property["value"] = value.As<int64_t>();
             break;
-        case PropertySpec::IntType:
-        case PropertySpec::EnumType:
-            properties[name]["value"] = props->Get(name).As<int>();
+        case Variant::BoolType:
+            property["value"] = value.As<bool>();
             break;
-        case PropertySpec::BoolType:
-            properties[name]["value"] = props->Get(name).As<bool>();
+        case Variant::FloatType:
+            property["value"] = value.As<float>();
             break;
-        case PropertySpec::PointType:
-            (Point &)properties[name]["value"] = props->Get(name).As<Point>();
+        case Variant::DoubleType:
+            property["value"] = value.As<double>();
             break;
-        case PropertySpec::RectType:
-            (Rect &)properties[name]["value"] = props->Get(name).As<Rect>();
+        case Variant::Vec2Type:
+            (Vec2 &)property["value"] = value.As<Vec2>();
             break;
-        case PropertySpec::Vec2Type:
-            (Vec2 &)properties[name]["value"] = props->Get(name).As<Vec2>();
+        case Variant::Vec3Type:
+            (Vec3 &)property["value"] = value.As<Vec3>();
             break;
-        case PropertySpec::Vec3Type:
-        case PropertySpec::Color3Type:
-            (Vec3 &)properties[name]["value"] = props->Get(name).As<Vec3>();
+        case Variant::Vec4Type:
+            (Vec4 &)property["value"] = value.As<Vec4>();
             break;
-        case PropertySpec::Vec4Type:
-        case PropertySpec::Color4Type:
-            (Vec4 &)properties[name]["value"] = props->Get(name).As<Vec4>();
+        case Variant::Color3Type:
+            (Color3 &)property["value"] = value.As<Color3>();
             break;
-        case PropertySpec::AnglesType:
-            (Angles &)properties[name]["value"] = props->Get(name).As<Angles>();
+        case Variant::Color4Type:
+            (Color4 &)property["value"] = value.As<Color4>();
             break;
-        case PropertySpec::Mat3Type:
-            (Mat3 &)properties[name]["value"] = props->Get(name).As<Mat3>();
+        case Variant::AnglesType:
+            (Angles &)property["value"] = value.As<Angles>();
             break;
-        case PropertySpec::ObjectType: {
-            Guid objectGuid = props->Get(name).As<Guid>();
+        case Variant::QuatType:
+            (Quat &)property["value"] = value.As<Quat>();
+            break;
+        case Variant::Mat2Type:
+            (Mat2 &)property["value"] = value.As<Mat2>();
+            break;
+        case Variant::Mat3Type:
+            (Mat3 &)property["value"] = value.As<Mat3>();
+            break;
+        case Variant::Mat3x4Type:
+            (Mat3x4 &)property["value"] = value.As<Mat3x4>();
+            break;
+        case Variant::Mat4Type:
+            (Mat4 &)property["value"] = value.As<Mat4>();
+            break;
+        case Variant::PointType:
+            (Point &)property["value"] = value.As<Point>();
+            break;
+        case Variant::RectType:
+            (Rect &)property["value"] = value.As<Rect>();
+            break;
+        case Variant::StrType:
+            property["value"] = value.As<Str>().c_str();
+            break;
+        case Variant::GuidType: {
+            Guid objectGuid = value.As<Guid>();
             Object *object = Object::FindInstance(objectGuid);
             if (object) {
-                properties[name]["value"] = object;
+                property["value"] = object;
             } else {
-                if (spec->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
+                if (propInfo->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
                     if (!objectGuid.IsZero()) {
-                        object = spec->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
-                        properties[name]["value"] = object;
+                        object = propInfo->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
+                        property["value"] = object;
                     }
                 }
             }
-            break; }
+            break; 
+        }
         default:
             assert(0);
             break;
@@ -336,113 +654,168 @@ void ComScript::SetScriptProperties() {
 }
 
 void ComScript::Awake() {
+    SetOwnerValues();
+
     SetScriptProperties();
 
-    CallFunc("awake");
+    if (awakeFunc.IsValid()) {
+        awakeFunc();
+    }
+
+    if (onEnableFunc.IsValid()) {
+        onEnableFunc();
+    }
 }
 
 void ComScript::Start() {
-    CallFunc("start");
+    if (startFunc.IsValid()) {
+        startFunc();
+    }
 }
 
 void ComScript::Update() {
-    CallFunc("update");
+    if (updateFunc.IsValid()) {
+        updateFunc();
+    }
 }
 
 void ComScript::LateUpdate() {
-    CallFunc("late_update");
+    if (lateUpdateFunc.IsValid()) {
+        lateUpdateFunc();
+    }
+}
+
+void ComScript::FixedUpdate(float timeStep) {
+    if (fixedUpdateFunc.IsValid()) {
+        fixedUpdateFunc(timeStep);
+    }
+}
+
+void ComScript::FixedLateUpdate(float timeStep) {
+    if (fixedLateUpdateFunc.IsValid()) {
+        fixedLateUpdateFunc(timeStep);
+    }
 }
 
 void ComScript::OnPointerEnter() {
-    CallFunc("on_pointer_enter");
+    if (onPointerEnterFunc.IsValid()) {
+        onPointerEnterFunc();
+    }
 }
 
 void ComScript::OnPointerExit() {
-    CallFunc("on_pointer_exit");
+    if (onPointerExitFunc.IsValid()) {
+        onPointerExitFunc();
+    }
 }
 
 void ComScript::OnPointerOver() {
-    CallFunc("on_pointer_over");
+    if (onPointerOverFunc.IsValid()) {
+        onPointerOverFunc();
+    }
 }
 
 void ComScript::OnPointerDown() {
-    CallFunc("on_pointer_down");
+    if (onPointerDownFunc.IsValid()) {
+        onPointerDownFunc();
+    }
 }
 
 void ComScript::OnPointerUp() {
-    CallFunc("on_pointer_up");
+    if (onPointerUpFunc.IsValid()) {
+        onPointerUpFunc();
+    }
 }
 
 void ComScript::OnPointerDrag() {
-    CallFunc("on_pointer_drag");
+    if (onPointerDragFunc.IsValid()) {
+        onPointerDragFunc();
+    }
+}
+
+void ComScript::OnPointerClick() {
+    if (onPointerClickFunc.IsValid()) {
+        onPointerClickFunc();
+    }
 }
 
 void ComScript::OnCollisionEnter(const Collision &collision) {
-    CallFunc("on_collision_enter", collision);
+    if (onCollisionEnterFunc.IsValid()) {
+        onCollisionEnterFunc(collision);
+    }
 }
 
 void ComScript::OnCollisionExit(const Collision &collision) {
-    CallFunc("on_collision_exit", entity);
+    if (onCollisionExitFunc.IsValid()) {
+        onCollisionExitFunc(collision);
+    }
 }
 
 void ComScript::OnCollisionStay(const Collision &collision) {
-    CallFunc("on_collision_stay", entity);
+    if (onCollisionStayFunc.IsValid()) {
+        onCollisionStayFunc(collision);
+    }
 }
 
 void ComScript::OnSensorEnter(const Entity *entity) {
-    CallFunc("on_sensor_enter", entity);
+    if (onSensorEnterFunc.IsValid()) {
+        onSensorEnterFunc(entity);
+    }
 }
 
 void ComScript::OnSensorExit(const Entity *entity) {
-    CallFunc("on_sensor_exit", entity);
+    if (onSensorExitFunc.IsValid()) {
+        onSensorExitFunc(entity);
+    }
 }
 
 void ComScript::OnSensorStay(const Entity *entity) {
-    CallFunc("on_sensor_stay", entity);
+    if (onSensorStayFunc.IsValid()) {
+        onSensorStayFunc(entity);
+    }
 }
 
 void ComScript::OnParticleCollision(const Entity *entity) {
-    CallFunc("on_particle_collision", entity);
+    if (onParticleCollisionFunc.IsValid()) {
+        onParticleCollisionFunc(entity);
+    }
 }
 
 void ComScript::OnApplicationTerminate() {
-    CallFunc("on_application_terminate");
+    if (onApplicationTerminateFunc.IsValid()) {
+        onApplicationTerminateFunc(entity);
+    }
 }
 
 void ComScript::OnApplicationPause(bool pause) {
-    CallFunc("on_application_pause", pause);
+    if (onApplicationPauseFunc.IsValid()) {
+        onApplicationPauseFunc(pause);
+    }
 }
 
 void ComScript::ScriptReloaded() {
-    SetScript(props->Get("script").As<Guid>());
+    Json::Value value;
+    Serializable::Serialize(value);
+
+    Deserialize(value);
+
+    // Update editor UI
+    EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
 }
 
-void ComScript::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-
-    if (!Str::Cmp(propName, "script")) {
-        SetScript(props->Get("script").As<Guid>());
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
+Guid ComScript::GetScriptGuid() const {
+    return scriptGuid;
 }
 
-const Guid ComScript::GetScript() const {
-    if (scriptAsset) {
-        return scriptAsset->GetGuid();
+void ComScript::SetScriptGuid(const Guid &guid) {
+    if (guid != scriptGuid) {
+        ChangeScript(guid);
     }
-    return Guid();
-}
 
-void ComScript::SetScript(const Guid &guid) {
-    InitPropertySpecImpl(guid);
-
-    ChangeScript(guid);
-
-    EmitSignal(&Properties::SIG_UpdateUI);
+    if (IsInitialized()) {
+        // Update editor UI
+        EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
+    }
 }
 
 BE_NAMESPACE_END

@@ -25,8 +25,9 @@ void LuaVM::RegisterComplex(LuaCpp::Module &module) {
     _Complex2.AddClassCtor<Complex, float, float>();
     _Complex2.AddClassMembers<Complex>(
         "re", &Complex::re,
-        "im", &Complex::im,        
+        "im", &Complex::im,
         "element", static_cast<float&(Complex::*)(int)>(&Complex::operator[]), // index start from zero
+        "assign", static_cast<Complex&(Complex::*)(const Complex&)>(&Complex::operator=),
         "set", &Complex::Set,
         "set_zero", &Complex::SetZero,
         "equals", static_cast<bool(Complex::*)(const Complex&, const float)const>(&Complex::Equals),

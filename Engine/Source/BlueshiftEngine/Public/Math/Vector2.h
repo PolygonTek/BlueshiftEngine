@@ -117,9 +117,13 @@ public:
                         /// This function is identical to the member function DivComp().
                         /// Divides this vector by a vector, element-wise.
     Vec2                operator/(const Vec2 &rhs) const { return Vec2(x / rhs.x, y / rhs.y); }
-                        /// Divides vector (s, s, s, s) by a vector v, element-wise.
+                        /// Divides vector (s, s, s, s) by a vector, element-wise.
     friend Vec2         operator/(float lhs, const Vec2 &rhs) { return Vec2(lhs / rhs.x, lhs / rhs.y); }
-    
+
+
+                        /// Assign from another vector.
+    Vec2 &              operator=(const Vec2 &rhs);
+
                         /// Adds a vector to this vector, in-place.
     Vec2 &              AddSelf(const Vec2 &v) { *this += v; return *this; }
                         /// Adds a vector to this vector, in-place.
@@ -232,6 +236,9 @@ public:
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
+                        /// Creates from the string
+    static Vec2         FromString(const char *str);
+
                         /// Converts to the polar coordinates.
     float               ToPolar(float &theta) const;
 
@@ -295,6 +302,12 @@ BE_INLINE float Vec2::operator[](int index) const {
 BE_INLINE float &Vec2::operator[](int index) {
     assert(index >= 0 && index < Size);
     return ((float *)this)[index];
+}
+
+BE_INLINE Vec2 &Vec2::operator=(const Vec2 &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    return *this;
 }
 
 BE_INLINE Vec2 &Vec2::operator+=(const Vec2 &rhs) {

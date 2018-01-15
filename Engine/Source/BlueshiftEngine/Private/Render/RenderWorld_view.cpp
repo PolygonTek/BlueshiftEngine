@@ -165,7 +165,7 @@ void RenderWorld::FindViewLightsAndEntities(view_t *view) {
             Swap(inverse[0], inverse[2]);
             Swap(inverse[1], inverse[2]);
 
-            Mat4 billboardMatrix = inverse.Scale(sceneEntity->parms.scale).ToMat4();
+            Mat3 billboardMatrix = inverse * Mat3::FromScale(sceneEntity->parms.scale);
             viewEntity->modelViewMatrix *= billboardMatrix;
             viewEntity->modelViewProjMatrix *= billboardMatrix;
         }
@@ -233,7 +233,7 @@ void RenderWorld::AddStaticMeshes(view_t *view) {
         }
 
         viewEntity_t *viewEntity = proxy->sceneEntity->viewEntity;
-        AddDrawSurf(view, viewEntity, viewEntity->def->parms.customMaterials[surf->materialIndex], surf->subMesh, flags);
+        AddDrawSurf(view, viewEntity, viewEntity->def->parms.materials[surf->materialIndex], surf->subMesh, flags);
 
         surf->viewCount = this->viewCount;
         surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
@@ -288,7 +288,7 @@ void RenderWorld::AddSkinnedMeshes(view_t *view) {
         for (int surfaceIndex = 0; surfaceIndex < entityParms.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = entityParms.mesh->GetSurface(surfaceIndex);
 
-            AddDrawSurf(view, viewEntity, entityParms.customMaterials[surf->materialIndex], surf->subMesh, flags);
+            AddDrawSurf(view, viewEntity, entityParms.materials[surf->materialIndex], surf->subMesh, flags);
 
             surf->viewCount = viewCount;
             surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
@@ -308,7 +308,7 @@ void RenderWorld::AddParticleMeshes(view_t *view) {
             continue;
         }
 
-        int flags = DrawSurf::AmbientVisible;
+        int flags = DrawSurf::AmbientVisible | DrawSurf::SkipSelection;
         if (entityParms.wireframeMode != SceneEntity::WireframeMode::ShowNone || r_showWireframe.GetInteger() > 0) {
             flags |= DrawSurf::ShowWires;
         }
@@ -360,7 +360,7 @@ void RenderWorld::AddTextMeshes(view_t *view) {
 
         textMesh.Clear();
         textMesh.SetColor(Color4(&entityParms.materialParms[SceneEntity::RedParm]));
-        textMesh.Draw(entityParms.font, entityParms.textAnchor, entityParms.textAlignment, entityParms.lineSpacing, entityParms.textScale, entityParms.text);        
+        textMesh.Draw(entityParms.font, entityParms.textAnchor, entityParms.textAlignment, entityParms.lineSpacing, entityParms.textScale, entityParms.text);
         textMesh.CacheIndexes();
 
         for (int surfaceIndex = 0; surfaceIndex < textMesh.NumSurfaces(); surfaceIndex++) {
@@ -456,7 +456,7 @@ void RenderWorld::AddStaticMeshesForLights(view_t *view) {
             return true;
         }
 
-        const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
+        const Material *material = proxyEntity->parms.materials[surf->materialIndex];
 
         // Is surface visible for this frame ?
         if (surf->viewCount == this->viewCount) {
@@ -560,7 +560,7 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
         for (int surfaceIndex = 0; surfaceIndex < proxyEntity->parms.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = proxyEntity->parms.mesh->GetSurface(surfaceIndex);
 
-            const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
+            const Material *material = proxyEntity->parms.materials[surf->materialIndex];
 
             // 이미 ambient visible surf 로 등록되었고, lighting 이 필요한 surf 라면 litSurfs 리스트에 추가한다.
             if (surf->viewCount == this->viewCount && surf->drawSurf->flags & DrawSurf::AmbientVisible && material->IsLitSurface()) {
@@ -590,7 +590,7 @@ void RenderWorld::AddSkinnedMeshesForLights(view_t *view) {
         for (int surfaceIndex = 0; surfaceIndex < proxyEntity->parms.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = proxyEntity->parms.mesh->GetSurface(surfaceIndex);
 
-            const Material *material = proxyEntity->parms.customMaterials[surf->materialIndex];
+            const Material *material = proxyEntity->parms.materials[surf->materialIndex];
 
             if (material->IsShadowCaster()) {
                 if (surf->viewCount != this->viewCount) {
@@ -810,7 +810,28 @@ void RenderWorld::AddDrawSurf(view_t *view, viewEntity_t *viewEntity, const Mate
     drawSurf->subMesh           = subMesh;
     drawSurf->flags             = flags;
 
-    drawSurf->MakeSortKey(viewEntity->def->index, realMaterial);
+    uint64_t materialSort = realMaterial->GetSort();
+    uint64_t entityIndex = viewEntity->def->index;
+    uint64_t materialIndex = materialManager.GetIndexByMaterial(realMaterial);
+    uint64_t depthDist = 0;
+    
+    if (materialSort == Material::TranslucentSort || materialSort == Material::OverlaySort) {
+        float depthMin = 0.0f;
+        float depthMax = 1.0f;
+
+        view->def->GetDepthBoundsFromAABB(subMesh->GetAABB(), viewEntity->modelViewProjMatrix, &depthMin, &depthMax);
+
+        depthDist = Math::Ftoui16((1.0f - depthMin) * 0xFFFF);
+    }
+
+    //---------------------------------------------------
+    // sortKey bits:
+    // 0xFFFF000000000000 (0~65535) : material sort
+    // 0x0000FFFF00000000 (0~65535) : depth dist
+    // 0x00000000FFFF0000 (0~65535) : entity index
+    // 0x000000000000FFFF (0~65535) : material index
+    //---------------------------------------------------
+    drawSurf->sortKey = ((materialSort << 48) | (depthDist << 32) | (entityIndex << 16) | materialIndex);
     
     view->drawSurfs[view->numDrawSurfs++] = drawSurf;
 }

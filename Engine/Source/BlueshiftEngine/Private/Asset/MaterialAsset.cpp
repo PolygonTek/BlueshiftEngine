@@ -24,8 +24,9 @@ BE_NAMESPACE_BEGIN
 OBJECT_DECLARATION("Material", MaterialAsset, Asset)
 BEGIN_EVENTS(MaterialAsset)
 END_EVENTS
-BEGIN_PROPERTIES(MaterialAsset)
-END_PROPERTIES
+
+void MaterialAsset::RegisterProperties() {
+}
 
 MaterialAsset::MaterialAsset() {
     material = nullptr;

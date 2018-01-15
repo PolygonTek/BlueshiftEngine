@@ -40,16 +40,16 @@ void RBSurf::DrawPrimitives() const {
 }
 
 void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
-    const auto &specHashMap = shader->GetSpecHashMap();
+    const auto &propertyInfoHashMap = shader->GetPropertyInfoHashMap();
 
     // Iterate over all shader property specs
-    for (int i = 0; i < specHashMap.Count(); i++) {
-        const auto *entry = specHashMap.GetByIndex(i);
+    for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
+        const auto *entry = propertyInfoHashMap.GetByIndex(i);
         const auto &key = entry->first;
-        const auto &spec = entry->second;
+        const auto &propInfo = entry->second;
 
         // Skip if it is a shader define
-        if (spec.GetFlags() & PropertySpec::ShaderDefine) {
+        if (propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) {
             continue;
         }
 
@@ -61,31 +61,44 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
 
         const Shader::Property &prop = propEntry->second;
 
-        switch (spec.GetType()) {
-        case PropertySpec::FloatType:
-            shader->SetConstant1f(key, prop.data.As<float>());
+        switch (propInfo.GetType()) {
+        case Variant::IntType:
+            shader->SetConstant1i(key, prop.data.As<int>());
             break;
-        case PropertySpec::Vec2Type:
-            shader->SetConstant2f(key, prop.data.As<Vec2>());
-            break;
-        case PropertySpec::Vec3Type:
-        case PropertySpec::Color3Type:
-            shader->SetConstant3f(key, prop.data.As<Vec3>());
-            break;
-        case PropertySpec::Vec4Type:
-        case PropertySpec::Color4Type:
-            shader->SetConstant4f(key, prop.data.As<Vec4>());
-            break;
-        case PropertySpec::PointType:
+        case Variant::PointType:
             shader->SetConstant2i(key, prop.data.As<Point>());
             break;
-        case PropertySpec::RectType:
+        case Variant::RectType:
             shader->SetConstant4i(key, prop.data.As<Rect>());
             break;
-        case PropertySpec::Mat3Type:
+        case Variant::FloatType:
+            shader->SetConstant1f(key, prop.data.As<float>());
+            break;
+        case Variant::Vec2Type:
+            shader->SetConstant2f(key, prop.data.As<Vec2>());
+            break;
+        case Variant::Vec3Type:
+            shader->SetConstant3f(key, prop.data.As<Vec3>());
+            break;
+        case Variant::Vec4Type:
+            shader->SetConstant4f(key, prop.data.As<Vec4>());
+            break;
+        case Variant::Color3Type:
+            shader->SetConstant3f(key, prop.data.As<Color3>());
+            break;
+        case Variant::Color4Type:
+            shader->SetConstant4f(key, prop.data.As<Color4>());
+            break;
+        case Variant::Mat2Type:
+            shader->SetConstant2x2f(key, true, prop.data.As<Mat2>());
+            break;
+        case Variant::Mat3Type:
             shader->SetConstant3x3f(key, true, prop.data.As<Mat3>());
             break;
-        case PropertySpec::ObjectType: // 
+        case Variant::Mat4Type:
+            shader->SetConstant4x4f(key, true, prop.data.As<Mat4>());
+            break;
+        case Variant::GuidType: // 
             shader->SetTexture(key, prop.texture);
             break;
         default:
@@ -99,13 +112,13 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
 }
 
 const Texture *RBSurf::TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const {
-    const auto *entry = mtrlPass->shader->GetSpecHashMap().Get(textureName);
+    const auto *entry = mtrlPass->shader->GetPropertyInfoHashMap().Get(textureName);
     if (!entry) {
         return nullptr;
     }
 
-    const auto &spec = entry->second;
-    if ((spec.GetFlags() & PropertySpec::ShaderDefine) || (spec.GetType() != PropertySpec::ObjectType)) {
+    const auto &propInfo = entry->second;
+    if ((propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) || (propInfo.GetType() != Variant::GuidType)) {
         return nullptr;
     }
 

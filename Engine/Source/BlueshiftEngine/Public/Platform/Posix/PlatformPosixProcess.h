@@ -18,8 +18,8 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixProcess : public PlatformBaseProcess {
 public:
-    static const wchar_t *		ComputerName();
-    static const wchar_t *		UserName();
+    static const wchar_t *      ComputerName();
+    static const wchar_t *      UserName();
     static int                  NumberOfLogicalProcessors();
     
     static ProcessHandle        CreateProccess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath);

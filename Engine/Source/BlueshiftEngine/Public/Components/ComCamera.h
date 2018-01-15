@@ -37,16 +37,17 @@ public:
     
     virtual void            Purge(bool chainPurge = true) override;
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
-
-    virtual void            Enable(bool enable) override;
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
+                            /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
     virtual const AABB      GetAABB() override;
@@ -57,6 +58,27 @@ public:
 
     const Ray               ScreenToRay(const Point &screenPoint);
 
+    int                     GetLayerMask() const;
+    void                    SetLayerMask(int layerMask);
+
+    int                     GetProjectionMethod() const;
+    void                    SetProjectionMethod(int projectionMethod);
+
+    float                   GetNear() const;
+    void                    SetNear(const float zNear);
+
+    float                   GetFar() const;
+    void                    SetFar(const float zFar);
+
+    SceneView::ClearMethod  GetClearMethod() const;
+    void                    SetClearMethod(SceneView::ClearMethod clearMethod);
+
+    const Color3 &          GetClearColor() const;
+    void                    SetClearColor(const Color3 &clearColor);
+
+    float                   GetClearAlpha() const;
+    void                    SetClearAlpha(float clearAlpha);
+
 private:
     int                     GetOrder() const { return order; }
 
@@ -65,30 +87,11 @@ private:
     void                    RenderScene();
 
 protected:
+    virtual void            OnActive() override;
+    virtual void            OnInactive() override;
+
     void                    UpdateVisuals();
 
-    const int               GetLayerMask() const;
-    void                    SetLayerMask(const int layerMask);
-
-    const int               GetProjectionMethod() const;
-    void                    SetProjectionMethod(const int projectionMethod);
-
-    const float             GetNear() const;
-    void                    SetNear(const float zNear);
-
-    const float             GetFar() const;
-    void                    SetFar(const float zFar);
-
-    const int               GetClearMethod() const;
-    void                    SetClearMethod(const int clearMethod);
-
-    const Color3 &          GetClearColor() const;
-    void                    SetClearColor(const Color3 &clearColor);
-
-    const float             GetClearAlpha() const;
-    void                    SetClearAlpha(const float clearAlpha);
-
-    void                    PropertyChanged(const char *classname, const char *propName);
     void                    TransformUpdated(const ComTransform *transform);
 
     SceneView *             view;
@@ -103,6 +106,9 @@ protected:
     Mesh *                  spriteMesh;
     SceneEntity::Parms      sprite;
     int                     spriteHandle;
+
+    Guid                    oldHoverEntityGuid;
+    Guid                    captureEntityGuid;
 };
 
 BE_NAMESPACE_END

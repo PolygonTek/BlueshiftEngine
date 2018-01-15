@@ -29,18 +29,20 @@ public:
     ComSocketJoint();
     virtual ~ComSocketJoint();
 
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started.
+                            /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
+                            /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-protected:
     const Vec3 &            GetAnchor() const;
     void                    SetAnchor(const Vec3 &anchor);
 
-    void                    PropertyChanged(const char *classname, const char *propName);
-
+protected:
     Vec3                    anchor;
 };
 

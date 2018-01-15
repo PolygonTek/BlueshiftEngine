@@ -280,7 +280,7 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
             ParseOrientation(lexer, &module.orientation);
         } else if (!token.Icmp("material")) {
             if (lexer.ReadToken(&token, false)) {
-                const Guid materialGuid = Guid::ParseString(token);
+                const Guid materialGuid = Guid::FromString(token);
                 const Str materialPath = resourceGuidMapper.Get(materialGuid);
                 module.material = materialManager.GetMaterial(materialPath);
             } else {
@@ -862,7 +862,7 @@ bool ParticleSystem::Load(const char *filename) {
     BE_LOG(L"Loading particle system '%hs'...\n", filename);
 
     char *data;
-    size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
+    int size = (int)fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
         return false;
     }

@@ -17,35 +17,31 @@
 #include "Components/ComTransform.h"
 #include "Components/ComReflectionProbe.h"
 #include "Game/GameWorld.h"
-#include "Game/GameSettings/TagLayerSettings.h"
+#include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
 
 OBJECT_DECLARATION("Reflection Probe", ComReflectionProbe, Component)
 BEGIN_EVENTS(ComReflectionProbe)
 END_EVENTS
-BEGIN_PROPERTIES(ComReflectionProbe)
-    PROPERTY_INT("importance", "Importance", "", "1", PropertySpec::ReadWrite),
-    PROPERTY_ENUM("resolution", "Resolution", "", "16;32;64;128;256;1024;2048", "3", PropertySpec::ReadWrite),
-    PROPERTY_BOOL("hdr", "HDR", "", "true", PropertySpec::ReadWrite),
-    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", "1", PropertySpec::ReadWrite), 
-    PROPERTY_COLOR3("clearColor", "Clear Color", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", "0", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(0.01, 20000, 10), "0.3", PropertySpec::ReadWrite),
-    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), "1000", PropertySpec::ReadWrite),
-    PROPERTY_VEC3("boxOffset", "Box Offset", "", "0 0 0", PropertySpec::ReadWrite),
-    PROPERTY_VEC3("boxSize", "Box Size", "", "10 10 10", PropertySpec::ReadWrite),
-END_PROPERTIES
 
 void ComReflectionProbe::RegisterProperties() {
+    /*PROPERTY_INT("importance", "Importance", "", 1, PropertyInfo::EditorFlag),
+    PROPERTY_ENUM("resolution", "Resolution", "", "16;32;64;128;256;1024;2048", 3, PropertyInfo::EditorFlag),
+    PROPERTY_BOOL("hdr", "HDR", "", true, PropertyInfo::EditorFlag),
+    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", 1, PropertyInfo::EditorFlag),
+    PROPERTY_COLOR3("clearColor", "Clear Color", "", Color3(0, 0, 0), PropertyInfo::EditorFlag),
+    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", 0.0f, PropertyInfo::EditorFlag),
+    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(0.01, 20000, 10), 0.3f, PropertyInfo::EditorFlag),
+    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 20000, 10), 1000.f, PropertyInfo::EditorFlag),
+    PROPERTY_VEC3("boxOffset", "Box Offset", "", Vec3(0, 0, 0), PropertyInfo::EditorFlag),
+    PROPERTY_VEC3("boxSize", "Box Size", "", Vec3(10, 10, 10), PropertyInfo::EditorFlag);*/
 }
 
 ComReflectionProbe::ComReflectionProbe() {
     sphereHandle = -1;
     sphereMesh = nullptr;
     memset(&sphere, 0, sizeof(sphere));
-
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComReflectionProbe::PropertyChanged);
 }
 
 ComReflectionProbe::~ComReflectionProbe() {
@@ -74,8 +70,6 @@ void ComReflectionProbe::Purge(bool chainPurge) {
 }
 
 void ComReflectionProbe::Init() {
-    Purge();
-
     Component::Init();
 
     renderWorld = GetGameWorld()->GetRenderWorld();
@@ -90,8 +84,8 @@ void ComReflectionProbe::Init() {
     sphere.maxVisDist = MeterToUnit(50);
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
-    sphere.customMaterials.SetCount(1);
-    sphere.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sphere.materials.SetCount(1);
+    sphere.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
 
     sphere.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);
@@ -108,22 +102,19 @@ void ComReflectionProbe::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComReflectionProbe::TransformUpdated, SignalObject::Unique);
 
+    // Mark as initialized
+    SetInitialized(true);
+
     UpdateVisuals();
 }
 
-void ComReflectionProbe::Enable(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            UpdateVisuals();
-            Component::Enable(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            renderWorld->RemoveEntity(sphereHandle);
-            sphereHandle = -1;
-            Component::Enable(false);
-        }
-    }
+void ComReflectionProbe::OnActive() {
+    UpdateVisuals();
+}
+
+void ComReflectionProbe::OnInactive() {
+    renderWorld->RemoveEntity(sphereHandle);
+    sphereHandle = -1;
 }
 
 bool ComReflectionProbe::HasRenderEntity(int renderEntityHandle) const {
@@ -157,6 +148,10 @@ const AABB ComReflectionProbe::GetAABB() {
 }
 
 void ComReflectionProbe::UpdateVisuals() {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
+        return;
+    }
+
     if (sphereHandle == -1) {
         sphereHandle = renderWorld->AddEntity(&sphere);
     } else {
@@ -171,14 +166,6 @@ void ComReflectionProbe::TransformUpdated(const ComTransform *transform) {
     sphere.origin = transform->GetOrigin();
 
     UpdateVisuals();
-}
-
-void ComReflectionProbe::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
-    }
-
-    Component::PropertyChanged(classname, propName);
 }
 
 BE_NAMESPACE_END

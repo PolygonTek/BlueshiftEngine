@@ -16,32 +16,29 @@
 #include "Render/Render.h"
 #include "Components/ComTransform.h"
 #include "Components/ComParticleSystem.h"
-#include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"
-#include "Game/GameSettings/TagLayerSettings.h"
+#include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
 
 OBJECT_DECLARATION("Particle System", ComParticleSystem, ComRenderable)
 BEGIN_EVENTS(ComParticleSystem)
 END_EVENTS
-BEGIN_PROPERTIES(ComParticleSystem)
-    PROPERTY_OBJECT("particleSystem", "Particle System", "", GuidMapper::defaultParticleSystemGuid.ToString(), ParticleSystemAsset::metaObject, PropertySpec::ReadWrite),
-    PROPERTY_BOOL("playOnAwake", "Play On Awake", "", "true", PropertySpec::ReadWrite),
-END_PROPERTIES
 
-void ComParticleSystem::RegisterProperties() {}
+void ComParticleSystem::RegisterProperties() {
+    REGISTER_MIXED_ACCESSOR_PROPERTY("particleSystem", "Particle System", Guid, GetParticleSystemGuid, SetParticleSystemGuid, GuidMapper::defaultParticleSystemGuid, "", PropertyInfo::EditorFlag)
+        .SetMetaObject(&ParticleSystemAsset::metaObject);
+    REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, true, "", PropertyInfo::EditorFlag);
+}
 
-ComParticleSystem::ComParticleSystem() {    
+ComParticleSystem::ComParticleSystem() {
     particleSystemAsset = nullptr;
 
     spriteHandle = -1;
-    spriteMesh = nullptr;
+    spriteReferenceMesh = nullptr;
     memset(&sprite, 0, sizeof(sprite));
-
-    Connect(&Properties::SIG_PropertyChanged, this, (SignalCallback)&ComParticleSystem::PropertyChanged);
 }
 
 ComParticleSystem::~ComParticleSystem() {
@@ -67,9 +64,9 @@ void ComParticleSystem::Purge(bool chainPurge) {
         sprite.mesh = nullptr;
     }
 
-    if (spriteMesh) {
-        meshManager.ReleaseMesh(spriteMesh);
-        spriteMesh = nullptr;
+    if (spriteReferenceMesh) {
+        meshManager.ReleaseMesh(spriteReferenceMesh);
+        spriteReferenceMesh = nullptr;
     }
 
     if (spriteHandle != -1) {
@@ -85,22 +82,13 @@ void ComParticleSystem::Purge(bool chainPurge) {
 void ComParticleSystem::Init() {
     ComRenderable::Init();
 
-    ChangeParticleSystem(props->Get("particleSystem").As<Guid>());
-
-    sceneEntity.mesh = nullptr;
-    sceneEntity.aabb = AABB::zero;
-    sceneEntity.customSkin = nullptr;
-    sceneEntity.castShadows = false;
-    sceneEntity.receiveShadows = false;
-    sceneEntity.time = 0;
-
     currentTime = 0;
     stopTime = 0;
 
     simulationStarted = false;
 
     // 3d sprite
-    spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
+    spriteReferenceMesh = meshManager.GetMesh("_defaultQuadMesh");
 
     memset(&sprite, 0, sizeof(sprite));
     sprite.layer = TagLayerSettings::EditorLayer;
@@ -108,12 +96,12 @@ void ComParticleSystem::Init() {
     sprite.billboard = true;
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ParticleSystem.png", Texture::Clamp | Texture::HighQuality);
-    sprite.customMaterials.SetCount(1);
-    sprite.customMaterials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sprite.materials.SetCount(1);
+    sprite.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
 
-    sprite.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
-    sprite.aabb = spriteMesh->GetAABB();
+    sprite.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    sprite.aabb = spriteReferenceMesh->GetAABB();
     sprite.origin = GetEntity()->GetTransform()->GetOrigin();
     sprite.scale = Vec3(1, 1, 1);
     sprite.axis = Mat3::identity;
@@ -125,17 +113,21 @@ void ComParticleSystem::Init() {
     sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
 
     GetEntity()->GetTransform()->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
- 
+
+    // Mark as initialized
+    SetInitialized(true);
+
     UpdateVisuals();
 }
 
 void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
-    // Disconnect from old particleSystem asset
+    // Disconnect with previously connected particleSystem asset
     if (particleSystemAsset) {
         particleSystemAsset->Disconnect(&Asset::SIG_Reloaded, this);
+        particleSystemAsset = nullptr;
     }
 
-    // Release the previous used particleSystem
+    // Release the previously used particleSystem
     if (sceneEntity.particleSystem) {
         particleSystemManager.ReleaseParticleSystem(sceneEntity.particleSystem);
         sceneEntity.particleSystem = nullptr;
@@ -147,7 +139,7 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
 
     ResetParticles();
 
-    // Need to particleSystem asset to be reloaded in Editor
+    // Need to particleSystem asset to be reloaded in editor
     particleSystemAsset = (ParticleSystemAsset *)ParticleSystemAsset::FindInstance(particleSystemGuid);
     if (particleSystemAsset) {
         particleSystemAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::Queued);
@@ -183,24 +175,24 @@ void ComParticleSystem::ResetParticles() {
 }
 
 void ComParticleSystem::Awake() {
-    if (props->Get("playOnAwake").As<bool>()) {
+    if (playOnAwake) {
         simulationStarted = true;
     }
 }
 
-void ComParticleSystem::Enable(bool enable) {
-    if (enable) {
-        if (!IsEnabled()) {
-            ResetParticles();
-            ComRenderable::Enable(true);
-        }
-    } else {
-        if (IsEnabled()) {
-            renderWorld->RemoveEntity(spriteHandle);
-            spriteHandle = -1;
-            ComRenderable::Enable(false);
-        }
+void ComParticleSystem::OnActive() {
+    ResetParticles();
+
+    ComRenderable::OnActive();
+}
+
+void ComParticleSystem::OnInactive() {
+    if (spriteHandle != -1) {
+        renderWorld->RemoveEntity(spriteHandle);
+        spriteHandle = -1;
     }
+
+    ComRenderable::OnInactive();
 }
 
 bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
@@ -208,7 +200,7 @@ bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
         return true;
     }
 
-    return ComRenderable::HasRenderEntity(renderEntityHandle);;
+    return ComRenderable::HasRenderEntity(renderEntityHandle);
 }
 
 int ComParticleSystem::GetAliveParticleCount() const {
@@ -236,7 +228,7 @@ int ComParticleSystem::GetAliveParticleCount() const {
 }
 
 void ComParticleSystem::Update() {
-    if (!IsEnabled()) {
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -258,7 +250,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
     sceneEntity.aabb.SetZero();
 
-    const Mat4 worldMatrix = GetEntity()->GetTransform()->GetWorldMatrix();
+    const Mat3x4 worldMatrix = GetEntity()->GetTransform()->GetTransform();
 
     bool simulationEnded = true;
     
@@ -286,7 +278,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
         }
 
         if (stopTime != 0) {
-            if (currentTime > stopTime + cycleDuration) {
+            if (time > MS2SEC(stopTime) + cycleDuration) {
                 continue;
             }
         }
@@ -339,6 +331,12 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
                     }
                 }
 
+                if (stopTime > 0) {
+                    if (particleGenTime + particle->cycle * cycleDuration > MS2SEC(stopTime)) {
+                        continue;
+                    }
+                }
+
                 particle->alive = true;
 
                 if (regenerate) {
@@ -360,6 +358,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
     if (simulationEnded) {
         simulationStarted = false;
+        stopTime = 0;
         return;
     }
 
@@ -487,9 +486,9 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
 }
 
 void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float particleAge) {
-    Mat4 offsetMatrix;
+    Mat3x4 offsetMatrix;
     if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
-        offsetMatrix = GetEntity()->GetTransform()->GetWorldMatrix().AffineInverse() * particle->worldMatrix;
+        offsetMatrix = GetEntity()->GetTransform()->GetTransform().Inverse() * particle->worldMatrix;
     }
     
     int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
@@ -664,29 +663,26 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
 }
 
 void ComParticleSystem::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
-    if (selected) {
-        UpdateSimulation(currentTime); // FIXME
-    }
-
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(sprite.origin.Distance(sceneView.origin) / MeterToUnit(8), 0.01f, 1.0f);
 
-    sprite.customMaterials[0]->GetPass()->constantColor[3] = alpha;
+    sprite.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 bool ComParticleSystem::IsAlive() const {
     return simulationStarted;
 }
 
-void ComParticleSystem::Start() {
+void ComParticleSystem::Play() {
     simulationStarted = true;
     currentTime = 0;
     stopTime = 0;
 }
 
 void ComParticleSystem::Stop() {
-    simulationStarted = false;
-    stopTime = currentTime;
+    if (stopTime == 0) {
+        stopTime = currentTime;
+    }
 }
 
 void ComParticleSystem::Resume() {
@@ -698,6 +694,10 @@ void ComParticleSystem::Pause() {
 }
 
 void ComParticleSystem::UpdateVisuals() {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
+        return;
+    }
+
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddEntity(&sprite);
     } else {
@@ -714,31 +714,19 @@ void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
 }
 
 void ComParticleSystem::ParticleSystemReloaded() {
-    SetParticleSystem(props->Get("particleSystem").As<Guid>());
+    SetParticleSystemGuid(GetProperty("particleSystem").As<Guid>());
 }
 
-void ComParticleSystem::PropertyChanged(const char *classname, const char *propName) {
-    if (!IsInitalized()) {
-        return;
+Guid ComParticleSystem::GetParticleSystemGuid() const {
+    if (sceneEntity.particleSystem) {
+        const Str particleSystemPath = sceneEntity.particleSystem->GetHashName();
+        return resourceGuidMapper.Get(particleSystemPath);
     }
-
-    if (!Str::Cmp(propName, "particleSystem")) {
-        SetParticleSystem(props->Get("particleSystem").As<Guid>());
-        return;
-    }
-
-    ComRenderable::PropertyChanged(classname, propName);
+    return Guid();
 }
 
-Guid ComParticleSystem::GetParticleSystem() const {
-    const Str particleSystemPath = sceneEntity.particleSystem->GetHashName();
-    return resourceGuidMapper.Get(particleSystemPath);
-}
-
-void ComParticleSystem::SetParticleSystem(const Guid &guid) {
+void ComParticleSystem::SetParticleSystemGuid(const Guid &guid) {
     ChangeParticleSystem(guid);
-
-    //ResetParticles();
 
     UpdateVisuals();
 }

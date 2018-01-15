@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Core/ByteOrder.h"
 #include "Core/Guid.h"
+#include "Core/Object.h"
 #include "File/File.h"
 #include "minizip/unzip.h"
 
@@ -24,34 +25,7 @@ BE_NAMESPACE_BEGIN
 // File
 //---------------------------------------------------------------
 
-const char *File::GetFilePath() const {
-    return "";
-}
-
-size_t File::Size() const {
-    return 0;
-}
-
-int File::Tell() const {
-    return 0;
-}
-
-int File::Seek(long offset) {
-    return -1;
-}
-
-int File::SeekFromEnd(long offset) {
-    return -1;
-}
-
-size_t File::Read(void *buffer, size_t bytesToRead) const {
-    BE_FATALERROR(L"File::Read: cannot read from File");
-    return 0;
-}
-
-bool File::Write(const void *buffer, size_t bytesToWrite) {
-    BE_FATALERROR(L"File::Write: cannot write from File");
-    return false;
+File::~File() {
 }
 
 bool File::Printf(const char *format, ...) {
@@ -148,11 +122,27 @@ size_t File::ReadString(Str &value) {
 size_t File::ReadGuid(Guid &value) {
     uint32_t a, b, c, d;
     size_t result = ReadUInt32(a);
-    result += ReadUInt32(b); 
+    result += ReadUInt32(b);
     result += ReadUInt32(c);
     result += ReadUInt32(d);
     value.Set(a, b, c, d);
     return result;
+}
+
+size_t File::ReadObject(Object &object) {
+    Str strValue;
+    size_t size = ReadString(strValue);
+
+    Json::Value jsonValue;
+    Json::Reader jsonReader;
+    if (!jsonReader.parse(strValue.c_str(), jsonValue)) {
+        BE_WARNLOG(L"File::ReadObject: Failed to parse JSON text\n");
+        return 0;
+    }
+
+    object.Deserialize(jsonValue);
+
+    return size;
 }
 
 size_t File::WriteChar(const char value) { 
@@ -225,6 +215,16 @@ size_t File::WriteGuid(const Guid &value) {
     return result;
 }
 
+size_t File::WriteObject(const Object &object) {
+    Json::Value jsonValue;
+    object.Serialize(jsonValue);
+
+    Json::FastWriter jsonWriter;
+    Str jsonText = jsonWriter.write(jsonValue).c_str();
+
+    return WriteString(jsonText);
+}
+
 //---------------------------------------------------------------
 // FileReal
 //---------------------------------------------------------------
@@ -249,7 +249,7 @@ int FileReal::Tell() const {
     return pf->Tell();
 }
 
-int FileReal::Seek(long offset) {
+int FileReal::Seek(int64_t offset) {
     if (!pf) {
         return 0;
     }
@@ -257,7 +257,7 @@ int FileReal::Seek(long offset) {
     return pf->Seek(offset, PlatformFile::Start);
 }
 
-int FileReal::SeekFromEnd(long offset) {
+int FileReal::SeekFromEnd(int64_t offset) {
     if (!pf) {
         return 0;
     }
@@ -302,12 +302,12 @@ int FileInZip::Tell() const {
     return (int)unztell(pointer);
 }
 
-int FileInZip::Seek(long offset) {
+int FileInZip::Seek(int64_t offset) {
     BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
     return 0;
 }
 
-int FileInZip::SeekFromEnd(long offset) {
+int FileInZip::SeekFromEnd(int64_t offset) {
     BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
     return 0;
 }
