@@ -150,7 +150,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     BE1::Engine::InitParms initParms;
-//	initParms.args.TokenizeString(lpCmdLine, false);
+//  initParms.args.TokenizeString(lpCmdLine, false);
 
     BE1::Str playerDir;
 #if 0
@@ -226,7 +226,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     MSG msg;
 
     // Disable automatic DPI scaling.
-    SetProcessDPIAware();
+    //SetProcessDPIAware();
 
     // Initialize global strings
     LoadString(hInstance, IDS_APP_TITLE, szTitle, COUNT_OF(szTitle));
@@ -316,6 +316,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             app.mainRenderContext->OnResize(LOWORD(lParam), HIWORD(lParam));
         }
         return 0;
+    case WM_DPICHANGED:
+        break;
     case WM_ACTIVATE:
         fActive = LOWORD(wParam);
         fMinimize = (BOOL)HIWORD(wParam);
