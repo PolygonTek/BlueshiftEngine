@@ -36,6 +36,7 @@ elseif (WIN32)
   list(APPEND ALL_FILES
     WinMain.cpp
     WinResource.h
+    Manifest.xml
     ResourceFiles/player.rc
     ResourceFiles/player.ico
     ResourceFiles/small.ico
@@ -154,12 +155,16 @@ else ()
     set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
   endif ()
 
-  if (WIN32)      
+  if (WIN32)
     find_package(OpenGL REQUIRED)
     target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} winmm.lib imm32.lib dxguid.lib dsound.lib ws2_32.lib)
     if (MSVC)
       set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)
+
+      add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND "mt.exe" -manifest "${PROJECT_SOURCE_DIR}\\Manifest.xml" -outputresource:"$<TARGET_FILE:${PROJECT_NAME}>\;1"
+        COMMENT "Adding manifest...")
     endif ()
   elseif (APPLE)
     # App name
@@ -276,7 +281,7 @@ else ()
     if (ANDROID)
       list(APPEND LIB_FILES nvidia android GLESv3 EGL OpenSLES)
     endif ()
-
+    
     if (WIN32)
       foreach (FILE ${LIB_FILES})
         add_library(${FILE} STATIC IMPORTED)
