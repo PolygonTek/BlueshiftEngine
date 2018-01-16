@@ -11,6 +11,11 @@ Downloads
 
 Blueshift editor binaries are downloadable [here](https://github.com/PolygonTek/BlueshiftEngine/releases).
 
+Examples
+-------------------
+
+Example projects are downloadable [here](https://github.com/PolygonTek/BlueshiftExamples/archive/master.zip).
+
 Screenshots
 -------------------
 
