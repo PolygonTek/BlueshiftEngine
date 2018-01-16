@@ -58,11 +58,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <IncludePath>$(LLVMToolchainPrebuiltRoot)\lib\clang\$(LLVMVersion)\include;..\..\..\Source\Dependencies\jsoncpp\include</IncludePath>
-    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <IncludePath>$(LLVMToolchainPrebuiltRoot)\lib\clang\$(LLVMVersion)\include;..\..\..\Source\Dependencies\jsoncpp\include</IncludePath>
-    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <ClCompile>
@@ -78,6 +76,9 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <ClCompile>
@@ -93,6 +94,9 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Dependencies\jsoncpp\src\lib_json\json_reader.cpp" />

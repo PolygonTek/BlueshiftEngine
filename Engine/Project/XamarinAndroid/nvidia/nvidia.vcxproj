@@ -112,12 +112,8 @@
     <OutDir>..\..\..\Build\Android\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\..\Build\Android\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -174,6 +170,9 @@
       <AdditionalIncludeDirectories>../../../Source/Dependencies/nvidia;$(Sysroot)\usr\include;$(StlIncludeDirectories)%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
@@ -183,6 +182,9 @@
       <AdditionalIncludeDirectories>../../../Source/Dependencies/nvidia;$(Sysroot)\usr\include;$(StlIncludeDirectories)%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_and_util\nv_native_app_glue.h" />

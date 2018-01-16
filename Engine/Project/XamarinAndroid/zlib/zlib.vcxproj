@@ -58,11 +58,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <IncludePath>$(LLVMToolchainPrebuiltRoot)\lib\clang\$(LLVMVersion)\include;.;</IncludePath>
-    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <IncludePath>$(LLVMToolchainPrebuiltRoot)\lib\clang\$(LLVMVersion)\include;.;</IncludePath>
-    <OutDir>..\..\..\Library\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <ClCompile>
@@ -77,6 +75,9 @@
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
       <AdditionalIncludeDirectories>.;$(Sysroot)\usr\include;$(StlIncludeDirectories)%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <ClCompile>
@@ -91,6 +92,9 @@
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
       <AdditionalIncludeDirectories>.;$(Sysroot)\usr\include;$(StlIncludeDirectories)%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Dependencies\zlib\adler32.c" />

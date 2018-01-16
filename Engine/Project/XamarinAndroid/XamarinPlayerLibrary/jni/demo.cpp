@@ -593,6 +593,10 @@ void appInit()
 		//app.Init();
 		app.Init();
 
+		app.LoadAppScript("Application");
+
+		app.StartAppScript();
+
 		////BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Append, L"exec \"autoexec.cfg\"\n");
 
 
