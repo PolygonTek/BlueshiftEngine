@@ -4,7 +4,7 @@
 ### Prerequisite
 
   * Android part of [README.md](README.md)
-  * Visual Studio 2017/Tools/Options/Cross Platform/C++/Android/Android NDK: /C:\ProgramData\Microsoft\AndroidNDK64\android-ndk-r13b
+  * Visual Studio 2017/Tools/Options/Cross Platform/C++/Android/Android NDK: C:\ProgramData\Microsoft\AndroidNDK64\android-ndk-r13b
 
 ### Instruction (only for C++ debugging)
 
