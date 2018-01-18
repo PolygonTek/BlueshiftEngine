@@ -297,9 +297,10 @@ static void TestModule(LuaCpp::State &lua) {
     lua.RunBuffer("TestModule", R"(
         --print(package.path) -- default path
         --print(package.cpath) -- default cpath
-        print(_ENV, _G)
+        print(_ENV, _G) -- _ENV is not defined by Lua 5.1
         local haha = require "haha"
         local math = require "blueshift.math"
+        local math2 = require "blueshift.math"
         local Vec3 = math.Vec3
         --print(type(Vec3))
         local v = Vec3(1, 2, 3)

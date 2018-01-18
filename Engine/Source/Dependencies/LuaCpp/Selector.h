@@ -96,6 +96,13 @@ public:
         });
     }
 
+    // Set the element to a char value
+    void operator=(char c) const {
+        _evaluate_store([this, c]() {
+            detail::_push(_l, (unsigned int)c);
+        });
+    }
+
     // Set the element to a int8_t value
     void operator=(int8_t i) const {
         _evaluate_store([this, i]() {
@@ -152,10 +159,17 @@ public:
         });
     }
 
-    // Set the element to a lua_Number value
-    void operator=(lua_Number n) const {
-        _evaluate_store([this, n]() {
-            detail::_push(_l, n);
+    // Set the element to a float value
+    void operator=(float f) const {
+        _evaluate_store([this, f]() {
+            detail::_push(_l, f);
+        });
+    }
+
+    // Set the element to a double value
+    void operator=(double f) const {
+        _evaluate_store([this, f]() {
+            detail::_push(_l, f);
         });
     }
 
@@ -355,11 +369,18 @@ public:
         return detail::_pop(detail::_id<unsigned int>{}, _l);
     }
 
-    // Retrieve a lua_Number value that is returned by call a functor
-    operator lua_Number() const {
+    // Retrieve a float value that is returned by call a functor
+    operator float() const {
         ResetStackOnScopeExit save(_l);
         _evaluate_retrieve(1);
-        return detail::_pop(detail::_id<lua_Number>{}, _l);
+        return detail::_pop(detail::_id<float>{}, _l);
+    }
+
+    // Retrieve a double value that is returned by call a functor
+    operator double() const {
+        ResetStackOnScopeExit save(_l);
+        _evaluate_retrieve(1);
+        return detail::_pop(detail::_id<double>{}, _l);
     }
 
     // Retrieve a std::string value that is returned by call a functor

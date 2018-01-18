@@ -198,9 +198,9 @@ if (BUILD_ENGINE)
     add_subdirectory(Source/Dependencies/lua)
   endif ()
   
-  add_subdirectory(Source/Dependencies/LuaCpp)
   add_subdirectory(Source/Dependencies/luasocket)
-
+  add_subdirectory(Source/Dependencies/LuaCpp)
+  
   add_subdirectory(Source/BlueshiftEngine)
 
   add_subdirectory(Shaders)

@@ -20,7 +20,7 @@
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
 
-extern int luaopen_file(lua_State *L);
+//extern int luaopen_file(lua_State *L);
 extern "C" int luaopen_socket_core(lua_State *L);
 
 BE_NAMESPACE_BEGIN
@@ -79,7 +79,7 @@ void LuaVM::Init() {
         return true;
     });
 
-    state->Require("blueshift.io", luaopen_file);
+    //state->Require("blueshift.io", luaopen_file);
 
 #if defined __IOS__ || defined __ANDROID__
     EnableDebug();
@@ -202,7 +202,7 @@ void LuaVM::Shutdown() {
 void LuaVM::RegisterEngineModuleCallback(EngineModuleCallback callback) {
     engineModuleCallbacks.Append(callback);
 }
-
+/*
 void LuaVM::EnableDebug() {
     char *server = tombs(lua_server.GetString());
     if (server[0] == 0)
@@ -215,6 +215,6 @@ void LuaVM::EnableDebug() {
     state->Require("socket.core", luaopen_socket_core);
     char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
     (*state)(cmd);
-}
+}*/
 
 BE_NAMESPACE_END

@@ -13,18 +13,18 @@ public:
         : _l(l), _func([callback](const std::string &moduleName) -> bool {
             return callback(moduleName);
         }) {
-        lua_getglobal(_l, "package");
+        lua_getglobal(_l, "package");                   // Push global table 'package' (1)
 #if LUA_VERSION_NUM >= 502
         const char *searchers_table_name = "searchers";
 #else
         const char *searchers_table_name = "loaders";
 #endif
-        lua_getfield(_l, -1, searchers_table_name);
-        lua_pushlightuserdata(l, (void *)this);
-        lua_pushcclosure(l, &_dispatcher, 1);
+        lua_getfield(_l, -1, searchers_table_name);     // Push package.searchers field (2)
+        lua_pushlightuserdata(l, (void *)this);         // Push light user data (3)
+        lua_pushcclosure(l, &_dispatcher, 1);           // Push C-closure and pop associated value (3)
         // TODO: insert after first searcher
-        lua_rawseti(_l, -2, 3);
-        lua_pop(_l, 2);
+        lua_rawseti(_l, -2, 3);                         // package.searchers[3] = closure (2)
+        lua_pop(_l, 2);                                 // Pop (0)
     }
     ~Searcher() = default;
     Searcher(const Searcher &) = delete;
@@ -42,8 +42,13 @@ private:
     }
 
     static inline int _loader(lua_State *l) {
+#if LUA_VERSION_NUM >= 502
         const char *moduleName = lua_tostring(l, -2);
         lua_pop(l, 2);
+#else
+        const char *moduleName = lua_tostring(l, -1);
+        lua_pop(l, 1);
+#endif
         Searcher *searcher = (Searcher *)lua_touserdata(l, lua_upvalueindex(1));
         
         int top = lua_gettop(l);

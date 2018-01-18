@@ -90,13 +90,13 @@ namespace detail {
     }
 
     // Read a float value from the stack
-    inline lua_Number _get(_id<float>, lua_State *l, const int index) {
-        return (lua_Number)lua_tonumber(l, index);
+    inline float _get(_id<float>, lua_State *l, const int index) {
+        return (float)lua_tonumber(l, index);
     }
 
     // Read a double value from the stack
-    inline lua_Number _get(_id<double>, lua_State *l, const int index) {
-        return (lua_Number)lua_tonumber(l, index);
+    inline double _get(_id<double>, lua_State *l, const int index) {
+        return (double)lua_tonumber(l, index);
     }
 
     // Read a std::string value from the stack
@@ -259,7 +259,7 @@ namespace detail {
 #if LUA_VERSION_NUM >= 502
         auto res = static_cast<long>(lua_tointegerx(l, index, &isNum));
 #else
-        auto res = lua_tointeger(l, index);
+        auto res = static_cast<long>(lua_tointeger(l, index));
         isNum = (res != 0 || lua_isnumber(l, index));
 #endif
         if (!isNum) {

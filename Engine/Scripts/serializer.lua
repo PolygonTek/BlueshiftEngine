@@ -38,7 +38,12 @@ function serializer.serialize(val, name, skipnewlines, depth)
 end
 
 function serializer.deserialize(s)
+  -- tricky way to determine lua version
+  if _ENV then 
   	return load("return"..s)()
+  else
+    return loadstring("return"..s)()
+  end
 end
 
 return serializer

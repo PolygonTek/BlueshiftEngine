@@ -72,15 +72,18 @@ bool State::LoadBuffer(const std::string &name, const char *code, size_t size, c
     assert(lua_type(_l, -1) == LUA_TFUNCTION);
 
     if (sandbox && sandbox[0]) {
-        // Set the first upvalue of a chunk to the sandbox table
-        lua_newtable(_l);                   // new environment table for sandboxing (1)
-        lua_setglobal(_l, sandbox);         // set and pop (0)
-        lua_getglobal(_l, sandbox);         // push (1)
-        lua_newtable(_l);                   // new metatable (2)
-        lua_getglobal(_l, "_G");            // push global table (3)
-        lua_setfield(_l, -2, "__index");    // set metatable's __index to global table and pop (2)
-        lua_setmetatable(_l, -2);           // set metatable of environment table (1)
-        lua_setupvalue(_l, -2, 1);          // pop environment and set to upvalue of the function (0)
+        lua_newtable(_l);                   // Push new environment table for sandboxing (1)
+        lua_setglobal(_l, sandbox);         // Set and pop (0)
+        lua_getglobal(_l, sandbox);         // Push again (1)
+        lua_newtable(_l);                   // Push new metatable (2)
+        lua_getglobal(_l, "_G");            // Push global table (3)
+        lua_setfield(_l, -2, "__index");    // Do metatable[__index] = _G and pop (2)
+        lua_setmetatable(_l, -2);           // Set metatable of sandbox table and pop (1)
+#if LUA_VERSION_NUM >= 502
+        lua_setupvalue(_l, -2, 1);          // Pop and set sandbox table as the new environment (using upvalue) of the current function (0)
+#else
+        lua_setfenv(_l, -2);                // Pop and set sandbox table as the new environment of the current function (0)
+#endif
     }
 
     return true;

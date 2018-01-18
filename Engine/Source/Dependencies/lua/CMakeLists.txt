@@ -8,12 +8,8 @@ set(SRC_FILES
   lauxlib.h
   lauxlib.c
   lbaselib.c
-  lbitlib.c
   lcode.h
   lcode.c
-  lcorolib.c
-  lctype.h
-  lctype.c
   ldblib.c
   ldebug.h
   ldebug.c
@@ -52,7 +48,6 @@ set(SRC_FILES
   ltm.h
   ltm.c
   lua.h
-  lua.hpp
   luaconf.h
   lualib.h
   lundump.h

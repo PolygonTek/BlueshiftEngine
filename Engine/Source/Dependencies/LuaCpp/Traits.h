@@ -69,7 +69,12 @@ namespace detail {
     };
 
     template <>
-    struct is_primitive<lua_Number> {
+    struct is_primitive<float> {
+        static constexpr bool value = true;
+    };
+
+    template <>
+    struct is_primitive<double> {
         static constexpr bool value = true;
     };
 
