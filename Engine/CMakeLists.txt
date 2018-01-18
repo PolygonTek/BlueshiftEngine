@@ -194,7 +194,9 @@ if (BUILD_ENGINE)
 	add_subdirectory(Source/Dependencies/nvidia)
   endif()
   
-  if (NOT USE_LUAJIT)
+  if (USE_LUAJIT)
+    add_subdirectory(Source/Dependencies/luaJIT)
+  else ()
     add_subdirectory(Source/Dependencies/lua)
   endif ()
   

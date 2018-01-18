@@ -44,8 +44,7 @@ include_directories(
 
 if (USE_LUAJIT)
   add_definitions(-DUSE_LUAJIT=1)
-  include(FindLuaJIT)
-  set(LUA_LIBRARY ${LUAJIT_LIBRARY})
+  set(LUA_LIBRARY luaJIT)
 else ()
   add_definitions(-DUSE_LUAJIT=0)  
   set(LUA_LIBRARY lua)
