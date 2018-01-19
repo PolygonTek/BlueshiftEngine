@@ -27,103 +27,103 @@
 
 /* detect x86 32 bit platform */
 #if defined(__i386__) || defined(_M_IX86)
-#  if !defined(__X86__)
-#    define __X86__
-#  endif
-#  if !defined(__X86_32__)
-#    define __X86_32_
-#  endif
+    #if !defined(__X86__)
+        #define __X86__
+    #endif
+    #if !defined(__X86_32__)
+        #define __X86_32_
+    #endif
 #endif
 
 /* detect x86 64 bit platform */
 #if defined(__x86_64__) || defined(__ia64__) || defined(_M_X64)
-#  if !defined(__X86__)
-#    define __X86__
-#  endif
-#  if !defined(__X86_64__)
-#    define __X86_64__
-#  endif
+    #if !defined(__X86__)
+        #define __X86__
+    #endif
+    #if !defined(__X86_64__)
+        #define __X86_64__
+    #endif
 #endif
 
 /* detect ARM platform */
 #if defined(__arm__) || defined(__arm64__) || defined(_M_ARM)
-#  if !defined(__LINUX__)
-#    define __ARM__
-#  endif
-#  if defined(__arm64__)
-#    define __ARM64__
-#  endif
+    #if !defined(__LINUX__)
+        #define __ARM__
+    #endif
+    #if defined(__arm64__)
+        #define __ARM64__
+    #endif
 #endif
 
 /* detect Linux platform */
 #if defined(linux) || defined(__linux__) || defined(__LINUX__)
-#  if !defined(__LINUX__)
-#     define __LINUX__
-#  endif
-#  if !defined(__UNIX__)
-#     define __UNIX__
-#  endif
+    #if !defined(__LINUX__)
+        #define __LINUX__
+    #endif
+    #if !defined(__UNIX__)
+        #define __UNIX__
+    #endif
 #endif
 
 /* detect FreeBSD platform */
 #if defined(__FreeBSD__) || defined(__FREEBSD__)
-#  if !defined(__FREEBSD__)
-#     define __FREEBSD__
-#  endif
-#  if !defined(__UNIX__)
-#     define __UNIX__
-#  endif
+    #if !defined(__FREEBSD__)
+        #define __FREEBSD__
+    #endif
+    #if !defined(__UNIX__)
+        #define __UNIX__
+    #endif
 #endif
 
 /* detect Windows 95/98/NT/2000/XP/Vista/7 platform */
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)) && !defined(__CYGWIN__)
-#  if !defined(__WIN32__)
-#     define __WIN32__
-#  endif
+    #if !defined(__WIN32__)
+        #define __WIN32__
+    #endif
 #endif
 
 /* detect Cygwin platform */
 #if defined(__CYGWIN__)
-#  if !defined(__UNIX__)
-#     define __UNIX__
-#  endif
+    #if !defined(__UNIX__)
+        #define __UNIX__
+    #endif
 #endif
 
 /* detect MacOS X & iOS/iOS simulator platform */
 #if defined(__APPLE__)
-#   define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0 // conflict with boost_1_58_0
-#  include <TargetConditionals.h>
-#  if TARGET_IPHONE_SIMULATOR == 1
-#    if !defined(__IOS_SIMULATOR__)
-#      define __IOS_SIMULATOR__
-#      define __IOS__
-#    endif
-#  elif TARGET_OS_IPHONE == 1
-#    if !defined(__IOS__)
-#      define __IOS__
-#    endif
-#  elif TARGET_OS_MAC == 1
-#    if !defined(__MACOSX__)
-#      define __MACOSX__
-#    endif
-#  endif
-#  if !defined(__UNIX__)
-#     define __UNIX__
-#  endif
+    #define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0 // conflict with boost_1_58_0
+    #include <TargetConditionals.h>
+    #if TARGET_IPHONE_SIMULATOR == 1
+        #if !defined(__IOS_SIMULATOR__)
+            #define __IOS_SIMULATOR__
+            #define __IOS__
+        #endif
+    #elif TARGET_OS_IPHONE == 1
+        #if !defined(__IOS__)
+            #define __IOS__
+        #endif
+    #elif TARGET_OS_MAC == 1
+        #if !defined(__MACOSX__)
+            #define __MACOSX__
+        #endif
+    #endif
+    #if !defined(__UNIX__)
+        #define __UNIX__
+    #endif
 #endif
 
 /* detect Android platform */
 #if defined(ANDROID) || defined(__ANDROID__)
-#  if !defined(__ANDROID__)
-#    define __ANDROID__
-#  endif
+    #if !defined(__ANDROID__)
+        #define __ANDROID__
+    #endif
 #endif
 
 /* try to detect other Unix systems */
 #if defined(__unix__) || defined (unix) || defined(__unix) || defined(_unix)
-#  if !defined(__UNIX__)
-#     define __UNIX__
-#  endif
+    #if !defined(__UNIX__)
+        #define __UNIX__
+    #endif
 #endif
 
 //----------------------------------------------------------------------------------------------
@@ -325,7 +325,6 @@ inline const ptrdiff_t offset_of(T1 T2::*member) {
 #pragma warning (disable: 4305)     // truncation from const double to float
 #pragma warning (disable: 4819)     // The file contains a character that cannot be represented in the current code page
 #pragma warning (disable: 4996)     // This function or variable may be unsafe
-
 #endif
 
 // Including SDKDDKVer.h defines the highest available Windows platform.

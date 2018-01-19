@@ -13,14 +13,14 @@ option(BUILD_EDITOR "Build Blueshift Editor" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 
 if (BUILD_ENGINE)
-  set(project_name BlueshiftEngine)
+    set(project_name BlueshiftEngine)
 
-  set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
-  set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
+    set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
+    set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
 elseif (BUILD_PLAYER)
-  set(project_name BlueshiftPlayer)
+    set(project_name BlueshiftPlayer)
 else ()
-  message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
+    message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
 endif ()
 
 project(${project_name})
@@ -57,35 +57,38 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 
 # Settings for macOS, iOS
 if (APPLE)
-  #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++")
+    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++")
 
-  add_compile_options("-Wno-unused-parameter")
-  add_compile_options("-Wno-unused-variable")
-  add_compile_options("-Wno-unused-local-typedef")
-  add_compile_options("-Wno-unused-function")
-  add_compile_options("-Wno-reorder")
-  add_compile_options("-Wno-inconsistent-missing-override")
+    add_compile_options("-Wno-unused-parameter")
+    add_compile_options("-Wno-unused-variable")
+    add_compile_options("-Wno-unused-local-typedef")
+    add_compile_options("-Wno-unused-function")
+    add_compile_options("-Wno-reorder")
+    add_compile_options("-Wno-inconsistent-missing-override")
 
-  if (NOT IOS)
-    set(CMAKE_OSX_SYSROOT "macosx")
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
-    #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
-  endif ()
+    if (NOT IOS)
+        add_definitions(-DIOS)
+
+        set(CMAKE_OSX_SYSROOT "macosx")
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
+        #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
+    endif ()
 endif ()
 
 # Settings for Android
 if (ANDROID)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++1y")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti")
+    add_definitions(-DANDROID)
 
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++1y")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti")
+
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
 endif ()
 
 # Settings for Windows
-if (MSVC)
-  if (WIN32)
+if (WIN32 AND MSVC)
     add_definitions(-D_UNICODE -DUNICODE)
 
     # Enable Function-Level Linking
@@ -101,23 +104,22 @@ if (MSVC)
 
     #set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
     #set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-    #set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
-  endif ()
+    #set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")  
 endif ()
 
 ################################################################################
 if (XAMARIN)
     if (MSVC)
-      set(ENGINE_BUILD_PLATFORM_DIR "XamarinWin64")
+        set(ENGINE_BUILD_PLATFORM_DIR "XamarinWin64")
     elseif (APPLE)
-      if (IOS)
-		if (WITHDEBUG)
-			set(WITHDEBUG_POSTFIX "_d")
-		endif ()
-		set(ENGINE_BUILD_PLATFORM_DIR "XamarinIOS$(EFFECTIVE_PLATFORM_NAME)${WITHDEBUG_POSTFIX}")
-      endif ()
+        if (IOS)
+            if (WITHDEBUG)
+	            set(WITHDEBUG_POSTFIX "_d")
+            endif ()
+            set(ENGINE_BUILD_PLATFORM_DIR "XamarinIOS$(EFFECTIVE_PLATFORM_NAME)${WITHDEBUG_POSTFIX}")
+        endif ()
     endif ()
-    
+
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__XAMARIN__")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__XAMARIN__")
     if (APPLE)
@@ -137,17 +139,17 @@ if (XAMARIN)
     endif ()
 else ()
     if (MSVC)
-      set(ENGINE_BUILD_PLATFORM_DIR "Win64")
+        set(ENGINE_BUILD_PLATFORM_DIR "Win64")
     elseif (APPLE)
-      if (IOS)
-        set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
-      else ()
-        set(ENGINE_BUILD_PLATFORM_DIR "macOS")
-      endif ()
+        if (IOS)
+            set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
+        else ()
+            set(ENGINE_BUILD_PLATFORM_DIR "macOS")
+        endif ()
     elseif (ANDROID)
-      set(ENGINE_BUILD_PLATFORM_DIR "Android")
+        set(ENGINE_BUILD_PLATFORM_DIR "Android")
     else ()
-      set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
+        set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
     endif ()
 endif ()
 
@@ -156,68 +158,68 @@ endif ()
 ################################################################################
 
 set(FLAGS
-  CMAKE_C_FLAGS
-  CMAKE_C_FLAGS_DEBUG
-  CMAKE_C_FLAGS_RELEASE
-  CMAKE_C_FLAGS_RELWITHDEBINFO
-  CMAKE_CXX_FLAGS
-  CMAKE_CXX_FLAGS_DEBUG
-  CMAKE_CXX_FLAGS_RELEASE
-  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    CMAKE_C_FLAGS
+    CMAKE_C_FLAGS_DEBUG
+    CMAKE_C_FLAGS_RELEASE
+    CMAKE_C_FLAGS_RELWITHDEBINFO
+    CMAKE_CXX_FLAGS
+    CMAKE_CXX_FLAGS_DEBUG
+    CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO
 )
 
 foreach(FLAG ${FLAGS})
-  message(STATUS "${FLAG}: ${${FLAG}}")
+    message(STATUS "${FLAG}: ${${FLAG}}")
 endforeach()
 
 ################################################################################
 # Sub projects
 ################################################################################
 if (BUILD_ENGINE)
-  add_subdirectory(Source/Dependencies/zlib)
-  add_subdirectory(Source/Dependencies/minizip)
-  add_subdirectory(Source/Dependencies/libjpeg)
-  add_subdirectory(Source/Dependencies/libpng)
-  add_subdirectory(Source/Dependencies/libpvrt)
-  add_subdirectory(Source/Dependencies/etcpack)
-  add_subdirectory(Source/Dependencies/etc2comp)
-  add_subdirectory(Source/Dependencies/freetype)
-  add_subdirectory(Source/Dependencies/libogg)
-  add_subdirectory(Source/Dependencies/libvorbis)
-  add_subdirectory(Source/Dependencies/jsoncpp)
-  add_subdirectory(Source/Dependencies/tinyxml2)
-  add_subdirectory(Source/Dependencies/NvTriStrip)
-  add_subdirectory(Source/Dependencies/Bullet)
-  add_subdirectory(Source/Dependencies/HACD)
+    add_subdirectory(Source/Dependencies/zlib)
+    add_subdirectory(Source/Dependencies/minizip)
+    add_subdirectory(Source/Dependencies/libjpeg)
+    add_subdirectory(Source/Dependencies/libpng)
+    add_subdirectory(Source/Dependencies/libpvrt)
+    add_subdirectory(Source/Dependencies/etcpack)
+    add_subdirectory(Source/Dependencies/etc2comp)
+    add_subdirectory(Source/Dependencies/freetype)
+    add_subdirectory(Source/Dependencies/libogg)
+    add_subdirectory(Source/Dependencies/libvorbis)
+    add_subdirectory(Source/Dependencies/jsoncpp)
+    add_subdirectory(Source/Dependencies/tinyxml2)
+    add_subdirectory(Source/Dependencies/NvTriStrip)
+    add_subdirectory(Source/Dependencies/Bullet)
+    add_subdirectory(Source/Dependencies/HACD)
   
-  if (ANDROID)
-	add_subdirectory(Source/Dependencies/nvidia)
-  endif()
+    if (ANDROID)
+        add_subdirectory(Source/Dependencies/nvidia)
+    endif()
   
-  if (USE_LUAJIT)
-    add_subdirectory(Source/Dependencies/luaJIT)
-  else ()
-    add_subdirectory(Source/Dependencies/lua)
-  endif ()
+    if (USE_LUAJIT)
+        add_subdirectory(Source/Dependencies/luaJIT)
+    else ()
+        add_subdirectory(Source/Dependencies/lua)
+    endif ()
   
-  add_subdirectory(Source/Dependencies/luasocket)
-  add_subdirectory(Source/Dependencies/LuaCpp)
+    add_subdirectory(Source/Dependencies/luasocket)
+    add_subdirectory(Source/Dependencies/LuaCpp)
   
-  add_subdirectory(Source/BlueshiftEngine)
+    add_subdirectory(Source/BlueshiftEngine)
 
-  add_subdirectory(Shaders)
+    add_subdirectory(Shaders)
 endif ()
 
 if (BUILD_PLAYER)
-  add_subdirectory(Source/BlueshiftPlayer)
+    add_subdirectory(Source/BlueshiftPlayer)
 endif ()
 
 if (BUILD_EDITOR)
-  add_subdirectory(Source/Dependencies/ToolWindowManager)  
-  add_subdirectory(Source/BlueshiftEditor)
+    add_subdirectory(Source/Dependencies/ToolWindowManager)  
+    add_subdirectory(Source/BlueshiftEditor)
 endif ()
 
 if (BUILD_TEST)
-  add_subdirectory(Source/TestBase)
-  add_subdirectory(Source/TestRenderer)
+    add_subdirectory(Source/TestBase)
+    add_subdirectory(Source/TestRenderer)
 endif ()
