@@ -67,9 +67,10 @@ if (APPLE)
     add_compile_options("-Wno-reorder")
     add_compile_options("-Wno-inconsistent-missing-override")
 
-    if (NOT IOS)
-        add_definitions(-DIOS)
-
+    if (IOS)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIOS")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIOS")
+    else ()
         set(CMAKE_OSX_SYSROOT "macosx")
         set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
         #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
@@ -78,13 +79,11 @@ endif ()
 
 # Settings for Android
 if (ANDROID)
-    add_definitions(-DANDROID)
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++1y")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DANDROID")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID")
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -std=gnu++1y -frtti")
 endif ()
 
 # Settings for Windows

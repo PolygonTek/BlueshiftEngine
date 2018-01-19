@@ -81,8 +81,8 @@ void LuaVM::Init() {
 
     //state->Require("blueshift.io", luaopen_file);
 
-#if defined __IOS__ || defined __ANDROID__
-    EnableDebug();
+#if !defined(__IOS__) && !defined(__ANDROID__)
+    //EnableDebug();
 #endif
 }
 
