@@ -228,11 +228,6 @@
     <ClCompile Include="..\..\..\Source\Dependencies\libvorbis\lib\window.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\libvorbis\lib\vorbisfile.c" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\libogg\libogg.vcxproj">
-      <Project>{c2b44a48-7789-4b17-9c32-453d4ac7b10d}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
