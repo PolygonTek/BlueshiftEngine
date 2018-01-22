@@ -314,7 +314,6 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComScript.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Game\LuaModule_Entity.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Game\LuaModule_GameWorld.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\File\liolib.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\DynamicAABBTree.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Vec4Color.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Posix\PlatformPosixProcess.cpp" />
