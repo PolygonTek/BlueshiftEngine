@@ -1,0 +1,55 @@
+apply plugin: 'com.android.model.$(ConfigurationType)'
+
+model {
+    android {
+        compileSdkVersion = $(AndroidAPILevelNumber)
+        buildToolsVersion = "$(AndroidBuildToolsVersion)"
+
+        defaultConfig.with {
+            $(ApplicationId)
+            minSdkVersion.apiLevel = 16
+            targetSdkVersion.apiLevel = 23
+        }
+
+        compileOptions.with {
+            sourceCompatibility=JavaVersion.VERSION_1_7
+            targetCompatibility=JavaVersion.VERSION_1_7
+        }
+    }
+
+    android.buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles.add(file('proguard-rules.txt'))
+            ndk.debuggable = true
+            debuggable = true
+        }
+    }
+
+    android.productFlavors {
+        create("arm7") {
+            ndk.abiFilters.add("armeabi-v7a")
+        }
+        create("arm8") {
+            ndk.abiFilters.add("arm64-v8a")
+        }
+        create("x86") {
+            ndk.abiFilters.add("x86")
+        }
+        create("x86-64") {
+            ndk.abiFilters.add("x86_64")
+        }
+        create("all")
+    }
+}
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    $(AarDependencies)
+}
