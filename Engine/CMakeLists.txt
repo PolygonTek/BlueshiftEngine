@@ -55,8 +55,28 @@ set(CMAKE_DEBUG_POSTFIX "_d")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 
-# Settings for macOS, iOS
-if (APPLE)
+################################################################################
+
+if (WIN32 AND MSVC) 
+    # Settings for Windows
+    add_definitions(-D_UNICODE -DUNICODE)
+
+    # Enable Function-Level Linking
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+    
+    # Force Synchronous PDB Writes
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+    
+    # Remove RTTI
+    string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+    #set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+    #set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+    #set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")  
+elseif (APPLE) 
+    # Settings for macOS, iOS
     #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++")
 
@@ -75,10 +95,8 @@ if (APPLE)
         set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
         #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
     endif ()
-endif ()
-
-# Settings for Android
-if (ANDROID)
+elseif (ANDROID)
+    # Settings for Android
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DANDROID")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID")
 
@@ -86,27 +104,8 @@ if (ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -std=gnu++1y -frtti")
 endif ()
 
-# Settings for Windows
-if (WIN32 AND MSVC)
-    add_definitions(-D_UNICODE -DUNICODE)
-
-    # Enable Function-Level Linking
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
-    
-    # Force Synchronous PDB Writes
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
-    
-    # Remove RTTI
-    string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
-    #set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-    #set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-    #set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")  
-endif ()
-
 ################################################################################
+
 if (XAMARIN)
     if (MSVC)
         set(ENGINE_BUILD_PLATFORM_DIR "XamarinWin64")

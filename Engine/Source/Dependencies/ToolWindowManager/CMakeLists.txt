@@ -8,19 +8,19 @@ endif()
 project(ToolWindowManager)
 
 set(SOURCES 
-  ToolWindowManager.cpp
-  ToolWindowManagerArea.cpp
-  ToolWindowManagerSplitter.cpp
-  ToolWindowManagerTabBar.cpp
-  ToolWindowManagerWrapper.cpp
+    ToolWindowManager.cpp
+    ToolWindowManagerArea.cpp
+    ToolWindowManagerSplitter.cpp
+    ToolWindowManagerTabBar.cpp
+    ToolWindowManagerWrapper.cpp
 )
 
 set(HEADERS
-  ToolWindowManager.h
-  ToolWindowManagerArea.h
-  ToolWindowManagerSplitter.h
-  ToolWindowManagerTabBar.h
-  ToolWindowManagerWrapper.h
+    ToolWindowManager.h
+    ToolWindowManagerArea.h
+    ToolWindowManagerSplitter.h
+    ToolWindowManagerTabBar.h
+    ToolWindowManagerWrapper.h
 )
 
 set(MOC_SOURCES ${HEADERS})
@@ -32,14 +32,16 @@ qt5_wrap_cpp(OUT_MOC_FILES ${MOC_SOURCES})
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS} ${OUT_MOC_FILES})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Dependencies)
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
-set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
+set_target_properties(${PROJECT_NAME} PROPERTIES 
+    FOLDER Dependencies
+    PREFIX ""
+    DEBUG_POSTFIX "_d"
+    OUTPUT_NAME ${PROJECT_NAME}
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR}
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
 
 target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Gui Qt5::Widgets)
+
 target_include_directories(${PROJECT_NAME} 
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
