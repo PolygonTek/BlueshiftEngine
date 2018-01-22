@@ -3,7 +3,7 @@ Blueshift Game Engine
 
 [![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)]()
 
-Blueshift is a cross-platform 3D game engine. it's free, open-source, and works on Windows, macOS, iOS, and Android.
+Blueshift is a cross-platform 3D game engine implemented in C++. it's free, open-source, and works on Windows, macOS, iOS, and Android.
 The project is currently in an early stage of development.
 
 Features
@@ -19,11 +19,11 @@ Features
   * Post-processing
   * PBR rendering
   * Physics using [Bullet](http://www.bulletphysics.org/)
-  * Scripting using [Lua](https://www.lua.org/)
+  * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
   * 2D and 3D audio static/streaming playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
   * TrueType font rendering using [FreeType](https://www.freetype.org/)
   * Component based entity system
-  * Playable WYSIWYG editor using [Qt](https://www.qt.io/)
+  * Playable WYSIWYG editor using [Qt](https://www.qt.io/) with undo & redo capabilities
 
 Downloads
 -------------------
