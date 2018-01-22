@@ -14,33 +14,19 @@
  * limitations under the License.
  */
 
+ 
 package com.AndroidPlayer;
 //package com.android.gles3jni;
 
-import android.app.Activity;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.WindowManager;
+// Wrapper for native library
 
-import java.io.File;
+public class GLES3JNILib {
 
-public class AndroidPlayer extends Activity {
+     static {
+          System.loadLibrary("gles3jni");
+     }
 
-    GLES3JNIView mView;
-
-    @Override protected void onCreate(Bundle icicle) {
-        super.onCreate(icicle);
-        mView = new GLES3JNIView(getApplication());
-        setContentView(mView);
-    }
-
-    @Override protected void onPause() {
-        super.onPause();
-        mView.onPause();
-    }
-
-    @Override protected void onResume() {
-        super.onResume();
-        mView.onResume();
-    }
+     public static native void init();
+     public static native void resize(int width, int height);
+     public static native void step();
 }

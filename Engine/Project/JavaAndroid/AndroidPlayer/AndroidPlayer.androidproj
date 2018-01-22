@@ -79,13 +79,17 @@
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
     <GradleTemplate Include="app\build.gradle.template" />
-    <GradleTemplate Include="app\src\main\AndroidManifest.xml.template" />
+    <GradleTemplate Include="app\src\main\AndroidManifest.xml.template">
+      <SubType>Designer</SubType>
+    </GradleTemplate>
     <GradleTemplate Include="build.gradle.template" />
-    <GradleTemplate Include="settings.gradle.template"/>
+    <GradleTemplate Include="settings.gradle.template" />
     <GradleTemplate Include="gradle\wrapper\gradle-wrapper.properties.template" />
   </ItemGroup>
   <ItemGroup>
     <JavaCompile Include="app\src\main\java\com\AndroidPlayer\AndroidPlayer.java" />
+    <JavaCompile Include="app\src\main\java\com\AndroidPlayer\GLES3JNILib.java" />
+    <JavaCompile Include="app\src\main\java\com\AndroidPlayer\GLES3JNIView.java" />
   </ItemGroup>
   <Import Project="$(AndroidTargetsPath)\Android.targets" />
   <ImportGroup Label="ExtensionTargets" />
