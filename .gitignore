@@ -60,3 +60,5 @@ Engine/XML/*
 .oracle_jre_usage
 .vs
 .workspace
+.gradle
+Engine/Project/JavaAndroid/AndroidPlayer/app/build/
