@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\autofit\autofit.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftadvanc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftbbox.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftbdf.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftbitmap.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftcalc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftcid.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftdbgmem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftdebug.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftfstype.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftgasp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftgloadr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftglyph.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftgxval.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftinit.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftlcdfil.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftmm.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftobjs.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftotval.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftoutln.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftpatent.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftpfr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftrfork.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftsnames.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftstream.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftstroke.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftsynth.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftsystem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\fttrigon.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\fttype1.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftutil.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftwinfnt.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\base\ftxf86.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\bdf\bdf.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\bzip2\ftbzip2.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\cache\ftcache.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\cff\cff.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\cid\type1cid.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\gzip\ftgzip.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\lzw\ftlzw.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\pcf\pcf.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\pfr\pfr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\psaux\psaux.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\pshinter\pshinter.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\psnames\psmodule.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\raster\raster.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\sfnt\sfnt.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\smooth\smooth.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\truetype\truetype.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\type1\type1.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\type42\type42.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\freetype\src\winfonts\winfnt.c" />
+  </ItemGroup>
+</Project>

@@ -146,25 +146,39 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-XamarinAndroid\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Enabled</ExceptionHandling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <CppLanguageStandard>c++1y</CppLanguageStandard>
+      <AdditionalOptions>-D_ENGINE=1 -DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
     </ClCompile>
     <Link>
-      <LibraryDependencies>$(StlLibraryName);%(LibraryDependencies);android;GLESv3;EGL;OpenSLES;m</LibraryDependencies>
+      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;$(StlLibraryName);%(LibraryDependencies);android;GLESv3;EGL;OpenSLES;m</LibraryDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftPlayer;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\nvidia;..\..\..\Source\Dependencies\zlib;..\..\..\Build\msvc2015-XamarinAndroid\Source\Dependencies\zlib;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Enabled</ExceptionHandling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <CppLanguageStandard>c++1y</CppLanguageStandard>
+      <AdditionalOptions>-D_ENGINE=1 -DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
     </ClCompile>
     <Link>
-      <LibraryDependencies>$(StlLibraryName);%(LibraryDependencies);android;GLESv3;EGL;OpenSLES;m</LibraryDependencies>
+      <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;$(StlLibraryName);%(LibraryDependencies);android;GLESv3;EGL;OpenSLES;m</LibraryDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
     <ClInclude Include="gles3jni.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp" />
     <ClCompile Include="gles3jni.cpp" />
     <ClCompile Include="RendererES2.cpp" />
     <ClCompile Include="RendererES3.cpp" />

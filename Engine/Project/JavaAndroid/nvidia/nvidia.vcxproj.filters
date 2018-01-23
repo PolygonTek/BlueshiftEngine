@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_and_util\nv_native_app_glue.h">
+      <Filter>nv_and_util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_bitfont\nv_bitfont.h">
+      <Filter>nv_bitfont</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_egl_util\nv_egl_util.h">
+      <Filter>nv_egl_util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_file\nv_apk_file.h">
+      <Filter>nv_file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_file\nv_file.h">
+      <Filter>nv_file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_glesutil\nv_draw_rect.h">
+      <Filter>nv_glesutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_glesutil\nv_images.h">
+      <Filter>nv_glesutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_hhdds\nv_hhdds.h">
+      <Filter>nv_hhdds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_log\nv_log.h">
+      <Filter>nv_log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_math\nv_math.h">
+      <Filter>nv_math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_math\nv_matrix.h">
+      <Filter>nv_math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_math\nv_quat.h">
+      <Filter>nv_math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_math\NvVec.h">
+      <Filter>nv_math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_shader\nv_shader.h">
+      <Filter>nv_shader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Dependencies\nvidia\nv_thread\nv_thread.h">
+      <Filter>nv_thread</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="nv_and_util">
+      <UniqueIdentifier>{1c665f7f-03d1-49b6-9759-193165500079}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_bitfont">
+      <UniqueIdentifier>{e140a893-0b8e-4293-9771-5e5f2c4d7e0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_egl_util">
+      <UniqueIdentifier>{93a65a6f-3bc4-4938-9fb3-9cf6c7e0d969}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_file">
+      <UniqueIdentifier>{7dd98fca-a3ba-419f-a1a1-e05b628057c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_glesutil">
+      <UniqueIdentifier>{49ceb719-8879-4e0d-a161-ec29c08e1648}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_hhdds">
+      <UniqueIdentifier>{070d4734-0956-429b-92d8-f682137d130a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_log">
+      <UniqueIdentifier>{0a33a348-993f-4e27-bf7c-f961c170a79b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_math">
+      <UniqueIdentifier>{860b9a17-9ad7-41cc-a0a9-780adb83d002}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_shader">
+      <UniqueIdentifier>{41d700fe-8804-4c16-bcb7-9ccbf7067163}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nv_thread">
+      <UniqueIdentifier>{41342f85-15f4-4dae-ba04-11d06e3b53f3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_and_util\nv_native_app_glue.c">
+      <Filter>nv_and_util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_bitfont\nv_bitfont.cpp">
+      <Filter>nv_bitfont</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_egl_util\nv_egl_util.cpp">
+      <Filter>nv_egl_util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_file\nv_apk_file.c">
+      <Filter>nv_file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_file\nv_file.c">
+      <Filter>nv_file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_glesutil\nv_draw_rect.cpp">
+      <Filter>nv_glesutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_glesutil\nv_images.cpp">
+      <Filter>nv_glesutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_hhdds\nv_hhdds.cpp">
+      <Filter>nv_hhdds</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_log\nv_log.cpp">
+      <Filter>nv_log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_math\nv_math.cpp">
+      <Filter>nv_math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_math\nv_matrix.cpp">
+      <Filter>nv_math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_math\nv_quat.cpp">
+      <Filter>nv_math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_shader\nv_shader.cpp">
+      <Filter>nv_shader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Dependencies\nvidia\nv_thread\nv_thread.c">
+      <Filter>nv_thread</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

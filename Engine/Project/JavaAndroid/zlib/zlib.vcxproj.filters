@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\adler32.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\compress.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\crc32.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\deflate.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\gzclose.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\gzlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\gzread.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\gzwrite.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\infback.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\inffast.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\inflate.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\inftrees.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\trees.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\uncompr.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\zlib\zutil.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="zconf.h" />
+  </ItemGroup>
+</Project>

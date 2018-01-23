@@ -24,14 +24,45 @@ import android.view.WindowManager;
 
 import java.io.File;
 
+import android.Manifest;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.AppCompatActivity;
+import android.content.pm.PackageManager;
+
 public class AndroidPlayer extends Activity {
 
+	public static final boolean _ENGINE = true;
+	private static final int REQUEST_STORAGE = 1;
     GLES3JNIView mView;
 
     @Override protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        if (_ENGINE) {
+            if (!getPackageName().equals("com.AndroidPlayer.AndroidPlayer"))
+            {
+                GLES3JNILib.SetAssetManager(getAssets(), getFilesDir().getAbsolutePath());
+            }
+			else if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+
+				if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+						Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+				} else {
+					ActivityCompat.requestPermissions(this,
+							new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+							REQUEST_STORAGE);
+				}
+                GLES3JNILib.SetAssetManager(getAssets(), getFilesDir().getAbsolutePath());
+			}
+            else
+            {
+                GLES3JNILib.SetAssetManager(getAssets(), "/sdcard/blueshift");
+            }
+        }
         mView = new GLES3JNIView(getApplication());
         setContentView(mView);
+
     }
 
     @Override protected void onPause() {
@@ -42,5 +73,11 @@ public class AndroidPlayer extends Activity {
     @Override protected void onResume() {
         super.onResume();
         mView.onResume();
+    }
+    @Override protected void onDestroy() {
+    	if (_ENGINE) {
+			GLES3JNILib.done();
+    	}
+        super.onDestroy();
     }
 }

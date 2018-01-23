@@ -3,10 +3,12 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="gles3jni.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gles3jni.cpp" />
     <ClCompile Include="RendererES2.cpp" />
     <ClCompile Include="RendererES3.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp" />
   </ItemGroup>
 </Project>

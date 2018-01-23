@@ -20,7 +20,21 @@
 #include <time.h>
 
 #include "gles3jni.h"
+#if _ENGINE 
+#	include "Precompiled.h"
+#	include "RHI/EGLUtil.h"
+#	include <android\asset_manager_jni.h>
 
+#include "Application.h"
+#include "Android/window.h"
+
+EGLUtil mEgl;
+bool	Initialized;
+
+#endif
+
+
+#if !_ENGINE
 const Vertex QUAD[4] = {
     // Square with diagonal < 2 so that it fits in a [-1 .. 1]^2 square
     // regardless of rotation.
@@ -232,15 +246,139 @@ void Renderer::render() {
     draw(mNumInstances);
     checkGlError("Renderer::render");
 }
+#endif
 
 // ----------------------------------------------------------------------------
 
+#if !_ENGINE
 static Renderer* g_renderer = NULL;
+#endif
+#if _ENGINE
+
+
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
+	static int t0 = 0;
+
+	if (t0 == 0) {
+		t0 = BE1::PlatformTime::Milliseconds();
+	}
+
+	int t = BE1::PlatformTime::Milliseconds();
+	int elapsedMsec = t - t0;
+	if (elapsedMsec > 100)
+		elapsedMsec = 100;
+
+	BE1::Engine::RunFrame(elapsedMsec);
+
+	BE1::gameClient.RunFrame();
+
+	app.Update();
+
+	BE1::gameClient.EndFrame();
+
+	app.Draw();
+
+	t0 = t;
+}
+
+
+void appInit()
+{
+	if (!Initialized) {
+		Initialized = true;
+
+		//// ----- Core initialization -----
+		//BE1::Engine::InitParms initParms;
+
+		//BE1::Str appDir = BE1::PlatformFile::ExecutablePath();
+		//initParms.baseDir = appDir;
+
+		//BE1::Str dataDir = appDir + "/Data";
+		//initParms.searchPath = dataDir;
+
+		//BE1::Engine::Init(&initParms);
+
+		BE1::Engine::InitParms initParms;
+		initParms.baseDir = "";
+		initParms.searchPath = "Data";
+		BE1::Engine::Init(&initParms);
+		//// -------------------------------
+
+		//BE1::resourceGuidMapper.Read("Data/guidmap");
+		BE1::resourceGuidMapper.Read("Data/guidmap");
+
+		//// mainWindow(UIWindow) - rootViewController.view(UIView) - eaglView(EAGLView)
+		//CGRect screenBounds = [[UIScreen mainScreen] bounds];
+		//mainWindow = [[UIWindow alloc] initWithFrame:screenBounds];
+		//mainWindow.backgroundColor = [UIColor blackColor];
+
+		//rootViewController = [[RootViewController alloc] init];
+		//mainWindow.rootViewController = rootViewController;
+
+		//[mainWindow makeKeyAndVisible];
+
+		//BE1::gameClient.Init((__bridge BE1::Renderer::WindowHandle)mainWindow, true);
+		BE1::gameClient.Init(0 /*&mEgl*/, true);
+
+		//float retinaScale = [[UIScreen mainScreen] scale];
+		//BE1::Vec2 screenScaleFactor(0.75f, 0.75f);
+		//int renderWidth = screenBounds.size.width * retinaScale * screenScaleFactor.x;
+		//int renderHeight = screenBounds.size.height * retinaScale* screenScaleFactor.y;
+
+		//app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
+		app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
+		//app.mainRenderContext->Init((__bridge BE1::Renderer::WindowHandle)[rootViewController view],
+		//	renderWidth, renderHeight, DisplayContext, NULL);
+		{
+			int w = mEgl.getWidth();
+			int h = mEgl.getHeight();
+			app.mainRenderContext->Init(&mEgl, w, h, DisplayContext, 0);
+		}
+
+		//app.Init();
+		app.Init();
+
+		app.LoadAppScript("Application");
+
+		app.StartAppScript();
+
+		////BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Append, L"exec \"autoexec.cfg\"\n");
+
+
+	}
+}
+
+void appDeinit()
+{
+	if (Initialized)
+	{
+		Initialized = false;
+
+		app.OnApplicationTerminate();
+
+		app.Shutdown();
+
+		app.mainRenderContext->Shutdown();
+		BE1::renderSystem.FreeRenderContext(app.mainRenderContext);
+
+		//DestroyRenderWindow(mainWnd);
+
+		BE1::gameClient.Shutdown();
+
+		BE1::Engine::Shutdown();
+	}
+}
+
+
+#endif
 
 extern "C" {
     JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_init(JNIEnv* env, jobject obj);
     JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
     JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_step(JNIEnv* env, jobject obj);
+#if _ENGINE
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject asset, jstring path);
+#endif
 };
 
 #if !defined(DYNAMIC_ES3)
@@ -251,6 +389,7 @@ static GLboolean gl3stubInit() {
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_init(JNIEnv* env, jobject obj) {
+#if !_ENGINE
     if (g_renderer) {
         delete g_renderer;
         g_renderer = NULL;
@@ -269,18 +408,60 @@ Java_com_AndroidPlayer_GLES3JNILib_init(JNIEnv* env, jobject obj) {
     } else {
         ALOGE("Unsupported OpenGL ES version");
     }
+#endif
 }
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height) {
-    if (g_renderer) {
+#if !_ENGINE
+	if (g_renderer) {
         g_renderer->resize(width, height);
     }
+#endif
+#if _ENGINE
+	extern EGLUtil mEgl;
+	appDeinit();
+	mEgl.m_width = mEgl.m_windowWidth = width;
+	mEgl.m_height = mEgl.m_windowHeight = height;
+	appInit();
+#endif
 }
+
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_step(JNIEnv* env, jobject obj) {
-    if (g_renderer) {
+#if !_ENGINE
+	if (g_renderer) {
         g_renderer->render();
     }
+#endif
+#if _ENGINE
+	DisplayContext(BE1::RHI::NullContext, 0);
+#endif
 }
+
+#if _ENGINE
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_done(JNIEnv* env, jobject obj) {
+	appDeinit();
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject asset, jstring path) {
+	static jobject object;
+	if (object) {
+		env->DeleteGlobalRef(object);
+	}
+	if (asset) {
+		object = env->NewGlobalRef(asset);
+		AAssetManager *mgr = AAssetManager_fromJava(env, object);
+		BE1::PlatformFile::SetManager(mgr);
+	}
+	else
+		BE1::PlatformFile::SetManager(0);
+	const char *_path = env->GetStringUTFChars(path, NULL);//Java String to C Style string
+	BE1::PlatformFile::SetExecutablePath(_path);
+	env->ReleaseStringUTFChars(path, _path);
+}
+#endif
+

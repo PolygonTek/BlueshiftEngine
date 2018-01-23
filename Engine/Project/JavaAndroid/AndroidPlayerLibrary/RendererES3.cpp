@@ -25,6 +25,7 @@
 #define SCALEROT_ATTRIB 2
 #define OFFSET_ATTRIB 3
 
+#if !_ENGINE
 static const char VERTEX_SHADER[] =
     "#version 300 es\n"
     "layout(location = " STRV(POS_ATTRIB) ") in vec2 pos;\n"
@@ -163,3 +164,4 @@ void RendererES3::draw(unsigned int numInstances) {
     glBindVertexArray(mVBState);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numInstances);
 }
+#endif

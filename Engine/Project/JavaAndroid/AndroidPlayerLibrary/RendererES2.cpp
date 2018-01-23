@@ -17,6 +17,7 @@
 #include "gles3jni.h"
 #include <EGL/egl.h>
 
+#if !_ENGINE
 static const char VERTEX_SHADER[] =
     "#version 100\n"
     "uniform mat2 scaleRot;\n"
@@ -140,3 +141,4 @@ void RendererES2::draw(unsigned int numInstances) {
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 }
+#endif

@@ -29,4 +29,7 @@ public class GLES3JNILib {
      public static native void init();
      public static native void resize(int width, int height);
      public static native void step();
+	 // _ENGINE
+	public static native void done();
+	public static native void SetAssetManager(Object asset, String path);
 }

@@ -45,6 +45,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpvrt", "libpvrt\libpvrt.vcxproj", "{DD9727C3-9EFC-4848-9295-3A5FCEE5EDA6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XamarinPlayer", "XamarinPlayer\XamarinPlayer.csproj", "{50CD4EBF-FE74-4154-B584-A2CE5EC3DEF7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{42AAAF21-3054-4A5C-9500-01CB43DA0543} = {42AAAF21-3054-4A5C-9500-01CB43DA0543}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BlueshiftEngine", "BlueshiftEngine\BlueshiftEngine.vcxproj", "{518E6ACC-5917-4219-B55B-D2F049209BFC}"
 EndProject
