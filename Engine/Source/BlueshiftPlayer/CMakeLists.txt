@@ -260,12 +260,12 @@ else ()
         if (IOS)
             add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 #COMMAND rm -rf \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\"
-                COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Data\"
-                COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Config\"
-                COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Scripts\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Data\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Data\""
+                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Config\""
+                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Scripts\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Data\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
                 COMMENT "Copying data files"
                 USES_TERMINAL)
         endif ()
@@ -286,11 +286,11 @@ else ()
             endforeach()
         elseif (APPLE)
             add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                #COMMAND rm -rf \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\"
-                COMMAND mkdir -p \"$(PROJECT_DIR)/Scripts\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Data\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+                #COMMAND rm -rf "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\""
+                COMMAND mkdir -p "\"$(PROJECT_DIR)/Scripts\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Data\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
                 COMMENT "Copying data files"
                 USES_TERMINAL)
 

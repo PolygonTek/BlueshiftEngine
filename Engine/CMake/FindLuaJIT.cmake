@@ -27,7 +27,7 @@ else ()
 endif ()
 
 if (APPLE)
-    set(LUAJIT_LIBNAME "lua51.a")
+    set(LUAJIT_LIBNAME "libluajit.a")
 elseif (CMAKE_COMPILER_IS_GNUCXX)
     set(LUAJIT_LIBNAME "lua51")
 else ()
