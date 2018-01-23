@@ -94,6 +94,10 @@
   <ItemGroup>
     <ProjectReference Include="..\AndroidPlayerLibrary\AndroidPlayerLibrary.vcxproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="app\src\main\res\drawable\icon.png" />
+    <Content Include="app\src\main\res\values\strings.xml" />
+  </ItemGroup>
   <Import Project="$(AndroidTargetsPath)\Android.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
