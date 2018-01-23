@@ -158,7 +158,7 @@ else ()
             set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)
 
             add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND "mt.exe" -manifest "${PROJECT_SOURCE_DIR}\\Manifest.xml" -outputresource:"$<TARGET_FILE:${PROJECT_NAME}>\;1"
+                COMMAND "mt.exe" -nologo -manifest "${PROJECT_SOURCE_DIR}\\Manifest.xml" -outputresource:"$<TARGET_FILE:${PROJECT_NAME}>\;1"
                 COMMENT "Adding manifest...")
         endif ()
     elseif (APPLE)
