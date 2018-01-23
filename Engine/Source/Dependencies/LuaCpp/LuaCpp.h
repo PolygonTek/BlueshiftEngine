@@ -6,7 +6,7 @@
 
 // --- Lua ---
 #if USE_LUAJIT
-#include "luaJIT/lua.hpp"
+#include "luaJIT/src/lua.hpp"
 #else
 extern "C" {
 #include "lua/lua.h"

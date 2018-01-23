@@ -202,6 +202,26 @@ void LuaVM::Shutdown() {
 void LuaVM::RegisterEngineModuleCallback(EngineModuleCallback callback) {
     engineModuleCallbacks.Append(callback);
 }
+
+const char *LuaVM::GetLuaVersion() const { 
+    static char versionString[32] = "";
+    int major, minor;
+    state->Version(major, minor);
+    Str::snPrintf(versionString, sizeof(versionString), "%i.%i", major, minor);
+    return versionString;
+}
+
+const char *LuaVM::GetLuaJitVersion() const {
+    static char versionString[32] = "";
+    int major, minor, patch;
+    state->JitVersion(major, minor, patch); 
+    Str::snPrintf(versionString, sizeof(versionString), "%i.%i.%i", major, minor, patch);
+    return versionString;
+}
+
+void LuaVM::EnableJIT(bool enabled) {
+    state->EnableJIT(enabled);
+}
 /*
 void LuaVM::EnableDebug() {
     char *server = tombs(lua_server.GetString());
