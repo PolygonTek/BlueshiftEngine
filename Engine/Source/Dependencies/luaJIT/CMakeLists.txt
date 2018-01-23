@@ -12,7 +12,15 @@ add_custom_target(${PROJECT_NAME} SOURCES ${ALL_FILES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Dependencies)
 
-if (MSVC)
+set(STATIC_LIB TRUE)
+
+if (APPLE)
+    if (IOS)
+    else ()
+        set($ENV{MACOSX_DEPLOYMENT_TARGET} ${CMAKE_OSX_DEPLOYMENT_TARGET})
+
+    endif ()
+elseif (MSVC)
     if (DEFINED ENV{VS150COMNTOOLS})
         set(VCVARS64 "$ENV{VS150COMNTOOLS}..\\..\\VC\\Auxiliary\\Build\\vcvars64.bat")
     elseif (DEFINED ENV{VS140COMNTOOLS})
@@ -84,12 +92,19 @@ if (MSVC)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
 
-    # Compile static library (release)
-    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} lj_*.c lib_*.c
+    # Compile library
+    if (STATIC_LIB)
+        set(LUAJIT_LIB_OPTIONS /OUT:${LJLIBNAME})
+    else ()
+        set(LUAJIT_COMPILE_OPTIONS /DLUA_BUILD_AS_DLL)
+        set(LUAJIT_LIB_OPTIONS /DLL /OUT:${LJDLLNAME})
+    endif ()
+
+    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} ${LUAJIT_COMPILE_OPTIONS} lj_*.c lib_*.c
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
 
-    execute_process(COMMAND ${VCVARS64} && ${LJLIB} /OUT:${LJLIBNAME} lj_*.obj lib_*.obj
+    execute_process(COMMAND ${VCVARS64} && ${LJLIB} ${LUAJIT_LIB_OPTIONS} lj_*.obj lib_*.obj
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
 
@@ -117,12 +132,22 @@ if (MSVC)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
 
-    # Copy library to lib folder
+    # Copy library and interpreter executable to lib folder
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib/${LUAJIT_LIBDIR})
 
-    execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${LJLIBNAME} ../lib/${LUAJIT_LIBDIR}/${LJLIBNAME}
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy luajit.exe ../lib/${LUAJIT_LIBDIR}/luajit.exe
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
+
+    if (STATIC_LIB)
+        execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${LJLIBNAME} ../lib/${LUAJIT_LIBDIR}/${LJLIBNAME}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
+            RESULT_VARIABLE EXIT_CODE)
+    else ()
+        execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${LJDLLNAME} ../lib/${LUAJIT_LIBDIR}/${LJDLLNAME}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
+            RESULT_VARIABLE EXIT_CODE)
+    endif ()
 
     message(STATUS "=== Successfully built LuaJIT for Windows/${LJARCH} ===")
 endif ()
