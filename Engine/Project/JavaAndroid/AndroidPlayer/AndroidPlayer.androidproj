@@ -91,6 +91,9 @@
     <JavaCompile Include="app\src\main\java\com\AndroidPlayer\GLES3JNILib.java" />
     <JavaCompile Include="app\src\main\java\com\AndroidPlayer\GLES3JNIView.java" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AndroidPlayerLibrary\AndroidPlayerLibrary.vcxproj" />
+  </ItemGroup>
   <Import Project="$(AndroidTargetsPath)\Android.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

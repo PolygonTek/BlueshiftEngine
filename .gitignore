@@ -62,3 +62,4 @@ Engine/XML/*
 .workspace
 .gradle
 Engine/Project/JavaAndroid/AndroidPlayer/app/build/
+Engine/Project/JavaAndroid/AndroidPlayer/app/src/main/jniLibs/
