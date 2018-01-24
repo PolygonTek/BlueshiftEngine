@@ -43,6 +43,58 @@ class GLES3JNIView extends GLSurfaceView {
         setEGLContextClientVersion(3);
         setRenderer(new Renderer());
     }
+	@Override
+	public boolean onTouchEvent(MotionEvent evt)
+	{
+		if (AndroidPlayer._ENGINE) {
+			if (evt.getActionMasked() == MotionEvent.ACTION_DOWN)
+			{
+				for (int index = 0; index < evt.getPointerCount(); index++)
+				{
+					int x = (int)evt.getX(index);
+					int y = (int)evt.getY(index);
+					int touch_id = evt.getPointerId(index);
+
+					GLES3JNILib.TouchBegin(touch_id, x, y);
+				}
+			}
+			else if (evt.getActionMasked() == MotionEvent.ACTION_MOVE)
+			{
+				for (int index = 0; index < evt.getPointerCount(); index++)
+				{
+					int x = (int)evt.getX(index);
+					int y = (int)evt.getY(index);
+					int touch_id = evt.getPointerId(index);
+
+					GLES3JNILib.TouchMove(touch_id, x, y);
+				}
+			}
+			else if (evt.getActionMasked() ==  MotionEvent.ACTION_UP)
+			{
+				for (int index = 0; index < evt.getPointerCount(); index++)
+				{
+					int x = (int)evt.getX(index);
+					int y = (int)evt.getY(index);
+					int touch_id = evt.getPointerId(index);
+
+					GLES3JNILib.TouchEnd(touch_id, x, y);
+				}
+			}
+			else if (evt.getActionMasked() == MotionEvent.ACTION_CANCEL)
+			{
+				for (int index = 0; index < evt.getPointerCount(); index++)
+				{
+					int touch_id = evt.getPointerId(index);
+
+					GLES3JNILib.TouchCancel(touch_id);
+				}
+			}
+
+			return true;
+		}
+		return false;
+	}
+
 
     private static class Renderer implements GLSurfaceView.Renderer {
         public void onDrawFrame(GL10 gl) {

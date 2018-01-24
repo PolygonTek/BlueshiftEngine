@@ -2,46 +2,11 @@
 <items version="2" >
 
     <item
-        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-core-utils\24.2.0\jars\classes.jar"
+        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-media-compat\24.2.0\jars\libs\internal_impl-24.2.0.jar"
         jumboMode="false"
         revision="23.0.1"
-        sha1="fcc945a86ebcbf527429acb8216ec7dae2c06417">
-        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-core-utils-24.2.0_a6aeed99971c3b4890aa7077b0ef116761e138f9.jar" />
-    </item>
-    <item
-        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-compat\24.2.0\jars\classes.jar"
-        jumboMode="false"
-        revision="23.0.1"
-        sha1="f9b41622897665678d31d78e57a361cb0cebcb0d">
-        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-compat-24.2.0_b0cd1e8fe63198dd0bd1cc5e088190d175b73e37.jar" />
-    </item>
-    <item
-        jar="C:\Program Files (x86)\Android\android-sdk\extras\android\m2repository\com\android\support\support-annotations\24.2.0\support-annotations-24.2.0.jar"
-        jumboMode="false"
-        revision="23.0.1"
-        sha1="6be858a75633b1f0a2d24cad740db57775cb6871">
-        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\support-annotations-24.2.0_f4228c1b901908a346c9ee83e23954a04b92a0ad.jar" />
-    </item>
-    <item
-        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-fragment\24.2.0\jars\libs\internal_impl-24.2.0.jar"
-        jumboMode="false"
-        revision="23.0.1"
-        sha1="032a4b53def5e2ceedfc2e793b126c0163cfa1dd">
-        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_9e1bb9551c5545e53aab673149b7c0bdaa157a31.jar" />
-    </item>
-    <item
-        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-core-utils\24.2.0\jars\libs\internal_impl-24.2.0.jar"
-        jumboMode="false"
-        revision="23.0.1"
-        sha1="60d7b23621d31e6f42f4f76f16af467e57a20cda">
-        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_650e075677067c3de092f1d6c5de9c52037a2f7f.jar" />
-    </item>
-    <item
-        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-compat\24.2.0\jars\libs\internal_impl-24.2.0.jar"
-        jumboMode="false"
-        revision="23.0.1"
-        sha1="771b3cc0e597b54da25f8086ba73180c59c6bc71">
-        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_0edf6ebc2bb2b611c5d0c6d224693345fc64b85f.jar" />
+        sha1="045be695d968dd707691cc55d23746dbf8cf569a">
+        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_df05da15714ab16adc9dc2844d2d10e705d3a98a.jar" />
     </item>
     <item
         jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-media-compat\24.2.0\jars\classes.jar"
@@ -51,18 +16,18 @@
         <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-media-compat-24.2.0_32f7beb4aed703eb6bbb99a3245b6b967755ebd2.jar" />
     </item>
     <item
-        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-media-compat\24.2.0\jars\libs\internal_impl-24.2.0.jar"
-        jumboMode="false"
-        revision="23.0.1"
-        sha1="045be695d968dd707691cc55d23746dbf8cf569a">
-        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_df05da15714ab16adc9dc2844d2d10e705d3a98a.jar" />
-    </item>
-    <item
         jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\appcompat-v7\24.2.0\jars\classes.jar"
         jumboMode="false"
         revision="23.0.1"
         sha1="c3c638be6e650b165ab9ae144857b64e82787fad">
         <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-appcompat-v7-24.2.0_a8ae2a6d44c25a1e7193f6040df214a39276c785.jar" />
+    </item>
+    <item
+        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-v4\24.2.0\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="45f5eda279825ff470e3f51019d374d1ef61e000">
+        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-v4-24.2.0_61d259474c796a3559bc09c56a1bfa0a59a754e1.jar" />
     </item>
     <item
         jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\animated-vector-drawable\24.2.0\jars\classes.jar"
@@ -79,11 +44,18 @@
         <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-fragment-24.2.0_ef9f7272b58a96a4f6a29ce59c8dce45cb8a8bbc.jar" />
     </item>
     <item
-        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-v4\24.2.0\jars\classes.jar"
+        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-fragment\24.2.0\jars\libs\internal_impl-24.2.0.jar"
         jumboMode="false"
         revision="23.0.1"
-        sha1="45f5eda279825ff470e3f51019d374d1ef61e000">
-        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-v4-24.2.0_61d259474c796a3559bc09c56a1bfa0a59a754e1.jar" />
+        sha1="032a4b53def5e2ceedfc2e793b126c0163cfa1dd">
+        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_9e1bb9551c5545e53aab673149b7c0bdaa157a31.jar" />
+    </item>
+    <item
+        jar="C:\Program Files (x86)\Android\android-sdk\extras\android\m2repository\com\android\support\support-annotations\24.2.0\support-annotations-24.2.0.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="6be858a75633b1f0a2d24cad740db57775cb6871">
+        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\support-annotations-24.2.0_f4228c1b901908a346c9ee83e23954a04b92a0ad.jar" />
     </item>
     <item
         jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-core-ui\24.2.0\jars\libs\internal_impl-24.2.0.jar"
@@ -91,6 +63,13 @@
         revision="23.0.1"
         sha1="6e02e34594ebe9c0501ffda8dd48497f81b82977">
         <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_f21fc47ff9dfd5a76740483336a1f5252c14bd7b.jar" />
+    </item>
+    <item
+        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-compat\24.2.0\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="f9b41622897665678d31d78e57a361cb0cebcb0d">
+        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-compat-24.2.0_b0cd1e8fe63198dd0bd1cc5e088190d175b73e37.jar" />
     </item>
     <item
         jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-core-ui\24.2.0\jars\classes.jar"
@@ -105,6 +84,27 @@
         revision="23.0.1"
         sha1="beac40bcc8a320a896dd15f5109cfcaea5e1e0e3">
         <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-vector-drawable-24.2.0_ec81aea655f1fab24c95226be6746fef6a0cef92.jar" />
+    </item>
+    <item
+        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-core-utils\24.2.0\jars\libs\internal_impl-24.2.0.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="60d7b23621d31e6f42f4f76f16af467e57a20cda">
+        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_650e075677067c3de092f1d6c5de9c52037a2f7f.jar" />
+    </item>
+    <item
+        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-compat\24.2.0\jars\libs\internal_impl-24.2.0.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="771b3cc0e597b54da25f8086ba73180c59c6bc71">
+        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\internal_impl-24.2.0_0edf6ebc2bb2b611c5d0c6d224693345fc64b85f.jar" />
+    </item>
+    <item
+        jar="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\exploded-aar\com.android.support\support-core-utils\24.2.0\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="fcc945a86ebcbf527429acb8216ec7dae2c06417">
+        <dex dex="C:\Users\sjpark\Documents\blueshift\BlueshiftEngine\Engine\Project\JavaAndroid\AndroidPlayer\app\build\intermediates\pre-dexed\arm7\debug\com.android.support-support-core-utils-24.2.0_a6aeed99971c3b4890aa7077b0ef116761e138f9.jar" />
     </item>
 
 </items>

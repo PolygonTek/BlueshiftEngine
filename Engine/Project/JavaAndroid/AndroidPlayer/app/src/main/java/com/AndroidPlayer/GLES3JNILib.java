@@ -32,4 +32,8 @@ public class GLES3JNILib {
 	 // _ENGINE
 	public static native void done();
 	public static native void SetAssetManager(Object asset, String path);
+	public static native void TouchBegin(int id, int x, int y);
+	public static native void TouchMove(int id, int x, int y);
+	public static native void TouchEnd(int id, int x, int y);
+	public static native void TouchCancel(int id);
 }

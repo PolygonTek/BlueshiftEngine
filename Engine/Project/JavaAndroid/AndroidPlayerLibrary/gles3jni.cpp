@@ -377,7 +377,12 @@ extern "C" {
     JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
     JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_step(JNIEnv* env, jobject obj);
 #if _ENGINE
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_done(JNIEnv* env, jobject obj);
 	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject asset, jstring path);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_TouchBegin(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_TouchMove(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_TouchEnd(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_TouchCancel(JNIEnv* env, jobject obj, jint touchId);
 #endif
 };
 
@@ -463,5 +468,41 @@ Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, job
 	BE1::PlatformFile::SetExecutablePath(_path);
 	env->ReleaseStringUTFChars(path, _path);
 }
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_TouchBegin(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY)
+{
+	uint64_t locationQword = BE1::MakeQWord((int)locationX, (int)locationY);
+
+	BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, true, 0, NULL);
+	BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, locationX, locationY, 0, NULL);
+	BE1::platform->QueEvent(BE1::Platform::TouchBeganEvent, touchId, locationQword, 0, NULL);
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_TouchMove(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY)
+{
+	uint64_t locationQword = BE1::MakeQWord((int)locationX, (int)locationY);
+
+	BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, locationX, locationY, 0, NULL);
+	BE1::platform->QueEvent(BE1::Platform::TouchMovedEvent, touchId, locationQword, 0, NULL);
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_TouchEnd(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY)
+{
+	uint64_t locationQword = BE1::MakeQWord((int)locationX, (int)locationY);
+
+	BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, NULL);
+	BE1::platform->QueEvent(BE1::Platform::TouchEndedEvent, touchId, locationQword, 0, NULL);
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_TouchCancel(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY)
+{
+	BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, NULL);
+	BE1::platform->QueEvent(BE1::Platform::TouchCanceledEvent, touchId, 0, 0, NULL);
+}
+
 #endif
 
