@@ -752,7 +752,7 @@ elseif (APPLE)
 endif ()
 
 if (IOS)
-    list(GGL_FILES
+    set(GGL_FILES
         Private/RHIOpenGL/OpenGL/GGL/ggles3.c
         Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
 elseif (ANDROID)
