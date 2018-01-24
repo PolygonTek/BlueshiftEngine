@@ -37,9 +37,11 @@ else ()
         usocket.h)
 endif ()
 
-include_directories(
-    ${ENGINE_INCLUDE_DIR}/Dependencies/lua
-)
+if (USE_LUAJIT)
+    include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/luaJIT/src)
+else ()
+    include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/lua)
+endif ()
 
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 

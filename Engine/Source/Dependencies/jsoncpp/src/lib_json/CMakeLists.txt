@@ -1,6 +1,6 @@
-SET( JSONCPP_INCLUDE_DIR ../../include )
+set(JSONCPP_INCLUDE_DIR ../../include )
 
-SET( PUBLIC_HEADERS
+set(PUBLIC_HEADERS
     ${JSONCPP_INCLUDE_DIR}/json/config.h
     ${JSONCPP_INCLUDE_DIR}/json/forwards.h
     ${JSONCPP_INCLUDE_DIR}/json/features.h
@@ -8,21 +8,19 @@ SET( PUBLIC_HEADERS
     ${JSONCPP_INCLUDE_DIR}/json/reader.h
     ${JSONCPP_INCLUDE_DIR}/json/writer.h
     ${JSONCPP_INCLUDE_DIR}/json/assertions.h
-    ${JSONCPP_INCLUDE_DIR}/json/version.h
-    )
+    ${JSONCPP_INCLUDE_DIR}/json/version.h)
 
-SOURCE_GROUP( "Public API" FILES ${PUBLIC_HEADERS} )
+source_group("Public API" FILES ${PUBLIC_HEADERS})
 
-ADD_LIBRARY( ${PROJECT_NAME} STATIC
-             ${PUBLIC_HEADERS}
-             json_tool.h
-             json_reader.cpp
-             json_batchallocator.h
-             json_valueiterator.inl
-             json_value.cpp
-             json_writer.cpp
-             version.h.in
-             )
+add_library(${PROJECT_NAME} STATIC
+    ${PUBLIC_HEADERS}
+    json_tool.h
+    json_reader.cpp
+    json_batchallocator.h
+    json_valueiterator.inl
+    json_value.cpp
+    json_writer.cpp
+    version.h.in)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     FOLDER Dependencies

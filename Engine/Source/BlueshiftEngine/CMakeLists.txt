@@ -821,7 +821,7 @@ elseif (APPLE)
         XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
         #XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS NO
         #XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] YES
-        #XCODE_ATTRIBUTE_GCC_PREFIX_HEADER ${CMAKE_CURRENT_LIST_DIR}/Precompiled.h        
+        #XCODE_ATTRIBUTE_GCC_PREFIX_HEADER ${CMAKE_CURRENT_LIST_DIR}/Precompiled.h
         #XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
         XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu99") 
 
@@ -856,7 +856,7 @@ elseif (APPLE)
 endif ()
 
 target_link_libraries(${PROJECT_NAME}
-    zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis jsoncpp freetype Bullet HACD LuaCpp NvTriStrip luasocket)
+    zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis jsoncpp freetype Bullet HACD luasocket LuaCpp NvTriStrip)
 
 if (ANDROID)
     target_link_libraries(${PROJECT_NAME} nvidia)

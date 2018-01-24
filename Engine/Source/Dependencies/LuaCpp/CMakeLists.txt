@@ -38,18 +38,24 @@ set(ALL_FILES
 
 auto_source_group(${ALL_FILES})
 
-include_directories(
-    ${ENGINE_INCLUDE_DIR}/Dependencies
-)
+include_directories(${ENGINE_INCLUDE_DIR}/Dependencies)
+
+add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
+
+target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
 if (USE_LUAJIT)
+    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${ENGINE_INCLUDE_DIR}/Dependencies/luaJIT/src>)
+
     include(FindLuaJIT)
     set(LUA_LIBRARY ${LUAJIT_LIBRARY})
 else ()
+    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${ENGINE_INCLUDE_DIR}/Dependencies/lua>)
+
     set(LUA_LIBRARY lua)
 endif ()
 
-add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
+target_link_libraries(${PROJECT_NAME} ${LUA_LIBRARY})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     FOLDER Dependencies
@@ -59,8 +65,3 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
 
-target_include_directories(${PROJECT_NAME} 
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-)
-
-target_link_libraries(${PROJECT_NAME} ${LUA_LIBRARY})
