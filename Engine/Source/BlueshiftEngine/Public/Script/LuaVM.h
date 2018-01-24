@@ -38,7 +38,9 @@ public:
     int                     GetLuaMemory() const { return state->GetGCKb() * 1024; }
 
     void                    EnableJIT(bool enabled);
-    void                    EnableDebug();
+
+    void                    StartDebuggee();
+    void                    PollDebuggee();
 
     void                    RegisterEngineModuleCallback(EngineModuleCallback callback);
 

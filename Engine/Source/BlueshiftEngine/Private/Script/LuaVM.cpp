@@ -20,12 +20,13 @@
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
 
-//extern int luaopen_file(lua_State *L);
-extern "C" int luaopen_socket_core(lua_State *L);
+extern "C" {
+#include "luasocket/luasocket.h"
+}
 
 BE_NAMESPACE_BEGIN
 
-static CVar lua_server(L"lua_server", L"127.0.0.1", CVar::Archive, L"lua server for debugging");
+static CVar lua_debuggerAddr(L"lua_debuggerAddr", L"localhost", CVar::Archive, L"Lua debugger address for remote debugging");
 
 void LuaVM::Init() {
     if (state) {
@@ -80,10 +81,6 @@ void LuaVM::Init() {
     });
 
     //state->Require("blueshift.io", luaopen_file);
-
-#if !defined(__IOS__) && !defined(__ANDROID__)
-    //EnableDebug();
-#endif
 }
 
 void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
@@ -222,19 +219,49 @@ const char *LuaVM::GetLuaJitVersion() const {
 void LuaVM::EnableJIT(bool enabled) {
     state->EnableJIT(enabled);
 }
-/*
-void LuaVM::EnableDebug() {
-    char *server = tombs(lua_server.GetString());
-    if (server[0] == 0)
-        return;
 
-    File *f = fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
-    if (!f)
-        return;
-    fileSystem.CloseFile(f);
+void LuaVM::StartDebuggee() {
+#if 1
+    return;
+    // Lua Debugger by devCAT
+    // https://marketplace.visualstudio.com/items?itemName=devCAT.lua-debug
+    Str addr = Str(lua_debuggerAddr.GetString());
     state->Require("socket.core", luaopen_socket_core);
-    char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", server);
+    const char *text = va(R"(
+local blueshift = require 'blueshift'
+local json = require 'dkjson'
+local debuggee = require 'vscode-debuggee'
+local config = { redirectPrint = true, controllerHost = '%hs' }
+local startResult, breakerType = debuggee.start(json, config)
+if startResult then
+    blueshift.log('Connected to debugger ('..breakerType..')')
+else
+    blueshift.log('Failed to connect to debugger')
+end
+    )", addr.c_str());
+    (*state)(text);
+#else
+    char *addr = tombs(lua_debuggerAddr.GetString());
+
+    File *fp = fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
+    if (!fp) {
+        return;
+    }
+    fileSystem.CloseFile(fp);
+
+    state->Require("socket.core", luaopen_socket_core);
+    char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", addr);
     (*state)(cmd);
-}*/
+#endif
+}
+
+void LuaVM::PollDebuggee() {
+#if 0
+    (*state)(R"(
+local debuggee = require 'vscode-debuggee'
+debuggee.poll()
+    )");
+#endif
+}
 
 BE_NAMESPACE_END

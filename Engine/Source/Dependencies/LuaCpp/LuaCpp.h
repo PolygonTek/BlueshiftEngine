@@ -5,15 +5,14 @@
 #endif
 
 // --- Lua ---
-#if USE_LUAJIT
-#include "luaJIT/src/lua.hpp"
-#else
 extern "C" {
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
-}
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+#if USE_LUAJIT
+    #include "luajit.h"
 #endif
+}
 
 // --- Cpp ---
 #include <iostream>
@@ -27,8 +26,6 @@ extern "C" {
 #include <functional>
 #include <exception>
 #include <cassert>
-
-
 
 #ifdef __ANDROID__
 

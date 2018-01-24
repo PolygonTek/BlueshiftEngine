@@ -532,23 +532,7 @@ bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxN
         return false;
     }
 
-    Str name;
-#if 0
-    // NOTE: absolute file path is needed for Lua debugging
-    char *path = tombs(lua_path.GetString());
-
-    if (path[0]) {
-        name = path;
-        name.AppendPath(filename);
-        name.CleanPath();
-    } else {
-        name = fileSystem.ToAbsolutePath(filename);
-    }
-#else
-    name = filename;
-#endif
-
-    if (!state->LoadBuffer(name.c_str(), data, size, sandboxName)) {
+    if (!state->LoadBuffer(filename, data, size, sandboxName)) {
         fileSystem.FreeFile(data);
         return false;
     }
