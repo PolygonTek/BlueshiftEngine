@@ -33,9 +33,11 @@ public:
 
     LuaCpp::State &         State() { return *state; }
 
-    float                   GetLuaVersion() const { return state->Version(); }
+    const char *            GetLuaVersion() const;
+    const char *            GetLuaJitVersion() const;
     int                     GetLuaMemory() const { return state->GetGCKb() * 1024; }
 
+    void                    EnableJIT(bool enabled);
     void                    EnableDebug();
 
     void                    RegisterEngineModuleCallback(EngineModuleCallback callback);

@@ -58,10 +58,23 @@ public:
         return lua_gettop(_l);
     }
 
-    float Version() const {
-        static int version;
-        version = (int)(LUA_VERSION_NUM);
-        return (float)(version / 100) + (float)(version % 10) / 10;
+    void Version(int &major, int &minor) const {
+        static int version = (int)(LUA_VERSION_NUM);
+        major = version / 100;
+        minor = version % 100;
+    }
+
+    void JitVersion(int &major, int &minor, int &patch) const {
+#if USE_LUAJIT
+        static int version = (int)(LUAJIT_VERSION_NUM);
+        major = version / 10000;
+        minor = (version - major * 10000) / 100;
+        patch = version % 100;
+#else
+        major = 0;
+        minor = 0;
+        patch = 0;
+#endif
     }
 
     template <typename T>
@@ -116,6 +129,17 @@ public:
         // Returns the current amount of memory (in Kbytes) in use by Lua.
         int kb = lua_gc(_l, LUA_GCCOUNT, 0);
         return kb;
+    }
+
+    bool EnableJIT(bool enabled) {
+#if USE_LUAJIT
+        if (luaJIT_setmode(_l, 0, LUAJIT_MODE_ENGINE | (enabled ? LUAJIT_MODE_ON : LUAJIT_MODE_OFF))) {
+            return true;
+        }
+        return false;
+#else
+        return false;
+#endif
     }
 
     void EnterInteractiveMode() {

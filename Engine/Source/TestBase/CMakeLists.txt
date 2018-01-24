@@ -32,11 +32,18 @@ target_link_libraries(${PROJECT_NAME}
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
 
+if (USE_LUAJIT)
+  if (APPLE AND NOT IOS)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pagezero_size 10000 -image_base 100000000")
+  endif ()
+endif ()
+
 if (NOT IOS)
-  set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-  set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
-  set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-  set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
+  set_target_properties(${PROJECT_NAME} PROPERTIES 
+    PREFIX ""
+    DEBUG_POSTFIX "_d"
+    OUTPUT_NAME ${PROJECT_NAME}
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
 endif ()
 
 if (WIN32)

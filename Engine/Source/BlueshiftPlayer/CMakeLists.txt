@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
+# Variables are given by Blueshift Editor
 set(BS_APP_NAME "Blueshift Player" CACHE STRING "BS_APP_NAME variable defaulting")
 set(BS_APP_IDENTIFIER "com.polygontek.BlueshiftPlayer" CACHE STRING "BS_APP_IDENTIFIER variable defaulting")
 set(BS_APP_VERSION "1.0" CACHE STRING "BS_APP_VERSION variable defaulting")
@@ -134,12 +135,14 @@ if (XAMARIN)
 else ()
     if (ANDROID)
 	    add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
-    else ()
-	    add_executable(${PROJECT_NAME} WIN32 MACOSX_BUNDLE ${ALL_FILES})
-    endif ()
+    elseif (WIN32)
+        add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
+    elseif (APPLE)
+        if (USE_LUAJIT AND NOT IOS)
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pagezero_size 10000 -image_base 100000000")
+        endif ()
 
-    if (BUILD_ENGINE)
-        set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
+        add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${ALL_FILES})
     endif ()
 
     if (NOT IOS)
@@ -158,7 +161,7 @@ else ()
             set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)
 
             add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND "mt.exe" -manifest "${PROJECT_SOURCE_DIR}\\Manifest.xml" -outputresource:"$<TARGET_FILE:${PROJECT_NAME}>\;1"
+                COMMAND "mt.exe" -nologo -manifest "${PROJECT_SOURCE_DIR}\\Manifest.xml" -outputresource:"$<TARGET_FILE:${PROJECT_NAME}>\;1"
                 COMMENT "Adding manifest...")
         endif ()
     elseif (APPLE)
@@ -255,29 +258,35 @@ else ()
     endif ()
 
     if (BUILD_ENGINE)
+        set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
+
         target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
 
         if (IOS)
             add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 #COMMAND rm -rf \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\"
-                COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Data\"
-                COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Config\"
-                COMMAND mkdir -p \"$(PROJECT_DIR)/Source/Player/Scripts\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Data\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Source/Player/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Data\""
+                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Config\""
+                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Scripts\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Data\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Config\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Scripts\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
                 COMMENT "Copying data files"
                 USES_TERMINAL)
         endif ()
     elseif (BUILD_PLAYER)
-        set(LIB_FILES zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis freetype jsoncpp Bullet HACD lua LuaCpp luasocket BlueshiftEngine)
+        set(ENGINE_LIB_FILES zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis freetype jsoncpp Bullet HACD LuaCpp luasocket BlueshiftEngine)
 
+        if (NOT USE_LUAJIT)
+            list(APPEND ENGINE_LIB_FILES lua)
+        endif ()
+        
         if (ANDROID)
-            list(APPEND LIB_FILES nvidia android GLESv3 EGL OpenSLES)
+            list(APPEND ENGINE_LIB_FILES nvidia android GLESv3 EGL OpenSLES)
         endif ()
     
         if (WIN32)
-            foreach (FILE ${LIB_FILES})
+            foreach (FILE ${ENGINE_LIB_FILES})
                 add_library(${FILE} STATIC IMPORTED)
 
                 set_target_properties(${FILE} PROPERTIES
@@ -286,15 +295,15 @@ else ()
             endforeach()
         elseif (APPLE)
             add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                #COMMAND rm -rf \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\"
-                COMMAND mkdir -p \"$(PROJECT_DIR)/Scripts\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Data\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Config\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
-                COMMAND cp -Rf \"$(PROJECT_DIR)/Scripts\" \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\"
+                #COMMAND rm -rf "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\""
+                COMMAND mkdir -p "\"$(PROJECT_DIR)/Scripts\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Data\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Config\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
+                COMMAND cp -Rf "\"$(PROJECT_DIR)/Scripts\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
                 COMMENT "Copying data files"
                 USES_TERMINAL)
 
-            foreach (FILE ${LIB_FILES})
+            foreach (FILE ${ENGINE_LIB_FILES})
                 add_library(${FILE} STATIC IMPORTED)
 
                 set_target_properties(${FILE} PROPERTIES
@@ -303,7 +312,12 @@ else ()
             endforeach ()
         endif ()
 
-        target_link_libraries(${PROJECT_NAME} ${LIB_FILES})
+        target_link_libraries(${PROJECT_NAME} ${ENGINE_LIB_FILES})
+
+        if (USE_LUAJIT)
+            include(FindLuaJIT)
+            target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
+        endif ()
     endif ()
 
     if (ANDROID)

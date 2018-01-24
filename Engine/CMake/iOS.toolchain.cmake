@@ -7,7 +7,10 @@
 # IOS_PLATFORM = OS (default) or SIMULATOR or SIMULATOR64
 #   This decides if SDKS will be selected from the iPhoneOS.platform or iPhoneSimulator.platform folders
 #   OS - the default, used to build for iPhone and iPad physical devices, which have an arm arch.
-#   SIMULATOR - used to build for the Simulator platforms, which have an x86 arch.
+#   SIMULATOR - used to build for x86 iPhone Simulator.
+#   SIMULATOR64 - used to build for x86 x86_64 iPhone Simulator.
+#   TVOS - Build for AppleTVOS
+#   SIMULATOR_TVOS - used to build for x86_64 AppleTV Simulator.
 #
 # CMAKE_IOS_DEVELOPER_ROOT = automatic(default) or /path/to/platform/Developer folder
 #   By default this location is automatcially chosen based on the IOS_PLATFORM value above.
@@ -34,6 +37,14 @@ set (CMAKE_SYSTEM_VERSION 1)
 set (UNIX True)
 set (APPLE True)
 set (IOS True)
+
+# Get the Xcode version being used.
+execute_process(COMMAND xcodebuild -version
+    OUTPUT_VARIABLE XCODE_VERSION
+    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+string(REGEX MATCH "Xcode [0-9\\.]+" XCODE_VERSION "${XCODE_VERSION}")
+string(REGEX REPLACE "Xcode ([0-9\\.]+)" "\\1" XCODE_VERSION "${XCODE_VERSION}")
+message(STATUS "Building with Xcode version: ${XCODE_VERSION}")
 
 # Required as of cmake 2.8.10
 set (CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Force unset of the deployment target for iOS" FORCE)
@@ -157,12 +168,17 @@ set (CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Sysroot used for iOS su
 
 # set the architecture for iOS 
 if (${IOS_PLATFORM} STREQUAL "OS")
-    set (IOS_ARCH arm64)
+    set(IOS_ARCH arm64)
 elseif (${IOS_PLATFORM} STREQUAL "SIMULATOR")
-    set (IOS_ARCH i386)
+    set(IOS_ARCH i386)
 elseif (${IOS_PLATFORM} STREQUAL "SIMULATOR64")
-    set (IOS_ARCH x86_64)
-endif (${IOS_PLATFORM} STREQUAL "OS")
+    set(IOS_ARCH x86_64)
+elseif (${IOS_PLATFORM} STREQUAL "TVOS")
+    set(IOS_ARCH arm64)
+elseif (${IOS_PLATFORM} STREQUAL "SIMULATOR_TVOS")
+    set(IOS_ARCH x86_64)
+else()
+endif ()
 
 set (CMAKE_OSX_ARCHITECTURES ${IOS_ARCH} CACHE string  "Build architecture for iOS")
 

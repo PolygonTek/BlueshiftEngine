@@ -7,23 +7,42 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 include(BlueshiftCommon)
 
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(ENGINE_64BIT TRUE)
+endif ()
+
+if (CMAKE_CROSSCOMPILING)
+    if (IOS)
+        set(ENGINE_ARCH ${IOS_ARCH})
+    elseif (ANDROID)
+        set(ENGINE_ARCH ${CMAKE_ANDROID_ARCH})
+    endif ()
+else ()
+    if (ENGINE_64BIT)
+        set(ENGINE_ARCH x86_64)
+    else ()
+        set(ENGINE_ARCH i386)
+    endif ()
+endif ()
+
 option(BUILD_ENGINE "Build Blueshift Engine" OFF)
 option(BUILD_PLAYER "Build Blueshift Player" OFF)
 option(BUILD_EDITOR "Build Blueshift Editor" OFF)
 option(BUILD_TEST "Build test projects" OFF)
+option(USE_LUAJIT "Use LuaJIT" OFF)
 
 if (BUILD_ENGINE)
-    set(project_name BlueshiftEngine)
+    set(ROOT_PROJECT_NAME BlueshiftEngine)
 
     set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
     set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
 elseif (BUILD_PLAYER)
-    set(project_name BlueshiftPlayer)
+    set(ROOT_PROJECT_NAME BlueshiftPlayer)
 else ()
     message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
 endif ()
 
-project(${project_name})
+project(${ROOT_PROJECT_NAME})
 
 set(VERSION_MAJOR 0 CACHE STRING "Project major version number.")
 set(VERSION_MINOR 3 CACHE STRING "Project minor version number.")
@@ -74,7 +93,10 @@ if (WIN32 AND MSVC)
 
     #set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
     #set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-    #set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")  
+    #set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+
+    # Suppress warnings when linking with release library
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:\"msvcrt.lib\"")
 elseif (APPLE) 
     # Settings for macOS, iOS
     #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
@@ -149,6 +171,12 @@ else ()
     else ()
         set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
     endif ()
+endif ()
+
+if (USE_LUAJIT)
+    add_definitions(-DUSE_LUAJIT=1)
+else ()
+    add_definitions(-DUSE_LUAJIT=0)
 endif ()
 
 ################################################################################
