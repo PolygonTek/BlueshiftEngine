@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
+# Variables are given by Blueshift Editor
 set(BS_APP_NAME "Blueshift Player" CACHE STRING "BS_APP_NAME variable defaulting")
 set(BS_APP_IDENTIFIER "com.polygontek.BlueshiftPlayer" CACHE STRING "BS_APP_IDENTIFIER variable defaulting")
 set(BS_APP_VERSION "1.0" CACHE STRING "BS_APP_VERSION variable defaulting")
@@ -144,10 +145,6 @@ else ()
         add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${ALL_FILES})
     endif ()
 
-    if (BUILD_ENGINE)
-        set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
-    endif ()
-
     if (NOT IOS)
         set_target_properties(${PROJECT_NAME} PROPERTIES 
             PREFIX ""
@@ -261,6 +258,8 @@ else ()
     endif ()
 
     if (BUILD_ENGINE)
+        set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
+
         target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
 
         if (IOS)
@@ -276,14 +275,18 @@ else ()
                 USES_TERMINAL)
         endif ()
     elseif (BUILD_PLAYER)
-        set(LIB_FILES zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis freetype jsoncpp Bullet HACD lua LuaCpp luasocket BlueshiftEngine)
+        set(ENGINE_LIB_FILES zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis freetype jsoncpp Bullet HACD LuaCpp luasocket BlueshiftEngine)
 
+        if (NOT USE_LUAJIT)
+            list(APPEND ENGINE_LIB_FILES lua)
+        endif ()
+        
         if (ANDROID)
-            list(APPEND LIB_FILES nvidia android GLESv3 EGL OpenSLES)
+            list(APPEND ENGINE_LIB_FILES nvidia android GLESv3 EGL OpenSLES)
         endif ()
     
         if (WIN32)
-            foreach (FILE ${LIB_FILES})
+            foreach (FILE ${ENGINE_LIB_FILES})
                 add_library(${FILE} STATIC IMPORTED)
 
                 set_target_properties(${FILE} PROPERTIES
@@ -300,7 +303,7 @@ else ()
                 COMMENT "Copying data files"
                 USES_TERMINAL)
 
-            foreach (FILE ${LIB_FILES})
+            foreach (FILE ${ENGINE_LIB_FILES})
                 add_library(${FILE} STATIC IMPORTED)
 
                 set_target_properties(${FILE} PROPERTIES
@@ -309,7 +312,12 @@ else ()
             endforeach ()
         endif ()
 
-        target_link_libraries(${PROJECT_NAME} ${LIB_FILES})
+        target_link_libraries(${PROJECT_NAME} ${ENGINE_LIB_FILES})
+
+        if (USE_LUAJIT)
+            include(FindLuaJIT)
+            target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
+        endif ()
     endif ()
 
     if (ANDROID)
