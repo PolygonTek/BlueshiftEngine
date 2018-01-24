@@ -49,7 +49,7 @@ local function make_set(t)
     return s
 end
 
--- these are allowed withing a path segment, along with alphanum
+-- these are allowed within a path segment, along with alphanum
 -- other characters must be escaped
 local segment_set = make_set {
     "-", "_", ".", "!", "~", "*", "'", "(",
@@ -59,7 +59,7 @@ local segment_set = make_set {
 local function protect_segment(s)
     return string.gsub(s, "([^A-Za-z0-9_])", function (c)
         if segment_set[c] then return c
-        else return string.format("%%%02x", string.byte(c)) end
+        else return string.format("%%%02X", string.byte(c)) end
     end)
 end
 
@@ -131,17 +131,17 @@ function _M.parse(url, default)
     if not url or url == "" then return nil, "invalid url" end
     -- remove whitespace
     -- url = string.gsub(url, "%s", "")
-    -- get fragment
-    url = string.gsub(url, "#(.*)$", function(f)
-        parsed.fragment = f
-        return ""
-    end)
     -- get scheme
     url = string.gsub(url, "^([%w][%w%+%-%.]*)%:",
         function(s) parsed.scheme = s; return "" end)
     -- get authority
     url = string.gsub(url, "^//([^/]*)", function(n)
         parsed.authority = n
+        return ""
+    end)
+    -- get fragment
+    url = string.gsub(url, "#(.*)$", function(f)
+        parsed.fragment = f
         return ""
     end)
     -- get query string
@@ -183,8 +183,9 @@ end
 --   a stringing with the corresponding URL
 -----------------------------------------------------------------------------
 function _M.build(parsed)
-    local ppath = _M.parse_path(parsed.path or "")
-    local url = _M.build_path(ppath)
+    --local ppath = _M.parse_path(parsed.path or "")
+    --local url = _M.build_path(ppath)
+    local url = parsed.path or ""
     if parsed.params then url = url .. ";" .. parsed.params end
     if parsed.query then url = url .. "?" .. parsed.query end
     local authority = parsed.authority
@@ -193,7 +194,7 @@ function _M.build(parsed)
         if string.find(authority, ":") then -- IPv6?
             authority = "[" .. authority .. "]"
         end
-        if parsed.port then authority = authority .. ":" .. parsed.port end
+        if parsed.port then authority = authority .. ":" .. base.tostring(parsed.port) end
         local userinfo = parsed.userinfo
         if parsed.user then
             userinfo = parsed.user

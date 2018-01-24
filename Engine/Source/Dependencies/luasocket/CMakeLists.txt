@@ -3,42 +3,42 @@ cmake_minimum_required(VERSION 2.8.12)
 project(luasocket)
 
 set(SRC_FILES
-  auxiliar.c
-  auxiliar.h
-  buffer.c
-  buffer.h
-  except.c
-  except.h
-  inet.c
-  inet.h
-  io.c
-  io.h
-  luasocket.c
-  luasocket.h
-  options.c
-  options.h
-  select.c
-  select.h
-  tcp.c
-  tcp.h
-  timeout.c
-  timeout.h
-  udp.c
-  udp.h
+    auxiliar.c
+    auxiliar.h
+    buffer.c
+    buffer.h
+    except.c
+    except.h
+    inet.c
+    inet.h
+    io.c
+    io.h
+    luasocket.c
+    luasocket.h
+    options.c
+    options.h
+    select.c
+    select.h
+    tcp.c
+    tcp.h
+    timeout.c
+    timeout.h
+    udp.c
+    udp.h
 )
 
 if (WIN32 AND NOT ANDROID)
-  list(APPEND SRC_FILES
-    wsocket.c
-    wsocket.h)
+    list(APPEND SRC_FILES
+        wsocket.c
+        wsocket.h)
 else ()
-  list(APPEND SRC_FILES
-    usocket.c
-    usocket.h)
+    list(APPEND SRC_FILES
+        usocket.c
+        usocket.h)
 endif ()
 
 include_directories(
-  ${ENGINE_INCLUDE_DIR}/Dependencies/lua
+    ${ENGINE_INCLUDE_DIR}/Dependencies/lua
 )
 
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
