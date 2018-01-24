@@ -11,7 +11,6 @@ set(ENGINE_FILES
     Precompiled.cpp
 
     Public/BlueshiftEngine.h
-    Public/BlueshiftEngineInterface.h
 
     Public/Core/Allocator.h
     Public/Core/Checksum_CRC32.h
@@ -137,9 +136,10 @@ set(ENGINE_FILES
     Public/RHI/RHI.h
     Public/RHI/RHIOpenGL.h
 
-    Public/Main/Common.h
-    Public/Main/GameClient.h
-    Public/Main/Console.h
+    Public/Engine/Common.h
+    Public/Engine/GameClient.h
+    Public/Engine/Console.h
+    Public/Engine/Engine.h
 
     Public/Asset/Asset.h
     Public/Asset/AssetImporter.h
@@ -246,7 +246,6 @@ set(ENGINE_FILES
 
     Public/Script/LuaVM.h
 
-    Private/BlueshiftEngine.cpp
     Private/Core/Checksum_CRC32.cpp
     Private/Core/Checksum_MD5.cpp
     Private/Core/Heap.cpp
@@ -345,9 +344,10 @@ set(ENGINE_FILES
     Private/RHIOpenGL/RGLTexture.cpp
     Private/RHIOpenGL/RGLVertexFormat.cpp
 
-    Private/Main/Common.cpp
-    Private/Main/GameClient.cpp
-    Private/Main/Console.cpp
+    Private/Engine/Common.cpp
+    Private/Engine/GameClient.cpp
+    Private/Engine/Console.cpp
+    Private/Engine/Engine.cpp
 
     Private/Asset/Asset.cpp
     Private/Asset/FolderAsset.cpp
@@ -553,7 +553,7 @@ set(ENGINE_FILES
     Private/Script/Math/LuaModule_Ray.cpp
     Private/Script/Math/LuaModule_Point.cpp
     Private/Script/Math/LuaModule_Rect.cpp
-    Private/Script/Main/LuaModule_Common.cpp
+    Private/Script/Engine/LuaModule_Common.cpp
     Private/Script/Input/LuaModule_InputSystem.cpp
     Private/Script/Screen/LuaModule_Screen.cpp
     Private/Script/Physics/LuaModule_Physics.cpp

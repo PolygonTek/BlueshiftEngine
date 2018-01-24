@@ -175,10 +175,9 @@
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 
-#include "Main/Common.h"
-#include "Main/Console.h"
-#include "Main/GameClient.h"
+#include "Engine/Common.h"
+#include "Engine/Console.h"
+#include "Engine/GameClient.h"
+#include "Engine/Engine.h"
 
 //#include "tinyxml2/tinyxml2.h"
-
-#include "BlueshiftEngineInterface.h"

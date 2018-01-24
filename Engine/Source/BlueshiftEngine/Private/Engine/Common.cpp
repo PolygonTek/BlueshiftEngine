@@ -13,13 +13,13 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "BlueshiftEngineInterface.h"
 #include "Core/Object.h"
 #include "Input/KeyCmd.h"
 #include "Input/InputSystem.h"
-#include "Main/GameClient.h"
-#include "Main/Console.h"
-#include "Main/Common.h"
+#include "Engine/Engine.h"
+#include "Engine/GameClient.h"
+#include "Engine/Console.h"
+#include "Engine/Common.h"
 #include "Platform/PlatformProcess.h"
 #include "Simd/Simd.h"
 #include "Core/StrColor.h"
