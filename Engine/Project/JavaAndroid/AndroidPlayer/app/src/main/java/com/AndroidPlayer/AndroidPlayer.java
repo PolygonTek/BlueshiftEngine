@@ -74,10 +74,4 @@ public class AndroidPlayer extends Activity {
         super.onResume();
         mView.onResume();
     }
-    @Override protected void onDestroy() {
-    	if (_ENGINE) {
-			GLES3JNILib.done();
-    	}
-        super.onDestroy();
-    }
 }

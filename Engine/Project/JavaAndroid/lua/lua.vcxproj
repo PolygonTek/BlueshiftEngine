@@ -147,7 +147,7 @@
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+      <Command>md ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -157,7 +157,7 @@
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+      <Command>md ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -184,35 +184,35 @@
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lundump.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lvm.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lzio.h" />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lapi.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lauxlib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lbaselib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lcode.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldblib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldebug.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldo.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldump.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lfunc.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lgc.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\linit.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\liolib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\llex.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lmathlib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lmem.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\loadlib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lobject.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lopcodes.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\loslib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lparser.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstate.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstring.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstrlib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltable.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltablib.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltm.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lundump.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lvm.c"  />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lzio.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lapi.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lauxlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lbaselib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lcode.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldblib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldebug.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldo.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldump.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lfunc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lgc.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\linit.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\liolib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\llex.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lmathlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lmem.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\loadlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lobject.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lopcodes.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\loslib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lparser.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstate.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstring.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstrlib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltable.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltablib.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltm.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lundump.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lvm.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lzio.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

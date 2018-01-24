@@ -4,10 +4,7 @@
     <ClCompile Include="..\..\..\Source\Dependencies\lua\lapi.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\lua\lauxlib.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\lua\lbaselib.c" />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lbitlib.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\lua\lcode.c" />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lcorolib.c" />
-    <ClCompile Include="..\..\..\Source\Dependencies\lua\lctype.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\lua\ldblib.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\lua\ldebug.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\lua\ldo.c" />
@@ -38,7 +35,6 @@
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lapi.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lauxlib.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lcode.h" />
-    <ClInclude Include="..\..\..\Source\Dependencies\lua\lctype.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\ldebug.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\ldo.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lfunc.h" />
@@ -54,7 +50,6 @@
     <ClInclude Include="..\..\..\Source\Dependencies\lua\ltable.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\ltm.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lua.h" />
-    <ClInclude Include="..\..\..\Source\Dependencies\lua\lua.hpp" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\luaconf.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lualib.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\lua\lundump.h" />

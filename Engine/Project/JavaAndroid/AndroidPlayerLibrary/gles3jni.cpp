@@ -446,10 +446,6 @@ Java_com_AndroidPlayer_GLES3JNILib_step(JNIEnv* env, jobject obj) {
 }
 
 #if _ENGINE
-JNIEXPORT void JNICALL
-Java_com_AndroidPlayer_GLES3JNILib_done(JNIEnv* env, jobject obj) {
-	appDeinit();
-}
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject asset, jstring path) {
