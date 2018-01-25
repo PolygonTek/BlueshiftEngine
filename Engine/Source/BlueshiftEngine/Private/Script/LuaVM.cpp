@@ -26,7 +26,7 @@ extern "C" {
 
 BE_NAMESPACE_BEGIN
 
-static CVAR(lua_debug, L"1", CVar::Bool, L"Enable Lua debugging");
+static CVAR(lua_debug, L"0", CVar::Bool | CVar::Archive, L"Enable Lua debugging");
 static CVAR(lua_debuggerServer, L"localhost", CVar::Archive, L"Lua debugger server address for remote debugging");
 static CVAR(lua_debuggeeController, L"mobdebug_controller", 0, L"Lua debuggee controller script name");
 static CVAR(lua_path, L"", CVar::Archive, L"Lua project path for debugging");
