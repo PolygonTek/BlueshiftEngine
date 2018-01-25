@@ -5,13 +5,11 @@ local startResult = false
 function start(debugger_server_addr)
 	mobdebug.onexit = stop
 	startResult = mobdebug.start(debugger_server_addr)
-	mobdebug.off()
 	if startResult then
     	blueshift.log('Successfully connected to debugger')
 	else
     	blueshift.log('Failed to connect to debugger')
 	end
-	mobdebug.on()
 end
 
 function stop()

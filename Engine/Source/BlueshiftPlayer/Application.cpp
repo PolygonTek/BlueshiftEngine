@@ -39,6 +39,7 @@ void Application::Init() {
     BE1::GameSettings::Init();
 
     gameWorld = (BE1::GameWorld *)BE1::GameWorld::CreateInstance();
+    gameWorld->SetDebuggable(true);
     gameWorld->GetLuaVM().RegisterEngineModuleCallback(RegisterApp);
     gameWorld->GetLuaVM().InitEngineModule(gameWorld);
 

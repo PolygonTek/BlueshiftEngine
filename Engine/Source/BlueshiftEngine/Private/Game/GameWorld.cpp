@@ -56,6 +56,8 @@ GameWorld::GameWorld() {
     // Create physics world
     physicsWorld = physicsSystem.AllocPhysicsWorld();
 
+    isDebuggable = false;
+    isMapLoading = false;
     gameStarted = false;
 
     timeScale = 1.0f;
@@ -426,6 +428,10 @@ void GameWorld::FinishMapLoading() {
 }
 
 void GameWorld::StartGame() {
+    if (isDebuggable) {
+        luaVM.StartDebuggee();
+    }
+
     gameStarted = true;
 
     timeScale = 1.0f;
@@ -443,6 +449,10 @@ void GameWorld::StartGame() {
 }
 
 void GameWorld::StopGame(bool stopAllSounds) {
+    if (isDebuggable) {
+        luaVM.StopDebuggee();
+    }
+
     gameStarted = false;
 
     if (stopAllSounds) {
@@ -542,6 +552,10 @@ void GameWorld::SaveMap(const char *filename) {
 }
 
 void GameWorld::Update(int elapsedTime) {
+    if (isDebuggable) {
+        luaVM.PollDebuggee();
+    }
+
     prevTime = time;
 
     int scaledElapsedTime = elapsedTime * timeScale;
