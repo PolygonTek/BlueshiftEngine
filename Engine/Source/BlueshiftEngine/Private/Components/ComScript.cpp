@@ -523,8 +523,6 @@ void ComScript::UpdateFunctionMap() {
     onApplicationPauseFunc = CacheFunction("on_application_pause");
 }
 
-static CVar lua_path(L"lua_path", L"", CVar::Archive, L"lua project path for debugging");
-
 bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxName) {
     char *data;
     size_t size = fileSystem.LoadFile(filename, true, (void **)&data);

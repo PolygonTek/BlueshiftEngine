@@ -40,6 +40,7 @@ public:
     void                    EnableJIT(bool enabled);
 
     void                    StartDebuggee();
+    void                    StopDebuggee();
     void                    PollDebuggee();
 
     void                    RegisterEngineModuleCallback(EngineModuleCallback callback);
@@ -134,6 +135,10 @@ private:
     void                    RegisterGameWorld(LuaCpp::Module &module);
 
     LuaCpp::State *         state;
+    LuaCpp::Selector        startDebuggee;
+    LuaCpp::Selector        stopDebuggee;
+    LuaCpp::Selector        pollDebuggee;
+    bool                    debuggeeStarted = false;
 
     Array<EngineModuleCallback> engineModuleCallbacks;
 
