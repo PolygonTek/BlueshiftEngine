@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Main/Common.h"
-#include "Main/Console.h"
+#include "Engine/Common.h"
+#include "Engine/Console.h"
 #include "Core/Signal.h"
 #include "Core/Cmds.h"
 #include "File/FileSystem.h"

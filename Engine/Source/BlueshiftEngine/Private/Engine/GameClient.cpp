@@ -23,9 +23,9 @@
 #include "Input/InputSystem.h"
 #include "Sound/SoundSystem.h"
 #include "AnimController/AnimController.h"
-#include "Main/Common.h"
-#include "Main/GameClient.h"
-#include "Main/Console.h"
+#include "Engine/Common.h"
+#include "Engine/GameClient.h"
+#include "Engine/Console.h"
 #include "Asset/GuidMapper.h"
 #include "Platform/PlatformProcess.h"
 
