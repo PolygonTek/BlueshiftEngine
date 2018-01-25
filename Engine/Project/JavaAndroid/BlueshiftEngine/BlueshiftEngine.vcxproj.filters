@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Precompiled.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\BlueshiftEngine.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Checksum_CRC32.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Checksum_MD5.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Core\Heap.cpp" />
@@ -93,9 +92,6 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\RHIOpenGL\RGLSync.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\RHIOpenGL\RGLTexture.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\RHIOpenGL\RGLVertexFormat.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Main\Common.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Main\GameClient.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Main\Console.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Asset\Asset.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Asset\FolderAsset.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Asset\FBXAsset.cpp" />
@@ -266,7 +262,6 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Ray.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Point.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Math\LuaModule_Rect.cpp" />
-    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Main\LuaModule_Common.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Input\LuaModule_InputSystem.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Screen\LuaModule_Screen.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Physics\LuaModule_Physics.cpp" />
@@ -346,11 +341,15 @@
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Components\LuaModule_ComAnimator.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Posix\PlatformPosixSystem.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Platform\Linux\PlatformLinuxSystem.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Engine\Common.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Engine\GameClient.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Engine\Console.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Engine\Engine.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftEngine\Private\Script\Engine\LuaModule_Common.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Precompiled.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\BlueshiftEngine.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\BlueshiftEngineInterface.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\Allocator.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\Checksum_CRC32.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Core\Checksum_MD5.h" />
@@ -461,9 +460,6 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\File\ZipArchiver.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\RHI\RHI.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\RHI\RHIOpenGL.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Main\Common.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Main\GameClient.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Main\Console.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Asset\Asset.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Asset\AssetImporter.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Asset\GuidMapper.h" />
@@ -597,5 +593,9 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Game\PlayerSettings.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Posix\PlatformPosixSystem.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Platform\Linux\PlatformLinuxSystem.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Engine\Common.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Engine\GameClient.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Engine\Console.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Engine\Engine.h" />
   </ItemGroup>
 </Project>

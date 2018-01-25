@@ -99,6 +99,9 @@ class GLES3JNIView extends GLSurfaceView {
     private static class Renderer implements GLSurfaceView.Renderer {
         public void onDrawFrame(GL10 gl) {
             GLES3JNILib.step();
+			if (AndroidPlayer._ENGINE) {
+				System.gc();
+			}
         }
 
         public void onSurfaceChanged(GL10 gl, int width, int height) {
