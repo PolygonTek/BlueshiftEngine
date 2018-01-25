@@ -46,7 +46,8 @@ elseif (UNIX)
         unixdgram.h
         unix.c
         unix.h
-        serial.c)
+        #serial.c
+        )
 endif ()
     
 if (USE_LUAJIT)
