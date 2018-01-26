@@ -110,17 +110,15 @@ elseif (APPLE)
     add_compile_options("-Wno-inconsistent-missing-override")
 
     if (IOS)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIOS")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIOS")
-    else ()
+        add_compile_options("-DIOS")
+   else ()
         set(CMAKE_OSX_SYSROOT "macosx")
         set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
         #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
     endif ()
 elseif (ANDROID)
     # Settings for Android
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DANDROID")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID")
+    add_compile_options("-DANDROID")
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -std=gnu++1y -frtti")
