@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 2.8.12)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
+include(CMakeDependentOption)
 include(BlueshiftCommon)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -29,7 +30,7 @@ option(BUILD_ENGINE "Build Blueshift Engine" OFF)
 option(BUILD_PLAYER "Build Blueshift Player" OFF)
 option(BUILD_EDITOR "Build Blueshift Editor" OFF)
 option(BUILD_TEST "Build test projects" OFF)
-option(USE_LUAJIT "Use LuaJIT" OFF)
+cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
 if (BUILD_ENGINE)
     set(ROOT_PROJECT_NAME BlueshiftEngine)

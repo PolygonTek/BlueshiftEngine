@@ -9,7 +9,7 @@ cd "Build"
 if exist "msvc2015" rd "msvc2015" /s /q
 md msvc2015
 cd msvc2015
-cmake -DUSE_LUAJIT=0 -DBUILD_ENGINE=1 -DBUILD_TEST=1 -DBUILD_PLAYER=1 -DBUILD_EDITOR=1 -G "Visual Studio 14 2015 Win64" ..\..
+cmake -DBUILD_ENGINE=1 -DBUILD_TEST=1 -DBUILD_PLAYER=1 -DBUILD_EDITOR=1 -G "Visual Studio 14 2015 Win64" ..\..
 @echo:
 @echo Solution created in %~dp0Build\msvc2015
 @echo:
