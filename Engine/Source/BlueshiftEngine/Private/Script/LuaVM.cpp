@@ -202,16 +202,10 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 void LuaVM::Shutdown() {
     engineModuleCallbacks.Clear();
 
-    if (startDebuggee.IsValid()) {
-        startDebuggee.~Selector();
-    }
-    if (stopDebuggee.IsValid()) {
-        stopDebuggee.~Selector();
-    }
-    if (pollDebuggee.IsValid()) {
-        pollDebuggee.~Selector();
-    }
-
+    startDebuggee = LuaCpp::Selector();
+    stopDebuggee = LuaCpp::Selector();
+    pollDebuggee = LuaCpp::Selector();
+    
     SAFE_DELETE(state);
 }
 
