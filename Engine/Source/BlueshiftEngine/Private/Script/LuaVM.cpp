@@ -26,6 +26,12 @@ extern "C" {
 
 BE_NAMESPACE_BEGIN
 
+// VS Code Lua Debugger by devCAT: https://marketplace.visualstudio.com/items?itemName=devCAT.lua-debug
+// Set lua_debuggeeController to "vscode_debuggee_controller"
+
+// MobDebug in ZeroBrane Studio https://github.com/pkulchenko/MobDebug
+// Set lua_debuggeeController to "mobdebug_controller"
+
 static CVAR(lua_debug, L"0", CVar::Bool | CVar::Archive, L"Enable Lua debugging");
 static CVAR(lua_debuggerServer, L"localhost", CVar::Archive, L"Lua debugger server address for remote debugging");
 static CVAR(lua_debuggeeController, L"mobdebug_controller", 0, L"Lua debuggee controller script name");
@@ -229,10 +235,6 @@ void LuaVM::StartDebuggee() {
     }
     
     if (!startDebuggee.IsValid()) {
-        // VS Code Lua Debugger by devCAT: https://marketplace.visualstudio.com/items?itemName=devCAT.lua-debug
-        // lua_debuggeeController = "vscode_debuggee_controller"
-        // MobDebug in ZeroBrane Studio https://github.com/pkulchenko/MobDebug
-        // lua_debuggeeController = "mobdebug_controller"
         Str name(lua_debuggeeController.GetString());
         Str filename = "Scripts/" + name;
         filename.DefaultFileExtension(".lua");
@@ -243,11 +245,7 @@ void LuaVM::StartDebuggee() {
             return;
         }
 
-#if 0
         state->Require("socket.core", luaopen_socket_core);
-#else
-        state->Require("socket", luaopen_socket_core);
-#endif
         state->RunBuffer(filename.c_str(), data, size, name);
 
         LuaCpp::Selector sandbox = (*state)[name.c_str()];
