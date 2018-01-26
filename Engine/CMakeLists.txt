@@ -8,6 +8,26 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 include(CMakeDependentOption)
 include(BlueshiftCommon)
 
+option(BUILD_ENGINE "Build Blueshift Engine" OFF)
+option(BUILD_PLAYER "Build Blueshift Player" OFF)
+option(BUILD_EDITOR "Build Blueshift Editor" OFF)
+option(BUILD_TEST "Build test projects" OFF)
+
+if (BUILD_ENGINE)
+    set(ROOT_PROJECT_NAME BlueshiftEngine)
+
+    set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
+    set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
+elseif (BUILD_PLAYER)
+    set(ROOT_PROJECT_NAME BlueshiftPlayer)
+else ()
+    message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
+endif ()
+
+project(${ROOT_PROJECT_NAME})
+
+cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
+
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ENGINE_64BIT TRUE)
 endif ()
@@ -25,25 +45,6 @@ else ()
         set(ENGINE_ARCH i386)
     endif ()
 endif ()
-
-option(BUILD_ENGINE "Build Blueshift Engine" OFF)
-option(BUILD_PLAYER "Build Blueshift Player" OFF)
-option(BUILD_EDITOR "Build Blueshift Editor" OFF)
-option(BUILD_TEST "Build test projects" OFF)
-cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
-
-if (BUILD_ENGINE)
-    set(ROOT_PROJECT_NAME BlueshiftEngine)
-
-    set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
-    set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
-elseif (BUILD_PLAYER)
-    set(ROOT_PROJECT_NAME BlueshiftPlayer)
-else ()
-    message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
-endif ()
-
-project(${ROOT_PROJECT_NAME})
 
 set(VERSION_MAJOR 0 CACHE STRING "Project major version number.")
 set(VERSION_MINOR 3 CACHE STRING "Project minor version number.")
