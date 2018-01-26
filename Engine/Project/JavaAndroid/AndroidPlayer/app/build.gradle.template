@@ -1,22 +1,22 @@
 apply plugin: 'com.android.$(ConfigurationType)'
 
 
-    android {
+android {
 
-        compileSdkVersion = $(AndroidAPILevelNumber)
-        buildToolsVersion = "$(AndroidBuildToolsVersion)"
+    compileSdkVersion = $(AndroidAPILevelNumber)
+    buildToolsVersion = "$(AndroidBuildToolsVersion)"
 
-        defaultConfig.with {
-            $(ApplicationId)
-            minSdkVersion = 16
-            targetSdkVersion = 23
-        }
+    defaultConfig.with {
+        $(ApplicationId)
+        minSdkVersion = 16
+        targetSdkVersion = 23
+    }
 
-        compileOptions.with {
-            sourceCompatibility=JavaVersion.VERSION_1_7
-            targetCompatibility=JavaVersion.VERSION_1_7
-        }
-		flavorDimensions "default"
+    compileOptions.with {
+        sourceCompatibility=JavaVersion.VERSION_1_7
+        targetCompatibility=JavaVersion.VERSION_1_7
+    }
+	flavorDimensions "default"
     signingConfigs {
         release {
             storeFile file("polygontek.keystore")
@@ -33,14 +33,17 @@ apply plugin: 'com.android.$(ConfigurationType)'
             signingConfig signingConfigs.release
         }
         debug {
-		  ndk {
             debuggable = true
-		  }
             jniDebuggable true
         }
     }
-
-	}
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+			def newApkName = applicationId + "-" + variant.versionName + "(" + variant.versionCode + ")" + ".apk";
+			outputFileName = new File("../" +  outputFileName);
+        }
+    }
+}
 
 
 
