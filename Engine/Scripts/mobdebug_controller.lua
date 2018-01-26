@@ -6,9 +6,9 @@ function start(debugger_server_addr)
 	mobdebug.onexit = stop
 	startResult = mobdebug.start(debugger_server_addr)
 	if startResult then
-    	blueshift.log('Successfully connected to debugger')
+    	blueshift.log('Successfully connected to debugger: '..debugger_server_addr)
 	else
-    	blueshift.log('Failed to connect to debugger')
+    	blueshift.log('Failed to connect to debugger: '..debugger_server_addr)
 	end
 end
 

@@ -8,9 +8,9 @@ function start(debugger_server_addr)
 	local config = { redirectPrint = true, controllerHost = debugger_server_addr }
 	startResult, breakerType = debuggee.start(json, config)
 	if startResult then
-	    blueshift.log('Successfully connected to debugger ('..breakerType..')')
+	    blueshift.log('Successfully connected to debugger ('..breakerType..'): '..debugger_server_addr)
 	else
-	    blueshift.log('Failed to connect to debugger')
+	    blueshift.log('Failed to connect to debugger: '..debugger_server_addr)
 	end
 end()
 
