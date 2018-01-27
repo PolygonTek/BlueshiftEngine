@@ -85,6 +85,8 @@ public:
     Guid                    GetScriptGuid() const;
     void                    SetScriptGuid(const Guid &guid);
 
+    bool                    HasError() const { return hasError;  }
+
     const char *            GetSandboxName() const { return sandboxName.c_str(); }
 
     template <typename... Args>
@@ -95,11 +97,11 @@ protected:
     virtual void            OnInactive() override;
 
     void                    ChangeScript(const Guid &scriptGuid);
-    bool                    LoadScriptWithSandbox(const char *filename, const char *sandboxName);
     void                    InitScriptFields();
     void                    SetScriptProperties();
     LuaCpp::Selector        CacheFunction(const char *funcname);
     void                    UpdateFunctionMap();
+    void                    ClearFunctionMap();
     void                    ScriptReloaded();
     void                    SetOwnerValues();
 
@@ -108,6 +110,7 @@ protected:
     LuaCpp::State *         state;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
+    bool                    hasError;
 
     Array<PropertyInfo>     fieldInfos;
     HashMap<Str, Variant>   fieldValues;

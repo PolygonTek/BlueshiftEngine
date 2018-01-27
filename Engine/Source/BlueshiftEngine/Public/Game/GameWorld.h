@@ -125,6 +125,8 @@ public:
     void                        OnApplicationPause(bool pause);
     void                        OnApplicationTerminate();
 
+    bool                        CheckScriptError() const;
+
     bool                        IsGameStarted() const { return gameStarted; }
     void                        StartGame();
     void                        StopGame(bool stopAllSounds = true);

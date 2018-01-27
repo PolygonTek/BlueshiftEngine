@@ -22,6 +22,7 @@
 #include "AnimController/AnimController.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
+#include "Components/ComScript.h"
 #include "Game/Entity.h"
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
@@ -425,6 +426,21 @@ void GameWorld::FinishMapLoading() {
     colliderManager.DestroyUnusedColliders();
     soundSystem.DestroyUnusedSounds();
     //meshManager.EndLevelLoad();
+}
+
+bool GameWorld::CheckScriptError() const {
+    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
+        ComponentPtrArray scriptComponents = ent->GetComponents(&ComScript::metaObject);
+
+        for (int i = 0; i < scriptComponents.Count(); i++) {
+            ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+            if (scriptComponent->HasError()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void GameWorld::StartGame() {
