@@ -2,6 +2,16 @@
 
 namespace LuaCpp {
 
+void State::RegisterLib(const struct luaL_Reg *lib, const char *libname) {
+    lua_getglobal(_l, "_G");
+#if LUA_VERSION_NUM >= 502
+    luaL_setfuncs(_l, lib, 0);
+#else
+    luaL_register(_l, libname, lib);
+#endif
+    lua_pop(_l, 1);
+}
+
 void State::Require(const char *name) {
     lua_getglobal(_l, "require");
     lua_pushstring(_l, name);

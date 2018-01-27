@@ -37,6 +37,21 @@ static CVAR(lua_debuggerServer, L"localhost", CVar::Archive, L"Lua debugger serv
 static CVAR(lua_debuggeeController, L"mobdebug_controller", 0, L"Lua debuggee controller script name");
 static CVAR(lua_path, L"", CVar::Archive, L"Lua project path for debugging");
 
+static int engine_print(lua_State* L) {
+    int nargs = lua_gettop(L);
+    for (int i = 1; i <= nargs; ++i) {
+        const char *s = lua_tostring(L, i);
+        BE_LOG(L"%hs", s);
+    }
+    BE_LOG(L"\n");
+    return 0;
+}
+
+static const struct luaL_Reg printlib[] = {
+    { "print", engine_print },
+    { nullptr, nullptr }
+};
+
 void LuaVM::Init() {
     if (state) {
         Shutdown();
@@ -45,6 +60,9 @@ void LuaVM::Init() {
     state = new LuaCpp::State(true);
 
     //BE_LOG(L"Lua version %.1f\n", state->Version());
+
+    // Redirect global print function
+    state->RegisterLib(printlib, nullptr);
 
     state->HandleExceptionsWith([](int status, std::string msg, std::exception_ptr exception) {
         const char *statusStr = "";
@@ -237,7 +255,7 @@ void LuaVM::StartDebuggee() {
     if (!lua_debug.GetBool()) {
         return;
     }
-    
+
     if (!startDebuggee.IsValid()) {
         Str name(lua_debuggeeController.GetString());
         Str filename = "Scripts/" + name;
