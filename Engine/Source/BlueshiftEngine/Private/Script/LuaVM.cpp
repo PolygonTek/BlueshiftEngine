@@ -268,23 +268,24 @@ void LuaVM::StartDebuggee() {
         }
 
         state->Require("socket.core", luaopen_socket_core);
-        state->RunBuffer(filename.c_str(), data, size, name);
 
-        LuaCpp::Selector sandbox = (*state)[name.c_str()];
+        if (state->RunBuffer(filename.c_str(), data, size, name)) {
+            LuaCpp::Selector sandbox = (*state)[name.c_str()];
 
-        startDebuggee = sandbox["start"];
-        if (!startDebuggee.IsFunction()) {
-            startDebuggee = LuaCpp::Selector();
-        }
+            startDebuggee = sandbox["start"];
+            if (!startDebuggee.IsFunction()) {
+                startDebuggee = LuaCpp::Selector();
+            }
 
-        stopDebuggee = sandbox["stop"];
-        if (!stopDebuggee.IsFunction()) {
-            stopDebuggee = LuaCpp::Selector();
-        }
+            stopDebuggee = sandbox["stop"];
+            if (!stopDebuggee.IsFunction()) {
+                stopDebuggee = LuaCpp::Selector();
+            }
 
-        pollDebuggee = sandbox["poll"];
-        if (!pollDebuggee.IsFunction()) {
-            pollDebuggee = LuaCpp::Selector();
+            pollDebuggee = sandbox["poll"];
+            if (!pollDebuggee.IsFunction()) {
+                pollDebuggee = LuaCpp::Selector();
+            }
         }
     }
 
