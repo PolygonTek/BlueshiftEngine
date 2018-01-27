@@ -56,11 +56,24 @@ else ()
     include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/lua)
 endif ()
 
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DLUASOCKET_DEBUG")
+
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Dependencies)
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
-set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
+if (WIN32 AND NOT ANDROID)
+    target_link_libraries(${PROJECT_NAME} "wsock32")
+elseif (APPLE)
+    target_link_libraries(${PROJECT_NAME} "-undefined dynamic_lookup")
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES 
+        COMPILE_FLAGS "-fno-common -pedantic")
+    add_definitions("-DUNIX_HAS_SUN_LEN")
+endif ()
+
+set_target_properties(${PROJECT_NAME} PROPERTIES 
+    FOLDER Dependencies
+    PREFIX ""
+    DEBUG_POSTFIX "_d"
+    OUTPUT_NAME ${PROJECT_NAME}
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR}
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
