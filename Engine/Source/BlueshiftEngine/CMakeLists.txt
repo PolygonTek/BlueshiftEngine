@@ -605,7 +605,6 @@ set(ENGINE_FILES
     Private/Script/Components/LuaModule_ComScript.cpp
     Private/Script/Game/LuaModule_Entity.cpp
     Private/Script/Game/LuaModule_GameWorld.cpp
-    #Private/Script/File/liolib.cpp
 
     Private/Core/DynamicAABBTree.cpp
     Private/Core/Vec4Color.cpp)
