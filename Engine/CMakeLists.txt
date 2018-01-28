@@ -113,6 +113,8 @@ elseif (APPLE)
 
     if (IOS)
         add_compile_options("-DIOS")
+
+        set(IOS_DEPLOYMENT_TARGET 9.0)
    else ()
         set(CMAKE_OSX_SYSROOT "macosx")
         set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks

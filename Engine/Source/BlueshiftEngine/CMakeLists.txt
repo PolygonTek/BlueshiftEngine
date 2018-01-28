@@ -834,7 +834,7 @@ elseif (APPLE)
 
     if (IOS)
         set_target_properties(${PROJECT_NAME} PROPERTIES
-            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET 9.0
+            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
             XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
 
         add_framework(${PROJECT_NAME} Foundation)
