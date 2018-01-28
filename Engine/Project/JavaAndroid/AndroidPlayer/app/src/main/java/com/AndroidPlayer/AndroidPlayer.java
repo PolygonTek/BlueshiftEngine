@@ -134,49 +134,101 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
     }
     @Override
     public void onRewardedVideoAdLeftApplication() {
-		// GLES3JNILib.WillLeaveApplication();
+		mView.queueEvent(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				GLES3JNILib.WillLeaveApplication();
+			}
+		});
     }
 
     @Override
     public void onRewardedVideoAdClosed() {
-			//Toast.makeText(this, "onRewardedVideoAdClosed", Toast.LENGTH_SHORT).show();
-			// Preload the next video ad.
 		mIsLoadedRewardedVideoAd = false;        
-		// GLES3JNILib.DidClose();
-			//loadRewardedVideoAd();
+		mView.queueEvent(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+					//Toast.makeText(this, "onRewardedVideoAdClosed", Toast.LENGTH_SHORT).show();
+					// Preload the next video ad.
+				GLES3JNILib.DidClose();
+					//loadRewardedVideoAd();
+			}
+		});
     }
 
     @Override
     public void onRewardedVideoAdFailedToLoad(int errorCode) {
-		//GLES3JNILib.DidFailToLoad(errorCode);
-    		//Toast.makeText(this, "onRewardedVideoAdFailedToLoad", Toast.LENGTH_SHORT).show();
+		final int _errorCode = errorCode;
+		mView.queueEvent(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				GLES3JNILib.DidFailToLoad(_errorCode);
+    				//Toast.makeText(this, "onRewardedVideoAdFailedToLoad", Toast.LENGTH_SHORT).show();
+			}
+		});
     }
 
     @Override
     public void onRewardedVideoAdLoaded() {
 		mIsLoadedRewardedVideoAd = true;        
-		//GLES3JNILib.DidReceiveAd();
-			//Toast.makeText(this, "onRewardedVideoAdLoaded", Toast.LENGTH_SHORT).show();
+		mView.queueEvent(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				GLES3JNILib.DidReceiveAd();
+					//Toast.makeText(this, "onRewardedVideoAdLoaded", Toast.LENGTH_SHORT).show();
+			}
+		});
     }
 
     @Override
     public void onRewardedVideoAdOpened() {
-			//Toast.makeText(this, "onRewardedVideoAdOpened", Toast.LENGTH_SHORT).show();
-		//GLES3JNILib.DidOpen();
+		mView.queueEvent(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+					//Toast.makeText(this, "onRewardedVideoAdOpened", Toast.LENGTH_SHORT).show();
+				GLES3JNILib.DidOpen();
+			}
+		});
     }
 
     @Override
     public void onRewarded(RewardItem reward) {
-		//GLES3JNILib.DidRewardUser(reward.getType(), reward.getAmount());
-			//Toast.makeText(this,
-			//        String.format(" onRewarded! currency: %s amount: %d", reward.getType(),
-			//                reward.getAmount()),
-			//        Toast.LENGTH_SHORT).show();
+		final String type = reward.getType();
+		final int amount = reward.getAmount();
+		mView.queueEvent(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				GLES3JNILib.DidRewardUser(type, amount);
+					//Toast.makeText(this,
+					//        String.format(" onRewarded! currency: %s amount: %d", reward.getType(),
+					//                reward.getAmount()),
+					//        Toast.LENGTH_SHORT).show();
+			}
+		});
     }
 
     @Override
     public void onRewardedVideoStarted() {
-		//GLES3JNILib.DidStartPlaying();
-			//Toast.makeText(this, "onRewardedVideoStarted", Toast.LENGTH_SHORT).show();
+		mView.queueEvent(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				GLES3JNILib.DidStartPlaying();
+					//Toast.makeText(this, "onRewardedVideoStarted", Toast.LENGTH_SHORT).show();
+			}
+		});
     }
 }

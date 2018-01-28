@@ -532,69 +532,103 @@ Java_com_AndroidPlayer_GLES3JNILib_TouchCancel(JNIEnv* env, jobject obj, jint to
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_DidRewardUser(JNIEnv* env, jobject obj, jstring type, jint amount)
 {
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	const char *rewardType = env->GetStringUTFChars(type, NULL);
 	int rewardAmount = amount;
 	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
 	if (function.IsFunction()) {
 		function(rewardType, rewardAmount);
 	}
-
 	env->ReleaseStringUTFChars(type, rewardType);
+
+	g_env = old_env;
 }
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_DidReceiveAd(JNIEnv* env, jobject obj)
 {
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_receive_ad"];
 	if (function.IsFunction()) {
 		function();
 	}
+
+	g_env = old_env;
 }
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_DidOpen(JNIEnv* env, jobject obj)
 {
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_open"];
 	if (function.IsFunction()) {
 		function();
 	}
+
+	g_env = old_env;
 }
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_DidStartPlaying(JNIEnv* env, jobject obj)
 {
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_start_playing"];
 	if (function.IsFunction()) {
 		function();
 	}
+
+	g_env = old_env;
 }
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_DidClose(JNIEnv* env, jobject obj)
 {
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_close"];
 	if (function.IsFunction()) {
 		function();
 	}
+
+	g_env = old_env;
 }
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_WillLeaveApplication(JNIEnv* env, jobject obj)
 {
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["will_leave_application"];
 	if (function.IsFunction()) {
 		function();
 	}
+
+	g_env = old_env;
 }
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_DidFailToLoad(JNIEnv* env, jobject obj, jint errorCode)
 {
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	const char *errorDescription = "";
 	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
 	if (function.IsFunction()) {
 		function(errorDescription);
 	}
+
+	g_env = old_env;
 }
 
 
