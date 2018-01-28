@@ -56,7 +56,8 @@ You can build Blueshift Engine but Blueshift Editor is **not** open source yet.
 
   * [MS Visual Studio 2017](https://www.visualstudio.com/downloads/)
     - select "Mobile development with c++"
-    - select "Mobile development with .NET"
+    - give write permission to Android SDK Folder. "C:\Program Files (x86)\Android\adroid-sdk"/Properties/Security/Edit/Add/Everyone: Full Control
+    - Android SDK Build Tools 26.0.2. "C:\Program Files (x86)\Android\adroid-sdk\SDK Manager.exe"
   * [CMake](https://cmake.org/download/)
 
 ### Instruction

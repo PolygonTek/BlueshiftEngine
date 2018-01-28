@@ -128,9 +128,14 @@ class GLES3JNIView extends GLSurfaceView {
     private static class Renderer implements GLSurfaceView.Renderer {
         public void onDrawFrame(GL10 gl) {
 			//Log.v(GLES3JNILib.TAG, "step");
-			GLES3JNILib.step();
+			if (!GLES3JNILib._ENGINE) {
+				GLES3JNILib.step();
+			}
 			if (GLES3JNILib._ENGINE) {
-				System.gc();
+				{
+					GLES3JNILib.step();
+					System.gc();
+				}
 			}
         }
 

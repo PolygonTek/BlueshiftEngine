@@ -45,6 +45,7 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
     GLES3JNIView mView;
     private RewardedVideoAd mRewardedVideoAd;
     private boolean mIsLoadedRewardedVideoAd = false;
+	public static boolean mIsOpenedRewardedVideoAd = false;
 
     @Override protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -146,7 +147,9 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 
     @Override
     public void onRewardedVideoAdClosed() {
-		mIsLoadedRewardedVideoAd = false;        
+		Log.v(GLES3JNILib.TAG, "onRewardedVideoAdClosed");
+		mIsLoadedRewardedVideoAd = false;   
+		mIsOpenedRewardedVideoAd = false;
 		mView.queueEvent(new Runnable()
 		{
 			@Override
@@ -162,6 +165,7 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 
     @Override
     public void onRewardedVideoAdFailedToLoad(int errorCode) {
+		Log.v(GLES3JNILib.TAG, "onRewardedVideoAdFailedToLoad");
 		final int _errorCode = errorCode;
 		mView.queueEvent(new Runnable()
 		{
@@ -176,6 +180,7 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 
     @Override
     public void onRewardedVideoAdLoaded() {
+		Log.v(GLES3JNILib.TAG, "onRewardedVideoAdLoaded");
 		mIsLoadedRewardedVideoAd = true;        
 		mView.queueEvent(new Runnable()
 		{
@@ -190,6 +195,8 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 
     @Override
     public void onRewardedVideoAdOpened() {
+		mIsOpenedRewardedVideoAd = true;
+		Log.v(GLES3JNILib.TAG, "onRewardedVideoAdOpened");
 		mView.queueEvent(new Runnable()
 		{
 			@Override
@@ -203,6 +210,7 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 
     @Override
     public void onRewarded(RewardItem reward) {
+		Log.v(GLES3JNILib.TAG, "onRewarded");
 		final String type = reward.getType();
 		final int amount = reward.getAmount();
 		mView.queueEvent(new Runnable()
@@ -221,6 +229,7 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 
     @Override
     public void onRewardedVideoStarted() {
+		Log.v(GLES3JNILib.TAG, "onRewardedVideoStarted");
 		mView.queueEvent(new Runnable()
 		{
 			@Override
