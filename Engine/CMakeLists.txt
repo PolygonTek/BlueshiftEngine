@@ -46,9 +46,9 @@ else ()
     endif ()
 endif ()
 
-set(VERSION_MAJOR 0 CACHE STRING "Project major version number.")
-set(VERSION_MINOR 3 CACHE STRING "Project minor version number.")
-set(VERSION_PATCH 0 CACHE STRING "Project patch version number.")
+set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
+set(VERSION_MINOR 4 CACHE INTERNAL "Project minor version number.")
+set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
