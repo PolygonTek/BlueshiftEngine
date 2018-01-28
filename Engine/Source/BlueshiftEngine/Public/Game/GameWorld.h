@@ -59,6 +59,8 @@ public:
 
     LuaVM &                     GetLuaVM() { return luaVM; }
 
+    void                        SetDebuggable(bool isDebuggable) { this->isDebuggable = isDebuggable; }
+
     int                         GetTime() const { return time; }
     int                         GetPrevTime() const { return prevTime; }
     int                         GetDeltaTime() const;
@@ -123,6 +125,8 @@ public:
     void                        OnApplicationPause(bool pause);
     void                        OnApplicationTerminate();
 
+    bool                        CheckScriptError() const;
+
     bool                        IsGameStarted() const { return gameStarted; }
     void                        StartGame();
     void                        StopGame(bool stopAllSounds = true);
@@ -174,6 +178,7 @@ private:
     float                       timeScale;
 
     bool                        gameStarted;
+    bool                        isDebuggable;
     bool                        isMapLoading;
 };
 

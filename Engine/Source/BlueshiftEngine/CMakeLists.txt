@@ -605,84 +605,83 @@ set(ENGINE_FILES
     Private/Script/Components/LuaModule_ComScript.cpp
     Private/Script/Game/LuaModule_Entity.cpp
     Private/Script/Game/LuaModule_GameWorld.cpp
-    #Private/Script/File/liolib.cpp
 
     Private/Core/DynamicAABBTree.cpp
     Private/Core/Vec4Color.cpp)
 
-    if (ANDROID)
-        list(APPEND ENGINE_FILES
-            Public/Platform/Posix/PlatformPosixProcess.h
-            Public/Platform/Posix/PlatformPosixTime.h
-            Public/Platform/Posix/PlatformPosixSystem.h
-            Private/Platform/Posix/PlatformPosixProcess.cpp
-            Private/Platform/Posix/PlatformPosixTime.cpp
-            Private/Platform/Posix/PlatformPosixSystem.cpp
-            Public/Platform/Linux/PlatformLinuxProcess.h
-            Public/Platform/Linux/PlatformLinuxTime.h
-            Public/Platform/Linux/PlatformLinuxSystem.h
-            Private/Platform/Linux/PlatformLinuxProcess.cpp
-            Private/Platform/Linux/PlatformLinuxTime.cpp
-            Private/Platform/Linux/PlatformLinuxSystem.cpp
-            Public/Platform/Android/PlatformAndroidProcess.h
-            Public/Platform/Android/PlatformAndroidThread.h
-            Public/Platform/Android/PlatformAndroidFile.h
-            Private/Platform/Android/PlatformAndroidProcess.cpp 
-            Private/Platform/Android/PlatformAndroidThread.cpp
-            Private/Platform/Android/PlatformAndroidFile.cpp
-            Private/Platform/PlatformAndroid.h
-            Private/Platform/PlatformAndroid.cpp
-            Private/Sound/SoundSystemSLES.cpp
-            Private/Sound/SoundBufferSLES.cpp
-            Private/Sound/SoundSourceSLES.cpp)
-    elseif (WIN32)
-        list(APPEND ENGINE_FILES
-            Public/Platform/Windows/PlatformWinProcess.h
-            Public/Platform/Windows/PlatformWinFile.h
-            Public/Platform/Windows/PlatformWinThread.h
-            Public/Platform/Windows/PlatformWinTime.h
-            Public/Platform/Windows/PlatformWinSystem.h
-            Private/Platform/Windows/PlatformWinProcess.cpp
-            Private/Platform/Windows/PlatformWinFile.cpp
-            Private/Platform/Windows/PlatformWinThread.cpp
-            Private/Platform/Windows/PlatformWinTime.cpp
-            Private/Platform/Windows/PlatformWinSystem.cpp
-            Private/Platform/PlatformWin.h
-            Private/Platform/PlatformWin.cpp
-            Private/Sound/SoundSystemDS.cpp
-            Private/Sound/SoundBufferDS.cpp
-            Private/Sound/SoundSourceDS.cpp
-            #Private/Sound/SoundSystemAL.cpp
-            #Private/Sound/SoundBufferAL.cpp
-            #Private/Sound/SoundSourceAL.cpp
-            Public/Network/Socket.h
-            Private/Network/Socket.cpp
-            Public/Network/Packet.h
-            Private/Network/Packet.cpp)
-    elseif (UNIX)
-        list(APPEND ENGINE_FILES
-            Public/Platform/Posix/PlatformPosixProcess.h
-            Public/Platform/Posix/PlatformPosixFile.h
-            Public/Platform/Posix/PlatformPosixThread.h
-            Public/Platform/Posix/PlatformPosixTime.h
-            Public/Platform/Posix/PlatformPosixSystem.h
-            Private/Platform/Posix/PlatformPosixProcess.cpp
-            Private/Platform/Posix/PlatformPosixFile.cpp
-            Private/Platform/Posix/PlatformPosixThread.cpp
-            Private/Platform/Posix/PlatformPosixTime.cpp
-            Private/Platform/Posix/PlatformPosixSystem.cpp
-            Private/Sound/SoundSystemAL.cpp
-            Private/Sound/SoundBufferAL.cpp
-            Private/Sound/SoundSourceAL.cpp)
+if (ANDROID)
+    list(APPEND ENGINE_FILES
+        Public/Platform/Posix/PlatformPosixProcess.h
+        Public/Platform/Posix/PlatformPosixTime.h
+        Public/Platform/Posix/PlatformPosixSystem.h
+        Public/Platform/Linux/PlatformLinuxProcess.h
+        Public/Platform/Linux/PlatformLinuxTime.h
+        Public/Platform/Linux/PlatformLinuxSystem.h
+        Public/Platform/Android/PlatformAndroidProcess.h
+        Public/Platform/Android/PlatformAndroidThread.h
+        Public/Platform/Android/PlatformAndroidFile.h
+        Private/Platform/Posix/PlatformPosixProcess.cpp
+        Private/Platform/Posix/PlatformPosixTime.cpp
+        Private/Platform/Posix/PlatformPosixSystem.cpp
+        Private/Platform/Linux/PlatformLinuxProcess.cpp
+        Private/Platform/Linux/PlatformLinuxTime.cpp
+        Private/Platform/Linux/PlatformLinuxSystem.cpp
+        Private/Platform/Android/PlatformAndroidProcess.cpp 
+        Private/Platform/Android/PlatformAndroidThread.cpp
+        Private/Platform/Android/PlatformAndroidFile.cpp
+        Private/Platform/PlatformAndroid.h
+        Private/Platform/PlatformAndroid.cpp
+        Private/Sound/SoundSystemSLES.cpp
+        Private/Sound/SoundBufferSLES.cpp
+        Private/Sound/SoundSourceSLES.cpp)
+elseif (WIN32)
+    list(APPEND ENGINE_FILES
+        Public/Platform/Windows/PlatformWinProcess.h
+        Public/Platform/Windows/PlatformWinFile.h
+        Public/Platform/Windows/PlatformWinThread.h
+        Public/Platform/Windows/PlatformWinTime.h
+        Public/Platform/Windows/PlatformWinSystem.h
+        Private/Platform/Windows/PlatformWinProcess.cpp
+        Private/Platform/Windows/PlatformWinFile.cpp
+        Private/Platform/Windows/PlatformWinThread.cpp
+        Private/Platform/Windows/PlatformWinTime.cpp
+        Private/Platform/Windows/PlatformWinSystem.cpp
+        Private/Platform/PlatformWin.h
+        Private/Platform/PlatformWin.cpp
+        Private/Sound/SoundSystemDS.cpp
+        Private/Sound/SoundBufferDS.cpp
+        Private/Sound/SoundSourceDS.cpp
+        #Private/Sound/SoundSystemAL.cpp
+        #Private/Sound/SoundBufferAL.cpp
+        #Private/Sound/SoundSourceAL.cpp
+        Public/Network/Socket.h
+        Public/Network/Packet.h
+        Private/Network/Socket.cpp
+        Private/Network/Packet.cpp)
+elseif (UNIX)
+    list(APPEND ENGINE_FILES
+        Public/Platform/Posix/PlatformPosixProcess.h
+        Public/Platform/Posix/PlatformPosixFile.h
+        Public/Platform/Posix/PlatformPosixThread.h
+        Public/Platform/Posix/PlatformPosixTime.h
+        Public/Platform/Posix/PlatformPosixSystem.h
+        Private/Platform/Posix/PlatformPosixProcess.cpp
+        Private/Platform/Posix/PlatformPosixFile.cpp
+        Private/Platform/Posix/PlatformPosixThread.cpp
+        Private/Platform/Posix/PlatformPosixTime.cpp
+        Private/Platform/Posix/PlatformPosixSystem.cpp
+        Private/Sound/SoundSystemAL.cpp
+        Private/Sound/SoundBufferAL.cpp
+        Private/Sound/SoundSourceAL.cpp)
 
-        if (APPLE)
-            list(APPEND ENGINE_FILES
-                Public/Platform/Apple/PlatformAppleTime.h
-                Public/Platform/Apple/PlatformAppleProcess.h
-                Public/Platform/Apple/PlatformAppleSystem.h
-                Private/Platform/Apple/PlatformAppleTime.cpp
-                Private/Platform/Apple/PlatformAppleProcess.mm
-                Private/Platform/Apple/PlatformAppleSystem.mm)
+    if (APPLE)
+        list(APPEND ENGINE_FILES
+            Public/Platform/Apple/PlatformAppleTime.h
+            Public/Platform/Apple/PlatformAppleProcess.h
+            Public/Platform/Apple/PlatformAppleSystem.h
+            Private/Platform/Apple/PlatformAppleTime.cpp
+            Private/Platform/Apple/PlatformAppleProcess.mm
+            Private/Platform/Apple/PlatformAppleSystem.mm)
     
         if (IOS)
             list(APPEND ENGINE_FILES
@@ -703,15 +702,15 @@ set(ENGINE_FILES
                 Private/Platform/PlatformMacOS.h
                 Private/Platform/PlatformMacOS.mm
                 Public/Network/Socket.h
-                Private/Network/Socket.cpp
                 Public/Network/Packet.h
+                Private/Network/Socket.cpp
                 Private/Network/Packet.cpp)
         endif ()
-    else ()
-        list(APPEND ENGINE_FILES
-            Public/Platform/Linux/PlatformLinuxProcess.h
-            Private/Platform/Linux/PlatformLinuxProcess.cpp)
     endif ()
+else ()
+    list(APPEND ENGINE_FILES
+        Public/Platform/Linux/PlatformLinuxProcess.h
+        Private/Platform/Linux/PlatformLinuxProcess.cpp)
 endif ()
 
 if (XAMARIN AND NOT WIN32)
@@ -737,11 +736,11 @@ elseif (WIN32)
 elseif (APPLE)
     if (IOS)
         list(APPEND RENDERER_FILES
-          Private/RHIOpenGL/OpenGL/OpenGLES3.h
-          Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
-          Private/RHIOpenGL/OpenGL/IOSOpenGL.h
-          Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
-          Private/RHIOpenGL/RGLPlatformIOS.mm)
+            Private/RHIOpenGL/OpenGL/OpenGLES3.h
+            Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+            Private/RHIOpenGL/OpenGL/IOSOpenGL.h
+            Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
+            Private/RHIOpenGL/RGLPlatformIOS.mm)
     else ()
         list(APPEND RENDERER_FILES
             Private/RHIOpenGL/OpenGL/OpenGL3.h
@@ -835,7 +834,7 @@ elseif (APPLE)
 
     if (IOS)
         set_target_properties(${PROJECT_NAME} PROPERTIES
-            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET 9.0
+            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
             XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
 
         add_framework(${PROJECT_NAME} Foundation)
@@ -855,8 +854,7 @@ elseif (APPLE)
     add_framework(${PROJECT_NAME} OpenAL)
 endif ()
 
-target_link_libraries(${PROJECT_NAME}
-    zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis jsoncpp freetype Bullet HACD luasocket LuaCpp NvTriStrip)
+target_link_libraries(${PROJECT_NAME} zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis jsoncpp freetype Bullet HACD luasocket LuaCpp NvTriStrip)
 
 if (ANDROID)
     target_link_libraries(${PROJECT_NAME} nvidia)

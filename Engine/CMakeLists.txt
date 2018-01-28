@@ -5,7 +5,28 @@ cmake_minimum_required(VERSION 2.8.12)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
+include(CMakeDependentOption)
 include(BlueshiftCommon)
+
+option(BUILD_ENGINE "Build Blueshift Engine" OFF)
+option(BUILD_PLAYER "Build Blueshift Player" OFF)
+option(BUILD_EDITOR "Build Blueshift Editor" OFF)
+option(BUILD_TEST "Build test projects" OFF)
+
+if (BUILD_ENGINE)
+    set(ROOT_PROJECT_NAME BlueshiftEngine)
+
+    set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
+    set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
+elseif (BUILD_PLAYER)
+    set(ROOT_PROJECT_NAME BlueshiftPlayer)
+else ()
+    message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
+endif ()
+
+project(${ROOT_PROJECT_NAME})
+
+cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ENGINE_64BIT TRUE)
@@ -25,28 +46,9 @@ else ()
     endif ()
 endif ()
 
-option(BUILD_ENGINE "Build Blueshift Engine" OFF)
-option(BUILD_PLAYER "Build Blueshift Player" OFF)
-option(BUILD_EDITOR "Build Blueshift Editor" OFF)
-option(BUILD_TEST "Build test projects" OFF)
-option(USE_LUAJIT "Use LuaJIT" OFF)
-
-if (BUILD_ENGINE)
-    set(ROOT_PROJECT_NAME BlueshiftEngine)
-
-    set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
-    set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
-elseif (BUILD_PLAYER)
-    set(ROOT_PROJECT_NAME BlueshiftPlayer)
-else ()
-    message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
-endif ()
-
-project(${ROOT_PROJECT_NAME})
-
-set(VERSION_MAJOR 0 CACHE STRING "Project major version number.")
-set(VERSION_MINOR 3 CACHE STRING "Project minor version number.")
-set(VERSION_PATCH 0 CACHE STRING "Project patch version number.")
+set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
+set(VERSION_MINOR 4 CACHE INTERNAL "Project minor version number.")
+set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
@@ -110,17 +112,17 @@ elseif (APPLE)
     add_compile_options("-Wno-inconsistent-missing-override")
 
     if (IOS)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIOS")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIOS")
-    else ()
+        add_compile_options("-DIOS")
+
+        set(IOS_DEPLOYMENT_TARGET 9.0)
+   else ()
         set(CMAKE_OSX_SYSROOT "macosx")
         set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
         #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
     endif ()
 elseif (ANDROID)
     # Settings for Android
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DANDROID")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID")
+    add_compile_options("-DANDROID")
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -std=gnu++1y -frtti")

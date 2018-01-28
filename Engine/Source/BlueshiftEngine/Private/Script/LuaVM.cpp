@@ -26,7 +26,31 @@ extern "C" {
 
 BE_NAMESPACE_BEGIN
 
-static CVar lua_debuggerAddr(L"lua_debuggerAddr", L"localhost", CVar::Archive, L"Lua debugger address for remote debugging");
+// VS Code Lua Debugger by devCAT: https://marketplace.visualstudio.com/items?itemName=devCAT.lua-debug
+// Set lua_debuggeeController to "vscode_debuggee_controller"
+
+// MobDebug in ZeroBrane Studio https://github.com/pkulchenko/MobDebug
+// Set lua_debuggeeController to "mobdebug_controller"
+
+static CVAR(lua_debug, L"0", CVar::Bool | CVar::Archive, L"Enable Lua debugging");
+static CVAR(lua_debuggerServer, L"localhost", CVar::Archive, L"Lua debugger server address for remote debugging");
+static CVAR(lua_debuggeeController, L"mobdebug_controller", 0, L"Lua debuggee controller script name");
+static CVAR(lua_path, L"", CVar::Archive, L"Lua project path for debugging");
+
+static int engine_print(lua_State* L) {
+    int nargs = lua_gettop(L);
+    for (int i = 1; i <= nargs; ++i) {
+        const char *s = lua_tostring(L, i);
+        BE_LOG(L"%hs", s);
+    }
+    BE_LOG(L"\n");
+    return 0;
+}
+
+static const struct luaL_Reg printlib[] = {
+    { "print", engine_print },
+    { nullptr, nullptr }
+};
 
 void LuaVM::Init() {
     if (state) {
@@ -36,6 +60,9 @@ void LuaVM::Init() {
     state = new LuaCpp::State(true);
 
     //BE_LOG(L"Lua version %.1f\n", state->Version());
+
+    // Redirect global print function
+    state->RegisterLib(printlib, nullptr);
 
     state->HandleExceptionsWith([](int status, std::string msg, std::exception_ptr exception) {
         const char *statusStr = "";
@@ -193,6 +220,10 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 void LuaVM::Shutdown() {
     engineModuleCallbacks.Clear();
 
+    startDebuggee = LuaCpp::Selector();
+    stopDebuggee = LuaCpp::Selector();
+    pollDebuggee = LuaCpp::Selector();
+    
     SAFE_DELETE(state);
 }
 
@@ -221,47 +252,69 @@ void LuaVM::EnableJIT(bool enabled) {
 }
 
 void LuaVM::StartDebuggee() {
-#if 1
-    return;
-    // Lua Debugger by devCAT
-    // https://marketplace.visualstudio.com/items?itemName=devCAT.lua-debug
-    Str addr = Str(lua_debuggerAddr.GetString());
-    state->Require("socket.core", luaopen_socket_core);
-    const char *text = va(R"(
-local blueshift = require 'blueshift'
-local json = require 'dkjson'
-local debuggee = require 'vscode-debuggee'
-local config = { redirectPrint = true, controllerHost = '%hs' }
-local startResult, breakerType = debuggee.start(json, config)
-if startResult then
-    blueshift.log('Connected to debugger ('..breakerType..')')
-else
-    blueshift.log('Failed to connect to debugger')
-end
-    )", addr.c_str());
-    (*state)(text);
-#else
-    char *addr = tombs(lua_debuggerAddr.GetString());
-
-    File *fp = fileSystem.OpenFileRead("Scripts/debug/debug.lua", true);
-    if (!fp) {
+    if (!lua_debug.GetBool()) {
         return;
     }
-    fileSystem.CloseFile(fp);
 
-    state->Require("socket.core", luaopen_socket_core);
-    char *cmd = va("assert(load(_G['blueshift.io'].open('Scripts/debug/debug.lua', 'rb'):read('*a'), '@Scripts/debug/debug.lua'))('%s')", addr);
-    (*state)(cmd);
-#endif
+    if (!startDebuggee.IsValid()) {
+        Str name(lua_debuggeeController.GetString());
+        Str filename = "Scripts/" + name;
+        filename.DefaultFileExtension(".lua");
+
+        char *data;
+        size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
+        if (!data) {
+            return;
+        }
+
+        state->Require("socket.core", luaopen_socket_core);
+
+        if (state->RunBuffer(filename.c_str(), data, size, name)) {
+            LuaCpp::Selector sandbox = (*state)[name.c_str()];
+
+            startDebuggee = sandbox["start"];
+            if (!startDebuggee.IsFunction()) {
+                startDebuggee = LuaCpp::Selector();
+            }
+
+            stopDebuggee = sandbox["stop"];
+            if (!stopDebuggee.IsFunction()) {
+                stopDebuggee = LuaCpp::Selector();
+            }
+
+            pollDebuggee = sandbox["poll"];
+            if (!pollDebuggee.IsFunction()) {
+                pollDebuggee = LuaCpp::Selector();
+            }
+        }
+    }
+
+    Str addr = Str(lua_debuggerServer.GetString());
+    startDebuggee(addr.c_str());
+
+    debuggeeStarted = true;
+}
+
+void LuaVM::StopDebuggee() {
+    if (!debuggeeStarted) {
+        return;
+    }
+
+    if (stopDebuggee.IsValid()) {
+        stopDebuggee();
+    }
+
+    debuggeeStarted = false;
 }
 
 void LuaVM::PollDebuggee() {
-#if 0
-    (*state)(R"(
-local debuggee = require 'vscode-debuggee'
-debuggee.poll()
-    )");
-#endif
+    if (!debuggeeStarted) {
+        return;
+    }
+
+    if (pollDebuggee.IsValid()) {
+        pollDebuggee();
+    }
 }
 
 BE_NAMESPACE_END

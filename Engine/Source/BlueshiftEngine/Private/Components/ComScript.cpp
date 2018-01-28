@@ -35,6 +35,7 @@ void ComScript::RegisterProperties() {
 
 ComScript::ComScript() {
     state = nullptr;
+    hasError = false;
     scriptAsset = nullptr;
 }
 
@@ -51,6 +52,8 @@ void ComScript::Purge(bool chainPurge) {
     if (sandbox.IsValid()) {
         sandbox = LuaCpp::Selector();
     }
+
+    hasError = false;
 
     fieldInfos.Clear();
     fieldValues.Clear();
@@ -124,48 +127,60 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     if (!sandboxName.IsEmpty()) {
         state->SetToNil(sandboxName.c_str());
         //state->ForceGC();
-        sandboxName = "";
     }
 
     if (sandbox.IsValid()) {
         sandbox = LuaCpp::Selector();
     }
 
+    hasError = false;
+
+    ClearFunctionMap();
+
     this->scriptGuid = scriptGuid;
 
     if (scriptGuid.IsZero()) {
+        sandboxName = "";
         return;
     }
 
     // Sandbox name is same as component GUID in string
     sandboxName = GetGuid().ToString();
 
-    // Load a script with sandboxed on current Lua state
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
-    if (!LoadScriptWithSandbox(scriptPath, sandboxName)) {
+    char *data;
+    size_t size = fileSystem.LoadFile(scriptPath, true, (void **)&data);
+    if (!data) {
         sandboxName = "";
         BE_WARNLOG(L"ComScript::ChangeScript: Failed to load script '%hs'\n", scriptPath.c_str());
         return;
     }
-    
-    // Get the state of current loaded script
-    sandbox = (*state)[sandboxName];
-    if (!sandbox.IsValid()) {
-        BE_WARNLOG(L"ComScript::ChangeScript: Invalid sandbox '%hs'\n", sandboxName.c_str());
-        return;
+
+    // Load a script with sandboxed on current Lua state
+    if (!state->LoadBuffer(scriptPath.c_str(), data, size, sandboxName)) {
+        hasError = true;
     }
 
-    // Run this script
-    state->Run();
+    fileSystem.FreeFile(data);
 
-    UpdateFunctionMap();
+    if (!hasError) {
+        // Get the state of current loaded script
+        sandbox = (*state)[sandboxName];
 
-    fieldInfos.Clear();
-    fieldValues.Clear();
+        // Run this script
+        state->Run();
 
-    // Get the script property informations with this sandboxed script
-    if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
-        InitScriptFields();
+        SetOwnerValues();
+
+        UpdateFunctionMap();
+
+        fieldInfos.Clear();
+        fieldValues.Clear();
+
+        // Get the script property informations with this sandboxed script
+        if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
+            InitScriptFields();
+        }
     }
 
     // Need to script asset to be reloaded in editor
@@ -488,6 +503,33 @@ void ComScript::InitScriptFields() {
     sandbox["property_names"].Enumerate(fieldInfoEnumerator);
 }
 
+void ComScript::ClearFunctionMap() {
+    awakeFunc = LuaCpp::Selector();
+    startFunc = LuaCpp::Selector();
+    updateFunc = LuaCpp::Selector();
+    lateUpdateFunc = LuaCpp::Selector();
+    fixedUpdateFunc = LuaCpp::Selector();
+    fixedLateUpdateFunc = LuaCpp::Selector();
+    onEnableFunc = LuaCpp::Selector();
+    onDisableFunc = LuaCpp::Selector();
+    onPointerEnterFunc = LuaCpp::Selector();
+    onPointerExitFunc = LuaCpp::Selector();
+    onPointerOverFunc = LuaCpp::Selector();
+    onPointerDownFunc = LuaCpp::Selector();
+    onPointerUpFunc = LuaCpp::Selector();
+    onPointerDragFunc = LuaCpp::Selector();
+    onPointerClickFunc = LuaCpp::Selector();
+    onCollisionEnterFunc = LuaCpp::Selector();
+    onCollisionExitFunc = LuaCpp::Selector();
+    onCollisionStayFunc = LuaCpp::Selector();
+    onSensorEnterFunc = LuaCpp::Selector();
+    onSensorExitFunc = LuaCpp::Selector();
+    onSensorStayFunc = LuaCpp::Selector();
+    onParticleCollisionFunc = LuaCpp::Selector();
+    onApplicationTerminateFunc = LuaCpp::Selector();
+    onApplicationPauseFunc = LuaCpp::Selector();
+}
+
 LuaCpp::Selector ComScript::CacheFunction(const char *funcname) {
     LuaCpp::Selector function = sandbox[funcname];
     if (function.IsFunction()) {
@@ -521,25 +563,6 @@ void ComScript::UpdateFunctionMap() {
     onParticleCollisionFunc = CacheFunction("on_particle_collision");
     onApplicationTerminateFunc = CacheFunction("on_application_terminate");
     onApplicationPauseFunc = CacheFunction("on_application_pause");
-}
-
-static CVar lua_path(L"lua_path", L"", CVar::Archive, L"lua project path for debugging");
-
-bool ComScript::LoadScriptWithSandbox(const char *filename, const char *sandboxName) {
-    char *data;
-    size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
-    if (!data) {
-        return false;
-    }
-
-    if (!state->LoadBuffer(filename, data, size, sandboxName)) {
-        fileSystem.FreeFile(data);
-        return false;
-    }
-
-    fileSystem.FreeFile(data);
-
-    return true;
 }
 
 void ComScript::SetScriptProperties() {
@@ -638,8 +661,6 @@ void ComScript::SetScriptProperties() {
 }
 
 void ComScript::Awake() {
-    SetOwnerValues();
-
     SetScriptProperties();
 
     if (awakeFunc.IsValid()) {

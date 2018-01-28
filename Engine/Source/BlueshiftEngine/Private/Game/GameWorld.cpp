@@ -22,6 +22,7 @@
 #include "AnimController/AnimController.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
+#include "Components/ComScript.h"
 #include "Game/Entity.h"
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
@@ -56,6 +57,8 @@ GameWorld::GameWorld() {
     // Create physics world
     physicsWorld = physicsSystem.AllocPhysicsWorld();
 
+    isDebuggable = false;
+    isMapLoading = false;
     gameStarted = false;
 
     timeScale = 1.0f;
@@ -425,7 +428,26 @@ void GameWorld::FinishMapLoading() {
     //meshManager.EndLevelLoad();
 }
 
+bool GameWorld::CheckScriptError() const {
+    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
+        ComponentPtrArray scriptComponents = ent->GetComponents(&ComScript::metaObject);
+
+        for (int i = 0; i < scriptComponents.Count(); i++) {
+            ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+            if (scriptComponent->HasError()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void GameWorld::StartGame() {
+    if (isDebuggable) {
+        luaVM.StartDebuggee();
+    }
+
     gameStarted = true;
 
     timeScale = 1.0f;
@@ -443,6 +465,10 @@ void GameWorld::StartGame() {
 }
 
 void GameWorld::StopGame(bool stopAllSounds) {
+    if (isDebuggable) {
+        luaVM.StopDebuggee();
+    }
+
     gameStarted = false;
 
     if (stopAllSounds) {
@@ -542,6 +568,10 @@ void GameWorld::SaveMap(const char *filename) {
 }
 
 void GameWorld::Update(int elapsedTime) {
+    if (isDebuggable) {
+        luaVM.PollDebuggee();
+    }
+
     prevTime = time;
 
     int scaledElapsedTime = elapsedTime * timeScale;

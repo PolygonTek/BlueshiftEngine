@@ -94,6 +94,8 @@ public:
         );
     }
 
+    void RegisterLib(const struct luaL_Reg *lib, const char *libname);
+
     void Require(const char *name);
     void Require(const char *name, lua_CFunction openf);
 

@@ -191,7 +191,7 @@ else ()
 
         if (IOS)
             set_target_properties(${PROJECT_NAME} PROPERTIES 
-                XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET 9.0
+                XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
                 XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2" # Universal (iPad + iPhone)
                 XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
                 #XCODE_ATTRIBUTE_DEVELOPMENT_TEAM XXX
@@ -277,7 +277,14 @@ else ()
     elseif (BUILD_PLAYER)
         set(ENGINE_LIB_FILES zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis freetype jsoncpp Bullet HACD LuaCpp luasocket BlueshiftEngine)
 
-        if (NOT USE_LUAJIT)
+        if (USE_LUAJIT)
+            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/Dependencies/luaJIT/src)
+
+            include(FindLuaJIT)
+            target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
+        else ()
+            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/Dependencies/lua)
+
             list(APPEND ENGINE_LIB_FILES lua)
         endif ()
         
@@ -313,11 +320,6 @@ else ()
         endif ()
 
         target_link_libraries(${PROJECT_NAME} ${ENGINE_LIB_FILES})
-
-        if (USE_LUAJIT)
-            include(FindLuaJIT)
-            target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
-        endif ()
     endif ()
 
     if (ANDROID)
