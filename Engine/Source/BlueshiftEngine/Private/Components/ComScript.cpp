@@ -127,7 +127,6 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     if (!sandboxName.IsEmpty()) {
         state->SetToNil(sandboxName.c_str());
         //state->ForceGC();
-        sandboxName = "";
     }
 
     if (sandbox.IsValid()) {
@@ -141,6 +140,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     this->scriptGuid = scriptGuid;
 
     if (scriptGuid.IsZero()) {
+        sandboxName = "";
         return;
     }
 
@@ -169,6 +169,8 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
 
         // Run this script
         state->Run();
+
+        SetOwnerValues();
 
         UpdateFunctionMap();
 
@@ -659,8 +661,6 @@ void ComScript::SetScriptProperties() {
 }
 
 void ComScript::Awake() {
-    SetOwnerValues();
-
     SetScriptProperties();
 
     if (awakeFunc.IsValid()) {
