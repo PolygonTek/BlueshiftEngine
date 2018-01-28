@@ -4,11 +4,13 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="gles3jni.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
+    <ClInclude Include="AndroidAdmob.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gles3jni.cpp" />
     <ClCompile Include="RendererES2.cpp" />
     <ClCompile Include="RendererES3.cpp" />
     <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp" />
+    <ClCompile Include="AndroidAdmob.cpp" />
   </ItemGroup>
 </Project>

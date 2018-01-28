@@ -174,11 +174,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
+    <ClInclude Include="AndroidAdmob.h" />
     <ClInclude Include="gles3jni.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp" />
+    <ClCompile Include="AndroidAdmob.cpp" />
     <ClCompile Include="gles3jni.cpp" />
     <ClCompile Include="RendererES2.cpp" />
     <ClCompile Include="RendererES3.cpp" />

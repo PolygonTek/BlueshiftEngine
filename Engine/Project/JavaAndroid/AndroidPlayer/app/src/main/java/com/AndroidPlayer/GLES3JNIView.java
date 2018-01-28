@@ -46,47 +46,76 @@ class GLES3JNIView extends GLSurfaceView {
 	@Override
 	public boolean onTouchEvent(MotionEvent evt)
 	{
-		if (AndroidPlayer._ENGINE) {
+		if (GLES3JNILib._ENGINE) {
 			if (evt.getActionMasked() == MotionEvent.ACTION_DOWN)
 			{
 				for (int index = 0; index < evt.getPointerCount(); index++)
 				{
-					int x = (int)evt.getX(index);
-					int y = (int)evt.getY(index);
-					int touch_id = evt.getPointerId(index);
+					final int x = (int)evt.getX(index);
+					final int y = (int)evt.getY(index);
+					final int touch_id = evt.getPointerId(index);
 
-					GLES3JNILib.TouchBegin(touch_id, x, y);
+					queueEvent(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							// Log.v(GLES3JNILib.TAG, "TouchBegin");
+							GLES3JNILib.TouchBegin(touch_id, x, y);
+						}
+					});
 				}
 			}
 			else if (evt.getActionMasked() == MotionEvent.ACTION_MOVE)
 			{
 				for (int index = 0; index < evt.getPointerCount(); index++)
 				{
-					int x = (int)evt.getX(index);
-					int y = (int)evt.getY(index);
-					int touch_id = evt.getPointerId(index);
+					final int x = (int)evt.getX(index);
+					final int y = (int)evt.getY(index);
+					final int touch_id = evt.getPointerId(index);
 
-					GLES3JNILib.TouchMove(touch_id, x, y);
+					queueEvent(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							GLES3JNILib.TouchMove(touch_id, x, y);
+						}
+					});
 				}
 			}
 			else if (evt.getActionMasked() ==  MotionEvent.ACTION_UP)
 			{
 				for (int index = 0; index < evt.getPointerCount(); index++)
 				{
-					int x = (int)evt.getX(index);
-					int y = (int)evt.getY(index);
-					int touch_id = evt.getPointerId(index);
+					final int x = (int)evt.getX(index);
+					final int y = (int)evt.getY(index);
+					final int touch_id = evt.getPointerId(index);
 
-					GLES3JNILib.TouchEnd(touch_id, x, y);
+					queueEvent(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							GLES3JNILib.TouchEnd(touch_id, x, y);
+						}
+					});
 				}
 			}
 			else if (evt.getActionMasked() == MotionEvent.ACTION_CANCEL)
 			{
 				for (int index = 0; index < evt.getPointerCount(); index++)
 				{
-					int touch_id = evt.getPointerId(index);
+					final int touch_id = evt.getPointerId(index);
 
-					GLES3JNILib.TouchCancel(touch_id);
+					queueEvent(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							GLES3JNILib.TouchCancel(touch_id);
+						}
+					});
 				}
 			}
 
@@ -98,18 +127,21 @@ class GLES3JNIView extends GLSurfaceView {
 
     private static class Renderer implements GLSurfaceView.Renderer {
         public void onDrawFrame(GL10 gl) {
-            GLES3JNILib.step();
-			if (AndroidPlayer._ENGINE) {
+			//Log.v(GLES3JNILib.TAG, "step");
+			GLES3JNILib.step();
+			if (GLES3JNILib._ENGINE) {
 				System.gc();
 			}
         }
 
         public void onSurfaceChanged(GL10 gl, int width, int height) {
-            GLES3JNILib.resize(width, height);
+			Log.v(GLES3JNILib.TAG, "resize");
+			GLES3JNILib.resize(width, height);
         }
 
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            GLES3JNILib.init();
+			Log.v(GLES3JNILib.TAG, "init");
+			GLES3JNILib.init();
         }
     }
 }

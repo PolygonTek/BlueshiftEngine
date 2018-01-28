@@ -27,6 +27,7 @@
 
 #include "Application.h"
 #include "Android/window.h"
+#include "AndroidAdmob.h"
 
 EGLUtil mEgl;
 bool	Initialized;
@@ -338,6 +339,9 @@ void appInit()
 		//app.Init();
 		app.Init();
 
+//#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+		RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
+//#endif
 		app.LoadAppScript("Application");
 
 		app.StartAppScript();
@@ -378,11 +382,20 @@ extern "C" {
     JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_step(JNIEnv* env, jobject obj);
 #if _ENGINE
 	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_done(JNIEnv* env, jobject obj);
-	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject asset, jstring path);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject activity, jobject asset, jstring path);
 	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_TouchBegin(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY);
 	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_TouchMove(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY);
 	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_TouchEnd(JNIEnv* env, jobject obj, jint touchId, jint locationX, jint locationY);
 	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_TouchCancel(JNIEnv* env, jobject obj, jint touchId);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_DidRewardUser(JNIEnv* env, jobject obj, jstring type, jint amount);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_DidReceiveAd(JNIEnv* env, jobject obj);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_DidOpen(JNIEnv* env, jobject obj);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_DidStartPlaying(JNIEnv* env, jobject obj);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_DidClose(JNIEnv* env, jobject obj);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_WillLeaveApplication(JNIEnv* env, jobject obj);
+	JNIEXPORT void JNICALL Java_com_AndroidPlayer_GLES3JNILib_DidFailToLoad(JNIEnv* env, jobject obj, jint errorCode);
+
+	__thread JNIEnv *g_env;
 #endif
 };
 
@@ -423,12 +436,18 @@ Java_com_AndroidPlayer_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, 
         g_renderer->resize(width, height);
     }
 #endif
+
 #if _ENGINE
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	extern EGLUtil mEgl;
 	appDeinit();
 	mEgl.m_width = mEgl.m_windowWidth = width;
 	mEgl.m_height = mEgl.m_windowHeight = height;
 	appInit();
+	
+	g_env = old_env;
 #endif
 }
 
@@ -441,14 +460,19 @@ Java_com_AndroidPlayer_GLES3JNILib_step(JNIEnv* env, jobject obj) {
     }
 #endif
 #if _ENGINE
+	JNIEnv *old_env = g_env;
+	g_env = env;
+
 	DisplayContext(BE1::RHI::NullContext, 0);
+
+	g_env = old_env;
 #endif
 }
 
 #if _ENGINE
 
 JNIEXPORT void JNICALL
-Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject asset, jstring path) {
+Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject activity, jobject asset, jstring path) {
 	static jobject object;
 	if (object) {
 		env->DeleteGlobalRef(object);
@@ -463,6 +487,11 @@ Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, job
 	const char *_path = env->GetStringUTFChars(path, NULL);//Java String to C Style string
 	BE1::PlatformFile::SetExecutablePath(_path);
 	env->ReleaseStringUTFChars(path, _path);
+
+	if (RewardBasedVideoAd::sActivity) {
+		env->DeleteGlobalRef(RewardBasedVideoAd::sActivity);
+	}
+	RewardBasedVideoAd::sActivity = env->NewGlobalRef(activity);
 }
 
 JNIEXPORT void JNICALL
@@ -499,6 +528,75 @@ Java_com_AndroidPlayer_GLES3JNILib_TouchCancel(JNIEnv* env, jobject obj, jint to
 	BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, NULL);
 	BE1::platform->QueEvent(BE1::Platform::TouchCanceledEvent, touchId, 0, 0, NULL);
 }
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_DidRewardUser(JNIEnv* env, jobject obj, jstring type, jint amount)
+{
+	const char *rewardType = env->GetStringUTFChars(type, NULL);
+	int rewardAmount = amount;
+	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
+	if (function.IsFunction()) {
+		function(rewardType, rewardAmount);
+	}
+
+	env->ReleaseStringUTFChars(type, rewardType);
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_DidReceiveAd(JNIEnv* env, jobject obj)
+{
+	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_receive_ad"];
+	if (function.IsFunction()) {
+		function();
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_DidOpen(JNIEnv* env, jobject obj)
+{
+	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_open"];
+	if (function.IsFunction()) {
+		function();
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_DidStartPlaying(JNIEnv* env, jobject obj)
+{
+	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_start_playing"];
+	if (function.IsFunction()) {
+		function();
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_DidClose(JNIEnv* env, jobject obj)
+{
+	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_close"];
+	if (function.IsFunction()) {
+		function();
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_WillLeaveApplication(JNIEnv* env, jobject obj)
+{
+	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["will_leave_application"];
+	if (function.IsFunction()) {
+		function();
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_AndroidPlayer_GLES3JNILib_DidFailToLoad(JNIEnv* env, jobject obj, jint errorCode)
+{
+	const char *errorDescription = "";
+	LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
+	if (function.IsFunction()) {
+		function(errorDescription);
+	}
+}
+
 
 #endif
 

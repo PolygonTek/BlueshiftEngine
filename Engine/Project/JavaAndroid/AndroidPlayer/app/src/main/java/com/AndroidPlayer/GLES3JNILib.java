@@ -18,21 +18,34 @@
 package com.AndroidPlayer;
 //package com.android.gles3jni;
 
+//import java.util.concurrent.locks.Lock;
+//import java.util.concurrent.locks.ReentrantLock;
 // Wrapper for native library
+
 
 public class GLES3JNILib {
 
      static {
           System.loadLibrary("AndroidPlayerLibrary");
      }
+	public static final boolean _ENGINE = true;
+	public static boolean flag = false;
 
-     public static native void init();
-     public static native void resize(int width, int height);
-     public static native void step();
+	public static final String TAG = "blueshift";
+	public static native void init();
+	public static native void resize(int width, int height);
+	public static native void step();
 	 // _ENGINE
-	public static native void SetAssetManager(Object asset, String path);
+	public static native void SetAssetManager(Object actvity, Object asset, String path);
 	public static native void TouchBegin(int id, int x, int y);
 	public static native void TouchMove(int id, int x, int y);
 	public static native void TouchEnd(int id, int x, int y);
 	public static native void TouchCancel(int id);
+	public static native void DidRewardUser(String type, int amount);
+	public static native void DidReceiveAd();
+	public static native void DidOpen();
+	public static native void DidStartPlaying();
+	public static native void DidClose();
+	public static native void WillLeaveApplication();
+	public static native void DidFailToLoad(int errorCode);
 }
