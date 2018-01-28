@@ -63,10 +63,12 @@ add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 if (WIN32 AND NOT ANDROID)
     target_link_libraries(${PROJECT_NAME} "wsock32")
 elseif (APPLE)
-    target_link_libraries(${PROJECT_NAME} "-undefined dynamic_lookup")
+    if (NOT IOS)
+        target_link_libraries(${PROJECT_NAME} "-undefined dynamic_lookup")
+    endif ()
 
     set_target_properties(${PROJECT_NAME} PROPERTIES 
-        COMPILE_FLAGS "-fno-common -pedantic")
+        COMPILE_FLAGS "-fno-common")
     add_definitions("-DUNIX_HAS_SUN_LEN")
 endif ()
 
