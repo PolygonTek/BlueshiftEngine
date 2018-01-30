@@ -37,12 +37,12 @@ android {
             jniDebuggable true
         }
     }
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-			def newApkName = applicationId + "-" + variant.versionName + "(" + variant.versionCode + ")" + ".apk";
-			outputFileName = new File("../" +  outputFileName);
-        }
-    }
+    //applicationVariants.all { variant ->
+    //    variant.outputs.all { output ->
+	//		def newApkName = applicationId + "-" + variant.versionName + "(" + variant.versionCode + ")" + ".apk";
+	//		outputFileName = new File("../" +  outputFileName);
+    //    }
+    //}
 }
 
 

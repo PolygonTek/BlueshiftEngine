@@ -132,10 +132,8 @@ class GLES3JNIView extends GLSurfaceView {
 				GLES3JNILib.step();
 			}
 			if (GLES3JNILib._ENGINE) {
-				{
-					GLES3JNILib.step();
-					System.gc();
-				}
+				GLES3JNILib.step();
+				System.gc();
 			}
         }
 
