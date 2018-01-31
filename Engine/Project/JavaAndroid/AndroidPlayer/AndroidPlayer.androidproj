@@ -102,6 +102,9 @@
     <Content Include="app\src\main\res\drawable\icon.png" />
     <Content Include="app\src\main\res\values\strings.xml" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="app\src\main\assets\" />
+  </ItemGroup>
   <Import Project="$(AndroidTargetsPath)\Android.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

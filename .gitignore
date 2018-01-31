@@ -64,3 +64,5 @@ Engine/XML/*
 Engine/Project/JavaAndroid/AndroidPlayer/app/build/
 Engine/Project/JavaAndroid/AndroidPlayer/app/src/main/jniLibs/
 Engine/Project/JavaAndroid/AndroidPlayer/build/
+Engine/Source/Dependencies/luaJIT/lib/
+Engine/Source/Dependencies/luaJIT/src/*.lib
