@@ -30,10 +30,10 @@ When the build is complete, the project folder opens automatically within the bu
 
 ### Android
 
-Copy `data` and `config` directory under `%USERPROFILE%\Documents\BasicGameAnd\Project\NativeAndroid\AndroidPlayer.Packaging\assets` 
+Copy `data` and `config` directory under `%USERPROFILE%\Documents\BasicGameAnd\Project\JavaAndroid\AndroidPlayer\app\src\main\assets` 
 to `/sdcard/blueshift` of Android device.
 
-Open `BlueshiftEngine/Engine/Project/NativeAndroid/NativeAndroid.sln`, then build and run `AndroidPlayer.Packaging`.
+Open `BlueshiftEngine/Engine/Project/JavaAndroid/JavaAndroid.sln`, then build and run `AndroidPlayer`.
 
 ### iOS
 
