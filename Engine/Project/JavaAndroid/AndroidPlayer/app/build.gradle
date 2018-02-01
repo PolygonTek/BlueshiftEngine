@@ -37,6 +37,10 @@ android {
             jniDebuggable true
         }
     }
+	aaptOptions { 
+		noCompress 'zip', 'pvr', 'ogg', 'png'
+		// noCompress 'zip', 'pvr', 'bmesh', 'ogg', 'map', 'png', 'wav'
+	}
     //applicationVariants.all { variant ->
     //    variant.outputs.all { output ->
 	//		def newApkName = applicationId + "-" + variant.versionName + "(" + variant.versionCode + ")" + ".apk";
