@@ -35,10 +35,25 @@ void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state) {
 
 void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
 
+	BE1::StrArray testDeviceList;
+	BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
+
 	JNIEnv *env = g_env;
 	jclass androidPlayerClass = env->FindClass("com/AndroidPlayer/AndroidPlayer");
-	jmethodID loadRewardedVideoAdMid = env->GetMethodID(androidPlayerClass, "loadRewardedVideoAd", "()V");
-	env->CallVoidMethod(sActivity, loadRewardedVideoAdMid);
+	jmethodID loadRewardedVideoAdMid = env->GetMethodID(androidPlayerClass, "loadRewardedVideoAd", "(Ljava/lang/String;[Ljava/lang/String;)V");
+	jstring jstrUnitID = env->NewStringUTF(unitID);
+	jstring jString = env->NewStringUTF("");
+	jobjectArray jStringArray = env->NewObjectArray(testDeviceList.Count(), env->FindClass("java/lang/String"),jString);
+	env->DeleteLocalRef(jString);
+	for (int i = 0; i < testDeviceList.Count(); i++) {
+		jstring jString = env->NewStringUTF(testDeviceList[i].c_str());
+		env->SetObjectArrayElement(jStringArray, i, jString);
+		env->DeleteLocalRef(jString);
+	}
+	env->CallVoidMethod(sActivity, loadRewardedVideoAdMid, jstrUnitID, jStringArray);
+	env->DeleteLocalRef(jstrUnitID);
+	env->DeleteLocalRef(jStringArray);
+
 
 		//GADRequest *request = [GADRequest request];
 

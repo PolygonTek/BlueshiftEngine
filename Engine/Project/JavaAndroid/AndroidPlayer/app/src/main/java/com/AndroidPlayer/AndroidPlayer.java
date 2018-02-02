@@ -103,16 +103,22 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 			mRewardedVideoAd.resume(this);
         }
     }
-    public void loadRewardedVideoAd() {
+    public void loadRewardedVideoAd(String _unitID, String[] _testDevices) {
+		final String unitID = _unitID;
+		final String[] testDevices = _testDevices;
 		runOnUiThread(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				Log.v(GLES3JNILib.TAG, "loadRewardedVideoAd");
+				Log.v(GLES3JNILib.TAG, "loadRewardedVideoAd "+ unitID + " " + testDevices.length);
 				GLES3JNILib.flag = true;
 				if (!mRewardedVideoAd.isLoaded()) {
-					mRewardedVideoAd.loadAd(AD_UNIT_ID, new AdRequest.Builder().build());
+					AdRequest.Builder builder = new AdRequest.Builder();
+					for (int i = 0; i  < testDevices.length; i++) {
+						builder = builder.addTestDevice("4E44374435FD7BD8DF6DE503E5686EF6");
+					}
+					mRewardedVideoAd.loadAd(AD_UNIT_ID, builder.build());
 				}
 			}
 		});
