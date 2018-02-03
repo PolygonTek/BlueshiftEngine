@@ -182,14 +182,14 @@ void Common::RunFrame(int frameMsec) {
 Common::PlatformId Common::GetPlatformId() const {
 #ifdef __WIN32__
     return PlatformId::WindowsPlatform;
+#elif defined(__IOS__)
+	return PlatformId::IOSPlatform;
+#elif defined(__ANDROID__)
+	return PlatformId::AndroidPlatform;
+#elif defined(__MACOSX__)
+	return PlatformId::MacOSPlatform;
 #elif defined(__LINUX__)
     return PlatformId::LinuxPlatform;
-#elif defined(__MACOSX__)
-    return PlatformId::MacOSPlatform;
-#elif defined(__IOS__)
-    return PlatformId::IOSPlatform;
-#elif defined(__ANDROID__)
-    return PlatformId::AndroidPlatform;
 #endif
 }
 
