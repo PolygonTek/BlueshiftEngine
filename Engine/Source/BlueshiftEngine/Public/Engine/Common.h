@@ -24,11 +24,11 @@ class CmdArgs;
 class Common {
 public:
     enum PlatformId {
-        Windows,
-        Linux,
-        MacOS,
-        IOS,
-        Android
+        WindowsPlatform,
+        LinuxPlatform,
+        MacOSPlatform,
+        IOSPlatform,
+        AndroidPlatform
     };
 
     void            Init(const char *baseDir);
