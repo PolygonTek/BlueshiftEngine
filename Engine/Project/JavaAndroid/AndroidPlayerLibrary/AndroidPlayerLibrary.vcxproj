@@ -151,7 +151,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <CppLanguageStandard>c++1y</CppLanguageStandard>
       <AdditionalOptions>-D_ENGINE=1 -ftemplate-depth=512</AdditionalOptions>
-      <PreprocessorDefinitions>__XAMARIN__;DEBUG;_DEBUG;ANDROID;USE_LUAJIT=0;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__XAMARIN__;DEBUG;_DEBUG;__ANDROID__;USE_LUAJIT=0;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;$(StlLibraryName);%(LibraryDependencies);android;GLESv3;EGL;OpenSLES;m</LibraryDependencies>
@@ -167,7 +167,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <CppLanguageStandard>c++1y</CppLanguageStandard>
       <AdditionalOptions>-D_ENGINE=1 -ftemplate-depth=512</AdditionalOptions>
-      <PreprocessorDefinitions>__XAMARIN__;NDEBUG;ANDROID;USE_LUAJIT=0;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__XAMARIN__;NDEBUG;__ANDROID__;USE_LUAJIT=0;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <LibraryDependencies>BlueshiftEngine;minizip;libjpeg;libpng;zlib;libpvrt;etcpack_lib;Etc2CompLib;libvorbis;libogg;jsoncpp;freetype;Bullet;HACD;LuaCpp;lua;NvTriStrip;luasocket;nvidia;$(StlLibraryName);%(LibraryDependencies);android;GLESv3;EGL;OpenSLES;m</LibraryDependencies>

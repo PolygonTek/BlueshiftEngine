@@ -122,7 +122,7 @@ elseif (APPLE)
     endif ()
 elseif (ANDROID)
     # Settings for Android
-    add_compile_options("-DANDROID")
+    add_compile_options("-D__ANDROID__")
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -std=gnu++1y -frtti")

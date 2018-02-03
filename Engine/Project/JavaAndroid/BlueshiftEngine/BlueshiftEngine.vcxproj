@@ -150,7 +150,7 @@
       <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftEngine;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\asio\include;..\..\..\Source\Dependencies\zlib;..\..\..\Source\Dependencies\zlib\..\..\..\Project\Android\zlib;..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\lua;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-ftemplate-depth=512</AdditionalOptions>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <PreprocessorDefinitions>__XAMARIN__;DEBUG;_DEBUG;ANDROID;USE_LUAJIT=0;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__XAMARIN__;DEBUG;_DEBUG;__ANDROID__;USE_LUAJIT=0;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
       <Command>md ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration)</Command>
@@ -166,7 +166,7 @@
       <AdditionalIncludeDirectories>..\..\..\Source\BlueshiftEngine;..\..\..\Source\BlueshiftEngine\Public;..\..\..\Source\Dependencies;..\..\..\Source\Dependencies\asio\include;..\..\..\Source\Dependencies\zlib;..\..\..\Source\Dependencies\zlib\..\..\..\Project\Android\zlib;..\..\..\Source\Dependencies\etc2comp\EtcLib\EtcCodec;..\..\..\Source\Dependencies\libogg\include;..\..\..\Source\Dependencies\libvorbis\include;..\..\..\Source\Dependencies\freetype\include;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\LuaCpp;..\..\..\Source\Dependencies\lua;..\..\..\Source\Dependencies\NvTriStrip\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-ftemplate-depth=512</AdditionalOptions>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <PreprocessorDefinitions>__XAMARIN__;NDEBUG;ANDROID;USE_LUAJIT=0;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__XAMARIN__;NDEBUG;__ANDROID__;USE_LUAJIT=0;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
       <Command>md ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration)</Command>
