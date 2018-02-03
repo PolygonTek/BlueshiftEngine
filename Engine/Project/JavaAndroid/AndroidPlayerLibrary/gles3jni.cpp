@@ -339,9 +339,9 @@ void appInit()
 		//app.Init();
 		app.Init();
 
-//#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+#if USE_ADMOB
 		RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
-//#endif
+#endif
 		app.LoadAppScript("Application");
 
 		app.StartAppScript();
@@ -470,6 +470,7 @@ Java_com_AndroidPlayer_GLES3JNILib_step(JNIEnv* env, jobject obj) {
 }
 
 #if _ENGINE
+jobject gActivity;
 
 JNIEXPORT void JNICALL
 Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, jobject activity, jobject asset, jstring path) {
@@ -488,10 +489,10 @@ Java_com_AndroidPlayer_GLES3JNILib_SetAssetManager(JNIEnv* env, jobject obj, job
 	BE1::PlatformFile::SetExecutablePath(_path);
 	env->ReleaseStringUTFChars(path, _path);
 
-	if (RewardBasedVideoAd::sActivity) {
-		env->DeleteGlobalRef(RewardBasedVideoAd::sActivity);
+	if (gActivity) {
+		env->DeleteGlobalRef(gActivity);
 	}
-	RewardBasedVideoAd::sActivity = env->NewGlobalRef(activity);
+	gActivity = env->NewGlobalRef(activity);
 }
 
 JNIEXPORT void JNICALL

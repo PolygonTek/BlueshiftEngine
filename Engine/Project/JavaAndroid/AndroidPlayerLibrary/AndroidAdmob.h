@@ -16,8 +16,6 @@
 
 class RewardBasedVideoAd {
 public:
-	static jobject sActivity;
-
 	void Request(const char *unitID, const char *testDevices = "");
 
 	bool IsReady() const;

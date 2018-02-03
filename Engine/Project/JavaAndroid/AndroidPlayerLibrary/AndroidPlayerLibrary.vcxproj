@@ -150,7 +150,7 @@
       <ExceptionHandling>Enabled</ExceptionHandling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <CppLanguageStandard>c++1y</CppLanguageStandard>
-      <AdditionalOptions>-D_ENGINE=1 -ftemplate-depth=512</AdditionalOptions>
+      <AdditionalOptions>-D_ENGINE=1 -DUSE_ADMOB=1 -ftemplate-depth=512</AdditionalOptions>
       <PreprocessorDefinitions>__XAMARIN__;DEBUG;_DEBUG;__ANDROID__;USE_LUAJIT=0;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -166,7 +166,7 @@
       <ExceptionHandling>Enabled</ExceptionHandling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <CppLanguageStandard>c++1y</CppLanguageStandard>
-      <AdditionalOptions>-D_ENGINE=1 -ftemplate-depth=512</AdditionalOptions>
+      <AdditionalOptions>-D_ENGINE=1 -DUSE_ADMOB=1 -ftemplate-depth=512</AdditionalOptions>
       <PreprocessorDefinitions>__XAMARIN__;NDEBUG;__ANDROID__;USE_LUAJIT=0;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>

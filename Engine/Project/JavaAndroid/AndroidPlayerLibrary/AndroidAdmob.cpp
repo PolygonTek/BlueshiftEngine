@@ -16,8 +16,9 @@
 #include "Application.h"
 #include "AndroidAdmob.h"
 
+#if USE_ADMOB
 RewardBasedVideoAd rewardBasedVideoAd;
-jobject RewardBasedVideoAd::sActivity;
+extern jobject gActivity;
 extern __thread JNIEnv *g_env;
 
 void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state) {
@@ -52,7 +53,7 @@ void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
 		env->DeleteLocalRef(jString);
 	}
 #endif
-	env->CallVoidMethod(sActivity, loadRewardedVideoAdMid, jstrUnitID, jStringArray);
+	env->CallVoidMethod(gActivity, loadRewardedVideoAdMid, jstrUnitID, jStringArray);
 	env->DeleteLocalRef(jstrUnitID);
 	env->DeleteLocalRef(jStringArray);
 
@@ -86,7 +87,7 @@ bool RewardBasedVideoAd::IsReady() const {
 	JNIEnv *env = g_env;
 	jclass androidPlayerClass = env->FindClass("com/AndroidPlayer/AndroidPlayer");
 	jmethodID isLoadedRewardedVideoAdMid = env->GetMethodID(androidPlayerClass, "isLoadedRewardedVideoAd", "()Z");
-	jboolean ret = env->CallBooleanMethod(sActivity, isLoadedRewardedVideoAdMid);
+	jboolean ret = env->CallBooleanMethod(gActivity, isLoadedRewardedVideoAdMid);
 	return ret;
 	//	return[[GADRewardBasedVideoAd sharedInstance] isReady];
 }
@@ -95,8 +96,9 @@ void RewardBasedVideoAd::Present() {
 	JNIEnv *env = g_env;
 	jclass androidPlayerClass = env->FindClass("com/AndroidPlayer/AndroidPlayer");
 	jmethodID showRewardedVideoAdMid = env->GetMethodID(androidPlayerClass, "showRewardedVideoAd", "()V");
-	env->CallVoidMethod(sActivity, showRewardedVideoAdMid);
+	env->CallVoidMethod(gActivity, showRewardedVideoAdMid);
 //	[[GADRewardBasedVideoAd sharedInstance] presentFromRootViewController:viewController];
 }
 
 
+#endif
