@@ -41,7 +41,6 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 
     private static final String AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917";
     private static final String APP_ID = "ca-app-pub-3940256099942544~3347511713";
-    private static final String TEST_DEVICE_ID = "4E44374435FD7BD8DF6DE503E5686EF6";
 	private static final int REQUEST_STORAGE = 1;
     GLES3JNIView mView;
     private RewardedVideoAd mRewardedVideoAd;
