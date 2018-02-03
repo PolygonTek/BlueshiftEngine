@@ -45,11 +45,13 @@ void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
 	jstring jString = env->NewStringUTF("");
 	jobjectArray jStringArray = env->NewObjectArray(testDeviceList.Count(), env->FindClass("java/lang/String"),jString);
 	env->DeleteLocalRef(jString);
+#ifdef DEBUG
 	for (int i = 0; i < testDeviceList.Count(); i++) {
-		jstring jString = env->NewStringUTF(testDeviceList[i].c_str());
+		jstring jString = env->NewStringUTF(testDeviceList[i].c_str()); 
 		env->SetObjectArrayElement(jStringArray, i, jString);
 		env->DeleteLocalRef(jString);
 	}
+#endif
 	env->CallVoidMethod(sActivity, loadRewardedVideoAdMid, jstrUnitID, jStringArray);
 	env->DeleteLocalRef(jstrUnitID);
 	env->DeleteLocalRef(jStringArray);

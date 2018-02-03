@@ -13,6 +13,11 @@
     <ClCompile Include="..\..\..\Source\Dependencies\luasocket\timeout.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\luasocket\udp.c" />
     <ClCompile Include="..\..\..\Source\Dependencies\luasocket\usocket.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\compat.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\mime.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\unixstream.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\unixdgram.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\unix.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Dependencies\luasocket\auxiliar.h" />
@@ -27,5 +32,11 @@
     <ClInclude Include="..\..\..\Source\Dependencies\luasocket\timeout.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\luasocket\udp.h" />
     <ClInclude Include="..\..\..\Source\Dependencies\luasocket\usocket.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\compat.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\mime.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\socket.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\unixstream.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\unixdgram.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\unix.h" />
   </ItemGroup>
 </Project>

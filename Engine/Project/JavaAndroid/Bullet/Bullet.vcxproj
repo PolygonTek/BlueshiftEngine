@@ -76,6 +76,7 @@
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
       <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\Bullet;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\Bullet\Extras;$(Sysroot)\usr\include;$(StlIncludeDirectories)%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PreprocessorDefinitions>__XAMARIN__;DEBUG;_DEBUG;ANDROID;USE_LUAJIT=0;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
       <Command>md ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration)</Command>
@@ -95,6 +96,7 @@
       <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
       <AdditionalIncludeDirectories>..\..\..\Source\Dependencies\Bullet;..\..\..\Source\Dependencies\Bullet\src;..\..\..\Source\Dependencies\Bullet\Extras;$(Sysroot)\usr\include;$(StlIncludeDirectories)%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PreprocessorDefinitions>__XAMARIN__;NDEBUG;ANDROID;USE_LUAJIT=0;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
       <Command>md ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\JavaAndroid\$(Platform)\$(Configuration)</Command>

@@ -41,6 +41,7 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 
     private static final String AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917";
     private static final String APP_ID = "ca-app-pub-3940256099942544~3347511713";
+    private static final String TEST_DEVICE_ID = "4E44374435FD7BD8DF6DE503E5686EF6";
 	private static final int REQUEST_STORAGE = 1;
     GLES3JNIView mView;
     private RewardedVideoAd mRewardedVideoAd;
@@ -78,7 +79,7 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
         if (GLES3JNILib._ENGINE) {
 			// Initialize the Mobile Ads SDK.
 			Log.v(GLES3JNILib.TAG, "Admob Initializing");
-			MobileAds.initialize(this);
+			MobileAds.initialize(this /* , APP_ID */);
 
 			mRewardedVideoAd = MobileAds.getRewardedVideoAdInstance(this);
 			mRewardedVideoAd.setRewardedVideoAdListener(this);
@@ -111,14 +112,14 @@ public class AndroidPlayer extends Activity implements RewardedVideoAdListener {
 			@Override
 			public void run()
 			{
-				Log.v(GLES3JNILib.TAG, "loadRewardedVideoAd "+ unitID + " " + testDevices.length);
+				Log.v(GLES3JNILib.TAG, "loadRewardedVideoAd: "+ unitID + ", " + testDevices.length);
 				GLES3JNILib.flag = true;
 				if (!mRewardedVideoAd.isLoaded()) {
 					AdRequest.Builder builder = new AdRequest.Builder();
 					for (int i = 0; i  < testDevices.length; i++) {
-						builder = builder.addTestDevice("4E44374435FD7BD8DF6DE503E5686EF6");
+						builder = builder.addTestDevice(testDevices[i]);
 					}
-					mRewardedVideoAd.loadAd(AD_UNIT_ID, builder.build());
+					mRewardedVideoAd.loadAd(unitID, builder.build());
 				}
 			}
 		});
