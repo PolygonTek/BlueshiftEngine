@@ -23,10 +23,20 @@ class CmdArgs;
 
 class Common {
 public:
+    enum PlatformId {
+        Windows,
+        Linux,
+        MacOS,
+        IOS,
+        Android
+    };
+
     void            Init(const char *baseDir);
     void            Shutdown();
 
     void            RunFrame(int frameMsec);
+
+    PlatformId      GetPlatformId() const;
 
     Str             GetAppPreferenceDir() const;
 

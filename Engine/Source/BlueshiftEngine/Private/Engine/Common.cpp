@@ -179,6 +179,20 @@ void Common::RunFrame(int frameMsec) {
     cmdSystem.ExecuteCommandBuffer();
 }
 
+Common::PlatformId Common::GetPlatformId() const {
+#ifdef __WIN32__
+    return PlatformId::Windows;
+#elif defined(__LINUX__)
+    return PlatformId::Linux;
+#elif defined(__MACOSX__)
+    return PlatformId::MacOS;
+#elif defined(__IOS__)
+    return PlatformId::IOS;
+#elif defined(__ANDROID__)
+    return PlatformId::Android;
+#endif
+}
+
 Str Common::GetAppPreferenceDir() const {
     Str companyName = GameSettings::playerSettings->GetProperty("companyName").As<Str>();
     Str productName = GameSettings::playerSettings->GetProperty("productName").As<Str>();
