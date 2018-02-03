@@ -18,16 +18,10 @@
 
 BE_NAMESPACE_BEGIN
 
+struct CommonPlatformId {};
+
 void LuaVM::RegisterCommon(LuaCpp::Module &module) {
     LuaCpp::Selector _Common = module["Common"];
-
-    LuaCpp::Selector _Common_PlatformId = _Common["PlatformId"];
-    _Common_PlatformId.SetClass<Common::PlatformId>();
-    _Common_PlatformId["Windows"] = Common::PlatformId::Windows;
-    _Common_PlatformId["Linux"] = Common::PlatformId::Linux;
-    _Common_PlatformId["MacOS"] = Common::PlatformId::MacOS;
-    _Common_PlatformId["IOS"] = Common::PlatformId::IOS;
-    _Common_PlatformId["Android"] = Common::PlatformId::Android;
 
     _Common.SetObj(common);
     _Common.AddObjMembers(common,
@@ -36,6 +30,14 @@ void LuaVM::RegisterCommon(LuaCpp::Module &module) {
         "frame_sec", &Common::frameSec,
         "platform_id", &Common::GetPlatformId,
         "preference_dir", &Common::GetAppPreferenceDir);
+
+    LuaCpp::Selector _Common_PlatformId = _Common["PlatformId"];
+    _Common_PlatformId.SetClass<CommonPlatformId>();
+    _Common_PlatformId["Windows"] = Common::PlatformId::Windows;
+    _Common_PlatformId["Linux"] = Common::PlatformId::Linux;
+    _Common_PlatformId["MacOS"] = Common::PlatformId::MacOS;
+    _Common_PlatformId["IOS"] = Common::PlatformId::IOS;
+    _Common_PlatformId["Android"] = Common::PlatformId::Android;
 }
 
 BE_NAMESPACE_END
