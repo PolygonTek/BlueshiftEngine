@@ -505,19 +505,28 @@ PlatformAndroidFile::~PlatformAndroidFile() {
 }
 
 Str PlatformAndroidFile::NormalizeFilename(const char *filename) {
-	Str normalizedFilename = PlatformFile::GetBasePath();
-	normalizedFilename.AppendPath(filename);
-//	Str normalizedFilename = filename;
-    normalizedFilename.BackSlashesToSlashes();
+    Str normalizedFilename;
+    if (FileSystem::IsAbsolutePath(filename)) {
+        normalizedFilename = filename;
+    } else {
+        normalizedFilename = basePath;
+        normalizedFilename.AppendPath(filename);
+    }
+    normalizedFilename.CleanPath(PATHSEPERATOR_CHAR);
+    
     return normalizedFilename;
 }
 
 Str PlatformAndroidFile::NormalizeDirectoryName(const char *dirname) {
-    Str normalizedDirname = PlatformFile::GetBasePath();
-    normalizedDirname.AppendPath(dirname);
-	//Str normalizedDirname = dirname;
-	normalizedDirname.BackSlashesToSlashes();
-    
+    Str normalizedDirname;
+    if (FileSystem::IsAbsolutePath(dirname)) {
+        normalizedDirname = dirname;
+    } else {
+        normalizedDirname = basePath;
+        normalizedDirname.AppendPath(dirname);
+    }
+    normalizedDirname.CleanPath(PATHSEPERATOR_CHAR);
+
     int length = normalizedDirname.Length();
     if (length > 0) {
         if (normalizedDirname[length - 1] != '/') {
