@@ -506,7 +506,7 @@ PlatformAndroidFile::~PlatformAndroidFile() {
 
 Str PlatformAndroidFile::NormalizeFilename(const char *filename) {
     Str normalizedFilename;
-    if (FileSystem::IsAbsolutePath(filename)) {
+    if (BE1::FileSystem::IsAbsolutePath(filename)) {
         normalizedFilename = filename;
     } else {
         normalizedFilename = basePath;
@@ -519,7 +519,7 @@ Str PlatformAndroidFile::NormalizeFilename(const char *filename) {
 
 Str PlatformAndroidFile::NormalizeDirectoryName(const char *dirname) {
     Str normalizedDirname;
-    if (FileSystem::IsAbsolutePath(dirname)) {
+    if (BE1::FileSystem::IsAbsolutePath(dirname)) {
         normalizedDirname = dirname;
     } else {
         normalizedDirname = basePath;
@@ -536,7 +536,6 @@ Str PlatformAndroidFile::NormalizeDirectoryName(const char *dirname) {
     
     return normalizedDirname;
 }
-
 
 PlatformAndroidFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
 
