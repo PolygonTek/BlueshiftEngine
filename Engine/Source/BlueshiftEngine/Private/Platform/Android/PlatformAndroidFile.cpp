@@ -510,7 +510,7 @@ Str PlatformAndroidFile::NormalizeFilename(const char *filename) {
     if (FileSystem::IsAbsolutePath(filename)) {
         normalizedFilename = filename;
     } else {
-        normalizedFilename = basePath;
+        normalizedFilename = PlatformFile::GetBasePath();
         normalizedFilename.AppendPath(filename);
     }
     normalizedFilename.CleanPath(PATHSEPERATOR_CHAR);
@@ -523,7 +523,7 @@ Str PlatformAndroidFile::NormalizeDirectoryName(const char *dirname) {
     if (FileSystem::IsAbsolutePath(dirname)) {
         normalizedDirname = dirname;
     } else {
-        normalizedDirname = basePath;
+        normalizedDirname = PlatformFile::GetBasePath();
         normalizedDirname.AppendPath(dirname);
     }
     normalizedDirname.CleanPath(PATHSEPERATOR_CHAR);
