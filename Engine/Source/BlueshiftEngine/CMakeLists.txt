@@ -618,6 +618,7 @@ if (ANDROID)
         Public/Platform/Linux/PlatformLinuxTime.h
         Public/Platform/Linux/PlatformLinuxSystem.h
         Public/Platform/Android/PlatformAndroidProcess.h
+        Public/Platform/Android/PlatformAndroidSystem.h
         Public/Platform/Android/PlatformAndroidThread.h
         Public/Platform/Android/PlatformAndroidFile.h
         Private/Platform/Posix/PlatformPosixProcess.cpp
@@ -627,6 +628,7 @@ if (ANDROID)
         Private/Platform/Linux/PlatformLinuxTime.cpp
         Private/Platform/Linux/PlatformLinuxSystem.cpp
         Private/Platform/Android/PlatformAndroidProcess.cpp 
+        Private/Platform/Android/PlatformAndroidSystem.cpp 
         Private/Platform/Android/PlatformAndroidThread.cpp
         Private/Platform/Android/PlatformAndroidFile.cpp
         Private/Platform/PlatformAndroid.h
