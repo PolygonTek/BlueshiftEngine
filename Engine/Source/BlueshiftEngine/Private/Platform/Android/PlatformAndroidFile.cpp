@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformFile.h"
+#include "File/FileSystem.h"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -506,7 +507,7 @@ PlatformAndroidFile::~PlatformAndroidFile() {
 
 Str PlatformAndroidFile::NormalizeFilename(const char *filename) {
     Str normalizedFilename;
-    if (BE1::FileSystem::IsAbsolutePath(filename)) {
+    if (FileSystem::IsAbsolutePath(filename)) {
         normalizedFilename = filename;
     } else {
         normalizedFilename = basePath;
@@ -519,7 +520,7 @@ Str PlatformAndroidFile::NormalizeFilename(const char *filename) {
 
 Str PlatformAndroidFile::NormalizeDirectoryName(const char *dirname) {
     Str normalizedDirname;
-    if (BE1::FileSystem::IsAbsolutePath(dirname)) {
+    if (FileSystem::IsAbsolutePath(dirname)) {
         normalizedDirname = dirname;
     } else {
         normalizedDirname = basePath;
