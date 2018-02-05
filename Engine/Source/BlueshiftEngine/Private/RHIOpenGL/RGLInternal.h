@@ -16,9 +16,7 @@
 
 #ifdef __WIN32__
 
-//#define USE_EGLWIN
-
-#ifdef USE_EGLWIN
+#ifdef USE_WINDOWS_EGL
 #include "OpenGL/OpenGLES3.h"
 #include "OpenGL/EGL/egl.h"
 #include "OpenGL/EGL/eglplatform.h"
@@ -26,16 +24,12 @@
 #include "OpenGL/WinOpenGL.h"
 #endif
 
-#endif // __WIN32__
-
-#if defined(__XAMARIN__) && !defined(__WIN32__)
+#elif defined(__XAMARIN__)
 
 #include "OpenGL/XamarinOpenGL.h"
 #include "RHI/EGLUtil.h"
 
-#else // __XAMARIN__
-
-#ifdef __MACOSX__
+#elif defined(__MACOSX__)
 
 #include <OpenGL/OpenGL.h>
 #include <CoreGraphics/CoreGraphics.h>
@@ -45,9 +39,7 @@ OBJC_CLASS(NSView);
 OBJC_CLASS(NSOpenGLContext);
 OBJC_CLASS(GLView);
 
-#endif // __MACOSX__
-
-#ifdef __IOS__
+#elif defined(__IOS__)
 
 #include <CoreGraphics/CoreGraphics.h>
 #include "OpenGL/IOSOpenGL.h"
@@ -56,16 +48,12 @@ OBJC_CLASS(EAGLContext);
 OBJC_CLASS(UIView);
 OBJC_CLASS(EAGLView);
 
-#endif // __IOS__
-
-#ifdef __ANDROID__
+#elif defined(__ANDROID__)
 
 #include "OpenGL/AndroidOpenGL.h"
 #include <nvidia/nv_egl_util/nv_egl_util.h>
 
-#endif // __ANDROID__
-
-#endif // __XAMARIN__
+#endif
 
 #include "Core/CVars.h"
 
@@ -97,19 +85,19 @@ struct GLContext {
     RHI::DisplayContextFunc displayFunc;
     void *              displayFuncDataPtr;
     bool                onDemandDrawing;
-#if defined __XAMARIN__ && !defined __WIN32__
-    EGLUtil *           rootView;
-#elif defined(__WIN32__)
+#if defined(__WIN32__)
     HWND                hwnd;
     WNDPROC             oldWndProc;
     HDC                 hdc;
-#	ifndef USE_EGLWIN
+#ifndef USE_WINDOWS_EGL
     HGLRC               hrc;
-#	else
+#else
     EGLDisplay          eglDisplay;
     EGLSurface          eglSurface;
     EGLContext          eglContext;
-#	endif
+#endif
+#elif defined(__XAMARIN__)
+    EGLUtil *           rootView;
 #elif defined(__MACOSX__)
     CGDirectDisplayID   display;
     NSView *            contentView;

@@ -78,27 +78,40 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 
 ################################################################################
 
-if (WIN32 AND MSVC) 
+if (WIN32)
     # Settings for Windows
     add_definitions(-D_UNICODE -DUNICODE)
 
-    # Enable Function-Level Linking
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
-    
-    # Force Synchronous PDB Writes
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
-    
-    # Remove RTTI
-    string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    set(USE_WINDOWS_EGL FALSE CACHE INTERNAL "Force to use EGL on Windows")
+    set(USE_WINDOWS_OPENAL FALSE CACHE INTERNAL "Force to use OpenAL on Windows")
 
-    #set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-    #set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-    #set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+    if (USE_WINDOWS_EGL)
+        add_definitions(-DUSE_WINDOWS_EGL)
+    endif ()
 
-    # Suppress warnings when linking with release library
-    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:\"msvcrt.lib\"")
+    if (USE_WINDOWS_OPENAL)
+        add_definitions(-DUSE_WINDOWS_OPENAL)
+    endif ()
+
+    if (MSVC)
+        # Enable Function-Level Linking
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+    
+        # Force Synchronous PDB Writes
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+    
+        # Remove RTTI
+        string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+        #set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+        #set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+        #set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+
+        # Suppress warnings when linking with release library
+        set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:\"msvcrt.lib\"")
+    endif ()
 elseif (APPLE) 
     # Settings for macOS, iOS
     #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")

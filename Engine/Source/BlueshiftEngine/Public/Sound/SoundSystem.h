@@ -28,8 +28,7 @@
 
 #elif defined(__WIN32__)
 
-#define USE_WINDOWS_OPENAL 0
-#if USE_WINDOWS_OPENAL
+#ifdef USE_WINDOWS_OPENAL
 #include "al.h"
 #include "alc.h"
 #else
@@ -69,7 +68,7 @@ public:
 
     bool                    duplicated;
 
-#if defined(__APPLE__) || (defined(__WIN32__) && USE_WINDOWS_OPENAL == 1)
+#if defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
     ALuint                  alBufferIds[MaxStreamBuffers];
     uint32_t                bufferCount;
     ALenum                  format;
@@ -111,7 +110,7 @@ public:
     Sound *                 sound;
     Pcm                     pcm;    ///< PCM file for streaming
 
-#if defined(__APPLE__) || (defined(__WIN32__) && USE_WINDOWS_OPENAL == 1)
+#if defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
     ALuint                  alSourceId;
 #elif defined(__WIN32__)
     IDirectSoundBuffer *    dsBuffer;
@@ -282,7 +281,7 @@ private:
     Vec3                    listenerForward;
     Vec3                    listenerUp;
 
-#if defined(__APPLE__) || (defined(__WIN32__) && USE_WINDOWS_OPENAL == 1)
+#if defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
     ALCcontext *            alContext;
     ALCdevice *             alDevice;
 #elif defined(__WIN32__)

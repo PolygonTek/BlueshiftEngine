@@ -650,16 +650,21 @@ elseif (WIN32)
         Private/Platform/Windows/PlatformWinSystem.cpp
         Private/Platform/PlatformWin.h
         Private/Platform/PlatformWin.cpp
-        Private/Sound/SoundSystemDS.cpp
-        Private/Sound/SoundBufferDS.cpp
-        Private/Sound/SoundSourceDS.cpp
-        #Private/Sound/SoundSystemAL.cpp
-        #Private/Sound/SoundBufferAL.cpp
-        #Private/Sound/SoundSourceAL.cpp
         Public/Network/Socket.h
         Public/Network/Packet.h
         Private/Network/Socket.cpp
         Private/Network/Packet.cpp)
+    if (USE_WINDOWS_OPENAL)
+        list(APPEND ENGINE_FILES
+            Private/Sound/SoundSystemAL.cpp
+            Private/Sound/SoundBufferAL.cpp
+            Private/Sound/SoundSourceAL.cpp)
+    else ()
+        list(APPEND ENGINE_FILES
+            Private/Sound/SoundSystemDS.cpp
+            Private/Sound/SoundBufferDS.cpp
+            Private/Sound/SoundSourceDS.cpp)
+    endif ()
 elseif (UNIX)
     list(APPEND ENGINE_FILES
         Public/Platform/Posix/PlatformPosixProcess.h
@@ -787,11 +792,6 @@ include_directories(
     ${ENGINE_INCLUDE_DIR}/Dependencies/asio/include
 )
 
-if (WIN32)
-    include(FindOpenAL)
-    include_directories(${OPENAL_INCLUDE_DIR})
-endif ()
-
 if (IOS)
     include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/OpenGL/include)
 endif ()
@@ -812,8 +812,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 if (WIN32)
     find_package(OpenGL REQUIRED)
-    target_link_libraries(${PROJECT_NAME}
-        ${OPENGL_LIBRARIES} ${OPENAL_LIBRARY} dxguid.lib dsound.lib ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} dxguid.lib dsound.lib ws2_32.lib)
+
+    if (USE_WINDOWS_OPENAL)
+        include(FindOpenAL)
+    
+        target_include_directories(${PROJECT_NAME} PUBLIC ${OPENAL_INCLUDE_DIR})
+        target_link_libraries(${PROJECT_NAME} ${OPENAL_LIBRARY})
+    endif ()
 elseif (APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++0x"

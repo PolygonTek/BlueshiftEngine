@@ -241,7 +241,7 @@ OpenGL 4.5 (2014)
 ------------------------------------------------------------------------------
 */
 
-#if (defined(__WIN32__) && !defined(USE_EGLWIN)) || defined(__MACOSX__) || defined(__LINUX__) && !defined(__ANDROID__)
+#if (defined(__WIN32__) && !defined(USE_WINDOWS_EGL)) || defined(__MACOSX__) || defined(__LINUX__) && !defined(__ANDROID__)
 #include "GGL/gglcore32.h"
 #if defined(__WIN32__)
 #include "GGL/gwgl.h"
@@ -250,7 +250,7 @@ OpenGL 4.5 (2014)
 #endif
 #endif
 
-#if (defined(__WIN32__) && defined(USE_EGLWIN)) || defined(__IOS__) || defined(__ANDROID__)
+#if (defined(__WIN32__) && defined(USE_WINDOWS_EGL)) || defined(__IOS__) || defined(__ANDROID__)
 #include "GGL/ggles3.h"
 #endif
 
