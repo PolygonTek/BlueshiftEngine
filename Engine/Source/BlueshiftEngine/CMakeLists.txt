@@ -735,11 +735,19 @@ elseif (ANDROID)
         Private/RHIOpenGL/OpenGL/AndroidOpenGL.cpp
         Private/RHIOpenGL/RGLPlatformAndroid.cpp)
 elseif (WIN32)
-    list(APPEND RENDERER_FILES
-        Private/RHIOpenGL/OpenGL/OpenGL3.h
-        Private/RHIOpenGL/OpenGL/OpenGL3.cpp
-        Private/RHIOpenGL/OpenGL/WinOpenGL.h
-        Private/RHIOpenGL/RGLPlatformWin.cpp)
+    if (USE_DESKTOP_EGL)
+        list(APPEND RENDERER_FILES
+            Private/RHIOpenGL/OpenGL/OpenGLES3.h
+            Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+            Private/RHIOpenGL/OpenGL/WinOpenGL.h
+            Private/RHIOpenGL/RGLPlatformWin.cpp)
+    else ()
+        list(APPEND RENDERER_FILES
+            Private/RHIOpenGL/OpenGL/OpenGL3.h
+            Private/RHIOpenGL/OpenGL/OpenGL3.cpp
+            Private/RHIOpenGL/OpenGL/WinOpenGL.h
+            Private/RHIOpenGL/RGLPlatformWin.cpp)
+    endif ()
 elseif (APPLE)
     if (IOS)
         list(APPEND RENDERER_FILES
@@ -757,14 +765,16 @@ elseif (APPLE)
     endif ()
 endif ()
 
-if (IOS)
+if (IOS OR ANDROID)
     set(GGL_FILES
         Private/RHIOpenGL/OpenGL/GGL/ggles3.c
         Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
-elseif (ANDROID)
+elseif (WIN32 AND USE_DESKTOP_EGL)
     set(GGL_FILES
         Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-        Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
+        Private/RHIOpenGL/OpenGL/GGL/ggles3.h
+        Private/RHIOpenGL/OpenGL/GGL/gegl.c
+        Private/RHIOpenGL/OpenGL/GGL/gegl.h)
 else ()
     set(GGL_FILES
         Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
@@ -792,10 +802,6 @@ include_directories(
     ${ENGINE_INCLUDE_DIR}/Dependencies/asio/include
 )
 
-if (IOS)
-    include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/OpenGL/include)
-endif ()
-
 if (NOT ANDROID)
     enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES RENDERER_FILES)
 endif ()
@@ -811,14 +817,31 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR}")
 
 if (WIN32)
-    find_package(OpenGL REQUIRED)
-    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} dxguid.lib dsound.lib ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} ws2_32.lib)
+
+    if (USE_DESKTOP_EGL)
+        include(FindOpenGLES3)
+        include(FindEGL)
+
+        include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/OpenGL/include)
+
+        find_library(OPENGLES3_LIBRARY GLESv2)
+        find_library(EGL_LIBRARY EGL)
+
+        target_link_libraries(${PROJECT_NAME} ${EGL_LIBRARY} ${OPENGLES3_LIBRARY})
+    else ()
+        find_package(OpenGL REQUIRED)
+
+        target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
+    endif ()
 
     if (USE_WINDOWS_OPENAL)
         include(FindOpenAL)
     
         target_include_directories(${PROJECT_NAME} PUBLIC ${OPENAL_INCLUDE_DIR})
         target_link_libraries(${PROJECT_NAME} ${OPENAL_LIBRARY})
+    else ()
+        target_link_libraries(${PROJECT_NAME} dxguid.lib dsound.lib)
     endif ()
 elseif (APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -841,6 +864,8 @@ elseif (APPLE)
     endif ()
 
     if (IOS)
+        include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/OpenGL/include)
+
         set_target_properties(${PROJECT_NAME} PROPERTIES
             XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
             XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)

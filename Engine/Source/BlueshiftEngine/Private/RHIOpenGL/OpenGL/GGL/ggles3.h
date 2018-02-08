@@ -39,20 +39,18 @@
 extern "C" {
 #endif
 
-#if defined(__WIN32__)
+#if defined(_WIN32)
 #include "GLES3/gl3.h"
-#include "GLES2/gl2ext.h"
-#include "KHR/khrplatform.h"
+//#include "GLES2/gl2ext.h"
 #elif defined(__APPLE__)
 #include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>
 #include "KHR/khrplatform.h"
-#elif defined(__ANDROID__)
+#elif defined(ANDROID)
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
 #include <GLES3/gl3platform.h>
 #endif
-
 #ifndef APIENTRY
 #define APIENTRY
 #endif

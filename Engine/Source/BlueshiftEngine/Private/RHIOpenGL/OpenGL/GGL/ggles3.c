@@ -4814,11 +4814,12 @@ static void APIENTRY d_glWindowRectanglesEXT(GLenum mode, GLsizei count, const G
 }
 gglext_t gglext;
 static GLint gglext_count = 0;
+static const GLubyte *gglext_strings[256];
 
 static int ggl_check_extension(const char *ext) {
 	GLint i = 0;
 	for (; i < gglext_count; i++) {
-		if (!strcmp((const char *)_glGetStringi(GL_EXTENSIONS, i), ext)) {
+		if (!strcmp(gglext_strings[i], ext)) {
 			return 1;
 		}
 	}
@@ -5821,6 +5822,9 @@ void ggl_init(int enableDebug) {
 	ggl_rebind(enableDebug);
 
 	_glGetIntegerv(GL_NUM_EXTENSIONS, &gglext_count);
+	for (int i = 0; i < gglext_count; i++) {
+		gglext_strings[i] = _glGetStringi(GL_EXTENSIONS, i);
+	}
 	memset(&gglext, 0, sizeof(gglext));
 	if (ggl_check_extension("GL_AMD_compressed_3DC_texture")) gglext._GL_AMD_compressed_3DC_texture = 1;
 	if (ggl_check_extension("GL_AMD_compressed_ATC_texture")) gglext._GL_AMD_compressed_ATC_texture = 1;

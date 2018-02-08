@@ -26,6 +26,7 @@
 ------------------------------------------------------------------------------
  OpenGL extensions and core versions
 
+ https://en.wikipedia.org/wiki/OpenGL
  https://www.khronos.org/opengl/wiki/History_of_OpenGL
  
  OpenGL 1.2 (1998)
@@ -238,20 +239,35 @@ OpenGL 4.5 (2014)
     ARB_shader_texture_image_samples
     ARB_texture_barrier
 
+OpenGL 4.6 (2017)
+    GLSL 4.60
+    GL_ARB_indirect_parameters
+    GL_ARB_pipeline_statistics_query
+    GL_ARB_polygon_offset_clamp
+    GL_KHR_no_error
+    GL_ARB_shader_atomic_counter_ops
+    GL_ARB_shader_draw_parameters
+    GL_ARB_shader_group_vote
+    GL_ARB_gl_spirv
+    GL_ARB_spirv_extensions
+    GL_ARB_texture_filter_anisotropic
+    GL_ARB_transform_feedback_overflow_query
+
 ------------------------------------------------------------------------------
 */
 
-#if (defined(__WIN32__) && !defined(USE_WINDOWS_EGL)) || defined(__MACOSX__) || defined(__LINUX__) && !defined(__ANDROID__)
+#if defined(__WIN32__) || defined(__MACOSX__) || defined(__LINUX__) && !defined(__ANDROID__)
 #include "GGL/gglcore32.h"
 #if defined(__WIN32__)
 #include "GGL/gwgl.h"
 #elif defined(__LINUX__)
 #include "GGL/gglx.h"
 #endif
-#endif
-
-#if (defined(__WIN32__) && defined(USE_WINDOWS_EGL)) || defined(__IOS__) || defined(__ANDROID__)
+#elif defined(__IOS__) || defined(__ANDROID__)
 #include "GGL/ggles3.h"
+#elif defined(USE_DESKTOP_EGL)
+#include "GGL/ggles3.h"
+#include "GGL/gegl.h"
 #endif
 
 #include "Image/Image.h"

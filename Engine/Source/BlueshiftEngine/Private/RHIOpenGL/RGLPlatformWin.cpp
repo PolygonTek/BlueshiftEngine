@@ -23,8 +23,18 @@ BE_NAMESPACE_BEGIN
 
 #define FAKE_WINDOW_CLASSNAME   _T("BLUESHIFT_FAKE_WINDOW")
 
-static int          majorVersion = 0;
-static int          minorVersion = 0;
+enum GLContextProfile {
+    CompatibilityProfile,
+    CoreProfile,
+    ES2Profile      // ES2 profile including ES3
+};
+
+static GLContextProfile contextProfile = CoreProfile;
+static int          contextMajorVersion = 3;
+static int          contextMinorVersion = 2;
+
+static int          majorVersion;
+static int          minorVersion;
 
 static bool         deviceFullscreen = false;
 static int          deviceBpp = 0;
@@ -122,7 +132,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
 
             BE_DLOG(L"PF %3i: color(%2i-bits) alpha(%2i-bits), depth(%2i-bits) stencil(%2i-bits)\n", i, pfd->cColorBits, pfd->cAlphaBits, pfd->cDepthBits, pfd->cStencilBits);
 
-            if (pfd->cDepthBits < 15 && inDepthBits > 0) {
+            if (pfd->cDepthBits < 16 && inDepthBits > 0) {
                 continue;
             }
 
@@ -243,12 +253,12 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
             BE_DLOG(L"PF %3i: color(%2i-bits) alpha(%2i-bits) depth(%2i-bits), stencil(%2i-bits), multisamples(%2ix)\n", i, attr[5], attr[6], attr[7], attr[8], attr[10]);
 
             // WGL_ALPHA_BITS_ARB
-            if (attr[6] < 0) {
+            if (attr[6] <= 0 && inAlphaBits > 0) {
                 continue;
             }
 
             // WGL_DEPTH_BITS_ARB
-            if (attr[7] < 15 && inDepthBits > 0) {
+            if (attr[7] < 16 && inDepthBits > 0) {
                 continue;
             }
 
@@ -344,7 +354,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
     return best;
 }
 
-static HGLRC CreateContextAttribs(HDC hdc, HGLRC hSharedContext) {
+static HGLRC CreateContextAttribs(HDC hdc, HGLRC hSharedContext, GLContextProfile contextProfile, int majorVersion, int minorVersion) {
     int contextFlags = WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
     if (gl_debug.GetBool()) {
         if (gglext._GL_ARB_debug_output) {
@@ -352,15 +362,27 @@ static HGLRC CreateContextAttribs(HDC hdc, HGLRC hSharedContext) {
         }
     }
 
-    int profileMask = WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
-    //profileMask |= WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
+    int profileMask = 0;
+    switch (contextProfile) {
+    case CompatibilityProfile:
+        profileMask |= WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
+        break;
+    case CoreProfile:
+        profileMask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
+        break;
+    case ES2Profile:
+        profileMask |= WGL_CONTEXT_ES2_PROFILE_BIT_EXT;
+        break;
+    }
 
     int attribs[16];
     int numAttribs = 0;
-    attribs[numAttribs++] = WGL_CONTEXT_MAJOR_VERSION_ARB;
-    attribs[numAttribs++] = 3;
-    attribs[numAttribs++] = WGL_CONTEXT_MINOR_VERSION_ARB;
-    attribs[numAttribs++] = 3;
+    if (contextProfile != CompatibilityProfile) {
+        attribs[numAttribs++] = WGL_CONTEXT_MAJOR_VERSION_ARB;
+        attribs[numAttribs++] = majorVersion;
+        attribs[numAttribs++] = WGL_CONTEXT_MINOR_VERSION_ARB;
+        attribs[numAttribs++] = minorVersion;
+    }
     attribs[numAttribs++] = WGL_CONTEXT_FLAGS_ARB;
     attribs[numAttribs++] = contextFlags;
     attribs[numAttribs++] = WGL_CONTEXT_PROFILE_MASK_ARB;
@@ -441,10 +463,10 @@ void OpenGLRHI::InitMainContext(const Settings *settings) {
     }
     BE_DLOG(L"set pixel format: ok\n");
 
-    // Create RC compatible with 3.2 or later
-    mainContext->hrc = CreateContextAttribs(mainContext->hdc, nullptr);
+    // Create rendering context
+    mainContext->hrc = CreateContextAttribs(mainContext->hdc, nullptr, contextProfile, contextMajorVersion, contextMinorVersion);
     if (!mainContext->hrc) {
-        BE_FATALERROR(L"Couldn't create 3.3 compatible RC");
+        BE_FATALERROR(L"Couldn't create RC");
     }
 
     if (!wglMakeCurrent(mainContext->hdc, mainContext->hrc)) {
@@ -453,9 +475,11 @@ void OpenGLRHI::InitMainContext(const Settings *settings) {
 
     GetGLVersion(&majorVersion, &minorVersion);
 
-    int decimalVersion = majorVersion * 10 + minorVersion;
-    if (decimalVersion < 33) {
-        BE_FATALERROR(L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
+    if (contextProfile == CompatibilityProfile) {
+        int decimalVersion = majorVersion * 10 + minorVersion;
+        if (decimalVersion < 32) {
+            BE_FATALERROR(L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.2 or higher graphic card");
+        }
     }
 
     // Enable debug callback
@@ -551,9 +575,9 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ctx->state = new GLState;
 
         if (gwglCreateContextAttribsARB) {
-            ctx->hrc = CreateContextAttribs(ctx->hdc, mainContext->hrc);
+            ctx->hrc = CreateContextAttribs(ctx->hdc, mainContext->hrc, contextProfile, contextMajorVersion, contextMinorVersion);
             if (!ctx->hrc) {
-                BE_FATALERROR(L"Couldn't create 3.3 compatible RC");
+                BE_FATALERROR(L"Couldn't create RC");
             }
 
             wglMakeCurrent(nullptr, nullptr); 
@@ -759,7 +783,7 @@ void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
     deviceHz = GetDeviceCaps(hdc, VREFRESH);
     ReleaseDC(nullptr, hdc);
 
-    BE_LOG(L"set window mode: ibpp %ihz\n", deviceBpp, deviceHz);
+    BE_LOG(L"set window mode: %ibpp %ihz\n", deviceBpp, deviceHz);
 }
 
 void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {

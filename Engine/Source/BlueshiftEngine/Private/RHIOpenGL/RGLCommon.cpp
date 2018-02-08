@@ -160,10 +160,10 @@ void OpenGLRHI::InitGL() {
     }
     BE_LOG(L"\n");
 
-#ifdef __WIN32__
+#if defined(__WIN32__)
     const char *winExtensions = (const char *)gwglGetExtensionsStringARB(mainContext->hdc);
     BE_LOG(L"WGL extensions: %hs\n", winExtensions);
-#endif	
+#endif
 
     glslVersionString = (const char *)gglGetString(GL_SHADING_LANGUAGE_VERSION);
     if (gglGetError() == GL_INVALID_ENUM) {
@@ -171,7 +171,7 @@ void OpenGLRHI::InitGL() {
     }
     glslVersion = atof(glslVersionString);
 
-    BE_LOG(L"GLSL version: %hs\n", glslVersionString);	
+    BE_LOG(L"GLSL version: %hs\n", glslVersionString);
 
     /*int red, green, blue, alpha;
     gglGetIntegerv(GL_RED_BITS, &red);

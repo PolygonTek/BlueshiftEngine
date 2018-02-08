@@ -37,12 +37,12 @@ void OpenGLES3::Init() {
     gglGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_MEDIUM_INT, range, &shaderIntPrecisionMedium);
     gglGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_HIGH_INT, range, &shaderIntPrecisionHigh);
 
-    BE_LOG(L"Fragment shader lowp float precision: %d", shaderFloatPrecisionLow);
-    BE_LOG(L"Fragment shader mediump float precision: %d", shaderFloatPrecisionMedium);
-    BE_LOG(L"Fragment shader highp float precision: %d", shaderFloatPrecisionHigh);
-    BE_LOG(L"Fragment shader lowp int precision: %d", shaderFloatPrecisionLow);
-    BE_LOG(L"Fragment shader mediump int precision: %d", shaderFloatPrecisionMedium);
-    BE_LOG(L"Fragment shader highp int precision: %d", shaderFloatPrecisionHigh);
+    BE_LOG(L"Fragment shader lowp float precision: %d\n", shaderFloatPrecisionLow);
+    BE_LOG(L"Fragment shader mediump float precision: %d\n", shaderFloatPrecisionMedium);
+    BE_LOG(L"Fragment shader highp float precision: %d\n", shaderFloatPrecisionHigh);
+    BE_LOG(L"Fragment shader lowp int precision: %d\n", shaderFloatPrecisionLow);
+    BE_LOG(L"Fragment shader mediump int precision: %d\n", shaderFloatPrecisionMedium);
+    BE_LOG(L"Fragment shader highp int precision: %d\n", shaderFloatPrecisionHigh);
 }
 
 void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format format) {
@@ -511,6 +511,8 @@ Image::Format OpenGLES3::ToUncompressedImageFormat(Image::Format inFormat) {
     Image::Format outFormat;
 
     switch (inFormat) {
+    case Image::DXN1:
+    case Image::DXN2:
     case Image::RGB_PVRTC_2BPPV1:
     case Image::RGB_PVRTC_4BPPV1:
     case Image::RGB_8_ETC1:
@@ -518,6 +520,9 @@ Image::Format OpenGLES3::ToUncompressedImageFormat(Image::Format inFormat) {
     case Image::RGB_ATC:
         outFormat = Image::RGB_8_8_8;
         break;
+    case Image::RGBA_DXT1:
+    case Image::RGBA_DXT3:
+    case Image::RGBA_DXT5:
     case Image::RGBA_PVRTC_2BPPV1:
     case Image::RGBA_PVRTC_4BPPV1:
     case Image::RGBA_PVRTC_2BPPV2:

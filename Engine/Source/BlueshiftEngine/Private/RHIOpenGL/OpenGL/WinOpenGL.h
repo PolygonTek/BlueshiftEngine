@@ -22,6 +22,22 @@
 ===============================================================================
 */
 
+#ifdef USE_DESKTOP_EGL
+
+#include "OpenGLES3.h"
+
+BE_NAMESPACE_BEGIN
+
+class WinOpenGL : public OpenGLES3 {
+public:
+};
+
+typedef WinOpenGL       OpenGL;
+
+BE_NAMESPACE_END
+
+#else
+
 #include "OpenGL3.h"
 
 BE_NAMESPACE_BEGIN
@@ -33,3 +49,5 @@ public:
 typedef WinOpenGL       OpenGL;
 
 BE_NAMESPACE_END
+
+#endif

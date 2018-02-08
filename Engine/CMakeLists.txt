@@ -78,16 +78,19 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 
 ################################################################################
 
+if (NOT CMAKE_CROSSCOMPILING)
+    set(USE_DESKTOP_EGL FALSE CACHE INTERNAL "Force to use EGL on desktop platform")
+endif ()
+
+if (USE_DESKTOP_EGL)
+    add_definitions(-DUSE_DESKTOP_EGL)
+endif ()
+
 if (WIN32)
     # Settings for Windows
     add_definitions(-D_UNICODE -DUNICODE)
-
-    set(USE_WINDOWS_EGL FALSE CACHE INTERNAL "Force to use EGL on Windows")
+    
     set(USE_WINDOWS_OPENAL FALSE CACHE INTERNAL "Force to use OpenAL on Windows")
-
-    if (USE_WINDOWS_EGL)
-        add_definitions(-DUSE_WINDOWS_EGL)
-    endif ()
 
     if (USE_WINDOWS_OPENAL)
         add_definitions(-DUSE_WINDOWS_OPENAL)
@@ -135,7 +138,7 @@ elseif (APPLE)
     endif ()
 elseif (ANDROID)
     # Settings for Android
-    add_compile_options("-D__ANDROID__")
+    add_compile_options("-DANDROID")
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -std=gnu++1y -frtti")

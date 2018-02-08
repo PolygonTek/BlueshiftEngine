@@ -99,11 +99,11 @@ void main() {
 
 void Application::Init() {
     BE1::RHI::Settings settings;
-    settings.colorBits      = r_colorBits.GetInteger();
+    settings.colorBits      = 24;
     settings.alphaBits      = settings.colorBits == 32 ? 8 : 0;
-    settings.depthBits      = r_depthBits.GetInteger();
-    settings.stencilBits    = r_stencilBits.GetInteger();
-    settings.multiSamples   = r_multiSamples.GetInteger();
+    settings.depthBits      = 24;
+    settings.stencilBits    = 0;
+    settings.multiSamples   = 0;
 
     BE1::rhi.Init(&settings);
 }

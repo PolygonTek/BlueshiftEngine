@@ -665,7 +665,7 @@ typedef EGLBoolean (APIENTRYP PFNEGLQUERYDMABUFFORMATSEXT)(EGLDisplay dpy, EGLin
 PFNEGLQUERYDMABUFFORMATSEXT geglQueryDmaBufFormatsEXT;
 static PFNEGLQUERYDMABUFFORMATSEXT _eglQueryDmaBufFormatsEXT;
 static EGLBoolean APIENTRY d_eglQueryDmaBufFormatsEXT(EGLDisplay dpy, EGLint max_formats, EGLint *formats, EGLint *num_formats) {
-	EGLBoolean ret = _eglQueryDmaBufFormatsEXT(dpy, max_formats, *formats, *num_formats);
+	EGLBoolean ret = _eglQueryDmaBufFormatsEXT(dpy, max_formats, formats, num_formats);
 	CheckGLError("eglQueryDmaBufFormatsEXT");
 	return ret;
 }
@@ -673,7 +673,7 @@ typedef EGLBoolean (APIENTRYP PFNEGLQUERYDMABUFMODIFIERSEXT)(EGLDisplay dpy, EGL
 PFNEGLQUERYDMABUFMODIFIERSEXT geglQueryDmaBufModifiersEXT;
 static PFNEGLQUERYDMABUFMODIFIERSEXT _eglQueryDmaBufModifiersEXT;
 static EGLBoolean APIENTRY d_eglQueryDmaBufModifiersEXT(EGLDisplay dpy, EGLint format, EGLint max_modifiers, EGLuint64KHR *modifiers, EGLBoolean *external_only, EGLint *num_modifiers) {
-	EGLBoolean ret = _eglQueryDmaBufModifiersEXT(dpy, format, max_modifiers, *modifiers, *external_only, *num_modifiers);
+	EGLBoolean ret = _eglQueryDmaBufModifiersEXT(dpy, format, max_modifiers, modifiers, external_only, num_modifiers);
 	CheckGLError("eglQueryDmaBufModifiersEXT");
 	return ret;
 }
@@ -912,7 +912,7 @@ typedef EGLBoolean (APIENTRYP PFNEGLSTREAMCONSUMERGLTEXTUREEXTERNALATTRIBSNV)(EG
 PFNEGLSTREAMCONSUMERGLTEXTUREEXTERNALATTRIBSNV geglStreamConsumerGLTextureExternalAttribsNV;
 static PFNEGLSTREAMCONSUMERGLTEXTUREEXTERNALATTRIBSNV _eglStreamConsumerGLTextureExternalAttribsNV;
 static EGLBoolean APIENTRY d_eglStreamConsumerGLTextureExternalAttribsNV(EGLDisplay dpy, EGLStreamKHR stream, EGLAttrib *attrib_list) {
-	EGLBoolean ret = _eglStreamConsumerGLTextureExternalAttribsNV(dpy, stream, *attrib_list);
+	EGLBoolean ret = _eglStreamConsumerGLTextureExternalAttribsNV(dpy, stream, attrib_list);
 	CheckGLError("eglStreamConsumerGLTextureExternalAttribsNV");
 	return ret;
 }
@@ -1059,245 +1059,245 @@ static int gegl_check_extension(const char *ext) {
 	return strstr(geglext_str, ext) ? 1 : 0;
 }
 
-void gegl_init(int enableDebug) {
+void gegl_init(EGLDisplay display, int enableDebug) {
 	/* EGL_VERSION_1_0 */
-	_eglChooseConfig = (PFNEGLCHOOSECONFIG)GPA(eglChooseConfig);
-	_eglCopyBuffers = (PFNEGLCOPYBUFFERS)GPA(eglCopyBuffers);
-	_eglCreateContext = (PFNEGLCREATECONTEXT)GPA(eglCreateContext);
-	_eglCreatePbufferSurface = (PFNEGLCREATEPBUFFERSURFACE)GPA(eglCreatePbufferSurface);
-	_eglCreatePixmapSurface = (PFNEGLCREATEPIXMAPSURFACE)GPA(eglCreatePixmapSurface);
-	_eglCreateWindowSurface = (PFNEGLCREATEWINDOWSURFACE)GPA(eglCreateWindowSurface);
-	_eglDestroyContext = (PFNEGLDESTROYCONTEXT)GPA(eglDestroyContext);
-	_eglDestroySurface = (PFNEGLDESTROYSURFACE)GPA(eglDestroySurface);
-	_eglGetConfigAttrib = (PFNEGLGETCONFIGATTRIB)GPA(eglGetConfigAttrib);
-	_eglGetConfigs = (PFNEGLGETCONFIGS)GPA(eglGetConfigs);
-	_eglGetCurrentDisplay = (PFNEGLGETCURRENTDISPLAY)GPA(eglGetCurrentDisplay);
-	_eglGetCurrentSurface = (PFNEGLGETCURRENTSURFACE)GPA(eglGetCurrentSurface);
-	_eglGetDisplay = (PFNEGLGETDISPLAY)GPA(eglGetDisplay);
-	_eglGetError = (PFNEGLGETERROR)GPA(eglGetError);
-	_eglGetProcAddress = (PFNEGLGETPROCADDRESS)GPA(eglGetProcAddress);
-	_eglInitialize = (PFNEGLINITIALIZE)GPA(eglInitialize);
-	_eglMakeCurrent = (PFNEGLMAKECURRENT)GPA(eglMakeCurrent);
-	_eglQueryContext = (PFNEGLQUERYCONTEXT)GPA(eglQueryContext);
-	_eglQueryString = (PFNEGLQUERYSTRING)GPA(eglQueryString);
-	_eglQuerySurface = (PFNEGLQUERYSURFACE)GPA(eglQuerySurface);
-	_eglSwapBuffers = (PFNEGLSWAPBUFFERS)GPA(eglSwapBuffers);
-	_eglTerminate = (PFNEGLTERMINATE)GPA(eglTerminate);
-	_eglWaitGL = (PFNEGLWAITGL)GPA(eglWaitGL);
-	_eglWaitNative = (PFNEGLWAITNATIVE)GPA(eglWaitNative);
+	_eglChooseConfig = eglChooseConfig;
+	_eglCopyBuffers = eglCopyBuffers;
+	_eglCreateContext = eglCreateContext;
+	_eglCreatePbufferSurface = eglCreatePbufferSurface;
+	_eglCreatePixmapSurface = eglCreatePixmapSurface;
+	_eglCreateWindowSurface = eglCreateWindowSurface;
+	_eglDestroyContext = eglDestroyContext;
+	_eglDestroySurface = eglDestroySurface;
+	_eglGetConfigAttrib = eglGetConfigAttrib;
+	_eglGetConfigs = eglGetConfigs;
+	_eglGetCurrentDisplay = eglGetCurrentDisplay;
+	_eglGetCurrentSurface = eglGetCurrentSurface;
+	_eglGetDisplay = eglGetDisplay;
+	_eglGetError = eglGetError;
+	_eglGetProcAddress = eglGetProcAddress;
+	_eglInitialize = eglInitialize;
+	_eglMakeCurrent = eglMakeCurrent;
+	_eglQueryContext = eglQueryContext;
+	_eglQueryString = eglQueryString;
+	_eglQuerySurface = eglQuerySurface;
+	_eglSwapBuffers = eglSwapBuffers;
+	_eglTerminate = eglTerminate;
+	_eglWaitGL = eglWaitGL;
+	_eglWaitNative = eglWaitNative;
 
 	/* EGL_VERSION_1_1 */
-	_eglBindTexImage = (PFNEGLBINDTEXIMAGE)GPA(eglBindTexImage);
-	_eglReleaseTexImage = (PFNEGLRELEASETEXIMAGE)GPA(eglReleaseTexImage);
-	_eglSurfaceAttrib = (PFNEGLSURFACEATTRIB)GPA(eglSurfaceAttrib);
-	_eglSwapInterval = (PFNEGLSWAPINTERVAL)GPA(eglSwapInterval);
+	_eglBindTexImage = eglBindTexImage;
+	_eglReleaseTexImage = eglReleaseTexImage;
+	_eglSurfaceAttrib = eglSurfaceAttrib;
+	_eglSwapInterval = eglSwapInterval;
 
 	/* EGL_VERSION_1_2 */
-	_eglBindAPI = (PFNEGLBINDAPI)GPA(eglBindAPI);
-	_eglQueryAPI = (PFNEGLQUERYAPI)GPA(eglQueryAPI);
-	_eglCreatePbufferFromClientBuffer = (PFNEGLCREATEPBUFFERFROMCLIENTBUFFER)GPA(eglCreatePbufferFromClientBuffer);
-	_eglReleaseThread = (PFNEGLRELEASETHREAD)GPA(eglReleaseThread);
-	_eglWaitClient = (PFNEGLWAITCLIENT)GPA(eglWaitClient);
+	_eglBindAPI = eglBindAPI;
+	_eglQueryAPI = eglQueryAPI;
+	_eglCreatePbufferFromClientBuffer = eglCreatePbufferFromClientBuffer;
+	_eglReleaseThread = eglReleaseThread;
+	_eglWaitClient = eglWaitClient;
 
 	/* EGL_VERSION_1_4 */
-	_eglGetCurrentContext = (PFNEGLGETCURRENTCONTEXT)GPA(eglGetCurrentContext);
+	_eglGetCurrentContext = eglGetCurrentContext;
 
 	/* EGL_VERSION_1_5 */
-	_eglCreateSync = (PFNEGLCREATESYNC)GPA(eglCreateSync);
-	_eglDestroySync = (PFNEGLDESTROYSYNC)GPA(eglDestroySync);
-	_eglClientWaitSync = (PFNEGLCLIENTWAITSYNC)GPA(eglClientWaitSync);
-	_eglGetSyncAttrib = (PFNEGLGETSYNCATTRIB)GPA(eglGetSyncAttrib);
-	_eglCreateImage = (PFNEGLCREATEIMAGE)GPA(eglCreateImage);
-	_eglDestroyImage = (PFNEGLDESTROYIMAGE)GPA(eglDestroyImage);
-	_eglGetPlatformDisplay = (PFNEGLGETPLATFORMDISPLAY)GPA(eglGetPlatformDisplay);
-	_eglCreatePlatformWindowSurface = (PFNEGLCREATEPLATFORMWINDOWSURFACE)GPA(eglCreatePlatformWindowSurface);
-	_eglCreatePlatformPixmapSurface = (PFNEGLCREATEPLATFORMPIXMAPSURFACE)GPA(eglCreatePlatformPixmapSurface);
-	_eglWaitSync = (PFNEGLWAITSYNC)GPA(eglWaitSync);
+	_eglCreateSync = eglCreateSync;
+	_eglDestroySync = eglDestroySync;
+	_eglClientWaitSync = eglClientWaitSync;
+	_eglGetSyncAttrib = eglGetSyncAttrib;
+	_eglCreateImage = eglCreateImage;
+	_eglDestroyImage = eglDestroyImage;
+	_eglGetPlatformDisplay = eglGetPlatformDisplay;
+	_eglCreatePlatformWindowSurface = eglCreatePlatformWindowSurface;
+	_eglCreatePlatformPixmapSurface = eglCreatePlatformPixmapSurface;
+	_eglWaitSync = eglWaitSync;
 
 	/* EGL_ANDROID_blob_cache */
-	_eglSetBlobCacheFuncsANDROID = (PFNEGLSETBLOBCACHEFUNCSANDROID)GPA(eglSetBlobCacheFuncsANDROID);
+	_eglSetBlobCacheFuncsANDROID = (PFNEGLSETBLOBCACHEFUNCSANDROID)eglGetProcAddress("eglSetBlobCacheFuncsANDROID");
 
 	/* EGL_ANDROID_create_native_client_buffer */
-	_eglCreateNativeClientBufferANDROID = (PFNEGLCREATENATIVECLIENTBUFFERANDROID)GPA(eglCreateNativeClientBufferANDROID);
+	_eglCreateNativeClientBufferANDROID = (PFNEGLCREATENATIVECLIENTBUFFERANDROID)eglGetProcAddress("eglCreateNativeClientBufferANDROID");
 
 	/* EGL_ANDROID_native_fence_sync */
-	_eglDupNativeFenceFDANDROID = (PFNEGLDUPNATIVEFENCEFDANDROID)GPA(eglDupNativeFenceFDANDROID);
+	_eglDupNativeFenceFDANDROID = (PFNEGLDUPNATIVEFENCEFDANDROID)eglGetProcAddress("eglDupNativeFenceFDANDROID");
 
 	/* EGL_ANDROID_presentation_time */
-	_eglPresentationTimeANDROID = (PFNEGLPRESENTATIONTIMEANDROID)GPA(eglPresentationTimeANDROID);
+	_eglPresentationTimeANDROID = (PFNEGLPRESENTATIONTIMEANDROID)eglGetProcAddress("eglPresentationTimeANDROID");
 
 	/* EGL_ANGLE_query_surface_pointer */
-	_eglQuerySurfacePointerANGLE = (PFNEGLQUERYSURFACEPOINTERANGLE)GPA(eglQuerySurfacePointerANGLE);
+	_eglQuerySurfacePointerANGLE = (PFNEGLQUERYSURFACEPOINTERANGLE)eglGetProcAddress("eglQuerySurfacePointerANGLE");
 
 	/* EGL_EXT_device_base */
-	_eglQueryDeviceAttribEXT = (PFNEGLQUERYDEVICEATTRIBEXT)GPA(eglQueryDeviceAttribEXT);
-	_eglQueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXT)GPA(eglQueryDeviceStringEXT);
-	_eglQueryDevicesEXT = (PFNEGLQUERYDEVICESEXT)GPA(eglQueryDevicesEXT);
-	_eglQueryDisplayAttribEXT = (PFNEGLQUERYDISPLAYATTRIBEXT)GPA(eglQueryDisplayAttribEXT);
+	_eglQueryDeviceAttribEXT = (PFNEGLQUERYDEVICEATTRIBEXT)eglGetProcAddress("eglQueryDeviceAttribEXT");
+	_eglQueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXT)eglGetProcAddress("eglQueryDeviceStringEXT");
+	_eglQueryDevicesEXT = (PFNEGLQUERYDEVICESEXT)eglGetProcAddress("eglQueryDevicesEXT");
+	_eglQueryDisplayAttribEXT = (PFNEGLQUERYDISPLAYATTRIBEXT)eglGetProcAddress("eglQueryDisplayAttribEXT");
 
 	/* EGL_EXT_device_enumeration */
-	_eglQueryDevicesEXT = (PFNEGLQUERYDEVICESEXT)GPA(eglQueryDevicesEXT);
+	_eglQueryDevicesEXT = (PFNEGLQUERYDEVICESEXT)eglGetProcAddress("eglQueryDevicesEXT");
 
 	/* EGL_EXT_device_query */
-	_eglQueryDeviceAttribEXT = (PFNEGLQUERYDEVICEATTRIBEXT)GPA(eglQueryDeviceAttribEXT);
-	_eglQueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXT)GPA(eglQueryDeviceStringEXT);
-	_eglQueryDisplayAttribEXT = (PFNEGLQUERYDISPLAYATTRIBEXT)GPA(eglQueryDisplayAttribEXT);
+	_eglQueryDeviceAttribEXT = (PFNEGLQUERYDEVICEATTRIBEXT)eglGetProcAddress("eglQueryDeviceAttribEXT");
+	_eglQueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXT)eglGetProcAddress("eglQueryDeviceStringEXT");
+	_eglQueryDisplayAttribEXT = (PFNEGLQUERYDISPLAYATTRIBEXT)eglGetProcAddress("eglQueryDisplayAttribEXT");
 
 	/* EGL_EXT_image_dma_buf_import_modifiers */
-	_eglQueryDmaBufFormatsEXT = (PFNEGLQUERYDMABUFFORMATSEXT)GPA(eglQueryDmaBufFormatsEXT);
-	_eglQueryDmaBufModifiersEXT = (PFNEGLQUERYDMABUFMODIFIERSEXT)GPA(eglQueryDmaBufModifiersEXT);
+	_eglQueryDmaBufFormatsEXT = (PFNEGLQUERYDMABUFFORMATSEXT)eglGetProcAddress("eglQueryDmaBufFormatsEXT");
+	_eglQueryDmaBufModifiersEXT = (PFNEGLQUERYDMABUFMODIFIERSEXT)eglGetProcAddress("eglQueryDmaBufModifiersEXT");
 
 	/* EGL_EXT_output_base */
-	_eglGetOutputLayersEXT = (PFNEGLGETOUTPUTLAYERSEXT)GPA(eglGetOutputLayersEXT);
-	_eglGetOutputPortsEXT = (PFNEGLGETOUTPUTPORTSEXT)GPA(eglGetOutputPortsEXT);
-	_eglOutputLayerAttribEXT = (PFNEGLOUTPUTLAYERATTRIBEXT)GPA(eglOutputLayerAttribEXT);
-	_eglQueryOutputLayerAttribEXT = (PFNEGLQUERYOUTPUTLAYERATTRIBEXT)GPA(eglQueryOutputLayerAttribEXT);
-	_eglQueryOutputLayerStringEXT = (PFNEGLQUERYOUTPUTLAYERSTRINGEXT)GPA(eglQueryOutputLayerStringEXT);
-	_eglOutputPortAttribEXT = (PFNEGLOUTPUTPORTATTRIBEXT)GPA(eglOutputPortAttribEXT);
-	_eglQueryOutputPortAttribEXT = (PFNEGLQUERYOUTPUTPORTATTRIBEXT)GPA(eglQueryOutputPortAttribEXT);
-	_eglQueryOutputPortStringEXT = (PFNEGLQUERYOUTPUTPORTSTRINGEXT)GPA(eglQueryOutputPortStringEXT);
+	_eglGetOutputLayersEXT = (PFNEGLGETOUTPUTLAYERSEXT)eglGetProcAddress("eglGetOutputLayersEXT");
+	_eglGetOutputPortsEXT = (PFNEGLGETOUTPUTPORTSEXT)eglGetProcAddress("eglGetOutputPortsEXT");
+	_eglOutputLayerAttribEXT = (PFNEGLOUTPUTLAYERATTRIBEXT)eglGetProcAddress("eglOutputLayerAttribEXT");
+	_eglQueryOutputLayerAttribEXT = (PFNEGLQUERYOUTPUTLAYERATTRIBEXT)eglGetProcAddress("eglQueryOutputLayerAttribEXT");
+	_eglQueryOutputLayerStringEXT = (PFNEGLQUERYOUTPUTLAYERSTRINGEXT)eglGetProcAddress("eglQueryOutputLayerStringEXT");
+	_eglOutputPortAttribEXT = (PFNEGLOUTPUTPORTATTRIBEXT)eglGetProcAddress("eglOutputPortAttribEXT");
+	_eglQueryOutputPortAttribEXT = (PFNEGLQUERYOUTPUTPORTATTRIBEXT)eglGetProcAddress("eglQueryOutputPortAttribEXT");
+	_eglQueryOutputPortStringEXT = (PFNEGLQUERYOUTPUTPORTSTRINGEXT)eglGetProcAddress("eglQueryOutputPortStringEXT");
 
 	/* EGL_EXT_platform_base */
-	_eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXT)GPA(eglGetPlatformDisplayEXT);
-	_eglCreatePlatformWindowSurfaceEXT = (PFNEGLCREATEPLATFORMWINDOWSURFACEEXT)GPA(eglCreatePlatformWindowSurfaceEXT);
-	_eglCreatePlatformPixmapSurfaceEXT = (PFNEGLCREATEPLATFORMPIXMAPSURFACEEXT)GPA(eglCreatePlatformPixmapSurfaceEXT);
+	_eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXT)eglGetProcAddress("eglGetPlatformDisplayEXT");
+	_eglCreatePlatformWindowSurfaceEXT = (PFNEGLCREATEPLATFORMWINDOWSURFACEEXT)eglGetProcAddress("eglCreatePlatformWindowSurfaceEXT");
+	_eglCreatePlatformPixmapSurfaceEXT = (PFNEGLCREATEPLATFORMPIXMAPSURFACEEXT)eglGetProcAddress("eglCreatePlatformPixmapSurfaceEXT");
 
 	/* EGL_EXT_stream_consumer_egloutput */
-	_eglStreamConsumerOutputEXT = (PFNEGLSTREAMCONSUMEROUTPUTEXT)GPA(eglStreamConsumerOutputEXT);
+	_eglStreamConsumerOutputEXT = (PFNEGLSTREAMCONSUMEROUTPUTEXT)eglGetProcAddress("eglStreamConsumerOutputEXT");
 
 	/* EGL_EXT_swap_buffers_with_damage */
-	_eglSwapBuffersWithDamageEXT = (PFNEGLSWAPBUFFERSWITHDAMAGEEXT)GPA(eglSwapBuffersWithDamageEXT);
+	_eglSwapBuffersWithDamageEXT = (PFNEGLSWAPBUFFERSWITHDAMAGEEXT)eglGetProcAddress("eglSwapBuffersWithDamageEXT");
 
 	/* EGL_HI_clientpixmap */
-	_eglCreatePixmapSurfaceHI = (PFNEGLCREATEPIXMAPSURFACEHI)GPA(eglCreatePixmapSurfaceHI);
+	_eglCreatePixmapSurfaceHI = (PFNEGLCREATEPIXMAPSURFACEHI)eglGetProcAddress("eglCreatePixmapSurfaceHI");
 
 	/* EGL_KHR_cl_event2 */
-	_eglCreateSync64KHR = (PFNEGLCREATESYNC64KHR)GPA(eglCreateSync64KHR);
+	_eglCreateSync64KHR = (PFNEGLCREATESYNC64KHR)eglGetProcAddress("eglCreateSync64KHR");
 
 	/* EGL_KHR_debug */
-	_eglDebugMessageControlKHR = (PFNEGLDEBUGMESSAGECONTROLKHR)GPA(eglDebugMessageControlKHR);
-	_eglQueryDebugKHR = (PFNEGLQUERYDEBUGKHR)GPA(eglQueryDebugKHR);
-	_eglLabelObjectKHR = (PFNEGLLABELOBJECTKHR)GPA(eglLabelObjectKHR);
+	_eglDebugMessageControlKHR = (PFNEGLDEBUGMESSAGECONTROLKHR)eglGetProcAddress("eglDebugMessageControlKHR");
+	_eglQueryDebugKHR = (PFNEGLQUERYDEBUGKHR)eglGetProcAddress("eglQueryDebugKHR");
+	_eglLabelObjectKHR = (PFNEGLLABELOBJECTKHR)eglGetProcAddress("eglLabelObjectKHR");
 
 	/* EGL_KHR_fence_sync */
-	_eglCreateSyncKHR = (PFNEGLCREATESYNCKHR)GPA(eglCreateSyncKHR);
-	_eglDestroySyncKHR = (PFNEGLDESTROYSYNCKHR)GPA(eglDestroySyncKHR);
-	_eglClientWaitSyncKHR = (PFNEGLCLIENTWAITSYNCKHR)GPA(eglClientWaitSyncKHR);
-	_eglGetSyncAttribKHR = (PFNEGLGETSYNCATTRIBKHR)GPA(eglGetSyncAttribKHR);
+	_eglCreateSyncKHR = (PFNEGLCREATESYNCKHR)eglGetProcAddress("eglCreateSyncKHR");
+	_eglDestroySyncKHR = (PFNEGLDESTROYSYNCKHR)eglGetProcAddress("eglDestroySyncKHR");
+	_eglClientWaitSyncKHR = (PFNEGLCLIENTWAITSYNCKHR)eglGetProcAddress("eglClientWaitSyncKHR");
+	_eglGetSyncAttribKHR = (PFNEGLGETSYNCATTRIBKHR)eglGetProcAddress("eglGetSyncAttribKHR");
 
 	/* EGL_KHR_image */
-	_eglCreateImageKHR = (PFNEGLCREATEIMAGEKHR)GPA(eglCreateImageKHR);
-	_eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHR)GPA(eglDestroyImageKHR);
+	_eglCreateImageKHR = (PFNEGLCREATEIMAGEKHR)eglGetProcAddress("eglCreateImageKHR");
+	_eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHR)eglGetProcAddress("eglDestroyImageKHR");
 
 	/* EGL_KHR_image_base */
-	_eglCreateImageKHR = (PFNEGLCREATEIMAGEKHR)GPA(eglCreateImageKHR);
-	_eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHR)GPA(eglDestroyImageKHR);
+	_eglCreateImageKHR = (PFNEGLCREATEIMAGEKHR)eglGetProcAddress("eglCreateImageKHR");
+	_eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHR)eglGetProcAddress("eglDestroyImageKHR");
 
 	/* EGL_KHR_lock_surface */
-	_eglLockSurfaceKHR = (PFNEGLLOCKSURFACEKHR)GPA(eglLockSurfaceKHR);
-	_eglUnlockSurfaceKHR = (PFNEGLUNLOCKSURFACEKHR)GPA(eglUnlockSurfaceKHR);
+	_eglLockSurfaceKHR = (PFNEGLLOCKSURFACEKHR)eglGetProcAddress("eglLockSurfaceKHR");
+	_eglUnlockSurfaceKHR = (PFNEGLUNLOCKSURFACEKHR)eglGetProcAddress("eglUnlockSurfaceKHR");
 
 	/* EGL_KHR_lock_surface3 */
-	_eglLockSurfaceKHR = (PFNEGLLOCKSURFACEKHR)GPA(eglLockSurfaceKHR);
-	_eglUnlockSurfaceKHR = (PFNEGLUNLOCKSURFACEKHR)GPA(eglUnlockSurfaceKHR);
-	_eglQuerySurface64KHR = (PFNEGLQUERYSURFACE64KHR)GPA(eglQuerySurface64KHR);
+	_eglLockSurfaceKHR = (PFNEGLLOCKSURFACEKHR)eglGetProcAddress("eglLockSurfaceKHR");
+	_eglUnlockSurfaceKHR = (PFNEGLUNLOCKSURFACEKHR)eglGetProcAddress("eglUnlockSurfaceKHR");
+	_eglQuerySurface64KHR = (PFNEGLQUERYSURFACE64KHR)eglGetProcAddress("eglQuerySurface64KHR");
 
 	/* EGL_KHR_partial_update */
-	_eglSetDamageRegionKHR = (PFNEGLSETDAMAGEREGIONKHR)GPA(eglSetDamageRegionKHR);
+	_eglSetDamageRegionKHR = (PFNEGLSETDAMAGEREGIONKHR)eglGetProcAddress("eglSetDamageRegionKHR");
 
 	/* EGL_KHR_reusable_sync */
-	_eglCreateSyncKHR = (PFNEGLCREATESYNCKHR)GPA(eglCreateSyncKHR);
-	_eglDestroySyncKHR = (PFNEGLDESTROYSYNCKHR)GPA(eglDestroySyncKHR);
-	_eglClientWaitSyncKHR = (PFNEGLCLIENTWAITSYNCKHR)GPA(eglClientWaitSyncKHR);
-	_eglSignalSyncKHR = (PFNEGLSIGNALSYNCKHR)GPA(eglSignalSyncKHR);
-	_eglGetSyncAttribKHR = (PFNEGLGETSYNCATTRIBKHR)GPA(eglGetSyncAttribKHR);
+	_eglCreateSyncKHR = (PFNEGLCREATESYNCKHR)eglGetProcAddress("eglCreateSyncKHR");
+	_eglDestroySyncKHR = (PFNEGLDESTROYSYNCKHR)eglGetProcAddress("eglDestroySyncKHR");
+	_eglClientWaitSyncKHR = (PFNEGLCLIENTWAITSYNCKHR)eglGetProcAddress("eglClientWaitSyncKHR");
+	_eglSignalSyncKHR = (PFNEGLSIGNALSYNCKHR)eglGetProcAddress("eglSignalSyncKHR");
+	_eglGetSyncAttribKHR = (PFNEGLGETSYNCATTRIBKHR)eglGetProcAddress("eglGetSyncAttribKHR");
 
 	/* EGL_KHR_stream */
-	_eglCreateStreamKHR = (PFNEGLCREATESTREAMKHR)GPA(eglCreateStreamKHR);
-	_eglDestroyStreamKHR = (PFNEGLDESTROYSTREAMKHR)GPA(eglDestroyStreamKHR);
-	_eglStreamAttribKHR = (PFNEGLSTREAMATTRIBKHR)GPA(eglStreamAttribKHR);
-	_eglQueryStreamKHR = (PFNEGLQUERYSTREAMKHR)GPA(eglQueryStreamKHR);
-	_eglQueryStreamu64KHR = (PFNEGLQUERYSTREAMU64KHR)GPA(eglQueryStreamu64KHR);
+	_eglCreateStreamKHR = (PFNEGLCREATESTREAMKHR)eglGetProcAddress("eglCreateStreamKHR");
+	_eglDestroyStreamKHR = (PFNEGLDESTROYSTREAMKHR)eglGetProcAddress("eglDestroyStreamKHR");
+	_eglStreamAttribKHR = (PFNEGLSTREAMATTRIBKHR)eglGetProcAddress("eglStreamAttribKHR");
+	_eglQueryStreamKHR = (PFNEGLQUERYSTREAMKHR)eglGetProcAddress("eglQueryStreamKHR");
+	_eglQueryStreamu64KHR = (PFNEGLQUERYSTREAMU64KHR)eglGetProcAddress("eglQueryStreamu64KHR");
 
 	/* EGL_KHR_stream_attrib */
-	_eglCreateStreamAttribKHR = (PFNEGLCREATESTREAMATTRIBKHR)GPA(eglCreateStreamAttribKHR);
-	_eglSetStreamAttribKHR = (PFNEGLSETSTREAMATTRIBKHR)GPA(eglSetStreamAttribKHR);
-	_eglQueryStreamAttribKHR = (PFNEGLQUERYSTREAMATTRIBKHR)GPA(eglQueryStreamAttribKHR);
-	_eglStreamConsumerAcquireAttribKHR = (PFNEGLSTREAMCONSUMERACQUIREATTRIBKHR)GPA(eglStreamConsumerAcquireAttribKHR);
-	_eglStreamConsumerReleaseAttribKHR = (PFNEGLSTREAMCONSUMERRELEASEATTRIBKHR)GPA(eglStreamConsumerReleaseAttribKHR);
+	_eglCreateStreamAttribKHR = (PFNEGLCREATESTREAMATTRIBKHR)eglGetProcAddress("eglCreateStreamAttribKHR");
+	_eglSetStreamAttribKHR = (PFNEGLSETSTREAMATTRIBKHR)eglGetProcAddress("eglSetStreamAttribKHR");
+	_eglQueryStreamAttribKHR = (PFNEGLQUERYSTREAMATTRIBKHR)eglGetProcAddress("eglQueryStreamAttribKHR");
+	_eglStreamConsumerAcquireAttribKHR = (PFNEGLSTREAMCONSUMERACQUIREATTRIBKHR)eglGetProcAddress("eglStreamConsumerAcquireAttribKHR");
+	_eglStreamConsumerReleaseAttribKHR = (PFNEGLSTREAMCONSUMERRELEASEATTRIBKHR)eglGetProcAddress("eglStreamConsumerReleaseAttribKHR");
 
 	/* EGL_KHR_stream_consumer_gltexture */
-	_eglStreamConsumerGLTextureExternalKHR = (PFNEGLSTREAMCONSUMERGLTEXTUREEXTERNALKHR)GPA(eglStreamConsumerGLTextureExternalKHR);
-	_eglStreamConsumerAcquireKHR = (PFNEGLSTREAMCONSUMERACQUIREKHR)GPA(eglStreamConsumerAcquireKHR);
-	_eglStreamConsumerReleaseKHR = (PFNEGLSTREAMCONSUMERRELEASEKHR)GPA(eglStreamConsumerReleaseKHR);
+	_eglStreamConsumerGLTextureExternalKHR = (PFNEGLSTREAMCONSUMERGLTEXTUREEXTERNALKHR)eglGetProcAddress("eglStreamConsumerGLTextureExternalKHR");
+	_eglStreamConsumerAcquireKHR = (PFNEGLSTREAMCONSUMERACQUIREKHR)eglGetProcAddress("eglStreamConsumerAcquireKHR");
+	_eglStreamConsumerReleaseKHR = (PFNEGLSTREAMCONSUMERRELEASEKHR)eglGetProcAddress("eglStreamConsumerReleaseKHR");
 
 	/* EGL_KHR_stream_cross_process_fd */
-	_eglGetStreamFileDescriptorKHR = (PFNEGLGETSTREAMFILEDESCRIPTORKHR)GPA(eglGetStreamFileDescriptorKHR);
-	_eglCreateStreamFromFileDescriptorKHR = (PFNEGLCREATESTREAMFROMFILEDESCRIPTORKHR)GPA(eglCreateStreamFromFileDescriptorKHR);
+	_eglGetStreamFileDescriptorKHR = (PFNEGLGETSTREAMFILEDESCRIPTORKHR)eglGetProcAddress("eglGetStreamFileDescriptorKHR");
+	_eglCreateStreamFromFileDescriptorKHR = (PFNEGLCREATESTREAMFROMFILEDESCRIPTORKHR)eglGetProcAddress("eglCreateStreamFromFileDescriptorKHR");
 
 	/* EGL_KHR_stream_fifo */
-	_eglQueryStreamTimeKHR = (PFNEGLQUERYSTREAMTIMEKHR)GPA(eglQueryStreamTimeKHR);
+	_eglQueryStreamTimeKHR = (PFNEGLQUERYSTREAMTIMEKHR)eglGetProcAddress("eglQueryStreamTimeKHR");
 
 	/* EGL_KHR_stream_producer_eglsurface */
-	_eglCreateStreamProducerSurfaceKHR = (PFNEGLCREATESTREAMPRODUCERSURFACEKHR)GPA(eglCreateStreamProducerSurfaceKHR);
+	_eglCreateStreamProducerSurfaceKHR = (PFNEGLCREATESTREAMPRODUCERSURFACEKHR)eglGetProcAddress("eglCreateStreamProducerSurfaceKHR");
 
 	/* EGL_KHR_swap_buffers_with_damage */
-	_eglSwapBuffersWithDamageKHR = (PFNEGLSWAPBUFFERSWITHDAMAGEKHR)GPA(eglSwapBuffersWithDamageKHR);
+	_eglSwapBuffersWithDamageKHR = (PFNEGLSWAPBUFFERSWITHDAMAGEKHR)eglGetProcAddress("eglSwapBuffersWithDamageKHR");
 
 	/* EGL_KHR_wait_sync */
-	_eglWaitSyncKHR = (PFNEGLWAITSYNCKHR)GPA(eglWaitSyncKHR);
+	_eglWaitSyncKHR = (PFNEGLWAITSYNCKHR)eglGetProcAddress("eglWaitSyncKHR");
 
 	/* EGL_MESA_drm_image */
-	_eglCreateDRMImageMESA = (PFNEGLCREATEDRMIMAGEMESA)GPA(eglCreateDRMImageMESA);
-	_eglExportDRMImageMESA = (PFNEGLEXPORTDRMIMAGEMESA)GPA(eglExportDRMImageMESA);
+	_eglCreateDRMImageMESA = (PFNEGLCREATEDRMIMAGEMESA)eglGetProcAddress("eglCreateDRMImageMESA");
+	_eglExportDRMImageMESA = (PFNEGLEXPORTDRMIMAGEMESA)eglGetProcAddress("eglExportDRMImageMESA");
 
 	/* EGL_MESA_image_dma_buf_export */
-	_eglExportDMABUFImageQueryMESA = (PFNEGLEXPORTDMABUFIMAGEQUERYMESA)GPA(eglExportDMABUFImageQueryMESA);
-	_eglExportDMABUFImageMESA = (PFNEGLEXPORTDMABUFIMAGEMESA)GPA(eglExportDMABUFImageMESA);
+	_eglExportDMABUFImageQueryMESA = (PFNEGLEXPORTDMABUFIMAGEQUERYMESA)eglGetProcAddress("eglExportDMABUFImageQueryMESA");
+	_eglExportDMABUFImageMESA = (PFNEGLEXPORTDMABUFIMAGEMESA)eglGetProcAddress("eglExportDMABUFImageMESA");
 
 	/* EGL_NOK_swap_region */
-	_eglSwapBuffersRegionNOK = (PFNEGLSWAPBUFFERSREGIONNOK)GPA(eglSwapBuffersRegionNOK);
+	_eglSwapBuffersRegionNOK = (PFNEGLSWAPBUFFERSREGIONNOK)eglGetProcAddress("eglSwapBuffersRegionNOK");
 
 	/* EGL_NOK_swap_region2 */
-	_eglSwapBuffersRegion2NOK = (PFNEGLSWAPBUFFERSREGION2NOK)GPA(eglSwapBuffersRegion2NOK);
+	_eglSwapBuffersRegion2NOK = (PFNEGLSWAPBUFFERSREGION2NOK)eglGetProcAddress("eglSwapBuffersRegion2NOK");
 
 	/* EGL_NV_native_query */
-	_eglQueryNativeDisplayNV = (PFNEGLQUERYNATIVEDISPLAYNV)GPA(eglQueryNativeDisplayNV);
-	_eglQueryNativeWindowNV = (PFNEGLQUERYNATIVEWINDOWNV)GPA(eglQueryNativeWindowNV);
-	_eglQueryNativePixmapNV = (PFNEGLQUERYNATIVEPIXMAPNV)GPA(eglQueryNativePixmapNV);
+	_eglQueryNativeDisplayNV = (PFNEGLQUERYNATIVEDISPLAYNV)eglGetProcAddress("eglQueryNativeDisplayNV");
+	_eglQueryNativeWindowNV = (PFNEGLQUERYNATIVEWINDOWNV)eglGetProcAddress("eglQueryNativeWindowNV");
+	_eglQueryNativePixmapNV = (PFNEGLQUERYNATIVEPIXMAPNV)eglGetProcAddress("eglQueryNativePixmapNV");
 
 	/* EGL_NV_post_sub_buffer */
-	_eglPostSubBufferNV = (PFNEGLPOSTSUBBUFFERNV)GPA(eglPostSubBufferNV);
+	_eglPostSubBufferNV = (PFNEGLPOSTSUBBUFFERNV)eglGetProcAddress("eglPostSubBufferNV");
 
 	/* EGL_NV_stream_consumer_gltexture_yuv */
-	_eglStreamConsumerGLTextureExternalAttribsNV = (PFNEGLSTREAMCONSUMERGLTEXTUREEXTERNALATTRIBSNV)GPA(eglStreamConsumerGLTextureExternalAttribsNV);
+	_eglStreamConsumerGLTextureExternalAttribsNV = (PFNEGLSTREAMCONSUMERGLTEXTUREEXTERNALATTRIBSNV)eglGetProcAddress("eglStreamConsumerGLTextureExternalAttribsNV");
 
 	/* EGL_NV_stream_metadata */
-	_eglQueryDisplayAttribNV = (PFNEGLQUERYDISPLAYATTRIBNV)GPA(eglQueryDisplayAttribNV);
-	_eglSetStreamMetadataNV = (PFNEGLSETSTREAMMETADATANV)GPA(eglSetStreamMetadataNV);
-	_eglQueryStreamMetadataNV = (PFNEGLQUERYSTREAMMETADATANV)GPA(eglQueryStreamMetadataNV);
+	_eglQueryDisplayAttribNV = (PFNEGLQUERYDISPLAYATTRIBNV)eglGetProcAddress("eglQueryDisplayAttribNV");
+	_eglSetStreamMetadataNV = (PFNEGLSETSTREAMMETADATANV)eglGetProcAddress("eglSetStreamMetadataNV");
+	_eglQueryStreamMetadataNV = (PFNEGLQUERYSTREAMMETADATANV)eglGetProcAddress("eglQueryStreamMetadataNV");
 
 	/* EGL_NV_stream_reset */
-	_eglResetStreamNV = (PFNEGLRESETSTREAMNV)GPA(eglResetStreamNV);
+	_eglResetStreamNV = (PFNEGLRESETSTREAMNV)eglGetProcAddress("eglResetStreamNV");
 
 	/* EGL_NV_stream_sync */
-	_eglCreateStreamSyncNV = (PFNEGLCREATESTREAMSYNCNV)GPA(eglCreateStreamSyncNV);
+	_eglCreateStreamSyncNV = (PFNEGLCREATESTREAMSYNCNV)eglGetProcAddress("eglCreateStreamSyncNV");
 
 	/* EGL_NV_sync */
-	_eglCreateFenceSyncNV = (PFNEGLCREATEFENCESYNCNV)GPA(eglCreateFenceSyncNV);
-	_eglDestroySyncNV = (PFNEGLDESTROYSYNCNV)GPA(eglDestroySyncNV);
-	_eglFenceNV = (PFNEGLFENCENV)GPA(eglFenceNV);
-	_eglClientWaitSyncNV = (PFNEGLCLIENTWAITSYNCNV)GPA(eglClientWaitSyncNV);
-	_eglSignalSyncNV = (PFNEGLSIGNALSYNCNV)GPA(eglSignalSyncNV);
-	_eglGetSyncAttribNV = (PFNEGLGETSYNCATTRIBNV)GPA(eglGetSyncAttribNV);
+	_eglCreateFenceSyncNV = (PFNEGLCREATEFENCESYNCNV)eglGetProcAddress("eglCreateFenceSyncNV");
+	_eglDestroySyncNV = (PFNEGLDESTROYSYNCNV)eglGetProcAddress("eglDestroySyncNV");
+	_eglFenceNV = (PFNEGLFENCENV)eglGetProcAddress("eglFenceNV");
+	_eglClientWaitSyncNV = (PFNEGLCLIENTWAITSYNCNV)eglGetProcAddress("eglClientWaitSyncNV");
+	_eglSignalSyncNV = (PFNEGLSIGNALSYNCNV)eglGetProcAddress("eglSignalSyncNV");
+	_eglGetSyncAttribNV = (PFNEGLGETSYNCATTRIBNV)eglGetProcAddress("eglGetSyncAttribNV");
 
 	/* EGL_NV_system_time */
-	_eglGetSystemTimeFrequencyNV = (PFNEGLGETSYSTEMTIMEFREQUENCYNV)GPA(eglGetSystemTimeFrequencyNV);
-	_eglGetSystemTimeNV = (PFNEGLGETSYSTEMTIMENV)GPA(eglGetSystemTimeNV);
+	_eglGetSystemTimeFrequencyNV = (PFNEGLGETSYSTEMTIMEFREQUENCYNV)eglGetProcAddress("eglGetSystemTimeFrequencyNV");
+	_eglGetSystemTimeNV = (PFNEGLGETSYSTEMTIMENV)eglGetProcAddress("eglGetSystemTimeNV");
 
 	gegl_rebind(enableDebug);
 
-	geglext_str = (const char *)_glGetString(GL_EXTENSIONS);
+	geglext_str = (const char *)_eglQueryString(display, EGL_EXTENSIONS);
 	memset(&geglext, 0, sizeof(geglext));
 	if (gegl_check_extension("EGL_ANDROID_blob_cache")) geglext._EGL_ANDROID_blob_cache = 1;
 	if (gegl_check_extension("EGL_ANDROID_create_native_client_buffer")) geglext._EGL_ANDROID_create_native_client_buffer = 1;

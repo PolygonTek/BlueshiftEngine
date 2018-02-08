@@ -16,13 +16,7 @@
 
 #ifdef __WIN32__
 
-#ifdef USE_WINDOWS_EGL
-#include "OpenGL/OpenGLES3.h"
-#include "OpenGL/EGL/egl.h"
-#include "OpenGL/EGL/eglplatform.h"
-#else
 #include "OpenGL/WinOpenGL.h"
-#endif
 
 #elif defined(__XAMARIN__)
 
@@ -89,10 +83,10 @@ struct GLContext {
     HWND                hwnd;
     WNDPROC             oldWndProc;
     HDC                 hdc;
-#ifndef USE_WINDOWS_EGL
     HGLRC               hrc;
-#else
+#ifdef USE_DESKTOP_EGL
     EGLDisplay          eglDisplay;
+    EGLConfig           eglConfig;
     EGLSurface          eglSurface;
     EGLContext          eglContext;
 #endif

@@ -39,6 +39,7 @@
 extern "C" {
 #endif
 
+#include "EGL/egl.h"
 
 #ifndef APIENTRY
 #define APIENTRY
@@ -1412,7 +1413,7 @@ typedef struct {
 
 extern geglext_t geglext;
 
-extern void gegl_init(int enableDebug);
+extern void gegl_init(EGLDisplay display, int enableDebug);
 extern void gegl_rebind(int enableDebug);
 
 #ifdef __cplusplus

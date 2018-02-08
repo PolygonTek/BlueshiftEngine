@@ -29,26 +29,70 @@
 #ifndef GL_FILL
 #define GL_FILL 0x1B02
 #endif
+
+#ifndef GL_POINT
 #define GL_POINT 0x1B00
+#endif
+
+#ifndef GL_LINE
 #define GL_LINE 0x1B01
+#endif
+
+#ifndef GL_LINE_SMOOTH
 #define GL_LINE_SMOOTH 0x0B20
+#endif
+
+#ifndef GL_LINE_SMOOTH_HINT
 #define GL_LINE_SMOOTH_HINT 0x0C52
+#endif
+
+#ifndef GL_POLYGON_SMOOTH
 #define GL_POLYGON_SMOOTH 0x0B41
+#endif
+
+#ifndef GL_POLYGON_SMOOTH_HINT
 #define GL_POLYGON_SMOOTH_HINT 0x0C53
+#endif
+
+#ifndef GL_POLYGON_OFFSET_LINE
 #define GL_POLYGON_OFFSET_LINE 0x2A02
+#endif
+
+#ifndef GL_POLYGON_OFFSET_POINT
 #define GL_POLYGON_OFFSET_POINT 0x2A01
+#endif
+
+#ifndef GL_DEPTH_CLAMP
 #define GL_DEPTH_CLAMP 0x864F
+#endif
+
+#ifndef GL_CLAMP_TO_BORDER
 #define GL_CLAMP_TO_BORDER 0x812D
+#endif
+
+#ifndef GL_TEXTURE_BORDER_COLOR
 #define GL_TEXTURE_BORDER_COLOR 0x1004
+#endif
+
+#ifndef GL_TEXTURE_LOD_BIAS
 #define GL_TEXTURE_LOD_BIAS 0x8501
+#endif
+
+#ifndef GL_TEXTURE_RECTANGLE
 #define GL_TEXTURE_RECTANGLE 0x84F5
+#endif
+
+#ifndef GL_FRAMEBUFFER_SRGB
 #define GL_FRAMEBUFFER_SRGB 0x8DB9
+#endif
 
-#define GL_WRITE_ONLY       GL_WRITE_ONLY_OES
+#ifndef GL_WRITE_ONLY
+#define GL_WRITE_ONLY GL_WRITE_ONLY_OES
+#endif
+
+#ifndef GL_TEXTURE_CUBE_MAP_ARRAY
 #define GL_TEXTURE_CUBE_MAP_ARRAY GL_TEXTURE_CUBE_MAP_ARRAY_EXT
-
-//#define gglMapBuffer        gglMapBufferOES
-//#define gglUnmapBuffer      gglUnmapBufferOES
+#endif
 
 BE_NAMESPACE_BEGIN
 
