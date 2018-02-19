@@ -2,7 +2,7 @@
  *
  * ggles3.c
  * ggl (OpenGL glue code library)
- * Version: 0.4
+ * Version: 0.5
  *
  * Copyright 2011 Ju Hyung Lee. All rights reserved.
  *
@@ -4812,6 +4812,13 @@ static void APIENTRY d_glWindowRectanglesEXT(GLenum mode, GLsizei count, const G
 	_glWindowRectanglesEXT(mode, count, box);
 	CheckGLError("glWindowRectanglesEXT");
 }
+
+#if defined(ANDROID) || defined(__linux__)
+#define GPA(a) eglGetProcAddress(#a)
+#elif defined(__APPLE__)
+#define GPA(a) a
+#endif
+
 gglext_t gglext;
 static GLint gglext_count = 0;
 static const GLubyte *gglext_strings[256];
@@ -4828,995 +4835,995 @@ static int ggl_check_extension(const char *ext) {
 
 void ggl_init(int enableDebug) {
 	/* GL_ES_VERSION_2_0 */
-	_glActiveTexture = glActiveTexture;
-	_glAttachShader = glAttachShader;
-	_glBindAttribLocation = glBindAttribLocation;
-	_glBindBuffer = glBindBuffer;
-	_glBindFramebuffer = glBindFramebuffer;
-	_glBindRenderbuffer = glBindRenderbuffer;
-	_glBindTexture = glBindTexture;
-	_glBlendColor = glBlendColor;
-	_glBlendEquation = glBlendEquation;
-	_glBlendEquationSeparate = glBlendEquationSeparate;
-	_glBlendFunc = glBlendFunc;
-	_glBlendFuncSeparate = glBlendFuncSeparate;
-	_glBufferData = glBufferData;
-	_glBufferSubData = glBufferSubData;
-	_glCheckFramebufferStatus = glCheckFramebufferStatus;
-	_glClear = glClear;
-	_glClearColor = glClearColor;
-	_glClearDepthf = glClearDepthf;
-	_glClearStencil = glClearStencil;
-	_glColorMask = glColorMask;
-	_glCompileShader = glCompileShader;
-	_glCompressedTexImage2D = glCompressedTexImage2D;
-	_glCompressedTexSubImage2D = glCompressedTexSubImage2D;
-	_glCopyTexImage2D = glCopyTexImage2D;
-	_glCopyTexSubImage2D = glCopyTexSubImage2D;
-	_glCreateProgram = glCreateProgram;
-	_glCreateShader = glCreateShader;
-	_glCullFace = glCullFace;
-	_glDeleteBuffers = glDeleteBuffers;
-	_glDeleteFramebuffers = glDeleteFramebuffers;
-	_glDeleteProgram = glDeleteProgram;
-	_glDeleteRenderbuffers = glDeleteRenderbuffers;
-	_glDeleteShader = glDeleteShader;
-	_glDeleteTextures = glDeleteTextures;
-	_glDepthFunc = glDepthFunc;
-	_glDepthMask = glDepthMask;
-	_glDepthRangef = glDepthRangef;
-	_glDetachShader = glDetachShader;
-	_glDisable = glDisable;
-	_glDisableVertexAttribArray = glDisableVertexAttribArray;
-	_glDrawArrays = glDrawArrays;
-	_glDrawElements = glDrawElements;
-	_glEnable = glEnable;
-	_glEnableVertexAttribArray = glEnableVertexAttribArray;
-	_glFinish = glFinish;
-	_glFlush = glFlush;
-	_glFramebufferRenderbuffer = glFramebufferRenderbuffer;
-	_glFramebufferTexture2D = glFramebufferTexture2D;
-	_glFrontFace = glFrontFace;
-	_glGenBuffers = glGenBuffers;
-	_glGenerateMipmap = glGenerateMipmap;
-	_glGenFramebuffers = glGenFramebuffers;
-	_glGenRenderbuffers = glGenRenderbuffers;
-	_glGenTextures = glGenTextures;
-	_glGetActiveAttrib = glGetActiveAttrib;
-	_glGetActiveUniform = glGetActiveUniform;
-	_glGetAttachedShaders = glGetAttachedShaders;
-	_glGetAttribLocation = glGetAttribLocation;
-	_glGetBooleanv = glGetBooleanv;
-	_glGetBufferParameteriv = glGetBufferParameteriv;
-	_glGetError = glGetError;
-	_glGetFloatv = glGetFloatv;
-	_glGetFramebufferAttachmentParameteriv = glGetFramebufferAttachmentParameteriv;
-	_glGetIntegerv = glGetIntegerv;
-	_glGetProgramiv = glGetProgramiv;
-	_glGetProgramInfoLog = glGetProgramInfoLog;
-	_glGetRenderbufferParameteriv = glGetRenderbufferParameteriv;
-	_glGetShaderiv = glGetShaderiv;
-	_glGetShaderInfoLog = glGetShaderInfoLog;
-	_glGetShaderPrecisionFormat = glGetShaderPrecisionFormat;
-	_glGetShaderSource = glGetShaderSource;
-	_glGetString = glGetString;
-	_glGetTexParameterfv = glGetTexParameterfv;
-	_glGetTexParameteriv = glGetTexParameteriv;
-	_glGetUniformfv = glGetUniformfv;
-	_glGetUniformiv = glGetUniformiv;
-	_glGetUniformLocation = glGetUniformLocation;
-	_glGetVertexAttribfv = glGetVertexAttribfv;
-	_glGetVertexAttribiv = glGetVertexAttribiv;
-	_glGetVertexAttribPointerv = glGetVertexAttribPointerv;
-	_glHint = glHint;
-	_glIsBuffer = glIsBuffer;
-	_glIsEnabled = glIsEnabled;
-	_glIsFramebuffer = glIsFramebuffer;
-	_glIsProgram = glIsProgram;
-	_glIsRenderbuffer = glIsRenderbuffer;
-	_glIsShader = glIsShader;
-	_glIsTexture = glIsTexture;
-	_glLineWidth = glLineWidth;
-	_glLinkProgram = glLinkProgram;
-	_glPixelStorei = glPixelStorei;
-	_glPolygonOffset = glPolygonOffset;
-	_glReadPixels = glReadPixels;
-	_glReleaseShaderCompiler = glReleaseShaderCompiler;
-	_glRenderbufferStorage = glRenderbufferStorage;
-	_glSampleCoverage = glSampleCoverage;
-	_glScissor = glScissor;
-	_glShaderBinary = glShaderBinary;
-	_glShaderSource = glShaderSource;
-	_glStencilFunc = glStencilFunc;
-	_glStencilFuncSeparate = glStencilFuncSeparate;
-	_glStencilMask = glStencilMask;
-	_glStencilMaskSeparate = glStencilMaskSeparate;
-	_glStencilOp = glStencilOp;
-	_glStencilOpSeparate = glStencilOpSeparate;
-	_glTexImage2D = glTexImage2D;
-	_glTexParameterf = glTexParameterf;
-	_glTexParameterfv = glTexParameterfv;
-	_glTexParameteri = glTexParameteri;
-	_glTexParameteriv = glTexParameteriv;
-	_glTexSubImage2D = glTexSubImage2D;
-	_glUniform1f = glUniform1f;
-	_glUniform1fv = glUniform1fv;
-	_glUniform1i = glUniform1i;
-	_glUniform1iv = glUniform1iv;
-	_glUniform2f = glUniform2f;
-	_glUniform2fv = glUniform2fv;
-	_glUniform2i = glUniform2i;
-	_glUniform2iv = glUniform2iv;
-	_glUniform3f = glUniform3f;
-	_glUniform3fv = glUniform3fv;
-	_glUniform3i = glUniform3i;
-	_glUniform3iv = glUniform3iv;
-	_glUniform4f = glUniform4f;
-	_glUniform4fv = glUniform4fv;
-	_glUniform4i = glUniform4i;
-	_glUniform4iv = glUniform4iv;
-	_glUniformMatrix2fv = glUniformMatrix2fv;
-	_glUniformMatrix3fv = glUniformMatrix3fv;
-	_glUniformMatrix4fv = glUniformMatrix4fv;
-	_glUseProgram = glUseProgram;
-	_glValidateProgram = glValidateProgram;
-	_glVertexAttrib1f = glVertexAttrib1f;
-	_glVertexAttrib1fv = glVertexAttrib1fv;
-	_glVertexAttrib2f = glVertexAttrib2f;
-	_glVertexAttrib2fv = glVertexAttrib2fv;
-	_glVertexAttrib3f = glVertexAttrib3f;
-	_glVertexAttrib3fv = glVertexAttrib3fv;
-	_glVertexAttrib4f = glVertexAttrib4f;
-	_glVertexAttrib4fv = glVertexAttrib4fv;
-	_glVertexAttribPointer = glVertexAttribPointer;
-	_glViewport = glViewport;
+	_glActiveTexture = (PFNGLACTIVETEXTURE)GPA(glActiveTexture);
+	_glAttachShader = (PFNGLATTACHSHADER)GPA(glAttachShader);
+	_glBindAttribLocation = (PFNGLBINDATTRIBLOCATION)GPA(glBindAttribLocation);
+	_glBindBuffer = (PFNGLBINDBUFFER)GPA(glBindBuffer);
+	_glBindFramebuffer = (PFNGLBINDFRAMEBUFFER)GPA(glBindFramebuffer);
+	_glBindRenderbuffer = (PFNGLBINDRENDERBUFFER)GPA(glBindRenderbuffer);
+	_glBindTexture = (PFNGLBINDTEXTURE)GPA(glBindTexture);
+	_glBlendColor = (PFNGLBLENDCOLOR)GPA(glBlendColor);
+	_glBlendEquation = (PFNGLBLENDEQUATION)GPA(glBlendEquation);
+	_glBlendEquationSeparate = (PFNGLBLENDEQUATIONSEPARATE)GPA(glBlendEquationSeparate);
+	_glBlendFunc = (PFNGLBLENDFUNC)GPA(glBlendFunc);
+	_glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATE)GPA(glBlendFuncSeparate);
+	_glBufferData = (PFNGLBUFFERDATA)GPA(glBufferData);
+	_glBufferSubData = (PFNGLBUFFERSUBDATA)GPA(glBufferSubData);
+	_glCheckFramebufferStatus = (PFNGLCHECKFRAMEBUFFERSTATUS)GPA(glCheckFramebufferStatus);
+	_glClear = (PFNGLCLEAR)GPA(glClear);
+	_glClearColor = (PFNGLCLEARCOLOR)GPA(glClearColor);
+	_glClearDepthf = (PFNGLCLEARDEPTHF)GPA(glClearDepthf);
+	_glClearStencil = (PFNGLCLEARSTENCIL)GPA(glClearStencil);
+	_glColorMask = (PFNGLCOLORMASK)GPA(glColorMask);
+	_glCompileShader = (PFNGLCOMPILESHADER)GPA(glCompileShader);
+	_glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2D)GPA(glCompressedTexImage2D);
+	_glCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2D)GPA(glCompressedTexSubImage2D);
+	_glCopyTexImage2D = (PFNGLCOPYTEXIMAGE2D)GPA(glCopyTexImage2D);
+	_glCopyTexSubImage2D = (PFNGLCOPYTEXSUBIMAGE2D)GPA(glCopyTexSubImage2D);
+	_glCreateProgram = (PFNGLCREATEPROGRAM)GPA(glCreateProgram);
+	_glCreateShader = (PFNGLCREATESHADER)GPA(glCreateShader);
+	_glCullFace = (PFNGLCULLFACE)GPA(glCullFace);
+	_glDeleteBuffers = (PFNGLDELETEBUFFERS)GPA(glDeleteBuffers);
+	_glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERS)GPA(glDeleteFramebuffers);
+	_glDeleteProgram = (PFNGLDELETEPROGRAM)GPA(glDeleteProgram);
+	_glDeleteRenderbuffers = (PFNGLDELETERENDERBUFFERS)GPA(glDeleteRenderbuffers);
+	_glDeleteShader = (PFNGLDELETESHADER)GPA(glDeleteShader);
+	_glDeleteTextures = (PFNGLDELETETEXTURES)GPA(glDeleteTextures);
+	_glDepthFunc = (PFNGLDEPTHFUNC)GPA(glDepthFunc);
+	_glDepthMask = (PFNGLDEPTHMASK)GPA(glDepthMask);
+	_glDepthRangef = (PFNGLDEPTHRANGEF)GPA(glDepthRangef);
+	_glDetachShader = (PFNGLDETACHSHADER)GPA(glDetachShader);
+	_glDisable = (PFNGLDISABLE)GPA(glDisable);
+	_glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAY)GPA(glDisableVertexAttribArray);
+	_glDrawArrays = (PFNGLDRAWARRAYS)GPA(glDrawArrays);
+	_glDrawElements = (PFNGLDRAWELEMENTS)GPA(glDrawElements);
+	_glEnable = (PFNGLENABLE)GPA(glEnable);
+	_glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAY)GPA(glEnableVertexAttribArray);
+	_glFinish = (PFNGLFINISH)GPA(glFinish);
+	_glFlush = (PFNGLFLUSH)GPA(glFlush);
+	_glFramebufferRenderbuffer = (PFNGLFRAMEBUFFERRENDERBUFFER)GPA(glFramebufferRenderbuffer);
+	_glFramebufferTexture2D = (PFNGLFRAMEBUFFERTEXTURE2D)GPA(glFramebufferTexture2D);
+	_glFrontFace = (PFNGLFRONTFACE)GPA(glFrontFace);
+	_glGenBuffers = (PFNGLGENBUFFERS)GPA(glGenBuffers);
+	_glGenerateMipmap = (PFNGLGENERATEMIPMAP)GPA(glGenerateMipmap);
+	_glGenFramebuffers = (PFNGLGENFRAMEBUFFERS)GPA(glGenFramebuffers);
+	_glGenRenderbuffers = (PFNGLGENRENDERBUFFERS)GPA(glGenRenderbuffers);
+	_glGenTextures = (PFNGLGENTEXTURES)GPA(glGenTextures);
+	_glGetActiveAttrib = (PFNGLGETACTIVEATTRIB)GPA(glGetActiveAttrib);
+	_glGetActiveUniform = (PFNGLGETACTIVEUNIFORM)GPA(glGetActiveUniform);
+	_glGetAttachedShaders = (PFNGLGETATTACHEDSHADERS)GPA(glGetAttachedShaders);
+	_glGetAttribLocation = (PFNGLGETATTRIBLOCATION)GPA(glGetAttribLocation);
+	_glGetBooleanv = (PFNGLGETBOOLEANV)GPA(glGetBooleanv);
+	_glGetBufferParameteriv = (PFNGLGETBUFFERPARAMETERIV)GPA(glGetBufferParameteriv);
+	_glGetError = (PFNGLGETERROR)GPA(glGetError);
+	_glGetFloatv = (PFNGLGETFLOATV)GPA(glGetFloatv);
+	_glGetFramebufferAttachmentParameteriv = (PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIV)GPA(glGetFramebufferAttachmentParameteriv);
+	_glGetIntegerv = (PFNGLGETINTEGERV)GPA(glGetIntegerv);
+	_glGetProgramiv = (PFNGLGETPROGRAMIV)GPA(glGetProgramiv);
+	_glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOG)GPA(glGetProgramInfoLog);
+	_glGetRenderbufferParameteriv = (PFNGLGETRENDERBUFFERPARAMETERIV)GPA(glGetRenderbufferParameteriv);
+	_glGetShaderiv = (PFNGLGETSHADERIV)GPA(glGetShaderiv);
+	_glGetShaderInfoLog = (PFNGLGETSHADERINFOLOG)GPA(glGetShaderInfoLog);
+	_glGetShaderPrecisionFormat = (PFNGLGETSHADERPRECISIONFORMAT)GPA(glGetShaderPrecisionFormat);
+	_glGetShaderSource = (PFNGLGETSHADERSOURCE)GPA(glGetShaderSource);
+	_glGetString = (PFNGLGETSTRING)GPA(glGetString);
+	_glGetTexParameterfv = (PFNGLGETTEXPARAMETERFV)GPA(glGetTexParameterfv);
+	_glGetTexParameteriv = (PFNGLGETTEXPARAMETERIV)GPA(glGetTexParameteriv);
+	_glGetUniformfv = (PFNGLGETUNIFORMFV)GPA(glGetUniformfv);
+	_glGetUniformiv = (PFNGLGETUNIFORMIV)GPA(glGetUniformiv);
+	_glGetUniformLocation = (PFNGLGETUNIFORMLOCATION)GPA(glGetUniformLocation);
+	_glGetVertexAttribfv = (PFNGLGETVERTEXATTRIBFV)GPA(glGetVertexAttribfv);
+	_glGetVertexAttribiv = (PFNGLGETVERTEXATTRIBIV)GPA(glGetVertexAttribiv);
+	_glGetVertexAttribPointerv = (PFNGLGETVERTEXATTRIBPOINTERV)GPA(glGetVertexAttribPointerv);
+	_glHint = (PFNGLHINT)GPA(glHint);
+	_glIsBuffer = (PFNGLISBUFFER)GPA(glIsBuffer);
+	_glIsEnabled = (PFNGLISENABLED)GPA(glIsEnabled);
+	_glIsFramebuffer = (PFNGLISFRAMEBUFFER)GPA(glIsFramebuffer);
+	_glIsProgram = (PFNGLISPROGRAM)GPA(glIsProgram);
+	_glIsRenderbuffer = (PFNGLISRENDERBUFFER)GPA(glIsRenderbuffer);
+	_glIsShader = (PFNGLISSHADER)GPA(glIsShader);
+	_glIsTexture = (PFNGLISTEXTURE)GPA(glIsTexture);
+	_glLineWidth = (PFNGLLINEWIDTH)GPA(glLineWidth);
+	_glLinkProgram = (PFNGLLINKPROGRAM)GPA(glLinkProgram);
+	_glPixelStorei = (PFNGLPIXELSTOREI)GPA(glPixelStorei);
+	_glPolygonOffset = (PFNGLPOLYGONOFFSET)GPA(glPolygonOffset);
+	_glReadPixels = (PFNGLREADPIXELS)GPA(glReadPixels);
+	_glReleaseShaderCompiler = (PFNGLRELEASESHADERCOMPILER)GPA(glReleaseShaderCompiler);
+	_glRenderbufferStorage = (PFNGLRENDERBUFFERSTORAGE)GPA(glRenderbufferStorage);
+	_glSampleCoverage = (PFNGLSAMPLECOVERAGE)GPA(glSampleCoverage);
+	_glScissor = (PFNGLSCISSOR)GPA(glScissor);
+	_glShaderBinary = (PFNGLSHADERBINARY)GPA(glShaderBinary);
+	_glShaderSource = (PFNGLSHADERSOURCE)GPA(glShaderSource);
+	_glStencilFunc = (PFNGLSTENCILFUNC)GPA(glStencilFunc);
+	_glStencilFuncSeparate = (PFNGLSTENCILFUNCSEPARATE)GPA(glStencilFuncSeparate);
+	_glStencilMask = (PFNGLSTENCILMASK)GPA(glStencilMask);
+	_glStencilMaskSeparate = (PFNGLSTENCILMASKSEPARATE)GPA(glStencilMaskSeparate);
+	_glStencilOp = (PFNGLSTENCILOP)GPA(glStencilOp);
+	_glStencilOpSeparate = (PFNGLSTENCILOPSEPARATE)GPA(glStencilOpSeparate);
+	_glTexImage2D = (PFNGLTEXIMAGE2D)GPA(glTexImage2D);
+	_glTexParameterf = (PFNGLTEXPARAMETERF)GPA(glTexParameterf);
+	_glTexParameterfv = (PFNGLTEXPARAMETERFV)GPA(glTexParameterfv);
+	_glTexParameteri = (PFNGLTEXPARAMETERI)GPA(glTexParameteri);
+	_glTexParameteriv = (PFNGLTEXPARAMETERIV)GPA(glTexParameteriv);
+	_glTexSubImage2D = (PFNGLTEXSUBIMAGE2D)GPA(glTexSubImage2D);
+	_glUniform1f = (PFNGLUNIFORM1F)GPA(glUniform1f);
+	_glUniform1fv = (PFNGLUNIFORM1FV)GPA(glUniform1fv);
+	_glUniform1i = (PFNGLUNIFORM1I)GPA(glUniform1i);
+	_glUniform1iv = (PFNGLUNIFORM1IV)GPA(glUniform1iv);
+	_glUniform2f = (PFNGLUNIFORM2F)GPA(glUniform2f);
+	_glUniform2fv = (PFNGLUNIFORM2FV)GPA(glUniform2fv);
+	_glUniform2i = (PFNGLUNIFORM2I)GPA(glUniform2i);
+	_glUniform2iv = (PFNGLUNIFORM2IV)GPA(glUniform2iv);
+	_glUniform3f = (PFNGLUNIFORM3F)GPA(glUniform3f);
+	_glUniform3fv = (PFNGLUNIFORM3FV)GPA(glUniform3fv);
+	_glUniform3i = (PFNGLUNIFORM3I)GPA(glUniform3i);
+	_glUniform3iv = (PFNGLUNIFORM3IV)GPA(glUniform3iv);
+	_glUniform4f = (PFNGLUNIFORM4F)GPA(glUniform4f);
+	_glUniform4fv = (PFNGLUNIFORM4FV)GPA(glUniform4fv);
+	_glUniform4i = (PFNGLUNIFORM4I)GPA(glUniform4i);
+	_glUniform4iv = (PFNGLUNIFORM4IV)GPA(glUniform4iv);
+	_glUniformMatrix2fv = (PFNGLUNIFORMMATRIX2FV)GPA(glUniformMatrix2fv);
+	_glUniformMatrix3fv = (PFNGLUNIFORMMATRIX3FV)GPA(glUniformMatrix3fv);
+	_glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FV)GPA(glUniformMatrix4fv);
+	_glUseProgram = (PFNGLUSEPROGRAM)GPA(glUseProgram);
+	_glValidateProgram = (PFNGLVALIDATEPROGRAM)GPA(glValidateProgram);
+	_glVertexAttrib1f = (PFNGLVERTEXATTRIB1F)GPA(glVertexAttrib1f);
+	_glVertexAttrib1fv = (PFNGLVERTEXATTRIB1FV)GPA(glVertexAttrib1fv);
+	_glVertexAttrib2f = (PFNGLVERTEXATTRIB2F)GPA(glVertexAttrib2f);
+	_glVertexAttrib2fv = (PFNGLVERTEXATTRIB2FV)GPA(glVertexAttrib2fv);
+	_glVertexAttrib3f = (PFNGLVERTEXATTRIB3F)GPA(glVertexAttrib3f);
+	_glVertexAttrib3fv = (PFNGLVERTEXATTRIB3FV)GPA(glVertexAttrib3fv);
+	_glVertexAttrib4f = (PFNGLVERTEXATTRIB4F)GPA(glVertexAttrib4f);
+	_glVertexAttrib4fv = (PFNGLVERTEXATTRIB4FV)GPA(glVertexAttrib4fv);
+	_glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTER)GPA(glVertexAttribPointer);
+	_glViewport = (PFNGLVIEWPORT)GPA(glViewport);
 
 	/* GL_ES_VERSION_3_0 */
-	_glReadBuffer = glReadBuffer;
-	_glDrawRangeElements = glDrawRangeElements;
-	_glTexImage3D = glTexImage3D;
-	_glTexSubImage3D = glTexSubImage3D;
-	_glCopyTexSubImage3D = glCopyTexSubImage3D;
-	_glCompressedTexImage3D = glCompressedTexImage3D;
-	_glCompressedTexSubImage3D = glCompressedTexSubImage3D;
-	_glGenQueries = glGenQueries;
-	_glDeleteQueries = glDeleteQueries;
-	_glIsQuery = glIsQuery;
-	_glBeginQuery = glBeginQuery;
-	_glEndQuery = glEndQuery;
-	_glGetQueryiv = glGetQueryiv;
-	_glGetQueryObjectuiv = glGetQueryObjectuiv;
-	_glUnmapBuffer = glUnmapBuffer;
-	_glGetBufferPointerv = glGetBufferPointerv;
-	_glDrawBuffers = glDrawBuffers;
-	_glUniformMatrix2x3fv = glUniformMatrix2x3fv;
-	_glUniformMatrix3x2fv = glUniformMatrix3x2fv;
-	_glUniformMatrix2x4fv = glUniformMatrix2x4fv;
-	_glUniformMatrix4x2fv = glUniformMatrix4x2fv;
-	_glUniformMatrix3x4fv = glUniformMatrix3x4fv;
-	_glUniformMatrix4x3fv = glUniformMatrix4x3fv;
-	_glBlitFramebuffer = glBlitFramebuffer;
-	_glRenderbufferStorageMultisample = glRenderbufferStorageMultisample;
-	_glFramebufferTextureLayer = glFramebufferTextureLayer;
-	_glMapBufferRange = glMapBufferRange;
-	_glFlushMappedBufferRange = glFlushMappedBufferRange;
-	_glBindVertexArray = glBindVertexArray;
-	_glDeleteVertexArrays = glDeleteVertexArrays;
-	_glGenVertexArrays = glGenVertexArrays;
-	_glIsVertexArray = glIsVertexArray;
-	_glGetIntegeri_v = glGetIntegeri_v;
-	_glBeginTransformFeedback = glBeginTransformFeedback;
-	_glEndTransformFeedback = glEndTransformFeedback;
-	_glBindBufferRange = glBindBufferRange;
-	_glBindBufferBase = glBindBufferBase;
-	_glTransformFeedbackVaryings = glTransformFeedbackVaryings;
-	_glGetTransformFeedbackVarying = glGetTransformFeedbackVarying;
-	_glVertexAttribIPointer = glVertexAttribIPointer;
-	_glGetVertexAttribIiv = glGetVertexAttribIiv;
-	_glGetVertexAttribIuiv = glGetVertexAttribIuiv;
-	_glVertexAttribI4i = glVertexAttribI4i;
-	_glVertexAttribI4ui = glVertexAttribI4ui;
-	_glVertexAttribI4iv = glVertexAttribI4iv;
-	_glVertexAttribI4uiv = glVertexAttribI4uiv;
-	_glGetUniformuiv = glGetUniformuiv;
-	_glGetFragDataLocation = glGetFragDataLocation;
-	_glUniform1ui = glUniform1ui;
-	_glUniform2ui = glUniform2ui;
-	_glUniform3ui = glUniform3ui;
-	_glUniform4ui = glUniform4ui;
-	_glUniform1uiv = glUniform1uiv;
-	_glUniform2uiv = glUniform2uiv;
-	_glUniform3uiv = glUniform3uiv;
-	_glUniform4uiv = glUniform4uiv;
-	_glClearBufferiv = glClearBufferiv;
-	_glClearBufferuiv = glClearBufferuiv;
-	_glClearBufferfv = glClearBufferfv;
-	_glClearBufferfi = glClearBufferfi;
-	_glGetStringi = glGetStringi;
-	_glCopyBufferSubData = glCopyBufferSubData;
-	_glGetUniformIndices = glGetUniformIndices;
-	_glGetActiveUniformsiv = glGetActiveUniformsiv;
-	_glGetUniformBlockIndex = glGetUniformBlockIndex;
-	_glGetActiveUniformBlockiv = glGetActiveUniformBlockiv;
-	_glGetActiveUniformBlockName = glGetActiveUniformBlockName;
-	_glUniformBlockBinding = glUniformBlockBinding;
-	_glDrawArraysInstanced = glDrawArraysInstanced;
-	_glDrawElementsInstanced = glDrawElementsInstanced;
-	_glFenceSync = glFenceSync;
-	_glIsSync = glIsSync;
-	_glDeleteSync = glDeleteSync;
-	_glClientWaitSync = glClientWaitSync;
-	_glWaitSync = glWaitSync;
-	_glGetInteger64v = glGetInteger64v;
-	_glGetSynciv = glGetSynciv;
-	_glGetInteger64i_v = glGetInteger64i_v;
-	_glGetBufferParameteri64v = glGetBufferParameteri64v;
-	_glGenSamplers = glGenSamplers;
-	_glDeleteSamplers = glDeleteSamplers;
-	_glIsSampler = glIsSampler;
-	_glBindSampler = glBindSampler;
-	_glSamplerParameteri = glSamplerParameteri;
-	_glSamplerParameteriv = glSamplerParameteriv;
-	_glSamplerParameterf = glSamplerParameterf;
-	_glSamplerParameterfv = glSamplerParameterfv;
-	_glGetSamplerParameteriv = glGetSamplerParameteriv;
-	_glGetSamplerParameterfv = glGetSamplerParameterfv;
-	_glVertexAttribDivisor = glVertexAttribDivisor;
-	_glBindTransformFeedback = glBindTransformFeedback;
-	_glDeleteTransformFeedbacks = glDeleteTransformFeedbacks;
-	_glGenTransformFeedbacks = glGenTransformFeedbacks;
-	_glIsTransformFeedback = glIsTransformFeedback;
-	_glPauseTransformFeedback = glPauseTransformFeedback;
-	_glResumeTransformFeedback = glResumeTransformFeedback;
-	_glGetProgramBinary = glGetProgramBinary;
-	_glProgramBinary = glProgramBinary;
-	_glProgramParameteri = glProgramParameteri;
-	_glInvalidateFramebuffer = glInvalidateFramebuffer;
-	_glInvalidateSubFramebuffer = glInvalidateSubFramebuffer;
-	_glTexStorage2D = glTexStorage2D;
-	_glTexStorage3D = glTexStorage3D;
-	_glGetInternalformativ = glGetInternalformativ;
+	_glReadBuffer = (PFNGLREADBUFFER)GPA(glReadBuffer);
+	_glDrawRangeElements = (PFNGLDRAWRANGEELEMENTS)GPA(glDrawRangeElements);
+	_glTexImage3D = (PFNGLTEXIMAGE3D)GPA(glTexImage3D);
+	_glTexSubImage3D = (PFNGLTEXSUBIMAGE3D)GPA(glTexSubImage3D);
+	_glCopyTexSubImage3D = (PFNGLCOPYTEXSUBIMAGE3D)GPA(glCopyTexSubImage3D);
+	_glCompressedTexImage3D = (PFNGLCOMPRESSEDTEXIMAGE3D)GPA(glCompressedTexImage3D);
+	_glCompressedTexSubImage3D = (PFNGLCOMPRESSEDTEXSUBIMAGE3D)GPA(glCompressedTexSubImage3D);
+	_glGenQueries = (PFNGLGENQUERIES)GPA(glGenQueries);
+	_glDeleteQueries = (PFNGLDELETEQUERIES)GPA(glDeleteQueries);
+	_glIsQuery = (PFNGLISQUERY)GPA(glIsQuery);
+	_glBeginQuery = (PFNGLBEGINQUERY)GPA(glBeginQuery);
+	_glEndQuery = (PFNGLENDQUERY)GPA(glEndQuery);
+	_glGetQueryiv = (PFNGLGETQUERYIV)GPA(glGetQueryiv);
+	_glGetQueryObjectuiv = (PFNGLGETQUERYOBJECTUIV)GPA(glGetQueryObjectuiv);
+	_glUnmapBuffer = (PFNGLUNMAPBUFFER)GPA(glUnmapBuffer);
+	_glGetBufferPointerv = (PFNGLGETBUFFERPOINTERV)GPA(glGetBufferPointerv);
+	_glDrawBuffers = (PFNGLDRAWBUFFERS)GPA(glDrawBuffers);
+	_glUniformMatrix2x3fv = (PFNGLUNIFORMMATRIX2X3FV)GPA(glUniformMatrix2x3fv);
+	_glUniformMatrix3x2fv = (PFNGLUNIFORMMATRIX3X2FV)GPA(glUniformMatrix3x2fv);
+	_glUniformMatrix2x4fv = (PFNGLUNIFORMMATRIX2X4FV)GPA(glUniformMatrix2x4fv);
+	_glUniformMatrix4x2fv = (PFNGLUNIFORMMATRIX4X2FV)GPA(glUniformMatrix4x2fv);
+	_glUniformMatrix3x4fv = (PFNGLUNIFORMMATRIX3X4FV)GPA(glUniformMatrix3x4fv);
+	_glUniformMatrix4x3fv = (PFNGLUNIFORMMATRIX4X3FV)GPA(glUniformMatrix4x3fv);
+	_glBlitFramebuffer = (PFNGLBLITFRAMEBUFFER)GPA(glBlitFramebuffer);
+	_glRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLE)GPA(glRenderbufferStorageMultisample);
+	_glFramebufferTextureLayer = (PFNGLFRAMEBUFFERTEXTURELAYER)GPA(glFramebufferTextureLayer);
+	_glMapBufferRange = (PFNGLMAPBUFFERRANGE)GPA(glMapBufferRange);
+	_glFlushMappedBufferRange = (PFNGLFLUSHMAPPEDBUFFERRANGE)GPA(glFlushMappedBufferRange);
+	_glBindVertexArray = (PFNGLBINDVERTEXARRAY)GPA(glBindVertexArray);
+	_glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYS)GPA(glDeleteVertexArrays);
+	_glGenVertexArrays = (PFNGLGENVERTEXARRAYS)GPA(glGenVertexArrays);
+	_glIsVertexArray = (PFNGLISVERTEXARRAY)GPA(glIsVertexArray);
+	_glGetIntegeri_v = (PFNGLGETINTEGERI_V)GPA(glGetIntegeri_v);
+	_glBeginTransformFeedback = (PFNGLBEGINTRANSFORMFEEDBACK)GPA(glBeginTransformFeedback);
+	_glEndTransformFeedback = (PFNGLENDTRANSFORMFEEDBACK)GPA(glEndTransformFeedback);
+	_glBindBufferRange = (PFNGLBINDBUFFERRANGE)GPA(glBindBufferRange);
+	_glBindBufferBase = (PFNGLBINDBUFFERBASE)GPA(glBindBufferBase);
+	_glTransformFeedbackVaryings = (PFNGLTRANSFORMFEEDBACKVARYINGS)GPA(glTransformFeedbackVaryings);
+	_glGetTransformFeedbackVarying = (PFNGLGETTRANSFORMFEEDBACKVARYING)GPA(glGetTransformFeedbackVarying);
+	_glVertexAttribIPointer = (PFNGLVERTEXATTRIBIPOINTER)GPA(glVertexAttribIPointer);
+	_glGetVertexAttribIiv = (PFNGLGETVERTEXATTRIBIIV)GPA(glGetVertexAttribIiv);
+	_glGetVertexAttribIuiv = (PFNGLGETVERTEXATTRIBIUIV)GPA(glGetVertexAttribIuiv);
+	_glVertexAttribI4i = (PFNGLVERTEXATTRIBI4I)GPA(glVertexAttribI4i);
+	_glVertexAttribI4ui = (PFNGLVERTEXATTRIBI4UI)GPA(glVertexAttribI4ui);
+	_glVertexAttribI4iv = (PFNGLVERTEXATTRIBI4IV)GPA(glVertexAttribI4iv);
+	_glVertexAttribI4uiv = (PFNGLVERTEXATTRIBI4UIV)GPA(glVertexAttribI4uiv);
+	_glGetUniformuiv = (PFNGLGETUNIFORMUIV)GPA(glGetUniformuiv);
+	_glGetFragDataLocation = (PFNGLGETFRAGDATALOCATION)GPA(glGetFragDataLocation);
+	_glUniform1ui = (PFNGLUNIFORM1UI)GPA(glUniform1ui);
+	_glUniform2ui = (PFNGLUNIFORM2UI)GPA(glUniform2ui);
+	_glUniform3ui = (PFNGLUNIFORM3UI)GPA(glUniform3ui);
+	_glUniform4ui = (PFNGLUNIFORM4UI)GPA(glUniform4ui);
+	_glUniform1uiv = (PFNGLUNIFORM1UIV)GPA(glUniform1uiv);
+	_glUniform2uiv = (PFNGLUNIFORM2UIV)GPA(glUniform2uiv);
+	_glUniform3uiv = (PFNGLUNIFORM3UIV)GPA(glUniform3uiv);
+	_glUniform4uiv = (PFNGLUNIFORM4UIV)GPA(glUniform4uiv);
+	_glClearBufferiv = (PFNGLCLEARBUFFERIV)GPA(glClearBufferiv);
+	_glClearBufferuiv = (PFNGLCLEARBUFFERUIV)GPA(glClearBufferuiv);
+	_glClearBufferfv = (PFNGLCLEARBUFFERFV)GPA(glClearBufferfv);
+	_glClearBufferfi = (PFNGLCLEARBUFFERFI)GPA(glClearBufferfi);
+	_glGetStringi = (PFNGLGETSTRINGI)GPA(glGetStringi);
+	_glCopyBufferSubData = (PFNGLCOPYBUFFERSUBDATA)GPA(glCopyBufferSubData);
+	_glGetUniformIndices = (PFNGLGETUNIFORMINDICES)GPA(glGetUniformIndices);
+	_glGetActiveUniformsiv = (PFNGLGETACTIVEUNIFORMSIV)GPA(glGetActiveUniformsiv);
+	_glGetUniformBlockIndex = (PFNGLGETUNIFORMBLOCKINDEX)GPA(glGetUniformBlockIndex);
+	_glGetActiveUniformBlockiv = (PFNGLGETACTIVEUNIFORMBLOCKIV)GPA(glGetActiveUniformBlockiv);
+	_glGetActiveUniformBlockName = (PFNGLGETACTIVEUNIFORMBLOCKNAME)GPA(glGetActiveUniformBlockName);
+	_glUniformBlockBinding = (PFNGLUNIFORMBLOCKBINDING)GPA(glUniformBlockBinding);
+	_glDrawArraysInstanced = (PFNGLDRAWARRAYSINSTANCED)GPA(glDrawArraysInstanced);
+	_glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCED)GPA(glDrawElementsInstanced);
+	_glFenceSync = (PFNGLFENCESYNC)GPA(glFenceSync);
+	_glIsSync = (PFNGLISSYNC)GPA(glIsSync);
+	_glDeleteSync = (PFNGLDELETESYNC)GPA(glDeleteSync);
+	_glClientWaitSync = (PFNGLCLIENTWAITSYNC)GPA(glClientWaitSync);
+	_glWaitSync = (PFNGLWAITSYNC)GPA(glWaitSync);
+	_glGetInteger64v = (PFNGLGETINTEGER64V)GPA(glGetInteger64v);
+	_glGetSynciv = (PFNGLGETSYNCIV)GPA(glGetSynciv);
+	_glGetInteger64i_v = (PFNGLGETINTEGER64I_V)GPA(glGetInteger64i_v);
+	_glGetBufferParameteri64v = (PFNGLGETBUFFERPARAMETERI64V)GPA(glGetBufferParameteri64v);
+	_glGenSamplers = (PFNGLGENSAMPLERS)GPA(glGenSamplers);
+	_glDeleteSamplers = (PFNGLDELETESAMPLERS)GPA(glDeleteSamplers);
+	_glIsSampler = (PFNGLISSAMPLER)GPA(glIsSampler);
+	_glBindSampler = (PFNGLBINDSAMPLER)GPA(glBindSampler);
+	_glSamplerParameteri = (PFNGLSAMPLERPARAMETERI)GPA(glSamplerParameteri);
+	_glSamplerParameteriv = (PFNGLSAMPLERPARAMETERIV)GPA(glSamplerParameteriv);
+	_glSamplerParameterf = (PFNGLSAMPLERPARAMETERF)GPA(glSamplerParameterf);
+	_glSamplerParameterfv = (PFNGLSAMPLERPARAMETERFV)GPA(glSamplerParameterfv);
+	_glGetSamplerParameteriv = (PFNGLGETSAMPLERPARAMETERIV)GPA(glGetSamplerParameteriv);
+	_glGetSamplerParameterfv = (PFNGLGETSAMPLERPARAMETERFV)GPA(glGetSamplerParameterfv);
+	_glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISOR)GPA(glVertexAttribDivisor);
+	_glBindTransformFeedback = (PFNGLBINDTRANSFORMFEEDBACK)GPA(glBindTransformFeedback);
+	_glDeleteTransformFeedbacks = (PFNGLDELETETRANSFORMFEEDBACKS)GPA(glDeleteTransformFeedbacks);
+	_glGenTransformFeedbacks = (PFNGLGENTRANSFORMFEEDBACKS)GPA(glGenTransformFeedbacks);
+	_glIsTransformFeedback = (PFNGLISTRANSFORMFEEDBACK)GPA(glIsTransformFeedback);
+	_glPauseTransformFeedback = (PFNGLPAUSETRANSFORMFEEDBACK)GPA(glPauseTransformFeedback);
+	_glResumeTransformFeedback = (PFNGLRESUMETRANSFORMFEEDBACK)GPA(glResumeTransformFeedback);
+	_glGetProgramBinary = (PFNGLGETPROGRAMBINARY)GPA(glGetProgramBinary);
+	_glProgramBinary = (PFNGLPROGRAMBINARY)GPA(glProgramBinary);
+	_glProgramParameteri = (PFNGLPROGRAMPARAMETERI)GPA(glProgramParameteri);
+	_glInvalidateFramebuffer = (PFNGLINVALIDATEFRAMEBUFFER)GPA(glInvalidateFramebuffer);
+	_glInvalidateSubFramebuffer = (PFNGLINVALIDATESUBFRAMEBUFFER)GPA(glInvalidateSubFramebuffer);
+	_glTexStorage2D = (PFNGLTEXSTORAGE2D)GPA(glTexStorage2D);
+	_glTexStorage3D = (PFNGLTEXSTORAGE3D)GPA(glTexStorage3D);
+	_glGetInternalformativ = (PFNGLGETINTERNALFORMATIV)GPA(glGetInternalformativ);
 
 #ifdef GL_AMD_performance_monitor
-	_glGetPerfMonitorGroupsAMD = glGetPerfMonitorGroupsAMD;
-	_glGetPerfMonitorCountersAMD = glGetPerfMonitorCountersAMD;
-	_glGetPerfMonitorGroupStringAMD = glGetPerfMonitorGroupStringAMD;
-	_glGetPerfMonitorCounterStringAMD = glGetPerfMonitorCounterStringAMD;
-	_glGetPerfMonitorCounterInfoAMD = glGetPerfMonitorCounterInfoAMD;
-	_glGenPerfMonitorsAMD = glGenPerfMonitorsAMD;
-	_glDeletePerfMonitorsAMD = glDeletePerfMonitorsAMD;
-	_glSelectPerfMonitorCountersAMD = glSelectPerfMonitorCountersAMD;
-	_glBeginPerfMonitorAMD = glBeginPerfMonitorAMD;
-	_glEndPerfMonitorAMD = glEndPerfMonitorAMD;
-	_glGetPerfMonitorCounterDataAMD = glGetPerfMonitorCounterDataAMD;
+	_glGetPerfMonitorGroupsAMD = (PFNGLGETPERFMONITORGROUPSAMD)GPA(glGetPerfMonitorGroupsAMD);
+	_glGetPerfMonitorCountersAMD = (PFNGLGETPERFMONITORCOUNTERSAMD)GPA(glGetPerfMonitorCountersAMD);
+	_glGetPerfMonitorGroupStringAMD = (PFNGLGETPERFMONITORGROUPSTRINGAMD)GPA(glGetPerfMonitorGroupStringAMD);
+	_glGetPerfMonitorCounterStringAMD = (PFNGLGETPERFMONITORCOUNTERSTRINGAMD)GPA(glGetPerfMonitorCounterStringAMD);
+	_glGetPerfMonitorCounterInfoAMD = (PFNGLGETPERFMONITORCOUNTERINFOAMD)GPA(glGetPerfMonitorCounterInfoAMD);
+	_glGenPerfMonitorsAMD = (PFNGLGENPERFMONITORSAMD)GPA(glGenPerfMonitorsAMD);
+	_glDeletePerfMonitorsAMD = (PFNGLDELETEPERFMONITORSAMD)GPA(glDeletePerfMonitorsAMD);
+	_glSelectPerfMonitorCountersAMD = (PFNGLSELECTPERFMONITORCOUNTERSAMD)GPA(glSelectPerfMonitorCountersAMD);
+	_glBeginPerfMonitorAMD = (PFNGLBEGINPERFMONITORAMD)GPA(glBeginPerfMonitorAMD);
+	_glEndPerfMonitorAMD = (PFNGLENDPERFMONITORAMD)GPA(glEndPerfMonitorAMD);
+	_glGetPerfMonitorCounterDataAMD = (PFNGLGETPERFMONITORCOUNTERDATAAMD)GPA(glGetPerfMonitorCounterDataAMD);
 #endif
 
 #ifdef GL_ANGLE_framebuffer_blit
-	_glBlitFramebufferANGLE = glBlitFramebufferANGLE;
+	_glBlitFramebufferANGLE = (PFNGLBLITFRAMEBUFFERANGLE)GPA(glBlitFramebufferANGLE);
 #endif
 
 #ifdef GL_ANGLE_framebuffer_multisample
-	_glRenderbufferStorageMultisampleANGLE = glRenderbufferStorageMultisampleANGLE;
+	_glRenderbufferStorageMultisampleANGLE = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEANGLE)GPA(glRenderbufferStorageMultisampleANGLE);
 #endif
 
 #ifdef GL_ANGLE_instanced_arrays
-	_glDrawArraysInstancedANGLE = glDrawArraysInstancedANGLE;
-	_glDrawElementsInstancedANGLE = glDrawElementsInstancedANGLE;
-	_glVertexAttribDivisorANGLE = glVertexAttribDivisorANGLE;
+	_glDrawArraysInstancedANGLE = (PFNGLDRAWARRAYSINSTANCEDANGLE)GPA(glDrawArraysInstancedANGLE);
+	_glDrawElementsInstancedANGLE = (PFNGLDRAWELEMENTSINSTANCEDANGLE)GPA(glDrawElementsInstancedANGLE);
+	_glVertexAttribDivisorANGLE = (PFNGLVERTEXATTRIBDIVISORANGLE)GPA(glVertexAttribDivisorANGLE);
 #endif
 
 #ifdef GL_ANGLE_translated_shader_source
-	_glGetTranslatedShaderSourceANGLE = glGetTranslatedShaderSourceANGLE;
+	_glGetTranslatedShaderSourceANGLE = (PFNGLGETTRANSLATEDSHADERSOURCEANGLE)GPA(glGetTranslatedShaderSourceANGLE);
 #endif
 
 #ifdef GL_APPLE_copy_texture_levels
-	_glCopyTextureLevelsAPPLE = glCopyTextureLevelsAPPLE;
+	_glCopyTextureLevelsAPPLE = (PFNGLCOPYTEXTURELEVELSAPPLE)GPA(glCopyTextureLevelsAPPLE);
 #endif
 
 #ifdef GL_APPLE_framebuffer_multisample
-	_glRenderbufferStorageMultisampleAPPLE = glRenderbufferStorageMultisampleAPPLE;
-	_glResolveMultisampleFramebufferAPPLE = glResolveMultisampleFramebufferAPPLE;
+	_glRenderbufferStorageMultisampleAPPLE = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEAPPLE)GPA(glRenderbufferStorageMultisampleAPPLE);
+	_glResolveMultisampleFramebufferAPPLE = (PFNGLRESOLVEMULTISAMPLEFRAMEBUFFERAPPLE)GPA(glResolveMultisampleFramebufferAPPLE);
 #endif
 
 #ifdef GL_APPLE_sync
-	_glFenceSyncAPPLE = glFenceSyncAPPLE;
-	_glIsSyncAPPLE = glIsSyncAPPLE;
-	_glDeleteSyncAPPLE = glDeleteSyncAPPLE;
-	_glClientWaitSyncAPPLE = glClientWaitSyncAPPLE;
-	_glWaitSyncAPPLE = glWaitSyncAPPLE;
-	_glGetInteger64vAPPLE = glGetInteger64vAPPLE;
-	_glGetSyncivAPPLE = glGetSyncivAPPLE;
+	_glFenceSyncAPPLE = (PFNGLFENCESYNCAPPLE)GPA(glFenceSyncAPPLE);
+	_glIsSyncAPPLE = (PFNGLISSYNCAPPLE)GPA(glIsSyncAPPLE);
+	_glDeleteSyncAPPLE = (PFNGLDELETESYNCAPPLE)GPA(glDeleteSyncAPPLE);
+	_glClientWaitSyncAPPLE = (PFNGLCLIENTWAITSYNCAPPLE)GPA(glClientWaitSyncAPPLE);
+	_glWaitSyncAPPLE = (PFNGLWAITSYNCAPPLE)GPA(glWaitSyncAPPLE);
+	_glGetInteger64vAPPLE = (PFNGLGETINTEGER64VAPPLE)GPA(glGetInteger64vAPPLE);
+	_glGetSyncivAPPLE = (PFNGLGETSYNCIVAPPLE)GPA(glGetSyncivAPPLE);
 #endif
 
 #ifdef GL_EXT_base_instance
-	_glDrawArraysInstancedBaseInstanceEXT = glDrawArraysInstancedBaseInstanceEXT;
-	_glDrawElementsInstancedBaseInstanceEXT = glDrawElementsInstancedBaseInstanceEXT;
-	_glDrawElementsInstancedBaseVertexBaseInstanceEXT = glDrawElementsInstancedBaseVertexBaseInstanceEXT;
+	_glDrawArraysInstancedBaseInstanceEXT = (PFNGLDRAWARRAYSINSTANCEDBASEINSTANCEEXT)GPA(glDrawArraysInstancedBaseInstanceEXT);
+	_glDrawElementsInstancedBaseInstanceEXT = (PFNGLDRAWELEMENTSINSTANCEDBASEINSTANCEEXT)GPA(glDrawElementsInstancedBaseInstanceEXT);
+	_glDrawElementsInstancedBaseVertexBaseInstanceEXT = (PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEEXT)GPA(glDrawElementsInstancedBaseVertexBaseInstanceEXT);
 #endif
 
 #ifdef GL_EXT_blend_func_extended
-	_glBindFragDataLocationIndexedEXT = glBindFragDataLocationIndexedEXT;
-	_glBindFragDataLocationEXT = glBindFragDataLocationEXT;
-	_glGetProgramResourceLocationIndexEXT = glGetProgramResourceLocationIndexEXT;
-	_glGetFragDataIndexEXT = glGetFragDataIndexEXT;
+	_glBindFragDataLocationIndexedEXT = (PFNGLBINDFRAGDATALOCATIONINDEXEDEXT)GPA(glBindFragDataLocationIndexedEXT);
+	_glBindFragDataLocationEXT = (PFNGLBINDFRAGDATALOCATIONEXT)GPA(glBindFragDataLocationEXT);
+	_glGetProgramResourceLocationIndexEXT = (PFNGLGETPROGRAMRESOURCELOCATIONINDEXEXT)GPA(glGetProgramResourceLocationIndexEXT);
+	_glGetFragDataIndexEXT = (PFNGLGETFRAGDATAINDEXEXT)GPA(glGetFragDataIndexEXT);
 #endif
 
 #ifdef GL_EXT_buffer_storage
-	_glBufferStorageEXT = glBufferStorageEXT;
+	_glBufferStorageEXT = (PFNGLBUFFERSTORAGEEXT)GPA(glBufferStorageEXT);
 #endif
 
 #ifdef GL_EXT_clear_texture
-	_glClearTexImageEXT = glClearTexImageEXT;
-	_glClearTexSubImageEXT = glClearTexSubImageEXT;
+	_glClearTexImageEXT = (PFNGLCLEARTEXIMAGEEXT)GPA(glClearTexImageEXT);
+	_glClearTexSubImageEXT = (PFNGLCLEARTEXSUBIMAGEEXT)GPA(glClearTexSubImageEXT);
 #endif
 
 #ifdef GL_EXT_copy_image
-	_glCopyImageSubDataEXT = glCopyImageSubDataEXT;
+	_glCopyImageSubDataEXT = (PFNGLCOPYIMAGESUBDATAEXT)GPA(glCopyImageSubDataEXT);
 #endif
 
 #ifdef GL_EXT_debug_label
-	_glLabelObjectEXT = glLabelObjectEXT;
-	_glGetObjectLabelEXT = glGetObjectLabelEXT;
+	_glLabelObjectEXT = (PFNGLLABELOBJECTEXT)GPA(glLabelObjectEXT);
+	_glGetObjectLabelEXT = (PFNGLGETOBJECTLABELEXT)GPA(glGetObjectLabelEXT);
 #endif
 
 #ifdef GL_EXT_debug_marker
-	_glInsertEventMarkerEXT = glInsertEventMarkerEXT;
-	_glPushGroupMarkerEXT = glPushGroupMarkerEXT;
-	_glPopGroupMarkerEXT = glPopGroupMarkerEXT;
+	_glInsertEventMarkerEXT = (PFNGLINSERTEVENTMARKEREXT)GPA(glInsertEventMarkerEXT);
+	_glPushGroupMarkerEXT = (PFNGLPUSHGROUPMARKEREXT)GPA(glPushGroupMarkerEXT);
+	_glPopGroupMarkerEXT = (PFNGLPOPGROUPMARKEREXT)GPA(glPopGroupMarkerEXT);
 #endif
 
 #ifdef GL_EXT_discard_framebuffer
-	_glDiscardFramebufferEXT = glDiscardFramebufferEXT;
+	_glDiscardFramebufferEXT = (PFNGLDISCARDFRAMEBUFFEREXT)GPA(glDiscardFramebufferEXT);
 #endif
 
 #ifdef GL_EXT_disjoint_timer_query
-	_glGenQueriesEXT = glGenQueriesEXT;
-	_glDeleteQueriesEXT = glDeleteQueriesEXT;
-	_glIsQueryEXT = glIsQueryEXT;
-	_glBeginQueryEXT = glBeginQueryEXT;
-	_glEndQueryEXT = glEndQueryEXT;
-	_glQueryCounterEXT = glQueryCounterEXT;
-	_glGetQueryivEXT = glGetQueryivEXT;
-	_glGetQueryObjectivEXT = glGetQueryObjectivEXT;
-	_glGetQueryObjectuivEXT = glGetQueryObjectuivEXT;
-	_glGetQueryObjecti64vEXT = glGetQueryObjecti64vEXT;
-	_glGetQueryObjectui64vEXT = glGetQueryObjectui64vEXT;
+	_glGenQueriesEXT = (PFNGLGENQUERIESEXT)GPA(glGenQueriesEXT);
+	_glDeleteQueriesEXT = (PFNGLDELETEQUERIESEXT)GPA(glDeleteQueriesEXT);
+	_glIsQueryEXT = (PFNGLISQUERYEXT)GPA(glIsQueryEXT);
+	_glBeginQueryEXT = (PFNGLBEGINQUERYEXT)GPA(glBeginQueryEXT);
+	_glEndQueryEXT = (PFNGLENDQUERYEXT)GPA(glEndQueryEXT);
+	_glQueryCounterEXT = (PFNGLQUERYCOUNTEREXT)GPA(glQueryCounterEXT);
+	_glGetQueryivEXT = (PFNGLGETQUERYIVEXT)GPA(glGetQueryivEXT);
+	_glGetQueryObjectivEXT = (PFNGLGETQUERYOBJECTIVEXT)GPA(glGetQueryObjectivEXT);
+	_glGetQueryObjectuivEXT = (PFNGLGETQUERYOBJECTUIVEXT)GPA(glGetQueryObjectuivEXT);
+	_glGetQueryObjecti64vEXT = (PFNGLGETQUERYOBJECTI64VEXT)GPA(glGetQueryObjecti64vEXT);
+	_glGetQueryObjectui64vEXT = (PFNGLGETQUERYOBJECTUI64VEXT)GPA(glGetQueryObjectui64vEXT);
 #endif
 
 #ifdef GL_EXT_draw_buffers
-	_glDrawBuffersEXT = glDrawBuffersEXT;
+	_glDrawBuffersEXT = (PFNGLDRAWBUFFERSEXT)GPA(glDrawBuffersEXT);
 #endif
 
 #ifdef GL_EXT_draw_buffers_indexed
-	_glEnableiEXT = glEnableiEXT;
-	_glDisableiEXT = glDisableiEXT;
-	_glBlendEquationiEXT = glBlendEquationiEXT;
-	_glBlendEquationSeparateiEXT = glBlendEquationSeparateiEXT;
-	_glBlendFunciEXT = glBlendFunciEXT;
-	_glBlendFuncSeparateiEXT = glBlendFuncSeparateiEXT;
-	_glColorMaskiEXT = glColorMaskiEXT;
-	_glIsEnablediEXT = glIsEnablediEXT;
+	_glEnableiEXT = (PFNGLENABLEIEXT)GPA(glEnableiEXT);
+	_glDisableiEXT = (PFNGLDISABLEIEXT)GPA(glDisableiEXT);
+	_glBlendEquationiEXT = (PFNGLBLENDEQUATIONIEXT)GPA(glBlendEquationiEXT);
+	_glBlendEquationSeparateiEXT = (PFNGLBLENDEQUATIONSEPARATEIEXT)GPA(glBlendEquationSeparateiEXT);
+	_glBlendFunciEXT = (PFNGLBLENDFUNCIEXT)GPA(glBlendFunciEXT);
+	_glBlendFuncSeparateiEXT = (PFNGLBLENDFUNCSEPARATEIEXT)GPA(glBlendFuncSeparateiEXT);
+	_glColorMaskiEXT = (PFNGLCOLORMASKIEXT)GPA(glColorMaskiEXT);
+	_glIsEnablediEXT = (PFNGLISENABLEDIEXT)GPA(glIsEnablediEXT);
 #endif
 
 #ifdef GL_EXT_draw_elements_base_vertex
-	_glDrawElementsBaseVertexEXT = glDrawElementsBaseVertexEXT;
-	_glDrawRangeElementsBaseVertexEXT = glDrawRangeElementsBaseVertexEXT;
-	_glDrawElementsInstancedBaseVertexEXT = glDrawElementsInstancedBaseVertexEXT;
-	_glMultiDrawElementsBaseVertexEXT = glMultiDrawElementsBaseVertexEXT;
+	_glDrawElementsBaseVertexEXT = (PFNGLDRAWELEMENTSBASEVERTEXEXT)GPA(glDrawElementsBaseVertexEXT);
+	_glDrawRangeElementsBaseVertexEXT = (PFNGLDRAWRANGEELEMENTSBASEVERTEXEXT)GPA(glDrawRangeElementsBaseVertexEXT);
+	_glDrawElementsInstancedBaseVertexEXT = (PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXEXT)GPA(glDrawElementsInstancedBaseVertexEXT);
+	_glMultiDrawElementsBaseVertexEXT = (PFNGLMULTIDRAWELEMENTSBASEVERTEXEXT)GPA(glMultiDrawElementsBaseVertexEXT);
 #endif
 
 #ifdef GL_EXT_draw_instanced
-	_glDrawArraysInstancedEXT = glDrawArraysInstancedEXT;
-	_glDrawElementsInstancedEXT = glDrawElementsInstancedEXT;
+	_glDrawArraysInstancedEXT = (PFNGLDRAWARRAYSINSTANCEDEXT)GPA(glDrawArraysInstancedEXT);
+	_glDrawElementsInstancedEXT = (PFNGLDRAWELEMENTSINSTANCEDEXT)GPA(glDrawElementsInstancedEXT);
 #endif
 
 #ifdef GL_EXT_draw_transform_feedback
-	_glDrawTransformFeedbackEXT = glDrawTransformFeedbackEXT;
-	_glDrawTransformFeedbackInstancedEXT = glDrawTransformFeedbackInstancedEXT;
+	_glDrawTransformFeedbackEXT = (PFNGLDRAWTRANSFORMFEEDBACKEXT)GPA(glDrawTransformFeedbackEXT);
+	_glDrawTransformFeedbackInstancedEXT = (PFNGLDRAWTRANSFORMFEEDBACKINSTANCEDEXT)GPA(glDrawTransformFeedbackInstancedEXT);
 #endif
 
 #ifdef GL_EXT_geometry_shader
-	_glFramebufferTextureEXT = glFramebufferTextureEXT;
+	_glFramebufferTextureEXT = (PFNGLFRAMEBUFFERTEXTUREEXT)GPA(glFramebufferTextureEXT);
 #endif
 
 #ifdef GL_EXT_instanced_arrays
-	_glDrawArraysInstancedEXT = glDrawArraysInstancedEXT;
-	_glDrawElementsInstancedEXT = glDrawElementsInstancedEXT;
-	_glVertexAttribDivisorEXT = glVertexAttribDivisorEXT;
+	_glDrawArraysInstancedEXT = (PFNGLDRAWARRAYSINSTANCEDEXT)GPA(glDrawArraysInstancedEXT);
+	_glDrawElementsInstancedEXT = (PFNGLDRAWELEMENTSINSTANCEDEXT)GPA(glDrawElementsInstancedEXT);
+	_glVertexAttribDivisorEXT = (PFNGLVERTEXATTRIBDIVISOREXT)GPA(glVertexAttribDivisorEXT);
 #endif
 
 #ifdef GL_EXT_map_buffer_range
-	_glMapBufferRangeEXT = glMapBufferRangeEXT;
-	_glFlushMappedBufferRangeEXT = glFlushMappedBufferRangeEXT;
+	_glMapBufferRangeEXT = (PFNGLMAPBUFFERRANGEEXT)GPA(glMapBufferRangeEXT);
+	_glFlushMappedBufferRangeEXT = (PFNGLFLUSHMAPPEDBUFFERRANGEEXT)GPA(glFlushMappedBufferRangeEXT);
 #endif
 
 #ifdef GL_EXT_multi_draw_arrays
-	_glMultiDrawArraysEXT = glMultiDrawArraysEXT;
-	_glMultiDrawElementsEXT = glMultiDrawElementsEXT;
+	_glMultiDrawArraysEXT = (PFNGLMULTIDRAWARRAYSEXT)GPA(glMultiDrawArraysEXT);
+	_glMultiDrawElementsEXT = (PFNGLMULTIDRAWELEMENTSEXT)GPA(glMultiDrawElementsEXT);
 #endif
 
 #ifdef GL_EXT_multi_draw_indirect
-	_glMultiDrawArraysIndirectEXT = glMultiDrawArraysIndirectEXT;
-	_glMultiDrawElementsIndirectEXT = glMultiDrawElementsIndirectEXT;
+	_glMultiDrawArraysIndirectEXT = (PFNGLMULTIDRAWARRAYSINDIRECTEXT)GPA(glMultiDrawArraysIndirectEXT);
+	_glMultiDrawElementsIndirectEXT = (PFNGLMULTIDRAWELEMENTSINDIRECTEXT)GPA(glMultiDrawElementsIndirectEXT);
 #endif
 
 #ifdef GL_EXT_multisampled_render_to_texture
-	_glRenderbufferStorageMultisampleEXT = glRenderbufferStorageMultisampleEXT;
-	_glFramebufferTexture2DMultisampleEXT = glFramebufferTexture2DMultisampleEXT;
+	_glRenderbufferStorageMultisampleEXT = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXT)GPA(glRenderbufferStorageMultisampleEXT);
+	_glFramebufferTexture2DMultisampleEXT = (PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXT)GPA(glFramebufferTexture2DMultisampleEXT);
 #endif
 
 #ifdef GL_EXT_multiview_draw_buffers
-	_glReadBufferIndexedEXT = glReadBufferIndexedEXT;
-	_glDrawBuffersIndexedEXT = glDrawBuffersIndexedEXT;
-	_glGetIntegeri_vEXT = glGetIntegeri_vEXT;
+	_glReadBufferIndexedEXT = (PFNGLREADBUFFERINDEXEDEXT)GPA(glReadBufferIndexedEXT);
+	_glDrawBuffersIndexedEXT = (PFNGLDRAWBUFFERSINDEXEDEXT)GPA(glDrawBuffersIndexedEXT);
+	_glGetIntegeri_vEXT = (PFNGLGETINTEGERI_VEXT)GPA(glGetIntegeri_vEXT);
 #endif
 
 #ifdef GL_EXT_occlusion_query_boolean
-	_glGenQueriesEXT = glGenQueriesEXT;
-	_glDeleteQueriesEXT = glDeleteQueriesEXT;
-	_glIsQueryEXT = glIsQueryEXT;
-	_glBeginQueryEXT = glBeginQueryEXT;
-	_glEndQueryEXT = glEndQueryEXT;
-	_glGetQueryivEXT = glGetQueryivEXT;
-	_glGetQueryObjectuivEXT = glGetQueryObjectuivEXT;
+	_glGenQueriesEXT = (PFNGLGENQUERIESEXT)GPA(glGenQueriesEXT);
+	_glDeleteQueriesEXT = (PFNGLDELETEQUERIESEXT)GPA(glDeleteQueriesEXT);
+	_glIsQueryEXT = (PFNGLISQUERYEXT)GPA(glIsQueryEXT);
+	_glBeginQueryEXT = (PFNGLBEGINQUERYEXT)GPA(glBeginQueryEXT);
+	_glEndQueryEXT = (PFNGLENDQUERYEXT)GPA(glEndQueryEXT);
+	_glGetQueryivEXT = (PFNGLGETQUERYIVEXT)GPA(glGetQueryivEXT);
+	_glGetQueryObjectuivEXT = (PFNGLGETQUERYOBJECTUIVEXT)GPA(glGetQueryObjectuivEXT);
 #endif
 
 #ifdef GL_EXT_polygon_offset_clamp
-	_glPolygonOffsetClampEXT = glPolygonOffsetClampEXT;
+	_glPolygonOffsetClampEXT = (PFNGLPOLYGONOFFSETCLAMPEXT)GPA(glPolygonOffsetClampEXT);
 #endif
 
 #ifdef GL_EXT_primitive_bounding_box
-	_glPrimitiveBoundingBoxEXT = glPrimitiveBoundingBoxEXT;
+	_glPrimitiveBoundingBoxEXT = (PFNGLPRIMITIVEBOUNDINGBOXEXT)GPA(glPrimitiveBoundingBoxEXT);
 #endif
 
 #ifdef GL_EXT_raster_multisample
-	_glRasterSamplesEXT = glRasterSamplesEXT;
+	_glRasterSamplesEXT = (PFNGLRASTERSAMPLESEXT)GPA(glRasterSamplesEXT);
 #endif
 
 #ifdef GL_EXT_robustness
-	_glGetGraphicsResetStatusEXT = glGetGraphicsResetStatusEXT;
-	_glReadnPixelsEXT = glReadnPixelsEXT;
-	_glGetnUniformfvEXT = glGetnUniformfvEXT;
-	_glGetnUniformivEXT = glGetnUniformivEXT;
+	_glGetGraphicsResetStatusEXT = (PFNGLGETGRAPHICSRESETSTATUSEXT)GPA(glGetGraphicsResetStatusEXT);
+	_glReadnPixelsEXT = (PFNGLREADNPIXELSEXT)GPA(glReadnPixelsEXT);
+	_glGetnUniformfvEXT = (PFNGLGETNUNIFORMFVEXT)GPA(glGetnUniformfvEXT);
+	_glGetnUniformivEXT = (PFNGLGETNUNIFORMIVEXT)GPA(glGetnUniformivEXT);
 #endif
 
 #ifdef GL_EXT_separate_shader_objects
-	_glActiveShaderProgramEXT = glActiveShaderProgramEXT;
-	_glBindProgramPipelineEXT = glBindProgramPipelineEXT;
-	_glCreateShaderProgramvEXT = glCreateShaderProgramvEXT;
-	_glDeleteProgramPipelinesEXT = glDeleteProgramPipelinesEXT;
-	_glGenProgramPipelinesEXT = glGenProgramPipelinesEXT;
-	_glGetProgramPipelineInfoLogEXT = glGetProgramPipelineInfoLogEXT;
-	_glGetProgramPipelineivEXT = glGetProgramPipelineivEXT;
-	_glIsProgramPipelineEXT = glIsProgramPipelineEXT;
-	_glProgramParameteriEXT = glProgramParameteriEXT;
-	_glProgramUniform1fEXT = glProgramUniform1fEXT;
-	_glProgramUniform1fvEXT = glProgramUniform1fvEXT;
-	_glProgramUniform1iEXT = glProgramUniform1iEXT;
-	_glProgramUniform1ivEXT = glProgramUniform1ivEXT;
-	_glProgramUniform2fEXT = glProgramUniform2fEXT;
-	_glProgramUniform2fvEXT = glProgramUniform2fvEXT;
-	_glProgramUniform2iEXT = glProgramUniform2iEXT;
-	_glProgramUniform2ivEXT = glProgramUniform2ivEXT;
-	_glProgramUniform3fEXT = glProgramUniform3fEXT;
-	_glProgramUniform3fvEXT = glProgramUniform3fvEXT;
-	_glProgramUniform3iEXT = glProgramUniform3iEXT;
-	_glProgramUniform3ivEXT = glProgramUniform3ivEXT;
-	_glProgramUniform4fEXT = glProgramUniform4fEXT;
-	_glProgramUniform4fvEXT = glProgramUniform4fvEXT;
-	_glProgramUniform4iEXT = glProgramUniform4iEXT;
-	_glProgramUniform4ivEXT = glProgramUniform4ivEXT;
-	_glProgramUniformMatrix2fvEXT = glProgramUniformMatrix2fvEXT;
-	_glProgramUniformMatrix3fvEXT = glProgramUniformMatrix3fvEXT;
-	_glProgramUniformMatrix4fvEXT = glProgramUniformMatrix4fvEXT;
-	_glUseProgramStagesEXT = glUseProgramStagesEXT;
-	_glValidateProgramPipelineEXT = glValidateProgramPipelineEXT;
-	_glProgramUniform1uiEXT = glProgramUniform1uiEXT;
-	_glProgramUniform2uiEXT = glProgramUniform2uiEXT;
-	_glProgramUniform3uiEXT = glProgramUniform3uiEXT;
-	_glProgramUniform4uiEXT = glProgramUniform4uiEXT;
-	_glProgramUniform1uivEXT = glProgramUniform1uivEXT;
-	_glProgramUniform2uivEXT = glProgramUniform2uivEXT;
-	_glProgramUniform3uivEXT = glProgramUniform3uivEXT;
-	_glProgramUniform4uivEXT = glProgramUniform4uivEXT;
-	_glProgramUniformMatrix4fvEXT = glProgramUniformMatrix4fvEXT;
-	_glProgramUniformMatrix2x3fvEXT = glProgramUniformMatrix2x3fvEXT;
-	_glProgramUniformMatrix3x2fvEXT = glProgramUniformMatrix3x2fvEXT;
-	_glProgramUniformMatrix2x4fvEXT = glProgramUniformMatrix2x4fvEXT;
-	_glProgramUniformMatrix4x2fvEXT = glProgramUniformMatrix4x2fvEXT;
-	_glProgramUniformMatrix3x4fvEXT = glProgramUniformMatrix3x4fvEXT;
-	_glProgramUniformMatrix4x3fvEXT = glProgramUniformMatrix4x3fvEXT;
+	_glActiveShaderProgramEXT = (PFNGLACTIVESHADERPROGRAMEXT)GPA(glActiveShaderProgramEXT);
+	_glBindProgramPipelineEXT = (PFNGLBINDPROGRAMPIPELINEEXT)GPA(glBindProgramPipelineEXT);
+	_glCreateShaderProgramvEXT = (PFNGLCREATESHADERPROGRAMVEXT)GPA(glCreateShaderProgramvEXT);
+	_glDeleteProgramPipelinesEXT = (PFNGLDELETEPROGRAMPIPELINESEXT)GPA(glDeleteProgramPipelinesEXT);
+	_glGenProgramPipelinesEXT = (PFNGLGENPROGRAMPIPELINESEXT)GPA(glGenProgramPipelinesEXT);
+	_glGetProgramPipelineInfoLogEXT = (PFNGLGETPROGRAMPIPELINEINFOLOGEXT)GPA(glGetProgramPipelineInfoLogEXT);
+	_glGetProgramPipelineivEXT = (PFNGLGETPROGRAMPIPELINEIVEXT)GPA(glGetProgramPipelineivEXT);
+	_glIsProgramPipelineEXT = (PFNGLISPROGRAMPIPELINEEXT)GPA(glIsProgramPipelineEXT);
+	_glProgramParameteriEXT = (PFNGLPROGRAMPARAMETERIEXT)GPA(glProgramParameteriEXT);
+	_glProgramUniform1fEXT = (PFNGLPROGRAMUNIFORM1FEXT)GPA(glProgramUniform1fEXT);
+	_glProgramUniform1fvEXT = (PFNGLPROGRAMUNIFORM1FVEXT)GPA(glProgramUniform1fvEXT);
+	_glProgramUniform1iEXT = (PFNGLPROGRAMUNIFORM1IEXT)GPA(glProgramUniform1iEXT);
+	_glProgramUniform1ivEXT = (PFNGLPROGRAMUNIFORM1IVEXT)GPA(glProgramUniform1ivEXT);
+	_glProgramUniform2fEXT = (PFNGLPROGRAMUNIFORM2FEXT)GPA(glProgramUniform2fEXT);
+	_glProgramUniform2fvEXT = (PFNGLPROGRAMUNIFORM2FVEXT)GPA(glProgramUniform2fvEXT);
+	_glProgramUniform2iEXT = (PFNGLPROGRAMUNIFORM2IEXT)GPA(glProgramUniform2iEXT);
+	_glProgramUniform2ivEXT = (PFNGLPROGRAMUNIFORM2IVEXT)GPA(glProgramUniform2ivEXT);
+	_glProgramUniform3fEXT = (PFNGLPROGRAMUNIFORM3FEXT)GPA(glProgramUniform3fEXT);
+	_glProgramUniform3fvEXT = (PFNGLPROGRAMUNIFORM3FVEXT)GPA(glProgramUniform3fvEXT);
+	_glProgramUniform3iEXT = (PFNGLPROGRAMUNIFORM3IEXT)GPA(glProgramUniform3iEXT);
+	_glProgramUniform3ivEXT = (PFNGLPROGRAMUNIFORM3IVEXT)GPA(glProgramUniform3ivEXT);
+	_glProgramUniform4fEXT = (PFNGLPROGRAMUNIFORM4FEXT)GPA(glProgramUniform4fEXT);
+	_glProgramUniform4fvEXT = (PFNGLPROGRAMUNIFORM4FVEXT)GPA(glProgramUniform4fvEXT);
+	_glProgramUniform4iEXT = (PFNGLPROGRAMUNIFORM4IEXT)GPA(glProgramUniform4iEXT);
+	_glProgramUniform4ivEXT = (PFNGLPROGRAMUNIFORM4IVEXT)GPA(glProgramUniform4ivEXT);
+	_glProgramUniformMatrix2fvEXT = (PFNGLPROGRAMUNIFORMMATRIX2FVEXT)GPA(glProgramUniformMatrix2fvEXT);
+	_glProgramUniformMatrix3fvEXT = (PFNGLPROGRAMUNIFORMMATRIX3FVEXT)GPA(glProgramUniformMatrix3fvEXT);
+	_glProgramUniformMatrix4fvEXT = (PFNGLPROGRAMUNIFORMMATRIX4FVEXT)GPA(glProgramUniformMatrix4fvEXT);
+	_glUseProgramStagesEXT = (PFNGLUSEPROGRAMSTAGESEXT)GPA(glUseProgramStagesEXT);
+	_glValidateProgramPipelineEXT = (PFNGLVALIDATEPROGRAMPIPELINEEXT)GPA(glValidateProgramPipelineEXT);
+	_glProgramUniform1uiEXT = (PFNGLPROGRAMUNIFORM1UIEXT)GPA(glProgramUniform1uiEXT);
+	_glProgramUniform2uiEXT = (PFNGLPROGRAMUNIFORM2UIEXT)GPA(glProgramUniform2uiEXT);
+	_glProgramUniform3uiEXT = (PFNGLPROGRAMUNIFORM3UIEXT)GPA(glProgramUniform3uiEXT);
+	_glProgramUniform4uiEXT = (PFNGLPROGRAMUNIFORM4UIEXT)GPA(glProgramUniform4uiEXT);
+	_glProgramUniform1uivEXT = (PFNGLPROGRAMUNIFORM1UIVEXT)GPA(glProgramUniform1uivEXT);
+	_glProgramUniform2uivEXT = (PFNGLPROGRAMUNIFORM2UIVEXT)GPA(glProgramUniform2uivEXT);
+	_glProgramUniform3uivEXT = (PFNGLPROGRAMUNIFORM3UIVEXT)GPA(glProgramUniform3uivEXT);
+	_glProgramUniform4uivEXT = (PFNGLPROGRAMUNIFORM4UIVEXT)GPA(glProgramUniform4uivEXT);
+	_glProgramUniformMatrix4fvEXT = (PFNGLPROGRAMUNIFORMMATRIX4FVEXT)GPA(glProgramUniformMatrix4fvEXT);
+	_glProgramUniformMatrix2x3fvEXT = (PFNGLPROGRAMUNIFORMMATRIX2X3FVEXT)GPA(glProgramUniformMatrix2x3fvEXT);
+	_glProgramUniformMatrix3x2fvEXT = (PFNGLPROGRAMUNIFORMMATRIX3X2FVEXT)GPA(glProgramUniformMatrix3x2fvEXT);
+	_glProgramUniformMatrix2x4fvEXT = (PFNGLPROGRAMUNIFORMMATRIX2X4FVEXT)GPA(glProgramUniformMatrix2x4fvEXT);
+	_glProgramUniformMatrix4x2fvEXT = (PFNGLPROGRAMUNIFORMMATRIX4X2FVEXT)GPA(glProgramUniformMatrix4x2fvEXT);
+	_glProgramUniformMatrix3x4fvEXT = (PFNGLPROGRAMUNIFORMMATRIX3X4FVEXT)GPA(glProgramUniformMatrix3x4fvEXT);
+	_glProgramUniformMatrix4x3fvEXT = (PFNGLPROGRAMUNIFORMMATRIX4X3FVEXT)GPA(glProgramUniformMatrix4x3fvEXT);
 #endif
 
 #ifdef GL_EXT_shader_pixel_local_storage2
-	_glFramebufferPixelLocalStorageSizeEXT = glFramebufferPixelLocalStorageSizeEXT;
-	_glGetFramebufferPixelLocalStorageSizeEXT = glGetFramebufferPixelLocalStorageSizeEXT;
-	_glClearPixelLocalStorageuiEXT = glClearPixelLocalStorageuiEXT;
+	_glFramebufferPixelLocalStorageSizeEXT = (PFNGLFRAMEBUFFERPIXELLOCALSTORAGESIZEEXT)GPA(glFramebufferPixelLocalStorageSizeEXT);
+	_glGetFramebufferPixelLocalStorageSizeEXT = (PFNGLGETFRAMEBUFFERPIXELLOCALSTORAGESIZEEXT)GPA(glGetFramebufferPixelLocalStorageSizeEXT);
+	_glClearPixelLocalStorageuiEXT = (PFNGLCLEARPIXELLOCALSTORAGEUIEXT)GPA(glClearPixelLocalStorageuiEXT);
 #endif
 
 #ifdef GL_EXT_sparse_texture
-	_glTexPageCommitmentEXT = glTexPageCommitmentEXT;
+	_glTexPageCommitmentEXT = (PFNGLTEXPAGECOMMITMENTEXT)GPA(glTexPageCommitmentEXT);
 #endif
 
 #ifdef GL_EXT_tessellation_shader
-	_glPatchParameteriEXT = glPatchParameteriEXT;
+	_glPatchParameteriEXT = (PFNGLPATCHPARAMETERIEXT)GPA(glPatchParameteriEXT);
 #endif
 
 #ifdef GL_EXT_texture_border_clamp
-	_glTexParameterIivEXT = glTexParameterIivEXT;
-	_glTexParameterIuivEXT = glTexParameterIuivEXT;
-	_glGetTexParameterIivEXT = glGetTexParameterIivEXT;
-	_glGetTexParameterIuivEXT = glGetTexParameterIuivEXT;
-	_glSamplerParameterIivEXT = glSamplerParameterIivEXT;
-	_glSamplerParameterIuivEXT = glSamplerParameterIuivEXT;
-	_glGetSamplerParameterIivEXT = glGetSamplerParameterIivEXT;
-	_glGetSamplerParameterIuivEXT = glGetSamplerParameterIuivEXT;
+	_glTexParameterIivEXT = (PFNGLTEXPARAMETERIIVEXT)GPA(glTexParameterIivEXT);
+	_glTexParameterIuivEXT = (PFNGLTEXPARAMETERIUIVEXT)GPA(glTexParameterIuivEXT);
+	_glGetTexParameterIivEXT = (PFNGLGETTEXPARAMETERIIVEXT)GPA(glGetTexParameterIivEXT);
+	_glGetTexParameterIuivEXT = (PFNGLGETTEXPARAMETERIUIVEXT)GPA(glGetTexParameterIuivEXT);
+	_glSamplerParameterIivEXT = (PFNGLSAMPLERPARAMETERIIVEXT)GPA(glSamplerParameterIivEXT);
+	_glSamplerParameterIuivEXT = (PFNGLSAMPLERPARAMETERIUIVEXT)GPA(glSamplerParameterIuivEXT);
+	_glGetSamplerParameterIivEXT = (PFNGLGETSAMPLERPARAMETERIIVEXT)GPA(glGetSamplerParameterIivEXT);
+	_glGetSamplerParameterIuivEXT = (PFNGLGETSAMPLERPARAMETERIUIVEXT)GPA(glGetSamplerParameterIuivEXT);
 #endif
 
 #ifdef GL_EXT_texture_buffer
-	_glTexBufferEXT = glTexBufferEXT;
-	_glTexBufferRangeEXT = glTexBufferRangeEXT;
+	_glTexBufferEXT = (PFNGLTEXBUFFEREXT)GPA(glTexBufferEXT);
+	_glTexBufferRangeEXT = (PFNGLTEXBUFFERRANGEEXT)GPA(glTexBufferRangeEXT);
 #endif
 
 #ifdef GL_EXT_texture_filter_minmax
-	_glRasterSamplesEXT = glRasterSamplesEXT;
+	_glRasterSamplesEXT = (PFNGLRASTERSAMPLESEXT)GPA(glRasterSamplesEXT);
 #endif
 
 #ifdef GL_EXT_texture_storage
-	_glTexStorage1DEXT = glTexStorage1DEXT;
-	_glTexStorage2DEXT = glTexStorage2DEXT;
-	_glTexStorage3DEXT = glTexStorage3DEXT;
-	_glTextureStorage1DEXT = glTextureStorage1DEXT;
-	_glTextureStorage2DEXT = glTextureStorage2DEXT;
-	_glTextureStorage3DEXT = glTextureStorage3DEXT;
+	_glTexStorage1DEXT = (PFNGLTEXSTORAGE1DEXT)GPA(glTexStorage1DEXT);
+	_glTexStorage2DEXT = (PFNGLTEXSTORAGE2DEXT)GPA(glTexStorage2DEXT);
+	_glTexStorage3DEXT = (PFNGLTEXSTORAGE3DEXT)GPA(glTexStorage3DEXT);
+	_glTextureStorage1DEXT = (PFNGLTEXTURESTORAGE1DEXT)GPA(glTextureStorage1DEXT);
+	_glTextureStorage2DEXT = (PFNGLTEXTURESTORAGE2DEXT)GPA(glTextureStorage2DEXT);
+	_glTextureStorage3DEXT = (PFNGLTEXTURESTORAGE3DEXT)GPA(glTextureStorage3DEXT);
 #endif
 
 #ifdef GL_EXT_texture_view
-	_glTextureViewEXT = glTextureViewEXT;
+	_glTextureViewEXT = (PFNGLTEXTUREVIEWEXT)GPA(glTextureViewEXT);
 #endif
 
 #ifdef GL_EXT_window_rectangles
-	_glWindowRectanglesEXT = glWindowRectanglesEXT;
+	_glWindowRectanglesEXT = (PFNGLWINDOWRECTANGLESEXT)GPA(glWindowRectanglesEXT);
 #endif
 
 #ifdef GL_IMG_bindless_texture
-	_glGetTextureHandleIMG = glGetTextureHandleIMG;
-	_glGetTextureSamplerHandleIMG = glGetTextureSamplerHandleIMG;
-	_glUniformHandleui64IMG = glUniformHandleui64IMG;
-	_glUniformHandleui64vIMG = glUniformHandleui64vIMG;
-	_glProgramUniformHandleui64IMG = glProgramUniformHandleui64IMG;
-	_glProgramUniformHandleui64vIMG = glProgramUniformHandleui64vIMG;
+	_glGetTextureHandleIMG = (PFNGLGETTEXTUREHANDLEIMG)GPA(glGetTextureHandleIMG);
+	_glGetTextureSamplerHandleIMG = (PFNGLGETTEXTURESAMPLERHANDLEIMG)GPA(glGetTextureSamplerHandleIMG);
+	_glUniformHandleui64IMG = (PFNGLUNIFORMHANDLEUI64IMG)GPA(glUniformHandleui64IMG);
+	_glUniformHandleui64vIMG = (PFNGLUNIFORMHANDLEUI64VIMG)GPA(glUniformHandleui64vIMG);
+	_glProgramUniformHandleui64IMG = (PFNGLPROGRAMUNIFORMHANDLEUI64IMG)GPA(glProgramUniformHandleui64IMG);
+	_glProgramUniformHandleui64vIMG = (PFNGLPROGRAMUNIFORMHANDLEUI64VIMG)GPA(glProgramUniformHandleui64vIMG);
 #endif
 
 #ifdef GL_IMG_framebuffer_downsample
-	_glFramebufferTexture2DDownsampleIMG = glFramebufferTexture2DDownsampleIMG;
-	_glFramebufferTextureLayerDownsampleIMG = glFramebufferTextureLayerDownsampleIMG;
+	_glFramebufferTexture2DDownsampleIMG = (PFNGLFRAMEBUFFERTEXTURE2DDOWNSAMPLEIMG)GPA(glFramebufferTexture2DDownsampleIMG);
+	_glFramebufferTextureLayerDownsampleIMG = (PFNGLFRAMEBUFFERTEXTURELAYERDOWNSAMPLEIMG)GPA(glFramebufferTextureLayerDownsampleIMG);
 #endif
 
 #ifdef GL_IMG_multisampled_render_to_texture
-	_glRenderbufferStorageMultisampleIMG = glRenderbufferStorageMultisampleIMG;
-	_glFramebufferTexture2DMultisampleIMG = glFramebufferTexture2DMultisampleIMG;
+	_glRenderbufferStorageMultisampleIMG = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEIMG)GPA(glRenderbufferStorageMultisampleIMG);
+	_glFramebufferTexture2DMultisampleIMG = (PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEIMG)GPA(glFramebufferTexture2DMultisampleIMG);
 #endif
 
 #ifdef GL_INTEL_framebuffer_CMAA
-	_glApplyFramebufferAttachmentCMAAINTEL = glApplyFramebufferAttachmentCMAAINTEL;
+	_glApplyFramebufferAttachmentCMAAINTEL = (PFNGLAPPLYFRAMEBUFFERATTACHMENTCMAAINTEL)GPA(glApplyFramebufferAttachmentCMAAINTEL);
 #endif
 
 #ifdef GL_INTEL_performance_query
-	_glBeginPerfQueryINTEL = glBeginPerfQueryINTEL;
-	_glCreatePerfQueryINTEL = glCreatePerfQueryINTEL;
-	_glDeletePerfQueryINTEL = glDeletePerfQueryINTEL;
-	_glEndPerfQueryINTEL = glEndPerfQueryINTEL;
-	_glGetFirstPerfQueryIdINTEL = glGetFirstPerfQueryIdINTEL;
-	_glGetNextPerfQueryIdINTEL = glGetNextPerfQueryIdINTEL;
-	_glGetPerfCounterInfoINTEL = glGetPerfCounterInfoINTEL;
-	_glGetPerfQueryDataINTEL = glGetPerfQueryDataINTEL;
-	_glGetPerfQueryIdByNameINTEL = glGetPerfQueryIdByNameINTEL;
-	_glGetPerfQueryInfoINTEL = glGetPerfQueryInfoINTEL;
+	_glBeginPerfQueryINTEL = (PFNGLBEGINPERFQUERYINTEL)GPA(glBeginPerfQueryINTEL);
+	_glCreatePerfQueryINTEL = (PFNGLCREATEPERFQUERYINTEL)GPA(glCreatePerfQueryINTEL);
+	_glDeletePerfQueryINTEL = (PFNGLDELETEPERFQUERYINTEL)GPA(glDeletePerfQueryINTEL);
+	_glEndPerfQueryINTEL = (PFNGLENDPERFQUERYINTEL)GPA(glEndPerfQueryINTEL);
+	_glGetFirstPerfQueryIdINTEL = (PFNGLGETFIRSTPERFQUERYIDINTEL)GPA(glGetFirstPerfQueryIdINTEL);
+	_glGetNextPerfQueryIdINTEL = (PFNGLGETNEXTPERFQUERYIDINTEL)GPA(glGetNextPerfQueryIdINTEL);
+	_glGetPerfCounterInfoINTEL = (PFNGLGETPERFCOUNTERINFOINTEL)GPA(glGetPerfCounterInfoINTEL);
+	_glGetPerfQueryDataINTEL = (PFNGLGETPERFQUERYDATAINTEL)GPA(glGetPerfQueryDataINTEL);
+	_glGetPerfQueryIdByNameINTEL = (PFNGLGETPERFQUERYIDBYNAMEINTEL)GPA(glGetPerfQueryIdByNameINTEL);
+	_glGetPerfQueryInfoINTEL = (PFNGLGETPERFQUERYINFOINTEL)GPA(glGetPerfQueryInfoINTEL);
 #endif
 
 #ifdef GL_KHR_blend_equation_advanced
-	_glBlendBarrierKHR = glBlendBarrierKHR;
+	_glBlendBarrierKHR = (PFNGLBLENDBARRIERKHR)GPA(glBlendBarrierKHR);
 #endif
 
 #ifdef GL_KHR_debug
-	_glDebugMessageControlKHR = glDebugMessageControlKHR;
-	_glDebugMessageInsertKHR = glDebugMessageInsertKHR;
-	_glDebugMessageCallbackKHR = glDebugMessageCallbackKHR;
-	_glGetDebugMessageLogKHR = glGetDebugMessageLogKHR;
-	_glPushDebugGroupKHR = glPushDebugGroupKHR;
-	_glPopDebugGroupKHR = glPopDebugGroupKHR;
-	_glObjectLabelKHR = glObjectLabelKHR;
-	_glGetObjectLabelKHR = glGetObjectLabelKHR;
-	_glObjectPtrLabelKHR = glObjectPtrLabelKHR;
-	_glGetObjectPtrLabelKHR = glGetObjectPtrLabelKHR;
-	_glGetPointervKHR = glGetPointervKHR;
+	_glDebugMessageControlKHR = (PFNGLDEBUGMESSAGECONTROLKHR)GPA(glDebugMessageControlKHR);
+	_glDebugMessageInsertKHR = (PFNGLDEBUGMESSAGEINSERTKHR)GPA(glDebugMessageInsertKHR);
+	_glDebugMessageCallbackKHR = (PFNGLDEBUGMESSAGECALLBACKKHR)GPA(glDebugMessageCallbackKHR);
+	_glGetDebugMessageLogKHR = (PFNGLGETDEBUGMESSAGELOGKHR)GPA(glGetDebugMessageLogKHR);
+	_glPushDebugGroupKHR = (PFNGLPUSHDEBUGGROUPKHR)GPA(glPushDebugGroupKHR);
+	_glPopDebugGroupKHR = (PFNGLPOPDEBUGGROUPKHR)GPA(glPopDebugGroupKHR);
+	_glObjectLabelKHR = (PFNGLOBJECTLABELKHR)GPA(glObjectLabelKHR);
+	_glGetObjectLabelKHR = (PFNGLGETOBJECTLABELKHR)GPA(glGetObjectLabelKHR);
+	_glObjectPtrLabelKHR = (PFNGLOBJECTPTRLABELKHR)GPA(glObjectPtrLabelKHR);
+	_glGetObjectPtrLabelKHR = (PFNGLGETOBJECTPTRLABELKHR)GPA(glGetObjectPtrLabelKHR);
+	_glGetPointervKHR = (PFNGLGETPOINTERVKHR)GPA(glGetPointervKHR);
 #endif
 
 #ifdef GL_KHR_robustness
-	_glGetGraphicsResetStatusKHR = glGetGraphicsResetStatusKHR;
-	_glReadnPixelsKHR = glReadnPixelsKHR;
-	_glGetnUniformfvKHR = glGetnUniformfvKHR;
-	_glGetnUniformivKHR = glGetnUniformivKHR;
-	_glGetnUniformuivKHR = glGetnUniformuivKHR;
+	_glGetGraphicsResetStatusKHR = (PFNGLGETGRAPHICSRESETSTATUSKHR)GPA(glGetGraphicsResetStatusKHR);
+	_glReadnPixelsKHR = (PFNGLREADNPIXELSKHR)GPA(glReadnPixelsKHR);
+	_glGetnUniformfvKHR = (PFNGLGETNUNIFORMFVKHR)GPA(glGetnUniformfvKHR);
+	_glGetnUniformivKHR = (PFNGLGETNUNIFORMIVKHR)GPA(glGetnUniformivKHR);
+	_glGetnUniformuivKHR = (PFNGLGETNUNIFORMUIVKHR)GPA(glGetnUniformuivKHR);
 #endif
 
 #ifdef GL_NV_bindless_texture
-	_glGetTextureHandleNV = glGetTextureHandleNV;
-	_glGetTextureSamplerHandleNV = glGetTextureSamplerHandleNV;
-	_glMakeTextureHandleResidentNV = glMakeTextureHandleResidentNV;
-	_glMakeTextureHandleNonResidentNV = glMakeTextureHandleNonResidentNV;
-	_glGetImageHandleNV = glGetImageHandleNV;
-	_glMakeImageHandleResidentNV = glMakeImageHandleResidentNV;
-	_glMakeImageHandleNonResidentNV = glMakeImageHandleNonResidentNV;
-	_glUniformHandleui64NV = glUniformHandleui64NV;
-	_glUniformHandleui64vNV = glUniformHandleui64vNV;
-	_glProgramUniformHandleui64NV = glProgramUniformHandleui64NV;
-	_glProgramUniformHandleui64vNV = glProgramUniformHandleui64vNV;
-	_glIsTextureHandleResidentNV = glIsTextureHandleResidentNV;
-	_glIsImageHandleResidentNV = glIsImageHandleResidentNV;
+	_glGetTextureHandleNV = (PFNGLGETTEXTUREHANDLENV)GPA(glGetTextureHandleNV);
+	_glGetTextureSamplerHandleNV = (PFNGLGETTEXTURESAMPLERHANDLENV)GPA(glGetTextureSamplerHandleNV);
+	_glMakeTextureHandleResidentNV = (PFNGLMAKETEXTUREHANDLERESIDENTNV)GPA(glMakeTextureHandleResidentNV);
+	_glMakeTextureHandleNonResidentNV = (PFNGLMAKETEXTUREHANDLENONRESIDENTNV)GPA(glMakeTextureHandleNonResidentNV);
+	_glGetImageHandleNV = (PFNGLGETIMAGEHANDLENV)GPA(glGetImageHandleNV);
+	_glMakeImageHandleResidentNV = (PFNGLMAKEIMAGEHANDLERESIDENTNV)GPA(glMakeImageHandleResidentNV);
+	_glMakeImageHandleNonResidentNV = (PFNGLMAKEIMAGEHANDLENONRESIDENTNV)GPA(glMakeImageHandleNonResidentNV);
+	_glUniformHandleui64NV = (PFNGLUNIFORMHANDLEUI64NV)GPA(glUniformHandleui64NV);
+	_glUniformHandleui64vNV = (PFNGLUNIFORMHANDLEUI64VNV)GPA(glUniformHandleui64vNV);
+	_glProgramUniformHandleui64NV = (PFNGLPROGRAMUNIFORMHANDLEUI64NV)GPA(glProgramUniformHandleui64NV);
+	_glProgramUniformHandleui64vNV = (PFNGLPROGRAMUNIFORMHANDLEUI64VNV)GPA(glProgramUniformHandleui64vNV);
+	_glIsTextureHandleResidentNV = (PFNGLISTEXTUREHANDLERESIDENTNV)GPA(glIsTextureHandleResidentNV);
+	_glIsImageHandleResidentNV = (PFNGLISIMAGEHANDLERESIDENTNV)GPA(glIsImageHandleResidentNV);
 #endif
 
 #ifdef GL_NV_blend_equation_advanced
-	_glBlendParameteriNV = glBlendParameteriNV;
-	_glBlendBarrierNV = glBlendBarrierNV;
+	_glBlendParameteriNV = (PFNGLBLENDPARAMETERINV)GPA(glBlendParameteriNV);
+	_glBlendBarrierNV = (PFNGLBLENDBARRIERNV)GPA(glBlendBarrierNV);
 #endif
 
 #ifdef GL_NV_conditional_render
-	_glBeginConditionalRenderNV = glBeginConditionalRenderNV;
-	_glEndConditionalRenderNV = glEndConditionalRenderNV;
+	_glBeginConditionalRenderNV = (PFNGLBEGINCONDITIONALRENDERNV)GPA(glBeginConditionalRenderNV);
+	_glEndConditionalRenderNV = (PFNGLENDCONDITIONALRENDERNV)GPA(glEndConditionalRenderNV);
 #endif
 
 #ifdef GL_NV_conservative_raster
-	_glSubpixelPrecisionBiasNV = glSubpixelPrecisionBiasNV;
+	_glSubpixelPrecisionBiasNV = (PFNGLSUBPIXELPRECISIONBIASNV)GPA(glSubpixelPrecisionBiasNV);
 #endif
 
 #ifdef GL_NV_conservative_raster_pre_snap_triangles
-	_glConservativeRasterParameteriNV = glConservativeRasterParameteriNV;
+	_glConservativeRasterParameteriNV = (PFNGLCONSERVATIVERASTERPARAMETERINV)GPA(glConservativeRasterParameteriNV);
 #endif
 
 #ifdef GL_NV_copy_buffer
-	_glCopyBufferSubDataNV = glCopyBufferSubDataNV;
+	_glCopyBufferSubDataNV = (PFNGLCOPYBUFFERSUBDATANV)GPA(glCopyBufferSubDataNV);
 #endif
 
 #ifdef GL_NV_coverage_sample
-	_glCoverageMaskNV = glCoverageMaskNV;
-	_glCoverageOperationNV = glCoverageOperationNV;
+	_glCoverageMaskNV = (PFNGLCOVERAGEMASKNV)GPA(glCoverageMaskNV);
+	_glCoverageOperationNV = (PFNGLCOVERAGEOPERATIONNV)GPA(glCoverageOperationNV);
 #endif
 
 #ifdef GL_NV_draw_buffers
-	_glDrawBuffersNV = glDrawBuffersNV;
+	_glDrawBuffersNV = (PFNGLDRAWBUFFERSNV)GPA(glDrawBuffersNV);
 #endif
 
 #ifdef GL_NV_draw_instanced
-	_glDrawArraysInstancedNV = glDrawArraysInstancedNV;
-	_glDrawElementsInstancedNV = glDrawElementsInstancedNV;
+	_glDrawArraysInstancedNV = (PFNGLDRAWARRAYSINSTANCEDNV)GPA(glDrawArraysInstancedNV);
+	_glDrawElementsInstancedNV = (PFNGLDRAWELEMENTSINSTANCEDNV)GPA(glDrawElementsInstancedNV);
 #endif
 
 #ifdef GL_NV_fence
-	_glDeleteFencesNV = glDeleteFencesNV;
-	_glGenFencesNV = glGenFencesNV;
-	_glIsFenceNV = glIsFenceNV;
-	_glTestFenceNV = glTestFenceNV;
-	_glGetFenceivNV = glGetFenceivNV;
-	_glFinishFenceNV = glFinishFenceNV;
-	_glSetFenceNV = glSetFenceNV;
+	_glDeleteFencesNV = (PFNGLDELETEFENCESNV)GPA(glDeleteFencesNV);
+	_glGenFencesNV = (PFNGLGENFENCESNV)GPA(glGenFencesNV);
+	_glIsFenceNV = (PFNGLISFENCENV)GPA(glIsFenceNV);
+	_glTestFenceNV = (PFNGLTESTFENCENV)GPA(glTestFenceNV);
+	_glGetFenceivNV = (PFNGLGETFENCEIVNV)GPA(glGetFenceivNV);
+	_glFinishFenceNV = (PFNGLFINISHFENCENV)GPA(glFinishFenceNV);
+	_glSetFenceNV = (PFNGLSETFENCENV)GPA(glSetFenceNV);
 #endif
 
 #ifdef GL_NV_fragment_coverage_to_color
-	_glFragmentCoverageColorNV = glFragmentCoverageColorNV;
+	_glFragmentCoverageColorNV = (PFNGLFRAGMENTCOVERAGECOLORNV)GPA(glFragmentCoverageColorNV);
 #endif
 
 #ifdef GL_NV_framebuffer_blit
-	_glBlitFramebufferNV = glBlitFramebufferNV;
+	_glBlitFramebufferNV = (PFNGLBLITFRAMEBUFFERNV)GPA(glBlitFramebufferNV);
 #endif
 
 #ifdef GL_NV_framebuffer_mixed_samples
-	_glRasterSamplesEXT = glRasterSamplesEXT;
-	_glCoverageModulationTableNV = glCoverageModulationTableNV;
-	_glGetCoverageModulationTableNV = glGetCoverageModulationTableNV;
-	_glCoverageModulationNV = glCoverageModulationNV;
+	_glRasterSamplesEXT = (PFNGLRASTERSAMPLESEXT)GPA(glRasterSamplesEXT);
+	_glCoverageModulationTableNV = (PFNGLCOVERAGEMODULATIONTABLENV)GPA(glCoverageModulationTableNV);
+	_glGetCoverageModulationTableNV = (PFNGLGETCOVERAGEMODULATIONTABLENV)GPA(glGetCoverageModulationTableNV);
+	_glCoverageModulationNV = (PFNGLCOVERAGEMODULATIONNV)GPA(glCoverageModulationNV);
 #endif
 
 #ifdef GL_NV_framebuffer_multisample
-	_glRenderbufferStorageMultisampleNV = glRenderbufferStorageMultisampleNV;
+	_glRenderbufferStorageMultisampleNV = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLENV)GPA(glRenderbufferStorageMultisampleNV);
 #endif
 
 #ifdef GL_NV_gpu_shader5
-	_glUniform1i64NV = glUniform1i64NV;
-	_glUniform2i64NV = glUniform2i64NV;
-	_glUniform3i64NV = glUniform3i64NV;
-	_glUniform4i64NV = glUniform4i64NV;
-	_glUniform1i64vNV = glUniform1i64vNV;
-	_glUniform2i64vNV = glUniform2i64vNV;
-	_glUniform3i64vNV = glUniform3i64vNV;
-	_glUniform4i64vNV = glUniform4i64vNV;
-	_glUniform1ui64NV = glUniform1ui64NV;
-	_glUniform2ui64NV = glUniform2ui64NV;
-	_glUniform3ui64NV = glUniform3ui64NV;
-	_glUniform4ui64NV = glUniform4ui64NV;
-	_glUniform1ui64vNV = glUniform1ui64vNV;
-	_glUniform2ui64vNV = glUniform2ui64vNV;
-	_glUniform3ui64vNV = glUniform3ui64vNV;
-	_glUniform4ui64vNV = glUniform4ui64vNV;
-	_glGetUniformi64vNV = glGetUniformi64vNV;
-	_glProgramUniform1i64NV = glProgramUniform1i64NV;
-	_glProgramUniform2i64NV = glProgramUniform2i64NV;
-	_glProgramUniform3i64NV = glProgramUniform3i64NV;
-	_glProgramUniform4i64NV = glProgramUniform4i64NV;
-	_glProgramUniform1i64vNV = glProgramUniform1i64vNV;
-	_glProgramUniform2i64vNV = glProgramUniform2i64vNV;
-	_glProgramUniform3i64vNV = glProgramUniform3i64vNV;
-	_glProgramUniform4i64vNV = glProgramUniform4i64vNV;
-	_glProgramUniform1ui64NV = glProgramUniform1ui64NV;
-	_glProgramUniform2ui64NV = glProgramUniform2ui64NV;
-	_glProgramUniform3ui64NV = glProgramUniform3ui64NV;
-	_glProgramUniform4ui64NV = glProgramUniform4ui64NV;
-	_glProgramUniform1ui64vNV = glProgramUniform1ui64vNV;
-	_glProgramUniform2ui64vNV = glProgramUniform2ui64vNV;
-	_glProgramUniform3ui64vNV = glProgramUniform3ui64vNV;
-	_glProgramUniform4ui64vNV = glProgramUniform4ui64vNV;
+	_glUniform1i64NV = (PFNGLUNIFORM1I64NV)GPA(glUniform1i64NV);
+	_glUniform2i64NV = (PFNGLUNIFORM2I64NV)GPA(glUniform2i64NV);
+	_glUniform3i64NV = (PFNGLUNIFORM3I64NV)GPA(glUniform3i64NV);
+	_glUniform4i64NV = (PFNGLUNIFORM4I64NV)GPA(glUniform4i64NV);
+	_glUniform1i64vNV = (PFNGLUNIFORM1I64VNV)GPA(glUniform1i64vNV);
+	_glUniform2i64vNV = (PFNGLUNIFORM2I64VNV)GPA(glUniform2i64vNV);
+	_glUniform3i64vNV = (PFNGLUNIFORM3I64VNV)GPA(glUniform3i64vNV);
+	_glUniform4i64vNV = (PFNGLUNIFORM4I64VNV)GPA(glUniform4i64vNV);
+	_glUniform1ui64NV = (PFNGLUNIFORM1UI64NV)GPA(glUniform1ui64NV);
+	_glUniform2ui64NV = (PFNGLUNIFORM2UI64NV)GPA(glUniform2ui64NV);
+	_glUniform3ui64NV = (PFNGLUNIFORM3UI64NV)GPA(glUniform3ui64NV);
+	_glUniform4ui64NV = (PFNGLUNIFORM4UI64NV)GPA(glUniform4ui64NV);
+	_glUniform1ui64vNV = (PFNGLUNIFORM1UI64VNV)GPA(glUniform1ui64vNV);
+	_glUniform2ui64vNV = (PFNGLUNIFORM2UI64VNV)GPA(glUniform2ui64vNV);
+	_glUniform3ui64vNV = (PFNGLUNIFORM3UI64VNV)GPA(glUniform3ui64vNV);
+	_glUniform4ui64vNV = (PFNGLUNIFORM4UI64VNV)GPA(glUniform4ui64vNV);
+	_glGetUniformi64vNV = (PFNGLGETUNIFORMI64VNV)GPA(glGetUniformi64vNV);
+	_glProgramUniform1i64NV = (PFNGLPROGRAMUNIFORM1I64NV)GPA(glProgramUniform1i64NV);
+	_glProgramUniform2i64NV = (PFNGLPROGRAMUNIFORM2I64NV)GPA(glProgramUniform2i64NV);
+	_glProgramUniform3i64NV = (PFNGLPROGRAMUNIFORM3I64NV)GPA(glProgramUniform3i64NV);
+	_glProgramUniform4i64NV = (PFNGLPROGRAMUNIFORM4I64NV)GPA(glProgramUniform4i64NV);
+	_glProgramUniform1i64vNV = (PFNGLPROGRAMUNIFORM1I64VNV)GPA(glProgramUniform1i64vNV);
+	_glProgramUniform2i64vNV = (PFNGLPROGRAMUNIFORM2I64VNV)GPA(glProgramUniform2i64vNV);
+	_glProgramUniform3i64vNV = (PFNGLPROGRAMUNIFORM3I64VNV)GPA(glProgramUniform3i64vNV);
+	_glProgramUniform4i64vNV = (PFNGLPROGRAMUNIFORM4I64VNV)GPA(glProgramUniform4i64vNV);
+	_glProgramUniform1ui64NV = (PFNGLPROGRAMUNIFORM1UI64NV)GPA(glProgramUniform1ui64NV);
+	_glProgramUniform2ui64NV = (PFNGLPROGRAMUNIFORM2UI64NV)GPA(glProgramUniform2ui64NV);
+	_glProgramUniform3ui64NV = (PFNGLPROGRAMUNIFORM3UI64NV)GPA(glProgramUniform3ui64NV);
+	_glProgramUniform4ui64NV = (PFNGLPROGRAMUNIFORM4UI64NV)GPA(glProgramUniform4ui64NV);
+	_glProgramUniform1ui64vNV = (PFNGLPROGRAMUNIFORM1UI64VNV)GPA(glProgramUniform1ui64vNV);
+	_glProgramUniform2ui64vNV = (PFNGLPROGRAMUNIFORM2UI64VNV)GPA(glProgramUniform2ui64vNV);
+	_glProgramUniform3ui64vNV = (PFNGLPROGRAMUNIFORM3UI64VNV)GPA(glProgramUniform3ui64vNV);
+	_glProgramUniform4ui64vNV = (PFNGLPROGRAMUNIFORM4UI64VNV)GPA(glProgramUniform4ui64vNV);
 #endif
 
 #ifdef GL_NV_instanced_arrays
-	_glVertexAttribDivisorNV = glVertexAttribDivisorNV;
+	_glVertexAttribDivisorNV = (PFNGLVERTEXATTRIBDIVISORNV)GPA(glVertexAttribDivisorNV);
 #endif
 
 #ifdef GL_NV_internalformat_sample_query
-	_glGetInternalformatSampleivNV = glGetInternalformatSampleivNV;
+	_glGetInternalformatSampleivNV = (PFNGLGETINTERNALFORMATSAMPLEIVNV)GPA(glGetInternalformatSampleivNV);
 #endif
 
 #ifdef GL_NV_non_square_matrices
-	_glUniformMatrix2x3fvNV = glUniformMatrix2x3fvNV;
-	_glUniformMatrix3x2fvNV = glUniformMatrix3x2fvNV;
-	_glUniformMatrix2x4fvNV = glUniformMatrix2x4fvNV;
-	_glUniformMatrix4x2fvNV = glUniformMatrix4x2fvNV;
-	_glUniformMatrix3x4fvNV = glUniformMatrix3x4fvNV;
-	_glUniformMatrix4x3fvNV = glUniformMatrix4x3fvNV;
+	_glUniformMatrix2x3fvNV = (PFNGLUNIFORMMATRIX2X3FVNV)GPA(glUniformMatrix2x3fvNV);
+	_glUniformMatrix3x2fvNV = (PFNGLUNIFORMMATRIX3X2FVNV)GPA(glUniformMatrix3x2fvNV);
+	_glUniformMatrix2x4fvNV = (PFNGLUNIFORMMATRIX2X4FVNV)GPA(glUniformMatrix2x4fvNV);
+	_glUniformMatrix4x2fvNV = (PFNGLUNIFORMMATRIX4X2FVNV)GPA(glUniformMatrix4x2fvNV);
+	_glUniformMatrix3x4fvNV = (PFNGLUNIFORMMATRIX3X4FVNV)GPA(glUniformMatrix3x4fvNV);
+	_glUniformMatrix4x3fvNV = (PFNGLUNIFORMMATRIX4X3FVNV)GPA(glUniformMatrix4x3fvNV);
 #endif
 
 #ifdef GL_NV_path_rendering
-	_glGenPathsNV = glGenPathsNV;
-	_glDeletePathsNV = glDeletePathsNV;
-	_glIsPathNV = glIsPathNV;
-	_glPathCommandsNV = glPathCommandsNV;
-	_glPathCoordsNV = glPathCoordsNV;
-	_glPathSubCommandsNV = glPathSubCommandsNV;
-	_glPathSubCoordsNV = glPathSubCoordsNV;
-	_glPathStringNV = glPathStringNV;
-	_glPathGlyphsNV = glPathGlyphsNV;
-	_glPathGlyphRangeNV = glPathGlyphRangeNV;
-	_glWeightPathsNV = glWeightPathsNV;
-	_glCopyPathNV = glCopyPathNV;
-	_glInterpolatePathsNV = glInterpolatePathsNV;
-	_glTransformPathNV = glTransformPathNV;
-	_glPathParameterivNV = glPathParameterivNV;
-	_glPathParameteriNV = glPathParameteriNV;
-	_glPathParameterfvNV = glPathParameterfvNV;
-	_glPathParameterfNV = glPathParameterfNV;
-	_glPathDashArrayNV = glPathDashArrayNV;
-	_glPathStencilFuncNV = glPathStencilFuncNV;
-	_glPathStencilDepthOffsetNV = glPathStencilDepthOffsetNV;
-	_glStencilFillPathNV = glStencilFillPathNV;
-	_glStencilStrokePathNV = glStencilStrokePathNV;
-	_glStencilFillPathInstancedNV = glStencilFillPathInstancedNV;
-	_glStencilStrokePathInstancedNV = glStencilStrokePathInstancedNV;
-	_glPathCoverDepthFuncNV = glPathCoverDepthFuncNV;
-	_glCoverFillPathNV = glCoverFillPathNV;
-	_glCoverStrokePathNV = glCoverStrokePathNV;
-	_glCoverFillPathInstancedNV = glCoverFillPathInstancedNV;
-	_glCoverStrokePathInstancedNV = glCoverStrokePathInstancedNV;
-	_glGetPathParameterivNV = glGetPathParameterivNV;
-	_glGetPathParameterfvNV = glGetPathParameterfvNV;
-	_glGetPathCommandsNV = glGetPathCommandsNV;
-	_glGetPathCoordsNV = glGetPathCoordsNV;
-	_glGetPathDashArrayNV = glGetPathDashArrayNV;
-	_glGetPathMetricsNV = glGetPathMetricsNV;
-	_glGetPathMetricRangeNV = glGetPathMetricRangeNV;
-	_glGetPathSpacingNV = glGetPathSpacingNV;
-	_glIsPointInFillPathNV = glIsPointInFillPathNV;
-	_glIsPointInStrokePathNV = glIsPointInStrokePathNV;
-	_glGetPathLengthNV = glGetPathLengthNV;
-	_glPointAlongPathNV = glPointAlongPathNV;
-	_glMatrixLoad3x2fNV = glMatrixLoad3x2fNV;
-	_glMatrixLoad3x3fNV = glMatrixLoad3x3fNV;
-	_glMatrixLoadTranspose3x3fNV = glMatrixLoadTranspose3x3fNV;
-	_glMatrixMult3x2fNV = glMatrixMult3x2fNV;
-	_glMatrixMult3x3fNV = glMatrixMult3x3fNV;
-	_glMatrixMultTranspose3x3fNV = glMatrixMultTranspose3x3fNV;
-	_glStencilThenCoverFillPathNV = glStencilThenCoverFillPathNV;
-	_glStencilThenCoverStrokePathNV = glStencilThenCoverStrokePathNV;
-	_glStencilThenCoverFillPathInstancedNV = glStencilThenCoverFillPathInstancedNV;
-	_glStencilThenCoverStrokePathInstancedNV = glStencilThenCoverStrokePathInstancedNV;
-	_glPathGlyphIndexRangeNV = glPathGlyphIndexRangeNV;
-	_glPathGlyphIndexArrayNV = glPathGlyphIndexArrayNV;
-	_glPathMemoryGlyphIndexArrayNV = glPathMemoryGlyphIndexArrayNV;
-	_glProgramPathFragmentInputGenNV = glProgramPathFragmentInputGenNV;
-	_glGetProgramResourcefvNV = glGetProgramResourcefvNV;
+	_glGenPathsNV = (PFNGLGENPATHSNV)GPA(glGenPathsNV);
+	_glDeletePathsNV = (PFNGLDELETEPATHSNV)GPA(glDeletePathsNV);
+	_glIsPathNV = (PFNGLISPATHNV)GPA(glIsPathNV);
+	_glPathCommandsNV = (PFNGLPATHCOMMANDSNV)GPA(glPathCommandsNV);
+	_glPathCoordsNV = (PFNGLPATHCOORDSNV)GPA(glPathCoordsNV);
+	_glPathSubCommandsNV = (PFNGLPATHSUBCOMMANDSNV)GPA(glPathSubCommandsNV);
+	_glPathSubCoordsNV = (PFNGLPATHSUBCOORDSNV)GPA(glPathSubCoordsNV);
+	_glPathStringNV = (PFNGLPATHSTRINGNV)GPA(glPathStringNV);
+	_glPathGlyphsNV = (PFNGLPATHGLYPHSNV)GPA(glPathGlyphsNV);
+	_glPathGlyphRangeNV = (PFNGLPATHGLYPHRANGENV)GPA(glPathGlyphRangeNV);
+	_glWeightPathsNV = (PFNGLWEIGHTPATHSNV)GPA(glWeightPathsNV);
+	_glCopyPathNV = (PFNGLCOPYPATHNV)GPA(glCopyPathNV);
+	_glInterpolatePathsNV = (PFNGLINTERPOLATEPATHSNV)GPA(glInterpolatePathsNV);
+	_glTransformPathNV = (PFNGLTRANSFORMPATHNV)GPA(glTransformPathNV);
+	_glPathParameterivNV = (PFNGLPATHPARAMETERIVNV)GPA(glPathParameterivNV);
+	_glPathParameteriNV = (PFNGLPATHPARAMETERINV)GPA(glPathParameteriNV);
+	_glPathParameterfvNV = (PFNGLPATHPARAMETERFVNV)GPA(glPathParameterfvNV);
+	_glPathParameterfNV = (PFNGLPATHPARAMETERFNV)GPA(glPathParameterfNV);
+	_glPathDashArrayNV = (PFNGLPATHDASHARRAYNV)GPA(glPathDashArrayNV);
+	_glPathStencilFuncNV = (PFNGLPATHSTENCILFUNCNV)GPA(glPathStencilFuncNV);
+	_glPathStencilDepthOffsetNV = (PFNGLPATHSTENCILDEPTHOFFSETNV)GPA(glPathStencilDepthOffsetNV);
+	_glStencilFillPathNV = (PFNGLSTENCILFILLPATHNV)GPA(glStencilFillPathNV);
+	_glStencilStrokePathNV = (PFNGLSTENCILSTROKEPATHNV)GPA(glStencilStrokePathNV);
+	_glStencilFillPathInstancedNV = (PFNGLSTENCILFILLPATHINSTANCEDNV)GPA(glStencilFillPathInstancedNV);
+	_glStencilStrokePathInstancedNV = (PFNGLSTENCILSTROKEPATHINSTANCEDNV)GPA(glStencilStrokePathInstancedNV);
+	_glPathCoverDepthFuncNV = (PFNGLPATHCOVERDEPTHFUNCNV)GPA(glPathCoverDepthFuncNV);
+	_glCoverFillPathNV = (PFNGLCOVERFILLPATHNV)GPA(glCoverFillPathNV);
+	_glCoverStrokePathNV = (PFNGLCOVERSTROKEPATHNV)GPA(glCoverStrokePathNV);
+	_glCoverFillPathInstancedNV = (PFNGLCOVERFILLPATHINSTANCEDNV)GPA(glCoverFillPathInstancedNV);
+	_glCoverStrokePathInstancedNV = (PFNGLCOVERSTROKEPATHINSTANCEDNV)GPA(glCoverStrokePathInstancedNV);
+	_glGetPathParameterivNV = (PFNGLGETPATHPARAMETERIVNV)GPA(glGetPathParameterivNV);
+	_glGetPathParameterfvNV = (PFNGLGETPATHPARAMETERFVNV)GPA(glGetPathParameterfvNV);
+	_glGetPathCommandsNV = (PFNGLGETPATHCOMMANDSNV)GPA(glGetPathCommandsNV);
+	_glGetPathCoordsNV = (PFNGLGETPATHCOORDSNV)GPA(glGetPathCoordsNV);
+	_glGetPathDashArrayNV = (PFNGLGETPATHDASHARRAYNV)GPA(glGetPathDashArrayNV);
+	_glGetPathMetricsNV = (PFNGLGETPATHMETRICSNV)GPA(glGetPathMetricsNV);
+	_glGetPathMetricRangeNV = (PFNGLGETPATHMETRICRANGENV)GPA(glGetPathMetricRangeNV);
+	_glGetPathSpacingNV = (PFNGLGETPATHSPACINGNV)GPA(glGetPathSpacingNV);
+	_glIsPointInFillPathNV = (PFNGLISPOINTINFILLPATHNV)GPA(glIsPointInFillPathNV);
+	_glIsPointInStrokePathNV = (PFNGLISPOINTINSTROKEPATHNV)GPA(glIsPointInStrokePathNV);
+	_glGetPathLengthNV = (PFNGLGETPATHLENGTHNV)GPA(glGetPathLengthNV);
+	_glPointAlongPathNV = (PFNGLPOINTALONGPATHNV)GPA(glPointAlongPathNV);
+	_glMatrixLoad3x2fNV = (PFNGLMATRIXLOAD3X2FNV)GPA(glMatrixLoad3x2fNV);
+	_glMatrixLoad3x3fNV = (PFNGLMATRIXLOAD3X3FNV)GPA(glMatrixLoad3x3fNV);
+	_glMatrixLoadTranspose3x3fNV = (PFNGLMATRIXLOADTRANSPOSE3X3FNV)GPA(glMatrixLoadTranspose3x3fNV);
+	_glMatrixMult3x2fNV = (PFNGLMATRIXMULT3X2FNV)GPA(glMatrixMult3x2fNV);
+	_glMatrixMult3x3fNV = (PFNGLMATRIXMULT3X3FNV)GPA(glMatrixMult3x3fNV);
+	_glMatrixMultTranspose3x3fNV = (PFNGLMATRIXMULTTRANSPOSE3X3FNV)GPA(glMatrixMultTranspose3x3fNV);
+	_glStencilThenCoverFillPathNV = (PFNGLSTENCILTHENCOVERFILLPATHNV)GPA(glStencilThenCoverFillPathNV);
+	_glStencilThenCoverStrokePathNV = (PFNGLSTENCILTHENCOVERSTROKEPATHNV)GPA(glStencilThenCoverStrokePathNV);
+	_glStencilThenCoverFillPathInstancedNV = (PFNGLSTENCILTHENCOVERFILLPATHINSTANCEDNV)GPA(glStencilThenCoverFillPathInstancedNV);
+	_glStencilThenCoverStrokePathInstancedNV = (PFNGLSTENCILTHENCOVERSTROKEPATHINSTANCEDNV)GPA(glStencilThenCoverStrokePathInstancedNV);
+	_glPathGlyphIndexRangeNV = (PFNGLPATHGLYPHINDEXRANGENV)GPA(glPathGlyphIndexRangeNV);
+	_glPathGlyphIndexArrayNV = (PFNGLPATHGLYPHINDEXARRAYNV)GPA(glPathGlyphIndexArrayNV);
+	_glPathMemoryGlyphIndexArrayNV = (PFNGLPATHMEMORYGLYPHINDEXARRAYNV)GPA(glPathMemoryGlyphIndexArrayNV);
+	_glProgramPathFragmentInputGenNV = (PFNGLPROGRAMPATHFRAGMENTINPUTGENNV)GPA(glProgramPathFragmentInputGenNV);
+	_glGetProgramResourcefvNV = (PFNGLGETPROGRAMRESOURCEFVNV)GPA(glGetProgramResourcefvNV);
 #endif
 
 #ifdef GL_NV_polygon_mode
-	_glPolygonModeNV = glPolygonModeNV;
+	_glPolygonModeNV = (PFNGLPOLYGONMODENV)GPA(glPolygonModeNV);
 #endif
 
 #ifdef GL_NV_read_buffer
-	_glReadBufferNV = glReadBufferNV;
+	_glReadBufferNV = (PFNGLREADBUFFERNV)GPA(glReadBufferNV);
 #endif
 
 #ifdef GL_NV_sample_locations
-	_glFramebufferSampleLocationsfvNV = glFramebufferSampleLocationsfvNV;
-	_glNamedFramebufferSampleLocationsfvNV = glNamedFramebufferSampleLocationsfvNV;
-	_glResolveDepthValuesNV = glResolveDepthValuesNV;
+	_glFramebufferSampleLocationsfvNV = (PFNGLFRAMEBUFFERSAMPLELOCATIONSFVNV)GPA(glFramebufferSampleLocationsfvNV);
+	_glNamedFramebufferSampleLocationsfvNV = (PFNGLNAMEDFRAMEBUFFERSAMPLELOCATIONSFVNV)GPA(glNamedFramebufferSampleLocationsfvNV);
+	_glResolveDepthValuesNV = (PFNGLRESOLVEDEPTHVALUESNV)GPA(glResolveDepthValuesNV);
 #endif
 
 #ifdef GL_NV_viewport_array
-	_glViewportArrayvNV = glViewportArrayvNV;
-	_glViewportIndexedfNV = glViewportIndexedfNV;
-	_glViewportIndexedfvNV = glViewportIndexedfvNV;
-	_glScissorArrayvNV = glScissorArrayvNV;
-	_glScissorIndexedNV = glScissorIndexedNV;
-	_glScissorIndexedvNV = glScissorIndexedvNV;
-	_glDepthRangeArrayfvNV = glDepthRangeArrayfvNV;
-	_glDepthRangeIndexedfNV = glDepthRangeIndexedfNV;
-	_glGetFloati_vNV = glGetFloati_vNV;
-	_glEnableiNV = glEnableiNV;
-	_glDisableiNV = glDisableiNV;
-	_glIsEnablediNV = glIsEnablediNV;
+	_glViewportArrayvNV = (PFNGLVIEWPORTARRAYVNV)GPA(glViewportArrayvNV);
+	_glViewportIndexedfNV = (PFNGLVIEWPORTINDEXEDFNV)GPA(glViewportIndexedfNV);
+	_glViewportIndexedfvNV = (PFNGLVIEWPORTINDEXEDFVNV)GPA(glViewportIndexedfvNV);
+	_glScissorArrayvNV = (PFNGLSCISSORARRAYVNV)GPA(glScissorArrayvNV);
+	_glScissorIndexedNV = (PFNGLSCISSORINDEXEDNV)GPA(glScissorIndexedNV);
+	_glScissorIndexedvNV = (PFNGLSCISSORINDEXEDVNV)GPA(glScissorIndexedvNV);
+	_glDepthRangeArrayfvNV = (PFNGLDEPTHRANGEARRAYFVNV)GPA(glDepthRangeArrayfvNV);
+	_glDepthRangeIndexedfNV = (PFNGLDEPTHRANGEINDEXEDFNV)GPA(glDepthRangeIndexedfNV);
+	_glGetFloati_vNV = (PFNGLGETFLOATI_VNV)GPA(glGetFloati_vNV);
+	_glEnableiNV = (PFNGLENABLEINV)GPA(glEnableiNV);
+	_glDisableiNV = (PFNGLDISABLEINV)GPA(glDisableiNV);
+	_glIsEnablediNV = (PFNGLISENABLEDINV)GPA(glIsEnablediNV);
 #endif
 
 #ifdef GL_NV_viewport_swizzle
-	_glViewportSwizzleNV = glViewportSwizzleNV;
+	_glViewportSwizzleNV = (PFNGLVIEWPORTSWIZZLENV)GPA(glViewportSwizzleNV);
 #endif
 
 #ifdef GL_OES_EGL_image
-	_glEGLImageTargetTexture2DOES = glEGLImageTargetTexture2DOES;
-	_glEGLImageTargetRenderbufferStorageOES = glEGLImageTargetRenderbufferStorageOES;
+	_glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOES)GPA(glEGLImageTargetTexture2DOES);
+	_glEGLImageTargetRenderbufferStorageOES = (PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOES)GPA(glEGLImageTargetRenderbufferStorageOES);
 #endif
 
 #ifdef GL_OES_copy_image
-	_glCopyImageSubDataOES = glCopyImageSubDataOES;
+	_glCopyImageSubDataOES = (PFNGLCOPYIMAGESUBDATAOES)GPA(glCopyImageSubDataOES);
 #endif
 
 #ifdef GL_OES_draw_buffers_indexed
-	_glEnableiOES = glEnableiOES;
-	_glDisableiOES = glDisableiOES;
-	_glBlendEquationiOES = glBlendEquationiOES;
-	_glBlendEquationSeparateiOES = glBlendEquationSeparateiOES;
-	_glBlendFunciOES = glBlendFunciOES;
-	_glBlendFuncSeparateiOES = glBlendFuncSeparateiOES;
-	_glColorMaskiOES = glColorMaskiOES;
-	_glIsEnablediOES = glIsEnablediOES;
+	_glEnableiOES = (PFNGLENABLEIOES)GPA(glEnableiOES);
+	_glDisableiOES = (PFNGLDISABLEIOES)GPA(glDisableiOES);
+	_glBlendEquationiOES = (PFNGLBLENDEQUATIONIOES)GPA(glBlendEquationiOES);
+	_glBlendEquationSeparateiOES = (PFNGLBLENDEQUATIONSEPARATEIOES)GPA(glBlendEquationSeparateiOES);
+	_glBlendFunciOES = (PFNGLBLENDFUNCIOES)GPA(glBlendFunciOES);
+	_glBlendFuncSeparateiOES = (PFNGLBLENDFUNCSEPARATEIOES)GPA(glBlendFuncSeparateiOES);
+	_glColorMaskiOES = (PFNGLCOLORMASKIOES)GPA(glColorMaskiOES);
+	_glIsEnablediOES = (PFNGLISENABLEDIOES)GPA(glIsEnablediOES);
 #endif
 
 #ifdef GL_OES_draw_elements_base_vertex
-	_glDrawElementsBaseVertexOES = glDrawElementsBaseVertexOES;
-	_glDrawRangeElementsBaseVertexOES = glDrawRangeElementsBaseVertexOES;
-	_glDrawElementsInstancedBaseVertexOES = glDrawElementsInstancedBaseVertexOES;
-	_glMultiDrawElementsBaseVertexOES = glMultiDrawElementsBaseVertexOES;
+	_glDrawElementsBaseVertexOES = (PFNGLDRAWELEMENTSBASEVERTEXOES)GPA(glDrawElementsBaseVertexOES);
+	_glDrawRangeElementsBaseVertexOES = (PFNGLDRAWRANGEELEMENTSBASEVERTEXOES)GPA(glDrawRangeElementsBaseVertexOES);
+	_glDrawElementsInstancedBaseVertexOES = (PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXOES)GPA(glDrawElementsInstancedBaseVertexOES);
+	_glMultiDrawElementsBaseVertexOES = (PFNGLMULTIDRAWELEMENTSBASEVERTEXOES)GPA(glMultiDrawElementsBaseVertexOES);
 #endif
 
 #ifdef GL_OES_geometry_shader
-	_glFramebufferTextureOES = glFramebufferTextureOES;
+	_glFramebufferTextureOES = (PFNGLFRAMEBUFFERTEXTUREOES)GPA(glFramebufferTextureOES);
 #endif
 
 #ifdef GL_OES_get_program_binary
-	_glGetProgramBinaryOES = glGetProgramBinaryOES;
-	_glProgramBinaryOES = glProgramBinaryOES;
+	_glGetProgramBinaryOES = (PFNGLGETPROGRAMBINARYOES)GPA(glGetProgramBinaryOES);
+	_glProgramBinaryOES = (PFNGLPROGRAMBINARYOES)GPA(glProgramBinaryOES);
 #endif
 
 #ifdef GL_OES_mapbuffer
-	_glMapBufferOES = glMapBufferOES;
-	_glUnmapBufferOES = glUnmapBufferOES;
-	_glGetBufferPointervOES = glGetBufferPointervOES;
+	_glMapBufferOES = (PFNGLMAPBUFFEROES)GPA(glMapBufferOES);
+	_glUnmapBufferOES = (PFNGLUNMAPBUFFEROES)GPA(glUnmapBufferOES);
+	_glGetBufferPointervOES = (PFNGLGETBUFFERPOINTERVOES)GPA(glGetBufferPointervOES);
 #endif
 
 #ifdef GL_OES_primitive_bounding_box
-	_glPrimitiveBoundingBoxOES = glPrimitiveBoundingBoxOES;
+	_glPrimitiveBoundingBoxOES = (PFNGLPRIMITIVEBOUNDINGBOXOES)GPA(glPrimitiveBoundingBoxOES);
 #endif
 
 #ifdef GL_OES_sample_shading
-	_glMinSampleShadingOES = glMinSampleShadingOES;
+	_glMinSampleShadingOES = (PFNGLMINSAMPLESHADINGOES)GPA(glMinSampleShadingOES);
 #endif
 
 #ifdef GL_OES_tessellation_shader
-	_glPatchParameteriOES = glPatchParameteriOES;
+	_glPatchParameteriOES = (PFNGLPATCHPARAMETERIOES)GPA(glPatchParameteriOES);
 #endif
 
 #ifdef GL_OES_texture_3D
-	_glTexImage3DOES = glTexImage3DOES;
-	_glTexSubImage3DOES = glTexSubImage3DOES;
-	_glCopyTexSubImage3DOES = glCopyTexSubImage3DOES;
-	_glCompressedTexImage3DOES = glCompressedTexImage3DOES;
-	_glCompressedTexSubImage3DOES = glCompressedTexSubImage3DOES;
-	_glFramebufferTexture3DOES = glFramebufferTexture3DOES;
+	_glTexImage3DOES = (PFNGLTEXIMAGE3DOES)GPA(glTexImage3DOES);
+	_glTexSubImage3DOES = (PFNGLTEXSUBIMAGE3DOES)GPA(glTexSubImage3DOES);
+	_glCopyTexSubImage3DOES = (PFNGLCOPYTEXSUBIMAGE3DOES)GPA(glCopyTexSubImage3DOES);
+	_glCompressedTexImage3DOES = (PFNGLCOMPRESSEDTEXIMAGE3DOES)GPA(glCompressedTexImage3DOES);
+	_glCompressedTexSubImage3DOES = (PFNGLCOMPRESSEDTEXSUBIMAGE3DOES)GPA(glCompressedTexSubImage3DOES);
+	_glFramebufferTexture3DOES = (PFNGLFRAMEBUFFERTEXTURE3DOES)GPA(glFramebufferTexture3DOES);
 #endif
 
 #ifdef GL_OES_texture_border_clamp
-	_glTexParameterIivOES = glTexParameterIivOES;
-	_glTexParameterIuivOES = glTexParameterIuivOES;
-	_glGetTexParameterIivOES = glGetTexParameterIivOES;
-	_glGetTexParameterIuivOES = glGetTexParameterIuivOES;
-	_glSamplerParameterIivOES = glSamplerParameterIivOES;
-	_glSamplerParameterIuivOES = glSamplerParameterIuivOES;
-	_glGetSamplerParameterIivOES = glGetSamplerParameterIivOES;
-	_glGetSamplerParameterIuivOES = glGetSamplerParameterIuivOES;
+	_glTexParameterIivOES = (PFNGLTEXPARAMETERIIVOES)GPA(glTexParameterIivOES);
+	_glTexParameterIuivOES = (PFNGLTEXPARAMETERIUIVOES)GPA(glTexParameterIuivOES);
+	_glGetTexParameterIivOES = (PFNGLGETTEXPARAMETERIIVOES)GPA(glGetTexParameterIivOES);
+	_glGetTexParameterIuivOES = (PFNGLGETTEXPARAMETERIUIVOES)GPA(glGetTexParameterIuivOES);
+	_glSamplerParameterIivOES = (PFNGLSAMPLERPARAMETERIIVOES)GPA(glSamplerParameterIivOES);
+	_glSamplerParameterIuivOES = (PFNGLSAMPLERPARAMETERIUIVOES)GPA(glSamplerParameterIuivOES);
+	_glGetSamplerParameterIivOES = (PFNGLGETSAMPLERPARAMETERIIVOES)GPA(glGetSamplerParameterIivOES);
+	_glGetSamplerParameterIuivOES = (PFNGLGETSAMPLERPARAMETERIUIVOES)GPA(glGetSamplerParameterIuivOES);
 #endif
 
 #ifdef GL_OES_texture_buffer
-	_glTexBufferOES = glTexBufferOES;
-	_glTexBufferRangeOES = glTexBufferRangeOES;
+	_glTexBufferOES = (PFNGLTEXBUFFEROES)GPA(glTexBufferOES);
+	_glTexBufferRangeOES = (PFNGLTEXBUFFERRANGEOES)GPA(glTexBufferRangeOES);
 #endif
 
 #ifdef GL_OES_texture_storage_multisample_2d_array
-	_glTexStorage3DMultisampleOES = glTexStorage3DMultisampleOES;
+	_glTexStorage3DMultisampleOES = (PFNGLTEXSTORAGE3DMULTISAMPLEOES)GPA(glTexStorage3DMultisampleOES);
 #endif
 
 #ifdef GL_OES_texture_view
-	_glTextureViewOES = glTextureViewOES;
+	_glTextureViewOES = (PFNGLTEXTUREVIEWOES)GPA(glTextureViewOES);
 #endif
 
 #ifdef GL_OES_vertex_array_object
-	_glBindVertexArrayOES = glBindVertexArrayOES;
-	_glDeleteVertexArraysOES = glDeleteVertexArraysOES;
-	_glGenVertexArraysOES = glGenVertexArraysOES;
-	_glIsVertexArrayOES = glIsVertexArrayOES;
+	_glBindVertexArrayOES = (PFNGLBINDVERTEXARRAYOES)GPA(glBindVertexArrayOES);
+	_glDeleteVertexArraysOES = (PFNGLDELETEVERTEXARRAYSOES)GPA(glDeleteVertexArraysOES);
+	_glGenVertexArraysOES = (PFNGLGENVERTEXARRAYSOES)GPA(glGenVertexArraysOES);
+	_glIsVertexArrayOES = (PFNGLISVERTEXARRAYOES)GPA(glIsVertexArrayOES);
 #endif
 
 #ifdef GL_OES_viewport_array
-	_glViewportArrayvOES = glViewportArrayvOES;
-	_glViewportIndexedfOES = glViewportIndexedfOES;
-	_glViewportIndexedfvOES = glViewportIndexedfvOES;
-	_glScissorArrayvOES = glScissorArrayvOES;
-	_glScissorIndexedOES = glScissorIndexedOES;
-	_glScissorIndexedvOES = glScissorIndexedvOES;
-	_glDepthRangeArrayfvOES = glDepthRangeArrayfvOES;
-	_glDepthRangeIndexedfOES = glDepthRangeIndexedfOES;
-	_glGetFloati_vOES = glGetFloati_vOES;
-	_glEnableiOES = glEnableiOES;
-	_glDisableiOES = glDisableiOES;
-	_glIsEnablediOES = glIsEnablediOES;
+	_glViewportArrayvOES = (PFNGLVIEWPORTARRAYVOES)GPA(glViewportArrayvOES);
+	_glViewportIndexedfOES = (PFNGLVIEWPORTINDEXEDFOES)GPA(glViewportIndexedfOES);
+	_glViewportIndexedfvOES = (PFNGLVIEWPORTINDEXEDFVOES)GPA(glViewportIndexedfvOES);
+	_glScissorArrayvOES = (PFNGLSCISSORARRAYVOES)GPA(glScissorArrayvOES);
+	_glScissorIndexedOES = (PFNGLSCISSORINDEXEDOES)GPA(glScissorIndexedOES);
+	_glScissorIndexedvOES = (PFNGLSCISSORINDEXEDVOES)GPA(glScissorIndexedvOES);
+	_glDepthRangeArrayfvOES = (PFNGLDEPTHRANGEARRAYFVOES)GPA(glDepthRangeArrayfvOES);
+	_glDepthRangeIndexedfOES = (PFNGLDEPTHRANGEINDEXEDFOES)GPA(glDepthRangeIndexedfOES);
+	_glGetFloati_vOES = (PFNGLGETFLOATI_VOES)GPA(glGetFloati_vOES);
+	_glEnableiOES = (PFNGLENABLEIOES)GPA(glEnableiOES);
+	_glDisableiOES = (PFNGLDISABLEIOES)GPA(glDisableiOES);
+	_glIsEnablediOES = (PFNGLISENABLEDIOES)GPA(glIsEnablediOES);
 #endif
 
 #ifdef GL_OVR_multiview
-	_glFramebufferTextureMultiviewOVR = glFramebufferTextureMultiviewOVR;
+	_glFramebufferTextureMultiviewOVR = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)GPA(glFramebufferTextureMultiviewOVR);
 #endif
 
 #ifdef GL_OVR_multiview_multisampled_render_to_texture
-	_glFramebufferTextureMultisampleMultiviewOVR = glFramebufferTextureMultisampleMultiviewOVR;
+	_glFramebufferTextureMultisampleMultiviewOVR = (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR)GPA(glFramebufferTextureMultisampleMultiviewOVR);
 #endif
 
 #ifdef GL_QCOM_alpha_test
-	_glAlphaFuncQCOM = glAlphaFuncQCOM;
+	_glAlphaFuncQCOM = (PFNGLALPHAFUNCQCOM)GPA(glAlphaFuncQCOM);
 #endif
 
 #ifdef GL_QCOM_driver_control
-	_glGetDriverControlsQCOM = glGetDriverControlsQCOM;
-	_glGetDriverControlStringQCOM = glGetDriverControlStringQCOM;
-	_glEnableDriverControlQCOM = glEnableDriverControlQCOM;
-	_glDisableDriverControlQCOM = glDisableDriverControlQCOM;
+	_glGetDriverControlsQCOM = (PFNGLGETDRIVERCONTROLSQCOM)GPA(glGetDriverControlsQCOM);
+	_glGetDriverControlStringQCOM = (PFNGLGETDRIVERCONTROLSTRINGQCOM)GPA(glGetDriverControlStringQCOM);
+	_glEnableDriverControlQCOM = (PFNGLENABLEDRIVERCONTROLQCOM)GPA(glEnableDriverControlQCOM);
+	_glDisableDriverControlQCOM = (PFNGLDISABLEDRIVERCONTROLQCOM)GPA(glDisableDriverControlQCOM);
 #endif
 
 #ifdef GL_QCOM_extended_get
-	_glExtGetTexturesQCOM = glExtGetTexturesQCOM;
-	_glExtGetBuffersQCOM = glExtGetBuffersQCOM;
-	_glExtGetRenderbuffersQCOM = glExtGetRenderbuffersQCOM;
-	_glExtGetFramebuffersQCOM = glExtGetFramebuffersQCOM;
-	_glExtGetTexLevelParameterivQCOM = glExtGetTexLevelParameterivQCOM;
-	_glExtTexObjectStateOverrideiQCOM = glExtTexObjectStateOverrideiQCOM;
-	_glExtGetTexSubImageQCOM = glExtGetTexSubImageQCOM;
-	_glExtGetBufferPointervQCOM = glExtGetBufferPointervQCOM;
+	_glExtGetTexturesQCOM = (PFNGLEXTGETTEXTURESQCOM)GPA(glExtGetTexturesQCOM);
+	_glExtGetBuffersQCOM = (PFNGLEXTGETBUFFERSQCOM)GPA(glExtGetBuffersQCOM);
+	_glExtGetRenderbuffersQCOM = (PFNGLEXTGETRENDERBUFFERSQCOM)GPA(glExtGetRenderbuffersQCOM);
+	_glExtGetFramebuffersQCOM = (PFNGLEXTGETFRAMEBUFFERSQCOM)GPA(glExtGetFramebuffersQCOM);
+	_glExtGetTexLevelParameterivQCOM = (PFNGLEXTGETTEXLEVELPARAMETERIVQCOM)GPA(glExtGetTexLevelParameterivQCOM);
+	_glExtTexObjectStateOverrideiQCOM = (PFNGLEXTTEXOBJECTSTATEOVERRIDEIQCOM)GPA(glExtTexObjectStateOverrideiQCOM);
+	_glExtGetTexSubImageQCOM = (PFNGLEXTGETTEXSUBIMAGEQCOM)GPA(glExtGetTexSubImageQCOM);
+	_glExtGetBufferPointervQCOM = (PFNGLEXTGETBUFFERPOINTERVQCOM)GPA(glExtGetBufferPointervQCOM);
 #endif
 
 #ifdef GL_QCOM_extended_get2
-	_glExtGetShadersQCOM = glExtGetShadersQCOM;
-	_glExtGetProgramsQCOM = glExtGetProgramsQCOM;
-	_glExtIsProgramBinaryQCOM = glExtIsProgramBinaryQCOM;
-	_glExtGetProgramBinarySourceQCOM = glExtGetProgramBinarySourceQCOM;
+	_glExtGetShadersQCOM = (PFNGLEXTGETSHADERSQCOM)GPA(glExtGetShadersQCOM);
+	_glExtGetProgramsQCOM = (PFNGLEXTGETPROGRAMSQCOM)GPA(glExtGetProgramsQCOM);
+	_glExtIsProgramBinaryQCOM = (PFNGLEXTISPROGRAMBINARYQCOM)GPA(glExtIsProgramBinaryQCOM);
+	_glExtGetProgramBinarySourceQCOM = (PFNGLEXTGETPROGRAMBINARYSOURCEQCOM)GPA(glExtGetProgramBinarySourceQCOM);
 #endif
 
 #ifdef GL_QCOM_tiled_rendering
-	_glStartTilingQCOM = glStartTilingQCOM;
-	_glEndTilingQCOM = glEndTilingQCOM;
+	_glStartTilingQCOM = (PFNGLSTARTTILINGQCOM)GPA(glStartTilingQCOM);
+	_glEndTilingQCOM = (PFNGLENDTILINGQCOM)GPA(glEndTilingQCOM);
 #endif
 
 	ggl_rebind(enableDebug);

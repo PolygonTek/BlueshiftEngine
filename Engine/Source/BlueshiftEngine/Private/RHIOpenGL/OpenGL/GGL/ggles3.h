@@ -2,7 +2,7 @@
  *
  * ggles3.h
  * ggl (OpenGL glue code library)
- * Version: 0.4
+ * Version: 0.5
  *
  * Copyright 2011 Ju Hyung Lee. All rights reserved.
  *
@@ -41,7 +41,6 @@ extern "C" {
 
 #if defined(_WIN32)
 #include "GLES3/gl3.h"
-//#include "GLES2/gl2ext.h"
 #elif defined(__APPLE__)
 #include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>

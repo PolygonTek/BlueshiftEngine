@@ -2,7 +2,7 @@
  *
  * gegl.c
  * ggl (OpenGL glue code library)
- * Version: 0.4
+ * Version: 0.5
  *
  * Copyright 2011 Ju Hyung Lee. All rights reserved.
  *
@@ -1052,6 +1052,13 @@ static EGLint APIENTRY d_eglWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR sync, EGLint 
 	CheckGLError("eglWaitSyncKHR");
 	return ret;
 }
+
+#if defined(ANDROID) || defined(__linux__)
+#define GPA(a) eglGetProcAddress(#a)
+#elif defined(__APPLE__)
+#define GPA(a) a
+#endif
+
 geglext_t geglext;
 static const char *geglext_str = NULL;
 
