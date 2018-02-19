@@ -43,28 +43,13 @@ void PlatformAndroid::Quit() {
 }
 
 void PlatformAndroid::Log(const wchar_t *msg) {
-    //NSString *nsmsg = [[NSString alloc] initWithBytes:msg
-    //                                           length:wcslen(msg) * sizeof(*msg)
-    //                                         encoding:NSUTF32LittleEndianStringEncoding];
-    //NSLog(@"%@", nsmsg);
-    __android_log_write(ANDROID_LOG_INFO, "blueshift", tombs(msg));
+    __android_log_write(ANDROID_LOG_INFO, "Blueshift", tombs(msg));
 }
 
 void PlatformAndroid::Error(const wchar_t *msg) {
-    //NSString *nsmsg = [[NSString alloc] initWithBytes:msg
-    //                                           length:wcslen(msg) * sizeof(*msg)
-    //                                         encoding:NSUTF32LittleEndianStringEncoding];
-    //
-    //UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error"
-    //                                                message:nsmsg
-    //                                               delegate:nil
-    //                                      cancelButtonTitle:@"OK"
-    //                                      otherButtonTitles: nil];
-    //[alert show];
-    //
-    //Quit();
-    __android_log_write(ANDROID_LOG_ERROR, "blueshift", tombs(msg));
-}
+    __android_log_write(ANDROID_LOG_ERROR, "Blueshift", tombs(msg));
 
+    Quit();
+}
 
 BE_NAMESPACE_END
