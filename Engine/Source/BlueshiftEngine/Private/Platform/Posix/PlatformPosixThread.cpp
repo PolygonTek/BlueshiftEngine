@@ -16,7 +16,9 @@
 #include "Platform/PlatformThread.h"
 #include <pthread.h>
 #include <sched.h>
+#ifndef __ANDROID__
 #include <sys/timeb.h>
+#endif
 
 BE_NAMESPACE_BEGIN
 
@@ -33,6 +35,20 @@ static void SetAffinity(int affinity) {
         if (thread_policy_set(mach_thread_self(), THREAD_AFFINITY_POLICY, (integer_t*)&ap, THREAD_AFFINITY_POLICY_COUNT) != KERN_SUCCESS) {
             std::cerr << "Thread: cannot set affinity" << std::endl;
         }
+    }
+}
+
+#elif defined(__ANDROID__)
+
+#include <unistd.h>
+#include <sys/syscall.h>
+
+static void SetAffinity(int affinity) {
+    pid_t pid = gettid();
+    int syscallres = syscall(__NR_sched_setaffinity, pid, sizeof(affinity), &affinity);
+    if (syscallres) {
+        int err = errno;
+        std::cerr << "Thread: cannot set affinity" << std::endl;
     }
 }
 
@@ -164,21 +180,31 @@ void PlatformPosixCondition::Wait(const PlatformPosixCondition *posixCondition, 
 }
 
 struct timespec *MillisecondsFromNow(struct timespec *time, int millisecs) {
-    timeb currSysTime;
-    int64_t nanosecs, secs;
     const int64_t NANOSEC_PER_MILLISEC = 1000000;
     const int64_t NANOSEC_PER_SEC = 1000000000;
 
+#ifdef __ANDROID__
+    struct timeval tvstruct;
+    gettimeofday(&tvstruct, NULL);
+
+    int64_t secs = tvstruct.tv_sec;
+    int64_t nanosecs = ((int64_t)(millisecs + tvstruct.tv_usec * 1000)) * NANOSEC_PER_MILLISEC;
+    if (nanosecs >= NANOSEC_PER_SEC) {
+        secs = secs + 1;
+        nanosecs %= NANOSEC_PER_SEC;
+    }
+#else
     // get current system time and add millisecs
+    timeb currSysTime;
     ftime(&currSysTime);
 
-    nanosecs = ((int64_t) (millisecs + currSysTime.millitm)) * NANOSEC_PER_MILLISEC;
+    int64_t secs = currSysTime.time;
+    int64_t nanosecs = ((int64_t)(millisecs + currSysTime.millitm)) * NANOSEC_PER_MILLISEC;
     if (nanosecs >= NANOSEC_PER_SEC) {
-        secs = currSysTime.time + 1;
+        secs = secs + 1;
         nanosecs %= NANOSEC_PER_SEC;
-    } else {
-        secs = currSysTime.time;
     }
+#endif
 
     time->tv_nsec = (long)nanosecs;
     time->tv_sec = (long)secs;
