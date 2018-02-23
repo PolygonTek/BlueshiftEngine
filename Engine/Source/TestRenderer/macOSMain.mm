@@ -16,7 +16,7 @@
 #include "Application.h"
 
 //#define CREATE_SUB_WINDOW
-#define USE_SHARED_CONTEXT      true
+#define USE_SHARED_CONTEXT      false
 
 @interface MyWindow : NSWindow
 
@@ -154,9 +154,9 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     BE1::Engine::InitBase(enginePath, false, SystemLog, SystemError);
     
     mainWindow = [self createGLWindow:NSMakeSize(640, 480) title:@"Main Window"];
-    NSView *mainContentView = [mainWindow contentView]
+    NSView *mainContentView = [mainWindow contentView];
 
-    ::app.Init(mainContentView);
+    ::app.Init((__bridge BE1::RHI::WindowHandle)mainContentView);
     
     ::app.LoadResources();
     
@@ -168,7 +168,7 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
 
 #ifdef CREATE_SUB_WINDOW
     subWindow = [self createGLWindow:NSMakeSize(320, 240) title:@"Sub Window"];
-    NSView *subContentView = [subWindow contentView]
+    NSView *subContentView = [subWindow contentView];
 
     subWindow.context = BE1::rhi.CreateContext((__bridge BE1::RHI::WindowHandle)subContentView, USE_SHARED_CONTEXT);    
     BE1::rhi.SetContextDisplayFunc(subWindow.context, DisplaySubContext, NULL, true);

@@ -163,7 +163,7 @@ static void SystemError(int errLevel, const wchar_t *msg) {
     
     [mainWindow makeKeyAndVisible];
 
-    ::app.Init(rootViewController.view);
+    ::app.Init((__bridge BE1::RHI::WindowHandle)[rootViewController view]);
     
     ::app.LoadResources();
     
