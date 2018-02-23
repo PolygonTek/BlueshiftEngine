@@ -16,7 +16,7 @@
 
 class Application {
 public:
-    void                Init();
+    void                Init(BE1::RHI::WindowHandle windowHandle);
     void                Shutdown();
 
     void                LoadResources();

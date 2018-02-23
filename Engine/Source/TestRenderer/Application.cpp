@@ -97,7 +97,7 @@ void main() {
     clipRectShader = BE1::rhi.CreateShader("cliprect_shader", clipRectVSText, clipRectFSText);
 }
 
-void Application::Init() {
+void Application::Init(BE1::RHI::WindowHandle windowHandle) {
     BE1::RHI::Settings settings;
     settings.colorBits      = 24;
     settings.alphaBits      = settings.colorBits == 32 ? 8 : 0;
@@ -105,7 +105,7 @@ void Application::Init() {
     settings.stencilBits    = 0;
     settings.multiSamples   = 0;
 
-    BE1::rhi.Init(&settings);
+    BE1::rhi.Init(windowHandle, &settings);
 }
 
 void Application::Shutdown() {

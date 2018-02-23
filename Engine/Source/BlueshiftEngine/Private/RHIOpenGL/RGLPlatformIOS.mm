@@ -200,7 +200,7 @@ const float userContentScaleFactor = 2.0f;
     glContext->displayFunc(glContext->handle, glContext->displayFuncDataPtr);
 }
 
-- (void)swapBuffers {
+- (bool)swapBuffers {
     gglBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     
     gglBindRenderbuffer(GL_RENDERBUFFER, colorbuffer);
@@ -210,7 +210,8 @@ const float userContentScaleFactor = 2.0f;
     //gglDiscardFramebufferEXT(GL_READ_FRAMEBUFFER_APPLE, 2, discards);
     gglInvalidateFramebuffer(GL_READ_FRAMEBUFFER_APPLE, 2, discards);
     
-    [glContext->eaglContext presentRenderbuffer:GL_RENDERBUFFER];
+    bool succeeded = [glContext->eaglContext presentRenderbuffer:GL_RENDERBUFFER];
+    return succeeded;
 }
 
 @end // @implementation EAGLView
@@ -229,15 +230,15 @@ static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"")
 static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
 
 static void GetGLVersion(int *major, int *minor) {
-	const char *verstr = (const char *)glGetString(GL_VERSION);
-	if (!verstr || sscanf(verstr, "%d.%d", major, minor) != 2) {
-		*major = *minor = 0;
-	}
+    const char *verstr = (const char *)glGetString(GL_VERSION);
+    if (!verstr || sscanf(verstr, "%d.%d", major, minor) != 2) {
+        *major = *minor = 0;
+    }
 }
 
-void OpenGLRHI::InitMainContext(const Settings *settings) {
-	mainContext = new GLContext;
-	mainContext->state = new GLState;
+void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
+    mainContext = new GLContext;
+    mainContext->state = new GLState;
     
     // Create EAGLContext
     mainContext->eaglContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
@@ -248,15 +249,15 @@ void OpenGLRHI::InitMainContext(const Settings *settings) {
     // Make current context
     [EAGLContext setCurrentContext:mainContext->eaglContext];
     
-	GetGLVersion(&majorVersion, &minorVersion);
+    GetGLVersion(&majorVersion, &minorVersion);
 
     int decimalVersion = majorVersion * 10 + minorVersion;
-	if (decimalVersion < 30) {
-		//BLib::Error(FatalErr, L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
-	}
+    if (decimalVersion < 30) {
+        //BLib::Error(FatalErr, L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
+    }
 
     // gglXXX 함수 바인딩 및 확장 flag 초기화
-	ggl_init(gl_debug.GetBool());
+    ggl_init(gl_debug.GetBool());
     
     // default FBO
     mainContext->defaultFramebuffer = 0;
@@ -266,36 +267,36 @@ void OpenGLRHI::InitMainContext(const Settings *settings) {
 }
 
 void OpenGLRHI::FreeMainContext() {
-	// Delete default VAO for main context
-	gglDeleteVertexArrays(1, &mainContext->defaultVAO);
+    // Delete default VAO for main context
+    gglDeleteVertexArrays(1, &mainContext->defaultVAO);
 
-	// Sets the current context to nil.
+    // Sets the current context to nil.
     [EAGLContext setCurrentContext:nil];
 
 #if !__has_feature(objc_arc)
-	[mainContext->eaglContext release];
+    [mainContext->eaglContext release];
 #endif
 
-	SAFE_DELETE(mainContext->state);
-	SAFE_DELETE(mainContext);
+    SAFE_DELETE(mainContext->state);
+    SAFE_DELETE(mainContext);
 }
 
 RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
-	GLContext *ctx = new GLContext;
+    GLContext *ctx = new GLContext;
 
-	int handle = contextList.FindNull();
-	if (handle == -1) {
-		handle = contextList.Append(ctx);
-	} else {
-		contextList[handle] = ctx;
-	}
+    int handle = contextList.FindNull();
+    if (handle == -1) {
+        handle = contextList.Append(ctx);
+    } else {
+        contextList[handle] = ctx;
+    }
 
     ctx->handle = (Handle)handle;
     ctx->onDemandDrawing = false;
     ctx->rootView = (__bridge UIView *)windowHandle;
 
-	if (!useSharedContext) {
-		ctx->state = mainContext->state;
+    if (!useSharedContext) {
+        ctx->state = mainContext->state;
         ctx->eaglContext = mainContext->eaglContext;
     } else {
         ctx->state = new GLState;
@@ -303,7 +304,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         if (!ctx->eaglContext) {
             BE_FATALERROR(L"Couldn't create main EAGLContext");
         }
-	}
+    }
     
     CGRect contentRect = [ctx->rootView bounds];
     ctx->eaglView = [[EAGLView alloc] initWithFrame:CGRectMake(0, 0, contentRect.size.width, contentRect.size.height)];
@@ -315,7 +316,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     
     [ctx->rootView addSubview:ctx->eaglView];
     
-	SetContext((Handle)handle);
+    SetContext((Handle)handle);
     
     ctx->defaultFramebuffer = ctx->eaglView.framebuffer;
     
@@ -326,9 +327,9 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ctx->defaultVAO = mainContext->defaultVAO;
     }
     
-	SetDefaultState();
+    SetDefaultState();
 
-	return (Handle)handle;
+    return (Handle)handle;
 }
 
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
@@ -349,18 +350,26 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     }
 
     if (currentContext == ctx) {
-		currentContext = mainContext;
+        currentContext = mainContext;
 
         [EAGLContext setCurrentContext:mainContext->eaglContext];
-	}
+    }
     
     delete ctx;
-    contextList[ctxHandle] = NULL;	
+    contextList[ctxHandle] = NULL;
+}
+
+void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
+    GLContext *ctx = contextList[ctxHandle];
+}
+
+void OpenGLRHI::DeactivateSurface(Handle ctxHandle) {
+    GLContext *ctx = contextList[ctxHandle];
 }
 
 void OpenGLRHI::SetContext(Handle ctxHandle) {
     EAGLContext *currentContext = [EAGLContext currentContext];
-	GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     if (currentContext != ctx->eaglContext) {
         // This ensures that previously submitted commands are delivered to the graphics hardware in a timely fashion.
@@ -368,8 +377,8 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     }
 
     [EAGLContext setCurrentContext:ctx->eaglContext];
-	
-	this->currentContext = ctx;
+
+    this->currentContext = ctx;
 }
 
 void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
@@ -391,9 +400,9 @@ void OpenGLRHI::DisplayContext(Handle ctxHandle) {
 }
 
 RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
-	const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
+    const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
-	return (__bridge WindowHandle)ctx->rootView;
+    return (__bridge WindowHandle)ctx->rootView;
 }
 
 void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
@@ -429,21 +438,26 @@ void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
 void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
-void OpenGLRHI::SwapBuffers() const {
-	if (!gl_ignoreGLError.GetBool()) {
-		CheckError("OpenGLRHI::SwapBuffers");
-	}
+bool OpenGLRHI::SwapBuffers() const {
+    if (!gl_ignoreGLError.GetBool()) {
+        CheckError("OpenGLRHI::SwapBuffers");
+    }
 
-	if (gl_finish.GetBool()) {
-		glFinish();
-	}
+    if (gl_finish.GetBool()) {
+        glFinish();
+    }
 
-    [currentContext->eaglView swapBuffers];
+    bool succeeded = [currentContext->eaglView swapBuffers];
+    if (succeeded) {
+        return false;
+    }
     
-	if (gl_debug.IsModified()) {
-		ggl_rebind(gl_debug.GetBool());
-		gl_debug.ClearModified();
-	}
+    if (gl_debug.IsModified()) {
+        ggl_rebind(gl_debug.GetBool());
+        gl_debug.ClearModified();
+    }
+
+    return true;
 }
 
 void OpenGLRHI::SwapInterval(int interval) const {

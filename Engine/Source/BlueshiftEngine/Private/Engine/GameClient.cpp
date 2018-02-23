@@ -97,7 +97,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
 
     inputSystem.Init();
 
-    renderSystem.Init(&settings);
+    renderSystem.Init(windowHandle, &settings);
 
     soundSystem.Init(windowHandle);
 

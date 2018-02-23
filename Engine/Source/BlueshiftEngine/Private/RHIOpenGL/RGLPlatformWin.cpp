@@ -447,7 +447,7 @@ static void InitGLFunctions() {
     DestroyWindow(hwndFake);
 }
 
-void OpenGLRHI::InitMainContext(const Settings *settings) {
+void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
     InitGLFunctions();
     
     // Create main context
@@ -639,6 +639,14 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = nullptr; 
 }
 
+void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
+    GLContext *ctx = contextList[ctxHandle];
+}
+
+void OpenGLRHI::DeactivateSurface(Handle ctxHandle) {
+    GLContext *ctx = contextList[ctxHandle];
+}
+
 void OpenGLRHI::SetContext(Handle ctxHandle) {
     HDC currentDC = wglGetCurrentDC();
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
@@ -794,7 +802,7 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     ::SetDeviceGammaRamp(currentContext->hdc, ramp);
 }
 
-void OpenGLRHI::SwapBuffers() const {
+bool OpenGLRHI::SwapBuffers() const {
     if (!gl_ignoreGLError.GetBool()) {
         CheckError("OpenGLRHI::SwapBuffers");
     }
@@ -805,7 +813,19 @@ void OpenGLRHI::SwapBuffers() const {
 
     //gglFlush();
 
-    ::SwapBuffers(currentContext->hdc);
+    BOOL succeeded = ::SwapBuffers(currentContext->hdc);
+    if (!succeeded) {
+        DWORD errCode = GetLastError();
+        TCHAR *errText;
+
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, errCode, 
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), 
+            (LPTSTR)&errText, 0, nullptr);
+
+        BE_WARNLOG(L"Failed to SwapBuffers : %ls\n", errText);
+        LocalFree(errText);
+        return false;
+    }
 
     if (gl_debug.IsModified()) {
         gl_debug.ClearModified();
@@ -823,6 +843,8 @@ void OpenGLRHI::SwapBuffers() const {
             gwgl_rebind(gl_debug.GetBool());
         }
     }
+
+    return true;
 }
 
 void OpenGLRHI::SwapInterval(int interval) const {

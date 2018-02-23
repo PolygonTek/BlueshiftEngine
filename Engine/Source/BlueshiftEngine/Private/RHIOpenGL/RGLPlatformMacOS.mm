@@ -241,111 +241,111 @@ static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
 static CVar         gl_debugLevel(L"gl_debugLevel", L"3", CVar::Integer, L"");
 static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"");
 static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
-static CVar			gl_screen(L"gl_screen", L"-1", CVar::Integer, L"");
-static CVar			gl_useMacMTEngine(L"gl_useMacMTEngine", L"1", CVar::Bool, L"");
+static CVar         gl_screen(L"gl_screen", L"-1", CVar::Integer, L"");
+static CVar         gl_useMacMTEngine(L"gl_useMacMTEngine", L"1", CVar::Bool, L"");
 
 #define MAX_DISPLAYS 32
 
 static CGDirectDisplayID MacOS_DisplayToUse() {
-	static bool gotDisplay = NO;
-	static CGDirectDisplayID displayToUse;
+    static bool gotDisplay = NO;
+    static CGDirectDisplayID displayToUse;
 
-	if (gotDisplay) {
-		return displayToUse;
-	}
+    if (gotDisplay) {
+        return displayToUse;
+    }
 
-	CGDirectDisplayID displays[MAX_DISPLAYS];
-	CGDisplayCount displayCount;
+    CGDirectDisplayID displays[MAX_DISPLAYS];
+    CGDisplayCount displayCount;
 
-	// CGGenActiveDisplayList: The first entry in the list of active displays is the main display. 
-	// In case of mirroring, the first entry is the largest drawable display or, if all are the same size, 
-	// the display with the greatest pixel depth.
-	CGDisplayErr err = CGGetActiveDisplayList(MAX_DISPLAYS, displays, &displayCount);
-	if (err != CGDisplayNoErr) {
-		BE_FATALERROR(L"Cannot get display list -- CGGetActiveDisplayList returned %d.", err);
-	}
+    // CGGenActiveDisplayList: The first entry in the list of active displays is the main display. 
+    // In case of mirroring, the first entry is the largest drawable display or, if all are the same size, 
+    // the display with the greatest pixel depth.
+    CGDisplayErr err = CGGetActiveDisplayList(MAX_DISPLAYS, displays, &displayCount);
+    if (err != CGDisplayNoErr) {
+        BE_FATALERROR(L"Cannot get display list -- CGGetActiveDisplayList returned %d.", err);
+    }
 
-	// -1, the default, means to use the main screen
-	int displayIndex = gl_screen.GetInteger();
+    // -1, the default, means to use the main screen
+    int displayIndex = gl_screen.GetInteger();
 
-	if (displayIndex < 0 || displayIndex >= displayCount) {
-		// This is documented (in CGDirectDisplay.h) to be the main display. 
-		// We want to return this instead of kCGDirectMainDisplay since this will allow us to compare display IDs.
-		displayToUse = displays[0];
-	} else {
-		displayToUse = displays[displayIndex];
-	}
+    if (displayIndex < 0 || displayIndex >= displayCount) {
+        // This is documented (in CGDirectDisplay.h) to be the main display. 
+        // We want to return this instead of kCGDirectMainDisplay since this will allow us to compare display IDs.
+        displayToUse = displays[0];
+    } else {
+        displayToUse = displays[displayIndex];
+    }
 
-	gotDisplay = YES;
+    gotDisplay = YES;
 
-	return displayToUse;
+    return displayToUse;
 }
 
 #define MAX_RENDERER_INFO_COUNT 128
 
 // Returns zero if there are no hardware renderers.  Otherwise, returns the max memory across all renderers (on the presumption that the screen that we'll use has the most memory).
 static uint32_t MacOS_QueryVideoMemory() {
-	int maxVRAM = 0;
-	int vram = 0;
-	int rendererInfoCount = MAX_RENDERER_INFO_COUNT;
-	CGLRendererInfoObj rendererInfos[MAX_RENDERER_INFO_COUNT];
+    int maxVRAM = 0;
+    int vram = 0;
+    int rendererInfoCount = MAX_RENDERER_INFO_COUNT;
+    CGLRendererInfoObj rendererInfos[MAX_RENDERER_INFO_COUNT];
 
-	CGLError err = CGLQueryRendererInfo(CGDisplayIDToOpenGLDisplayMask(MacOS_DisplayToUse()), rendererInfos, &rendererInfoCount);
-	if (err) {
-		BE_LOG(L"CGLQueryRendererInfo -> %d\n", err);
-		return vram;
-	}
+    CGLError err = CGLQueryRendererInfo(CGDisplayIDToOpenGLDisplayMask(MacOS_DisplayToUse()), rendererInfos, &rendererInfoCount);
+    if (err) {
+        BE_LOG(L"CGLQueryRendererInfo -> %d\n", err);
+        return vram;
+    }
 
-	int totalRenderers = 0;
-	for (int rendererInfoIndex = 0; rendererInfoIndex < rendererInfoCount && totalRenderers < rendererInfoCount; rendererInfoIndex++) {
-		CGLRendererInfoObj rendererInfo = rendererInfos[rendererInfoIndex];
+    int totalRenderers = 0;
+    for (int rendererInfoIndex = 0; rendererInfoIndex < rendererInfoCount && totalRenderers < rendererInfoCount; rendererInfoIndex++) {
+        CGLRendererInfoObj rendererInfo = rendererInfos[rendererInfoIndex];
 
-		int rendererCount;
-		err = CGLDescribeRenderer(rendererInfo, 0, kCGLRPRendererCount, &rendererCount);
-		if (err) {
-			BE_LOG(L"CGLDescribeRenderer(kCGLRPRendererID) -> %d\n", err);
-			continue;
-		}
+        int rendererCount;
+        err = CGLDescribeRenderer(rendererInfo, 0, kCGLRPRendererCount, &rendererCount);
+        if (err) {
+            BE_LOG(L"CGLDescribeRenderer(kCGLRPRendererID) -> %d\n", err);
+            continue;
+        }
 
-		for (int rendererIndex = 0; rendererIndex < rendererCount; rendererIndex++) {
-			totalRenderers++;
+        for (int rendererIndex = 0; rendererIndex < rendererCount; rendererIndex++) {
+            totalRenderers++;
 
-			int rendererID = 0xffffffff;
-			err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPRendererID, &rendererID);
-			if (err) {
-				BE_LOG(L"CGLDescribeRenderer(kCGLRPRendererID) -> %d\n", err);
-				continue;
-			}
+            int rendererID = 0xffffffff;
+            err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPRendererID, &rendererID);
+            if (err) {
+                BE_LOG(L"CGLDescribeRenderer(kCGLRPRendererID) -> %d\n", err);
+                continue;
+            }
 
-			int accelerated = 0;
-			err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPAccelerated, &accelerated);
-			if (err) {
-				BE_LOG(L"CGLDescribeRenderer(kCGLRPAccelerated) -> %d\n", err);
-				continue;
-			}
+            int accelerated = 0;
+            err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPAccelerated, &accelerated);
+            if (err) {
+                BE_LOG(L"CGLDescribeRenderer(kCGLRPAccelerated) -> %d\n", err);
+                continue;
+            }
 
-			if (!accelerated) {
-				continue;
-			}
+            if (!accelerated) {
+                continue;
+            }
 
-			vram = 0;
-			err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPVideoMemoryMegabytes, &vram);
-			if (err) {
-				BE_LOG(L"CGLDescribeRenderer -> %d\n", err);
-				continue;
-			}
+            vram = 0;
+            err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPVideoMemoryMegabytes, &vram);
+            if (err) {
+                BE_LOG(L"CGLDescribeRenderer -> %d\n", err);
+                continue;
+            }
 
-			// presumably we'll be running on the best card, so we'll take the max of the vrams
-			if (vram > maxVRAM) {
-				maxVRAM = vram;
-			}
-		}
+            // presumably we'll be running on the best card, so we'll take the max of the vrams
+            if (vram > maxVRAM) {
+                maxVRAM = vram;
+            }
+        }
 
 #if 0
-		err = CGLDestroyRendererInfo(rendererInfo);
-		if (err) {
-			BLib::Log(NormalLog, "CGLDestroyRendererInfo -> %d\n", err);
-		}
+        err = CGLDestroyRendererInfo(rendererInfo);
+        if (err) {
+            BLib::Log(NormalLog, "CGLDestroyRendererInfo -> %d\n", err);
+        }
 #endif
 	}
 
@@ -446,19 +446,19 @@ static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretc
 #define MAX_ATTRIB_SIZE 128
 
 static NSOpenGLPixelFormatAttribute *GetPixelFormatAttributes(bool fullScreen, int inColorBits, int inAlphaBits, int inDepthBits, int inStencilBits, int inMultiSamples) {
-	static NSOpenGLPixelFormatAttribute attribs[MAX_ATTRIB_SIZE];
-	unsigned int numAttribs = 0;
+    static NSOpenGLPixelFormatAttribute attribs[MAX_ATTRIB_SIZE];
+    unsigned int numAttribs = 0;
 
-	// only greater or equal attributes will be selected
-	attribs[numAttribs++] = NSOpenGLPFAMinimumPolicy;
-	attribs[numAttribs++] = 1;
+    // only greater or equal attributes will be selected
+    attribs[numAttribs++] = NSOpenGLPFAMinimumPolicy;
+    attribs[numAttribs++] = 1;
 
-	/*if (fullScreen) {
-		attribs[numAttribs++] = NSOpenGLPFAFullScreen;
-	}*/
+    /*if (fullScreen) {
+        attribs[numAttribs++] = NSOpenGLPFAFullScreen;
+    }*/
 
-	attribs[numAttribs++] = NSOpenGLPFAScreenMask;
-	attribs[numAttribs++] = CGDisplayIDToOpenGLDisplayMask(MacOS_DisplayToUse());
+    attribs[numAttribs++] = NSOpenGLPFAScreenMask;
+    attribs[numAttribs++] = CGDisplayIDToOpenGLDisplayMask(MacOS_DisplayToUse());
     
     // OpenGL core profile
     attribs[numAttribs++] = NSOpenGLPFAOpenGLProfile;
@@ -466,40 +466,40 @@ static NSOpenGLPixelFormatAttribute *GetPixelFormatAttributes(bool fullScreen, i
     attribs[numAttribs++] = NSOpenGLProfileVersion3_2Core;
     //attribs[numAttribs++] = NSOpenGLProfileVersion4_1Core;
 
-	// Require hardware acceleration
-	attribs[numAttribs++] = NSOpenGLPFAAccelerated;
+    // Require hardware acceleration
+    attribs[numAttribs++] = NSOpenGLPFAAccelerated;
 
     // Require double-buffer
-	attribs[numAttribs++] = NSOpenGLPFADoubleBuffer;
+    attribs[numAttribs++] = NSOpenGLPFADoubleBuffer;
 
-	// color bits
-	attribs[numAttribs++] = NSOpenGLPFAColorSize;
-	attribs[numAttribs++] = inColorBits;
+    // color bits
+    attribs[numAttribs++] = NSOpenGLPFAColorSize;
+    attribs[numAttribs++] = inColorBits;
 
-	// Specify the number of depth bits
-	attribs[numAttribs++] = NSOpenGLPFADepthSize;
-	attribs[numAttribs++] = inDepthBits;
+    // Specify the number of depth bits
+    attribs[numAttribs++] = NSOpenGLPFADepthSize;
+    attribs[numAttribs++] = inDepthBits;
 
-	// Specify the number of stencil bits
-	attribs[numAttribs++] = NSOpenGLPFAStencilSize;
-	attribs[numAttribs++] = inStencilBits;
+    // Specify the number of stencil bits
+    attribs[numAttribs++] = NSOpenGLPFAStencilSize;
+    attribs[numAttribs++] = inStencilBits;
 
-	// Specify destination alpha
-	attribs[numAttribs++] = NSOpenGLPFAAlphaSize;
-	attribs[numAttribs++] = inAlphaBits;
+    // Specify destination alpha
+    attribs[numAttribs++] = NSOpenGLPFAAlphaSize;
+    attribs[numAttribs++] = inAlphaBits;
 
-	if (inMultiSamples) {
-		int buffers = 1;
-		attribs[numAttribs++] = NSOpenGLPFASampleBuffers;
-		attribs[numAttribs++] = buffers;
-		attribs[numAttribs++] = NSOpenGLPFASamples;
-		attribs[numAttribs++] = inMultiSamples;
-	}
+    if (inMultiSamples) {
+        int buffers = 1;
+        attribs[numAttribs++] = NSOpenGLPFASampleBuffers;
+        attribs[numAttribs++] = buffers;
+        attribs[numAttribs++] = NSOpenGLPFASamples;
+        attribs[numAttribs++] = inMultiSamples;
+    }
 
-	// Terminate the list
-	attribs[numAttribs++] = 0;
+    // Terminate the list
+    attribs[numAttribs++] = 0;
 
-	return attribs;
+return attribs;
 }
 
 static void GetGLVersion(int *major, int *minor) {
@@ -508,39 +508,39 @@ static void GetGLVersion(int *major, int *minor) {
     glGetIntegerv(GL_MAJOR_VERSION, major);
     glGetIntegerv(GL_MINOR_VERSION, minor);
 #else
-	const char *verstr = (const char *)glGetString(GL_VERSION);
-	if (!verstr || sscanf(verstr, "%d.%d", major, minor) != 2) {
-		*major = *minor = 0;
-	}
+    const char *verstr = (const char *)glGetString(GL_VERSION);
+    if (!verstr || sscanf(verstr, "%d.%d", major, minor) != 2) {
+        *major = *minor = 0;
+    }
 #endif
 }
 
-void OpenGLRHI::InitMainContext(const Settings *settings) {
+void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
     availVRAM = MacOS_QueryVideoMemory();
 
-	mainContext = new GLContext;
-	mainContext->state = new GLState;
-	mainContext->display = MacOS_DisplayToUse();
+    mainContext = new GLContext;
+    mainContext->state = new GLState;
+    mainContext->display = MacOS_DisplayToUse();
     //mainContext->glView = [[GLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
     
     //[mainContext->glView setGLContext:mainContext];
     
-	// Create pixel format
-	NSOpenGLPixelFormatAttribute *attribs = GetPixelFormatAttributes(false,
+    // Create pixel format
+    NSOpenGLPixelFormatAttribute *attribs = GetPixelFormatAttributes(false,
         settings->colorBits, settings->alphaBits, settings->depthBits, settings->stencilBits, settings->multiSamples);
-	mainContextPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes: attribs];
-	if (!mainContextPixelFormat) {
-		BE_FATALERROR(L"no pixel format found");
-	}
+    mainContextPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes: attribs];
+    if (!mainContextPixelFormat) {
+        BE_FATALERROR(L"no pixel format found");
+    }
 
-	// Create NSOpenGLContext object
-	mainContext->nsglContext = [[NSOpenGLContext alloc] initWithFormat:mainContextPixelFormat shareContext: nil];
-	if (!mainContext->nsglContext) {
-		BE_FATALERROR(L"Couldn't create main NSOpenGLContext");
-	}
+    // Create NSOpenGLContext object
+    mainContext->nsglContext = [[NSOpenGLContext alloc] initWithFormat:mainContextPixelFormat shareContext: nil];
+    if (!mainContext->nsglContext) {
+        BE_FATALERROR(L"Couldn't create main NSOpenGLContext");
+    }
 
-	// Get CGLContextObj from NSOpenGLContext object
-	mainContext->cglContext = (CGLContextObj)[mainContext->nsglContext CGLContextObj];
+    // Get CGLContextObj from NSOpenGLContext object
+    mainContext->cglContext = (CGLContextObj)[mainContext->nsglContext CGLContextObj];
     
 #if 0 //SUPPORT_GL3
     // When we're using a CoreProfile context, crash if we call a legacy OpenGL function
@@ -551,24 +551,24 @@ void OpenGLRHI::InitMainContext(const Settings *settings) {
     CGLEnable(mainContext->cglContext, kCGLCECrashOnRemovedFunctions);
 #endif
 
-	if (gl_useMacMTEngine.GetBool()) {
-		CGLEnable(mainContext->cglContext, kCGLCEMPEngine);
-	}
+    if (gl_useMacMTEngine.GetBool()) {
+        CGLEnable(mainContext->cglContext, kCGLCEMPEngine);
+    }
     
     //[mainContext->nsglContext setView:mainContext->glView];
 
-	// Make current context
-	[mainContext->nsglContext makeCurrentContext];
+    // Make current context
+    [mainContext->nsglContext makeCurrentContext];
 
-	GetGLVersion(&majorVersion, &minorVersion);
+    GetGLVersion(&majorVersion, &minorVersion);
 
     int decimalVersion = majorVersion * 10 + minorVersion;
-	if (decimalVersion < 33) {
-		BE_FATALERROR(L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
-	}
+    if (decimalVersion < 33) {
+        BE_FATALERROR(L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
+    }
 
     // gglXXX 함수 바인딩 및 확장 flag 초기화
-	ggl_init(gl_debug.GetBool() && !gglext._GL_ARB_debug_output);
+    ggl_init(gl_debug.GetBool() && !gglext._GL_ARB_debug_output);
     
     // Enable debug callback
     if (gl_debug.GetBool() && gglext._GL_ARB_debug_output) {
@@ -584,56 +584,56 @@ void OpenGLRHI::InitMainContext(const Settings *settings) {
 }
 
 void OpenGLRHI::FreeMainContext() {
-	// Delete default VAO for main context
-	gglDeleteVertexArrays(1, &mainContext->defaultVAO);
+    // Delete default VAO for main context
+    gglDeleteVertexArrays(1, &mainContext->defaultVAO);
 
-	[NSOpenGLContext clearCurrentContext];
+    [NSOpenGLContext clearCurrentContext];
 
-	if (CGLClearDrawable(mainContext->cglContext) != kCGLNoError) {
-		BE_FATALERROR(L"CGLClearDrawable: failed");
-	}
+    if (CGLClearDrawable(mainContext->cglContext) != kCGLNoError) {
+        BE_FATALERROR(L"CGLClearDrawable: failed");
+    }
 
-	// This method disassociates the receiver from any associated NSView object.If the receiver is in full - screen or offscreen mode, it exits that mode.
-	[mainContext->nsglContext clearDrawable];
+    // This method disassociates the receiver from any associated NSView object.If the receiver is in full - screen or offscreen mode, it exits that mode.
+    [mainContext->nsglContext clearDrawable];
 
 #if !__has_feature(objc_arc)
-	[mainContext->nsglContext release];
+    [mainContext->nsglContext release];
 #endif
 
-	SAFE_DELETE(mainContext->state);
-	SAFE_DELETE(mainContext);
+    SAFE_DELETE(mainContext->state);
+    SAFE_DELETE(mainContext);
 }
 
 RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSharedContext) {
-	GLContext *ctx = new GLContext;
+    GLContext *ctx = new GLContext;
 
-	int handle = contextList.FindNull();
-	if (handle == -1) {
-		handle = contextList.Append(ctx);
-	} else {
-		contextList[handle] = ctx;
-	}
+    int handle = contextList.FindNull();
+    if (handle == -1) {
+        handle = contextList.Append(ctx);
+    } else {
+        contextList[handle] = ctx;
+    }
 
     ctx->handle = (Handle)handle;
     ctx->onDemandDrawing = false;
     ctx->display = mainContext->display;
     ctx->contentView = (__bridge NSView *)windowHandle;
 
-	if (!useSharedContext) {
-		ctx->state = mainContext->state;
-		ctx->nsglContext = mainContext->nsglContext;
+    if (!useSharedContext) {
+        ctx->state = mainContext->state;
+        ctx->nsglContext = mainContext->nsglContext;
         ctx->cglContext = mainContext->cglContext;
         ctx->defaultVAO = mainContext->defaultVAO;
-	} else {
-		ctx->state = new GLState;
+    } else {
+        ctx->state = new GLState;
 
-		ctx->nsglContext = [[NSOpenGLContext alloc] initWithFormat:mainContextPixelFormat shareContext:mainContext->nsglContext];
-		if (!ctx->nsglContext) {
-			BE_FATALERROR(L"Couldn't create NSOpenGLContext");
-		}
+        ctx->nsglContext = [[NSOpenGLContext alloc] initWithFormat:mainContextPixelFormat shareContext:mainContext->nsglContext];
+        if (!ctx->nsglContext) {
+            BE_FATALERROR(L"Couldn't create NSOpenGLContext");
+        }
 
-		// Get CGLContextObj from NSOpenGLContext object
-		ctx->cglContext = (CGLContextObj)[ctx->nsglContext CGLContextObj];
+        // Get CGLContextObj from NSOpenGLContext object
+ctx->cglContext = (CGLContextObj)[ctx->nsglContext CGLContextObj];
         
 #if 0 //SUPPORT_GL3
         // When we're using a CoreProfile context, crash if we call a legacy OpenGL function
@@ -644,18 +644,18 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         CGLEnable(mainContext->cglContext, kCGLCECrashOnRemovedFunctions);
 #endif
 
-		if (gl_useMacMTEngine.GetBool()) {
-			CGLEnable(ctx->cglContext, kCGLCEMPEngine);
-		}
+        if (gl_useMacMTEngine.GetBool()) {
+            CGLEnable(ctx->cglContext, kCGLCEMPEngine);
+        }
 
-		// Set swap interval to 0
-		//int swapInterval = 0;
-		//[ctx->nsglContext setValues: &swapInterval forParameter: NSOpenGLCPSwapInterval];
+        // Set swap interval to 0
+        //int swapInterval = 0;
+        //[ctx->nsglContext setValues: &swapInterval forParameter: NSOpenGLCPSwapInterval];
 
-		// Setup Opacity - can't change it dynamically later!
-		//int surfaceOpacity = 0;
-		//[ctx->nsglContext setValues: &surfaceOpacity forParameter: NSOpenGLCPSurfaceOpacity];
-	}
+        // Setup Opacity - can't change it dynamically later!
+        //int surfaceOpacity = 0;
+        //[ctx->nsglContext setValues: &surfaceOpacity forParameter: NSOpenGLCPSurfaceOpacity];
+    }
     
     NSRect contentRect = [ctx->contentView bounds];
     
@@ -667,13 +667,13 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 #if USE_DISPLAY_LINK
     [ctx->glView setupDisplayLink];
 #endif
-    
+
     [ctx->contentView addSubview:ctx->glView];
-    
+
     [ctx->nsglContext setView:ctx->glView];
-    
+
     [[ctx->contentView window] setInitialFirstResponder:ctx->glView];
-    
+
     GLint fragmentGPUProcessing, vertexGPUProcessing;
     CGLGetParameter(ctx->cglContext, kCGLCPGPUVertexProcessing, &vertexGPUProcessing);
     CGLGetParameter(ctx->cglContext, kCGLCPGPUFragmentProcessing, &fragmentGPUProcessing);
@@ -681,8 +681,8 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     BE_LOG(L"GPU vertex processing: %hs\n", vertexGPUProcessing ? "YES" : "NO");
     BE_LOG(L"GPU fragment processing: %hs\n", fragmentGPUProcessing ? "YES" : "NO");
 
-	SetContext((Handle)handle);
-    
+    SetContext((Handle)handle);
+
     ctx->defaultFramebuffer = 0;
     
     if (useSharedContext) {
@@ -690,9 +690,9 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         gglGenVertexArrays(1, &ctx->defaultVAO);
     }
 
-	SetDefaultState();
+    SetDefaultState();
 
-	return (Handle)handle;
+    return (Handle)handle;
 }
 
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
@@ -701,29 +701,37 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     if (ctx->nsglContext != mainContext->nsglContext) {
         // Delete default VAO for shared context
         gglDeleteVertexArrays(1, &ctx->defaultVAO);
-        
+
         [ctx->nsglContext clearDrawable];
-        
+
 #if !__has_feature(objc_arc)
         [ctx->nsglContext release];
 #endif
-        
+
         delete ctx->state;
     }
 
     if (currentContext == ctx) {
-		currentContext = mainContext;
+        currentContext = mainContext;
 
-		[mainContext->nsglContext makeCurrentContext];
-	}
-    
+        [mainContext->nsglContext makeCurrentContext];
+    }
+
     delete ctx;
-    contextList[ctxHandle] = NULL;	
+    contextList[ctxHandle] = NULL;
+}
+
+void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
+    GLContext *ctx = contextList[ctxHandle];
+}
+
+void OpenGLRHI::DeactivateSurface(Handle ctxHandle) {
+    GLContext *ctx = contextList[ctxHandle];
 }
 
 void OpenGLRHI::SetContext(Handle ctxHandle) {
     NSOpenGLContext *currentContext = [NSOpenGLContext currentContext];
-	GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     if (currentContext != ctx->nsglContext) {
         // This ensures that previously submitted commands are delivered to the graphics hardware in a timely fashion.
@@ -732,18 +740,18 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
 
     [ctx->nsglContext setView:ctx->glView];
 
-	[ctx->nsglContext makeCurrentContext];
-	
-	this->currentContext = ctx;
+    [ctx->nsglContext makeCurrentContext];
+
+    this->currentContext = ctx;
 }
 
 void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
-    
+
     ctx->displayFunc = displayFunc;
     ctx->displayFuncDataPtr = dataPtr;
     ctx->onDemandDrawing = onDemandDrawing;
-    
+
 #if USE_DISPLAY_LINK
     [ctx->glView startDisplayLink];
 #endif
@@ -756,20 +764,20 @@ void OpenGLRHI::DisplayContext(Handle ctxHandle) {
 }
 
 RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
-	const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
-    
-	return (__bridge WindowHandle)ctx->contentView;
+    const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
+
+    return (__bridge WindowHandle)ctx->contentView;
 }
 
 void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
     GLContext *ctx = contextList[ctxHandle];
-    
+
     if (windowWidth || windowHeight) {
         CGSize windowSize = [ctx->glView bounds].size;
         *windowWidth = windowSize.width;
         *windowHeight = windowSize.height;
     }
-    
+
     if (backingWidth || backingHeight) {
         CGSize backingSize = [ctx->glView backingPixelSize];
         *backingWidth = backingSize.width;
@@ -852,21 +860,21 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     free(values);
 }
 
-void OpenGLRHI::SwapBuffers() const {
-	if (!gl_ignoreGLError.GetBool()) {
-		CheckError("GLRenderer::SwapBuffers");
-	}
+bool OpenGLRHI::SwapBuffers() const {
+    if (!gl_ignoreGLError.GetBool()) {
+        CheckError("GLRenderer::SwapBuffers");
+    }
 
-	if (gl_finish.GetBool()) {
-		glFinish();
-	}
+    if (gl_finish.GetBool()) {
+        glFinish();
+    }
 
-	[currentContext->nsglContext flushBuffer];
+    [currentContext->nsglContext flushBuffer];
     
     //EAGLContext *context = [EAGLContext currentContext];
     //[context presentRenderbuffer:GL_RENDERBUFFER];
 
-	if (gl_debug.IsModified()) {
+    if (gl_debug.IsModified()) {
         if (gglext._GL_ARB_debug_output) {
             if (gl_debug.GetBool()) {
                 gglDebugMessageCallbackARB(OpenGL::DebugCallback, NULL);
@@ -879,7 +887,9 @@ void OpenGLRHI::SwapBuffers() const {
             ggl_rebind(gl_debug.GetBool());
         }
         gl_debug.ClearModified();
-	}
+    }
+
+    return true;
 }
 
 void OpenGLRHI::SwapInterval(int interval) const {

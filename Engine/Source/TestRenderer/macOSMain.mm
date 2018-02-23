@@ -52,8 +52,8 @@
 
 //---------------------------------------------------------------------------------------
 
-__strong MyWindow *mainWindow;
-__strong MyWindow *subWindow;
+static __strong MyWindow *  mainWindow;
+static __strong MyWindow *  subWindow;
 
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate> {
 }
@@ -84,7 +84,7 @@ __strong MyWindow *subWindow;
     [NSApp sendEvent: event];
 }
 
-- (MyWindow *)createGLWindow:(NSSize)size title:(NSString *)title sharedContext:(bool)shared displayFunc:(BE1::RHI::DisplayContextFunc)displayFunc {
+- (MyWindow *)createGLWindow:(NSSize)size title:(NSString *)title {
     NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask;
     
     NSRect contentRect = NSMakeRect(0, 0, size.width, size.height);
@@ -102,12 +102,6 @@ __strong MyWindow *subWindow;
     [window setCollectionBehavior:NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenPrimary];
     
     [window cascade];
-    
-    NSView *contentView = [window contentView];
-    
-    window.context = BE1::rhi.CreateContext((__bridge BE1::RHI::WindowHandle)contentView, shared);
-    
-    BE1::rhi.SetContextDisplayFunc(window.context, displayFunc, NULL, true);
     
     [window makeKeyAndOrderFront:nil];
     
@@ -159,17 +153,25 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     enginePath.CleanPath();
     BE1::Engine::InitBase(enginePath, false, SystemLog, SystemError);
     
-    ::app.Init();
+    mainWindow = [self createGLWindow:NSMakeSize(640, 480) title:@"Main Window"];
+    NSView *mainContentView = [mainWindow contentView]
+
+    ::app.Init(mainContentView);
     
     ::app.LoadResources();
     
-    mainWindow = [self createGLWindow:NSMakeSize(640, 480) title:@"Main Window" sharedContext:USE_SHARED_CONTEXT displayFunc:DisplayMainContext];
+    mainWindow.context = BE1::rhi.CreateContext((__bridge BE1::RHI::WindowHandle)mainContentView, USE_SHARED_CONTEXT);    
+    BE1::rhi.SetContextDisplayFunc(mainWindow.context, DisplayMainContext, NULL, true);
     
     // FBO cannot be shared, so we should create FBO for each context
     mainWindow.renderTarget = ::app.CreateRenderTarget(mainWindow.context);
 
 #ifdef CREATE_SUB_WINDOW
-    subWindow = [self createGLWindow:NSMakeSize(320, 240) title:@"Sub Window" sharedContext:USE_SHARED_CONTEXT displayFunc:DisplaySubContext];
+    subWindow = [self createGLWindow:NSMakeSize(320, 240) title:@"Sub Window"];
+    NSView *subContentView = [subWindow contentView]
+
+    subWindow.context = BE1::rhi.CreateContext((__bridge BE1::RHI::WindowHandle)subContentView, USE_SHARED_CONTEXT);    
+    BE1::rhi.SetContextDisplayFunc(subWindow.context, DisplaySubContext, NULL, true);
 
     subWindow.renderTarget = ::app.CreateRenderTarget(subWindow.context);
 #endif

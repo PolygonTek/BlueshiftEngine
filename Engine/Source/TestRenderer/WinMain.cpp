@@ -17,42 +17,42 @@
 #include "Application.h"
 
 //#define CREATE_SUB_WINDOW
-#define USE_SHARED_CONTEXT      true
+#define USE_SHARED_CONTEXT  false
 
-static const TCHAR *            mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
-static const TCHAR *            subWindowClassName   = _T("BLUESHIFT_SUB_WINDOW");
+static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
+static const TCHAR *        subWindowClassName   = _T("BLUESHIFT_SUB_WINDOW");
 
-static TCHAR                    szTitle[100];    // The title bar text
+static TCHAR                szTitle[100];    // The title bar text
 
-static BE1::RHI::Handle    mainContext = BE1::RHI::NullContext;
-static BE1::RHI::Handle    subContext = BE1::RHI::NullContext;
+static BE1::RHI::Handle     mainContext = BE1::RHI::NullContext;
+static BE1::RHI::Handle     subContext = BE1::RHI::NullContext;
 
-static BE1::RHI::Handle    mainRenderTarget = BE1::RHI::NullRenderTarget;
-static BE1::RHI::Handle    subRenderTarget = BE1::RHI::NullRenderTarget;
+static BE1::RHI::Handle     mainRenderTarget = BE1::RHI::NullRenderTarget;
+static BE1::RHI::Handle     subRenderTarget = BE1::RHI::NullRenderTarget;
 
-LRESULT CALLBACK                MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK                SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK            SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void SystemLog(int logLevel, const wchar_t *msg) {
     OutputDebugString(msg);
 }
 
 static void SystemError(int errLevel, const wchar_t *msg) {
-    HWND hwnd = FindWindow(mainWindowClassName, NULL);
+    HWND hwnd = FindWindow(mainWindowClassName, nullptr);
     MessageBox(hwnd, msg, L"Error", MB_OK);
     if (errLevel == BE1::FatalErr) {
         exit(0);
     }
 }
 
-static BE1::RHI::Handle CreateRenderWindow(const TCHAR *title, const TCHAR *classname, int width, int height, bool fullscreen, bool useSharedContext) {
+static HWND CreateRenderWindow(const TCHAR *title, const TCHAR *classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
     int styleEx;
     BE1::Rect windowRect;
 
     if (fullscreen) {
         styleEx = WS_EX_TOPMOST;
-        style |= WS_POPUP;	
+        style |= WS_POPUP;
     } else {
         styleEx = 0;
         style |= WS_OVERLAPPEDWINDOW;
@@ -79,19 +79,17 @@ static BE1::RHI::Handle CreateRenderWindow(const TCHAR *title, const TCHAR *clas
         title,
         style,
         windowRect.x, windowRect.y, windowRect.w, windowRect.h, 
-        NULL, NULL, (HINSTANCE)GetModuleHandle(NULL), NULL);
+        nullptr, nullptr, (HINSTANCE)GetModuleHandle(nullptr), nullptr);
 
-    //::SetTimer(hwnd, 0, 100, NULL);
+    //::SetTimer(hwnd, 0, 100, nullptr);
 
     ::SetForegroundWindow(hwnd);
     ::SetFocus(hwnd);
 
-    return BE1::rhi.CreateContext(hwnd, useSharedContext);
+    return hwnd;
 }
 
-static void ChangeRenderWindow(BE1::RHI::Handle contextHandle, int width, int height, bool fullscreen) {
-    HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(contextHandle);
-
+static void ChangeRenderWindow(HWND hwnd, int width, int height, bool fullscreen) {
     int style = GetWindowLong(hwnd, GWL_STYLE);
 
     if (fullscreen) {
@@ -113,7 +111,7 @@ static void ChangeRenderWindow(BE1::RHI::Handle contextHandle, int width, int he
     
     BE1::Rect windowRect;
     windowRect.w = rect.right - rect.left;
-    windowRect.h = rect.bottom - rect.top;	
+    windowRect.h = rect.bottom - rect.top;
 
     if (fullscreen) {
         windowRect.x = 0;
@@ -129,24 +127,18 @@ static void ChangeRenderWindow(BE1::RHI::Handle contextHandle, int width, int he
     ::SetFocus(hwnd);
 }
 
-static void DestroyRenderWindow(BE1::RHI::Handle contextHandle) {
-    HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(contextHandle);
-
-    BE1::rhi.DestroyContext(contextHandle);
-
-    ::DestroyWindow(hwnd);
-}
-
 static void ToggleFullscreen(BE1::RHI::Handle ctx) {
     int width = 1024;
     int height = 768;
 
+    HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(ctx);
+
     if (!BE1::rhi.IsFullscreen()) {
-        ChangeRenderWindow(ctx, width, height, true);
+        ChangeRenderWindow(hwnd, width, height, true);
         BE1::rhi.SetFullscreen(ctx, width, height);
     } else {
         BE1::rhi.ResetFullscreen(ctx);
-        ChangeRenderWindow(ctx, width, height, false);
+        ChangeRenderWindow(hwnd, width, height, false);
     }
 }
 
@@ -166,8 +158,8 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     ::app.Draw(context, subRenderTarget, t);
 }
 
-static void CreateMainWindow(const TCHAR *title, int width, int height) {
-    HINSTANCE hInstance = GetModuleHandle(NULL);
+static HWND CreateMainWindow(const TCHAR *title, int width, int height) {
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     WNDCLASSEX wcex;
     memset(&wcex, 0, sizeof(wcex));
@@ -177,19 +169,18 @@ static void CreateMainWindow(const TCHAR *title, int width, int height) {
     wcex.hInstance          = hInstance;
     wcex.hIcon              = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TESTRENDERER));
     wcex.hIconSm            = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL));
-    wcex.hCursor            = LoadCursor(NULL, IDC_ARROW);
+    wcex.hCursor            = LoadCursor(nullptr, IDC_ARROW);
     //wcex.hbrBackground    = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wcex.lpszMenuName       = MAKEINTRESOURCE(IDC_TESTRENDERER);
     wcex.lpszClassName      = mainWindowClassName;
     RegisterClassEx(&wcex);
 
-    mainContext = CreateRenderWindow(title, mainWindowClassName, width, height, false, USE_SHARED_CONTEXT);
-    
-    BE1::rhi.SetContextDisplayFunc(mainContext, DisplayMainContext, NULL, false);
+    HWND hwnd = CreateRenderWindow(title, mainWindowClassName, width, height, false);
+    return hwnd;
 }
 
-static void CreateSubWindow(const TCHAR *title, int width, int height) {
-    HINSTANCE hInstance = GetModuleHandle(NULL);
+static HWND CreateSubWindow(const TCHAR *title, int width, int height) {
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     WNDCLASSEX wcex;
     memset(&wcex, 0, sizeof(wcex));
@@ -199,14 +190,13 @@ static void CreateSubWindow(const TCHAR *title, int width, int height) {
     wcex.hInstance          = hInstance;
     wcex.hIcon              = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TESTRENDERER));
     wcex.hIconSm            = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL));
-    wcex.hCursor            = LoadCursor(NULL, IDC_ARROW);
+    wcex.hCursor            = LoadCursor(nullptr, IDC_ARROW);
     //wcex.hbrBackground    = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wcex.lpszClassName      = subWindowClassName;
     RegisterClassEx(&wcex);
 
-    subContext = CreateRenderWindow(title, subWindowClassName, width, height, false, USE_SHARED_CONTEXT);
-    
-    BE1::rhi.SetContextDisplayFunc(subContext, DisplaySubContext, NULL, false);
+    HWND hwnd = CreateRenderWindow(title, subWindowClassName, width, height, false);
+    return hwnd;
 }
 
 BOOL InitInstance(int nCmdShow) {
@@ -214,17 +204,23 @@ BOOL InitInstance(int nCmdShow) {
     path.AppendPath("../../..");
     BE1::Engine::InitBase(path.c_str(), false, SystemLog, SystemError);
 
-    app.Init();
+    HWND hwndMain = CreateMainWindow(BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__), 1024, 768);
+
+    app.Init(hwndMain);
 
     app.LoadResources();
 
-    CreateMainWindow(BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__), 1024, 768);
+    mainContext = BE1::rhi.CreateContext(hwndMain, USE_SHARED_CONTEXT);
+    BE1::rhi.SetContextDisplayFunc(mainContext, DisplayMainContext, nullptr, false);
 
     // FBO cannot be shared, so we should create FBO for each context
     mainRenderTarget = app.CreateRenderTarget(mainContext);
 
 #ifdef CREATE_SUB_WINDOW
-    CreateSubWindow(_T("sub window"), 512, 384);
+    HWND hwndSub = CreateSubWindow(_T("sub window"), 512, 384);
+
+    subContext = BE1::rhi.CreateContext(hwndSub, USE_SHARED_CONTEXT);
+    BE1::rhi.SetContextDisplayFunc(subContext, DisplaySubContext, nullptr, false);
 
     subRenderTarget = app.CreateRenderTarget(subContext);
 #endif
@@ -235,16 +231,24 @@ BOOL InitInstance(int nCmdShow) {
 void ShutdownInstance() {
     app.FreeResources();
     
+#ifdef CREATE_SUB_WINDOW
     if (subContext) {
         BE1::rhi.DeleteRenderTarget(subRenderTarget);
 
-        DestroyRenderWindow(subContext);
+        HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(subContext);
+        BE1::rhi.DestroyContext(subContext);
+
+        ::DestroyWindow(hwnd);
     }
+#endif
 
     if (mainContext) {
         BE1::rhi.DeleteRenderTarget(mainRenderTarget);
 
-        DestroyRenderWindow(mainContext);
+        HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(mainContext);
+        BE1::rhi.DestroyContext(mainContext);
+
+        ::DestroyWindow(hwnd);
     }
 
     app.Shutdown();
@@ -273,7 +277,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TESTRENDERER));
 
     while (1) {
-        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             if (msg.message == WM_QUIT) {
                 goto QUIT;
             }
@@ -289,9 +293,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
         if (mainContext) {
             BE1::rhi.DisplayContext(mainContext);
         }
+#ifdef CREATE_SUB_WINDOW
         if (subContext) {
             BE1::rhi.DisplayContext(subContext);
         }
+#endif
     }
 
 QUIT:
@@ -318,10 +324,8 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_CLOSE:
-        DestroyRenderWindow(mainContext);
-        mainContext = BE1::RHI::NullContext;
-        return 0;
-    case WM_TIMER:        
+        break;
+    case WM_TIMER:
         if (mainContext) {
             //BE1::rhi.DisplayContext(mainContext);
         }
@@ -353,9 +357,7 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 LRESULT CALLBACK SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_CLOSE:
-        DestroyRenderWindow(subContext);
-        subContext = BE1::RHI::NullContext;
-        return 0;
+        return 0; // prevent to close sub window
     case WM_TIMER:
         if (subContext) {
             //BE1::rhi.DisplayContext(subContext);

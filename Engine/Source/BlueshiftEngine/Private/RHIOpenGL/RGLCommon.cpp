@@ -41,12 +41,12 @@ OpenGLRHI::OpenGLRHI() {
     mainContext = nullptr;
 }
 
-void OpenGLRHI::Init(const Settings *settings) {
+void OpenGLRHI::Init(WindowHandle windowHandle, const Settings *settings) {
     BE_LOG(L"Initializing OpenGL Renderer...\n");
 
     InitHandles();
 
-    InitMainContext(settings);
+    InitMainContext(windowHandle, settings);
 
     currentContext = mainContext;
 

@@ -215,7 +215,7 @@ static void GetGLVersion(int *major, int *minor) {
 #endif
 }
 
-void OpenGLRHI::InitMainContext(const Settings *settings) {
+void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
     // Create main context
     mainContext = new GLContext;
     mainContext->state = new GLState;
@@ -249,18 +249,18 @@ void OpenGLRHI::InitMainContext(const Settings *settings) {
 
     mainContext->eglConfig = ChooseBestConfig(mainContext->eglDisplay, settings->colorBits, settings->alphaBits, settings->depthBits, settings->stencilBits, settings->multiSamples);
 
-    // Once we've got a valid configuration we can create a window surface that'll be used for rendering
-    EGLint surfaceAttribs[] = { EGL_NONE };
-    mainContext->eglSurface = eglCreateWindowSurface(mainContext->eglDisplay, mainContext->eglConfig, mainContext->hwnd, surfaceAttribs);
-    if (mainContext->eglSurface == EGL_NO_SURFACE) {
-        BE_FATALERROR(L"Couldn't create EGL window surface");
-    }
-
     // Create a main EGL rendering context
     EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
     mainContext->eglContext = eglCreateContext(mainContext->eglDisplay, mainContext->eglConfig, EGL_NO_CONTEXT, contextAttribs);
     if (mainContext->eglContext == EGL_NO_CONTEXT) {
         BE_FATALERROR(L"Couldn't create EGL context");
+    }
+
+    // Once we've got a valid configuration we can create a window surface that'll be used for rendering
+    EGLint surfaceAttribs[] = { EGL_NONE };
+    mainContext->eglSurface = eglCreateWindowSurface(mainContext->eglDisplay, mainContext->eglConfig, mainContext->hwnd, surfaceAttribs);
+    if (mainContext->eglSurface == EGL_NO_SURFACE) {
+        BE_FATALERROR(L"Couldn't create EGL window surface");
     }
 
     // Associate the EGL context with the EGL surface
@@ -377,17 +377,17 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
         eglBindAPI(EGL_OPENGL_ES_API);*/
 
-        EGLint surfaceAttribs[] = { EGL_NONE };
-        ctx->eglSurface = eglCreateWindowSurface(ctx->eglDisplay, ctx->eglConfig, ctx->hwnd, surfaceAttribs);
-        if (ctx->eglSurface == EGL_NO_SURFACE) {
-            BE_FATALERROR(L"Couldn't create EGL window surface");
-        }
-
         // Create a main EGL rendering context
         EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
         ctx->eglContext = eglCreateContext(ctx->eglDisplay, ctx->eglConfig, mainContext->eglContext, contextAttribs);
         if (ctx->eglContext == EGL_NO_CONTEXT) {
             BE_FATALERROR(L"Couldn't create EGL context");
+        }
+
+        EGLint surfaceAttribs[] = { EGL_NONE };
+        ctx->eglSurface = eglCreateWindowSurface(ctx->eglDisplay, ctx->eglConfig, ctx->hwnd, surfaceAttribs);
+        if (ctx->eglSurface == EGL_NO_SURFACE) {
+            BE_FATALERROR(L"Couldn't create EGL window surface");
         }
     }
 
@@ -595,7 +595,7 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     ::SetDeviceGammaRamp(currentContext->hdc, ramp);
 }
 
-void OpenGLRHI::SwapBuffers() const {
+bool OpenGLRHI::SwapBuffers() const {
     if (!gl_ignoreGLError.GetBool()) {
         CheckError("OpenGLRHI::SwapBuffers");
     }
@@ -613,6 +613,8 @@ void OpenGLRHI::SwapBuffers() const {
 
         ggl_rebind(gl_debug.GetBool());
     }
+
+    return true;
 }
 
 void OpenGLRHI::SwapInterval(int interval) const {

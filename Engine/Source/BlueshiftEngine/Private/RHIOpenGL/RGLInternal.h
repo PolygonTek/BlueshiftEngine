@@ -105,7 +105,11 @@ struct GLContext {
     EAGLView *          eaglView;
     EAGLContext *       eaglContext;
 #elif defined(__ANDROID__)
-    NvEGLUtil *         rootView;
+    ANativeWindow *     nativeWindow;
+    EGLDisplay          eglDisplay;
+    EGLConfig           eglConfig;
+    EGLContext          eglContext;
+    EGLSurface          eglSurface;
 #endif
     GLState *           state;
     GLuint              defaultFramebuffer;

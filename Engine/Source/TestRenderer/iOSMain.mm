@@ -115,9 +115,9 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 @end // @implementation RootViewController
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate> {
-    float                   osVersion;
-    UIWindow *              mainWindow;
-    RootViewController *    rootViewController;
+    float osVersion;
+    UIWindow *mainWindow;
+    RootViewController *rootViewController;
 }
 
 @end
@@ -153,9 +153,7 @@ static void SystemError(int errLevel, const wchar_t *msg) {
     BE1::Engine::InitBase(enginePath, false, SystemLog, SystemError);
     
     osVersion = [[[UIDevice currentDevice] systemVersion] floatValue];
-    
-    ::app.Init();
-    
+       
     CGRect screenBounds = [[UIScreen mainScreen] bounds];
     mainWindow = [[UIWindow alloc] initWithFrame:screenBounds];
     mainWindow.backgroundColor = [UIColor blackColor];
@@ -164,6 +162,8 @@ static void SystemError(int errLevel, const wchar_t *msg) {
     mainWindow.rootViewController = rootViewController;
     
     [mainWindow makeKeyAndVisible];
+
+    ::app.Init(rootViewController.view);
     
     ::app.LoadResources();
     

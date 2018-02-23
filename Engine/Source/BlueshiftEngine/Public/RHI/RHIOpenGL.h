@@ -51,7 +51,7 @@ class OpenGLRHI : public RHI {
 public:
     OpenGLRHI();
 
-    void                    Init(const Settings *settings);
+    void                    Init(WindowHandle windowHandle, const Settings *settings);
     void                    Shutdown();
 
     bool                    IsInitialized() const { return initialized; }
@@ -70,6 +70,8 @@ public:
 
     Handle                  CreateContext(WindowHandle windowHandle, bool useSharedContext);
     void                    DestroyContext(Handle ctxHandle);
+    void                    ActivateSurface(Handle ctxHandle);
+    void                    DeactivateSurface(Handle ctxHandle);
     void                    SetContext(Handle ctxHandle);
     void                    SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing);
     void                    DisplayContext(Handle ctxHandle);
@@ -83,7 +85,7 @@ public:
     void                    GetGammaRamp(unsigned short ramp[768]) const;
     void                    SetGammaRamp(unsigned short ramp[768]) const;
 
-    void                    SwapBuffers() const;
+    bool                    SwapBuffers() const;
     void                    SwapInterval(int interval) const;
 
     void                    Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil);
@@ -241,7 +243,7 @@ public:
     const HWLimit &         HWLimit() const { return hwLimit; }
 
 protected:
-    void                    InitMainContext(const Settings *settings);
+    void                    InitMainContext(WindowHandle windowHandle, const Settings *settings);
     void                    FreeMainContext();
     void                    InitGL();
 

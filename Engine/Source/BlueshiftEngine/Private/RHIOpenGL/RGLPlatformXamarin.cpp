@@ -199,7 +199,7 @@ const float userContentScaleFactor = 2.0f;
     glContext->displayFunc(glContext->handle, glContext->displayFuncDataPtr);
 }
 
-- (void)swapBuffers {
+- (bool)swapBuffers {
     gglBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     
     gglBindRenderbuffer(GL_RENDERBUFFER, colorbuffer);
@@ -209,7 +209,8 @@ const float userContentScaleFactor = 2.0f;
     //gglDiscardFramebufferEXT(GL_READ_FRAMEBUFFER_APPLE, 2, discards);
     gglInvalidateFramebuffer(GL_READ_FRAMEBUFFER_APPLE, 2, discards);
     
-    [glContext->eaglContext presentRenderbuffer:GL_RENDERBUFFER];
+    bool succeeded = [glContext->eaglContext presentRenderbuffer:GL_RENDERBUFFER];
+    return succeeded;
 }
 
 @end // @implementation EAGLView
@@ -233,7 +234,7 @@ static void GetGLVersion(int *major, int *minor) {
 	}
 }
 
-void OpenGLRHI::InitMainContext(const Settings *settings) {
+void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *settings) {
 	mainContext = new GLContext;
 	mainContext->state = new GLState;
     
@@ -439,7 +440,7 @@ void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
 void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
-void OpenGLRHI::SwapBuffers() const {
+bool OpenGLRHI::SwapBuffers() const {
 	//if (!gl_ignoreGLError.GetBool()) {
 	//	CheckError("OpenGLRHI::SwapBuffers");
 	//}
@@ -456,6 +457,8 @@ void OpenGLRHI::SwapBuffers() const {
 	//}
 	//assert(0);;
 	currentContext->rootView->swap();
+
+    return true;
 }
 
 void OpenGLRHI::SwapInterval(int interval) const {

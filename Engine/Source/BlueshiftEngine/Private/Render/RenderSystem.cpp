@@ -24,11 +24,11 @@ BE_NAMESPACE_BEGIN
 renderGlobal_t      renderGlobal;
 RenderSystem        renderSystem;
 
-void RenderSystem::Init(const RHI::Settings *settings) {
+void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
     cmdSystem.AddCommand(L"screenshot", Cmd_ScreenShot);
 
     // Initialize OpenGL renderer
-    rhi.Init(settings);
+    rhi.Init(windowHandle, settings);
 
     // Save current gamma ramp table
     rhi.GetGammaRamp(savedGammaRamp);
