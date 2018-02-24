@@ -61,6 +61,13 @@
 #include "Platform/PlatformTime.h"
 #include "Platform/PlatformThread.h"
 
+// Platform Utils
+#if defined(__IOS__)
+#include "PlatformUtils/iOS/iOSDevice.h"
+#elif defined(__ANDROID__)
+#include "PlatformUtils/Android/AndroidJNI.h"
+#endif
+
 // File
 #include "File/File.h"
 #include "File/FileMapping.h"

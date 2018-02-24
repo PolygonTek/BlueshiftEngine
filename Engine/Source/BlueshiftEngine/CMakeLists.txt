@@ -621,6 +621,7 @@ if (ANDROID)
         Public/Platform/Android/PlatformAndroidSystem.h
         Public/Platform/Android/PlatformAndroidThread.h
         Public/Platform/Android/PlatformAndroidFile.h
+
         Private/Platform/Posix/PlatformPosixProcess.cpp
         Private/Platform/Posix/PlatformPosixTime.cpp
         Private/Platform/Posix/PlatformPosixSystem.cpp
@@ -633,6 +634,10 @@ if (ANDROID)
         Private/Platform/Android/PlatformAndroidFile.cpp
         Private/Platform/PlatformAndroid.h
         Private/Platform/PlatformAndroid.cpp
+
+        Public/PlatformUtils/Android/AndroidJNI.h
+        Private/PlatformUtils/Android/AndroidJNI.cpp
+
         Private/Sound/SoundSystemSLES.cpp
         Private/Sound/SoundBufferSLES.cpp
         Private/Sound/SoundSourceSLES.cpp)
@@ -643,6 +648,7 @@ elseif (WIN32)
         Public/Platform/Windows/PlatformWinThread.h
         Public/Platform/Windows/PlatformWinTime.h
         Public/Platform/Windows/PlatformWinSystem.h
+
         Private/Platform/Windows/PlatformWinProcess.cpp
         Private/Platform/Windows/PlatformWinFile.cpp
         Private/Platform/Windows/PlatformWinThread.cpp
@@ -650,6 +656,7 @@ elseif (WIN32)
         Private/Platform/Windows/PlatformWinSystem.cpp
         Private/Platform/PlatformWin.h
         Private/Platform/PlatformWin.cpp
+
         Public/Network/Socket.h
         Public/Network/Packet.h
         Private/Network/Socket.cpp
@@ -672,6 +679,7 @@ elseif (UNIX)
         Public/Platform/Posix/PlatformPosixThread.h
         Public/Platform/Posix/PlatformPosixTime.h
         Public/Platform/Posix/PlatformPosixSystem.h
+
         Private/Platform/Posix/PlatformPosixProcess.cpp
         Private/Platform/Posix/PlatformPosixFile.cpp
         Private/Platform/Posix/PlatformPosixThread.cpp
@@ -695,11 +703,15 @@ elseif (UNIX)
                 Public/Platform/IOS/PlatformIOSFile.h
                 Public/Platform/IOS/PlatformIOSProcess.h
                 Public/Platform/IOS/PlatformIOSSystem.h
+
                 Private/Platform/IOS/PlatformIOSFile.mm
                 Private/Platform/IOS/PlatformIOSProcess.mm
                 Private/Platform/IOS/PlatformIOSSystem.mm
                 Private/Platform/PlatformIOS.h
-                Private/Platform/PlatformIOS.mm)
+                Private/Platform/PlatformIOS.mm
+
+                Public/PlatformUtils/iOS/iOSDevice.h
+                Private/PlatformUtils/iOS/iOSDevice.mm)
         else ()
             list(APPEND ENGINE_FILES
                 Public/Platform/MacOS/PlatformMacOSProcess.h

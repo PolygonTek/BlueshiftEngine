@@ -42,8 +42,6 @@ elseif (WIN32)
 elseif (APPLE)
     if (IOS)
         list(APPEND ALL_FILES
-            iOSDevice.h
-            iOSDevice.mm
             iOSMain.mm
             iOSLaunchScreen.xib
             Assets.xcassets)

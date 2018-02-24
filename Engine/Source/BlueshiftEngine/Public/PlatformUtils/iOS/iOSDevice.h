@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma once
+
+BE_NAMESPACE_BEGIN
+
 class IOSDevice {
 public:
     enum Type {
@@ -60,3 +64,4 @@ public:
     static Type GetIOSDeviceType();
 };
 
+BE_NAMESPACE_END

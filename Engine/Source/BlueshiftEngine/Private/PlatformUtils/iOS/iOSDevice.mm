@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include <sys/types.h>
 #include <sys/sysctl.h>
-#include "iOSDevice.h"
 
 bool IOSDevice::IsIPhone(IOSDevice::Type deviceType) {
     return deviceType >= IOS_IPhone4 && deviceType <= IOS_IPhoneX;

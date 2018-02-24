@@ -18,7 +18,6 @@
 #include <sys/sysctl.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
-#include "iOSDevice.h"
 #ifdef USE_ADMOB_REWARD_BASED_VIDEO
 #include "iOSAdMob.h"
 #endif
@@ -244,8 +243,8 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 @implementation AppDelegate
 
 - (void)initInstance {
-    IOSDevice::Type deviceType = IOSDevice::GetIOSDeviceType();
-    if (deviceType == IOSDevice::IOS_Unknown) {
+    BE1::IOSDevice::Type deviceType = BE1::IOSDevice::GetIOSDeviceType();
+    if (deviceType == BE1::IOSDevice::IOS_Unknown) {
         assert(0);
     }
     
@@ -282,8 +281,8 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     BE1::Vec2 screenScaleFactor(1.0f, 1.0f);
     int deviceWidth;
     int deviceHeight;
-    if (IOSDevice::IsIPad(deviceType)) {
-        if (deviceType < IOSDevice::IOS_IPadAir2) {
+    if (BE1::IOSDevice::IsIPad(deviceType)) {
+        if (deviceType < BE1::IOSDevice::IOS_IPadAir2) {
             screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
             screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
         } else {
