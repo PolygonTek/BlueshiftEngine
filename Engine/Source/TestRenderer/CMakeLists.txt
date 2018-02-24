@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(TestRenderer)
 
+if (ANDROID)
+    # Export ANativeActivity_onCreate(), 
+    # Refer to: https://github.com/android-ndk/ndk/issues/381.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
+endif ()
+
 set(ALL_FILES
     Precompiled.h
     Precompiled.cpp
@@ -27,6 +33,9 @@ elseif (APPLE)
             macOSMain.mm
             macOSMainMenu.xib)
     endif ()
+elseif (ANDROID)
+    list(APPEND ALL_FILES
+        AndroidMain.cpp)
 endif ()
 
 auto_source_group(${ALL_FILES})
