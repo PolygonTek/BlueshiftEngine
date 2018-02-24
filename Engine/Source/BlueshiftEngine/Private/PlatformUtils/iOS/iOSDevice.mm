@@ -13,8 +13,12 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Str.h"
+#include "PlatformUtils/iOS/iOSDevice.h"
 #include <sys/types.h>
 #include <sys/sysctl.h>
+
+BE_NAMESPACE_BEGIN
 
 bool IOSDevice::IsIPhone(IOSDevice::Type deviceType) {
     return deviceType >= IOS_IPhone4 && deviceType <= IOS_IPhoneX;
@@ -237,4 +241,6 @@ IOSDevice::Type IOSDevice::GetIOSDeviceType() {
     
     return deviceType;
 }
+
+BE_NAMESPACE_END
 
