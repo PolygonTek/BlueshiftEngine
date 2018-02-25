@@ -266,7 +266,7 @@ static void DecompressImageETC2_RGB8(const byte *src, const int width, const int
             // ETC2 RGB block
             ReadColorBlockETC2(src, block1, block2);
             src += 8;
-            etcpack_decompressBlockETC2c(block1, block2, unpackedBlock, 4, 4, 0, 0, 4);
+            etcpack::decompressBlockETC2c(block1, block2, unpackedBlock, 4, 4, 0, 0, 4);
 
             int dstBlockWidth = Min(4, width - x);
 
@@ -293,11 +293,11 @@ static void DecompressImageETC2_RGBA8(const byte *src, const int width, const in
 
         for (int x = 0; x < width; x += 4) {
             // EAC block + ETC2 RGB block
-            etcpack_decompressBlockAlphaC(const_cast<byte *>(src), unpackedBlock + 3, 4, 4, 0, 0, 4);
+            etcpack::decompressBlockAlphaC(const_cast<byte *>(src), unpackedBlock + 3, 4, 4, 0, 0, 4);
             src += 8;
             ReadColorBlockETC2(src, block1, block2);
             src += 8;
-            etcpack_decompressBlockETC2c(block1, block2, unpackedBlock, 4, 4, 0, 0, 4);
+            etcpack::decompressBlockETC2c(block1, block2, unpackedBlock, 4, 4, 0, 0, 4);
 
             int dstBlockWidth = Min(4, width - x);
 
@@ -326,7 +326,7 @@ static void DecompressImageETC2_RGB8A1(const byte *src, const int width, const i
             // ETC2 RGB/punchthrough alpha block 
             ReadColorBlockETC2(src, block1, block2);
             src += 8;
-            etcpack_decompressBlockETC21BitAlphaC(block1, block2, unpackedBlock, nullptr, 4, 4, 0, 0, 4);
+            etcpack::decompressBlockETC21BitAlphaC(block1, block2, unpackedBlock, nullptr, 4, 4, 0, 0, 4);
 
             int dstBlockWidth = Min(4, width - x);
 

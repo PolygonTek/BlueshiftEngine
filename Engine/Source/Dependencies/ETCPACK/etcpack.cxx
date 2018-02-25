@@ -53,7 +53,9 @@
 #ifndef __ANDROID__
 #include <sys/timeb.h>
 #endif
-#include "image.h"
+//#include "image.h"
+
+namespace etcpack {
 
 // Typedefs
 typedef unsigned char uint8;
@@ -4516,7 +4518,7 @@ void stuff57bits(unsigned int planar57_word1, unsigned int planar57_word2, unsig
 	d = GETBITSHIGH( planar_word1, 1, 40);
 	// The following bit abcd bit sequences should be padded with ones: 0111, 1010, 1011, 1101, 1110, 1111
 	// The following logical expression checks for the presence of any of those:
-	bit = (a & c) | (!a & b & c & d) | (a & b & !c & d);
+	bit = (a & c) | ((!a) & b & c & d) | (a & b & (!c) & d);
 	bits = 0xf*bit;
 	PUTBITSHIGH( planar_word1, bits,  3, 47);
 	PUTBITSHIGH( planar_word1, !bit,  1, 42);
@@ -4596,7 +4598,7 @@ void stuff58bits(unsigned int thumbH58_word1, unsigned int thumbH58_word2, unsig
 	d = GETBITSHIGH( thumbH_word1, 1, 48);
 	// The following bit abcd bit sequences should be padded with ones: 0111, 1010, 1011, 1101, 1110, 1111
 	// The following logical expression checks for the presence of any of those:
-	bit = (a & c) | (!a & b & c & d) | (a & b & !c & d);
+	bit = (a & c) | ((!a) & b & c & d) | (a & b & (!c) & d);
 	bits = 0xf*bit;
 	PUTBITSHIGH( thumbH_word1, bits,  3, 55);
 	PUTBITSHIGH( thumbH_word1, !bit,  1, 50);
@@ -4636,7 +4638,7 @@ void stuff58bitsDiffFalse(unsigned int thumbH58_word1, unsigned int thumbH58_wor
 	d = GETBITSHIGH( thumbH_word1, 1, 48);
 	// The following bit abcd bit sequences should be padded with ones: 0111, 1010, 1011, 1101, 1110, 1111
 	// The following logical expression checks for the presence of any of those:
-	bit = (a & c) | (!a & b & c & d) | (a & b & !c & d);
+	bit = (a & c) | ((!a) & b & c & d) | (a & b & (!c) & d);
 	bits = 0xf*bit;
 	PUTBITSHIGH( thumbH_word1, bits,  3, 55);
 	PUTBITSHIGH( thumbH_word1, !bit,  1, 50);
@@ -4698,7 +4700,7 @@ void stuff59bits(unsigned int thumbT59_word1, unsigned int thumbT59_word2, unsig
 	d = GETBITSHIGH( thumbT_word1, 1, 56);
 	// The following bit abcd bit sequences should be padded with ones: 0111, 1010, 1011, 1101, 1110, 1111
 	// The following logical expression checks for the presence of any of those:
-	bit = (a & c) | (!a & b & c & d) | (a & b & !c & d);
+	bit = (a & c) | ((!a) & b & c & d) | (a & b & (!c) & d);
 	bits = 0xf*bit;
 	PUTBITSHIGH( thumbT_word1, bits,  3, 63);
 	PUTBITSHIGH( thumbT_word1, !bit,  1, 58);
@@ -8095,7 +8097,7 @@ void stuff59bitsDiffFalse(unsigned int thumbT59_word1, unsigned int thumbT59_wor
 	d = GETBITSHIGH( thumbT_word1, 1, 56);
 	// The following bit abcd bit sequences should be padded with ones: 0111, 1010, 1011, 1101, 1110, 1111
 	// The following logical expression checks for the presence of any of those:
-	bit = (a & c) | (!a & b & c & d) | (a & b & !c & d);
+	bit = (a & c) | ((!a) & b & c & d) | (a & b & (!c) & d);
 	bits = 0xf*bit;
 	PUTBITSHIGH( thumbT_word1, bits,  3, 63);
 	PUTBITSHIGH( thumbT_word1, !bit,  1, 58);
@@ -8495,6 +8497,8 @@ void setupAlphaTableAndValtab()
 	}
 }
 
+#if 0
+
 // Reads alpha data
 // NO WARRANTY --- SEE STATEMENT IN TOP OF FILE (C) Ericsson AB 2005-2013. All Rights Reserved.
 void readAlpha(uint8* &data, int &width, int &height, int &extendedwidth, int &extendedheight) 
@@ -8568,6 +8572,7 @@ void readAlpha(uint8* &data, int &width, int &height, int &extendedwidth, int &e
 	}
 }
 
+#endif
 
 // Compresses the alpha part of a GL_COMPRESSED_RGBA8_ETC2_EAC block.
 // NO WARRANTY --- SEE STATEMENT IN TOP OF FILE (C) Ericsson AB 2005-2013. All Rights Reserved.
@@ -16111,3 +16116,5 @@ int main(int argc,char *argv[])
 }
 
 #endif
+
+}

@@ -168,6 +168,8 @@ submitted to the exclusive jurisdiction of the Swedish Courts.
 #include <stdio.h>
 #include <stdlib.h>
 
+namespace etcpack {
+
 // Typedefs
 typedef unsigned char uint8;
 typedef unsigned short uint16;
@@ -1839,4 +1841,6 @@ void decompressBlockAlpha16bitC(uint8* data, uint8* img, int width, int height, 
 void decompressBlockAlpha16bit(uint8* data, uint8* img, int width, int height, int ix, int iy)
 {
   decompressBlockAlpha16bitC(data, img, width, height, ix, iy, 1);
+}
+
 }

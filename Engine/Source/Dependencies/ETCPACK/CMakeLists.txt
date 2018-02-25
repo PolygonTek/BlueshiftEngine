@@ -1,9 +1,11 @@
+cmake_minimum_required(VERSION 2.8.12)
+
 project(etcpack_lib)
 
 set(SRC_FILES
   etcpack_lib.h
-  etcpackwrap.cpp
-  etcdecwrap.cpp
+  etcdec.cxx
+  etcpack.cxx
 )
 
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
