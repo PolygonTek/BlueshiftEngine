@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformTime.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 #include "Sound/SoundSystem.h"
 
 BE_NAMESPACE_BEGIN

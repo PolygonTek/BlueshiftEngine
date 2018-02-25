@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
-#include "SIMD/Simd.h"
+#include "Simd/Simd.h"
 #include "Core/CVars.h"
 #include "Sound/SoundSystem.h"
 
