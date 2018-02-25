@@ -256,18 +256,18 @@ OpenGL 4.6 (2017)
 ------------------------------------------------------------------------------
 */
 
-#if defined(__WIN32__) || defined(__MACOSX__) || defined(__LINUX__) && !defined(__ANDROID__)
-#include "GGL/gglcore32.h"
-#if defined(__WIN32__)
-#include "GGL/gwgl.h"
-#elif defined(__LINUX__)
-#include "GGL/gglx.h"
-#endif
-#elif defined(__IOS__) || defined(__ANDROID__)
+#if defined(__IOS__)
 #include "GGL/ggles3.h"
-#elif defined(USE_DESKTOP_EGL)
+#elif defined(__ANDROID__)
 #include "GGL/ggles3.h"
 #include "GGL/gegl.h"
+#elif defined(__WIN32__) || defined(__MACOSX__) || defined(__LINUX__)
+#include "GGL/gglcore32.h"
+    #if defined(__WIN32__)
+        #include "GGL/gwgl.h"
+    #elif defined(__LINUX__)
+        #include "GGL/gglx.h"
+    #endif
 #endif
 
 #include "Image/Image.h"

@@ -79,7 +79,17 @@ struct GLContext {
     RHI::DisplayContextFunc displayFunc;
     void *              displayFuncDataPtr;
     bool                onDemandDrawing;
-#if defined(__WIN32__)
+#if defined(__IOS__) || defined(__IOS_SIMULATOR__)
+    UIView *            rootView;
+    EAGLView *          eaglView;
+    EAGLContext *       eaglContext;
+#elif defined(__ANDROID__)
+    ANativeWindow *     nativeWindow;
+    EGLDisplay          eglDisplay;
+    EGLConfig           eglConfig;
+    EGLContext          eglContext;
+    EGLSurface          eglSurface;
+#elif defined(__WIN32__)
     HWND                hwnd;
     WNDPROC             oldWndProc;
     HDC                 hdc;
@@ -100,16 +110,6 @@ struct GLContext {
     //CGSize            windowSize;
     NSOpenGLContext *   nsglContext;
     CGLContextObj       cglContext;
-#elif defined(__IOS__) || defined(__IOS_SIMULATOR__)
-    UIView *            rootView;
-    EAGLView *          eaglView;
-    EAGLContext *       eaglContext;
-#elif defined(__ANDROID__)
-    ANativeWindow *     nativeWindow;
-    EGLDisplay          eglDisplay;
-    EGLConfig           eglConfig;
-    EGLContext          eglContext;
-    EGLSurface          eglSurface;
 #endif
     GLState *           state;
     GLuint              defaultFramebuffer;

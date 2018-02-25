@@ -29,12 +29,14 @@ public:
 
 BE_NAMESPACE_END
 
-#ifdef __WIN32__
+#if defined(__IOS__)
+#include "IOS/PlatformIOSSystem.h"
+#elif defined(__ANDROID__)
+#include "Android/PlatformAndroidSystem.h"
+#elif defined(__WIN32__)
 #include "Windows/PlatformWinSystem.h"
 #elif defined(__MACOSX__)
 #include "MacOS/PlatformMacOSSystem.h"
-#elif defined(__IOS__)
-#include "IOS/PlatformIOSSystem.h"
 #elif defined(__LINUX__)
 #include "Linux/PlatformLinuxSystem.h"
 #elif defined(__UNIX__)

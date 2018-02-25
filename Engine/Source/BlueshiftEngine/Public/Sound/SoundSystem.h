@@ -21,7 +21,13 @@
 #include "Core/CVars.h"
 #include "Sound/Pcm.h"
 
-#if defined(__APPLE__)
+#if defined(__ANDROID__)
+
+// Reference: https://googlesamples.github.io/android-audio-high-performance/guides/opensl_es.html
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
+
+#elif defined(__APPLE__)
 
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
@@ -34,12 +40,6 @@
 #else
 #include <dsound.h>
 #endif
-
-#elif defined(__ANDROID__)
-
-// Reference: https://googlesamples.github.io/android-audio-high-performance/guides/opensl_es.html
-#include <SLES/OpenSLES.h>
-#include <SLES/OpenSLES_Android.h>
 
 #endif
 
@@ -68,7 +68,11 @@ public:
 
     bool                    duplicated;
 
-#if defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
+#if defined(__ANDROID__)
+    uint32_t                bufferSize;
+    uint32_t                bufferCount;
+    byte *                  buffers[MaxStreamBuffers];
+#elif defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
     ALuint                  alBufferIds[MaxStreamBuffers];
     uint32_t                bufferCount;
     ALenum                  format;
@@ -78,10 +82,6 @@ public:
     IDirectSound3DBuffer *  ds3dBuffer;
     uint32_t                streamBufferSize;
     uint32_t                streamBufferCount;
-#elif defined(__ANDROID__)
-    uint32_t                bufferSize;
-    uint32_t                bufferCount;
-    byte *                  buffers[MaxStreamBuffers];
 #endif
 };
 
@@ -110,14 +110,7 @@ public:
     Sound *                 sound;
     Pcm                     pcm;    ///< PCM file for streaming
 
-#if defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
-    ALuint                  alSourceId;
-#elif defined(__WIN32__)
-    IDirectSoundBuffer *    dsBuffer;
-    IDirectSound3DBuffer *  ds3dBuffer;
-    uint32_t                streamWriteOffset;
-    bool                    streamEnded;
-#elif defined(__ANDROID__)
+#if defined(__ANDROID__)
     bool                    CreateAudioPlayer(const Sound *sound);
     void                    DestroyAudioPlayer();
     void                    OnRequeueBufferCallback(SLAndroidSimpleBufferQueueItf bufferQueue);
@@ -131,6 +124,13 @@ public:
     SLuint32                lastBufferQueueIndex;
     SLuint32                bufferUnqueueIndex;
     bool                    hasPositionUpdated;
+#elif defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
+    ALuint                  alSourceId;
+#elif defined(__WIN32__)
+    IDirectSoundBuffer *    dsBuffer;
+    IDirectSound3DBuffer *  ds3dBuffer;
+    uint32_t                streamWriteOffset;
+    bool                    streamEnded;
 #endif
 };
 
@@ -281,7 +281,12 @@ private:
     Vec3                    listenerForward;
     Vec3                    listenerUp;
 
-#if defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
+#if defined(__ANDROID__)
+    SLObjectItf             slEngineObject;
+    SLEngineItf             slEngine;
+    SLObjectItf             slOutputMixObject;
+    SLObjectItf             slListenerObject;
+#elif defined(__APPLE__) || (defined(__WIN32__) && defined(USE_WINDOWS_OPENAL))
     ALCcontext *            alContext;
     ALCdevice *             alDevice;
 #elif defined(__WIN32__)
@@ -289,11 +294,6 @@ private:
     IDirectSound8 *         dsDevice;
     IDirectSoundBuffer *    dsPrimaryBuffer;
     IDirectSound3DListener8 *dsListener3D;
-#elif defined(__ANDROID__)
-    SLObjectItf             slEngineObject;
-    SLEngineItf             slEngine;
-    SLObjectItf             slOutputMixObject;
-    SLObjectItf             slListenerObject;
 #endif
 };
 

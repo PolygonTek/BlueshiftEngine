@@ -99,12 +99,12 @@ protected:
 
 BE_NAMESPACE_END
 
-#ifdef __WIN32__
-#include "Windows/PlatformWinFile.h"
-#elif defined(__IOS__)
+#if defined(__IOS__)
 #include "IOS/PlatformIOSFile.h"
 #elif defined(__ANDROID__)
 #include "Android/PlatformAndroidFile.h"
+#elif defined(__WIN32__)
+#include "Windows/PlatformWinFile.h"
 #elif defined(__UNIX__)
 #include "Posix/PlatformPosixFile.h"
 #endif
