@@ -109,7 +109,7 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     }
 
     //uint64_t endClocks = rdtsc();
-    //BE_LOG(L"%DXT compression in %llu clocks\n", endClocks - startClocks);
+    //BE_LOG(L"%DXT compression in %" PRIu64 " clocks\n", endClocks - startClocks);
 
     return true;
 }

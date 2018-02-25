@@ -497,7 +497,7 @@ BE_INLINE WStr::WStr(const int i) : WStr() {
 
 BE_INLINE WStr::WStr(const int64_t i) : WStr() {
     wchar_t text[64];
-    int l = WStr::snPrintf(text, COUNT_OF(text), L"%lli", i);
+    int l = WStr::snPrintf(text, COUNT_OF(text), L"%" PRIi64, i);
     EnsureAlloced(l + 1, false);
     wcscpy(data, text);
     len = l;
@@ -513,7 +513,7 @@ BE_INLINE WStr::WStr(const unsigned u) : WStr() {
 
 BE_INLINE WStr::WStr(const uint64_t u) : WStr() {
     wchar_t text[64];
-    int l = WStr::snPrintf(text, COUNT_OF(text), L"%llu", u);
+    int l = WStr::snPrintf(text, COUNT_OF(text), L"%" PRIu64, u);
     EnsureAlloced(l + 1, false);
     wcscpy(data, text);
     len = l;

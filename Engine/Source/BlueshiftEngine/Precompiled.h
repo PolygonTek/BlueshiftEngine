@@ -142,6 +142,7 @@
 #include <limits.h>
 #include <math.h>
 #include <time.h>
+#include <inttypes.h>
 #include <locale.h>
 
 // C++ RunTime Header Files
@@ -434,9 +435,7 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 }
 
 #endif // __APPLE__
-#ifdef __ANDROID__
-#include <sys/stat.h>
-#endif
+
 //----------------------------------------------------------------------------------------------
 
 typedef void (*streamOutFunc_t)(const int level, const wchar_t *msg);

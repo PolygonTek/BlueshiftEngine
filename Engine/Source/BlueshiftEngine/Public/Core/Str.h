@@ -484,7 +484,7 @@ BE_INLINE Str::Str(const int i) : Str() {
 
 BE_INLINE Str::Str(const int64_t i) : Str() {
     char text[64];
-    int l = Str::snPrintf(text, sizeof(text), "%lli", i);
+    int l = Str::snPrintf(text, sizeof(text), "%" PRIi64, i);
     EnsureAlloced(l + 1, false);
     strcpy(data, text);
     len = l;
@@ -500,7 +500,7 @@ BE_INLINE Str::Str(const unsigned u) : Str() {
 
 BE_INLINE Str::Str(const uint64_t u) : Str() {
     char text[64];
-    int l = Str::snPrintf(text, sizeof(text), "%llu", u);
+    int l = Str::snPrintf(text, sizeof(text), "%" PRIu64, u);
     EnsureAlloced(l + 1, false);
     strcpy(data, text);
     len = l;

@@ -230,7 +230,7 @@ bool Dict::GetInt(const char *key, const char *defaultString, int &out) const {
 bool Dict::GetInt64(const char *key, const char *defaultString, int64_t &out) const {
     const char *s;
     bool found = GetString(key, defaultString, &s);
-    sscanf(s, "%lld", &out);
+    sscanf(s, "%" PRIi64, &out);
     return found;
 }
 

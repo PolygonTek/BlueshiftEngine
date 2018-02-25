@@ -215,9 +215,9 @@ BE_INLINE int Dict::GetInt(const char *key, const char *defaultString) const {
     return atoi(GetString(key, defaultString));
 }
 
-BE_INLINE int64_t Dict::GetInt64(const char *key, const char *defaultString) const {   
+BE_INLINE int64_t Dict::GetInt64(const char *key, const char *defaultString) const {
     int64_t v;
-    sscanf(GetString(key, defaultString), "%lld", &v);
+    sscanf(GetString(key, defaultString), "%" PRIi64, &v);
     return v;
 }
 
@@ -276,7 +276,7 @@ BE_INLINE void Dict::SetInt(const char *key, int val) {
 }
 
 BE_INLINE void Dict::SetInt64(const char *key, int64_t val) {
-    Set(key, va("%lld", val));
+    Set(key, va("%" PRIi64, val));
 }
 
 BE_INLINE void Dict::SetBool(const char *key, bool val) {
