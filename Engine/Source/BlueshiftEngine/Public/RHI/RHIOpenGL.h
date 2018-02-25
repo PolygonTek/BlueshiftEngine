@@ -85,7 +85,7 @@ public:
     void                    GetGammaRamp(unsigned short ramp[768]) const;
     void                    SetGammaRamp(unsigned short ramp[768]) const;
 
-    bool                    SwapBuffers() const;
+    bool                    SwapBuffers();
     void                    SwapInterval(int interval) const;
 
     void                    Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil);

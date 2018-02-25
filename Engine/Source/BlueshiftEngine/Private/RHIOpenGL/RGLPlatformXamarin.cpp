@@ -440,7 +440,7 @@ void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
 void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
-bool OpenGLRHI::SwapBuffers() const {
+bool OpenGLRHI::SwapBuffers() {
 	//if (!gl_ignoreGLError.GetBool()) {
 	//	CheckError("OpenGLRHI::SwapBuffers");
 	//}

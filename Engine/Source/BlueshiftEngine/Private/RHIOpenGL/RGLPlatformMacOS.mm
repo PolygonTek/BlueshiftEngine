@@ -860,7 +860,7 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     free(values);
 }
 
-bool OpenGLRHI::SwapBuffers() const {
+bool OpenGLRHI::SwapBuffers() {
     if (!gl_ignoreGLError.GetBool()) {
         CheckError("GLRenderer::SwapBuffers");
     }

@@ -802,7 +802,7 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     ::SetDeviceGammaRamp(currentContext->hdc, ramp);
 }
 
-bool OpenGLRHI::SwapBuffers() const {
+bool OpenGLRHI::SwapBuffers() {
     if (!gl_ignoreGLError.GetBool()) {
         CheckError("OpenGLRHI::SwapBuffers");
     }
