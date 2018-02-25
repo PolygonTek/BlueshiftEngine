@@ -1,6 +1,17 @@
 Bin/*
 Tools/*
 Build/*
+!Build/Android
+Build/Android/*
+!Build/Android/build.gradle
+!Build/Android/settings.gradle
+!Build/Android/gradlew*
+#Build/Android/.gradle/*
+#Build/Android/.idea/*
+#Build/Android/build/*
+#Build/Android/gradle/*
+Build/Android/TestRenderer/*
+!Build/Android/TestRenderer/build.gradle
 Data/*
 Library/*
 Documents/html/*

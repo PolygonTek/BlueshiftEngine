@@ -28,6 +28,7 @@ _ReSharper*/
 Screenshots/
 .DS_Store
 \#*
+.vscode/
 Debug
 Release
 log.txt
