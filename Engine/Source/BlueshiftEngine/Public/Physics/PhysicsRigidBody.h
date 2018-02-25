@@ -36,7 +36,7 @@ public:
     virtual const Mat3      GetAxis() const override;
     virtual void            SetAxis(const Mat3 &axis) override;
 
-    void                    SetTransform(const Mat3 &axis, const Vec3 &origin);
+    virtual void            SetTransform(const Mat3 &axis, const Vec3 &origin) override;
 
     float                   GetMass() const;
     void                    SetMass(float mass);
