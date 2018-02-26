@@ -200,9 +200,10 @@ static HWND CreateSubWindow(const TCHAR *title, int width, int height) {
 }
 
 BOOL InitInstance(int nCmdShow) {
-    BE1::Str path = BE1::PlatformFile::ExecutablePath();
-    path.AppendPath("../../..");
-    BE1::Engine::InitBase(path.c_str(), false, SystemLog, SystemError);
+    BE1::Str basePath = BE1::PlatformFile::ExecutablePath();
+    basePath.AppendPath("../../..");
+    basePath.CleanPath();
+    BE1::Engine::InitBase(basePath.c_str(), false, SystemLog, SystemError);
 
     HWND hwndMain = CreateMainWindow(BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__), 1024, 768);
 

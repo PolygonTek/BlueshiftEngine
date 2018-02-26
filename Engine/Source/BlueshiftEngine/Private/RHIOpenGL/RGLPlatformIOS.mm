@@ -360,11 +360,11 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
 }
 
 void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
-    GLContext *ctx = contextList[ctxHandle];
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 }
 
 void OpenGLRHI::DeactivateSurface(Handle ctxHandle) {
-    GLContext *ctx = contextList[ctxHandle];
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 }
 
 void OpenGLRHI::SetContext(Handle ctxHandle) {
@@ -405,8 +405,8 @@ RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
     return (__bridge WindowHandle)ctx->rootView;
 }
 
-void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
-    GLContext *ctx = contextList[ctxHandle];
+void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) const {
+    const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
     
     if (windowWidth || windowHeight) {
         CGSize viewSize = [ctx->eaglView bounds].size;

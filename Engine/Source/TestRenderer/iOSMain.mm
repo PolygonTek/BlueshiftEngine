@@ -151,8 +151,8 @@ static void SystemError(int errLevel, const wchar_t *msg) {
 }
 
 - (void)initInstance {
-    BE1::Str enginePath = BE1::PlatformFile::ExecutablePath(); // main bundle path
-    BE1::Engine::InitBase(enginePath, false, SystemLog, SystemError);
+    BE1::Str basePath = BE1::PlatformFile::ExecutablePath(); // main bundle path
+    BE1::Engine::InitBase(basePath, false, SystemLog, SystemError);
     
     osVersion = [[[UIDevice currentDevice] systemVersion] floatValue];
        

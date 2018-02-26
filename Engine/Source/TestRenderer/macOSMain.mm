@@ -148,10 +148,10 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
 #endif
 
 - (void)initInstance {
-    BE1::Str enginePath = BE1::PlatformFile::ExecutablePath();
-    enginePath.AppendPath("../../.."); // Strip "Bin/macOS/<Configuration>"
-    enginePath.CleanPath();
-    BE1::Engine::InitBase(enginePath, false, SystemLog, SystemError);
+    BE1::Str basePath = BE1::PlatformFile::ExecutablePath();
+    basePath.AppendPath("../../.."); // Strip "Bin/macOS/<Configuration>"
+    basePath.CleanPath();
+    BE1::Engine::InitBase(basePath, false, SystemLog, SystemError);
     
     mainWindow = [self createGLWindow:NSMakeSize(640, 480) title:@"Main Window"];
     NSView *mainContentView = [mainWindow contentView];

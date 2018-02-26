@@ -148,8 +148,8 @@ Str PlatformWinFile::NormalizeDirectory(const char *dirname) {
 
     int length = normalizedDirname.Length();
     if (length > 0) {
-        if (normalizedDirname[length - 1] != '\\') {
-            normalizedDirname.Append('\\');
+        if (normalizedDirname[length - 1] != PATHSEPERATOR_CHAR) {
+            normalizedDirname.Append(PATHSEPERATOR_CHAR);
         }
     }
     
@@ -486,8 +486,7 @@ int PlatformWinFile::ListFiles(const char *directory, const char *nameFilter, bo
 
     if (recursive) {
         ListFilesRecursive(normalizedDirectory, "", nameFilter, includeSubDir, files);
-    }
-    else {
+    } else {
         char pattern[MaxAbsolutePath];
         Str::snPrintf(pattern, sizeof(pattern), "%s\\%s", normalizedDirectory.c_str(), nameFilter);
 
