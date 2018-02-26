@@ -65,7 +65,7 @@ IF(BUILD_STATIC_LIBS)
 
     IF(NOT CMAKE_VERSION VERSION_LESS 2.8.11)
         TARGET_INCLUDE_DIRECTORIES( ${PROJECT_NAME} PUBLIC
-                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                                #$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                                 $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/${JSONCPP_INCLUDE_DIR}>
                                 )
     ENDIF()

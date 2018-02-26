@@ -156,4 +156,4 @@ ENDIF()
 ADD_SUBDIRECTORY( src )
 
 #install the includes
-ADD_SUBDIRECTORY( include )
+#ADD_SUBDIRECTORY( include )
