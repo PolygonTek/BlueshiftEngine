@@ -437,8 +437,18 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 #endif // __APPLE__
 
 //----------------------------------------------------------------------------------------------
+// Android
+//----------------------------------------------------------------------------------------------
 
-typedef void (*streamOutFunc_t)(const int level, const wchar_t *msg);
+#ifdef __ANDROID__
+
+#include <jni.h>
+
+#endif // __ANDROID__
+
+//----------------------------------------------------------------------------------------------
+
+typedef void (*streamOutFunc_t)(int level, const wchar_t *msg);
 
 BE_NAMESPACE_BEGIN
 

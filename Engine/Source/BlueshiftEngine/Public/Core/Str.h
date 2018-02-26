@@ -74,6 +74,17 @@ public:
     }
 #endif
 
+#ifdef __ANDROID__
+    /// Constructs from a jstring
+    Str(JNIEnv *env, jstring javaString) : Str() {
+        const char *raw = env->GetStringUTFChars(javaString, 0);
+        jsize l = env->GetStringLength(javaString);
+        EnsureAlloced(l + 1, false);
+        strcpy(data, raw);
+        env->ReleaseStringUTFChars(javaString, raw);
+    }
+#endif
+
     /// Constructs from a bool.
     explicit Str(const bool b);
     /// Constructs from a character.
@@ -391,8 +402,17 @@ public:
 #endif
 
 #ifdef QSTRING_H
+                        /// Convert Str to QString
     QString             ToQString() const {
         return QString::fromLatin1(data, len);
+    }
+#endif
+
+#ifdef __ANDROID__
+    /// Convert Str to jstring
+    jstring             ToJavaString(JNIEnv *env) const {
+        jstring javaString = env->NewStringUTF(data);
+        return javaString;
     }
 #endif
 

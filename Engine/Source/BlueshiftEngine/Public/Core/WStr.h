@@ -82,6 +82,20 @@ public:
     }
 #endif
 
+#ifdef __ANDROID__
+    /// Constructs from a jstring
+    WStr(JNIEnv *env, jstring javaString) : WStr() {
+        const jchar *raw = env->GetStringChars(javaString, 0);
+        jsize l = env->GetStringLength(javaString);
+        EnsureAlloced(l + 1, false);
+        for (int i = 0; i < l; i++) {
+            data[i] = (wchar_t)raw[i];
+        }
+        data[l] = 0;
+        env->ReleaseStringChars(javaString, raw);
+    }
+#endif
+
     /// Construct from a bool.
     explicit WStr(const bool b);
     /// Construct from a character.
@@ -384,11 +398,32 @@ public:
 #endif
 
 #ifdef QSTRING_H
+                        /// Convert WStr to QString
     QString             ToQString() const {
         return QString::fromWCharArray(data, len);
     }
 #endif
-    
+
+#ifdef __ANDROID__
+                        /// Convert WStr to jstring
+    jstring             ToJavaString(JNIEnv *env) const {
+        jstring javaString;
+        if (sizeof(wchar_t) == sizeof(jchar)) {
+            javaString = env->NewString((jchar *)data, (jsize)len);
+        } else {
+            jchar *raw = (jchar *)malloc((len + 1) * sizeof(jchar));
+            for (int i = 0; i < len; i++) {
+                // This discards two bytes in data[i], but these should be 0 in UTF-16
+                raw[i] = (jchar)data[i];
+            }
+            raw[len] = 0;
+            javaString = env->NewString(raw, (jsize)len);
+            free(raw);
+        }
+        return javaString;
+    }
+#endif
+
     void                ReAllocate(int amount, bool keepOld);
     void                FreeData();
 
