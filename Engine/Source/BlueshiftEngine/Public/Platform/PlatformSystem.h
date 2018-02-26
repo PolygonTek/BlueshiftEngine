@@ -33,12 +33,12 @@ BE_NAMESPACE_END
 #include "IOS/PlatformIOSSystem.h"
 #elif defined(__ANDROID__)
 #include "Android/PlatformAndroidSystem.h"
-#elif defined(__WIN32__)
-#include "Windows/PlatformWinSystem.h"
 #elif defined(__MACOSX__)
 #include "MacOS/PlatformMacOSSystem.h"
 #elif defined(__LINUX__)
 #include "Linux/PlatformLinuxSystem.h"
 #elif defined(__UNIX__)
 #include "Posix/PlatformPosixSystem.h"
+#elif defined(__WIN32__)
+#include "Windows/PlatformWinSystem.h"
 #endif

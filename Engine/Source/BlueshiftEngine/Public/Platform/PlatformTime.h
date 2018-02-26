@@ -45,12 +45,12 @@ protected:
 
 BE_NAMESPACE_END
 
-#ifdef __WIN32__
-#include "Windows/PlatformWinTime.h"
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #include "Apple/PlatformAppleTime.h"
 #elif defined(__LINUX__)
 #include "Linux/PlatformLinuxTime.h"
 #elif defined(__UNIX__)
 #include "Posix/PlatformPosixTime.h"
+#elif defined(__WIN32__)
+#include "Windows/PlatformWinTime.h"
 #endif

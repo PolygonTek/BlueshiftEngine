@@ -59,10 +59,8 @@ BE_NAMESPACE_END
 
 #if defined(__ANDROID__)
 #include "Android/PlatformAndroidThread.h"
-#elif defined(__WIN32__)
-#include "Windows/PlatformWinThread.h"
 #elif defined(__UNIX__) 
 #include "Posix/PlatformPosixThread.h"
+#elif defined(__WIN32__)
+#include "Windows/PlatformWinThread.h"
 #endif
-
-

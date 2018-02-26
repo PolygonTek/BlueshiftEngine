@@ -103,9 +103,9 @@ BE_NAMESPACE_END
 #include "IOS/PlatformIOSFile.h"
 #elif defined(__ANDROID__)
 #include "Android/PlatformAndroidFile.h"
-#elif defined(__WIN32__)
-#include "Windows/PlatformWinFile.h"
 #elif defined(__UNIX__)
 #include "Posix/PlatformPosixFile.h"
+#elif defined(__WIN32__)
+#include "Windows/PlatformWinFile.h"
 #endif
 

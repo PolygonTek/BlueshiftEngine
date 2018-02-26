@@ -52,12 +52,12 @@ BE_NAMESPACE_END
 #include "IOS/PlatformIOSProcess.h"
 #elif defined(__ANDROID__)
 #include "Android/PlatformAndroidProcess.h"
-#elif defined(__WIN32__)
-#include "Windows/PlatformWinProcess.h"
 #elif defined(__MACOSX__)
 #include "MacOS/PlatformMacOSProcess.h"
 #elif defined(__LINUX__)
 #include "Linux/PlatformLinuxProcess.h"
 #elif defined(__UNIX__)
 #include "Posix/PlatformPosixProcess.h"
+#elif defined(__WIN32__)
+#include "Windows/PlatformWinProcess.h"
 #endif
