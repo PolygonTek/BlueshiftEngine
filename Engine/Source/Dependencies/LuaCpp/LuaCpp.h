@@ -27,6 +27,7 @@ extern "C" {
 #include <exception>
 #include <cassert>
 
+#if 0
 #ifdef __ANDROID__
 
 namespace std
@@ -126,6 +127,7 @@ namespace std
 			"%Lf", __val);
 	}
 }
+#endif
 #endif
 
 // --- LuaCpp ---
