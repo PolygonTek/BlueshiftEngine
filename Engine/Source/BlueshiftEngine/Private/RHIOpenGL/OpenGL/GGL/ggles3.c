@@ -4814,6 +4814,7 @@ static void APIENTRY d_glWindowRectanglesEXT(GLenum mode, GLsizei count, const G
 }
 
 #if defined(ANDROID) || defined(__linux__)
+#include <EGL/egl.h>
 #define GPA(a) eglGetProcAddress(#a)
 #elif defined(__APPLE__)
 #define GPA(a) a
@@ -4821,7 +4822,7 @@ static void APIENTRY d_glWindowRectanglesEXT(GLenum mode, GLsizei count, const G
 
 gglext_t gglext;
 static GLint gglext_count = 0;
-static const GLubyte *gglext_strings[256];
+static const char *gglext_strings[512];
 
 static int ggl_check_extension(const char *ext) {
 	GLint i = 0;
@@ -5830,7 +5831,7 @@ void ggl_init(int enableDebug) {
 
 	_glGetIntegerv(GL_NUM_EXTENSIONS, &gglext_count);
 	for (int i = 0; i < gglext_count; i++) {
-		gglext_strings[i] = _glGetStringi(GL_EXTENSIONS, i);
+		gglext_strings[i] = (const char *)_glGetStringi(GL_EXTENSIONS, i);
 	}
 	memset(&gglext, 0, sizeof(gglext));
 	if (ggl_check_extension("GL_AMD_compressed_3DC_texture")) gglext._GL_AMD_compressed_3DC_texture = 1;
