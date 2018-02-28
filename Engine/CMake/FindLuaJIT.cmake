@@ -35,11 +35,11 @@ else ()
 endif ()
 
 find_path(LUAJIT_INCLUDE_DIR "lua.h"
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/LuaJIT"
+    PATHS "${ENGINE_INCLUDE_DIR}/Dependencies/LuaJIT"
     PATH_SUFFIXES "src")
 
 find_library(LUAJIT_LIBRARY ${LUAJIT_LIBNAME}
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/LuaJIT"
+    PATHS "${ENGINE_INCLUDE_DIR}/Dependencies/LuaJIT"
     PATH_SUFFIXES "lib/${LUAJIT_LIBDIR}")
 
 if (LUAJIT_LIBRARY AND LUAJIT_INCLUDE_DIR)

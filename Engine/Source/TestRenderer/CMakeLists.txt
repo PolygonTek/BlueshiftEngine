@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(TestRenderer)
 
-if (ANDROID)
-    # Export ANativeActivity_onCreate(), 
-    # Refer to: https://github.com/android-ndk/ndk/issues/381.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
-endif ()
-
 set(ALL_FILES
     Precompiled.h
     Precompiled.cpp
@@ -16,13 +10,9 @@ set(ALL_FILES
     Application.cpp
 )
 
-if (WIN32)
+if (ANDROID)
     list(APPEND ALL_FILES
-        WinMain.cpp
-        WinResource.h
-        ResourceFiles/small.ico
-        ResourceFiles/TestRenderer.ico
-        ResourceFiles/TestRenderer.rc)
+        AndroidMain.cpp)
 elseif (APPLE)
     if (IOS)
         list(APPEND ALL_FILES
@@ -33,9 +23,13 @@ elseif (APPLE)
             macOSMain.mm
             macOSMainMenu.xib)
     endif ()
-elseif (ANDROID)
+elseif (WIN32)
     list(APPEND ALL_FILES
-        AndroidMain.cpp)
+        WinMain.cpp
+        WinResource.h
+        WinRes/small.ico
+        WinRes/TestRenderer.ico
+        WinRes/TestRenderer.rc)
 endif ()
 
 auto_source_group(${ALL_FILES})
@@ -48,26 +42,39 @@ include_directories(
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp ALL_FILES)
 
-add_executable(${PROJECT_NAME} WIN32 MACOSX_BUNDLE ${ALL_FILES})
+if (ANDROID)
+    # Export ANativeActivity_onCreate(),
+    # Refer to: https://github.com/android-ndk/ndk/issues/381.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
+
+    add_library(${PROJECT_NAME} SHARED ${ALL_FILES} 
+        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.h
+        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
+
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
+elseif (WIN32)
+    add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
+elseif (APPLE)
+    add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${ALL_FILES})
+endif ()
 
 target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
 
-if (NOT IOS)
+if (NOT ANDROID AND NOT IOS)
     set_target_properties(${PROJECT_NAME} PROPERTIES 
         PREFIX ""
-        DEBUG_POSTFIX "_d"
+        #DEBUG_POSTFIX "_d"
         OUTPUT_NAME ${PROJECT_NAME}
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
 endif ()
 
-if (WIN32)
-    target_link_libraries(${PROJECT_NAME} winmm.lib)
-
-    if (MSVC)
-        set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)
-    endif ()
+if (ANDROID)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E remove_directory "\"${CMAKE_SOURCE_DIR}/Bin/Android/Assets\""
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "\"${CMAKE_SOURCE_DIR}/Data\"" "\"${CMAKE_SOURCE_DIR}/Bin/Android/Assets/Data\""
+        COMMENT Copying asset files)
 elseif (APPLE)
     # App name
     set(CMAKEVAR_APP_NAME "Test Renderer")
@@ -117,4 +124,10 @@ elseif (APPLE)
         COMMAND rm -rf "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\""
         COMMAND cp -Rf "\"$(PROJECT_DIR)/Data\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\""
         COMMENT Copying data files)
+elseif (WIN32)
+    target_link_libraries(${PROJECT_NAME} winmm.lib)
+
+    if (MSVC)
+        set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)
+    endif ()
 endif ()

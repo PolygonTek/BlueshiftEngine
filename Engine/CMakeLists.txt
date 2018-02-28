@@ -3,6 +3,7 @@
 ################################################################################
 cmake_minimum_required(VERSION 2.8.12)
 
+set(CMAKE_OBJECT_PATH_MAX 512)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 include(CMakeDependentOption)
@@ -37,6 +38,8 @@ if (CMAKE_CROSSCOMPILING)
         set(ENGINE_ARCH ${IOS_ARCH})
     elseif (ANDROID)
         set(ENGINE_ARCH ${CMAKE_ANDROID_ARCH})
+
+        include_directories(${ANDROID_SYSROOT}/usr/include/${ANDROID_HEADER_TRIPLE})
     endif ()
 else ()
     if (ENGINE_64BIT)
@@ -69,8 +72,6 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
 
 #set(CMAKE_CXX_STANDARD 14)
 #set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(CMAKE_DEBUG_POSTFIX "_d")
 
 # Add DEBUG, _DEBUG definition to compiler in debug build
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
@@ -137,11 +138,23 @@ elseif (APPLE)
         #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
     endif ()
 elseif (ANDROID)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -fno-exceptions -fno-rtti")
+
     # Settings for Android
     add_compile_options("-DANDROID")
 
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -std=gnu++1y -frtti")
+    add_compile_options("-Wno-unused-parameter")
+    add_compile_options("-Wno-unused-variable")
+    add_compile_options("-Wno-unused-local-typedef")
+    add_compile_options("-Wno-unused-function")
+    add_compile_options("-Wno-unused-private-field")
+    add_compile_options("-Wno-reorder")
+    add_compile_options("-Wno-inconsistent-missing-override")
+    add_compile_options("-Wparentheses-equality")
+    add_compile_options("-Wlogical-not-parentheses")
+    add_compile_options("-Wshift-overflow")
+    add_compile_options("-Wshift-negative-value")
 endif ()
 
 ################################################################################
@@ -178,14 +191,14 @@ if (XAMARIN)
 else ()
     if (MSVC)
         set(ENGINE_BUILD_PLATFORM_DIR "Win64")
+    elseif (ANDROID)
+        set(ENGINE_BUILD_PLATFORM_DIR "Android/${CMAKE_BUILD_TYPE}/${ANDROID_ABI}")
     elseif (APPLE)
         if (IOS)
             set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
         else ()
             set(ENGINE_BUILD_PLATFORM_DIR "macOS")
         endif ()
-    elseif (ANDROID)
-        set(ENGINE_BUILD_PLATFORM_DIR "Android")
     else ()
         set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
     endif ()
@@ -220,6 +233,11 @@ endforeach()
 # Sub projects
 ################################################################################
 if (BUILD_ENGINE)
+    # Override subdirectory options
+    set(JSONCPP_WITH_TESTS OFF CACHE "" INTERNAL FORCE)
+    set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE "" INTERNAL FORCE)
+    set(JSONCPP_WITH_PKGCONFIG_SUPPORT OFF CACHE "" INTERNAL FORCE)
+
     add_subdirectory(Source/Dependencies/zlib)
     add_subdirectory(Source/Dependencies/minizip)
     add_subdirectory(Source/Dependencies/libjpeg)
@@ -235,11 +253,7 @@ if (BUILD_ENGINE)
     add_subdirectory(Source/Dependencies/NvTriStrip)
     add_subdirectory(Source/Dependencies/Bullet)
     add_subdirectory(Source/Dependencies/HACD)
-  
-    if (ANDROID)
-        add_subdirectory(Source/Dependencies/nvidia)
-    endif()
-  
+ 
     if (USE_LUAJIT)
         add_subdirectory(Source/Dependencies/luaJIT)
     else ()
@@ -259,11 +273,13 @@ if (BUILD_PLAYER)
 endif ()
 
 if (BUILD_EDITOR)
-    add_subdirectory(Source/Dependencies/ToolWindowManager)  
+    add_subdirectory(Source/Dependencies/ToolWindowManager)
     add_subdirectory(Source/BlueshiftEditor)
 endif ()
 
 if (BUILD_TEST)
-    add_subdirectory(Source/TestBase)
+    if (NOT ANDROID)
+        add_subdirectory(Source/TestBase)
+    endif ()
     add_subdirectory(Source/TestRenderer)
 endif ()

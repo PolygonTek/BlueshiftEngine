@@ -13,8 +13,30 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Str.h"
+#include "PlatformUtils/Android/AndroidJNI.h"
 
-extern struct android_app *appState;
+BE_NAMESPACE_BEGIN
+
+android_app *AndroidJNI::appState = nullptr;
+
+jmethodID AndroidJNI::javaMethod_showAlert = nullptr;
+
+void AndroidJNI::Init(android_app *appState) {
+    AndroidJNI::appState = appState;
+
+    FindJavaClassesAndMethods();
+}
+
+void AndroidJNI::FindJavaClassesAndMethods() {
+    JNIEnv *env = AndroidJNI::GetJavaEnv(AndroidJNI::appState->activity);
+
+    jclass javaClassActivity = env->GetObjectClass(AndroidJNI::appState->activity->clazz);
+
+    AndroidJNI::javaMethod_showAlert = AndroidJNI::FindMethod(env, javaClassActivity, "showAlert", "(Ljava/lang/String;)V", false);
+
+    env->DeleteLocalRef(javaClassActivity);
+}
 
 // Unregister this thread from the VM
 static void DetachCurrentThreadDtor(void *p) {
@@ -22,13 +44,13 @@ static void DetachCurrentThreadDtor(void *p) {
     activity->vm->DetachCurrentThread();
 }
 
-JNIEnv *AndroidJNI::GetJavaEnv() {
+JNIEnv *AndroidJNI::GetJavaEnv(ANativeActivity *nativeActivity) {
     JNIEnv *env;
-    if (appState->activity->vm->GetEnv((void **)&env, JNI_CURRENT_VERSION) == JNI_OK) {
+    if (nativeActivity->vm->GetEnv((void **)&env, JNI_CURRENT_VERSION) == JNI_OK) {
         return env;
     }
-    appState->activity->vm->AttachCurrentThread(&env, nullptr);
-    pthread_key_create((int32_t *)appState->activity, DetachCurrentThreadDtor);
+    nativeActivity->vm->AttachCurrentThread(&env, nullptr);
+    pthread_key_create((int32_t *)nativeActivity, DetachCurrentThreadDtor);
 
     return env;
 }
@@ -72,7 +94,7 @@ jclass AndroidJNI::LoadClass(JNIEnv *env, jobject activityObject, const char *cl
 jclass AndroidJNI::FindClass(JNIEnv *env, const char *className, bool isOptional) {
     jclass javaClass = env->FindClass(className);
     if (!javaClass && !isOptional) {
-        LOGI("Failed to find %s", className);
+        BE_WARNLOG(L"Failed to find %hs", className);
     }
     return javaClass;
 }
@@ -80,7 +102,7 @@ jclass AndroidJNI::FindClass(JNIEnv *env, const char *className, bool isOptional
 jmethodID AndroidJNI::FindMethod(JNIEnv *env, jclass javaClass, const char *methodName, const char *methodSignature, bool isOptional) {
     jmethodID method = javaClass ? env->GetMethodID(javaClass, methodName, methodSignature) : nullptr;
     if (!method && !isOptional) {
-        LOGI("Failed to find %s", methodName);
+        BE_WARNLOG(L"Failed to find %hs", methodName);
     }
     return method;
 }
@@ -88,7 +110,7 @@ jmethodID AndroidJNI::FindMethod(JNIEnv *env, jclass javaClass, const char *meth
 jmethodID AndroidJNI::FindStaticMethod(JNIEnv *env, jclass javaClass, const char *methodName, const char *methodSignature, bool isOptional) {
     jmethodID method = javaClass ? env->GetStaticMethodID(javaClass, methodName, methodSignature) : nullptr;
     if (!method && !isOptional) {
-        LOGI("Failed to find %s", methodName);
+        BE_WARNLOG(L"Failed to find %hs", methodName);
     }
     return method;
 }
@@ -96,7 +118,7 @@ jmethodID AndroidJNI::FindStaticMethod(JNIEnv *env, jclass javaClass, const char
 jfieldID AndroidJNI::FindField(JNIEnv *env, jclass javaClass, const char *fieldName, const char *fieldType, bool isOptional) {
     jfieldID field = env->GetFieldID(javaClass, fieldName, fieldType);
     if (!field && !isOptional) {
-        LOGI("Failed to find %s", fieldName);
+        BE_WARNLOG(L"Failed to find %hs", fieldName);
     }
     return field;
 }
@@ -157,3 +179,5 @@ float AndroidJNI::CallFloatMethod(JNIEnv *env, jobject object, jmethodID method,
 
     return (float)ret;
 }
+
+BE_NAMESPACE_END

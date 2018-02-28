@@ -23,9 +23,21 @@ include_directories(
     ${ENGINE_INCLUDE_DIR}/Dependencies
 )
 
-add_executable(${PROJECT_NAME} ${ALL_FILES})
+if (ANDROID)
+    # Export ANativeActivity_onCreate(),
+    # Refer to: https://github.com/android-ndk/ndk/issues/381.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
-target_link_libraries(${PROJECT_NAME} BlueshiftEngine tinyxml2 LuaCpp)
+    add_library(${PROJECT_NAME} SHARED ${ALL_FILES} 
+        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.h
+        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
+
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
+else ()
+    add_executable(${PROJECT_NAME} ${ALL_FILES})
+endif ()
+
+target_link_libraries(${PROJECT_NAME} BlueshiftEngine LuaCpp)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
 
@@ -38,7 +50,7 @@ endif ()
 if (NOT IOS)
     set_target_properties(${PROJECT_NAME} PROPERTIES 
         PREFIX ""
-        DEBUG_POSTFIX "_d"
+        #DEBUG_POSTFIX "_d"
         OUTPUT_NAME ${PROJECT_NAME}
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
 endif ()

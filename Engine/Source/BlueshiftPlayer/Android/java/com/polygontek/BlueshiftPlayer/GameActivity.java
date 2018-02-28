@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package polygontek.testrenderer;
+package com.polygontek.BlueshiftPlayer;
 
 import android.os.Build;
 import android.os.Bundle;
@@ -29,7 +29,7 @@ import android.util.Log;
 
 public class GameActivity extends NativeActivity {
     static {
-        System.loadLibrary("TestRenderer");
+        System.loadLibrary("BlueshiftPlayer");
     }
 
     @Override

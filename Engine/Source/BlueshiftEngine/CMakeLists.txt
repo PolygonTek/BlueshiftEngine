@@ -104,20 +104,20 @@ set(ENGINE_FILES
     Public/Math/Vector3.h
     Public/Math/Vector4.h
 
-    Public/SIMD/Simd.h
-    Public/SIMD/Simd_AVX.h
-    Public/SIMD/Simd_Generic.h
-    Public/SIMD/Simd_SSE4.h
-    Public/SIMD/smmintrin_emu.h
-    Public/SIMD/immintrin_emu.h
-    Public/SIMD/AVX/avx.h
-    Public/SIMD/AVX/avxb.h
-    Public/SIMD/AVX/avxf.h
-    Public/SIMD/AVX/avxi.h
-    Public/SIMD/SSE/sse.h
-    Public/SIMD/SSE/sseb.h
-    Public/SIMD/SSE/ssef.h
-    Public/SIMD/SSE/ssei.h
+    Public/Simd/Simd.h
+    Public/Simd/Simd_AVX.h
+    Public/Simd/Simd_Generic.h
+    Public/Simd/Simd_SSE4.h
+    Public/Simd/smmintrin_emu.h
+    Public/Simd/immintrin_emu.h
+    Public/Simd/AVX/avx.h
+    Public/Simd/AVX/avxb.h
+    Public/Simd/AVX/avxf.h
+    Public/Simd/AVX/avxi.h
+    Public/Simd/SSE/sse.h
+    Public/Simd/SSE/sseb.h
+    Public/Simd/SSE/ssef.h
+    Public/Simd/SSE/ssei.h
 
     Public/Platform/cpuid.h
     Public/Platform/Intrinsics.h
@@ -613,10 +613,8 @@ if (ANDROID)
     list(APPEND ENGINE_FILES
         Public/Platform/Posix/PlatformPosixProcess.h
         Public/Platform/Posix/PlatformPosixTime.h
-        Public/Platform/Posix/PlatformPosixSystem.h
         Public/Platform/Linux/PlatformLinuxProcess.h
         Public/Platform/Linux/PlatformLinuxTime.h
-        Public/Platform/Linux/PlatformLinuxSystem.h
         Public/Platform/Android/PlatformAndroidProcess.h
         Public/Platform/Android/PlatformAndroidSystem.h
         Public/Platform/Android/PlatformAndroidThread.h
@@ -624,10 +622,8 @@ if (ANDROID)
 
         Private/Platform/Posix/PlatformPosixProcess.cpp
         Private/Platform/Posix/PlatformPosixTime.cpp
-        Private/Platform/Posix/PlatformPosixSystem.cpp
         Private/Platform/Linux/PlatformLinuxProcess.cpp
         Private/Platform/Linux/PlatformLinuxTime.cpp
-        Private/Platform/Linux/PlatformLinuxSystem.cpp
         Private/Platform/Android/PlatformAndroidProcess.cpp 
         Private/Platform/Android/PlatformAndroidSystem.cpp 
         Private/Platform/Android/PlatformAndroidThread.cpp
@@ -685,6 +681,7 @@ elseif (UNIX)
         Private/Platform/Posix/PlatformPosixThread.cpp
         Private/Platform/Posix/PlatformPosixTime.cpp
         Private/Platform/Posix/PlatformPosixSystem.cpp
+
         Private/Sound/SoundSystemAL.cpp
         Private/Sound/SoundBufferAL.cpp
         Private/Sound/SoundSourceAL.cpp)
@@ -694,6 +691,7 @@ elseif (UNIX)
             Public/Platform/Apple/PlatformAppleTime.h
             Public/Platform/Apple/PlatformAppleProcess.h
             Public/Platform/Apple/PlatformAppleSystem.h
+
             Private/Platform/Apple/PlatformAppleTime.cpp
             Private/Platform/Apple/PlatformAppleProcess.mm
             Private/Platform/Apple/PlatformAppleSystem.mm)
@@ -716,10 +714,12 @@ elseif (UNIX)
             list(APPEND ENGINE_FILES
                 Public/Platform/MacOS/PlatformMacOSProcess.h
                 Public/Platform/MacOS/PlatformMacOSSystem.h
+
                 Private/Platform/MacOS/PlatformMacOSProcess.mm
                 Private/Platform/MacOS/PlatformMacOSSystem.mm
                 Private/Platform/PlatformMacOS.h
                 Private/Platform/PlatformMacOS.mm
+
                 Public/Network/Socket.h
                 Public/Network/Packet.h
                 Private/Network/Socket.cpp
@@ -777,11 +777,11 @@ elseif (APPLE)
     endif ()
 endif ()
 
-if (IOS OR ANDROID)
+if (IOS)
     set(GGL_FILES
         Private/RHIOpenGL/OpenGL/GGL/ggles3.c
         Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
-elseif (WIN32 AND USE_DESKTOP_EGL)
+elseif (ANDROID OR (WIN32 AND USE_DESKTOP_EGL))
     set(GGL_FILES
         Private/RHIOpenGL/OpenGL/GGL/ggles3.c
         Private/RHIOpenGL/OpenGL/GGL/ggles3.h
@@ -814,48 +814,19 @@ include_directories(
     ${ENGINE_INCLUDE_DIR}/Dependencies/asio/include
 )
 
-if (NOT ANDROID)
+if (ANDROID)
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
+
+    target_link_libraries(${PROJECT_NAME} android atomic log EGL GLESv3 OpenSLES)
+
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
+else ()
     enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES RENDERER_FILES)
+
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 endif ()
 
-add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    FOLDER "Blueshift"
-    PREFIX ""
-    DEBUG_POSTFIX "_d"
-    OUTPUT_NAME ${PROJECT_NAME}
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR}"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR}")
-
-if (WIN32)
-    target_link_libraries(${PROJECT_NAME} ws2_32.lib)
-
-    if (USE_DESKTOP_EGL)
-        include(FindOpenGLES3)
-        include(FindEGL)
-
-        include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/OpenGL/include)
-
-        find_library(OPENGLES3_LIBRARY GLESv2)
-        find_library(EGL_LIBRARY EGL)
-
-        target_link_libraries(${PROJECT_NAME} ${EGL_LIBRARY} ${OPENGLES3_LIBRARY})
-    else ()
-        find_package(OpenGL REQUIRED)
-
-        target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
-    endif ()
-
-    if (USE_WINDOWS_OPENAL)
-        include(FindOpenAL)
-    
-        target_include_directories(${PROJECT_NAME} PUBLIC ${OPENAL_INCLUDE_DIR})
-        target_link_libraries(${PROJECT_NAME} ${OPENAL_LIBRARY})
-    else ()
-        target_link_libraries(${PROJECT_NAME} dxguid.lib dsound.lib)
-    endif ()
-elseif (APPLE)
+if (APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++0x"
         XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
@@ -897,10 +868,69 @@ elseif (APPLE)
     endif ()
 
     add_framework(${PROJECT_NAME} OpenAL)
+elseif (WIN32)
+    target_link_libraries(${PROJECT_NAME} ws2_32.lib)
+
+    if (USE_DESKTOP_EGL)
+        include(FindOpenGLES3)
+        include(FindEGL)
+
+        include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/OpenGL/include)
+
+        find_library(OPENGLES3_LIBRARY GLESv2)
+        find_library(EGL_LIBRARY EGL)
+
+        target_link_libraries(${PROJECT_NAME} ${EGL_LIBRARY} ${OPENGLES3_LIBRARY})
+    else ()
+        find_package(OpenGL REQUIRED)
+
+        target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
+    endif ()
+
+    if (USE_WINDOWS_OPENAL)
+        include(FindOpenAL)
+    
+        target_include_directories(${PROJECT_NAME} PUBLIC ${OPENAL_INCLUDE_DIR})
+        target_link_libraries(${PROJECT_NAME} ${OPENAL_LIBRARY})
+    else ()
+        target_link_libraries(${PROJECT_NAME} dxguid.lib dsound.lib)
+    endif ()
 endif ()
 
-target_link_libraries(${PROJECT_NAME} zlib minizip libjpeg libpng libpvrt etcpack_lib Etc2CompLib libogg libvorbis jsoncpp freetype Bullet HACD luasocket LuaCpp NvTriStrip)
+target_link_libraries(${PROJECT_NAME} 
+    zlib
+    minizip
+    libjpeg
+    libpng
+    libpvrt
+    etcpack_lib
+    Etc2CompLib
+    libogg
+    libvorbis
+    jsoncpp
+    tinyxml2
+    freetype
+    Bullet
+    HACD
+    luasocket
+    LuaCpp
+    NvTriStrip)
 
-if (ANDROID)
-    target_link_libraries(${PROJECT_NAME} nvidia)
+if (USE_LUAJIT)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/Dependencies/luaJIT/src)
+
+    include(FindLuaJIT)
+    target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
+else ()    
+    target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/Dependencies/lua)
+
+    target_link_libraries(${PROJECT_NAME} lua)
 endif ()
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    FOLDER "Blueshift"
+    PREFIX ""
+    #DEBUG_POSTFIX "_d"
+    OUTPUT_NAME ${PROJECT_NAME}
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR}
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})

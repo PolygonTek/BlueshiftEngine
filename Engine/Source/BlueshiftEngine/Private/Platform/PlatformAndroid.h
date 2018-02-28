@@ -15,7 +15,8 @@
 #pragma once
 
 #include "PlatformGeneric.h"
-#include <nvidia/nv_egl_util/nv_egl_util.h>
+
+struct ANativeWindow;
 
 BE_NAMESPACE_BEGIN
 
@@ -27,12 +28,13 @@ public:
     virtual void			Shutdown() override;
 
     virtual void            SetMainWindowHandle(void *windowHandle) override;
+
     virtual void			Quit() override;
     virtual void			Log(const wchar_t *msg) override;
     virtual void			Error(const wchar_t *msg) override;
 
 private:
-//	NvEGLUtil *				window;
+	ANativeWindow *			window;
 };
 
 BE_NAMESPACE_END

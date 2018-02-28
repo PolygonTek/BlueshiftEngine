@@ -15,6 +15,8 @@
 #include "Precompiled.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -25,8 +27,6 @@ static Str          eglExtensions;
 
 static int          majorVersion = 0;
 static int          minorVersion = 0;
-
-static HGLRC        hrcMain;
 
 static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
 static CVar         gl_debugLevel(L"gl_debugLevel", L"1", CVar::Integer, L"");
@@ -211,7 +211,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
         BE_FATALERROR(L"Couldn't create EGL context");
     }
 
-    ActivateSurface(mainContext);
+    ActivateSurface(NullContext);
     
     GetGLVersion(&majorVersion, &minorVersion);
 
@@ -280,7 +280,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
             BE_FATALERROR(L"Couldn't create EGL context");
         }
 
-        ActivateSurface(ctx);
+        ActivateSurface(ctx->handle);
     }
 
     SetContext((Handle)handle);
@@ -328,7 +328,7 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
 }
 
 void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
-    GLContext *ctx = contextList[ctxHandle];
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     // EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
     // guaranteed to be accepted by ANativeWindow_setBuffersGeometry().
@@ -355,7 +355,7 @@ void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
 }
 
 void OpenGLRHI::DeactivateSurface(Handle ctxHandle) {
-    GLContext *ctx = contextList[ctxHandle];
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     eglMakeCurrent(ctx->eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     
@@ -403,8 +403,8 @@ RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
     return (WindowHandle)ctx->nativeWindow;
 }
 
-void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
-    GLContext *ctx = contextList[ctxHandle];
+void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) const {
+    const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     if (windowWidth || windowHeight || backingWidth || backingHeight) {
         EGLint surfaceWidth;
@@ -445,7 +445,7 @@ void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
 void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
-bool OpenGLRHI::SwapBuffers() const {
+bool OpenGLRHI::SwapBuffers() {
     if (!gl_ignoreGLError.GetBool()) {
         CheckError("OpenGLRHI::SwapBuffers");
     }
@@ -456,7 +456,7 @@ bool OpenGLRHI::SwapBuffers() const {
 
     //gglFlush();
 
-    bool succeeded = eglSwapBuffers(currentContext->eglContext, currentContext->eglSurface);
+    EGLBoolean succeeded = eglSwapBuffers(currentContext->eglDisplay, currentContext->eglSurface);
     if (!succeeded) {
         EGLint err = eglGetError();
         if (err == EGL_BAD_SURFACE || err == EGL_BAD_NATIVE_WINDOW) {
@@ -474,6 +474,8 @@ bool OpenGLRHI::SwapBuffers() const {
 
         ggl_rebind(gl_debug.GetBool());
     }
+
+    return true;
 }
 
 void OpenGLRHI::SwapInterval(int interval) const {

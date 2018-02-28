@@ -18,8 +18,7 @@
 #include "Application.h"
 #include <dlfcn.h>
 #include <android/sensor.h>
-
-struct android_app *        appState = nullptr;
+#include <android/log.h>
 
 static bool                 appInitialized = false;
 static int                  currentWindowWidth = 0;
@@ -33,49 +32,15 @@ static const ASensor *      accelerometerSensor = nullptr;
 static const ASensor *      gyroscopeSensor = nullptr;
 static ASensorEventQueue *  sensorEventQueue = nullptr;
 
-static jmethodID            javaMethod_showAlert = nullptr;
-
 static BE1::RHI::Handle     mainContext = BE1::RHI::NullContext;
 static BE1::RHI::Handle     mainRenderTarget = BE1::RHI::NullRenderTarget;
 
-static std::wstring JavaStringToWString(JNIEnv *env, jstring javaString) {
-    const jchar *raw = env->GetStringChars(javaString, 0);
-    jsize len = env->GetStringLength(javaString);
-
-    std::wstring ret;
-    ret.assign(raw, raw + len);
-
-    env->ReleaseStringChars(javaString, raw);
-
-    return ret;
-}
-
-static jstring WStringToJavaString(JNIEnv *env, const std::wstring &wstr) {
-    jstring ret;
-    size_t len = wstr.length();
-
-    if (sizeof(wchar_t) == sizeof(jchar)) {
-        ret = env->NewString((jchar *)wstr.c_str(), (jsize)len);
-    } else {
-        jchar *javaChars = (jchar *)malloc((len + 1) * sizeof(jchar));
-        for (int i = 0; i < len; i++) {
-            // This discards two bytes in wstr[i], but these should be 0 in UTF-16
-            javaChars[i] = (jchar)wstr[i];
-        }
-        javaChars[len] = 0;
-
-        ret = env->NewString(javaChars, (jsize)len);
-        free(javaChars);
-    }
-    return ret;
-}
-
 static void SystemLog(int logLevel, const wchar_t *msg) {
-    if (logLevel == DevLog) {
+    if (logLevel == BE1::DevLog) {
         __android_log_print(ANDROID_LOG_VERBOSE, "libTestRenderer", "%ls", msg);
-    } else if (logLevel == WarningLog) {
+    } else if (logLevel == BE1::WarningLog) {
         __android_log_print(ANDROID_LOG_WARN, "libTestRenderer", "%ls", msg);
-    } else if (logLevel == ErrorLog) {
+    } else if (logLevel == BE1::ErrorLog) {
         __android_log_print(ANDROID_LOG_ERROR, "libTestRenderer", "%ls", msg);
     } else {
         __android_log_print(ANDROID_LOG_INFO, "libTestRenderer", "%ls", msg);
@@ -83,10 +48,10 @@ static void SystemLog(int logLevel, const wchar_t *msg) {
 }
 
 static void SystemError(int errLevel, const wchar_t *msg) {
-    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv(BE1::AndroidJNI::appState->activity);
 
-    jstring javaMsg = ToJavaString(env, msg);
-    AndroidJNI::CallVoidMethod(env, appState->activity->clazz, javaMethod_showAlert, javaMsg);
+    jstring javaMsg = BE1::WStr(msg).ToJavaString(env);
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::appState->activity->clazz, BE1::AndroidJNI::javaMethod_showAlert, javaMsg);
 
     env->DeleteLocalRef(javaMsg);
 }
@@ -102,12 +67,14 @@ static void InitDisplay() {
     if (!appInitialized) {
         appInitialized = true;
 
-        currentWindowWidth = ANativeWindow_getWidth(appState->window);
-        currentWindowHeight = ANativeWindow_getHeight(appState->window);
+        currentWindowWidth = ANativeWindow_getWidth(BE1::AndroidJNI::appState->window);
+        currentWindowHeight = ANativeWindow_getHeight(BE1::AndroidJNI::appState->window);
 
-        ::app.Init(appState->window);
+        ::app.Init(BE1::AndroidJNI::appState->window);
 
         ::app.LoadResources();
+
+        mainContext = BE1::rhi.CreateContext(BE1::AndroidJNI::appState->window, false);
 
         mainRenderTarget = ::app.CreateRenderTarget(mainContext);
 
@@ -115,54 +82,6 @@ static void InitDisplay() {
     } else {
         BE1::rhi.ActivateSurface(mainContext);
     }
-}
-
-static void FindJavaClassesAndMethods() {
-    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
-
-    jclass javaClassActivity = env->GetObjectClass(appState->activity->clazz);
-
-    javaMethod_showAlert = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "showAlert", "(Ljava/lang/String;)V", false);
-
-    env->DeleteLocalRef(javaClassActivity);
-}
-
-static void InitInstance(struct android_app *appState) {
-    ::appState = appState;
-
-    FindJavaClassesAndMethods();
-
-    BE1::Str path = BE1::PlatformFile::ExecutablePath();
-    path.AppendPath("../../..");
-    BE1::Engine::InitBase(path.c_str(), false, SystemLog, SystemError);
-
-    // Set window format to 8888
-    ANativeActivity_setWindowFormat(appState->activity, WINDOW_FORMAT_RGBA_8888);
-
-    appState->userData = &g_engine;
-    appState->onAppCmd = HandleCmd; // app command callback
-    appState->onInputEvent = HandleInput; // input event callback
-
-#ifdef USE_NDK_PROFILER
-    monstartup("libTestRenderer.so");
-#endif
-
-    // Prepare to monitor accelerometer
-    InitSensors();
-}
-
-static void ShutdownInstance() {
-    app.FreeResources();
-
-    if (mainContext) {
-        BE1::rhi.DeleteRenderTarget(mainRenderTarget);
-
-        BE1::rhi.DestroyContext(mainContext);
-    }
-
-    app.Shutdown();
-
-    BE1::Engine::ShutdownBase();
 }
 
 /*
@@ -202,10 +121,10 @@ static ASensorManager *AcquireASensorManagerInstance(android_app *app) {
 }
 
 static void InitSensors() {
-    sensorManager = AcquireASensorManagerInstance(appState);
+    sensorManager = AcquireASensorManagerInstance(BE1::AndroidJNI::appState);
     accelerometerSensor = ASensorManager_getDefaultSensor(sensorManager, ASENSOR_TYPE_ACCELEROMETER);
     gyroscopeSensor = ASensorManager_getDefaultSensor(sensorManager, ASENSOR_TYPE_GYROSCOPE);
-    sensorEventQueue = ASensorManager_createEventQueue(sensorManager, appState->looper, LOOPER_ID_USER, nullptr, nullptr);
+    sensorEventQueue = ASensorManager_createEventQueue(sensorManager, BE1::AndroidJNI::appState->looper, LOOPER_ID_USER, nullptr, nullptr);
 }
 
 static void ProcessSensors(int32_t id) {
@@ -268,8 +187,6 @@ static void WindowSizeChanged(int w, int h) {
 
 // Process the next main command.
 static void HandleCmd(struct android_app *appState, int32_t cmd) {
-    Engine *eng = (Engine *)appState->userData;
-
     switch (cmd) {
     case APP_CMD_DESTROY:
         /**
@@ -307,8 +224,10 @@ static void HandleCmd(struct android_app *appState, int32_t cmd) {
 		 * contains the existing window; after calling android_app_exec_cmd
 		 * it will be set to NULL.
 		 */
-        BE1::rhi.DeactivateSurface(mainContext);
-        surfaceCreated = false;
+        if (surfaceCreated) {
+            BE1::rhi.DeactivateSurface(mainContext);
+            surfaceCreated = false;
+        }
         break;
     case APP_CMD_LOST_FOCUS:
         /**
@@ -360,27 +279,27 @@ static int32_t HandleInput(struct android_app *appState, AInputEvent *event) {
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                LOGI("AMOTION_EVENT_ACTION_DOWN: %i %i", x, y);
+                BE_LOG(L"AMOTION_EVENT_ACTION_DOWN: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_UP:
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                LOGI("AMOTION_EVENT_ACTION_UP: %i %i", x, y);
+                BE_LOG(L"AMOTION_EVENT_ACTION_UP: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_DOWN:
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                LOGI("AMOTION_EVENT_ACTION_POINTER_DOWN: %i %i", x, y);
+                BE_LOG(L"AMOTION_EVENT_ACTION_POINTER_DOWN: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_UP:
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                LOGI("AMOTION_EVENT_ACTION_POINTER_UP: %i %i", x, y);
+                BE_LOG(L"AMOTION_EVENT_ACTION_POINTER_UP: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_MOVE:
                 // ACTION_MOVE events are batched, unlike the other events.
@@ -389,7 +308,7 @@ static int32_t HandleInput(struct android_app *appState, AInputEvent *event) {
                     pointerId = (uint64_t)AMotionEvent_getPointerId(event, i);
                     x = (int)AMotionEvent_getX(event, i);
                     y = (int)AMotionEvent_getY(event, i);
-                    LOGI("AMOTION_EVENT_ACTION_MOVE(%i/%i): %i %i", (int)i, (int)pointerCount, x, y);
+                    BE_LOG(L"AMOTION_EVENT_ACTION_MOVE(%i/%i): %i %i", (int)i, (int)pointerCount, x, y);
                 }
                 break;
             }
@@ -397,6 +316,40 @@ static int32_t HandleInput(struct android_app *appState, AInputEvent *event) {
         return 1;
     }
     return 0;
+}
+
+static void InitInstance(struct android_app *appState) {
+    BE1::AndroidJNI::Init(appState);
+
+    BE1::Str basePath = appState->activity->externalDataPath;
+    BE1::Engine::InitBase(basePath.c_str(), false, SystemLog, SystemError);
+
+    // Set window format to 8888
+    ANativeActivity_setWindowFormat(appState->activity, WINDOW_FORMAT_RGBA_8888);
+
+    appState->onAppCmd = HandleCmd; // app command callback
+    appState->onInputEvent = HandleInput; // input event callback
+
+#ifdef USE_NDK_PROFILER
+    monstartup("libTestRenderer.so");
+#endif
+
+    // Prepare to monitor accelerometer
+    InitSensors();
+}
+
+static void ShutdownInstance() {
+    app.FreeResources();
+
+    if (mainContext) {
+        BE1::rhi.DeleteRenderTarget(mainRenderTarget);
+
+        BE1::rhi.DestroyContext(mainContext);
+    }
+
+    app.Shutdown();
+
+    BE1::Engine::ShutdownBase();
 }
 
 extern "C" {
@@ -414,8 +367,6 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
  */
 void android_main(struct android_app *appState) {
     InitInstance(appState);
-
-    //int t0 = BE1::PlatformTime::Milliseconds();
 
     // loop waiting for stuff to do.
     while (1) {
@@ -437,7 +388,6 @@ void android_main(struct android_app *appState) {
 
             // Check if we are exiting.
             if (appState->destroyRequested != 0) {
-                g_engine.gl_context_->SuspendSurface();
                 ShutdownInstance();
                 return;
             }

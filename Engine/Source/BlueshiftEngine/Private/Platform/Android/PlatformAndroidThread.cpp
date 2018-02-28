@@ -13,53 +13,33 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform\PlatformThread.h"
+#include "Platform/PlatformThread.h"
 #include <pthread.h>
 #include <sched.h>
-//#include <sys/timeb.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 
 BE_NAMESPACE_BEGIN
 
-#if defined(__APPLE__)
-
-#include <mach/thread_act.h>
-#include <mach/thread_policy.h>
-#include <mach/mach_init.h>
-
 static void SetAffinity(int affinity) {
-    if (affinity >= 0) {
-        thread_affinity_policy ap;
-        ap.affinity_tag = affinity;
-        if (thread_policy_set(mach_thread_self(), THREAD_AFFINITY_POLICY, (integer_t*)&ap, THREAD_AFFINITY_POLICY_COUNT) != KERN_SUCCESS) {
-            std::cerr << "Thread: cannot set affinity" << std::endl;
-        }
+    pid_t pid = gettid();
+    long syscallres = syscall(__NR_sched_setaffinity, pid, sizeof(affinity), &affinity);
+    if (syscallres) {
+        int err = errno;
+        std::cerr << "Thread: cannot set affinity" << std::endl;
     }
 }
 
-#else
-
-static void SetAffinity(int affinity) {
-    //cpu_set_t cset;
-    //CPU_ZERO(&cset);
-    //CPU_SET(affinity, &cset);
-    //if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0) {
-    //    std::cerr << "Thread: cannot set affinity" << std::endl;
-    //}
-	assert(0);
-}
-
-#endif
-
 struct ThreadStartupData {
-	int affinity;
+    int affinity;
     threadFunc_t startProc;
     void *param;
 };
 
 static void *ThreadStartup(ThreadStartupData *parg) {
     ThreadStartupData arg = *parg; 
-	delete parg;
-	parg = NULL;
+    delete parg;
+    parg = NULL;
 
     SetAffinity(arg.affinity);
     arg.startProc(arg.param);
@@ -67,141 +47,136 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     return NULL;
 }
 
-PlatformUnixThread *PlatformUnixThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
-	pthread_attr_t attr;
+PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+    pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
-		pthread_attr_setstacksize(&attr, stackSize);
-	}
+        pthread_attr_setstacksize(&attr, stackSize);
+    }
 
     pthread_t *tid = new pthread_t;
-	ThreadStartupData *startup = new ThreadStartupData;
+    ThreadStartupData *startup = new ThreadStartupData;
     startup->startProc = startProc;
     startup->param = param;
     startup->affinity = affinity;
 
     if (pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup) != 0) {
-		BE_FATALERROR(L"pthread_create");
-	}
+        BE_FATALERROR(L"pthread_create");
+    }
     
-    PlatformUnixThread *posixThread = new PlatformUnixThread;
-    posixThread->thread = tid;
-    return posixThread;
+    PlatformAndroidThread *androidThread = new PlatformAndroidThread;
+    androidThread->thread = tid;
+    return androidThread;
 }
 
-void PlatformUnixThread::Delete(PlatformUnixThread *posixThread) {
- //   assert(posixThread);
-	//pthread_cancel(*posixThread->thread);
- //   delete posixThread->thread;
- //   delete posixThread;
-	assert(0);;
+void PlatformAndroidThread::Delete(PlatformAndroidThread *androidThread) {
+    assert(androidThread);
+    //pthread_cancel(*androidThread->thread);
+    delete androidThread->thread;
+    delete androidThread;
 }
 
-void PlatformUnixThread::SetAffinity(int affinity) {
-	SetAffinity(affinity);
+void PlatformAndroidThread::SetAffinity(int affinity) {
+    BE1::SetAffinity(affinity);
 }
 
-void PlatformUnixThread::Wait(PlatformUnixThread *posixThread) {
-	if (pthread_join(*posixThread->thread, NULL) != 0) {
-		BE_FATALERROR(L"pthread_join");
-	}
-    delete posixThread->thread;
-    delete posixThread;
+void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
+    if (pthread_join(*androidThread->thread, NULL) != 0) {
+        BE_FATALERROR(L"pthread_join");
+    }
+    delete androidThread->thread;
+    delete androidThread;
 }
 
-void PlatformUnixThread::WaitAll(int numThreads, PlatformUnixThread *posixThreads[]) {
-	for (int i = 0; i < numThreads; i++) {
-		if (pthread_join(*posixThreads[i]->thread, NULL) != 0) {
-			BE_FATALERROR(L"pthread_join");
-		}
+void PlatformAndroidThread::WaitAll(int numThreads, PlatformAndroidThread *androidThreads[]) {
+    for (int i = 0; i < numThreads; i++) {
+        if (pthread_join(*androidThreads[i]->thread, NULL) != 0) {
+            BE_FATALERROR(L"pthread_join");
+        }
 
-		delete posixThreads[i]->thread;
-        delete posixThreads[i];
-	} 
+        delete androidThreads[i]->thread;
+        delete androidThreads[i];
+    } 
 }
 
-PlatformUnixMutex *PlatformUnixMutex::Create() {
-    PlatformUnixMutex *posixMutex = new PlatformUnixMutex;
-	posixMutex->mutex = new pthread_mutex_t;
-	pthread_mutexattr_t attr;
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(posixMutex->mutex, &attr);
-    return posixMutex;
+PlatformAndroidMutex *PlatformAndroidMutex::Create() {
+    PlatformAndroidMutex *androidMutex = new PlatformAndroidMutex;
+    androidMutex->mutex = new pthread_mutex_t;
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(androidMutex->mutex, &attr);
+    return androidMutex;
 }
 
-void PlatformUnixMutex::Delete(PlatformUnixMutex *posixMutex) {
-    assert(posixMutex);
-	pthread_mutex_destroy(posixMutex->mutex);
-	delete posixMutex->mutex;
-    delete posixMutex;
+void PlatformAndroidMutex::Delete(PlatformAndroidMutex *androidMutex) {
+    assert(androidMutex);
+    pthread_mutex_destroy(androidMutex->mutex);
+    delete androidMutex->mutex;
+    delete androidMutex;
 }
 
-void PlatformUnixMutex::Lock(const PlatformUnixMutex *posixMutex) {
-	pthread_mutex_lock(posixMutex->mutex);
+void PlatformAndroidMutex::Lock(const PlatformAndroidMutex *androidMutex) {
+    pthread_mutex_lock(androidMutex->mutex);
 }
 
-bool PlatformUnixMutex::TryLock(const PlatformUnixMutex *posixMutex) {
-	return pthread_mutex_trylock(posixMutex->mutex);
+bool PlatformAndroidMutex::TryLock(const PlatformAndroidMutex *androidMutex) {
+    return pthread_mutex_trylock(androidMutex->mutex) == 0;
 }
 
-void PlatformUnixMutex::Unlock(const PlatformUnixMutex *posixMutex) {
-	pthread_mutex_unlock(posixMutex->mutex);
+void PlatformAndroidMutex::Unlock(const PlatformAndroidMutex *androidMutex) {
+    pthread_mutex_unlock(androidMutex->mutex);
 }
 
-PlatformUnixCondition *PlatformUnixCondition::Create() {
-    PlatformUnixCondition *posixCondition = new PlatformUnixCondition;
-	posixCondition->cond = new pthread_cond_t;
-	pthread_cond_init(posixCondition->cond, NULL);
-    return posixCondition;
+PlatformAndroidCondition *PlatformAndroidCondition::Create() {
+    PlatformAndroidCondition *androidCondition = new PlatformAndroidCondition;
+    androidCondition->cond = new pthread_cond_t;
+    pthread_cond_init(androidCondition->cond, NULL);
+    return androidCondition;
 }
 
-void PlatformUnixCondition::Delete(PlatformUnixCondition *posixCondition) {
-    assert(posixCondition);
-	delete posixCondition->cond;
+void PlatformAndroidCondition::Delete(PlatformAndroidCondition *androidCondition) {
+    assert(androidCondition);
+    delete androidCondition->cond;
 }
 
-void PlatformUnixCondition::Wait(const PlatformUnixCondition *posixCondition, const PlatformUnixMutex *posixMutex) {
-	pthread_cond_wait(posixCondition->cond, posixMutex->mutex);
+void PlatformAndroidCondition::Wait(const PlatformAndroidCondition *androidCondition, const PlatformAndroidMutex *androidMutex) {
+    pthread_cond_wait(androidCondition->cond, androidMutex->mutex);
 }
 
 struct timespec *MillisecondsFromNow(struct timespec *time, int millisecs) {
-	//timeb currSysTime;
-	//int64_t nanosecs, secs;
-	//const int64_t NANOSEC_PER_MILLISEC = 1000000;
-	//const int64_t NANOSEC_PER_SEC = 1000000000;
+    const int64_t NANOSEC_PER_MILLISEC = 1000000;
+    const int64_t NANOSEC_PER_SEC = 1000000000;
 
-	//// get current system time and add millisecs
-	//ftime(&currSysTime);
+    struct timeval tvstruct;
+    gettimeofday(&tvstruct, NULL);
 
-	//nanosecs = ((int64_t) (millisecs + currSysTime.millitm)) * NANOSEC_PER_MILLISEC;
-	//if (nanosecs >= NANOSEC_PER_SEC) {
-	//	secs = currSysTime.time + 1;
-	//	nanosecs %= NANOSEC_PER_SEC;
-	//} else {
-	//	secs = currSysTime.time;
-	//}
+    int64_t secs = tvstruct.tv_sec;
+    int64_t nanosecs = ((int64_t)(millisecs + tvstruct.tv_usec * 1000)) * NANOSEC_PER_MILLISEC;
+    if (nanosecs >= NANOSEC_PER_SEC) {
+        secs = secs + 1;
+        nanosecs %= NANOSEC_PER_SEC;
+    }
 
-	//time->tv_nsec = (long)nanosecs;
-	//time->tv_sec = (long)secs;
+    time->tv_nsec = (long)nanosecs;
+    time->tv_sec = (long)secs;
 
-	//return time;
-	assert(0);; return 0;
+    return time;
 }
 
-bool PlatformUnixCondition::TimedWait(const PlatformUnixCondition *posixCondition, const PlatformUnixMutex *posixMutex, int ms) {
-	timespec ts;
-	MillisecondsFromNow(&ts, ms);
+bool PlatformAndroidCondition::TimedWait(const PlatformAndroidCondition *androidCondition, const PlatformAndroidMutex *androidMutex, int ms) {
+    timespec ts;
+    MillisecondsFromNow(&ts, ms);
     
-	int ret = pthread_cond_timedwait(posixCondition->cond, posixMutex->mutex, &ts);
-	if (ret == ETIMEDOUT || ret == EINVAL) {
-		return false;
-	}
-	return true;
+    int ret = pthread_cond_timedwait(androidCondition->cond, androidMutex->mutex, &ts);
+    if (ret == ETIMEDOUT || ret == EINVAL) {
+        return false;
+    }
+    return true;
 }
 
-void PlatformUnixCondition::Broadcast(const PlatformUnixCondition *posixCondition) {
-	pthread_cond_broadcast(posixCondition->cond);
+void PlatformAndroidCondition::Broadcast(const PlatformAndroidCondition *androidCondition) {
+    pthread_cond_broadcast(androidCondition->cond);
 }
 
 BE_NAMESPACE_END

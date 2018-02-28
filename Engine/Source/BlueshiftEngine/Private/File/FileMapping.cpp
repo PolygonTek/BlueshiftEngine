@@ -18,23 +18,25 @@
 #include "Platform/PlatformFile.h"
 #include "Platform/PlatformProcess.h"
 #include "File/FileMapping.h"
+
 #ifdef __UNIX__
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #endif
-#ifdef __ANDROID__
-#	include <jni.h>
-#	include <android/asset_manager.h>
-#endif // __ANDORID__
 
+#ifdef __ANDROID__
+#include "PlatformUtils/Android/AndroidJNI.h"
+#include <android/asset_manager.h>
+#endif
 
 BE_NAMESPACE_BEGIN
 
 #ifdef __ANDROID__
 static off_t g_nPageMask;
 #endif
+
 void _FileMapping::Touch() {
 #if defined(__UNIX__)
     size_t page_size = (size_t)sysconf(_SC_PAGESIZE);
@@ -46,12 +48,11 @@ void _FileMapping::Touch() {
     uint32_t checksum = 0;
     for (byte *ptr = (byte *)data; ptr < (byte *)data + size; ptr += page_size) {
         checksum += *(uint32_t *)ptr;
-    }	
+    }
 }
 
 bool FileMapping::Open(const TCHAR *filename) {
-
-#if defined __ANDROID__ 
+#if defined __ANDROID__
     g_nPageMask = getpagesize() - 1;
     off_t nStart;
     hFile = open(filename, O_RDONLY);
@@ -60,9 +61,8 @@ bool FileMapping::Open(const TCHAR *filename) {
         fstat(hFile, &fs);
         size = fs.st_size;
         nStart = 0;
-    }
-    else {
-        AAsset* asset = AAssetManager_open(PlatformFile::GetManager(), filename, AASSET_MODE_UNKNOWN);
+    } else {
+        AAsset* asset = AAssetManager_open(AndroidJNI::appState->activity->assetManager, filename, AASSET_MODE_UNKNOWN);
         if (asset) {
             off_t nLength;
             hFile = AAsset_openFileDescriptor(asset, &nStart, &nLength);
@@ -140,7 +140,6 @@ FileMapping::FileMapping() {
     hFile = -1;
 #endif
 }
-
 
 bool FileMapping::Open(const Str &filename) {
     this->filename = filename;

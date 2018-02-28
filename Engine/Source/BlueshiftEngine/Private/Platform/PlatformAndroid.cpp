@@ -15,13 +15,14 @@
 #include "Precompiled.h"
 #include "PlatformGeneric.h"
 #include "PlatformAndroid.h"
-#include <android/log.h>
+#include "PlatformUtils/Android/AndroidJNI.h"
 #include "Core/WStr.h"
+#include <android/log.h>
 
 BE_NAMESPACE_BEGIN
 
 PlatformAndroid::PlatformAndroid() {
-//    window = nil;
+	window = nullptr;
 }
 
 void PlatformAndroid::Init() {
@@ -33,7 +34,7 @@ void PlatformAndroid::Shutdown() {
 }
 
 void PlatformAndroid::SetMainWindowHandle(void *windowHandle) {
-//	window = (NvEGLUtil *)windowHandle;
+	window = (ANativeWindow *)windowHandle;
 }
 
 void PlatformAndroid::Quit() {
@@ -43,11 +44,16 @@ void PlatformAndroid::Quit() {
 }
 
 void PlatformAndroid::Log(const wchar_t *msg) {
-    __android_log_write(ANDROID_LOG_INFO, "Blueshift", tombs(msg));
+	__android_log_print(ANDROID_LOG_INFO, "", "%ls", msg);
 }
 
 void PlatformAndroid::Error(const wchar_t *msg) {
-    __android_log_write(ANDROID_LOG_ERROR, "Blueshift", tombs(msg));
+	JNIEnv *env = AndroidJNI::GetJavaEnv(AndroidJNI::appState->activity);
+
+    jstring javaMsg = WStr(msg).ToJavaString(env);
+    AndroidJNI::CallVoidMethod(env, AndroidJNI::appState->activity->clazz, AndroidJNI::javaMethod_showAlert, javaMsg);
+
+    env->DeleteLocalRef(javaMsg);
 
     Quit();
 }
