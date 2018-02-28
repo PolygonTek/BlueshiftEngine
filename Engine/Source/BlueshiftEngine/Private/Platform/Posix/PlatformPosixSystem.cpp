@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
 #include <pwd.h>
+#include <unistd.h>
 
 BE_NAMESPACE_BEGIN
 

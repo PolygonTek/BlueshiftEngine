@@ -34,14 +34,6 @@ void PlatformBaseFile::SetBasePath(const char *basePath) {
     }
 }
 
-Str PlatformBaseFile::NormalizeFilename(const char *filename) {
-    return "";
-}
-
-Str PlatformBaseFile::NormalizeDirectoryName(const char *dirname) {
-    return "";
-}
-
 PlatformBaseFile *PlatformBaseFile::OpenFileRead(const char *filename) {
     return nullptr;
 }

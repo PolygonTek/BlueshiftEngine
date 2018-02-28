@@ -30,10 +30,7 @@ public:
     // Read data from the file to the buffer.
     virtual size_t          Read(void *buffer, size_t bytesToRead) const;
     // Write data from the buffer to the file.
-    virtual bool            Write(const void *buffer, size_t bytesToWrite);
-    
-    static Str              NormalizeFilename(const char *filename);
-    static Str              NormalizeDirectoryName(const char *dirname);
+    virtual bool            Write(const void *buffer, size_t bytesToWrite);   
     
     static PlatformPosixFile *OpenFileRead(const char *filename);
     static PlatformPosixFile *OpenFileWrite(const char *filename);
@@ -64,6 +61,9 @@ public:
     static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
     
 protected:
+    static Str              NormalizeFilename(const char *filename);
+    static Str              NormalizeDirectoryName(const char *dirname);
+
     FILE *                  fp;
 };
 

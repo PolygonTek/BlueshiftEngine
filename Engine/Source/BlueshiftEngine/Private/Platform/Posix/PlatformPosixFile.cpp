@@ -43,7 +43,6 @@ int PlatformPosixFile::Size() const {
     if (fstat(fileno(fp), &fileInfo) < 0) {
         return -1;
     }
-
     return (int)fileInfo.st_size;
 }
 
@@ -103,7 +102,6 @@ bool PlatformPosixFile::Write(const void *buffer, size_t bytesToWrite) {
     }
     
     fflush(fp);
-    
     return true;
 }
 
@@ -145,38 +143,35 @@ Str PlatformPosixFile::NormalizeDirectoryName(const char *dirname) {
 }
 
 PlatformPosixFile *PlatformPosixFile::OpenFileRead(const char *filename) {
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "rb");
     if (!fp) {
-        return NULL;
+        return nullptr;
     }
-
     return new PlatformPosixFile(fp);
 }
 
 PlatformPosixFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "wb");
     if (!fp) {
-        return NULL;
-    }
-    
+        return nullptr;
+    }    
     return new PlatformPosixFile(fp);
 }
 
 PlatformPosixFile *PlatformPosixFile::OpenFileAppend(const char *filename) {
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "ab");
     if (!fp) {
-        return NULL;
-    }
-    
+        return nullptr;
+    }    
     return new PlatformPosixFile(fp);
 }
 
 bool PlatformPosixFile::FileExists(const char *filename) {
     struct stat fileInfo;
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     if (stat(normalizedFilename, &fileInfo) == 0 && S_ISREG(fileInfo.st_mode)) {
         return true;
     }
@@ -186,7 +181,7 @@ bool PlatformPosixFile::FileExists(const char *filename) {
 size_t PlatformPosixFile::FileSize(const char *filename) {
     struct stat fileInfo;
     fileInfo.st_size = -1;
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     stat(normalizedFilename, &fileInfo);
     
     // make sure to return -1 for directories
@@ -199,7 +194,7 @@ size_t PlatformPosixFile::FileSize(const char *filename) {
 
 bool PlatformPosixFile::IsFileWritable(const char *filename) {
     struct stat fileInfo;
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     if (stat(normalizedFilename, &fileInfo) == -1) {
         return true;
     }
@@ -207,7 +202,7 @@ bool PlatformPosixFile::IsFileWritable(const char *filename) {
 }
 
 bool PlatformPosixFile::IsReadOnly(const char *filename) {
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     if (access(normalizedFilename, F_OK) == -1) {
         return false; // file doesn't exist
     }
@@ -219,7 +214,7 @@ bool PlatformPosixFile::IsReadOnly(const char *filename) {
 
 bool PlatformPosixFile::SetReadOnly(const char *filename, bool readOnly) {
     struct stat fileInfo;
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     if (stat(normalizedFilename, &fileInfo) == -1) {
         return false;
     }
@@ -229,11 +224,11 @@ bool PlatformPosixFile::SetReadOnly(const char *filename, bool readOnly) {
     } else {
         fileInfo.st_mode |= S_IWUSR;
     }
-    return chmod(normalizedFilename, fileInfo.st_mode);
+    return chmod(normalizedFilename, fileInfo.st_mode) == 0;
 }
 
 bool PlatformPosixFile::RemoveFile(const char *filename) {
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     if (remove(normalizedFilename)) {
         BE_LOG(L"failed to remove file '%hs'\n", normalizedFilename.c_str());
         return false;
@@ -243,9 +238,9 @@ bool PlatformPosixFile::RemoveFile(const char *filename) {
 }
 
 bool PlatformPosixFile::MoveFile(const char *srcFilename, const char *dstFilename) {
-    Str normalizedSrcFilename = PlatformFile::NormalizeFilename(srcFilename);
-    Str normalizedDstFilename = PlatformFile::NormalizeFilename(dstFilename);
-    return rename(normalizedSrcFilename, normalizedDstFilename) == 0 ? true : false;
+    Str normalizedSrcFilename = NormalizeFilename(srcFilename);
+    Str normalizedDstFilename = NormalizeFilename(dstFilename);
+    return rename(normalizedSrcFilename, normalizedDstFilename) == 0;
 }
 
 int PlatformPosixFile::GetFileMode(const char *filename) {
@@ -267,7 +262,7 @@ int PlatformPosixFile::GetFileMode(const char *filename) {
 }
 
 void PlatformPosixFile::SetFileMode(const char *filename, int fileMode) {
-	int mode = 0;
+	mode_t mode = 0;
     if (fileMode & Readable) {
         mode |= S_IRUSR;
     }
@@ -284,7 +279,7 @@ DateTime PlatformPosixFile::GetTimeStamp(const char *filename) {
     static const DateTime epoch(1970, 1, 1);
     struct stat fileInfo;
 
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     if (stat(normalizedFilename, &fileInfo) == -1) {
         return DateTime::MinValue();
     }
@@ -297,7 +292,7 @@ void PlatformPosixFile::SetTimeStamp(const char *filename, const DateTime &timeS
     static const DateTime epoch(1970, 1, 1);
     struct stat fileInfo;
 
-    Str normalizedFilename = PlatformFile::NormalizeFilename(filename);
+    Str normalizedFilename = NormalizeFilename(filename);
     if (stat(normalizedFilename, &fileInfo) == -1) {
         return;
     }
@@ -310,7 +305,7 @@ void PlatformPosixFile::SetTimeStamp(const char *filename, const DateTime &timeS
 
 bool PlatformPosixFile::DirectoryExists(const char *dirname) {
     struct stat fileInfo;
-    Str normalizedDirname = PlatformFile::NormalizeDirectoryName(dirname);
+    Str normalizedDirname = NormalizeDirectoryName(dirname);
     if (stat(normalizedDirname, &fileInfo) == 0 && S_ISDIR(fileInfo.st_mode)) {
         return true;
     }
@@ -318,14 +313,14 @@ bool PlatformPosixFile::DirectoryExists(const char *dirname) {
 }
 
 bool PlatformPosixFile::CreateDirectory(const char *dirname) {
-    if (PlatformFile::DirectoryExists(dirname)) {
+    if (DirectoryExists(dirname)) {
         return true;
     }
-    return mkdir(PlatformFile::NormalizeDirectoryName(dirname), S_IRWXU | S_IRWXG | S_IRWXO) == 0;
+    return mkdir(NormalizeDirectoryName(dirname), S_IRWXU | S_IRWXG | S_IRWXO) == 0;
 }
 
 bool PlatformPosixFile::RemoveDirectory(const char *dirname) {
-    Str normalizedDirname = PlatformFile::NormalizeDirectoryName(dirname);
+    Str normalizedDirname = NormalizeDirectoryName(dirname);
     return rmdir(normalizedDirname) == 0;
 }
 
@@ -339,7 +334,7 @@ static int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, str
 }
 
 bool PlatformPosixFile::RemoveDirectoryTree(const char *dirname) {
-    Str normalizedDirname = PlatformFile::NormalizeDirectoryName(dirname);
+    Str normalizedDirname = NormalizeDirectoryName(dirname);
     return nftw(normalizedDirname, unlink_cb, 64, FTW_DEPTH | FTW_PHYS) == 0;
 }
 
@@ -418,7 +413,7 @@ int PlatformPosixFile::ListFiles(const char *directory, const char *nameFilter, 
     
     files.Clear();
     
-    Str normalizedDirectory = PlatformFile::NormalizeFilename(directory);
+    Str normalizedDirectory = NormalizeFilename(directory);
     
     if (recursive) {
         ListFilesRecursive(normalizedDirectory, "", nameFilter, includeSubDir, files);

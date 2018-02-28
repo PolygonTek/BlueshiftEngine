@@ -21,11 +21,8 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformIOSFile : public PlatformPosixFile {
 public:
-                            PlatformIOSFile(FILE *fp);
-    virtual                 ~PlatformIOSFile();
-    
-    static Str              NormalizeFilename(const char *filename);
-    static Str              NormalizeDirectoryName(const char *dirname);
+    PlatformIOSFile(FILE *fp);
+    virtual ~PlatformIOSFile();   
     
     static PlatformIOSFile *OpenFileRead(const char *filename);
     static PlatformIOSFile *OpenFileWrite(const char *filename);
@@ -50,6 +47,10 @@ public:
     static const char *     UserTempDir();
     
     static Str              ConvertToIOSPath(const Str &filename, bool forWrite);
+
+protected:
+    static Str              NormalizeFilename(const char *filename);
+    static Str              NormalizeDirectoryName(const char *dirname);
 };
 
 typedef PlatformIOSFile     PlatformFile;

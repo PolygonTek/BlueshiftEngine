@@ -60,8 +60,6 @@ public:
 
     static const char *     GetBasePath();
     static void             SetBasePath(const char *basePath);
-    static Str              NormalizeFilename(const char *filename);
-    static Str              NormalizeDirectoryName(const char *dirname);
     
     static PlatformBaseFile *OpenFileRead(const char *filename);
     static PlatformBaseFile *OpenFileWrite(const char *filename);

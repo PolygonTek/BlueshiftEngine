@@ -20,6 +20,7 @@ class BE_API PlatformWinFile : public PlatformBaseFile {
 public:
     PlatformWinFile(HANDLE fileHandle);
     virtual ~PlatformWinFile();
+
                             /// Returns offset in file.
     virtual int             Tell() const;
                             /// Returns file size.
@@ -31,10 +32,7 @@ public:
     virtual size_t          Read(void *buffer, size_t bytesToRead) const;
                             /// Writes data from the buffer to the file.
     virtual bool            Write(const void *buffer, size_t bytesToWrite);
-    
-    static Str              NormalizeFilename(const char *filename);
-    static Str              NormalizeDirectory(const char *dirname);
-    
+
     static PlatformWinFile *OpenFileRead(const char *filename);
     static PlatformWinFile *OpenFileWrite(const char *filename);
     static PlatformWinFile *OpenFileAppend(const char *filename);
@@ -63,8 +61,11 @@ public:
     static const char *     ExecutablePath();
     
     static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &list);
-    
+
 protected:
+    static Str              NormalizeFilename(const char *filename);
+    static Str              NormalizeDirectory(const char *dirname);
+
     HANDLE                  fileHandle;
 };
 
