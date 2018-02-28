@@ -36,12 +36,10 @@
   <true/>
   <key>UISupportedInterfaceOrientations</key>
   <array>
-    <string>UIInterfaceOrientationLandscapeRight</string>
-    <string>UIInterfaceOrientationLandscapeLeft</string>
+$(CMAKEVAR_ORIENTATION)
   </array>
   <key>UISupportedInterfaceOrientations~ipad</key>
   <array>
-    <string>UIInterfaceOrientationLandscapeRight</string>
-    <string>UIInterfaceOrientationLandscapeLeft</string>
+$(CMAKEVAR_ORIENTATION)
   </array></dict>
 </plist>
