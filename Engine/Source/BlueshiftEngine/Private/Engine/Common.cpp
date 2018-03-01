@@ -135,9 +135,7 @@ void Common::Init(const char *baseDir) {
 void Common::Shutdown() {
     cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, L"condump \"Log/log\"\n");
 
-#ifndef __ANDROID__
     SaveConfig("Config/config.cfg");
-#endif
 
     cmdSystem.RemoveCommand(L"version");
     cmdSystem.RemoveCommand(L"quit");

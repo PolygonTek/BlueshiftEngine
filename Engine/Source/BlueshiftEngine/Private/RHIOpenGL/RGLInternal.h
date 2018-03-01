@@ -45,7 +45,6 @@ OBJC_CLASS(EAGLView);
 #elif defined(__ANDROID__)
 
 #include "OpenGL/AndroidOpenGL.h"
-#include <nvidia/nv_egl_util/nv_egl_util.h>
 
 #endif
 

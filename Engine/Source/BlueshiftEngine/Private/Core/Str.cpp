@@ -452,12 +452,11 @@ const Str Str::ToRelativePath(const char *basePath) const {
             break;
         }
     }
-#if defined(__ANDROID__) || 1
+
     if (idx == 0) {
         // already a path is relative path.
         return a_path;
     }
-#endif
     assert(idx > 0);
 
     Str result;
