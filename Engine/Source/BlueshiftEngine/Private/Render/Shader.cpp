@@ -949,7 +949,6 @@ void Shader::Reinstantiate() {
     }
 }
 
-
 bool Shader::Instantiate(const Array<Define> &defineArray) {
 #if defined __ANDROID__ && ! defined __XAMARIN__
 

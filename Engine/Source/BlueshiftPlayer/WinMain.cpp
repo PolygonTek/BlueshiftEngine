@@ -159,6 +159,7 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     playerDir = BE1::PlatformFile::ExecutablePath();
     playerDir.AppendPath("..\\..\\..");
 #endif
+    playerDir.CleanPath(PATHSEPERATOR_CHAR);
     
     if (lpCmdLine[0]) {
         playerDir = lpCmdLine;

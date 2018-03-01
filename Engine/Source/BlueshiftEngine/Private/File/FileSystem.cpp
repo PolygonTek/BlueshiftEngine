@@ -80,22 +80,22 @@ void FileSystem::ClearSearchPath() {
     searchPath = nullptr;
 }
 
-void FileSystem::SetSearchPath(const char *multiplePath) {
-    Str s_path = multiplePath;
-    int len = (int)Str::Length(multiplePath);
+void FileSystem::SetSearchPath(const char *multiPath) {
+    Str multiPathStr = multiPath;
+    int len = (int)Str::Length(multiPath);
     int start = 0;
     
     ClearSearchPath();
 
     while (start < len) {
-        int last = s_path.Find(';', start);
+        int last = multiPathStr.Find(';', start);
         if (last == -1) {
             last = len;
         }
 
-        Str singlePath = s_path.Mid(start, last - start);
-        if (!singlePath.IsEmpty()) {
-            AddSearchPath(singlePath);
+        Str singlePathStr = multiPathStr.Mid(start, last - start);
+        if (!singlePathStr.IsEmpty()) {
+            AddSearchPath(singlePathStr);
         }
 
         start = last + 1;
@@ -123,50 +123,50 @@ void FileSystem::AddSearchPath(const char *path) {
     }
 }
 
-static voidpf ZCALLBACK _fopen_file_func(voidpf opaque, const char* filename, int mode)
-{
-    PlatformFile* file = nullptr;
-    //const char* mode_fopen = nullptr;
-    PlatformFile* (*mode_fopen)(const char *filename) = 0;
+#if defined(__ANDROID__) 
+
+static voidpf ZCALLBACK _fopen_file_func(voidpf opaque, const char* filename, int mode) {
+    PlatformFile *file = nullptr;
+    PlatformFile *(*mode_fopen)(const char *filename) = nullptr;
     if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER) == ZLIB_FILEFUNC_MODE_READ) {
         mode_fopen = PlatformFile::OpenFileRead;
-    }
-    else
-        if (mode & ZLIB_FILEFUNC_MODE_EXISTING)
+    } else {
+        if (mode & ZLIB_FILEFUNC_MODE_EXISTING) {
             mode_fopen = PlatformFile::OpenFileAppend;
-        else
-            if (mode & ZLIB_FILEFUNC_MODE_CREATE)
+        } else {
+            if (mode & ZLIB_FILEFUNC_MODE_CREATE) {
                 mode_fopen = PlatformFile::OpenFileWrite;
+            }
+        }
+    }
 
-    if ((filename != nullptr) && (mode_fopen != nullptr))
+    if ((filename != nullptr) && (mode_fopen != nullptr)) {
         file = (*mode_fopen)(filename);
+    }
     return (FILE *) file;
 }
 
-static uLong ZCALLBACK _fread_file_func(voidpf opaque, voidpf stream, void* buf, uLong size)
-{
-    if (((PlatformFile *)stream)->Read(buf, size))
+static uLong ZCALLBACK _fread_file_func(voidpf opaque, voidpf stream, void* buf, uLong size) {
+    if (((PlatformFile *)stream)->Read(buf, size)) {
         return size;
+    }
     return -1;
 }
 
-static uLong ZCALLBACK _fwrite_file_func(voidpf opaque, voidpf stream, const void* buf, uLong size)
-{
-    if (((PlatformFile *)stream)->Write(buf, size))
+static uLong ZCALLBACK _fwrite_file_func(voidpf opaque, voidpf stream, const void* buf, uLong size) {
+    if (((PlatformFile *)stream)->Write(buf, size)) {
         return size;
+    }
     return -1;
 }
 
-static long ZCALLBACK _ftell_file_func(voidpf opaque, voidpf stream)
-{
-    return 	((PlatformFile *)stream)->Tell();
+static long ZCALLBACK _ftell_file_func(voidpf opaque, voidpf stream) {
+    return ((PlatformFile *)stream)->Tell();
 }
 
-static long ZCALLBACK _fseek_file_func(voidpf  opaque, voidpf stream, uLong offset, int origin)
-{
+static long ZCALLBACK _fseek_file_func(voidpf  opaque, voidpf stream, uLong offset, int origin) {
     enum PlatformFile::Origin fseek_origin;
-    switch (origin)
-    {
+    switch (origin) {
     case ZLIB_FILEFUNC_SEEK_CUR:
         fseek_origin = PlatformFile::Current;
         break;
@@ -176,25 +176,22 @@ static long ZCALLBACK _fseek_file_func(voidpf  opaque, voidpf stream, uLong offs
     case ZLIB_FILEFUNC_SEEK_SET:
         fseek_origin = PlatformFile::Start;
         break;
-    default: return -1;
+    default:
+        return -1;
     }
-    return 	((PlatformFile *)stream)->Seek(offset, fseek_origin);
+    return ((PlatformFile *)stream)->Seek(offset, fseek_origin);
 }
 
-static int ZCALLBACK _fclose_file_func(voidpf opaque, voidpf stream)
-{
+static int ZCALLBACK _fclose_file_func(voidpf opaque, voidpf stream) {
     delete ((PlatformFile *)stream);
     return 0;
 }
 
-static int ZCALLBACK _ferror_file_func(voidpf opaque, voidpf stream)
-{
+static int ZCALLBACK _ferror_file_func(voidpf opaque, voidpf stream) {
     return 0;
 }
 
-
-void _fill_fopen_filefunc(zlib_filefunc_def* pzlib_filefunc_def)
-{
+static void _fill_fopen_filefunc(zlib_filefunc_def* pzlib_filefunc_def) {
     pzlib_filefunc_def->zopen_file = _fopen_file_func;
     pzlib_filefunc_def->zread_file = _fread_file_func;
     pzlib_filefunc_def->zwrite_file = _fwrite_file_func;
@@ -205,7 +202,9 @@ void _fill_fopen_filefunc(zlib_filefunc_def* pzlib_filefunc_def)
     pzlib_filefunc_def->opaque = nullptr;
 }
 
-void FileSystem::AddSearchPath_ZIP(const char *path, const char *filename) {		
+#endif
+
+void FileSystem::AddSearchPath_ZIP(const char *path, const char *filename) {
     char fullpath[MaxAbsolutePath];
     fileSystem.MakeFullPath(fullpath, sizeof(fullpath), path, "", filename);
     

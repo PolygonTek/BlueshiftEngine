@@ -548,7 +548,7 @@ int main(int argc, const char *argv[]) {
     BE1::Str workingDir = argv[0];
     workingDir.StripFileName();
     workingDir.AppendPath("../../.."); // Strip "Player.app/Contents/MacOS"
-    workingDir.CleanPath();
+    workingDir.CleanPath(PATHSEPERATOR_CHAR);
     chdir(workingDir.c_str());
     
     Class appDelegateClass = NSClassFromString(@"AppDelegate");
