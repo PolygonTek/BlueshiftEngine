@@ -15,8 +15,7 @@ set(ALL_FILES
     Precompiled.cpp
     Application.h
     Precompiled.h
-    Application.cpp
-)
+    Application.cpp)
 
 if (XAMARIN AND IOS)
     list(APPEND ALL_FILES
@@ -64,8 +63,7 @@ auto_source_group(${ALL_FILES})
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${ENGINE_INCLUDE_DIR}/BlueshiftEngine/Public
-    ${ENGINE_INCLUDE_DIR}/Dependencies
-)
+    ${ENGINE_INCLUDE_DIR}/Dependencies)
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp ALL_FILES)
 
@@ -293,7 +291,7 @@ else ()
             Bullet 
             HACD 
             LuaCpp 
-            luasocket 
+            luasocket
             BlueshiftEngine)
 
         if (USE_LUAJIT)
@@ -342,6 +340,11 @@ else ()
                 USES_TERMINAL)
         endif ()
 
-        target_link_libraries(${PROJECT_NAME} ${ENGINE_LIB_FILES})
+        set_property(TARGET minizip PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES zlib)
+        set_property(TARGET libpng PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES zlib)
+        set_property(TARGET libvorbis PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES libogg)
+        set_property(TARGET BlueshiftEngine PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES ${ENGINE_LIB_FILES})
+
+        target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
     endif ()
 endif ()

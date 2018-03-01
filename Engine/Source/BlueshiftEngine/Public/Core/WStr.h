@@ -982,8 +982,6 @@ BE_INLINE int WStr::LineCount(const wchar_t *s) {
     return count;
 }
 
-#ifndef __ANDROID__
-
 BE_INLINE int32_t WStr::ToI32(const wchar_t *s) {
     return (int32_t)wcstol(s, nullptr, 10);
 }
@@ -993,14 +991,24 @@ BE_INLINE uint32_t WStr::ToUI32(const wchar_t *s) {
 }
 
 BE_INLINE int64_t WStr::ToI64(const wchar_t *s) {
+#if !defined(__ANDROID__) || __ANDROID_API__ >= 21
     return wcstoll(s, nullptr, 10);
+#else
+    int64_t i;
+    swscanf(s, L"%" SCNi64, &i);
+    return i;
+#endif
 }
 
 BE_INLINE uint64_t WStr::ToUI64(const wchar_t *s) {
+#if !defined(__ANDROID__) || __ANDROID_API__ >= 21
     return wcstoull(s, nullptr, 10);
+#else
+    uint64_t u;
+    swscanf(s, L"%" SCNu64, &u);
+    return u;
+#endif
 }
-
-#endif // !__ANDROID__
 
 BE_INLINE bool WStr::CheckExtension(const wchar_t *ext) const {
     return WStr::CheckExtension(data, ext);
