@@ -53,6 +53,7 @@ PlayerSettings *PlayerSettings::Load(const char *filename) {
 
     if (failedToParse) {
         jsonNode["classname"] = PlayerSettings::metaObject.ClassName();
+        jsonNode["guid"] = Guid::CreateGuid().ToString();
     }
 
     const char *classname = jsonNode["classname"].asCString();

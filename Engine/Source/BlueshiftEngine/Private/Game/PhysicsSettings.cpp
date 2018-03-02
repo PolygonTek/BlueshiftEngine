@@ -105,6 +105,7 @@ PhysicsSettings *PhysicsSettings::Load(const char *filename, PhysicsWorld *physi
 
     if (failedToParse) {
         jsonNode["classname"] = PhysicsSettings::metaObject.ClassName();
+        jsonNode["guid"] = Guid::CreateGuid().ToString();
     }
 
     const char *classname = jsonNode["classname"].asCString();

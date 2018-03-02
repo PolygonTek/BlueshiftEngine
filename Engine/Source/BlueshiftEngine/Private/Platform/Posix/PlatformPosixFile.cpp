@@ -354,7 +354,7 @@ const char *PlatformPosixFile::ExecutablePath() {
     return Cwd();
 }
 
-static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
+void PlatformPosixFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
     char		path[MaxAbsolutePath];
     char		subpath[MaxAbsolutePath];
