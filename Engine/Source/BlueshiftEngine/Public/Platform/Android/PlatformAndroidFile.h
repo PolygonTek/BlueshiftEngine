@@ -70,6 +70,8 @@ protected:
     static Str              NormalizeFilename(const char *filename);
     static Str              NormalizeDirectoryName(const char *dirname);
 
+    static void             ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files);
+
     FILE *                  fp;
     AAsset *                asset;
 };

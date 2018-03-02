@@ -417,7 +417,7 @@ const char *PlatformWinFile::ExecutablePath() {
     return path;
 }
 
-static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
+void PlatformWinFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
     _finddata_t finddata;
     char        pattern[MaxAbsolutePath];

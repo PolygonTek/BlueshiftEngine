@@ -298,7 +298,7 @@ const char *FileSystem::GetBaseDir() const {
 }
 
 void FileSystem::SetBaseDir(const char *baseDir) {
-    fs_baseDir.SetString(wva(L"%hs", baseDir));
+    fs_baseDir.SetString(Str::ToWStr(baseDir));
     
     PlatformFile::SetBasePath(baseDir);
 }
@@ -459,7 +459,7 @@ bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, Prog
             break;
         }
 
-        remainSize -= s;	
+        remainSize -= s;
 
         if (progress) {
             float fraction = 1.0f - (float)remainSize / srcFileSize;
@@ -568,8 +568,6 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
         return nullptr;
     }
     
-    Str basePathOld = PlatformFile::GetBasePath();
-    
     File *resultFile = nullptr;
     
     for (SearchPath *s = searchPath; s; s = s->next) {
@@ -606,15 +604,17 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
                 break;
             }
         } else {
-            PlatformFile::SetBasePath(s->pathname);
+            Str relativePath = Str(s->pathname).ToRelativePath(Str(fs_baseDir.GetString()));
+            relativePath.AppendPath(filename);
+            relativePath.CleanPath();
 
-            PlatformFile *pf = PlatformFile::OpenFileRead(filename);
+            PlatformFile *pf = PlatformFile::OpenFileRead(relativePath);
             if (pf) {
                 if (fs_debug.GetBool()) {
-                    BE_LOG(L"FileSystem::OpenFileRead: %hs (found in '%hs')\n", filename, s->pathname);
+                    BE_LOG(L"FileSystem::OpenFileRead: %hs (found in '%hs')\n", relativePath.c_str(), s->pathname);
                 }
 
-                FileReal *file = new FileReal(filename, pf);
+                FileReal *file = new FileReal(relativePath, pf);
                 
                 if (fileSize) {
                     file->size = *fileSize = pf->Size(); // PlatformFile::FileSize(filename);
@@ -625,8 +625,6 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
             }
         }
     }
-    
-    PlatformFile::SetBasePath(basePathOld);
 
     return resultFile;
 }
