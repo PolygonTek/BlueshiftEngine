@@ -181,8 +181,6 @@ static void SuspendSensors() {
 static void WindowSizeChanged(int w, int h) {
     currentWindowWidth = w;
     currentWindowHeight = h;
-
-    // TODO
 }
 
 // Process the next main command.
@@ -394,10 +392,10 @@ void android_main(struct android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            int w = ANativeWindow_getWidth(appState->window);
-            int h = ANativeWindow_getHeight(appState->window);
-            if (w != currentWindowWidth || h != currentWindowHeight) {
-                WindowSizeChanged(w, h);
+            int backingWidth, backingHeight;
+            BE1::rhi.GetContextSize(mainContext, nullptr, nullptr, &backingWidth, &backingHeight);
+            if (backingWidth != currentWindowWidth || backingHeight != currentWindowHeight) {
+                WindowSizeChanged(backingWidth, backingHeight);
             }
 
             app.RunFrame();

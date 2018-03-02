@@ -197,7 +197,7 @@ PlatformAndroidFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
         return new PlatformAndroidFile(fp);
     }
     // Read by asset manager
-    AAsset *asset = AAssetManager_open(AndroidJNI::appState->activity->assetManager, filename, AASSET_MODE_UNKNOWN);
+    AAsset *asset = AAssetManager_open(AndroidJNI::appState->activity->assetManager, filename, AASSET_MODE_RANDOM);
     if (asset) {
         return new PlatformAndroidFile(asset);
     }        
@@ -402,7 +402,7 @@ const char *PlatformAndroidFile::ExecutablePath() {
     return Cwd();
 }
 
-static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
+void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
     char		path[MaxAbsolutePath];
     char		subpath[MaxAbsolutePath];
@@ -414,44 +414,59 @@ static void ListFilesRecursive(const char *directory, const char *subdir, const 
         Str::snPrintf(path, sizeof(path), "%s", directory);
     }
 
-    DIR *dp = opendir(path);
-    if (!dp) {
-        return;
-    }
-
-    while (dirent *dent = readdir(dp)) {
-        if (!Str::Cmp(dent->d_name, ".") || !Str::Cmp(dent->d_name, "..")) {
-            continue;
-        }
-
-        if (dent->d_type & DT_DIR) {
-            if (subdir[0]) {
-                Str::snPrintf(subpath, sizeof(subpath), "%s/%s", subdir, dent->d_name);
-            } else {
-                Str::snPrintf(subpath, sizeof(subpath), "%s", dent->d_name);
+    Str normalizedPath = NormalizeFilename(path);
+    DIR *dp = opendir(normalizedPath);
+    if (dp) {
+        while (dirent *dent = readdir(dp)) {
+            if (!Str::Cmp(dent->d_name, ".") || !Str::Cmp(dent->d_name, "..")) {
+                continue;
             }
 
-            if (includeSubDir) {
-                fileInfo.isSubDir = true;
-                fileInfo.relativePath = subpath;
+            if (dent->d_type & DT_DIR) {
+                if (subdir[0]) {
+                    Str::snPrintf(subpath, sizeof(subpath), "%s/%s", subdir, dent->d_name);
+                } else {
+                    Str::snPrintf(subpath, sizeof(subpath), "%s", dent->d_name);
+                }
+
+                if (includeSubDir) {
+                    fileInfo.isSubDir = true;
+                    fileInfo.relativePath = subpath;
+                    files.Append(fileInfo);
+                }
+
+                ListFilesRecursive(directory, subpath, nameFilter, includeSubDir, files);
+            } else if (Str::Filter(nameFilter, dent->d_name, false)) {
+                if (subdir[0]) {
+                    Str::snPrintf(filename, sizeof(filename), "%s/%s", subdir, dent->d_name);
+                } else {
+                    Str::snPrintf(filename, sizeof(filename), "%s", dent->d_name);
+                }
+
+                fileInfo.isSubDir = false;
+                fileInfo.relativePath = filename;
                 files.Append(fileInfo);
             }
+        }
 
-            ListFilesRecursive(directory, subpath, nameFilter, includeSubDir, files);
-        } else if (Str::Filter(nameFilter, dent->d_name, false)) {
-            if (subdir[0]) {
-                Str::snPrintf(filename, sizeof(filename), "%s/%s", subdir, dent->d_name);
-            } else {
-                Str::snPrintf(filename, sizeof(filename), "%s", dent->d_name);
+        closedir(dp);
+    }
+
+    AAssetDir *assetDir = AAssetManager_openDir(AndroidJNI::appState->activity->assetManager, path);
+    if (assetDir) {
+        FileInfo fileInfo;
+        while (const char *filename = AAssetDir_getNextFileName(assetDir)) {
+            if (!Str::Filter(nameFilter, filename)) {
+                continue;
             }
 
             fileInfo.isSubDir = false;
             fileInfo.relativePath = filename;
             files.Append(fileInfo);
         }
-    }
 
-    closedir(dp);
+        AAssetDir_close(assetDir);
+    }
 }
 
 int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files) {
@@ -461,11 +476,10 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
 
     files.Clear();
 
-    Str normalizedDirectory = NormalizeFilename(directory);
-
     if (recursive) {
-        ListFilesRecursive(normalizedDirectory, "", nameFilter, includeSubDir, files);
+        ListFilesRecursive(directory, "", nameFilter, includeSubDir, files);
     } else {
+        Str normalizedDirectory = NormalizeFilename(directory);
         DIR *dp = opendir(normalizedDirectory);
         if (dp) {
             FileInfo fileInfo;
@@ -476,8 +490,7 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
 
                 if (includeSubDir) {
                     fileInfo.isSubDir = (dent->d_type & DT_DIR) != 0;
-                }
-                else {
+                } else {
                     if (dent->d_type & DT_DIR) {
                         continue;
                     }
@@ -489,7 +502,7 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
             closedir(dp);
         }
 
-        AAssetDir *assetDir = AAssetManager_openDir(AndroidJNI::appState->activity->assetManager, normalizedDirectory);
+        AAssetDir *assetDir = AAssetManager_openDir(AndroidJNI::appState->activity->assetManager, directory);
         if (assetDir) {
             FileInfo fileInfo;
             while (const char *filename = AAssetDir_getNextFileName(assetDir)) {
@@ -499,7 +512,6 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
 
                 fileInfo.isSubDir = false;
                 fileInfo.relativePath = filename;
-
                 files.Append(fileInfo);
             }
 

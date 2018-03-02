@@ -155,7 +155,9 @@ static void WindowSizeChanged(int w, int h) {
     currentWindowWidth = w;
     currentWindowHeight = h;
 
-    // TODO
+    if (app.mainRenderContext) {
+        app.mainRenderContext->OnResize(w, h);
+    }    
 }
 
 // Process the next main command.
@@ -396,10 +398,10 @@ void android_main(struct android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            int w = ANativeWindow_getWidth(appState->window);
-            int h = ANativeWindow_getHeight(appState->window);
-            if (w != currentWindowWidth || h != currentWindowHeight) {
-                WindowSizeChanged(w, h);
+            int backingWidth, backingHeight;
+            BE1::rhi.GetContextSize(app.mainRenderContext->GetContextHandle(), nullptr, nullptr, &backingWidth, &backingHeight);
+            if (backingWidth != currentWindowWidth || backingHeight != currentWindowHeight) {
+                WindowSizeChanged(backingWidth, backingHeight);
             }
 
             int t = BE1::PlatformTime::Milliseconds();
