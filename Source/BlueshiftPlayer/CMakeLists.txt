@@ -258,11 +258,6 @@ else ()
     if (BUILD_ENGINE)
         set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
 
-        #set_property(TARGET minizip PROPERTY INTERFACE_LINK_LIBRARIES zlib)
-        #set_property(TARGET libpng PROPERTY INTERFACE_LINK_LIBRARIES zlib)
-        #set_property(TARGET libvorbis PROPERTY INTERFACE_LINK_LIBRARIES libogg)
-        #set_property(TARGET BlueshiftEngine PROPERTY INTERFACE_LINK_LIBRARIES ${THIRDPARTY_LIB_FILES})
-
         target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
     elseif (BUILD_PLAYER)
         set(THIRDPARTY_LIB_FILES
@@ -293,6 +288,8 @@ else ()
             include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/ThirdParty/lua)
         endif ()
 
+        set(IMPORTED_LIB_FILES ${THIRDPARTY_LIB_FILES} BlueshiftEngine)
+
         if (ANDROID)
             target_link_libraries(${PROJECT_NAME} 
                 android
@@ -301,8 +298,6 @@ else ()
                 GLESv3 
                 EGL 
                 OpenSLES)
-
-            set(IMPORTED_LIB_FILES ${THIRDPARTY_LIB_FILES} BlueshiftEngine)
 
             foreach (FILE ${IMPORTED_LIB_FILES})
                 add_library(${FILE} STATIC IMPORTED)
@@ -313,6 +308,8 @@ else ()
         else ()
             foreach (FILE ${IMPORTED_LIB_FILES})
                 add_library(${FILE} STATIC IMPORTED)
+
+                message(STATUS ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/Debug/${FILE}${CMAKE_STATIC_LIBRARY_SUFFIX})
 
                 set_target_properties(${FILE} PROPERTIES
                     IMPORTED_LOCATION_DEBUG   ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/Debug/${FILE}${CMAKE_STATIC_LIBRARY_SUFFIX}
