@@ -15,7 +15,6 @@ Thumbs.db
 *.bak
 *.cache
 *.ilk
-[Bb]in
 *.sbr
 obj/
 _ReSharper*/
