@@ -16,10 +16,10 @@ ENDIF ()
 SET(OPENAL_LIBNAME "OpenAL32")
 
 FIND_PATH(OPENAL_INCLUDE_DIR "al.h"
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/OpenAL/include")
+    PATHS "${CMAKE_SOURCE_DIR}/Source/ThirdParty/OpenAL/include")
 
 FIND_LIBRARY(OPENAL_LIBRARY ${OPENAL_LIBNAME}
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/OpenAL"
+    PATHS "${CMAKE_SOURCE_DIR}/Source/ThirdParty/OpenAL"
     PATH_SUFFIXES "libs/${OPENAL_LIBDIR}")
 
 #Once one of the calls succeeds the result variable will be set and stored in the cache so that no call will search again.

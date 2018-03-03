@@ -810,8 +810,8 @@ auto_source_group(${ALL_FILES})
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${ENGINE_INCLUDE_DIR}/BlueshiftEngine/Public
-    ${ENGINE_INCLUDE_DIR}/Dependencies
-    ${ENGINE_INCLUDE_DIR}/Dependencies/asio/include
+    ${ENGINE_INCLUDE_DIR}/ThirdParty
+    ${ENGINE_INCLUDE_DIR}/ThirdParty/asio/include
 )
 
 if (ANDROID)
@@ -851,7 +851,7 @@ if (APPLE)
     endif ()
 
     if (IOS)
-        include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/OpenGL/include)
+        include_directories(${ENGINE_INCLUDE_DIR}/ThirdParty/OpenGL/include)
 
         set_target_properties(${PROJECT_NAME} PROPERTIES
             XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
@@ -879,7 +879,7 @@ elseif (WIN32)
         include(FindOpenGLES3)
         include(FindEGL)
 
-        include_directories(${ENGINE_INCLUDE_DIR}/Dependencies/OpenGL/include)
+        include_directories(${ENGINE_INCLUDE_DIR}/ThirdParty/OpenGL/include)
 
         find_library(OPENGLES3_LIBRARY GLESv2)
         find_library(EGL_LIBRARY EGL)
@@ -921,12 +921,12 @@ target_link_libraries(${PROJECT_NAME}
     NvTriStrip)
 
 if (USE_LUAJIT)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/Dependencies/luaJIT/src)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/ThirdParty/luaJIT/src)
 
     include(FindLuaJIT)
     target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
 else ()    
-    target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/Dependencies/lua)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/ThirdParty/lua)
 
     target_link_libraries(${PROJECT_NAME} lua)
 endif ()

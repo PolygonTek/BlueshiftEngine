@@ -24,8 +24,8 @@ endif ()
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${ENGINE_INCLUDE_DIR}/Engine/Public
-  ${ENGINE_INCLUDE_DIR}/Dependencies
-  ${ENGINE_INCLUDE_DIR}/Dependencies/asio/include
+  ${ENGINE_INCLUDE_DIR}/ThirdParty
+  ${ENGINE_INCLUDE_DIR}/ThirdParty/asio/include
 )
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp CORE_FILES)

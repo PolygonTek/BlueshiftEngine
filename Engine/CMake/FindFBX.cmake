@@ -39,11 +39,11 @@ ELSE()
 ENDIF()
 
 FIND_PATH(FBX_INCLUDE_DIR "fbxsdk.h"
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/FBXSDK"
+    PATHS "${CMAKE_SOURCE_DIR}/Source/ThirdParty/FBXSDK"
     PATH_SUFFIXES "include")
 
 FIND_LIBRARY(FBX_LIBRARY ${FBX_LIBNAME}
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/FBXSDK"
+    PATHS "${CMAKE_SOURCE_DIR}/Source/ThirdParty/FBXSDK"
     PATH_SUFFIXES "lib/${FBX_LIBDIR}")
 
 #Once one of the calls succeeds the result variable will be set and stored in the cache so that no call will search again.

@@ -27,11 +27,11 @@ endif ()
 set(OPENGLES3_LIBNAME "libGLESv2")
 
 find_path(OPENGLES3_INCLUDE_DIR "gl3.h"
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/OpenGL/include/GLES3"
+    PATHS "${CMAKE_SOURCE_DIR}/Source/ThirdParty/OpenGL/include/GLES3"
     NO_DEFAULT_PATH)
 
 find_library(OPENGLES3_LIBRARY ${OPENGLES3_LIBNAME}
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/OpenGL/lib/${OPENGLES3_LIBDIR}"
+    PATHS "${CMAKE_SOURCE_DIR}/Source/ThirdParty/OpenGL/lib/${OPENGLES3_LIBDIR}"
     NO_DEFAULT_PATH)
 
 if (OPENGLES3_LIBRARY AND OPENGLES3_INCLUDE_DIR)

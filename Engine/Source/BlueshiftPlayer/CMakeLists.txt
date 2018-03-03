@@ -64,7 +64,7 @@ auto_source_group(${ALL_FILES})
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${ENGINE_INCLUDE_DIR}/BlueshiftEngine/Public
-    ${ENGINE_INCLUDE_DIR}/Dependencies)
+    ${ENGINE_INCLUDE_DIR}/ThirdParty)
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp ALL_FILES)
 
@@ -200,7 +200,7 @@ else ()
             if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
                 add_definitions(-DUSE_ADMOB_REWARD_BASED_VIDEO=1)
 
-                set(GoogleMobileAds ${ENGINE_INCLUDE_DIR}/Dependencies/GoogleMobileAds/GoogleMobileAds)
+                set(GoogleMobileAds ${ENGINE_INCLUDE_DIR}/ThirdParty/GoogleMobileAds/GoogleMobileAds)
 
                 if (${GoogleMobileAds} STREQUAL GoogleMobileAds-NOTFOUND)
                     message(ERROR ": Framework GoogleMobileAds not found")
@@ -286,11 +286,11 @@ else ()
             include(FindLuaJIT)
             target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
 
-            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/Dependencies/luaJIT/src)
+            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/ThirdParty/luaJIT/src)
         else ()
             list(APPEND THIRDPARTY_LIB_FILES lua)
 
-            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/Dependencies/lua)
+            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/ThirdParty/lua)
         endif ()
 
         if (ANDROID)

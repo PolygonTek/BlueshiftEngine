@@ -27,11 +27,11 @@ endif ()
 set(EGL_LIBNAME "libEGL")
 
 find_path(EGL_INCLUDE_DIR "egl.h"
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/OpenGL/include/EGL"
+    PATHS "${CMAKE_SOURCE_DIR}/Source/ThirdParty/OpenGL/include/EGL"
     NO_DEFAULT_PATH)
 
 find_library(EGL_LIBRARY ${EGL_LIBNAME}
-    PATHS "${CMAKE_SOURCE_DIR}/Source/Dependencies/OpenGL/lib/${EGL_LIBDIR}"
+    PATHS "${CMAKE_SOURCE_DIR}/Source/ThirdParty/OpenGL/lib/${EGL_LIBDIR}"
     NO_DEFAULT_PATH)
 
 if (EGL_LIBRARY AND EGL_INCLUDE_DIR)
