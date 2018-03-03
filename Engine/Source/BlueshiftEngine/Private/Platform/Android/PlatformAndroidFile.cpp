@@ -197,7 +197,7 @@ PlatformAndroidFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
         return new PlatformAndroidFile(fp);
     }
     // Read by asset manager
-    AAsset *asset = AAssetManager_open(AndroidJNI::appState->activity->assetManager, filename, AASSET_MODE_RANDOM);
+    AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_RANDOM);
     if (asset) {
         return new PlatformAndroidFile(asset);
     }        
@@ -228,7 +228,7 @@ bool PlatformAndroidFile::FileExists(const char *filename) {
     if (stat(normalizedFilename, &fileInfo) == 0 && S_ISREG(fileInfo.st_mode)) {
         return true;
     }
-    AAsset *asset = AAssetManager_open(AndroidJNI::appState->activity->assetManager, filename, AASSET_MODE_RANDOM);
+    AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_RANDOM);
     if (asset) {
         AAsset_close(asset);
         return true;
@@ -243,7 +243,7 @@ size_t PlatformAndroidFile::FileSize(const char *filename) {
     if (stat(normalizedFilename, &fileInfo) == 0 && S_ISREG(fileInfo.st_mode)) {
         return fileInfo.st_size;
     }
-    AAsset *asset = AAssetManager_open(AndroidJNI::appState->activity->assetManager, filename, AASSET_MODE_RANDOM);
+    AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_RANDOM);
     if (asset) {
         size_t size = (size_t)AAsset_getLength(asset);
         AAsset_close(asset);
@@ -452,7 +452,7 @@ void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *
         closedir(dp);
     }
 
-    AAssetDir *assetDir = AAssetManager_openDir(AndroidJNI::appState->activity->assetManager, path);
+    AAssetDir *assetDir = AAssetManager_openDir(AndroidJNI::activity->assetManager, path);
     if (assetDir) {
         FileInfo fileInfo;
         while (const char *filename = AAssetDir_getNextFileName(assetDir)) {
@@ -502,7 +502,7 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
             closedir(dp);
         }
 
-        AAssetDir *assetDir = AAssetManager_openDir(AndroidJNI::appState->activity->assetManager, directory);
+        AAssetDir *assetDir = AAssetManager_openDir(AndroidJNI::activity->assetManager, directory);
         if (assetDir) {
             FileInfo fileInfo;
             while (const char *filename = AAssetDir_getNextFileName(assetDir)) {

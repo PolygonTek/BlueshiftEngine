@@ -22,7 +22,7 @@
 BE_NAMESPACE_BEGIN
 
 PlatformAndroid::PlatformAndroid() {
-	window = nullptr;
+    window = nullptr;
 }
 
 void PlatformAndroid::Init() {
@@ -38,20 +38,18 @@ void PlatformAndroid::SetMainWindowHandle(void *windowHandle) {
 }
 
 void PlatformAndroid::Quit() {
-    //[[UIApplication sharedApplication] terminateWithSuccess];
- //   exit(EXIT_SUCCESS);
-    assert(0);;
+    exit(EXIT_SUCCESS);
 }
 
 void PlatformAndroid::Log(const wchar_t *msg) {
-	__android_log_print(ANDROID_LOG_INFO, "", "%ls", msg);
+    __android_log_print(ANDROID_LOG_INFO, "", "%ls", msg);
 }
 
 void PlatformAndroid::Error(const wchar_t *msg) {
-	JNIEnv *env = AndroidJNI::GetJavaEnv(AndroidJNI::appState->activity);
+    JNIEnv *env = AndroidJNI::GetJavaEnv();
 
     jstring javaMsg = WStr(msg).ToJavaString(env);
-    AndroidJNI::CallVoidMethod(env, AndroidJNI::appState->activity->clazz, AndroidJNI::javaMethod_showAlert, javaMsg);
+    AndroidJNI::CallVoidMethod(env, AndroidJNI::activity->clazz, AndroidJNI::javaMethod_showAlert, javaMsg);
 
     env->DeleteLocalRef(javaMsg);
 

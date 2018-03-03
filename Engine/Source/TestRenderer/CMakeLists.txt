@@ -5,13 +5,13 @@ project(TestRenderer)
 set(ALL_FILES
     Precompiled.h
     Precompiled.cpp
-
     Application.h
-    Application.cpp
-)
+    Application.cpp)
 
 if (ANDROID)
     list(APPEND ALL_FILES
+        android_native_app_glue.h
+        android_native_app_glue.c
         AndroidMain.cpp)
 elseif (APPLE)
     if (IOS)
@@ -37,8 +37,7 @@ auto_source_group(${ALL_FILES})
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${ENGINE_INCLUDE_DIR}/BlueshiftEngine/Public
-    ${ENGINE_INCLUDE_DIR}/Dependencies
-)
+    ${ENGINE_INCLUDE_DIR}/Dependencies)
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp ALL_FILES)
 
@@ -47,23 +46,15 @@ if (ANDROID)
     # Refer to: https://github.com/android-ndk/ndk/issues/381.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
-    add_library(${PROJECT_NAME} SHARED ${ALL_FILES} 
-        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.h
-        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
-
-    target_include_directories(${PROJECT_NAME} PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
-elseif (WIN32)
-    add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
+    add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
 elseif (APPLE)
     add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${ALL_FILES})
+elseif (WIN32)
+    add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
 endif ()
 
-target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
-
-set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
-
 if (NOT ANDROID AND NOT IOS)
-    set_target_properties(${PROJECT_NAME} PROPERTIES 
+    set_target_properties(${PROJECT_NAME} PROPERTIES
         PREFIX ""
         #DEBUG_POSTFIX "_d"
         OUTPUT_NAME ${PROJECT_NAME}
@@ -131,3 +122,7 @@ elseif (WIN32)
         set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)
     endif ()
 endif ()
+
+set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
+
+target_link_libraries(${PROJECT_NAME} BlueshiftEngine)

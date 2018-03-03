@@ -28,11 +28,7 @@ if (ANDROID)
     # Refer to: https://github.com/android-ndk/ndk/issues/381.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
-    add_library(${PROJECT_NAME} SHARED ${ALL_FILES} 
-        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.h
-        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
-
-    target_include_directories(${PROJECT_NAME} PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
+    add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
 else ()
     add_executable(${PROJECT_NAME} ${ALL_FILES})
 endif ()

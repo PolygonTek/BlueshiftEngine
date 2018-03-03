@@ -342,7 +342,7 @@ void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
     ANativeWindow_setBuffersGeometry(ctx->nativeWindow, 0, 0, format);
 
     // Once we've got a valid configuration we can create a window surface that'll be used for rendering
-    EGLint surfaceAttribs[] = { EGL_RENDER_BUFFER, EGL_BACK_BUFFER, EGL_NONE };
+    EGLint surfaceAttribs[] = { EGL_RENDER_BUFFER, EGL_BACK_BUFFER, EGL_COLORSPACE, EGL_COLORSPACE_sRGB, EGL_NONE };
     ctx->eglSurface = eglCreateWindowSurface(ctx->eglDisplay, ctx->eglConfig, ctx->nativeWindow, surfaceAttribs);
     if (ctx->eglSurface == EGL_NO_SURFACE) {
         BE_FATALERROR(L"Couldn't create EGL window surface");

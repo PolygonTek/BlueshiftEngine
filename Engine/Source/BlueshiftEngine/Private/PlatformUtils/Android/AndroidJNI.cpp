@@ -18,22 +18,21 @@
 
 BE_NAMESPACE_BEGIN
 
-android_app *AndroidJNI::appState = nullptr;
+ANativeActivity *   AndroidJNI::activity = nullptr;
+jmethodID           AndroidJNI::javaMethod_showAlert = nullptr;
 
-jmethodID AndroidJNI::javaMethod_showAlert = nullptr;
+void AndroidJNI::Init(ANativeActivity *nativeActivity) {
+    AndroidJNI::activity = nativeActivity;
 
-void AndroidJNI::Init(android_app *appState) {
-    AndroidJNI::appState = appState;
-
-    FindJavaClassesAndMethods();
+    AndroidJNI::FindJavaClassesAndMethods();
 }
 
 void AndroidJNI::FindJavaClassesAndMethods() {
-    JNIEnv *env = AndroidJNI::GetJavaEnv(AndroidJNI::appState->activity);
+    JNIEnv *env = AndroidJNI::GetJavaEnv();
 
-    jclass javaClassActivity = env->GetObjectClass(AndroidJNI::appState->activity->clazz);
+    jclass javaClassActivity = env->GetObjectClass(AndroidJNI::activity->clazz);
 
-    AndroidJNI::javaMethod_showAlert = AndroidJNI::FindMethod(env, javaClassActivity, "showAlert", "(Ljava/lang/String;)V", false);
+    javaMethod_showAlert = AndroidJNI::FindMethod(env, javaClassActivity, "showAlert", "(Ljava/lang/String;)V", false);
 
     env->DeleteLocalRef(javaClassActivity);
 }
@@ -44,13 +43,13 @@ static void DetachCurrentThreadDtor(void *p) {
     activity->vm->DetachCurrentThread();
 }
 
-JNIEnv *AndroidJNI::GetJavaEnv(ANativeActivity *nativeActivity) {
+JNIEnv *AndroidJNI::GetJavaEnv() {
     JNIEnv *env;
-    if (nativeActivity->vm->GetEnv((void **)&env, JNI_CURRENT_VERSION) == JNI_OK) {
+    if (AndroidJNI::activity->vm->GetEnv((void **)&env, JNI_CURRENT_VERSION) == JNI_OK) {
         return env;
     }
-    nativeActivity->vm->AttachCurrentThread(&env, nullptr);
-    pthread_key_create((int32_t *)nativeActivity, DetachCurrentThreadDtor);
+    AndroidJNI::activity->vm->AttachCurrentThread(&env, nullptr);
+    pthread_key_create((int32_t *)AndroidJNI::activity, DetachCurrentThreadDtor);
 
     return env;
 }

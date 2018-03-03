@@ -16,6 +16,7 @@
 
 #include "Precompiled.h"
 #include "Application.h"
+#include "android_native_app_glue.h"
 #include <dlfcn.h>
 #include <android/sensor.h>
 
@@ -35,17 +36,17 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     app.Draw();
 }
 
-static void InitDisplay() {
+static void InitDisplay(ANativeWindow *window) {
     if (!appInitialized) {
         appInitialized = true;
 
-        currentWindowWidth = ANativeWindow_getWidth(BE1::AndroidJNI::appState->window);
-        currentWindowHeight = ANativeWindow_getHeight(BE1::AndroidJNI::appState->window);
+        currentWindowWidth = ANativeWindow_getWidth(window);
+        currentWindowHeight = ANativeWindow_getHeight(window);
 
-        BE1::gameClient.Init(BE1::AndroidJNI::appState->window, true);
+        BE1::gameClient.Init(window, true);
 
         app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-        app.mainRenderContext->Init(BE1::AndroidJNI::appState->window, currentWindowWidth, currentWindowHeight, DisplayContext, NULL);
+        app.mainRenderContext->Init(window, currentWindowWidth, currentWindowHeight, DisplayContext, NULL);
 
         app.Init();
 
@@ -93,11 +94,11 @@ static ASensorManager *AcquireASensorManagerInstance(android_app *app) {
     return getInstanceFunc();
 }
 
-static void InitSensors() {
-    sensorManager = AcquireASensorManagerInstance(BE1::AndroidJNI::appState);
+static void InitSensors(android_app *appState) {
+    sensorManager = AcquireASensorManagerInstance(appState);
     accelerometerSensor = ASensorManager_getDefaultSensor(sensorManager, ASENSOR_TYPE_ACCELEROMETER);
     gyroscopeSensor = ASensorManager_getDefaultSensor(sensorManager, ASENSOR_TYPE_GYROSCOPE);
-    sensorEventQueue = ASensorManager_createEventQueue(sensorManager, BE1::AndroidJNI::appState->looper, LOOPER_ID_USER, nullptr, nullptr);
+    sensorEventQueue = ASensorManager_createEventQueue(sensorManager, appState->looper, LOOPER_ID_USER, nullptr, nullptr);
 }
 
 static void ProcessSensors(int32_t id) {
@@ -161,7 +162,7 @@ static void WindowSizeChanged(int w, int h) {
 }
 
 // Process the next main command.
-static void HandleCmd(struct android_app *appState, int32_t cmd) {
+static void HandleCmd(android_app *appState, int32_t cmd) {
     switch (cmd) {
     case APP_CMD_DESTROY:
         /**
@@ -194,7 +195,7 @@ static void HandleCmd(struct android_app *appState, int32_t cmd) {
 		 */
         if (appState->window) {
             surfaceCreated = true;
-            InitDisplay();
+            InitDisplay(appState->window);
         }        
         break;
     case APP_CMD_TERM_WINDOW:
@@ -240,7 +241,7 @@ static void HandleCmd(struct android_app *appState, int32_t cmd) {
 }
 
 // Process the next input event.
-static int32_t HandleInput(struct android_app *appState, AInputEvent *event) {
+static int32_t HandleInput(android_app *appState, AInputEvent *event) {
     int32_t type = AInputEvent_getType(event);
     int32_t source = AInputEvent_getSource(event);
 
@@ -311,8 +312,8 @@ static int32_t HandleInput(struct android_app *appState, AInputEvent *event) {
     return 0;
 }
 
-static void InitInstance(struct android_app *appState) {
-    BE1::AndroidJNI::Init(appState);
+static void InitInstance(android_app *appState) {
+    BE1::AndroidJNI::Init(appState->activity);
 
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
@@ -339,7 +340,7 @@ static void InitInstance(struct android_app *appState) {
 #endif
 
     // Prepare to monitor accelerometer
-    InitSensors();
+    InitSensors(appState);
 }
 
 static void ShutdownInstance() {
@@ -357,6 +358,10 @@ static void ShutdownInstance() {
 extern "C" {
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    JNIEnv *env;
+    if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_CURRENT_VERSION) != JNI_OK) {
+        return -1;
+    }
     return JNI_CURRENT_VERSION;
 }
 
@@ -367,7 +372,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
  * android_native_app_glue.  It runs in its own thread, with its own
  * event loop for receiving input events and doing other things.
  */
-void android_main(struct android_app *appState) {
+void android_main(android_app *appState) {
     InitInstance(appState);
 
     int t0 = BE1::PlatformTime::Milliseconds();

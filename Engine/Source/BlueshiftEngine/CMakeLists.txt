@@ -817,9 +817,13 @@ include_directories(
 if (ANDROID)
     add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 
-    target_link_libraries(${PROJECT_NAME} android atomic log EGL GLESv3 OpenSLES)
-
-    target_include_directories(${PROJECT_NAME} PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
+    target_link_libraries(${PROJECT_NAME}
+        android 
+        atomic 
+        log 
+        EGL 
+        GLESv3 
+        OpenSLES)
 else ()
     enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES RENDERER_FILES)
 
@@ -869,7 +873,7 @@ if (APPLE)
 
     add_framework(${PROJECT_NAME} OpenAL)
 elseif (WIN32)
-    target_link_libraries(${PROJECT_NAME} ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} ws2_32)
 
     if (USE_DESKTOP_EGL)
         include(FindOpenGLES3)
@@ -893,7 +897,7 @@ elseif (WIN32)
         target_include_directories(${PROJECT_NAME} PUBLIC ${OPENAL_INCLUDE_DIR})
         target_link_libraries(${PROJECT_NAME} ${OPENAL_LIBRARY})
     else ()
-        target_link_libraries(${PROJECT_NAME} dxguid.lib dsound.lib)
+        target_link_libraries(${PROJECT_NAME} dxguid dsound)
     endif ()
 endif ()
 

@@ -14,7 +14,6 @@ set(ALL_FILES
     Precompiled.h
     Precompiled.cpp
     Application.h
-    Precompiled.h
     Application.cpp)
 
 if (XAMARIN AND IOS)
@@ -30,6 +29,8 @@ if (XAMARIN AND IOS)
         Binding/XMBindingLibrarySample/XMBindingLibrarySample.m)
 elseif (ANDROID)
     list(APPEND ALL_FILES
+        android_native_app_glue.h
+        android_native_app_glue.c
         AndroidMain.cpp)
 elseif (APPLE)
     if (IOS)
@@ -130,11 +131,7 @@ else ()
         # Refer to: https://github.com/android-ndk/ndk/issues/381.
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
-        add_library(${PROJECT_NAME} SHARED ${ALL_FILES} 
-            ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.h
-            ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
-
-        target_include_directories(${PROJECT_NAME} PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
+        add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
     elseif (APPLE)
         if (USE_LUAJIT AND NOT IOS)
             set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pagezero_size 10000 -image_base 100000000")
@@ -261,48 +258,39 @@ else ()
     if (BUILD_ENGINE)
         set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
 
-        target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
+        #set_property(TARGET minizip PROPERTY INTERFACE_LINK_LIBRARIES zlib)
+        #set_property(TARGET libpng PROPERTY INTERFACE_LINK_LIBRARIES zlib)
+        #set_property(TARGET libvorbis PROPERTY INTERFACE_LINK_LIBRARIES libogg)
+        #set_property(TARGET BlueshiftEngine PROPERTY INTERFACE_LINK_LIBRARIES ${THIRDPARTY_LIB_FILES})
 
-        if (IOS)
-            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                #COMMAND rm -rf \"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Data\"
-                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Data\""
-                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Config\""
-                COMMAND mkdir -p "\"$(PROJECT_DIR)/Source/Player/Scripts\""
-                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Data\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
-                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Config\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
-                COMMAND cp -Rf "\"$(PROJECT_DIR)/Source/Player/Scripts\"" "\"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app\""
-                COMMENT "Copying data files"
-                USES_TERMINAL)
-        endif ()
+        target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
     elseif (BUILD_PLAYER)
-        set(ENGINE_LIB_FILES 
-            zlib 
-            minizip 
-            libjpeg 
-            libpng 
-            libpvrt 
-            etcpack_lib 
-            Etc2CompLib 
-            libogg 
-            libvorbis 
-            freetype 
-            jsoncpp 
-            Bullet 
-            HACD 
-            LuaCpp 
-            luasocket
-            BlueshiftEngine)
+        set(THIRDPARTY_LIB_FILES
+            zlib
+            minizip
+            libjpeg
+            libpng
+            libpvrt
+            etcpack_lib
+            Etc2CompLib
+            libogg
+            libvorbis
+            freetype
+            jsoncpp
+            Bullet
+            HACD
+            LuaCpp
+            luasocket)
 
         if (USE_LUAJIT)
-            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/Dependencies/luaJIT/src)
-
             include(FindLuaJIT)
             target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
-        else ()
-            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/Dependencies/lua)
 
-            list(APPEND ENGINE_LIB_FILES lua)
+            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/Dependencies/luaJIT/src)
+        else ()
+            list(APPEND THIRDPARTY_LIB_FILES lua)
+
+            include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/Dependencies/lua)
         endif ()
 
         if (ANDROID)
@@ -314,14 +302,16 @@ else ()
                 EGL 
                 OpenSLES)
 
-            foreach (FILE ${ENGINE_LIB_FILES})
+            set(IMPORTED_LIB_FILES ${THIRDPARTY_LIB_FILES} BlueshiftEngine)
+
+            foreach (FILE ${IMPORTED_LIB_FILES})
                 add_library(${FILE} STATIC IMPORTED)
 
                 set_target_properties(${FILE} PROPERTIES
                     IMPORTED_LOCATION ${ENGINE_LIBRARY_DIR}/${ENGINE_BUILD_PLATFORM_DIR}/${FILE}${CMAKE_STATIC_LIBRARY_SUFFIX})
             endforeach ()
         else ()
-            foreach (FILE ${ENGINE_LIB_FILES})
+            foreach (FILE ${IMPORTED_LIB_FILES})
                 add_library(${FILE} STATIC IMPORTED)
 
                 set_target_properties(${FILE} PROPERTIES
@@ -343,8 +333,8 @@ else ()
         set_property(TARGET minizip PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES zlib)
         set_property(TARGET libpng PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES zlib)
         set_property(TARGET libvorbis PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES libogg)
-        set_property(TARGET BlueshiftEngine PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES ${ENGINE_LIB_FILES})
+        set_property(TARGET BlueshiftEngine PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES ${THIRDPARTY_LIB_FILES})
 
-        target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
+        target_link_libraries(${PROJECT_NAME} ${THIRDPARTY_LIB_FILES} BlueshiftEngine)
     endif ()
 endif ()

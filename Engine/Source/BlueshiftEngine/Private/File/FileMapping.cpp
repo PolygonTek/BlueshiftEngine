@@ -62,7 +62,7 @@ bool FileMapping::Open(const TCHAR *filename) {
         size = fs.st_size;
         nStart = 0;
     } else {
-        AAsset* asset = AAssetManager_open(AndroidJNI::appState->activity->assetManager, filename, AASSET_MODE_UNKNOWN);
+        AAsset* asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_UNKNOWN);
         if (asset) {
             off_t nLength;
             hFile = AAsset_openFileDescriptor(asset, &nStart, &nLength);

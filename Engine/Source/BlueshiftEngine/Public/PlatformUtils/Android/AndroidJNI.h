@@ -15,7 +15,7 @@
 #pragma once
 
 #include <android/native_window_jni.h>
-#include <android_native_app_glue.h>
+#include <android/native_activity.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -23,9 +23,9 @@ BE_NAMESPACE_BEGIN
 
 class AndroidJNI {
 public:
-    static void         Init(android_app *appState);
+    static void         Init(ANativeActivity *nativeActivity);
 
-    static JNIEnv *     GetJavaEnv(ANativeActivity *nativeActivity);
+    static JNIEnv *     GetJavaEnv();
 
     static jobject      CreateObject(JNIEnv *env, const char *class_name);
     static void         DeleteObject(JNIEnv *env, jobject obj);
@@ -43,7 +43,7 @@ public:
     static bool         CallBooleanMethod(JNIEnv *env, jobject object, jmethodID method, ...);
     static float        CallFloatMethod(JNIEnv *env, jobject object, jmethodID method, ...);
 
-    static struct android_app *appState;
+    static ANativeActivity *activity;
 
     static jmethodID    javaMethod_showAlert;
 
