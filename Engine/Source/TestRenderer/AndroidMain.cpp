@@ -16,6 +16,7 @@
 
 #include "Precompiled.h"
 #include "Application.h"
+#include "android_native_app_glue.h"
 #include <dlfcn.h>
 #include <android/sensor.h>
 #include <android/log.h>
@@ -51,7 +52,7 @@ static void SystemError(int errLevel, const wchar_t *msg) {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
     jstring javaMsg = BE1::WStr(msg).ToJavaString(env);
-    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, AndroidJNI::javaMethod_showAlert, javaMsg);
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, BE1::AndroidJNI::javaMethod_showAlert, javaMsg);
 
     env->DeleteLocalRef(javaMsg);
 }
@@ -70,7 +71,7 @@ static void InitDisplay(ANativeWindow *window) {
         currentWindowWidth = ANativeWindow_getWidth(window);
         currentWindowHeight = ANativeWindow_getHeight(window);
 
-        ::app.Init(BE1::AndroidJNI::appState->window);
+        ::app.Init(window);
 
         ::app.LoadResources();
 
