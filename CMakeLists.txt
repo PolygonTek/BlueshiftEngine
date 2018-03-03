@@ -15,7 +15,7 @@ option(BUILD_EDITOR "Build Blueshift Editor" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 
 if (BUILD_ENGINE)
-    set(ROOT_PROJECT_NAME BlueshiftEngine)
+    set(ROOT_PROJECT_NAME Blueshift)
 
     set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
     set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")

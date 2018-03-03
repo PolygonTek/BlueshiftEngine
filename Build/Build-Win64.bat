@@ -19,6 +19,6 @@
 		@cd Build\msvc2015
 	)
 )
-msbuild /v:m /m BlueshiftEngine.sln /p:Configuration=Release /p:Platform=x64
+msbuild /v:m /m Blueshift.sln /p:Configuration=Release /p:Platform=x64
 @popd
 @pause
