@@ -20,6 +20,8 @@
 
 BE_NAMESPACE_BEGIN
 
+#pragma pack(push, 4)
+
 struct WaveFormatEx {
     uint16_t        format;
     uint16_t        channels;
@@ -49,6 +51,8 @@ struct WaveImaAdpcmFormat {
     uint16_t        extraBytes;
     uint16_t        samplesPerBlock;
 };
+
+#pragma pack(pop)
 
 //--------------------------------------------------------------------------------------------------
 // RIFF wave chunk id

@@ -189,17 +189,9 @@ if(UNIX)
    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME z)
 endif()
 
-if (ANDROID)
-    target_include_directories(${PROJECT_NAME} 
-	PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-	../../../Project/Android/zlib
-    )
-else() 
-    target_include_directories(${PROJECT_NAME} 
-	PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-	PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-    )
-endif()
+target_include_directories(${PROJECT_NAME}
+    PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     FOLDER ThirdParty
