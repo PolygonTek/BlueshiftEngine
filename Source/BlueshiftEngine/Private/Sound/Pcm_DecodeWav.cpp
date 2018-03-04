@@ -246,9 +246,9 @@ static bool FindChunkInFile(File *fp, uint32_t chunkId, uint32_t *chunkSize) {
             return true;
         }
 
-        if (length <= 0x10000) {
+        if (length <= 0x8000) {
             if (!tempBuffer) {
-                tempBuffer = (byte *)_alloca16(0x10000);
+                tempBuffer = (byte *)_alloca16(0x8000);
             }
 
             fp->Read(tempBuffer, length);
@@ -270,7 +270,6 @@ static bool FindChunkInFile(File *fp, uint32_t chunkId, uint32_t *chunkSize) {
     if (tempMem) {
         Mem_AlignedFree(tempMem);
     }
-
     return false;
 }
 

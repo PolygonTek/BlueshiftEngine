@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "Core/Heap.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -57,10 +58,12 @@ void PP_Init() {
     }
 
     const int size = sphereLats * (sphereLongs + 1) * 2 * sizeof(Vec3);
-    Vec3 *verts = (Vec3 *)_alloca16(size);
+    Vec3 *verts = (Vec3 *)Mem_Alloc16(size);
     R_GenerateSphereTriangleStripVerts(Sphere(Vec3::origin, 1.0f), sphereLats, sphereLongs, verts);
 
     sphereVB = rhi.CreateBuffer(RHI::VertexBuffer, RHI::Static, size, 0, verts);
+
+    Mem_AlignedFree(verts);
 }
 
 void PP_Free() {
