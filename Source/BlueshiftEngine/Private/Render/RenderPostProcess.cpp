@@ -27,7 +27,7 @@ static Vec3             ssaoRandomKernel[8];
 // for camera motion blur
 static const int        sphereLats = 32;
 static const int        sphereLongs = 32;
-static RHI::Handle sphereVB;
+static RHI::Handle      sphereVB;
 
 void PP_Init() {
     R_ComputeGaussianWeights(5, gaussKernel5x.discreteWeights);
