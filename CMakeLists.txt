@@ -1,10 +1,15 @@
 ################################################################################
 # Top-level CMakeLists.txt file for Blueshift Engine
 ################################################################################
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.1)
+
+cmake_policy(SET CMP0025 NEW)
 
 set(CMAKE_OBJECT_PATH_MAX 512)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(CMakeDependentOption)
 include(BlueshiftCommon)
@@ -69,9 +74,6 @@ set(RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_GENERATOR})
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
-
-#set(CMAKE_CXX_STANDARD 14)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add DEBUG, _DEBUG definition to compiler in debug build
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
@@ -138,7 +140,7 @@ elseif (APPLE)
         #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
     endif ()
 elseif (ANDROID)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -fno-exceptions -fno-rtti")
 
     # Settings for Android
@@ -154,7 +156,6 @@ elseif (ANDROID)
     add_compile_options("-Wparentheses-equality")
     add_compile_options("-Wlogical-not-parentheses")
     add_compile_options("-Wshift-overflow")
-    add_compile_options("-Wshift-negative-value")
 endif ()
 
 ################################################################################
