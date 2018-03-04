@@ -814,6 +814,8 @@ include_directories(
     ${ENGINE_INCLUDE_DIR}/ThirdParty/asio/include
 )
 
+enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES RENDERER_FILES)
+
 if (ANDROID)
     add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 
@@ -825,8 +827,6 @@ if (ANDROID)
         GLESv3 
         OpenSLES)
 else ()
-    enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES RENDERER_FILES)
-
     add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 endif ()
 
