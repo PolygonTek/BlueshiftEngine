@@ -93,7 +93,7 @@ jclass AndroidJNI::LoadClass(JNIEnv *env, jobject activityObject, const char *cl
 jclass AndroidJNI::FindClass(JNIEnv *env, const char *className, bool isOptional) {
     jclass javaClass = env->FindClass(className);
     if (!javaClass && !isOptional) {
-        BE_WARNLOG(L"Failed to find %hs", className);
+        BE_FATALERROR(L"Failed to find %hs", className);
     }
     return javaClass;
 }
@@ -101,7 +101,7 @@ jclass AndroidJNI::FindClass(JNIEnv *env, const char *className, bool isOptional
 jmethodID AndroidJNI::FindMethod(JNIEnv *env, jclass javaClass, const char *methodName, const char *methodSignature, bool isOptional) {
     jmethodID method = javaClass ? env->GetMethodID(javaClass, methodName, methodSignature) : nullptr;
     if (!method && !isOptional) {
-        BE_WARNLOG(L"Failed to find %hs", methodName);
+        BE_FATALERROR(L"Failed to find %hs", methodName);
     }
     return method;
 }
@@ -109,7 +109,7 @@ jmethodID AndroidJNI::FindMethod(JNIEnv *env, jclass javaClass, const char *meth
 jmethodID AndroidJNI::FindStaticMethod(JNIEnv *env, jclass javaClass, const char *methodName, const char *methodSignature, bool isOptional) {
     jmethodID method = javaClass ? env->GetStaticMethodID(javaClass, methodName, methodSignature) : nullptr;
     if (!method && !isOptional) {
-        BE_WARNLOG(L"Failed to find %hs", methodName);
+        BE_FATALERROR(L"Failed to find %hs", methodName);
     }
     return method;
 }
@@ -117,7 +117,7 @@ jmethodID AndroidJNI::FindStaticMethod(JNIEnv *env, jclass javaClass, const char
 jfieldID AndroidJNI::FindField(JNIEnv *env, jclass javaClass, const char *fieldName, const char *fieldType, bool isOptional) {
     jfieldID field = env->GetFieldID(javaClass, fieldName, fieldType);
     if (!field && !isOptional) {
-        BE_WARNLOG(L"Failed to find %hs", fieldName);
+        BE_FATALERROR(L"Failed to find %hs", fieldName);
     }
     return field;
 }

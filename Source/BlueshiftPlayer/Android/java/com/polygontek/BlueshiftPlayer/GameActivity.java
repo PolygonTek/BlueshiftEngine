@@ -17,6 +17,7 @@ package com.polygontek.BlueshiftPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.annotation.TargetApi;
+import android.support.annotation.Keep;
 import android.app.NativeActivity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -25,8 +26,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.view.View;
-import android.util.Log;
 
+@Keep
 public class GameActivity extends NativeActivity {
     static {
         System.loadLibrary("BlueshiftPlayer");
