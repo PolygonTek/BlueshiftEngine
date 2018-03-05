@@ -1,5 +1,5 @@
 @pushd %~dp0
 @cd Android\Blueshift
-gradlew.bat BlueshiftPlayer:assembleRelease
+cmd /k gradlew.bat BlueshiftPlayer:assembleRelease
 @popd
-@pause
+
