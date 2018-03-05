@@ -26,10 +26,16 @@ void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state, UIViewControlle
         
         _RewardBasedVideoAd.SetObj(rewardBasedVideoAd);
         _RewardBasedVideoAd.AddObjMembers(rewardBasedVideoAd,
-                                          "request", &RewardBasedVideoAd::Request,
-                                          "is_ready", &RewardBasedVideoAd::IsReady,
-                                          "present", &RewardBasedVideoAd::Present);
+            "init", &RewardBasedVideoAd::Init,
+            "request", &RewardBasedVideoAd::Request,
+            "is_ready", &RewardBasedVideoAd::IsReady,
+            "present", &RewardBasedVideoAd::Present);
     });
+}
+
+void RewardBasedVideoAd::Init(const char *appID) {
+    NSString *nsAppID = [[NSString alloc] initWithBytes:appID length:strlen(appID) encoding:NSUTF8StringEncoding];
+    [GADMobileAds configureWithApplicationID:nsAppID];
 }
 
 void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
@@ -48,6 +54,7 @@ void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
     }
     
     if (!unitID || !unitID[0]) {
+        // Google-provided test ad units
         unitID = "ca-app-pub-3940256099942544/1712485313";
     }
     NSString *nsUnitID = [[NSString alloc] initWithBytes:unitID length:strlen(unitID) encoding:NSUTF8StringEncoding];

@@ -17,6 +17,8 @@
 
 class RewardBasedVideoAd {
 public:
+	void Init(const char *appID);
+
     void Request(const char *unitID, const char *testDevices = "");
     
     bool IsReady() const;
