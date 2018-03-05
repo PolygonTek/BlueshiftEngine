@@ -98,19 +98,10 @@ SharedLib PlatformWinProcess::OpenLibrary(const char *filename) {
         Str::snPrintf(str, sizeof(str), "%s.dll", filename);
         handle = LoadLibraryA(str);
         // So you can see what the error is in the debugger...
-#ifdef _DEBUG
         if (!handle) {
-            char *lpMsgBuf;
-            FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 
-                nullptr, 
-                GetLastError(), 
-                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),  // Default language
-                (LPTSTR)&lpMsgBuf, 
-                0, nullptr);
-
-            LocalFree((HLOCAL)lpMsgBuf);
+            WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
+            BE_WARNLOG(L"Failed to LoadLibrary : %ls\n", lastErrorText.c_str());
         }
-#endif
     }
 
     return reinterpret_cast<SharedLib>(handle);
@@ -161,6 +152,8 @@ ProcessHandle PlatformWinProcess::CreateProccess(const wchar_t *appPath, const w
     WStr::snPrintf(commandLine, COUNT_OF(commandLine), L"%s %s", appPath, args);
 
     if (!CreateProcess(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, workingDirectory, &si, &pi)) {
+        WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
+        BE_WARNLOG(L"Failed to CreateProcess : %ls\n", lastErrorText.c_str());
         return ProcessHandle();
     }
 

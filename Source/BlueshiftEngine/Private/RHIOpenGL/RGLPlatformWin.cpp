@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
+#include "Platform/PlatformProcess.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -815,15 +816,8 @@ bool OpenGLRHI::SwapBuffers() {
 
     BOOL succeeded = ::SwapBuffers(currentContext->hdc);
     if (!succeeded) {
-        DWORD errCode = GetLastError();
-        TCHAR *errText;
-
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, errCode, 
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), 
-            (LPTSTR)&errText, 0, nullptr);
-
-        BE_WARNLOG(L"Failed to SwapBuffers : %ls\n", errText);
-        LocalFree(errText);
+        WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
+        BE_WARNLOG(L"Failed to SwapBuffers : %ls\n", lastErrorText.c_str());
         return false;
     }
 

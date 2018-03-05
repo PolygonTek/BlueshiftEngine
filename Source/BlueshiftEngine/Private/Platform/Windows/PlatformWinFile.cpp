@@ -16,6 +16,7 @@
 #include "File/FileSystem.h"
 #include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinFile.h"
+#include "Platform/PlatformProcess.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -173,7 +174,8 @@ PlatformWinFile *PlatformWinFile::OpenFileWrite(const char *filename) {
     DWORD creation = CREATE_ALWAYS;
     HANDLE handle = CreateFileA(NormalizeFilename(filename), access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE) {
-        DWORD lastError = GetLastError();
+        WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
+        BE_WARNLOG(L"Failed to CreateFile : %ls\n", lastErrorText.c_str());
         return nullptr;
     }
     return new PlatformWinFile(handle);
@@ -375,7 +377,8 @@ static bool RemoveDirRecursive(const char *path) {
     
     // remove the empty directory
     if (!RemoveDirectoryA(path)) {
-        DWORD err = GetLastError();
+        WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
+        BE_WARNLOG(L"Failed to RemoveDirectory : %ls\n", lastErrorText.c_str());
         return false;
     }
     
