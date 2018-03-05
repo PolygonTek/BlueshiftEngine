@@ -81,7 +81,7 @@ public class GameActivity extends NativeActivity {
                 builder.setCancelable(false);
                 builder.setTitle(R.string.app_name);
                 builder.setMessage(msg);
-                builder.setIcon(R.mipmap.icon);
+                builder.setIcon(R.mipmap.ic_launcher);
                 builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
