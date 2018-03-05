@@ -42,7 +42,7 @@ void PlatformAndroid::Quit() {
 }
 
 void PlatformAndroid::Log(const wchar_t *msg) {
-    __android_log_print(ANDROID_LOG_INFO, "", "%ls", msg);
+    __android_log_print(ANDROID_LOG_INFO, "Blueshift", "%ls", msg);
 }
 
 void PlatformAndroid::Error(const wchar_t *msg) {
