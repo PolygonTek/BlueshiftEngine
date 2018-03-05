@@ -156,7 +156,11 @@ else ()
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
     endif ()
 
-    if (APPLE)
+    if (ANDROID)
+        if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
+            add_definitions(-DUSE_ADMOB_REWARD_BASED_VIDEO=1)
+        endif ()
+    elseif (APPLE)
         # App name
         set(CMAKEVAR_APP_NAME ${BS_APP_NAME})
         # App version

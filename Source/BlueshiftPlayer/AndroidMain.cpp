@@ -52,7 +52,7 @@ static void InitDisplay(ANativeWindow *window) {
         app.Init();
 
 #ifdef USE_ADMOB_REWARD_BASED_VIDEO
-        RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
+        RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
 #endif
 
         app.LoadAppScript("Application");
