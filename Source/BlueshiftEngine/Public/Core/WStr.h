@@ -68,6 +68,7 @@ public:
         int l = qstr.length();
         EnsureAlloced(l + 1, false);
         qstr.toWCharArray(data);
+        data[l] = '\0';
         len = l;
 #else
         static QTextCodec *codec = QTextCodec::codecForName(sizeof(wchar_t) == 4 ? "UTF-32" : "UTF-16");
