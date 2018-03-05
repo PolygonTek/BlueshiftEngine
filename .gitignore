@@ -84,6 +84,7 @@ Build/Android/Blueshift/TestRenderer/*
 !Build/Android/Blueshift/gradlew*
 !Build/Android/Blueshift/BlueshiftPlayer
 !Build/Android/Blueshift/BlueshiftPlayer/build.gradle
+!Build/Android/Blueshift/BlueshiftPlayer/build.gradle.signing
 !Build/Android/Blueshift/TestRenderer
 !Build/Android/Blueshift/TestRenderer/build.gradle
 Library/*

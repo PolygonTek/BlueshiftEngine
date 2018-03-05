@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+def keystorePropertiesFile = project.file("keystore.properties")
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 android {
     compileSdkVersion = 26
     defaultConfig {
@@ -12,6 +16,14 @@ android {
             }
         }
     }
+    signingConfigs {
+        release {
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+        }
+    }
     buildTypes {
         debug {
             applicationIdSuffix '.debug'
@@ -22,6 +34,7 @@ android {
         release {
             minifyEnabled = true
             shrinkResources = true
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             ndk {
                 abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
