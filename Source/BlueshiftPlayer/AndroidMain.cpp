@@ -1,24 +1,25 @@
-/*
- * Copyright 2013 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright(c) 2017 POLYGONTEK
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http ://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "Precompiled.h"
 #include "Application.h"
 #include "android_native_app_glue.h"
 #include <dlfcn.h>
 #include <android/sensor.h>
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+#include "AndroidAdMob.h"
+#endif
 
 static bool                 appInitialized = false;
 static int                  currentWindowWidth = 0;
@@ -49,6 +50,10 @@ static void InitDisplay(ANativeWindow *window) {
         app.mainRenderContext->Init(window, currentWindowWidth, currentWindowHeight, DisplayContext, NULL);
 
         app.Init();
+
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+        RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
+#endif
 
         app.LoadAppScript("Application");
 

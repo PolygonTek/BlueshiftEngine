@@ -32,6 +32,12 @@ elseif (ANDROID)
         android_native_app_glue.h
         android_native_app_glue.c
         AndroidMain.cpp)
+
+    if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
+        list(APPEND ALL_FILES 
+            AndroidAdMob.h
+            AndroidAdMob.cpp)
+    endif ()
 elseif (APPLE)
     if (IOS)
         list(APPEND ALL_FILES
