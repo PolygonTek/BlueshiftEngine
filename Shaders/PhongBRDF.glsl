@@ -14,7 +14,7 @@ vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float s
     vec3 Cd = albedo.rgb * max(NdotL, 0.0);
 #endif
 
-#if _SPECULAR_SOURCE != 0
+#if _SPECULAR != 0
     #ifdef USE_BLINN_PHONG
         vec3 H = normalize(L + V);
 
@@ -50,7 +50,7 @@ vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, 
     vec3 Cd = albedo.rgb * max(NdotL, 0.0);
 #endif
 
-#if _SPECULAR_SOURCE != 0
+#if _SPECULAR != 0
     #ifdef USE_BLINN_PHONG
         vec3 H = normalize(L + V);
     

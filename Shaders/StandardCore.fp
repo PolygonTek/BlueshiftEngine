@@ -1,41 +1,41 @@
 $include "fragment_common.glsl"
 
-#ifndef _ALBEDO_SOURCE
-#define _ALBEDO_SOURCE 0
+#ifndef _ALBEDO
+#define _ALBEDO 0
 #endif
 
-#ifndef _NORMAL_SOURCE
-#define _NORMAL_SOURCE 0
+#ifndef _NORMAL
+#define _NORMAL 0
 #endif
 
-#ifndef _SPECULAR_SOURCE
-#define _SPECULAR_SOURCE 0
+#ifndef _SPECULAR
+#define _SPECULAR 0
 #endif
 
-#ifndef _GLOSS_SOURCE
-#define _GLOSS_SOURCE 0
+#ifndef _GLOSS
+#define _GLOSS 0
 #endif
 
-#ifndef _METALLIC_SOURCE
-#define _METALLIC_SOURCE 0
+#ifndef _METALLIC
+#define _METALLIC 0
 #endif
 
-#ifndef _ROUGHNESS_SOURCE
-#define _ROUGHNESS_SOURCE 0
+#ifndef _ROUGHNESS
+#define _ROUGHNESS 0
 #endif
 
 #ifndef _PRALLAX_SOURCE
 #define _PRALLAX_SOURCE 0
 #endif
 
-#ifndef _EMISSION_SOURCE
-#define _EMISSION_SOURCE 0
+#ifndef _EMISSION
+#define _EMISSION 0
 #endif
 
 in LOWP vec4 v2f_color;
 in MEDIUMP vec2 v2f_tex;
 
-#if _NORMAL_SOURCE == 0
+#if _NORMAL == 0
     in LOWP vec3 v2f_normal;
 #endif
 
@@ -51,7 +51,7 @@ in MEDIUMP vec2 v2f_tex;
     in vec4 v2f_toWorldAndPackedWorldPosR;
 #endif
 
-#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
+#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING) || _PARALLAX != 0
     in vec3 v2f_viewVector;
 #endif
 
@@ -130,17 +130,17 @@ $include "IBL.glsl"
 $include "ShadowLibrary.fp"
 #endif
 
-#if _NORMAL_SOURCE == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
-#undef _NORMAL_SOURCE
-#define _NORMAL_SOURCE 1
+#if _NORMAL == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
+#undef _NORMAL
+#define _NORMAL 1
 #endif
 
-#if _PARALLAX_SOURCE == 1 && !defined(ENABLE_PARALLAXMAP)
-#undef _PARALLAX_SOURCE 
-#define _PARALLAX_SOURCE 0
+#if _PARALLAX == 1 && !defined(ENABLE_PARALLAXMAP)
+#undef _PARALLAX 
+#define _PARALLAX 0
 #endif
 
-#if _ALBEDO_SOURCE != 0 || _NORMAL_SOURCE != 0 || _SPECULAR_SOURCE != 0 || _GLOSS_SOURCE == 3 || _METALLIC_SOURCE == 1 || (_ROUGHNESS_SOURCE == 2 || _ROUGHNESS_SOURCE == 3) || _PARALLAX_SOURCE != 0 || _EMISSION_SOURCE == 2
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC == 1 || (_ROUGHNESS == 2 || _ROUGHNESS == 3) || _PARALLAX != 0 || _EMISSION == 2
 #define NEED_BASE_TC
 #endif
 
@@ -157,12 +157,12 @@ void main() {
     }*/
 #endif
 
-#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX != 0
     vec3 V = normalize(v2f_viewVector);
 #endif
 
 #ifdef NEED_BASE_TC
-    #if _PARALLAX_SOURCE != 0
+    #if _PARALLAX != 0
         float h = tex2D(heightMap, v2f_tex).x * 2.0 - 1.0;
         vec2 baseTc = offsetTexcoord(h, v2f_tex, V, heightScale * 0.1);
     #else
@@ -170,9 +170,9 @@ void main() {
     #endif
 #endif
 
-#if _ALBEDO_SOURCE == 0
+#if _ALBEDO == 0
     vec4 albedo = vec4(albedoColor, albedoAlpha);
-#elif _ALBEDO_SOURCE == 1
+#elif _ALBEDO == 1
     vec4 albedo = tex2D(albedoMap, baseTc);
 #endif
 
@@ -183,12 +183,12 @@ void main() {
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    #if _NORMAL_SOURCE == 0
+    #if _NORMAL == 0
         vec3 N = normalize(v2f_normal);
-    #elif _NORMAL_SOURCE == 1 || _NORMAL_SOURCE == 2
+    #elif _NORMAL == 1 || _NORMAL == 2
         vec3 N = normalize(getNormal(normalMap, baseTc));
 
-        #if _NORMAL_SOURCE == 2
+        #if _NORMAL == 2
             vec3 DN = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
             N = normalize(N + DN);
         #endif
@@ -197,19 +197,19 @@ void main() {
     #if defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
         vec4 diffuse = albedo;
 
-        #if _SPECULAR_SOURCE == 0
+        #if _SPECULAR == 0
             vec4 specular = specularColor;
-        #elif _SPECULAR_SOURCE == 1
+        #elif _SPECULAR == 1
             vec4 specular = tex2D(specularMap, baseTc);
         #endif
 
-        #if _GLOSS_SOURCE == 0
+        #if _GLOSS == 0
             float glossiness = glossScale;
-        #elif _GLOSS_SOURCE == 1
+        #elif _GLOSS == 1
             float glossiness = albedo.a * glossScale;
-        #elif _GLOSS_SOURCE == 2
+        #elif _GLOSS == 2
             float glossiness = specular.a * glossScale;
-        #elif _GLOSS_SOURCE == 3
+        #elif _GLOSS == 3
             float glossiness = tex2D(glossMap, baseTc).r * glossScale;
         #endif
 
@@ -219,20 +219,20 @@ void main() {
             float specularPower = glossinessToSpecularPower(glossiness);
         #endif
     #elif defined(STANDARD_METALLIC_LIGHTING)
-        #if _METALLIC_SOURCE == 0
+        #if _METALLIC == 0
             vec4 metallic = vec4(metallicScale, 0.0, 0.0, 0.0);
-        #elif _METALLIC_SOURCE == 1
+        #elif _METALLIC == 1
             vec4 metallic = tex2D(metallicMap, baseTc);
             metallic.r *= metallicScale;
         #endif
 
-        #if _ROUGHNESS_SOURCE == 0
+        #if _ROUGHNESS == 0
             float roughness = roughnessScale;
-        #elif _ROUGHNESS_SOURCE == 1
+        #elif _ROUGHNESS == 1
             float roughness = metallic.g * roughnessScale;
-        #elif _ROUGHNESS_SOURCE == 2
+        #elif _ROUGHNESS == 2
             float roughness = tex2D(roughnessMap, baseTc).r * roughnessScale;
-        #elif _ROUGHNESS_SOURCE == 3
+        #elif _ROUGHNESS == 3
             float roughness = (1.0 - tex2D(roughnessMap, baseTc).r) * roughnessScale;
         #endif
 
@@ -245,9 +245,9 @@ void main() {
     vec3 C = vec3(0.0);
 
 #if (defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)) || !defined(DIRECT_LIGHTING)
-    #if _EMISSION_SOURCE == 1
+    #if _EMISSION == 1
         C += emissionColor * emissionScale;
-    #elif _EMISSION_SOURCE == 2
+    #elif _EMISSION == 2
         C += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
     #endif
 #endif
@@ -346,10 +346,10 @@ void main() {
     C += Cl * lightingColor * shadowLighting;
 #endif
 
-#if _OCCLUSION_SOURCE != 0
-    #if _OCCLUSION_SOURCE == 1
+#if _OCCLUSION != 0
+    #if _OCCLUSION == 1
         float occ = tex2D(occlusionMap, baseTc).r;
-    #elif _OCCLUSION_SOURCE == 2
+    #elif _OCCLUSION == 2
         float occ = metallic.b;
     #endif
 

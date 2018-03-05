@@ -40,7 +40,7 @@ void MaterialManager::Init() {
     defaultMaterial->Create(va(
         "pass {\n"
         "   shader \"%s\" {\n"
-        "       _ALBEDO_SOURCE \"1\"\n"
+        "       _ALBEDO \"1\"\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
         "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
@@ -52,7 +52,7 @@ void MaterialManager::Init() {
         "pass {\n"
         "   useOwnerColor\n"
         "   shader \"%s\" {\n"
-        "       _ALBEDO_SOURCE \"1\"\n"
+        "       _ALBEDO \"1\"\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
         "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));

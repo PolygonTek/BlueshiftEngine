@@ -77,9 +77,9 @@ void main() {
 #endif
 #endif
 
-#if _ALBEDO_SOURCE == 0
+#if _ALBEDO == 0
 	vec4 diffuse = albedoColor;
-#elif _ALBEDO_SOURCE == 1
+#elif _ALBEDO == 1
 	vec4 diffuse = tex2D(albedoMap, v2f_texCoord);
 #endif
 
@@ -97,11 +97,11 @@ void main() {
 	vec3 R = reflect(-L, N);
 	float RdotV = max(dot(R, V), 0.0);
 
-#if _SPECULAR_SOURCE == 0
+#if _SPECULAR == 0
 	vec3 Cs = vec3(0.0, 0.0, 0.0);
-#elif _SPECULAR_SOURCE == 1
+#elif _SPECULAR == 1
 	vec3 Cs = specularColor.xyz * (pow((NdotL > 0.0 ? RdotV : 0.0), specularPower) > 0.9 ? 1.0 : 0.0);
-#elif _SPECULAR_SOURCE == 2
+#elif _SPECULAR == 2
 	vec3 Cs = tex2D(specularMap, v2f_texCoord).xyz * (pow(NdotL > 0.0 ? RdotV : 0.0, specularPower) > 0.9 ? 1.0 : 0.0);
 #endif
 

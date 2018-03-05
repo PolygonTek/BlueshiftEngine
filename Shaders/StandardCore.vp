@@ -11,7 +11,7 @@ $include "ShadowLibrary.vp"
 out LOWP vec4 v2f_color;
 out MEDIUMP vec2 v2f_tex;
 
-#if _NORMAL_SOURCE == 0
+#if _NORMAL == 0
     out LOWP vec3 v2f_normal;
 #endif
 
@@ -27,7 +27,7 @@ out MEDIUMP vec2 v2f_tex;
     out vec4 v2f_toWorldAndPackedWorldPosR;
 #endif
 
-#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
+#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING) || _PARALLAX != 0
     out vec3 v2f_viewVector;
 #endif
 
@@ -67,7 +67,7 @@ uniform mat4 lightTextureMatrix;
 uniform bool useShadowMap;
 
 void main() {
-#if _NORMAL_SOURCE == 0
+#if _NORMAL == 0
     vec4 localVertex;
     vec3 localNormal;
 
@@ -131,8 +131,8 @@ void main() {
     v2f_lightFallOff = (L * localLightAxis) * lightInvRadius;
 #endif
 
-#if _NORMAL_SOURCE == 0
-    #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
+#if _NORMAL == 0
+    #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX != 0
         v2f_normal = localNormal;
 
         v2f_viewVector = localViewOrigin.xyz - localVertex.xyz;
@@ -152,7 +152,7 @@ void main() {
         v2f_toWorldAndPackedWorldPosR.w = worldVertex.z;
     #endif
 #else
-    #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX_SOURCE != 0
+    #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX != 0
         mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
 
         v2f_viewVector = (localViewOrigin.xyz - localVertex.xyz) * TBN;
