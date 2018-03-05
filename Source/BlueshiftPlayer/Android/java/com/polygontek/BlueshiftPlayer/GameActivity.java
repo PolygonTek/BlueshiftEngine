@@ -93,7 +93,7 @@ public class GameActivity extends NativeActivity {
         });
     }
 
-    GameActivity activity;
+    private GameActivity activity;
 }
 
 
