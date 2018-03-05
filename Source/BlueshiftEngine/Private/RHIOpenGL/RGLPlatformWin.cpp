@@ -817,7 +817,7 @@ bool OpenGLRHI::SwapBuffers() {
     BOOL succeeded = ::SwapBuffers(currentContext->hdc);
     if (!succeeded) {
         WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_WARNLOG(L"Failed to SwapBuffers : %ls\n", lastErrorText.c_str());
+        BE_WARNLOG(L"Failed to SwapBuffers : %ls", lastErrorText.c_str());
         return false;
     }
 

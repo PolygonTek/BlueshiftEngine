@@ -100,7 +100,7 @@ SharedLib PlatformWinProcess::OpenLibrary(const char *filename) {
         // So you can see what the error is in the debugger...
         if (!handle) {
             WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
-            BE_WARNLOG(L"Failed to LoadLibrary : %ls\n", lastErrorText.c_str());
+            BE_WARNLOG(L"Failed to LoadLibrary : %ls", lastErrorText.c_str());
         }
     }
 
@@ -151,9 +151,9 @@ ProcessHandle PlatformWinProcess::CreateProccess(const wchar_t *appPath, const w
     wchar_t commandLine[32768];
     WStr::snPrintf(commandLine, COUNT_OF(commandLine), L"%s %s", appPath, args);
 
-    if (!CreateProcess(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, workingDirectory, &si, &pi)) {
+    if (!CreateProcessW(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, workingDirectory, &si, &pi)) {
         WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_WARNLOG(L"Failed to CreateProcess : %ls\n", lastErrorText.c_str());
+        BE_WARNLOG(L"Failed to CreateProcess : %ls", lastErrorText.c_str());
         return ProcessHandle();
     }
 
@@ -193,6 +193,7 @@ bool PlatformWinProcess::ReadProcessOutput(ProcessHandle &processHandle, int buf
 
     BOOL ok = PeekNamedPipe(processHandle.hStdOutRead, nullptr, 0, nullptr, &bytesAvail, &bytesLeft);
     if (ok && bytesAvail != 0) {
+        // The read operation will block until there is data to read
         ok = ReadFile(processHandle.hStdOutRead, buffer, bufferLength - 3, &bytesRead, nullptr);
         if (ok && bytesRead > 0) {
             buffer[bytesRead] = '\0';
