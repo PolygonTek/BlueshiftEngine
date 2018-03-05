@@ -88,7 +88,7 @@ void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderi
     this->guiMesh.SetCoordFrame(GuiMesh::CoordFrame2D);
     this->guiMesh.SetClipRect(Rect(0, 0, renderingWidth, renderingHeight));
     
-    rhi.SetContextDisplayFunc(contextHandle, displayFunc, displayFuncDataPtr, (flags & OnDemandDrawing) ? true : false);
+    rhi.SetContextDisplayFunc(contextHandle, displayFunc, displayFuncDataPtr, (flags & Flag::OnDemandDrawing) ? true : false);
 
     InitScreenMapRT();
 

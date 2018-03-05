@@ -34,19 +34,26 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
 
     @Override
     protected void onDestroy() {
-        rewardedVideoAd.destroy(this);
+        if (rewardedVideoAd != null) {
+            rewardedVideoAd.destroy(this);
+            rewardedVideoAd = null;
+        }
         super.onDestroy();
     }
 
     @Override
     protected void onPause() {
-        rewardedVideoAd.pause(this);
+        if (rewardedVideoAd != null) {
+            rewardedVideoAd.pause(this);
+        }
         super.onPause();
     }
 
     @Override
     protected void onResume() {
-        rewardedVideoAd.resume(this);
+        if (rewardedVideoAd != null) {
+            rewardedVideoAd.resume(this);
+        }
         super.onResume();
     }
 
@@ -166,7 +173,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     private native void rewardBasedVideoAdWillLeaveApplication();
     private native void rewardBasedVideoAdDidFailToLoad(String errorMessage);
 
-    private RewardedVideoAd rewardedVideoAd;
+    private RewardedVideoAd rewardedVideoAd = null;
     private boolean adLoaded = false;
 
     private GameAdMobActivity activity;

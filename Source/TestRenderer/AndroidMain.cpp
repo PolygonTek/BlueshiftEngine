@@ -53,6 +53,8 @@ static void SystemError(int errLevel, const wchar_t *msg) {
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, BE1::AndroidJNI::javaMethod_showAlert, javaMsg);
 
     env->DeleteLocalRef(javaMsg);
+
+    exit(EXIT_SUCCESS);
 }
 
 static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {

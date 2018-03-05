@@ -44,10 +44,10 @@ static void InitDisplay(ANativeWindow *window) {
         currentWindowWidth = ANativeWindow_getWidth(window);
         currentWindowHeight = ANativeWindow_getHeight(window);
 
-        BE1::gameClient.Init(window, true);
+        BE1::gameClient.Init(window, false);
 
         app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-        app.mainRenderContext->Init(window, currentWindowWidth, currentWindowHeight, DisplayContext, NULL);
+        app.mainRenderContext->Init(window, currentWindowWidth, currentWindowHeight, DisplayContext, nullptr);
 
         app.Init();
 
@@ -187,7 +187,7 @@ static void HandleCmd(android_app *appState, int32_t cmd) {
         /**
          * Command from main thread: the app's activity has been resumed.
          */
-        if (surfaceCreated) {
+        if (appInitialized) {
             app.OnApplicationPause(false);
         }
         suspended = false;

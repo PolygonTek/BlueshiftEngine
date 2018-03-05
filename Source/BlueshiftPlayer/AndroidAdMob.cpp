@@ -40,7 +40,7 @@ void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state) {
         LuaCpp::Selector _RewardBasedVideoAd = module["RewardBasedVideoAd"];
         
         _RewardBasedVideoAd.SetObj(rewardBasedVideoAd);
-        _RewardBasedVideoAd.AddObjMembers(rewardBasedVideoAd,                                        
+        _RewardBasedVideoAd.AddObjMembers(rewardBasedVideoAd,
             "init", &RewardBasedVideoAd::Init,
             "request", &RewardBasedVideoAd::Request,
             "is_ready", &RewardBasedVideoAd::IsReady,
