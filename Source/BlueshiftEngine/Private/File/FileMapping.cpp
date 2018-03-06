@@ -147,11 +147,13 @@ bool FileMapping::Open(const Str &filename) {
 }
 
 void FileMapping::Close() {
-    if (!data)
+    if (!data) {
         return;
+    }
 #ifdef __ANDROID__
     data = (void *)((off_t)data & ~g_nPageMask);
 #endif
+
 #if defined(__UNIX__)
     int retval = munmap((void *) data, size);
     if (retval != 0) {

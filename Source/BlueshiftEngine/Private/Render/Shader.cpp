@@ -950,7 +950,7 @@ void Shader::Reinstantiate() {
 }
 
 bool Shader::Instantiate(const Array<Define> &defineArray) {
-#if defined __ANDROID__ && ! defined __XAMARIN__
+/*#if defined __ANDROID__ && ! defined __XAMARIN__
 
 	if (android_progress >= 0) {
 		float f = android_progress * (M_PI * 0.01f);
@@ -967,7 +967,7 @@ bool Shader::Instantiate(const Array<Define> &defineArray) {
 	}
 
     //BE_LOG(L"progress %f %f %f %f %d", color.r, color.g, color.b, f, progress);
-#endif
+#endif*/
 
     Str processedVsText;
     Str processedFsText;

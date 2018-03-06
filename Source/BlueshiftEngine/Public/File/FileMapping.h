@@ -24,6 +24,7 @@ public:
         size = 0;
         data = NULL;
     }
+
     void            Open(const void *_data, size_t _size) {
         data = _data;
         size = _size;
@@ -38,16 +39,18 @@ protected:
     const void *    data;
 };
 
-class FileMapping : public _FileMapping
-{
+class FileMapping : public _FileMapping {
 public:
     FileMapping();
-    FileMapping & operator = (const FileMapping &value);
+
+    FileMapping &   operator=(const FileMapping &value);
+
     bool            Open(const TCHAR *filename);
     bool            Open(const Str &filename);
     void            Close();
+
 private:
-    Str            filename;
+    Str             filename;
 #if defined(__WIN32__)
     HANDLE          hFile;
     HANDLE          hMapping;
@@ -56,8 +59,7 @@ private:
 #endif
 };
 
-BE_INLINE FileMapping & FileMapping::operator = (const FileMapping &value) 
-{
+BE_INLINE FileMapping & FileMapping::operator=(const FileMapping &value) {
 //	*(_FileMapping *) this = (_FileMapping &)value;
 #ifdef __WIN32__
     hFile = value.hFile;
