@@ -305,6 +305,10 @@ void OpenGLRHI::InitGL() {
     }
 }
 
+Str OpenGLRHI::GetGPUString() const {
+    return Str(rendererString);
+}
+
 bool OpenGLRHI::SupportsPackedFloat() const {
     return OpenGL::SupportsPackedFloat();
 }

@@ -66,6 +66,7 @@
 #include "PlatformUtils/iOS/iOSDevice.h"
 #elif defined(__ANDROID__)
 #include "PlatformUtils/Android/AndroidJNI.h"
+#include "PlatformUtils/Android/AndroidGPUInfo.h"
 #endif
 
 // File

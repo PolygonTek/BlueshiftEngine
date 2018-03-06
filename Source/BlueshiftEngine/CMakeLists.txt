@@ -632,7 +632,10 @@ if (ANDROID)
         Private/Platform/PlatformAndroid.cpp
 
         Public/PlatformUtils/Android/AndroidJNI.h
+        Public/PlatformUtils/Android/AndroidGPUInfo.h
+
         Private/PlatformUtils/Android/AndroidJNI.cpp
+        Private/PlatformUtils/Android/AndroidGPUInfo.cpp
 
         Private/Sound/SoundSystemSLES.cpp
         Private/Sound/SoundBufferSLES.cpp

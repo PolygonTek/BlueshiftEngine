@@ -240,6 +240,8 @@ public:
 
     void                    CheckError(const char *fmt, ...) const;
 
+    Str                     GetGPUString() const;
+
     const HWLimit &         HWLimit() const { return hwLimit; }
 
 protected:
