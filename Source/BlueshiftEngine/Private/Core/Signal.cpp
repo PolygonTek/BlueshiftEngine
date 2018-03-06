@@ -55,6 +55,8 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
     memset(this->argOffset, 0, sizeof(this->argOffset));
     this->argSize = 0;
 
+    unsigned int argBits = 0;
+
     for (int i = 0; i < this->numArgs; i++) {
         this->argOffset[i] = (int)this->argSize;
 
@@ -62,10 +64,8 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
         case VariantArg::IntType:
             this->argSize += sizeof(int);
             break;
-        case VariantArg::BoolType:
-            this->argSize += sizeof(bool);
-            break;
         case VariantArg::FloatType:
+            argBits |= 1 << i;
             this->argSize += sizeof(float);
             break;
         case VariantArg::PointerType:
@@ -101,6 +101,8 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
             return;
         }
     }
+
+    formatSpecBits = (numArgs << EventDef::MaxArgs) | argBits;
 
     for (int i = 0; i < this->numSignalDefs; i++) {
         SignalDef *sigdef = this->signalDefs[i];
@@ -249,19 +251,10 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
 
         switch (format[argIndex]) {
         case VariantArg::IntType:
-            if (arg->pointer) {
-                *reinterpret_cast<int *>(dataPtr) = arg->intValue;
-            }
-            break;
-        case VariantArg::BoolType:
-            if (arg->pointer) {
-                *reinterpret_cast<bool *>(dataPtr) = arg->boolValue;
-            }
+            *reinterpret_cast<int *>(dataPtr) = arg->intValue;
             break;
         case VariantArg::FloatType:
-            if (arg->pointer) {
-                *reinterpret_cast<float *>(dataPtr) = arg->floatValue;
-            }
+            *reinterpret_cast<float *>(dataPtr) = arg->floatValue;
             break;
         case VariantArg::PointerType:
             *reinterpret_cast<void **>(dataPtr) = reinterpret_cast<void *>(arg->pointer);
@@ -378,9 +371,6 @@ void SignalSystem::ServiceSignal(Signal *signal) {
         switch (formatSpec[i]) {
         case VariantArg::IntType:
             argPtrs[i] = *reinterpret_cast<int *>(&data[offset]);
-            break;
-        case VariantArg::BoolType:
-            argPtrs[i] = *reinterpret_cast<bool *>(&data[offset]);
             break;
         case VariantArg::FloatType:
             argPtrs[i] = *reinterpret_cast<float *>(&data[offset]);

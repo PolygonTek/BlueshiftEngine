@@ -449,7 +449,6 @@ bool Object::ProcessEventArgs(const EventDef *evdef, int numArgs, ...) {
 bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
     assert(evdef);
     assert(EventSystem::initialized);
-    assert(EventDef::MaxArgs == 8);
 
     if (evdef == &EV_ImmediateDestroy) {
         EventSystem::CancelEvents(this);
@@ -463,43 +462,537 @@ bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
     }
 
     EventCallback callback = meta->eventCallbacks[num];
-        
-    switch (evdef->GetNumArgs()) {
+
+    // formatSpecBits = 0bNNNFFFFFF
+    // N means number of arguments
+    // F means float bit mask
+    switch (evdef->GetFormatSpecBits()) {
+        //----------------------------------------------------------------------------------------------
+        // 0 args
+        //----------------------------------------------------------------------------------------------
     case 0:
         (this->*callback)();
-        break;
-    case 1:
-        using eventCallback_1_t = void (Object::*)(const intptr_t);
-        (this->*(eventCallback_1_t)callback)(data[0]);
-        break;
-    case 2:
-        using eventCallback_2_t = void (Object::*)(const intptr_t, const intptr_t);
-        (this->*(eventCallback_2_t)callback)(data[0], data[1]);
-        break;
-    case 3:
-        using eventCallback_3_t = void (Object::*)(const intptr_t, const intptr_t, const intptr_t);
-        (this->*(eventCallback_3_t)callback)(data[0], data[1], data[2]);
-        break;
-    case 4:
-        using eventCallback_4_t = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t);
-        (this->*(eventCallback_4_t)callback)(data[0], data[1], data[2], data[3]);
-        break;
-    case 5:
-        using eventCallback_5_t = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
-        (this->*(eventCallback_5_t)callback)(data[0], data[1], data[2], data[3], data[4]);
-        break;
-    case 6:
-        using eventCallback_6_t = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
-        (this->*(eventCallback_6_t)callback)(data[0], data[1], data[2], data[3], data[4], data[5]);
-        break;
-    case 7:
-        using eventCallback_7_t = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
-        (this->*(eventCallback_7_t)callback)(data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
-        break;
-    case 8:
-        using eventCallback_8_t = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
-        (this->*(eventCallback_8_t)callback)(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-        break;
+        return true;
+        //----------------------------------------------------------------------------------------------
+        // 1 args
+        //----------------------------------------------------------------------------------------------
+    case 0b001000000:
+        using EventCallback_i = void (Object::*)(const intptr_t);
+        (this->*(EventCallback_i)callback)(data[0]);
+        return true;
+    case 0b001000001:
+        using EventCallback_f = void (Object::*)(const float);
+        (this->*(EventCallback_f)callback)(*(float *)&data[0]);
+        return true;
+        //----------------------------------------------------------------------------------------------
+        // 2 args
+        //----------------------------------------------------------------------------------------------
+    case 0b010000000:
+        using EventCallback_ii = void (Object::*)(const intptr_t, const intptr_t);
+        (this->*(EventCallback_ii)callback)(data[0], data[1]);
+        return true;
+    case 0b010000001:
+        using EventCallback_fi = void (Object::*)(const float, const intptr_t);
+        (this->*(EventCallback_fi)callback)(*(float *)&data[0], data[1]);
+        return true;
+    case 0b010000010:
+        using EventCallback_if = void (Object::*)(const intptr_t, const float);
+        (this->*(EventCallback_if)callback)(data[0], *(float *)&data[1]);
+        return true;
+    case 0b010000011:
+        using EventCallback_ff = void (Object::*)(const float, const float);
+        (this->*(EventCallback_ff)callback)(*(float *)&data[0], *(float *)&data[1]);
+        return true;
+        // 3 args
+    case 0b011000000:
+        using EventCallback_iii = void (Object::*)(const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iii)callback)(data[0], data[1], data[2]);
+        return true;
+    case 0b011000001:
+        using EventCallback_fii = void (Object::*)(const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fii)callback)(*(float *)&data[0], data[1], data[2]);
+        return true;
+    case 0b011000010:
+        using EventCallback_ifi = void (Object::*)(const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_ifi)callback)(data[0], *(float *)&data[1], data[2]);
+        return true;
+    case 0b011000011:
+        using EventCallback_ffi = void (Object::*)(const float, const float, const intptr_t);
+        (this->*(EventCallback_ffi)callback)(*(float *)&data[0], *(float *)&data[1], data[2]);
+        return true;
+    case 0b011000100:
+        using EventCallback_iif = void (Object::*)(const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_iif)callback)(data[0], data[1], *(float *)&data[2]);
+        return true;
+    case 0b011000101:
+        using EventCallback_fif = void (Object::*)(const float, const intptr_t, const float);
+        (this->*(EventCallback_fif)callback)(*(float *)&data[0], data[1], *(float *)&data[2]);
+        return true;
+    case 0b011000110:
+        using EventCallback_iff = void (Object::*)(const intptr_t, const float, const float);
+        (this->*(EventCallback_iff)callback)(data[0], *(float *)&data[1], *(float *)&data[2]);
+        return true;
+    case 0b011000111:
+        using EventCallback_fff = void (Object::*)(const float, const float, const float);
+        (this->*(EventCallback_fff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2]);
+        return true;
+        //----------------------------------------------------------------------------------------------
+        // 4 args
+        //----------------------------------------------------------------------------------------------
+    case 0b100000000:
+        using EventCallback_iiii = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iiii)callback)(data[0], data[1], data[2], data[3]);
+        return true;
+    case 0b100000001:
+        using EventCallback_fiii = void (Object::*)(const float, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fiii)callback)(*(float *)&data[0], data[1], data[2], data[3]);
+        return true;
+    case 0b100000010:
+        using EventCallback_ifii = void (Object::*)(const intptr_t, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ifii)callback)(data[0], *(float *)&data[1], data[2], data[3]);
+        return true;
+    case 0b100000011:
+        using EventCallback_ffii = void (Object::*)(const float, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ffii)callback)(*(float *)&data[0], *(float *)&data[1], data[2], data[3]);
+        return true;
+    case 0b100000100:
+        using EventCallback_iifi = void (Object::*)(const intptr_t, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_iifi)callback)(data[0], data[1], *(float *)&data[2], data[3]);
+        return true;
+    case 0b100000101:
+        using EventCallback_fifi = void (Object::*)(const float, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_fifi)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3]);
+        return true;
+    case 0b100000110:
+        using EventCallback_iffi = void (Object::*)(const intptr_t, const float, const float, const intptr_t);
+        (this->*(EventCallback_iffi)callback)(data[0], *(float *)&data[1], *(float *)&data[2], data[3]);
+        return true;
+    case 0b100000111:
+        using EventCallback_fffi = void (Object::*)(const float, const float, const float, const intptr_t);
+        (this->*(EventCallback_fffi)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], data[3]);
+        return true;
+    case 0b100001000:
+        using EventCallback_iiif = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_iiif)callback)(data[0], data[1], data[2], *(float *)&data[3]);
+        return true;
+    case 0b100001001:
+        using EventCallback_fiif = void (Object::*)(const float, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_fiif)callback)(*(float *)&data[0], data[1], data[2], *(float *)&data[3]);
+        return true;
+    case 0b100001010:
+        using EventCallback_ifif = void (Object::*)(const intptr_t, const float, const intptr_t, const float);
+        (this->*(EventCallback_ifif)callback)(data[0], *(float *)&data[1], data[2], *(float *)&data[3]);
+        return true;
+    case 0b100001011:
+        using EventCallback_ffif = void (Object::*)(const float, const float, const intptr_t, const float);
+        (this->*(EventCallback_ffif)callback)(*(float *)&data[0], *(float *)&data[1], data[2], *(float *)&data[3]);
+        return true;
+    case 0b100001100:
+        using EventCallback_iiff = void (Object::*)(const intptr_t, const intptr_t, const float, const float);
+        (this->*(EventCallback_iiff)callback)(data[0], data[1], *(float *)&data[2], *(float *)&data[3]);
+        return true;
+    case 0b100001101:
+        using EventCallback_fiff = void (Object::*)(const float, const intptr_t, const float, const float);
+        (this->*(EventCallback_fiff)callback)(*(float *)&data[0], data[1], *(float *)&data[2], *(float *)&data[3]);
+        return true;
+    case 0b100001110:
+        using EventCallback_ifff = void (Object::*)(const intptr_t, const float, const float, const float);
+        (this->*(EventCallback_ifff)callback)(data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3]);
+        return true;
+    case 0b100001111:
+        using EventCallback_ffff = void (Object::*)(const float, const float, const float, const float);
+        (this->*(EventCallback_ffff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3]);
+        return true;
+        //----------------------------------------------------------------------------------------------
+        // 5 args
+        //----------------------------------------------------------------------------------------------
+    case 0b101000000:
+        using EventCallback_iiiii = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iiiii)callback)(data[0], data[1], data[2], data[3], data[4]);
+        return true;
+    case 0b101000001:
+        using EventCallback_fiiii = void (Object::*)(const float, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fiiii)callback)(*(float *)&data[0], data[1], data[2], data[3], data[4]);
+        return true;
+    case 0b101000010:
+        using EventCallback_ifiii = void (Object::*)(const intptr_t, const float, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ifiii)callback)(data[0], *(float *)&data[1], data[2], data[3], data[4]);
+        return true;
+    case 0b101000011:
+        using EventCallback_ffiii = void (Object::*)(const float, const float, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ffiii)callback)(*(float *)&data[0], *(float *)&data[1], data[2], data[3], data[4]);
+        return true;
+    case 0b101000100:
+        using EventCallback_iifii = void (Object::*)(const intptr_t, const intptr_t, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iifii)callback)(data[0], data[1], *(float *)&data[2], data[3], data[4]);
+        return true;
+    case 0b101000101:
+        using EventCallback_fifii = void (Object::*)(const float, const intptr_t, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fifii)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], data[4]);
+        return true;
+    case 0b101000110:
+        using EventCallback_iffii = void (Object::*)(const intptr_t, const float, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iffii)callback)(data[0], *(float *)&data[1], *(float *)&data[2], data[3], data[4]);
+        return true;
+    case 0b101000111:
+        using EventCallback_fffii = void (Object::*)(const float, const float, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fffii)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], data[3], data[4]);
+        return true;
+    case 0b101001000:
+        using EventCallback_iiifi = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_iiifi)callback)(data[0], data[1], data[2], *(float *)&data[3], data[4]);
+        return true;
+    case 0b101001001:
+        using EventCallback_fiifi = void (Object::*)(const float, const intptr_t, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_fiifi)callback)(*(float *)&data[0], data[1], data[2], *(float *)&data[3], data[4]);
+        return true;
+    case 0b101001010:
+        using EventCallback_ififi = void (Object::*)(const intptr_t, const float, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_ififi)callback)(data[0], *(float *)&data[1], data[2], *(float *)&data[3], data[4]);
+        return true;
+    case 0b101001011:
+        using EventCallback_ffifi = void (Object::*)(const float, const float, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_ffifi)callback)(*(float *)&data[0], *(float *)&data[1], data[2], *(float *)&data[3], data[4]);
+        return true;
+    case 0b101001100:
+        using EventCallback_iiffi = void (Object::*)(const intptr_t, const intptr_t, const float, const float, const intptr_t);
+        (this->*(EventCallback_iiffi)callback)(data[0], data[1], *(float *)&data[2], *(float *)&data[3], data[4]);
+        return true;
+    case 0b101001101:
+        using EventCallback_fiffi = void (Object::*)(const float, const intptr_t, const float, const float, const intptr_t);
+        (this->*(EventCallback_fiffi)callback)(*(float *)&data[0], data[1], *(float *)&data[2], *(float *)&data[3], data[4]);
+        return true;
+    case 0b101001110:
+        using EventCallback_ifffi = void (Object::*)(const intptr_t, const float, const float, const float, const intptr_t);
+        (this->*(EventCallback_ifffi)callback)(data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], data[4]);
+        return true;
+    case 0b101001111:
+        using EventCallback_ffffi = void (Object::*)(const float, const float, const float, const float, const intptr_t);
+        (this->*(EventCallback_ffffi)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], data[4]);
+        return true;
+    case 0b101010000:
+        using EventCallback_iiiif = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_iiiif)callback)(data[0], data[1], data[2], data[3], *(float *)&data[4]);
+        return true;
+    case 0b101010001:
+        using EventCallback_fiiif = void (Object::*)(const float, const intptr_t, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_fiiif)callback)(*(float *)&data[0], data[1], data[2], data[3], *(float *)&data[4]);
+        return true;
+    case 0b101010010:
+        using EventCallback_ifiif = void (Object::*)(const intptr_t, const float, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_ifiif)callback)(data[0], *(float *)&data[1], data[2], data[3], *(float *)&data[4]);
+        return true;
+    case 0b101010011:
+        using EventCallback_ffiif = void (Object::*)(const float, const float, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_ffiif)callback)(*(float *)&data[0], *(float *)&data[1], data[2], data[3], *(float *)&data[4]);
+        return true;
+    case 0b101010100:
+        using EventCallback_iifif = void (Object::*)(const intptr_t, const intptr_t, const float, const intptr_t, const float);
+        (this->*(EventCallback_iifif)callback)(data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4]);
+        return true;
+    case 0b101010101:
+        using EventCallback_fifif = void (Object::*)(const float, const intptr_t, const float, const intptr_t, const float);
+        (this->*(EventCallback_fifif)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4]);
+        return true;
+    case 0b101010110:
+        using EventCallback_iffif = void (Object::*)(const intptr_t, const float, const float, const intptr_t, const float);
+        (this->*(EventCallback_iffif)callback)(data[0], *(float *)&data[1], *(float *)&data[2], data[3], *(float *)&data[4]);
+        return true;
+    case 0b101010111:
+        using EventCallback_fffif = void (Object::*)(const float, const float, const float, const intptr_t, const float);
+        (this->*(EventCallback_fffif)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], data[3], *(float *)&data[4]);
+        return true;
+    case 0b101011000:
+        using EventCallback_iiiff = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const float, const float);
+        (this->*(EventCallback_iiiff)callback)(data[0], data[1], data[2], *(float *)&data[3], *(float *)&data[4]);
+        return true;
+    case 0b101011001:
+        using EventCallback_fiiff = void (Object::*)(const float, const intptr_t, const intptr_t, const float, const float);
+        (this->*(EventCallback_fiiff)callback)(*(float *)&data[0], data[1], data[2], *(float *)&data[3], *(float *)&data[4]);
+        return true;
+    case 0b101011010:
+        using EventCallback_ififf = void (Object::*)(const intptr_t, const float, const intptr_t, const float, const float);
+        (this->*(EventCallback_ififf)callback)(data[0], *(float *)&data[1], data[2], *(float *)&data[3], *(float *)&data[4]);
+        return true;
+    case 0b101011011:
+        using EventCallback_ffiff = void (Object::*)(const float, const float, const intptr_t, const float, const float);
+        (this->*(EventCallback_ffiff)callback)(*(float *)&data[0], *(float *)&data[1], data[2], *(float *)&data[3], *(float *)&data[4]);
+        return true;
+    case 0b101011100:
+        using EventCallback_iifff = void (Object::*)(const intptr_t, const intptr_t, const float, const float, const float);
+        (this->*(EventCallback_iifff)callback)(data[0], data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4]);
+        return true;
+    case 0b101011101:
+        using EventCallback_fifff = void (Object::*)(const float, const intptr_t, const float, const float, const float);
+        (this->*(EventCallback_fifff)callback)(*(float *)&data[0], data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4]);
+        return true;
+    case 0b101011110:
+        using EventCallback_iffff = void (Object::*)(const intptr_t, const float, const float, const float, const float);
+        (this->*(EventCallback_iffff)callback)(data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4]);
+        return true;
+    case 0b101011111:
+        using EventCallback_fffff = void (Object::*)(const float, const float, const float, const float, const float);
+        (this->*(EventCallback_fffff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4]);
+        return true;
+        //----------------------------------------------------------------------------------------------
+        // 6 args
+        //----------------------------------------------------------------------------------------------
+    case 0b110000000:
+        using EventCallback_iiiiii = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iiiiii)callback)(data[0], data[1], data[2], data[3], data[4], data[5]);
+        return true;
+    case 0b110000001:
+        using EventCallback_fiiiii = void (Object::*)(const float, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fiiiii)callback)(*(float *)&data[0], data[1], data[2], data[3], data[4], data[5]);
+        return true;
+    case 0b110000010:
+        using EventCallback_ifiiii = void (Object::*)(const intptr_t, const float, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ifiiii)callback)(data[0], *(float *)&data[1], data[2], data[3], data[4], data[5]);
+        return true;
+    case 0b110000011:
+        using EventCallback_ffiiii = void (Object::*)(const float, const float, const intptr_t, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ffiiii)callback)(*(float *)&data[0], *(float *)&data[1], data[2], data[3], data[4], data[5]);
+        return true;
+    case 0b110000100:
+        using EventCallback_iifiii = void (Object::*)(const intptr_t, const intptr_t, const float, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iifiii)callback)(data[0], data[1], *(float *)&data[2], data[3], data[4], data[5]);
+        return true;
+    case 0b110000101:
+        using EventCallback_fifiii = void (Object::*)(const float, const intptr_t, const float, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fifiii)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], data[4], data[5]);
+        return true;
+    case 0b110000110:
+        using EventCallback_iffiii = void (Object::*)(const intptr_t, const float, const float, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iffiii)callback)(data[0], *(float *)&data[1], *(float *)&data[2], data[3], data[4], data[5]);
+        return true;
+    case 0b110000111:
+        using EventCallback_fffiii = void (Object::*)(const float, const float, const float, const intptr_t, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fffiii)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], data[3], data[4], data[5]);
+        return true;
+    case 0b110001000:
+        using EventCallback_iiifii = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iiifii)callback)(data[0], data[1], data[2], *(float *)&data[3], data[4], data[5]);
+        return true;
+    case 0b110001001:
+        using EventCallback_fiifii = void (Object::*)(const float, const intptr_t, const intptr_t, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fiifii)callback)(*(float *)&data[0], data[1], data[2], *(float *)&data[3], data[4], data[5]);
+        return true;
+    case 0b110001010:
+        using EventCallback_ififii = void (Object::*)(const intptr_t, const float, const intptr_t, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ififii)callback)(data[0], *(float *)&data[1], data[2], *(float *)&data[3], data[4], data[5]);
+        return true;
+    case 0b110001011:
+        using EventCallback_ffifii = void (Object::*)(const float, const float, const intptr_t, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ffifii)callback)(*(float *)&data[0], *(float *)&data[1], data[2], *(float *)&data[3], data[4], data[5]);
+        return true;
+    case 0b110001100:
+        using EventCallback_iiffii = void (Object::*)(const intptr_t, const intptr_t, const float, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_iiffii)callback)(data[0], data[1], *(float *)&data[2], *(float *)&data[3], data[4], data[5]);
+        return true;
+    case 0b110001101:
+        using EventCallback_fiffii = void (Object::*)(const float, const intptr_t, const float, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_fiffii)callback)(*(float *)&data[0], data[1], *(float *)&data[2], *(float *)&data[3], data[4], data[5]);
+        return true;
+    case 0b110001110:
+        using EventCallback_ifffii = void (Object::*)(const intptr_t, const float, const float, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ifffii)callback)(data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], data[4], data[5]);
+        return true;
+    case 0b110001111:
+        using EventCallback_ffffii = void (Object::*)(const float, const float, const float, const float, const intptr_t, const intptr_t);
+        (this->*(EventCallback_ffffii)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], data[4], data[5]);
+        return true;
+    case 0b110010000:
+        using EventCallback_iiiifi = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_iiiifi)callback)(data[0], data[1], data[2], data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110010001:
+        using EventCallback_fiiifi = void (Object::*)(const float, const intptr_t, const intptr_t, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_fiiifi)callback)(*(float *)&data[0], data[1], data[2], data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110010010:
+        using EventCallback_ifiifi = void (Object::*)(const intptr_t, const float, const intptr_t, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_ifiifi)callback)(data[0], *(float *)&data[1], data[2], data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110010011:
+        using EventCallback_ffiifi = void (Object::*)(const float, const float, const intptr_t, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_ffiifi)callback)(*(float *)&data[0], *(float *)&data[1], data[2], data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110010100:
+        using EventCallback_iififi = void (Object::*)(const intptr_t, const intptr_t, const float, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_iififi)callback)(data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110010101:
+        using EventCallback_fififi = void (Object::*)(const float, const intptr_t, const float, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_fifiii)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110010110:
+        using EventCallback_iffifi = void (Object::*)(const intptr_t, const float, const float, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_iffifi)callback)(data[0], *(float *)&data[1], *(float *)&data[2], data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110010111:
+        using EventCallback_fffifi = void (Object::*)(const float, const float, const float, const intptr_t, const float, const intptr_t);
+        (this->*(EventCallback_fffifi)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110011000:
+        using EventCallback_iiiffi = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const float, const float, const intptr_t);
+        (this->*(EventCallback_iiiffi)callback)(data[0], data[1], data[2], *(float *)&data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110011001:
+        using EventCallback_fiiffi = void (Object::*)(const float, const intptr_t, const intptr_t, const float, const float, const intptr_t);
+        (this->*(EventCallback_fiiffi)callback)(*(float *)&data[0], data[1], data[2], *(float *)&data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110011010:
+        using EventCallback_ififfi = void (Object::*)(const intptr_t, const float, const intptr_t, const float, const float, const intptr_t);
+        (this->*(EventCallback_ififfi)callback)(data[0], *(float *)&data[1], data[2], *(float *)&data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110011011:
+        using EventCallback_ffiffi = void (Object::*)(const float, const float, const intptr_t, const float, const float, const intptr_t);
+        (this->*(EventCallback_ffiffi)callback)(*(float *)&data[0], *(float *)&data[1], data[2], *(float *)&data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110011100:
+        using EventCallback_iifffi = void (Object::*)(const intptr_t, const intptr_t, const float, const float, const float, const intptr_t);
+        (this->*(EventCallback_iifffi)callback)(data[0], data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110011101:
+        using EventCallback_fifffi = void (Object::*)(const float, const intptr_t, const float, const float, const float, const intptr_t);
+        (this->*(EventCallback_fifffi)callback)(*(float *)&data[0], data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110011110:
+        using EventCallback_iffffi = void (Object::*)(const intptr_t, const float, const float, const float, const float, const intptr_t);
+        (this->*(EventCallback_iffffi)callback)(data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110011111:
+        using EventCallback_fffffi = void (Object::*)(const float, const float, const float, const float, const float, const intptr_t);
+        (this->*(EventCallback_fffffi)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], data[5]);
+        return true;
+    case 0b110100000:
+        using EventCallback_iiiiif = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_iiiiif)callback)(data[0], data[1], data[2], data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110100001:
+        using EventCallback_fiiiif = void (Object::*)(const float, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_fiiiif)callback)(*(float *)&data[0], data[1], data[2], data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110100010:
+        using EventCallback_ifiiif = void (Object::*)(const intptr_t, const float, const intptr_t, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_ifiiif)callback)(data[0], *(float *)&data[1], data[2], data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110100011:
+        using EventCallback_ffiiif = void (Object::*)(const float, const float, const intptr_t, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_ffiiif)callback)(*(float *)&data[0], *(float *)&data[1], data[2], data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110100100:
+        using EventCallback_iifiif = void (Object::*)(const intptr_t, const intptr_t, const float, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_iifiif)callback)(data[0], data[1], *(float *)&data[2], data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110100101:
+        using EventCallback_fifiif = void (Object::*)(const float, const intptr_t, const float, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_fifiif)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110100110:
+        using EventCallback_iffiif = void (Object::*)(const intptr_t, const float, const float, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_iffiif)callback)(data[0], *(float *)&data[1], *(float *)&data[2], data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110100111:
+        using EventCallback_fffiif = void (Object::*)(const float, const float, const float, const intptr_t, const intptr_t, const float);
+        (this->*(EventCallback_fffiif)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110101000:
+        using EventCallback_iiifif = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const float, const intptr_t, const float);
+        (this->*(EventCallback_iiifif)callback)(data[0], data[1], data[2], *(float *)&data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110101001:
+        using EventCallback_fiifif = void (Object::*)(const float, const intptr_t, const intptr_t, const float, const intptr_t, const float);
+        (this->*(EventCallback_fiifif)callback)(*(float *)&data[0], data[1], data[2], *(float *)&data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110101010:
+        using EventCallback_ififif = void (Object::*)(const intptr_t, const float, const intptr_t, const float, const intptr_t, const float);
+        (this->*(EventCallback_ififif)callback)(data[0], *(float *)&data[1], data[2], *(float *)&data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110101011:
+        using EventCallback_ffifif = void (Object::*)(const float, const float, const intptr_t, const float, const intptr_t, const float);
+        (this->*(EventCallback_ffifif)callback)(*(float *)&data[0], *(float *)&data[1], data[2], *(float *)&data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110101100:
+        using EventCallback_iiffif = void (Object::*)(const intptr_t, const intptr_t, const float, const float, const intptr_t, const float);
+        (this->*(EventCallback_iiffif)callback)(data[0], data[1], *(float *)&data[2], *(float *)&data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110101101:
+        using EventCallback_fiffif = void (Object::*)(const float, const intptr_t, const float, const float, const intptr_t, const float);
+        (this->*(EventCallback_fiffif)callback)(*(float *)&data[0], data[1], *(float *)&data[2], *(float *)&data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110101110:
+        using EventCallback_ifffif = void (Object::*)(const intptr_t, const float, const float, const float, const intptr_t, const float);
+        (this->*(EventCallback_ifffif)callback)(data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110101111:
+        using EventCallback_ffffif = void (Object::*)(const float, const float, const float, const float, const intptr_t, const float);
+        (this->*(EventCallback_ffffif)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], data[4], *(float *)&data[5]);
+        return true;
+    case 0b110110000:
+        using EventCallback_iiiiff = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const intptr_t, const float, const float);
+        (this->*(EventCallback_iiiiff)callback)(data[0], data[1], data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110110001:
+        using EventCallback_fiiiff = void (Object::*)(const float, const intptr_t, const intptr_t, const intptr_t, const float, const float);
+        (this->*(EventCallback_fiiiff)callback)(*(float *)&data[0], data[1], data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110110010:
+        using EventCallback_ifiiff = void (Object::*)(const intptr_t, const float, const intptr_t, const intptr_t, const float, const float);
+        (this->*(EventCallback_ifiiff)callback)(data[0], *(float *)&data[1], data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110110011:
+        using EventCallback_ffiiff = void (Object::*)(const float, const float, const intptr_t, const intptr_t, const float, const float);
+        (this->*(EventCallback_ffiiff)callback)(*(float *)&data[0], *(float *)&data[1], data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110110100:
+        using EventCallback_iififf = void (Object::*)(const intptr_t, const intptr_t, const float, const intptr_t, const float, const float);
+        (this->*(EventCallback_iififf)callback)(data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110110101:
+        using EventCallback_fififf = void (Object::*)(const float, const intptr_t, const float, const intptr_t, const float, const float);
+        (this->*(EventCallback_fifiif)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110110110:
+        using EventCallback_iffiff = void (Object::*)(const intptr_t, const float, const float, const intptr_t, const float, const float);
+        (this->*(EventCallback_iffiff)callback)(data[0], *(float *)&data[1], *(float *)&data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110110111:
+        using EventCallback_fffiff = void (Object::*)(const float, const float, const float, const intptr_t, const float, const float);
+        (this->*(EventCallback_fffiff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110111000:
+        using EventCallback_iiifff = void (Object::*)(const intptr_t, const intptr_t, const intptr_t, const float, const float, const float);
+        (this->*(EventCallback_iiifff)callback)(data[0], data[1], data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110111001:
+        using EventCallback_fiifff = void (Object::*)(const float, const intptr_t, const intptr_t, const float, const float, const float);
+        (this->*(EventCallback_fiifff)callback)(*(float *)&data[0], data[1], data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110111010:
+        using EventCallback_ififff = void (Object::*)(const intptr_t, const float, const intptr_t, const float, const float, const float);
+        (this->*(EventCallback_ififff)callback)(data[0], *(float *)&data[1], data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110111011:
+        using EventCallback_ffifff = void (Object::*)(const float, const float, const intptr_t, const float, const float, const float);
+        (this->*(EventCallback_ffifff)callback)(*(float *)&data[0], *(float *)&data[1], data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110111100:
+        using EventCallback_iiffff = void (Object::*)(const intptr_t, const intptr_t, const float, const float, const float, const float);
+        (this->*(EventCallback_iiffff)callback)(data[0], data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110111101:
+        using EventCallback_fiffff = void (Object::*)(const float, const intptr_t, const float, const float, const float, const float);
+        (this->*(EventCallback_fiffff)callback)(*(float *)&data[0], data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110111110:
+        using EventCallback_ifffff = void (Object::*)(const intptr_t, const float, const float, const float, const float, const float);
+        (this->*(EventCallback_ifffff)callback)(data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
+    case 0b110111111:
+        using EventCallback_ffffff = void (Object::*)(const float, const float, const float, const float, const float, const float);
+        (this->*(EventCallback_ffffff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
+        return true;
     default:
         BE_WARNLOG(L"Invalid formatSpec on event '%hs'\n", evdef->GetName());
         break;

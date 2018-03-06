@@ -54,17 +54,17 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
     memset(this->argOffset, 0, sizeof(this->argOffset));
     this->argSize = 0;
 
-    for (int argIndex = 0; argIndex < this->numArgs; argIndex++) {
-        this->argOffset[argIndex] = (int)this->argSize;
+    unsigned int argBits = 0;
 
-        switch (this->formatSpec[argIndex]) {
+    for (int i = 0; i < this->numArgs; i++) {
+        this->argOffset[i] = (int)this->argSize;
+
+        switch (this->formatSpec[i]) {
         case VariantArg::IntType:
             this->argSize += sizeof(int);
             break;
-        case VariantArg::BoolType:
-            this->argSize += sizeof(bool);
-            break;
         case VariantArg::FloatType:
+            argBits |= 1 << i;
             this->argSize += sizeof(float);
             break;
         case VariantArg::PointerType:
@@ -100,6 +100,8 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
             return;
         }
     }
+
+    formatSpecBits = (numArgs << EventDef::MaxArgs) | argBits;
 
     // Check if same name event def already exist
     for (int i = 0; i < this->numEventDefs; i++) {
@@ -250,19 +252,10 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
 
         switch (format[argIndex]) {
         case VariantArg::IntType:
-            if (arg->pointer) {
-                *reinterpret_cast<int *>(dataPtr) = *reinterpret_cast<const int *>(arg->pointer);
-            }
-            break;
-        case VariantArg::BoolType:
-            if (arg->pointer) {
-                *reinterpret_cast<bool *>(dataPtr) = *reinterpret_cast<const bool *>(arg->pointer);
-            }
+            *reinterpret_cast<int *>(dataPtr) = arg->intValue;
             break;
         case VariantArg::FloatType:
-            if (arg->pointer) {
-                *reinterpret_cast<float *>(dataPtr) = *reinterpret_cast<const float *>(arg->pointer);
-            }
+            *reinterpret_cast<float *>(dataPtr) = arg->floatValue;
             break;
         case VariantArg::PointerType:
             *reinterpret_cast<void **>(dataPtr) = reinterpret_cast<void *>(arg->pointer);
@@ -391,9 +384,6 @@ void EventSystem::ServiceEvent(Event *event) {
         switch (formatSpec[argIndex]) {
         case VariantArg::IntType:
             *reinterpret_cast<int **>(&argPtrs[argIndex]) = reinterpret_cast<int *>(&data[offset]);
-            break;
-        case VariantArg::BoolType:
-            *reinterpret_cast<bool **>(&argPtrs[argIndex]) = reinterpret_cast<bool *>(&data[offset]);
             break;
         case VariantArg::FloatType:
             *reinterpret_cast<float **>(&argPtrs[argIndex]) = reinterpret_cast<float *>(&data[offset]);

@@ -23,11 +23,11 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ab");
-const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyChanged", "ab");
+const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ai");
+const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyChanged", "ai");
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
 const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
-const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ab");
+const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ai");
 const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
 const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
 const SignalDef Entity::SIG_ComponentRemoved("Entity::ComponentRemoved", "a");
@@ -349,7 +349,7 @@ void Entity::SetActiveInHierarchy(bool active) {
 
     activeInHierarchy = active;
 
-    EmitSignal(&SIG_ActiveInHierarchyChanged, this, active);
+    EmitSignal(&SIG_ActiveInHierarchyChanged, this, active ? 1 : 0);
 
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
@@ -524,7 +524,7 @@ void Entity::SetFrozen(bool frozen) {
             renderable->SetProperty("skipSelection", frozen);
         }
 
-        EmitSignal(&SIG_FrozenChanged, this, frozen);
+        EmitSignal(&SIG_FrozenChanged, this, frozen ? 1 : 0);
     }
 }
 

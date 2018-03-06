@@ -30,8 +30,8 @@ class BE_API VariantArg {
 public:
     static const char VoidType = '\0';
     static const char IntType = 'i';
-    static const char BoolType = 'b';
     static const char FloatType = 'f';
+    static const char PointerType = 'a';
     static const char PointType = 'p';
     static const char RectType = 'r';
     static const char Vec3Type = 'v';
@@ -39,12 +39,10 @@ public:
     static const char Mat4x4Type = 'M';
     static const char StringType = 's';
     static const char WStringType = 'w';
-    static const char PointerType = 'a';
     static const char GuidType = 'g';
 
     VariantArg() { type = IntType; pointer = 0; };
     VariantArg(const int data) { type = IntType; intValue = data; };
-    VariantArg(const bool data) { type = BoolType; boolValue = data; };
     VariantArg(const float data) { type = FloatType; floatValue = data; };
     VariantArg(const void *data) { type = PointerType; pointer = reinterpret_cast<intptr_t>(data); };
     VariantArg(const char *data) { type = StringType; pointer = reinterpret_cast<intptr_t>(data); };
@@ -61,10 +59,8 @@ public:
     int                     type;
     union {
         intptr_t            pointer;
-        bool                boolValue;
         int                 intValue;
         float               floatValue;
-        double              doubleValue;
     };
 };
 

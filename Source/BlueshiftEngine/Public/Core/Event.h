@@ -22,7 +22,7 @@ class Object;
 
 class BE_API EventDef {
 public:
-    static const int MaxArgs = 8;
+    static const int MaxArgs = 6;
     static const int MaxEventDefs = 4096;
 
     explicit EventDef(const char *name, bool guiEvent = false, const char *formatSpec = nullptr, char returnType = 0);
@@ -35,6 +35,7 @@ public:
     char                    GetReturnType() const { return returnType; }
     int                     GetEventNum() const { return eventNum; }
     int                     GetNumArgs() const { return numArgs; }
+    unsigned int            GetFormatSpecBits() const { return formatSpecBits; }
     size_t                  GetArgSize() const { return argSize; }
     int                     GetArgOffset(int arg) const { assert((arg >= 0) && (arg < MaxArgs)); return argOffset[arg]; }
     bool                    IsGuiEvent() const { return guiEvent; }
@@ -51,6 +52,7 @@ public:
 private:
     const char *            name;
     const char *            formatSpec;
+    unsigned int            formatSpecBits;
     int                     returnType;
     bool                    guiEvent;
     int                     numArgs;

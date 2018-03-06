@@ -69,7 +69,7 @@ public:
     bool                        BlockSignals(bool block);
 
 private:
-    bool                        ExecuteCallback(const SignalCallback &callback, int numArgs, intptr_t *data);
+    bool                        ExecuteCallback(const SignalCallback &callback, int formatSpecBits, intptr_t *data);
     bool                        EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...);
 
     struct Connection {
