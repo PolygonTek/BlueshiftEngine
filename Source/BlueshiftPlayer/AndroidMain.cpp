@@ -46,8 +46,38 @@ static void InitDisplay(ANativeWindow *window) {
 
         BE1::gameClient.Init(window, false);
 
+        int renderWidth;
+        int renderHeight;
+        bool lowProfile = false;
+
+        BE1::AndroidGPUInfo gpuInfo = BE1::AndroidGPUInfo::GetFromOpenGLRendererString(BE1::rhi.GetGPUString());
+        if (gpuInfo.processor == BE1::AndroidGPUInfo::Processor::Qualcomm_Adreno) {
+            if (gpuInfo.model > 500) {
+                if (gpuInfo.model < 510) {
+                    lowProfile = true;
+                }
+            } else if (gpuInfo.model > 400) {
+                if (gpuInfo.model < 410) {
+                    lowProfile = true;
+                }
+            } else {
+                lowProfile = true;
+            }
+        }
+
+        if (lowProfile) {
+            if (currentWindowWidth > currentWindowHeight) {
+                // landscape mode
+                renderWidth = 1280;
+                renderHeight = 720;
+            } else {
+                renderWidth = 720;
+                renderHeight = 1280;
+            }
+        }
+
         app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-        app.mainRenderContext->Init(window, currentWindowWidth, currentWindowHeight, DisplayContext, nullptr);
+        app.mainRenderContext->Init(window, renderWidth, renderHeight, DisplayContext, nullptr);
 
         app.Init();
 
