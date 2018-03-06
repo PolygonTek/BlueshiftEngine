@@ -399,7 +399,7 @@ bool PlatformAndroidFile::SetCwd(const char *dirname) {
 }
 
 const char *PlatformAndroidFile::ExecutablePath() {
-    return Cwd();
+    return AndroidJNI::activity->externalDataPath;
 }
 
 void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
