@@ -111,7 +111,7 @@ public:
     static bool             SupportsDepthClamp() { return false; }
     static bool             SupportsDepthBufferFloat() { return true; }
     static bool             SupportsPixelBufferObject() { return true; }
-    static bool             SupportsFrameBufferSRGB() { return false; } // sRGB framebuffer is always enabled in ES3
+    static bool             SupportsFrameBufferSRGB() { return supportsFrameBufferSRGB; }
     static bool             SupportsTextureRectangle() { return true; }
     static bool             SupportsTextureArray() { return true; }
     static bool             SupportsTextureCompressionS3TC() { return false; }
@@ -133,6 +133,8 @@ public:
     static Image::Format    ToUncompressedImageFormat(Image::Format inFormat);
 
 private:
+    static bool             supportsFrameBufferSRGB;
+
     static int              shaderFloatPrecisionLow;
     static int              shaderFloatPrecisionMedium;
     static int              shaderFloatPrecisionHigh;

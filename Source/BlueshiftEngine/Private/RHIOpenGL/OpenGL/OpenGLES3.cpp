@@ -19,6 +19,8 @@ BE_NAMESPACE_BEGIN
 
 const char *OpenGLES3::GLSL_VERSION_STRING = "300 es";
 
+bool OpenGLES3::supportsFrameBufferSRGB = false;
+
 int OpenGLES3::shaderFloatPrecisionLow = 0;
 int OpenGLES3::shaderFloatPrecisionMedium = 0;
 int OpenGLES3::shaderFloatPrecisionHigh = 0;
@@ -28,6 +30,10 @@ int OpenGLES3::shaderIntPrecisionHigh = 0;
 
 void OpenGLES3::Init() {
     OpenGLBase::Init();
+
+#ifdef GL_EXT_sRGB_write_control
+    supportsFrameBufferSRGB = gglext._GL_EXT_sRGB_write_control ? true : false;
+#endif
 
     int range[2];
     gglGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_LOW_FLOAT, range, &shaderFloatPrecisionLow);
@@ -346,27 +352,27 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         return true;
     case Image::RGB_PVRTC_2BPPV1:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
-        if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
+        if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
         if (glType)     *glType = 0;
-        if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
+        if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
         return true;
     case Image::RGB_PVRTC_4BPPV1:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
-        if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
+        if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
         if (glType)     *glType = 0;
-        if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
+        if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
         return true;
     case Image::RGBA_PVRTC_2BPPV1:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
-        if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
+        if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
         if (glType)     *glType = 0;
-        if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
+        if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
         return true;
     case Image::RGBA_PVRTC_4BPPV1:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
-        if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
+        if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
         if (glType)     *glType = 0;
-        if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
+        if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
         return true;
     case Image::RGBA_PVRTC_2BPPV2:
         if (!gglext._GL_IMG_texture_compression_pvrtc2) return false;

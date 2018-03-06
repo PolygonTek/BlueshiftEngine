@@ -348,7 +348,7 @@ bool OpenGLRHI::SupportsDebugLabel() const {
 void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil) {
 #if 1
     if (clearBits & ColorBit) {
-        if (gl_sRGB.GetBool()) {
+        if (gl_sRGB.GetBool() && OpenGL::SupportsFrameBufferSRGB()) {
             gglClearBufferfv(GL_COLOR, 0, Color4(color.ToColor3().SRGBtoLinear(), color[3]));
         } else {
             gglClearBufferfv(GL_COLOR, 0, color);
@@ -366,7 +366,6 @@ void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned 
         gglClearBufferiv(GL_STENCIL, 0, (const GLint *)&stencil);
         gglStencilMask(0);
     }
-
 #else
     GLbitfield bits = 0;
 

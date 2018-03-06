@@ -22,7 +22,6 @@ bool OpenGLBase::supportsDepthClamp = false;
 bool OpenGLBase::supportsDepthBoundsTest = false;
 bool OpenGLBase::supportsDepthBufferFloat = false;
 bool OpenGLBase::supportsPixelBufferObject = false;
-bool OpenGLBase::supportsFrameBufferSRGB = false;
 bool OpenGLBase::supportsTextureRectangle = false;
 bool OpenGLBase::supportsTextureArray = false;
 bool OpenGLBase::supportsTextureBufferObject = false;
@@ -58,11 +57,7 @@ void OpenGLBase::Init() {
 #ifdef GL_ARB_pixel_buffer_object // 2.1
     supportsPixelBufferObject = gglext._GL_ARB_pixel_buffer_object ? true : false;
 #endif
-    
-#ifdef GL_ARB_framebuffer_sRGB // 3.0
-    supportsFrameBufferSRGB = gglext._GL_ARB_framebuffer_sRGB ? true : false;
-#endif
-    
+
 #ifdef GL_ARB_texture_rectangle // 3.1
     supportsTextureRectangle = gglext._GL_ARB_texture_rectangle ? true : false;
 #endif

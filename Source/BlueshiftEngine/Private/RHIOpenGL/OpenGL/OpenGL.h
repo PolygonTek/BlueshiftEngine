@@ -287,7 +287,7 @@ public:
     static bool             SupportsDepthBoundsTest() { return supportsDepthBoundsTest; }
     static bool             SupportsDepthBufferFloat() { return supportsDepthBufferFloat; }
     static bool             SupportsPixelBufferObject() { return supportsPixelBufferObject; }
-    static bool             SupportsFrameBufferSRGB() { return supportsFrameBufferSRGB; }
+    static bool             SupportsFrameBufferSRGB() { return false; }
     static bool             SupportsTextureRectangle() { return supportsTextureRectangle; }
     static bool             SupportsTextureArray() { return supportsTextureArray; }
     static bool             SupportsTextureBufferObject() { return supportsTextureBufferObject; }
@@ -319,7 +319,6 @@ private:
     static bool             supportsDepthBoundsTest;
     static bool             supportsDepthBufferFloat;
     static bool             supportsPixelBufferObject;
-    static bool             supportsFrameBufferSRGB;
     static bool             supportsTextureRectangle;
     static bool             supportsTextureArray;
     static bool             supportsTextureBufferObject;
