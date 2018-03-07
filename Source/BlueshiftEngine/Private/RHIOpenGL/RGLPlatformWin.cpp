@@ -640,7 +640,7 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = nullptr; 
 }
 
-void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
+void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 }
 
