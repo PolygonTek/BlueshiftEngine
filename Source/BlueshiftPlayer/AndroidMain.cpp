@@ -115,6 +115,8 @@ static int DetermineRenderQuality() {
         break;
     case BE1::AndroidGPUInfo::Processor::PowerVR_RogueGE:
         break;
+    default:
+        break;
     }
     return renderQuality;
 }
@@ -526,12 +528,19 @@ void android_main(android_app *appState) {
 
             int t = BE1::PlatformTime::Milliseconds();
             int elapsedMsec = t - t0;
+            if (elapsedMsec > 1000) {
+                elapsedMsec = 1000;
+            }
 
             t0 = t;
 
             BE1::Engine::RunFrame(elapsedMsec);
 
             BE1::gameClient.RunFrame();
+
+#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+            rewardBasedVideoAd.ProcessQueue();
+#endif
 
             app.Update();
 

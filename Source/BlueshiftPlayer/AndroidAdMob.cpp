@@ -24,6 +24,9 @@ static jmethodID javaMethod_requestRewardedVideoAd = nullptr;
 static jmethodID javaMethod_isRewardedVideoAdLoaded = nullptr;
 static jmethodID javaMethod_showRewardedVideoAd = nullptr;
 
+static std::queue<std::function<void()>> callbackQueue;
+static std::mutex callbackQueueMutex;
+
 void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state) {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
@@ -94,59 +97,117 @@ void RewardBasedVideoAd::Present() {
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_showRewardedVideoAd);
 }
 
-extern "C" {
+void RewardBasedVideoAd::ProcessQueue() {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidRewardUser(JNIEnv *env, jobject thiz, jstring javaType, jint javaAmount) { 
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
-    if (function.IsFunction()) {
-        const char *type = env->GetStringUTFChars(javaType, nullptr);
-        function(type, (int)javaAmount);
-        env->ReleaseStringUTFChars(javaType, type);
+    while (!callbackQueue.empty()) {
+        callbackQueue.front()();
+        callbackQueue.pop();
     }
 }
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidReceiveAd(JNIEnv *env, jobject thiz) { 
+static void DidRewardUser(const BE1::Str &type, int amount) {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
+    if (function.IsFunction()) {
+        function(type.c_str(), amount);
+    }
+}
+
+static void DidReceiveAd() {
     LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_receive_ad"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidOpen(JNIEnv *env, jobject thiz) {
+static void DidOpen() {
     LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_open"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidStartPlaying(JNIEnv *env, jobject thiz) {
+static void DidStartPlaying() {
     LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_start_playing"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidClose(JNIEnv *env, jobject thiz) { 
+static void DidClose() {
     LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_close"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdWillLeaveApplication(JNIEnv *env, jobject thiz) { 
+static void WillLeaveApplication() {
     LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["will_leave_application"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidFailToLoad(JNIEnv *env, jobject thiz, jstring javaErrorMessage) {
+static void DidFailToLoad(const BE1::Str &errorMessage) {
     LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
-    if (function.IsFunction()) {
-        const char *errorMessage = env->GetStringUTFChars(javaErrorMessage, nullptr);
-        function(errorMessage);
-        env->ReleaseStringUTFChars(javaErrorMessage, errorMessage);
+    if (function.IsFunction()) {    
+        function(errorMessage.c_str());
     }
+}
+
+extern "C" {
+
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidRewardUser(JNIEnv *env, jobject thiz, jstring javaType, jint javaAmount) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    const char *type = env->GetStringUTFChars(javaType, nullptr);
+    BE1::Str typeStr = type;
+    int amount = (int)javaAmount;
+
+    env->ReleaseStringUTFChars(javaType, type);
+
+    callbackQueue.push([typeStr, amount] { DidRewardUser(typeStr, amount); });
+}
+
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidReceiveAd(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { DidReceiveAd(); });
+}
+
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidOpen(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { DidOpen(); });
+}
+
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidStartPlaying(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { DidStartPlaying(); });
+}
+
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidClose(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { DidClose(); });
+}
+
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdWillLeaveApplication(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { WillLeaveApplication(); });
+}
+
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidFailToLoad(JNIEnv *env, jobject thiz, jstring javaErrMsg) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    const char *errMsg = env->GetStringUTFChars(javaErrMsg, nullptr);
+    BE1::Str errMsgStr = errMsg;
+
+    env->ReleaseStringUTFChars(javaErrMsg, errMsg);
+
+    callbackQueue.push([errMsgStr] { DidFailToLoad(errMsgStr); });
 }
 
 }

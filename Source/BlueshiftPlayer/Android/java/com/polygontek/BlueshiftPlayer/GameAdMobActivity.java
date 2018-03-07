@@ -104,12 +104,24 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     }
 
     public void showRewardedVideoAd() {
-        this.runOnUiThread(new Runnable() {
+        final Runnable showRunnable = new Runnable() {
             @Override
             public void run() {
                 rewardedVideoAd.show();
+                synchronized (this) {
+                    this.notify();
+                }
             }
-        });
+        };
+
+        synchronized (showRunnable) {
+            this.runOnUiThread(showRunnable);
+            try {
+                showRunnable.wait();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override

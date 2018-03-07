@@ -23,6 +23,8 @@ public:
     bool IsReady() const;
     
     void Present();
+
+    void ProcessQueue();
     
     static void RegisterLuaModule(LuaCpp::State *state);
 };
