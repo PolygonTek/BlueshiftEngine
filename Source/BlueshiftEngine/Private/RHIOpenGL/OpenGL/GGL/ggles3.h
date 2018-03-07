@@ -1020,6 +1020,8 @@ extern void (APIENTRYP gglTexStorage2D)(GLenum target, GLsizei levels, GLenum in
 extern void (APIENTRYP gglTexStorage3D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 extern void (APIENTRYP gglGetInternalformativ)(GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint *params);
 
+#ifndef __APPLE__
+
 #ifndef GL_AMD_compressed_3DC_texture
 #define GL_AMD_compressed_3DC_texture
 #define GL_3DC_X_AMD 0x87F9
@@ -3801,6 +3803,8 @@ extern void (APIENTRYP gglEndTilingQCOM)(GLbitfield preserveMask);
 #define GL_VIV_shader_binary
 #define GL_SHADER_BINARY_VIV 0x8FC4
 #endif
+
+#endif // __APPLE__
 
 /* 242 extensions */
 typedef struct {
