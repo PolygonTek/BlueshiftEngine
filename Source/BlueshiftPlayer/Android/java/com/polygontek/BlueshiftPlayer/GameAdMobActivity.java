@@ -66,6 +66,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
                 // Use an activity context to get the rewarded video instance.
                 rewardedVideoAd = MobileAds.getRewardedVideoAdInstance(activity);
                 rewardedVideoAd.setRewardedVideoAdListener(activity);
+                rewardedVideoAd.setImmersiveMode(true);
             }
         });
     }
