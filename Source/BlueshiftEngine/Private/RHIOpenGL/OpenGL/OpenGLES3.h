@@ -82,6 +82,10 @@
 #define GL_TEXTURE_RECTANGLE 0x84F5
 #endif
 
+#ifndef GL_TEXTURE_BUFFER
+#define GL_TEXTURE_BUFFER 0x8C2A
+#endif
+
 #ifndef GL_FRAMEBUFFER_SRGB
 #define GL_FRAMEBUFFER_SRGB 0x8DB9
 #endif

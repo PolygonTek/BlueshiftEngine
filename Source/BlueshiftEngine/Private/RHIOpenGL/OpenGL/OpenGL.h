@@ -290,7 +290,7 @@ public:
     static bool             SupportsFrameBufferSRGB() { return false; }
     static bool             SupportsTextureRectangle() { return supportsTextureRectangle; }
     static bool             SupportsTextureArray() { return supportsTextureArray; }
-    static bool             SupportsTextureBufferObject() { return supportsTextureBufferObject; }
+    static bool             SupportsTextureBufferObject() { return false; }
     static bool             SupportsTextureFilterAnisotropic() { return supportsTextureFilterAnisotropic; }
     static bool             SupportsTextureCompressionS3TC() { return supportsTextureCompressionS3TC; }
     static bool             SupportsTextureCompressionLATC() { return supportsTextureCompressionLATC; }
@@ -321,7 +321,6 @@ private:
     static bool             supportsPixelBufferObject;
     static bool             supportsTextureRectangle;
     static bool             supportsTextureArray;
-    static bool             supportsTextureBufferObject;
     static bool             supportsTextureFilterAnisotropic;
     static bool             supportsTextureCompressionS3TC;
     static bool             supportsTextureCompressionLATC;

@@ -34,7 +34,7 @@ const GLenum ToGLTextureTarget(RHI::TextureType type) {
     case RHI::Texture2DArray:
         return GL_TEXTURE_2D_ARRAY;
     case RHI::TextureBuffer:
-        return GL_TEXTURE_BUFFER_EXT;
+        return GL_TEXTURE_BUFFER;
     default:
         assert(0);
         return 0;
@@ -552,7 +552,7 @@ void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool useSRGB, int
         OpenGL::TexBuffer(internalFormat, bufferList[bufferHandle]->object);
     }
     
-    OpenGL::SetTextureSwizzling(GL_TEXTURE_BUFFER_EXT, dstFormat);
+    OpenGL::SetTextureSwizzling(GL_TEXTURE_BUFFER, dstFormat);
 }
 
 void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {

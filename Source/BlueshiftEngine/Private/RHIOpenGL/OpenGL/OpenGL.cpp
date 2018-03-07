@@ -24,7 +24,6 @@ bool OpenGLBase::supportsDepthBufferFloat = false;
 bool OpenGLBase::supportsPixelBufferObject = false;
 bool OpenGLBase::supportsTextureRectangle = false;
 bool OpenGLBase::supportsTextureArray = false;
-bool OpenGLBase::supportsTextureBufferObject = false;
 bool OpenGLBase::supportsTextureFilterAnisotropic = false;
 bool OpenGLBase::supportsTextureCompressionS3TC = false;
 bool OpenGLBase::supportsTextureCompressionLATC = false;
@@ -64,10 +63,6 @@ void OpenGLBase::Init() {
     
 #ifdef GL_EXT_texture_array // 3.0
     supportsTextureArray = gglext._GL_EXT_texture_array ? true : false;
-#endif
-    
-#ifdef GL_EXT_texture_buffer_object // 3.1
-    supportsTextureBufferObject = gglext._GL_EXT_texture_buffer_object ? true : false;
 #endif
 
 #ifdef GL_EXT_texture_filter_anisotropic

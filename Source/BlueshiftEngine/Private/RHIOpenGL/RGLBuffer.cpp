@@ -44,7 +44,7 @@ const GLenum ToGLBufferTarget(RHI::BufferType type) {
     case RHI::PixelUnpackBuffer:
         return GL_PIXEL_UNPACK_BUFFER;
     case RHI::TexelBuffer:
-        return GL_TEXTURE_BUFFER_EXT;
+        return GL_TEXTURE_BUFFER;
     case RHI::UniformBuffer:
         return GL_UNIFORM_BUFFER;
     case RHI::TransformFeedbackBuffer:
