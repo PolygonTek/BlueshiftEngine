@@ -241,6 +241,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     while (1) {
         int t = BE1::PlatformTime::Milliseconds();
         int elapsedMsec = t - t0;
+        if (elapsedMsec > 1000) {
+            elapsedMsec = 1000;
+        }
 
         t0 = t;
 

@@ -510,6 +510,11 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     while (1) {
         int t = BE1::PlatformTime::Milliseconds();
         int elapsedMsec = t - t0;
+        if (elapsedMsec > 1000) {
+            elapsedMsec = 1000;
+        }
+
+        t0 = t;
         
         @autoreleasepool {
             while (NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask
@@ -529,8 +534,6 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
         BE1::gameClient.EndFrame();
         
         app.mainRenderContext->Display();
-        
-        t0 = t;
     }
 }
 

@@ -52,6 +52,11 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     
     int t = BE1::PlatformTime::Milliseconds();
     int elapsedMsec = t - t0;
+    if (elapsedMsec > 1000) {
+        elapsedMsec = 1000;
+    }
+
+    t0 = t;
     
     BE1::Engine::RunFrame(elapsedMsec);
     
@@ -62,8 +67,6 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     BE1::gameClient.EndFrame();
     
     app.Draw();
-    
-    t0 = t;
 }
 
 - (void)loadView {
