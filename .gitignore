@@ -94,8 +94,8 @@ Documents/html/*
 Source/BlueshiftEditor
 Source/Player/Data
 Source/Player/Config
-Source/Dependencies/luaJIT/lib/
-Source/Dependencies/luaJIT/src/*.lib
+Source/ThirdParty/luaJIT/lib/
+Source/ThirdParty/luaJIT/src/*.lib
 Project/XamarinAndroid/XamarinPlayer/Assets/Config
 Project/XamarinAndroid/XamarinPlayer/Assets/Data
 Project/XamarinIOS/XamarinPlayer/libs
