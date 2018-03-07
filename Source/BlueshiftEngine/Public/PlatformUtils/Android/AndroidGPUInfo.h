@@ -28,11 +28,11 @@ public:
         Intel_Gen,
         Nvidia_Tegra,
         PowerVR_SGX,
-        PowerVR_RogueG,
-        PowerVR_RogueGE,
-        PowerVR_RogueGM,
-        PowerVR_RogueGT,
-        PowerVR_RogueGX,
+        PowerVR_RogueG,     // Series 6, Series 6XE
+        PowerVR_RogueGX,    // Series 6XT
+        PowerVR_RogueGE,    // Series 7XE, Series 8XE, Series 9XE
+        PowerVR_RogueGT,    // Series 7XT, Series 8XT
+        PowerVR_RogueGM,    // Series 9XM
         Qualcomm_Adreno,
         Vivante_GC
     };

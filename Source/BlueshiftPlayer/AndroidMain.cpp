@@ -39,20 +39,82 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 // 0: full, 1: medium, 2: low
 static int DetermineRenderQuality() {
-    int renderQuality = 0;
     BE1::AndroidGPUInfo gpuInfo = BE1::AndroidGPUInfo::GetFromOpenGLRendererString(BE1::rhi.GetGPUString());
-    if (gpuInfo.processor == BE1::AndroidGPUInfo::Processor::Qualcomm_Adreno) {
-        if (gpuInfo.model > 500) {
+    int renderQuality = 0;
+
+    switch (gpuInfo.processor) {
+    case BE1::AndroidGPUInfo::Processor::Qualcomm_Adreno:
+        if (gpuInfo.model >= 500) {
             if (gpuInfo.model < 510) {
                 renderQuality = 2;
+            } else if (gpuInfo.model < 530) {
+                renderQuality = 1;
             }
-        } else if (gpuInfo.model > 400) {
-            if (gpuInfo.model < 410) {
+        } else if (gpuInfo.model >= 400) {
+            if (gpuInfo.model < 420) {
                 renderQuality = 2;
+            } else if (gpuInfo.model <= 430) {
+                renderQuality = 1;
             }
         } else {
             renderQuality = 2;
         }
+        break;
+    case BE1::AndroidGPUInfo::Processor::ARM_MaliG:
+        break;
+    case BE1::AndroidGPUInfo::Processor::ARM_MaliT:
+        if (gpuInfo.model >= 800) {
+            if (gpuInfo.model < 880) {
+                renderQuality = 2;
+            } else {
+                renderQuality = 1;
+            }
+        } else if (gpuInfo.model >= 700) {
+            if (gpuInfo.model < 760) {
+                renderQuality = 2;
+            } else {
+                renderQuality = 1;
+            }
+        } else {
+            renderQuality = 2;
+        }
+        break;
+    case BE1::AndroidGPUInfo::Processor::ARM_Mali:
+        renderQuality = 2;
+        break;
+    case BE1::AndroidGPUInfo::Processor::PowerVR_RogueG:
+        if (gpuInfo.model >= 6000) {
+            if (gpuInfo.model <= 6430) {
+                renderQuality = 2;
+            } else {
+                renderQuality = 1;
+            }
+        }
+        break;
+    case BE1::AndroidGPUInfo::Processor::PowerVR_RogueGX:
+        if (gpuInfo.model >= 6000) {
+            if (gpuInfo.model < 6450) {
+                renderQuality = 2;
+            } else {
+                renderQuality = 1;
+            }
+        } else {
+            renderQuality = 2;
+        }
+        break;
+    case BE1::AndroidGPUInfo::Processor::PowerVR_RogueGT:
+        if (gpuInfo.model >= 7000) {
+            if (gpuInfo.model < 7400) {
+                renderQuality = 2;
+            } else if (gpuInfo.model < 7600) {
+                renderQuality = 1;
+            }
+        } else {
+            renderQuality = 2;
+        }
+        break;
+    case BE1::AndroidGPUInfo::Processor::PowerVR_RogueGE:
+        break;
     }
     return renderQuality;
 }
@@ -66,7 +128,7 @@ static void InitDisplay(ANativeWindow *window) {
 
         BE1::gameClient.Init(window, false);
 
-        bool renderQuality = DetermineRenderQuality();
+        int renderQuality = DetermineRenderQuality();
         int renderWidth;
         int renderHeight;
 
@@ -89,6 +151,9 @@ static void InitDisplay(ANativeWindow *window) {
                     renderHeight = BE1::Min(1024, currentWindowHeight);
                 }
             }
+        } else {
+            renderWidth = currentWindowWidth;
+            renderHeight = currentWindowHeight;
         }
 
         app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
@@ -208,7 +273,7 @@ static void WindowSizeChanged(int w, int h) {
 
     if (app.mainRenderContext) {
         app.mainRenderContext->OnResize(w, h);
-    }    
+    }
 }
 
 // Process the next main command.
@@ -239,22 +304,22 @@ static void HandleCmd(android_app *appState, int32_t cmd) {
         break;
     case APP_CMD_INIT_WINDOW:
         /**
-		 * Command from main thread: a new ANativeWindow is ready for use.  Upon
-		 * receiving this command, android_app->window will contain the new window
-		 * surface.
-		 */
+         * Command from main thread: a new ANativeWindow is ready for use.  Upon
+         * receiving this command, android_app->window will contain the new window
+         * surface.
+         */
         if (appState->window) {
             surfaceCreated = true;
             InitDisplay(appState->window);
-        }        
+        }
         break;
     case APP_CMD_TERM_WINDOW:
         /**
-		 * Command from main thread: the existing ANativeWindow needs to be
-		 * terminated.  Upon receiving this command, android_app->window still
-		 * contains the existing window; after calling android_app_exec_cmd
-		 * it will be set to NULL.
-		 */
+         * Command from main thread: the existing ANativeWindow needs to be
+         * terminated.  Upon receiving this command, android_app->window still
+         * contains the existing window; after calling android_app_exec_cmd
+         * it will be set to NULL.
+         */
         if (surfaceCreated) {
             BE1::rhi.DeactivateSurface(app.mainRenderContext->GetContextHandle());
             surfaceCreated = false;
@@ -284,8 +349,8 @@ static void HandleCmd(android_app *appState, int32_t cmd) {
         break;
     case APP_CMD_CONFIG_CHANGED:
         /**
-		 * Command from main thread: the current device configuration has changed.
-		 */
+         * Command from main thread: the current device configuration has changed.
+         */
         break;
     }
 }
@@ -367,13 +432,13 @@ static void InitInstance(android_app *appState) {
 
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
-    
+
     BE1::Str appDir = appState->activity->externalDataPath;
     initParms.baseDir = appDir;
-    
+
     BE1::Str dataDir = appDir + "/Data";
     initParms.searchPath = dataDir;
-    
+
     BE1::Engine::Init(&initParms);
     // -------------------------------
 
