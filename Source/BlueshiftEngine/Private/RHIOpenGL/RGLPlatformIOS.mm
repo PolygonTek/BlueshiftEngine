@@ -207,8 +207,8 @@ const float userContentScaleFactor = 2.0f;
     
     // Discard the unncessary depth buffer for now
     const GLenum discards[]  = { GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT };
-    //gglDiscardFramebufferEXT(GL_READ_FRAMEBUFFER_APPLE, 2, discards);
-    gglInvalidateFramebuffer(GL_READ_FRAMEBUFFER_APPLE, 2, discards);
+    //gglDiscardFramebufferEXT(GL_READ_FRAMEBUFFER, 2, discards);
+    gglInvalidateFramebuffer(GL_READ_FRAMEBUFFER, 2, discards);
     
     bool succeeded = [glContext->eaglContext presentRenderbuffer:GL_RENDERBUFFER];
     return succeeded;

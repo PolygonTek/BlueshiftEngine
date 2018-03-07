@@ -95,7 +95,19 @@
 #endif
 
 #ifndef GL_TEXTURE_CUBE_MAP_ARRAY
-#define GL_TEXTURE_CUBE_MAP_ARRAY GL_TEXTURE_CUBE_MAP_ARRAY_EXT
+#define GL_TEXTURE_CUBE_MAP_ARRAY 0x9009
+#endif
+
+#ifndef GL_MAX_TEXTURE_BUFFER_SIZE
+#define GL_MAX_TEXTURE_BUFFER_SIZE 0x8C2B
+#endif
+
+#ifndef GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS
+#define GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS 0x8C29
+#endif
+
+#ifndef GL_MAX_GEOMETRY_OUTPUT_VERTICES
+#define GL_MAX_GEOMETRY_OUTPUT_VERTICES 0x8DE0
 #endif
 
 BE_NAMESPACE_BEGIN
@@ -118,6 +130,7 @@ public:
     static bool             SupportsFrameBufferSRGB() { return supportsFrameBufferSRGB; }
     static bool             SupportsTextureRectangle() { return true; }
     static bool             SupportsTextureArray() { return true; }
+    static bool             SupportsTextureBuffer() { return supportsTextureBuffer; }
     static bool             SupportsTextureCompressionS3TC() { return false; }
     static bool             SupportsTextureCompressionLATC() { return false; }
     static bool             SupportsTextureCompressionETC2() { return true; }
@@ -128,7 +141,7 @@ public:
     static void             ClearDepth(GLdouble depth) { gglClearDepthf(depth); }
     static void             DepthRange(GLdouble znear, GLdouble zfar) { gglDepthRangef(znear, zfar); }
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffers(1, &buffer); }
-    static void             TexBuffer(GLenum internalFormat, GLuint buffer) { gglTexBufferEXT(GL_TEXTURE_BUFFER_EXT, internalFormat, buffer); }
+    static void             TexBuffer(GLenum internalFormat, GLuint buffer);
 
     static void             SetTextureSwizzling(GLenum target, Image::Format format);
     static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
@@ -138,6 +151,7 @@ public:
 
 private:
     static bool             supportsFrameBufferSRGB;
+    static bool             supportsTextureBuffer;
 
     static int              shaderFloatPrecisionLow;
     static int              shaderFloatPrecisionMedium;

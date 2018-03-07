@@ -34,6 +34,10 @@ void OpenGLES3::Init() {
 #ifdef GL_EXT_sRGB_write_control
     supportsFrameBufferSRGB = gglext._GL_EXT_sRGB_write_control ? true : false;
 #endif
+    
+#ifdef GL_EXT_texture_buffer
+    supportsTextureBuffer = gglext._GL_EXT_texture_buffer ? true : false;
+#endif
 
     int range[2];
     gglGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_LOW_FLOAT, range, &shaderFloatPrecisionLow);
@@ -49,6 +53,12 @@ void OpenGLES3::Init() {
     BE_LOG(L"Fragment shader lowp int precision: %d\n", shaderFloatPrecisionLow);
     BE_LOG(L"Fragment shader mediump int precision: %d\n", shaderFloatPrecisionMedium);
     BE_LOG(L"Fragment shader highp int precision: %d\n", shaderFloatPrecisionHigh);
+}
+
+void OpenGLES3::TexBuffer(GLenum internalFormat, GLuint buffer) {
+#ifdef GL_EXT_texture_buffer
+    gglTexBufferEXT(GL_TEXTURE_BUFFER, internalFormat, buffer);
+#endif
 }
 
 void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format format) {
@@ -332,24 +342,36 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glInternal) *glInternal = GL_RGBA32F;
         return true;
     case Image::RGBA_DXT1:
+#ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         return true;
+#else
+        return false;
+#endif
     case Image::RGBA_DXT3:
+#ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         return true;
+#else
+        return false;
+#endif
     case Image::RGBA_DXT5:
     case Image::XGBR_DXT5:
+#ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         return true;
+#else
+        return false;
+#endif
     case Image::RGB_PVRTC_2BPPV1:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
         if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
@@ -375,22 +397,35 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT : GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
         return true;
     case Image::RGBA_PVRTC_2BPPV2:
+#ifdef GL_IMG_texture_compression_pvrtc2
         if (!gglext._GL_IMG_texture_compression_pvrtc2) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG;
         return true;
+#else
+        return false;
+#endif
     case Image::RGBA_PVRTC_4BPPV2:
+#ifdef GL_IMG_texture_compression_pvrtc2
         if (!gglext._GL_IMG_texture_compression_pvrtc2) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG;
         return true;
+#else
+        return false;
+#endif
     case Image::RGB_8_ETC1:
+#ifdef GL_OES_compressed_ETC1_RGB8_texture
+        if (!gglext._GL_OES_compressed_ETC1_RGB8_texture) return false;
         if (glFormat)   *glFormat = GL_ETC1_RGB8_OES;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_ETC1_RGB8_OES;
         return true;
+#else
+        return false;
+#endif
     case Image::RGB_8_ETC2:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB8_ETC2 : GL_COMPRESSED_RGB8_ETC2;
         if (glType)     *glType = 0;
@@ -427,23 +462,35 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glInternal) *glInternal = GL_COMPRESSED_SIGNED_RG11_EAC;
         return true;
     case Image::RGB_ATC:
+#ifdef GL_AMD_compressed_ATC_texture
         if (!gglext._GL_AMD_compressed_ATC_texture) return false;
         if (glFormat)   *glFormat = GL_ATC_RGB_AMD;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_ATC_RGB_AMD;
         return true;
+#else
+        return false;
+#endif
     case Image::RGBA_EA_ATC:
+#ifdef GL_AMD_compressed_ATC_texture
         if (!gglext._GL_AMD_compressed_ATC_texture) return false;
         if (glFormat)   *glFormat = GL_ATC_RGBA_EXPLICIT_ALPHA_AMD;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_ATC_RGBA_EXPLICIT_ALPHA_AMD;
         return true;
+#else
+        return false;
+#endif
     case Image::RGBA_IA_ATC:
+#ifdef GL_AMD_compressed_ATC_texture
         if (!gglext._GL_AMD_compressed_ATC_texture) return false;
         if (glFormat)   *glFormat = GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD;
         return true;
+#else
+        return false;
+#endif
     case Image::Depth_16:
         if (glFormat)   *glFormat = GL_DEPTH_COMPONENT;
         if (glType)     *glType = GL_UNSIGNED_SHORT;

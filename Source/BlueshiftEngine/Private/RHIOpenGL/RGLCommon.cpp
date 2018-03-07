@@ -201,7 +201,7 @@ void OpenGLRHI::InitGL() {
 #endif
     
     if (OpenGL::SupportsTextureBufferObject()) {
-        gglGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE_EXT, &hwLimit.maxTextureBufferSize);
+        gglGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &hwLimit.maxTextureBufferSize);
         BE_LOG(L"Maximum texture buffer size: %i\n", hwLimit.maxTextureBufferSize);
     }
     
@@ -230,10 +230,10 @@ void OpenGLRHI::InitGL() {
     BE_LOG(L"Maximum fragment input components: %i\n", hwLimit.maxFragmentInputComponents);
 
     if (OpenGL::SupportsGeometryShader()) {
-        gglGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_EXT, &hwLimit.maxGeometryTextureImageUnits);
+        gglGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &hwLimit.maxGeometryTextureImageUnits);
         BE_LOG(L"Maximum geometry texture image units: %i\n", hwLimit.maxGeometryTextureImageUnits);
         
-        gglGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT, &hwLimit.maxGeometryOutputVertices);
+        gglGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &hwLimit.maxGeometryOutputVertices);
         BE_LOG(L"Maximum geometry output vertices: %i\n", hwLimit.maxGeometryOutputVertices);
     }
 
