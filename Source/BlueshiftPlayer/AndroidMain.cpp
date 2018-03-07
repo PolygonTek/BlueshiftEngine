@@ -37,6 +37,26 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     app.Draw();
 }
 
+// 0: full, 1: medium, 2: low
+static int DetermineRenderQuality() {
+    int renderQuality = 0;
+    BE1::AndroidGPUInfo gpuInfo = BE1::AndroidGPUInfo::GetFromOpenGLRendererString(BE1::rhi.GetGPUString());
+    if (gpuInfo.processor == BE1::AndroidGPUInfo::Processor::Qualcomm_Adreno) {
+        if (gpuInfo.model > 500) {
+            if (gpuInfo.model < 510) {
+                renderQuality = 2;
+            }
+        } else if (gpuInfo.model > 400) {
+            if (gpuInfo.model < 410) {
+                renderQuality = 2;
+            }
+        } else {
+            renderQuality = 2;
+        }
+    }
+    return renderQuality;
+}
+
 static void InitDisplay(ANativeWindow *window) {
     if (!appInitialized) {
         appInitialized = true;
@@ -46,33 +66,28 @@ static void InitDisplay(ANativeWindow *window) {
 
         BE1::gameClient.Init(window, false);
 
+        bool renderQuality = DetermineRenderQuality();
         int renderWidth;
         int renderHeight;
-        bool lowProfile = false;
 
-        BE1::AndroidGPUInfo gpuInfo = BE1::AndroidGPUInfo::GetFromOpenGLRendererString(BE1::rhi.GetGPUString());
-        if (gpuInfo.processor == BE1::AndroidGPUInfo::Processor::Qualcomm_Adreno) {
-            if (gpuInfo.model > 500) {
-                if (gpuInfo.model < 510) {
-                    lowProfile = true;
-                }
-            } else if (gpuInfo.model > 400) {
-                if (gpuInfo.model < 410) {
-                    lowProfile = true;
-                }
-            } else {
-                lowProfile = true;
-            }
-        }
-
-        if (lowProfile) {
+        if (renderQuality > 0) {
             if (currentWindowWidth > currentWindowHeight) {
                 // landscape mode
-                renderWidth = 1280;
-                renderHeight = 720;
+                if (renderQuality == 1) {
+                    renderWidth = BE1::Min(1280, currentWindowWidth);
+                    renderHeight = BE1::Min(720, currentWindowHeight);
+                } else {
+                    renderWidth = BE1::Min(1024, currentWindowWidth);
+                    renderHeight = BE1::Min(576, currentWindowHeight);
+                }
             } else {
-                renderWidth = 720;
-                renderHeight = 1280;
+                if (renderQuality == 1) {
+                    renderWidth = BE1::Min(720, currentWindowWidth);
+                    renderHeight = BE1::Min(1280, currentWindowHeight);
+                } else {
+                    renderWidth = BE1::Min(576, currentWindowWidth);
+                    renderHeight = BE1::Min(1024, currentWindowHeight);
+                }
             }
         }
 
@@ -89,7 +104,7 @@ static void InitDisplay(ANativeWindow *window) {
 
         app.StartAppScript();
     } else {
-        BE1::rhi.ActivateSurface(app.mainRenderContext->GetContextHandle());
+        BE1::rhi.ActivateSurface(app.mainRenderContext->GetContextHandle(), window);
     }
 }
 

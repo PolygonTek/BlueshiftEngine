@@ -70,7 +70,7 @@ public:
 
     Handle                  CreateContext(WindowHandle windowHandle, bool useSharedContext);
     void                    DestroyContext(Handle ctxHandle);
-    void                    ActivateSurface(Handle ctxHandle);
+    void                    ActivateSurface(Handle ctxHandle, WindowHandle windowHandle);
     void                    DeactivateSurface(Handle ctxHandle);
     void                    SetContext(Handle ctxHandle);
     void                    SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing);

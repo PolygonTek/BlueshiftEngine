@@ -211,7 +211,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
         BE_FATALERROR(L"Couldn't create EGL context");
     }
 
-    ActivateSurface(NullContext);
+    ActivateSurface(NullContext, windowHandle);
     
     GetGLVersion(&majorVersion, &minorVersion);
 
@@ -280,7 +280,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
             BE_FATALERROR(L"Couldn't create EGL context");
         }
 
-        ActivateSurface(ctx->handle);
+        ActivateSurface(ctx->handle, windowHandle);
     }
 
     SetContext((Handle)handle);
@@ -327,8 +327,10 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = nullptr; 
 }
 
-void OpenGLRHI::ActivateSurface(Handle ctxHandle) {
+void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
+
+    ctx->nativeWindow = (ANativeWindow *)windowHandle;
 
     // EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
     // guaranteed to be accepted by ANativeWindow_setBuffersGeometry().
@@ -461,7 +463,7 @@ bool OpenGLRHI::SwapBuffers() {
         EGLint err = eglGetError();
         if (err == EGL_BAD_SURFACE || err == EGL_BAD_NATIVE_WINDOW) {
             DeactivateSurface(currentContext->handle);
-            ActivateSurface(currentContext->handle);
+            ActivateSurface(currentContext->handle, currentContext->nativeWindow);
             return true;
         } else if (err == EGL_CONTEXT_LOST || err == EGL_BAD_CONTEXT) {
             return false;
