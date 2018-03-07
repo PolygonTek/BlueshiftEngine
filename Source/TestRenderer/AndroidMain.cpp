@@ -81,7 +81,7 @@ static void InitDisplay(ANativeWindow *window) {
 
         BE1::rhi.SetContextDisplayFunc(mainContext, DisplayMainContext, nullptr, false);
     } else {
-        BE1::rhi.ActivateSurface(mainContext);
+        BE1::rhi.ActivateSurface(mainContext, window);
     }
 }
 
