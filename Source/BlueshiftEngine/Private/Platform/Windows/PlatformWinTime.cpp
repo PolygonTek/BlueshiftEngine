@@ -16,22 +16,23 @@
 #include "Platform/PlatformTime.h"
 #include "Platform/Windows/PlatformWinTime.h"
 #include <mmsystem.h>
+#include <winsock2.h>
 
 BE_NAMESPACE_BEGIN
 
 double PlatformWinTime::secondsPerCycle;
 
 // 'HRT' - High resolution timer
-static LARGE_INTEGER	hrt_frequency;
-static double		    hrt_secs;
-static int			    hrt_hz;
-static int			    hrt_shift;
-static double		    hrt_curtime = 0.0;
-static int			    hrt_sametimecount = 0;
+static LARGE_INTEGER    hrt_frequency;
+static double           hrt_secs;
+static int              hrt_hz;
+static int              hrt_shift;
+static double           hrt_curtime = 0.0;
+static int              hrt_sametimecount = 0;
 
 void PlatformWinTime::Init() {
-    unsigned int	lpart;
-    unsigned int	hpart;
+    unsigned int lpart;
+    unsigned int hpart;
 
     if (!QueryPerformanceFrequency(&hrt_frequency)) {
         BE_FATALERROR(L"No hardware timer available");
@@ -102,7 +103,7 @@ float PlatformWinTime::Seconds() {
                 }
             } else {
                 hrt_sametimecount = 0;
-            }			
+            }
         }
     }
 
@@ -157,28 +158,28 @@ void PlatformWinTime::LocalTime(int32_t &year, int32_t &month, int32_t &dayOfWee
     SYSTEMTIME st;
     GetLocalTime(&st);
 
-    year		= st.wYear;
-    month		= st.wMonth;
-    dayOfWeek	= st.wDayOfWeek;
-    day			= st.wDay;
-    hour		= st.wHour;
-    min			= st.wMinute;
-    sec			= st.wSecond;
-    msec		= st.wMilliseconds;
+    year        = st.wYear;
+    month       = st.wMonth;
+    dayOfWeek   = st.wDayOfWeek;
+    day         = st.wDay;
+    hour        = st.wHour;
+    min         = st.wMinute;
+    sec         = st.wSecond;
+    msec        = st.wMilliseconds;
 }
 
 void PlatformWinTime::UtcTime(int32_t &year, int32_t &month, int32_t &dayOfWeek, int32_t &day, int32_t &hour, int32_t &min, int32_t &sec, int32_t &msec) {
     SYSTEMTIME st;
     GetSystemTime(&st);
 
-    year		= st.wYear;
-    month		= st.wMonth;
-    dayOfWeek	= st.wDayOfWeek;
-    day			= st.wDay;
-    hour		= st.wHour;
-    min			= st.wMinute;
-    sec			= st.wSecond;
-    msec		= st.wMilliseconds;
+    year        = st.wYear;
+    month       = st.wMonth;
+    dayOfWeek   = st.wDayOfWeek;
+    day         = st.wDay;
+    hour        = st.wHour;
+    min         = st.wMinute;
+    sec         = st.wSecond;
+    msec        = st.wMilliseconds;
 }
 
 BE_NAMESPACE_END

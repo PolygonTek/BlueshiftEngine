@@ -355,12 +355,9 @@ inline const ptrdiff_t offset_of(T1 T2::*member) {
 //#define _CRTDBG_MAP_ALLOC
 #endif
 
-// Windows Specific Header Files:
+// Windows specific headers
 #include <windows.h>
-#include <process.h>
-#include <winsock2.h>
-#include <mmsystem.h>
-#include <malloc.h>         // no malloc.h on mac or unix
+#include <malloc.h>     // no malloc.h on mac or unix
 #include <crtdbg.h>
 #include <tchar.h>
 #include <intrin.h>

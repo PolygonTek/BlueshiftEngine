@@ -14,6 +14,8 @@
 
 #pragma once
 
+struct timeval;
+
 BE_NAMESPACE_BEGIN
 
 class BE_API PlatformBaseTime {

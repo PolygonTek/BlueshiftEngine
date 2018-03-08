@@ -37,7 +37,10 @@
 #ifdef USE_WINDOWS_OPENAL
 #include "al.h"
 #include "alc.h"
+
 #else
+
+#include <mmsystem.h>
 #include <dsound.h>
 #endif
 
