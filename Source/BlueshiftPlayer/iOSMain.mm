@@ -89,8 +89,19 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    //float nativeScale = [[UIScreen mainScreen] nativeScale];
-    //game.mainRenderContext->OnResize(size.width * nativeScale, size.height * nativeScale);
+
+    // This is basically an animation block
+    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+
+        // Get the new orientation if you want
+        UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+
+        // Adjust your views
+        [self.myView setFrame:CGRectMake(0, 0, size.width, size.height)];
+
+    } completion:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+        // Anything else you need to do at the end
+    }];
 }
 
 - (BOOL)prefersStatusBarHidden {
