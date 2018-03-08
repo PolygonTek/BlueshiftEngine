@@ -16,6 +16,7 @@
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 #include "Platform/PlatformProcess.h"
+#include <tchar.h>
 
 BE_NAMESPACE_BEGIN
 

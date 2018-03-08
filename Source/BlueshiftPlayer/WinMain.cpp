@@ -16,6 +16,7 @@
 #include "Application.h"
 #include "WinResource.h"
 #include <windowsx.h>
+#include <tchar.h>
 
 static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_PLAYER_MAIN_WINDOW");
 
