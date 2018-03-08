@@ -45,10 +45,11 @@ Screenshots
 ![Screenshot3](Screenshots/screenshot3.png)
 ![Screenshot4](Screenshots/screenshot4.png)
 
-HowTos
+Documentation
 -------------------
 
-[How to Build Engine Runtime Libraries](https://github.com/PolygonTek/BlueshiftEngine/wiki/How-to-Build-Engine-Runtime-Libraries)
+* [How to Build Engine Runtime Libraries](https://github.com/PolygonTek/BlueshiftEngine/wiki/How-to-Build-Engine-Runtime-Libraries)
+* [Lua Debugging with ZeroBrane Studio](https://github.com/PolygonTek/BlueshiftEngine/wiki/Lua-Debugging-with-ZeroBrane-Studio)
 
 License
 -------------------
