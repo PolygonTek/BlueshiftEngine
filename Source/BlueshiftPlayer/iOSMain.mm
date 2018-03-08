@@ -197,6 +197,8 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     if (function.IsFunction()) {
         function();
     }
+    
+    [self stopAnimation];
 }
 
 - (void)rewardBasedVideoAdDidStartPlaying:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
@@ -211,6 +213,8 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     if (function.IsFunction()) {
         function();
     }
+    
+    [self startAnimation];
 }
 
 - (void)rewardBasedVideoAdWillLeaveApplication:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
