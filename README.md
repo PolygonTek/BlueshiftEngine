@@ -45,41 +45,10 @@ Screenshots
 ![Screenshot3](Screenshots/screenshot3.png)
 ![Screenshot4](Screenshots/screenshot4.png)
 
-How To Build Engine
+HowTos
 -------------------
 
-You can build Blueshift Engine but Blueshift Editor is **not** open source yet.
-
-**Please note**: Building from source code is intended for users who want to use/test new features or customize the C++ source code. For most users, we recommend the [binary releases](https://github.com/PolygonTek/BlueshiftEngine/releases).
-
-## Windows (64 bit) and Android
-
-### Prerequisite
-
-  * [MS Visual Studio 2017](https://www.visualstudio.com/downloads/)
-    - select "Mobile development with c++"
-  * [CMake](https://cmake.org/download/)
-
-### Instruction
-
-  1. Clone the repository `git clone https://github.com/PolygonTek/BlueshiftEngine.git`
-
-  2. Run `Build\Build-Win64.bat` to build engine from the sources.
-
-## macOS and iOS
-
-### Prerequisite
-
-  * Xcode
-  * [CMake](https://cmake.org/download/)
-
-### Instruction
-
-  1. Clone the repository `git clone https://github.com/PolygonTek/BlueshiftEngine.git`
-
-  2. Run `Build/Build-macOS.command` to build engine for macOS from the sources.
-
-  3. Run `Build/Build-iOS.command` to build engine for iOS from the sources.
+[How to Build Engine Runtime Libraries](https://github.com/PolygonTek/BlueshiftEngine/wiki/How-to-Build-Engine-Runtime-Libraries)
 
 License
 -------------------
