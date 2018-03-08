@@ -36,10 +36,10 @@
   <true/>
   <key>UISupportedInterfaceOrientations</key>
   <array>
-$(CMAKEVAR_ORIENTATION)
+${CMAKEVAR_ORIENTATION}
   </array>
   <key>UISupportedInterfaceOrientations~ipad</key>
   <array>
-$(CMAKEVAR_ORIENTATION)
+${CMAKEVAR_ORIENTATION}
   </array></dict>
 </plist>

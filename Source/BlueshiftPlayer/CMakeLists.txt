@@ -5,7 +5,7 @@ set(BS_APP_NAME "Blueshift Player" CACHE STRING "BS_APP_NAME variable defaulting
 set(BS_APP_IDENTIFIER "com.polygontek.BlueshiftPlayer" CACHE STRING "BS_APP_IDENTIFIER variable defaulting")
 set(BS_APP_VERSION "1.0" CACHE STRING "BS_APP_VERSION variable defaulting")
 set(BS_PRODUCT_NAME "BlueshiftPlayer" CACHE STRING "BS_PRODUCT_NAME variable defaulting")
-set(BS_ORIENTATION "" CACHE STRING "BS_ORIENTATION variable defaulting")
+set(BS_ORIENTATION "<string>UIInterfaceOrientationPortrait</string>" CACHE STRING "BS_ORIENTATION variable defaulting")
 set(BS_USE_ADMOB_REWARD_BASED_VIDEO FALSE CACHE BOOL "BS_USE_ADMOB_REWARD_BASED_VIDEO variable defaulting")
 
 project(BlueshiftPlayer)
