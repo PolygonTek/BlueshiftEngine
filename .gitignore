@@ -96,6 +96,16 @@ Source/Player/Data
 Source/Player/Config
 Source/ThirdParty/luaJIT/lib/
 Source/ThirdParty/luaJIT/src/*.lib
+Source/ThirdParty/luaJIT/src/*.exp
+Source/ThirdParty/luaJIT/src/lj_bcdef.h
+Source/ThirdParty/luaJIT/src/lj_ffdef.h
+Source/ThirdParty/luaJIT/src/lj_libdef.h
+Source/ThirdParty/luaJIT/src/lj_recdef.h
+Source/ThirdParty/luaJIT/src/lj_folddef.h
+Source/ThirdParty/luaJIT/src/jit/vmdef.lua
+Source/ThirdParty/luaJIT/src/host/buildvm_arch.h
+Source/ThirdParty/jsoncpp/version
+Source/ThirdParty/jsoncpp/include/json/version.h
 Project/XamarinAndroid/XamarinPlayer/Assets/Config
 Project/XamarinAndroid/XamarinPlayer/Assets/Data
 Project/XamarinIOS/XamarinPlayer/libs
