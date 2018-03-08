@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "WinResource.h"
 #include "Application.h"
+#include <tchar.h>
 
 //#define CREATE_SUB_WINDOW
 #define USE_SHARED_CONTEXT  false

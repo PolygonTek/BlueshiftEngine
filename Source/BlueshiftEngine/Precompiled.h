@@ -357,9 +357,7 @@ inline const ptrdiff_t offset_of(T1 T2::*member) {
 
 // Windows specific headers
 #include <windows.h>
-#include <malloc.h>     // no malloc.h on mac or unix
-#include <crtdbg.h>
-#include <tchar.h>
+//#include <malloc.h>
 #include <intrin.h>
 
 #endif
