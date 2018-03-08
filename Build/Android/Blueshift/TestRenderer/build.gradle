@@ -1,9 +1,9 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion = 26
+    compileSdkVersion 26
     defaultConfig {
-        applicationId = 'com.polygontek.TestRenderer'
+        applicationId 'com.polygontek.TestRenderer'
         minSdkVersion 19
         targetSdkVersion 24
         externalNativeBuild {
@@ -20,8 +20,8 @@ android {
             }
         }
         release {
-            minifyEnabled = true
-            shrinkResources = true
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             ndk {
                 abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'

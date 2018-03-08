@@ -5,9 +5,9 @@ def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
-    compileSdkVersion = 26
+    compileSdkVersion 26
     defaultConfig {
-        applicationId = 'com.polygontek.BlueshiftPlayer'
+        applicationId 'com.polygontek.BlueshiftPlayer'
         minSdkVersion 19
         targetSdkVersion 24
         externalNativeBuild {
@@ -32,9 +32,9 @@ android {
             }
         }
         release {
-            minifyEnabled = true
-            shrinkResources = true
-            //debuggable = true
+            minifyEnabled true
+            shrinkResources true
+            //debuggable true
             signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             ndk {
