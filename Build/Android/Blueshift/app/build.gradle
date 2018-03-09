@@ -38,7 +38,7 @@ android {
         }
     }
     aaptOptions {
-        noCompress 'zip', 'pvr', 'ogg'
+        noCompress 'zip', 'ogg'
     }
     externalNativeBuild {
         cmake {
