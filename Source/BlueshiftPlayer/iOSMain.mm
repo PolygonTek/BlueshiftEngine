@@ -97,7 +97,8 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
 
         // Adjust your views
-        [self.myView setFrame:CGRectMake(0, 0, size.width, size.height)];
+        float nativeScale = [[UIScreen mainScreen] nativeScale];
+        app.mainRenderContext->OnResize(size.width * nativeScale, size.height * nativeScale);
 
     } completion:^(id<UIViewControllerTransitionCoordinatorContext> context) {
         // Anything else you need to do at the end
