@@ -4,8 +4,9 @@ Version History
 ### 0.4.0
 - Added support for LuaJIT
 - Added support for debugging Lua script in [ZeroBrane Studio](https://studio.zerobrane.com/)
-- Rebuilt the Android build from scratch
+- Reimplemented Android build from scratch
 - Added support for Google reward based video ad (Android)
+- Various minor improvements and bug fixes
 
 ### 0.3.0
 - Improved property system
