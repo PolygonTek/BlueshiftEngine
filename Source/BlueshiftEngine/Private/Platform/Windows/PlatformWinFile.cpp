@@ -341,7 +341,7 @@ static bool RemoveDirRecursive(const char *path) {
             }
         }
         
-        if (finddata.name[0] == '.') {
+        if (!strcmp(finddata.name, ".") || !strcmp(finddata.name, "..")) {
             continue;
         }
         
@@ -357,8 +357,7 @@ static bool RemoveDirRecursive(const char *path) {
             // remove the empty directory
             RemoveDirectoryA(filename);
             strcpy(filename, findPath);
-        }
-        else {
+        } else {
             if (finddata.attrib & _A_RDONLY) {
                 // change read-only file mode
                 _chmod(filename, _S_IWRITE);
