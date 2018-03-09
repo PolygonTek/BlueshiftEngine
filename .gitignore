@@ -113,8 +113,6 @@ Source/ThirdParty/luaJIT/src/lj_recdef.h
 Source/ThirdParty/luaJIT/src/lj_folddef.h
 Source/ThirdParty/luaJIT/src/jit/vmdef.lua
 Source/ThirdParty/luaJIT/src/host/buildvm_arch.h
-Source/ThirdParty/jsoncpp/version
-Source/ThirdParty/jsoncpp/include/json/version.h
 Project/XamarinAndroid/XamarinPlayer/Assets/Config
 Project/XamarinAndroid/XamarinPlayer/Assets/Data
 Project/XamarinIOS/XamarinPlayer/libs
