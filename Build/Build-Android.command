@@ -2,4 +2,4 @@
 
 cd `dirname $0`
 cd Android/Blueshift
-./gradlew BlueshiftPlayer:assembleRelease
+./gradlew app:assembleRelease
