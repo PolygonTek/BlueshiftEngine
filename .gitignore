@@ -2,6 +2,7 @@
 Thumbs.db
 #Ignore files build by Visual Studio
 *.exe
+*.pdb
 *.user
 *.aps
 *.pch
@@ -128,4 +129,4 @@ Project/NativeAndroid/AndroidPlayer.Packaging/assets/Data
 Project/JavaAndroid/AndroidPlayer/app/build/
 Project/JavaAndroid/AndroidPlayer/app/src/main/jniLibs/
 Project/JavaAndroid/AndroidPlayer/build/
-Bin/Win64/Debug/
+
