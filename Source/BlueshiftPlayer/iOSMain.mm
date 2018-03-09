@@ -185,10 +185,40 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     }
 }
 
+#ifdef USE_ADMOB_BANNER
+
+/// Tells the delegate an ad request loaded an ad.
+- (void)adViewDidReceiveAd:(GADBannerView *)adView {
+}
+
+/// Tells the delegate an ad request failed.
+- (void)adView:(GADBannerView *)adView didFailToReceiveAdWithError:(GADRequestError *)error {
+    const char *errorDescription = (const char *)[error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];    
+}
+
+/// Tells the delegate that a full-screen view will be presented in response
+/// to the user clicking on an ad.
+- (void)adViewWillPresentScreen:(GADBannerView *)adView {
+}
+
+/// Tells the delegate that the full-screen view will be dismissed.
+- (void)adViewWillDismissScreen:(GADBannerView *)adView {
+}
+
+/// Tells the delegate that the full-screen view has been dismissed.
+- (void)adViewDidDismissScreen:(GADBannerView *)adView {
+}
+
+/// Tells the delegate that a user click will open another app (such as
+/// the App Store), backgrounding the current app.
+- (void)adViewWillLeaveApplication:(GADBannerView *)adView {
+}
+
+#endif
+
 #ifdef USE_ADMOB_REWARD_BASED_VIDEO
 
-- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd
-   didRewardUserWithReward:(GADAdReward *)reward {
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didRewardUserWithReward:(GADAdReward *)reward {
     const char *rewardType = (const char *)[reward.type cStringUsingEncoding:NSUTF8StringEncoding];
     int rewardAmount = [reward.amount intValue];
     LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
@@ -236,8 +266,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     }
 }
 
-- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd
-    didFailToLoadWithError:(NSError *)error {
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didFailToLoadWithError:(NSError *)error {
     const char *errorDescription = (const char *)[error.description cStringUsingEncoding:NSUTF8StringEncoding];
     LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
     if (function.IsFunction()) {
