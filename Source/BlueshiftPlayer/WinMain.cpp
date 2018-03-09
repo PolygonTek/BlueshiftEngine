@@ -184,7 +184,7 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     wcex.lpfnWndProc        = WndProc;
     wcex.hInstance          = hInstance;
     wcex.hIcon              = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GAME));
-    wcex.hIconSm            = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.hIconSm            = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GAME));
     wcex.hbrBackground      = (HBRUSH)(COLOR_GRAYTEXT + 1);
     wcex.hCursor            = LoadCursor(NULL, IDC_ARROW);
     wcex.lpszMenuName       = MAKEINTRESOURCE(IDC_GAME);
