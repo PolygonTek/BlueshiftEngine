@@ -34,9 +34,22 @@ static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"")
 static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
 
 static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int inAlphaBits, int inDepthBits, int inStencilBits, int inMultiSamples) {
-    int best = -1;
+    EGLint maxConfigs;
+    if (!eglGetConfigs(eglDisplay, nullptr, 0, &maxConfigs)) {
+        BE_FATALERROR(L"Cannot query count of all EGL configs");
+    }
 
-    struct ConfigAttribValues {
+    EGLConfig *configs = new EGLConfig[maxConfigs];
+    if (!eglGetConfigs(eglDisplay, configs, maxConfigs, &maxConfigs)) {
+        BE_FATALERROR(L"Cannot query all EGL configs");
+    }
+
+    EGLConfig bestConfig = nullptr;
+    int64_t bestScore = LONG_MAX; // smaller score is better
+
+    for (int i = 0; i < maxConfigs; i++) {
+        EGLint surfaceType;
+        EGLint renderableType;
         EGLint redSize;
         EGLint greenSize;
         EGLint blueSize;
@@ -45,117 +58,76 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
         EGLint stencilSize;
         EGLint samples;
         EGLint sampleBuffers;
-    };
+        EGLint depthEncoding;
 
-    static const EGLint configAttribs[] = {
-        EGL_BUFFER_SIZE, 0,
-        EGL_RENDERABLE_TYPE, geglext._EGL_KHR_create_context ? EGL_OPENGL_ES3_BIT_KHR : EGL_OPENGL_ES2_BIT,
-        EGL_CONFIG_CAVEAT, EGL_NONE,
-        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-        EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER,
-        EGL_TRANSPARENT_TYPE, EGL_NONE,
-        EGL_RED_SIZE, EGL_DONT_CARE,
-        EGL_GREEN_SIZE, EGL_DONT_CARE,
-        EGL_BLUE_SIZE, EGL_DONT_CARE,
-        EGL_ALPHA_SIZE, EGL_DONT_CARE,
-        EGL_DEPTH_SIZE, EGL_DONT_CARE,
-        EGL_STENCIL_SIZE, EGL_DONT_CARE,
-        EGL_LEVEL, 0,
-        EGL_NONE // end marker
-    };
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_SURFACE_TYPE, &surfaceType);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_RENDERABLE_TYPE, &renderableType);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_RED_SIZE, &redSize);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_GREEN_SIZE, &greenSize);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_BLUE_SIZE, &blueSize);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_ALPHA_SIZE, &alphaSize);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_DEPTH_SIZE, &depthSize);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_STENCIL_SIZE, &stencilSize);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_SAMPLES, &samples);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_SAMPLE_BUFFERS, &sampleBuffers);
 
-    EGLint maxConfigs;
-    eglChooseConfig(eglDisplay, configAttribs, nullptr, 0, &maxConfigs);
-    
-    EGLConfig *configs = (EGLConfig *)_alloca(sizeof(EGLConfig) * maxConfigs);
-    eglChooseConfig(eglDisplay, configAttribs, configs, maxConfigs, &maxConfigs);
+        // Optional, Tegra-specific non-linear depth buffer, which allows for much better
+        // effective depth range in relatively limited bit-depths (e.g. 16-bit)
+        int nonLinearDepth = 0;
+        if (eglGetConfigAttrib(eglDisplay, configs[i], EGL_DEPTH_ENCODING_NV, &depthEncoding)) {
+            nonLinearDepth = (depthEncoding == EGL_DEPTH_ENCODING_NONLINEAR_NV) ? 1 : 0;
+        }
 
-    ConfigAttribValues *attribValues = (ConfigAttribValues *)_alloca(sizeof(ConfigAttribValues) * maxConfigs);
+        if (!(surfaceType & EGL_WINDOW_BIT)) {
+            continue;
+        }
 
-    for (int i = 0; i < maxConfigs; i++) {
-        ConfigAttribValues *attr = &attribValues[i];
+        if (!(renderableType & (EGL_OPENGL_ES3_BIT_KHR | EGL_OPENGL_ES2_BIT))) {
+            continue;
+        }
 
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_RED_SIZE, &attr->redSize);
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_GREEN_SIZE, &attr->greenSize);
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_BLUE_SIZE, &attr->blueSize);
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_ALPHA_SIZE, &attr->alphaSize);
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_DEPTH_SIZE, &attr->depthSize);
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_STENCIL_SIZE, &attr->stencilSize);
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_SAMPLES, &attr->samples);
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_SAMPLE_BUFFERS, &attr->sampleBuffers);
-    }
-
-    for (int i = 0; i < maxConfigs; i++) {
-        ConfigAttribValues *attr = &attribValues[i];
-
-        if (inAlphaBits > 0) {
-            if (attr->alphaSize <= 0) {
-                continue;
-            }
+        if (redSize < 5 || greenSize < 6 || blueSize < 5) {
+            continue;
         }
 
         if (inDepthBits > 0) {
-            if (attr->depthSize < 16) {
+            if (depthSize < 16) {
                 continue;
             }
         }
 
         if (inStencilBits > 0) {
-            if (attr->stencilSize < 4) {
+            if (stencilSize < 4) {
                 continue;
             }
         }
 
         if (inMultiSamples > 0) {
-            if (attr->samples == 0) {
+            if (samples == 0) {
                 continue;
             }
         }
 
-        if (best == -1) {
-            best = i;
-            continue;
-        }
+        int colorBits = redSize + greenSize + blueSize;
 
-        int colorBits = attr->redSize + attr->greenSize + attr->blueSize;
-        int bestColorBits = attribValues[best].redSize + attribValues[best].greenSize + attribValues[best].blueSize;
-        if (bestColorBits != inColorBits) {
-            if (colorBits == inColorBits || colorBits > bestColorBits) {
-                best = i;
-                continue;
-            }
-        }
+        int64_t score = 0;
+        score |= ((int64_t)Min(Math::Abs(sampleBuffers - (inMultiSamples > 0 ? 1 : 0)), 15)) << 29;
+        score |= ((int64_t)Min(Math::Abs(samples - inMultiSamples), 31)) << 24;
+        score |= Min(Math::Abs(colorBits - inColorBits), 127) << 17;
+        score |= Min(Math::Abs(depthSize - inDepthBits), 63) << 11;
+        score |= Min(Math::Abs(1 - nonLinearDepth), 1) << 10;
+        score |= Min(Math::Abs(stencilSize - inStencilBits), 31) << 6;
+        score |= Min(Math::Abs(alphaSize - inAlphaBits), 31) << 0;
 
-        if (attribValues[best].alphaSize != inAlphaBits) {
-            if (attr->alphaSize == inAlphaBits || attr->alphaSize > attribValues[best].alphaSize) {
-                best = i;
-                continue;
-            }
-        }
-
-        if (attribValues[best].depthSize != inDepthBits) {
-            if (attr->depthSize == inDepthBits || attr->depthSize > attribValues[best].depthSize) {
-                best = i;
-                continue;
-            }
-        }
-
-        if (attribValues[best].stencilSize != inStencilBits) {
-            if (attr->stencilSize == inStencilBits || attr->stencilSize > attribValues[best].stencilSize) {
-                best = i;
-                continue;
-            }
-        }
-
-        if (attribValues[best].sampleBuffers != inMultiSamples) {
-            if (attr->sampleBuffers == inMultiSamples || attr->sampleBuffers > attribValues[best].sampleBuffers) {
-                best = i;
-                continue;
-            }
+        if (score < bestScore || !bestConfig) {
+            bestConfig = configs[i];
+            bestScore = score;
         }
     }
 
-    return configs[best];
+    delete[] configs;
+
+    return bestConfig;
 }
 
 static void GetGLVersion(int *major, int *minor) {
