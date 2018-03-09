@@ -182,19 +182,17 @@ bool SignalObject::EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...) {
             continue;
         }
 
-        if (!con->receiver->SignalObject::ExecuteCallback(con->function, sigdef->GetFormatSpecBits(), argPtrs)) {
-            BE_WARNLOG(L"Invalid formatSpec on signal '%hs'\n", sigdef->GetName());
-        }
+        con->receiver->ExecuteCallback(con->function, sigdef, argPtrs);
     }
 
     return true;
 }
 
-bool SignalObject::ExecuteCallback(const SignalCallback &callback, int formatSpecBits, intptr_t *data) {
+bool SignalObject::ExecuteCallback(const SignalCallback &callback, const SignalDef *sigdef, intptr_t *data) {
     // formatSpecBits = 0bNNNFFFFFF
     // N means number of arguments
     // F means float bit mask
-    switch (formatSpecBits) {
+    switch (sigdef->GetFormatSpecBits()) {
     //----------------------------------------------------------------------------------------------
     // 0 args
     //----------------------------------------------------------------------------------------------
@@ -721,6 +719,9 @@ bool SignalObject::ExecuteCallback(const SignalCallback &callback, int formatSpe
         using EventCallback_ffffff = void (SignalObject::*)(const float, const float, const float, const float, const float, const float);
         (this->*(EventCallback_ffffff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
         return true;
+    default:
+        BE_WARNLOG(L"Invalid formatSpec on signal '%hs'\n", sigdef->GetName());
+        break;
     }
 
     return false;

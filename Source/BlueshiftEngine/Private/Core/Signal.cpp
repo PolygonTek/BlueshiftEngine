@@ -411,7 +411,7 @@ void SignalSystem::ServiceSignal(Signal *signal) {
     // is deleted, the signal won't be freed twice
     signal->node.Remove();
     assert(signal->receiver);
-    signal->receiver->ExecuteCallback(signal->callback, numArgs, argPtrs);
+    signal->receiver->ExecuteCallback(signal->callback, sigdef, argPtrs);
 
     // return the signal to the free list
     FreeSignal(signal);
