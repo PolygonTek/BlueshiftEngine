@@ -182,7 +182,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
 
         // best PFD choosed !!
         if (!(best = ::ChoosePixelFormat(hDC, &pfdList[best-1]))) {
-            BE_FATALERROR(L"ChoosePixelFormat: failed");	
+            BE_FATALERROR(L"ChoosePixelFormat: failed");
         }
     } else {
         int results[MAX_ATTRIB_SIZE];
@@ -309,7 +309,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
                     best = i;
                     continue;
                 }
-            }		
+            }
 
             // check multi samples
             if (attribList[best-1][10] != inMultiSamples) {

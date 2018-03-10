@@ -61,8 +61,7 @@ elseif (WIN32)
         WinResource.h
         Manifest.xml
         WinRes/player.rc
-        WinRes/player.ico
-        WinRes/small.ico)
+        WinRes/player.ico)
 endif ()
 
 auto_source_group(${ALL_FILES})
