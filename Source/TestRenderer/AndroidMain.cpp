@@ -36,13 +36,13 @@ static BE1::RHI::Handle     mainRenderTarget = BE1::RHI::NullRenderTarget;
 
 static void SystemLog(int logLevel, const wchar_t *msg) {
     if (logLevel == BE1::DevLog) {
-        __android_log_print(ANDROID_LOG_VERBOSE, "libTestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_VERBOSE, "TestRenderer", "%ls", msg);
     } else if (logLevel == BE1::WarningLog) {
-        __android_log_print(ANDROID_LOG_WARN, "libTestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_WARN, "TestRenderer", "%ls", msg);
     } else if (logLevel == BE1::ErrorLog) {
-        __android_log_print(ANDROID_LOG_ERROR, "libTestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_ERROR, "TestRenderer", "%ls", msg);
     } else {
-        __android_log_print(ANDROID_LOG_INFO, "libTestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_INFO, "TestRenderer", "%ls", msg);
     }
 }
 
