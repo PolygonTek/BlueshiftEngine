@@ -165,6 +165,11 @@ void OpenGLRHI::InitGL() {
     BE_LOG(L"WGL extensions: %hs\n", winExtensions);
 #endif
 
+#if defined(__ANDROID__)
+    const char *eglExtensions = (const char *)geglQueryString(mainContext->eglDisplay, EGL_EXTENSIONS);
+    BE_LOG(L"EGL extensions: %hs\n", eglExtensions);
+#endif
+
     glslVersionString = (const char *)gglGetString(GL_SHADING_LANGUAGE_VERSION);
     if (gglGetError() == GL_INVALID_ENUM) {
         glslVersionString = "1.051";

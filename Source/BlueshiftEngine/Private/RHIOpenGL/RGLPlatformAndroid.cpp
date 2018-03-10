@@ -34,22 +34,58 @@ static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"")
 static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
 
 static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int inAlphaBits, int inDepthBits, int inStencilBits, int inMultiSamples) {
+    EGLint minAttribs[32];
+
+    int numMinAttribs = 0;
+    minAttribs[numMinAttribs++] = EGL_RENDERABLE_TYPE;
+    minAttribs[numMinAttribs++] = EGL_OPENGL_ES3_BIT_KHR;
+
+    minAttribs[numMinAttribs++] = EGL_SURFACE_TYPE;
+    minAttribs[numMinAttribs++] = EGL_WINDOW_BIT;
+
+    minAttribs[numMinAttribs++] = EGL_COLOR_BUFFER_TYPE;
+    minAttribs[numMinAttribs++] = EGL_RGB_BUFFER;
+
+    minAttribs[numMinAttribs++] = EGL_RED_SIZE;
+    minAttribs[numMinAttribs++] = 5;
+    minAttribs[numMinAttribs++] = EGL_GREEN_SIZE;
+    minAttribs[numMinAttribs++] = 6;
+    minAttribs[numMinAttribs++] = EGL_BLUE_SIZE;
+    minAttribs[numMinAttribs++] = 5;
+    minAttribs[numMinAttribs++] = EGL_ALPHA_SIZE;
+    minAttribs[numMinAttribs++] = 0;
+    minAttribs[numMinAttribs++] = EGL_DEPTH_SIZE;
+    minAttribs[numMinAttribs++] = 16;
+    minAttribs[numMinAttribs++] = EGL_STENCIL_SIZE;
+    minAttribs[numMinAttribs++] = 0;
+    minAttribs[numMinAttribs++] = EGL_SAMPLE_BUFFERS;
+    minAttribs[numMinAttribs++] = 0;
+    minAttribs[numMinAttribs++] = EGL_SAMPLES;
+    minAttribs[numMinAttribs++] = 0;
+
+    minAttribs[numMinAttribs++] = EGL_CONFIG_CAVEAT;
+    minAttribs[numMinAttribs++] = EGL_NONE;
+
+    minAttribs[numMinAttribs++] = EGL_NONE;
+
     EGLint maxConfigs;
-    if (!eglGetConfigs(eglDisplay, nullptr, 0, &maxConfigs)) {
-        BE_FATALERROR(L"Cannot query count of all EGL configs");
+    if (!eglChooseConfig(eglDisplay, minAttribs, nullptr, 0, &maxConfigs)) {
+        BE_FATALERROR(L"Cannot query count of minimum matched EGL configs");
     }
 
     EGLConfig *configs = new EGLConfig[maxConfigs];
-    if (!eglGetConfigs(eglDisplay, configs, maxConfigs, &maxConfigs)) {
-        BE_FATALERROR(L"Cannot query all EGL configs");
+    //if (!eglGetConfigs(eglDisplay, configs, maxConfigs, &maxConfigs)) {
+    if (!eglChooseConfig(eglDisplay, minAttribs, configs, maxConfigs, &maxConfigs)) {
+        BE_FATALERROR(L"Cannot query all minimum matched EGL configs");
     }
 
     EGLConfig bestConfig = nullptr;
     int64_t bestScore = LONG_MAX; // smaller score is better
 
     for (int i = 0; i < maxConfigs; i++) {
-        EGLint surfaceType;
         EGLint renderableType;
+        EGLint surfaceType;
+        EGLint colorSize;
         EGLint redSize;
         EGLint greenSize;
         EGLint blueSize;
@@ -60,8 +96,9 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
         EGLint sampleBuffers;
         EGLint depthEncoding;
 
-        eglGetConfigAttrib(eglDisplay, configs[i], EGL_SURFACE_TYPE, &surfaceType);
         eglGetConfigAttrib(eglDisplay, configs[i], EGL_RENDERABLE_TYPE, &renderableType);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_SURFACE_TYPE, &surfaceType);
+        eglGetConfigAttrib(eglDisplay, configs[i], EGL_BUFFER_SIZE, &colorSize);
         eglGetConfigAttrib(eglDisplay, configs[i], EGL_RED_SIZE, &redSize);
         eglGetConfigAttrib(eglDisplay, configs[i], EGL_GREEN_SIZE, &greenSize);
         eglGetConfigAttrib(eglDisplay, configs[i], EGL_BLUE_SIZE, &blueSize);
@@ -74,22 +111,21 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
         // Optional, Tegra-specific non-linear depth buffer, which allows for much better
         // effective depth range in relatively limited bit-depths (e.g. 16-bit)
         int nonLinearDepth = 0;
-
 		if (geglext._EGL_NV_depth_nonlinear) {
         	if (eglGetConfigAttrib(eglDisplay, configs[i], EGL_DEPTH_ENCODING_NV, &depthEncoding)) {
             	nonLinearDepth = (depthEncoding == EGL_DEPTH_ENCODING_NONLINEAR_NV) ? 1 : 0;
         	}
     	}
 
-        if (!(surfaceType & EGL_WINDOW_BIT)) {
-            continue;
-        }
-
         if (!(renderableType & (EGL_OPENGL_ES3_BIT_KHR | EGL_OPENGL_ES2_BIT))) {
             continue;
         }
 
-        if (redSize < 5 || greenSize < 6 || blueSize < 5) {
+        if (!(surfaceType & EGL_WINDOW_BIT)) {
+            continue;
+        }
+
+        if (colorSize < 16) {
             continue;
         }
 
@@ -123,6 +159,8 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
         score |= Min(Math::Abs(alphaSize - inAlphaBits), 31) << 0;
 
         if (score < bestScore || !bestConfig) {
+            BE_LOG(L"Best config: renderableType(%i), surfaceType(%i), r(%i), g(%i), b(%i), a(%i), d(%i), s(%i)\n", renderableType, surfaceType, redSize, greenSize, blueSize, alphaSize, depthSize, stencilSize);
+
             bestConfig = configs[i];
             bestScore = score;
         }
@@ -176,6 +214,10 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     eglBindAPI(EGL_OPENGL_ES_API);
 
     gegl_init(mainContext->eglDisplay, false);
+
+    if (!geglext._EGL_KHR_create_context) {
+        BE_FATALERROR(L"Unsupported OpenGL 3.0 context");
+    }
 
     mainContext->eglConfig = ChooseBestConfig(mainContext->eglDisplay, settings->colorBits, settings->alphaBits, settings->depthBits, settings->stencilBits, settings->multiSamples);
 
@@ -319,7 +361,18 @@ void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle
     ANativeWindow_setBuffersGeometry(ctx->nativeWindow, 0, 0, format);
 
     // Once we've got a valid configuration we can create a window surface that'll be used for rendering
-    EGLint surfaceAttribs[] = { /*EGL_RENDER_BUFFER, EGL_BACK_BUFFER, EGL_COLORSPACE, EGL_COLORSPACE_sRGB, */EGL_NONE };
+    EGLint surfaceAttribs[32];
+    int numSurfaceAttribs = 0;
+
+    surfaceAttribs[numSurfaceAttribs++] = EGL_RENDER_BUFFER;
+    surfaceAttribs[numSurfaceAttribs++] = EGL_BACK_BUFFER;
+
+    if (geglext._EGL_KHR_gl_colorspace) {
+        surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_KHR;
+        surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_SRGB_KHR;
+    }
+    surfaceAttribs[numSurfaceAttribs++] = EGL_NONE;
+
     ctx->eglSurface = eglCreateWindowSurface(ctx->eglDisplay, ctx->eglConfig, ctx->nativeWindow, surfaceAttribs);
     if (ctx->eglSurface == EGL_NO_SURFACE) {
         BE_FATALERROR(L"Couldn't create EGL window surface");
