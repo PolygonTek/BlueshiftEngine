@@ -54,6 +54,7 @@ static void SystemError(int errLevel, const wchar_t *msg) {
 
     env->DeleteLocalRef(javaMsg);
 
+    // FIXME: wait until finishing java UI thread
     exit(EXIT_SUCCESS);
 }
 

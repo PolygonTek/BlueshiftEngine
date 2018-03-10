@@ -74,9 +74,12 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
         // Optional, Tegra-specific non-linear depth buffer, which allows for much better
         // effective depth range in relatively limited bit-depths (e.g. 16-bit)
         int nonLinearDepth = 0;
-        if (eglGetConfigAttrib(eglDisplay, configs[i], EGL_DEPTH_ENCODING_NV, &depthEncoding)) {
-            nonLinearDepth = (depthEncoding == EGL_DEPTH_ENCODING_NONLINEAR_NV) ? 1 : 0;
-        }
+
+		if (geglext._EGL_NV_depth_nonlinear) {
+        	if (eglGetConfigAttrib(eglDisplay, configs[i], EGL_DEPTH_ENCODING_NV, &depthEncoding)) {
+            	nonLinearDepth = (depthEncoding == EGL_DEPTH_ENCODING_NONLINEAR_NV) ? 1 : 0;
+        	}
+    	}
 
         if (!(surfaceType & EGL_WINDOW_BIT)) {
             continue;
