@@ -5,6 +5,7 @@ set(BS_APP_NAME "Blueshift Player" CACHE STRING "BS_APP_NAME variable defaulting
 set(BS_APP_IDENTIFIER "com.polygontek.BlueshiftPlayer" CACHE STRING "BS_APP_IDENTIFIER variable defaulting")
 set(BS_APP_VERSION "1.0" CACHE STRING "BS_APP_VERSION variable defaulting")
 set(BS_PRODUCT_NAME "BlueshiftPlayer" CACHE STRING "BS_PRODUCT_NAME variable defaulting")
+set(BS_TARGET_DEVICE "1,2" CACHE STRING "BS_TARGET_DEVICE variable defaulting")
 set(BS_ORIENTATION "<string>UIInterfaceOrientationPortrait</string>" CACHE STRING "BS_ORIENTATION variable defaulting")
 set(BS_USE_ADMOB_REWARD_BASED_VIDEO FALSE CACHE BOOL "BS_USE_ADMOB_REWARD_BASED_VIDEO variable defaulting")
 
@@ -189,7 +190,7 @@ else ()
         if (IOS)
             set_target_properties(${PROJECT_NAME} PROPERTIES 
                 XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
-                XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2" # Universal (iPad + iPhone)
+                XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY ${BS_TARGET_DEVICE}
                 XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
                 #XCODE_ATTRIBUTE_DEVELOPMENT_TEAM XXX
                 XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
