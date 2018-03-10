@@ -38,7 +38,7 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
 
     int numMinAttribs = 0;
     minAttribs[numMinAttribs++] = EGL_RENDERABLE_TYPE;
-    minAttribs[numMinAttribs++] = EGL_OPENGL_ES3_BIT_KHR;
+    minAttribs[numMinAttribs++] = EGL_OPENGL_ES3_BIT_KHR; // EGL_KHR_create_context
 
     minAttribs[numMinAttribs++] = EGL_SURFACE_TYPE;
     minAttribs[numMinAttribs++] = EGL_WINDOW_BIT;
@@ -216,7 +216,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     gegl_init(mainContext->eglDisplay, false);
 
     if (!geglext._EGL_KHR_create_context) {
-        BE_FATALERROR(L"Unsupported OpenGL 3.0 context");
+        BE_FATALERROR(L"This device cannot support OpenGL 3.0 context");
     }
 
     mainContext->eglConfig = ChooseBestConfig(mainContext->eglDisplay, settings->colorBits, settings->alphaBits, settings->depthBits, settings->stencilBits, settings->multiSamples);
