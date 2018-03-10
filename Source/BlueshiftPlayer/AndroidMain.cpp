@@ -286,14 +286,18 @@ static void HandleCmd(android_app *appState, int32_t cmd) {
         * Command from main thread: the app's activity is being destroyed,
         * and waiting for the app thread to clean up and exit before proceeding.
         */
-        app.OnApplicationTerminate();
+        if (appInitialized) {
+            app.OnApplicationTerminate();
+        }
         break;
     case APP_CMD_PAUSE:
         /**
          * Command from main thread: the app's activity has been paused.
          */
         suspended = true;
-        app.OnApplicationPause(true);
+        if (appInitialized) {
+            app.OnApplicationPause(true);
+        }
         break;
     case APP_CMD_RESUME:
         /**
