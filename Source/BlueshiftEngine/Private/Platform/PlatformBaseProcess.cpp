@@ -75,6 +75,43 @@ ProcessHandle PlatformBaseProcess::CreateProccess(const wchar_t *appPath, const 
     return ProcessHandle();
 }
 
+bool PlatformBaseProcess::ExecuteProcess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath) {
+    ProcessHandle processHandle = PlatformProcess::CreateProccess(appPath, args, workingPath);
+    if (!processHandle.IsValid()) {
+        return false;
+    }
+
+    int32_t exitCode;
+    const int bufferSize = 32768;
+    char *buffer = new char[bufferSize];
+    bool firstOutput = true;
+
+    while (1) {
+        bool exit = PlatformProcess::GetProcessExitCode(processHandle, &exitCode);
+        PlatformProcess::Sleep(0.01f);
+
+        if (PlatformProcess::ReadProcessOutput(processHandle, bufferSize, buffer)) {
+            if (firstOutput) {
+                BE_LOG(L"Executing %ls:\n", appPath);
+                firstOutput = false;
+            }
+            BE_LOG(L"%hs", buffer);
+        }
+
+        if (exit) {
+            break;
+        }
+    }
+
+    BE_LOG(L"\n");
+
+    delete[] buffer;
+
+    processHandle.Close();
+
+    return true;
+}
+
 bool PlatformBaseProcess::IsProccessRunning(ProcessHandle &processHandle) {
     return false;
 }

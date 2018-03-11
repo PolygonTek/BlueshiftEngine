@@ -29,6 +29,8 @@ public:
     static const wchar_t *      UserName();
     static int                  NumberOfLogicalProcessors();
 
+    static bool                 ExecuteProcess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath);
+
     static ProcessHandle        CreateProccess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath);
     static bool                 IsProccessRunning(ProcessHandle &processHandle);
     static void                 WaitForProccess(ProcessHandle &processHandle);
