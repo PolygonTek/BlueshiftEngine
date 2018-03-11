@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 struct ProcessHandle {
     ProcessHandle(void *task = NULL) { }
     bool IsValid() const { return false; }
-    void Close();
+    void Close() {}
 };
 
 class BE_API PlatformAndroidProcess : public PlatformLinuxProcess {
