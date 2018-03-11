@@ -7,12 +7,12 @@ Build Sample Program
 
 ## Game Build Test
 
-Download the file [BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame/BasicGame.zip),
-extract to the `~/Documents` folder
+Download the file [BlueshiftExamples.zip](https://github.com/PolygonTek/BlueshiftExamples/archive/master.zip),
+extract BasicGame to the `~/Documents/BasicGame` folder
 
 Run `BlueshiftEditor` (`BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe`),
 select the `~/Documents/BasicGame` folder from the `File/Open Project` menu,
-and select the `~/Documents/BasicGame/Contents/Maps/title.map` from the `File/Open Scene` menu.
+and select the `~/Documents/BasicGame/Contents/Maps/main.map` from the `File/Open Scene` menu.
 
 
 Select the platform from the `Project/Build Settings...` menu,
