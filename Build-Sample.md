@@ -7,7 +7,7 @@ Build Sample Program
 
 ## Game Build Test
 
-Download the file [BlueshiftExamples.zip](https://github.com/PolygonTek/BlueshiftExamples/archive/master.zip),
+Download the file [BlueshiftExamples-master.zip](https://github.com/PolygonTek/BlueshiftExamples/archive/master.zip),
 extract BasicGame to the `~/Documents/BasicGame` folder
 
 Run `BlueshiftEditor` (`BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe`),
