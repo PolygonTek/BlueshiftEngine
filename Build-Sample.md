@@ -3,17 +3,16 @@ Build Sample Program
 
 ## Prerequisite
 
-  * [Build-Android.md](Build-Android.md)
-  * iOS part of [README.md](README.md)
+* [How to Build Engine Runtime Libraries](https://github.com/PolygonTek/BlueshiftEngine/wiki/How-to-Build-Engine-Runtime-Libraries)
 
 ## Game Build Test
 
-Download the file [BasicGame.zip](https://github.com/PolygonTek/BlueshiftDocument/raw/master/BasicGame/BasicGame.zip),
-extract to the `~/Documents` folder
+Download the file [BlueshiftExamples-master.zip](https://github.com/PolygonTek/BlueshiftExamples/archive/master.zip),
+extract `BasicGame` to the `~/Documents/BasicGame` folder
 
 Run `BlueshiftEditor` (`BlueshiftEngine/Engine/Bin/Win64/Release/BlueshiftEditor.exe`),
 select the `~/Documents/BasicGame` folder from the `File/Open Project` menu,
-and select the `~/Documents/BasicGame/Contents/Maps/title.map` from the `File/Open Scene` menu.
+and select the `~/Documents/BasicGame/Contents/Maps/main.map` from the `File/Open Scene` menu.
 
 
 Select the platform from the `Project/Build Settings...` menu,
@@ -25,19 +24,4 @@ When the build is complete, the project folder opens automatically within the bu
 
 * [Building iOS Sample Program](https://github.com/PolygonTek/BlueshiftDocument/blob/master/Build%20iOS.pdf)
 
-
-## Debugging Tips for mobile platform
-
-### Android
-
-Copy `data` and `config` directory under `%USERPROFILE%\Documents\BasicGameAnd\Project\NativeAndroid\AndroidPlayer.Packaging\assets` 
-to `/sdcard/blueshift` of Android device.
-
-Open `BlueshiftEngine/Engine/Project/NativeAndroid/NativeAndroid.sln`, then build and run `AndroidPlayer.Packaging`.
-
-### iOS
-
-Copy `data` and `config` directory under `~/Documents/BasicGameIOS` to `BlueshiftEngine/Engine/Source/Player`.
-
-Open `BlueshiftEngine/Engine/Build/xcode-iOS/BlueshiftEngine.xcodeproj`, then build and run `BlueshiftPlayer`.
 

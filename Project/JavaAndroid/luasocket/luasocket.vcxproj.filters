@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\auxiliar.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\buffer.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\except.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\inet.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\io.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\luasocket.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\options.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\select.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\tcp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\timeout.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\udp.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\usocket.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\compat.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\mime.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\unixstream.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\unixdgram.c" />
+    <ClCompile Include="..\..\..\Source\Dependencies\luasocket\unix.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\auxiliar.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\buffer.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\except.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\inet.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\io.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\luasocket.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\options.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\select.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\tcp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\timeout.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\udp.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\usocket.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\compat.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\mime.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\socket.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\unixstream.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\unixdgram.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\luasocket\unix.h" />
+  </ItemGroup>
+</Project>

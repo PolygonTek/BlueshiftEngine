@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="gles3jni.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftPlayer\Application.h" />
+    <ClInclude Include="AndroidAdmob.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="gles3jni.cpp" />
+    <ClCompile Include="RendererES2.cpp" />
+    <ClCompile Include="RendererES3.cpp" />
+    <ClCompile Include="..\..\..\Source\BlueshiftPlayer\Application.cpp" />
+    <ClCompile Include="AndroidAdmob.cpp" />
+  </ItemGroup>
+</Project>

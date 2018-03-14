@@ -1,0 +1,50 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 26
+    defaultConfig {
+        applicationId 'com.polygontek.TestRenderer'
+        minSdkVersion 19
+        targetSdkVersion 24
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_static', '-DBUILD_ENGINE=1', '-DBUILD_TEST=1'
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            ndk {
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            ndk {
+                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            }
+        }
+    }
+    sourceSets {
+        main {
+            manifest.srcFile '../../../../Source/TestRenderer/Android/AndroidManifest.xml'
+            java.srcDirs = ['../../../../Source/TestRenderer/Android/java']
+            res.srcDirs = ['../../../../Source/TestRenderer/Android/res']
+            assets.srcDirs = ['../../../../Bin/Android/Assets']
+        }
+    }
+    externalNativeBuild {
+        cmake {
+        	path '../../../../CMakeLists.txt'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+}

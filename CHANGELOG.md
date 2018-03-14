@@ -1,6 +1,13 @@
 Version History
 ---------------
 
+### 0.4.0
+- Added support for LuaJIT (Windows / macOS)
+- Added support for debugging Lua script in [ZeroBrane Studio](https://studio.zerobrane.com/)
+- Reimplemented Android build from scratch
+- Added support for Google reward based video ad (Android)
+- Various minor improvements and bug fixes
+
 ### 0.3.0
 - Improved property system
 - Added support for editing multiple selected entities simultaneously

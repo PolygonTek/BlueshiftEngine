@@ -3,13 +3,39 @@ Blueshift Game Engine
 
 [![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)]()
 
-Blueshift is a cross-platform 3D game engine. it's free, open-source, and works on Windows, macOS, iOS, and Android.
+Blueshift is a cross-platform 3D game engine implemented in C++. it's free, open-source, and works on Windows, macOS, iOS, and Android.
 The project is currently in an early stage of development.
+
+<a href='https://ko-fi.com/V7V66PEJ' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://az743702.vo.msecnd.net/cdn/kofi1.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
+Features
+-------------------
+
+  * Cross-platform (Windows, macOS, iOS and Android)
+  * OpenGL 3.2, OpenGL ES 3.0 rendering
+  * Skeletal (with hardware skinning) animation
+  * Parametric animation blending
+  * Directional, spot, point lights
+  * Shadow mapping (cascaded shadow map, omni directional shadow map, projected shadow map)
+  * Particle system
+  * Post-processing
+  * PBR rendering
+  * Physics using [Bullet](http://www.bulletphysics.org/)
+  * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
+  * 2D and 3D audio static/streaming playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
+  * TrueType font rendering using [FreeType](https://www.freetype.org/)
+  * Component based entity system
+  * Playable WYSIWYG editor using [Qt](https://www.qt.io/) with undo & redo capabilities
 
 Downloads
 -------------------
 
 Blueshift editor binaries are downloadable [here](https://github.com/PolygonTek/BlueshiftEngine/releases).
+
+Examples
+-------------------
+
+Example projects are downloadable [here](https://github.com/PolygonTek/BlueshiftExamples/archive/master.zip).
 
 Screenshots
 -------------------
@@ -19,46 +45,11 @@ Screenshots
 ![Screenshot3](Screenshots/screenshot3.png)
 ![Screenshot4](Screenshots/screenshot4.png)
 
-How To Build Engine
+Documentation
 -------------------
 
-You can build Blueshift Engine but Blueshift Editor is **not** open source yet.
-
-**Please note**: Building from source code is intended for users who want to use/test new features or customize the C++ source code. For most users, we recommend the [binary releases](https://github.com/PolygonTek/BlueshiftEngine/releases).
-
-## Windows (64 bit) and Android
-
-### Prerequisite
-
-  * [MS Visual Studio 2017](https://www.visualstudio.com/downloads/)
-    - select "Mobile development with c++"
-    - select "Mobile development with .NET"
-  * [CMake](https://cmake.org/download/)
-
-### Instruction
-
-  1. Clone the repository `git clone --recursive --progress https://github.com/PolygonTek/BlueshiftEngine.git`
-
-  2. Run `Scripts\Copy-EngineData.bat` to copy essential data to the engine folder.
-
-  3. Run `Scripts\Build-Win64.bat` to build engine from the sources.
-
-## macOS and iOS
-
-### Prerequisite
-
-  * Xcode
-  * [CMake](https://cmake.org/download/)
-
-### Instruction
-
-  1. Clone the repository `git clone --recursive --progress https://github.com/PolygonTek/BlueshiftEngine.git`
-
-  2. Run `Scripts/Copy-EngineData.command` to copy essential data to the engine folder.
-
-  3. Run `Scripts/Build-macOS.command` to build engine for macOS from the sources.
-
-  4. Run `Scripts/Build-iOS.command` to build engine for iOS from the sources.
+* [How to Build Engine Runtime Libraries](https://github.com/PolygonTek/BlueshiftEngine/wiki/How-to-Build-Engine-Runtime-Libraries)
+* [Lua Debugging with ZeroBrane Studio](https://github.com/PolygonTek/BlueshiftEngine/wiki/Lua-Debugging-with-ZeroBrane-Studio)
 
 License
 -------------------

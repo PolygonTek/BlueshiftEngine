@@ -1,0 +1,89 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 26
+    defaultConfig {
+        applicationId 'com.polygontek.BlueshiftPlayer'
+        minSdkVersion 19
+        targetSdkVersion 24
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_static', '-DBUILD_ENGINE=1', '-DBUILD_PLAYER=1', '-DBS_USE_ADMOB_REWARD_BASED_VIDEO=0'
+            }
+        }
+        splits {
+            // Configures multiple APKs based on ABI.
+            abi {
+                // Enables building multiple APKs per ABI.
+                enable gradle.startParameter.taskNames.any { it.contains("assembleRelease") }
+
+                // Resets the list of ABIs that Gradle should create APKs for to none.
+                reset()
+
+                // Specifies a list of ABIs that Gradle should create APKs for.
+                include 'armeabi-v7a', 'arm64-v8a', 'x86_64', 'x86'
+
+                // Specifies that we do not want to also generate a universal APK that includes all ABIs.
+                universalApk false
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            ndk {
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            //debuggable = true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            ndk {
+                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            }
+        }
+    }
+    sourceSets {
+        main {
+            manifest.srcFile '../../../../Source/BlueshiftPlayer/Android/AndroidManifest.xml'
+            java.srcDirs = ['../../../../Source/BlueshiftPlayer/Android/java']
+            res.srcDirs = ['../../../../Source/BlueshiftPlayer/Android/res']
+            assets.srcDirs = ['../../../../Assets']
+        }
+    }
+    aaptOptions {
+        noCompress 'zip', 'ogg'
+    }
+    externalNativeBuild {
+        cmake {
+        	path '../../../../CMakeLists.txt'
+        }
+    }
+}
+
+import com.android.build.OutputFile
+
+// Map for the version code that gives each ABI a value.
+ext.abiCodes = ['armeabi-v7a': 3, 'arm64-v8a': 4, 'x86': 5, 'x86_64': 6]
+
+// For each APK output variant, override versionCode with a combination of
+// ext.abiCodes * 1000 + defaultConfig.versionCode
+android.applicationVariants.all { variant ->
+    // Assigns a different version code for each output APK other than the universal APK.
+    variant.outputs.each { output ->
+        // Stores the value of ext.abiCodes that is associated with the ABI for this variant.
+        def baseAbiVersionCode = project.ext.abiCodes.get(output.getFilter(OutputFile.ABI))
+        if (baseAbiVersionCode != null) {
+            output.versionCodeOverride = baseAbiVersionCode * 1000 + variant.versionCode
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    implementation 'com.google.android.gms:play-services-ads:11.8.0'
+}

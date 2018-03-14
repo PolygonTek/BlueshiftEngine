@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM">
+      <Configuration>Release</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x86">
+      <Configuration>Debug</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x86">
+      <Configuration>Release</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2b101bc5-b22b-4431-b8c4-5db37469115c}</ProjectGuid>
+    <Keyword>Android</Keyword>
+    <RootNamespace>lua</RootNamespace>
+    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
+    <ApplicationType>Android</ApplicationType>
+    <ApplicationTypeRevision>3.0</ApplicationTypeRevision>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+    <AndroidAPILevel>android-21</AndroidAPILevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Clang_3_8</PlatformToolset>
+    <AndroidAPILevel>android-21</AndroidAPILevel>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
+    </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalOptions>-DANDROID_NDK -D__XAMARIN__ -ftemplate-depth=512</AdditionalOptions>
+    </ClCompile>
+    <PostBuildEvent>
+      <Command>md ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration) &amp; copy $(SolutionDir)$(Platform)\$(Configuration)\lib$(RootNamespace).a ..\..\..\Library\XamarinAndroid\$(Platform)\$(Configuration)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lapi.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lauxlib.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lcode.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\ldebug.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\ldo.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lfunc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lgc.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\llex.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\llimits.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lmem.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lobject.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lopcodes.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lparser.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lstate.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lstring.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\ltable.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\ltm.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lua.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\luaconf.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lualib.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lundump.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lvm.h" />
+    <ClInclude Include="..\..\..\Source\Dependencies\lua\lzio.h" />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lapi.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lauxlib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lbaselib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lcode.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldblib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldebug.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldo.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ldump.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lfunc.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lgc.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\linit.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\liolib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\llex.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lmathlib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lmem.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\loadlib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lobject.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lopcodes.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\loslib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lparser.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstate.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstring.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lstrlib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltable.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltablib.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\ltm.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lundump.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lvm.c"  />
+    <ClCompile Include="..\..\..\Source\Dependencies\lua\lzio.c"  />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>
