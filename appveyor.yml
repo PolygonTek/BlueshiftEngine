@@ -1,0 +1,12 @@
+version: '{build}'
+image: Visual Studio 2017
+configuration: Release
+platform: x64
+before_build:
+- cmd: call cmake-vs2017-Win64.bat nopause
+build:
+  project: Build\msvc2017\Blueshift.sln
+  parallel: true
+  verbosity: minimal
+artifacts:
+- path: Library/*
