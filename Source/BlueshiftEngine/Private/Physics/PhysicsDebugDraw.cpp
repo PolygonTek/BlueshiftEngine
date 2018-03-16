@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-PhysDebugDraw	physicsDebugDraw;
+PhysDebugDraw   physicsDebugDraw;
 
 BE_INLINE const Vec3 btVector3ToVec3(const btVector3 &btVec) {
     return Vec3(btVec.x(), btVec.y(), btVec.z());

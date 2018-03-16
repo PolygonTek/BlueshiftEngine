@@ -84,8 +84,8 @@ public:
     const Collider *            AddRefCount() const { refCount++; return this; }
 
 private:
-    int                         NumMeshes() const { return cmeshes.Count(); }
-    CollisionMesh *             GetMesh(int index) const { assert(index >= 0 && index < cmeshes.Count()); return cmeshes[index]; }
+    int                         NumCollisionMeshes() const { return collisionMeshes.Count(); }
+    CollisionMesh *             GetCollisionMesh(int index) const { assert(index >= 0 && index < collisionMeshes.Count()); return collisionMeshes[index]; }
     CollisionMesh *             AllocCollisionMesh(int numVerts, int numIndexes, bool materialIndexes = false) const;
     void                        CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1));
     void                        CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1));
@@ -103,7 +103,7 @@ private:
     float                       volume;
     Vec3                        modelScale;
     btCollisionShape *          shape;
-    Array<CollisionMesh *>      cmeshes;
+    Array<CollisionMesh *>      collisionMeshes;
 };
 
 BE_INLINE Collider::Collider() {

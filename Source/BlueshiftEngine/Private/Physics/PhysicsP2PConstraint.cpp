@@ -20,9 +20,9 @@ BE_NAMESPACE_BEGIN
 
 PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA) : 
     PhysConstraint(bodyA, nullptr) { 
-    Vec3 _anchorInA = anchorInA - bodyA->centroid;
+    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     
-    btPoint2PointConstraint *point2PointConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), ToBtVector3(_anchorInA));
+    btPoint2PointConstraint *point2PointConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), ToBtVector3(anchorInACentroid));
     point2PointConstraint->setUserConstraintPtr(this);
 
     constraint = point2PointConstraint;
@@ -30,38 +30,38 @@ PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA
 
 PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, PhysRigidBody *bodyB, const Vec3 &anchorInB) : 
     PhysConstraint(bodyA, bodyB) {
-    Vec3 _anchorInA = anchorInA - bodyA->centroid;
-    Vec3 _anchorInB = anchorInB - bodyB->centroid;
+    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
     btPoint2PointConstraint *point2PointConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(),
-        ToBtVector3(_anchorInA), ToBtVector3(_anchorInB));
+        ToBtVector3(anchorInACentroid), ToBtVector3(anchorInBCentroid));
     point2PointConstraint->setUserConstraintPtr(this);
 
     constraint = point2PointConstraint;
 }
 
 const Vec3 PhysP2PConstraint::GetAnchorA() const {
-    const btVector3 &anchorA = ((btPoint2PointConstraint *)constraint)->getPivotInA();
+    const btVector3 &anchorInACentroid = ((btPoint2PointConstraint *)constraint)->getPivotInA();
 
-    return Vec3(anchorA.x(), anchorA.y(), anchorA.z()) + bodyA->centroid;
+    return ToVec3(anchorInACentroid) + bodyA->centroid;
 }
 
 void PhysP2PConstraint::SetAnchorA(const Vec3 &anchorInA) {
-    Vec3 _anchorInA = anchorInA - bodyA->centroid;
+    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
 
-    ((btPoint2PointConstraint *)constraint)->setPivotA(ToBtVector3(_anchorInA));
+    ((btPoint2PointConstraint *)constraint)->setPivotA(ToBtVector3(anchorInACentroid));
 }
 
 const Vec3 PhysP2PConstraint::GetAnchorB() const {
-    const btVector3 &anchorB = ((btPoint2PointConstraint *)constraint)->getPivotInB();
+    const btVector3 &anchorInBCentroid = ((btPoint2PointConstraint *)constraint)->getPivotInB();
 
-    return Vec3(anchorB.x(), anchorB.y(), anchorB.z()) + bodyB->centroid;
+    return ToVec3(anchorInBCentroid) + bodyB->centroid;
 }
 
 void PhysP2PConstraint::SetAnchorB(const Vec3 &anchorInB) {
-    Vec3 _anchorInB = anchorInB - bodyA->centroid;
+    Vec3 anchorInBCentroid = anchorInB - bodyA->centroid;
 
-    ((btPoint2PointConstraint *)constraint)->setPivotB(ToBtVector3(_anchorInB));
+    ((btPoint2PointConstraint *)constraint)->setPivotB(ToBtVector3(anchorInBCentroid));
 }
 
 BE_NAMESPACE_END

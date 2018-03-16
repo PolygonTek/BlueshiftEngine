@@ -82,8 +82,8 @@ public:
     void                    SetTwistDamping(float damping);
 
 protected:
-    Vec3                    anchor;
-    Mat3                    axis;
+    Mat3                    localAxis;
+    Vec3                    localAnchor;
     Vec3                    lowerLimit;
     Vec3                    upperLimit;
     Vec3                    stiffness;

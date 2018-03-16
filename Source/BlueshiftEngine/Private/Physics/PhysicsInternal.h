@@ -15,31 +15,41 @@
 #pragma once
 
 #include "btBulletDynamicsCommon.h"
-
 #include "BulletCollision/CollisionDispatch/btGhostObject.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
-
-#include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
-#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
-#include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
+//#include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
+//#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
+//#include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
 
 BE_NAMESPACE_BEGIN
 
+/// Converts Vec3 to btVector3
 BE_INLINE btVector3 ToBtVector3(const Vec3 &vector) {
     return btVector3(vector.x, vector.y, vector.z);
 }
 
+/// Converts Quat to btQuaternion
 BE_INLINE btQuaternion ToBtQuaternion(const Quat &quaternion) {
     return btQuaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
 }
 
+/// Converts btVector3 to Vec3
 BE_INLINE Vec3 ToVec3(const btVector3 &vector) {
     return Vec3(vector.x(), vector.y(), vector.z());
 }
 
+/// Converts btQuaternion to Quat
 BE_INLINE Quat ToQuat(const btQuaternion &quaternion) {
     return Quat(quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z());
+}
+
+/// Converts Mat3 and Vec3 to btTransform
+BE_INLINE btTransform ToBtTransform(const Mat3 &rotation, const Vec3 &translation = Vec3::origin) {
+    return btTransform(btMatrix3x3(
+        rotation[0][0], rotation[1][0], rotation[2][0],
+        rotation[0][1], rotation[1][1], rotation[2][1],
+        rotation[0][2], rotation[1][2], rotation[2][2]), ToBtVector3(translation));
 }
 
 class PhysDebugDraw : public btIDebugDraw {

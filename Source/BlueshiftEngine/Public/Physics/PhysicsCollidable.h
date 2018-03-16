@@ -115,8 +115,8 @@ public:
     void                    SetCollisionListener(PhysCollisionListener *listener);
 
 protected:
-    Type                    type;
-    Vec3                    centroid;
+    Type                    type;                   ///< Collidable type
+    Vec3                    centroid;               ///< Center of mass
     unsigned int            customFilterIndex;
     btCollisionObject *     collisionObject;
     PhysCollisionListener * collisionListener;

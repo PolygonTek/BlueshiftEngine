@@ -58,8 +58,8 @@ protected:
     float                   GetDamping() const;
     void                    SetDamping(float damping);
 
-    Vec3                    anchor;
-    Mat3                    axis;
+    Mat3                    localAxis;
+    Vec3                    localAnchor;
     float                   lowerLimit;
     float                   upperLimit;
     float                   stiffness;

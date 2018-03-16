@@ -26,6 +26,7 @@ public:
 
     const Vec3              GetAnchorA() const;
     void                    SetAnchorA(const Vec3 &anchorInA);
+
     const Vec3              GetAnchorB() const;
     void                    SetAnchorB(const Vec3 &anchorInB);
 };

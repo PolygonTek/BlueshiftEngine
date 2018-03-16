@@ -53,12 +53,12 @@ void ComSocketJoint::Start() {
     PhysConstraintDesc desc;
     desc.type           = PhysConstraint::Point2Point;
     desc.bodyA          = rigidBody->GetBody();
-    desc.anchorInA      = transform->GetScale() * anchor;
+    desc.anchorInA      = transform->GetScale() * localAnchor;
 
     if (connectedBody) {
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
-        desc.bodyB      = connectedBody->GetBody();  
+        desc.bodyB      = connectedBody->GetBody();
         desc.anchorInB  = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
     } else {
         desc.bodyB      = nullptr;
@@ -81,7 +81,7 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
-    Vec3 worldOrigin = transform->GetTransform() * anchor;
+    Vec3 worldOrigin = transform->GetTransform() * localAnchor;
     
     renderWorld->SetDebugColor(Color4::red, Color4::zero);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(5), worldOrigin + Mat3::identity[0] * CentiToUnit(5), 1);
@@ -90,11 +90,11 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
 }
 
 const Vec3 &ComSocketJoint::GetAnchor() const {
-    return anchor;
+    return localAnchor;
 }
 
 void ComSocketJoint::SetAnchor(const Vec3 &anchor) {
-    this->anchor = anchor;
+    this->localAnchor = anchor;
     if (constraint) {
         ((PhysP2PConstraint *)constraint)->SetAnchorA(anchor);
     }

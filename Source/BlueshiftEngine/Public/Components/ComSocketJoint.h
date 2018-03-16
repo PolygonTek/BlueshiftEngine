@@ -43,7 +43,7 @@ public:
     void                    SetAnchor(const Vec3 &anchor);
 
 protected:
-    Vec3                    anchor;
+    Vec3                    localAnchor;
 };
 
 BE_NAMESPACE_END

@@ -18,7 +18,6 @@
 
 BE_NAMESPACE_BEGIN
 
-// TODO: stiffness, damping 값으로는 시뮬레이션이 불안정할 수 있음. soft constraint 개념을 도입해야함
 class PhysGenericSpringConstraint : public PhysGenericConstraint {
 public:
     PhysGenericSpringConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA);

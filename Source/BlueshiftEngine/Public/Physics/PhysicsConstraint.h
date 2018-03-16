@@ -35,7 +35,7 @@ public:
 
     PhysConstraint() {}
     PhysConstraint(PhysRigidBody *bodyA, PhysRigidBody *bodyB);
-    virtual ~PhysConstraint();
+    virtual ~PhysConstraint() = 0;
 
     const PhysRigidBody *   RigidBodyA() const { return bodyA; } 
     PhysRigidBody *         RigidBodyA() { return bodyA; }

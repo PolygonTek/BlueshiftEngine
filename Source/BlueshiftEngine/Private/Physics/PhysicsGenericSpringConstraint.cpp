@@ -20,12 +20,9 @@ BE_NAMESPACE_BEGIN
     
 PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA) :
     PhysGenericConstraint(bodyA, nullptr) {
-    Vec3 _anchorInA = anchorInA - bodyA->centroid;
+    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
 
-    btTransform frameA(btMatrix3x3(
-        axisInA[0][0], axisInA[1][0], axisInA[2][0],
-        axisInA[0][1], axisInA[1][1], axisInA[2][1],
-        axisInA[0][2], axisInA[1][2], axisInA[2][2]), ToBtVector3(_anchorInA));
+    btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
 
     btGeneric6DofSpringConstraint *generic6DofSpringConstraint = new btGeneric6DofSpringConstraint(*bodyA->GetRigidBody(), frameA, true);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
@@ -57,18 +54,11 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
 
 PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA, PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) : 
     PhysGenericConstraint(bodyA, bodyB) { 
-    Vec3 _anchorInA = anchorInA - bodyA->centroid;
-    Vec3 _anchorInB = anchorInB - bodyB->centroid;
+    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
-    btTransform frameA(btMatrix3x3(
-        axisInA[0][0], axisInA[1][0], axisInA[2][0],
-        axisInA[0][1], axisInA[1][1], axisInA[2][1],
-        axisInA[0][2], axisInA[1][2], axisInA[2][2]), ToBtVector3(_anchorInA));
-
-    btTransform frameB(btMatrix3x3(
-        axisInB[0][0], axisInB[1][0], axisInB[2][0],
-        axisInB[0][1], axisInB[1][1], axisInB[2][1],
-        axisInB[0][2], axisInB[1][2], axisInB[2][2]), ToBtVector3(_anchorInB));
+    btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
+    btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
 
     btGeneric6DofSpringConstraint *generic6DofSpringConstraint = new btGeneric6DofSpringConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, true);
     generic6DofSpringConstraint->setUserConstraintPtr(this);

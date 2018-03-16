@@ -59,14 +59,14 @@ void ComSpringJoint::Start() {
     PhysConstraintDesc desc;
     desc.type           = PhysConstraint::GenericSpring;
     desc.bodyA          = rigidBody->GetBody();
-    desc.axisInA        = axis;
-    desc.anchorInA      = transform->GetScale() * anchor;
+    desc.axisInA        = localAxis;
+    desc.anchorInA      = transform->GetScale() * localAnchor;
 
     if (connectedBody) {
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
-        desc.bodyB      = connectedBody->GetBody();  
-        desc.axisInB    = axis;
+        desc.bodyB      = connectedBody->GetBody();
+        desc.axisInB    = localAxis;
         desc.anchorInB  = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
     } else {
         desc.bodyB      = nullptr;
@@ -95,7 +95,7 @@ void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     const ComTransform *transform = GetEntity()->GetTransform();
 
     if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
-        Vec3 worldOrigin = transform->GetTransform() * anchor;
+        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
         renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(5), worldOrigin + Mat3::identity[0] * CentiToUnit(5), 1);
@@ -105,26 +105,26 @@ void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
 }
 
 const Vec3 &ComSpringJoint::GetAnchor() const {
-    return anchor;
+    return localAnchor;
 }
 
 void ComSpringJoint::SetAnchor(const Vec3 &anchor) {
-    this->anchor = anchor;
+    this->localAnchor = anchor;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, axis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
     }
 }
 
 Angles ComSpringJoint::GetAngles() const {
-    return axis.ToAngles();
+    return localAxis.ToAngles();
 }
 
 void ComSpringJoint::SetAngles(const Angles &angles) {
-    this->axis = angles.ToMat3();
-    this->axis.FixDegeneracies();
+    this->localAxis = angles.ToMat3();
+    this->localAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, axis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
     }
 }
 

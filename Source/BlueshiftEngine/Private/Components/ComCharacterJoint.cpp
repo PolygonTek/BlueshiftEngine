@@ -75,14 +75,14 @@ void ComCharacterJoint::Start() {
     PhysConstraintDesc desc;
     desc.type           = PhysConstraint::GenericSpring;
     desc.bodyA          = rigidBody->GetBody();
-    desc.axisInA        = axis;
-    desc.anchorInA      = transform->GetScale() * anchor;
+    desc.axisInA        = localAxis;
+    desc.anchorInA      = transform->GetScale() * localAnchor;
 
     if (connectedBody) {
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
         desc.bodyB      = connectedBody->GetBody();
-        desc.axisInB    = axis;
+        desc.axisInB    = localAxis;
         desc.anchorInB  = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
     } else {
         desc.bodyB      = nullptr;
@@ -111,8 +111,8 @@ void ComCharacterJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selec
     const ComTransform *transform = GetEntity()->GetTransform();
 
     if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
-        Vec3 worldOrigin = transform->GetTransform() * anchor;
-        Mat3 worldAxis = transform->GetAxis() * axis;
+        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
+        Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
         renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5), worldOrigin + worldAxis[0] * CentiToUnit(5), 1);
@@ -122,26 +122,26 @@ void ComCharacterJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selec
 }
 
 const Vec3 &ComCharacterJoint::GetAnchor() const {
-    return anchor;
+    return localAnchor;
 }
 
 void ComCharacterJoint::SetAnchor(const Vec3 &anchor) {
-    this->anchor = anchor;
+    this->localAnchor = anchor;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, axis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
     }
 }
 
 Angles ComCharacterJoint::GetAngles() const {
-    return axis.ToAngles();
+    return localAxis.ToAngles();
 }
 
 void ComCharacterJoint::SetAngles(const Angles &angles) {
-    this->axis = angles.ToMat3();
-    this->axis.FixDegeneracies();
+    this->localAxis = angles.ToMat3();
+    this->localAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, axis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
     }
 }
 

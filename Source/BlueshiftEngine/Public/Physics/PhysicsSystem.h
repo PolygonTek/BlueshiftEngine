@@ -34,10 +34,14 @@ public:
     PhysicsWorld *          AllocPhysicsWorld();
     void                    FreePhysicsWorld(PhysicsWorld *renderWorld);
     
+                            /// Create a collidable object with the given description.
     PhysCollidable *        CreateCollidable(const PhysCollidableDesc *desc);
+                            /// Destroy a collidable object.
     void                    DestroyCollidable(PhysCollidable *collidable);
     
+                            /// Create a constraint object with the given description.
     PhysConstraint *        CreateConstraint(const PhysConstraintDesc *desc);
+                            /// Destroy a constraint object.
     void                    DestroyConstraint(PhysConstraint *constraint);
 
     void                    CheckModifiedCVars();

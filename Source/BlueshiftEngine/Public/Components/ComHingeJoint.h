@@ -52,8 +52,8 @@ public:
     void                    SetMaxMotorImpulse(float maxMotorImpulse);
 
 protected:
-    Vec3                    anchor;
-    Mat3                    axis;
+    Mat3                    localAxis;
+    Vec3                    localAnchor;
     float                   motorSpeed;
     float                   maxMotorImpulse;
 };
