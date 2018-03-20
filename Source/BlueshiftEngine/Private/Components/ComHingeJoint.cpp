@@ -26,15 +26,16 @@ BEGIN_EVENTS(ComHingeJoint)
 END_EVENTS
 
 void ComHingeJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minimumAngle", "Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maximumAngle", "Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f, 
-        "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Maximum Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, 
-        "Maximum motor impulse", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, "Activate joint limits", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minAngle", "Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, "Minimum value of joint angle", PropertyInfo::EditorFlag)
+        .SetRange(-180, 0, 1);
+    REGISTER_ACCESSOR_PROPERTY("maxAngle", "Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, "Maximum value of joint angle", PropertyInfo::EditorFlag)
+        .SetRange(0, 180, 1);
+    REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f, "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Maximum Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "Maximum motor impulse", PropertyInfo::EditorFlag)
+        .SetRange(0, 1e30f, 0.03f);
 }
 
 ComHingeJoint::ComHingeJoint() {
@@ -106,10 +107,21 @@ void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected)
         Vec3 worldOrigin = transform->GetTransform() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
-        renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(2), worldOrigin + worldAxis[0] * CentiToUnit(2), 1);
-        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(2), worldOrigin + worldAxis[1] * CentiToUnit(2), 1);
-        renderWorld->DebugLine(worldOrigin - worldAxis[2] * CentiToUnit(10), worldOrigin + worldAxis[2] * CentiToUnit(10), 1);
+        Mat3 constraintAxis = Mat3::identity;
+        if (connectedBody) {
+            constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
+        }
+
+        if (enableLimitAngles) {
+            renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
+            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5), minimumAngle, maximumAngle, true);
+
+            renderWorld->SetDebugColor(Color4::red, Color4::zero);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5), 1);
+        }
+
+        renderWorld->SetDebugColor(Color4::red, Color4::red);
+        renderWorld->DebugArrow(worldOrigin - worldAxis[2] * CentiToUnit(5), worldOrigin + worldAxis[2] * CentiToUnit(5), CentiToUnit(3), CentiToUnit(0.75));
     }
 }
 

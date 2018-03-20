@@ -26,7 +26,7 @@ BEGIN_EVENTS(ComSocketJoint)
 END_EVENTS
 
 void ComSocketJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
 }
 
 ComSocketJoint::ComSocketJoint() {
@@ -84,9 +84,9 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     Vec3 worldOrigin = transform->GetTransform() * localAnchor;
     
     renderWorld->SetDebugColor(Color4::red, Color4::zero);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(2.5), worldOrigin + Mat3::identity[0] * CentiToUnit(2.5), 1);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(2.5), worldOrigin + Mat3::identity[1] * CentiToUnit(2.5), 1);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(2.5), worldOrigin + Mat3::identity[2] * CentiToUnit(2.5), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(1), worldOrigin + Mat3::identity[0] * CentiToUnit(1), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(1), worldOrigin + Mat3::identity[1] * CentiToUnit(1), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(1), worldOrigin + Mat3::identity[2] * CentiToUnit(1), 1);
 }
 
 const Vec3 &ComSocketJoint::GetAnchor() const {

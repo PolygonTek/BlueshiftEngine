@@ -26,10 +26,10 @@ BEGIN_EVENTS(ComSpringJoint)
 END_EVENTS
 
 void ComSpringJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("lowerLimit", "Lower Limit", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("upperLimit", "Upper Limit", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("damping", "Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::EditorFlag)
         .SetRange(0, 1, 0.01f);
@@ -79,8 +79,8 @@ void ComSpringJoint::Start() {
     constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);
-    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, lowerLimit));
-    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, upperLimit));
+    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(lowerLimit)));
+    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(upperLimit)));
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, stiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
 
@@ -98,9 +98,12 @@ void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
         Vec3 worldOrigin = transform->GetTransform() * localAnchor;
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(5), worldOrigin + Mat3::identity[0] * CentiToUnit(5), 1);
-        renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(5), worldOrigin + Mat3::identity[1] * CentiToUnit(5), 1);
-        renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(5), worldOrigin + Mat3::identity[2] * CentiToUnit(5), 1);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(2.5), worldOrigin + Mat3::identity[0] * CentiToUnit(2.5), 1);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(2.5), worldOrigin + Mat3::identity[1] * CentiToUnit(2.5), 1);
+
+        renderWorld->DebugCircle(worldOrigin - Mat3::identity[2] * CentiToUnit(2), Mat3::identity[2], CentiToUnit(2.5));
+        renderWorld->DebugCircle(worldOrigin, Mat3::identity[2], CentiToUnit(2.5));
+        renderWorld->DebugCircle(worldOrigin + Mat3::identity[2] * CentiToUnit(2), Mat3::identity[2], CentiToUnit(2.5));
     }
 }
 
@@ -135,7 +138,7 @@ float ComSpringJoint::GetLowerLimit() const {
 void ComSpringJoint::SetLowerLimit(float limit) {
     this->lowerLimit = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, lowerLimit));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(lowerLimit)));
     }
 }
 
@@ -146,7 +149,7 @@ float ComSpringJoint::GetUpperLimit() const {
 void ComSpringJoint::SetUpperLimit(float limit) {
     this->upperLimit = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, upperLimit));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(upperLimit)));
     }
 }
 
