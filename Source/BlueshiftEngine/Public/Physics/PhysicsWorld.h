@@ -84,9 +84,11 @@ public:
 
                             /// Returns fixed frame rate in physics simulation
     int                     GetFrameRate() const { return frameRate; }
+                            /// Returns fixed time delta in physics simulation
+    float                   GetFrameTimeDelta() const { return frameTimeDelta; }
 
                             /// Sets fixed frame rate in physics simulation
-    void                    SetFrameRate(int frameRate) { this->frameRate = frameRate; }
+    void                    SetFrameRate(int frameRate);
 
                             /// Returns maximum allowed time step
     float                   GetMaximumAllowedTimeStep() const { return maximumAllowedTimeStep; }
@@ -120,8 +122,9 @@ private:
     void                    CheckModifiedCVars();
 
     float                   time;
-    float                   timeDelta;
+    float                   accumulatedTimeDelta;
     int                     frameRate;
+    float                   frameTimeDelta;
     float                   maximumAllowedTimeStep;
     uint32_t                filterMasks[32];
     btDefaultCollisionConfiguration *collisionConfiguration;

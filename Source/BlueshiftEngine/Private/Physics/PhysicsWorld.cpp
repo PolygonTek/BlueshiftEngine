@@ -116,7 +116,7 @@ PhysicsWorld::PhysicsWorld() {
 
     memset(filterMasks, 0xFFFFFFFF, sizeof(filterMasks));
 
-    timeDelta = 0;
+    accumulatedTimeDelta = 0;
     time = 0;
 
     frameRate = 50;
@@ -162,6 +162,11 @@ void PhysicsWorld::ClearScene() {
     time = 0;
 }
 
+void PhysicsWorld::SetFrameRate(int frameRate) {
+    this->frameRate = frameRate; 
+    this->frameTimeDelta = 1.0f / frameRate; 
+}
+
 void PhysicsWorld::StepSimulation(int frameTime) {
     //startFrameMsec = PlatformTime::Milliseconds();
 
@@ -169,12 +174,10 @@ void PhysicsWorld::StepSimulation(int frameTime) {
         return;
     }
 
-    timeDelta += frameTime * 0.001f;
-
-    const float h = 1.0f / frameRate;
+    accumulatedTimeDelta += frameTime * 0.001f;
 
 #if 0
-    int steps = Math::Floor(timeDelta / h);
+    int steps = Math::Floor(accumulatedTimeDelta / h);
     if (steps > 0) {
         int maxSubSteps = Min(steps, MAX_SUBSTEPS);
         float timeStep = steps * h;
@@ -182,19 +185,19 @@ void PhysicsWorld::StepSimulation(int frameTime) {
 
         dynamicsWorld->stepSimulation(timeStep, maxSubSteps, h);
 
-        timeDelta -= timeStep;
+        accumulatedTimeDelta -= timeStep;
     }
 #else
-    int steps = Math::Ceil(timeDelta / h);
+    int steps = Math::Ceil(accumulatedTimeDelta / frameTimeDelta);
     int maxSubSteps = Max(1, (int)Math::Ceil(frameRate * maximumAllowedTimeStep));
 
     // The btDiscreteDynamicsWorld is guaranteed to call setWorldTransform() once per substep 
     // for every btRigidBody that : has a MotionState AND is active AND is not KINEMATIC or STATIC.
 
     // maxSubSteps > 0 이면 motion state 의 getWorldTransform() 은 interpolation 된 결과를 반환한다.
-    dynamicsWorld->stepSimulation(timeDelta, maxSubSteps, h);
+    dynamicsWorld->stepSimulation(accumulatedTimeDelta, maxSubSteps, frameTimeDelta);
     
-    timeDelta = 0.0f;
+    accumulatedTimeDelta = 0.0f;
 #endif
 
     //fc.frameTime = PlatformTime::Milliseconds() - startFrameMsec;

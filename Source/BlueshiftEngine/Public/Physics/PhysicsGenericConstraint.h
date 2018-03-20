@@ -27,16 +27,24 @@ public:
     void                SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA);
     void                SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB);
 
+                        /// Gets minimum rotation angles for each axis in radian.
     const Vec3          GetAngularLowerLimit() const;
+                        /// Sets minimum rotation angles for each axis in radian.
     void                SetAngularLowerLimit(const Vec3 &lower);
 
+                        /// Gets maximum rotation angles for each axis in radian.
     const Vec3          GetAngularUpperLimit() const;
+                        /// Sets maximum rotation angles for each axis in radian.
     void                SetAngularUpperLimit(const Vec3 &upper);
 
+                        /// Gets minimum translation offsets for each axis.
     const Vec3          GetLinearLowerLimit() const; 
+                        /// Sets minimum translation offsets for each axis.
     void                SetLinearLowerLimit(const Vec3 &lower);
 
+                        /// Gets maximum translation offsets for each axis.
     const Vec3          GetLinearUpperLimit() const; 
+                        /// Sets maximum translation offsets for each axis.
     void                SetLinearUpperLimit(const Vec3 &upper);
 };
 
