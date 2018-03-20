@@ -53,14 +53,16 @@ void PhysP2PConstraint::SetAnchorA(const Vec3 &anchorInA) {
 }
 
 const Vec3 PhysP2PConstraint::GetAnchorB() const {
-    const btVector3 &anchorInBCentroid = ((btPoint2PointConstraint *)constraint)->getPivotInB();
+    Vec3 anchorInBCentroid = ToVec3(((btPoint2PointConstraint *)constraint)->getPivotInB());
 
-    return ToVec3(anchorInBCentroid) + bodyB->centroid;
+    // pivotInB stands for local anchor in B or world anchor if body B is not defined
+    return bodyB ? anchorInBCentroid + bodyB->centroid : anchorInBCentroid;
 }
 
 void PhysP2PConstraint::SetAnchorB(const Vec3 &anchorInB) {
-    Vec3 anchorInBCentroid = anchorInB - bodyA->centroid;
+    Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
 
+    // pivotInB stands for local anchor in B or world anchor if body B is not defined
     ((btPoint2PointConstraint *)constraint)->setPivotB(ToBtVector3(anchorInBCentroid));
 }
 

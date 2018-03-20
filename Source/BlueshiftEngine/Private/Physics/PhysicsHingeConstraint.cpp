@@ -54,7 +54,7 @@ void PhysHingeConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) 
 }
 
 void PhysHingeConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) {
-    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
+    Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
 
     btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
 

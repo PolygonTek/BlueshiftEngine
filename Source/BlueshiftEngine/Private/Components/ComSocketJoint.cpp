@@ -51,21 +51,21 @@ void ComSocketJoint::Start() {
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
-    desc.type           = PhysConstraint::Point2Point;
-    desc.bodyA          = rigidBody->GetBody();
-    desc.anchorInA      = transform->GetScale() * localAnchor;
+    desc.type = PhysConstraint::Point2Point;
+    desc.collision = collisionEnabled;
+    desc.breakImpulse = breakImpulse;
+ 
+    desc.bodyA = rigidBody->GetBody();
+    desc.anchorInA = transform->GetScale() * localAnchor;
 
     if (connectedBody) {
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
-        desc.bodyB      = connectedBody->GetBody();
-        desc.anchorInB  = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        desc.bodyB = connectedBody->GetBody();
+        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
     } else {
-        desc.bodyB      = nullptr;
+        desc.bodyB = nullptr;
     }
-
-    desc.collision      = collisionEnabled;
-    desc.breakImpulse   = breakImpulse;
 
     // Create a constraint by description
     constraint = physicsSystem.CreateConstraint(&desc);
@@ -84,9 +84,9 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     Vec3 worldOrigin = transform->GetTransform() * localAnchor;
     
     renderWorld->SetDebugColor(Color4::red, Color4::zero);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(5), worldOrigin + Mat3::identity[0] * CentiToUnit(5), 1);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(5), worldOrigin + Mat3::identity[1] * CentiToUnit(5), 1);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(5), worldOrigin + Mat3::identity[2] * CentiToUnit(5), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(2.5), worldOrigin + Mat3::identity[0] * CentiToUnit(2.5), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(2.5), worldOrigin + Mat3::identity[1] * CentiToUnit(2.5), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(2.5), worldOrigin + Mat3::identity[2] * CentiToUnit(2.5), 1);
 }
 
 const Vec3 &ComSocketJoint::GetAnchor() const {

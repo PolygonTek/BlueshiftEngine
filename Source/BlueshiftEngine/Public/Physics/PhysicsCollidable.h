@@ -30,7 +30,7 @@ struct CastResult {
     PhysCollidable *        hitObject;
     Vec3                    point;
     Vec3                    normal;
-    Vec3                    endpos;
+    Vec3                    endPos;
     float                   fraction;
     int                     surfaceFlags;
 };

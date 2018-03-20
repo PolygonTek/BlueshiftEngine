@@ -53,23 +53,23 @@ void ComHingeJoint::Start() {
     assert(rigidBody);
 
     PhysConstraintDesc desc;
-    desc.type           = PhysConstraint::Hinge;
-    desc.bodyA          = rigidBody->GetBody();
-    desc.axisInA        = localAxis;
-    desc.anchorInA      = transform->GetScale() * localAnchor;
+    desc.type = PhysConstraint::Hinge;
+    desc.collision = collisionEnabled;
+    desc.breakImpulse = breakImpulse;
+
+    desc.bodyA = rigidBody->GetBody();
+    desc.axisInA = localAxis;
+    desc.anchorInA = transform->GetScale() * localAnchor;
 
     if (connectedBody) {
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
-        desc.bodyB      = connectedBody->GetBody();
-        desc.axisInB    = localAxis;
-        desc.anchorInB  = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        desc.bodyB = connectedBody->GetBody();
+        desc.axisInB = localAxis;
+        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
     } else {
-        desc.bodyB      = nullptr;
+        desc.bodyB = nullptr;
     }
-    
-    desc.collision      = collisionEnabled;
-    desc.breakImpulse   = breakImpulse;
 
     constraint = physicsSystem.CreateConstraint(&desc);
 

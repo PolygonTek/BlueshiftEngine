@@ -49,7 +49,7 @@ struct PhysCollidableDesc {
     Mat3                    axis;
     bool                    kinematic;
     bool                    ccd;
-    float                   mass;   // if mass is zero, then static object
+    float                   mass;           // if mass is zero, then static object
     float                   restitution;
     float                   friction;
     float                   rollingFriction;
@@ -60,11 +60,11 @@ struct PhysCollidableDesc {
 struct PhysConstraintDesc {
     PhysConstraint::Type    type;
     PhysRigidBody *         bodyA;
-    Vec3                    anchorInA;
-    Mat3                    axisInA;
+    Vec3                    anchorInA;      // local position in A
+    Mat3                    axisInA;        // local axis in A
     PhysRigidBody *         bodyB;
-    Vec3                    anchorInB;
-    Mat3                    axisInB;
+    Vec3                    anchorInB;      // local position in B
+    Mat3                    axisInB;        // local axis in B
     bool                    collision;
     float                   breakImpulse;
 };

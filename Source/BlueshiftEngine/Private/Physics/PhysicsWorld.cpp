@@ -206,7 +206,7 @@ const Vec3 PhysicsWorld::GetGravity() const {
     }
 
     btVector3 gravity = dynamicsWorld->getGravity();
-    return Vec3(gravity.x(), gravity.y(), gravity.z());
+    return ToVec3(gravity);
 }
 
 void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
@@ -301,10 +301,10 @@ bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origi
 
     if (cb.hasHit()) {
         trace.hitObject = (PhysCollidable *)(cb.m_collisionObject->getUserPointer());
-        trace.point = Vec3(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
-        trace.normal = Vec3(cb.m_hitNormalWorld.x(), cb.m_hitNormalWorld.y(), cb.m_hitNormalWorld.z());
+        trace.point = ToVec3(cb.m_hitPointWorld);
+        trace.normal = ToVec3(cb.m_hitNormalWorld);
         trace.fraction = cb.m_closestHitFraction;
-        trace.endpos = origin + trace.fraction * (dest - origin);
+        trace.endPos = origin + trace.fraction * (dest - origin);
 
         const btCollisionShape *shape = cb.m_collisionObject->getCollisionShape();
         if (shape) {
@@ -362,10 +362,10 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
         for (int i = 0; i < cb.m_collisionObjects.size(); i++) {
             CastResult trace;
             trace.hitObject = (PhysCollidable *)(cb.m_collisionObjects[i]->getUserPointer());
-            trace.point = Vec3(cb.m_hitPointWorld[i].x(), cb.m_hitPointWorld[i].y(), cb.m_hitPointWorld[i].z());
-            trace.normal = Vec3(cb.m_hitNormalWorld[i].x(), cb.m_hitNormalWorld[i].y(), cb.m_hitNormalWorld[i].z());
+            trace.point = ToVec3(cb.m_hitPointWorld[i]);
+            trace.normal = ToVec3(cb.m_hitNormalWorld[i]);
             trace.fraction = cb.m_hitFractions[i];
-            trace.endpos = origin + trace.fraction * (dest - origin);
+            trace.endPos = origin + trace.fraction * (dest - origin);
 
             const btCollisionShape *shape = cb.m_collisionObject->getCollisionShape();
             if (shape) {
@@ -414,14 +414,14 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
                     const int32_t *idxptr = (int32_t *)idxbase;
 
                     idx[0] = *idxptr++;
-                    idx[1] = *idxptr++;	
-                    idx[2] = *idxptr++;	
+                    idx[1] = *idxptr++;
+                    idx[2] = *idxptr++;
                 } else {
                     const int16_t *idxptr = (int16_t *)idxbase;
 
                     idx[0] = *idxptr++;
-                    idx[1] = *idxptr++;	
-                    idx[2] = *idxptr++;	
+                    idx[1] = *idxptr++;
+                    idx[2] = *idxptr++;
                 }
 
                 Vec3 v0 = *(Vec3 *)(indexedMesh.m_vertexBase + indexedMesh.m_vertexStride * idx[0]);
@@ -448,7 +448,7 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
     if (origin.DistanceSqr(dest) < Math::FloatEpsilon) {
         trace.hitObject = nullptr;
         trace.fraction = 1.0f;
-        trace.endpos = origin;
+        trace.endPos = origin;
         trace.surfaceFlags = 0;
         return false;
     }
@@ -474,10 +474,10 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
     
     if (cb.hasHit()) {
         trace.hitObject = (PhysCollidable *)(cb.m_hitCollisionObject->getUserPointer());
-        trace.point = Vec3(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
-        trace.normal = Vec3(cb.m_hitNormalWorld.x(), cb.m_hitNormalWorld.y(), cb.m_hitNormalWorld.z());
+        trace.point = ToVec3(cb.m_hitPointWorld);
+        trace.normal = ToVec3(cb.m_hitNormalWorld);
         trace.fraction = cb.m_closestHitFraction;
-        trace.endpos = origin + trace.fraction * (dest - origin);
+        trace.endPos = origin + trace.fraction * (dest - origin);
 
         const btCollisionShape *shape = cb.m_hitCollisionObject->getCollisionShape();
         if (shape) {
@@ -495,7 +495,7 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
     } else {
         trace.hitObject = nullptr;
         trace.fraction = 1.0f;
-        trace.endpos = dest;
+        trace.endPos = dest;
         trace.surfaceFlags = 0;
     }
 
@@ -561,10 +561,10 @@ void PhysicsWorld::ProcessCollision() {
                     const btScalar impulse = pt.getAppliedImpulse();
 
                     if (listenerA) {
-                        listenerA->Collide(a, b, Vec3(ptB.x(), ptB.y(), ptB.z()), Vec3(normalOnB.x(), normalOnB.y(), normalOnB.z()), distance, impulse);
+                        listenerA->Collide(a, b, ToVec3(ptB), ToVec3(normalOnB), distance, impulse);
                     }
                     if (listenerB) {
-                        listenerB->Collide(b, a, Vec3(ptA.x(), ptA.y(), ptA.z()), Vec3(-normalOnB.x(), -normalOnB.y(), -normalOnB.z()), distance, impulse);
+                        listenerB->Collide(b, a, ToVec3(ptA), ToVec3(-normalOnB), distance, impulse);
                     }
                 }
             }

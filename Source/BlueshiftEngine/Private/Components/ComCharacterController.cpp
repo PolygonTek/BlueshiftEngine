@@ -303,7 +303,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
 
         // 이동 가능한 fraction 만큼 origin 이동
         if (trace.fraction > 0.0f) {
-            origin = trace.endpos;
+            origin = trace.endPos;
             numBumpNormals = 0;
         }
         

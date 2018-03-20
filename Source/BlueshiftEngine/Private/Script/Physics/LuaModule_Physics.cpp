@@ -43,7 +43,7 @@ void LuaVM::RegisterPhysics(LuaCpp::Module &module) {
     _Physics_CastResultParent.AddClassMembers<CastResult>(
         "point", &CastResult::point,
         "normal", &CastResult::normal,
-        "end_pos", &CastResult::endpos,
+        "end_pos", &CastResult::endPos,
         "fraction", &CastResult::fraction,
         "surface_flags", &CastResult::surfaceFlags);
     
