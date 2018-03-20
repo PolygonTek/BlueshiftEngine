@@ -45,8 +45,16 @@ public:
     Angles                  GetAngles() const;
     void                    SetAngles(const Angles &angles);
 
-    float                   GetMotorSpeed() const;
-    void                    SetMotorSpeed(float motorSpeed);
+    bool                    GetEnableLimitAngles() const;
+    void                    SetEnableLimitAngles(bool enable);
+
+    float                   GetMinimumAngle() const;
+    void                    SetMinimumAngle(float minimumAngle);
+    float                   GetMaximumAngle() const;
+    void                    SetMaximumAngle(float maximumAngle);
+
+    float                   GetMotorTargetVelocity() const;
+    void                    SetMotorTargetVelocity(float motorTargetVelocity);
 
     float                   GetMaxMotorImpulse() const;
     void                    SetMaxMotorImpulse(float maxMotorImpulse);
@@ -54,7 +62,10 @@ public:
 protected:
     Mat3                    localAxis;
     Vec3                    localAnchor;
-    float                   motorSpeed;
+    float                   minimumAngle;
+    float                   maximumAngle;
+    bool                    enableLimitAngles;
+    float                   motorTargetVelocity;
     float                   maxMotorImpulse;
 };
 

@@ -27,13 +27,19 @@ public:
     void                SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA);
     void                SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB);
 
-    void                EnableLimit(bool enable);
-    float               GetLowerLimit() const { return lowerLimit; }
-    float               GetUpperLimit() const { return upperLimit; }
-    void                SetLimit(float lowerLimit, float upperLimit);
+                        /// Gets minimum rotation angle in radian.
+    float               GetLowerLimitAngle() const { return lowerLimit; }
+                        /// Gets maximum rotation angle in radian.
+    float               GetUpperLimitAngle() const { return upperLimit; }
+                        /// Sets rotation limit angles in radian.
+    void                SetLimitAngles(float lowerLimit, float upperLimit);
+                        /// Enables rotation limit.
+    void                EnableLimitAngles(bool enable);
 
+                        /// Sets motor target angular velocity in radian and maximum motor torque.
+    void                SetMotor(float motorTargetVelocity, float maxMotorTorque);
+                        /// Enables motors.
     void                EnableMotor(bool enable);
-    void                SetMotor(float motorSpeed, float maxMotorImpulse);
 
 private:
     float               lowerLimit;

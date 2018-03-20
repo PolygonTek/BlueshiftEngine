@@ -27,8 +27,14 @@ void LuaVM::RegisterHingeJointComponent(LuaCpp::Module &module) {
         "set_anchor", &ComHingeJoint::SetAnchor,
         "angles", &ComHingeJoint::GetAngles,
         "set_angles", &ComHingeJoint::SetAngles,
-        "motor_speed", &ComHingeJoint::GetMotorSpeed,
-        "set_motor_speed", &ComHingeJoint::SetMotorSpeed,
+        "enable_limit_angles", &ComHingeJoint::GetEnableLimitAngles,
+        "set_enable_limit_angles", &ComHingeJoint::SetEnableLimitAngles,
+        "minimum_angle", &ComHingeJoint::GetMinimumAngle,
+        "set_minimum_angle", &ComHingeJoint::SetMinimumAngle,
+        "maximum_angle", &ComHingeJoint::GetMaximumAngle,
+        "set_maximum_angle", &ComHingeJoint::SetMaximumAngle,
+        "motor_target_velocity", &ComHingeJoint::GetMotorTargetVelocity,
+        "set_motor_target_velocity", &ComHingeJoint::SetMotorTargetVelocity,
         "max_motor_impulse", &ComHingeJoint::GetMaxMotorImpulse,
         "set_max_motor_impulse", &ComHingeJoint::SetMaxMotorImpulse);
 

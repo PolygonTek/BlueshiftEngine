@@ -28,8 +28,13 @@ END_EVENTS
 void ComHingeJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("motorSpeed", "Motor Speed", float, GetMotorSpeed, SetMotorSpeed, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Max Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minimumAngle", "Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maximumAngle", "Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f, 
+        "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Maximum Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, 
+        "Maximum motor impulse", PropertyInfo::EditorFlag);
 }
 
 ComHingeJoint::ComHingeJoint() {
@@ -74,8 +79,18 @@ void ComHingeJoint::Start() {
     constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysHingeConstraint *hingeConstraint = static_cast<PhysHingeConstraint *>(constraint);
-    hingeConstraint->EnableMotor(motorSpeed != 0.0f ? true : false);
-    hingeConstraint->SetMotor(motorSpeed, maxMotorImpulse);
+
+    // Apply limit angles
+    if (enableLimitAngles) {
+        hingeConstraint->SetLimitAngles(DEG2RAD(minimumAngle), DEG2RAD(maximumAngle));
+        hingeConstraint->EnableLimitAngles(enableLimitAngles);
+    }
+
+    // Apply motor
+    if (motorTargetVelocity != 0.0f) {
+        hingeConstraint->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
+        hingeConstraint->EnableMotor(true);
+    }
 
     if (IsActiveInHierarchy()) {
         hingeConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
@@ -92,8 +107,8 @@ void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected)
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5), worldOrigin + worldAxis[0] * CentiToUnit(5), 1);
-        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(5), worldOrigin + worldAxis[1] * CentiToUnit(5), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(2), worldOrigin + worldAxis[0] * CentiToUnit(2), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(2), worldOrigin + worldAxis[1] * CentiToUnit(2), 1);
         renderWorld->DebugLine(worldOrigin - worldAxis[2] * CentiToUnit(10), worldOrigin + worldAxis[2] * CentiToUnit(10), 1);
     }
 }
@@ -122,15 +137,48 @@ void ComHingeJoint::SetAngles(const Angles &angles) {
     }
 }
 
-float ComHingeJoint::GetMotorSpeed() const {
-    return motorSpeed;
+bool ComHingeJoint::GetEnableLimitAngles() const {
+    return enableLimitAngles;
 }
 
-void ComHingeJoint::SetMotorSpeed(float motorSpeed) {
-    this->motorSpeed = motorSpeed;
+void ComHingeJoint::SetEnableLimitAngles(bool enable) {
+    this->enableLimitAngles = enable;
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->EnableMotor(motorSpeed != 0.0f ? true : false);
-        ((PhysHingeConstraint *)constraint)->SetMotor(motorSpeed, maxMotorImpulse);
+        ((PhysHingeConstraint *)constraint)->EnableLimitAngles(enableLimitAngles);
+    }
+}
+
+float ComHingeJoint::GetMinimumAngle() const {
+    return minimumAngle;
+}
+
+void ComHingeJoint::SetMinimumAngle(float minimumAngle) {
+    this->minimumAngle = minimumAngle;
+    if (constraint) {
+        ((PhysHingeConstraint *)constraint)->SetLimitAngles(DEG2RAD(minimumAngle), DEG2RAD(maximumAngle));
+    }
+}
+
+float ComHingeJoint::GetMaximumAngle() const {
+    return maximumAngle;
+}
+
+void ComHingeJoint::SetMaximumAngle(float maximumAngle) {
+    this->maximumAngle = maximumAngle;
+    if (constraint) {
+        ((PhysHingeConstraint *)constraint)->SetLimitAngles(DEG2RAD(minimumAngle), DEG2RAD(maximumAngle));
+    }
+}
+
+float ComHingeJoint::GetMotorTargetVelocity() const {
+    return motorTargetVelocity;
+}
+
+void ComHingeJoint::SetMotorTargetVelocity(float motorTargetVelocity) {
+    this->motorTargetVelocity = motorTargetVelocity;
+    if (constraint) {
+        ((PhysHingeConstraint *)constraint)->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
+        ((PhysHingeConstraint *)constraint)->EnableMotor(motorTargetVelocity != 0.0f ? true : false);
     }
 }
 
@@ -141,8 +189,8 @@ float ComHingeJoint::GetMaxMotorImpulse() const {
 void ComHingeJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     this->maxMotorImpulse = maxMotorImpulse;
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->EnableMotor(motorSpeed != 0.0f ? true : false);
-        ((PhysHingeConstraint *)constraint)->SetMotor(motorSpeed, maxMotorImpulse);
+        ((PhysHingeConstraint *)constraint)->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
+        ((PhysHingeConstraint *)constraint)->EnableMotor(motorTargetVelocity != 0.0f ? true : false);
     }
 }
 

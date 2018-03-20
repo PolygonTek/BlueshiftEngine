@@ -62,12 +62,16 @@ void PhysHingeConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) 
     hingeConstraint->setFrames(hingeConstraint->getFrameOffsetA(), frameB);
 }
 
-void PhysHingeConstraint::SetLimit(float lowerLimit, float upperLimit) {
+void PhysHingeConstraint::SetLimitAngles(float lowerLimit, float upperLimit) {
     this->lowerLimit = lowerLimit;
     this->upperLimit = upperLimit;
+
+    if (((btHingeConstraint *)constraint)->hasLimit()) {
+        ((btHingeConstraint *)constraint)->setLimit(lowerLimit, upperLimit, 0.9f, 0.3f);
+    }
 }
 
-void PhysHingeConstraint::EnableLimit(bool enable) {
+void PhysHingeConstraint::EnableLimitAngles(bool enable) {
     if (enable) {
         ((btHingeConstraint *)constraint)->setLimit(lowerLimit, upperLimit, 0.9f, 0.3f);
     } else {
@@ -75,15 +79,15 @@ void PhysHingeConstraint::EnableLimit(bool enable) {
     }
 }
 
-void PhysHingeConstraint::EnableMotor(bool enable) {
-    btScalar motorSpeed = ((btHingeConstraint *)constraint)->getMotorTargetVelosity();
-    btScalar maxMotorImpulse = ((btHingeConstraint *)constraint)->getMaxMotorImpulse();
-    ((btHingeConstraint *)constraint)->enableAngularMotor(enable, motorSpeed, maxMotorImpulse);
+void PhysHingeConstraint::SetMotor(float motorTargetVelocity, float maxMotorImpulse) {
+    bool enabled = ((btHingeConstraint *)constraint)->getEnableAngularMotor();
+    ((btHingeConstraint *)constraint)->enableAngularMotor(enabled, motorTargetVelocity, maxMotorImpulse);
 }
 
-void PhysHingeConstraint::SetMotor(float motorSpeed, float maxMotorImpulse) {
-    bool enabled = ((btHingeConstraint *)constraint)->getEnableAngularMotor();
-    ((btHingeConstraint *)constraint)->enableAngularMotor(enabled, motorSpeed, maxMotorImpulse);
+void PhysHingeConstraint::EnableMotor(bool enable) {
+    btScalar motorTargetVelocity = ((btHingeConstraint *)constraint)->getMotorTargetVelosity();
+    btScalar maxMotorImpulse = ((btHingeConstraint *)constraint)->getMaxMotorImpulse();
+    ((btHingeConstraint *)constraint)->enableAngularMotor(enable, motorTargetVelocity, maxMotorImpulse);
 }
 
 BE_NAMESPACE_END
