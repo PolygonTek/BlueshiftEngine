@@ -140,6 +140,15 @@ public:
 		return m_baseCollider;
 	}
 
+	btMultiBodyLinkCollider* getLinkCollider(int index)
+	{
+		if (index >= 0 && index < getNumLinks())
+		{
+			return getLink(index).m_collider;
+		}
+		return 0;
+	}
+
     //
     // get parent
     // input: link num from 0 to num_links-1
@@ -272,7 +281,11 @@ public:
     btVector3 localDirToWorld(int i, const btVector3 &vec) const;
     btVector3 worldPosToLocal(int i, const btVector3 &vec) const;
     btVector3 worldDirToLocal(int i, const btVector3 &vec) const;
-    
+
+    //
+    // transform a frame in local coordinate to a frame in world coordinate
+    //
+    btMatrix3x3 localFrameToWorld(int i, const btMatrix3x3 &mat) const;
 
     //
     // calculate kinetic energy and angular momentum
@@ -556,6 +569,8 @@ void addJointTorque(int i, btScalar Q);
 	}
 	void	forwardKinematics(btAlignedObjectArray<btQuaternion>& scratch_q,btAlignedObjectArray<btVector3>& scratch_m);
 
+	void compTreeLinkVelocities(btVector3 *omega, btVector3 *vel) const;
+
 	void	updateCollisionObjectWorldTransforms(btAlignedObjectArray<btQuaternion>& scratch_q,btAlignedObjectArray<btVector3>& scratch_m);
 	
 	virtual	int	calculateSerializeBufferSize()	const;
@@ -573,13 +588,44 @@ void addJointTorque(int i, btScalar Q);
 		m_baseName = name;
 	}
 
+	///users can point to their objects, userPointer is not used by Bullet
+	void*	getUserPointer() const
+	{
+		return m_userObjectPointer;
+	}
+
+	int	getUserIndex() const
+	{
+		return m_userIndex;
+	}
+
+	int	getUserIndex2() const
+	{
+		return m_userIndex2;
+	}
+	///users can point to their objects, userPointer is not used by Bullet
+	void	setUserPointer(void* userPointer)
+	{
+		m_userObjectPointer = userPointer;
+	}
+
+	///users can point to their objects, userPointer is not used by Bullet
+	void	setUserIndex(int index)
+	{
+		m_userIndex = index;
+	}
+
+	void	setUserIndex2(int index)
+	{
+		m_userIndex2 = index;
+	}
+
 private:
     btMultiBody(const btMultiBody &);  // not implemented
     void operator=(const btMultiBody &);  // not implemented
 
-    void compTreeLinkVelocities(btVector3 *omega, btVector3 *vel) const;
 
-	void solveImatrix(const btVector3& rhs_top, const btVector3& rhs_bot, float result[6]) const;
+	void solveImatrix(const btVector3& rhs_top, const btVector3& rhs_bot, btScalar result[6]) const;
 	void solveImatrix(const btSpatialForceVector &rhs, btSpatialMotionVector &result) const;
 	
 	void updateLinksDofOffsets()
@@ -613,7 +659,6 @@ private:
     btVector3 m_baseConstraintTorque;    // external torque applied to base. World frame.
  
     btAlignedObjectArray<btMultibodyLink> m_links;    // array of m_links, excluding the base. index from 0 to num_links-1.
-	btAlignedObjectArray<btMultiBodyLinkCollider*> m_colliders;
 
     
     //
@@ -641,6 +686,7 @@ private:
 	btMatrix3x3 m_cachedInertiaTopRight;
 	btMatrix3x3 m_cachedInertiaLowerLeft;
 	btMatrix3x3 m_cachedInertiaLowerRight;
+	bool m_cachedInertiaValid;
 
     bool m_fixedBase;
 
@@ -649,18 +695,25 @@ private:
     bool m_canSleep;
     btScalar m_sleepTimer;
 
+	void* m_userObjectPointer;
+	int m_userIndex2;
+	int m_userIndex;
+
 	int	m_companionId;
 	btScalar	m_linearDamping;
 	btScalar	m_angularDamping;
-	bool	m_useGyroTerm;
+	bool		m_useGyroTerm;
 	btScalar	m_maxAppliedImpulse;
 	btScalar	m_maxCoordinateVelocity;
 	bool		m_hasSelfCollision;
 	
-		bool __posUpdated;
-		int m_dofCount, m_posVarCnt;
+	bool __posUpdated;
+	int m_dofCount, m_posVarCnt;
+
 	bool m_useRK4, m_useGlobalVelocities;
-	
+	//for global velocities, see 8.3.2B Proposed resolution in Jakub Stepien PhD Thesis
+	//https://drive.google.com/file/d/0Bz3vEa19XOYGNWdZWGpMdUdqVmZ5ZVBOaEh4ZnpNaUxxZFNV/view?usp=sharing
+
 	///the m_needsJointFeedback gets updated/computed during the stepVelocitiesMultiDof and it for internal usage only
 	bool m_internalNeedsJointFeedback;
 };
@@ -668,48 +721,54 @@ private:
 struct btMultiBodyLinkDoubleData
 {
 	btQuaternionDoubleData	m_zeroRotParentToThis;
-	btVector3DoubleData		m_parentComToThisComOffset;
+	btVector3DoubleData		m_parentComToThisPivotOffset;
 	btVector3DoubleData		m_thisPivotToThisComOffset;
 	btVector3DoubleData		m_jointAxisTop[6];
 	btVector3DoubleData		m_jointAxisBottom[6];
 
-
-	char					*m_linkName;
-	char					*m_jointName;
-	btCollisionObjectDoubleData	*m_linkCollider;
-	
 	btVector3DoubleData		m_linkInertia;   // inertia of the base (in local frame; diagonal)
+	btVector3DoubleData		m_absFrameTotVelocityTop;
+	btVector3DoubleData		m_absFrameTotVelocityBottom;
+	btVector3DoubleData		m_absFrameLocVelocityTop;
+	btVector3DoubleData		m_absFrameLocVelocityBottom;
+
 	double					m_linkMass;
 	int						m_parentIndex;
 	int						m_jointType;
-	
-
-	
 
 	int						m_dofCount;
 	int						m_posVarCount;
 	double					m_jointPos[7];
 	double					m_jointVel[6];
 	double					m_jointTorque[6];
+
+	double					m_jointDamping;
+	double					m_jointFriction;
+	double					m_jointLowerLimit;
+	double					m_jointUpperLimit;
+	double					m_jointMaxForce;
+	double					m_jointMaxVelocity;
 	
-	
-	
+	char					*m_linkName;
+	char					*m_jointName;
+	btCollisionObjectDoubleData	*m_linkCollider;
+	char					*m_paddingPtr;
+
 };
 
 struct btMultiBodyLinkFloatData
 {
 	btQuaternionFloatData	m_zeroRotParentToThis;
-	btVector3FloatData		m_parentComToThisComOffset;
+	btVector3FloatData		m_parentComToThisPivotOffset;
 	btVector3FloatData		m_thisPivotToThisComOffset;
 	btVector3FloatData		m_jointAxisTop[6];
 	btVector3FloatData		m_jointAxisBottom[6];
-	
+	btVector3FloatData		m_linkInertia;   // inertia of the base (in local frame; diagonal)
+	btVector3FloatData		m_absFrameTotVelocityTop;
+	btVector3FloatData		m_absFrameTotVelocityBottom;
+	btVector3FloatData		m_absFrameLocVelocityTop;
+	btVector3FloatData		m_absFrameLocVelocityBottom;
 
-	char				*m_linkName;
-	char				*m_jointName;
-	btCollisionObjectFloatData	*m_linkCollider;
-	
-	btVector3FloatData	m_linkInertia;   // inertia of the base (in local frame; diagonal)
 	int						m_dofCount;
 	float				m_linkMass;
 	int					m_parentIndex;
@@ -721,38 +780,55 @@ struct btMultiBodyLinkFloatData
 	float					m_jointVel[6];
 	float					m_jointTorque[6];
 	int						m_posVarCount;
+	float					m_jointDamping;
+	float					m_jointFriction;
+	float					m_jointLowerLimit;
+	float					m_jointUpperLimit;
+	float					m_jointMaxForce;
+	float					m_jointMaxVelocity;
 	
+	char				*m_linkName;
+	char				*m_jointName;
+	btCollisionObjectFloatData	*m_linkCollider;
+	char				*m_paddingPtr;
 
 };
 
 ///do not change those serialization structures, it requires an updated sBulletDNAstr/sBulletDNAstr64
 struct	btMultiBodyDoubleData
 {
+	btVector3DoubleData m_baseWorldPosition;
+	btQuaternionDoubleData m_baseWorldOrientation;
+	btVector3DoubleData m_baseLinearVelocity;
+	btVector3DoubleData m_baseAngularVelocity;
+	btVector3DoubleData m_baseInertia;   // inertia of the base (in local frame; diagonal)
+	double	m_baseMass;
+	int		m_numLinks;
+	char	m_padding[4];
+
 	char	*m_baseName;
 	btMultiBodyLinkDoubleData	*m_links;
 	btCollisionObjectDoubleData	*m_baseCollider;
-
-	btTransformDoubleData m_baseWorldTransform;
-	btVector3DoubleData m_baseInertia;   // inertia of the base (in local frame; diagonal)
 	
-	int		m_numLinks;
-	double	m_baseMass;
-
-	char m_padding[4];
 	
 };
 
 ///do not change those serialization structures, it requires an updated sBulletDNAstr/sBulletDNAstr64
 struct	btMultiBodyFloatData
 {
+	btVector3FloatData m_baseWorldPosition;
+	btQuaternionFloatData m_baseWorldOrientation;
+	btVector3FloatData m_baseLinearVelocity;
+	btVector3FloatData m_baseAngularVelocity;
+
+	btVector3FloatData m_baseInertia;   // inertia of the base (in local frame; diagonal)
+	float	m_baseMass;
+	int		m_numLinks;
+
 	char	*m_baseName;
 	btMultiBodyLinkFloatData	*m_links;
 	btCollisionObjectFloatData	*m_baseCollider;
-	btTransformFloatData m_baseWorldTransform;
-	btVector3FloatData m_baseInertia;   // inertia of the base (in local frame; diagonal)
-	
-	float	m_baseMass;
-	int		m_numLinks;
+
 };
 
 

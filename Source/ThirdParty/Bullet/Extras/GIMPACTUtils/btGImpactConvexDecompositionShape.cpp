@@ -21,7 +21,7 @@ subject to the following restrictions:
 #include "btGImpactConvexDecompositionShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 
-#include "../ConvexDecomposition/ConvexBuilder.h"
+#include "ConvexBuilder.h"
 
 class GIM_ConvexDecomposition : public ConvexDecomposition::ConvexDecompInterface
 {

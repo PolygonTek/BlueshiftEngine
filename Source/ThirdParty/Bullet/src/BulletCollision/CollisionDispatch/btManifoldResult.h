@@ -34,6 +34,15 @@ extern ContactAddedCallback		gContactAddedCallback;
 
 //#define DEBUG_PART_INDEX 1
 
+/// These callbacks are used to customize the algorith that combine restitution, friction, damping, Stiffness
+typedef btScalar (*CalculateCombinedCallback)(const btCollisionObject* body0,const btCollisionObject* body1);
+
+extern CalculateCombinedCallback		gCalculateCombinedRestitutionCallback;
+extern CalculateCombinedCallback		gCalculateCombinedFrictionCallback;
+extern CalculateCombinedCallback		gCalculateCombinedRollingFrictionCallback;
+extern CalculateCombinedCallback		gCalculateCombinedSpinningFrictionCallback;
+extern CalculateCombinedCallback		gCalculateCombinedContactDampingCallback;
+extern CalculateCombinedCallback		gCalculateCombinedContactStiffnessCallback;
 
 ///btManifoldResult is a helper class to manage  contact results.
 class btManifoldResult : public btDiscreteCollisionDetectorInterface::Result
@@ -49,17 +58,19 @@ protected:
 	int m_index0;
 	int m_index1;
 	
-
+	
 public:
 
 	btManifoldResult()
-#ifdef DEBUG_PART_INDEX
 		:
+#ifdef DEBUG_PART_INDEX
+		
 	m_partId0(-1),
 	m_partId1(-1),
 	m_index0(-1),
 	m_index1(-1)
 #endif //DEBUG_PART_INDEX
+		m_closestPointDistanceThreshold(0)
 	{
 	}
 
@@ -142,9 +153,15 @@ public:
 		return m_body1Wrap->getCollisionObject();
 	}
 
+	btScalar	m_closestPointDistanceThreshold;
+
 	/// in the future we can let the user override the methods to combine restitution and friction
 	static btScalar	calculateCombinedRestitution(const btCollisionObject* body0,const btCollisionObject* body1);
 	static btScalar	calculateCombinedFriction(const btCollisionObject* body0,const btCollisionObject* body1);
+	static btScalar calculateCombinedRollingFriction(const btCollisionObject* body0,const btCollisionObject* body1);
+    static btScalar calculateCombinedSpinningFriction(const btCollisionObject* body0,const btCollisionObject* body1);
+    static btScalar calculateCombinedContactDamping(const btCollisionObject* body0,const btCollisionObject* body1);
+	static btScalar calculateCombinedContactStiffness(const btCollisionObject* body0,const btCollisionObject* body1);
 };
 
 #endif //BT_MANIFOLD_RESULT_H
