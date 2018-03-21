@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-// Hinge constraint or revolute joint
+/// Hinge constraint, also known as revolute joint
 class PhysHingeConstraint : public PhysConstraint {
 public:
     PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA);

@@ -44,8 +44,6 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
 
     constraint = generic6DofSpringConstraint;
 
-    bodyA->GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
-
     angularStiffness.SetFromScalar(0);
     angularDamping.SetFromScalar(0);
     linearStiffness.SetFromScalar(0);
@@ -118,9 +116,9 @@ void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
 void PhysGenericSpringConstraint::SetLinearDamping(const Vec3 &damping) {
     btGeneric6DofSpringConstraint *genericSpringConstraint = static_cast<btGeneric6DofSpringConstraint *>(constraint);
 
-    genericSpringConstraint->setStiffness(0, damping.x);
-    genericSpringConstraint->setStiffness(1, damping.y);
-    genericSpringConstraint->setStiffness(2, damping.z);
+    genericSpringConstraint->setDamping(0, damping.x);
+    genericSpringConstraint->setDamping(1, damping.y);
+    genericSpringConstraint->setDamping(2, damping.z);
 
     genericSpringConstraint->setEquilibriumPoint();
 

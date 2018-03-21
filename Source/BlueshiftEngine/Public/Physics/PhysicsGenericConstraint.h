@@ -18,6 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
+/// Generic 6 DOF (Degree of Freedom) constraint
 class PhysGenericConstraint : public PhysConstraint {
 public:
     PhysGenericConstraint(PhysRigidBody *bodyA, PhysRigidBody *bodyB) : PhysConstraint(bodyA, bodyB) {}

@@ -18,6 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
+/// Generic 6 DOF (Degree of Freedom) spring constraint
 class PhysGenericSpringConstraint : public PhysGenericConstraint {
 public:
     PhysGenericSpringConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA);

@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-// Point-to-point constraint, also known as ball socket joint
+/// Point-to-point constraint, also known as ball socket joint
 class PhysP2PConstraint : public PhysConstraint {
 public:
     PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA);
