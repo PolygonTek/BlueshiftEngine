@@ -106,6 +106,7 @@ void Collider::CreateBox(const Vec3 &center, const Vec3 &extents, float margin) 
     btVector3 halfExtents = btVector3(extents.x, extents.y, extents.z);
     btBoxShape *boxShape = new btBoxShape(halfExtents);
     boxShape->setMargin(margin);
+
     shape = boxShape;
 
     modelScale = Vec3::one;
@@ -119,6 +120,7 @@ void Collider::CreateSphere(const Vec3 &center, float radius, float margin) {
     type = Type::Sphere;
     btSphereShape *sphereShape = new btSphereShape(radius);
     sphereShape->setMargin(margin);
+
     shape = sphereShape;
 
     modelScale = Vec3::one;

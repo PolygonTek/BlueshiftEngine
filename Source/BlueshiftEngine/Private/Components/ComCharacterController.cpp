@@ -101,7 +101,7 @@ void ComCharacterController::Awake() {
         float scaledHeight = transform->GetScale().z * capsuleHeight;
 
         collider = colliderManager.AllocUnnamedCollider();
-        collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight, scaledRadius);
+        collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight);
 
         PhysCollidableDesc desc;
         desc.type = PhysCollidable::Type::Character;

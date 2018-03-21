@@ -26,7 +26,8 @@ BE_INLINE const Vec3 btVector3ToVec3(const btVector3 &btVec) {
 }
 
 BE_INLINE const Mat3 btMatrix3x3ToMat3(const btMatrix3x3 &btMat) {
-    return Mat3(btMat[0][0], btMat[1][0], btMat[2][0],
+    return Mat3(
+        btMat[0][0], btMat[1][0], btMat[2][0],
         btMat[0][1], btMat[1][1], btMat[2][1],
         btMat[0][2], btMat[1][2], btMat[2][2]);
 }
