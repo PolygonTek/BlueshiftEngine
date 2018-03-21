@@ -45,77 +45,101 @@ PhysGenericConstraint::PhysGenericConstraint(PhysRigidBody *bodyA, const Vec3 &a
 }
 
 void PhysGenericConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
+    btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
 
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
 
-    genericConstraint->setFrames(frameA, genericConstraint->getFrameOffsetB());
+    generic6DofConstraint->setFrames(frameA, generic6DofConstraint->getFrameOffsetB());
 }
 
 void PhysGenericConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
+    btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
 
     Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
     btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
 
-    genericConstraint->setFrames(genericConstraint->getFrameOffsetA(), frameB);
-}
-
-const Vec3 PhysGenericConstraint::GetAngularLowerLimit() const {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
-
-    btVector3 lower;
-    genericConstraint->getAngularLowerLimit(lower);
-    return ToVec3(lower);
-}
-
-void PhysGenericConstraint::SetAngularLowerLimit(const Vec3 &lower) {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
-
-    genericConstraint->setAngularLowerLimit(ToBtVector3(lower));
-}
-
-const Vec3 PhysGenericConstraint::GetAngularUpperLimit() const {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
-
-    btVector3 upper;
-    genericConstraint->getAngularUpperLimit(upper);
-    return ToVec3(upper);
-}
-
-void PhysGenericConstraint::SetAngularUpperLimit(const Vec3 &upper) {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
-
-    genericConstraint->setAngularUpperLimit(ToBtVector3(upper));
-}
-
-const Vec3 PhysGenericConstraint::GetLinearLowerLimit() const {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
-
-    btVector3 lower;
-    genericConstraint->getLinearLowerLimit(lower);
-    return ToVec3(lower);
+    generic6DofConstraint->setFrames(generic6DofConstraint->getFrameOffsetA(), frameB);
 }
 
 void PhysGenericConstraint::SetLinearLowerLimit(const Vec3 &lower) {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
+    btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
 
-    genericConstraint->setLinearLowerLimit(ToBtVector3(lower));
-}
+    this->linearLowerLimit = lower;
 
-const Vec3 PhysGenericConstraint::GetLinearUpperLimit() const {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
-
-    btVector3 upper;
-    genericConstraint->getLinearUpperLimit(upper);
-    return ToVec3(upper);
+    if (generic6DofConstraint->isLimited(0) || generic6DofConstraint->isLimited(1) || generic6DofConstraint->isLimited(2)) {
+        generic6DofConstraint->setLinearLowerLimit(ToBtVector3(lower));
+    }
 }
 
 void PhysGenericConstraint::SetLinearUpperLimit(const Vec3 &upper) {
-    btGeneric6DofConstraint *genericConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
+    btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
 
-    genericConstraint->setLinearUpperLimit(ToBtVector3(upper));
+    this->linearUpperLimit = upper;
+
+    if (generic6DofConstraint->isLimited(0) || generic6DofConstraint->isLimited(1) || generic6DofConstraint->isLimited(2)) {
+        generic6DofConstraint->setLinearUpperLimit(ToBtVector3(upper));
+    }
+}
+
+void PhysGenericConstraint::EnableLinearLimits(bool enableX, bool enableY, bool enableZ) {
+    btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
+
+    if (enableX) {
+        generic6DofConstraint->setLimit(0, linearLowerLimit[0], linearUpperLimit[0]);
+    } else {
+        generic6DofConstraint->setLimit(0, 1.0f, -1.0f);
+    }
+    if (enableY) {
+        generic6DofConstraint->setLimit(1, linearLowerLimit[1], linearUpperLimit[1]);
+    } else {
+        generic6DofConstraint->setLimit(1, 1.0f, -1.0f);
+    }
+    if (enableZ) {
+        generic6DofConstraint->setLimit(2, linearLowerLimit[2], linearUpperLimit[2]);
+    } else {
+        generic6DofConstraint->setLimit(2, 1.0f, -1.0f);
+    }
+}
+
+void PhysGenericConstraint::SetAngularLowerLimit(const Vec3 &lower) {
+    btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
+
+    this->angularLowerLimit = lower;
+
+    if (generic6DofConstraint->isLimited(3) || generic6DofConstraint->isLimited(4) || generic6DofConstraint->isLimited(5)) {
+        generic6DofConstraint->setAngularLowerLimit(ToBtVector3(lower));
+    }
+}
+
+void PhysGenericConstraint::SetAngularUpperLimit(const Vec3 &upper) {
+    btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
+
+    this->angularUpperLimits = upper;
+
+    if (generic6DofConstraint->isLimited(3) || generic6DofConstraint->isLimited(4) || generic6DofConstraint->isLimited(5)) {
+        generic6DofConstraint->setAngularUpperLimit(ToBtVector3(upper));
+    }
+}
+
+void PhysGenericConstraint::EnableAngularLimits(bool enableX, bool enableY, bool enableZ) {
+    btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
+
+    if (enableX) {
+        generic6DofConstraint->setLimit(3, angularLowerLimit[0], angularUpperLimits[0]);
+    } else {
+        generic6DofConstraint->setLimit(3, 1.0f, -1.0f);
+    }
+    if (enableY) {
+        generic6DofConstraint->setLimit(4, angularLowerLimit[1], angularUpperLimits[1]);
+    } else {
+        generic6DofConstraint->setLimit(4, 1.0f, -1.0f);
+    }
+    if (enableZ) {
+        generic6DofConstraint->setLimit(5, angularLowerLimit[2], angularUpperLimits[2]);
+    } else {
+        generic6DofConstraint->setLimit(5, 1.0f, -1.0f);
+    }
 }
 
 BE_NAMESPACE_END

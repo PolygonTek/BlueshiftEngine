@@ -68,10 +68,11 @@ void ComHingeJoint::Start() {
     desc.anchorInA = transform->GetScale() * localAnchor;
 
     if (connectedBody) {
+        Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
         desc.bodyB = connectedBody->GetBody();
-        desc.axisInB = localAxis;
+        desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
         desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
     } else {
         desc.bodyB = nullptr;
@@ -82,11 +83,9 @@ void ComHingeJoint::Start() {
     PhysHingeConstraint *hingeConstraint = static_cast<PhysHingeConstraint *>(constraint);
 
     // Apply limit angles
-    if (enableLimitAngles) {
-        hingeConstraint->SetLimitAngles(DEG2RAD(minimumAngle), DEG2RAD(maximumAngle));
-        hingeConstraint->EnableLimitAngles(enableLimitAngles);
-    }
-
+    hingeConstraint->SetLimitAngles(DEG2RAD(minimumAngle), DEG2RAD(maximumAngle));
+    hingeConstraint->EnableLimitAngles(enableLimitAngles);
+    
     // Apply motor
     if (motorTargetVelocity != 0.0f) {
         hingeConstraint->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);

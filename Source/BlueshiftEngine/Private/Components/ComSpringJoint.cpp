@@ -28,9 +28,10 @@ END_EVENTS
 void ComSpringJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetLowerLimit, SetLowerLimit, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetUpperLimit, SetUpperLimit, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 2.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, "Activate joint limits", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 30.f, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("damping", "Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::EditorFlag)
         .SetRange(0, 1, 0.01f);
 }
@@ -66,10 +67,11 @@ void ComSpringJoint::Start() {
     desc.anchorInA = transform->GetScale() * localAnchor;
 
     if (connectedBody) {
+        Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
         desc.bodyB = connectedBody->GetBody();
-        desc.axisInB = localAxis;
+        desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
         desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
     } else {
         desc.bodyB = nullptr;
@@ -79,10 +81,14 @@ void ComSpringJoint::Start() {
     constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);
-    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(lowerLimit)));
-    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(upperLimit)));
+
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, stiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
+
+    // Apply limit distances
+    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minDist)));
+    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxDist)));
+    genericSpringConstraint->EnableLinearLimits(true, true, enableLimitDistances);
 
     if (IsActiveInHierarchy()) {
         constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
@@ -113,25 +119,36 @@ void ComSpringJoint::SetAngles(const Angles &angles) {
     }
 }
 
-float ComSpringJoint::GetLowerLimit() const {
-    return lowerLimit;
+bool ComSpringJoint::GetEnableLimitDistances() const {
+    return enableLimitDistances;
 }
 
-void ComSpringJoint::SetLowerLimit(float limit) {
-    this->lowerLimit = limit;
+void ComSpringJoint::SetEnableLimitDistances(bool enable) {
+    this->enableLimitDistances = enable;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(lowerLimit)));
+        ((PhysGenericSpringConstraint *)constraint)->EnableLinearLimits(true, true, enableLimitDistances);
     }
 }
 
-float ComSpringJoint::GetUpperLimit() const {
-    return upperLimit;
+float ComSpringJoint::GetMinimumDistance() const {
+    return minDist;
 }
 
-void ComSpringJoint::SetUpperLimit(float limit) {
-    this->upperLimit = limit;
+void ComSpringJoint::SetMinimumDistance(float minDist) {
+    this->minDist = minDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(upperLimit)));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minDist)));
+    }
+}
+
+float ComSpringJoint::GetMaximumDistance() const {
+    return maxDist;
+}
+
+void ComSpringJoint::SetMaximumDistance(float maxDist) {
+    this->maxDist = maxDist;
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxDist)));
     }
 }
 

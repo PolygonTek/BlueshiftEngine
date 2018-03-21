@@ -49,7 +49,7 @@ void ComFixedJoint::Start() {
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
-    desc.type = PhysConstraint::Generic;
+    desc.type = PhysConstraint::Hinge;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
@@ -68,11 +68,9 @@ void ComFixedJoint::Start() {
     // Create a constraint by description
     constraint = physicsSystem.CreateConstraint(&desc);
 
-    PhysGenericConstraint *genericConstraint = static_cast<PhysGenericConstraint *>(constraint);
-    genericConstraint->SetLinearLowerLimit(Vec3::zero);
-    genericConstraint->SetLinearUpperLimit(Vec3::zero);
-    genericConstraint->SetAngularLowerLimit(Vec3::zero);
-    genericConstraint->SetAngularUpperLimit(Vec3::zero);
+    PhysHingeConstraint *hingeConstraint = static_cast<PhysHingeConstraint *>(constraint);
+    hingeConstraint->SetLimitAngles(0, 0);
+    hingeConstraint->EnableLimitAngles(true);
 
     if (IsActiveInHierarchy()) {
         constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());

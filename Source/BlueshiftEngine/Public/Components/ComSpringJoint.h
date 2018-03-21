@@ -39,18 +39,19 @@ public:
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-protected:
     const Vec3 &            GetAnchor() const;
     void                    SetAnchor(const Vec3 &anchor);
 
     Angles                  GetAngles() const;
     void                    SetAngles(const Angles &angles);
 
-    float                   GetLowerLimit() const;
-    void                    SetLowerLimit(float limit);
+    bool                    GetEnableLimitDistances() const;
+    void                    SetEnableLimitDistances(bool enable);
 
-    float                   GetUpperLimit() const;
-    void                    SetUpperLimit(float limit);
+    float                   GetMinimumDistance() const;
+    void                    SetMinimumDistance(float minDist);
+    float                   GetMaximumDistance() const;
+    void                    SetMaximumDistance(float maxDist);
 
     float                   GetStiffness() const;
     void                    SetStiffness(float stiffness);
@@ -58,10 +59,12 @@ protected:
     float                   GetDamping() const;
     void                    SetDamping(float damping);
 
+protected:
     Mat3                    localAxis;
     Vec3                    localAnchor;
-    float                   lowerLimit;
-    float                   upperLimit;
+    bool                    enableLimitDistances;
+    float                   minDist;
+    float                   maxDist;
     float                   stiffness;
     float                   damping;
 };

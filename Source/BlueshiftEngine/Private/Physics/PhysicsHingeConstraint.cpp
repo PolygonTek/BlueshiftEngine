@@ -27,7 +27,15 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), frameA);
     hingeConstraint->setUserConstraintPtr(this);
 
+    hingeConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
+    hingeConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
+    hingeConstraint->setParam(BT_CONSTRAINT_CFM, 0);
+    hingeConstraint->setParam(BT_CONSTRAINT_ERP, 1);
+
     constraint = hingeConstraint;
+
+    lowerLimit = 0;
+    upperLimit = 0;
 }
 
 PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA, PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) : 
@@ -41,7 +49,15 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB);
     hingeConstraint->setUserConstraintPtr(this);
 
+    hingeConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
+    hingeConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
+    hingeConstraint->setParam(BT_CONSTRAINT_CFM, 0);
+    hingeConstraint->setParam(BT_CONSTRAINT_ERP, 1);
+
     constraint = hingeConstraint;
+
+    lowerLimit = 0;
+    upperLimit = 0;
 }
 
 void PhysHingeConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {
@@ -93,7 +109,7 @@ void PhysHingeConstraint::SetMotor(float motorTargetVelocity, float maxMotorImpu
 void PhysHingeConstraint::EnableMotor(bool enable) {
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
-    btScalar motorTargetVelocity = hingeConstraint->getMotorTargetVelosity();
+    btScalar motorTargetVelocity = hingeConstraint->getMotorTargetVelocity();
     btScalar maxMotorImpulse = hingeConstraint->getMaxMotorImpulse();
 
     hingeConstraint->enableAngularMotor(enable, motorTargetVelocity, maxMotorImpulse);

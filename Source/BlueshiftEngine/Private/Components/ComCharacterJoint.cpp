@@ -82,10 +82,11 @@ void ComCharacterJoint::Start() {
     desc.anchorInA = transform->GetScale() * localAnchor;
 
     if (connectedBody) {
+        Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
         desc.bodyB = connectedBody->GetBody();
-        desc.axisInB = localAxis;
+        desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
         desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
     } else {
         desc.bodyB = nullptr;
@@ -95,10 +96,14 @@ void ComCharacterJoint::Start() {
     constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);
-    genericSpringConstraint->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
-    genericSpringConstraint->SetAngularUpperLimit(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
+
     genericSpringConstraint->SetAngularStiffness(stiffness);
     genericSpringConstraint->SetAngularDamping(damping);
+
+    // Apply limit angles
+    genericSpringConstraint->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
+    genericSpringConstraint->SetAngularUpperLimit(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
+    genericSpringConstraint->EnableAngularLimits(true, true, true);
 
     if (IsActiveInHierarchy()) {
         constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
