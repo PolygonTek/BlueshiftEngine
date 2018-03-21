@@ -85,25 +85,7 @@ void ComSpringJoint::Start() {
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
 
     if (IsActiveInHierarchy()) {
-        genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
-}
-
-void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
-    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
-
-    const ComTransform *transform = GetEntity()->GetTransform();
-
-    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
-        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
-
-        renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(2.5), worldOrigin + Mat3::identity[0] * CentiToUnit(2.5), 1);
-        renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(2.5), worldOrigin + Mat3::identity[1] * CentiToUnit(2.5), 1);
-
-        renderWorld->DebugCircle(worldOrigin - Mat3::identity[2] * CentiToUnit(2), Mat3::identity[2], CentiToUnit(2.5));
-        renderWorld->DebugCircle(worldOrigin, Mat3::identity[2], CentiToUnit(2.5));
-        renderWorld->DebugCircle(worldOrigin + Mat3::identity[2] * CentiToUnit(2), Mat3::identity[2], CentiToUnit(2.5));
+        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
@@ -172,6 +154,24 @@ void ComSpringJoint::SetDamping(float damping) {
     this->damping = damping;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetLinearDamping(Vec3(0, 0, damping));
+    }
+}
+
+void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+    const ComTransform *transform = GetEntity()->GetTransform();
+
+    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
+
+        renderWorld->SetDebugColor(Color4::red, Color4::zero);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(2.5), worldOrigin + Mat3::identity[0] * CentiToUnit(2.5), 1);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(2.5), worldOrigin + Mat3::identity[1] * CentiToUnit(2.5), 1);
+
+        renderWorld->DebugCircle(worldOrigin - Mat3::identity[2] * CentiToUnit(2), Mat3::identity[2], CentiToUnit(2.5));
+        renderWorld->DebugCircle(worldOrigin, Mat3::identity[2], CentiToUnit(2.5));
+        renderWorld->DebugCircle(worldOrigin + Mat3::identity[2] * CentiToUnit(2), Mat3::identity[2], CentiToUnit(2.5));
     }
 }
 

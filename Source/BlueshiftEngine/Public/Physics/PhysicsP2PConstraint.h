@@ -24,11 +24,11 @@ public:
     PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA);
     PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, PhysRigidBody *bodyB, const Vec3 &anchorInB);
 
-    const Vec3              GetAnchorA() const;
-    void                    SetAnchorA(const Vec3 &anchorInA);
+    const Vec3          GetAnchorA() const;
+    void                SetAnchorA(const Vec3 &anchorInA);
 
-    const Vec3              GetAnchorB() const;
-    void                    SetAnchorB(const Vec3 &anchorInB);
+    const Vec3          GetAnchorB() const;
+    void                SetAnchorB(const Vec3 &anchorInB);
 };
 
 BE_NAMESPACE_END

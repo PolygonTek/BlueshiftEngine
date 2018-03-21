@@ -45,49 +45,58 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
 }
 
 void PhysHingeConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {
-    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+    btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
+    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
 
-    btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
     hingeConstraint->setFrames(frameA, hingeConstraint->getFrameOffsetB());
 }
 
 void PhysHingeConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) {
-    Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
+    btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
+    Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
     btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
 
-    btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
     hingeConstraint->setFrames(hingeConstraint->getFrameOffsetA(), frameB);
 }
 
 void PhysHingeConstraint::SetLimitAngles(float lowerLimit, float upperLimit) {
+    btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
+
     this->lowerLimit = lowerLimit;
     this->upperLimit = upperLimit;
 
-    if (((btHingeConstraint *)constraint)->hasLimit()) {
-        ((btHingeConstraint *)constraint)->setLimit(lowerLimit, upperLimit, 0.9f, 0.3f);
+    if (hingeConstraint->hasLimit()) {
+        hingeConstraint->setLimit(lowerLimit, upperLimit, 0.9f, 0.3f);
     }
 }
 
 void PhysHingeConstraint::EnableLimitAngles(bool enable) {
+    btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
+
     if (enable) {
-        ((btHingeConstraint *)constraint)->setLimit(lowerLimit, upperLimit, 0.9f, 0.3f);
+        hingeConstraint->setLimit(lowerLimit, upperLimit, 0.9f, 0.3f);
     } else {
-        ((btHingeConstraint *)constraint)->setLimit(1.0f, -1.0f);
+        hingeConstraint->setLimit(1.0f, -1.0f);
     }
 }
 
 void PhysHingeConstraint::SetMotor(float motorTargetVelocity, float maxMotorImpulse) {
-    bool enabled = ((btHingeConstraint *)constraint)->getEnableAngularMotor();
-    ((btHingeConstraint *)constraint)->enableAngularMotor(enabled, motorTargetVelocity, maxMotorImpulse);
+    btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
+
+    bool enabled = hingeConstraint->getEnableAngularMotor();
+    hingeConstraint->enableAngularMotor(enabled, motorTargetVelocity, maxMotorImpulse);
 }
 
 void PhysHingeConstraint::EnableMotor(bool enable) {
-    btScalar motorTargetVelocity = ((btHingeConstraint *)constraint)->getMotorTargetVelosity();
-    btScalar maxMotorImpulse = ((btHingeConstraint *)constraint)->getMaxMotorImpulse();
-    ((btHingeConstraint *)constraint)->enableAngularMotor(enable, motorTargetVelocity, maxMotorImpulse);
+    btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
+
+    btScalar motorTargetVelocity = hingeConstraint->getMotorTargetVelosity();
+    btScalar maxMotorImpulse = hingeConstraint->getMaxMotorImpulse();
+
+    hingeConstraint->enableAngularMotor(enable, motorTargetVelocity, maxMotorImpulse);
 }
 
 BE_NAMESPACE_END

@@ -94,34 +94,7 @@ void ComHingeJoint::Start() {
     }
 
     if (IsActiveInHierarchy()) {
-        hingeConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
-}
-
-void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
-    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
-
-    const ComTransform *transform = GetEntity()->GetTransform();
-
-    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
-        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
-        Mat3 worldAxis = transform->GetAxis() * localAxis;
-
-        Mat3 constraintAxis = Mat3::identity;
-        if (connectedBody) {
-            constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
-        }
-
-        if (enableLimitAngles) {
-            renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5), minimumAngle, maximumAngle, true);
-
-            renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5), 1);
-        }
-
-        renderWorld->SetDebugColor(Color4::red, Color4::red);
-        renderWorld->DebugArrow(worldOrigin - worldAxis[2] * CentiToUnit(5), worldOrigin + worldAxis[2] * CentiToUnit(5), CentiToUnit(3), CentiToUnit(0.75));
+        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
@@ -203,6 +176,33 @@ void ComHingeJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     if (constraint) {
         ((PhysHingeConstraint *)constraint)->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
         ((PhysHingeConstraint *)constraint)->EnableMotor(motorTargetVelocity != 0.0f ? true : false);
+    }
+}
+
+void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+    const ComTransform *transform = GetEntity()->GetTransform();
+
+    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
+        Mat3 worldAxis = transform->GetAxis() * localAxis;
+
+        Mat3 constraintAxis = Mat3::identity;
+        if (connectedBody) {
+            constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
+        }
+
+        if (enableLimitAngles) {
+            renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
+            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5), minimumAngle, maximumAngle, true);
+
+            renderWorld->SetDebugColor(Color4::red, Color4::zero);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5), 1);
+        }
+
+        renderWorld->SetDebugColor(Color4::red, Color4::red);
+        renderWorld->DebugArrow(worldOrigin - worldAxis[2] * CentiToUnit(5), worldOrigin + worldAxis[2] * CentiToUnit(5), CentiToUnit(3), CentiToUnit(0.75));
     }
 }
 

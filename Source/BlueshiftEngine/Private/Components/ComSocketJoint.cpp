@@ -70,10 +70,21 @@ void ComSocketJoint::Start() {
     // Create a constraint by description
     constraint = physicsSystem.CreateConstraint(&desc);
 
-    PhysP2PConstraint *p2pConstraint = static_cast<PhysP2PConstraint *>(constraint);
+    //PhysP2PConstraint *p2pConstraint = static_cast<PhysP2PConstraint *>(constraint);
 
     if (IsActiveInHierarchy()) {
-        p2pConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+}
+
+const Vec3 &ComSocketJoint::GetAnchor() const {
+    return localAnchor;
+}
+
+void ComSocketJoint::SetAnchor(const Vec3 &anchor) {
+    this->localAnchor = anchor;
+    if (constraint) {
+        ((PhysP2PConstraint *)constraint)->SetAnchorA(anchor);
     }
 }
 
@@ -87,17 +98,6 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(1), worldOrigin + Mat3::identity[0] * CentiToUnit(1), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(1), worldOrigin + Mat3::identity[1] * CentiToUnit(1), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(1), worldOrigin + Mat3::identity[2] * CentiToUnit(1), 1);
-}
-
-const Vec3 &ComSocketJoint::GetAnchor() const {
-    return localAnchor;
-}
-
-void ComSocketJoint::SetAnchor(const Vec3 &anchor) {
-    this->localAnchor = anchor;
-    if (constraint) {
-        ((PhysP2PConstraint *)constraint)->SetAnchorA(anchor);
-    }
 }
 
 BE_NAMESPACE_END

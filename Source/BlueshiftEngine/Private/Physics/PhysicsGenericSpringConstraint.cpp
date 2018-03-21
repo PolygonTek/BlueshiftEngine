@@ -24,25 +24,10 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
 
     btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
 
-    btGeneric6DofSpringConstraint *generic6DofSpringConstraint = new btGeneric6DofSpringConstraint(*bodyA->GetRigidBody(), frameA, true);
-    generic6DofSpringConstraint->setUserConstraintPtr(this);
+    btGeneric6DofSpringConstraint *genericSpringConstraint = new btGeneric6DofSpringConstraint(*bodyA->GetRigidBody(), frameA, true);
+    genericSpringConstraint->setUserConstraintPtr(this);
 
-    /*
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.8, 0);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.8, 1);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.8, 2);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.8, 3);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.8, 4);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.8, 5);
-
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.1, 0);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.1, 1);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.1, 2);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.1, 3);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.1, 4);
-    generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.1, 5);*/
-
-    constraint = generic6DofSpringConstraint;
+    constraint = genericSpringConstraint;
 
     angularStiffness.SetFromScalar(0);
     angularDamping.SetFromScalar(0);
@@ -98,7 +83,7 @@ void PhysGenericSpringConstraint::SetAngularDamping(const Vec3 &damping) {
 }
 
 void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
-     btGeneric6DofSpringConstraint *genericSpringConstraint = static_cast<btGeneric6DofSpringConstraint *>(constraint);
+    btGeneric6DofSpringConstraint *genericSpringConstraint = static_cast<btGeneric6DofSpringConstraint *>(constraint);
 
     genericSpringConstraint->enableSpring(0, stiffness.x > 0.0f ? true : false);
     genericSpringConstraint->enableSpring(1, stiffness.y > 0.0f ? true : false);

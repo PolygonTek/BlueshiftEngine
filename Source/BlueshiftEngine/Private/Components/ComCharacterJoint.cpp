@@ -101,32 +101,7 @@ void ComCharacterJoint::Start() {
     genericSpringConstraint->SetAngularDamping(damping);
 
     if (IsActiveInHierarchy()) {
-        genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
-}
-
-void ComCharacterJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
-    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
-
-    const ComTransform *transform = GetEntity()->GetTransform();
-
-    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
-        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
-        Mat3 worldAxis = transform->GetAxis() * localAxis;
-
-        Mat3 constraintAxis = Mat3::identity;
-        if (connectedBody) {
-            constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
-        }
-
-        renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], CentiToUnit(2.5), lowerLimit.x, upperLimit.x, true);
-        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], CentiToUnit(2.5), lowerLimit.y, upperLimit.y, true);
-        renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], CentiToUnit(2.5), lowerLimit.z, upperLimit.z, true);
-
-        renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(3), 1);
-        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * CentiToUnit(3), 1);
+        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
@@ -283,6 +258,31 @@ void ComCharacterJoint::SetTwistDamping(float damping) {
     this->damping.z = damping;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularDamping(this->damping);
+    }
+}
+
+void ComCharacterJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+    const ComTransform *transform = GetEntity()->GetTransform();
+
+    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
+        Mat3 worldAxis = transform->GetAxis() * localAxis;
+
+        Mat3 constraintAxis = Mat3::identity;
+        if (connectedBody) {
+            constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
+        }
+
+        renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
+        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], CentiToUnit(2.5), lowerLimit.x, upperLimit.x, true);
+        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], CentiToUnit(2.5), lowerLimit.y, upperLimit.y, true);
+        renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], CentiToUnit(2.5), lowerLimit.z, upperLimit.z, true);
+
+        renderWorld->SetDebugColor(Color4::red, Color4::zero);
+        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(3), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * CentiToUnit(3), 1);
     }
 }
 

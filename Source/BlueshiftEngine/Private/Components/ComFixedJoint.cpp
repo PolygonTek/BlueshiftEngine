@@ -49,18 +49,24 @@ void ComFixedJoint::Start() {
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
-    desc.type           = PhysConstraint::Generic;
-    desc.bodyA          = rigidBody->GetBody();
-    desc.axisInA        = Mat3::identity;
-    desc.anchorInA      = Vec3::zero;
-    desc.bodyB          = connectedBody ? connectedBody->GetBody() : nullptr;
-    desc.axisInB        = Mat3::identity;
-    desc.anchorInB      = Vec3::zero;
-    desc.collision      = collisionEnabled;
-    desc.breakImpulse   = breakImpulse;
+    desc.type = PhysConstraint::Generic;
+    desc.collision = collisionEnabled;
+    desc.breakImpulse = breakImpulse;
+
+    desc.bodyA = rigidBody->GetBody();
+    desc.axisInA = Mat3::identity;
+    desc.anchorInA = Vec3::zero;
+
+    if (connectedBody) {
+        desc.bodyB = connectedBody->GetBody();
+        desc.axisInB = Mat3::identity;
+        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(desc.bodyA->GetOrigin() - connectedBody->GetBody()->GetOrigin());
+    } else {
+        desc.bodyB = nullptr;
+    }
 
     // Create a constraint by description
-    constraint          = physicsSystem.CreateConstraint(&desc);
+    constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysGenericConstraint *genericConstraint = static_cast<PhysGenericConstraint *>(constraint);
     genericConstraint->SetLinearLowerLimit(Vec3::zero);
@@ -69,7 +75,7 @@ void ComFixedJoint::Start() {
     genericConstraint->SetAngularUpperLimit(Vec3::zero);
 
     if (IsActiveInHierarchy()) {
-        genericConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
