@@ -24,7 +24,7 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
 
     btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
 
-    btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), frameA);
+    btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), frameA, RO_XZY);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
 
     constraint = generic6DofSpringConstraint;
@@ -48,7 +48,7 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
     btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
     btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
 
-    btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB);
+    btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, RO_XZY);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
 
     constraint = generic6DofSpringConstraint;
