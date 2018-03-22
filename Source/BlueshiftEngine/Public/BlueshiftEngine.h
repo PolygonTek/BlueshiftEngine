@@ -155,6 +155,7 @@
 #include "Components/ComHingeJoint.h"
 #include "Components/ComSocketJoint.h"
 #include "Components/ComSpringJoint.h"
+#include "Components/ComWheelJoint.h"
 #include "Components/ComCharacterJoint.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"

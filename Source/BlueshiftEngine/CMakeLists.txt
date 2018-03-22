@@ -188,6 +188,7 @@ set(ENGINE_FILES
     Public/Components/ComSpringJoint.h
     Public/Components/ComStaticMeshRenderer.h
     Public/Components/ComTransform.h
+    Public/Components/ComWheelJoint.h
 
     Public/Game/Entity.h
     Public/Game/Prefab.h
@@ -412,6 +413,7 @@ set(ENGINE_FILES
     Private/Components/ComSpringJoint.cpp
     Private/Components/ComStaticMeshRenderer.cpp
     Private/Components/ComTransform.cpp
+    Private/Components/ComWheelJoint.cpp
 
     Private/Game/Entity.cpp
     Private/Game/Prefab.cpp
@@ -587,6 +589,7 @@ set(ENGINE_FILES
     Private/Script/Components/LuaModule_ComHingeJoint.cpp
     Private/Script/Components/LuaModule_ComSocketJoint.cpp
     Private/Script/Components/LuaModule_ComSpringJoint.cpp
+    Private/Script/Components/LuaModule_ComWheelJoint.cpp
     Private/Script/Components/LuaModule_ComCharacterJoint.cpp
     Private/Script/Components/LuaModule_ComConstantForce.cpp
     Private/Script/Components/LuaModule_ComCharacterController.cpp

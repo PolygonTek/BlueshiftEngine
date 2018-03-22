@@ -104,6 +104,7 @@ static void RegisterEngineObjects() {
     ComHingeJoint::RegisterProperties();
     ComSocketJoint::RegisterProperties();
     ComSpringJoint::RegisterProperties();
+    ComWheelJoint::RegisterProperties();
     ComCharacterJoint::RegisterProperties();
     ComCharacterController::RegisterProperties();
     ComRenderable::RegisterProperties();

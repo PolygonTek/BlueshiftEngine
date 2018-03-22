@@ -114,6 +114,7 @@ private:
     void                    RegisterHingeJointComponent(LuaCpp::Module &module);
     void                    RegisterSocketJointComponent(LuaCpp::Module &module);
     void                    RegisterSpringJointComponent(LuaCpp::Module &module);
+    void                    RegisterWheelJointComponent(LuaCpp::Module &module);
     void                    RegisterCharacterJointComponent(LuaCpp::Module &module);
     void                    RegisterConstantForceComponent(LuaCpp::Module &module);
     void                    RegisterCharacterControllerComponent(LuaCpp::Module &module);

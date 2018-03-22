@@ -32,6 +32,7 @@
 #include "Components/ComHingeJoint.h"
 #include "Components/ComSocketJoint.h"
 #include "Components/ComSpringJoint.h"
+#include "Components/ComWheelJoint.h"
 #include "Components/ComCharacterJoint.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
@@ -85,6 +86,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_hinge_joint", static_cast<ComHingeJoint*(Object::*)()>(&Object::Cast<ComHingeJoint>),
         "cast_socket_joint", static_cast<ComSocketJoint*(Object::*)()>(&Object::Cast<ComSocketJoint>),
         "cast_spring_joint", static_cast<ComSpringJoint*(Object::*)()>(&Object::Cast<ComSpringJoint>),
+        "cast_wheel_joint", static_cast<ComWheelJoint*(Object::*)()>(&Object::Cast<ComWheelJoint>),
         "cast_character_joint", static_cast<ComCharacterJoint*(Object::*)()>(&Object::Cast<ComCharacterJoint>),
         "cast_character_controller", static_cast<ComCharacterController*(Object::*)()>(&Object::Cast<ComCharacterController>),
         "cast_camera", static_cast<ComCamera*(Object::*)()>(&Object::Cast<ComCamera>),
