@@ -45,40 +45,31 @@ public:
     Angles                  GetAngles() const;
     void                    SetAngles(const Angles &angles);
 
-    float                   GetSwing1LowerLimit() const;
+    float                   GetSwing1LowerLimit() const { return lowerLimit.x; }
     void                    SetSwing1LowerLimit(const float limit);
-
-    float                   GetSwing1UpperLimit() const;
+    float                   GetSwing1UpperLimit() const { return upperLimit.x; }
     void                    SetSwing1UpperLimit(const float limit);
-
-    float                   GetSwing1Stiffness() const;
+    float                   GetSwing1Stiffness() const { return stiffness.x; }
     void                    SetSwing1Stiffness(const float stiffness);
-
-    float                   GetSwing1Damping() const;
+    float                   GetSwing1Damping() const { return damping.x; }
     void                    SetSwing1Damping(const float damping);
 
-    float                   GetSwing2LowerLimit() const;
+    float                   GetSwing2LowerLimit() const { return lowerLimit.y; }
     void                    SetSwing2LowerLimit(const float limit);
-
-    float                   GetSwing2UpperLimit() const;
+    float                   GetSwing2UpperLimit() const { return upperLimit.y; }
     void                    SetSwing2UpperLimit(const float limit);
-
-    float                   GetSwing2Stiffness() const;
+    float                   GetSwing2Stiffness() const { return stiffness.y; }
     void                    SetSwing2Stiffness(float stiffness);
-
-    float                   GetSwing2Damping() const;
+    float                   GetSwing2Damping() const { return damping.y; }
     void                    SetSwing2Damping(float damping);
 
-    float                   GetTwistLowerLimit() const;
+    float                   GetTwistLowerLimit() const { return lowerLimit.z; }
     void                    SetTwistLowerLimit(float limit);
-
-    float                   GetTwistUpperLimit() const;
+    float                   GetTwistUpperLimit() const { return upperLimit.z; }
     void                    SetTwistUpperLimit(float limit);
-
-    float                   GetTwistStiffness() const;
+    float                   GetTwistStiffness() const { return stiffness.z; }
     void                    SetTwistStiffness(float stiffness);
-
-    float                   GetTwistDamping() const;
+    float                   GetTwistDamping() const { return damping.z; }
     void                    SetTwistDamping(float damping);
 
 protected:

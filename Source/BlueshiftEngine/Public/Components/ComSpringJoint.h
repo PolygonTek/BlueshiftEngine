@@ -45,18 +45,18 @@ public:
     Angles                  GetAngles() const;
     void                    SetAngles(const Angles &angles);
 
-    bool                    GetEnableLimitDistances() const;
+    bool                    GetEnableLimitDistances() const { return enableLimitDistances; }
     void                    SetEnableLimitDistances(bool enable);
 
-    float                   GetMinimumDistance() const;
+    float                   GetMinimumDistance() const { return minDist; }
     void                    SetMinimumDistance(float minDist);
-    float                   GetMaximumDistance() const;
+    float                   GetMaximumDistance() const { return maxDist; }
     void                    SetMaximumDistance(float maxDist);
 
-    float                   GetStiffness() const;
+    float                   GetStiffness() const { return stiffness; }
     void                    SetStiffness(float stiffness);
 
-    float                   GetDamping() const;
+    float                   GetDamping() const { return damping; }
     void                    SetDamping(float damping);
 
 protected:

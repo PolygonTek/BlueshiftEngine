@@ -134,19 +134,11 @@ void ComCharacterJoint::SetAngles(const Angles &angles) {
     }
 }
 
-float ComCharacterJoint::GetSwing1LowerLimit() const {
-    return lowerLimit.x;
-}
-
 void ComCharacterJoint::SetSwing1LowerLimit(float limit) {
     this->lowerLimit.x = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
-}
-
-float ComCharacterJoint::GetSwing1UpperLimit() const {
-    return upperLimit.x;
 }
 
 void ComCharacterJoint::SetSwing1UpperLimit(float limit) {
@@ -156,19 +148,11 @@ void ComCharacterJoint::SetSwing1UpperLimit(float limit) {
     }
 }
 
-float ComCharacterJoint::GetSwing1Stiffness() const {
-    return stiffness.x;
-}
-
 void ComCharacterJoint::SetSwing1Stiffness(float stiffness) {
     this->stiffness.x = stiffness;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
-}
-
-float ComCharacterJoint::GetSwing1Damping() const {
-    return damping.x;
 }
 
 void ComCharacterJoint::SetSwing1Damping(float damping) {
@@ -178,19 +162,11 @@ void ComCharacterJoint::SetSwing1Damping(float damping) {
     }
 }
 
-float ComCharacterJoint::GetSwing2LowerLimit() const {
-    return lowerLimit.y;
-}
-
 void ComCharacterJoint::SetSwing2LowerLimit(float limit) {
     this->lowerLimit.y = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
-}
-
-float ComCharacterJoint::GetSwing2UpperLimit() const {
-    return upperLimit.y;
 }
 
 void ComCharacterJoint::SetSwing2UpperLimit(float limit) {
@@ -200,19 +176,11 @@ void ComCharacterJoint::SetSwing2UpperLimit(float limit) {
     }
 }
 
-float ComCharacterJoint::GetSwing2Stiffness() const {
-    return stiffness.y;
-}
-
 void ComCharacterJoint::SetSwing2Stiffness(float stiffness) {
     this->stiffness.y = stiffness;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
-}
-
-float ComCharacterJoint::GetSwing2Damping() const {
-    return damping.y;
 }
 
 void ComCharacterJoint::SetSwing2Damping(float damping) {
@@ -222,19 +190,11 @@ void ComCharacterJoint::SetSwing2Damping(float damping) {
     }
 }
 
-float ComCharacterJoint::GetTwistLowerLimit() const {
-    return lowerLimit.z;
-}
-
 void ComCharacterJoint::SetTwistLowerLimit(float limit) {
     this->lowerLimit.z = limit;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
-}
-
-float ComCharacterJoint::GetTwistUpperLimit() const {
-    return upperLimit.z;
 }
 
 void ComCharacterJoint::SetTwistUpperLimit(float limit) {
@@ -244,19 +204,11 @@ void ComCharacterJoint::SetTwistUpperLimit(float limit) {
     }
 }
 
-float ComCharacterJoint::GetTwistStiffness() const {
-    return stiffness.z;
-}
-
 void ComCharacterJoint::SetTwistStiffness(float stiffness) {
     this->stiffness.z = stiffness;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
-}
-
-float ComCharacterJoint::GetTwistDamping() const {
-    return damping.z;
 }
 
 void ComCharacterJoint::SetTwistDamping(float damping) {

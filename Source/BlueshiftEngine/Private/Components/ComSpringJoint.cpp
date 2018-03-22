@@ -119,19 +119,11 @@ void ComSpringJoint::SetAngles(const Angles &angles) {
     }
 }
 
-bool ComSpringJoint::GetEnableLimitDistances() const {
-    return enableLimitDistances;
-}
-
 void ComSpringJoint::SetEnableLimitDistances(bool enable) {
     this->enableLimitDistances = enable;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->EnableLinearLimits(true, true, enableLimitDistances);
     }
-}
-
-float ComSpringJoint::GetMinimumDistance() const {
-    return minDist;
 }
 
 void ComSpringJoint::SetMinimumDistance(float minDist) {
@@ -141,10 +133,6 @@ void ComSpringJoint::SetMinimumDistance(float minDist) {
     }
 }
 
-float ComSpringJoint::GetMaximumDistance() const {
-    return maxDist;
-}
-
 void ComSpringJoint::SetMaximumDistance(float maxDist) {
     this->maxDist = maxDist;
     if (constraint) {
@@ -152,19 +140,11 @@ void ComSpringJoint::SetMaximumDistance(float maxDist) {
     }
 }
 
-float ComSpringJoint::GetStiffness() const {
-    return stiffness;
-}
-
 void ComSpringJoint::SetStiffness(float stiffness) {
     this->stiffness = stiffness;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetLinearStiffness(Vec3(0, 0, stiffness));
     }
-}
-
-float ComSpringJoint::GetDamping() const {
-    return damping;
 }
 
 void ComSpringJoint::SetDamping(float damping) {
@@ -181,14 +161,15 @@ void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
 
     if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
         Vec3 worldOrigin = transform->GetTransform() * localAnchor;
+        Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(2.5), worldOrigin + Mat3::identity[0] * CentiToUnit(2.5), 1);
-        renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(2.5), worldOrigin + Mat3::identity[1] * CentiToUnit(2.5), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(2.5), worldOrigin + worldAxis[0] * CentiToUnit(2.5), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(2.5), worldOrigin + worldAxis[1] * CentiToUnit(2.5), 1);
 
-        renderWorld->DebugCircle(worldOrigin - Mat3::identity[2] * CentiToUnit(2), Mat3::identity[2], CentiToUnit(2.5));
-        renderWorld->DebugCircle(worldOrigin, Mat3::identity[2], CentiToUnit(2.5));
-        renderWorld->DebugCircle(worldOrigin + Mat3::identity[2] * CentiToUnit(2), Mat3::identity[2], CentiToUnit(2.5));
+        renderWorld->DebugCircle(worldOrigin - worldAxis[2] * CentiToUnit(2), worldAxis[2], CentiToUnit(2.5));
+        renderWorld->DebugCircle(worldOrigin, worldAxis[2], CentiToUnit(2.5));
+        renderWorld->DebugCircle(worldOrigin + worldAxis[2] * CentiToUnit(2), worldAxis[2], CentiToUnit(2.5));
     }
 }
 
