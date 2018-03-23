@@ -32,15 +32,22 @@ if (APPLE)
         set(LJLIBNAME libluajit.a)
         set(LJARCH x86_64)
 
-        execute_process(COMMAND make clean && make "TARGET_FLAGS=-arch ${LJARCH}"
+        execute_process(COMMAND make clean
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
+            RESULT_VARIABLE EXIT_CODE)
+
+        execute_process(COMMAND make "TARGET_FLAGS=-arch ${LJARCH}"
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
             RESULT_VARIABLE EXIT_CODE)
 
         # Copy library and interpreter executable to lib folder
         file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib/${LUAJIT_LIBDIR})
 
-        execute_process(COMMAND ${CMAKE_COMMAND} -E copy luajit ../lib/${LUAJIT_LIBDIR}/luajit && 
-            ${CMAKE_COMMAND} -E copy ${LJLIBNAME} ../lib/${LUAJIT_LIBDIR}/${LJLIBNAME}
+        execute_process(COMMAND ${CMAKE_COMMAND} -E copy luajit ../lib/${LUAJIT_LIBDIR}/luajit
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
+            RESULT_VARIABLE EXIT_CODE)
+
+        execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${LJLIBNAME} ../lib/${LUAJIT_LIBDIR}/${LJLIBNAME}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
             RESULT_VARIABLE EXIT_CODE)
 
