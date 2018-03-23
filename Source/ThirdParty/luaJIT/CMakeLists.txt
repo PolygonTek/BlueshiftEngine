@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 
+cmake_policy(SET CMP0053 OLD)
+
 project(LuaJIT)
 
 include(FindLuaJIT)
@@ -12,6 +14,11 @@ add_custom_target(${PROJECT_NAME} SOURCES ${ALL_FILES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ThirdParty)
 
+# Skip LuaJIT compilation if library already exists
+if (LUAJIT_FOUND)
+    #return ()
+endif ()
+
 set(STATIC_LIB TRUE)
 
 if (APPLE)
@@ -20,22 +27,15 @@ if (APPLE)
         set(LJLIBNAME libluajit.a)
         set(LJARCH x86_64)
 
-        execute_process(COMMAND make clean
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
-            RESULT_VARIABLE EXIT_CODE)
-
-        execute_process(COMMAND make "TARGET_FLAGS=-arch ${LJARCH}"
+        execute_process(COMMAND make clean && make "TARGET_FLAGS=-arch ${LJARCH}"
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
             RESULT_VARIABLE EXIT_CODE)
 
         # Copy library and interpreter executable to lib folder
         file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib/${LUAJIT_LIBDIR})
 
-        execute_process(COMMAND ${CMAKE_COMMAND} -E copy luajit ../lib/${LUAJIT_LIBDIR}/luajit
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
-            RESULT_VARIABLE EXIT_CODE)
-
-        execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${LJLIBNAME} ../lib/${LUAJIT_LIBDIR}/${LJLIBNAME}
+        execute_process(COMMAND ${CMAKE_COMMAND} -E copy luajit ../lib/${LUAJIT_LIBDIR}/luajit && 
+            ${CMAKE_COMMAND} -E copy ${LJLIBNAME} ../lib/${LUAJIT_LIBDIR}/${LJLIBNAME}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
             RESULT_VARIABLE EXIT_CODE)
 
@@ -47,12 +47,23 @@ if (APPLE)
         message(STATUS "=== Successfully built LuaJIT for MacOS/${LJARCH} ===")
     endif ()
 elseif (MSVC)
-    if (DEFINED ENV{VS150COMNTOOLS})
-        set(VCVARS64 "$ENV{VS150COMNTOOLS}..\\..\\VC\\Auxiliary\\Build\\vcvars64.bat")
+    if (DEFINED $ENV{VSWHERE})
+        set(VSWHERE $ENV{VSWHERE})
+    else ()
+        set(VSWHERE "$ENV{ProgramFiles(x86)}\\Microsoft Visual Studio\\Installer\\vswhere.exe")
+    endif ()
+        
+    execute_process(COMMAND ${VSWHERE} -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+        OUTPUT_VARIABLE VSINSTALL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    if (DEFINED VSINSTALL_DIR)
+        set(VCVARS64 "${VSINSTALL_DIR}\\VC\\Auxiliary\\Build\\vcvars64.bat")
+        # Prevent vcvarsxx.bat call from changing the current working directory
+        set(ENV{VSCMD_START_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
     elseif (DEFINED ENV{VS140COMNTOOLS})
         set(VCVARS64 "$ENV{VS140COMNTOOLS}..\\..\\VC\\bin\\amd64\\vcvars64.bat")
     else ()
-        message(FATAL_ERROR "Not Found VSXXXCOMNTOOLS")
+        message(FATAL_ERROR "Not found vcvars64.bat")
     endif ()
 
     set(LJCOMPILE cl /MD /nologo /c /O2 /W3 /D_CRT_SECURE_NO_DEPRECATE "/D_CRT_STDIO_INLINE=__declspec(dllexport)__inline") # NOTE: Add /MD because we need it !
@@ -66,11 +77,7 @@ elseif (MSVC)
     set(ALL_LIB lib_base.c lib_math.c lib_bit.c lib_string.c lib_table.c lib_io.c lib_os.c lib_package.c lib_debug.c lib_jit.c lib_ffi.c)
     
     # Compile minilua
-    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} host/minilua.c
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
-        RESULT_VARIABLE EXIT_CODE)
-
-    execute_process(COMMAND ${VCVARS64} && ${LJLINK} /out:minilua.exe minilua.obj
+    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} host/minilua.c && ${LJLINK} /out:minilua.exe minilua.obj
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
 
@@ -93,11 +100,7 @@ elseif (MSVC)
         RESULT_VARIABLE EXIT_CODE)
 
     # Compile buildvm
-    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} /I "." /I ${DASMDIR} host/buildvm*.c
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
-        RESULT_VARIABLE EXIT_CODE)
-
-    execute_process(COMMAND ${VCVARS64} && ${LJLINK} /out:buildvm.exe buildvm*.obj
+    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} /I "." /I ${DASMDIR} host/buildvm*.c && ${LJLINK} /out:buildvm.exe buildvm*.obj
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
 
@@ -126,20 +129,12 @@ elseif (MSVC)
         set(LUAJIT_LIB_OPTIONS /DLL /OUT:${LJDLLNAME})
     endif ()
 
-    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} ${LUAJIT_COMPILE_OPTIONS} lj_*.c lib_*.c
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
-        RESULT_VARIABLE EXIT_CODE)
-
-    execute_process(COMMAND ${VCVARS64} && ${LJLIB} ${LUAJIT_LIB_OPTIONS} lj_*.obj lib_*.obj
+    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} ${LUAJIT_COMPILE_OPTIONS} lj_*.c lib_*.c && ${LJLIB} ${LUAJIT_LIB_OPTIONS} lj_*.obj lib_*.obj
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
 
     # Compile interpreter executable
-    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} luajit.c
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
-        RESULT_VARIABLE EXIT_CODE)
-
-    execute_process(COMMAND ${VCVARS64} && ${LJLINK} /out:luajit.exe luajit.obj ${LJLIBNAME}
+    execute_process(COMMAND ${VCVARS64} && ${LJCOMPILE} luajit.c && ${LJLINK} /out:luajit.exe luajit.obj ${LJLIBNAME}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
         RESULT_VARIABLE EXIT_CODE)
 
