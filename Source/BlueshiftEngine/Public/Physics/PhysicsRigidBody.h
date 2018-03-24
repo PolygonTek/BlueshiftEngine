@@ -72,11 +72,11 @@ public:
     void                    ClearVelocities();
 
     void                    ApplyCentralForce(const Vec3 &force);
-    void                    ApplyForce(const Vec3 &force, const Vec3 &relativePos);
+    void                    ApplyForce(const Vec3 &force, const Vec3 &worldPos);
     void                    ApplyTorque(const Vec3 &torque);
 
     void                    ApplyCentralImpulse(const Vec3 &impulse);
-    void                    ApplyImpulse(const Vec3 &impulse, const Vec3 &relativePos);
+    void                    ApplyImpulse(const Vec3 &impulse, const Vec3 &worldPos);
     void                    ApplyAngularImpulse(const Vec3 &impulse);
 
 private:

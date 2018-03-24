@@ -271,9 +271,12 @@ void PhysRigidBody::ApplyCentralForce(const Vec3 &force) {
     GetRigidBody()->applyCentralForce(ToBtVector3(force));
 }
 
-void PhysRigidBody::ApplyForce(const Vec3 &force, const Vec3 &relativePos) {
+void PhysRigidBody::ApplyForce(const Vec3 &force, const Vec3 &worldPos) {
+    const btTransform &worldTransform = GetRigidBody()->getWorldTransform();
+    btVector3 relativePos = worldTransform.getBasis().transpose() * (ToBtVector3(worldPos) - worldTransform.getOrigin());
+
     GetRigidBody()->activate();
-    GetRigidBody()->applyForce(ToBtVector3(force), ToBtVector3(relativePos));
+    GetRigidBody()->applyForce(ToBtVector3(force), relativePos);
 }
 
 void PhysRigidBody::ApplyTorque(const Vec3 &torque) {
@@ -286,9 +289,12 @@ void PhysRigidBody::ApplyCentralImpulse(const Vec3 &impulse) {
     GetRigidBody()->applyCentralImpulse(ToBtVector3(impulse));
 }
 
-void PhysRigidBody::ApplyImpulse(const Vec3 &impulse, const Vec3 &relativePos) {
+void PhysRigidBody::ApplyImpulse(const Vec3 &impulse, const Vec3 &worldPos) {
+    const btTransform &worldTransform = GetRigidBody()->getWorldTransform();
+    btVector3 relativePos = worldTransform.getBasis().transpose() * (ToBtVector3(worldPos) - worldTransform.getOrigin());
+
     GetRigidBody()->activate();
-    GetRigidBody()->applyImpulse(ToBtVector3(impulse), ToBtVector3(relativePos));
+    GetRigidBody()->applyImpulse(ToBtVector3(impulse), relativePos);
 }
 
 void PhysRigidBody::ApplyAngularImpulse(const Vec3 &impulse) {
