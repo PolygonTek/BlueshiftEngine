@@ -120,13 +120,18 @@ void PhysGenericSpringConstraint::EnableLinearLimits(bool enableX, bool enableY,
     } else {
         generic6DofSpringConstraint->setLimit(2, 1.0f, -1.0f);
     }
+
+    generic6DofSpringConstraint->setEquilibriumPoint();
 }
 
 void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
+    float mA = bodyA->GetMass();
+    float mB = bodyB ? bodyB->GetMass() : FLT_INFINITY;
+    float m = Min(mA, mB);
     Vec3 omega = Math::TwoPi * stiffness;
-    Vec3 k = omega * omega;
+    Vec3 k = m * omega * omega;
 
     generic6DofSpringConstraint->enableSpring(0, stiffness.x > 0.0f ? true : false);
     generic6DofSpringConstraint->enableSpring(1, stiffness.y > 0.0f ? true : false);
@@ -135,8 +140,6 @@ void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
     generic6DofSpringConstraint->setStiffness(0, k.x);
     generic6DofSpringConstraint->setStiffness(1, k.y);
     generic6DofSpringConstraint->setStiffness(2, k.z);
-
-    generic6DofSpringConstraint->setEquilibriumPoint();
 
     linearStiffness = stiffness;
 }
@@ -147,8 +150,6 @@ void PhysGenericSpringConstraint::SetLinearDamping(const Vec3 &dampingRatio) {
     generic6DofSpringConstraint->setDamping(0, dampingRatio.x);
     generic6DofSpringConstraint->setDamping(1, dampingRatio.y);
     generic6DofSpringConstraint->setDamping(2, dampingRatio.z);
-
-    generic6DofSpringConstraint->setEquilibriumPoint();
 
     linearDamping = dampingRatio;
 }
@@ -191,13 +192,18 @@ void PhysGenericSpringConstraint::EnableAngularLimits(bool enableX, bool enableY
     } else {
         generic6DofSpringConstraint->setLimit(5, 1.0f, -1.0f);
     }
+
+    generic6DofSpringConstraint->setEquilibriumPoint();
 }
 
 void PhysGenericSpringConstraint::SetAngularStiffness(const Vec3 &stiffness) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
+    float mA = bodyA->GetMass();
+    float mB = bodyB ? bodyB->GetMass() : FLT_INFINITY;
+    float m = Min(mA, mB);
     Vec3 omega = Math::TwoPi * stiffness;
-    Vec3 k = omega * omega;
+    Vec3 k = m * omega * omega;
 
     generic6DofSpringConstraint->enableSpring(3, stiffness.x > 0.0f ? true : false);
     generic6DofSpringConstraint->enableSpring(4, stiffness.y > 0.0f ? true : false);
@@ -206,8 +212,6 @@ void PhysGenericSpringConstraint::SetAngularStiffness(const Vec3 &stiffness) {
     generic6DofSpringConstraint->setStiffness(3, k.x);
     generic6DofSpringConstraint->setStiffness(4, k.y);
     generic6DofSpringConstraint->setStiffness(5, k.z);
-
-    generic6DofSpringConstraint->setEquilibriumPoint();
 
     angularStiffness = stiffness;
 }
@@ -218,8 +222,6 @@ void PhysGenericSpringConstraint::SetAngularDamping(const Vec3 &dampingRatio) {
     generic6DofSpringConstraint->setDamping(3, dampingRatio.x);
     generic6DofSpringConstraint->setDamping(4, dampingRatio.y);
     generic6DofSpringConstraint->setDamping(5, dampingRatio.z);
-
-    generic6DofSpringConstraint->setEquilibriumPoint();
 
     angularDamping = dampingRatio;
 }

@@ -85,10 +85,6 @@ void ComWheelJoint::Start() {
 
     PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);
 
-    // Apply suspension stiffness & damping
-    genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, susStiffness));
-    genericSpringConstraint->SetLinearDamping(Vec3(0, 0, susDamping));
-
     // Apply limit suspension distances
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minSusDist)));
     genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxSusDist)));
@@ -98,6 +94,10 @@ void ComWheelJoint::Start() {
     genericSpringConstraint->SetAngularLowerLimit(Vec3(0, 0, DEG2RAD(minSteeringAngle)));
     genericSpringConstraint->SetAngularUpperLimit(Vec3(0, 0, DEG2RAD(maxSteeringAngle)));
     genericSpringConstraint->EnableAngularLimits(false, true, enableSteeringLimit);
+
+    // Apply suspension stiffness & damping
+    genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, susStiffness));
+    genericSpringConstraint->SetLinearDamping(Vec3(0, 0, susDamping));
 
     if (IsActiveInHierarchy()) {
         constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());

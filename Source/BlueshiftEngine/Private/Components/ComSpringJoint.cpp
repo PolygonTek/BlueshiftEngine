@@ -82,13 +82,14 @@ void ComSpringJoint::Start() {
 
     PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);
 
-    genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, stiffness));
-    genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
-
     // Apply limit distances
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minDist)));
     genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxDist)));
     genericSpringConstraint->EnableLinearLimits(true, true, enableLimitDistances);
+
+    // Apply spring stiffness & damping
+    genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, stiffness));
+    genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
 
     if (IsActiveInHierarchy()) {
         constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
