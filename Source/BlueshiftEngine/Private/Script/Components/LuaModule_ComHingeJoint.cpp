@@ -23,10 +23,14 @@ void LuaVM::RegisterHingeJointComponent(LuaCpp::Module &module) {
 
     _ComHingeJoint.SetClass<ComHingeJoint>(module["ComJoint"]);
     _ComHingeJoint.AddClassMembers<ComHingeJoint>(
-        "anchor", &ComHingeJoint::GetAnchor,
-        "set_anchor", &ComHingeJoint::SetAnchor,
-        "angles", &ComHingeJoint::GetAngles,
-        "set_angles", &ComHingeJoint::SetAngles,
+        "local_anchor", &ComHingeJoint::GetLocalAnchor,
+        "set_local_anchor", &ComHingeJoint::SetLocalAnchor,
+        "local_angles", &ComHingeJoint::GetLocalAngles,
+        "set_local_angles", &ComHingeJoint::SetLocalAngles,
+        "connected_anchor", &ComHingeJoint::GetConnectedAnchor,
+        "set_connected_anchor", &ComHingeJoint::SetConnectedAnchor,
+        "connected_angles", &ComHingeJoint::GetConnectedAngles,
+        "set_connected_angles", &ComHingeJoint::SetConnectedAngles,
         "enable_limit_angles", &ComHingeJoint::GetEnableLimitAngles,
         "set_enable_limit_angles", &ComHingeJoint::SetEnableLimitAngles,
         "minimum_angle", &ComHingeJoint::GetMinimumAngle,

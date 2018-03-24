@@ -26,8 +26,8 @@ BEGIN_EVENTS(ComCharacterJoint)
 END_EVENTS
 
 void ComCharacterJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("swing1LowerLimit", "X Swing Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, -45.f, "", PropertyInfo::EditorFlag)
         .SetRange(-180, 0, 1);
     REGISTER_ACCESSOR_PROPERTY("swing1UpperLimit", "X Swing Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, 45.f, "", PropertyInfo::EditorFlag)
@@ -88,8 +88,14 @@ void ComCharacterJoint::Start() {
         desc.bodyB = connectedBody->GetBody();
         desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
         desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+
+        connectedAxis = desc.axisInB;
+        connectedAnchor = desc.anchorInB;
     } else {
         desc.bodyB = nullptr;
+
+        connectedAxis = Mat3::identity;
+        connectedAnchor = Vec3::origin;
     }
 
     // Create a constraint by description
@@ -110,27 +116,51 @@ void ComCharacterJoint::Start() {
     }
 }
 
-const Vec3 &ComCharacterJoint::GetAnchor() const {
+const Vec3 &ComCharacterJoint::GetLocalAnchor() const {
     return localAnchor;
 }
 
-void ComCharacterJoint::SetAnchor(const Vec3 &anchor) {
+void ComCharacterJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
     }
 }
 
-Angles ComCharacterJoint::GetAngles() const {
+Angles ComCharacterJoint::GetLocalAngles() const {
     return localAxis.ToAngles();
 }
 
-void ComCharacterJoint::SetAngles(const Angles &angles) {
+void ComCharacterJoint::SetLocalAngles(const Angles &angles) {
     this->localAxis = angles.ToMat3();
     this->localAxis.FixDegeneracies();
 
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
+    }
+}
+
+const Vec3 &ComCharacterJoint::GetConnectedAnchor() const {
+    return connectedAnchor;
+}
+
+void ComCharacterJoint::SetConnectedAnchor(const Vec3 &anchor) {
+    this->connectedAnchor = anchor;
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, connectedAxis);
+    }
+}
+
+Angles ComCharacterJoint::GetConnectedAngles() const {
+    return connectedAxis.ToAngles();
+}
+
+void ComCharacterJoint::SetConnectedAngles(const Angles &angles) {
+    this->connectedAxis = angles.ToMat3();
+    this->connectedAxis.FixDegeneracies();
+
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(connectedAnchor, connectedAxis);
     }
 }
 

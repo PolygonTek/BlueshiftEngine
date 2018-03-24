@@ -23,10 +23,14 @@ void LuaVM::RegisterCharacterJointComponent(LuaCpp::Module &module) {
 
     _ComCharacterJoint.SetClass<ComCharacterJoint>(module["ComJoint"]);
     _ComCharacterJoint.AddClassMembers<ComCharacterJoint>(
-        "anchor", &ComCharacterJoint::GetAnchor,
-        "set_anchor", &ComCharacterJoint::SetAnchor,
-        "angles", &ComCharacterJoint::GetAngles,
-        "set_angles", &ComCharacterJoint::SetAngles,
+        "local_anchor", &ComCharacterJoint::GetLocalAnchor,
+        "set_local_anchor", &ComCharacterJoint::SetLocalAnchor,
+        "local_angles", &ComCharacterJoint::GetLocalAngles,
+        "set_local_angles", &ComCharacterJoint::SetLocalAngles,
+        "connected_anchor", &ComCharacterJoint::GetConnectedAnchor,
+        "set_connected_anchor", &ComCharacterJoint::SetConnectedAnchor,
+        "connected_angles", &ComCharacterJoint::GetConnectedAngles,
+        "set_connected_angles", &ComCharacterJoint::SetConnectedAngles,
         "swing1_lower_limit", &ComCharacterJoint::GetSwing1LowerLimit,
         "set_swing1_lower_limit", &ComCharacterJoint::SetSwing1LowerLimit,
         "swing1_upper_limit", &ComCharacterJoint::GetSwing1UpperLimit,

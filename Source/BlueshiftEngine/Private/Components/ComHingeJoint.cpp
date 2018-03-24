@@ -26,8 +26,8 @@ BEGIN_EVENTS(ComHingeJoint)
 END_EVENTS
 
 void ComHingeJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, "Activate joint limits", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("minAngle", "Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, "Minimum value of joint angle", PropertyInfo::EditorFlag)
         .SetRange(-180, 0, 1);
@@ -74,8 +74,14 @@ void ComHingeJoint::Start() {
         desc.bodyB = connectedBody->GetBody();
         desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
         desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+
+        connectedAxis = desc.axisInB;
+        connectedAnchor = desc.anchorInB;
     } else {
         desc.bodyB = nullptr;
+
+        connectedAxis = Mat3::identity;
+        connectedAnchor = Vec3::origin;
     }
 
     constraint = physicsSystem.CreateConstraint(&desc);
@@ -97,27 +103,51 @@ void ComHingeJoint::Start() {
     }
 }
 
-const Vec3 &ComHingeJoint::GetAnchor() const {
+const Vec3 &ComHingeJoint::GetLocalAnchor() const {
     return localAnchor;
 }
 
-void ComHingeJoint::SetAnchor(const Vec3 &anchor) {
+void ComHingeJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
     if (constraint) {
         ((PhysHingeConstraint *)constraint)->SetFrameA(anchor, localAxis);
     }
 }
 
-Angles ComHingeJoint::GetAngles() const {
+Angles ComHingeJoint::GetLocalAngles() const {
     return localAxis.ToAngles();
 }
 
-void ComHingeJoint::SetAngles(const Angles &angles) {
+void ComHingeJoint::SetLocalAngles(const Angles &angles) {
     this->localAxis = angles.ToMat3();
     this->localAxis.FixDegeneracies();
 
     if (constraint) {
         ((PhysHingeConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
+    }
+}
+
+const Vec3 &ComHingeJoint::GetConnectedAnchor() const {
+    return connectedAnchor;
+}
+
+void ComHingeJoint::SetConnectedAnchor(const Vec3 &anchor) {
+    this->connectedAnchor = anchor;
+    if (constraint) {
+        ((PhysP2PConstraint *)constraint)->SetAnchorB(anchor);
+    }
+}
+
+Angles ComHingeJoint::GetConnectedAngles() const {
+    return connectedAxis.ToAngles();
+}
+
+void ComHingeJoint::SetConnectedAngles(const Angles &angles) {
+    this->connectedAxis = angles.ToMat3();
+    this->connectedAxis.FixDegeneracies();
+
+    if (constraint) {
+        ((PhysHingeConstraint *)constraint)->SetFrameB(connectedAnchor, connectedAxis);
     }
 }
 

@@ -23,10 +23,14 @@ void LuaVM::RegisterSpringJointComponent(LuaCpp::Module &module) {
 
     _ComSpringJoint.SetClass<ComSpringJoint>(module["ComJoint"]);
     _ComSpringJoint.AddClassMembers<ComSpringJoint>(
-        "anchor", &ComSpringJoint::GetAnchor,
-        "set_anchor", &ComSpringJoint::SetAnchor,
-        "angles", &ComSpringJoint::GetAngles,
-        "set_angles", &ComSpringJoint::SetAngles,
+        "local_anchor", &ComSpringJoint::GetLocalAnchor,
+        "set_local_anchor", &ComSpringJoint::SetLocalAnchor,
+        "local_angles", &ComSpringJoint::GetLocalAngles,
+        "set_local_angles", &ComSpringJoint::SetLocalAngles,
+        "connected_anchor", &ComSpringJoint::GetConnectedAnchor,
+        "set_connected_anchor", &ComSpringJoint::SetConnectedAnchor,
+        "connected_angles", &ComSpringJoint::GetConnectedAngles,
+        "set_connected_angles", &ComSpringJoint::SetConnectedAngles,
         "minimum_distance", &ComSpringJoint::GetMinimumDistance,
         "set_minimum_distance", &ComSpringJoint::SetMinimumDistance,
         "maximum_distance", &ComSpringJoint::GetMaximumDistance,

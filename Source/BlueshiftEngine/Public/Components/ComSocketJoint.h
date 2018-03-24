@@ -39,11 +39,15 @@ public:
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-    const Vec3 &            GetAnchor() const;
-    void                    SetAnchor(const Vec3 &anchor);
+    const Vec3 &            GetLocalAnchor() const;
+    void                    SetLocalAnchor(const Vec3 &anchor);
+
+    const Vec3 &            GetConnectedAnchor() const;
+    void                    SetConnectedAnchor(const Vec3 &anchor);
 
 protected:
     Vec3                    localAnchor;
+    Vec3                    connectedAnchor;
 };
 
 BE_NAMESPACE_END

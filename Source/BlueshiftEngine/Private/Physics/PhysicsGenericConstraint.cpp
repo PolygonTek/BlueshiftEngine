@@ -50,7 +50,11 @@ void PhysGenericConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
 
-    generic6DofConstraint->setFrames(frameA, generic6DofConstraint->getFrameOffsetB());
+    if (!bodyB) {
+        generic6DofConstraint->setFrames(generic6DofConstraint->getFrameOffsetA(), frameA);
+    } else {
+        generic6DofConstraint->setFrames(frameA, generic6DofConstraint->getFrameOffsetB());
+    }
 }
 
 void PhysGenericConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) {
@@ -59,7 +63,11 @@ void PhysGenericConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB
     Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
     btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
 
-    generic6DofConstraint->setFrames(generic6DofConstraint->getFrameOffsetA(), frameB);
+    if (!bodyB) {
+        generic6DofConstraint->setFrames(frameB, generic6DofConstraint->getFrameOffsetB());
+    } else {
+        generic6DofConstraint->setFrames(generic6DofConstraint->getFrameOffsetA(), frameB);
+    }
 }
 
 void PhysGenericConstraint::SetLinearLowerLimit(const Vec3 &lower) {

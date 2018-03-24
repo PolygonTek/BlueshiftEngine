@@ -26,8 +26,8 @@ BEGIN_EVENTS(ComWheelJoint)
 END_EVENTS
 
 void ComWheelJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("useSusLimits", "Use Suspension Limits", bool, GetEnableSuspensionLimit, SetEnableSuspensionLimit, false, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("minSusDist", "Min Suspension Distance", float, GetMinimumSuspensionDistance, SetMinimumSuspensionDistance, 0.f, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("maxSusDist", "Max Suspension Distance", float, GetMaximumSuspensionDistance, SetMaximumSuspensionDistance, 0.f, "", PropertyInfo::EditorFlag);
@@ -76,8 +76,14 @@ void ComWheelJoint::Start() {
         desc.bodyB = connectedBody->GetBody();
         desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
         desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+
+        connectedAxis = desc.axisInB;
+        connectedAnchor = desc.anchorInB;
     } else {
         desc.bodyB = nullptr;
+
+        connectedAxis = Mat3::identity;
+        connectedAnchor = Vec3::origin;
     }
 
     // Create a constraint by description
@@ -104,27 +110,51 @@ void ComWheelJoint::Start() {
     }
 }
 
-const Vec3 &ComWheelJoint::GetAnchor() const {
+const Vec3 &ComWheelJoint::GetLocalAnchor() const {
     return localAnchor;
 }
 
-void ComWheelJoint::SetAnchor(const Vec3 &anchor) {
+void ComWheelJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
     }
 }
 
-Angles ComWheelJoint::GetAngles() const {
+Angles ComWheelJoint::GetLocalAngles() const {
     return localAxis.ToAngles();
 }
 
-void ComWheelJoint::SetAngles(const Angles &angles) {
+void ComWheelJoint::SetLocalAngles(const Angles &angles) {
     this->localAxis = angles.ToMat3();
     this->localAxis.FixDegeneracies();
 
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
+    }
+}
+
+const Vec3 &ComWheelJoint::GetConnectedAnchor() const {
+    return connectedAnchor;
+}
+
+void ComWheelJoint::SetConnectedAnchor(const Vec3 &anchor) {
+    this->connectedAnchor = anchor;
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, connectedAxis);
+    }
+}
+
+Angles ComWheelJoint::GetConnectedAngles() const {
+    return connectedAxis.ToAngles();
+}
+
+void ComWheelJoint::SetConnectedAngles(const Angles &angles) {
+    this->connectedAxis = angles.ToMat3();
+    this->connectedAxis.FixDegeneracies();
+
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(connectedAnchor, connectedAxis);
     }
 }
 

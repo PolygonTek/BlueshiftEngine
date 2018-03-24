@@ -70,7 +70,11 @@ void PhysGenericSpringConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &a
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
 
-    generic6DofSpringConstraint->setFrames(frameA, generic6DofSpringConstraint->getFrameOffsetB());
+    if (!bodyB) {
+        generic6DofSpringConstraint->setFrames(generic6DofSpringConstraint->getFrameOffsetA(), frameA);
+    } else {
+        generic6DofSpringConstraint->setFrames(frameA, generic6DofSpringConstraint->getFrameOffsetB());
+    }
 }
 
 void PhysGenericSpringConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) {
@@ -79,7 +83,11 @@ void PhysGenericSpringConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &a
     Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
     btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
 
-    generic6DofSpringConstraint->setFrames(generic6DofSpringConstraint->getFrameOffsetA(), frameB);
+    if (!bodyB) {
+        generic6DofSpringConstraint->setFrames(frameB, generic6DofSpringConstraint->getFrameOffsetB());
+    } else {
+        generic6DofSpringConstraint->setFrames(generic6DofSpringConstraint->getFrameOffsetA(), frameB);
+    }
 }
 
 void PhysGenericSpringConstraint::SetLinearLowerLimit(const Vec3 &lower) {

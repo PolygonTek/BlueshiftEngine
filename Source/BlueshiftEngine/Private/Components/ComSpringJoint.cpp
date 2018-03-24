@@ -26,8 +26,8 @@ BEGIN_EVENTS(ComSpringJoint)
 END_EVENTS
 
 void ComSpringJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, "Activate joint limits", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, "", PropertyInfo::EditorFlag);
@@ -73,8 +73,14 @@ void ComSpringJoint::Start() {
         desc.bodyB = connectedBody->GetBody();
         desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
         desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+
+        connectedAxis = desc.axisInB;
+        connectedAnchor = desc.anchorInB;
     } else {
         desc.bodyB = nullptr;
+
+        connectedAxis = Mat3::identity;
+        connectedAnchor = Vec3::origin;
     }
 
     // Create a constraint by description
@@ -96,27 +102,51 @@ void ComSpringJoint::Start() {
     }
 }
 
-const Vec3 &ComSpringJoint::GetAnchor() const {
+const Vec3 &ComSpringJoint::GetLocalAnchor() const {
     return localAnchor;
 }
 
-void ComSpringJoint::SetAnchor(const Vec3 &anchor) {
+void ComSpringJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
     }
 }
 
-Angles ComSpringJoint::GetAngles() const {
+Angles ComSpringJoint::GetLocalAngles() const {
     return localAxis.ToAngles();
 }
 
-void ComSpringJoint::SetAngles(const Angles &angles) {
+void ComSpringJoint::SetLocalAngles(const Angles &angles) {
     this->localAxis = angles.ToMat3();
     this->localAxis.FixDegeneracies();
 
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
+    }
+}
+
+const Vec3 &ComSpringJoint::GetConnectedAnchor() const {
+    return connectedAnchor;
+}
+
+void ComSpringJoint::SetConnectedAnchor(const Vec3 &anchor) {
+    this->connectedAnchor = anchor;
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, connectedAxis);
+    }
+}
+
+Angles ComSpringJoint::GetConnectedAngles() const {
+    return connectedAxis.ToAngles();
+}
+
+void ComSpringJoint::SetConnectedAngles(const Angles &angles) {
+    this->connectedAxis = angles.ToMat3();
+    this->connectedAxis.FixDegeneracies();
+
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(connectedAnchor, connectedAxis);
     }
 }
 

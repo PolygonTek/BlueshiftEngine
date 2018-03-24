@@ -39,11 +39,17 @@ public:
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-    const Vec3 &            GetAnchor() const;
-    void                    SetAnchor(const Vec3 &anchor);
+    const Vec3 &            GetLocalAnchor() const;
+    void                    SetLocalAnchor(const Vec3 &anchor);
 
-    Angles                  GetAngles() const;
-    void                    SetAngles(const Angles &angles);
+    Angles                  GetLocalAngles() const;
+    void                    SetLocalAngles(const Angles &angles);
+
+    const Vec3 &            GetConnectedAnchor() const;
+    void                    SetConnectedAnchor(const Vec3 &anchor);
+
+    Angles                  GetConnectedAngles() const;
+    void                    SetConnectedAngles(const Angles &angles);
 
     bool                    GetEnableSuspensionLimit() const { return enableSusLimit; }
     void                    SetEnableSuspensionLimit(bool enable);
@@ -70,6 +76,8 @@ public:
 protected:
     Mat3                    localAxis;
     Vec3                    localAnchor;
+    Mat3                    connectedAxis;
+    Vec3                    connectedAnchor;
     bool                    enableSusLimit;
     float                   minSusDist;
     float                   maxSusDist;

@@ -26,7 +26,7 @@ BEGIN_EVENTS(ComSocketJoint)
 END_EVENTS
 
 void ComSocketJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
 }
 
 ComSocketJoint::ComSocketJoint() {
@@ -63,8 +63,12 @@ void ComSocketJoint::Start() {
 
         desc.bodyB = connectedBody->GetBody();
         desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+
+        connectedAnchor = desc.anchorInB;
     } else {
         desc.bodyB = nullptr;
+
+        connectedAnchor = Vec3::origin;
     }
 
     // Create a constraint by description
@@ -77,14 +81,25 @@ void ComSocketJoint::Start() {
     }
 }
 
-const Vec3 &ComSocketJoint::GetAnchor() const {
+const Vec3 &ComSocketJoint::GetLocalAnchor() const {
     return localAnchor;
 }
 
-void ComSocketJoint::SetAnchor(const Vec3 &anchor) {
+void ComSocketJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
     if (constraint) {
         ((PhysP2PConstraint *)constraint)->SetAnchorA(anchor);
+    }
+}
+
+const Vec3 &ComSocketJoint::GetConnectedAnchor() const {
+    return connectedAnchor;
+}
+
+void ComSocketJoint::SetConnectedAnchor(const Vec3 &anchor) {
+    this->connectedAnchor = anchor;
+    if (constraint) {
+        ((PhysP2PConstraint *)constraint)->SetAnchorB(anchor);
     }
 }
 
