@@ -28,6 +28,12 @@ public:
 
     PhysicsSettings();
 
+    int                         GetSolver() const;
+    void                        SetSolver(int solver);
+
+    int                         GetSolverIterations() const;
+    void                        SetSolverIterations(int iterationCount);
+
     int                         GetFrameRate() const;
     void                        SetFrameRate(int frameRate);
 

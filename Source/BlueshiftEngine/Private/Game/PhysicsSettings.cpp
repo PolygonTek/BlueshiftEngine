@@ -28,12 +28,32 @@ void PhysicsSettings::RegisterProperties() {
         .SetRange(1, 120, 1);
     REGISTER_ACCESSOR_PROPERTY("maximumAllowedTimeStep", "Maximum Allowed Timestep", float, GetMaximumAllowedTimeStep, SetMaximumAllowedTimeStep, 1.0f/5.0f, "", PropertyInfo::EditorFlag)
         .SetRange(1.0f/120, 1.0f, 1.0f/120);
+    REGISTER_ACCESSOR_PROPERTY("solver", "Solver", int, GetSolver, SetSolver, 0, "", PropertyInfo::EditorFlag)
+        .SetEnumString("Sequential Impulse;NNCG Solver;MLCP (PGS);MLCP (Dantzig)");
+    REGISTER_ACCESSOR_PROPERTY("solverIterations", "solverIterations", int, GetSolverIterations, SetSolverIterations, 10, "", PropertyInfo::EditorFlag)
+        .SetRange(1, 100, 1);
     REGISTER_MIXED_ACCESSOR_PROPERTY("gravity", "Gravity", Vec3, GetGravity, SetGravity, Vec3(0, 0, -9.8f), "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_ARRAY_PROPERTY("filterMasks", "Filter Mask", int, GetFilterMaskElement, SetFilterMaskElement, GetFilterMaskCount, SetFilterMaskCount, -1, "", PropertyInfo::EditorFlag);
 }
 
 PhysicsSettings::PhysicsSettings() {
     numFilterMasks = 0;
+}
+
+int PhysicsSettings::GetSolver() const {
+    return (int)physicsWorld->GetConstraintSolver();
+}
+
+void PhysicsSettings::SetSolver(int solver) {
+    return physicsWorld->SetConstraintSolver((PhysicsWorld::ConstraintSolver)solver);
+}
+
+int PhysicsSettings::GetSolverIterations() const {
+    return physicsWorld->GetConstraintSolverIterations();
+}
+
+void PhysicsSettings::SetSolverIterations(int iterations) {
+    return physicsWorld->SetConstraintSolverIterations(iterations);
 }
 
 int PhysicsSettings::GetFrameRate() const {

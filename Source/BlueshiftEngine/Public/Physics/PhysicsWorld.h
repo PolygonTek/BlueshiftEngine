@@ -76,11 +76,24 @@ class PhysicsWorld : public SignalObject {
     friend class PhysSensor;
 
 public:
+    enum ConstraintSolver {
+        SequentialImpulseSolver,        // Default constraint solver.
+        NNCGSolver,                     // Nonsmooth Nonlinear Conjugate Gradient Solver
+        ProjectedGaussSeidelSolver,
+        DantzigSolver
+    };
+
     PhysicsWorld();
     ~PhysicsWorld();
 
     void                    ClearScene();
     void                    StepSimulation(int frameTime);
+
+    int                     GetConstraintSolverIterations() const;
+    void                    SetConstraintSolverIterations(int iterationCount);
+
+    ConstraintSolver        GetConstraintSolver() const;
+    void                    SetConstraintSolver(ConstraintSolver solver);
 
                             /// Returns fixed frame rate in physics simulation
     int                     GetFrameRate() const { return frameRate; }
@@ -126,6 +139,7 @@ private:
     int                     frameRate;
     float                   frameTimeDelta;
     float                   maximumAllowedTimeStep;
+    ConstraintSolver        solverType;
     uint32_t                filterMasks[32];
     btDefaultCollisionConfiguration *collisionConfiguration;
     btCollisionDispatcher *  collisionDispatcher;

@@ -18,9 +18,11 @@
 #include "BulletCollision/CollisionDispatch/btGhostObject.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
-//#include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
-//#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
-//#include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
+
+#include "BulletDynamics/ConstraintSolver/btNNCGConstraintSolver.h"
+#include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
+#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
+#include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
 
 BE_NAMESPACE_BEGIN
 

@@ -24,8 +24,6 @@ BE_NAMESPACE_BEGIN
 const SignalDef PhysicsWorld::SIG_PreStep("PhysicsWorld::PreStep", "f");
 const SignalDef PhysicsWorld::SIG_PostStep("PhysicsWorld::PostStep", "f");
 
-//#define USE_MLCP_SOLVER
-
 static const int MAX_SUBSTEPS = 16;
 
 static void PreTickCallback(btDynamicsWorld *world, btScalar timeStep) {
@@ -80,20 +78,11 @@ PhysicsWorld::PhysicsWorld() {
     broadphase = new btAxisSweep3(worldMin, worldMax);
 #endif
 
-// direct MLCP solvers are useful when higher quality simulation is needed, for example in robotics. 
-// The performance is less than the PGS / SI solver,
-#ifdef USE_MLCP_SOLVER
-    //btDantzigSolver *mlcp = new btDantzigSolver();
-    btSolveProjectedGaussSeidel *mlcp = new btSolveProjectedGaussSeidel;
-    solver = new btMLCPSolver(mlcp);
-    dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, solver, collisionConfiguration);
-    dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 32; // for direct solver, it is better to solve multiple objects together, small batches have high overhead
-#else
     // the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
+    solverType = SequentialImpulseSolver;
     solver = new btSequentialImpulseConstraintSolver;
     dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, solver, collisionConfiguration);
-    dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; // for direct solver it is better to have a small A matrix 
-#endif
+    //dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; // for direct solver it is better to have a small A matrix 
     
     // the polyhedral contact clipping can use either GJK or SAT test to find the separating axis
     //dynamicsWorld->getDispatchInfo().m_enableSatConvex = false;
@@ -109,6 +98,7 @@ PhysicsWorld::PhysicsWorld() {
     dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
 
     //dynamicsWorld->getSolverInfo().m_numIterations = 10;
+    //dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_RANDMIZE_ORDER;
     dynamicsWorld->getSolverInfo().m_splitImpulse = false;
     //dynamicsWorld->setSynchronizeAllMotionStates(true);
 
@@ -160,6 +150,47 @@ void PhysicsWorld::ClearScene() {
     dynamicsWorld->getConstraintSolver()->reset();
 
     time = 0;
+}
+
+PhysicsWorld::ConstraintSolver PhysicsWorld::GetConstraintSolver() const {
+    return solverType;
+}
+
+void PhysicsWorld::SetConstraintSolver(ConstraintSolver solverType) {
+    switch (solverType) {
+    case SequentialImpulseSolver:
+        solver = new btSequentialImpulseConstraintSolver;
+        break;
+    case NNCGSolver:
+        solver = new btNNCGConstraintSolver;
+        break;
+    case ProjectedGaussSeidelSolver:
+        // Direct MLCP solvers are useful when higher quality simulation is needed, for example in robotics. 
+        // The performance is less than the SI solver,
+        solver = new btMLCPSolver(new btSolveProjectedGaussSeidel);
+        break;
+    case DantzigSolver:
+        solver = new btMLCPSolver(new btDantzigSolver());
+        break;
+    default:
+        assert(0);
+        break;
+    }
+
+    this->solverType = solverType;
+
+    dynamicsWorld->setConstraintSolver(solver);
+
+    // for direct solver it is better to have a small A matrix 
+    //dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; 
+}
+
+int PhysicsWorld::GetConstraintSolverIterations() const {
+    return dynamicsWorld->getSolverInfo().m_numIterations;
+}
+
+void PhysicsWorld::SetConstraintSolverIterations(int iterationCount) {
+    dynamicsWorld->getSolverInfo().m_numIterations = iterationCount;
 }
 
 void PhysicsWorld::SetFrameRate(int frameRate) {
