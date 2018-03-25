@@ -135,6 +135,8 @@ public:
                                 /// Returns a transform component.
     ComTransform *              GetTransform() const;
 
+                                /// Adds a defaulted component to the entity.
+    Component *                 AddNewComponent(const MetaObject *type);
                                 /// Adds a component to the entity.
     void                        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
                                 /// Inserts a component after the index to the entity.

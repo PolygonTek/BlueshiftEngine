@@ -188,6 +188,19 @@ ComTransform *Entity::GetTransform() const {
     return transform;
 }
 
+Component *Entity::AddNewComponent(const MetaObject *type) {
+    if (!type->IsTypeOf(Component::metaObject)) {
+        BE_ERRLOG(L"Entity::AddNewComponent: %hs is not component type\n", type->ClassName());
+        return nullptr;
+    }
+    Component *component = (Component *)type->CreateInstance();
+    AddComponent(component);
+
+    component->Deserialize(Json::Value());
+
+    return component;
+}
+
 void Entity::InsertComponent(Component *component, int index) {
     component->SetEntity(this);
 
