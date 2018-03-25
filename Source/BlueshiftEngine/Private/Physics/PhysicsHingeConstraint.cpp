@@ -78,7 +78,7 @@ void PhysHingeConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) 
     hingeConstraint->setFrames(hingeConstraint->getFrameOffsetA(), frameB);
 }
 
-void PhysHingeConstraint::SetLimitAngles(float lowerLimit, float upperLimit) {
+void PhysHingeConstraint::SetAngularLimits(float lowerLimit, float upperLimit) {
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
     this->lowerLimit = lowerLimit;
@@ -89,7 +89,7 @@ void PhysHingeConstraint::SetLimitAngles(float lowerLimit, float upperLimit) {
     }
 }
 
-void PhysHingeConstraint::EnableLimitAngles(bool enable) {
+void PhysHingeConstraint::EnableAngularLimits(bool enable) {
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
     if (enable) {

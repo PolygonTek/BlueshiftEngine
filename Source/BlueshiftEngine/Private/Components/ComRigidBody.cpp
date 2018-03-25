@@ -157,6 +157,7 @@ void ComRigidBody::Awake() {
         physicsDesc.origin = transform->GetOrigin();
         physicsDesc.axis = transform->GetAxis();
 
+        // Collect collider shadpes in this entity
         ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
         if (colliders.Count() > 0) {
             for (int i = 0; i < colliders.Count(); i++) {
@@ -171,6 +172,7 @@ void ComRigidBody::Awake() {
             }
         } 
 
+        // Collect collider shadpes in children recursively
         for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
             AddChildShapeRecursive(childEntity, physicsDesc.shapes);
         }

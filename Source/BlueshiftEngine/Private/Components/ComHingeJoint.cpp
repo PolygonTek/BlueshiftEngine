@@ -34,8 +34,7 @@ void ComHingeJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("maxAngle", "Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, "Maximum value of joint angle", PropertyInfo::EditorFlag)
         .SetRange(0, 180, 1);
     REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f, "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Maximum Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "Maximum motor impulse", PropertyInfo::EditorFlag)
-        .SetRange(0, 1e30f, 0.03f);
+    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Maximum Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, "Maximum motor impulse", PropertyInfo::EditorFlag);
 }
 
 ComHingeJoint::ComHingeJoint() {
@@ -89,8 +88,8 @@ void ComHingeJoint::Start() {
     PhysHingeConstraint *hingeConstraint = static_cast<PhysHingeConstraint *>(constraint);
 
     // Apply limit angles
-    hingeConstraint->SetLimitAngles(DEG2RAD(minimumAngle), DEG2RAD(maximumAngle));
-    hingeConstraint->EnableLimitAngles(enableLimitAngles);
+    hingeConstraint->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
+    hingeConstraint->EnableAngularLimits(enableLimitAngles);
     
     // Apply motor
     if (motorTargetVelocity != 0.0f) {
@@ -151,41 +150,25 @@ void ComHingeJoint::SetConnectedAngles(const Angles &angles) {
     }
 }
 
-bool ComHingeJoint::GetEnableLimitAngles() const {
-    return enableLimitAngles;
-}
-
 void ComHingeJoint::SetEnableLimitAngles(bool enable) {
     this->enableLimitAngles = enable;
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->EnableLimitAngles(enableLimitAngles);
+        ((PhysHingeConstraint *)constraint)->EnableAngularLimits(enableLimitAngles);
     }
 }
 
-float ComHingeJoint::GetMinimumAngle() const {
-    return minimumAngle;
-}
-
-void ComHingeJoint::SetMinimumAngle(float minimumAngle) {
-    this->minimumAngle = minimumAngle;
+void ComHingeJoint::SetMinimumAngle(float minAngle) {
+    this->minAngle = minAngle;
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->SetLimitAngles(DEG2RAD(minimumAngle), DEG2RAD(maximumAngle));
+        ((PhysHingeConstraint *)constraint)->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
     }
 }
 
-float ComHingeJoint::GetMaximumAngle() const {
-    return maximumAngle;
-}
-
-void ComHingeJoint::SetMaximumAngle(float maximumAngle) {
-    this->maximumAngle = maximumAngle;
+void ComHingeJoint::SetMaximumAngle(float maxAngle) {
+    this->maxAngle = maxAngle;
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->SetLimitAngles(DEG2RAD(minimumAngle), DEG2RAD(maximumAngle));
+        ((PhysHingeConstraint *)constraint)->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
     }
-}
-
-float ComHingeJoint::GetMotorTargetVelocity() const {
-    return motorTargetVelocity;
 }
 
 void ComHingeJoint::SetMotorTargetVelocity(float motorTargetVelocity) {
@@ -194,10 +177,6 @@ void ComHingeJoint::SetMotorTargetVelocity(float motorTargetVelocity) {
         ((PhysHingeConstraint *)constraint)->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
         ((PhysHingeConstraint *)constraint)->EnableMotor(motorTargetVelocity != 0.0f ? true : false);
     }
-}
-
-float ComHingeJoint::GetMaxMotorImpulse() const {
-    return maxMotorImpulse;
 }
 
 void ComHingeJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
@@ -224,7 +203,7 @@ void ComHingeJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected)
 
         if (enableLimitAngles) {
             renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5), minimumAngle, maximumAngle, true);
+            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5), minAngle, maxAngle, true);
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
             renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5), 1);

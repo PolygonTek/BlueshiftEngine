@@ -69,8 +69,8 @@ void ComFixedJoint::Start() {
     constraint = physicsSystem.CreateConstraint(&desc);
 
     PhysHingeConstraint *hingeConstraint = static_cast<PhysHingeConstraint *>(constraint);
-    hingeConstraint->SetLimitAngles(0, 0);
-    hingeConstraint->EnableLimitAngles(true);
+    hingeConstraint->SetAngularLimits(0, 0);
+    hingeConstraint->EnableAngularLimits(true);
 
     if (IsActiveInHierarchy()) {
         constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());

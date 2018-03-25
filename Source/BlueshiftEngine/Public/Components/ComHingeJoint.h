@@ -51,18 +51,18 @@ public:
     Angles                  GetConnectedAngles() const;
     void                    SetConnectedAngles(const Angles &angles);
 
-    bool                    GetEnableLimitAngles() const;
+    bool                    GetEnableLimitAngles() const { return enableLimitAngles; }
     void                    SetEnableLimitAngles(bool enable);
 
-    float                   GetMinimumAngle() const;
-    void                    SetMinimumAngle(float minimumAngle);
-    float                   GetMaximumAngle() const;
-    void                    SetMaximumAngle(float maximumAngle);
+    float                   GetMinimumAngle() const { return minAngle; }
+    void                    SetMinimumAngle(float minAngle);
+    float                   GetMaximumAngle() const { return maxAngle; }
+    void                    SetMaximumAngle(float maxAngle);
 
-    float                   GetMotorTargetVelocity() const;
+    float                   GetMotorTargetVelocity() const { return motorTargetVelocity; }
     void                    SetMotorTargetVelocity(float motorTargetVelocity);
 
-    float                   GetMaxMotorImpulse() const;
+    float                   GetMaxMotorImpulse() const { return maxMotorImpulse; }
     void                    SetMaxMotorImpulse(float maxMotorImpulse);
 
 protected:
@@ -70,8 +70,8 @@ protected:
     Vec3                    localAnchor;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
-    float                   minimumAngle;
-    float                   maximumAngle;
+    float                   minAngle;
+    float                   maxAngle;
     bool                    enableLimitAngles;
     float                   motorTargetVelocity;
     float                   maxMotorImpulse;

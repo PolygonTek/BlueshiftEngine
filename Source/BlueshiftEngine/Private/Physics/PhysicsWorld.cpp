@@ -97,7 +97,6 @@ PhysicsWorld::PhysicsWorld() {
     filterCallback = new CollisionFilterCallback();
     dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
 
-    //dynamicsWorld->getSolverInfo().m_numIterations = 10;
     //dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_RANDMIZE_ORDER;
     dynamicsWorld->getSolverInfo().m_splitImpulse = false;
     //dynamicsWorld->setSynchronizeAllMotionStates(true);

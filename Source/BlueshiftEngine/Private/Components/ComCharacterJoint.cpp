@@ -263,13 +263,13 @@ void ComCharacterJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selec
         }
 
         renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], CentiToUnit(2.5), lowerLimit.x, upperLimit.x, true);
-        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], CentiToUnit(2.5), lowerLimit.y, upperLimit.y, true);
-        renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], CentiToUnit(2.5), lowerLimit.z, upperLimit.z, true);
+        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], CentiToUnit(5), lowerLimit.x, upperLimit.x, true);
+        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], CentiToUnit(5), lowerLimit.y, upperLimit.y, true);
+        renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], CentiToUnit(5), lowerLimit.z, upperLimit.z, true);
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(3), 1);
-        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * CentiToUnit(3), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(5), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * CentiToUnit(5), 1);
     }
 }
 
