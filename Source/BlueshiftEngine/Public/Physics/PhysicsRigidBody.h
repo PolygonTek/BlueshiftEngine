@@ -25,6 +25,7 @@ class PhysRigidBody : public PhysCollidable {
     friend class PhysGenericSpringConstraint;
     friend class PhysP2PConstraint;
     friend class PhysHingeConstraint;
+    friend class PhysSliderConstraint;
 
 public:
     PhysRigidBody(btRigidBody *rididBody, const Vec3 &centroid);

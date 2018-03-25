@@ -31,6 +31,7 @@
 #include "Components/ComFixedJoint.h"
 #include "Components/ComHingeJoint.h"
 #include "Components/ComSocketJoint.h"
+#include "Components/ComSliderJoint.h"
 #include "Components/ComSpringJoint.h"
 #include "Components/ComWheelJoint.h"
 #include "Components/ComCharacterJoint.h"
@@ -85,6 +86,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_fixed_joint", static_cast<ComFixedJoint*(Object::*)()>(&Object::Cast<ComFixedJoint>),
         "cast_hinge_joint", static_cast<ComHingeJoint*(Object::*)()>(&Object::Cast<ComHingeJoint>),
         "cast_socket_joint", static_cast<ComSocketJoint*(Object::*)()>(&Object::Cast<ComSocketJoint>),
+        "cast_slider_joint", static_cast<ComSliderJoint*(Object::*)()>(&Object::Cast<ComSliderJoint>),
         "cast_spring_joint", static_cast<ComSpringJoint*(Object::*)()>(&Object::Cast<ComSpringJoint>),
         "cast_wheel_joint", static_cast<ComWheelJoint*(Object::*)()>(&Object::Cast<ComWheelJoint>),
         "cast_character_joint", static_cast<ComCharacterJoint*(Object::*)()>(&Object::Cast<ComCharacterJoint>),

@@ -103,6 +103,7 @@ static void RegisterEngineObjects() {
     ComFixedJoint::RegisterProperties();
     ComHingeJoint::RegisterProperties();
     ComSocketJoint::RegisterProperties();
+    ComSliderJoint::RegisterProperties();
     ComSpringJoint::RegisterProperties();
     ComWheelJoint::RegisterProperties();
     ComCharacterJoint::RegisterProperties();

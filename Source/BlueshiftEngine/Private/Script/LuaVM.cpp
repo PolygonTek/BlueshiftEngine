@@ -187,6 +187,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterFixedJointComponent(module);
         RegisterHingeJointComponent(module);
         RegisterSocketJointComponent(module);
+        RegisterSliderJointComponent(module);
         RegisterSpringJointComponent(module);
         RegisterWheelJointComponent(module);
         RegisterCharacterJointComponent(module);

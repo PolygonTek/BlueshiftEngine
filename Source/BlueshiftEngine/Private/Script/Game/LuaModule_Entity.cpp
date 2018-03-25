@@ -31,6 +31,7 @@
 #include "Components/ComFixedJoint.h"
 #include "Components/ComHingeJoint.h"
 #include "Components/ComSocketJoint.h"
+#include "Components/ComSliderJoint.h"
 #include "Components/ComSpringJoint.h"
 #include "Components/ComWheelJoint.h"
 #include "Components/ComCharacterJoint.h"
@@ -87,6 +88,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "fixed_joint", static_cast<ComFixedJoint*(Entity::*)()const>(&Entity::GetComponent<ComFixedJoint>),
         "hinge_joint", static_cast<ComHingeJoint*(Entity::*)()const>(&Entity::GetComponent<ComHingeJoint>),
         "socket_joint", static_cast<ComSocketJoint*(Entity::*)()const>(&Entity::GetComponent<ComSocketJoint>),
+        "slider_joint", static_cast<ComSliderJoint*(Entity::*)()const>(&Entity::GetComponent<ComSliderJoint>),
         "spring_joint", static_cast<ComSpringJoint*(Entity::*)()const>(&Entity::GetComponent<ComSpringJoint>),
         "wheel_joint", static_cast<ComWheelJoint*(Entity::*)()const>(&Entity::GetComponent<ComWheelJoint>),
         "character_joint", static_cast<ComCharacterJoint*(Entity::*)()const>(&Entity::GetComponent<ComCharacterJoint>),

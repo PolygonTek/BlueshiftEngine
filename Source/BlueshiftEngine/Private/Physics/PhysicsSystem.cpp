@@ -206,11 +206,12 @@ void PhysicsSystem::DestroyCollidable(PhysCollidable *object) {
 
     btRigidBody *rigidBody = btRigidBody::upcast(object->collisionObject);
     if (rigidBody) {
+        // Remove attached constraints of rigid body
         int numConstraintRefs = rigidBody->getNumConstraintRefs();
         if (numConstraintRefs > 0) {
             PhysConstraint **constraintRefs = (PhysConstraint **)_alloca(numConstraintRefs * sizeof(constraintRefs[0]));
             for (int i = 0; i < numConstraintRefs; i++) {
-                constraintRefs[i] = (PhysConstraint *)rigidBody->getConstraintRef(i)->getUserConstraintPtr(); 
+                constraintRefs[i] = (PhysConstraint *)rigidBody->getConstraintRef(i)->getUserConstraintPtr();
             }
 
             for (int i = 0; i < numConstraintRefs; i++) {
@@ -260,6 +261,13 @@ PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc *desc) 
             constraint = new PhysHingeConstraint(desc->bodyA, desc->anchorInA, desc->axisInA);
         } else {
             constraint = new PhysHingeConstraint(desc->bodyA, desc->anchorInA, desc->axisInA, desc->bodyB, desc->anchorInB, desc->axisInB);
+        }
+        break;
+    case PhysConstraint::Slider:
+        if (!desc->bodyB) {
+            constraint = new PhysSliderConstraint(desc->bodyA, desc->anchorInA, desc->axisInA);
+        } else {
+            constraint = new PhysSliderConstraint(desc->bodyA, desc->anchorInA, desc->axisInA, desc->bodyB, desc->anchorInB, desc->axisInB);
         }
         break;
     default:

@@ -154,6 +154,7 @@
 #include "Components/ComFixedJoint.h"
 #include "Components/ComHingeJoint.h"
 #include "Components/ComSocketJoint.h"
+#include "Components/ComSliderJoint.h"
 #include "Components/ComSpringJoint.h"
 #include "Components/ComWheelJoint.h"
 #include "Components/ComCharacterJoint.h"

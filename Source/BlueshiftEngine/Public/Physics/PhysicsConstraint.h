@@ -30,7 +30,8 @@ public:
         Generic,
         GenericSpring,
         Point2Point,
-        Hinge
+        Hinge,
+        Slider
     };
 
     PhysConstraint() {}

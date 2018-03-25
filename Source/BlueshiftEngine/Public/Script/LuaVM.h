@@ -113,6 +113,7 @@ private:
     void                    RegisterFixedJointComponent(LuaCpp::Module &module);
     void                    RegisterHingeJointComponent(LuaCpp::Module &module);
     void                    RegisterSocketJointComponent(LuaCpp::Module &module);
+    void                    RegisterSliderJointComponent(LuaCpp::Module &module);
     void                    RegisterSpringJointComponent(LuaCpp::Module &module);
     void                    RegisterWheelJointComponent(LuaCpp::Module &module);
     void                    RegisterCharacterJointComponent(LuaCpp::Module &module);

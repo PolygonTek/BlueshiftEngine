@@ -182,6 +182,7 @@ set(ENGINE_FILES
     Public/Components/ComRigidBody.h
     Public/Components/ComSensor.h
     Public/Components/ComSkinnedMeshRenderer.h
+    Public/Components/ComSliderJoint.h
     Public/Components/ComSocketJoint.h
     Public/Components/ComSphereCollider.h
     Public/Components/ComSpline.h
@@ -209,6 +210,7 @@ set(ENGINE_FILES
     Public/Physics/PhysicsGenericSpringConstraint.h
     Public/Physics/PhysicsHingeConstraint.h
     Public/Physics/PhysicsP2PConstraint.h
+    Public/Physics/PhysicsSliderConstraint.h
     Public/Physics/PhysicsRigidBody.h
     Public/Physics/PhysicsSensor.h
     Public/Physics/PhysicsSystem.h
@@ -407,6 +409,7 @@ set(ENGINE_FILES
     Private/Components/ComRigidBody.cpp
     Private/Components/ComSensor.cpp
     Private/Components/ComSkinnedMeshRenderer.cpp
+    Private/Components/ComSliderJoint.cpp
     Private/Components/ComSocketJoint.cpp
     Private/Components/ComSphereCollider.cpp
     Private/Components/ComSpline.cpp
@@ -446,6 +449,7 @@ set(ENGINE_FILES
     Private/Physics/PhysicsGenericSpringConstraint.cpp
     Private/Physics/PhysicsHingeConstraint.cpp
     Private/Physics/PhysicsP2PConstraint.cpp
+    Private/Physics/PhysicsSliderConstraint.cpp
     Private/Physics/PhysicsRigidBody.cpp
     Private/Physics/PhysicsSensor.cpp
     Private/Physics/PhysicsSystem.cpp
@@ -588,6 +592,7 @@ set(ENGINE_FILES
     Private/Script/Components/LuaModule_ComFixedJoint.cpp
     Private/Script/Components/LuaModule_ComHingeJoint.cpp
     Private/Script/Components/LuaModule_ComSocketJoint.cpp
+    Private/Script/Components/LuaModule_ComSliderJoint.cpp
     Private/Script/Components/LuaModule_ComSpringJoint.cpp
     Private/Script/Components/LuaModule_ComWheelJoint.cpp
     Private/Script/Components/LuaModule_ComCharacterJoint.cpp
