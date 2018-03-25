@@ -65,15 +65,16 @@ void ComFixedJoint::Start() {
         desc.bodyB = nullptr;
     }
 
-    // Create a constraint by description
-    constraint = physicsSystem.CreateConstraint(&desc);
+    // Create a constraint with the given description
+    PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    PhysHingeConstraint *hingeConstraint = static_cast<PhysHingeConstraint *>(constraint);
+    constraint = hingeConstraint;
+
     hingeConstraint->SetAngularLimits(0, 0);
     hingeConstraint->EnableAngularLimits(true);
 
     if (IsActiveInHierarchy()) {
-        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        hingeConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 

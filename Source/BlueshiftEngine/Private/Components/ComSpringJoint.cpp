@@ -83,10 +83,10 @@ void ComSpringJoint::Start() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint by description
-    constraint = physicsSystem.CreateConstraint(&desc);
+    // Create a constraint with the given description
+    PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);
+    constraint = genericSpringConstraint;
 
     // Apply limit distances
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minDist)));
@@ -98,7 +98,7 @@ void ComSpringJoint::Start() {
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
 
     if (IsActiveInHierarchy()) {
-        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 

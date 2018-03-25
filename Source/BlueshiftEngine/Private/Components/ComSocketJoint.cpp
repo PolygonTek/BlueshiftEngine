@@ -71,13 +71,13 @@ void ComSocketJoint::Start() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint by description
-    constraint = physicsSystem.CreateConstraint(&desc);
+    // Create a constraint with the given description
+    PhysP2PConstraint *p2pConstraint = (PhysP2PConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    //PhysP2PConstraint *p2pConstraint = static_cast<PhysP2PConstraint *>(constraint);
+    constraint = p2pConstraint;
 
     if (IsActiveInHierarchy()) {
-        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        p2pConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 

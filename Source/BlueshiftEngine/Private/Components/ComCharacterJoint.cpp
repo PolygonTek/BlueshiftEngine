@@ -98,10 +98,10 @@ void ComCharacterJoint::Start() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint by description
-    constraint = physicsSystem.CreateConstraint(&desc);
+    // Create a constraint with the given description
+    PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    PhysGenericSpringConstraint *genericSpringConstraint = static_cast<PhysGenericSpringConstraint *>(constraint);
+    constraint = genericSpringConstraint;
 
     genericSpringConstraint->SetAngularStiffness(stiffness);
     genericSpringConstraint->SetAngularDamping(damping);
@@ -112,7 +112,7 @@ void ComCharacterJoint::Start() {
     genericSpringConstraint->EnableAngularLimits(true, true, true);
 
     if (IsActiveInHierarchy()) {
-        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 

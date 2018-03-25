@@ -87,10 +87,10 @@ void ComSliderJoint::Start() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint by description
-    constraint = physicsSystem.CreateConstraint(&desc);
+    // Create a constraint with the given description
+    PhysSliderConstraint *sliderConstraint = (PhysSliderConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    PhysSliderConstraint *sliderConstraint = static_cast<PhysSliderConstraint *>(constraint);
+    constraint = sliderConstraint;
 
     // Apply limit distances
     sliderConstraint->SetLinearLimits(MeterToUnit(minDist), MeterToUnit(maxDist));
@@ -113,7 +113,7 @@ void ComSliderJoint::Start() {
     }
 
     if (IsActiveInHierarchy()) {
-        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        sliderConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 

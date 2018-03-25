@@ -57,11 +57,9 @@ void ComJoint::Init() {
 void ComJoint::Start() {
     connectedBody = nullptr;
 
-    // Rigid body component will be created after calling Awake() function
-    // So we can connect this joint to the connected rigid body in Start() function
-    if (!connectedBodyGuid.IsZero()) {
-        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
-    }
+    // Rigid body component will be created after Awake() function is called.
+    // So we can connect this joint to the connected rigid body in Start() function.
+    SetConnectedBody(connectedBodyGuid);
 }
 
 void ComJoint::OnActive() {
@@ -73,6 +71,15 @@ void ComJoint::OnActive() {
 void ComJoint::OnInactive() {
     if (constraint) {
         constraint->SetEnabled(false);
+    }
+}
+
+void ComJoint::SetConnectedBody(const Guid &guid) {
+    connectedBodyGuid = guid;
+    connectedBody = nullptr;
+
+    if (!guid.IsZero()) {
+        connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
     }
 }
 

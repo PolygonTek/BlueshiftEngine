@@ -43,6 +43,8 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Start() override;
 
+    void                    SetConnectedBody(const Guid &connectedBodyGuid);
+
     bool                    IsCollisionEnabled() const;
     void                    SetCollisionEnabled(bool enabled);
 

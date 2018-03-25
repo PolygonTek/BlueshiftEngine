@@ -83,9 +83,10 @@ void ComHingeJoint::Start() {
         connectedAnchor = Vec3::origin;
     }
 
-    constraint = physicsSystem.CreateConstraint(&desc);
+    // Create a constraint with the given description
+    PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    PhysHingeConstraint *hingeConstraint = static_cast<PhysHingeConstraint *>(constraint);
+    constraint = hingeConstraint;
 
     // Apply limit angles
     hingeConstraint->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
@@ -98,7 +99,7 @@ void ComHingeJoint::Start() {
     }
 
     if (IsActiveInHierarchy()) {
-        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        hingeConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
