@@ -19,6 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
+class ComJoint;
 class ComTransform;
 class ComRigidBody;
 class ComCharacterController;
@@ -36,8 +37,10 @@ public:
     float                   distance;
     float                   impulse;
 };
-    
+
 class ComRigidBody : public Component {
+    friend class ComJoint;
+
 public:
     OBJECT_PROTOTYPE(ComRigidBody);
 
@@ -109,7 +112,10 @@ public:
     void                    ApplyImpulse(const Vec3 &impulse, const Vec3 &relativePos) { body->ApplyImpulse(impulse, relativePos); }
     void                    ApplyAngularImpulse(const Vec3 &impulse) { body->ApplyAngularImpulse(impulse); }
 
+                            /// Returns internal rigid body pointer.
     PhysRigidBody *         GetBody() const { return body; }
+
+    void                    Activate() { body->Activate(); }
 
     static const SignalDef  SIG_PhysicsUpdated;
 
@@ -117,6 +123,7 @@ protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
 
+    void                    CreateBody();
     void                    ProcessScriptCallback();
     void                    TransformUpdated(const ComTransform *transform);
 

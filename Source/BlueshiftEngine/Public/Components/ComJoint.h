@@ -39,9 +39,7 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Called once when game started.
-                            /// When game already started, called immediately after spawned
-    virtual void            Start() override;
+    virtual void            Awake() override;
 
     void                    SetConnectedBody(const Guid &connectedBodyGuid);
 
@@ -55,8 +53,10 @@ protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
 
+    virtual void            CreateConstraint() = 0;
+
     Guid                    connectedBodyGuid;
-    const ComRigidBody *    connectedBody;
+    ComRigidBody *          connectedBody;
     PhysConstraint *        constraint;
     bool                    collisionEnabled;
     float                   breakImpulse;

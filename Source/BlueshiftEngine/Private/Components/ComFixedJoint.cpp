@@ -41,9 +41,7 @@ void ComFixedJoint::Init() {
     SetInitialized(true);
 }
 
-void ComFixedJoint::Start() {
-    ComJoint::Start();
-
+void ComFixedJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
@@ -68,14 +66,10 @@ void ComFixedJoint::Start() {
     // Create a constraint with the given description
     PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    constraint = hingeConstraint;
-
     hingeConstraint->SetAngularLimits(0, 0);
     hingeConstraint->EnableAngularLimits(true);
 
-    if (IsActiveInHierarchy()) {
-        hingeConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
+    constraint = hingeConstraint;
 }
 
 BE_NAMESPACE_END

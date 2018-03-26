@@ -49,14 +49,12 @@ void ComSpringJoint::Init() {
     SetInitialized(true);
 }
 
-void ComSpringJoint::Start() {
-    ComJoint::Start();
-
+void ComSpringJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description 
+    // Fill up a constraint description
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::GenericSpring;
     desc.collision = collisionEnabled;
@@ -86,8 +84,6 @@ void ComSpringJoint::Start() {
     // Create a constraint with the given description
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    constraint = genericSpringConstraint;
-
     // Apply limit distances
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minDist)));
     genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxDist)));
@@ -97,9 +93,7 @@ void ComSpringJoint::Start() {
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, stiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
 
-    if (IsActiveInHierarchy()) {
-        genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
+    constraint = genericSpringConstraint;
 }
 
 const Vec3 &ComSpringJoint::GetLocalAnchor() const {

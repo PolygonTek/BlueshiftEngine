@@ -32,10 +32,6 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Called once when game started.
-                            /// When game already started, called immediately after spawned
-    virtual void            Start() override;
-
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
@@ -46,6 +42,8 @@ public:
     void                    SetConnectedAnchor(const Vec3 &anchor);
 
 protected:
+    virtual void            CreateConstraint() override;
+
     Vec3                    localAnchor;
     Vec3                    connectedAnchor;
 };

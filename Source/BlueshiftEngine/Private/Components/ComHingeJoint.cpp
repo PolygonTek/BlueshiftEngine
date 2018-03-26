@@ -50,9 +50,7 @@ void ComHingeJoint::Init() {
     SetInitialized(true);
 }
 
-void ComHingeJoint::Start() {
-    ComJoint::Start();
-
+void ComHingeJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
@@ -86,21 +84,17 @@ void ComHingeJoint::Start() {
     // Create a constraint with the given description
     PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    constraint = hingeConstraint;
-
     // Apply limit angles
     hingeConstraint->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
     hingeConstraint->EnableAngularLimits(enableLimitAngles);
-    
+
     // Apply motor
     if (motorTargetVelocity != 0.0f) {
         hingeConstraint->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
         hingeConstraint->EnableMotor(true);
     }
 
-    if (IsActiveInHierarchy()) {
-        hingeConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
+    constraint = hingeConstraint;
 }
 
 const Vec3 &ComHingeJoint::GetLocalAnchor() const {

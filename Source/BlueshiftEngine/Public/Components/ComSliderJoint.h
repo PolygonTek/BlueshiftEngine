@@ -32,10 +32,6 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Called once when game started.
-                            /// When game already started, called immediately after spawned
-    virtual void            Start() override;
-
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
@@ -80,6 +76,8 @@ public:
     void                    SetMaxAngularMotorImpulse(float maxMotorImpulse);
 
 protected:
+    virtual void            CreateConstraint() override;
+
     Mat3                    localAxis;
     Vec3                    localAnchor;
     Mat3                    connectedAxis;

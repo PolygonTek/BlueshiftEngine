@@ -42,9 +42,7 @@ void ComSocketJoint::Init() {
     SetInitialized(true);
 }
 
-void ComSocketJoint::Start() {
-    ComJoint::Start();
-
+void ComSocketJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
@@ -54,7 +52,7 @@ void ComSocketJoint::Start() {
     desc.type = PhysConstraint::Point2Point;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
- 
+
     desc.bodyA = rigidBody->GetBody();
     desc.anchorInA = transform->GetScale() * localAnchor;
 
@@ -75,10 +73,6 @@ void ComSocketJoint::Start() {
     PhysP2PConstraint *p2pConstraint = (PhysP2PConstraint *)physicsSystem.CreateConstraint(&desc);
 
     constraint = p2pConstraint;
-
-    if (IsActiveInHierarchy()) {
-        p2pConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
 }
 
 const Vec3 &ComSocketJoint::GetLocalAnchor() const {

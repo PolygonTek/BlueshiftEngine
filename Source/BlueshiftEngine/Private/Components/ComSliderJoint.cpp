@@ -53,9 +53,7 @@ void ComSliderJoint::Init() {
     SetInitialized(true);
 }
 
-void ComSliderJoint::Start() {
-    ComJoint::Start();
-
+void ComSliderJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
@@ -90,8 +88,6 @@ void ComSliderJoint::Start() {
     // Create a constraint with the given description
     PhysSliderConstraint *sliderConstraint = (PhysSliderConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    constraint = sliderConstraint;
-
     // Apply limit distances
     sliderConstraint->SetLinearLimits(MeterToUnit(minDist), MeterToUnit(maxDist));
     sliderConstraint->EnableLinearLimits(enableLimitDistances);
@@ -112,9 +108,7 @@ void ComSliderJoint::Start() {
         sliderConstraint->EnableAngularMotor(true);
     }
 
-    if (IsActiveInHierarchy()) {
-        sliderConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
+    constraint = sliderConstraint;
 }
 
 const Vec3 &ComSliderJoint::GetLocalAnchor() const {

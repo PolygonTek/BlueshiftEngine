@@ -16,6 +16,8 @@
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComJoint.h"
+#include "Game/Entity.h"
+#include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -26,8 +28,8 @@ END_EVENTS
 void ComJoint::RegisterProperties() {
     REGISTER_PROPERTY("connectedBody", "Connected Body", Guid, connectedBodyGuid, Guid::zero, "", PropertyInfo::EditorFlag)
         .SetMetaObject(&ComRigidBody::metaObject);
-    REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, false, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, false, "Enable collisions between bodies connected with a joint", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "Maximum impulse the joint can withstand before breaking", PropertyInfo::EditorFlag);
 }
 
 ComJoint::ComJoint() {
@@ -43,6 +45,20 @@ void ComJoint::Purge(bool chainPurge) {
     if (constraint) {
         physicsSystem.DestroyConstraint(constraint);
         constraint = nullptr;
+
+        // Wake up both rigid bodies in case they have been constrained by the joint.
+        if (entity) {
+            ComRigidBody *body = entity->GetComponent<ComRigidBody>();
+            if (body) {
+                body->Activate();
+            }
+        }
+
+        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
+        if (connectedBody) {
+            connectedBody->Activate();
+            connectedBody = nullptr;
+        }
     }
 
     if (chainPurge) {
@@ -54,32 +70,61 @@ void ComJoint::Init() {
     Component::Init();
 }
 
-void ComJoint::Start() {
-    connectedBody = nullptr;
+void ComJoint::Awake() {
+    ComRigidBody *body = GetEntity()->GetComponent<ComRigidBody>();
+    if (!body->GetBody()) {
+        body->CreateBody();
+    }
 
-    // Rigid body component will be created after Awake() function is called.
-    // So we can connect this joint to the connected rigid body in Start() function.
-    SetConnectedBody(connectedBodyGuid);
+    if (!connectedBodyGuid.IsZero()) {
+        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
+        assert(connectedBody);
+
+        if (!connectedBody->GetBody()) {
+            connectedBody->CreateBody();
+        }
+    }
+
+    CreateConstraint();
+
+    if (IsActiveInHierarchy()) {
+        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
 }
 
 void ComJoint::OnActive() {
     if (constraint) {
-        constraint->SetEnabled(true);
+        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
 void ComJoint::OnInactive() {
     if (constraint) {
-        constraint->SetEnabled(false);
+        constraint->RemoveFromWorld();
     }
 }
 
 void ComJoint::SetConnectedBody(const Guid &guid) {
+    if (connectedBodyGuid == guid) {
+        return;
+    }
     connectedBodyGuid = guid;
     connectedBody = nullptr;
 
     if (!guid.IsZero()) {
         connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
+    }
+
+    if (constraint) {
+        if (constraint->IsInWorld()) {
+            constraint->RemoveFromWorld();
+        }
+    }
+
+    CreateConstraint();
+
+    if (IsActiveInHierarchy()) {
+        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 

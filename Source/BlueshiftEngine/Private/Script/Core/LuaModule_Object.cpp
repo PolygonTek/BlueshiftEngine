@@ -58,7 +58,9 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
     _MetaObject.SetClass<MetaObject>();
     _MetaObject.AddClassMembers<MetaObject>(
         "classname", &MetaObject::ClassName,
-        "super_classname", &MetaObject::SuperClassName);
+        "super_classname", &MetaObject::SuperClassName,
+        "create_instance", static_cast<Object*(MetaObject::*)()const>(&MetaObject::CreateInstance),
+        "is_type_of", &MetaObject::IsTypeOf);
 
     LuaCpp::Selector _SignalObject = module["SignalObject"];
     
@@ -71,6 +73,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "classname", &Object::ClassName,
         "super_classname", &Object::SuperClassName,
         "cast_entity", static_cast<Entity*(Object::*)()>(&Object::Cast<Entity>),
+        "cast_component", static_cast<Component*(Object::*)()>(&Object::Cast<Component>),
         "cast_transform", static_cast<ComTransform*(Object::*)()>(&Object::Cast<ComTransform>),
         "cast_collider", static_cast<ComCollider*(Object::*)()>(&Object::Cast<ComCollider>),
         "cast_box_collider", static_cast<ComBoxCollider*(Object::*)()>(&Object::Cast<ComBoxCollider>),

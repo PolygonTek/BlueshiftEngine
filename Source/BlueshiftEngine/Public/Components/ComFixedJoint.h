@@ -28,9 +28,8 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-                            /// Called once when game started.
-                            /// When game already started, called immediately after spawned
-    virtual void            Start() override;
+protected:
+    virtual void            CreateConstraint() override;
 };
 
 BE_NAMESPACE_END

@@ -64,9 +64,7 @@ void ComCharacterJoint::Init() {
     SetInitialized(true);
 }
 
-void ComCharacterJoint::Start() {
-    ComJoint::Start();
-
+void ComCharacterJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
@@ -101,8 +99,6 @@ void ComCharacterJoint::Start() {
     // Create a constraint with the given description
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    constraint = genericSpringConstraint;
-
     genericSpringConstraint->SetAngularStiffness(stiffness);
     genericSpringConstraint->SetAngularDamping(damping);
 
@@ -111,9 +107,7 @@ void ComCharacterJoint::Start() {
     genericSpringConstraint->SetAngularUpperLimit(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
     genericSpringConstraint->EnableAngularLimits(true, true, true);
 
-    if (IsActiveInHierarchy()) {
-        genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
+    constraint = genericSpringConstraint;
 }
 
 const Vec3 &ComCharacterJoint::GetLocalAnchor() const {

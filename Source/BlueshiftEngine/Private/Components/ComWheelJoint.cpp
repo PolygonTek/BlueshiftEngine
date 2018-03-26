@@ -52,12 +52,9 @@ void ComWheelJoint::Init() {
     SetInitialized(true);
 }
 
-void ComWheelJoint::Start() {
-    ComJoint::Start();
-
+void ComWheelJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
-    assert(rigidBody);
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
@@ -89,8 +86,6 @@ void ComWheelJoint::Start() {
     // Create a constraint with the given description
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
 
-    constraint = genericSpringConstraint;
-
     // Apply limit suspension distances
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minSusDist)));
     genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxSusDist)));
@@ -105,9 +100,7 @@ void ComWheelJoint::Start() {
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, susStiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, susDamping));
 
-    if (IsActiveInHierarchy()) {
-        genericSpringConstraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
+    constraint = genericSpringConstraint;
 }
 
 const Vec3 &ComWheelJoint::GetLocalAnchor() const {

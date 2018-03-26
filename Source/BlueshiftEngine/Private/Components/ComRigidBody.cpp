@@ -127,6 +127,15 @@ void ComRigidBody::Init() {
     SetInitialized(true);
 }
 
+void ComRigidBody::Awake() {
+    if (!body) {
+        CreateBody();
+    }
+
+    collisions.Clear();
+    oldCollisions.Clear();
+}
+
 static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &shapes) {
     if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>()) {
         return;
@@ -144,58 +153,53 @@ static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &s
     shapeDesc.localOrigin = transform->GetScale() * transform->GetLocalOrigin();
     shapeDesc.localAxis = transform->GetLocalAxis();
     shapeDesc.localAxis.FixDegeneracies();
-    
+
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(childEntity, shapes);
     }
 }
 
-void ComRigidBody::Awake() {
-    if (!body) {
-        ComTransform *transform = GetEntity()->GetTransform();
+void ComRigidBody::CreateBody() {
+    ComTransform *transform = GetEntity()->GetTransform();
 
-        physicsDesc.origin = transform->GetOrigin();
-        physicsDesc.axis = transform->GetAxis();
+    physicsDesc.origin = transform->GetOrigin();
+    physicsDesc.axis = transform->GetAxis();
 
-        // Collect collider shadpes in this entity
-        ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
-        if (colliders.Count() > 0) {
-            for (int i = 0; i < colliders.Count(); i++) {
-                ComCollider *collider = colliders[i]->Cast<ComCollider>();
+    // Collect collider shadpes in this entity
+    ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
+    if (colliders.Count() > 0) {
+        for (int i = 0; i < colliders.Count(); i++) {
+            ComCollider *collider = colliders[i]->Cast<ComCollider>();
 
-                PhysShapeDesc shapeDesc;
-                shapeDesc.localOrigin = Vec3::zero;
-                shapeDesc.localAxis.SetIdentity();
-                shapeDesc.collider = collider->GetCollider();
+            PhysShapeDesc shapeDesc;
+            shapeDesc.localOrigin = Vec3::zero;
+            shapeDesc.localAxis.SetIdentity();
+            shapeDesc.collider = collider->GetCollider();
 
-                physicsDesc.shapes.Append(shapeDesc);
-            }
-        } 
-
-        // Collect collider shadpes in children recursively
-        for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-            AddChildShapeRecursive(childEntity, physicsDesc.shapes);
+            physicsDesc.shapes.Append(shapeDesc);
         }
-
-        if (physicsDesc.shapes.Count() == 0) {
-            BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
-            return;
-        }
-
-        body = static_cast<PhysRigidBody *>(physicsSystem.CreateCollidable(&physicsDesc));
-        body->SetUserPointer(this);
-        body->SetCustomCollisionFilterIndex(entity->GetLayer());
-        body->SetCollisionListener(collisionListener);
-
-        if (IsActiveInHierarchy()) {
-            body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-        }
-
-        transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRigidBody::TransformUpdated, SignalObject::Unique);
     }
 
-    collisions.Clear();
-    oldCollisions.Clear();
+    // Collect collider shadpes in children recursively
+    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        AddChildShapeRecursive(childEntity, physicsDesc.shapes);
+    }
+
+    if (physicsDesc.shapes.Count() == 0) {
+        BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
+        return;
+    }
+
+    body = static_cast<PhysRigidBody *>(physicsSystem.CreateCollidable(&physicsDesc));
+    body->SetUserPointer(this);
+    body->SetCustomCollisionFilterIndex(entity->GetLayer());
+    body->SetCollisionListener(collisionListener);
+
+    if (IsActiveInHierarchy()) {
+        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRigidBody::TransformUpdated, SignalObject::Unique);
 }
 
 void ComRigidBody::Update() {

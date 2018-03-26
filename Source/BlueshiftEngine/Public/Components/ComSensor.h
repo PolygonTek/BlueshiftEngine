@@ -47,6 +47,7 @@ protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
 
+    void                    CreateSensor();
     void                    ProcessScriptCallback();
     void                    TransformUpdated(const ComTransform *transform);
 

@@ -126,9 +126,11 @@ public:
                                 /// Returns super class name.
     const char *                SuperClassName() const { return superclassname; }
 
-                                /// Create object instance with GUID.
-                                /// If guid is given default, new GUID will be created with
-    Object *                    CreateInstance(const Guid &guid = Guid::zero) const { return funcCreateInstance(guid); }
+                                /// Create object instance with given GUID.
+    Object *                    CreateInstance(const Guid &guid) const { return funcCreateInstance(guid); }
+
+                                /// Create object instance with new GUID.
+    Object *                    CreateInstance() const { return funcCreateInstance(Guid::zero); }
 
                                 /// Tests if this meta object is compatible with supermeta.
     bool                        IsTypeOf(const MetaObject &supermeta) const { return ((hierarchyIndex >= supermeta.hierarchyIndex) && (hierarchyIndex <= supermeta.lastChildIndex)); }
@@ -269,19 +271,23 @@ BE_INLINE bool Object::IsInstanceOf(const MetaObject &metaObject) const {
 
 template <typename T>
 BE_INLINE T *Object::Cast() {
+    if (this == nullptr) {
+        return nullptr;
+    }
     if (!GetMetaObject()->IsTypeOf(T::metaObject)) {
         return nullptr;
     }
-
     return static_cast<T *>(this);
 }
 
 template <typename T>
 BE_INLINE const T *Object::Cast() const {
+    if (this == nullptr) {
+        return nullptr;
+    }
     if (!GetMetaObject()->IsTypeOf(T::metaObject)) {
         return nullptr;
     }
-
     return static_cast<const T *>(this);
 }
 
