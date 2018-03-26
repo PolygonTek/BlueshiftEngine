@@ -40,6 +40,8 @@ public:
     
                             /// Get the entity that own this component
     Entity *                GetEntity() const { return entity; }
+
+    void                    SetEntity(Entity *entity) { this->entity = entity; }
     
                             /// Get the game world object
     GameWorld *             GetGameWorld() const;
@@ -73,18 +75,9 @@ public:
                             /// Called once when game started before Start()
                             /// When game already started, called immediately after spawned
     virtual void            Awake() {}
-                            /// Called once when game started.
-                            /// When game already started, called immediately after spawned
-    virtual void            Start() {}
 
                             /// Called on scene update, variable timestep.
     virtual void            Update() {}
-                            /// Called on scene post-update, variable timestep.
-    virtual void            LateUpdate() {}
-                            /// Called on physics update, fixed timestep.
-    virtual void            FixedUpdate(float timeStep) {}
-                            /// Called on physics post-update, fixed timestep.
-    virtual void            FixedLateUpdate(float timeStep) {}
 
                             ///
     virtual const AABB      GetAABB() { return AABB::zero; }
@@ -102,7 +95,6 @@ protected:
     virtual void            Event_ImmediateDestroy() override;
 
     void                    SetInitialized(bool init) { initialized = init; }
-    void                    SetEntity(Entity *entity) { this->entity = entity; }
 
     Entity *                entity;
     bool                    enabled;

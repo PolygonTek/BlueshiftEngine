@@ -41,12 +41,16 @@ public:
 
     virtual void            Awake() override;
 
-    void                    SetConnectedBody(const Guid &connectedBodyGuid);
+    Guid                    GetConnectedBodyGuid() const { return connectedBodyGuid; }
+    void                    SetConnectedBodyGuid(const Guid &connectedBodyGuid);
 
-    bool                    IsCollisionEnabled() const;
+    ComRigidBody *          GetConnectedBody() const { return connectedBody; }
+    void                    SetConnectedBody(const ComRigidBody *connectedBody);
+
+    bool                    IsCollisionEnabled() const { return collisionEnabled; }
     void                    SetCollisionEnabled(bool enabled);
 
-    float                   GetBreakImpulse() const;
+    float                   GetBreakImpulse() const { return breakImpulse; }
     void                    SetBreakImpulse(float breakImpulse);
 
 protected:

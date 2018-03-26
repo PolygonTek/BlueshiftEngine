@@ -38,6 +38,7 @@ class Entity;
 using EntityPtr = Entity*;
 using EntityPtrArray = Array<EntityPtr>;
 
+/// An Entity is any object that can be placed into a scene.
 class Entity : public Object {
     friend class GameWorld;
     friend class GameEdit;
@@ -45,7 +46,7 @@ class Entity : public Object {
     friend class Component;
 
 public:
-    enum WorldPosEnum {
+    enum WorldPosTrait {
         Pivot,
         Center,
         Minimum,
@@ -84,6 +85,7 @@ public:
     Guid                        GetPrefabSourceGuid() const;
     void                        SetPrefabSourceGuid(const Guid &prefabSourceGuid);
 
+                                /// Returns GameWorld of this entity is in.
     GameWorld *                 GetGameWorld() const { return gameWorld; }
 
     int                         GetEntityNum() const { return entityNum; }
@@ -97,7 +99,7 @@ public:
     bool                        IsRoot() const { return GetRoot() == this; }
 
                                 /// Returns parent entity.
-    Entity *                    GetParent() const;
+    Entity *                    GetParent() const { return node.GetParent(); }
                                 /// Sets parent entity.
     void                        SetParent(Entity *parentEntity);
 
@@ -135,8 +137,6 @@ public:
                                 /// Returns a transform component.
     ComTransform *              GetTransform() const;
 
-                                /// Adds a defaulted component to the entity.
-    Component *                 AddNewComponent(const MetaObject *type);
                                 /// Adds a component to the entity.
     void                        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
                                 /// Inserts a component after the index to the entity.
@@ -145,6 +145,9 @@ public:
     bool                        RemoveComponent(Component *component);
                                 /// Swap two components.
     bool                        SwapComponent(int fromIndex, int toIndex);
+
+                                /// Adds new component to the entity in real-time.
+    Component *                 NewComponent(const MetaObject *type);
 
     bool                        HasRenderEntity(int renderEntityHandle) const;
 
@@ -171,30 +174,36 @@ public:
     void                        FixedUpdate(float timeStep);
                                 /// Called on physics late-update, fixed timestep.
     void                        FixedLateUpdate(float timeStep);
-    
-    void                        OnApplicationTerminate();
-    void                        OnApplicationPause(bool pause);
 
                                 /// Serializes entity to JSON value.
     virtual void                Serialize(Json::Value &data) const override;
                                 /// Deserializes entity from JSON value.
     virtual void                Deserialize(const Json::Value &data) override;
-
+                                /// Serializes given entity hierarchy to JSON value.
     static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue);
 
+                                /// Returns if this entity is active. 
+                                /// Note that an entity may be inactive because a parent is not active, even if this returns true.
+                                /// Use IsActiveInHierarchy() if you want to check if the entity is actually treated as active in the scene.
     bool                        IsActiveSelf() const { return activeSelf; }
+                                /// Returns if this entity is active in the game.
     bool                        IsActiveInHierarchy() const { return activeInHierarchy; }
 
+                                /// Sets local active state of this entity.
     void                        SetActive(bool active);
 
-    virtual const AABB          GetAABB() const;
+                                /// Returns AABB in local space.
+    const AABB                  GetAABB() const;
+                                /// Returns AABB in world space.
     const AABB                  GetWorldAABB() const;
-    const Vec3                  GetWorldPosition(WorldPosEnum pos = Pivot) const;
+                                /// Returns position in world space with given trait.
+    const Vec3                  GetWorldPosition(WorldPosTrait posTrait = Pivot) const;
 
                                 /// Visualizes the component in editor.
-    virtual void                DrawGizmos(const SceneView::Parms &sceneView, bool selected);
+    void                        DrawGizmos(const SceneView::Parms &sceneView, bool selected);
 
-    virtual bool                RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
+                                /// Ray cast to this entity.
+    bool                        RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
 
                                 /// Creates an entity by JSON text.
     static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr);
@@ -225,6 +234,11 @@ protected:
 
     virtual void                Event_ImmediateDestroy() override;
 
+                                /// Called when the application terminates.
+    void                        OnApplicationTerminate();
+                                /// Called when the application pauses.
+    void                        OnApplicationPause(bool pause);
+
     Str                         name;               ///< Entity name
     int                         nameHash;           ///< Hash key for GameWorld::entityHash
     Str                         tag;                ///< Tag name
@@ -235,8 +249,9 @@ protected:
     Guid                        prefabSourceGuid;
 
     bool                        initialized;
-    bool                        activeSelf;
-    bool                        activeInHierarchy;
+    bool                        awaked;
+    bool                        activeSelf;         ///< Local active state
+    bool                        activeInHierarchy;  ///< Actual active state 
     bool                        prefab;
     bool                        frozen;
 
@@ -308,10 +323,6 @@ BE_INLINE Entity *Entity::GetRoot() const {
         ent = ent->GetParent();
     }
     return const_cast<Entity *>(ent);
-}
-
-BE_INLINE Entity *Entity::GetParent() const {
-    return node.GetParent();
 }
 
 BE_NAMESPACE_END

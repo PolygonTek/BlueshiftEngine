@@ -117,8 +117,6 @@ public:
 
     void                    Activate() { body->Activate(); }
 
-    static const SignalDef  SIG_PhysicsUpdated;
-
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;

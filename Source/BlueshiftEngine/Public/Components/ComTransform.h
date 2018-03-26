@@ -99,6 +99,8 @@ public:
                             /// Rotate with given vector and angle in the choosen transform space.
     void                    Rotate(const Vec3 &rotVec, float angle, TransformSpace space = WorldSpace);
 
+    void                    SetPhysicsUpdating(bool updating) { physicsUpdating = updating; }
+
     static const SignalDef  SIG_TransformUpdated;
 
 protected:
@@ -106,7 +108,6 @@ protected:
     void                    InvalidateWorldMatrix();
                             /// Recalculate world matrix
     void                    UpdateWorldMatrix() const;
-    void                    PhysicsUpdated(const PhysRigidBody *body);
 
     Vec3                    localOrigin;            ///< Position in local space.
     Vec3                    localScale;             ///< Scale in local space.

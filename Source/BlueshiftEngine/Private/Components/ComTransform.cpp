@@ -56,12 +56,6 @@ void ComTransform::Init() {
 
     UpdateWorldMatrix();
 
-    // If this entity has a rigid body component, connect it to update the transform due to the physics simulation.
-    ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
-    if (rigidBody) {
-        rigidBody->Connect(&ComRigidBody::SIG_PhysicsUpdated, this, (SignalCallback)&ComTransform::PhysicsUpdated, SignalObject::Unique);
-    }
-
     // Mark as initialized
     SetInitialized(true);
 }
@@ -233,16 +227,6 @@ void ComTransform::UpdateWorldMatrix() const {
     }
 
     worldMatrixInvalidated = false;
-}
-
-// Called by ComRigidBody::Update()
-void ComTransform::PhysicsUpdated(const PhysRigidBody *body) {
-    physicsUpdating = true;
-
-    SetAxis(body->GetAxis());
-    SetOrigin(body->GetOrigin());
-
-    physicsUpdating = false;
 }
 
 BE_NAMESPACE_END

@@ -107,7 +107,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),
         "script", static_cast<ComScript*(Entity::*)()const>(&Entity::GetComponent<ComScript>),
         //"components", &Entity::GetComponents,
-        "add_new_component", &Entity::AddNewComponent);
+        "new_component", &Entity::NewComponent);
 
     _Entity["meta_object"] = Entity::metaObject;
     _Entity["destroy"].SetFunc(Entity::DestroyInstance);

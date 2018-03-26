@@ -50,16 +50,17 @@ public:
 
                             /// Called once when game started.
                             /// When game already started, called immediately after spawned
-    virtual void            Start() override;
+    void                    Start();
 
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
+
                             /// Called on game world late-update, variable timestep.
-    virtual void            LateUpdate() override;
+    void                    LateUpdate();
                             /// Called on physics update, fixed timestep.
-    virtual void            FixedUpdate(float timeStep) override;
+    void                    FixedUpdate(float timeStep);
                             /// Called on physics late-update, fixed timestep.
-    virtual void            FixedLateUpdate(float timeStep) override;
+    void                    FixedLateUpdate(float timeStep);
 
     virtual void            OnPointerEnter();
     virtual void            OnPointerExit();

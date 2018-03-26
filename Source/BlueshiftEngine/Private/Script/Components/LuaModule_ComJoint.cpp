@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Script/LuaVM.h"
 #include "Components/ComJoint.h"
+#include "Components/ComRigidBody.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -23,7 +24,8 @@ void LuaVM::RegisterJointComponent(LuaCpp::Module &module) {
 
     _ComJoint.SetClass<ComJoint>(module["Component"]);
     _ComJoint.AddClassMembers<ComJoint>(
-        "connected_body", &ComJoint::connectedBodyGuid,
+        "connected_body", &ComJoint::GetConnectedBody,
+        "set_connected_body", &ComJoint::SetConnectedBody,
         "is_collision_enabled", &ComJoint::IsCollisionEnabled,
         "set_collision_enabled", &ComJoint::SetCollisionEnabled,
         "break_impulse", &ComJoint::GetBreakImpulse,

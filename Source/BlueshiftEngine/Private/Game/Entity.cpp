@@ -61,6 +61,7 @@ Entity::Entity() {
     prefabSourceGuid = Guid::zero;
     activeSelf = true;
     activeInHierarchy = true;
+    awaked = false;
     initialized = false;
 }
 
@@ -77,6 +78,7 @@ void Entity::Purge() {
         }
     }
 
+    awaked = false;
     initialized = false;
 }
 
@@ -130,34 +132,36 @@ void Entity::Awake() {
             component->Awake();
         }
     }
+
+    awaked = true;
 }
 
 void Entity::Start() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
-        Component *component = components[componentIndex];
+        ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
 
-        if (component) {
-            component->Start();
+        if (scriptComponent) {
+            scriptComponent->Start();
         }
     }
 }
 
 void Entity::FixedUpdate(float timeStep) {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
-        Component *component = components[componentIndex];
+        ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
 
-        if (component && component->IsActiveInHierarchy()) {
-            component->FixedUpdate(timeStep);
+        if (scriptComponent && scriptComponent->IsActiveInHierarchy()) {
+            scriptComponent->FixedUpdate(timeStep);
         }
     }
 }
 
 void Entity::FixedLateUpdate(float timeStep) {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
-        Component *component = components[componentIndex];
+        ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
 
-        if (component && component->IsActiveInHierarchy()) {
-            component->FixedLateUpdate(timeStep);
+        if (scriptComponent && scriptComponent->IsActiveInHierarchy()) {
+            scriptComponent->FixedLateUpdate(timeStep);
         }
     }
 }
@@ -174,10 +178,10 @@ void Entity::Update() {
 
 void Entity::LateUpdate() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
-        Component *component = components[componentIndex];
+        ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
 
-        if (component && component->IsActiveInHierarchy()) {
-            component->LateUpdate();
+        if (scriptComponent && scriptComponent->IsActiveInHierarchy()) {
+            scriptComponent->LateUpdate();
         }
     }
 }
@@ -188,15 +192,16 @@ ComTransform *Entity::GetTransform() const {
     return transform;
 }
 
-Component *Entity::AddNewComponent(const MetaObject *type) {
+Component *Entity::NewComponent(const MetaObject *type) {
     if (!type->IsTypeOf(Component::metaObject)) {
-        BE_ERRLOG(L"Entity::AddNewComponent: %hs is not component type\n", type->ClassName());
+        BE_ERRLOG(L"Entity::NewComponent: %hs is not component type\n", type->ClassName());
         return nullptr;
     }
     Component *component = (Component *)type->CreateInstance();
-    AddComponent(component);
-
+    component->SetEntity(this);
     component->Deserialize(Json::Value());
+
+    AddComponent(component);
 
     return component;
 }
@@ -205,6 +210,14 @@ void Entity::InsertComponent(Component *component, int index) {
     component->SetEntity(this);
 
     components.Insert(component, index);
+
+    if (initialized) {
+        component->Init();
+    }
+
+    if (awaked) {
+        component->Awake();
+    }
 
     EmitSignal(&SIG_ComponentInserted, component, index);
 }
@@ -315,9 +328,10 @@ void Entity::Deserialize(const Json::Value &entityValue) {
                 }
 
                 Component *component = static_cast<Component *>(metaComponent->CreateInstance(componentGuid));
-                AddComponent(component);
-
+                component->SetEntity(this);
                 component->Deserialize(componentValue);
+
+                AddComponent(component);
             } else {
                 BE_WARNLOG(L"'%hs' is not a component class\n", classname);
             }
@@ -404,19 +418,19 @@ const AABB Entity::GetWorldAABB() const {
     return worldAabb;
 }
 
-const Vec3 Entity::GetWorldPosition(WorldPosEnum pos) const {
+const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait) const {
     Vec3 vec;
     
-    if (pos == Pivot) {
+    if (posTrait == Pivot) {
         vec = GetTransform()->GetOrigin();
     } else {
         AABB aabb = GetWorldAABB();
             
-        if (pos == Minimum) {
+        if (posTrait == Minimum) {
             vec = aabb.b[0];
-        } else if (pos == Maximum) {
+        } else if (posTrait == Maximum) {
             vec = aabb.b[1];
-        } else if (pos == Center) {
+        } else if (posTrait == Center) {
             vec = aabb.Center();
         } else {
             assert(0);

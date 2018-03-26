@@ -26,7 +26,7 @@ BEGIN_EVENTS(ComJoint)
 END_EVENTS
 
 void ComJoint::RegisterProperties() {
-    REGISTER_PROPERTY("connectedBody", "Connected Body", Guid, connectedBodyGuid, Guid::zero, "", PropertyInfo::EditorFlag)
+    REGISTER_MIXED_ACCESSOR_PROPERTY("connectedBody", "Connected Body", Guid, GetConnectedBodyGuid, SetConnectedBodyGuid, Guid::zero, "", PropertyInfo::EditorFlag)
         .SetMetaObject(&ComRigidBody::metaObject);
     REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, false, "Enable collisions between bodies connected with a joint", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "Maximum impulse the joint can withstand before breaking", PropertyInfo::EditorFlag);
@@ -76,10 +76,7 @@ void ComJoint::Awake() {
         body->CreateBody();
     }
 
-    if (!connectedBodyGuid.IsZero()) {
-        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
-        assert(connectedBody);
-
+    if (connectedBody) {
         if (!connectedBody->GetBody()) {
             connectedBody->CreateBody();
         }
@@ -104,32 +101,33 @@ void ComJoint::OnInactive() {
     }
 }
 
-void ComJoint::SetConnectedBody(const Guid &guid) {
+void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
     if (connectedBodyGuid == guid) {
         return;
     }
     connectedBodyGuid = guid;
-    connectedBody = nullptr;
 
-    if (!guid.IsZero()) {
-        connectedBody = Object::FindInstance(guid)->Cast<ComRigidBody>();
+    if (!connectedBodyGuid.IsZero()) {
+        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
+    } else {
+        connectedBody = nullptr;
     }
 
     if (constraint) {
-        if (constraint->IsInWorld()) {
-            constraint->RemoveFromWorld();
+        physicsSystem.DestroyConstraint(constraint);
+
+        CreateConstraint();
+
+        if (IsActiveInHierarchy()) {
+            constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
-    }
-
-    CreateConstraint();
-
-    if (IsActiveInHierarchy()) {
-        constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
-bool ComJoint::IsCollisionEnabled() const {
-    return collisionEnabled;
+void ComJoint::SetConnectedBody(const ComRigidBody *connectedBody) {
+    const Guid bodyGuid = connectedBody->GetGuid();
+
+    SetConnectedBodyGuid(bodyGuid);
 }
 
 void ComJoint::SetCollisionEnabled(bool enabled) {
@@ -138,10 +136,6 @@ void ComJoint::SetCollisionEnabled(bool enabled) {
     if (constraint) {
         constraint->EnableCollision(collisionEnabled);
     }
-}
-
-float ComJoint::GetBreakImpulse() const {
-    return breakImpulse;
 }
 
 void ComJoint::SetBreakImpulse(float breakImpulse) {

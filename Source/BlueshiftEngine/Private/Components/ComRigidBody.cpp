@@ -23,8 +23,6 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef ComRigidBody::SIG_PhysicsUpdated("ComRigidBody::PhysicsUpdated", "a");
-
 OBJECT_DECLARATION("Rigid Body", ComRigidBody, Component)
 BEGIN_EVENTS(ComRigidBody)
 END_EVENTS
@@ -114,7 +112,7 @@ void ComRigidBody::Purge(bool chainPurge) {
 
 void ComRigidBody::Init() {
     Component::Init();
-
+    
     physicsDesc.type = PhysCollidable::Type::RigidBody;
     physicsDesc.shapes.Clear();
 
@@ -212,10 +210,14 @@ void ComRigidBody::Update() {
     }
 
     if (!body->IsStatic() && !body->IsKinematic() && body->IsActive()) {
-        // Block SIG_TransformUpdated during SIG_PhysicsUpdated
+        // Block SIG_TransformUpdated during chainging transform in below
         physicsUpdating = true;
 
-        EmitSignal(&SIG_PhysicsUpdated, body);
+        ComTransform *transform = GetEntity()->GetTransform();
+        transform->SetPhysicsUpdating(true);
+        transform->SetAxis(body->GetAxis());
+        transform->SetOrigin(body->GetOrigin());
+        transform->SetPhysicsUpdating(false);
 
         physicsUpdating = false;
     }
