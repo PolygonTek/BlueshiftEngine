@@ -166,4 +166,11 @@ void ComAudioSource::SetAudioClipGuid(const Guid &guid) {
     referenceSound = soundSystem.GetSound(audioClipPath);
 }
 
+void ComAudioSource::SetVolume(float volume) {
+    this->volume = volume;
+    if (sound) {
+        sound->SetVolume(volume);
+    }
+}
+
 BE_NAMESPACE_END

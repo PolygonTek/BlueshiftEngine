@@ -48,6 +48,9 @@ public:
     Guid                    GetAudioClipGuid() const;
     void                    SetAudioClipGuid(const Guid &guid);
 
+    float                   GetVolume() const { return volume; }
+    void                    SetVolume(float volume);
+
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
