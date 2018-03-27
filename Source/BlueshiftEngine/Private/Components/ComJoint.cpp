@@ -68,6 +68,8 @@ void ComJoint::Purge(bool chainPurge) {
 
 void ComJoint::Init() {
     Component::Init();
+
+    GetEntity()->GetTransform()->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComJoint::TransformUpdated, SignalObject::Unique);
 }
 
 void ComJoint::Awake() {
@@ -76,9 +78,9 @@ void ComJoint::Awake() {
         body->CreateBody();
     }
 
-    if (connectedBody) {
-        if (!connectedBody->GetBody()) {
-            connectedBody->CreateBody();
+    if (GetConnectedBody()) {
+        if (!GetConnectedBody()->GetBody()) {
+            GetConnectedBody()->CreateBody();
         }
     }
 
@@ -121,11 +123,22 @@ void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
         if (IsActiveInHierarchy()) {
             constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
+
+        if (connectedBody) {
+            connectedBody->Activate();
+        }
     }
 }
 
+ComRigidBody *ComJoint::GetConnectedBody() const {
+    if (!connectedBody && !connectedBodyGuid.IsZero()) {
+        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
+    }
+    return connectedBody;
+}
+
 void ComJoint::SetConnectedBody(const ComRigidBody *connectedBody) {
-    const Guid bodyGuid = connectedBody->GetGuid();
+    const Guid bodyGuid = connectedBody ? connectedBody->GetGuid() : Guid::zero;
 
     SetConnectedBodyGuid(bodyGuid);
 }
@@ -143,6 +156,14 @@ void ComJoint::SetBreakImpulse(float breakImpulse) {
 
     if (constraint) {
         constraint->SetBreakImpulse(breakImpulse);
+    }
+}
+
+void ComJoint::TransformUpdated(const ComTransform *transform) {
+    if (constraint) {
+        if (GetConnectedBody()) {
+            GetConnectedBody()->Activate();
+        }
     }
 }
 
