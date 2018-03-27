@@ -27,9 +27,11 @@ END_EVENTS
 
 void ComSocketJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("impulseClamp", "Impulse Clamp", float, GetImpulseClamp, SetImpulseClamp, 0, "", PropertyInfo::EditorFlag);
 }
 
 ComSocketJoint::ComSocketJoint() {
+    impulseClamp = 0;
 }
 
 ComSocketJoint::~ComSocketJoint() {
@@ -71,6 +73,7 @@ void ComSocketJoint::CreateConstraint() {
 
     // Create a constraint with the given description
     PhysP2PConstraint *p2pConstraint = (PhysP2PConstraint *)physicsSystem.CreateConstraint(&desc);
+    p2pConstraint->SetImpulseClamp(impulseClamp);
 
     constraint = p2pConstraint;
 }
@@ -94,6 +97,17 @@ void ComSocketJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
         ((PhysP2PConstraint *)constraint)->SetAnchorB(anchor);
+    }
+}
+
+float ComSocketJoint::GetImpulseClamp() const {
+    return impulseClamp;
+}
+
+void ComSocketJoint::SetImpulseClamp(float impulseClamp) {
+    this->impulseClamp = impulseClamp;
+    if (constraint) {
+        ((PhysP2PConstraint *)constraint)->SetImpulseClamp(impulseClamp);
     }
 }
 

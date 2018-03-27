@@ -29,6 +29,9 @@ public:
 
     const Vec3          GetAnchorB() const;
     void                SetAnchorB(const Vec3 &anchorInB);
+
+    float               GetImpulseClamp() const;
+    void                SetImpulseClamp(float clamp);
 };
 
 BE_NAMESPACE_END

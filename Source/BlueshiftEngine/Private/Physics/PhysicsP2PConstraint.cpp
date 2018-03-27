@@ -74,4 +74,16 @@ void PhysP2PConstraint::SetAnchorB(const Vec3 &anchorInB) {
     p2pConstraint->setPivotB(ToBtVector3(anchorInBCentroid));
 }
 
+float PhysP2PConstraint::GetImpulseClamp() const {
+    btPoint2PointConstraint *p2pConstraint = static_cast<btPoint2PointConstraint *>(constraint);
+
+    return p2pConstraint->m_setting.m_impulseClamp;
+}
+
+void PhysP2PConstraint::SetImpulseClamp(float impulse) {
+    btPoint2PointConstraint *p2pConstraint = static_cast<btPoint2PointConstraint *>(constraint);
+
+    p2pConstraint->m_setting.m_impulseClamp = impulse;
+}
+
 BE_NAMESPACE_END

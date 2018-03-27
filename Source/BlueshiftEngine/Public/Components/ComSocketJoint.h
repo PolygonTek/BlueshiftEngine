@@ -41,11 +41,15 @@ public:
     const Vec3 &            GetConnectedAnchor() const;
     void                    SetConnectedAnchor(const Vec3 &anchor);
 
+    float                   GetImpulseClamp() const;
+    void                    SetImpulseClamp(float impulseClamp);
+
 protected:
     virtual void            CreateConstraint() override;
 
     Vec3                    localAnchor;
     Vec3                    connectedAnchor;
+    float                   impulseClamp;
 };
 
 BE_NAMESPACE_END
