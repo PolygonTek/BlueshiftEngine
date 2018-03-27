@@ -26,8 +26,8 @@ BEGIN_EVENTS(ComSphereCollider)
 END_EVENTS
 
 void ComSphereCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.0f, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 1.0f, "", PropertyInfo::EditorFlag);
 }
 
 ComSphereCollider::ComSphereCollider() {
@@ -36,9 +36,7 @@ ComSphereCollider::ComSphereCollider() {
 ComSphereCollider::~ComSphereCollider() {
 }
 
-void ComSphereCollider::Init() {
-    ComCollider::Init();
-
+void ComSphereCollider::CreateCollider() {
     // Create collider based on transformed sphere
     const ComTransform *transform = GetEntity()->GetTransform();
     const Vec3 scaledCenter = transform->GetScale() * center;
@@ -46,9 +44,24 @@ void ComSphereCollider::Init() {
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateSphere(scaledCenter, scaledRadius);
+}
 
-    // Mark as initialized
-    SetInitialized(true);
+void ComSphereCollider::SetCenter(const Vec3 &center) {
+    this->center = center;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
+}
+
+void ComSphereCollider::SetRadius(float radius) {
+    this->radius = radius;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
 }
 
 bool ComSphereCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

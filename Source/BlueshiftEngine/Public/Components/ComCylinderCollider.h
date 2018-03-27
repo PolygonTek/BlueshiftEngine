@@ -29,15 +29,23 @@ public:
     ComCylinderCollider();
     virtual ~ComCylinderCollider();
 
-                            /// Initializes this component. Called after deserialization.
-    virtual void            Init() override;
-
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
+    Vec3                    GetCenter() const { return center; }
+    void                    SetCenter(const Vec3 &center);
+
+    float                   GetRadius() const { return radius; }
+    void                    SetRadius(float radius);
+
+    float                   GetHeight() const { return height; }
+    void                    SetHeight(float height);
+
 protected:
+    virtual void            CreateCollider() override;
+
     Vec3                    center;
     float                   radius;
     float                   height;

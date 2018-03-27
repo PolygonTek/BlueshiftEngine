@@ -26,9 +26,9 @@ BEGIN_EVENTS(ComConeCollider)
 END_EVENTS
 
 void ComConeCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.f, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("height", "Height", float, height, 1.f, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 1.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 1.f, "", PropertyInfo::EditorFlag);
 }
 
 ComConeCollider::ComConeCollider() {
@@ -37,9 +37,7 @@ ComConeCollider::ComConeCollider() {
 ComConeCollider::~ComConeCollider() {
 }
 
-void ComConeCollider::Init() {
-    ComCollider::Init();
-
+void ComConeCollider::CreateCollider() {
     // Create collider based on transformed cone
     const ComTransform *transform = GetEntity()->GetTransform();
     Vec3 scaledCenter = transform->GetScale() * center;
@@ -48,9 +46,33 @@ void ComConeCollider::Init() {
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateCone(scaledCenter, scaledRadius, scaledHeight);
+}
 
-    // Mark as initialized
-    SetInitialized(true);
+void ComConeCollider::SetCenter(const Vec3 &center) {
+    this->center = center;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
+}
+
+void ComConeCollider::SetRadius(float radius) {
+    this->radius = radius;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
+}
+
+void ComConeCollider::SetHeight(float height) {
+    this->height = height;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
 }
 
 bool ComConeCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

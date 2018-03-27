@@ -26,9 +26,9 @@ BEGIN_EVENTS(ComCapsuleCollider)
 END_EVENTS
 
 void ComCapsuleCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.0f, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("height", "Height", float, height, 1.0f, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 1.0f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 1.0f, "", PropertyInfo::EditorFlag);
 }
 
 ComCapsuleCollider::ComCapsuleCollider() {
@@ -37,9 +37,7 @@ ComCapsuleCollider::ComCapsuleCollider() {
 ComCapsuleCollider::~ComCapsuleCollider() {
 }
 
-void ComCapsuleCollider::Init() {
-    ComCollider::Init();
-    
+void ComCapsuleCollider::CreateCollider() {
     // Create collider based on transformed capsule
     const ComTransform *transform = GetEntity()->GetTransform();
     Vec3 scaledCenter = transform->GetScale() * center;
@@ -48,9 +46,33 @@ void ComCapsuleCollider::Init() {
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight);
+}
 
-    // Mark as initialized
-    SetInitialized(true);
+void ComCapsuleCollider::SetCenter(const Vec3 &center) {
+    this->center = center;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
+}
+
+void ComCapsuleCollider::SetRadius(float radius) {
+    this->radius = radius;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
+}
+
+void ComCapsuleCollider::SetHeight(float height) {
+    this->height = height;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
 }
 
 bool ComCapsuleCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

@@ -26,8 +26,8 @@ BEGIN_EVENTS(ComBoxCollider)
 END_EVENTS
 
 void ComBoxCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("extents", "Extents", Vec3, extents, Vec3::one, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("extents", "Extents", Vec3, GetExtents, SetExtents, Vec3::one, "", PropertyInfo::EditorFlag);
 }
 
 ComBoxCollider::ComBoxCollider() {
@@ -36,9 +36,7 @@ ComBoxCollider::ComBoxCollider() {
 ComBoxCollider::~ComBoxCollider() {
 }
 
-void ComBoxCollider::Init() {
-    ComCollider::Init();
-
+void ComBoxCollider::CreateCollider() {
     // Create collider based on transformed box
     const ComTransform *transform = GetEntity()->GetTransform();
     Vec3 scaledCenter = transform->GetScale() * center;
@@ -46,9 +44,24 @@ void ComBoxCollider::Init() {
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateBox(scaledCenter, scaledExtents);
+}
 
-    // Mark as initialized
-    SetInitialized(true);
+void ComBoxCollider::SetCenter(const Vec3 &center) {
+    this->center = center;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
+}
+
+void ComBoxCollider::SetExtents(const Vec3 &extents) {
+    this->extents = extents;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
 }
 
 bool ComBoxCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

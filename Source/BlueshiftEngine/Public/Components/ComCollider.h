@@ -42,6 +42,8 @@ public:
     Collider *              GetCollider() const { return collider; }
 
 protected:
+    virtual void            CreateCollider() = 0;
+
     Str                     material; // TODO: implement physics material
     Collider *              collider;
 };

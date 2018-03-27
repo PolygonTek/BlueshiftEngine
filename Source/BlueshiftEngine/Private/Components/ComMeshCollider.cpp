@@ -40,16 +40,21 @@ ComMeshCollider::ComMeshCollider() {
 ComMeshCollider::~ComMeshCollider() {
 }
 
-void ComMeshCollider::Init() {
-    ComCollider::Init();
-
+void ComMeshCollider::CreateCollider() {
     if (!meshGuid.IsZero()) {
         const Str meshPath = resourceGuidMapper.Get(meshGuid);
         collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
     }
+}
 
-    // Mark as initialized
-    SetInitialized(true);
+void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
+    this->meshGuid = meshGuid;
+
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
 }
 
 bool ComMeshCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
@@ -58,21 +63,6 @@ bool ComMeshCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool b
 
 void ComMeshCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
     //collider;
-}
-
-Guid ComMeshCollider::GetMeshGuid() const {
-    return meshGuid;
-}
-
-void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
-    this->meshGuid = meshGuid;
-
-    if (initialized) {
-        if (!meshGuid.IsZero()) {
-            const Str meshPath = resourceGuidMapper.Get(meshGuid);
-            collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
-        }
-    }
 }
 
 BE_NAMESPACE_END

@@ -26,9 +26,9 @@ BEGIN_EVENTS(ComCylinderCollider)
 END_EVENTS
 
 void ComCylinderCollider::RegisterProperties() {
-    REGISTER_PROPERTY("center", "Center", Vec3, center, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("radius", "Radius", float, radius, 1.f, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("height", "Height", float, height, 1.f, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 1.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 1.f, "", PropertyInfo::EditorFlag);
 }
 
 ComCylinderCollider::ComCylinderCollider() {
@@ -37,9 +37,7 @@ ComCylinderCollider::ComCylinderCollider() {
 ComCylinderCollider::~ComCylinderCollider() {
 }
 
-void ComCylinderCollider::Init() {
-    ComCollider::Init();
-
+void ComCylinderCollider::CreateCollider() {
     // Create collider based on transformed cylinder
     const ComTransform *transform = GetEntity()->GetTransform();
     Vec3 scaledCenter = transform->GetScale() * center;
@@ -48,9 +46,33 @@ void ComCylinderCollider::Init() {
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateCylinder(scaledCenter, scaledRadius, scaledHeight);
+}
 
-    // Mark as initialized
-    SetInitialized(true);
+void ComCylinderCollider::SetCenter(const Vec3 &center) {
+    this->center = center;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
+}
+
+void ComCylinderCollider::SetRadius(float radius) {
+    this->radius = radius;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
+}
+
+void ComCylinderCollider::SetHeight(float height) {
+    this->height = height;
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+
+        CreateCollider();
+    }
 }
 
 bool ComCylinderCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

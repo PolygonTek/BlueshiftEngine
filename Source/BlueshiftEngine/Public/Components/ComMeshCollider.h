@@ -25,18 +25,17 @@ public:
     ComMeshCollider();
     virtual ~ComMeshCollider();
 
-                            /// Initializes this component. Called after deserialization.
-    virtual void            Init() override;
-
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
-    Guid                    GetMeshGuid() const;
+    Guid                    GetMeshGuid() const { return meshGuid; }
     void                    SetMeshGuid(const Guid &meshGuid);
 
 protected:
+    virtual void            CreateCollider() override;
+
     Guid                    meshGuid;
     bool                    convex;
 };

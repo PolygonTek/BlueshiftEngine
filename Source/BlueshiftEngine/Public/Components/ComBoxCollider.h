@@ -29,15 +29,20 @@ public:
     ComBoxCollider();
     virtual ~ComBoxCollider();
 
-                            /// Initializes this component. Called after deserialization.
-    virtual void            Init() override;
-
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
 
+    Vec3                    GetCenter() const { return center; }
+    void                    SetCenter(const Vec3 &center);
+
+    Vec3                    GetExtents() const { return extents; }
+    void                    SetExtents(const Vec3 &extents);
+
 protected:
+    virtual void            CreateCollider() override;
+
     Vec3                    center;
     Vec3                    extents;
 };
