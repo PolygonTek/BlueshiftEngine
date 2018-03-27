@@ -46,7 +46,7 @@ public:
                             /// Get the game world object
     GameWorld *             GetGameWorld() const;
 
-                            /// Returns true if same component is allowed
+                            /// Returns true if the same component is allowed
     virtual bool            AllowSameComponent() const { return false; }
                             /// Returns true if this component conflicts with the given component
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const { return false; }

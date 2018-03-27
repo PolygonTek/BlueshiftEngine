@@ -18,20 +18,18 @@
 
 BE_NAMESPACE_BEGIN
 
-class LuaVM;
 class PhysConstraint;
+class ComTransform;
 class ComRigidBody;
 
 class ComJoint : public Component {
-    friend class LuaVM;
-
 public:
     ABSTRACT_PROTOTYPE(ComJoint);
 
     ComJoint();
     virtual ~ComJoint() = 0;
 
-                            /// Returns true if same component is allowed
+                            /// Returns true if the same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
 
     virtual void            Purge(bool chainPurge = true) override;
@@ -44,7 +42,7 @@ public:
     Guid                    GetConnectedBodyGuid() const { return connectedBodyGuid; }
     void                    SetConnectedBodyGuid(const Guid &connectedBodyGuid);
 
-    ComRigidBody *          GetConnectedBody() const { return connectedBody; }
+    ComRigidBody *          GetConnectedBody() const;
     void                    SetConnectedBody(const ComRigidBody *connectedBody);
 
     bool                    IsCollisionEnabled() const { return collisionEnabled; }
@@ -59,8 +57,10 @@ protected:
 
     virtual void            CreateConstraint() = 0;
 
+    void                    TransformUpdated(const ComTransform *transform);
+
     Guid                    connectedBodyGuid;
-    ComRigidBody *          connectedBody;
+    mutable ComRigidBody *  connectedBody;
     PhysConstraint *        constraint;
     bool                    collisionEnabled;
     float                   breakImpulse;

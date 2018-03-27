@@ -30,7 +30,7 @@ public:
     ComScript();
     virtual ~ComScript();
 
-                            /// Returns true if same component is allowed
+                            /// Returns true if the same component is allowed
     virtual bool            AllowSameComponent() const override { return true; }
 
                             /// Gets full list of property info including script properties.
