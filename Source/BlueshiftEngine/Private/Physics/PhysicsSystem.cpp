@@ -22,7 +22,8 @@ extern ContactAddedCallback     gContactAddedCallback;
 
 BE_NAMESPACE_BEGIN
 
-PhysicsSystem     physicsSystem;
+PhysicsSystem       physicsSystem;
+btEmptyShape *      emptyShape = nullptr;
 
 static bool CustomMaterialCombinerCallback(btManifoldPoint &cp, const btCollisionObjectWrapper *colObj0, int partId0, int index0, 
     const btCollisionObjectWrapper *colObj1, int partId1, int index1) {
@@ -37,6 +38,8 @@ static bool CustomMaterialCombinerCallback(btManifoldPoint &cp, const btCollisio
 void PhysicsSystem::Init() {
     gContactAddedCallback = CustomMaterialCombinerCallback;
 
+    emptyShape = new btEmptyShape;
+
     colliderManager.Init();
 
     physics_showWireframe.SetModified();
@@ -49,6 +52,8 @@ void PhysicsSystem::Init() {
 }
 
 void PhysicsSystem::Shutdown() {
+    SAFE_DELETE(emptyShape);
+
     colliderManager.Shutdown();
 }
 
@@ -73,7 +78,28 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
 
     assert(desc->shapes.Count() > 0);
 
-    if (desc->shapes.Count() > 1) {
+    if (desc->shapes.Count() == 0) {
+        shape = emptyShape;
+
+        totalCentroid.Set(0, 0, 0);
+
+        initialTransform.setIdentity();
+        initialTransform.setOrigin(btVector3(0, 0, 0));
+    } else if (desc->shapes.Count() == 1) {
+        const PhysShapeDesc *singleShapeDesc = &desc->shapes[0];
+        shape = singleShapeDesc->collider->shape;
+
+        totalCentroid = singleShapeDesc->localOrigin + singleShapeDesc->localAxis * singleShapeDesc->collider->GetCentroid();
+
+        // initial world transform 
+        Vec3 worldCentroid = desc->origin + desc->axis * totalCentroid;
+        Mat3 worldAxis = desc->axis * singleShapeDesc->localAxis;
+        initialTransform.setBasis(btMatrix3x3(
+            worldAxis[0][0], worldAxis[1][0], worldAxis[2][0],
+            worldAxis[0][1], worldAxis[1][1], worldAxis[2][1],
+            worldAxis[0][2], worldAxis[1][2], worldAxis[2][2]));
+        initialTransform.setOrigin(ToBtVector3(worldCentroid));
+    } else {
         btCompoundShape *compoundShape = new btCompoundShape;
         shape = compoundShape;
 
@@ -116,20 +142,6 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
             desc->axis[0][0], desc->axis[1][0], desc->axis[2][0],
             desc->axis[0][1], desc->axis[1][1], desc->axis[2][1],
             desc->axis[0][2], desc->axis[1][2], desc->axis[2][2]));
-        initialTransform.setOrigin(ToBtVector3(worldCentroid));
-    } else {
-        const PhysShapeDesc *singleShapeDesc = &desc->shapes[0];
-        shape = singleShapeDesc->collider->shape;
-
-        totalCentroid = singleShapeDesc->localOrigin + singleShapeDesc->localAxis * singleShapeDesc->collider->GetCentroid();
-
-        // initial world transform 
-        Vec3 worldCentroid = desc->origin + desc->axis * totalCentroid;
-        Mat3 worldAxis = desc->axis * singleShapeDesc->localAxis;
-        initialTransform.setBasis(btMatrix3x3(
-            worldAxis[0][0], worldAxis[1][0], worldAxis[2][0],
-            worldAxis[0][1], worldAxis[1][1], worldAxis[2][1],
-            worldAxis[0][2], worldAxis[1][2], worldAxis[2][2]));
         initialTransform.setOrigin(ToBtVector3(worldCentroid));
     }
 

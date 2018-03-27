@@ -183,10 +183,11 @@ void ComRigidBody::CreateBody() {
         AddChildShapeRecursive(childEntity, physicsDesc.shapes);
     }
 
+#if 0
     if (physicsDesc.shapes.Count() == 0) {
         BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
-        return;
     }
+#endif
 
     body = static_cast<PhysRigidBody *>(physicsSystem.CreateCollidable(&physicsDesc));
     body->SetUserPointer(this);
