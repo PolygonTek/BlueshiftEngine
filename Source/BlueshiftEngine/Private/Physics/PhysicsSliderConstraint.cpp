@@ -27,6 +27,11 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anc
     btSliderConstraint *sliderConstraint = new btSliderConstraint(*bodyA->GetRigidBody(), frameA, true);
     sliderConstraint->setUserConstraintPtr(this);
 
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
+    sliderConstraint->setParam(BT_CONSTRAINT_CFM, 0);
+    sliderConstraint->setParam(BT_CONSTRAINT_ERP, 1);
+
     constraint = sliderConstraint;
 
     linearLowerLimit = 0;
@@ -45,6 +50,11 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anc
 
     btSliderConstraint *sliderConstraint = new btSliderConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, true);
     sliderConstraint->setUserConstraintPtr(this);
+
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
+    sliderConstraint->setParam(BT_CONSTRAINT_CFM, 0);
+    sliderConstraint->setParam(BT_CONSTRAINT_ERP, 1);
 
     constraint = sliderConstraint;
 
