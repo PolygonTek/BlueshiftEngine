@@ -3,6 +3,7 @@ Version History
 
 ### 0.5.0
 - Added slider/wheel joint components
+- Fixed to reflect changes in properties of physics components in play mode
 
 ### 0.4.0
 - Added support for LuaJIT (Windows / macOS)
