@@ -76,12 +76,8 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
     Vec3 totalCentroid = Vec3::origin;
     btTransform initialTransform;
 
-    assert(desc->shapes.Count() > 0);
-
     if (desc->shapes.Count() == 0) {
         shape = emptyShape;
-
-        totalCentroid.Set(0, 0, 0);
 
         initialTransform.setIdentity();
         initialTransform.setOrigin(btVector3(0, 0, 0));
@@ -146,10 +142,12 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
     }
 
     btVector3 inertia(0, 0, 0);
-    if (desc->mass != 0.0f) {
-        // NOTE: bullet 에서는 shape 이 center of mass 에 정렬되어 있다고 가정하고,
-        // 대부분의 경우에 AABB approximation 으로 inertia tensor 를 계산한다.
-        shape->calculateLocalInertia(desc->mass, inertia);
+    if (shape != emptyShape) {
+        if (desc->mass != 0.0f) {
+            // NOTE: bullet 에서는 shape 이 center of mass 에 정렬되어 있다고 가정하고,
+            // 대부분의 경우에 AABB approximation 으로 inertia tensor 를 계산한다.
+            shape->calculateLocalInertia(desc->mass, inertia);
+        }
     }
 
     if (desc->type == PhysCollidable::Type::RigidBody || desc->type == PhysCollidable::Type::Character) {
