@@ -39,3 +39,22 @@ BE_NAMESPACE_END
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
+
+BE_NAMESPACE_BEGIN
+
+BE_FORCE_INLINE Vec2 BE_API UnitToCenti(const Vec2 &x) { return x * 1.0f; }
+BE_FORCE_INLINE Vec2 BE_API UnitToMeter(const Vec2 &x) { return UnitToCenti(x) * 0.01f; }
+BE_FORCE_INLINE Vec2 BE_API CentiToUnit(const Vec2 &x) { return x / UnitToCenti(1.0f); }
+BE_FORCE_INLINE Vec2 BE_API MeterToUnit(const Vec2 &x) { return CentiToUnit(x * 100.0f); }
+
+BE_FORCE_INLINE Vec3 BE_API UnitToCenti(const Vec3 &x) { return x * 1.0f; }
+BE_FORCE_INLINE Vec3 BE_API UnitToMeter(const Vec3 &x) { return UnitToCenti(x) * 0.01f; }
+BE_FORCE_INLINE Vec3 BE_API CentiToUnit(const Vec3 &x) { return x / UnitToCenti(1.0f); }
+BE_FORCE_INLINE Vec3 BE_API MeterToUnit(const Vec3 &x) { return CentiToUnit(x * 100.0f); }
+
+BE_FORCE_INLINE Vec4 BE_API UnitToCenti(const Vec4 &x) { return x * 1.0f; }
+BE_FORCE_INLINE Vec4 BE_API UnitToMeter(const Vec4 &x) { return UnitToCenti(x) * 0.01f; }
+BE_FORCE_INLINE Vec4 BE_API CentiToUnit(const Vec4 &x) { return x / UnitToCenti(1.0f); }
+BE_FORCE_INLINE Vec4 BE_API MeterToUnit(const Vec4 &x) { return CentiToUnit(x * 100.0f); }
+
+BE_NAMESPACE_END

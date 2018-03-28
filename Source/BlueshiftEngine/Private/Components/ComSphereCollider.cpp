@@ -26,8 +26,10 @@ BEGIN_EVENTS(ComSphereCollider)
 END_EVENTS
 
 void ComSphereCollider::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 1.0f, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 0.5f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
 }
 
 ComSphereCollider::ComSphereCollider() {
@@ -37,10 +39,10 @@ ComSphereCollider::~ComSphereCollider() {
 }
 
 void ComSphereCollider::CreateCollider() {
-    // Create collider based on transformed sphere
     const ComTransform *transform = GetEntity()->GetTransform();
-    const Vec3 scaledCenter = transform->GetScale() * center;
-    const float scaledRadius = (transform->GetScale() * radius).MaxComponent();
+
+    Vec3 scaledCenter = transform->GetScale() * center;
+    float scaledRadius = (transform->GetScale() * radius).MaxComponent();
 
     collider = colliderManager.AllocUnnamedCollider();
     collider->CreateSphere(scaledCenter, scaledRadius);
@@ -75,10 +77,11 @@ void ComSphereCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selec
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugSphereSimple(transform->GetTransform() * center, transform->GetAxis(), scaledRadius + CentiToUnit(0.25f), 1.25f, true);
+            renderWorld->DebugSphereSimple(transform->GetTransform() * scaledCenter, transform->GetAxis(), scaledRadius + 0.25f, 1.25f, true);
         }
     }
 }

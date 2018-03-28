@@ -26,18 +26,30 @@ BEGIN_EVENTS(ComSliderJoint)
 END_EVENTS
 
 void ComSliderJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useLinearLimits", "Use Linear Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useAngularLimits", "Use Angular Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, true, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minAngle", "Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxAngle", "Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("linearMotorTargetVelocity", "Linear Motor Target Velocity", float, GetLinearMotorTargetVelocity, SetLinearMotorTargetVelocity, 0.f, "Target linear velocity (m/s) of motor", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxLinearMotorImpulse", "Maximum Linear Motor Impulse", float, GetMaxLinearMotorImpulse, SetMaxLinearMotorImpulse, 0.f, "Maximum linear motor impulse", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("angularMotorTargetVelocity", "Angular Motor Target Velocity", float, GetAngularMotorTargetVelocity, SetAngularMotorTargetVelocity, 0.f, "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxAngularMotorImpulse", "Maximum Angular Motor Impulse", float, GetMaxAngularMotorImpulse, SetMaxAngularMotorImpulse, 0.f, "Maximum angular motor impulse", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
+        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
+        "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("useLinearLimits", "Use Linear Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("useAngularLimits", "Use Angular Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, true, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minAngle", "Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxAngle", "Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("linearMotorTargetVelocity", "Linear Motor Target Velocity", float, GetLinearMotorTargetVelocity, SetLinearMotorTargetVelocity, 0.f, 
+        "Target linear velocity (m/s) of motor", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxLinearMotorImpulse", "Maximum Linear Motor Impulse", float, GetMaxLinearMotorImpulse, SetMaxLinearMotorImpulse, 0.f, 
+        "Maximum linear motor impulse", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("angularMotorTargetVelocity", "Angular Motor Target Velocity", float, GetAngularMotorTargetVelocity, SetAngularMotorTargetVelocity, 0.f, 
+        "Target angular velocity (degree/s) of motor", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxAngularMotorImpulse", "Maximum Angular Motor Impulse", float, GetMaxAngularMotorImpulse, SetMaxAngularMotorImpulse, 0.f, 
+        "Maximum angular motor impulse", PropertyInfo::EditorFlag);
 }
 
 ComSliderJoint::ComSliderJoint() {
@@ -89,7 +101,7 @@ void ComSliderJoint::CreateConstraint() {
     PhysSliderConstraint *sliderConstraint = (PhysSliderConstraint *)physicsSystem.CreateConstraint(&desc);
 
     // Apply limit distances
-    sliderConstraint->SetLinearLimits(MeterToUnit(minDist), MeterToUnit(maxDist));
+    sliderConstraint->SetLinearLimits(minDist, maxDist);
     sliderConstraint->EnableLinearLimits(enableLimitDistances);
 
     // Apply limit angles
@@ -98,7 +110,7 @@ void ComSliderJoint::CreateConstraint() {
 
     // Apply linear motor
     if (linearMotorTargetVelocity != 0.0f) {
-        sliderConstraint->SetLinearMotor(MeterToUnit(linearMotorTargetVelocity), maxLinearMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
+        sliderConstraint->SetLinearMotor(linearMotorTargetVelocity, maxLinearMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
         sliderConstraint->EnableLinearMotor(true);
     }
 
@@ -169,14 +181,14 @@ void ComSliderJoint::SetEnableLimitDistances(bool enable) {
 void ComSliderJoint::SetMinimumDistance(float minDist) {
     this->minDist = minDist;
     if (constraint) {
-        ((PhysSliderConstraint *)constraint)->SetLinearLimits(MeterToUnit(minDist), MeterToUnit(maxDist));
+        ((PhysSliderConstraint *)constraint)->SetLinearLimits(minDist, maxDist);
     }
 }
 
 void ComSliderJoint::SetMaximumDistance(float maxDist) {
     this->maxDist = maxDist;
     if (constraint) {
-        ((PhysSliderConstraint *)constraint)->SetLinearLimits(MeterToUnit(minDist), MeterToUnit(maxDist));
+        ((PhysSliderConstraint *)constraint)->SetLinearLimits(minDist, maxDist);
     }
 }
 

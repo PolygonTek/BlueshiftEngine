@@ -62,19 +62,27 @@ public:
 
     void                        Purge();
 
+                                /// Create box shaped collider with the given parameters.
     void                        CreateBox(const Vec3 &center, const Vec3 &extents, float margin = 0.0f);
-    void                        CreateSphere(const Vec3 &center, float radius, float margin = 0.0f);
-    void                        CreateCapsule(const Vec3 &center, float radius, float height, float margin = 0.0f);
-    void                        CreateCylinder(const Vec3 &center, float radius, float height, float margin = 0.0f);
-    void                        CreateCone(const Vec3 &center, float radius, float height, float margin = 0.0f);
-    void                        CreateMultiSphere(int count, const Vec3 *centers, const float *radius, float margin = 0.0f);
 
-    float                       GetMargin() const;
-    void                        SetMargin(float margin);
+                                /// Create sphere shaped collider with the given parameters.
+    void                        CreateSphere(const Vec3 &center, float radius, float margin = 0.0f);
+
+                                /// Create capsule shaped collider with the given parameters.
+    void                        CreateCapsule(const Vec3 &center, float radius, float height, float margin = 0.0f);
+
+                                /// Create cylinder shaped collider with the given parameters.
+    void                        CreateCylinder(const Vec3 &center, float radius, float height, float margin = 0.0f);
+
+                                /// Create cone shaped collider with the given parameters.
+    void                        CreateCone(const Vec3 &center, float radius, float height, float margin = 0.0f);
 
     void                        SetLocalScaling(float sx, float sy, float sz);
 
+                                /// Returns axis-aligned bounding box in system units
     const AABB                  GetAABB() const;
+
+                                /// Returns volume in system units
     float                       GetVolume() const { return volume; }
 
     bool                        Load(const char *filename, bool convexHull, const Vec3 &scale);
@@ -99,8 +107,8 @@ private:
     int                         unnamedIndex;
 
     int                         type;
-    Vec3                        centroid;
-    float                       volume;
+    Vec3                        centroid;           ///< Position of center of mass in system units
+    float                       volume;             ///< Volume in system units
     Vec3                        modelScale;
     btCollisionShape *          shape;
     Array<CollisionMesh *>      collisionMeshes;

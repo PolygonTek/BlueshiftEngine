@@ -26,9 +26,12 @@ BEGIN_EVENTS(ComConeCollider)
 END_EVENTS
 
 void ComConeCollider::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 1.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 1.f, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 50.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 100.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
 }
 
 ComConeCollider::ComConeCollider() {
@@ -38,8 +41,8 @@ ComConeCollider::~ComConeCollider() {
 }
 
 void ComConeCollider::CreateCollider() {
-    // Create collider based on transformed cone
     const ComTransform *transform = GetEntity()->GetTransform();
+
     Vec3 scaledCenter = transform->GetScale() * center;
     float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
     float scaledHeight = transform->GetScale().z * height;
@@ -86,10 +89,11 @@ void ComConeCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selecte
         ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldOrigin = transform->GetTransform() * center - transform->GetAxis()[2] * scaledHeight * 0.5f;
+            Vec3 worldOrigin = transform->GetTransform() * scaledCenter - transform->GetAxis()[2] * scaledHeight * 0.5f;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius, false, 1.25f);

@@ -73,8 +73,8 @@ PhysicsWorld::PhysicsWorld() {
 #if 1
     broadphase = new btDbvtBroadphase();
 #else
-    btVector3 worldMin(-MeterToUnit(100), -MeterToUnit(100), -MeterToUnit(100));
-    btVector3 worldMax(MeterToUnit(100), MeterToUnit(100), MeterToUnit(100));
+    btVector3 worldMin(-100, -100, -100);
+    btVector3 worldMax(+100, +100, +100);
     broadphase = new btAxisSweep3(worldMin, worldMax);
 #endif
 
@@ -239,7 +239,7 @@ const Vec3 PhysicsWorld::GetGravity() const {
     }
 
     btVector3 gravity = dynamicsWorld->getGravity();
-    return ToVec3(gravity);
+    return MeterToUnit(ToVec3(gravity));
 }
 
 void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
@@ -247,7 +247,7 @@ void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
         return;
     }
 
-    dynamicsWorld->setGravity(ToBtVector3(gravityAcceleration));
+    dynamicsWorld->setGravity(ToBtVector3(UnitToMeter(gravityAcceleration)));
 }
 
 uint32_t PhysicsWorld::GetCollisionFilterMask(int index) const {
@@ -277,7 +277,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
     if (shape->isCompound()) {
         btCompoundShape *compoundShape = static_cast<btCompoundShape *>(shape);
         if (compoundShape->getNumChildShapes() != 1) {
-            BE_WARNLOG(L"PhysicsWorld::ConvexCast: multiple compound shape is not allowed\n");	
+            BE_WARNLOG(L"PhysicsWorld::ConvexCast: multiple compound shape is not allowed\n");
             return false;
         }
 
@@ -287,7 +287,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
         const Vec3 centroid = collider->GetCentroid();
     
         shapeTransform.setIdentity();
-        shapeTransform.setOrigin(ToBtVector3(centroid));
+        shapeTransform.setOrigin(ToBtVector3(UnitToMeter(centroid)));
     }
 
     if (!shape->isConvex()) {
@@ -322,8 +322,8 @@ bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origi
         const btCollisionObject *m_me;
     };
 
-    btVector3 rayFromWorld(origin.x, origin.y, origin.z);
-    btVector3 rayToWorld(dest.x, dest.y, dest.z);
+    btVector3 rayFromWorld = ToBtVector3(UnitToMeter(origin));
+    btVector3 rayToWorld = ToBtVector3(UnitToMeter(dest));
 
     MyClosestRayResultCallback cb(me, rayFromWorld, rayToWorld);
 
@@ -334,7 +334,7 @@ bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origi
 
     if (cb.hasHit()) {
         trace.hitObject = (PhysCollidable *)(cb.m_collisionObject->getUserPointer());
-        trace.point = ToVec3(cb.m_hitPointWorld);
+        trace.point = MeterToUnit(ToVec3(cb.m_hitPointWorld));
         trace.normal = ToVec3(cb.m_hitNormalWorld);
         trace.fraction = cb.m_closestHitFraction;
         trace.endPos = origin + trace.fraction * (dest - origin);
@@ -381,8 +381,8 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
         const btCollisionObject *m_me;
     };
 
-    btVector3 rayFromWorld(origin.x, origin.y, origin.z);
-    btVector3 rayToWorld(dest.x, dest.y, dest.z);
+    btVector3 rayFromWorld = ToBtVector3(UnitToMeter(origin));
+    btVector3 rayToWorld = ToBtVector3(UnitToMeter(dest));
 
     MyAllHitsRayResultCallback cb(me, rayFromWorld, rayToWorld);
 
@@ -395,7 +395,7 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
         for (int i = 0; i < cb.m_collisionObjects.size(); i++) {
             CastResult trace;
             trace.hitObject = (PhysCollidable *)(cb.m_collisionObjects[i]->getUserPointer());
-            trace.point = ToVec3(cb.m_hitPointWorld[i]);
+            trace.point = MeterToUnit(ToVec3(cb.m_hitPointWorld[i]));
             trace.normal = ToVec3(cb.m_hitNormalWorld[i]);
             trace.fraction = cb.m_hitFractions[i];
             trace.endPos = origin + trace.fraction * (dest - origin);
@@ -490,12 +490,12 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
 
     btTransform fromTrans;
     fromTrans.setRotation(ToBtQuaternion(q));
-    fromTrans.setOrigin(ToBtVector3(origin));
+    fromTrans.setOrigin(ToBtVector3(UnitToMeter(origin)));
     fromTrans.mult(shapeTransform, fromTrans);
 
     btTransform toTrans;
     toTrans.setRotation(ToBtQuaternion(q));
-    toTrans.setOrigin(ToBtVector3(dest));
+    toTrans.setOrigin(ToBtVector3(UnitToMeter(dest)));
     toTrans.mult(shapeTransform, toTrans);
 
     MyClosestConvexResultCallback cb(me, fromTrans.getOrigin(), toTrans.getOrigin());
@@ -507,7 +507,7 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
     
     if (cb.hasHit()) {
         trace.hitObject = (PhysCollidable *)(cb.m_hitCollisionObject->getUserPointer());
-        trace.point = ToVec3(cb.m_hitPointWorld);
+        trace.point = MeterToUnit(ToVec3(cb.m_hitPointWorld));
         trace.normal = ToVec3(cb.m_hitNormalWorld);
         trace.fraction = cb.m_closestHitFraction;
         trace.endPos = origin + trace.fraction * (dest - origin);
@@ -594,10 +594,10 @@ void PhysicsWorld::ProcessCollision() {
                     const btScalar impulse = pt.getAppliedImpulse();
 
                     if (listenerA) {
-                        listenerA->Collide(a, b, ToVec3(ptB), ToVec3(normalOnB), distance, impulse);
+                        listenerA->Collide(a, b, MeterToUnit(ToVec3(ptB)), ToVec3(normalOnB), MeterToUnit(distance), MeterToUnit(impulse));
                     }
                     if (listenerB) {
-                        listenerB->Collide(b, a, ToVec3(ptA), ToVec3(-normalOnB), distance, impulse);
+                        listenerB->Collide(b, a, MeterToUnit(ToVec3(ptA)), ToVec3(-normalOnB), MeterToUnit(distance), MeterToUnit(impulse));
                     }
                 }
             }

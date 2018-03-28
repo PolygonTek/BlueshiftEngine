@@ -35,9 +35,15 @@ const Vec3 PhysCollidable::GetOrigin() const {
     Vec3 transformedCentroid = GetAxis() * centroid;
 
     // bullet world transform origin stands for the center of mass
-    btVector3 worldCentroid = collisionObject->getWorldTransform().getOrigin();
+    Vec3 worldCentroid = MeterToUnit(ToVec3(collisionObject->getWorldTransform().getOrigin()));
 
-    return ToVec3(worldCentroid - ToBtVector3(transformedCentroid));
+    return worldCentroid - transformedCentroid;
+}
+
+void PhysCollidable::SetOrigin(const Vec3 &origin) {
+    btVector3 worldCentroid = ToBtVector3(UnitToMeter(origin + GetAxis() * centroid));
+
+    collisionObject->getWorldTransform().setOrigin(worldCentroid);
 }
 
 const Mat3 PhysCollidable::GetAxis() const {
@@ -49,12 +55,6 @@ const Mat3 PhysCollidable::GetAxis() const {
         basis[0][2], basis[1][2], basis[2][2]);
 }
 
-void PhysCollidable::SetOrigin(const Vec3 &origin) {
-    btVector3 worldCentroid = ToBtVector3(origin + GetAxis() * centroid);
-
-    collisionObject->getWorldTransform().setOrigin(worldCentroid);
-}
-
 void PhysCollidable::SetAxis(const Mat3 &axis) {
     collisionObject->getWorldTransform().setBasis(btMatrix3x3(
         axis[0][0], axis[1][0], axis[2][0],
@@ -63,7 +63,7 @@ void PhysCollidable::SetAxis(const Mat3 &axis) {
 }
 
 void PhysCollidable::SetTransform(const Mat3 &axis, const Vec3 &origin) {
-    btVector3 worldCentroid = ToBtVector3(origin + axis * centroid);
+    btVector3 worldCentroid = ToBtVector3(UnitToMeter(origin + axis * centroid));
 
     collisionObject->getWorldTransform().setOrigin(worldCentroid);
     collisionObject->getWorldTransform().setBasis(btMatrix3x3(

@@ -22,7 +22,7 @@ PhysGenericConstraint::PhysGenericConstraint(PhysRigidBody *bodyA, const Vec3 &a
     PhysConstraint(bodyA, nullptr) {
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
+    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
 
     btGeneric6DofConstraint *generic6DofConstraint = new btGeneric6DofConstraint(*bodyA->GetRigidBody(), frameA, true);
     generic6DofConstraint->setUserConstraintPtr(this);
@@ -35,8 +35,8 @@ PhysGenericConstraint::PhysGenericConstraint(PhysRigidBody *bodyA, const Vec3 &a
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
     
-    btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
-    btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
+    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
+    btTransform frameB = ToBtTransform(axisInB, UnitToMeter(anchorInBCentroid));
 
     btGeneric6DofConstraint *generic6DofConstraint = new btGeneric6DofConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, true);
     generic6DofConstraint->setUserConstraintPtr(this);
@@ -48,7 +48,7 @@ void PhysGenericConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA
     btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
 
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
-    btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
+    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
 
     if (!bodyB) {
         generic6DofConstraint->setFrames(generic6DofConstraint->getFrameOffsetA(), frameA);
@@ -61,7 +61,7 @@ void PhysGenericConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB
     btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
 
     Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
-    btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
+    btTransform frameB = ToBtTransform(axisInB, UnitToMeter(anchorInBCentroid));
 
     if (!bodyB) {
         generic6DofConstraint->setFrames(frameB, generic6DofConstraint->getFrameOffsetB());
@@ -76,7 +76,7 @@ void PhysGenericConstraint::SetLinearLowerLimit(const Vec3 &lower) {
     this->linearLowerLimit = lower;
 
     if (generic6DofConstraint->isLimited(0) || generic6DofConstraint->isLimited(1) || generic6DofConstraint->isLimited(2)) {
-        generic6DofConstraint->setLinearLowerLimit(ToBtVector3(lower));
+        generic6DofConstraint->setLinearLowerLimit(ToBtVector3(UnitToMeter(lower)));
     }
 }
 
@@ -86,7 +86,7 @@ void PhysGenericConstraint::SetLinearUpperLimit(const Vec3 &upper) {
     this->linearUpperLimit = upper;
 
     if (generic6DofConstraint->isLimited(0) || generic6DofConstraint->isLimited(1) || generic6DofConstraint->isLimited(2)) {
-        generic6DofConstraint->setLinearUpperLimit(ToBtVector3(upper));
+        generic6DofConstraint->setLinearUpperLimit(ToBtVector3(UnitToMeter(upper)));
     }
 }
 
@@ -94,17 +94,17 @@ void PhysGenericConstraint::EnableLinearLimits(bool enableX, bool enableY, bool 
     btGeneric6DofConstraint *generic6DofConstraint = static_cast<btGeneric6DofConstraint *>(constraint);
 
     if (enableX) {
-        generic6DofConstraint->setLimit(0, linearLowerLimit[0], linearUpperLimit[0]);
+        generic6DofConstraint->setLimit(0, UnitToMeter(linearLowerLimit[0]), UnitToMeter(linearUpperLimit[0]));
     } else {
         generic6DofConstraint->setLimit(0, 1.0f, -1.0f);
     }
     if (enableY) {
-        generic6DofConstraint->setLimit(1, linearLowerLimit[1], linearUpperLimit[1]);
+        generic6DofConstraint->setLimit(1, UnitToMeter(linearLowerLimit[1]), UnitToMeter(linearUpperLimit[1]));
     } else {
         generic6DofConstraint->setLimit(1, 1.0f, -1.0f);
     }
     if (enableZ) {
-        generic6DofConstraint->setLimit(2, linearLowerLimit[2], linearUpperLimit[2]);
+        generic6DofConstraint->setLimit(2, UnitToMeter(linearLowerLimit[2]), UnitToMeter(linearUpperLimit[2]));
     } else {
         generic6DofConstraint->setLimit(2, 1.0f, -1.0f);
     }

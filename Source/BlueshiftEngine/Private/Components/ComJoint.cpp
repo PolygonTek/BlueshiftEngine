@@ -26,10 +26,12 @@ BEGIN_EVENTS(ComJoint)
 END_EVENTS
 
 void ComJoint::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("connectedBody", "Connected Body", Guid, GetConnectedBodyGuid, SetConnectedBodyGuid, Guid::zero, "", PropertyInfo::EditorFlag)
-        .SetMetaObject(&ComRigidBody::metaObject);
-    REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, false, "Enable collisions between bodies connected with a joint", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, "Maximum impulse the joint can withstand before breaking", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("connectedBody", "Connected Body", Guid, GetConnectedBodyGuid, SetConnectedBodyGuid, Guid::zero, 
+        "", PropertyInfo::EditorFlag).SetMetaObject(&ComRigidBody::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, false, 
+        "Enable collisions between bodies connected with a joint", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, 
+        "Maximum impulse the joint can withstand before breaking", PropertyInfo::EditorFlag);
 }
 
 ComJoint::ComJoint() {

@@ -119,7 +119,7 @@ public:
 
 protected:
     Type                    type;                   ///< Collidable type
-    Vec3                    centroid;               ///< Center of mass
+    Vec3                    centroid;               ///< Position of the center of mass in system units
     unsigned int            customFilterIndex;
     btCollisionObject *     collisionObject;
     PhysCollisionListener * collisionListener;

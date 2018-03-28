@@ -25,25 +25,28 @@ void Collider::Purge() {
     for (int i = 0; i < collisionMeshes.Count(); i++) {
         FreeCollisionMesh(collisionMeshes[i]);
     }
-    
+
     collisionMeshes.Clear();
 
-    if (shape && type == Collider::Type::Bvh) {
-        btBvhTriangleMeshShape *bvhTriMeshShape = static_cast<btBvhTriangleMeshShape *>(shape);
-        assert(bvhTriMeshShape);
+    if (shape) {
+        if (type == Collider::Type::Bvh) {
+            btBvhTriangleMeshShape *bvhTriMeshShape = static_cast<btBvhTriangleMeshShape *>(shape);
+            assert(bvhTriMeshShape);
 
-        btStridingMeshInterface *meshInterface = bvhTriMeshShape->getMeshInterface();
-        if (meshInterface) {
-            delete meshInterface;
+            btStridingMeshInterface *meshInterface = bvhTriMeshShape->getMeshInterface();
+            if (meshInterface) {
+                delete meshInterface;
+            }
+
+            btTriangleInfoMap *triInfoMap = bvhTriMeshShape->getTriangleInfoMap();
+            if (triInfoMap) {
+                delete triInfoMap;
+            }
         }
 
-        btTriangleInfoMap *triInfoMap = bvhTriMeshShape->getTriangleInfoMap();
-        if (triInfoMap) {
-            delete triInfoMap;
-        }
+        delete shape;
+        shape = nullptr;
     }
-
-    SAFE_DELETE(shape);
 }
 
 CollisionMesh *Collider::AllocCollisionMesh(int numVerts, int numIndexes, bool materialIndexes) const {
@@ -75,14 +78,6 @@ void Collider::FreeCollisionMesh(CollisionMesh *cmesh) const {
     SAFE_DELETE(cmesh);
 }
 
-float Collider::GetMargin() const {
-    return shape->getMargin();
-}
-
-void Collider::SetMargin(float margin) {
-    shape->setMargin(margin);
-}
-
 void Collider::SetLocalScaling(float sx, float sy, float sz) {
     shape->setLocalScaling(btVector3(sx, sy, sz));
 }
@@ -92,10 +87,11 @@ const AABB Collider::GetAABB() const {
     btTransform transform;
 
     transform.setIdentity();
-    transform.setOrigin(btVector3(centroid.x, centroid.y, centroid.z));
+    transform.setOrigin(ToBtVector3(UnitToMeter(centroid)));
+
     shape->getAabb(transform, aabbMin, aabbMax);
 
-    AABB aabb(ToVec3(aabbMin), ToVec3(aabbMax));
+    AABB aabb(MeterToUnit(ToVec3(aabbMin)), MeterToUnit(ToVec3(aabbMax)));
     return aabb;
 }
 
@@ -103,9 +99,9 @@ void Collider::CreateBox(const Vec3 &center, const Vec3 &extents, float margin) 
     Purge();
 
     type = Type::Box;
-    btVector3 halfExtents = btVector3(extents.x, extents.y, extents.z);
+    btVector3 halfExtents = ToBtVector3(UnitToMeter(extents));
     btBoxShape *boxShape = new btBoxShape(halfExtents);
-    boxShape->setMargin(margin);
+    boxShape->setMargin(UnitToMeter(margin));
 
     shape = boxShape;
 
@@ -118,8 +114,8 @@ void Collider::CreateSphere(const Vec3 &center, float radius, float margin) {
     Purge();
     
     type = Type::Sphere;
-    btSphereShape *sphereShape = new btSphereShape(radius);
-    sphereShape->setMargin(margin);
+    btSphereShape *sphereShape = new btSphereShape(UnitToMeter(radius));
+    sphereShape->setMargin(UnitToMeter(margin));
 
     shape = sphereShape;
 
@@ -132,8 +128,8 @@ void Collider::CreateCapsule(const Vec3 &center, float radius, float height, flo
     Purge();
     
     type = Type::Capsule;
-    btCapsuleShapeZ *capsuleShape = new btCapsuleShapeZ(radius + margin, height + margin * 2.0f);
-    capsuleShape->setMargin(margin);
+    btCapsuleShapeZ *capsuleShape = new btCapsuleShapeZ(UnitToMeter(radius + margin), UnitToMeter(height + margin * 2.0f));
+    capsuleShape->setMargin(UnitToMeter(margin));
 
     shape = capsuleShape;
 
@@ -146,8 +142,8 @@ void Collider::CreateCylinder(const Vec3 &center, float radius, float height, fl
     Purge();
 
     type = Type::Cylinder;
-    btCylinderShapeZ *cylinderShape = new btCylinderShapeZ(btVector3(radius + margin, radius + margin, height * 0.5f + margin));
-    cylinderShape->setMargin(margin);
+    btCylinderShapeZ *cylinderShape = new btCylinderShapeZ(btVector3(UnitToMeter(radius + margin), UnitToMeter(radius + margin), UnitToMeter(height * 0.5f + margin)));
+    cylinderShape->setMargin(UnitToMeter(margin));
 
     shape = cylinderShape;
 
@@ -160,43 +156,14 @@ void Collider::CreateCone(const Vec3 &center, float radius, float height, float 
     Purge();
 
     type = Type::Cone;
-    btConeShapeZ *coneShape = new btConeShapeZ(radius, height);
-    coneShape->setMargin(margin);
+    btConeShapeZ *coneShape = new btConeShapeZ(UnitToMeter(radius), UnitToMeter(height));
+    coneShape->setMargin(UnitToMeter(margin));
 
     shape = coneShape;
 
     modelScale = Vec3::one;
     volume = Math::Pi * radius * radius * height / 3.0f;
     centroid = center;
-}
-
-void Collider::CreateMultiSphere(int count, const Vec3 *centers, const float *radius, float margin) {
-    Purge();
-
-    type = Type::MultiSphere;
-
-    modelScale = Vec3::one;
-    centroid = Vec3::origin;
-    for (int i = 0; i < count; i++) {
-        centroid += centers[i];
-    }
-    centroid /= count;
-    
-    Array<btVector3> sphereOrigins;
-    for (int i = 0; i < count; i++) {
-        const Vec3 org = centers[i] - centroid;
-        sphereOrigins.Append(btVector3(org.x, org.y, org.z));
-    }
-    
-    // The btMultiSphereShape represents the convex hull of a collection of spheres. 
-    // You can create special capsules or other smooth volumes. 
-    btMultiSphereShape *multiSphereShape = new btMultiSphereShape(&sphereOrigins[0], &radius[0], count);
-    multiSphereShape->setMargin(margin);
-
-    shape = multiSphereShape;
-
-    // FIXME
-    volume = 0.0f;
 }
 
 void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margin) {
@@ -221,12 +188,12 @@ void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margi
         const SubMesh *subMesh = surf->subMesh;
 
         for (int j = 0; j < subMesh->NumOriginalVerts(); j++) {
-            points[numPoints++] = scale * subMesh->Verts()[j].xyz - centroid;
+            points[numPoints++] = UnitToMeter(scale * subMesh->Verts()[j].xyz - centroid);
         }
     }
 
     btConvexHullComputer *chc = new btConvexHullComputer;
-    float shrink = chc->compute((const float *)points.Ptr(), sizeof(points[0]), points.Count(), margin, 1.0f);
+    float shrink = chc->compute((const float *)points.Ptr(), sizeof(points[0]), points.Count(), UnitToMeter(margin), 1.0f);
 
     // convex hull have no indexes
     CollisionMesh *cmesh = AllocCollisionMesh(chc->vertices.size(), 0);
@@ -262,7 +229,7 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
         const SubMesh *subMesh = surf->subMesh;
 
         for (int i = 0; i < subMesh->NumOriginalVerts(); i++) {
-            const Vec3 &xyz = scale * subMesh->Verts()[i].xyz - centroid;
+            const Vec3 &xyz = UnitToMeter(scale * subMesh->Verts()[i].xyz - centroid);
             HACD::Vec3<HACD::Real> p(xyz.x, xyz.y, xyz.z);
             hacdPoints.Append(p);
         }
@@ -339,7 +306,7 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
         const CollisionMesh *cmesh = GetCollisionMesh(i);
 
         btConvexHullShape *chShape = new btConvexHullShape((const btScalar *)cmesh->verts, cmesh->numVerts, sizeof(cmesh->verts[0]));
-        chShape->setMargin(margin);
+        chShape->setMargin(UnitToMeter(margin));
     
         btTransform localTransform;
         localTransform.setIdentity();
@@ -378,7 +345,7 @@ void Collider::CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale) {
         collisionMeshes.Append(cmesh);
 
         for (int j = 0; j < subMesh->NumVerts(); j++) {
-            cmesh->verts[j] = scale * subMesh->Verts()[j].xyz;
+            cmesh->verts[j] = UnitToMeter(scale * subMesh->Verts()[j].xyz);
         }
 
         // TODO: vertex hash 로 중복 vertex position 제거할 것
@@ -397,7 +364,7 @@ void Collider::CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale) {
         btIndexedMesh indexedMesh;
         indexedMesh.m_numTriangles = cmesh->numIndexes / 3; // assume TRIANGLES primitive type
         indexedMesh.m_indexType = indexType;
-        indexedMesh.m_triangleIndexStride = sizeof(cmesh->indexes[0]) * 3;	
+        indexedMesh.m_triangleIndexStride = sizeof(cmesh->indexes[0]) * 3;
         indexedMesh.m_triangleIndexBase = (const byte *)cmesh->indexes;
     
         indexedMesh.m_numVertices = cmesh->numVerts;
@@ -422,7 +389,7 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
         collisionMeshes.Append(cmesh);
 
         for (int j = 0; j < subMesh->NumVerts(); j++) {
-            cmesh->verts[j] = scale * subMesh->Verts()[j].xyz;
+            cmesh->verts[j] = UnitToMeter(scale * subMesh->Verts()[j].xyz);
         }
 
         // TODO: vertex hash 로 중복 vertex position 제거할 것
@@ -448,7 +415,7 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
         indexedMesh.m_triangleIndexStride = sizeof(cmesh->indexes[0]) * 3;
         indexedMesh.m_triangleIndexBase = (const byte *)cmesh->indexes;
         
-        indexedMesh.m_numVertices = cmesh->numVerts;	
+        indexedMesh.m_numVertices = cmesh->numVerts;
         indexedMesh.m_vertexType = PHY_FLOAT;
         indexedMesh.m_vertexStride = sizeof(cmesh->verts[0]);
         indexedMesh.m_vertexBase = (const byte *)cmesh->verts;
@@ -469,7 +436,7 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
 
     type = Type::Bvh;
     shape = new btMultimaterialTriangleMeshShape(indexedMeshArray, true);
-    //shape->setMargin(CentiToUnit(0.001f));
+    //shape->setMargin(0.001f);
 }
 
 bool Collider::Load(const char *filename, bool convexHull, const Vec3 &scale) {

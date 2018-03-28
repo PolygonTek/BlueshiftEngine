@@ -29,16 +29,16 @@ BEGIN_EVENTS(ComCharacterController)
 END_EVENTS
 
 void ComCharacterController::RegisterProperties() {
-    REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, "", PropertyInfo::EditorFlag)
-        .SetRange(0, 100, 0.1f);
-    REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 0.5f, "", PropertyInfo::EditorFlag)
-        .SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 0.8f, "", PropertyInfo::EditorFlag)
-        .SetRange(0.01, 2, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, 0.5f, "", PropertyInfo::EditorFlag)
-        .SetRange(0.0, 1.0, 0.1);
-    REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, "", PropertyInfo::EditorFlag)
-        .SetRange(0, 90, 1);
+    REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, 
+        "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.1f);
+    REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, 50.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(1, 500, 1);
+    REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, 80.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(1, 500, 1);
+    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, 40.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0, 100, 1);
+    REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, 
+        "", PropertyInfo::EditorFlag).SetRange(0, 90, 1);
 }
 
 ComCharacterController::ComCharacterController() {
@@ -84,7 +84,6 @@ void ComCharacterController::Init() {
     Component::Init();
 
     ComTransform *transform = GetEntity()->GetTransform();
-
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::Unique);
 
     // Mark as initialized
@@ -93,62 +92,68 @@ void ComCharacterController::Init() {
 
 void ComCharacterController::Awake() {
     if (!body) {
-        ComTransform *transform = GetEntity()->GetTransform();
+        CreateBodyAndSensor();
+    }
+}
 
-        Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
-        Vec3 scaledCenter = transform->GetScale() * center;
-        float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
-        float scaledHeight = transform->GetScale().z * capsuleHeight;
+void ComCharacterController::CreateBodyAndSensor() {
+    ComTransform *transform = GetEntity()->GetTransform();
 
-        collider = colliderManager.AllocUnnamedCollider();
-        collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight);
+    Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
+    Vec3 scaledCenter = transform->GetScale() * center;
+    float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
+    float scaledHeight = transform->GetScale().z * capsuleHeight;
 
-        PhysCollidableDesc desc;
-        desc.type = PhysCollidable::Type::Character;
-        desc.kinematic = true;
-        desc.ccd = false;
-        desc.mass = mass;
-        desc.restitution = 0.5f;
-        desc.friction = 1.0f;
-        desc.rollingFriction = 1.0f;
-        desc.linearDamping = 0.0f;
-        desc.angularDamping = 0.0f;
-        desc.origin = transform->GetOrigin();
-        desc.axis = transform->GetAxis();
+    collider = colliderManager.AllocUnnamedCollider();
+    collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight);
 
-        PhysShapeDesc shapeDesc;
-        shapeDesc.localOrigin.SetFromScalar(0);
-        shapeDesc.localAxis.SetIdentity();
-        shapeDesc.collider = collider;
-        desc.shapes.Append(shapeDesc);
+    PhysCollidableDesc desc;
+    desc.type = PhysCollidable::Type::Character;
+    desc.kinematic = true;
+    desc.ccd = false;
+    desc.mass = mass;
+    desc.restitution = 0.5f;
+    desc.friction = 1.0f;
+    desc.rollingFriction = 1.0f;
+    desc.spinningFriction = 1.0f;
+    desc.linearDamping = 0.0f;
+    desc.angularDamping = 0.0f;
+    desc.origin = transform->GetOrigin();
+    desc.axis = transform->GetAxis();
 
-        body = (PhysRigidBody *)physicsSystem.CreateCollidable(&desc);
-        body->SetCustomCollisionFilterIndex(GetEntity()->GetLayer());
-        body->SetAngularFactor(Vec3(0, 0, 0));
-        body->SetCharacter(true);
-        body->SetUserPointer(this);
-        //body->SetCollisionListener(this);
-        
-        desc.type = PhysCollidable::Sensor;
-        desc.kinematic = false;
-        desc.ccd = false;
-        desc.mass = 0.0f;
-        desc.restitution = 0.0f;
-        desc.friction = 0.0f;
-        desc.rollingFriction = 0.0f;
-        desc.linearDamping = 0.0f;
-        desc.angularDamping = 0.0f;
+    PhysShapeDesc shapeDesc;
+    shapeDesc.localOrigin.SetFromScalar(0);
+    shapeDesc.localAxis.SetIdentity();
+    shapeDesc.collider = collider;
+    desc.shapes.Append(shapeDesc);
 
-        correctionSensor = (PhysSensor *)physicsSystem.CreateCollidable(&desc);
-        correctionSensor->SetDebugDraw(false);
+    body = (PhysRigidBody *)physicsSystem.CreateCollidable(&desc);
+    body->SetCustomCollisionFilterIndex(GetEntity()->GetLayer());
+    body->SetAngularFactor(Vec3(0, 0, 0));
+    body->SetCharacter(true);
+    body->SetUserPointer(this);
+    //body->SetCollisionListener(this);
 
-        if (IsActiveInHierarchy()) {
-            body->SetIgnoreCollisionCheck(*correctionSensor, true);
+    desc.type = PhysCollidable::Sensor;
+    desc.kinematic = false;
+    desc.ccd = false;
+    desc.mass = 0.0f;
+    desc.restitution = 0.0f;
+    desc.friction = 0.0f;
+    desc.rollingFriction = 0.0f;
+    desc.spinningFriction = 0.0f;
+    desc.linearDamping = 0.0f;
+    desc.angularDamping = 0.0f;
 
-            body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    correctionSensor = (PhysSensor *)physicsSystem.CreateCollidable(&desc);
+    correctionSensor->SetDebugDraw(false);
 
-            correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-        }
+    if (IsActiveInHierarchy()) {
+        body->SetIgnoreCollisionCheck(*correctionSensor, true);
+
+        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+
+        correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
@@ -158,7 +163,7 @@ void ComCharacterController::Update() {
     }
 
     origin = GetEntity()->GetTransform()->GetOrigin();
-    
+
     RecoverFromPenetration();
 
     GroundTrace();
@@ -166,51 +171,15 @@ void ComCharacterController::Update() {
     GetEntity()->GetTransform()->SetOrigin(origin);
 }
 
-void ComCharacterController::OnActive() {
-    if (body) {
-        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
-    if (correctionSensor) {
-        correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
-}
-
-void ComCharacterController::OnInactive() {
-    if (body) {
-        body->RemoveFromWorld();
-    }
-    if (correctionSensor) {
-        correctionSensor->RemoveFromWorld();
-    }
-}
-
-void ComCharacterController::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
-    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
-
-    if (selected) {
-        const ComTransform *transform = GetEntity()->GetTransform();
-
-        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
-            Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
-            float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
-            float scaledHeight = transform->GetScale().z * capsuleHeight;
-
-            Vec3 worldCenter = transform->GetTransform() * center;
-
-            renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
-            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);
-        }
-    }
-}
-
 void ComCharacterController::GroundTrace() {
     Vec3 p1 = origin;
     Vec3 p2 = p1;
 
-    // 땅에 닿아있는지 체크하기위해 z 축으로 1.5cm 만큼 내려서 이동시켜 본다
-    p2.z -= CentiToUnit(1.5);
-    if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2, 
-        PhysCollidable::CharacterGroup, PhysCollidable::StaticGroup | PhysCollidable::DefaultGroup, groundTrace)) {
+    // 땅에 닿아있는지 체크하기위해 z 축으로 5cm 만큼 내려서 이동시켜 본다
+    p2.z -= CentiToUnit(5);
+    if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2,
+        PhysCollidable::CharacterGroup,
+        PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup, groundTrace)) {
         onGround = false;
         isValidGroundTrace = false;
         return;
@@ -229,7 +198,7 @@ void ComCharacterController::GroundTrace() {
 
 void ComCharacterController::RecoverFromPenetration() {
     Array<Contact> contacts;
-    
+
     int numPenetrationLoop = 0;
     while (1) {
         numPenetrationLoop++;
@@ -256,6 +225,8 @@ void ComCharacterController::RecoverFromPenetration() {
 
                 // 한번에 밀어내지 않고, 가장 깊이 penetration 된 contact 부터 조금씩 밀어낸다.
                 origin -= contact.normal * contact.dist * 0.25f;
+
+                //BE_LOG(L"%hs (%f) -> %hs\n", contact.normal.ToString(), contact.dist, origin.ToString());
             }
         }
 
@@ -263,6 +234,24 @@ void ComCharacterController::RecoverFromPenetration() {
         if (maxPen == 0) {
             break;
         }
+    }
+}
+
+void ComCharacterController::OnActive() {
+    if (body) {
+        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+    if (correctionSensor) {
+        correctionSensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+    }
+}
+
+void ComCharacterController::OnInactive() {
+    if (body) {
+        body->RemoveFromWorld();
+    }
+    if (correctionSensor) {
+        correctionSensor->RemoveFromWorld();
     }
 }
 
@@ -432,27 +421,27 @@ void ComCharacterController::SetMass(const float mass) {
 }
 
 float ComCharacterController::GetCapsuleRadius() const {
-    return UnitToMeter(capsuleRadius);
+    return capsuleRadius;
 }
 
 void ComCharacterController::SetCapsuleRadius(const float capsuleRadius) {
-    this->capsuleRadius = MeterToUnit(capsuleRadius);
+    this->capsuleRadius = capsuleRadius;
 }
 
 float ComCharacterController::GetCapsuleHeight() const {
-    return UnitToMeter(capsuleHeight);
+    return capsuleHeight;
 }
 
 void ComCharacterController::SetCapsuleHeight(const float capsuleHeight) {
-    this->capsuleHeight = MeterToUnit(capsuleHeight);
+    this->capsuleHeight = capsuleHeight;
 }
 
 float ComCharacterController::GetStepOffset() const {
-    return UnitToMeter(stepOffset);
+    return stepOffset;
 }
 
 void ComCharacterController::SetStepOffset(const float stepOffset) {
-    this->stepOffset = MeterToUnit(stepOffset);
+    this->stepOffset = stepOffset;
 }
 
 float ComCharacterController::GetSlopeLimit() const {
@@ -461,6 +450,26 @@ float ComCharacterController::GetSlopeLimit() const {
 
 void ComCharacterController::SetSlopeLimit(const float slopeLimit) {
     this->slopeDotZ = Math::Cos(DEG2RAD(slopeLimit));
+}
+
+void ComCharacterController::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+    if (selected) {
+        const ComTransform *transform = GetEntity()->GetTransform();
+
+        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
+            Vec3 scaledCenter = transform->GetScale() * center;
+            float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
+            float scaledHeight = transform->GetScale().z * capsuleHeight;
+
+            Vec3 worldCenter = transform->GetTransform() * scaledCenter;
+
+            renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
+            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);
+        }
+    }
 }
 
 BE_NAMESPACE_END

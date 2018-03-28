@@ -26,8 +26,10 @@ BEGIN_EVENTS(ComSocketJoint)
 END_EVENTS
 
 void ComSocketJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("impulseClamp", "Impulse Clamp", float, GetImpulseClamp, SetImpulseClamp, 0, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
+        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("impulseClamp", "Impulse Clamp", float, GetImpulseClamp, SetImpulseClamp, 0, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
 }
 
 ComSocketJoint::ComSocketJoint() {

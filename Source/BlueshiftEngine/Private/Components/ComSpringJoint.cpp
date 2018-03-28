@@ -26,14 +26,20 @@ BEGIN_EVENTS(ComSpringJoint)
 END_EVENTS
 
 void ComSpringJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, "Activate joint limits", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 30.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("damping", "Damping", float, GetDamping, SetDamping, 0.2f, "", PropertyInfo::EditorFlag)
-        .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
+        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
+        "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, 
+        "Activate joint limits", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 30.f, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("damping", "Damping", float, GetDamping, SetDamping, 0.2f, 
+        "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
 }
 
 ComSpringJoint::ComSpringJoint() {
@@ -85,8 +91,8 @@ void ComSpringJoint::CreateConstraint() {
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
 
     // Apply limit distances
-    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minDist)));
-    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxDist)));
+    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, minDist));
+    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, maxDist));
     genericSpringConstraint->EnableLinearLimits(true, true, enableLimitDistances);
 
     // Apply spring stiffness & damping
@@ -154,14 +160,14 @@ void ComSpringJoint::SetEnableLimitDistances(bool enable) {
 void ComSpringJoint::SetMinimumDistance(float minDist) {
     this->minDist = minDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minDist)));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, minDist));
     }
 }
 
 void ComSpringJoint::SetMaximumDistance(float maxDist) {
     this->maxDist = maxDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxDist)));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, maxDist));
     }
 }
 

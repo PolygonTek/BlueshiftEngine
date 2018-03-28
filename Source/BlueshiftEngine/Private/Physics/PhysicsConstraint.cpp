@@ -40,11 +40,11 @@ void PhysConstraint::EnableCollision(bool enable) {
 }
 
 float PhysConstraint::GetBreakImpulse() const {
-    return constraint->getBreakingImpulseThreshold();
+    return MeterToUnit(constraint->getBreakingImpulseThreshold());
 }
 
 void PhysConstraint::SetBreakImpulse(float impulse) {
-    constraint->setBreakingImpulseThreshold(impulse);
+    constraint->setBreakingImpulseThreshold(UnitToMeter(impulse));
 }
 
 bool PhysConstraint::IsEnabled() const {

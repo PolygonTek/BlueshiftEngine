@@ -24,7 +24,8 @@ BEGIN_EVENTS(Component)
 END_EVENTS
 
 void Component::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("enabled", "Enabled", bool, IsEnabled, SetEnabled, true, "", 0);
+    REGISTER_ACCESSOR_PROPERTY("enabled", "Enabled", bool, IsEnabled, SetEnabled, true, 
+        "", 0);
 }
 
 Component::Component() {

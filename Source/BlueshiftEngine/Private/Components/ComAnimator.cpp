@@ -27,8 +27,8 @@ BEGIN_EVENTS(ComAnimator)
 END_EVENTS
 
 void ComAnimator::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("animController", "Anim Controller", Guid, GetAnimControllerGuid, SetAnimControllerGuid, GuidMapper::defaultAnimControllerGuid, "", PropertyInfo::EditorFlag)
-        .SetMetaObject(&AnimControllerAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("animController", "Anim Controller", Guid, GetAnimControllerGuid, SetAnimControllerGuid, GuidMapper::defaultAnimControllerGuid, 
+        "", PropertyInfo::EditorFlag).SetMetaObject(&AnimControllerAsset::metaObject);
 }
 
 ComAnimator::ComAnimator() {

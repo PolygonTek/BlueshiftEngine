@@ -22,7 +22,7 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     PhysConstraint(bodyA, nullptr) {
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
+    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
 
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), frameA);
     hingeConstraint->setUserConstraintPtr(this);
@@ -43,8 +43,8 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
-    btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
+    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
+    btTransform frameB = ToBtTransform(axisInB, UnitToMeter(anchorInBCentroid));
 
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB);
     hingeConstraint->setUserConstraintPtr(this);
@@ -64,7 +64,7 @@ void PhysHingeConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) 
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
-    btTransform frameA = ToBtTransform(axisInA, anchorInACentroid);
+    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
 
     hingeConstraint->setFrames(frameA, hingeConstraint->getFrameOffsetB());
 }
@@ -73,7 +73,7 @@ void PhysHingeConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) 
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
     Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
-    btTransform frameB = ToBtTransform(axisInB, anchorInBCentroid);
+    btTransform frameB = ToBtTransform(axisInB, UnitToMeter(anchorInBCentroid));
 
     hingeConstraint->setFrames(hingeConstraint->getFrameOffsetA(), frameB);
 }

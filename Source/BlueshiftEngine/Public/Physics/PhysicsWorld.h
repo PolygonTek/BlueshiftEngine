@@ -37,7 +37,7 @@ class Collider;
 class PhysRigidBody;
 
 struct PhysShapeDesc {
-    Vec3                    localOrigin;
+    Vec3                    localOrigin;    // local position in system units
     Mat3                    localAxis;
     Collider *              collider;
 };
@@ -45,7 +45,7 @@ struct PhysShapeDesc {
 struct PhysCollidableDesc {
     PhysCollidable::Type    type;
     Array<PhysShapeDesc>    shapes;
-    Vec3                    origin;
+    Vec3                    origin;         // position in system units
     Mat3                    axis;
     bool                    kinematic;
     bool                    ccd;
@@ -61,10 +61,10 @@ struct PhysCollidableDesc {
 struct PhysConstraintDesc {
     PhysConstraint::Type    type;
     PhysRigidBody *         bodyA;
-    Vec3                    anchorInA;      // local position in A
+    Vec3                    anchorInA;      // local position in A in system units
     Mat3                    axisInA;        // local axis in A
     PhysRigidBody *         bodyB;
-    Vec3                    anchorInB;      // local position in B
+    Vec3                    anchorInB;      // local position in B in system units
     Mat3                    axisInB;        // local axis in B
     bool                    collision;
     float                   breakImpulse;

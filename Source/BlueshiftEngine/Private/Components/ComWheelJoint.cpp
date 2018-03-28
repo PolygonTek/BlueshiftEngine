@@ -26,17 +26,26 @@ BEGIN_EVENTS(ComWheelJoint)
 END_EVENTS
 
 void ComWheelJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, "Joint position in local space", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, "Joint angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useSusLimits", "Use Suspension Limits", bool, GetEnableSuspensionLimit, SetEnableSuspensionLimit, false, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minSusDist", "Min Suspension Distance", float, GetMinimumSuspensionDistance, SetMinimumSuspensionDistance, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxSusDist", "Max Suspension Distance", float, GetMaximumSuspensionDistance, SetMaximumSuspensionDistance, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 30.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f, "", PropertyInfo::EditorFlag)
-        .SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Use Steering Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minSteeringAngle", "Min Steering Angle", float, GetMinimumSteeringAngle, SetMinimumSteeringAngle, 0.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxSteeringAngle", "Max Steering Angle", float, GetMaximumSteeringAngle, SetMaximumSteeringAngle, 0.f, "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
+        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero,
+        "Joint angles in local space", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("useSusLimits", "Use Suspension Limits", bool, GetEnableSuspensionLimit, SetEnableSuspensionLimit, false, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minSusDist", "Min Suspension Distance", float, GetMinimumSuspensionDistance, SetMinimumSuspensionDistance, 0.f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxSusDist", "Max Suspension Distance", float, GetMaximumSuspensionDistance, SetMaximumSuspensionDistance, 0.f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 30.f, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f, 
+        "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Use Steering Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("minSteeringAngle", "Min Steering Angle", float, GetMinimumSteeringAngle, SetMinimumSteeringAngle, 0.f, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxSteeringAngle", "Max Steering Angle", float, GetMaximumSteeringAngle, SetMaximumSteeringAngle, 0.f, 
+        "", PropertyInfo::EditorFlag);
 }
 
 ComWheelJoint::ComWheelJoint() {
@@ -87,8 +96,8 @@ void ComWheelJoint::CreateConstraint() {
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
 
     // Apply limit suspension distances
-    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minSusDist)));
-    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxSusDist)));
+    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, minSusDist));
+    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, maxSusDist));
     genericSpringConstraint->EnableLinearLimits(true, true, enableSusLimit);
 
     // Apply limit steering angles
@@ -161,14 +170,14 @@ void ComWheelJoint::SetEnableSuspensionLimit(bool enable) {
 void ComWheelJoint::SetMinimumSuspensionDistance(float minSusDist) {
     this->minSusDist = minSusDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, MeterToUnit(minSusDist)));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, minSusDist));
     }
 }
 
 void ComWheelJoint::SetMaximumSuspensionDistance(float maxSusDist) {
     this->maxSusDist = maxSusDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, MeterToUnit(maxSusDist)));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, maxSusDist));
     }
 }
 

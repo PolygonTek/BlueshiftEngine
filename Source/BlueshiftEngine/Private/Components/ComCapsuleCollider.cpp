@@ -26,9 +26,12 @@ BEGIN_EVENTS(ComCapsuleCollider)
 END_EVENTS
 
 void ComCapsuleCollider::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 1.0f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 1.0f, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 50.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 100.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
 }
 
 ComCapsuleCollider::ComCapsuleCollider() {
@@ -38,8 +41,8 @@ ComCapsuleCollider::~ComCapsuleCollider() {
 }
 
 void ComCapsuleCollider::CreateCollider() {
-    // Create collider based on transformed capsule
     const ComTransform *transform = GetEntity()->GetTransform();
+
     Vec3 scaledCenter = transform->GetScale() * center;
     float scaledRadius = (transform->GetScale() * radius).MaxComponent();
     float scaledHeight = transform->GetScale().z * height;
@@ -86,13 +89,14 @@ void ComCapsuleCollider::DrawGizmos(const SceneView::Parms &sceneView, bool sele
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldCenter = transform->GetTransform() * center;
+            Vec3 worldCenter = transform->GetTransform() * scaledCenter;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + CentiToUnit(0.25f), 1.25f, true);
+            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + 0.25f, 1.25f, true);
         }
     }
 }

@@ -61,21 +61,22 @@ public:
     void                    SetMass(const float mass);
     
     float                   GetCapsuleRadius() const;
-    void                    SetCapsuleRadius(const float capsuleRadius);
+    void                    SetCapsuleRadius(float capsuleRadius);
     
     float                   GetCapsuleHeight() const;
-    void                    SetCapsuleHeight(const float capsuleHeight);
+    void                    SetCapsuleHeight(float capsuleHeight);
     
     float                   GetStepOffset() const;
-    void                    SetStepOffset(const float stepOffset);
+    void                    SetStepOffset(float stepOffset);
         
     float                   GetSlopeLimit() const;
-    void                    SetSlopeLimit(const float slopeLimit);
+    void                    SetSlopeLimit(float slopeLimit);
 
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
 
+    void                    CreateBodyAndSensor();
     void                    GroundTrace();
     void                    RecoverFromPenetration();
     bool                    SlideMove(const Vec3 &moveVector);

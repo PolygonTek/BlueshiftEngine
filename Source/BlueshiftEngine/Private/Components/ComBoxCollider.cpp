@@ -26,8 +26,10 @@ BEGIN_EVENTS(ComBoxCollider)
 END_EVENTS
 
 void ComBoxCollider::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("extents", "Extents", Vec3, GetExtents, SetExtents, Vec3::one, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("extents", "Extents", Vec3, GetExtents, SetExtents, Vec3(50.0f), 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
 }
 
 ComBoxCollider::ComBoxCollider() {
@@ -37,8 +39,8 @@ ComBoxCollider::~ComBoxCollider() {
 }
 
 void ComBoxCollider::CreateCollider() {
-    // Create collider based on transformed box
     const ComTransform *transform = GetEntity()->GetTransform();
+
     Vec3 scaledCenter = transform->GetScale() * center;
     Vec3 scaledExtents = transform->GetScale() * extents;
 
@@ -75,8 +77,10 @@ void ComBoxCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selected
         ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 scaledCenter = transform->GetScale() * center;
             Vec3 scaledExtents = transform->GetScale() * extents;
-            OBB obb(transform->GetTransform() * center, scaledExtents + Vec3(CentiToUnit(0.25f)), transform->GetAxis());
+
+            OBB obb(transform->GetTransform() * scaledCenter, scaledExtents + 0.25f, transform->GetAxis());
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugOBB(obb, 1.25f);

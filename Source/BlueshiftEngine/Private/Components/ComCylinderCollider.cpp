@@ -26,9 +26,12 @@ BEGIN_EVENTS(ComCylinderCollider)
 END_EVENTS
 
 void ComCylinderCollider::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 1.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 1.f, "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 50.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, 100.0f, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
 }
 
 ComCylinderCollider::ComCylinderCollider() {
@@ -38,8 +41,8 @@ ComCylinderCollider::~ComCylinderCollider() {
 }
 
 void ComCylinderCollider::CreateCollider() {
-    // Create collider based on transformed cylinder
     const ComTransform *transform = GetEntity()->GetTransform();
+
     Vec3 scaledCenter = transform->GetScale() * center;
     float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
     float scaledHeight = transform->GetScale().z * height;
@@ -86,13 +89,14 @@ void ComCylinderCollider::DrawGizmos(const SceneView::Parms &sceneView, bool sel
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldCenter = transform->GetTransform() * center;
+            Vec3 worldCenter = transform->GetTransform() * scaledCenter;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + CentiToUnit(0.25f), 1.25f, true);
+            renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + 0.25f, 1.25f, true);
         }
     }
 }

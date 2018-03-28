@@ -27,15 +27,18 @@ BEGIN_EVENTS(ComTextRenderer)
 END_EVENTS
 
 void ComTextRenderer::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("text", "Text", Str, GetText, SetText, "Hello World", "", PropertyInfo::EditorFlag | PropertyInfo::MultiLinesFlag);
-    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", SceneEntity::TextAnchor, GetAnchor, SetAnchor, 0, "", PropertyInfo::EditorFlag)
-        .SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
-    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", SceneEntity::TextAlignment, GetAlignment, SetAlignment, 0, "", PropertyInfo::EditorFlag)
-        .SetEnumString("Left; Center; Right");
-    REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14, "", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid, "", PropertyInfo::EditorFlag)
-        .SetMetaObject(&FontAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("text", "Text", Str, GetText, SetText, "Hello World", 
+        "", PropertyInfo::EditorFlag | PropertyInfo::MultiLinesFlag);
+    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", SceneEntity::TextAnchor, GetAnchor, SetAnchor, 0, 
+        "", PropertyInfo::EditorFlag).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
+    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", SceneEntity::TextAlignment, GetAlignment, SetAlignment, 0, 
+        "", PropertyInfo::EditorFlag).SetEnumString("Left; Center; Right");
+    REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14, 
+        "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid, 
+        "", PropertyInfo::EditorFlag).SetMetaObject(&FontAsset::metaObject);
 }
 
 ComTextRenderer::ComTextRenderer() {

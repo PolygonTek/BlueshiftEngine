@@ -36,7 +36,7 @@ void ColliderManager::Shutdown() {
     
     for (int i = 0; i < colliderHashMap.Count(); i++) {
         const auto *entry = colliderManager.colliderHashMap.GetByIndex(i);
-        Collider *collider = entry->second;        
+        Collider *collider = entry->second;
         collider->Purge();
         delete collider;
     }

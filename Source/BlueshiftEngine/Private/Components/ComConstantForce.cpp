@@ -25,8 +25,10 @@ BEGIN_EVENTS(ComConstantForce)
 END_EVENTS
 
 void ComConstantForce::RegisterProperties() {
-    REGISTER_PROPERTY("force", "Force", Vec3, force, Vec3::zero, "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("torque", "Torque", Vec3, torque, Vec3::zero, "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("force", "Force", Vec3, force, Vec3::zero, 
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("torque", "Torque", Vec3, torque, Vec3::zero, 
+        "", PropertyInfo::EditorFlag);
 }
 
 ComConstantForce::ComConstantForce() {
