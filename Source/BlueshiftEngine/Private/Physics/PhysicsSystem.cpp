@@ -171,12 +171,13 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
         body->SetRestitution(desc->restitution);
         body->SetFriction(desc->friction);
         body->SetRollingFriction(desc->rollingFriction);
+        body->SetSpinningFriction(desc->spinningFriction);
         body->SetLinearDamping(desc->linearDamping);
         body->SetAngularDamping(desc->angularDamping);
         body->SetKinematic(desc->kinematic);
         // NOTE: compound shape 일 경우 CCD 적용 안됨
         body->SetCCD(desc->ccd);
-                
+
         rigidBody->setUserPointer(body);
 
         return body;

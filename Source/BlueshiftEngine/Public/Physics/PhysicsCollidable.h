@@ -86,6 +86,9 @@ public:
     float                   GetRollingFriction() const;
     void                    SetRollingFriction(float friction);
 
+    float                   GetSpinningFriction() const;
+    void                    SetSpinningFriction(float friction);
+
     void *                  GetUserPointer() const;
     void                    SetUserPointer(void *ptr);
 

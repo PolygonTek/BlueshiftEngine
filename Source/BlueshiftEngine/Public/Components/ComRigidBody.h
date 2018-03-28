@@ -71,6 +71,9 @@ public:
     float                   GetRollingFriction() const;
     void                    SetRollingFriction(float rollingFriction);
 
+    float                   GetSpinningFriction() const;
+    void                    SetSpinningFriction(float spinningFriction);
+
     float                   GetLinearDamping() const;
     void                    SetLinearDamping(float linearDamping);
 

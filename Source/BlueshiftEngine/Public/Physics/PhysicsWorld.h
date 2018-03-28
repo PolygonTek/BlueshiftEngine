@@ -53,6 +53,7 @@ struct PhysCollidableDesc {
     float                   restitution;
     float                   friction;
     float                   rollingFriction;
+    float                   spinningFriction;
     float                   linearDamping;
     float                   angularDamping;
 };

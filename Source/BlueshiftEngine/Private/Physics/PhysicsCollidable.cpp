@@ -96,6 +96,14 @@ void PhysCollidable::SetRollingFriction(float friction) {
     collisionObject->setRollingFriction(friction);
 }
 
+float PhysCollidable::GetSpinningFriction() const {
+    return collisionObject->getSpinningFriction();
+}
+
+void PhysCollidable::SetSpinningFriction(float friction) {
+    collisionObject->setSpinningFriction(friction);
+}
+
 void *PhysCollidable::GetUserPointer() const {
     return userPointer;
 }

@@ -76,6 +76,8 @@ void ComRigidBody::RegisterProperties() {
         .SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("rollingFriction", "Rolling Friction", float, GetRollingFriction, SetRollingFriction, 1.f, "", PropertyInfo::EditorFlag)
         .SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("spinningFriction", "Spinning Friction", float, GetSpinningFriction, SetSpinningFriction, 1.f, "", PropertyInfo::EditorFlag)
+        .SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("linearDamping", "Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.05f, "Reduced amount of linear velocity", PropertyInfo::EditorFlag)
         .SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("angularDamping", "Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, "Reduced amount of angular velocity", PropertyInfo::EditorFlag)
@@ -347,6 +349,18 @@ void ComRigidBody::SetRollingFriction(float rollingFriction) {
         body->SetRollingFriction(rollingFriction);
     } else {
         physicsDesc.rollingFriction = rollingFriction;
+    }
+}
+
+float ComRigidBody::GetSpinningFriction() const {
+    return body ? body->GetSpinningFriction() : physicsDesc.spinningFriction;
+}
+
+void ComRigidBody::SetSpinningFriction(float spinningFriction) {
+    if (body) {
+        body->SetSpinningFriction(spinningFriction);
+    } else {
+        physicsDesc.spinningFriction = spinningFriction;
     }
 }
 
