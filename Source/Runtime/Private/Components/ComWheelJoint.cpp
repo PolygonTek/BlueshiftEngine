@@ -46,6 +46,10 @@ void ComWheelJoint::RegisterProperties() {
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("maxSteeringAngle", "Max Steering Angle", float, GetMaximumSteeringAngle, SetMaximumSteeringAngle, 0.f, 
         "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f,
+        "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Maximum Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f,
+        "Maximum motor impulse", PropertyInfo::EditorFlag);
 }
 
 ComWheelJoint::ComWheelJoint() {
@@ -108,6 +112,12 @@ void ComWheelJoint::CreateConstraint() {
     // Apply suspension stiffness & damping
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, susStiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, susDamping));
+
+    // Apply motor
+    if (motorTargetVelocity != 0.0f) {
+        genericSpringConstraint->SetMotor(Vec3(DEG2RAD(motorTargetVelocity), 0, 0), Vec3(maxMotorImpulse, 0, 0));
+        genericSpringConstraint->EnableMotor(true, false, false);
+    }
 
     constraint = genericSpringConstraint;
 }
@@ -213,6 +223,22 @@ void ComWheelJoint::SetMaximumSteeringAngle(float angle) {
     this->maxSteeringAngle = angle;
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimit(Vec3(0, 0, DEG2RAD(maxSteeringAngle)));
+    }
+}
+
+void ComWheelJoint::SetMotorTargetVelocity(float motorTargetVelocity) {
+    this->motorTargetVelocity = motorTargetVelocity;
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetMotor(Vec3(DEG2RAD(motorTargetVelocity), 0, 0), Vec3(maxMotorImpulse, 0, 0));
+        ((PhysGenericSpringConstraint *)constraint)->EnableMotor(motorTargetVelocity != 0.0f ? true : false, false, false);
+    }
+}
+
+void ComWheelJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
+    this->maxMotorImpulse = maxMotorImpulse;
+    if (constraint) {
+        ((PhysGenericSpringConstraint *)constraint)->SetMotor(Vec3(DEG2RAD(motorTargetVelocity), 0, 0), Vec3(maxMotorImpulse, 0, 0));
+        ((PhysGenericSpringConstraint *)constraint)->EnableMotor(motorTargetVelocity != 0.0f ? true : false, false, false);
     }
 }
 

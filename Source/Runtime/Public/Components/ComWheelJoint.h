@@ -69,6 +69,12 @@ public:
     float                   GetMaximumSteeringAngle() const { return maxSteeringAngle; }
     void                    SetMaximumSteeringAngle(float angle);
 
+    float                   GetMotorTargetVelocity() const { return motorTargetVelocity; }
+    void                    SetMotorTargetVelocity(float motorTargetVelocity);
+
+    float                   GetMaxMotorImpulse() const { return maxMotorImpulse; }
+    void                    SetMaxMotorImpulse(float maxMotorImpulse);
+
 protected:
     virtual void            CreateConstraint() override;
 
@@ -84,6 +90,8 @@ protected:
     bool                    enableSteeringLimit;
     float                   minSteeringAngle;
     float                   maxSteeringAngle;
+    float                   motorTargetVelocity;
+    float                   maxMotorImpulse;
 };
 
 BE_NAMESPACE_END

@@ -237,21 +237,21 @@ void PhysGenericSpringConstraint::SetAngularDamping(const Vec3 &dampingRatio) {
 void PhysGenericSpringConstraint::SetMotor(const Vec3 &motorTargetVelocities, const Vec3 &maxMotorForces) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    generic6DofSpringConstraint->setTargetVelocity(0, motorTargetVelocities.x);
-    generic6DofSpringConstraint->setTargetVelocity(1, motorTargetVelocities.y);
-    generic6DofSpringConstraint->setTargetVelocity(2, motorTargetVelocities.z);
+    generic6DofSpringConstraint->setTargetVelocity(3, motorTargetVelocities.x);
+    generic6DofSpringConstraint->setTargetVelocity(4, motorTargetVelocities.y);
+    generic6DofSpringConstraint->setTargetVelocity(5, motorTargetVelocities.z);
     
-    generic6DofSpringConstraint->setMaxMotorForce(0, maxMotorForces.x);
-    generic6DofSpringConstraint->setMaxMotorForce(1, maxMotorForces.y);
-    generic6DofSpringConstraint->setMaxMotorForce(2, maxMotorForces.z);
+    generic6DofSpringConstraint->setMaxMotorForce(3, maxMotorForces.x);
+    generic6DofSpringConstraint->setMaxMotorForce(4, maxMotorForces.y);
+    generic6DofSpringConstraint->setMaxMotorForce(5, maxMotorForces.z);
 }
 
 void PhysGenericSpringConstraint::EnableMotor(bool enableX, bool enableY, bool enableZ) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    generic6DofSpringConstraint->enableMotor(0, enableX);
-    generic6DofSpringConstraint->enableMotor(1, enableY);
-    generic6DofSpringConstraint->enableMotor(2, enableZ);
+    generic6DofSpringConstraint->enableMotor(3, enableX);
+    generic6DofSpringConstraint->enableMotor(4, enableY);
+    generic6DofSpringConstraint->enableMotor(5, enableZ);
 }
 
 BE_NAMESPACE_END
