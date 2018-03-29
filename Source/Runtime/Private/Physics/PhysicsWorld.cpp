@@ -104,8 +104,6 @@ PhysicsWorld::PhysicsWorld() {
 
     dynamicsWorld->getSolverInfo().m_solverMode &= ~SOLVER_RANDMIZE_ORDER;
 #else
-    dynamicsWorld->getSimulationIslandManager()->setSplitIslands(true);
-
     dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_RANDMIZE_ORDER;
 #endif
 

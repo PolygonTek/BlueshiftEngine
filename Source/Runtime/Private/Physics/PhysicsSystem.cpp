@@ -158,14 +158,14 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
             rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
         } else {
             // the constraint solver can discard solving contacts, if the distance is above this threshold. 
-            rigidBody->setContactProcessingThreshold(0.005f);
+            //rigidBody->setContactProcessingThreshold(BT_LARGE_FLOAT);
         }
 
         if (shape->isConcave()) {
             rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
         }
 
-        rigidBody->setSleepingThresholds(0.005f, 2.0f);
+        rigidBody->setSleepingThresholds(1.0f, 2.0f);
 
         PhysRigidBody *body = new PhysRigidBody(rigidBody, totalCentroid);
         body->SetRestitution(desc->restitution);
