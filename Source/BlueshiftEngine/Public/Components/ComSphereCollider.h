@@ -43,8 +43,8 @@ public:
 protected:
     virtual void            CreateCollider() override;
 
-    Vec3                    center;     ///< Local center position in meters
-    float                   radius;     ///< Radius in meters
+    Vec3                    center;     ///< Local center position in system units
+    float                   radius;     ///< Radius in system units
 };
 
 BE_NAMESPACE_END

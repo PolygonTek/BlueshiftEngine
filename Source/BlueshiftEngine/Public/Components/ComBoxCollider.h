@@ -43,8 +43,8 @@ public:
 protected:
     virtual void            CreateCollider() override;
 
-    Vec3                    center;     ///< Local center position in meters
-    Vec3                    extents;    ///< Local size for each axis in meters
+    Vec3                    center;     ///< Local center position in system units
+    Vec3                    extents;    ///< Local size for each axis in system units
 };
 
 BE_NAMESPACE_END
