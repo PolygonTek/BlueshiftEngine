@@ -94,7 +94,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
             worldAxis[0][0], worldAxis[1][0], worldAxis[2][0],
             worldAxis[0][1], worldAxis[1][1], worldAxis[2][1],
             worldAxis[0][2], worldAxis[1][2], worldAxis[2][2]));
-        initialTransform.setOrigin(ToBtVector3(UnitToMeter(worldCentroid)));
+        initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
     } else {
         btCompoundShape *compoundShape = new btCompoundShape;
         shape = compoundShape;
@@ -127,7 +127,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
                 shapeDesc->localAxis[0][0], shapeDesc->localAxis[1][0], shapeDesc->localAxis[2][0],
                 shapeDesc->localAxis[0][1], shapeDesc->localAxis[1][1], shapeDesc->localAxis[2][1],
                 shapeDesc->localAxis[0][2], shapeDesc->localAxis[1][2], shapeDesc->localAxis[2][2]));
-            localTransform.setOrigin(ToBtVector3(UnitToMeter(localCentroid)));
+            localTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(localCentroid)));
 
             compoundShape->addChildShape(localTransform, shapeDesc->collider->shape);
         }
@@ -138,7 +138,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
             desc->axis[0][0], desc->axis[1][0], desc->axis[2][0],
             desc->axis[0][1], desc->axis[1][1], desc->axis[2][1],
             desc->axis[0][2], desc->axis[1][2], desc->axis[2][2]));
-        initialTransform.setOrigin(ToBtVector3(UnitToMeter(worldCentroid)));
+        initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
     }
 
     btVector3 inertia(0, 0, 0);
@@ -165,7 +165,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
             rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
         }
 
-        rigidBody->setSleepingThresholds(0.5f, 2.0f);
+        rigidBody->setSleepingThresholds(0.005f, 2.0f);
 
         PhysRigidBody *body = new PhysRigidBody(rigidBody, totalCentroid);
         body->SetRestitution(desc->restitution);

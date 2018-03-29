@@ -22,15 +22,18 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anc
     PhysConstraint(bodyA, nullptr) {
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
+    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
 
     btSliderConstraint *sliderConstraint = new btSliderConstraint(*bodyA->GetRigidBody(), frameA, true);
     sliderConstraint->setUserConstraintPtr(this);
 
-    sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
-    sliderConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
-    sliderConstraint->setParam(BT_CONSTRAINT_CFM, 0);
-    sliderConstraint->setParam(BT_CONSTRAINT_ERP, 1);
+#if 1
+    sliderConstraint->setParam(BT_CONSTRAINT_CFM, 0, 3);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, 3);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, 4);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1, 3);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1, 4);
+#endif
 
     constraint = sliderConstraint;
 
@@ -45,16 +48,19 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anc
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
-    btTransform frameB = ToBtTransform(axisInB, UnitToMeter(anchorInBCentroid));
+    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
+    btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
     btSliderConstraint *sliderConstraint = new btSliderConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, true);
     sliderConstraint->setUserConstraintPtr(this);
 
-    sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
-    sliderConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
-    sliderConstraint->setParam(BT_CONSTRAINT_CFM, 0);
-    sliderConstraint->setParam(BT_CONSTRAINT_ERP, 1);
+#if 1
+    sliderConstraint->setParam(BT_CONSTRAINT_CFM, 0, 3);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, 3);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, 4);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1, 3);
+    sliderConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1, 4);
+#endif
 
     constraint = sliderConstraint;
 
@@ -68,7 +74,7 @@ void PhysSliderConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA)
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
-    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
+    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
 
     if (!bodyB) {
         sliderConstraint->setFrames(sliderConstraint->getFrameOffsetA(), frameA);
@@ -81,7 +87,7 @@ void PhysSliderConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB)
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
     Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
-    btTransform frameB = ToBtTransform(axisInB, UnitToMeter(anchorInBCentroid));
+    btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
     if (!bodyB) {
         sliderConstraint->setFrames(frameB, sliderConstraint->getFrameOffsetB());
@@ -97,8 +103,8 @@ void PhysSliderConstraint::SetLinearLimits(float lowerLimit, float upperLimit) {
     this->angularUpperLimit = upperLimit;
 
     if (sliderConstraint->getLowerLinLimit() <= sliderConstraint->getUpperLinLimit()) {
-        sliderConstraint->setLowerLinLimit(UnitToMeter(lowerLimit));
-        sliderConstraint->setUpperLinLimit(UnitToMeter(upperLimit));
+        sliderConstraint->setLowerLinLimit(SystemUnitToPhysicsUnit(lowerLimit));
+        sliderConstraint->setUpperLinLimit(SystemUnitToPhysicsUnit(upperLimit));
     }
 }
 
@@ -106,8 +112,8 @@ void PhysSliderConstraint::EnableLinearLimits(bool enable) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
     if (enable) {
-        sliderConstraint->setLowerLinLimit(UnitToMeter(angularLowerLimit));
-        sliderConstraint->setUpperLinLimit(UnitToMeter(angularUpperLimit));
+        sliderConstraint->setLowerLinLimit(SystemUnitToPhysicsUnit(angularLowerLimit));
+        sliderConstraint->setUpperLinLimit(SystemUnitToPhysicsUnit(angularUpperLimit));
     } else {
         sliderConstraint->setLowerLinLimit(1);
         sliderConstraint->setUpperLinLimit(-1);
@@ -121,8 +127,8 @@ void PhysSliderConstraint::SetAngularLimits(float lowerLimit, float upperLimit) 
     this->angularUpperLimit = upperLimit;
 
     if (sliderConstraint->getLowerAngLimit() <= sliderConstraint->getUpperAngLimit()) {
-        sliderConstraint->setLowerAngLimit(UnitToMeter(lowerLimit));
-        sliderConstraint->setUpperAngLimit(UnitToMeter(upperLimit));
+        sliderConstraint->setLowerAngLimit(SystemUnitToPhysicsUnit(lowerLimit));
+        sliderConstraint->setUpperAngLimit(SystemUnitToPhysicsUnit(upperLimit));
     }
 }
 
@@ -130,8 +136,8 @@ void PhysSliderConstraint::EnableAngularLimits(bool enable) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
     if (enable) {
-        sliderConstraint->setLowerAngLimit(UnitToMeter(angularLowerLimit));
-        sliderConstraint->setUpperAngLimit(UnitToMeter(angularUpperLimit));
+        sliderConstraint->setLowerAngLimit(SystemUnitToPhysicsUnit(angularLowerLimit));
+        sliderConstraint->setUpperAngLimit(SystemUnitToPhysicsUnit(angularUpperLimit));
     } else {
         sliderConstraint->setLowerAngLimit(1);
         sliderConstraint->setUpperAngLimit(-1);
@@ -141,8 +147,8 @@ void PhysSliderConstraint::EnableAngularLimits(bool enable) {
 void PhysSliderConstraint::SetLinearMotor(float motorTargetVelocity, float maxMotorForce) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
-    sliderConstraint->setTargetLinMotorVelocity(UnitToMeter(motorTargetVelocity));
-    sliderConstraint->setMaxLinMotorForce(UnitToMeter(maxMotorForce));
+    sliderConstraint->setTargetLinMotorVelocity(SystemUnitToPhysicsUnit(motorTargetVelocity));
+    sliderConstraint->setMaxLinMotorForce(SystemUnitToPhysicsUnit(maxMotorForce));
 }
 
 void PhysSliderConstraint::EnableLinearMotor(bool enable) {

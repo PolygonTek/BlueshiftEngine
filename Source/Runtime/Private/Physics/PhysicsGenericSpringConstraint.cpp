@@ -22,7 +22,7 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
     PhysConstraint(bodyA, nullptr) {
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
+    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
 
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), frameA, RO_XZY);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
@@ -45,8 +45,8 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
-    btTransform frameB = ToBtTransform(axisInB, UnitToMeter(anchorInBCentroid));
+    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
+    btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, RO_XZY);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
@@ -68,7 +68,7 @@ void PhysGenericSpringConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &a
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
-    btTransform frameA = ToBtTransform(axisInA, UnitToMeter(anchorInACentroid));
+    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
 
     if (!bodyB) {
         generic6DofSpringConstraint->setFrames(generic6DofSpringConstraint->getFrameOffsetA(), frameA);
@@ -81,7 +81,7 @@ void PhysGenericSpringConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &a
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
     Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
-    btTransform frameB = ToBtTransform(axisInB, UnitToMeter(anchorInBCentroid));
+    btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
     if (!bodyB) {
         generic6DofSpringConstraint->setFrames(frameB, generic6DofSpringConstraint->getFrameOffsetB());
@@ -96,7 +96,7 @@ void PhysGenericSpringConstraint::SetLinearLowerLimit(const Vec3 &lower) {
     this->linearLowerLimit = lower;
 
     if (generic6DofSpringConstraint->isLimited(0) || generic6DofSpringConstraint->isLimited(1) || generic6DofSpringConstraint->isLimited(2)) {
-        generic6DofSpringConstraint->setLinearLowerLimit(ToBtVector3(UnitToMeter(lower)));
+        generic6DofSpringConstraint->setLinearLowerLimit(ToBtVector3(SystemUnitToPhysicsUnit(lower)));
     }
 }
 
@@ -106,7 +106,7 @@ void PhysGenericSpringConstraint::SetLinearUpperLimit(const Vec3 &upper) {
     this->linearUpperLimit = upper;
 
     if (generic6DofSpringConstraint->isLimited(0) || generic6DofSpringConstraint->isLimited(1) || generic6DofSpringConstraint->isLimited(2)) {
-        generic6DofSpringConstraint->setLinearUpperLimit(ToBtVector3(UnitToMeter(upper)));
+        generic6DofSpringConstraint->setLinearUpperLimit(ToBtVector3(SystemUnitToPhysicsUnit(upper)));
     }
 }
 
@@ -114,17 +114,17 @@ void PhysGenericSpringConstraint::EnableLinearLimits(bool enableX, bool enableY,
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
     if (enableX) {
-        generic6DofSpringConstraint->setLimit(0, UnitToMeter(linearLowerLimit[0]), UnitToMeter(linearUpperLimit[0]));
+        generic6DofSpringConstraint->setLimit(0, SystemUnitToPhysicsUnit(linearLowerLimit[0]), SystemUnitToPhysicsUnit(linearUpperLimit[0]));
     } else {
         generic6DofSpringConstraint->setLimit(0, 1.0f, -1.0f);
     }
     if (enableY) {
-        generic6DofSpringConstraint->setLimit(1, UnitToMeter(linearLowerLimit[1]), UnitToMeter(linearUpperLimit[1]));
+        generic6DofSpringConstraint->setLimit(1, SystemUnitToPhysicsUnit(linearLowerLimit[1]), SystemUnitToPhysicsUnit(linearUpperLimit[1]));
     } else {
         generic6DofSpringConstraint->setLimit(1, 1.0f, -1.0f);
     }
     if (enableZ) {
-        generic6DofSpringConstraint->setLimit(2, UnitToMeter(linearLowerLimit[2]), UnitToMeter(linearUpperLimit[2]));
+        generic6DofSpringConstraint->setLimit(2, SystemUnitToPhysicsUnit(linearLowerLimit[2]), SystemUnitToPhysicsUnit(linearUpperLimit[2]));
     } else {
         generic6DofSpringConstraint->setLimit(2, 1.0f, -1.0f);
     }

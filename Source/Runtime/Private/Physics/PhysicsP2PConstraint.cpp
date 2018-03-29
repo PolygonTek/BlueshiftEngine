@@ -22,7 +22,7 @@ PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA
     PhysConstraint(bodyA, nullptr) { 
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
     
-    btPoint2PointConstraint *p2pConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), ToBtVector3(UnitToMeter(anchorInACentroid)));
+    btPoint2PointConstraint *p2pConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), ToBtVector3(SystemUnitToPhysicsUnit(anchorInACentroid)));
     p2pConstraint->setUserConstraintPtr(this);
 
     constraint = p2pConstraint;
@@ -34,7 +34,7 @@ PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA
     Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
     btPoint2PointConstraint *p2pConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(),
-        ToBtVector3(UnitToMeter(anchorInACentroid)), ToBtVector3(UnitToMeter(anchorInBCentroid)));
+        ToBtVector3(SystemUnitToPhysicsUnit(anchorInACentroid)), ToBtVector3(SystemUnitToPhysicsUnit(anchorInBCentroid)));
     p2pConstraint->setUserConstraintPtr(this);
 
     constraint = p2pConstraint;
@@ -45,7 +45,7 @@ const Vec3 PhysP2PConstraint::GetAnchorA() const {
 
     const btVector3 &anchorInACentroid = p2pConstraint->getPivotInA();
 
-    return MeterToUnit(ToVec3(anchorInACentroid)) + bodyA->centroid;
+    return PhysicsUnitToSystemUnit(ToVec3(anchorInACentroid)) + bodyA->centroid;
 }
 
 void PhysP2PConstraint::SetAnchorA(const Vec3 &anchorInA) {
@@ -53,7 +53,7 @@ void PhysP2PConstraint::SetAnchorA(const Vec3 &anchorInA) {
 
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
 
-    p2pConstraint->setPivotA(ToBtVector3(UnitToMeter(anchorInACentroid)));
+    p2pConstraint->setPivotA(ToBtVector3(SystemUnitToPhysicsUnit(anchorInACentroid)));
 }
 
 const Vec3 PhysP2PConstraint::GetAnchorB() const {
@@ -62,7 +62,7 @@ const Vec3 PhysP2PConstraint::GetAnchorB() const {
     Vec3 anchorInBCentroid = ToVec3(p2pConstraint->getPivotInB());
 
     // pivotInB stands for local anchor in B or world anchor if body B is not defined
-    return bodyB ? MeterToUnit(anchorInBCentroid) + bodyB->centroid : MeterToUnit(anchorInBCentroid);
+    return bodyB ? PhysicsUnitToSystemUnit(anchorInBCentroid) + bodyB->centroid : PhysicsUnitToSystemUnit(anchorInBCentroid);
 }
 
 void PhysP2PConstraint::SetAnchorB(const Vec3 &anchorInB) {
@@ -71,19 +71,19 @@ void PhysP2PConstraint::SetAnchorB(const Vec3 &anchorInB) {
     Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
 
     // pivotInB stands for local anchor in B or world anchor if body B is not defined
-    p2pConstraint->setPivotB(ToBtVector3(UnitToMeter(anchorInBCentroid)));
+    p2pConstraint->setPivotB(ToBtVector3(SystemUnitToPhysicsUnit(anchorInBCentroid)));
 }
 
 float PhysP2PConstraint::GetImpulseClamp() const {
     btPoint2PointConstraint *p2pConstraint = static_cast<btPoint2PointConstraint *>(constraint);
 
-    return MeterToUnit(p2pConstraint->m_setting.m_impulseClamp);
+    return PhysicsUnitToSystemUnit(p2pConstraint->m_setting.m_impulseClamp);
 }
 
 void PhysP2PConstraint::SetImpulseClamp(float impulse) {
     btPoint2PointConstraint *p2pConstraint = static_cast<btPoint2PointConstraint *>(constraint);
 
-    p2pConstraint->m_setting.m_impulseClamp = UnitToMeter(impulse);
+    p2pConstraint->m_setting.m_impulseClamp = SystemUnitToPhysicsUnit(impulse);
 }
 
 BE_NAMESPACE_END

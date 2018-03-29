@@ -19,6 +19,8 @@
 #include "ColliderInternal.h"
 #include "PhysicsInternal.h"
 
+//#define DETERMINISTIC
+
 BE_NAMESPACE_BEGIN
 
 const SignalDef PhysicsWorld::SIG_PreStep("PhysicsWorld::PreStep", "f");
@@ -97,7 +99,16 @@ PhysicsWorld::PhysicsWorld() {
     filterCallback = new CollisionFilterCallback();
     dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
 
-    //dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_RANDMIZE_ORDER;
+#ifdef DETERMINISTIC
+    dynamicsWorld->getSimulationIslandManager()->setSplitIslands(false);
+
+    dynamicsWorld->getSolverInfo().m_solverMode &= ~SOLVER_RANDMIZE_ORDER;
+#else
+    dynamicsWorld->getSimulationIslandManager()->setSplitIslands(true);
+
+    dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_RANDMIZE_ORDER;
+#endif
+
     dynamicsWorld->getSolverInfo().m_splitImpulse = false;
     //dynamicsWorld->setSynchronizeAllMotionStates(true);
 
@@ -109,7 +120,7 @@ PhysicsWorld::PhysicsWorld() {
     time = 0;
 
     frameRate = 50;
-    maximumAllowedTimeStep = 1.0f / 5;
+    maximumAllowedTimeStep = 0.2f;
 
     SetGravity(Vec3(0, 0, 0));
 }
@@ -127,7 +138,7 @@ PhysicsWorld::~PhysicsWorld() {
 }
 
 void PhysicsWorld::ClearScene() {
-    // cleanup in the reverse order of creation/initialization
+    // Cleanup in the reverse order of creation/initialization
     for (int i = dynamicsWorld->getNumConstraints() - 1; i >= 0; i--) {
         btTypedConstraint *constraint = dynamicsWorld->getConstraint(i);
         PhysConstraint *userConstraint = (PhysConstraint *)constraint->getUserConstraintPtr();
@@ -139,12 +150,15 @@ void PhysicsWorld::ClearScene() {
     for (int i = dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
         btCollisionObject *colObj = dynamicsWorld->getCollisionObjectArray()[i];
         PhysCollidable *userColObj = (PhysCollidable *)colObj->getUserPointer();
+
+        // Removed cached contact points (this is not necessary if all objects have been removed from the dynamics world)
+        //dynamicsWorld->getBroadphase()->getOverlappingPairCache()->cleanProxyFromPairs(colObj->getBroadphaseHandle(), dynamicsWorld->getDispatcher());
         
         userColObj->RemoveFromWorld();
         physicsSystem.DestroyCollidable(userColObj);
     }
     
-    // reset some internal cached data in the broadphase
+    // Reset some internal cached data in the broadphase
     dynamicsWorld->getBroadphase()->resetPool(dynamicsWorld->getDispatcher());
     dynamicsWorld->getConstraintSolver()->reset();
 
@@ -156,6 +170,9 @@ PhysicsWorld::ConstraintSolver PhysicsWorld::GetConstraintSolver() const {
 }
 
 void PhysicsWorld::SetConstraintSolver(ConstraintSolver solverType) {
+    // Direct MLCP solvers are useful when higher quality simulation is needed, for example in robotics. 
+    // The performance is less than the SI solver,
+    // NOTE: rolling friction is not working with MLCP solver ! (bullet bug)
     switch (solverType) {
     case SequentialImpulseSolver:
         solver = new btSequentialImpulseConstraintSolver;
@@ -164,8 +181,6 @@ void PhysicsWorld::SetConstraintSolver(ConstraintSolver solverType) {
         solver = new btNNCGConstraintSolver;
         break;
     case ProjectedGaussSeidelSolver:
-        // Direct MLCP solvers are useful when higher quality simulation is needed, for example in robotics. 
-        // The performance is less than the SI solver,
         solver = new btMLCPSolver(new btSolveProjectedGaussSeidel);
         break;
     case DantzigSolver:
@@ -181,7 +196,7 @@ void PhysicsWorld::SetConstraintSolver(ConstraintSolver solverType) {
     dynamicsWorld->setConstraintSolver(solver);
 
     // for direct solver it is better to have a small A matrix 
-    //dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; 
+    //dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 128;
 }
 
 int PhysicsWorld::GetConstraintSolverIterations() const {
@@ -239,7 +254,7 @@ const Vec3 PhysicsWorld::GetGravity() const {
     }
 
     btVector3 gravity = dynamicsWorld->getGravity();
-    return MeterToUnit(ToVec3(gravity));
+    return PhysicsUnitToSystemUnit(ToVec3(gravity));
 }
 
 void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
@@ -247,7 +262,7 @@ void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
         return;
     }
 
-    dynamicsWorld->setGravity(ToBtVector3(UnitToMeter(gravityAcceleration)));
+    dynamicsWorld->setGravity(ToBtVector3(SystemUnitToPhysicsUnit(gravityAcceleration)));
 }
 
 uint32_t PhysicsWorld::GetCollisionFilterMask(int index) const {
@@ -287,7 +302,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
         const Vec3 centroid = collider->GetCentroid();
     
         shapeTransform.setIdentity();
-        shapeTransform.setOrigin(ToBtVector3(UnitToMeter(centroid)));
+        shapeTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(centroid)));
     }
 
     if (!shape->isConvex()) {
@@ -322,8 +337,8 @@ bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origi
         const btCollisionObject *m_me;
     };
 
-    btVector3 rayFromWorld = ToBtVector3(UnitToMeter(origin));
-    btVector3 rayToWorld = ToBtVector3(UnitToMeter(dest));
+    btVector3 rayFromWorld = ToBtVector3(SystemUnitToPhysicsUnit(origin));
+    btVector3 rayToWorld = ToBtVector3(SystemUnitToPhysicsUnit(dest));
 
     MyClosestRayResultCallback cb(me, rayFromWorld, rayToWorld);
 
@@ -334,7 +349,7 @@ bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origi
 
     if (cb.hasHit()) {
         trace.hitObject = (PhysCollidable *)(cb.m_collisionObject->getUserPointer());
-        trace.point = MeterToUnit(ToVec3(cb.m_hitPointWorld));
+        trace.point = PhysicsUnitToSystemUnit(ToVec3(cb.m_hitPointWorld));
         trace.normal = ToVec3(cb.m_hitNormalWorld);
         trace.fraction = cb.m_closestHitFraction;
         trace.endPos = origin + trace.fraction * (dest - origin);
@@ -381,8 +396,8 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
         const btCollisionObject *m_me;
     };
 
-    btVector3 rayFromWorld = ToBtVector3(UnitToMeter(origin));
-    btVector3 rayToWorld = ToBtVector3(UnitToMeter(dest));
+    btVector3 rayFromWorld = ToBtVector3(SystemUnitToPhysicsUnit(origin));
+    btVector3 rayToWorld = ToBtVector3(SystemUnitToPhysicsUnit(dest));
 
     MyAllHitsRayResultCallback cb(me, rayFromWorld, rayToWorld);
 
@@ -395,7 +410,7 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
         for (int i = 0; i < cb.m_collisionObjects.size(); i++) {
             CastResult trace;
             trace.hitObject = (PhysCollidable *)(cb.m_collisionObjects[i]->getUserPointer());
-            trace.point = MeterToUnit(ToVec3(cb.m_hitPointWorld[i]));
+            trace.point = PhysicsUnitToSystemUnit(ToVec3(cb.m_hitPointWorld[i]));
             trace.normal = ToVec3(cb.m_hitNormalWorld[i]);
             trace.fraction = cb.m_hitFractions[i];
             trace.endPos = origin + trace.fraction * (dest - origin);
@@ -490,12 +505,12 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
 
     btTransform fromTrans;
     fromTrans.setRotation(ToBtQuaternion(q));
-    fromTrans.setOrigin(ToBtVector3(UnitToMeter(origin)));
+    fromTrans.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(origin)));
     fromTrans.mult(shapeTransform, fromTrans);
 
     btTransform toTrans;
     toTrans.setRotation(ToBtQuaternion(q));
-    toTrans.setOrigin(ToBtVector3(UnitToMeter(dest)));
+    toTrans.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(dest)));
     toTrans.mult(shapeTransform, toTrans);
 
     MyClosestConvexResultCallback cb(me, fromTrans.getOrigin(), toTrans.getOrigin());
@@ -507,7 +522,7 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
     
     if (cb.hasHit()) {
         trace.hitObject = (PhysCollidable *)(cb.m_hitCollisionObject->getUserPointer());
-        trace.point = MeterToUnit(ToVec3(cb.m_hitPointWorld));
+        trace.point = PhysicsUnitToSystemUnit(ToVec3(cb.m_hitPointWorld));
         trace.normal = ToVec3(cb.m_hitNormalWorld);
         trace.fraction = cb.m_closestHitFraction;
         trace.endPos = origin + trace.fraction * (dest - origin);
@@ -594,10 +609,10 @@ void PhysicsWorld::ProcessCollision() {
                     const btScalar impulse = pt.getAppliedImpulse();
 
                     if (listenerA) {
-                        listenerA->Collide(a, b, MeterToUnit(ToVec3(ptB)), ToVec3(normalOnB), MeterToUnit(distance), MeterToUnit(impulse));
+                        listenerA->Collide(a, b, PhysicsUnitToSystemUnit(ToVec3(ptB)), ToVec3(normalOnB), PhysicsUnitToSystemUnit(distance), PhysicsUnitToSystemUnit(impulse));
                     }
                     if (listenerB) {
-                        listenerB->Collide(b, a, MeterToUnit(ToVec3(ptA)), ToVec3(-normalOnB), MeterToUnit(distance), MeterToUnit(impulse));
+                        listenerB->Collide(b, a, PhysicsUnitToSystemUnit(ToVec3(ptA)), ToVec3(-normalOnB), PhysicsUnitToSystemUnit(distance), PhysicsUnitToSystemUnit(impulse));
                     }
                 }
             }

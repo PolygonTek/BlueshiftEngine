@@ -40,12 +40,12 @@ const Vec3 PhysRigidBody::GetOrigin() const {
     Vec3 worldCentroid;
 
     if (IsStatic()) {
-        worldCentroid = MeterToUnit(ToVec3(rigidBody->getWorldTransform().getOrigin()));
+        worldCentroid = PhysicsUnitToSystemUnit(ToVec3(rigidBody->getWorldTransform().getOrigin()));
     } else {
         btTransform motionTransform;
         rigidBody->getMotionState()->getWorldTransform(motionTransform);
 
-        worldCentroid = MeterToUnit(ToVec3(motionTransform.getOrigin()));
+        worldCentroid = PhysicsUnitToSystemUnit(ToVec3(motionTransform.getOrigin()));
     }
     return worldCentroid - transformedCentroid;;
 }
@@ -54,7 +54,7 @@ void PhysRigidBody::SetOrigin(const Vec3 &origin) {
     btRigidBody *rigidBody = GetRigidBody();
 
     btTransform transform = rigidBody->getWorldTransform();
-    transform.setOrigin(ToBtVector3(UnitToMeter(origin + GetAxis() * centroid)));
+    transform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(origin + GetAxis() * centroid)));
 
     rigidBody->setWorldTransform(transform);
 
@@ -125,7 +125,7 @@ void PhysRigidBody::SetTransform(const Mat3 &axis, const Vec3 &origin) {
     btRigidBody *rigidBody = GetRigidBody();
 
     btTransform transform = rigidBody->getWorldTransform();
-    transform.setOrigin(ToBtVector3(UnitToMeter(origin + axis * centroid)));
+    transform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(origin + axis * centroid)));
     transform.setBasis(btMatrix3x3(
         axis[0][0], axis[1][0], axis[2][0],
         axis[0][1], axis[1][1], axis[2][1],
@@ -190,11 +190,11 @@ void PhysRigidBody::SetAngularDamping(float angularDamping) {
 
 const Vec3 PhysRigidBody::GetLinearVelocity() const {
     const btVector3 &linearVelocity = GetRigidBody()->getLinearVelocity();
-    return MeterToUnit(ToVec3(linearVelocity));
+    return PhysicsUnitToSystemUnit(ToVec3(linearVelocity));
 }
 
 void PhysRigidBody::SetLinearVelocity(const Vec3 &linearVelocity) {
-    btVector3 bulletLinearVelocity = ToBtVector3(UnitToMeter(linearVelocity));
+    btVector3 bulletLinearVelocity = ToBtVector3(SystemUnitToPhysicsUnit(linearVelocity));
 
     GetRigidBody()->setLinearVelocity(bulletLinearVelocity);
     GetRigidBody()->setInterpolationLinearVelocity(bulletLinearVelocity);
@@ -230,12 +230,12 @@ void PhysRigidBody::SetAngularFactor(const Vec3 &angularFactor) {
 
 const Vec3 PhysRigidBody::GetTotalForce() const {
     const btVector3 &totalForce = GetRigidBody()->getTotalForce();
-    return MeterToUnit(ToVec3(totalForce));
+    return PhysicsUnitToSystemUnit(ToVec3(totalForce));
 }
 
 const Vec3 PhysRigidBody::GetTotalTorque() const {
     const btVector3 &totalTorque = GetRigidBody()->getTotalTorque();
-    return MeterToUnit(Vec3(Math::Sqrt(totalTorque.x()), Math::Sqrt(totalTorque.y()), Math::Sqrt(totalTorque.z())));
+    return PhysicsUnitToSystemUnit(Vec3(Math::Sqrt(totalTorque.x()), Math::Sqrt(totalTorque.y()), Math::Sqrt(totalTorque.z())));
 }
 
 bool PhysRigidBody::IsCCD() const {
@@ -267,38 +267,38 @@ void PhysRigidBody::ClearVelocities() {
 
 void PhysRigidBody::ApplyCentralForce(const Vec3 &force) {
     GetRigidBody()->activate();
-    GetRigidBody()->applyCentralForce(ToBtVector3(UnitToMeter(force)));
+    GetRigidBody()->applyCentralForce(ToBtVector3(SystemUnitToPhysicsUnit(force)));
 }
 
 void PhysRigidBody::ApplyForce(const Vec3 &force, const Vec3 &worldPos) {
     const btTransform &worldTransform = GetRigidBody()->getWorldTransform();
-    btVector3 relativePos = worldTransform.getBasis().transpose() * (ToBtVector3(worldPos) - worldTransform.getOrigin());
+    btVector3 relativePos = worldTransform.getBasis().transpose() * (ToBtVector3(SystemUnitToPhysicsUnit(worldPos)) - worldTransform.getOrigin());
 
     GetRigidBody()->activate();
-    GetRigidBody()->applyForce(ToBtVector3(UnitToMeter(force)), relativePos);
+    GetRigidBody()->applyForce(ToBtVector3(SystemUnitToPhysicsUnit(force)), relativePos);
 }
 
 void PhysRigidBody::ApplyTorque(const Vec3 &torque) {
     GetRigidBody()->activate();
-    GetRigidBody()->applyTorque(ToBtVector3(UnitToMeter(torque * torque)));
+    GetRigidBody()->applyTorque(ToBtVector3(SystemUnitToPhysicsUnit(torque * torque)));
 }
 
 void PhysRigidBody::ApplyCentralImpulse(const Vec3 &impulse) {
     GetRigidBody()->activate();
-    GetRigidBody()->applyCentralImpulse(ToBtVector3(UnitToMeter(impulse)));
+    GetRigidBody()->applyCentralImpulse(ToBtVector3(SystemUnitToPhysicsUnit(impulse)));
 }
 
 void PhysRigidBody::ApplyImpulse(const Vec3 &impulse, const Vec3 &worldPos) {
     const btTransform &worldTransform = GetRigidBody()->getWorldTransform();
-    btVector3 relativePos = worldTransform.getBasis().transpose() * (ToBtVector3(worldPos) - worldTransform.getOrigin());
+    btVector3 relativePos = worldTransform.getBasis().transpose() * (ToBtVector3(SystemUnitToPhysicsUnit(worldPos)) - worldTransform.getOrigin());
 
     GetRigidBody()->activate();
-    GetRigidBody()->applyImpulse(ToBtVector3(UnitToMeter(impulse)), relativePos);
+    GetRigidBody()->applyImpulse(ToBtVector3(SystemUnitToPhysicsUnit(impulse)), relativePos);
 }
 
 void PhysRigidBody::ApplyAngularImpulse(const Vec3 &impulse) {
     GetRigidBody()->activate();
-    GetRigidBody()->applyTorqueImpulse(ToBtVector3(UnitToMeter(impulse)));
+    GetRigidBody()->applyTorqueImpulse(ToBtVector3(SystemUnitToPhysicsUnit(impulse)));
 }
 
 BE_NAMESPACE_END

@@ -54,6 +54,12 @@ BE_INLINE btTransform ToBtTransform(const Mat3 &rotation, const Vec3 &translatio
         rotation[0][2], rotation[1][2], rotation[2][2]), ToBtVector3(translation));
 }
 
+template <typename T>
+BE_INLINE T SystemUnitToPhysicsUnit(T x) { return (x * 0.25); }
+
+template <typename T>
+BE_INLINE T PhysicsUnitToSystemUnit(T x) { return (x * 4); }
+
 class PhysDebugDraw : public btIDebugDraw {
 public:
     PhysDebugDraw() { debugMode = 0; }

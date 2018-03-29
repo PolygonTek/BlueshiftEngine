@@ -75,16 +75,16 @@ void PhysSensor::GetContacts(Array<Contact> &contacts) {
 
                     if (objA == collisionObject) {
                         contact.object = (PhysCollidable *)objB->getUserPointer();
-                        contact.point = MeterToUnit(ToVec3(ptB));
+                        contact.point = PhysicsUnitToSystemUnit(ToVec3(ptB));
                         contact.normal = ToVec3(normalOnB);
-                        contact.dist = MeterToUnit(dist);
-                        contact.impulse = MeterToUnit(pt.getAppliedImpulse());
+                        contact.dist = PhysicsUnitToSystemUnit(dist);
+                        contact.impulse = PhysicsUnitToSystemUnit(pt.getAppliedImpulse());
                     } else {
                         contact.object = (PhysCollidable *)objA->getUserPointer();
-                        contact.point = MeterToUnit(ToVec3(ptA));
+                        contact.point = PhysicsUnitToSystemUnit(ToVec3(ptA));
                         contact.normal = -ToVec3(normalOnB);
-                        contact.dist = MeterToUnit(dist);
-                        contact.impulse = MeterToUnit(pt.getAppliedImpulse());
+                        contact.dist = PhysicsUnitToSystemUnit(dist);
+                        contact.impulse = PhysicsUnitToSystemUnit(pt.getAppliedImpulse());
                     }
 
                     contacts.Append(contact);
