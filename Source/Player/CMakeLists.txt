@@ -69,7 +69,7 @@ auto_source_group(${ALL_FILES})
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
-    ${ENGINE_INCLUDE_DIR}/BlueshiftEngine/Public
+    ${ENGINE_INCLUDE_DIR}/Runtime/Public
     ${ENGINE_INCLUDE_DIR}/ThirdParty)
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp ALL_FILES)

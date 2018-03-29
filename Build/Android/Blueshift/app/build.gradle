@@ -47,9 +47,9 @@ android {
     }
     sourceSets {
         main {
-            manifest.srcFile '../../../../Source/BlueshiftPlayer/Android/AndroidManifest.xml'
-            java.srcDirs = ['../../../../Source/BlueshiftPlayer/Android/java']
-            res.srcDirs = ['../../../../Source/BlueshiftPlayer/Android/res']
+            manifest.srcFile '../../../../Source/Player/Android/AndroidManifest.xml'
+            java.srcDirs = ['../../../../Source/Player/Android/java']
+            res.srcDirs = ['../../../../Source/Player/Android/res']
             assets.srcDirs = ['../../../../Assets']
         }
     }

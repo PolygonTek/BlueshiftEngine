@@ -19,9 +19,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(CMakeDependentOption)
 include(BlueshiftCommon)
 
-option(BUILD_ENGINE "Build Blueshift Engine" OFF)
-option(BUILD_PLAYER "Build Blueshift Player" OFF)
-option(BUILD_EDITOR "Build Blueshift Editor" OFF)
+option(BUILD_ENGINE "Build Blueshift Engine Runtime libraies" OFF)
+option(BUILD_PLAYER "Build Blueshift Player executable" OFF)
+option(BUILD_EDITOR "Build Blueshift Editor executable" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 
 if (BUILD_ENGINE)
@@ -60,7 +60,7 @@ else ()
 endif ()
 
 set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
-set(VERSION_MINOR 4 CACHE INTERNAL "Project minor version number.")
+set(VERSION_MINOR 5 CACHE INTERNAL "Project minor version number.")
 set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
@@ -269,18 +269,18 @@ if (BUILD_ENGINE)
     add_subdirectory(Source/ThirdParty/luasocket)
     add_subdirectory(Source/ThirdParty/LuaCpp)
   
-    add_subdirectory(Source/BlueshiftEngine)
+    add_subdirectory(Source/Runtime)
 
     add_subdirectory(Shaders)
 endif ()
 
 if (BUILD_PLAYER)
-    add_subdirectory(Source/BlueshiftPlayer)
+    add_subdirectory(Source/Player)
 endif ()
 
 if (BUILD_EDITOR)
     add_subdirectory(Source/ThirdParty/ToolWindowManager)
-    add_subdirectory(Source/BlueshiftEditor)
+    add_subdirectory(Source/Editor)
 endif ()
 
 if (BUILD_TEST)
