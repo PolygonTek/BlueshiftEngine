@@ -550,44 +550,44 @@ BE_FORCE_INLINE constexpr T Wrap(const T &v, const T &min, const T &max) {
     return v;
 }
 
-BE_FORCE_INLINE signed char BE_API ClampChar(int i) {
+BE_FORCE_INLINE signed char ClampChar(int i) {
     if (i < -128) return -128;
     if (i > 127) return 127;
     return i;
 }
 
-BE_FORCE_INLINE unsigned char BE_API ClampByte(int i) {
+BE_FORCE_INLINE unsigned char ClampByte(int i) {
     if (i < 0) return 0;
     if (i > 255) return 255;
     return i;
 }
 
-BE_FORCE_INLINE signed short BE_API ClampShort(int i) {
+BE_FORCE_INLINE signed short ClampShort(int i) {
     if (i < -32768) return -32768;
     if (i > 32767) return 32767;
     return i;
 }
 
-BE_FORCE_INLINE int BE_API ClampInt(int min, int max, int value) {
+BE_FORCE_INLINE int ClampInt(int min, int max, int value) {
     if (value < min) return min;
     if (value > max) return max;
     return value;
 }
 
-BE_FORCE_INLINE float BE_API ClampFloat(float min, float max, float value) {
+BE_FORCE_INLINE float ClampFloat(float min, float max, float value) {
     if (value < min) return min;
     if (value > max) return max;
     return value;
 }
 
-BE_FORCE_INLINE constexpr float BE_API  UnitToCenti(float x) { return x * 1.0f; }
-BE_FORCE_INLINE constexpr float BE_API  UnitToMeter(float x) { return UnitToCenti(x) * 0.01f; }
-BE_FORCE_INLINE constexpr float BE_API  CentiToUnit(float x) { return x / UnitToCenti(1.0f); }
-BE_FORCE_INLINE constexpr float BE_API  MeterToUnit(float x) { return CentiToUnit(x * 100.0f); }
+BE_FORCE_INLINE constexpr float UnitToCenti(float x) { return x * 1.0f; }
+BE_FORCE_INLINE constexpr float UnitToMeter(float x) { return UnitToCenti(x) * 0.01f; }
+BE_FORCE_INLINE constexpr float CentiToUnit(float x) { return x / UnitToCenti(1.0f); }
+BE_FORCE_INLINE constexpr float MeterToUnit(float x) { return CentiToUnit(x * 100.0f); }
 
-void BE_CDECL Log(int logLevel, const wchar_t *msg, ...);
-void BE_CDECL Error(int errLevel, const wchar_t *msg, ...);
-void BE_CDECL Assert(bool expr);
+void BE_CDECL BE_API Log(int logLevel, const wchar_t *msg, ...);
+void BE_CDECL BE_API Error(int errLevel, const wchar_t *msg, ...);
+void BE_CDECL BE_API Assert(bool expr);
 
 #define BE_LOG(...) do { \
     BE1::Log(BE1::NormalLog, __VA_ARGS__); \
