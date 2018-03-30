@@ -39,6 +39,10 @@ ComBoxCollider::~ComBoxCollider() {
 }
 
 void ComBoxCollider::CreateCollider() {
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
+    }
+
     const ComTransform *transform = GetEntity()->GetTransform();
 
     Vec3 scaledCenter = transform->GetScale() * center;
@@ -50,20 +54,14 @@ void ComBoxCollider::CreateCollider() {
 
 void ComBoxCollider::SetCenter(const Vec3 &center) {
     this->center = center;
-    if (collider) {
-        colliderManager.ReleaseCollider(collider);
 
-        CreateCollider();
-    }
+    CreateCollider();
 }
 
 void ComBoxCollider::SetExtents(const Vec3 &extents) {
     this->extents = extents;
-    if (collider) {
-        colliderManager.ReleaseCollider(collider);
 
-        CreateCollider();
-    }
+    CreateCollider();
 }
 
 bool ComBoxCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

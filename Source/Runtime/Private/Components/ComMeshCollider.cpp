@@ -42,20 +42,18 @@ ComMeshCollider::~ComMeshCollider() {
 }
 
 void ComMeshCollider::CreateCollider() {
-    if (!meshGuid.IsZero()) {
-        const Str meshPath = resourceGuidMapper.Get(meshGuid);
-        collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
+    if (collider) {
+        colliderManager.ReleaseCollider(collider);
     }
+
+    const Str meshPath = resourceGuidMapper.Get(meshGuid);
+    collider = colliderManager.GetCollider(meshPath, GetEntity()->GetTransform()->GetScale(), convex);
 }
 
 void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     this->meshGuid = meshGuid;
 
-    if (collider) {
-        colliderManager.ReleaseCollider(collider);
-
-        CreateCollider();
-    }
+    CreateCollider();
 }
 
 bool ComMeshCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
