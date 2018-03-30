@@ -175,8 +175,8 @@ void ComCharacterController::GroundTrace() {
     Vec3 p1 = origin;
     Vec3 p2 = p1;
 
-    // 땅에 닿아있는지 체크하기위해 z 축으로 5cm 만큼 내려서 이동시켜 본다
-    p2.z -= CentiToUnit(5);
+    // 땅에 닿아있는지 체크하기위해 z 축으로 7cm 만큼 내려서 이동시켜 본다
+    p2.z -= CentiToUnit(7);
     if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2,
         PhysCollidable::CharacterGroup,
         PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup, groundTrace)) {
