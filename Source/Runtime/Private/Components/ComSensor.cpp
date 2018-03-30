@@ -59,27 +59,30 @@ void ComSensor::Init() {
     SetInitialized(true);
 }
 
-static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &shapes) {
-    const ComCollider *collider = entity->GetComponent<ComCollider>();
+void ComSensor::AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes) {
+    if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>()) {
+        return;
+    }
+
+    ComCollider *collider = entity->GetComponent<ComCollider>();
     if (!collider) {
         return;
     }
 
-    const ComSensor *sensor = entity->GetComponent<ComSensor>();
-    if (sensor) {
-        return;
-    }
+    collider->CreateCollider();
 
     const ComTransform *transform = entity->GetTransform();
 
+    Mat3x4 localTransform = parentTransform->GetTransformNoScale().Inverse() * Mat3x4(Vec3::one, transform->GetAxis(), transform->GetOrigin());
+    localTransform.FixDegeneracies();
+
     PhysShapeDesc &shapeDesc = shapes.Alloc();
     shapeDesc.collider = collider->GetCollider();
-    shapeDesc.localOrigin = transform->GetScale() * transform->GetLocalOrigin();
-    shapeDesc.localAxis = transform->GetLocalAxis();
-    shapeDesc.localAxis.FixDegeneracies();
+    shapeDesc.localOrigin = localTransform.ToTranslationVec3();
+    shapeDesc.localAxis = localTransform.ToMat3();
 
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(childEntity, shapes);
+        AddChildShapeRecursive(parentTransform, childEntity, shapes);
     }
 }
 
@@ -104,10 +107,12 @@ void ComSensor::CreateSensor() {
     physicsDesc.origin = transform->GetOrigin();
     physicsDesc.axis = transform->GetAxis();
 
+    // Collect collider shadpes in this entity
     ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
     if (colliders.Count() > 0) {
         for (int i = 0; i < colliders.Count(); i++) {
             ComCollider *collider = colliders[i]->Cast<ComCollider>();
+            collider->CreateCollider();
 
             PhysShapeDesc shapeDesc;
             shapeDesc.localOrigin = Vec3::zero;
@@ -120,8 +125,13 @@ void ComSensor::CreateSensor() {
         return;
     }
 
+    // Collect collider shadpes in children recursively
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(childEntity, physicsDesc.shapes);
+        AddChildShapeRecursive(transform, childEntity, physicsDesc.shapes);
+    }
+
+    if (physicsDesc.shapes.Count() == 0) {
+        BE_WARNLOG(L"Entity %hs has sensor but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
     }
 
     sensor = static_cast<PhysSensor *>(physicsSystem.CreateCollidable(&physicsDesc));

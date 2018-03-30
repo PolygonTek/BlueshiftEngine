@@ -48,6 +48,7 @@ protected:
     virtual void            OnInactive() override;
 
     void                    CreateSensor();
+    void                    AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes);
     void                    ProcessScriptCallback();
     void                    TransformUpdated(const ComTransform *transform);
 
