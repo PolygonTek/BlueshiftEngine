@@ -127,6 +127,19 @@ const Mat3x4 &ComTransform::GetTransform() const {
     return worldMatrix;
 }
 
+Mat3x4 ComTransform::GetTransformNoScale() const {
+    Mat3x4 worldMatrixNoScale;
+    Mat3x4 localTransform = GetLocalTransformNoScale();
+    
+    ComTransform *parent = GetParent();
+    if (parent) {
+        worldMatrixNoScale = parent->GetTransformNoScale() * localTransform;
+    } else {
+        worldMatrixNoScale = localTransform;
+    }
+    return worldMatrixNoScale;
+}
+
 void ComTransform::SetOrigin(const Vec3 &origin) {
     const ComTransform *parent = GetParent();
     SetLocalOrigin(parent ? parent->GetTransform().Inverse() * origin : origin);
@@ -222,7 +235,6 @@ void ComTransform::UpdateWorldMatrix() const {
     Mat3x4 localTransform = GetLocalTransform();
 
     ComTransform *parent = GetParent();
-
     if (parent) {
         worldMatrix = parent->GetTransform() * localTransform;
     } else {

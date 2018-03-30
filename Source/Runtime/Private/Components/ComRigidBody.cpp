@@ -138,7 +138,7 @@ void ComRigidBody::Awake() {
     oldCollisions.Clear();
 }
 
-static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &shapes) {
+static void AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes) {
     if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>()) {
         return;
     }
@@ -150,14 +150,16 @@ static void AddChildShapeRecursive(const Entity *entity, Array<PhysShapeDesc> &s
 
     ComTransform *transform = entity->GetTransform();
 
+    Mat3x4 localTransform = parentTransform->GetTransformNoScale().Inverse() * Mat3x4(Vec3::one, transform->GetAxis(), transform->GetOrigin());
+    localTransform.FixDegeneracies();
+
     PhysShapeDesc &shapeDesc = shapes.Alloc();
     shapeDesc.collider = collider->GetCollider();
-    shapeDesc.localOrigin = transform->GetScale() * transform->GetLocalOrigin();
-    shapeDesc.localAxis = transform->GetLocalAxis();
-    shapeDesc.localAxis.FixDegeneracies();
+    shapeDesc.localOrigin = localTransform.ToTranslationVec3();
+    shapeDesc.localAxis = localTransform.ToMat3();
 
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(childEntity, shapes);
+        AddChildShapeRecursive(parentTransform, childEntity, shapes);
     }
 }
 
@@ -184,7 +186,7 @@ void ComRigidBody::CreateBody() {
 
     // Collect collider shadpes in children recursively
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(childEntity, physicsDesc.shapes);
+        AddChildShapeRecursive(transform, childEntity, physicsDesc.shapes);
     }
 
 #if 0

@@ -154,6 +154,11 @@ public:
                         /// Sets this matrix to equal the identity.
     void                SetIdentity();
 
+                        /// Fix degenerate axial cases
+    bool                FixDegeneracies();
+                        /// Change tiny numbers to zero
+    bool                FixDenormals();
+
     void                SetScaleRotation(const Vec3 &s, const Mat3 &m);
                         /// Sets the translation part of this matrix.
     void                SetTranslation(const Vec3 &t);
@@ -402,6 +407,20 @@ BE_INLINE void Mat3x4::SetZero() {
 
 BE_INLINE void Mat3x4::SetIdentity() {
     *this = Mat3x4::identity;
+}
+
+BE_INLINE bool Mat3x4::FixDegeneracies() {
+    bool r = mat[0].ToVec3().FixDegenerateNormal();
+    r |= mat[1].ToVec3().FixDegenerateNormal();
+    r |= mat[2].ToVec3().FixDegenerateNormal();
+    return r;
+}
+
+BE_INLINE bool Mat3x4::FixDenormals() {
+    bool r = mat[0].ToVec3().FixDenormals();
+    r |= mat[1].ToVec3().FixDenormals();
+    r |= mat[2].ToVec3().FixDenormals();
+    return r;
 }
 
 BE_INLINE Mat3x4 Mat3x4::Inverse() const {

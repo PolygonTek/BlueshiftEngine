@@ -82,14 +82,14 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
         initialTransform.setIdentity();
         initialTransform.setOrigin(btVector3(0, 0, 0));
     } else if (desc->shapes.Count() == 1) {
-        const PhysShapeDesc *singleShapeDesc = &desc->shapes[0];
-        shape = singleShapeDesc->collider->shape;
+        const PhysShapeDesc *shapeDesc = &desc->shapes[0];
+        shape = shapeDesc->collider->shape;
 
-        totalCentroid = singleShapeDesc->localOrigin + singleShapeDesc->localAxis * singleShapeDesc->collider->GetCentroid();
+        totalCentroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
 
-        // initial world transform 
+        // Construct initial world transform 
         Vec3 worldCentroid = desc->origin + desc->axis * totalCentroid;
-        Mat3 worldAxis = desc->axis * singleShapeDesc->localAxis;
+        Mat3 worldAxis = desc->axis * shapeDesc->localAxis;
         initialTransform.setBasis(btMatrix3x3(
             worldAxis[0][0], worldAxis[1][0], worldAxis[2][0],
             worldAxis[0][1], worldAxis[1][1], worldAxis[2][1],
@@ -99,6 +99,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
         btCompoundShape *compoundShape = new btCompoundShape;
         shape = compoundShape;
 
+        // Compute total centroid & volume
         float totalVolume = 0.0f;
 
         for (int i = 0; i < desc->shapes.Count(); i++) {
@@ -115,13 +116,13 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
             totalCentroid /= totalVolume;
         }
 
-        // local transform for child shapes
         for (int i = 0; i < desc->shapes.Count(); i++) {
             const PhysShapeDesc *shapeDesc = &desc->shapes[i];
 
             Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
             Vec3 localCentroid = centroid - totalCentroid;
 
+            // Construct local transform for each child shapes
             btTransform localTransform;
             localTransform.setBasis(btMatrix3x3(
                 shapeDesc->localAxis[0][0], shapeDesc->localAxis[1][0], shapeDesc->localAxis[2][0],
@@ -132,7 +133,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
             compoundShape->addChildShape(localTransform, shapeDesc->collider->shape);
         }
 
-        // initial world transform 
+        // Construct initial world transform 
         Vec3 worldCentroid = desc->origin + desc->axis * totalCentroid;
         initialTransform.setBasis(btMatrix3x3(
             desc->axis[0][0], desc->axis[1][0], desc->axis[2][0],

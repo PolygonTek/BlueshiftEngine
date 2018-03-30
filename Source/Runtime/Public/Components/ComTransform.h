@@ -53,6 +53,8 @@ public:
     Angles                  GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
                             /// Returns local space transform matrix.
     Mat3x4                  GetLocalTransform() const { return Mat3x4(localScale, localAxis, localOrigin); }
+                            /// Returns local space transform matrix without scaling.
+    Mat3x4                  GetLocalTransformNoScale() const { return Mat3x4(Vec3::one, localAxis, localOrigin); }
 
                             /// Sets position in local space.
     void                    SetLocalOrigin(const Vec3 &origin);
@@ -75,6 +77,8 @@ public:
     Angles                  GetAngles() const { return GetAxis().ToAngles(); }
                             /// Returns world space transform matrix.
     const Mat3x4 &          GetTransform() const;
+                            /// Returns world space transform matrix without scaling.
+    Mat3x4                  GetTransformNoScale() const;
 
                             /// Sets position in world space.
     void                    SetOrigin(const Vec3 &origin);
