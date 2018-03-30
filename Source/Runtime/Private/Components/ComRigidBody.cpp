@@ -166,6 +166,10 @@ void ComRigidBody::AddChildShapeRecursive(const ComTransform *parentTransform, c
 }
 
 void ComRigidBody::CreateBody() {
+    if (body) {
+        physicsSystem.DestroyCollidable(body);
+    }
+
     ComTransform *transform = GetEntity()->GetTransform();
 
     physicsDesc.origin = transform->GetOrigin();

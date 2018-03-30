@@ -58,19 +58,25 @@ void ComCylinderCollider::CreateCollider() {
 void ComCylinderCollider::SetCenter(const Vec3 &center) {
     this->center = center;
 
-    CreateCollider();
+    if (IsInitialized()) {
+        CreateCollider();
+    }
 }
 
 void ComCylinderCollider::SetRadius(float radius) {
     this->radius = radius;
 
-    CreateCollider();
+    if (IsInitialized()) {
+        CreateCollider();
+    }
 }
 
 void ComCylinderCollider::SetHeight(float height) {
     this->height = height;
 
-    CreateCollider();
+    if (IsInitialized()) {
+        CreateCollider();
+    }
 }
 
 bool ComCylinderCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

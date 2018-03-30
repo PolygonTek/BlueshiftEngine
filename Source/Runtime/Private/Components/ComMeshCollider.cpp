@@ -53,7 +53,9 @@ void ComMeshCollider::CreateCollider() {
 void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     this->meshGuid = meshGuid;
 
-    CreateCollider();
+    if (IsInitialized()) {
+        CreateCollider();
+    }
 }
 
 bool ComMeshCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

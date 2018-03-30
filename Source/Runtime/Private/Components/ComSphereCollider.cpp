@@ -55,13 +55,17 @@ void ComSphereCollider::CreateCollider() {
 void ComSphereCollider::SetCenter(const Vec3 &center) {
     this->center = center;
 
-    CreateCollider();
+    if (IsInitialized()) {
+        CreateCollider();
+    }
 }
 
 void ComSphereCollider::SetRadius(float radius) {
     this->radius = radius;
 
-    CreateCollider();
+    if (IsInitialized()) {
+        CreateCollider();
+    }
 }
 
 bool ComSphereCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

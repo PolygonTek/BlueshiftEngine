@@ -55,13 +55,17 @@ void ComBoxCollider::CreateCollider() {
 void ComBoxCollider::SetCenter(const Vec3 &center) {
     this->center = center;
 
-    CreateCollider();
+    if (IsInitialized()) {
+        CreateCollider();
+    }
 }
 
 void ComBoxCollider::SetExtents(const Vec3 &extents) {
     this->extents = extents;
 
-    CreateCollider();
+    if (IsInitialized()) {
+        CreateCollider();
+    }
 }
 
 bool ComBoxCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
