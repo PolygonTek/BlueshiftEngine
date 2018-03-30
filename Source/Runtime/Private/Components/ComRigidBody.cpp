@@ -138,16 +138,18 @@ void ComRigidBody::Awake() {
     oldCollisions.Clear();
 }
 
-static void AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes) {
+void ComRigidBody::AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes) {
     if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>()) {
         return;
     }
 
-    const ComCollider *collider = entity->GetComponent<ComCollider>();
+    ComCollider *collider = entity->GetComponent<ComCollider>();
     if (!collider) {
         return;
     }
 
+    collider->CreateCollider();
+    
     ComTransform *transform = entity->GetTransform();
 
     Mat3x4 localTransform = parentTransform->GetTransformNoScale().Inverse() * Mat3x4(Vec3::one, transform->GetAxis(), transform->GetOrigin());
@@ -174,6 +176,7 @@ void ComRigidBody::CreateBody() {
     if (colliders.Count() > 0) {
         for (int i = 0; i < colliders.Count(); i++) {
             ComCollider *collider = colliders[i]->Cast<ComCollider>();
+            collider->CreateCollider();
 
             PhysShapeDesc shapeDesc;
             shapeDesc.localOrigin = Vec3::zero;

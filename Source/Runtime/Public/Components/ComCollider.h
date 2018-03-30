@@ -19,8 +19,13 @@
 BE_NAMESPACE_BEGIN
 
 class Collider;
+class ComRigidBody;
+class ComSensor;
 
 class ComCollider : public Component {
+    friend class ComRigidBody;
+    friend class ComSensor;
+
 public:
     ABSTRACT_PROTOTYPE(ComCollider);
 

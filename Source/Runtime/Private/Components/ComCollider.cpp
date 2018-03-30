@@ -48,8 +48,6 @@ void ComCollider::Purge(bool chainPurge) {
 void ComCollider::Init() {
     Component::Init();
 
-    CreateCollider();
-
     // Mark as initialized
     SetInitialized(true);
 }
