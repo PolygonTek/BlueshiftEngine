@@ -89,6 +89,7 @@ void ComRigidBody::RegisterProperties() {
 }
 
 ComRigidBody::ComRigidBody() {
+    memset(&physicsDesc, 0, sizeof(physicsDesc));
     body = nullptr;
     collisionListener = nullptr;
     physicsUpdating = false;
@@ -139,7 +140,7 @@ void ComRigidBody::Awake() {
 }
 
 void ComRigidBody::AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes) {
-    if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>()) {
+    if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>()) { // || entity->GetComponent<ComVehicleWheel>()) {
         return;
     }
 
