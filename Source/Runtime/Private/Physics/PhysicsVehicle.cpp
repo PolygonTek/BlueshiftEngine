@@ -108,13 +108,11 @@ int PhysVehicle::AddWheel(const Vec3 &chassisLocalOrigin, const Mat3 &chassisLoc
 
 float PhysVehicle::GetTorque(int wheelIndex) const {
     btWheelInfo &wheelInfo = vehicle->getWheelInfo(wheelIndex);
-    // FIXME: negative torque 
-    return PhysicsUnitToSystemUnit(PhysicsUnitToSystemUnit(-wheelInfo.m_engineForce));
+    return PhysicsUnitToSystemUnit(PhysicsUnitToSystemUnit(wheelInfo.m_engineForce));
 }
 
 void PhysVehicle::SetTorque(int wheelIndex, float torque) {
-    // FIXME: negative torque 
-    vehicle->applyEngineForce(SystemUnitToPhysicsUnit(SystemUnitToPhysicsUnit(-torque)), wheelIndex);
+    vehicle->applyEngineForce(SystemUnitToPhysicsUnit(SystemUnitToPhysicsUnit(torque)), wheelIndex);
 }
 
 float PhysVehicle::GetBrakingTorque(int wheelIndex) const {
