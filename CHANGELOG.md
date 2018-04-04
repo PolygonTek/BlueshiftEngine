@@ -1,8 +1,9 @@
 Version History
 ---------------
 
-### 0.5.0
-- Added slider/wheel joint components
+### 0.5.0 (work in progress)
+- Added support for vehicle physics
+- Added support for slider/wheel joint components
 - Fixed to reflect changes in properties of physics components in play mode
 
 ### 0.4.0
