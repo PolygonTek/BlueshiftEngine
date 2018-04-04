@@ -98,6 +98,7 @@ static void RegisterEngineObjects() {
     ComMeshCollider::RegisterProperties();
     ComRigidBody::RegisterProperties();
     ComSensor::RegisterProperties();
+    ComVehicleWheel::RegisterProperties();
     ComConstantForce::RegisterProperties();
     ComJoint::RegisterProperties();
     ComFixedJoint::RegisterProperties();

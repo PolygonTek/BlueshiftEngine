@@ -26,6 +26,7 @@
 #include "Components/ComMeshCollider.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComSensor.h"
+#include "Components/ComVehicleWheel.h"
 #include "Components/ComConstantForce.h"
 #include "Components/ComJoint.h"
 #include "Components/ComFixedJoint.h"
@@ -84,6 +85,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_mesh_collider", static_cast<ComMeshCollider*(Object::*)()>(&Object::Cast<ComMeshCollider>),
         "cast_rigid_body", static_cast<ComRigidBody*(Object::*)()>(&Object::Cast<ComRigidBody>),
         "cast_sensor", static_cast<ComSensor*(Object::*)()>(&Object::Cast<ComSensor>),
+        "cast_vehicle_wheel", static_cast<ComVehicleWheel*(Object::*)()>(&Object::Cast<ComVehicleWheel>),
         "cast_constant_force", static_cast<ComConstantForce*(Object::*)()>(&Object::Cast<ComConstantForce>),
         "cast_joint", static_cast<ComJoint*(Object::*)()>(&Object::Cast<ComJoint>),
         "cast_fixed_joint", static_cast<ComFixedJoint*(Object::*)()>(&Object::Cast<ComFixedJoint>),

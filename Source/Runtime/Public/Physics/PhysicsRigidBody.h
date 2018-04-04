@@ -26,6 +26,7 @@ class PhysRigidBody : public PhysCollidable {
     friend class PhysP2PConstraint;
     friend class PhysHingeConstraint;
     friend class PhysSliderConstraint;
+    friend class PhysVehicle;
 
 public:
     PhysRigidBody(btRigidBody *rididBody, const Vec3 &centroid);
@@ -37,7 +38,7 @@ public:
     virtual const Mat3      GetAxis() const override;
     virtual void            SetAxis(const Mat3 &axis) override;
 
-    virtual void            SetTransform(const Mat3 &axis, const Vec3 &origin) override;
+    virtual void            SetTransform(const Mat3x4 &transform) override;
 
     float                   GetMass() const;
     void                    SetMass(float mass);
@@ -83,6 +84,8 @@ public:
 private:
     btRigidBody *           GetRigidBody();
     const btRigidBody *     GetRigidBody() const;
+
+    PhysVehicle *           vehiclePtr;
 };
 
 BE_NAMESPACE_END

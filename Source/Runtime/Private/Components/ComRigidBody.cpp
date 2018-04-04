@@ -18,6 +18,7 @@
 #include "Components/ComRigidBody.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComSensor.h"
+#include "Components/ComVehicleWheel.h"
 #include "Components/ComScript.h"
 #include "Game/GameWorld.h"
 
@@ -91,6 +92,7 @@ void ComRigidBody::RegisterProperties() {
 ComRigidBody::ComRigidBody() {
     memset(&physicsDesc, 0, sizeof(physicsDesc));
     body = nullptr;
+    vehicle = nullptr;
     collisionListener = nullptr;
     physicsUpdating = false;
 }
@@ -103,6 +105,11 @@ void ComRigidBody::Purge(bool chainPurge) {
     if (body) {
         physicsSystem.DestroyCollidable(body);
         body = nullptr;
+    }
+
+    if (vehicle) {
+        physicsSystem.DestroyVehicle(vehicle);
+        vehicle = nullptr;
     }
 
     if (collisionListener) {
@@ -121,11 +128,6 @@ void ComRigidBody::Init() {
     physicsDesc.type = PhysCollidable::Type::RigidBody;
     physicsDesc.shapes.Clear();
 
-    // static rigid body can't have collision listener
-    if (physicsDesc.mass > 0) {
-        collisionListener = new CollisionListener(this);
-    }
-
     // Mark as initialized
     SetInitialized(true);
 }
@@ -139,8 +141,8 @@ void ComRigidBody::Awake() {
     oldCollisions.Clear();
 }
 
-void ComRigidBody::AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes) {
-    if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>()) { // || entity->GetComponent<ComVehicleWheel>()) {
+void ComRigidBody::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse, const Entity *entity, Array<PhysShapeDesc> &shapeDescs) {
+    if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>() || entity->GetComponent<ComVehicleWheel>()) {
         return;
     }
 
@@ -153,25 +155,69 @@ void ComRigidBody::AddChildShapeRecursive(const ComTransform *parentTransform, c
     
     ComTransform *transform = entity->GetTransform();
 
-    Mat3x4 localTransform = parentTransform->GetTransformNoScale().Inverse() * Mat3x4(Vec3::one, transform->GetAxis(), transform->GetOrigin());
+    Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
     localTransform.FixDegeneracies();
 
-    PhysShapeDesc &shapeDesc = shapes.Alloc();
-    shapeDesc.collider = collider->GetCollider();
+    PhysShapeDesc &shapeDesc = shapeDescs.Alloc();
     shapeDesc.localOrigin = localTransform.ToTranslationVec3();
     shapeDesc.localAxis = localTransform.ToMat3();
+    shapeDesc.collider = collider->GetCollider();
 
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(parentTransform, childEntity, shapes);
+        AddChildShapeRecursive(parentWorldMatrixInverse, childEntity, shapeDescs);
+    }
+}
+
+void ComRigidBody::AddChildWheelRecursive(const Mat3x4 &parentWorldMatrixInverse, const Entity *entity, Array<PhysWheelDesc> &wheelDescs, Array<ComVehicleWheel *> &vehicleWheels) {
+    if (entity->GetComponent<ComRigidBody>()) {
+        return;
+    }
+
+    ComVehicleWheel *vehicleWheel = entity->GetComponent<ComVehicleWheel>();
+    if (vehicleWheel) {
+        vehicleWheel->ClearCache();
+
+        vehicleWheels.Append(vehicleWheel);
+
+        ComTransform *transform = entity->GetTransform();
+
+        Mat3x4 worldTransform = Mat3x4(transform->GetAxis(), transform->GetOrigin()) * Mat3x4(vehicleWheel->localAxis, vehicleWheel->localOrigin);
+        Mat3x4 localTransform = parentWorldMatrixInverse * worldTransform;
+        localTransform.FixDegeneracies();
+
+        PhysWheelDesc &wheelDesc = wheelDescs.Alloc();
+        wheelDesc.chassisLocalOrigin = localTransform.ToTranslationVec3();
+        wheelDesc.chassisLocalAxis = localTransform.ToMat3();
+        wheelDesc.radius = vehicleWheel->GetRadius();
+        wheelDesc.suspensionRestLength = vehicleWheel->GetSuspensionDistance();
+        wheelDesc.suspensionMaxDistance = vehicleWheel->GetSuspensionMaxDistance();
+        wheelDesc.suspensionMaxForce = vehicleWheel->GetSuspensionMaxForce();
+        wheelDesc.suspensionStiffness = vehicleWheel->GetSuspensionStiffness();
+        wheelDesc.suspensionDampingRelaxation = vehicleWheel->GetSuspensionDampingRelaxation();
+        wheelDesc.suspensionDampingCompression = vehicleWheel->GetSuspensionDampingCompression();
+        wheelDesc.rollingFriction = vehicleWheel->GetRollingFriction();
+        wheelDesc.rollingInfluence = vehicleWheel->GetRollingInfluence();
+    }
+
+    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        AddChildWheelRecursive(parentWorldMatrixInverse, childEntity, wheelDescs, vehicleWheels);
     }
 }
 
 void ComRigidBody::CreateBody() {
     if (body) {
         physicsSystem.DestroyCollidable(body);
+        body = nullptr;
+    }
+
+    if (vehicle) {
+        physicsSystem.DestroyVehicle(vehicle);
+        vehicle = nullptr;
     }
 
     ComTransform *transform = GetEntity()->GetTransform();
+
+    Mat3x4 worldMatrixNoScaleInverse = transform->GetMatrixNoScale().Inverse();
 
     physicsDesc.origin = transform->GetOrigin();
     physicsDesc.axis = transform->GetAxis();
@@ -194,7 +240,7 @@ void ComRigidBody::CreateBody() {
 
     // Collect collider shadpes in children recursively
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(transform, childEntity, physicsDesc.shapes);
+        AddChildShapeRecursive(worldMatrixNoScaleInverse, childEntity, physicsDesc.shapes);
     }
 
 #if 0
@@ -203,13 +249,51 @@ void ComRigidBody::CreateBody() {
     }
 #endif
 
-    body = static_cast<PhysRigidBody *>(physicsSystem.CreateCollidable(&physicsDesc));
+    if (!collisionListener) {
+        if (physicsDesc.mass > 0) {
+            collisionListener = new CollisionListener(this);
+        }
+    } else {
+        // static rigid body can't have collision listener
+        if (physicsDesc.mass == 0) {
+            SAFE_DELETE(collisionListener);
+        }
+    }
+
+    // Create a rigid body
+    body = static_cast<PhysRigidBody *>(physicsSystem.CreateCollidable(physicsDesc));
     body->SetUserPointer(this);
     body->SetCustomCollisionFilterIndex(entity->GetLayer());
     body->SetCollisionListener(collisionListener);
 
+    // Collect vehicle wheels in children recursively
+    Array<ComVehicleWheel *> vehicleWheels;
+    PhysVehicleDesc vehicleDesc;
+    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        AddChildWheelRecursive(worldMatrixNoScaleInverse, childEntity, vehicleDesc.wheels, vehicleWheels);
+    }
+
+    // If a vehicle wheel component exists in any of its children, create a physics vehicle
+    if (vehicleWheels.Count() > 0) {
+        vehicleDesc.chassisBody = body;
+
+        vehicle = physicsSystem.CreateVehicle(vehicleDesc);
+
+        for (int wheelIndex = 0; wheelIndex < vehicleWheels.Count(); wheelIndex++) {
+            vehicleWheels[wheelIndex]->vehicle = vehicle;
+            vehicleWheels[wheelIndex]->vehicleWheelIndex = wheelIndex;
+
+            //ComTransform *wheelTransform = vehicleWheels[wheelIndex]->GetEntity()->GetTransform();
+            //wheelTransform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComVehicleWheel::TransformUpdated, SignalObject::Unique);
+        }
+    }
+
     if (IsActiveInHierarchy()) {
         body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+
+        if (vehicle) {
+            vehicle->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+        }
     }
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRigidBody::TransformUpdated, SignalObject::Unique);
@@ -225,13 +309,13 @@ void ComRigidBody::Update() {
     }
 
     if (!body->IsStatic() && !body->IsKinematic() && body->IsActive()) {
+        ComTransform *transform = GetEntity()->GetTransform();
+
         // Block SIG_TransformUpdated during chainging transform in below
         physicsUpdating = true;
 
-        ComTransform *transform = GetEntity()->GetTransform();
         transform->SetPhysicsUpdating(true);
-        transform->SetAxis(body->GetAxis());
-        transform->SetOrigin(body->GetOrigin());
+        transform->SetOriginAxis(body->GetOrigin(), body->GetAxis());
         transform->SetPhysicsUpdating(false);
 
         physicsUpdating = false;
@@ -309,7 +393,7 @@ void ComRigidBody::TransformUpdated(const ComTransform *transform) {
     }
 
     if (body) {
-        body->SetTransform(transform->GetAxis(), transform->GetOrigin());
+        body->SetTransform(Mat3x4(transform->GetAxis(), transform->GetOrigin()));
         body->ClearForces();
         body->ClearVelocities();
         body->Activate();

@@ -149,6 +149,7 @@
 #include "Components/ComMeshCollider.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComSensor.h"
+#include "Components/ComVehicleWheel.h"
 #include "Components/ComConstantForce.h"
 #include "Components/ComJoint.h"
 #include "Components/ComFixedJoint.h"

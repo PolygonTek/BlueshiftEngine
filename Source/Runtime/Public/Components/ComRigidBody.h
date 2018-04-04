@@ -23,6 +23,7 @@ class ComJoint;
 class ComTransform;
 class ComRigidBody;
 class ComCharacterController;
+class ComVehicleWheel;
 
 class Collision {
 public:
@@ -125,13 +126,15 @@ protected:
     virtual void            OnInactive() override;
 
     void                    CreateBody();
-    void                    AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes);
+    void                    AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse, const Entity *entity, Array<PhysShapeDesc> &shapeDescs);
+    void                    AddChildWheelRecursive(const Mat3x4 &parentWorldMatrixInverse, const Entity *entity, Array<PhysWheelDesc> &wheelDescs, Array<ComVehicleWheel *> &vehicleWheels);
     void                    ProcessScriptCallback();
     void                    TransformUpdated(const ComTransform *transform);
 
     class CollisionListener;
 
     PhysRigidBody *         body;
+    PhysVehicle *           vehicle;
     PhysCollidableDesc      physicsDesc;
     CollisionListener *     collisionListener;
     Array<Collision>        collisions;

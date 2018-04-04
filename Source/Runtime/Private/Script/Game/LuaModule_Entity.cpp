@@ -26,6 +26,7 @@
 #include "Components/ComMeshCollider.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComSensor.h"
+#include "Components/ComVehicleWheel.h"
 #include "Components/ComConstantForce.h"
 #include "Components/ComJoint.h"
 #include "Components/ComFixedJoint.h"
@@ -73,6 +74,8 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "has_component", &Entity::HasComponent,
         "component_index", &Entity::GetComponentIndex,
         "component_by_index", static_cast<Component*(Entity::*)(int)const>(&Entity::GetComponent),
+        "components_in_children", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *)const>(&Entity::GetComponentsInChildren),
+        "components", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *)const>(&Entity::GetComponents),
         "transform", static_cast<ComTransform*(Entity::*)()const>(&Entity::GetComponent<ComTransform>),
         "collider", static_cast<ComCollider*(Entity::*)()const>(&Entity::GetComponent<ComCollider>),
         "box_collider", static_cast<ComBoxCollider*(Entity::*)()const>(&Entity::GetComponent<ComBoxCollider>),
@@ -83,6 +86,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "mesh_collider", static_cast<ComMeshCollider*(Entity::*)()const>(&Entity::GetComponent<ComMeshCollider>),
         "rigid_body", static_cast<ComRigidBody*(Entity::*)()const>(&Entity::GetComponent<ComRigidBody>),
         "sensor", static_cast<ComSensor*(Entity::*)()const>(&Entity::GetComponent<ComSensor>),
+        "vehicle_wheel", static_cast<ComVehicleWheel*(Entity::*)()const>(&Entity::GetComponent<ComVehicleWheel>),
         "constant_force", static_cast<ComConstantForce*(Entity::*)()const>(&Entity::GetComponent<ComConstantForce>),
         "joint", static_cast<ComJoint*(Entity::*)()const>(&Entity::GetComponent<ComJoint>),
         "fixed_joint", static_cast<ComFixedJoint*(Entity::*)()const>(&Entity::GetComponent<ComFixedJoint>),
@@ -105,8 +109,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "audio_source", static_cast<ComAudioSource*(Entity::*)()const>(&Entity::GetComponent<ComAudioSource>),
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),
-        "script", static_cast<ComScript*(Entity::*)()const>(&Entity::GetComponent<ComScript>),
-        //"components", &Entity::GetComponents,
+        "script", static_cast<ComScript*(Entity::*)()const>(&Entity::GetComponent<ComScript>),        
         "new_component", &Entity::NewComponent);
 
     _Entity["meta_object"] = Entity::metaObject;

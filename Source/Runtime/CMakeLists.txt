@@ -190,6 +190,7 @@ set(ENGINE_FILES
     Public/Components/ComStaticMeshRenderer.h
     Public/Components/ComTransform.h
     Public/Components/ComWheelJoint.h
+    Public/Components/ComVehicleWheel.h
 
     Public/Game/Entity.h
     Public/Game/Prefab.h
@@ -214,6 +215,7 @@ set(ENGINE_FILES
     Public/Physics/PhysicsRigidBody.h
     Public/Physics/PhysicsSensor.h
     Public/Physics/PhysicsSystem.h
+    Public/Physics/PhysicsVehicle.h
     Public/Physics/PhysicsWorld.h
 
     Public/Sound/Pcm.h
@@ -417,6 +419,7 @@ set(ENGINE_FILES
     Private/Components/ComStaticMeshRenderer.cpp
     Private/Components/ComTransform.cpp
     Private/Components/ComWheelJoint.cpp
+    Private/Components/ComVehicleWheel.cpp
 
     Private/Game/Entity.cpp
     Private/Game/Prefab.cpp
@@ -453,6 +456,7 @@ set(ENGINE_FILES
     Private/Physics/PhysicsRigidBody.cpp
     Private/Physics/PhysicsSensor.cpp
     Private/Physics/PhysicsSystem.cpp
+    Private/Physics/PhysicsVehicle.cpp
     Private/Physics/PhysicsWorld.cpp
 
     Private/Sound/Pcm.cpp
@@ -611,6 +615,7 @@ set(ENGINE_FILES
     Private/Script/Components/LuaModule_ComAudioSource.cpp
     Private/Script/Components/LuaModule_ComSpline.cpp
     Private/Script/Components/LuaModule_ComScript.cpp
+    Private/Script/Components/LuaModule_ComVehicleWheel.cpp
     Private/Script/Game/LuaModule_Entity.cpp
     Private/Script/Game/LuaModule_GameWorld.cpp
 

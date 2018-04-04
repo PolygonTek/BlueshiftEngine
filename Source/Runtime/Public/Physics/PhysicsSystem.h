@@ -34,15 +34,20 @@ public:
     PhysicsWorld *          AllocPhysicsWorld();
     void                    FreePhysicsWorld(PhysicsWorld *renderWorld);
     
-                            /// Create a collidable object with the given description.
-    PhysCollidable *        CreateCollidable(const PhysCollidableDesc *desc);
-                            /// Destroy a collidable object.
+                            /// Creates a collidable object with the given descriptor.
+    PhysCollidable *        CreateCollidable(const PhysCollidableDesc &desc);
+                            /// Destroys a collidable object.
     void                    DestroyCollidable(PhysCollidable *collidable);
     
-                            /// Create a constraint object with the given description.
-    PhysConstraint *        CreateConstraint(const PhysConstraintDesc *desc);
-                            /// Destroy a constraint object.
+                            /// Creates a constraint object with the given descriptor.
+    PhysConstraint *        CreateConstraint(const PhysConstraintDesc &desc);
+                            /// Destroys a constraint object.
     void                    DestroyConstraint(PhysConstraint *constraint);
+
+                            /// Creates a vehicle object with the given descriptor.
+    PhysVehicle *           CreateVehicle(const PhysVehicleDesc &desc);
+                            /// Destroys a vehicle object.
+    void                    DestroyVehicle(PhysVehicle *vehicle);
 
     void                    CheckModifiedCVars();
 

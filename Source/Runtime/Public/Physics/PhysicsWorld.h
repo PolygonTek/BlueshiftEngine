@@ -47,6 +47,7 @@ struct PhysCollidableDesc {
     Array<PhysShapeDesc>    shapes;
     Vec3                    origin;         // position in system units
     Mat3                    axis;
+    bool                    character;
     bool                    kinematic;
     bool                    ccd;
     float                   mass;           // if mass is zero, then static object
@@ -70,11 +71,31 @@ struct PhysConstraintDesc {
     float                   breakImpulse;
 };
 
+struct PhysWheelDesc {
+    Vec3                    chassisLocalOrigin;
+    Mat3                    chassisLocalAxis;
+    float                   radius;
+    float                   suspensionRestLength;
+    float                   suspensionMaxDistance;
+    float                   suspensionMaxForce;
+    float                   suspensionStiffness;
+    float                   suspensionDampingRelaxation;
+    float                   suspensionDampingCompression;
+    float                   rollingFriction;
+    float                   rollingInfluence;
+};
+
+struct PhysVehicleDesc {
+    PhysRigidBody *         chassisBody;
+    Array<PhysWheelDesc>    wheels;
+};
+
 class PhysicsWorld : public SignalObject {
     friend class PhysicsSystem;
     friend class PhysCollidable;
     friend class PhysConstraint;
     friend class PhysSensor;
+    friend class PhysVehicle;
 
 public:
     enum ConstraintSolver {
