@@ -64,7 +64,7 @@ void LuaVM::RegisterRigidBodyComponent(LuaCpp::Module &module) {
     _Collision.AddClassMembers<Collision>(
         "entity", &Collision::entity,
         "rigid_body", &Collision::body,
-        "controller", &Collision::controller,
+        "character_controller", &Collision::characterController,
         "point", &Collision::point,
         "normal", &Collision::normal,
         "distance", &Collision::distance,

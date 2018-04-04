@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "Components/Component.h"
 #include "Components/ComTransform.h"
-#include "Components/ComJoint.h"
 #include "Components/ComRenderable.h"
 #include "Components/ComScript.h"
 #include "Game/Entity.h"
@@ -139,7 +138,7 @@ void Entity::Awake() {
 void Entity::Start() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
-
+        
         if (scriptComponent) {
             scriptComponent->Start();
         }

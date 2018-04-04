@@ -240,8 +240,7 @@ void ComTransform::Rotate(const Vec3 &rotVec, float angle, TransformSpace space)
 void ComTransform::InvalidateWorldMatrix() {
     // Precondition:
     // a) whenever a transform is marked worldMatrixInvalidated, all its children are marked worldMatrixInvalidated as well.
-    // b) whenever a transform is cleared from being worldMatrixInvalidated, all its parents must have been
-    //    cleared as well.
+    // b) whenever a transform is cleared from being worldMatrixInvalidated, all its parents must have been cleared as well.
     if (worldMatrixInvalidated) {
         return;
     }

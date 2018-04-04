@@ -27,12 +27,12 @@ class ComVehicleWheel;
 
 class Collision {
 public:
-    bool                    operator==(const Collision &rhs) const { return entityGuid == rhs.entityGuid && body == rhs.body && controller == rhs.controller; }
+    bool                    operator==(const Collision &rhs) const { return entityGuid == rhs.entityGuid && body == rhs.body && characterController == rhs.characterController; }
 
     Guid                    entityGuid;
     Entity *                entity;
     ComRigidBody *          body;
-    ComCharacterController *controller;
+    ComCharacterController *characterController;
     Vec3                    point;
     Vec3                    normal;
     float                   distance;

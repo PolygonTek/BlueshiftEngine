@@ -45,14 +45,14 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
     }
 
     ComRigidBody *collisionRigidBody = collisionComponent->Cast<ComRigidBody>();
-    ComCharacterController *collisionController = collisionComponent->Cast<ComCharacterController>();
+    ComCharacterController *collisionCharacterController = collisionComponent->Cast<ComCharacterController>();
 
-    if (collisionRigidBody || collisionController) {
+    if (collisionRigidBody || collisionCharacterController) {
         Collision collision;
         collision.entityGuid = collisionComponent->GetEntity()->GetGuid();
         collision.entity = collisionComponent->GetEntity();
         collision.body = collisionRigidBody;
-        collision.controller = collisionController;
+        collision.characterController = collisionCharacterController;
         collision.point = point;
         collision.normal = normal;
         collision.distance = distance;
