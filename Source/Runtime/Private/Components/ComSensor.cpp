@@ -59,7 +59,7 @@ void ComSensor::Init() {
     SetInitialized(true);
 }
 
-void ComSensor::AddChildShapeRecursive(const ComTransform *parentTransform, const Entity *entity, Array<PhysShapeDesc> &shapes) {
+void ComSensor::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse, const Entity *entity, Array<PhysShapeDesc> &shapes) {
     if (entity->GetComponent<ComRigidBody>() || entity->GetComponent<ComSensor>()) {
         return;
     }
@@ -73,7 +73,7 @@ void ComSensor::AddChildShapeRecursive(const ComTransform *parentTransform, cons
 
     const ComTransform *transform = entity->GetTransform();
 
-    Mat3x4 localTransform = parentTransform->GetTransformNoScale().Inverse() * Mat3x4(Vec3::one, transform->GetAxis(), transform->GetOrigin());
+    Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
     localTransform.FixDegeneracies();
 
     PhysShapeDesc &shapeDesc = shapes.Alloc();
@@ -82,7 +82,7 @@ void ComSensor::AddChildShapeRecursive(const ComTransform *parentTransform, cons
     shapeDesc.localAxis = localTransform.ToMat3();
 
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(parentTransform, childEntity, shapes);
+        AddChildShapeRecursive(parentWorldMatrixInverse, childEntity, shapes);
     }
 }
 
@@ -127,14 +127,14 @@ void ComSensor::CreateSensor() {
 
     // Collect collider shadpes in children recursively
     for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(transform, childEntity, physicsDesc.shapes);
+        AddChildShapeRecursive(transform->GetMatrixNoScale().Inverse(), childEntity, physicsDesc.shapes);
     }
 
     if (physicsDesc.shapes.Count() == 0) {
         BE_WARNLOG(L"Entity %hs has sensor but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
     }
 
-    sensor = static_cast<PhysSensor *>(physicsSystem.CreateCollidable(&physicsDesc));
+    sensor = static_cast<PhysSensor *>(physicsSystem.CreateCollidable(physicsDesc));
     sensor->SetUserPointer(this);
     sensor->SetCustomCollisionFilterIndex(entity->GetLayer());
 }

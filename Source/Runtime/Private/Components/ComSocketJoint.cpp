@@ -74,7 +74,7 @@ void ComSocketJoint::CreateConstraint() {
     }
 
     // Create a constraint with the given description
-    PhysP2PConstraint *p2pConstraint = (PhysP2PConstraint *)physicsSystem.CreateConstraint(&desc);
+    PhysP2PConstraint *p2pConstraint = (PhysP2PConstraint *)physicsSystem.CreateConstraint(desc);
     p2pConstraint->SetImpulseClamp(impulseClamp);
 
     constraint = p2pConstraint;
@@ -117,7 +117,7 @@ void ComSocketJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
-    Vec3 worldOrigin = transform->GetTransform() * localAnchor;
+    Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
     
     renderWorld->SetDebugColor(Color4::red, Color4::zero);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(1), worldOrigin + Mat3::identity[0] * CentiToUnit(1), 1);

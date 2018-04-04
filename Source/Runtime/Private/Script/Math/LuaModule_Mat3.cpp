@@ -44,6 +44,7 @@ void LuaVM::RegisterMat3(LuaCpp::Module &module) {
         "is_singular", &Mat3::IsSingular,
         "set_zero", &Mat3::SetZero,
         "set_identity", &Mat3::SetIdentity,
+        "set_from_look_at", &Mat3::SetFromLookAt,
         "fix_degeneracies", &Mat3::FixDegeneracies,
         "fix_denormals", &Mat3::FixDenormals,
         "trace", &Mat3::Trace,

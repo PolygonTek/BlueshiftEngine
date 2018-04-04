@@ -38,8 +38,8 @@ void ComWheelJoint::RegisterProperties() {
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 30.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f,
+        "", PropertyInfo::EditorFlag);// .SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Use Steering Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false, 
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("minSteeringAngle", "Min Steering Angle", float, GetMinimumSteeringAngle, SetMinimumSteeringAngle, 0.f, 
@@ -97,7 +97,7 @@ void ComWheelJoint::CreateConstraint() {
     }
 
     // Create a constraint with the given description
-    PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
+    PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
 
     // Apply limit suspension distances
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, minSusDist));
@@ -247,16 +247,26 @@ void ComWheelJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected)
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
-        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
+    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+        Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
+        // Draw wheel circle
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(5), worldOrigin + worldAxis[1] * CentiToUnit(5), 1);
-        renderWorld->DebugLine(worldOrigin - worldAxis[2] * CentiToUnit(5), worldOrigin + worldAxis[2] * CentiToUnit(5), 1);
-
         renderWorld->DebugCircle(worldOrigin, worldAxis[0], CentiToUnit(5));
         renderWorld->DebugCircle(worldOrigin, worldAxis[0], CentiToUnit(15));
+
+        // Draw axle axis
+        renderWorld->SetDebugColor(Color4::red, Color4::zero);
+        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5), worldOrigin + worldAxis[0] * CentiToUnit(5), 1);
+
+        // Draw forward direction
+        renderWorld->SetDebugColor(Color4::green, Color4::zero);
+        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[1] * CentiToUnit(5), 1);
+
+        // Draw suspension direction
+        renderWorld->SetDebugColor(Color4::blue, Color4::zero);
+        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * CentiToUnit(5), 1);
     }
 }
 

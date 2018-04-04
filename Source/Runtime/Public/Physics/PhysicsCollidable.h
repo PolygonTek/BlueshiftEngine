@@ -62,7 +62,7 @@ public:
 
     enum Type {
         RigidBody,
-        Character,
+        SoftBody,
         Sensor
     };
 
@@ -75,7 +75,7 @@ public:
     virtual const Mat3      GetAxis() const;
     virtual void            SetAxis(const Mat3 &axis);
 
-    virtual void            SetTransform(const Mat3 &axis, const Vec3 &origin);
+    virtual void            SetTransform(const Mat3x4 &transform);
 
     float                   GetRestitution() const;
     void                    SetRestitution(float rest);

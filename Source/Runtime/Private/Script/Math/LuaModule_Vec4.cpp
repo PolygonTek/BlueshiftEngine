@@ -28,7 +28,7 @@ void LuaVM::RegisterVec4(LuaCpp::Module &module) {
         "y", &Vec4::y,
         "z", &Vec4::z,
         "w", &Vec4::w,
-        "at", &Vec4::At, // index start from zero
+        "at", &Vec4::At,
         "add", &Vec4::Add,
         "add_self", &Vec4::AddSelf,
         "sub", &Vec4::Sub,
@@ -71,6 +71,8 @@ void LuaVM::RegisterVec4(LuaCpp::Module &module) {
     _Vec4["unit_y"] = Vec4::unitY;
     _Vec4["unit_z"] = Vec4::unitZ;
     _Vec4["unit_w"] = Vec4::unitW;
+
+    _Vec4["from_lerp"].SetFunc(Vec4::FromLerp);
 }
 
 BE_NAMESPACE_END

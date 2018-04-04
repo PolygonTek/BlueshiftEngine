@@ -64,7 +64,7 @@ void ComFixedJoint::CreateConstraint() {
     }
 
     // Create a constraint with the given description
-    PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(&desc);
+    PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(desc);
 
     hingeConstraint->SetAngularLimits(0, 0);
     hingeConstraint->EnableAngularLimits(true);

@@ -27,6 +27,7 @@ PhysConstraint::PhysConstraint(PhysRigidBody *bodyA, PhysRigidBody *bodyB) {
 }
 
 PhysConstraint::~PhysConstraint() {
+    delete constraint;
 }
 
 void PhysConstraint::EnableCollision(bool enable) {

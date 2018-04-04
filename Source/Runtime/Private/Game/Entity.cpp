@@ -259,6 +259,49 @@ Entity *Entity::FindChild(const char *name) const {
     return nullptr;
 }
 
+Component *Entity::GetComponent(const MetaObject *type) const {
+    for (int i = 0; i < components.Count(); i++) {
+        Component *component = components[i];
+        if (component->GetMetaObject()->IsTypeOf(*type)) {
+            return component;
+        }
+    }
+
+    return nullptr;
+}
+
+ComponentPtrArray Entity::GetComponents(const MetaObject *type) const {
+    ComponentPtrArray subComponents;
+
+    for (int i = 0; i < components.Count(); i++) {
+        Component *component = components[i];
+
+        if (component->GetMetaObject()->IsTypeOf(*type)) {
+            subComponents.Append(component);
+        }
+    }
+
+    return subComponents;
+}
+
+ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type) const {
+    ComponentPtrArray subComponents;
+
+    for (int i = 0; i < components.Count(); i++) {
+        Component *component = components[i];
+
+        if (component->GetMetaObject()->IsTypeOf(*type)) {
+            subComponents.Append(component);
+        }
+    }
+
+    for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
+        subComponents.AppendArray(child->GetComponentsInChildren(type));
+    }
+
+    return subComponents;
+}
+
 bool Entity::HasRenderEntity(int renderEntityHandle) const {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];

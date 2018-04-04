@@ -65,7 +65,7 @@ Vec2 Vec2::FromConcentricSampleDisk(float u1, float u2) {
 
 const Vec2 Vec2::Compute2DBarycentricCoords(const float s1, const float s2, const float p) {
     float a = s1 - s2;
-    if (Math::Fabs(a) < Math::FloatEpsilon) {
+    if (Math::Fabs(a) < VECTOR_EPSILON) {
         return Vec2::zero;
     }
     float b = (p - s2) / a;

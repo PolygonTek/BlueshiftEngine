@@ -62,14 +62,14 @@ void PhysCollidable::SetAxis(const Mat3 &axis) {
         axis[0][2], axis[1][2], axis[2][2]));
 }
 
-void PhysCollidable::SetTransform(const Mat3 &axis, const Vec3 &origin) {
-    btVector3 worldCentroid = ToBtVector3(SystemUnitToPhysicsUnit(origin + axis * centroid));
+void PhysCollidable::SetTransform(const Mat3x4 &transform) {
+    btVector3 worldCentroid = ToBtVector3(SystemUnitToPhysicsUnit(transform * centroid));
 
     collisionObject->getWorldTransform().setOrigin(worldCentroid);
     collisionObject->getWorldTransform().setBasis(btMatrix3x3(
-        axis[0][0], axis[1][0], axis[2][0],
-        axis[0][1], axis[1][1], axis[2][1],
-        axis[0][2], axis[1][2], axis[2][2]));
+        transform[0][0], transform[0][1], transform[0][2],
+        transform[1][0], transform[1][1], transform[1][2],
+        transform[2][0], transform[2][1], transform[2][2]));
 }
 
 float PhysCollidable::GetRestitution() const {
@@ -200,7 +200,7 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
         bool isStatic = rigidBody->isStaticObject();
         bool isKinematic = rigidBody->isKinematicObject();
         
-        short filterGroup = isStatic ? (isKinematic ? (btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::DefaultFilter; 
+        short filterGroup = IsCharacter() ? btBroadphaseProxy::CharacterFilter : (isStatic ? (isKinematic ? (btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::DefaultFilter);
         short filterMask = btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger | btBroadphaseProxy::CharacterFilter;
         if (isStatic) {
             filterMask = filterMask & ~btBroadphaseProxy::StaticFilter;
@@ -209,10 +209,6 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
         physicsWorld->dynamicsWorld->addRigidBody(rigidBody, filterGroup, filterMask);
         break; 
     }
-    case Type::Character:
-        physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::CharacterFilter, 
-            btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger | btBroadphaseProxy::CharacterFilter);
-        break;
     case Type::Sensor:
         physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::SensorTrigger, 
             btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter /* FIXME: remove? */ | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter);
@@ -234,9 +230,6 @@ void PhysCollidable::RemoveFromWorld() {
     switch (type) {
     case Type::RigidBody:
         physicsWorld->dynamicsWorld->removeRigidBody(static_cast<btRigidBody *>(collisionObject));
-        break;
-    case Type::Character:
-        physicsWorld->dynamicsWorld->removeCollisionObject(collisionObject);
         break;
     case Type::Sensor:
         physicsWorld->dynamicsWorld->removeCollisionObject(collisionObject);

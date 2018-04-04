@@ -62,6 +62,7 @@ public:
     Vec3                operator-() const { return Vec3(-x, -y, -z); }
                         /// Performs an unary negation of this vector.
     Vec3                Negate() const { return Vec3(-x, -y, -z); }
+
                         /// Returns Vec3(|x|, |y|, |z|)
     Vec3                Abs() const { return Vec3(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
 
@@ -73,6 +74,7 @@ public:
                         /// Adds a vector to this vector.
                         /// This function is identical to the member function Add().
     Vec3                operator+(const Vec3 &rhs) const { return Vec3(x + rhs.x, y + rhs.y, z + rhs.z); }
+
                         /// Adds the vector (s, s, s, s) to this vector.
     Vec3                AddScalar(float s) const { return *this + s; }
                         /// Adds the vector (s, s, s, s) to this vector.
@@ -86,6 +88,7 @@ public:
                         /// Subtracts the given vector from this vector.
                         /// This function is identical to the member function Sub()
     Vec3                operator-(const Vec3 &rhs) const { return Vec3(x - rhs.x, y - rhs.y, z - rhs.z); }
+
                         /// Subtracts the vector (s, s, s, s) from this vector.
     Vec3                SubScalar(float s) const { return *this - s; }
                         /// Subtracts the vector (s, s, s, s) from this vector.
@@ -101,6 +104,7 @@ public:
     Vec3                operator*(float rhs) const { return Vec3(x * rhs, y * rhs, z * rhs); }
                         /// Multiplies vector v by a scalar.
     friend Vec3         operator*(float lhs, const Vec3 &rhs) { return Vec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
+
                         /// Multiplies this vector by a vector, element-wise.
     Vec3                MulComp(const Vec3 &v) const { return *this * v; }
                         /// Multiplies this vector by a vector, element-wise.
@@ -112,6 +116,7 @@ public:
                         /// Divides this vector by a scalar.
                         /// This function is identical to the member function Div().
     Vec3                operator/(float rhs) const { float inv = 1.f / rhs; return Vec3(x * inv, y * inv, z * inv); }
+
                         /// Divides this vector by a vector, element-wise.
     Vec3                DivComp(const Vec3 &v) const { return *this / v; }
                         /// This function is identical to the member function DivComp().
@@ -173,9 +178,9 @@ public:
 
                         /// Sets all element of this vector
     void                Set(float x, float y, float z);
+
                         /// Sets this Vec3 to (s, s, s).
     void                SetFromScalar(float s) { x = y = z = s; }
-
                         /// Returns Vec3(s, s, s).
     static Vec3         FromScalar(float s) { return Vec3(s, s, s); }
 
@@ -190,17 +195,20 @@ public:
 
                         /// Computes the length of this vector.
     float               Length() const;
+
                         /// Computes the squared length of this vector.
     float               LengthSqr() const;
+
                         /// Computes the distance between this point and the given vector.
     float               Distance(const Vec3 &a) const;
+
                         /// Computes the squared distance between this point and the given vector.
     float               DistanceSqr(const Vec3 &a) const;
 
                         /// Fix degenerate axial cases
     bool                FixDegenerateNormal();
                         /// Change tiny numbers to zero
-    bool                FixDenormals(float epsilon = Math::FloatEpsilon);
+    bool                FixDenormals();
 
                         /// Normalizes this vector.
                         /// @return Length of this vector
@@ -219,6 +227,7 @@ public:
     float               Dot(const Vec3 &a) const;
                         /// Computes the absolute dot product of this and the given vector.
     float               AbsDot(const Vec3 &a) const;
+
                         /// Computes the cross product of this and the given vector.
     Vec3                Cross(const Vec3 &a) const;
                         /// Sets this vector from the cross product of two vectors.
@@ -243,6 +252,10 @@ public:
     void                SetFromLerp(const Vec3 &v1, const Vec3 &v2, const float t);
                         /// Sets from spherical linear interpolation between the vector v1 and the vector v2.
     void                SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t);
+                        /// Returns linear interpolation between the vector v1 and the vector v2.
+    static Vec3         FromLerp(const Vec3 &v1, const Vec3 &v2, const float t);
+                        /// Returns spherical linear interpolation between the vector v1 and the vector v2.
+    static Vec3         FromSLerp(const Vec3 &v1, const Vec3 &v2, const float t);
 
                         /// Returns vector on the unit sphere has uniform distribution with the given random variables u1, u2 [0, 1].
     static Vec3         FromUniformSampleSphere(float u1, float u2);
@@ -411,7 +424,7 @@ BE_INLINE bool Vec3::Equals(const Vec3 &a) const {
 BE_INLINE bool Vec3::Equals(const Vec3 &a, const float epsilon) const {
     if (Math::Fabs(x - a.x) > epsilon) {
         return false;
-    }            
+    }
     if (Math::Fabs(y - a.y) > epsilon) {
         return false;
     }
@@ -421,18 +434,18 @@ BE_INLINE bool Vec3::Equals(const Vec3 &a, const float epsilon) const {
     return true;
 }
 
-BE_INLINE bool Vec3::FixDenormals(float epsilon) {
+BE_INLINE bool Vec3::FixDenormals() {
     bool denormal = false;
 
-    if (fabs(x) < epsilon) {
+    if (fabs(x) < 1e-30f) {
         x = 0.0f;
         denormal = true;
     }
-    if (fabs(y) < epsilon) {
+    if (fabs(y) < 1e-30f) {
         y = 0.0f;
         denormal = true;
     }
-    if (fabs(z) < epsilon) {
+    if (fabs(z) < 1e-30f) {
         z = 0.0f;
         denormal = true;
     }
@@ -574,6 +587,18 @@ BE_INLINE void Vec3::SetFromLerp(const Vec3 &v1, const Vec3 &v2, const float t) 
     } else {
         (*this) = v1 + t * (v2 - v1);
     }
+}
+
+BE_INLINE Vec3 Vec3::FromLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
+    Vec3 v;
+    v.SetFromLerp(v1, v2, t);
+    return v;
+}
+
+BE_INLINE Vec3 Vec3::FromSLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
+    Vec3 v;
+    v.SetFromSLerp(v1, v2, t);
+    return v;
 }
 
 BE_INLINE float Vec3::ComputeBitangentSign(const Vec3 &n, const Vec3 &t0, const Vec3 &t1) {

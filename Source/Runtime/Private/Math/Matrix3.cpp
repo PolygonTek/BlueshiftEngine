@@ -189,11 +189,7 @@ bool Mat3::InverseSelf() {
 //        | 0  sin   cos | | m02  m12  m22 |
 //
 //------------------------------------------------
-void Mat3::RotateX(const float degree) {
-    if (!degree) {
-        return;
-    }
-    
+Mat3 &Mat3::RotateX(const float degree) {
     float s, c;
     Math::SinCos(DEG2RAD(degree), s, c);
 
@@ -211,6 +207,8 @@ void Mat3::RotateX(const float degree) {
     mat[1][2] = tmp[3];
     mat[2][1] = tmp[4];
     mat[2][2] = tmp[5];
+
+    return *this;
 }
 
 //------------------------------------------------
@@ -220,11 +218,7 @@ void Mat3::RotateX(const float degree) {
 //        | -sin  0  cos | | m02  m12  m22 |
 //
 //------------------------------------------------
-void Mat3::RotateY(const float degree) {
-    if (!degree) {
-        return;
-    }
-    
+Mat3 &Mat3::RotateY(const float degree) {
     float s, c;
     Math::SinCos(DEG2RAD(degree), s, c);
     
@@ -242,6 +236,8 @@ void Mat3::RotateY(const float degree) {
     mat[1][2] = tmp[3];
     mat[2][0] = tmp[4];
     mat[2][2] = tmp[5];
+
+    return *this;
 }
 
 //------------------------------------------------
@@ -251,11 +247,7 @@ void Mat3::RotateY(const float degree) {
 //        |   0     0  1 | | m02  m12  m22 |
 //
 //------------------------------------------------
-void Mat3::RotateZ(const float degree) {
-    if (!degree) {
-        return;
-    }
-    
+Mat3 &Mat3::RotateZ(const float degree) {
     float s, c;
     Math::SinCos(DEG2RAD(degree), s, c);
     
@@ -273,11 +265,15 @@ void Mat3::RotateZ(const float degree) {
     mat[1][1] = tmp[3];
     mat[2][0] = tmp[4];
     mat[2][1] = tmp[5];
+
+    return *this;
 }
 
-void Mat3::Rotate(const Vec3 &axis, const float degree) {
+Mat3 &Mat3::Rotate(const Vec3 &axis, const float degree) {
     Rotation rot(Vec3::origin, axis, degree);
     *this = rot.ToMat3() * *this;
+
+    return *this;
 }
 
 //------------------------------------------------
@@ -288,20 +284,20 @@ void Mat3::Rotate(const Vec3 &axis, const float degree) {
 //
 //------------------------------------------------
 
-Mat3 Mat3::Scale(const Vec3 &scale) const {
-    Mat3 m;
-    m[0][0] = mat[0][0] * scale.x;
-    m[0][1] = mat[0][1] * scale.y;
-    m[0][2] = mat[0][2] * scale.z;
+Mat3 &Mat3::Scale(const Vec3 &scale) {
+    mat[0][0] = mat[0][0] * scale.x;
+    mat[0][1] = mat[0][1] * scale.y;
+    mat[0][2] = mat[0][2] * scale.z;
 
-    m[1][0] = mat[1][0] * scale.x;
-    m[1][1] = mat[1][1] * scale.y;
-    m[1][2] = mat[1][2] * scale.z;
+    mat[1][0] = mat[1][0] * scale.x;
+    mat[1][1] = mat[1][1] * scale.y;
+    mat[1][2] = mat[1][2] * scale.z;
 
-    m[2][0] = mat[2][0] * scale.x;
-    m[2][1] = mat[2][1] * scale.y;
-    m[2][2] = mat[2][2] * scale.z;
-    return m;
+    mat[2][0] = mat[2][0] * scale.x;
+    mat[2][1] = mat[2][1] * scale.y;
+    mat[2][2] = mat[2][2] * scale.z;
+
+    return *this;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -373,7 +369,7 @@ Angles Mat3::ToAngles() const {
     double cp = cos(theta);
 
     Angles angles;
-    if (cp > 8192.0f * Math::FloatEpsilon) {
+    if (cp > 8192.0f * Math::FloatEpsilon) { //
         angles.pitch    = (float)RAD2DEG(theta);
         angles.yaw      = (float)RAD2DEG(atan2(mat[0][1], mat[0][0]));
         angles.roll     = (float)RAD2DEG(atan2(mat[1][2], mat[2][2]));
@@ -587,6 +583,22 @@ Quat Mat3::ToQuat() const {
     }
 
     return q;
+}
+
+bool Mat3::SetFromLookAt(const Vec3 &viewDir, const Vec3 &up) {
+    mat[0] = viewDir;
+    if (mat[0].Normalize() < VECTOR_EPSILON) {
+        return false;
+    }
+    mat[1] = up.Cross(mat[0]);
+    if (mat[1].Normalize() < VECTOR_EPSILON) {
+        return false;
+    }
+    mat[2] = mat[0].Cross(mat[1]);
+    if (Math::Fabs(mat[2].LengthSqr() - 1.0f) > VECTOR_EPSILON) {
+        return false;
+    }
+    return true;
 }
 
 Mat3 Mat3::FromString(const char *str) {

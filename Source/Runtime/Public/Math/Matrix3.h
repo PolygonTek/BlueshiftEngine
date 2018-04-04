@@ -161,6 +161,10 @@ public:
                         /// Sets this matrix to equal the identity.
     void                SetIdentity();
 
+                        /// Sets matrix by given view direction.
+                        /// No need to normalize viewDir direction vector.
+    bool                SetFromLookAt(const Vec3 &viewDir, const Vec3 &up = Vec3::unitZ);
+
                         /// Fix degenerate axial cases
     bool                FixDegeneracies();
                         /// Change tiny numbers to zero
@@ -191,15 +195,15 @@ public:
     Mat3 &              OrthoNormalizeSelf();
 
                         /// Rotates about the given axis by the given angle, in-place
-    void                Rotate(const Vec3 &axis, const float degree);
+    Mat3 &              Rotate(const Vec3 &axis, const float degree);
                         /// Rotates about one of the principal axes by the given angle, in-place
                         /// Calling RotateX, RotateY or RotateZ is slightly faster than calling the more generic Rotate() function.
-    void                RotateX(const float degree);
-    void                RotateY(const float degree);
-    void                RotateZ(const float degree);
+    Mat3 &              RotateX(const float degree);
+    Mat3 &              RotateY(const float degree);
+    Mat3 &              RotateZ(const float degree);
 
                         /// Scales by the given factors, in-place
-    Mat3                Scale(const Vec3 &scale) const;
+    Mat3 &              Scale(const Vec3 &scale);
 
                         /// Returns scaling matrix
     static Mat3         FromScale(float sx, float sy, float sz);

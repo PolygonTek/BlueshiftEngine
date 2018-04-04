@@ -291,7 +291,7 @@ const Vec3 Vec3::Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, cons
     Vec2 b = s2 - s3;
     float det = a[0] * b[1] - b[0] * a[1];
 
-    if (Math::Fabs(det) < Math::FloatEpsilon) {
+    if (Math::Fabs(det) < VECTOR_EPSILON) {
         return Vec3::zero;
     }
 

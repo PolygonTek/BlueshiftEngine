@@ -43,7 +43,7 @@ Quat &Quat::SetFromTwoVectors(const Vec3 &from, const Vec3 &to) {
         Vec3 t(0.0f, from.x, -from.y);
 
         float len = t.Length();
-        if (len < Math::FloatEpsilon) {
+        if (len < VECTOR_EPSILON) {
             // nope! we need cross product of from vec with [0, 1, 0]
             t.Set(-from.z, 0.0f, from.x);
         }

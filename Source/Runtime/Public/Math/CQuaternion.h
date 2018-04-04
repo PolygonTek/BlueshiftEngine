@@ -76,7 +76,7 @@ public:
     const char *        ToString(int precision) const;
 
                         /// Change tiny numbers to zero
-    bool                FixDenormals(float epsilon = Math::FloatEpsilon);
+    bool                FixDenormals();
 
                         /// Returns dimension of this type
     int                 GetDimension() const { return 3; }
@@ -142,17 +142,17 @@ BE_INLINE const char *CQuat::ToString(int precision) const {
     return Str::FloatArrayToString((const float *)(*this), 3, precision);
 }
 
-BE_INLINE bool CQuat::FixDenormals(float epsilon) {
+BE_INLINE bool CQuat::FixDenormals() {
     bool denormal = false;
-    if (fabs(x) < epsilon) {
+    if (fabs(x) < 1e-30f) {
         x = 0.0f;
         denormal = true;
     }
-    if (fabs(y) < epsilon) {
+    if (fabs(y) < 1e-30f) {
         y = 0.0f;
         denormal = true;
     }
-    if (fabs(z) < epsilon) {
+    if (fabs(z) < 1e-30f) {
         z = 0.0f;
         denormal = true;
     }

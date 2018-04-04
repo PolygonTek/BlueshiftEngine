@@ -88,7 +88,7 @@ void ComSpringJoint::CreateConstraint() {
     }
 
     // Create a constraint with the given description
-    PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(&desc);
+    PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
 
     // Apply limit distances
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, minDist));
@@ -190,8 +190,8 @@ void ComSpringJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
-        Vec3 worldOrigin = transform->GetTransform() * localAnchor;
+    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+        Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);

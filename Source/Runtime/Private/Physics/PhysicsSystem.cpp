@@ -71,25 +71,25 @@ void PhysicsSystem::FreePhysicsWorld(PhysicsWorld *physicsWorld) {
     }
 }
 
-PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) {
+PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) {
     btCollisionShape *shape;
     btTransform initialTransform;
     Vec3 totalCentroid = Vec3::origin;
 
-    if (desc->shapes.Count() == 0) {
+    if (desc.shapes.Count() == 0) {
         shape = emptyShape;
 
         initialTransform.setIdentity();
         initialTransform.setOrigin(btVector3(0, 0, 0));
-    } else if (desc->shapes.Count() == 1) {
-        const PhysShapeDesc *shapeDesc = &desc->shapes[0];
+    } else if (desc.shapes.Count() == 1) {
+        const PhysShapeDesc *shapeDesc = &desc.shapes[0];
         shape = shapeDesc->collider->shape;
 
         totalCentroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
 
         // Construct initial world transform 
-        Vec3 worldCentroid = desc->origin + desc->axis * totalCentroid;
-        Mat3 worldAxis = desc->axis * shapeDesc->localAxis;
+        Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
+        Mat3 worldAxis = desc.axis * shapeDesc->localAxis;
         initialTransform.setBasis(btMatrix3x3(
             worldAxis[0][0], worldAxis[1][0], worldAxis[2][0],
             worldAxis[0][1], worldAxis[1][1], worldAxis[2][1],
@@ -102,8 +102,8 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
         // Compute total centroid & volume
         float totalVolume = 0.0f;
 
-        for (int i = 0; i < desc->shapes.Count(); i++) {
-            const PhysShapeDesc *shapeDesc = &desc->shapes[i];
+        for (int i = 0; i < desc.shapes.Count(); i++) {
+            const PhysShapeDesc *shapeDesc = &desc.shapes[i];
 
             Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
             float volume = shapeDesc->collider->GetVolume();
@@ -116,8 +116,8 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
             totalCentroid /= totalVolume;
         }
 
-        for (int i = 0; i < desc->shapes.Count(); i++) {
-            const PhysShapeDesc *shapeDesc = &desc->shapes[i];
+        for (int i = 0; i < desc.shapes.Count(); i++) {
+            const PhysShapeDesc *shapeDesc = &desc.shapes[i];
 
             Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
             Vec3 localCentroid = centroid - totalCentroid;
@@ -134,28 +134,28 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
         }
 
         // Construct initial world transform 
-        Vec3 worldCentroid = desc->origin + desc->axis * totalCentroid;
+        Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
         initialTransform.setBasis(btMatrix3x3(
-            desc->axis[0][0], desc->axis[1][0], desc->axis[2][0],
-            desc->axis[0][1], desc->axis[1][1], desc->axis[2][1],
-            desc->axis[0][2], desc->axis[1][2], desc->axis[2][2]));
+            desc.axis[0][0], desc.axis[1][0], desc.axis[2][0],
+            desc.axis[0][1], desc.axis[1][1], desc.axis[2][1],
+            desc.axis[0][2], desc.axis[1][2], desc.axis[2][2]));
         initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
     }
 
     btVector3 inertia(0, 0, 0);
     if (shape != emptyShape) {
-        if (desc->mass != 0.0f) {
+        if (desc.mass != 0.0f) {
             // NOTE: bullet 에서는 shape 이 center of mass 에 정렬되어 있다고 가정하고,
             // 대부분의 경우에 AABB approximation 으로 inertia tensor 를 계산한다.
-            shape->calculateLocalInertia(desc->mass, inertia);
+            shape->calculateLocalInertia(desc.mass, inertia);
         }
     }
 
-    if (desc->type == PhysCollidable::Type::RigidBody || desc->type == PhysCollidable::Type::Character) {
+    if (desc.type == PhysCollidable::Type::RigidBody) {
         btDefaultMotionState *motionState = new btDefaultMotionState(initialTransform);
-        btRigidBody *rigidBody = new btRigidBody(desc->mass, motionState, shape, inertia);
+        btRigidBody *rigidBody = new btRigidBody(desc.mass, motionState, shape, inertia);
 
-        if (desc->mass == 0) {
+        if (desc.mass == 0) {
             rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
         } else {
             // the constraint solver can discard solving contacts, if the distance is above this threshold. 
@@ -169,22 +169,23 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
         rigidBody->setSleepingThresholds(1.0f, 2.0f);
 
         PhysRigidBody *body = new PhysRigidBody(rigidBody, totalCentroid);
-        body->SetRestitution(desc->restitution);
-        body->SetFriction(desc->friction);
-        body->SetRollingFriction(desc->rollingFriction);
-        body->SetSpinningFriction(desc->spinningFriction);
-        body->SetLinearDamping(desc->linearDamping);
-        body->SetAngularDamping(desc->angularDamping);
-        body->SetKinematic(desc->kinematic);
+        body->SetRestitution(desc.restitution);
+        body->SetFriction(desc.friction);
+        body->SetRollingFriction(desc.rollingFriction);
+        body->SetSpinningFriction(desc.spinningFriction);
+        body->SetLinearDamping(desc.linearDamping);
+        body->SetAngularDamping(desc.angularDamping);
+        body->SetKinematic(desc.kinematic);
+        body->SetCharacter(desc.character);
         // NOTE: compound shape 일 경우 CCD 적용 안됨
-        body->SetCCD(desc->ccd);
+        body->SetCCD(desc.ccd);
 
         rigidBody->setUserPointer(body);
 
         return body;
     }
     
-    if (desc->type == PhysCollidable::Sensor) {
+    if (desc.type == PhysCollidable::Sensor) {
         btPairCachingGhostObject *ghost = new btPairCachingGhostObject;
         ghost->setWorldTransform(initialTransform);
         ghost->setCollisionShape(shape);
@@ -201,24 +202,26 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc *desc) 
     btCollisionObject *collisionObject = new btCollisionObject;
     collisionObject->setCollisionShape(shape);
 
-    PhysCollidable *object = new PhysCollidable(desc->type, collisionObject, totalCentroid);
+    PhysCollidable *object = new PhysCollidable(desc.type, collisionObject, totalCentroid);
     collisionObject->setUserPointer(object);
 
     return object;
 }
 
-void PhysicsSystem::DestroyCollidable(PhysCollidable *object) {
-    if (object->IsInWorld()) {
-        object->RemoveFromWorld();
+void PhysicsSystem::DestroyCollidable(PhysCollidable *collidable) {
+    if (collidable->IsInWorld()) {
+        collidable->RemoveFromWorld();
     }
 
-    btCollisionShape *shape = object->collisionObject->getCollisionShape();
+    btCollisionShape *shape = collidable->collisionObject->getCollisionShape();
     if (shape->isCompound()) {
         delete shape;
     }
 
-    btRigidBody *rigidBody = btRigidBody::upcast(object->collisionObject);
-    if (rigidBody) {
+    if (collidable->type == PhysCollidable::Type::RigidBody) {
+        btRigidBody *rigidBody = btRigidBody::upcast(collidable->collisionObject);
+        assert(rigidBody);
+
         // Remove attached constraints of rigid body
         int numConstraintRefs = rigidBody->getNumConstraintRefs();
         if (numConstraintRefs > 0) {
@@ -232,55 +235,59 @@ void PhysicsSystem::DestroyCollidable(PhysCollidable *object) {
             }
         }
 
+        if (static_cast<PhysRigidBody *>(collidable)->vehiclePtr) {
+            static_cast<PhysRigidBody *>(collidable)->vehiclePtr->RemoveFromWorld();
+        }
+
         if (rigidBody->getMotionState()) {
             delete rigidBody->getMotionState();
         }
-       
+
         delete rigidBody;
     } else {
-        delete object->collisionObject;
+        delete collidable->collisionObject;
     }
 
-    delete object;
+    delete collidable;
 }
 
-PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc *desc) {
+PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc &desc) {
     PhysConstraint *constraint = nullptr;
 
-    switch (desc->type) {
+    switch (desc.type) {
     case PhysConstraint::Generic:
-        if (!desc->bodyB) {
-            constraint = new PhysGenericConstraint(desc->bodyA, desc->anchorInA, desc->axisInA);
+        if (!desc.bodyB) {
+            constraint = new PhysGenericConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
         } else {
-            constraint = new PhysGenericConstraint(desc->bodyA, desc->anchorInA, desc->axisInA, desc->bodyB, desc->anchorInB, desc->axisInB);
+            constraint = new PhysGenericConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::GenericSpring:
-        if (!desc->bodyB) {
-            constraint = new PhysGenericSpringConstraint(desc->bodyA, desc->anchorInA, desc->axisInA);
+        if (!desc.bodyB) {
+            constraint = new PhysGenericSpringConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
         } else {
-            constraint = new PhysGenericSpringConstraint(desc->bodyA, desc->anchorInA, desc->axisInA, desc->bodyB, desc->anchorInB, desc->axisInB);
+            constraint = new PhysGenericSpringConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Point2Point:
-        if (!desc->bodyB) {
-            constraint = new PhysP2PConstraint(desc->bodyA, desc->anchorInA);
+        if (!desc.bodyB) {
+            constraint = new PhysP2PConstraint(desc.bodyA, desc.anchorInA);
         } else {
-            constraint = new PhysP2PConstraint(desc->bodyA, desc->anchorInA, desc->bodyB, desc->anchorInB);
+            constraint = new PhysP2PConstraint(desc.bodyA, desc.anchorInA, desc.bodyB, desc.anchorInB);
         }
         break;
     case PhysConstraint::Hinge:
-        if (!desc->bodyB) {
-            constraint = new PhysHingeConstraint(desc->bodyA, desc->anchorInA, desc->axisInA);
+        if (!desc.bodyB) {
+            constraint = new PhysHingeConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
         } else {
-            constraint = new PhysHingeConstraint(desc->bodyA, desc->anchorInA, desc->axisInA, desc->bodyB, desc->anchorInB, desc->axisInB);
+            constraint = new PhysHingeConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Slider:
-        if (!desc->bodyB) {
-            constraint = new PhysSliderConstraint(desc->bodyA, desc->anchorInA, desc->axisInA);
+        if (!desc.bodyB) {
+            constraint = new PhysSliderConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
         } else {
-            constraint = new PhysSliderConstraint(desc->bodyA, desc->anchorInA, desc->axisInA, desc->bodyB, desc->anchorInB, desc->axisInB);
+            constraint = new PhysSliderConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     default:
@@ -288,8 +295,8 @@ PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc *desc) 
         return nullptr;
     }
 
-    constraint->EnableCollision(desc->collision);
-    constraint->SetBreakImpulse(desc->breakImpulse);
+    constraint->EnableCollision(desc.collision);
+    constraint->SetBreakImpulse(desc.breakImpulse);
     constraint->constraint->setDbgDrawSize(0.1f);
 
     return constraint;
@@ -300,8 +307,30 @@ void PhysicsSystem::DestroyConstraint(PhysConstraint *constraint) {
         constraint->RemoveFromWorld();
     }
 
-    delete constraint->constraint;
     delete constraint;
+}
+
+PhysVehicle *PhysicsSystem::CreateVehicle(const PhysVehicleDesc &desc) {
+    PhysVehicle *vehicle = new PhysVehicle(desc.chassisBody);
+
+    for (int i = 0; i < desc.wheels.Count(); i++) {
+        const PhysWheelDesc &wheelDesc = desc.wheels[i];
+
+        vehicle->AddWheel(wheelDesc.chassisLocalOrigin, wheelDesc.chassisLocalAxis, wheelDesc.radius,
+            wheelDesc.suspensionRestLength, wheelDesc.suspensionMaxDistance, wheelDesc.suspensionMaxForce,
+            wheelDesc.suspensionStiffness, wheelDesc.suspensionDampingRelaxation, wheelDesc.suspensionDampingCompression,
+            wheelDesc.rollingFriction, wheelDesc.rollingInfluence);
+    }
+
+    return vehicle;
+}
+
+void PhysicsSystem::DestroyVehicle(PhysVehicle *vehicle) {
+    if (vehicle->IsInWorld()) {
+        vehicle->RemoveFromWorld();
+    }
+
+    delete vehicle;
 }
 
 void PhysicsSystem::CheckModifiedCVars() {

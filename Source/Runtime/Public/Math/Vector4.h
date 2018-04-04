@@ -64,6 +64,7 @@ public:
     Vec4                operator-() const { return Vec4(-x, -y, -z, -w); }
                         /// Performs an unary negation of this vector.
     Vec4                Negate() const { return Vec4(-x, -y, -z, -w); }
+
                         /// return Vec4(|x|, |y|, |z|, |w|)
     Vec4                Abs() const { return Vec4(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z), Math::Fabs(w)); }
 
@@ -75,6 +76,7 @@ public:
                         /// Adds a vector to this vector.
                         /// This function is identical to the member function Add().
     Vec4                operator+(const Vec4 &rhs) const { return Vec4(x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w); }
+
                         /// Adds the vector (s, s, s, s) to this vector.
     Vec4                AddScalar(float s) const { return *this + s; }
                         /// Adds the vector (s, s, s, s) to this vector.
@@ -88,6 +90,7 @@ public:
                         /// Subtracts the given vector from this vector.
                         /// This function is identical to the member function Sub()
     Vec4                operator-(const Vec4 &rhs) const { return Vec4(x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w); }
+
                         /// Subtracts the vector (s, s, s, s) from this vector.
     Vec4                SubScalar(float s) const { return *this - s; }
                         /// Subtracts the vector (s, s, s, s) from this vector.
@@ -103,6 +106,7 @@ public:
     Vec4                operator*(float rhs) const { return Vec4(x * rhs, y * rhs, z * rhs, w * rhs); }
                         /// Multiplies vector v by a scalar.
     friend Vec4         operator*(float lhs, const Vec4 &rhs) { return Vec4(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w); }
+
                         /// Multiplies this vector by a vector, element-wise.
     Vec4                MulComp(const Vec4 &v) const { return *this * v; }
                         /// Multiplies this vector by a vector, element-wise.
@@ -114,6 +118,7 @@ public:
                         /// Divides this vector by a scalar.
                         /// This function is identical to the member function Div().
     Vec4                operator/(float rhs) const { float inv = 1.f / rhs; return Vec4(x * inv, y * inv, z * inv, w * inv); }
+
                         /// Divides this vector by a vector, element-wise.
     Vec4                DivComp(const Vec4 &v) const { return *this / v; }
                         /// This function is identical to the member function DivComp().
@@ -175,9 +180,9 @@ public:
 
                         /// Sets all element of this vector
     void                Set(float x, float y, float z, float w);
+
                         /// Sets this Vec4 to (s, s, s, s).
     void                SetFromScalar(float s) { x = y = z = w = s; }
-
                         /// Returns Vec4(s, s, s, s).
     static Vec4         FromScalar(float s) { return Vec4(s, s, s, s); }
 
@@ -188,6 +193,7 @@ public:
 
                         /// Computes the length of this vector.
     float               Length() const;
+
                         /// Computes the squared length of this vector.
     float               LengthSqr() const;
 
@@ -208,6 +214,8 @@ public:
 
                         /// Sets from linear interpolation between vector v1 and the vector v2.
     void                SetFromLerp(const Vec4 &v1, const Vec4 &v2, const float t);
+                        /// Returns linear interpolation between the vector v1 and the vector v2.
+    static Vec4         FromLerp(const Vec4 &v1, const Vec4 &v2, const float t);
 
                         /// Returns "x y z"
     const char *        ToString() const { return ToString(4); }
@@ -443,6 +451,12 @@ BE_INLINE void Vec4::SetFromLerp(const Vec4 &v1, const Vec4 &v2, const float t) 
     } else {
         (*this) = v1 + t * (v2 - v1);
     }
+}
+
+BE_INLINE Vec4 Vec4::FromLerp(const Vec4 &v1, const Vec4 &v2, const float t) {
+    Vec4 v;
+    v.SetFromLerp(v1, v2, t);
+    return v;
 }
 
 BE_INLINE bool Vec4::IsZero(float epsilon) const { 

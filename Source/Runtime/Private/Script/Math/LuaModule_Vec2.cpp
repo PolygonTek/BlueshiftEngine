@@ -26,7 +26,7 @@ void LuaVM::RegisterVec2(LuaCpp::Module &module) {
     _Vec2.AddClassMembers<Vec2>(
         "x", &Vec2::x,
         "y", &Vec2::y,
-        "at", &Vec2::At, // index start from zero        
+        "at", &Vec2::At,
         "add", &Vec2::Add,
         "add_self", &Vec2::AddSelf,
         "sub", &Vec2::Sub,
@@ -73,6 +73,7 @@ void LuaVM::RegisterVec2(LuaCpp::Module &module) {
     _Vec2["unit_y"] = Vec2::unitY;
 
     _Vec2["from_angle"].SetFunc(Vec2::FromAngle);
+    _Vec2["from_lerp"].SetFunc(Vec2::FromLerp);
 }
 
 BE_NAMESPACE_END

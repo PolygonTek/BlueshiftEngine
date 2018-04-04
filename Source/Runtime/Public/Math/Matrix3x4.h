@@ -42,6 +42,7 @@ public:
     Mat3x4(const float xx, const float xy, const float xz, const float tx,
            const float yx, const float yy, const float yz, const float ty,
            const float zx, const float zy, const float zz, const float tz);
+    Mat3x4(const Mat3 &rot, const Vec3 &pos);
     Mat3x4(const Vec3 &s, const Mat3 &rot, const Vec3 &pos);
     Mat3x4(const Mat3 &m);
     Mat3x4(const Mat4 &m);
@@ -171,15 +172,19 @@ public:
     void                InverseSelf();
 
                         /// Translates by the given offset, in-place.
-    void                Translate(const Vec3 &t) { Translate(t.x, t.y, t.z); }
-    void                Translate(float tx, float ty, float tz);
+    Mat3x4 &            Translate(const Vec3 &t) { return Translate(t.x, t.y, t.z); }
+    Mat3x4 &            Translate(float tx, float ty, float tz);
+
+                        /// Translates right by the given offset, in-place.
+    Mat3x4 &            TranslateRight(const Vec3 &t) { return TranslateRight(t.x, t.y, t.z); }
+    Mat3x4 &            TranslateRight(float tx, float ty, float tz);
 
                         /// Scales by the given factors, in-place.
-    void                Scale(float sx, float sy, float sz);
-    void                Scale(const Vec3 &s) { Scale(s.x, s.y, s.z); }
+    Mat3x4 &            Scale(float sx, float sy, float sz);
+    Mat3x4 &            Scale(const Vec3 &s) { return Scale(s.x, s.y, s.z); }
 
-                        /// Performs uniform scaling by the given amout, in-place.
-    void                UniformScale(const float s) { Scale(s, s, s); }
+                        /// Performs uniform scaling by the given amount, in-place.
+    Mat3x4 &            UniformScale(const float s) { return Scale(s, s, s); }
 
                         /// Returns translation matrix
     static Mat3x4       FromTranslation(float tx, float ty, float tz);
@@ -245,6 +250,23 @@ BE_INLINE Mat3x4::Mat3x4(const float xx, const float xy, const float xz, const f
     mat[2][1] = zy;
     mat[2][2] = zz;
     mat[2][3] = tz;
+}
+
+BE_INLINE Mat3x4::Mat3x4(const Mat3 &rot, const Vec3 &pos) {
+    mat[0][0] = rot[0][0];
+    mat[0][1] = rot[1][0];
+    mat[0][2] = rot[2][0];
+    mat[0][3] = pos[0];
+
+    mat[1][0] = rot[0][1];
+    mat[1][1] = rot[1][1];
+    mat[1][2] = rot[2][1];
+    mat[1][3] = pos[1];
+
+    mat[2][0] = rot[0][2];
+    mat[2][1] = rot[1][2];
+    mat[2][2] = rot[2][2];
+    mat[2][3] = pos[2];
 }
 
 BE_INLINE Mat3x4::Mat3x4(const Vec3 &s, const Mat3 &rot, const Vec3 &pos) {

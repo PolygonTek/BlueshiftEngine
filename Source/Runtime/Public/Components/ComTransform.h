@@ -52,9 +52,9 @@ public:
                             /// Returns rotation angles in local space.
     Angles                  GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
                             /// Returns local space transform matrix.
-    Mat3x4                  GetLocalTransform() const { return Mat3x4(localScale, localAxis, localOrigin); }
+    Mat3x4                  GetLocalMatrix() const { return Mat3x4(localScale, localAxis, localOrigin); }
                             /// Returns local space transform matrix without scaling.
-    Mat3x4                  GetLocalTransformNoScale() const { return Mat3x4(Vec3::one, localAxis, localOrigin); }
+    Mat3x4                  GetLocalMatrixNoScale() const { return Mat3x4(localAxis, localOrigin); }
 
                             /// Sets position in local space.
     void                    SetLocalOrigin(const Vec3 &origin);
@@ -64,8 +64,10 @@ public:
     void                    SetLocalAxis(const Mat3 &axis);
                             /// Sets rotation angles in local space.
     void                    SetLocalAngles(const Angles &localAngles) { SetLocalAxis(localAngles.ToMat3()); }
+                            /// Sets position, rotation in local space.
+    void                    SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis);
                             /// Sets position, rotation and scale in local space as an atomic operation.
-    void                    SetLocalTransform(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale = Vec3::one);
+    void                    SetLocalOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale = Vec3::one);
 
                             /// Returns position in world space.
     Vec3                    GetOrigin() const;
@@ -76,9 +78,9 @@ public:
                             /// Returns rotation angles in world space.
     Angles                  GetAngles() const { return GetAxis().ToAngles(); }
                             /// Returns world space transform matrix.
-    const Mat3x4 &          GetTransform() const;
+    const Mat3x4 &          GetMatrix() const;
                             /// Returns world space transform matrix without scaling.
-    Mat3x4                  GetTransformNoScale() const;
+    Mat3x4                  GetMatrixNoScale() const;
 
                             /// Sets position in world space.
     void                    SetOrigin(const Vec3 &origin);
@@ -88,8 +90,13 @@ public:
     void                    SetAxis(const Mat3 &axis);
                             /// Sets position angles in world space.
     void                    SetAngles(const Angles &angles) { SetAxis(angles.ToMat3()); }
+                            /// Sets position, rotation in world space.
+    void                    SetOriginAxis(const Vec3 &origin, const Mat3 &axis);
                             /// Sets position, rotation and scale in world space as an atomic operation.
-    void                    SetTransform(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale = Vec3::one);
+    void                    SetOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale = Vec3::one);
+
+                            /// Rotates the transform so the forward vector points at targetPosition.
+    void                    LookAt(const Vec3 &targetPosition, const Vec3 &worldUp = Vec3::unitZ);
 
                             /// Returns forward direction in the choosen transform space.
     Vec3                    Forward(TransformSpace space = WorldSpace) const;

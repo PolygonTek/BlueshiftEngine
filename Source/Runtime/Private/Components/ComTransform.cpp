@@ -87,7 +87,16 @@ void ComTransform::SetLocalAxis(const Mat3 &axis) {
     }
 }
 
-void ComTransform::SetLocalTransform(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
+void ComTransform::SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis) {
+    this->localOrigin = origin;
+    this->localAxis = axis;
+
+    if (IsInitialized()) {
+        InvalidateWorldMatrix();
+    }
+}
+
+void ComTransform::SetLocalOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
     this->localOrigin = origin;
     this->localAxis = axis;
     this->localScale = scale;
@@ -120,20 +129,20 @@ Vec3 ComTransform::GetScale() const {
     return worldMatrix.ToScaleVec3();
 }
 
-const Mat3x4 &ComTransform::GetTransform() const {
+const Mat3x4 &ComTransform::GetMatrix() const {
     if (worldMatrixInvalidated) {
         UpdateWorldMatrix();
     }
     return worldMatrix;
 }
 
-Mat3x4 ComTransform::GetTransformNoScale() const {
+Mat3x4 ComTransform::GetMatrixNoScale() const {
     Mat3x4 worldMatrixNoScale;
-    Mat3x4 localTransform = GetLocalTransformNoScale();
+    Mat3x4 localTransform = GetLocalMatrixNoScale();
     
     ComTransform *parent = GetParent();
     if (parent) {
-        worldMatrixNoScale = parent->GetTransformNoScale() * localTransform;
+        worldMatrixNoScale = parent->GetMatrixNoScale() * localTransform;
     } else {
         worldMatrixNoScale = localTransform;
     }
@@ -142,7 +151,7 @@ Mat3x4 ComTransform::GetTransformNoScale() const {
 
 void ComTransform::SetOrigin(const Vec3 &origin) {
     const ComTransform *parent = GetParent();
-    SetLocalOrigin(parent ? parent->GetTransform().Inverse() * origin : origin);
+    SetLocalOrigin(parent ? parent->GetMatrix().Inverse() * origin : origin);
 }
 
 void ComTransform::SetAxis(const Mat3 &axis) {
@@ -155,10 +164,35 @@ void ComTransform::SetScale(const Vec3 &scale) {
     SetLocalScale(parent ? scale / parent->GetScale() : scale);
 }
 
-void ComTransform::SetTransform(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
-    SetScale(scale);
-    SetAxis(axis);
-    SetOrigin(origin);
+void ComTransform::SetOriginAxis(const Vec3 &origin, const Mat3 &axis) {
+    const ComTransform *parent = GetParent();
+    if (parent) {
+        SetLocalOriginAxis(parent->GetMatrix().Inverse() * origin, parent->GetAxis().Transpose() * axis);
+    } else {
+        SetLocalOriginAxis(origin, axis);
+    }
+}
+
+void ComTransform::SetOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
+    const ComTransform *parent = GetParent();
+    if (parent) {
+        SetLocalOriginAxisScale(parent->GetMatrix().Inverse() * origin, parent->GetAxis().Transpose() * axis, scale / parent->GetScale());
+    } else {
+        SetLocalOriginAxisScale(origin, axis, scale);
+    }
+}
+
+void ComTransform::LookAt(const Vec3 &targetPosition, const Vec3 &worldUp) {
+    Vec3 forward = targetPosition - GetOrigin();
+    Mat3 axis;
+    if (axis.SetFromLookAt(forward, worldUp)) {
+        SetAxis(axis);
+    } else {
+        if (forward.Normalize() > VECTOR_EPSILON) {
+            Quat q = Quat::FromTwoVectors(Vec3::unitX, forward);
+            SetAxis(q.ToMat3());
+        }
+    }
 }
 
 Vec3 ComTransform::Forward(TransformSpace space) const {
@@ -232,11 +266,11 @@ void ComTransform::InvalidateWorldMatrix() {
 }
 
 void ComTransform::UpdateWorldMatrix() const {
-    Mat3x4 localTransform = GetLocalTransform();
+    Mat3x4 localTransform = GetLocalMatrix();
 
     ComTransform *parent = GetParent();
     if (parent) {
-        worldMatrix = parent->GetTransform() * localTransform;
+        worldMatrix = parent->GetMatrix() * localTransform;
     } else {
         worldMatrix = localTransform;
     }

@@ -86,6 +86,10 @@ public:
                         /// Exact compare, no epsilon
     bool                operator!=(const Angles &rhs) const { return !Equals(rhs); }
 
+    float               GetYaw() const { return yaw; }
+    float               GetPitch() const { return pitch; }
+    float               GetRoll() const { return roll; }
+
     void                Set(float yaw, float pitch, float roll);
     void                SetYaw(float yaw) { this->yaw = yaw; }
     void                SetPitch(float pitch) { this->pitch = pitch; }
@@ -122,9 +126,9 @@ public:
 
     static const Angles zero;
 
-    float               yaw;
-    float               pitch;
-    float               roll;
+    float               yaw;        ///< Angle of rotation around up axis in degrees
+    float               pitch;      ///< Angle of rotation around left axis in degrees
+    float               roll;       ///< Angle of rotation around forward axis in degrees
 };
 
 BE_INLINE Angles::Angles(float yaw, float pitch, float roll) {

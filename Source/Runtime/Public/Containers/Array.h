@@ -157,7 +157,7 @@ public:
 
                     /// Inserts the items of the array 'array' at index position 'index'.
                     /// Returns index of the last inserted element.
-    int             InsertList(const Array<T> &array, int index = 0);
+    int             InsertArray(const Array<T> &array, int index = 0);
 
                     /// Appends 'value' at the end of the array.
                     /// Returns index of the last appended element.
@@ -167,7 +167,7 @@ public:
 
                     /// Appends the items of the array 'array' to this array.
                     /// Returns index of the last appended element.
-    int             AppendList(const Array<T> &array);
+    int             AppendArray(const Array<T> &array);
 
                     /// Appends the unique value 'value'.
                     /// Nothing happens if value 'value' is in the array already.
@@ -502,6 +502,10 @@ BE_INLINE bool Array<T>::operator!=(const Array<T> &rhs) const {
 
 template <typename T>
 BE_INLINE T &Array<T>::Alloc() {
+    if (granularity == 0) { // hack to fix memset
+        granularity = DefaultGranularity;
+    }
+
     if (!elements) {
         Resize(granularity);
     }
@@ -541,7 +545,7 @@ BE_INLINE int Array<T>::Insert(CompatibleT &&value, int index) {
 }
 
 template <typename T>
-BE_INLINE int Array<T>::InsertList(const Array<T> &array, int index) {
+BE_INLINE int Array<T>::InsertArray(const Array<T> &array, int index) {
     assert(index >= 0 && index <= count);
 
     if (!elements) {
@@ -578,8 +582,8 @@ BE_INLINE int Array<T>::Append(CompatibleT &&value, Rest&&... rest) {
 }
 
 template <typename T>
-BE_INLINE int Array<T>::AppendList(const Array<T> &array) {
-    return InsertList(array, count);
+BE_INLINE int Array<T>::AppendArray(const Array<T> &array) {
+    return InsertArray(array, count);
 }
 
 template <typename T>

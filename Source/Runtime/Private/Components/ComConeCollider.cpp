@@ -89,12 +89,12 @@ void ComConeCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selecte
     if (selected) {
         ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < MeterToUnit(200) * MeterToUnit(200)) {
             Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldOrigin = transform->GetTransform() * scaledCenter - transform->GetAxis()[2] * scaledHeight * 0.5f;
+            Vec3 worldOrigin = transform->GetMatrix() * scaledCenter - transform->GetAxis()[2] * scaledHeight * 0.5f;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius, false, 1.25f);

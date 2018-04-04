@@ -108,7 +108,8 @@ void ComCharacterController::CreateBodyAndSensor() {
     collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight);
 
     PhysCollidableDesc desc;
-    desc.type = PhysCollidable::Type::Character;
+    desc.type = PhysCollidable::Type::RigidBody;
+    desc.character = true;
     desc.kinematic = true;
     desc.ccd = false;
     desc.mass = mass;
@@ -127,7 +128,7 @@ void ComCharacterController::CreateBodyAndSensor() {
     shapeDesc.collider = collider;
     desc.shapes.Append(shapeDesc);
 
-    body = (PhysRigidBody *)physicsSystem.CreateCollidable(&desc);
+    body = (PhysRigidBody *)physicsSystem.CreateCollidable(desc);
     body->SetCustomCollisionFilterIndex(GetEntity()->GetLayer());
     body->SetAngularFactor(Vec3(0, 0, 0));
     body->SetCharacter(true);
@@ -135,6 +136,7 @@ void ComCharacterController::CreateBodyAndSensor() {
     //body->SetCollisionListener(this);
 
     desc.type = PhysCollidable::Sensor;
+    desc.character = false;
     desc.kinematic = false;
     desc.ccd = false;
     desc.mass = 0.0f;
@@ -145,7 +147,7 @@ void ComCharacterController::CreateBodyAndSensor() {
     desc.linearDamping = 0.0f;
     desc.angularDamping = 0.0f;
 
-    correctionSensor = (PhysSensor *)physicsSystem.CreateCollidable(&desc);
+    correctionSensor = (PhysSensor *)physicsSystem.CreateCollidable(desc);
     correctionSensor->SetDebugDraw(false);
 
     if (IsActiveInHierarchy()) {
@@ -175,8 +177,8 @@ void ComCharacterController::GroundTrace() {
     Vec3 p1 = origin;
     Vec3 p2 = p1;
 
-    // 땅에 닿아있는지 체크하기위해 z 축으로 7cm 만큼 내려서 이동시켜 본다
-    p2.z -= CentiToUnit(7);
+    // 땅에 닿아있는지 체크하기위해 z 축으로 2.5cm 만큼 내려서 이동시켜 본다
+    p2.z -= CentiToUnit(2.5);
     if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2,
         PhysCollidable::CharacterGroup,
         PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup, groundTrace)) {
@@ -256,7 +258,7 @@ void ComCharacterController::OnInactive() {
 }
 
 bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
-    const float backoffScale = 1.001f;
+    const float backoffScale = 1.0001f;
     CastResultEx trace;
     Vec3 moveVec = moveVector;
     Vec3 slideVec;
@@ -458,13 +460,13 @@ void ComCharacterController::DrawGizmos(const SceneView::Parms &sceneView, bool 
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < 20000.0f * 20000.0f) {
+        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < MeterToUnit(200) * MeterToUnit(200)) {
             Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
             Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
             float scaledHeight = transform->GetScale().z * capsuleHeight;
 
-            Vec3 worldCenter = transform->GetTransform() * scaledCenter;
+            Vec3 worldCenter = transform->GetMatrix() * scaledCenter;
 
             renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
             renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);

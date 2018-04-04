@@ -62,6 +62,7 @@ public:
                         /// Performs an unary negation of this vector.
                         /// This function is identical to the member function Negate().
     Vec2                operator-() const { return Vec2(-x, -y); }
+
                         /// Returns Vec2(|x|, |y|)
     Vec2                Abs() const { return Vec2(Math::Fabs(x), Math::Fabs(y)); }
 
@@ -73,6 +74,7 @@ public:
                         /// Adds a vector to this vector.
                         /// This function is identical to the member function Add().
     Vec2                operator+(const Vec2 &rhs) const { return Vec2(x + rhs.x, y + rhs.y); }
+
                         /// Adds the vector (s, s, s, s) to this vector.
     Vec2                AddScalar(float s) const { return *this + s; }
                         /// Adds the vector (s, s, s, s) to this vector.
@@ -86,6 +88,7 @@ public:
                         /// Subtracts the given vector from this vector.
                         /// This function is identical to the member function Sub()
     Vec2                operator-(const Vec2 &rhs) const { return Vec2(x - rhs.x, y - rhs.y); }
+
                         /// Subtracts the vector (s, s, s, s) from this vector.
     Vec2                SubScalar(float s) const { return *this - s; }
                         /// Subtracts the vector (s, s, s, s) from this vector.
@@ -101,6 +104,7 @@ public:
     Vec2                operator*(float rhs) const { return Vec2(x * rhs, y * rhs); }
                         /// Multiplies vector v by a scalar.
     friend Vec2         operator*(float lhs, const Vec2 &rhs) { return Vec2(lhs * rhs.x, lhs * rhs.y); }
+
                         /// Multiplies this vector by a vector, element-wise.
     Vec2                MulComp(const Vec2 &v) const { return *this * v; }
                         /// Multiplies this vector by a vector, element-wise.
@@ -112,6 +116,7 @@ public:
                         /// Divides this vector by a scalar.
                         /// This function is identical to the member function Div().
     Vec2                operator/(float rhs) const { float inv = 1.f / rhs; return Vec2(x * inv, y * inv); }
+
                         /// Divides this vector by a vector, element-wise.
     Vec2                DivComp(const Vec2 &v) const { return *this / v; }
                         /// This function is identical to the member function DivComp().
@@ -174,9 +179,9 @@ public:
 
                         /// Sets all element of this vector.
     void                Set(float x, float y);
+
                         /// Sets this Vec2 to (s, s).
     void                SetFromScalar(float s) { x = y = s; }
-
                         /// Returns Vec2(s, s).
     static Vec2         FromScalar(float s) { return Vec2(s, s); }
 
@@ -191,10 +196,13 @@ public:
 
                         /// Computes the length of this vector.
     float               Length() const;
+
                         /// Computes the squared length of this vector.
     float               LengthSqr() const;
+
                         /// Computes the distance between this point and the given vector.
     float               Distance(const Vec2 &v) const;
+
                         /// Computes the squared distance between this point and the given vector.
     float               DistanceSqr(const Vec2 &v) const;
 
@@ -215,11 +223,14 @@ public:
     float               Dot(const Vec2 &a) const;
                         /// Computes the absolute dot product of this and the given vector.
     float               AbsDot(const Vec2 &a) const;
+
                         /// Computes z-component of 3D vector cross product of this (x, y, 0) and the given vector (a.x, a.y, 0).
     float               Cross(const Vec2 &a) const;
 
                         /// Sets from linear interpolation between vector v1 and the vector v2.
     void                SetFromLerp(const Vec2 &v1, const Vec2 &v2, float l);
+                        /// Returns linear interpolation between the vector v1 and the vector v2.
+    static Vec2         FromLerp(const Vec2 &v1, const Vec2 &v2, const float t);
 
                         /// Sets this vector on unit circle has uniform distribution with the given random variable u [0, 1].
     static Vec2         FromUniformSampleCircle(float u);
@@ -446,6 +457,12 @@ BE_INLINE void Vec2::SetFromLerp(const Vec2 &v1, const Vec2 &v2, const float l) 
     } else {
         (*this) = v1 + l * (v2 - v1);
     }
+}
+
+BE_INLINE Vec2 Vec2::FromLerp(const Vec2 &v1, const Vec2 &v2, const float t) {
+    Vec2 v;
+    v.SetFromLerp(v1, v2, t);
+    return v;
 }
 
 BE_INLINE Vec2 Vec2::FromUniformSampleCircle(float u) {

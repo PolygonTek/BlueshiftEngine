@@ -129,10 +129,15 @@ public:
     Component *                 GetComponent(const MetaObject *type) const;
                                 /// Returns a component pointer by the given type T.
     template <typename T> T *   GetComponent() const;
-                                /// Returns a component pointer array of all.
+                                /// Returns all component pointers.
     ComponentPtrArray &         GetComponents() { return components; }
-                                /// Returns a component pointer array by the given meta object.
+                                /// Returns all component pointers by the given meta object.
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
+                                /// Returns all component pointers by the given meta object in this entity or any children.
+    ComponentPtrArray           GetComponentsInChildren(const MetaObject *type) const;
+                                /// Returns all component pointers by the given type T in this entity or any children.
+    template <typename T> 
+    ComponentPtrArray           GetComponentsInChildren() const;
 
                                 /// Returns a transform component.
     ComTransform *              GetTransform() const;
@@ -281,27 +286,9 @@ BE_INLINE int Entity::GetComponentIndex(const Component *component) const {
     return components.FindIndex(const_cast<Component *>(component));
 }
 
-BE_INLINE Component *Entity::GetComponent(const MetaObject *type) const {
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-        if (component->GetMetaObject()->IsTypeOf(*type)) {
-            return component;
-        }
-    }
-
-    return nullptr;
-}
-
-BE_INLINE ComponentPtrArray Entity::GetComponents(const MetaObject *type) const {
-    ComponentPtrArray subComponents;
-
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-
-        if (component->GetMetaObject()->IsTypeOf(*type)) {
-            subComponents.Append(component);
-        }
-    }
+template <typename T>
+BE_INLINE ComponentPtrArray Entity::GetComponentsInChildren() const {
+    ComponentPtrArray subComponents = GetComponentsInChildren(&T::metaObject);
 
     return subComponents;
 }
