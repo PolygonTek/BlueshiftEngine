@@ -64,6 +64,10 @@ public:
 
     float                   GetSkidInfo(int wheelIndex) const;
 
+    float                   GetSuspensionRelativeVelocity(int wheelIndex) const;
+
+    float                   GetCurrentSpeed() const;
+
     void                    UpdateWheelTransform(int wheelIndex);
 
                             /// Returns world transform with the given wheel index.

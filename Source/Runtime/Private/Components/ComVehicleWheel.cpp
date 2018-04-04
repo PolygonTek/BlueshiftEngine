@@ -41,13 +41,13 @@ void ComVehicleWheel::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 60.f,
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("susDampingRelaxation", "Suspension Damping Relaxation", float, GetSuspensionDampingRelaxation, SetSuspensionDampingRelaxation, 2.3f,
-        "", PropertyInfo::EditorFlag);
+        "The damping coefficient for when the suspension is expanding", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("susDampingCompression", "Suspension Damping Compression", float, GetSuspensionDampingCompression, SetSuspensionDampingCompression, 4.4f,
-        "", PropertyInfo::EditorFlag);
+        "The damping coefficient for when the suspension is compressed", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("rollingFriction", "Rolling Friction", float, GetRollingFriction, SetRollingFriction, 2.0f,
-        "", PropertyInfo::EditorFlag);
+        "The coefficient of friction between the tyre and the ground", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("rollingInfluence", "Rolling Influence", float, GetRollingInfluence, SetRollingInfluence, 0.1f,
-        "", PropertyInfo::EditorFlag);
+        "Rolling torque applied from the wheels that cause the vehicle to roll over", PropertyInfo::EditorFlag);
 }
 
 ComVehicleWheel::ComVehicleWheel() {
@@ -185,6 +185,13 @@ void ComVehicleWheel::SetBrakingTorque(float torque) {
 float ComVehicleWheel::GetSkidInfo() const {
     if (vehicle) {
         return vehicle->GetSkidInfo(vehicleWheelIndex);
+    }
+    return 1.0f;
+}
+
+float ComVehicleWheel::GetSuspensionRelativeVelocity() const {
+    if (vehicle) {
+        return vehicle->GetSuspensionRelativeVelocity(vehicleWheelIndex);
     }
     return 1.0f;
 }

@@ -88,6 +88,8 @@ public:
 
     float                   GetSkidInfo() const;
 
+    float                   GetSuspensionRelativeVelocity() const;
+
 protected:
     Mat3                    localAxis;
     Vec3                    localOrigin;

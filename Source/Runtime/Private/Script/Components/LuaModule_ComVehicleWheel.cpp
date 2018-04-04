@@ -33,7 +33,8 @@ void LuaVM::RegisterVehicleWheelComponent(LuaCpp::Module &module) {
         "set_torque", &ComVehicleWheel::SetTorque,
         "braking_torque", &ComVehicleWheel::GetBrakingTorque,
         "set_braking_torque", &ComVehicleWheel::SetBrakingTorque,
-        "skid_info", &ComVehicleWheel::GetSkidInfo);
+        "skid_info", &ComVehicleWheel::GetSkidInfo,
+        "suspension_relative_velocity", &ComVehicleWheel::GetSuspensionRelativeVelocity);
 
     _ComVehicleWheel["meta_object"] = ComVehicleWheel::metaObject;
 }

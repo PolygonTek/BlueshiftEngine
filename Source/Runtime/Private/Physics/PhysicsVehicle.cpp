@@ -162,6 +162,15 @@ float PhysVehicle::GetSkidInfo(int wheelIndex) const {
     return wheelInfo.m_skidInfo;
 }
 
+float PhysVehicle::GetSuspensionRelativeVelocity(int wheelIndex) const {
+    btWheelInfo &wheelInfo = vehicle->getWheelInfo(wheelIndex);
+    return wheelInfo.m_suspensionRelativeVelocity;
+}
+
+float PhysVehicle::GetCurrentSpeed() const {
+    return vehicle->getCurrentSpeedKmHour();
+}
+
 void PhysVehicle::UpdateWheelTransform(int wheelIndex) {
     vehicle->updateWheelTransform(wheelIndex, true);
 }
