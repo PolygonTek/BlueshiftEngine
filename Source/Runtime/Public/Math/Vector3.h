@@ -305,8 +305,8 @@ public:
 
                         /// This function computes two new vectors left and up which are both orthogonal to this vector and to each other.
                         /// That is, the set { this, left, up } is an orthogonal set. The vectors left and up that are outputted are also normalized.
-                        /// @param left[out] Receives vector left.
-                        /// @param up[out] Receives vector up.
+                        /// @param left[out]    Receives vector left.
+                        /// @param up[out]      Receives vector up.
     void                OrthogonalBasis(Vec3 &left, Vec3 &up) const;
 
                         /// Returns dimension of this type.

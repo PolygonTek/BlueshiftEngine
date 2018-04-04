@@ -79,9 +79,9 @@ public:
     void                    CreateFromBuffer(Image::Format format, RHI::Handle bufferHandle);
 
                             /// Create indirection cubemap
-                            /// @param size size of indirection cubemap
-                            /// @param vcmWidth actual height of virtual cubemap texture
-                            /// @param vcmHeight actual width of virtual cubemap texture
+                            /// @param size         size of indirection cubemap
+                            /// @param vcmWidth     actual height of virtual cubemap texture
+                            /// @param vcmHeight    actual width of virtual cubemap texture
     void                    CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags = 0);
     void                    CreateDefaultTexture(int size, int flags = 0);
     void                    CreateZeroClampTexture(int size, int flags = 0);

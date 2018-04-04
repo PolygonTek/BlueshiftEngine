@@ -97,11 +97,11 @@ void OpenGLRHI::SetDefaultState() {
 }
 
 void OpenGLRHI::SetStateBits(unsigned int stateBits) {
-    unsigned int	state_delta;
-    unsigned int	bits;
-    GLenum			blend_src;
-    GLenum			blend_dst;
-    GLboolean		redWrite, greenWrite, blueWrite, alphaWrite;
+    unsigned int    state_delta;
+    unsigned int    bits;
+    GLenum          blend_src;
+    GLenum          blend_dst;
+    GLboolean       redWrite, greenWrite, blueWrite, alphaWrite;
     
     state_delta = currentContext->state->renderState ^ stateBits;
     //state_delta = ~0;
@@ -246,10 +246,10 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
         
         // color mask
         if (state_delta & (ColorWrite | AlphaWrite)) {
-            redWrite	= stateBits & RedWrite ? true : false;
-            greenWrite	= stateBits & GreenWrite ? true : false;
-            blueWrite	= stateBits & BlueWrite ? true : false;
-            alphaWrite	= stateBits & AlphaWrite ? true : false;
+            redWrite    = stateBits & RedWrite ? true : false;
+            greenWrite  = stateBits & GreenWrite ? true : false;
+            blueWrite   = stateBits & BlueWrite ? true : false;
+            alphaWrite  = stateBits & AlphaWrite ? true : false;
             gglColorMask(redWrite, greenWrite, blueWrite, alphaWrite);
         }
         
@@ -379,16 +379,16 @@ void OpenGLRHI::SetLineWidth(float width) {
 
 RHI::Handle OpenGLRHI::CreateStencilState(int readMask, int writeMask, StencilFunc funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc funcFront, int failFront, int zfailFront, int zpassFront) {
     GLStencilState *stencilState = new GLStencilState;
-    stencilState->readMask	= readMask;
-    stencilState->writeMask	= writeMask;
-    stencilState->func[0]	= toGLStencilFunc[funcBack];
-    stencilState->func[1]	= toGLStencilFunc[funcFront];
-    stencilState->fail[0]	= toGLStencilOp[failBack];
-    stencilState->zfail[0]	= toGLStencilOp[zfailBack];
-    stencilState->zpass[0]	= toGLStencilOp[zpassBack];
-    stencilState->fail[1]	= toGLStencilOp[failFront];
-    stencilState->zfail[1]	= toGLStencilOp[zfailFront];
-    stencilState->zpass[1]	= toGLStencilOp[zpassFront];
+    stencilState->readMask  = readMask;
+    stencilState->writeMask = writeMask;
+    stencilState->func[0]   = toGLStencilFunc[funcBack];
+    stencilState->func[1]   = toGLStencilFunc[funcFront];
+    stencilState->fail[0]   = toGLStencilOp[failBack];
+    stencilState->zfail[0]  = toGLStencilOp[zfailBack];
+    stencilState->zpass[0]  = toGLStencilOp[zpassBack];
+    stencilState->fail[1]   = toGLStencilOp[failFront];
+    stencilState->zfail[1]  = toGLStencilOp[zfailFront];
+    stencilState->zpass[1]  = toGLStencilOp[zpassFront];
     
     int handle = stencilStateList.FindNull();
     if (handle == -1) {

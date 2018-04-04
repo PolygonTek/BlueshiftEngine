@@ -56,8 +56,8 @@ public:
     const Vec3 &                GetRootOffset() const { return offset; }
 
                                 /// Sets up bind pose joint matrices
-                                /// @param numJoints The address to which the number of joints will be written
-                                /// @param jointMats The address to which the joint matrices will be written
+                                /// @param numJoints    The address to which the number of joints will be written
+                                /// @param jointMats    The address to which the joint matrices will be written
     void                        BuildBindPoseMats(int *numJoints, Mat3x4 **jointMats) const;
 
                                 /// Returns the skeleton

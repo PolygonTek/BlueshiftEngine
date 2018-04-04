@@ -58,6 +58,7 @@ public:
     Collider();
     ~Collider();
 
+                                /// Returns center of mass position.
     const Vec3 &                GetCentroid() const { return centroid; }
 
     void                        Purge();
@@ -106,7 +107,7 @@ private:
     mutable int                 refCount;
     int                         unnamedIndex;
 
-    int                         type;
+    Type                        type;
     Vec3                        centroid;           ///< Position of center of mass in system units
     float                       volume;             ///< Volume in system units
     Vec3                        modelScale;

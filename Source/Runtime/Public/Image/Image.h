@@ -249,12 +249,12 @@ public:
                         /// Returns Color4 sample with the given cubemap coordinates.
     Color4              SampleCube(const Vec3 &str, int level = 0) const;
 
-                        /// Returns number of pixels with given mipmap levels.
+                        /// Returns number of pixels with the given mipmap levels.
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
 
-                        /// Returns number of bytes with given mipmap levels.
+                        /// Returns number of bytes with the given mipmap levels.
     int                 GetSize(int firstLevel = 0, int numLevels = 1) const;
-                        /// Returns number of bytes of a slice with given mipmap levels.
+                        /// Returns number of bytes of a slice with the given mipmap levels.
                         /// A slice means single cubemap face or single texture of an array texture.
     int                 GetSliceSize(int firstLevel = 0, int numLevels = 1) const;
                         
@@ -325,7 +325,7 @@ public:
     bool                WriteBMP(const char *filename) const;
     bool                WritePCX(const char *filename) const;
     bool                WriteTGA(const char *filename) const;
-                        /// @param quality value has the range [0, 100]
+                        /// @param quality  value has the range [0, 100]
     bool                WriteJPG(const char *filename, int quality = 100) const; 
     bool                WritePNG(const char *filename) const;
     bool                WriteHDR(const char *filename) const;
