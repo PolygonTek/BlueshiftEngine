@@ -41,6 +41,7 @@ class Mat3;
 class Mat4;
 class Angles;
 class Rotation;
+class CQuat;
 
 /// Rotation represented as a four-dimensional normalized vector.
 class BE_API Quat {
@@ -133,6 +134,7 @@ public:
     Rotation            ToRotation() const;
     Mat3                ToMat3() const;
     Mat4                ToMat4() const;
+    CQuat               ToCQuat() const;
     Vec3                ToAngularVelocity() const;
                         /// Returns "x y z w".
     const char *        ToString() const { return ToString(4); }

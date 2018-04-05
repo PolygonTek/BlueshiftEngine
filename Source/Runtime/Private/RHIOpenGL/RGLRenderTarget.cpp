@@ -171,7 +171,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
             gglBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
             gglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
             gglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBuffer);
-        }		
+        }
     }
 
     if (!CheckFBOStatus()) {

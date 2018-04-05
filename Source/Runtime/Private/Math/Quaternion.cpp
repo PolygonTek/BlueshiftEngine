@@ -218,6 +218,13 @@ Mat4 Quat::ToMat4() const {
     return ToMat3().ToMat4();
 }
 
+CQuat Quat::ToCQuat() const {
+    if (w < 0.0f) {
+        return CQuat(-x, -y, -z);
+    }
+    return CQuat(x, y, z);
+}
+
 Vec3 Quat::ToAngularVelocity() const {
     Vec3 vec(x, y, z);
     vec.Normalize();
