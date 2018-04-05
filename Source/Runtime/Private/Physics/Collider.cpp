@@ -101,7 +101,10 @@ void Collider::CreateBox(const Vec3 &center, const Vec3 &extents, float margin) 
     type = Type::Box;
     btVector3 halfExtents = ToBtVector3(SystemUnitToPhysicsUnit(extents));
     btBoxShape *boxShape = new btBoxShape(halfExtents);
-    boxShape->setMargin(SystemUnitToPhysicsUnit(margin));
+
+    if (SystemUnitToPhysicsUnit(margin) < boxShape->getMargin()) {
+        boxShape->setMargin(SystemUnitToPhysicsUnit(margin));
+    }
 
     shape = boxShape;
 
@@ -110,12 +113,12 @@ void Collider::CreateBox(const Vec3 &center, const Vec3 &extents, float margin) 
     centroid = center;
 }
 
-void Collider::CreateSphere(const Vec3 &center, float radius, float margin) {
+void Collider::CreateSphere(const Vec3 &center, float radius) {
     Purge();
     
     type = Type::Sphere;
     btSphereShape *sphereShape = new btSphereShape(SystemUnitToPhysicsUnit(radius));
-    sphereShape->setMargin(SystemUnitToPhysicsUnit(margin));
+    // No need to set margin, because entire shape can be represented by margin
 
     shape = sphereShape;
 
@@ -124,14 +127,14 @@ void Collider::CreateSphere(const Vec3 &center, float radius, float margin) {
     centroid = center;
 }
 
-void Collider::CreateCapsule(const Vec3 &center, float radius, float height, float margin) {
+void Collider::CreateCapsule(const Vec3 &center, float radius, float height) {
     Purge();
     
     type = Type::Capsule;
     btCapsuleShapeZ *capsuleShape = new btCapsuleShapeZ(
-        SystemUnitToPhysicsUnit(radius + margin), 
-        SystemUnitToPhysicsUnit(height + margin * 2.0f));
-    capsuleShape->setMargin(SystemUnitToPhysicsUnit(margin));
+        SystemUnitToPhysicsUnit(radius), 
+        SystemUnitToPhysicsUnit(height));
+    // No need to set margin, because entire shape can be represented by margin
 
     shape = capsuleShape;
 
@@ -148,7 +151,10 @@ void Collider::CreateCylinder(const Vec3 &center, float radius, float height, fl
         SystemUnitToPhysicsUnit(radius + margin), 
         SystemUnitToPhysicsUnit(radius + margin), 
         SystemUnitToPhysicsUnit(height * 0.5f + margin)));
-    cylinderShape->setMargin(SystemUnitToPhysicsUnit(margin));
+
+    if (SystemUnitToPhysicsUnit(margin) < cylinderShape->getMargin()) {
+        cylinderShape->setMargin(SystemUnitToPhysicsUnit(margin));
+    }
 
     shape = cylinderShape;
 
@@ -164,7 +170,10 @@ void Collider::CreateCone(const Vec3 &center, float radius, float height, float 
     btConeShapeZ *coneShape = new btConeShapeZ(
         SystemUnitToPhysicsUnit(radius), 
         SystemUnitToPhysicsUnit(height));
-    coneShape->setMargin(SystemUnitToPhysicsUnit(margin));
+
+    if (SystemUnitToPhysicsUnit(margin) < coneShape->getMargin()) {
+        coneShape->setMargin(SystemUnitToPhysicsUnit(margin));
+    }
 
     shape = coneShape;
 

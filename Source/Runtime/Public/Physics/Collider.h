@@ -64,19 +64,19 @@ public:
     void                        Purge();
 
                                 /// Create box shaped collider with the given parameters.
-    void                        CreateBox(const Vec3 &center, const Vec3 &extents, float margin = 0.0f);
-
-                                /// Create sphere shaped collider with the given parameters.
-    void                        CreateSphere(const Vec3 &center, float radius, float margin = 0.0f);
-
-                                /// Create capsule shaped collider with the given parameters.
-    void                        CreateCapsule(const Vec3 &center, float radius, float height, float margin = 0.0f);
+    void                        CreateBox(const Vec3 &center, const Vec3 &extents, float margin = CentiToUnit(0.1));
 
                                 /// Create cylinder shaped collider with the given parameters.
-    void                        CreateCylinder(const Vec3 &center, float radius, float height, float margin = 0.0f);
+    void                        CreateCylinder(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1));
 
                                 /// Create cone shaped collider with the given parameters.
-    void                        CreateCone(const Vec3 &center, float radius, float height, float margin = 0.0f);
+    void                        CreateCone(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1));
+
+                                /// Create sphere shaped collider with the given parameters.
+    void                        CreateSphere(const Vec3 &center, float radius);
+
+                                /// Create capsule shaped collider with the given parameters.
+    void                        CreateCapsule(const Vec3 &center, float radius, float height);
 
     void                        SetLocalScaling(float sx, float sy, float sz);
 
