@@ -878,7 +878,7 @@ bool ParticleSystem::Load(const char *filename) {
 
     int version = lexer.ParseInt();
     if (version != PRTS_VERSION) {
-        lexer.Error("Invalid version %d. Should be version %d\n", version, PRTS_VERSION);
+        lexer.Error("ParticleSystem::Load: Invalid version %d\n", version);
         fileSystem.FreeFile(data);
         return false;
     }

@@ -146,7 +146,7 @@ private:
     bool                    ParsePass(Lexer &lexer, ShaderPass *pass);
     bool                    ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) const;
     bool                    ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
-    //void                  MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);    
+    //void                  MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);
     bool                    ParseShaderProperties(Lexer &lexer, Dict &properties);
 
     Str                     hashName;

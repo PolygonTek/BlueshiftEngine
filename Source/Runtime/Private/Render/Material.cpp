@@ -931,7 +931,7 @@ bool Material::Load(const char *hashName) {
 
     int version = lexer.ParseInt();
     if (version != MATERIAL_VERSION) {
-        lexer.Error("Invalid version %d. Should be version %d\n", version, MATERIAL_VERSION);
+        lexer.Error("Material::Load: Invalid version %d\n", version);
         fileSystem.FreeFile(data);
         return false;
     }
