@@ -734,6 +734,9 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         break;
     }
 
+    Variant oldValue;
+    GetProperty(propertyInfo, oldValue);
+
     if (propertyInfo.accessor) {
         propertyInfo.accessor->Set(this, newValue);
     } else {
@@ -809,7 +812,9 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         }
     }
 
-    EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), -1);
+    if (newValue != oldValue) {
+        EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), -1);
+    }
     
     return true;
 }
@@ -993,6 +998,9 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         break;
     }
 
+    Variant oldValue;
+    GetArrayProperty(propertyInfo, elementIndex, oldValue);
+
     if (propertyInfo.accessor) {
         propertyInfo.accessor->Set(this, elementIndex, newValue);
     } else {
@@ -1068,7 +1076,9 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         }
     }
 
-    EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), elementIndex);
+    if (newValue != oldValue) {
+        EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), elementIndex);
+    }
 
     return true;
 }
@@ -1318,7 +1328,9 @@ void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int c
         BlockSignals(false);
     }
 
-    EmitSignal(&SIG_PropertyArrayCountChanged, propertyInfo.name.c_str());
+    if (count != oldCount) {
+        EmitSignal(&SIG_PropertyArrayCountChanged, propertyInfo.name.c_str());
+    }
 }
 
 BE_NAMESPACE_END
