@@ -279,6 +279,7 @@ if (BUILD_PLAYER)
 endif ()
 
 if (BUILD_EDITOR)
+	add_subdirectory(Source/ThirdParty/mikktspace)
     add_subdirectory(Source/ThirdParty/ToolWindowManager)
     add_subdirectory(Source/Editor)
 endif ()
