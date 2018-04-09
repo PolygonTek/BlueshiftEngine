@@ -398,6 +398,7 @@ void SubMesh::ComputeAABB() {
     }
 }
 
+// Compute area weighted average of the normals
 void SubMesh::ComputeNormals() {
     if (normalsCalculated) {
         return;
@@ -406,7 +407,7 @@ void SubMesh::ComputeNormals() {
     Vec3 *tempNormals = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
 
     for (int i = 0; i < numVerts; i++) {
-        tempNormals[i].SetFromScalar(0);
+        tempNormals[i] = BE1::Vec3::zero;
     }
 
     for (int i = 0; i < numIndexes; i += 3) {
@@ -421,12 +422,11 @@ void SubMesh::ComputeNormals() {
         const Vec3 side0 = v1.xyz - v0.xyz;
         const Vec3 side1 = v2.xyz - v0.xyz;
 
-        Vec3 normal = side0.Cross(side1);
-        normal.Normalize();
+        Vec3 faceNormal = side0.Cross(side1);
 
-        tempNormals[i0] += normal;
-        tempNormals[i1] += normal;
-        tempNormals[i2] += normal;
+        tempNormals[i0] += faceNormal;
+        tempNormals[i1] += faceNormal;
+        tempNormals[i2] += faceNormal;
     }
 
     for (int i = 0; i < numVerts; i++) {
@@ -440,88 +440,91 @@ void SubMesh::ComputeNormals() {
 }
 
 static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int numVerts, const TriIndex *indexes, const int numIndexes) {
-    Vec3 *triangleTangents = (Vec3 *)Mem_Alloc16((numIndexes / 3) * sizeof(Vec3));
-    Vec3 *triangleBitangents = (Vec3 *)Mem_Alloc16((numIndexes / 3) * sizeof(Vec3));
+    int numTris = numIndexes / 3;
 
-    //
-    // calculate tangent vectors for each face in isolation
-    //
-    int c_positive = 0;
-    int c_negative = 0;
-    int c_textureDegenerateFaces = 0;
+    Vec3 *triangleTangents = (Vec3 *)Mem_Alloc16(numTris * sizeof(Vec3));
+    Vec3 *triangleBitangents = (Vec3 *)Mem_Alloc16(numTris * sizeof(Vec3));
+
+    // Calculate tangent vectors for each face in isolation
     for (int i = 0; i < numIndexes; i += 3) {
+        int triIndex = i / 3;
+
         int v0 = indexes[i + 0];
         int v1 = indexes[i + 1];
         int v2 = indexes[i + 2];
 
-        VertexGenericLit *a = verts + v0;
-        VertexGenericLit *b = verts + v1;
-        VertexGenericLit *c = verts + v2;
+        const VertexGenericLit &a = verts[v0];
+        const VertexGenericLit &b = verts[v1];
+        const VertexGenericLit &c = verts[v2];
 
-        const Vec2 aST = a->GetTexCoord();
-        const Vec2 bST = b->GetTexCoord();
-        const Vec2 cST = c->GetTexCoord();
+        const Vec2 aST = a.GetTexCoord();
+        const Vec2 bST = b.GetTexCoord();
+        const Vec2 cST = c.GetTexCoord();
 
-        float d0[5];
-        d0[0] = b->xyz[0] - a->xyz[0];
-        d0[1] = b->xyz[1] - a->xyz[1];
-        d0[2] = b->xyz[2] - a->xyz[2];
-        d0[3] = bST[0] - aST[0];
-        d0[4] = bST[1] - aST[1];
+        Vec3 baXYZ;
+        baXYZ[0] = b.xyz[0] - a.xyz[0];
+        baXYZ[1] = b.xyz[1] - a.xyz[1];
+        baXYZ[2] = b.xyz[2] - a.xyz[2];
 
-        float d1[5];
-        d1[0] = c->xyz[0] - a->xyz[0];
-        d1[1] = c->xyz[1] - a->xyz[1];
-        d1[2] = c->xyz[2] - a->xyz[2];
-        d1[3] = cST[0] - aST[0];
-        d1[4] = cST[1] - aST[1];
+        Vec3 caXYZ;
+        caXYZ[0] = c.xyz[0] - a.xyz[0];
+        caXYZ[1] = c.xyz[1] - a.xyz[1];
+        caXYZ[2] = c.xyz[2] - a.xyz[2];
+
+        Vec2 baST;
+        baST[0] = bST[0] - aST[0];
+        baST[1] = bST[1] - aST[1];
+
+        Vec2 caST;
+        caST[0] = cST[0] - aST[0];
+        caST[1] = cST[1] - aST[1];
 
         // area sign bit
-        const float area = d0[3] * d1[4] - d0[4] * d1[3];
+        const float area = baST[0] * caST[1] - baST[1] * caST[0]; // determinant
         if (fabs(area) < 1e-20f) {
-            triangleTangents[i / 3].SetFromScalar(0);
-            triangleBitangents[i / 3].SetFromScalar(0);
-            c_textureDegenerateFaces++;
+            triangleTangents[triIndex] = BE1::Vec3::zero;
+            triangleBitangents[triIndex] = BE1::Vec3::zero;
             continue;
-        }
-
-        if (area > 0.0f) {
-            c_positive++;
-        } else {
-            c_negative++;
         }
 
         float inva = (area < 0.0f) ? -1.0f : 1.0f;  // was = 1.0f / area;
 
-        Vec3 temp;
-        temp[0] = (d0[0] * d1[4] - d0[4] * d1[0]) * inva;
-        temp[1] = (d0[1] * d1[4] - d0[4] * d1[1]) * inva;
-        temp[2] = (d0[2] * d1[4] - d0[4] * d1[2]) * inva;
-        temp.Normalize();
-        triangleTangents[i / 3] = temp;
+        Vec3 tangent;
+        tangent[0] = inva * (baXYZ[0] * caST[1] - caXYZ[0] * baST[1]);
+        tangent[1] = inva * (baXYZ[1] * caST[1] - caXYZ[1] * baST[1]);
+        tangent[2] = inva * (baXYZ[2] * caST[1] - caXYZ[2] * baST[1]);
+        tangent.Normalize();
 
-        temp[0] = (d0[3] * d1[0] - d0[0] * d1[3]) * inva;
-        temp[1] = (d0[3] * d1[1] - d0[1] * d1[3]) * inva;
-        temp[2] = (d0[3] * d1[2] - d0[2] * d1[3]) * inva;
-        temp.Normalize();
-        triangleBitangents[i / 3] = temp;
+        triangleTangents[triIndex] = tangent;
+
+        Vec3 bitangent;
+        bitangent[0] = inva * (caXYZ[0] * baST[0] - baXYZ[0] * caST[0]);
+        bitangent[1] = inva * (caXYZ[1] * baST[0] - baXYZ[1] * caST[0]);
+        bitangent[2] = inva * (caXYZ[2] * baST[0] - baXYZ[2] * caST[0]);
+        bitangent.Normalize();
+
+        triangleBitangents[triIndex] = bitangent;
     }
 
     Vec3 *vertexTangents = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
     Vec3 *vertexBitangents = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
 
-    // clear the tangents
+    // Clear the tangents
     for (int i = 0; i < numVerts; i++) {
-        vertexTangents[i].SetFromScalar(0);
-        vertexBitangents[i].SetFromScalar(0);
+        vertexTangents[i] = BE1::Vec3::zero;
+        vertexBitangents[i] = BE1::Vec3::zero;
     }
 
-    // sum up the neighbors
+    // Sum up the neighbors
     for (int i = 0; i < numIndexes; i += 3) {
-        // for each vertex on this face
+        int triIndex = i / 3;
+
+        // For each vertex on this face
         for (int j = 0; j < 3; j++) {
-            vertexTangents[indexes[i+j]] += triangleTangents[i / 3];
-            vertexBitangents[indexes[i+j]] += triangleBitangents[i / 3];
+            int index = indexes[i + j];
+
+            vertexTangents[index] += triangleTangents[triIndex];
+            vertexBitangents[index] += triangleBitangents[triIndex];
         }
     }
 
@@ -564,33 +567,37 @@ static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVer
         int v1 = indexes[i + 1];
         int v2 = indexes[i + 2];
 
-        VertexGenericLit *a = verts + v0;
-        VertexGenericLit *b = verts + v1;
-        VertexGenericLit *c = verts + v2;
+        const VertexGenericLit &a = verts[v0];
+        const VertexGenericLit &b = verts[v1];
+        const VertexGenericLit &c = verts[v2];
 
-        const Vec2 aST = a->GetTexCoord();
-        const Vec2 bST = b->GetTexCoord();
-        const Vec2 cST = c->GetTexCoord();
+        const Vec2 aST = a.GetTexCoord();
+        const Vec2 bST = b.GetTexCoord();
+        const Vec2 cST = c.GetTexCoord();
 
-        float d0[5];
-        d0[0] = b->xyz[0] - a->xyz[0];
-        d0[1] = b->xyz[1] - a->xyz[1];
-        d0[2] = b->xyz[2] - a->xyz[2];
-        d0[3] = bST[0] - aST[0];
-        d0[4] = bST[1] - aST[1];
+        Vec3 baXYZ;
+        baXYZ[0] = b.xyz[0] - a.xyz[0];
+        baXYZ[1] = b.xyz[1] - a.xyz[1];
+        baXYZ[2] = b.xyz[2] - a.xyz[2];
 
-        float d1[5];
-        d1[0] = c->xyz[0] - a->xyz[0];
-        d1[1] = c->xyz[1] - a->xyz[1];
-        d1[2] = c->xyz[2] - a->xyz[2];
-        d1[3] = cST[0] - aST[0];
-        d1[4] = cST[1] - aST[1];
+        Vec3 caXYZ;
+        caXYZ[0] = c.xyz[0] - a.xyz[0];
+        caXYZ[1] = c.xyz[1] - a.xyz[1];
+        caXYZ[2] = c.xyz[2] - a.xyz[2];
+
+        Vec2 baST;
+        baST[0] = bST[0] - aST[0];
+        baST[1] = bST[1] - aST[1];
+
+        Vec2 caST;
+        caST[0] = cST[0] - aST[0];
+        caST[1] = cST[1] - aST[1];
 
         // normal
         Vec3 normal;
-        normal[0] = d1[2] * d0[1] - d1[1] * d0[2];
-        normal[1] = d1[0] * d0[2] - d1[2] * d0[0];
-        normal[2] = d1[1] * d0[0] - d1[0] * d0[1];
+        normal[0] = caXYZ[2] * baXYZ[1] - caXYZ[1] * baXYZ[2];
+        normal[1] = caXYZ[0] * baXYZ[2] - caXYZ[2] * baXYZ[0];
+        normal[2] = caXYZ[1] * baXYZ[0] - caXYZ[0] * baXYZ[1];
 
         const float f0 = Math::InvSqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
 
@@ -599,14 +606,14 @@ static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVer
         normal.z *= f0;
 
         // area sign bit
-        float area = d0[3] * d1[4] - d0[4] * d1[3];
+        float area = baST[0] * caST[1] - baST[1] * caST[0]; // determinant
         uint32_t signBit = (*(uint32_t *)&area) & (1 << 31);
 
         // tangent
         Vec3 tangent;
-        tangent[0] = d0[0] * d1[4] - d0[4] * d1[0];
-        tangent[1] = d0[1] * d1[4] - d0[4] * d1[1];
-        tangent[2] = d0[2] * d1[4] - d0[4] * d1[2];
+        tangent[0] = baXYZ[0] * caST[1] - caXYZ[0] * baST[1];
+        tangent[1] = baXYZ[1] * caST[1] - caXYZ[1] * baST[1];
+        tangent[2] = baXYZ[2] * caST[1] - caXYZ[2] * baST[1];
 
         const float f1 = Math::InvSqrt(tangent.x * tangent.x + tangent.y * tangent.y + tangent.z * tangent.z);
         *(uint32_t *)&f1 ^= signBit;
@@ -617,9 +624,9 @@ static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVer
 
         // bitangent
         Vec3 bitangent;
-        bitangent[0] = d0[3] * d1[0] - d0[0] * d1[3];
-        bitangent[1] = d0[3] * d1[1] - d0[1] * d1[3];
-        bitangent[2] = d0[3] * d1[2] - d0[2] * d1[3];
+        bitangent[0] = caXYZ[0] * baST[0] - baXYZ[0] * caST[0];
+        bitangent[1] = caXYZ[1] * baST[0] - baXYZ[1] * caST[0];
+        bitangent[2] = caXYZ[2] * baST[0] - baXYZ[2] * caST[0];
 
         const float f2 = Math::InvSqrt(bitangent.x * bitangent.x + bitangent.y * bitangent.y + bitangent.z * bitangent.z);
         *(uint32_t *)&f2 ^= signBit;
