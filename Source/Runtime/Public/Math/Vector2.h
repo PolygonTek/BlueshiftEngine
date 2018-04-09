@@ -227,6 +227,11 @@ public:
                         /// Computes z-component of 3D vector cross product of this (x, y, 0) and the given vector (a.x, a.y, 0).
     float               Cross(const Vec2 &a) const;
 
+                        /// Returns the angle between this vector and the specified vector, in radians.
+    float               AngleBetween(const Vec2 &other) const;
+                        /// Returns the angle between this vector and the specified normalized vector, in radians.
+    float               AngleBetweenNorm(const Vec2 &other) const;
+
                         /// Sets from linear interpolation between vector v1 and the vector v2.
     void                SetFromLerp(const Vec2 &v1, const Vec2 &v2, float l);
                         /// Returns linear interpolation between the vector v1 and the vector v2.
@@ -447,6 +452,28 @@ BE_INLINE float Vec2::AbsDot(const Vec2 &a) const {
 
 BE_INLINE float Vec2::Cross(const Vec2 &a) const {
     return x * a.y - y * a.x;
+}
+
+BE_INLINE float Vec2::AngleBetween(const Vec2 &other) const {
+    float cosa = Dot(other) / Math::Sqrt(LengthSqr() * other.LengthSqr());
+    if (cosa >= 1.f) {
+        return 0.f;
+    } else if (cosa <= -1.f) {
+        return Math::Pi;
+    } else {
+        return Math::ACos(cosa);
+    }
+}
+
+BE_INLINE float Vec2::AngleBetweenNorm(const Vec2 &other) const {
+    float cosa = Dot(other);
+    if (cosa >= 1.f) {
+        return 0.f;
+    } else if (cosa <= -1.f) {
+        return Math::Pi;
+    } else {
+        return Math::ACos(cosa);
+    }
 }
 
 BE_INLINE void Vec2::SetFromLerp(const Vec2 &v1, const Vec2 &v2, const float l) {

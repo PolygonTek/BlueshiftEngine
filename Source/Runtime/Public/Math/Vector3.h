@@ -245,6 +245,11 @@ public:
                         /// Refracts this vector about a plane with the given normal, in-place.
     Vec3 &              RefractSelf(const Vec3 &normal, float eta);
 
+                        /// Returns the angle between this vector and the specified vector, in radians.
+    float               AngleBetween(const Vec3 &other) const;
+                        /// Returns the angle between this vector and the specified normalized vector, in radians.
+    float               AngleBetweenNorm(const Vec3 &other) const;
+
                         /// Returns this vector slided about a plane with the given normal.
     Vec3                Slide(const Vec3 &normal, float backoffScale = 1.001f) const;
 
@@ -577,6 +582,28 @@ BE_INLINE Vec3 &Vec3::RefractSelf(const Vec3 &normal, float eta) {
         *this = (eta * cos_in - Math::Sqrt(cos_tn2)) * normal - eta * (*this);
     }
     return *this;
+}
+
+BE_INLINE float Vec3::AngleBetween(const Vec3 &other) const {
+    float cosa = Dot(other) / Math::Sqrt(LengthSqr() * other.LengthSqr());
+    if (cosa >= 1.f) {
+        return 0.f;
+    } else if (cosa <= -1.f) {
+        return Math::Pi;
+    } else {
+        return Math::ACos(cosa);
+    }
+}
+
+BE_INLINE float Vec3::AngleBetweenNorm(const Vec3 &other) const {
+    float cosa = Dot(other);
+    if (cosa >= 1.f) {
+        return 0.f;
+    } else if (cosa <= -1.f) {
+        return Math::Pi;
+    } else {
+        return Math::ACos(cosa);
+    }
 }
 
 BE_INLINE void Vec3::SetFromLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
