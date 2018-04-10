@@ -156,8 +156,10 @@ struct BE_API VertexGenericLit : public VertexGeneric {
     const Vec3      GetTangentRaw() const;
 
                     // must be normalized already!
-    void            SetTangent(const Vec3 &n);
+    void            SetTangent(const Vec3 &t);
     void            SetTangent(float x, float y, float z);
+    void            SetTangent(const Vec4 &t);
+    void            SetTangent(float x, float y, float z, float w);
 
                     // derived from normal, tangent, and tangent flag
     const Vec3      GetBiTangent() const;
@@ -267,6 +269,28 @@ BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z) {
     tangent[1] = F16Converter::FromF32(y);
     tangent[2] = F16Converter::FromF32(z);
 #endif
+}
+
+BE_INLINE void VertexGenericLit::SetTangent(const Vec4 &t) {
+#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+    ConvertNormalToBytes(t.x, t.y, t.z, tangent);
+#else
+    tangent[0] = F16Converter::FromF32(t[0]);
+    tangent[1] = F16Converter::FromF32(t[1]);
+    tangent[2] = F16Converter::FromF32(t[2]);
+#endif
+    SetBiTangentSign(t.w);
+}
+
+BE_INLINE void VertexGenericLit::SetTangent(float x, float y, float z, float w) {
+#ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+    ConvertNormalToBytes(x, y, z, tangent);
+#else
+    tangent[0] = F16Converter::FromF32(x);
+    tangent[1] = F16Converter::FromF32(y);
+    tangent[2] = F16Converter::FromF32(z);
+#endif
+    SetBiTangentSign(w);
 }
 
 BE_INLINE const Vec3 VertexGenericLit::GetTangent() const {
