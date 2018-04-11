@@ -140,7 +140,7 @@ $include "ShadowLibrary.fp"
 #define _PARALLAX 0
 #endif
 
-#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC == 1 || (_ROUGHNESS == 2 || _ROUGHNESS == 3) || _PARALLAX != 0 || _EMISSION == 2
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2
 #define NEED_BASE_TC
 #endif
 
@@ -220,25 +220,42 @@ void main() {
         #endif
     #elif defined(STANDARD_METALLIC_LIGHTING)
         #if _METALLIC == 0
-            vec4 metallic = vec4(metallicScale, 0.0, 0.0, 0.0);
-        #elif _METALLIC == 1
+            vec4 metallic = vec4(1.0, 0.0, 0.0, 0.0);
+        #elif _METALLIC >= 1
             vec4 metallic = tex2D(metallicMap, baseTc);
-            metallic.r *= metallicScale;
+        #endif
+
+        #if _METALLIC == 0
+            float metalness = metallicScale;
+        #elif _METALLIC == 1
+            float metalness = metallic.r * metallicScale;
+        #elif _METALLIC == 2
+            float metalness = metallic.g * metallicScale;
+        #elif _METALLIC == 3
+            float metalness = metallic.b * metallicScale;
+        #elif _METALLIC == 4
+            float metalness = metallic.a * metallicScale;
         #endif
 
         #if _ROUGHNESS == 0
             float roughness = roughnessScale;
         #elif _ROUGHNESS == 1
-            float roughness = metallic.g * roughnessScale;
-        #elif _ROUGHNESS == 2
             float roughness = tex2D(roughnessMap, baseTc).r * roughnessScale;
-        #elif _ROUGHNESS == 3
+        #elif _ROUGHNESS == 2
             float roughness = (1.0 - tex2D(roughnessMap, baseTc).r) * roughnessScale;
+        #elif _ROUGHNESS == 3
+            float roughness = metallic.r * roughnessScale;
+        #elif _ROUGHNESS == 4
+            float roughness = metallic.g * roughnessScale;
+        #elif _ROUGHNESS == 5
+            float roughness = metallic.b * roughnessScale;
+        #elif _ROUGHNESS == 6
+            float roughness = metallic.a * roughnessScale;
         #endif
 
-        vec4 specular = vec4(mix(vec3(0.04), albedo.rgb, metallic.r), 1.0);
+        vec4 specular = vec4(mix(vec3(0.04), albedo.rgb, metalness), 1.0);
         
-        vec4 diffuse = vec4(albedo.rgb * ((1.0 - 0.04) - metallic.r), albedo.a);
+        vec4 diffuse = vec4(albedo.rgb * ((1.0 - 0.04) - metalness), albedo.a);
     #endif
 #endif
 
@@ -346,14 +363,34 @@ void main() {
     C += Cl * lightingColor * shadowLighting;
 #endif
 
-#if _OCCLUSION != 0
-    #if _OCCLUSION == 1
-        float occ = tex2D(occlusionMap, baseTc).r;
-    #elif _OCCLUSION == 2
-        float occ = metallic.b;
-    #endif
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
+    #if _OCCLUSION != 0
+        #if _OCCLUSION == 1
+            float occ = tex2D(occlusionMap, baseTc).r;
+        #elif defined(STANDARD_METALLIC_LIGHTING)
+            #if _OCCLUSION == 2
+                float occ = metallic.r;
+            #elif _OCCLUSION == 3
+                float occ = metallic.g;
+            #elif _OCCLUSION == 4
+                float occ = metallic.b;
+            #elif _OCCLUSION == 5
+                float occ = metallic.a;
+            #else
+                float occ = 1.0;
+            #endif
+        #elif defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
+            #if _OCCLUSION == 2
+                float occ = albedo.a;
+            #elif _OCCLUSION == 3
+                float occ = specular.a;
+            #else
+                float occ = 1.0;
+            #endif
+        #endif
 
-    C *= (1.0 - occlusionStrength) + occ * occlusionStrength;
+        C *= (1.0 - occlusionStrength) + occ * occlusionStrength;
+    #endif
 #endif
 
     vec4 outputColor = v2f_color * vec4(C, albedo.a);
