@@ -200,8 +200,9 @@ void RBSurf::RenderColor(const Color4 &color) const {
     Shader *shader = ShaderManager::constantColorShader;
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -221,14 +222,15 @@ void RBSurf::RenderColor(const Color4 &color) const {
 
 void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &vec3_id) const {
     Shader *shader = ShaderManager::selectionIdShader;
-    
+
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff && shader->GetPerforatedVersion()) {
         shader = shader->GetPerforatedVersion();
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -276,8 +278,9 @@ void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -375,8 +378,9 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
         }
 
         if (subMesh->useGpuSkinning) {
-            if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-                shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+            Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+            if (skinningShader) {
+                shader = skinningShader;
             }
         }
 
@@ -390,8 +394,9 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
         }
 
         if (subMesh->useGpuSkinning) {
-            if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-                shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+            Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+            if (skinningShader) {
+                shader = skinningShader;
             }
         }
 
@@ -444,8 +449,9 @@ void RBSurf::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSc
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -500,8 +506,9 @@ void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambien
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -594,8 +601,9 @@ void RBSurf::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -650,8 +658,9 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, fl
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -856,8 +865,9 @@ void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const 
     }
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -883,12 +893,13 @@ void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const 
     DrawPrimitives();
 }
 
-void RBSurf::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) const {	
+void RBSurf::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::fogLightShader;
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 
@@ -920,8 +931,9 @@ void RBSurf::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) c
     Shader *shader = ShaderManager::blendLightShader;
 
     if (subMesh->useGpuSkinning) {
-        if (shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex)) {
-            shader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
         }
     }
 

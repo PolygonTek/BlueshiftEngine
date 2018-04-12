@@ -49,7 +49,7 @@ public:
     const Vec3 &            GetLocalScale() const { return localScale; }
                             /// Returns rotation axis in local space.
     const Mat3 &            GetLocalAxis() const { return localAxis; }
-                            /// Returns rotation angles in local space.
+                            /// Returns Euler angles in local space.
     Angles                  GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
                             /// Returns local space transform matrix.
     Mat3x4                  GetLocalMatrix() const { return Mat3x4(localScale, localAxis, localOrigin); }
@@ -62,7 +62,7 @@ public:
     void                    SetLocalScale(const Vec3 &scale);
                             /// Sets rotation axis in local space.
     void                    SetLocalAxis(const Mat3 &axis);
-                            /// Sets rotation angles in local space.
+                            /// Sets Euler angles in local space.
     void                    SetLocalAngles(const Angles &localAngles) { SetLocalAxis(localAngles.ToMat3()); }
                             /// Sets position, rotation in local space.
     void                    SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis);

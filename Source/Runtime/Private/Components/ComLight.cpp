@@ -239,10 +239,10 @@ void ComLight::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
             lightColor2.a = 0.2f;
             renderWorld->SetDebugColor(lightColor2, Color4::zero);
             renderWorld->DebugLine(sceneLight.origin - sceneLight.axis[0] * sceneLight.value[0] * 0.2f, sceneLight.origin - sceneLight.axis[0] * sceneLight.value[0], 1, true);
-            renderWorld->DebugLine(sceneLight.origin + sceneLight.axis[0] * sceneLight.value[0] * 0.2f, sceneLight.origin + sceneLight.axis[0] * sceneLight.value[0], 1, true);	
+            renderWorld->DebugLine(sceneLight.origin + sceneLight.axis[0] * sceneLight.value[0] * 0.2f, sceneLight.origin + sceneLight.axis[0] * sceneLight.value[0], 1, true);
             renderWorld->DebugLine(sceneLight.origin - sceneLight.axis[1] * sceneLight.value[1] * 0.2f, sceneLight.origin - sceneLight.axis[1] * sceneLight.value[1], 1, true);
             renderWorld->DebugLine(sceneLight.origin + sceneLight.axis[1] * sceneLight.value[1] * 0.2f, sceneLight.origin + sceneLight.axis[1] * sceneLight.value[1], 1, true);
-            renderWorld->DebugLine(sceneLight.origin - sceneLight.axis[2] * sceneLight.value[2] * 0.2f, sceneLight.origin - sceneLight.axis[2] * sceneLight.value[2], 1, true);			
+            renderWorld->DebugLine(sceneLight.origin - sceneLight.axis[2] * sceneLight.value[2] * 0.2f, sceneLight.origin - sceneLight.axis[2] * sceneLight.value[2], 1, true);
             renderWorld->DebugLine(sceneLight.origin + sceneLight.axis[2] * sceneLight.value[2] * 0.2f, sceneLight.origin + sceneLight.axis[2] * sceneLight.value[2], 1, true);
         }
     }
