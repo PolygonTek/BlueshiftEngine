@@ -44,6 +44,8 @@ public:
     void                    AllocStaticVertex(int bytes, const void *data, BufferCache *vc);
                             /// Allocates index buffer in the local device memory
     void                    AllocStaticIndex(int bytes, const void *data, BufferCache *vc);
+                            /// Allocates uniform buffer in the local device memory
+    void                    AllocStaticUniform(int bytes, const void *data, BufferCache *vc);
                             /// Allocates texel buffer in the local device memory
     void                    AllocStaticTexel(int bytes, const void *data, BufferCache *vc);
 

@@ -197,9 +197,16 @@ public:
     void                    SetShaderConstantArray3x3f(int index, bool rowmajor, int count, const Mat3 *constant) const;
     void                    SetShaderConstantArray4x4f(int index, bool rowmajor, int count, const Mat4 *constant) const;
 
+    int                     GetShaderConstantBlockIndex(int shaderHandle, const char *name) const;
+
+    void                    SetShaderConstantBlock(int bindingIndex, int blockIndex);
+
     Handle                  CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch = 0, const void *data = nullptr);
     void                    DeleteBuffer(Handle bufferHandle);
     void                    BindBuffer(BufferType type, Handle bufferHandle);
+
+    void                    BindIndexedBuffer(BufferType type, int bindingIndex, Handle bufferHandle);
+    void                    BindIndexedBufferRange(BufferType type, int bindingIndex, Handle bufferHandle, int offset, int size);
 
     void *                  MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset = 0, int size = -1);
     bool                    UnmapBuffer(Handle bufferHandle);

@@ -59,6 +59,7 @@ struct GLState {
     RHI::Handle         textureHandles[RHI::MaxTMU];
     RHI::Handle         shaderHandle;
     RHI::Handle         bufferHandles[RHI::MaxBufferTypes];
+    RHI::Handle         indexedBufferHandles[2]; // 0: UniformBuffer, 1: TransformFeedbackBuffer
     RHI::Handle         vertexFormatHandle;
     RHI::Handle         renderTargetHandle;
     RHI::Handle         renderTargetHandleStack[16];
@@ -158,10 +159,23 @@ struct GLUniform {
     bool                operator<(const GLUniform &other) const { return Str::Cmp(name, other.name) < 0; }
     bool                operator>(const GLUniform &other) const { return Str::Cmp(name, other.name) > 0; }
 
-    char *              name;    
+    char *              name;
     GLint               location;
     GLenum              type;
     int                 count;
+};
+
+struct GLUniformBlock {
+    bool                operator==(const GLUniformBlock &other) const { return Str::Cmp(name, other.name) == 0; }
+    bool                operator<(const GLUniformBlock &other) const { return Str::Cmp(name, other.name) < 0; }
+    bool                operator>(const GLUniformBlock &other) const { return Str::Cmp(name, other.name) > 0; }
+
+    char *              name;
+    GLuint              index;
+    GLint               size;
+    int                 numUniforms;
+    bool                referencedByVS;
+    bool                referencedByFS;
 };
 
 struct GLShader {
@@ -171,6 +185,8 @@ struct GLShader {
     GLSampler *         samplers;
     int                 numUniforms;
     GLUniform *         uniforms;
+    int                 numUniformBlocks;
+    GLUniformBlock *    uniformBlocks;
     static Str          programCacheDir;
 };
 

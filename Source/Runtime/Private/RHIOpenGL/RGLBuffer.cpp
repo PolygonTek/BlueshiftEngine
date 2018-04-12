@@ -117,6 +117,31 @@ void OpenGLRHI::BindBuffer(BufferType type, Handle bufferHandle) {
     }
 }
 
+void OpenGLRHI::BindIndexedBuffer(BufferType type, int bindingIndex, Handle bufferHandle) {
+    int targetIndex = type - UniformBuffer;
+    // Allowed target only UniformBuffer and TransformFeedbackBuffer
+    assert(targetIndex >= 0 && targetIndex <= 1);
+    Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
+    if (*bufferHandlePtr != bufferHandle) {
+        *bufferHandlePtr = bufferHandle;
+        const GLBuffer *buffer = bufferList[bufferHandle];
+        gglBindBufferBase(ToGLBufferTarget(type), bindingIndex, buffer->object);
+    }
+}
+
+void OpenGLRHI::BindIndexedBufferRange(BufferType type, int bindingIndex, Handle bufferHandle, int offset, int size) {
+    int targetIndex = type - UniformBuffer;
+    // Allowed target only UniformBuffer and TransformFeedbackBuffer
+    assert(targetIndex >= 0 && targetIndex <= 1);
+    Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
+    if (*bufferHandlePtr != bufferHandle) {
+        *bufferHandlePtr = bufferHandle;
+        const GLBuffer *buffer = bufferList[bufferHandle];
+        gglBindBufferRange(ToGLBufferTarget(type), bindingIndex, buffer->object, offset, size);
+    }
+}
+
+
 void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset, int size) {
     GLBuffer *buffer = bufferList[bufferHandle];
     

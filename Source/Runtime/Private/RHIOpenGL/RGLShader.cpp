@@ -340,6 +340,40 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
             continue;
         }
 
+        if (token == "UNIFORM_BLOCK" && parentheses == 0) {
+            processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
+
+            Str blockName;
+            lexer.ReadToken(&blockName);
+            lexer.ExpectPunctuation(P_BRACEOPEN);
+
+            processedText += "layout (std140) uniform " + blockName + "{\n";
+
+            while (1) {
+                lexer.ReadToken(&token);
+
+                if (token.IsEmpty()) {
+                    BE_WARNLOG(L"no matching '}' found\n");
+                    break;
+                } else if (token[0] == '}') {
+                    lexer.SkipUntilString(";");
+                    break;
+                } else {
+                    lexer.UnreadToken(&token);
+                    ParseUniform(lexer, uniform);
+                    lexer.SkipUntilString(";");
+
+                    if (!uniform.precision.IsEmpty()) {
+                        processedText += uniform.precision + " ";
+                    }
+                    processedText += uniform.type + " " + uniform.name + ";";
+                }
+            }
+
+            processedText += "};\n";
+            continue;
+        }
+
         if (!isVertexShader) {
             for (int i = 0; i < inOutList.Count(); i++) {
                 const InOut &fsOut = inOutList[i];
@@ -470,6 +504,10 @@ static int CompareSampler(const void *s0, const void *s1) {
 
 static int CompareUniform(const void *s0, const void *s1) {
     return strcmp(((GLUniform *)s0)->name, ((GLUniform *)s1)->name);
+}
+
+static int CompareUniformBlock(const void *s0, const void *s1) {
+    return strcmp(((GLUniformBlock *)s0)->name, ((GLUniformBlock *)s1)->name);
 }
 
 static bool IsValidSamplerType(GLenum type) {
@@ -701,24 +739,32 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         }
     } 
 
-    GLint uniformCount, uniformNameMaxLength;
+    GLint uniformCount, uniformMaxNameLength;
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORMS, &uniformCount);
-    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_MAX_LENGTH, &uniformNameMaxLength); // maximum length of the uniform name
+    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_MAX_LENGTH, &uniformMaxNameLength); // maximum length of the uniform name
 
-    char *uniformName = (char *)_alloca(uniformNameMaxLength);
+    GLint uniformBlockCount, uniformBlockMaxNameLength;
+    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &uniformBlockCount);
+    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &uniformBlockMaxNameLength);
+    
+    char *uniformName = (char *)_alloca(uniformMaxNameLength);
+    char *uniformBlockName = (char *)_alloca(uniformBlockMaxNameLength);
 
-    static const int MAX_SAMPLERS = 4096;
+    static const int MAX_SAMPLERS = 64;
     static const int MAX_UNIFORMS = 4096;
+    static const int MAX_UNIFORM_BLOCKS = 16;
 
     GLSampler *tempSamplers = (GLSampler *)_alloca(sizeof(GLSampler) * MAX_SAMPLERS);
     GLUniform *tempUniforms = (GLUniform *)_alloca(sizeof(GLUniform) * MAX_UNIFORMS);
+    GLUniformBlock *tempUniformBlocks = (GLUniformBlock *)_alloca(sizeof(GLUniformBlock) * MAX_UNIFORM_BLOCKS);
 
     int numSamplers = 0;
     int numUniforms = 0;
+    int numUniformBlocks = 0;
     
     gglUseProgram(programObject);
 
-    for (int i = 0; i < uniformCount; i++) {
+    for (int uniformIndex = 0; uniformIndex < uniformCount; uniformIndex++) {
         GLenum type;
         GLint size;
 
@@ -730,16 +776,15 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         // returned in type, and the size parameter returns the highest array element index used, plus one, 
         // as determined by the compiler and/or linker
         // http://www.khronos.org/opengles/sdk/docs/man/xhtml/glGetActiveUniform.xml
-        gglGetActiveUniform(programObject, i, uniformNameMaxLength, nullptr, &size, &type, uniformName);
-
+        gglGetActiveUniform(programObject, uniformIndex, uniformMaxNameLength, nullptr, &size, &type, uniformName);
         // NOTE: size 는 highest array element index used 가 아닌 것 같다. 그냥 max array count 가 나옴
 
         if (IsValidSamplerType(type)) {
             if (size > 1) {
                 char *bracket = strchr(uniformName, '[');
                 if (bracket) {
-                    for (int j = 0; j < size; j++) {
-                        bracket[1] = '0' + j;
+                    for (int arrayIndex = 0; arrayIndex < size; arrayIndex++) {
+                        bracket[1] = '0' + arrayIndex;
 
                         GLint location = gglGetUniformLocation(programObject, uniformName);
                         gglUniform1i(location, numSamplers);
@@ -777,11 +822,35 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
             }
         }
     }
+
+    for (int uniformBlockIndex = 0; uniformBlockIndex < uniformBlockCount; uniformBlockIndex++) {
+        GLint params;
+
+        gglGetActiveUniformBlockName(programObject, uniformBlockIndex, uniformBlockMaxNameLength, nullptr, uniformBlockName);
+
+        tempUniformBlocks[numUniformBlocks].name = Mem_AllocString(uniformBlockName);
+        tempUniformBlocks[numUniformBlocks].index = gglGetUniformBlockIndex(programObject, uniformBlockName);
+
+        gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &params);
+        tempUniformBlocks[numUniformBlocks].size = params;
+
+        gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &params);
+        tempUniformBlocks[numUniformBlocks].numUniforms = params;
+
+        gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER, &params);
+        tempUniformBlocks[numUniformBlocks].referencedByVS = params > 0;
+
+        gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER, &params);
+        tempUniformBlocks[numUniformBlocks].referencedByFS = params > 0;
+
+        numUniformBlocks++;
+    }
     
     gglUseProgram(0);
 
     GLSampler *samplers = nullptr;
     GLUniform *uniforms = nullptr;
+    GLUniformBlock *uniformBlocks = nullptr;
 
     if (numSamplers > 0) {
         samplers = (GLSampler *)Mem_Alloc(sizeof(GLSampler) * numSamplers);
@@ -799,13 +868,23 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         qsort(uniforms, numUniforms, sizeof(uniforms[0]), CompareUniform);
     }
 
+    if (numUniformBlocks > 0) {
+        uniformBlocks = (GLUniformBlock *)Mem_Alloc(sizeof(GLUniformBlock) * numUniformBlocks);
+        simdProcessor->Memcpy(uniformBlocks, tempUniformBlocks, sizeof(GLUniform) * numUniformBlocks);
+
+        // binary search 를 위해 정렬
+        qsort(uniformBlocks, numUniformBlocks, sizeof(uniformBlocks[0]), CompareUniformBlock);
+    }
+
     GLShader *shader = new GLShader;
     Str::Copynz(shader->name, name, COUNT_OF(shader->name));
-    shader->programObject   = programObject;
-    shader->numSamplers     = numSamplers;
-    shader->samplers        = samplers;
-    shader->numUniforms     = numUniforms;
-    shader->uniforms        = uniforms;
+    shader->programObject       = programObject;
+    shader->numSamplers         = numSamplers;
+    shader->samplers            = samplers;
+    shader->numUniforms         = numUniforms;
+    shader->uniforms            = uniforms;
+    shader->numUniformBlocks    = numUniformBlocks;
+    shader->uniformBlocks       = uniformBlocks;
 
     int handle = shaderList.FindNull();
     if (handle == -1) {
@@ -874,6 +953,24 @@ int OpenGLRHI::GetShaderConstantLocation(int shaderHandle, const char *name) con
     }
 
     return index;
+}
+
+int OpenGLRHI::GetShaderConstantBlockIndex(int shaderHandle, const char *name) const {
+    const GLShader *shader = shaderList[shaderHandle];
+    GLUniformBlock find;
+    find.name = const_cast<char *>(name);
+    int index = BinSearch_Equal<GLUniformBlock>(shader->uniformBlocks, shader->numUniformBlocks, find);
+    if (index < 0) {
+        return -1;
+    }
+
+    return index;
+}
+
+void OpenGLRHI::SetShaderConstantBlock(int bindingIndex, int blockIndex) {
+    const GLShader *shader = shaderList[currentContext->state->shaderHandle];
+
+    gglUniformBlockBinding(shader->programObject, blockIndex, bindingIndex);
 }
 
 void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowmajor, int count, const void *data) const {	

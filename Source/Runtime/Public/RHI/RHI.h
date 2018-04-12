@@ -314,6 +314,8 @@ public:
         int                 maxFragmentInputComponents;
         int                 maxGeometryTextureImageUnits;
         int                 maxGeometryOutputVertices;
+        int                 maxUniformBufferBindings;
+        int                 maxUniformBlockSize;
 
         int                 maxRenderBufferSize;
         int                 maxColorAttachments;

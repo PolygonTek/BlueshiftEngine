@@ -215,26 +215,32 @@ void OpenGLRHI::InitGL() {
         BE_LOG(L"Maximum texture anisotropy: %i\n", hwLimit.maxTextureAnisotropy);
     }
     
+    // the maximum supported texture image units that can be used to access texture maps from the fragment shader.
     gglGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &hwLimit.maxTextureImageUnits);
     BE_LOG(L"Maximum texture image units: %i\n", hwLimit.maxTextureImageUnits);
 
-    // ARB vertex/fragment/geometry shader limits
+    // the maximum number of 4 component generic vertex attributes accessible to a vertex shader.
     gglGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &hwLimit.maxVertexAttribs);
     BE_LOG(L"Maximum vertex attribs: %i\n", hwLimit.maxVertexAttribs);
 
-    gglGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &hwLimit.maxVertexUniformComponents);	
-    BE_LOG(L"Maximum vertex uniform components: %i\n", hwLimit.maxVertexUniformComponents);	
+    // the maximum number of individual floating point, integer, or boolean values that can be held in uniform variable storage for a vertex shader.
+    gglGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &hwLimit.maxVertexUniformComponents);
+    BE_LOG(L"Maximum vertex uniform components: %i\n", hwLimit.maxVertexUniformComponents);
 
+    // the maximum supported texture image units that can be used to access texture maps from the vertex shader.
     gglGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &hwLimit.maxVertexTextureImageUnits);
     BE_LOG(L"Maximum vertex texture image units: %i\n", hwLimit.maxVertexTextureImageUnits);
 
+    // the maximum number of individual floating point, integer, or boolean values that can be held in uniform variable storage for a fragment shader.
     gglGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &hwLimit.maxFragmentUniformComponents);
     BE_LOG(L"Maximum fragment uniform components: %i\n", hwLimit.maxFragmentUniformComponents);
 
+    // the maximum number of components of the inputs read by the fragment shader.
     gglGetIntegerv(GL_MAX_FRAGMENT_INPUT_COMPONENTS, &hwLimit.maxFragmentInputComponents);
     BE_LOG(L"Maximum fragment input components: %i\n", hwLimit.maxFragmentInputComponents);
 
     if (OpenGL::SupportsGeometryShader()) {
+        // the maximum supported texture image units that can be used to access texture maps from the geometry shader.
         gglGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &hwLimit.maxGeometryTextureImageUnits);
         BE_LOG(L"Maximum geometry texture image units: %i\n", hwLimit.maxGeometryTextureImageUnits);
         
@@ -242,10 +248,18 @@ void OpenGLRHI::InitGL() {
         BE_LOG(L"Maximum geometry output vertices: %i\n", hwLimit.maxGeometryOutputVertices);
     }
 
+    // the maximum number of uniform buffer binding points on the context.
+    gglGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &hwLimit.maxUniformBufferBindings);
+    BE_LOG(L"Maximum uniform buffer bindings: %i\n", hwLimit.maxUniformBufferBindings);
+
+    // the maximum size in basic machine units of a uniform block.
+    gglGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &hwLimit.maxUniformBlockSize);
+    BE_LOG(L"Maximum uniform block size: %i\n", hwLimit.maxUniformBlockSize);
+
     // GL_ARB_framebuffer_object (3.0)
     gglGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &hwLimit.maxRenderBufferSize);
-    gglGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &hwLimit.maxColorAttachments);	
-    BE_LOG(L"Maximum render buffer size: %i\n", hwLimit.maxRenderBufferSize);	
+    gglGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &hwLimit.maxColorAttachments);
+    BE_LOG(L"Maximum render buffer size: %i\n", hwLimit.maxRenderBufferSize);
 
     // GL_ARB_draw_buffers (2.0)
     gglGetIntegerv(GL_MAX_DRAW_BUFFERS, &hwLimit.maxDrawBuffers);

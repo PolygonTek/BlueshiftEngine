@@ -272,6 +272,13 @@ void BufferCacheManager::AllocStaticIndex(int bytes, const void *data, BufferCac
     bc->frameCount = 0xFFFFFFFF;
 }
 
+void BufferCacheManager::AllocStaticUniform(int bytes, const void *data, BufferCache *bc) {
+    bc->buffer = rhi.CreateBuffer(RHI::UniformBuffer, RHI::Static, bytes, 0, data);
+    bc->offset = 0;
+    bc->bytes = bytes;
+    bc->frameCount = 0xFFFFFFFF;
+}
+
 void BufferCacheManager::AllocStaticTexel(int bytes, const void *data, BufferCache *bc) {
     bc->buffer = rhi.CreateBuffer(RHI::TexelBuffer, RHI::Static, bytes, 0, data);
     bc->offset = 0;
