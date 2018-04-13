@@ -31,36 +31,41 @@ out MEDIUMP vec2 v2f_tex;
     out vec3 v2f_viewVector;
 #endif
 
-#ifdef INSTANCED_DRAW
-    struct entityData_t {
+#ifdef INSTANCING
+    struct InstanceData {
         vec4 worldMatrixS;
         vec4 worldMatrixT;
         vec4 worldMatrixR;
-        vec3 localViewOrigin;
-        vec3 localLightDir;
         vec4 textureMatrixS;
         vec4 textureMatrixT;
-        vec4 vertexColorScale;
-        vec4 vertexColorAdd;
-        vec4 constantColor;
+        vec3 localViewOrigin;
+        mat3 localLightAxis;
+        vec4 localLightOrigin;
+        LOWP vec4 vertexColorScale;
+        LOWP vec4 vertexColorAdd;
+        LOWP vec4 constantColor;
     };
 
-    uniform entityData_t entityData[256];
-    #define ED entityData[gl_InstanceIDARB]
+    UNIFORM_BLOCK InstanceDataBlock {
+        InstanceData instanceData[256];
+    };
+
+    #define instance instanceData[gl_InstanceID]
 #else
     uniform vec4 worldMatrixS;
     uniform vec4 worldMatrixT;
     uniform vec4 worldMatrixR;
+    uniform vec4 textureMatrixS;
+    uniform vec4 textureMatrixT;
     uniform vec3 localViewOrigin;
     uniform mat3 localLightAxis;
     uniform vec4 localLightOrigin;
-    uniform vec4 textureMatrixS;
-    uniform vec4 textureMatrixT;
     uniform LOWP vec4 vertexColorScale;
     uniform LOWP vec4 vertexColorAdd;
     uniform LOWP vec4 constantColor;
 #endif
 
+uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
 uniform vec3 lightInvRadius;
 uniform mat4 lightTextureMatrix;
@@ -108,6 +113,7 @@ void main() {
 #endif
 
 #if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING)
+#define WORLD_VERTEX_CALCULATED
     vec4 worldVertex;
     worldVertex.x = dot(worldMatrixS, localVertex);
     worldVertex.y = dot(worldMatrixT, localVertex);
@@ -183,5 +189,16 @@ void main() {
 
     v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
+#ifdef INSTANCING
+    #ifndef WORLD_VERTEX_CALCULATED
+        vec4 worldVertex;
+        worldVertex.x = dot(worldMatrixS, localVertex);
+        worldVertex.y = dot(worldMatrixT, localVertex);
+        worldVertex.z = dot(worldMatrixR, localVertex);
+        worldVertex.w = 1.0;
+    #endif
+    gl_Position = viewProjectionMatrix * worldVertex;
+#else
     gl_Position = modelViewProjectionMatrix * localVertex;
+#endif
 }

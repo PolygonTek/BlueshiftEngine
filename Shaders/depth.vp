@@ -5,14 +5,20 @@ out MEDIUMP vec2 v2f_texCoord;
 
 uniform mat4 modelViewProjectionMatrix;
 
-#ifdef INSTANCED_DRAW
-	struct entityData_t {
+#ifdef INSTANCING
+	struct InstanceData {
+        vec4 worldMatrixS;
+        vec4 worldMatrixT;
+        vec4 worldMatrixR;
 		vec4 textureMatrixS;
 		vec4 textureMatrixT;
 	};
 
-	uniform entityData_t entityData[256];
-	#define ED entityData[gl_InstanceIDARB]
+    UNIFORM_BLOCK InstanceDataBlock {
+        InstanceData instanceData[256];
+    };
+
+    #define instance instanceData[gl_InstanceID]
 #else
 	uniform vec4 textureMatrixS;
 	uniform vec4 textureMatrixT;
@@ -32,5 +38,14 @@ void main() {
 	localVertex = in_position;
 #endif
 
-	gl_Position = modelViewProjectionMatrix * localVertex;
+#ifdef INSTANCING
+    vec4 worldVertex;
+    worldVertex.x = dot(instance.worldMatrixS, localVertex);
+    worldVertex.y = dot(instance.worldMatrixT, localVertex);
+    worldVertex.z = dot(instance.worldMatrixR, localVertex);
+    worldVertex.w = 1.0;
+    gl_Position = viewProjectionMatrix * worldVertex;
+#else
+    gl_Position = modelViewProjectionMatrix * localVertex;
+#endif
 }

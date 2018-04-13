@@ -10,9 +10,9 @@ in vec4 in_weightValue : WEIGHT_VALUE;
 		#define TC_TYPE vec2
 	#endif
 
-	#ifdef INSTANCED_DRAW
-		uniform TC_TYPE tcBase[256];	// indexed by gl_InstanceIDARB
-		#define BASE_TC	tcBase[gl_InstanceIDARB]
+	#ifdef SKINNED_INSTANCING
+		uniform TC_TYPE tcBase[256];	// indexed by gl_InstanceID
+		#define BASE_TC	tcBase[gl_InstanceID]
 	#else
 		uniform TC_TYPE tcBase;
 		#define BASE_TC	tcBase

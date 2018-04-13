@@ -34,6 +34,8 @@ static const char *builtInConstantNames[] = {
     "modelViewMatrixTranspose",             // ModelViewMatrixTransposeConst
     "projectionMatrix",                     // ProjectionMatrixConst
     "projectionMatrixTranspose",            // ProjectionMatrixTransposeConst
+    "viewProjectionMatrix",                 // ViewProjectionMatrixConst
+    "viewProjectionMatrixTranspose",        // ViewProjectionMatrixTransposeConst
     "modelViewProjectionMatrix",            // ModelViewProjectionMatrixConst
     "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTransposeConst
     "worldMatrixS",                         // WorldMatrixSConst

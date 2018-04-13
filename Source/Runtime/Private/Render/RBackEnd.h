@@ -174,6 +174,7 @@ struct BackEnd {
     double              depthMax;
     Mat4                modelViewMatrix;
     Mat4                projMatrix;
+    Mat4                viewProjMatrix;
     Mat4                modelViewProjMatrix;
     Mat4                viewMatrixPrev;
 

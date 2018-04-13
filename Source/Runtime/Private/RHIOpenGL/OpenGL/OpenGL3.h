@@ -52,6 +52,7 @@ public:
     static void             DepthRange(GLdouble znear, GLdouble zfar) { gglDepthRange(znear, zfar); }
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffer(buffer); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer) { gglTexBuffer(GL_TEXTURE_BUFFER, internalFormat, buffer); }
+    static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisorARB(index, divisor); }
 
     static void             SetTextureSwizzling(GLenum target, Image::Format format);
     static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);

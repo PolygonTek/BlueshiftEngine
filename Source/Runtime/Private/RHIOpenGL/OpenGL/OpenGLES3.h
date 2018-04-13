@@ -143,6 +143,8 @@ public:
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffers(1, &buffer); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer);
 
+    static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisor(index, divisor); }
+
     static void             SetTextureSwizzling(GLenum target, Image::Format format);
     static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
     static bool             SupportedImageFormat(Image::Format imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }

@@ -53,6 +53,8 @@ public:
         ModelViewMatrixTransposeConst,
         ProjectionMatrixConst,
         ProjectionMatrixTransposeConst,
+        ViewProjectionMatrixConst,
+        ViewProjectionMatrixTransposeConst,
         ModelViewProjectionMatrixConst,
         ModelViewProjectionMatrixTransposeConst,
         WorldMatrixSConst,

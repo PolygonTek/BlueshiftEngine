@@ -708,6 +708,7 @@ static const void *RB_ExecuteDrawView(const void *data) {
     backEnd.numDrawSurfs    = cmd->view.numDrawSurfs;
     backEnd.drawSurfs       = cmd->view.drawSurfs;
     backEnd.projMatrix      = cmd->view.def->projMatrix;
+    backEnd.viewProjMatrix  = cmd->view.def->viewProjMatrix;
     backEnd.renderRect      = cmd->view.def->parms.renderRect;
     backEnd.upscaleFactor   = Vec2(backEnd.ctx->GetUpscaleFactorX(), backEnd.ctx->GetUpscaleFactorY());
 

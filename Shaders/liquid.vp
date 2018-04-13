@@ -12,8 +12,8 @@ out vec3 v2f_toWorldS;
 out vec3 v2f_toWorldT;
 out vec3 v2f_toWorldR;
 
-#ifdef INSTANCED_DRAW
-	struct entityData_t {
+#ifdef INSTANCING
+	struct InstanceData {
 		vec4 worldMatrixS;
 		vec4 worldMatrixT;
 		vec4 worldMatrixR;
@@ -25,8 +25,11 @@ out vec3 v2f_toWorldR;
 		vec4 constantColor;
 	};
 
-	uniform entityData_t entityData[256];
-	#define ED entityData[gl_InstanceIDARB]
+	UNIFORM_BLOCK InstanceDataBlock {
+        InstanceData instanceData[256];
+    };
+
+    #define instance instanceData[gl_InstanceID]
 #else
 	uniform vec4 worldMatrixS;
 	uniform vec4 worldMatrixT;

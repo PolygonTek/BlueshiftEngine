@@ -309,6 +309,7 @@ public:
     static void             DepthRange(GLdouble znear, GLdouble zfar) {}
     static void             DrawBuffer(GLenum buffer) {}
     static void             BindDefaultFBO() { gglBindFramebuffer(GL_FRAMEBUFFER, 0); }
+    static void             VertexAttribDivisor(int index, int divisor) {}
     
     static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
     static Image::Format    ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap);

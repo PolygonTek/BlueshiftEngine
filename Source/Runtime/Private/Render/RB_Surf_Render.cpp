@@ -135,6 +135,10 @@ void RBSurf::SetMatrixConstants(const Shader *shader) const {
         shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ProjectionMatrixConst], true, backEnd.projMatrix);
     }
 
+    if (shader->builtInConstantLocations[Shader::ViewProjectionMatrixConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ViewProjectionMatrixConst], true, backEnd.viewProjMatrix);
+    }
+
     if (shader->builtInConstantLocations[Shader::ModelViewProjectionMatrixConst] >= 0) {
         shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ModelViewProjectionMatrixConst], true, backEnd.modelViewProjMatrix);
     }
@@ -145,6 +149,10 @@ void RBSurf::SetMatrixConstants(const Shader *shader) const {
 
     if (shader->builtInConstantLocations[Shader::ProjectionMatrixTransposeConst] >= 0) {
         shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ProjectionMatrixTransposeConst], false, backEnd.projMatrix);
+    }
+
+    if (shader->builtInConstantLocations[Shader::ViewProjectionMatrixTransposeConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ViewProjectionMatrixTransposeConst], false, backEnd.viewProjMatrix);
     }
 
     if (shader->builtInConstantLocations[Shader::ModelViewProjectionMatrixTransposeConst] >= 0) {

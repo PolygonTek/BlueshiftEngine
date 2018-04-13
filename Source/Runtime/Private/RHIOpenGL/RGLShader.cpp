@@ -347,7 +347,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
             lexer.ReadToken(&blockName);
             lexer.ExpectPunctuation(P_BRACEOPEN);
 
-            processedText += "layout (std140) uniform " + blockName + "{\n";
+            processedText += "layout (std140) uniform " + blockName + " {\n";
 
             while (1) {
                 lexer.ReadToken(&token);
@@ -356,7 +356,6 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                     BE_WARNLOG(L"no matching '}' found\n");
                     break;
                 } else if (token[0] == '}') {
-                    lexer.SkipUntilString(";");
                     break;
                 } else {
                     lexer.UnreadToken(&token);
@@ -366,11 +365,11 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                     if (!uniform.precision.IsEmpty()) {
                         processedText += uniform.precision + " ";
                     }
-                    processedText += uniform.type + " " + uniform.name + ";";
+                    processedText += uniform.type + " " + uniform.name + ";\n";
                 }
             }
 
-            processedText += "};\n";
+            processedText += "}";
             continue;
         }
 
@@ -835,7 +834,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         tempUniformBlocks[numUniformBlocks].size = params;
 
         gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &params);
-        tempUniformBlocks[numUniformBlocks].numUniforms = params;
+        tempUniformBlocks[numUniformBlocks].numUniforms = params; // occupies 16 bytes per uniform
 
         gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER, &params);
         tempUniformBlocks[numUniformBlocks].referencedByVS = params > 0;

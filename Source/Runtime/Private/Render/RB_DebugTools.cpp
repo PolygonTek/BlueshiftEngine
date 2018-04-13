@@ -158,7 +158,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     const Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
-    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);	
+    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);
     
     rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
@@ -462,7 +462,7 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     const Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
-    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);	
+    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);
     
     rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
