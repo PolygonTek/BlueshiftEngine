@@ -210,7 +210,7 @@ void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base,
     }
 
     for (int i = 0; i < MaxTCU; i++) {
-        ve = &vertexFormat->vertexElements[TEXCOORD0 + i];		
+        ve = &vertexFormat->vertexElements[TEXCOORD0 + i];
         if (ve->stream == stream && ve->components > 0) {
             gglClientActiveTextureARB(GL_TEXTURE0 + i);
             gglTexCoordPointer(ve->components, ve->type, stride, BUFFER_OFFSET(base + ve->offset));
@@ -223,7 +223,7 @@ void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base,
             gglVertexAttribPointerARB(i, ve->components, ve->type, ve->normalize, stride, BUFFER_OFFSET(base + ve->offset));
         }
     }
-#endif	
+#endif
 }
 
 BE_NAMESPACE_END
