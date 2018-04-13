@@ -4,7 +4,8 @@ Version History
 ### 0.5.0 (work in progress)
 - Added support for vehicle physics
 - Added support for slider/wheel joint components
-- Fixed to reflect changes in properties of physics components in play mode
+- Added support for calculation tangent vectors using MikkTSpace
+- Modified to calculate mesh normals with area and anglular weights
 
 ### 0.4.0
 - Added support for LuaJIT (Windows / macOS)
