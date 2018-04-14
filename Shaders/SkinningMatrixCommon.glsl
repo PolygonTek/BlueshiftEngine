@@ -60,7 +60,7 @@ void skinningMatrix(vec4 position, out vec4 transformedPosition, vec3 normal, ou
 	transformedTangent.x = dot(R0.xyz, tangent.xyz);
 	transformedTangent.y = dot(R1.xyz, tangent.xyz);
 	transformedTangent.z = dot(R2.xyz, tangent.xyz);
-		
+
 	// derive bitangent
 	transformedBitangent = cross(transformedNormal, transformedTangent);
 	transformedBitangent = transformedBitangent * tangent.w;

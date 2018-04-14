@@ -61,34 +61,34 @@ void main() {
 	vec3 vNormal = in_normal.xyz;
 #endif
 
-	vec4 localVertex;
+	vec4 localPos;
 	vec3 localNormal;
 
 #ifdef GPU_SKINNING
-	skinningMatrix(in_position, localVertex, vNormal, localNormal);
+	skinningMatrix(in_position, localPos, vNormal, localNormal);
 #else
-	localVertex = in_position;
+	localPos = in_position;
 	localNormal = vNormal;
 #endif
 
-	vec4 worldVertex;
-	worldVertex.x = dot(worldMatrixS, localVertex);
-	worldVertex.y = dot(worldMatrixT, localVertex);
-	worldVertex.z = dot(worldMatrixR, localVertex);
-	worldVertex.w = 1.0;
+	vec4 worldPos;
+	worldPos.x = dot(worldMatrixS, localPos);
+	worldPos.y = dot(worldMatrixT, localPos);
+	worldPos.z = dot(worldMatrixR, localPos);
+	worldPos.w = 1.0;
 
-	v2f_lightProjection = lightTextureMatrix * worldVertex;
+	v2f_lightProjection = lightTextureMatrix * worldPos;
 
 #ifdef USE_SHADOW_MAP
 	#ifdef USE_SHADOW_POINT
-		ShadowCubeTransform(localVertex, localLightOrigin.xyz, worldMatrixS.xyz, worldMatrixT.xyz, worldMatrixR.xyz);
+		ShadowCubeTransform(localPos, localLightOrigin.xyz, worldMatrixS.xyz, worldMatrixT.xyz, worldMatrixR.xyz);
 	#elif defined(USE_SHADOW_SPOT) || defined(USE_SHADOW_CASCADE)
-		ShadowTransform(worldVertex);
+		ShadowTransform(worldPos);
 	#endif
 #endif
 
-	vec3 L = localLightOrigin.xyz + (localLightOrigin.w - 1.0) * localVertex.xyz;
-	vec3 V = localViewOrigin.xyz - localVertex.xyz;
+	vec3 L = localLightOrigin.xyz + (localLightOrigin.w - 1.0) * localPos.xyz;
+	vec3 V = localViewOrigin.xyz - localPos.xyz;
 
 	v2f_lightFallOff = (L * localLightAxis) * lightInvRadius;
 	v2f_lightVector = L;
@@ -101,5 +101,5 @@ void main() {
 
 	v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
-	gl_Position = modelViewProjectionMatrix * localVertex;
+	gl_Position = modelViewProjectionMatrix * localPos;
 }

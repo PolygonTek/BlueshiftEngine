@@ -25,7 +25,7 @@ uniform mat4 modelViewProjectionMatrix;
 #endif
 
 void main() {
-	vec4 localVertex;
+	vec4 localPos;
 
 #ifdef PERFORATED
 	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
@@ -33,19 +33,19 @@ void main() {
 #endif
 
 #ifdef GPU_SKINNING
-	skinningMatrix(in_position, localVertex);
+	skinningMatrix(in_position, localPos);
 #else
-	localVertex = in_position;
+	localPos = in_position;
 #endif
 
 #ifdef INSTANCING
-    vec4 worldVertex;
-    worldVertex.x = dot(instance.worldMatrixS, localVertex);
-    worldVertex.y = dot(instance.worldMatrixT, localVertex);
-    worldVertex.z = dot(instance.worldMatrixR, localVertex);
-    worldVertex.w = 1.0;
-    gl_Position = viewProjectionMatrix * worldVertex;
+    vec4 worldPos;
+    worldPos.x = dot(instance.worldMatrixS, localPos);
+    worldPos.y = dot(instance.worldMatrixT, localPos);
+    worldPos.z = dot(instance.worldMatrixR, localPos);
+    worldPos.w = 1.0;
+    gl_Position = viewProjectionMatrix * worldPos;
 #else
-    gl_Position = modelViewProjectionMatrix * localVertex;
+    gl_Position = modelViewProjectionMatrix * localPos;
 #endif
 }

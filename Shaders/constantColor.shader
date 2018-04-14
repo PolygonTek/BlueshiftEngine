@@ -8,15 +8,15 @@ shader "constantColor" {
 		uniform mat4 modelViewProjectionMatrix;
 
 		void main() {
-			vec4 localVertex;
+			vec4 localPos;
 
 		#ifdef GPU_SKINNING
-			skinningMatrix(in_position, localVertex);
+			skinningMatrix(in_position, localPos);
 		#else
-			localVertex = in_position;
+			localPos = in_position;
 		#endif
 
-			gl_Position = modelViewProjectionMatrix * localVertex;
+			gl_Position = modelViewProjectionMatrix * localPos;
 		}
 	}
 
