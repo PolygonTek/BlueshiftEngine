@@ -28,7 +28,7 @@ BE_NAMESPACE_BEGIN
 
 class OpenGL3 : public OpenGLBase {
 public:
-    static const int        GLSL_VERSION = 330;
+    static const int        GLSL_VERSION = 150;
     static const char *     GLSL_VERSION_STRING;
 
     static bool             SupportsPolygonMode() { return true; }

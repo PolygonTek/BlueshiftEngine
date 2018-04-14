@@ -48,6 +48,12 @@ public:
         CgShader
     };
 
+    enum ShaderFlag {
+        VertexShader            = BIT(0),
+        FragmentShader          = BIT(1),
+        GeometryShader          = BIT(2)
+    };
+
     enum BuiltInConstant {
         ModelViewMatrixConst,
         ModelViewMatrixTransposeConst,
@@ -97,8 +103,9 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
-    bool                    HasVertexShader() const { return hasVertexShader; }
-    bool                    HasFragmentShader() const { return hasFragmentShader; }
+    bool                    HasVertexShader() const { return !!(shaderFlags & VertexShader); }
+    bool                    HasFragmentShader() const { return !!(shaderFlags & FragmentShader); }
+    bool                    HasGeometryShader() const { return !!(shaderFlags & GeometryShader); }
 
     bool                    IsOriginalShader() const { return !originalShader; }
     bool                    IsInstantiatedShader() const { return !!originalShader; }
@@ -229,10 +236,9 @@ private:
     int                     frameCount;
 
     RHI::Handle             shaderHandle;
+    int                     shaderFlags;
     Str                     vsText;                 ///< Vertex shader souce code text
     Str                     fsText;                 ///< Fragment shader source code text
-    bool                    hasVertexShader;
-    bool                    hasFragmentShader;
     //int                   interactionParms[MaxInteractionParms];
     int                     builtInConstantLocations[MaxBuiltInConstants];
     int                     builtInSamplerUnits[MaxBuiltInSamplers];
@@ -261,8 +267,7 @@ BE_INLINE Shader::Shader() {
     permanence              = false;
     frameCount              = 0; 
     shaderHandle            = RHI::NullShader;
-    hasVertexShader         = false;
-    hasFragmentShader       = false;
+    shaderFlags             = 0;
     perforatedVersion       = nullptr;
     premulAlphaVersion      = nullptr;
     ambientLitVersion       = nullptr;
@@ -378,8 +383,8 @@ public:
     static Shader *         blendLightShader;
     static Shader *         postObjectMotionBlurShader;
     static Shader *         postCameraMotionBlurShader;
-    static Shader *         postPassThruShader;	
-    static Shader *         postPassThruColorShader;	
+    static Shader *         postPassThruShader;
+    static Shader *         postPassThruColorShader;
     static Shader *         downscale2x2Shader;
     static Shader *         downscale4x4Shader;
     static Shader *         downscale4x4LogLumShader;

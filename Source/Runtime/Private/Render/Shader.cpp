@@ -468,7 +468,10 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
 
     shader = shaderManager.AllocShader(shaderName);
 
-    Str text = Str("{ glsl_vp {\n") + vsHeaderText + skinningVsHeaderText + vsText + "} glsl_fp {\n" + fsHeaderText + fsText + "} }";
+    Str text = "{\n";
+    text += "glsl_vp { " + vsHeaderText + skinningVsHeaderText + vsText + " }\n";
+    text += "glsl_fp { " + fsHeaderText + fsText + " }\n";
+    text += "}";
     if (!shader->Create(text, baseDir)) {
         return nullptr;
     }
@@ -973,10 +976,11 @@ bool Shader::Instantiate(const Array<Define> &defineArray) {
 
     Str processedVsText;
     Str processedFsText;
-    hasVertexShader = ProcessShaderText(originalShader->vsText, originalShader->baseDir, defineArray, processedVsText);
-    hasFragmentShader = ProcessShaderText(originalShader->fsText, originalShader->baseDir, defineArray, processedFsText);
 
-    if (!hasVertexShader || !hasFragmentShader) {
+    shaderFlags |= ProcessShaderText(originalShader->vsText, originalShader->baseDir, defineArray, processedVsText) ? VertexShader : 0;
+    shaderFlags |= ProcessShaderText(originalShader->fsText, originalShader->baseDir, defineArray, processedFsText) ? FragmentShader : 0;
+
+    if (!(shaderFlags & VertexShader) || !(shaderFlags & FragmentShader)) {
         return false;
     }
 
@@ -1011,7 +1015,7 @@ bool Shader::ProcessShaderText(const char *text, const char *baseDir, const Arra
     // insert global define array
     for (int i = shaderManager.globalHeaderList.Count() - 1; i >= 0; i--) {
         outStr.Insert(shaderManager.globalHeaderList[i].c_str(), 0);
-    }    
+    }
 
     ProcessIncludeRecursive(baseDir, outStr);
 
