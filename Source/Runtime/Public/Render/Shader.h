@@ -159,9 +159,11 @@ public:
     void                    SetConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const;
     void                    SetConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const;
     void                    SetConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const;
+    void                    SetConstant4x3f(int index, bool rowmajor, const Mat3x4 &constant) const;
     void                    SetConstant2x2f(const char *name, bool rowmajor, const Mat2 &constant) const;
     void                    SetConstant3x3f(const char *name, bool rowmajor, const Mat3 &constant) const;
     void                    SetConstant4x4f(const char *name, bool rowmajor, const Mat4 &constant) const;
+    void                    SetConstant4x3f(const char *name, bool rowmajor, const Mat3x4 &constant) const;
 
     void                    SetConstantArray1i(int index, int num, const int *constant) const;
     void                    SetConstantArray2i(int index, int num, const int *constant) const;
@@ -190,9 +192,11 @@ public:
     void                    SetConstantArray2x2f(int index, bool rowmajor, int num, const Mat2 *constant) const;
     void                    SetConstantArray3x3f(int index, bool rowmajor, int num, const Mat3 *constant) const;
     void                    SetConstantArray4x4f(int index, bool rowmajor, int num, const Mat4 *constant) const;
+    void                    SetConstantArray4x3f(int index, bool rowmajor, int num, const Mat3x4 *constant) const;
     void                    SetConstantArray2x2f(const char *name, bool rowmajor, int num, const Mat2 *constant) const;
     void                    SetConstantArray3x3f(const char *name, bool rowmajor, int num, const Mat3 *constant) const;
     void                    SetConstantArray4x4f(const char *name, bool rowmajor, int num, const Mat4 *constant) const;
+    void                    SetConstantArray4x3f(const char *name, bool rowmajor, int num, const Mat3x4 *constant) const;
 
     void                    SetConstantBuffer(int index, RHI::Handle bufferHandle) const;
     void                    SetConstantBuffer(const char *name, RHI::Handle bufferHandle) const;

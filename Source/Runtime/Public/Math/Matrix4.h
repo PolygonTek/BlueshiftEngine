@@ -257,6 +257,8 @@ public:
     
                         /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
+                        /// Returns upper 3x4 part.
+    Mat3x4              ToMat3x4() const;
                         /// Returns scale part.
     Vec3                ToScaleVec3() const;
                         /// Returns translation vector part.

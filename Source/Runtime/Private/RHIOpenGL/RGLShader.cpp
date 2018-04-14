@@ -1011,7 +1011,7 @@ void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowmajor, int count, co
     case GL_UNSIGNED_INT_VEC4:
     case GL_BOOL_VEC4:
         gglUniform4iv(uniform->location, count, (const GLint *)data);
-        break;		
+        break;
     case GL_FLOAT_MAT2:
         gglUniformMatrix2fv(uniform->location, count, rowmajor, (const GLfloat *)data);
         break;
@@ -1020,6 +1020,9 @@ void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowmajor, int count, co
         break;
     case GL_FLOAT_MAT4:
         gglUniformMatrix4fv(uniform->location, count, rowmajor, (const GLfloat *)data);
+        break;
+    case GL_FLOAT_MAT4x3:
+        gglUniformMatrix4x3fv(uniform->location, count, rowmajor, (const GLfloat *)data);
         break;
     }
 }
@@ -1080,6 +1083,10 @@ void OpenGLRHI::SetShaderConstant4x4f(int index, bool rowmajor, const Mat4 &cons
     SetShaderConstantGeneric(index, rowmajor, 1, &constant);
 }
 
+void OpenGLRHI::SetShaderConstant4x3f(int index, bool rowmajor, const Mat3x4 &constant) const {
+    SetShaderConstantGeneric(index, rowmajor, 1, &constant);
+}
+
 void OpenGLRHI::SetShaderConstantArray1i(int index, int count, const int *constant) const {
     SetShaderConstantGeneric(index, false, count, constant);
 }
@@ -1133,6 +1140,10 @@ void OpenGLRHI::SetShaderConstantArray3x3f(int index, bool rowmajor, int count, 
 }
 
 void OpenGLRHI::SetShaderConstantArray4x4f(int index, bool rowmajor, int count, const Mat4 *constant) const {
+    SetShaderConstantGeneric(index, rowmajor, count, constant);
+}
+
+void OpenGLRHI::SetShaderConstantArray4x3f(int index, bool rowmajor, int count, const Mat3x4 *constant) const {
     SetShaderConstantGeneric(index, rowmajor, count, constant);
 }
 

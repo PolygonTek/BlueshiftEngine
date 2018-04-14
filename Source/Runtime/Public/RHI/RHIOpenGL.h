@@ -179,6 +179,7 @@ public:
     void                    SetShaderConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const;
     void                    SetShaderConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const;
     void                    SetShaderConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const;
+    void                    SetShaderConstant4x3f(int index, bool rowmajor, const Mat3x4 &constant) const;
 
     void                    SetShaderConstantArray1i(int index, int count, const int *constant) const;
     void                    SetShaderConstantArray2i(int index, int count, const int *constant) const;
@@ -196,6 +197,7 @@ public:
     void                    SetShaderConstantArray2x2f(int index, bool rowmajor, int count, const Mat2 *constant) const;
     void                    SetShaderConstantArray3x3f(int index, bool rowmajor, int count, const Mat3 *constant) const;
     void                    SetShaderConstantArray4x4f(int index, bool rowmajor, int count, const Mat4 *constant) const;
+    void                    SetShaderConstantArray4x3f(int index, bool rowmajor, int count, const Mat3x4 *constant) const;
 
     int                     GetShaderConstantBlockIndex(int shaderHandle, const char *name) const;
 
