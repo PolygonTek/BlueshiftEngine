@@ -105,7 +105,7 @@ void VertexFormat::Init() {
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, OFFSET_OF(VertexGenericLit, xyz), RHI::VertexElement::Position, 3, RHI::VertexElement::FloatType, false);
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, OFFSET_OF(VertexGenericLit, st), RHI::VertexElement::TexCoord, 2, RHI::VertexElement::HalfType, false);
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, OFFSET_OF(VertexGenericLit, normal), RHI::VertexElement::Normal, 3, normalTangentType, normalTangentNormalize);
-    vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, OFFSET_OF(VertexGenericLit, tangent), RHI::VertexElement::TexCoord1, 4, normalTangentType, normalTangentNormalize);
+    vertexFormats[VertexFormat::Type::GenericXyzStNT].Append(0, OFFSET_OF(VertexGenericLit, tangent), RHI::VertexElement::Tangent, 4, normalTangentType, normalTangentNormalize);
     vertexFormats[VertexFormat::Type::GenericXyzStNT].Create();
 
     // GenericXyzStNTSkinning1, GenericXyzStNTSkinning4, GenericXyzStNTSkinning8
@@ -119,7 +119,7 @@ void VertexFormat::Init() {
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, OFFSET_OF(VertexGenericLit, st), RHI::VertexElement::TexCoord0, 2, RHI::VertexElement::HalfType, false);
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, OFFSET_OF(VertexGenericLit, color), RHI::VertexElement::Color, 4, RHI::VertexElement::UByteType, true);
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, OFFSET_OF(VertexGenericLit, normal), RHI::VertexElement::Normal, 3, normalTangentType, normalTangentNormalize);
-    vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, OFFSET_OF(VertexGenericLit, tangent), RHI::VertexElement::TexCoord1, 4, normalTangentType, normalTangentNormalize);
+    vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Append(0, OFFSET_OF(VertexGenericLit, tangent), RHI::VertexElement::Tangent, 4, normalTangentType, normalTangentNormalize);
     vertexFormats[VertexFormat::Type::GenericXyzStColorNT].Create();
 
     // GenericXyzStColorNTSkinning1, GenericXyzStColorNTSkinning4, GenericXyzStColorNTSkinning8

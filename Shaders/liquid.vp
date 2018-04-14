@@ -2,7 +2,7 @@ in vec4 in_position : POSITION;
 in vec3 in_normal : NORMAL;
 in vec4 in_color : COLOR;
 in vec2 in_st : TEXCOORD0;
-in vec4 in_tangent : TEXCOORD1;
+in vec4 in_tangent : TANGENT;
 
 out vec3 v2f_color;
 out vec2 v2f_texCoord;

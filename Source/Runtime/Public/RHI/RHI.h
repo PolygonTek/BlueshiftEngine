@@ -266,6 +266,7 @@ public:
             Normal                          = 1,
             Color                           = 2,
             SecondaryColor                  = 3,
+            Tangent                         = 3,
             WeightIndex                     = 4,
             WeightIndex0                    = 4,
             WeightIndex1                    = 5,

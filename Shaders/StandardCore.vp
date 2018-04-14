@@ -1,8 +1,11 @@
 in HIGHP vec4 in_position : POSITION;
-in MEDIUMP vec2 in_st : TEXCOORD0;
-in LOWP vec4 in_tangent : TEXCOORD1;
-in LOWP vec4 in_color : COLOR;
 in LOWP vec3 in_normal : NORMAL;
+in LOWP vec4 in_color : COLOR;
+in MEDIUMP vec2 in_st : TEXCOORD0;
+
+#if _NORMAL
+    in LOWP vec4 in_tangent : TANGENT;
+#endif
 
 #ifdef USE_SHADOW_MAP
 $include "ShadowLibrary.vp"
@@ -37,7 +40,6 @@ out MEDIUMP vec2 v2f_tex;
         vec4 worldMatrixT;
         vec4 worldMatrixR;
         vec3 localViewOrigin;
-        mat3 localLightAxis;
         vec4 localLightOrigin;
         LOWP vec4 constantColor;
     };

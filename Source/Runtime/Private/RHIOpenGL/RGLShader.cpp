@@ -44,21 +44,22 @@ static const InOutSemantic inOutSemantics[] = {
     { 1, RHI::VertexElement::Normal, "NORMAL" },
     { 2, RHI::VertexElement::Color, "COLOR" },
     { 3, RHI::VertexElement::SecondaryColor, "SECONDARY_COLOR" },
-    { 4, RHI::VertexElement::WeightIndex, "WEIGHT_INDEX" },
-    { 5, RHI::VertexElement::WeightIndex0, "WEIGHT_INDEX0" },
-    { 6, RHI::VertexElement::WeightIndex1, "WEIGHT_INDEX1" },
-    { 7, RHI::VertexElement::WeightValue, "WEIGHT_VALUE" },
-    { 8, RHI::VertexElement::WeightValue0, "WEIGHT_VALUE0" },
-    { 9, RHI::VertexElement::WeightValue1, "WEIGHT_VALUE1" },
-    { 10, RHI::VertexElement::TexCoord, "TEXCOORD" },
-    { 11, RHI::VertexElement::TexCoord0, "TEXCOORD0" },
-    { 12, RHI::VertexElement::TexCoord1, "TEXCOORD1" },
-    { 13, RHI::VertexElement::TexCoord2, "TEXCOORD2" },
-    { 14, RHI::VertexElement::TexCoord3, "TEXCOORD3" },
-    { 15, RHI::VertexElement::TexCoord4, "TEXCOORD4" },
-    { 16, RHI::VertexElement::TexCoord5, "TEXCOORD5" },
-    { 17, RHI::VertexElement::TexCoord6, "TEXCOORD6" },
-    { 18, RHI::VertexElement::TexCoord7, "TEXCOORD7" },
+    { 4, RHI::VertexElement::Tangent, "TANGENT" },
+    { 5, RHI::VertexElement::WeightIndex, "WEIGHT_INDEX" },
+    { 6, RHI::VertexElement::WeightIndex0, "WEIGHT_INDEX0" },
+    { 7, RHI::VertexElement::WeightIndex1, "WEIGHT_INDEX1" },
+    { 8, RHI::VertexElement::WeightValue, "WEIGHT_VALUE" },
+    { 9, RHI::VertexElement::WeightValue0, "WEIGHT_VALUE0" },
+    { 10, RHI::VertexElement::WeightValue1, "WEIGHT_VALUE1" },
+    { 11, RHI::VertexElement::TexCoord, "TEXCOORD" },
+    { 12, RHI::VertexElement::TexCoord0, "TEXCOORD0" },
+    { 13, RHI::VertexElement::TexCoord1, "TEXCOORD1" },
+    { 14, RHI::VertexElement::TexCoord2, "TEXCOORD2" },
+    { 15, RHI::VertexElement::TexCoord3, "TEXCOORD3" },
+    { 16, RHI::VertexElement::TexCoord4, "TEXCOORD4" },
+    { 17, RHI::VertexElement::TexCoord5, "TEXCOORD5" },
+    { 18, RHI::VertexElement::TexCoord6, "TEXCOORD6" },
+    { 19, RHI::VertexElement::TexCoord7, "TEXCOORD7" },
 
     // fragment shader output semantics
     { 0, 0, "FRAG_COLOR" },
@@ -972,7 +973,7 @@ void OpenGLRHI::SetShaderConstantBlock(int bindingIndex, int blockIndex) {
     gglUniformBlockBinding(shader->programObject, blockIndex, bindingIndex);
 }
 
-void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowmajor, int count, const void *data) const {	
+void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, const void *data) const {	
     if (index < 0) {
         return;
     }
@@ -1013,16 +1014,16 @@ void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowmajor, int count, co
         gglUniform4iv(uniform->location, count, (const GLint *)data);
         break;
     case GL_FLOAT_MAT2:
-        gglUniformMatrix2fv(uniform->location, count, rowmajor, (const GLfloat *)data);
+        gglUniformMatrix2fv(uniform->location, count, rowMajor, (const GLfloat *)data);
         break;
     case GL_FLOAT_MAT3:
-        gglUniformMatrix3fv(uniform->location, count, rowmajor, (const GLfloat *)data);
+        gglUniformMatrix3fv(uniform->location, count, rowMajor, (const GLfloat *)data);
         break;
     case GL_FLOAT_MAT4:
-        gglUniformMatrix4fv(uniform->location, count, rowmajor, (const GLfloat *)data);
+        gglUniformMatrix4fv(uniform->location, count, rowMajor, (const GLfloat *)data);
         break;
-    case GL_FLOAT_MAT4x3:
-        gglUniformMatrix4x3fv(uniform->location, count, rowmajor, (const GLfloat *)data);
+    case GL_FLOAT_MAT4x3: // columns = 4, rows = 3
+        gglUniformMatrix4x3fv(uniform->location, count, rowMajor, (const GLfloat *)data);
         break;
     }
 }
@@ -1071,20 +1072,20 @@ void OpenGLRHI::SetShaderConstant4f(int index, const Vec4 &constant) const {
     SetShaderConstantGeneric(index, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const {
-    SetShaderConstantGeneric(index, rowmajor, 1, &constant);
+void OpenGLRHI::SetShaderConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const {
+    SetShaderConstantGeneric(index, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const {
-    SetShaderConstantGeneric(index, rowmajor, 1, &constant);
+void OpenGLRHI::SetShaderConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const {
+    SetShaderConstantGeneric(index, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const {
-    SetShaderConstantGeneric(index, rowmajor, 1, &constant);
+void OpenGLRHI::SetShaderConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const {
+    SetShaderConstantGeneric(index, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant4x3f(int index, bool rowmajor, const Mat3x4 &constant) const {
-    SetShaderConstantGeneric(index, rowmajor, 1, &constant);
+void OpenGLRHI::SetShaderConstant4x3f(int index, bool rowMajor, const Mat3x4 &constant) const {
+    SetShaderConstantGeneric(index, rowMajor, 1, &constant);
 }
 
 void OpenGLRHI::SetShaderConstantArray1i(int index, int count, const int *constant) const {
@@ -1131,20 +1132,20 @@ void OpenGLRHI::SetShaderConstantArray4f(int index, int count, const Vec4 *const
     SetShaderConstantGeneric(index, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2x2f(int index, bool rowmajor, int count, const Mat2 *constant) const {
-    SetShaderConstantGeneric(index, rowmajor, count, constant);
+void OpenGLRHI::SetShaderConstantArray2x2f(int index, bool rowMajor, int count, const Mat2 *constant) const {
+    SetShaderConstantGeneric(index, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3x3f(int index, bool rowmajor, int count, const Mat3 *constant) const {
-    SetShaderConstantGeneric(index, rowmajor, count, constant);
+void OpenGLRHI::SetShaderConstantArray3x3f(int index, bool rowMajor, int count, const Mat3 *constant) const {
+    SetShaderConstantGeneric(index, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4x4f(int index, bool rowmajor, int count, const Mat4 *constant) const {
-    SetShaderConstantGeneric(index, rowmajor, count, constant);
+void OpenGLRHI::SetShaderConstantArray4x4f(int index, bool rowMajor, int count, const Mat4 *constant) const {
+    SetShaderConstantGeneric(index, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4x3f(int index, bool rowmajor, int count, const Mat3x4 *constant) const {
-    SetShaderConstantGeneric(index, rowmajor, count, constant);
+void OpenGLRHI::SetShaderConstantArray4x3f(int index, bool rowMajor, int count, const Mat3x4 *constant) const {
+    SetShaderConstantGeneric(index, rowMajor, count, constant);
 }
 
 BE_NAMESPACE_END
