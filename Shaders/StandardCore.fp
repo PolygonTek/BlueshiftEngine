@@ -39,20 +39,26 @@ in MEDIUMP vec2 v2f_tex;
     in LOWP vec3 v2f_normal;
 #endif
 
+#if _PARALLAX
+    in vec3 v2f_tangentViewDir;
+#endif
+
 #ifdef DIRECT_LIGHTING
     in vec3 v2f_lightVector;
     in vec3 v2f_lightFallOff;
     in vec4 v2f_lightProjection;
 #endif
 
-#ifdef INDIRECT_LIGHTING
-    in vec4 v2f_toWorldAndPackedWorldPosS;
-    in vec4 v2f_toWorldAndPackedWorldPosT;
-    in vec4 v2f_toWorldAndPackedWorldPosR;
-#endif
-
-#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING) || _PARALLAX != 0
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     in vec3 v2f_viewVector;
+
+    #if _NORMAL == 0
+        in vec3 v2f_worldPos;
+    #else
+        in vec4 v2f_toWorldAndPackedWorldPosS;
+        in vec4 v2f_toWorldAndPackedWorldPosT;
+        in vec4 v2f_toWorldAndPackedWorldPosR;
+    #endif
 #endif
 
 out vec4 o_fragColor : FRAG_COLOR;
@@ -157,14 +163,14 @@ void main() {
     }*/
 #endif
 
-#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX != 0
-    vec3 V = normalize(v2f_viewVector);
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
+    vec3 worldV = normalize(v2f_viewVector.yzx);
 #endif
 
 #ifdef NEED_BASE_TC
     #if _PARALLAX != 0
         float h = tex2D(heightMap, v2f_tex).x * 2.0 - 1.0;
-        vec2 baseTc = offsetTexcoord(h, v2f_tex, V, heightScale * 0.1);
+        vec2 baseTc = v2f_tex + h * heightScale * 0.1 * (v2f_tangentViewDir.xy / v2f_tangentViewDir.z);
     #else
         vec2 baseTc = v2f_tex;
     #endif
@@ -184,14 +190,25 @@ void main() {
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     #if _NORMAL == 0
-        vec3 N = normalize(v2f_normal);
-    #elif _NORMAL == 1 || _NORMAL == 2
-        vec3 N = normalize(getNormal(normalMap, baseTc));
+        vec3 worldN = normalize(v2f_normal.yzx);
+    #else
+        vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
+        vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
+        vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
+        //vec3 toWorldMatrixR = normalize(cross(toWorldMatrixS, toWorldMatrixT) * v2f_toWorldT.w);
+
+        vec3 tangentN = normalize(getNormal(normalMap, baseTc)); 
 
         #if _NORMAL == 2
-            vec3 DN = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
-            N = normalize(N + DN);
+            vec3 tangentN2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
+            tangentN = normalize(tangentN + tangentN2);
         #endif
+
+        vec3 worldN;
+        // Convert coordinates from tangent space to GL world space
+        worldN.x = dot(toWorldMatrixS, tangentN);
+        worldN.y = dot(toWorldMatrixT, tangentN);
+        worldN.z = dot(toWorldMatrixR, tangentN);
     #endif
 
     #if defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
@@ -270,49 +287,24 @@ void main() {
 #endif
 
 #ifdef INDIRECT_LIGHTING
-    vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
-    vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
-    vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
-    //vec3 toWorldMatrixR = normalize(cross(toWorldMatrixS, toWorldMatrixT) * v2f_toWorldT.w);
-
     #ifdef BRUTE_FORCE_IBL
-        vec3 worldN;
-        // Convert coordinates from z-up to GL axis
-        worldN.z = dot(toWorldMatrixS, N);
-        worldN.x = dot(toWorldMatrixT, N);
-        worldN.y = dot(toWorldMatrixR, N);
-
-        vec3 worldV;
-        // Convert coordinates from z-up to GL axis
-        worldV.z = dot(toWorldMatrixS, V);
-        worldV.x = dot(toWorldMatrixT, V);
-        worldV.y = dot(toWorldMatrixR, V);
-
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
             C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
             C += IBLPhongWithFresnel(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, specularPower, roughness);
         #endif
     #else
-        vec3 worldN;
-        // Convert coordinates from z-up to GL axis
-        worldN.z = dot(toWorldMatrixS, N);
-        worldN.x = dot(toWorldMatrixT, N);
-        worldN.y = dot(toWorldMatrixR, N);
-
-        vec3 S = reflect(-V, N);
-        vec3 worldS;
-        // Convert coordinates from z-up to GL axis
-        worldS.z = dot(toWorldMatrixS, S);
-        worldS.x = dot(toWorldMatrixT, S);
-        worldS.y = dot(toWorldMatrixR, S);
+        vec3 worldS = reflect(-worldV, worldN);
 
         #ifdef PARALLAX_CORRECTED_INDIRECT_LIGHTING
-            // Convert coordinates from z-up to GL axis
-            vec3 worldPos;
-            worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
-            worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
-            worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
+            #if _NORMAL == 0
+                worldPos = v2f_worldPos.yzx;
+            #else
+                vec3 worldPos;
+                worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
+                worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
+                worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
+            #endif
 
             vec4 sampleVec;
             sampleVec.xyz = boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 250, 1.0), vec3(-2500, 0, -2500), vec3(2500, 250, 2500)); // FIXME
@@ -321,7 +313,7 @@ void main() {
             sampleVec.xyz = worldS;
         #endif
 
-        float NdotV = max(dot(N, V), 0.0);
+        float NdotV = max(dot(worldN, worldV), 0.0);
 
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
             C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
@@ -340,18 +332,18 @@ void main() {
         vec3 shadowLighting = vec3(1.0);
     #endif
 
-    vec3 L = normalize(v2f_lightVector);
+    vec3 worldL = normalize(v2f_lightVector.yzx);
 
     #ifdef USE_LIGHT_CUBE_MAP
         if (useLightCube) {
-            Cl *= texCUBE(lightCubeMap, -L);
+            Cl *= texCUBE(lightCubeMap, -worldL);
         }
     #endif
 
     #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-        vec3 lightingColor = DirectLit_Standard(L, N, V, diffuse.rgb, specular.rgb, roughness);
+        vec3 lightingColor = DirectLit_Standard(worldL, worldN, worldV, diffuse.rgb, specular.rgb, roughness);
     #elif defined(LEGACY_PHONG_LIGHTING)
-        vec3 lightingColor = DirectLit_PhongFresnel(L, N, V, diffuse.rgb, specular.rgb, specularPower);
+        vec3 lightingColor = DirectLit_PhongFresnel(worldL, worldN, worldV, diffuse.rgb, specular.rgb, specularPower);
     #endif
 
     #if defined(_SUB_SURFACE_SCATTERING)

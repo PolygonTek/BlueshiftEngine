@@ -63,10 +63,6 @@ vec3 getNormal(sampler2D normalMap, in vec2 tc) {
     return n;
 }
 
-vec2 offsetTexcoord(in float h, in vec2 st, in vec3 viewDir, in float heightScale) {
-    return st + h * heightScale * (viewDir.xy / (viewDir.z));
-}
-
 vec4 encodeFloatRGBA(float v) {
     vec4 enc = vec4(1.0, 255.0, 65025.0, 160581375.0) * v;
     enc = fract(enc);

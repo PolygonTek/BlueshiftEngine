@@ -421,15 +421,15 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
 
     shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
 
-    const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
+    const Mat4 &localToWorldMatrix = surfSpace->def->GetModelMatrix();
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixSConst], localToWorldMatrix[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixTConst], localToWorldMatrix[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixRConst], localToWorldMatrix[2]);
 
-    Mat3x4 worldMatrixInv = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvSConst], worldMatrixInv[0]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvTConst], worldMatrixInv[1]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvRConst], worldMatrixInv[2]);
+    Mat3x4 worldToLocalMatrix = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixSConst], worldToLocalMatrix[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixTConst], worldToLocalMatrix[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixRConst], worldToLocalMatrix[2]);
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -554,15 +554,15 @@ void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambien
 
     shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
 
-    const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
+    const Mat4 &localToWorldMatrix = surfSpace->def->GetModelMatrix();
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixSConst], localToWorldMatrix[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixTConst], localToWorldMatrix[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixRConst], localToWorldMatrix[2]);
 
-    Mat3x4 worldMatrixInv = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvSConst], worldMatrixInv[0]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvTConst], worldMatrixInv[1]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvRConst], worldMatrixInv[2]);
+    Mat3x4 worldToLocalMatrix = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixSConst], worldToLocalMatrix[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixTConst], worldToLocalMatrix[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixRConst], worldToLocalMatrix[2]);
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
@@ -729,16 +729,15 @@ void RBSurf::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale
 }
 
 void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const {
-    // Set local to world matrix
-    const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
+    const Mat4 &localToWorldMatrix = surfSpace->def->GetModelMatrix();
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixSConst], localToWorldMatrix[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixTConst], localToWorldMatrix[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixRConst], localToWorldMatrix[2]);
 
-    Mat3x4 worldMatrixInv = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvSConst], worldMatrixInv[0]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvTConst], worldMatrixInv[1]);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvRConst], worldMatrixInv[2]);
+    Mat3x4 worldToLocalMatrix = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixSConst], worldToLocalMatrix[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixTConst], worldToLocalMatrix[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixRConst], worldToLocalMatrix[2]);
 
     Vec4 lightVec;
     Vec3 lightInvRadius;

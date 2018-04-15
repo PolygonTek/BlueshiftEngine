@@ -35,12 +35,12 @@ static const char *builtInConstantNames[] = {
     "viewProjectionMatrixTranspose",        // ViewProjectionMatrixTransposeConst
     "modelViewProjectionMatrix",            // ModelViewProjectionMatrixConst
     "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTransposeConst
-    "worldMatrixS",                         // WorldMatrixSConst
-    "worldMatrixT",                         // WorldMatrixTConst
-    "worldMatrixR",                         // WorldMatrixRConst
-    "worldMatrixInvS",                      // WorldMatrixInvSConst
-    "worldMatrixInvT",                      // WorldMatrixInvTConst
-    "worldMatrixInvR",                      // WorldMatrixInvRConst
+    "localToWorldMatrixS",                  // LocalToWorldMatrixSConst
+    "localToWorldMatrixT",                  // LocalToWorldMatrixTConst
+    "localToWorldMatrixR",                  // LocalToWorldMatrixRConst
+    "worldToLocalMatrixS",                  // WorldToLocalMatrixSConst
+    "worldToLocalMatrixT",                  // WorldToLocalMatrixTConst
+    "worldToLocalMatrixR",                  // WorldToLocalMatrixRConst
     "textureMatrixS",                       // TextureMatrixSConst
     "textureMatrixT",                       // TextureMatrixTConst
     "constantColor",                        // ConstantColorConst

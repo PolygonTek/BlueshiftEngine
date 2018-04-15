@@ -14,10 +14,9 @@ out vec3 v2f_toWorldR;
 
 #ifdef INSTANCING
 	struct InstanceData {
-		vec4 worldMatrixS;
-		vec4 worldMatrixT;
-		vec4 worldMatrixR;
-		vec3 localViewOrigin;
+		vec4 localToWorldMatrixS;
+		vec4 localToWorldMatrixT;
+		vec4 localToWorldMatrixR;
 		vec4 textureMatrixS;
 		vec4 textureMatrixT;
 		vec4 vertexColorScale;
@@ -31,10 +30,9 @@ out vec3 v2f_toWorldR;
 
     #define instance instanceData[gl_InstanceID]
 #else
-	uniform vec4 worldMatrixS;
-	uniform vec4 worldMatrixT;
-	uniform vec4 worldMatrixR;
-	uniform vec3 localViewOrigin;
+	uniform vec4 localToWorldMatrixS;
+	uniform vec4 localToWorldMatrixT;
+	uniform vec4 localToWorldMatrixR;
 	uniform vec4 textureMatrixS;
 	uniform vec4 textureMatrixT;
 	uniform vec4 vertexColorScale;
@@ -63,9 +61,9 @@ void main() {
 
 	v2f_eyeVector.xyz = E * TBN;
 
-	v2f_toWorldS = worldMatrixS.xyz * TBN;
-	v2f_toWorldT = worldMatrixT.xyz * TBN;
-	v2f_toWorldR = worldMatrixR.xyz * TBN;
+	v2f_toWorldS = localToWorldMatrixS.xyz * TBN;
+	v2f_toWorldT = localToWorldMatrixT.xyz * TBN;
+	v2f_toWorldR = localToWorldMatrixR.xyz * TBN;
 
 	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
 	v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));

@@ -7,9 +7,9 @@ uniform mat4 modelViewProjectionMatrix;
 
 #ifdef INSTANCING
 	struct InstanceData {
-        vec4 worldMatrixS;
-        vec4 worldMatrixT;
-        vec4 worldMatrixR;
+        vec4 localToWorldMatrixS;
+        vec4 localToWorldMatrixT;
+        vec4 localToWorldMatrixR;
 		vec4 textureMatrixS;
 		vec4 textureMatrixT;
 	};
@@ -40,9 +40,9 @@ void main() {
 
 #ifdef INSTANCING
     vec4 worldPos;
-    worldPos.x = dot(instance.worldMatrixS, localPos);
-    worldPos.y = dot(instance.worldMatrixT, localPos);
-    worldPos.z = dot(instance.worldMatrixR, localPos);
+    worldPos.x = dot(instance.localToWorldMatrixS, localPos);
+    worldPos.y = dot(instance.localToWorldMatrixT, localPos);
+    worldPos.z = dot(instance.localToWorldMatrixR, localPos);
     worldPos.w = 1.0;
     gl_Position = viewProjectionMatrix * worldPos;
 #else
