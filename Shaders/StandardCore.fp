@@ -154,10 +154,10 @@ $include "ShadowLibrary.fp"
 
 void main() {
 #ifdef DIRECT_LIGHTING
-    float A = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
-    A = pow(A, lightFallOffExponent);
+    float attenuation = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
+    attenuation = pow(attenuation, lightFallOffExponent);
 
-    vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * A;
+    vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * attenuation;
     /*if (Cl == vec3(0.0)) {
         discard;
     }*/
@@ -276,22 +276,22 @@ void main() {
     #endif
 #endif
 
-    vec3 C = vec3(0.0);
+    vec3 shadingColor = vec3(0.0);
 
 #if (defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)) || !defined(DIRECT_LIGHTING)
     #if _EMISSION == 1
-        C += emissionColor * emissionScale;
+        shadingColor += emissionColor * emissionScale;
     #elif _EMISSION == 2
-        C += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
+        shadingColor += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
     #endif
 #endif
 
 #ifdef INDIRECT_LIGHTING
     #ifdef BRUTE_FORCE_IBL
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-            C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, roughness);
+            shadingColor += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            C += IBLPhongWithFresnel(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, specularPower, roughness);
+            shadingColor += IBLPhongWithFresnel(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, specularPower, roughness);
         #endif
     #else
         vec3 worldS = reflect(-worldV, worldN);
@@ -316,13 +316,13 @@ void main() {
         float NdotV = max(dot(worldN, worldV), 0.0);
 
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-            C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
+            shadingColor += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            C += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, specularPower, roughness);
+            shadingColor += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, specularPower, roughness);
         #endif
     #endif
 #else
-    C += albedo.rgb * ambientScale;
+    shadingColor += albedo.rgb * ambientScale;
 #endif
 
 #ifdef DIRECT_LIGHTING
@@ -352,7 +352,7 @@ void main() {
         lightingColor += subLamb * tex2D(subSurfaceColorMap, baseTc).xyz * (shadowLighting * (1.0 - subSurfaceShadowDensity) + subSurfaceShadowDensity);
     #endif
 
-    C += Cl * lightingColor * shadowLighting;
+    shadingColor += Cl * lightingColor * shadowLighting;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
@@ -381,15 +381,15 @@ void main() {
             #endif
         #endif
 
-        C *= (1.0 - occlusionStrength) + occ * occlusionStrength;
+        shadingColor *= (1.0 - occlusionStrength) + occ * occlusionStrength;
     #endif
 #endif
 
-    vec4 outputColor = v2f_color * vec4(C, albedo.a);
+    vec4 finalColor = v2f_color * vec4(shadingColor, albedo.a);
 
 #ifdef LOGLUV_HDR
-    o_fragColor = encodeLogLuv(outputColor.xyz);
+    o_fragColor = encodeLogLuv(finalColor.xyz);
 #else
-    o_fragColor = outputColor;
+    o_fragColor = finalColor;
 #endif
 }

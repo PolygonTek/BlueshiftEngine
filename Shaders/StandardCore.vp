@@ -153,7 +153,7 @@ void main() {
             v2f_tangentViewDir = localV * TBN;
         #endif
 
-        // Build tangent space to GL axis world space matrix
+        // Build the matrix to transform tangent space into GL world space
         v2f_toWorldAndPackedWorldPosS.xyz = localToWorldMatrixS.xyz * TBN;
         v2f_toWorldAndPackedWorldPosT.xyz = localToWorldMatrixT.xyz * TBN;
         v2f_toWorldAndPackedWorldPosR.xyz = localToWorldMatrixR.xyz * TBN;
