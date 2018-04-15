@@ -1,9 +1,9 @@
-in HIGHP vec4 in_position : POSITION;
-in LOWP vec3 in_normal : NORMAL;
-in LOWP vec4 in_color : COLOR;
-in MEDIUMP vec2 in_st : TEXCOORD0;
+in HIGHP vec4 in_position   : POSITION;
+in LOWP vec3 in_normal      : NORMAL;
+in LOWP vec4 in_color       : COLOR;
+in MEDIUMP vec2 in_st       : TEXCOORD0;
 
-#if _NORMAL
+#if _NORMAL != 0
     in LOWP vec4 in_tangent : TANGENT;
 #endif
 
@@ -39,13 +39,13 @@ out MEDIUMP vec2 v2f_tex;
         vec4 worldMatrixS;
         vec4 worldMatrixT;
         vec4 worldMatrixR;
-        vec3 localViewOrigin;
-        vec4 localLightOrigin;
-        LOWP vec4 constantColor;
+        vec4 worldMatrixInvS;
+        vec4 worldMatrixInvT;
+        vec4 worldMatrixInvR;
     };
 
     UNIFORM_BLOCK InstanceDataBlock {
-        InstanceData instanceData[256];
+        InstanceData instanceData[512];
     };
 
     #define instance instanceData[gl_InstanceID]
@@ -53,11 +53,13 @@ out MEDIUMP vec2 v2f_tex;
     uniform vec4 worldMatrixS;
     uniform vec4 worldMatrixT;
     uniform vec4 worldMatrixR;
+    uniform vec4 worldMatrixInvS;
+    uniform vec4 worldMatrixInvT;
+    uniform vec4 worldMatrixInvR;
     uniform vec4 textureMatrixS;
     uniform vec4 textureMatrixT;
-    uniform vec3 localViewOrigin;
-    uniform mat3 localLightAxis;
-    uniform vec4 localLightOrigin;
+    uniform vec3 viewOrigin;
+    uniform vec4 lightVec;
     uniform LOWP vec4 vertexColorScale;
     uniform LOWP vec4 vertexColorAdd;
     uniform LOWP vec4 constantColor;
@@ -110,40 +112,47 @@ void main() {
     #endif
 #endif
 
-#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING)
     vec4 worldPos;
     worldPos.x = dot(worldMatrixS, localPos);
     worldPos.y = dot(worldMatrixT, localPos);
     worldPos.z = dot(worldMatrixR, localPos);
     worldPos.w = 1.0;
-    #define WORLD_POS_CALCULATED
-#endif
 
 #ifdef DIRECT_LIGHTING
+    vec3 worldL = lightVec.xyz - lightVec.w * worldPos.xyz;
+
     #ifdef USE_SHADOW_MAP
         #ifdef USE_SHADOW_POINT
-            ShadowCubeTransform(localPos, localLightOrigin.xyz, worldMatrixS.xyz, worldMatrixT.xyz, worldMatrixR.xyz);
+            ShadowCubeTransform(worldL);
         #elif defined(USE_SHADOW_SPOT) || defined(USE_SHADOW_CASCADE)
             ShadowTransform(worldPos);
         #endif
     #endif
-    
+
     v2f_lightProjection = lightTextureMatrix * worldPos;
-
-    vec3 L = localLightOrigin.xyz + (localLightOrigin.w - 1.0) * localPos.xyz;
-
-    v2f_lightFallOff = (L * localLightAxis) * lightInvRadius;
+    v2f_lightFallOff = worldL * lightInvRadius;
 #endif
 
 #if _NORMAL == 0
     #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX != 0
         v2f_normal = localNormal;
 
-        v2f_viewVector = localViewOrigin.xyz - localPos.xyz;
+        vec3 worldV = viewOrigin.xyz - worldPos.xyz;
+        vec3 localV;
+        localV.x = dot(worldMatrixInvS.xyz, worldV);
+        localV.y = dot(worldMatrixInvT.xyz, worldV);
+        localV.z = dot(worldMatrixInvR.xyz, worldV);
+
+        v2f_viewVector = localV;
     #endif
 
     #ifdef DIRECT_LIGHTING
-        v2f_lightVector = L;
+        vec3 localL;
+        localL.x = dot(worldMatrixInvS.xyz, worldL);
+        localL.y = dot(worldMatrixInvT.xyz, worldL);
+        localL.z = dot(worldMatrixInvR.xyz, worldL);
+
+        v2f_lightVector = localL;
     #endif
    
     #ifdef INDIRECT_LIGHTING
@@ -159,11 +168,22 @@ void main() {
     #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX != 0
         mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
 
-        v2f_viewVector = (localViewOrigin.xyz - localPos.xyz) * TBN;
+        vec3 worldV = viewOrigin.xyz - worldPos.xyz;
+        vec3 localV;
+        localV.x = dot(worldMatrixInvS.xyz, worldV);
+        localV.y = dot(worldMatrixInvT.xyz, worldV);
+        localV.z = dot(worldMatrixInvR.xyz, worldV);
+
+        v2f_viewVector = localV * TBN;
     #endif
 
     #ifdef DIRECT_LIGHTING
-        v2f_lightVector = L * TBN;
+        vec3 localL;
+        localL.x = dot(worldMatrixInvS.xyz, worldL);
+        localL.y = dot(worldMatrixInvT.xyz, worldL);
+        localL.z = dot(worldMatrixInvR.xyz, worldL);
+
+        v2f_lightVector = localL * TBN;
     #endif
     
     #ifdef INDIRECT_LIGHTING
@@ -188,13 +208,6 @@ void main() {
     v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
 #ifdef INSTANCING
-    #ifndef WORLD_POS_CALCULATED
-        vec4 worldPos;
-        worldPos.x = dot(worldMatrixS, localPos);
-        worldPos.y = dot(worldMatrixT, localPos);
-        worldPos.z = dot(worldMatrixR, localPos);
-        worldPos.w = 1.0;
-    #endif
     gl_Position = viewProjectionMatrix * worldPos;
 #else
     gl_Position = modelViewProjectionMatrix * localPos;

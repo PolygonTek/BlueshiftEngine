@@ -20,18 +20,13 @@ out vec4 v2f_lightProjection;
 		vec4 worldMatrixS;
 		vec4 worldMatrixT;
 		vec4 worldMatrixR;
-		vec3 localViewOrigin;
-		mat3 localLightAxis;
-		vec4 localLightOrigin;
-		vec4 textureMatrixS;
-		vec4 textureMatrixT;
-		vec4 vertexColorScale;
-		vec4 vertexColorAdd;
-		vec4 constantColor;
+        vec4 worldMatrixInvS;
+        vec4 worldMatrixInvT;
+        vec4 worldMatrixInvR;
 	};
 
 	UNIFORM_BLOCK InstanceDataBlock {
-        InstanceData instanceData[256];
+        InstanceData instanceData[512];
     };
 
     #define instance instanceData[gl_InstanceID]
@@ -39,16 +34,19 @@ out vec4 v2f_lightProjection;
 	uniform vec4 worldMatrixS;
 	uniform vec4 worldMatrixT;
 	uniform vec4 worldMatrixR;
-	uniform vec3 localViewOrigin;
-	uniform mat3 localLightAxis;
-	uniform vec4 localLightOrigin;
+    uniform vec4 worldMatrixInvS;
+    uniform vec4 worldMatrixInvT;
+    uniform vec4 worldMatrixInvR;
 	uniform vec4 textureMatrixS;
 	uniform vec4 textureMatrixT;
-	uniform vec4 vertexColorScale;
-	uniform vec4 vertexColorAdd;
-	uniform vec4 constantColor;
+    uniform vec3 viewOrigin;
+    uniform vec4 lightVec;
+	uniform LOWP vec4 vertexColorScale;
+	uniform LOWP vec4 vertexColorAdd;
+	uniform LOWP vec4 constantColor;
 #endif
 
+uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
 uniform vec3 lightInvRadius;
 uniform mat4 lightTextureMatrix;
@@ -77,22 +75,30 @@ void main() {
 	worldPos.z = dot(worldMatrixR, localPos);
 	worldPos.w = 1.0;
 
-	v2f_lightProjection = lightTextureMatrix * worldPos;
+    vec3 worldL = lightVec.xyz - lightVec.w * worldPos.xyz;
+    vec3 localL;
+    localL.x = dot(worldMatrixInvS.xyz, worldL);
+    localL.y = dot(worldMatrixInvT.xyz, worldL);
+    localL.z = dot(worldMatrixInvR.xyz, worldL);
 
 #ifdef USE_SHADOW_MAP
 	#ifdef USE_SHADOW_POINT
-		ShadowCubeTransform(localPos, localLightOrigin.xyz, worldMatrixS.xyz, worldMatrixT.xyz, worldMatrixR.xyz);
+		ShadowCubeTransform(worldL);
 	#elif defined(USE_SHADOW_SPOT) || defined(USE_SHADOW_CASCADE)
 		ShadowTransform(worldPos);
 	#endif
 #endif
 
-	vec3 L = localLightOrigin.xyz + (localLightOrigin.w - 1.0) * localPos.xyz;
-	vec3 V = localViewOrigin.xyz - localPos.xyz;
+    v2f_lightProjection = lightTextureMatrix * worldPos;
+    v2f_lightFallOff = localL * lightInvRadius;
+	v2f_lightVector = localL;
 
-	v2f_lightFallOff = (L * localLightAxis) * lightInvRadius;
-	v2f_lightVector = L;
-	v2f_viewVector = V;
+	vec3 worldV = viewOrigin.xyz - worldPos.xyz;
+    vec3 localV;
+    localV.x = dot(worldMatrixInvS.xyz, worldV);
+    localV.y = dot(worldMatrixInvT.xyz, worldV);
+    localV.z = dot(worldMatrixInvR.xyz, worldV);
+    v2f_viewVector = localV;
 
 	v2f_normal = localNormal;
 

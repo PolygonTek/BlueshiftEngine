@@ -20,9 +20,6 @@
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"
 
-#if defined __ANDROID__ && ! defined __XAMARIN__
-int android_progress = 0;
-#endif
 BE_NAMESPACE_BEGIN
 
 static const char *directiveInclude = "$include";
@@ -41,14 +38,16 @@ static const char *builtInConstantNames[] = {
     "worldMatrixS",                         // WorldMatrixSConst
     "worldMatrixT",                         // WorldMatrixTConst
     "worldMatrixR",                         // WorldMatrixRConst
+    "worldMatrixInvS",                      // WorldMatrixInvSConst
+    "worldMatrixInvT",                      // WorldMatrixInvTConst
+    "worldMatrixInvR",                      // WorldMatrixInvRConst
     "textureMatrixS",                       // TextureMatrixSConst
     "textureMatrixT",                       // TextureMatrixTConst
     "constantColor",                        // ConstantColorConst
     "vertexColorScale",                     // VertexColorScaleConst
     "vertexColorAdd",                       // VertexColorAddConst
-    "localViewOrigin",                      // LocalViewOriginConst
-    "localLightOrigin",                     // LocalLightOriginConst
-    "localLightAxis"                        // LocalLightAxisConst
+    "viewOrigin",                           // ViewOriginConst
+    "lightVec",                             // LightVecConst
 };
 
 // NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함
@@ -544,7 +543,8 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
     return true;
 }
 
-bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir) {
+bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVersion, bool genereateGpuSkinningVersion, 
+    bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir) {
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(this, "", "", "")) {
             return false;
@@ -955,25 +955,6 @@ void Shader::Reinstantiate() {
 }
 
 bool Shader::Instantiate(const Array<Define> &defineArray) {
-/*#if defined __ANDROID__ && ! defined __XAMARIN__
-
-	if (android_progress >= 0) {
-		float f = android_progress * (M_PI * 0.01f);
-		android_progress++;
-		Color4 color;
-		color.r = sinf(f) * 0.5f + 0.5f;
-		color.g = sinf(f + M_PI * 2.0f / 3.0f)* 0.5f + 0.5f;
-		color.b = sinf(f + M_PI * 4.0f / 3.0f)* 0.5f + 0.5f;
-		color.a = 1.0f;
-
-		rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-		rhi.Clear(RHI::ColorBit, color, 0, 0);
-		rhi.SwapBuffers();
-	}
-
-    //BE_LOG(L"progress %f %f %f %f %d", color.r, color.g, color.b, f, progress);
-#endif*/
-
     Str processedVsText;
     Str processedFsText;
 

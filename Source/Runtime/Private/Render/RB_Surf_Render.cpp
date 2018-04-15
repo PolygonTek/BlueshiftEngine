@@ -419,14 +419,17 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
 
-    Vec3 localViewOrigin = surfSpace->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfSpace->def->parms.origin) / surfSpace->def->parms.scale;
-    //Vec3 localViewOrigin = (backEnd.view->def->parms.origin - surfSpace->def->parms.origin) * surfSpace->def->parms.axis;
-    shader->SetConstant3f(shader->builtInConstantLocations[Shader::LocalViewOriginConst], localViewOrigin);
+    shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
 
     const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
+
+    Mat3x4 worldMatrixInv = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvSConst], worldMatrixInv[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvTConst], worldMatrixInv[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvRConst], worldMatrixInv[2]);
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -549,15 +552,17 @@ void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambien
     shader->SetTexture("prefilteredEnvCubeMap1", backEnd.prefilteredEnvCubeTexture);
     shader->SetConstant1f("ambientLerp", 0.0f);
 
-    // view vector: world -> to mesh coordinates
-    Vec3 localViewOrigin = surfSpace->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfSpace->def->parms.origin) / surfSpace->def->parms.scale;
-    //Vec3 localViewOrigin = (backEnd.view->def->parms.origin - surfSpace->def->parms.origin) * surfSpace->def->parms.axis;
-    shader->SetConstant3f(shader->builtInConstantLocations[Shader::LocalViewOriginConst], localViewOrigin);
+    shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
 
     const Mat4 &worldMatrix = surfSpace->def->GetModelMatrix();
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixSConst], worldMatrix[0]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
+
+    Mat3x4 worldMatrixInv = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvSConst], worldMatrixInv[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvTConst], worldMatrixInv[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvRConst], worldMatrixInv[2]);
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         shader->SetConstant1f("perforatedAlpha", mtrlPass->cutoffAlpha);
@@ -730,27 +735,24 @@ void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Sha
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixTConst], worldMatrix[1]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixRConst], worldMatrix[2]);
 
-    // world coordinates -> entity's local coordinates
-    Vec3 localViewOrigin = surfSpace->def->parms.axis.TransposedMulVec(backEnd.view->def->parms.origin - surfSpace->def->parms.origin) / surfSpace->def->parms.scale;
-    Vec4 localLightOrigin;
+    Mat3x4 worldMatrixInv = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvSConst], worldMatrixInv[0]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvTConst], worldMatrixInv[1]);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldMatrixInvRConst], worldMatrixInv[2]);
+
+    Vec4 lightVec;
     Vec3 lightInvRadius;
 
     if (surfLight->def->parms.type == SceneLight::DirectionalLight) {
-        localLightOrigin = Vec4(surfSpace->def->parms.axis.TransposedMulVec(-surfLight->def->parms.axis[0]), 1.0f);
+        lightVec = Vec4(-surfLight->def->parms.axis[0], 0);
         lightInvRadius.SetFromScalar(0);
     } else {
-        localLightOrigin = Vec4(surfSpace->def->parms.axis.TransposedMulVec(surfLight->def->parms.origin - surfSpace->def->parms.origin) / surfSpace->def->parms.scale, 0.0f);
+        lightVec = Vec4(surfLight->def->parms.origin, 1);
         lightInvRadius = 1.0f / surfLight->def->GetRadius();
     }
-
-    Mat3 localLightAxis = surfSpace->def->parms.axis.TransposedMul(surfLight->def->parms.axis);
-    localLightAxis[0] *= surfSpace->def->parms.scale;
-    localLightAxis[1] *= surfSpace->def->parms.scale;
-    localLightAxis[2] *= surfSpace->def->parms.scale;
-
-    shader->SetConstant3f(shader->builtInConstantLocations[Shader::LocalViewOriginConst], localViewOrigin);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalLightOriginConst], localLightOrigin);
-    shader->SetConstant3x3f(shader->builtInConstantLocations[Shader::LocalLightAxisConst], false, localLightAxis);
+        
+    shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LightVecConst], lightVec);
 
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);

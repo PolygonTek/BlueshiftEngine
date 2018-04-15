@@ -11,10 +11,7 @@ void ShadowTransform(vec4 worldPos) {
 }
 
 // output value is world light direction vector
-void ShadowCubeTransform(vec4 localPos, vec3 localLightOrigin, vec3 worldMatrixS, vec3 worldMatrixT, vec3 worldMatrixR) {
-    vec3 lightVec = localPos.xyz - localLightOrigin;
-    v2f_shadowVec.x = dot(worldMatrixS, lightVec);
-    v2f_shadowVec.y = dot(worldMatrixT, lightVec);
-    v2f_shadowVec.z = dot(worldMatrixR, lightVec);
+void ShadowCubeTransform(vec3 worldL) {
+    v2f_shadowVec.xyz = -worldL;
     v2f_shadowVec.w = 1.0;
 }

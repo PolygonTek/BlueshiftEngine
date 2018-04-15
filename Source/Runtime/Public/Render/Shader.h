@@ -66,14 +66,16 @@ public:
         WorldMatrixSConst,
         WorldMatrixTConst,
         WorldMatrixRConst,
+        WorldMatrixInvSConst,
+        WorldMatrixInvTConst,
+        WorldMatrixInvRConst,
         TextureMatrixSConst,
         TextureMatrixTConst,
         ConstantColorConst,
         VertexColorScaleConst,
         VertexColorAddConst,
-        LocalViewOriginConst,
-        LocalLightOriginConst,
-        LocalLightAxisConst,
+        ViewOriginConst,
+        LightVecConst,
         MaxBuiltInConstants
     };
 
