@@ -2,10 +2,12 @@ Version History
 ---------------
 
 ### 0.5.0 (work in progress)
+- Added support for GPU instancing
+- Added support for static batching
+- Added support for calculation tangent vectors using MikkTSpace
+- Added support for calculation normals with area and anglular weights
 - Added support for vehicle physics
 - Added support for slider/wheel joint components
-- Added support for calculation tangent vectors using MikkTSpace
-- Modified to calculate mesh normals with area and anglular weights
 
 ### 0.4.0
 - Added support for LuaJIT (Windows / macOS)
