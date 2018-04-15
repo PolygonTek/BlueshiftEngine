@@ -30,25 +30,25 @@ void ComSliderJoint::RegisterProperties() {
         "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
         "Joint angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useLinearLimits", "Use Linear Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, 
+    REGISTER_ACCESSOR_PROPERTY("useLinearLimits", "Linear Limits/Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("minDist", "Linear Limits/Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, 
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxDist", "Linear Limits/Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, 
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useAngularLimits", "Use Angular Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, true, 
+    REGISTER_ACCESSOR_PROPERTY("useAngularLimits", "Angular Limits/Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, true, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minAngle", "Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("minAngle", "Angular Limits/Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxAngle", "Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxAngle", "Angular Limits/Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("linearMotorTargetVelocity", "Linear Motor Target Velocity", float, GetLinearMotorTargetVelocity, SetLinearMotorTargetVelocity, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("linearMotorTargetVelocity", "Linear Motor/Target Velocity", float, GetLinearMotorTargetVelocity, SetLinearMotorTargetVelocity, 0.f, 
         "Target linear velocity (m/s) of motor", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxLinearMotorImpulse", "Maximum Linear Motor Impulse", float, GetMaxLinearMotorImpulse, SetMaxLinearMotorImpulse, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxLinearMotorImpulse", "Linear Motor/Maximum Impulse", float, GetMaxLinearMotorImpulse, SetMaxLinearMotorImpulse, 0.f, 
         "Maximum linear motor impulse", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("angularMotorTargetVelocity", "Angular Motor Target Velocity", float, GetAngularMotorTargetVelocity, SetAngularMotorTargetVelocity, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("angularMotorTargetVelocity", "Angular Motor/Target Velocity", float, GetAngularMotorTargetVelocity, SetAngularMotorTargetVelocity, 0.f, 
         "Target angular velocity (degree/s) of motor", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxAngularMotorImpulse", "Maximum Angular Motor Impulse", float, GetMaxAngularMotorImpulse, SetMaxAngularMotorImpulse, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxAngularMotorImpulse", "Angular Motor/Maximum Impulse", float, GetMaxAngularMotorImpulse, SetMaxAngularMotorImpulse, 0.f, 
         "Maximum angular motor impulse", PropertyInfo::EditorFlag);
 }
 

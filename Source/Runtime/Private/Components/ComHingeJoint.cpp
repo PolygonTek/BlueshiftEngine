@@ -30,15 +30,15 @@ void ComHingeJoint::RegisterProperties() {
         "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
         "Joint angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, 
+    REGISTER_ACCESSOR_PROPERTY("useLimits", "Limits/Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, 
         "Activate joint limits", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minAngle", "Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("minAngle", "Limits/Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, 
         "Minimum value of joint angle", PropertyInfo::EditorFlag).SetRange(-180, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("maxAngle", "Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxAngle", "Limits/Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, 
         "Maximum value of joint angle", PropertyInfo::EditorFlag).SetRange(0, 180, 1);
-    REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor/Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f, 
         "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Maximum Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Motor/Maximum Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, 
         "Maximum motor impulse", PropertyInfo::EditorFlag);
 }
 

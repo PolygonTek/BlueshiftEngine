@@ -41,13 +41,13 @@ void ComCamera::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetRange(1, 179, 1);
     REGISTER_PROPERTY("size", "Size", float, size, 1000.f, 
         "", PropertyInfo::EditorFlag).SetRange(1, 16384, 1);
-    REGISTER_PROPERTY("x", "X", float, nx, 0.f, 
+    REGISTER_PROPERTY("x", "Viewport Rect/X", float, nx, 0.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("y", "Y", float, ny, 0.f, 
+    REGISTER_PROPERTY("y", "Viewport Rect/Y", float, ny, 0.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("w", "W", float, nw, 1.f, 
+    REGISTER_PROPERTY("w", "Viewport Rect/W", float, nw, 1.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
-    REGISTER_PROPERTY("h", "H", float, nh, 1.f, 
+    REGISTER_PROPERTY("h", "Viewport Rect/H", float, nh, 1.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), 
         "", PropertyInfo::EditorFlag);

@@ -37,11 +37,11 @@ void ComLight::RegisterProperties() {
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("turnOn", "Turn On", bool, IsTurnOn, SetTurnOn, true, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("castShadows", "Cast Shadows", bool, IsCastShadows, SetCastShadows, false, 
+    REGISTER_ACCESSOR_PROPERTY("castShadows", "Shadows/Cast", bool, IsCastShadows, SetCastShadows, false, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("shadowOffsetFactor", "Shadow Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, 3.f, 
+    REGISTER_ACCESSOR_PROPERTY("shadowOffsetFactor", "Shadows/Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, 3.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 16, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("shadowOffsetUnits", "Shadow Offset Units", float, GetShadowOffsetUnits, SetShadowOffsetUnits, 200.f, 
+    REGISTER_ACCESSOR_PROPERTY("shadowOffsetUnits", "Shadows/Offset Units", float, GetShadowOffsetUnits, SetShadowOffsetUnits, 200.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1000, 1);
     REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false, 
         "", PropertyInfo::EditorFlag);

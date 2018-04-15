@@ -30,25 +30,25 @@ void ComWheelJoint::RegisterProperties() {
         "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero,
         "Joint angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useSusLimits", "Use Suspension Limits", bool, GetEnableSuspensionLimit, SetEnableSuspensionLimit, false, 
+    REGISTER_ACCESSOR_PROPERTY("useSusLimits", "Suspension/Use Limits", bool, GetEnableSuspensionLimit, SetEnableSuspensionLimit, false, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minSusDist", "Min Suspension Distance", float, GetMinimumSuspensionDistance, SetMinimumSuspensionDistance, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("minSusDist", "Suspension/Min Distance", float, GetMinimumSuspensionDistance, SetMinimumSuspensionDistance, 0.f, 
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxSusDist", "Max Suspension Distance", float, GetMaximumSuspensionDistance, SetMaximumSuspensionDistance, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxSusDist", "Suspension/Max Distance", float, GetMaximumSuspensionDistance, SetMaximumSuspensionDistance, 0.f, 
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 30.f, 
+    REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension/Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 30.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f,
+    REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension/Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f,
         "", PropertyInfo::EditorFlag);// .SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Use Steering Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false, 
+    REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Steering/Use Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minSteeringAngle", "Min Steering Angle", float, GetMinimumSteeringAngle, SetMinimumSteeringAngle, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("minSteeringAngle", "Steering/Min Angle", float, GetMinimumSteeringAngle, SetMinimumSteeringAngle, 0.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxSteeringAngle", "Max Steering Angle", float, GetMaximumSteeringAngle, SetMaximumSteeringAngle, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxSteeringAngle", "Steering/Max Angle", float, GetMaximumSteeringAngle, SetMaximumSteeringAngle, 0.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f,
+    REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor/Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f,
         "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Maximum Motor Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f,
+    REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Motor/Maximum Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f,
         "Maximum motor impulse", PropertyInfo::EditorFlag);
 }
 

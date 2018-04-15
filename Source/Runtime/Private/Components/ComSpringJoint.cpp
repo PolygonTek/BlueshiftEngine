@@ -30,15 +30,15 @@ void ComSpringJoint::RegisterProperties() {
         "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
         "Joint angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("useLimits", "Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, 
+    REGISTER_ACCESSOR_PROPERTY("useLimits", "Limits/Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, 
         "Activate joint limits", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("minDist", "Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("minDist", "Limits/Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, 
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxDist", "Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxDist", "Limits/Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, 
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 30.f, 
+    REGISTER_ACCESSOR_PROPERTY("stiffness", "Spring/Stiffness", float, GetStiffness, SetStiffness, 30.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("damping", "Damping", float, GetDamping, SetDamping, 0.2f, 
+    REGISTER_ACCESSOR_PROPERTY("damping", "Spring/Damping", float, GetDamping, SetDamping, 0.2f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
 }
 
