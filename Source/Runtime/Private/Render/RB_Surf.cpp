@@ -328,7 +328,7 @@ void RBSurf::Flush_LitPass() {
     }
 
     rhi.SetCullFace(mtrlPass->cullType);
-        
+ 
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
 
     int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 

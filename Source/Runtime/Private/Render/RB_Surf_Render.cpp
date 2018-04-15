@@ -739,20 +739,6 @@ void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Sha
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixTConst], worldToLocalMatrix[1]);
     shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixRConst], worldToLocalMatrix[2]);
 
-    Vec4 lightVec;
-    Vec3 lightInvRadius;
-
-    if (surfLight->def->parms.type == SceneLight::DirectionalLight) {
-        lightVec = Vec4(-surfLight->def->parms.axis[0], 0);
-        lightInvRadius.SetFromScalar(0);
-    } else {
-        lightVec = Vec4(surfLight->def->parms.origin, 1);
-        lightInvRadius = 1.0f / surfLight->def->GetRadius();
-    }
-        
-    shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LightVecConst], lightVec);
-
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
@@ -774,9 +760,24 @@ void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Sha
         const Mesh *mesh = surfSpace->def->parms.mesh;
         SetSkinningConstants(shader, mesh->skinningJointCache);
     }
+
+    Vec4 lightVec;
+    Vec3 lightInvRadius;
+
+    if (surfLight->def->parms.type == SceneLight::DirectionalLight) {
+        lightVec = Vec4(-surfLight->def->parms.axis[0], 0);
+        lightInvRadius.SetFromScalar(0);
+    } else {
+        lightVec = Vec4(surfLight->def->parms.origin, 1);
+        lightInvRadius = 1.0f / surfLight->def->GetRadius();
+    }
         
+    shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
+    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LightVecConst], lightVec);
+
     shader->SetConstant3f("lightInvRadius", lightInvRadius);
     shader->SetConstant1f("lightFallOffExponent", surfLight->def->parms.fallOffExponent);
+
     shader->SetConstant1i("removeBackProjection", surfLight->def->parms.type == SceneLight::SpotLight ? 1 : 0);
         
     if (useShadowMap) {
@@ -853,7 +854,7 @@ void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Sha
     }*/
 }
 
-void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {    
+void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = mtrlPass->shader;
 
     if (shader && shader->GetDirectLitVersion()) {
