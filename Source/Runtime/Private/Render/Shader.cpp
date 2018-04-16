@@ -1102,20 +1102,20 @@ void Shader::SetConstant4f(int index, const Vec4 &constant) const {
     rhi.SetShaderConstant4f(index, constant);
 }
 
-void Shader::SetConstant2x2f(int index, bool rowmajor, const Mat2 &constant) const { 
-    rhi.SetShaderConstant2x2f(index, rowmajor, constant);
+void Shader::SetConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const { 
+    rhi.SetShaderConstant2x2f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant3x3f(int index, bool rowmajor, const Mat3 &constant) const { 
-    rhi.SetShaderConstant3x3f(index, rowmajor, constant);
+void Shader::SetConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const { 
+    rhi.SetShaderConstant3x3f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant4x4f(int index, bool rowmajor, const Mat4 &constant) const { 
-    rhi.SetShaderConstant4x4f(index, rowmajor, constant);
+void Shader::SetConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const { 
+    rhi.SetShaderConstant4x4f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant4x3f(int index, bool rowmajor, const Mat3x4 &constant) const {
-    rhi.SetShaderConstant4x3f(index, rowmajor, constant);
+void Shader::SetConstant4x3f(int index, bool rowMajor, const Mat3x4 &constant) const {
+    rhi.SetShaderConstant4x3f(index, rowMajor, constant);
 }
 
 void Shader::SetConstantArray1i(int index, int num, const int *constant) const {
@@ -1162,16 +1162,16 @@ void Shader::SetConstantArray4f(int index, int num, const Vec4 *constant) const 
     rhi.SetShaderConstantArray4f(index, num, constant);
 }
 
-void Shader::SetConstantArray2x2f(int index, bool rowmajor, int num, const Mat2 *constant) const { 
-    rhi.SetShaderConstantArray2x2f(index, rowmajor, num, constant);
+void Shader::SetConstantArray2x2f(int index, bool rowMajor, int num, const Mat2 *constant) const { 
+    rhi.SetShaderConstantArray2x2f(index, rowMajor, num, constant);
 }
 
-void Shader::SetConstantArray3x3f(int index, bool rowmajor, int num, const Mat3 *constant) const { 
-    rhi.SetShaderConstantArray3x3f(index, rowmajor, num, constant);
+void Shader::SetConstantArray3x3f(int index, bool rowMajor, int num, const Mat3 *constant) const { 
+    rhi.SetShaderConstantArray3x3f(index, rowMajor, num, constant);
 }
 
-void Shader::SetConstantArray4x4f(int index, bool rowmajor, int num, const Mat4 *constant) const { 
-    rhi.SetShaderConstantArray4x4f(index, rowmajor, num, constant);
+void Shader::SetConstantArray4x4f(int index, bool rowMajor, int num, const Mat4 *constant) const { 
+    rhi.SetShaderConstantArray4x4f(index, rowMajor, num, constant);
 }
 
 void Shader::SetConstant1i(const char *name, int x) const { 
@@ -1273,40 +1273,40 @@ void Shader::SetConstant4f(const char *name, const Vec4 &constant) const {
     rhi.SetShaderConstant4f(index, constant);
 }
 
-void Shader::SetConstant2x2f(const char *name, bool rowmajor, const Mat2 &constant) const { 
+void Shader::SetConstant2x2f(const char *name, bool rowMajor, const Mat2 &constant) const { 
     int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant2x2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    rhi.SetShaderConstant2x2f(index, rowmajor, constant);
+    rhi.SetShaderConstant2x2f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant3x3f(const char *name, bool rowmajor, const Mat3 &constant) const { 
+void Shader::SetConstant3x3f(const char *name, bool rowMajor, const Mat3 &constant) const { 
     int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant3x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    rhi.SetShaderConstant3x3f(index, rowmajor, constant);
+    rhi.SetShaderConstant3x3f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant4x4f(const char *name, bool rowmajor, const Mat4 &constant) const { 
+void Shader::SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &constant) const { 
     int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant4x4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    rhi.SetShaderConstant4x4f(index, rowmajor, constant);
+    rhi.SetShaderConstant4x4f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant4x3f(const char *name, bool rowmajor, const Mat3x4 &constant) const {
+void Shader::SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &constant) const {
     int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstant4x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    rhi.SetShaderConstant4x3f(index, rowmajor, constant);
+    rhi.SetShaderConstant4x3f(index, rowMajor, constant);
 }
 
 void Shader::SetConstantArray1i(const char *name, int num, const int *constant) const {
@@ -1408,31 +1408,31 @@ void Shader::SetConstantArray4f(const char *name, int num, const Vec4 *constant)
     rhi.SetShaderConstantArray4f(index, num, constant);
 }
 
-void Shader::SetConstantArray2x2f(const char *name, bool rowmajor, int num, const Mat2 *constant) const { 
+void Shader::SetConstantArray2x2f(const char *name, bool rowMajor, int num, const Mat2 *constant) const { 
     int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray2x2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    rhi.SetShaderConstantArray2x2f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray2x2f(index, rowMajor, num, constant);
 }
 
-void Shader::SetConstantArray3x3f(const char *name, bool rowmajor, int num, const Mat3 *constant) const { 
+void Shader::SetConstantArray3x3f(const char *name, bool rowMajor, int num, const Mat3 *constant) const { 
     int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray3x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    rhi.SetShaderConstantArray3x3f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray3x3f(index, rowMajor, num, constant);
 }
 
-void Shader::SetConstantArray4x4f(const char *name, bool rowmajor, int num, const Mat4 *constant) const { 
+void Shader::SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const { 
     int index = rhi.GetShaderConstantLocation(shaderHandle, name);
     if (index < 0) {
         //BE_WARNLOG(L"Shader::SetConstantArray4x4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
         return;
     }
-    rhi.SetShaderConstantArray4x4f(index, rowmajor, num, constant);
+    rhi.SetShaderConstantArray4x4f(index, rowMajor, num, constant);
 }
 
 int Shader::GetSamplerUnit(const char *name) const {

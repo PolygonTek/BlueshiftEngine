@@ -112,17 +112,17 @@ void GuiMesh::CacheIndexes() {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         GuiMeshSurf *surf = &surfaces[surfaceIndex];
 
-        int startIndex = surf->vertexCache.offset / sizeof(VertexGeneric);
+        int baseVertexIndex = surf->vertexCache.offset / sizeof(VertexGeneric);
 
         for (int index = 0; index < surf->numIndexes; index += 6) {
-            *indexPointer++ = startIndex + quadTrisIndexes[0];
-            *indexPointer++ = startIndex + quadTrisIndexes[1];
-            *indexPointer++ = startIndex + quadTrisIndexes[2];
-            *indexPointer++ = startIndex + quadTrisIndexes[3];
-            *indexPointer++ = startIndex + quadTrisIndexes[4];
-            *indexPointer++ = startIndex + quadTrisIndexes[5];
+            *indexPointer++ = baseVertexIndex + quadTrisIndexes[0];
+            *indexPointer++ = baseVertexIndex + quadTrisIndexes[1];
+            *indexPointer++ = baseVertexIndex + quadTrisIndexes[2];
+            *indexPointer++ = baseVertexIndex + quadTrisIndexes[3];
+            *indexPointer++ = baseVertexIndex + quadTrisIndexes[4];
+            *indexPointer++ = baseVertexIndex + quadTrisIndexes[5];
 
-            startIndex += 4;
+            baseVertexIndex += 4;
         }
     }
     bufferCacheManager.UnmapIndexBuffer(&indexCache);
@@ -135,7 +135,9 @@ void GuiMesh::CacheIndexes() {
         surf->indexCache = indexCache;
         surf->indexCache.offset = offset;
         surf->indexCache.bytes = sizeof(TriIndex) * surf->numIndexes;
-        
+        // TODO: Prebuilt index cache in max batch size and just make use of base vertex index to use calling RHI::DrawElementsBaseVertex
+        //surf->indexCache.baseVertexIndex = surf->vertexCache.offset / sizeof(VertexGeneric);
+
         offset += surf->indexCache.bytes;
     }
 }

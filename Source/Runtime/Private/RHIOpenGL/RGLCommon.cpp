@@ -328,6 +328,10 @@ Str OpenGLRHI::GetGPUString() const {
     return Str(rendererString);
 }
 
+bool OpenGLRHI::SupportsPolygonMode() const {
+    return OpenGL::SupportsPolygonMode();
+}
+
 bool OpenGLRHI::SupportsPackedFloat() const {
     return OpenGL::SupportsPackedFloat();
 }
@@ -442,26 +446,42 @@ void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format im
     gglPixelStorei(GL_PACK_ALIGNMENT, oldPackAlignment);
 }
 
-void OpenGLRHI::DrawArrays(Primitive primitives, const int startVertex, const int numVerts) const {
+void OpenGLRHI::DrawArrays(Primitive primitives, int startVertex, int numVerts) const {
     gglDrawArrays(toGLPrim[primitives], startVertex, numVerts);
 }
 
-void OpenGLRHI::DrawArraysInstanced(Primitive primitives, const int startVertex, const int numVerts, const int primCount) const {
-    gglDrawArraysInstanced(toGLPrim[primitives], startVertex, numVerts, primCount);
+void OpenGLRHI::DrawArraysInstanced(Primitive primitives, int startVertex, int numVerts, int instanceCount) const {
+    gglDrawArraysInstanced(toGLPrim[primitives], startVertex, numVerts, instanceCount);
 }
 
-void OpenGLRHI::DrawElements(Primitive primitives, const int startIndex, const int numIndices, const int indexSize, const void *ptr) const {
+void OpenGLRHI::DrawElements(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
     int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
     gglDrawElements(toGLPrim[primitives], numIndices, indexType, indices);
 }
 
-void OpenGLRHI::DrawElementsInstanced(Primitive primitives, const int startIndex, const int numIndices, const int indexSize, const void *ptr, const int primCount) const {
+void OpenGLRHI::DrawElementsBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
     int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
-    gglDrawElementsInstanced(toGLPrim[primitives], numIndices, indexType, indices, primCount);
+    // Require GL_EXT_draw_elements_base_vertex for OpenGL ES 3.0
+    gglDrawElementsBaseVertex(toGLPrim[primitives], numIndices, indexType, indices, baseVertexIndex);
+}
+
+void OpenGLRHI::DrawElementsInstanced(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const {
+    GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
+    int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
+    const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
+    gglDrawElementsInstanced(toGLPrim[primitives], numIndices, indexType, indices, instanceCount);
+}
+
+void OpenGLRHI::DrawElementsInstancedBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const {
+    GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
+    int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
+    const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
+    // Require GL_EXT_draw_elements_base_vertex for OpenGL ES 3.0
+    gglDrawElementsInstancedBaseVertex(toGLPrim[primitives], numIndices, indexType, indices, instanceCount, baseVertexIndex);
 }
 
 extern "C" void CheckGLError(const char *msg);

@@ -967,7 +967,7 @@ int OpenGLRHI::GetShaderConstantBlockIndex(int shaderHandle, const char *name) c
     return index;
 }
 
-void OpenGLRHI::SetShaderConstantBlock(int bindingIndex, int blockIndex) {
+void OpenGLRHI::SetShaderConstantBlock(int blockIndex, int bindingIndex) {
     const GLShader *shader = shaderList[currentContext->state->shaderHandle];
 
     gglUniformBlockBinding(shader->programObject, blockIndex, bindingIndex);
