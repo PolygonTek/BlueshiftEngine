@@ -79,6 +79,8 @@ private:
     void                SetMatrixConstants(const Shader *shader) const;
     void                SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const;
     void                SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const;
+    void                SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const;
+    void                SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const;
 
     void                SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const;
 

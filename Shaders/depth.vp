@@ -1,48 +1,54 @@
-in vec4 in_position : POSITION;
-in MEDIUMP vec2 in_st : TEXCOORD0;
+in HIGHP vec4 in_position   : POSITION;
+in MEDIUMP vec2 in_st       : TEXCOORD0;
 
 out MEDIUMP vec2 v2f_texCoord;
 
-uniform mat4 modelViewProjectionMatrix;
-
 #ifdef INSTANCING
-	struct InstanceData {
+    struct InstanceData {
         vec4 localToWorldMatrixS;
         vec4 localToWorldMatrixT;
         vec4 localToWorldMatrixR;
-		vec4 textureMatrixS;
-		vec4 textureMatrixT;
-	};
+    };
 
     UNIFORM_BLOCK InstanceDataBlock {
-        InstanceData instanceData[256];
+        InstanceData instanceData[512];
     };
 
     #define instance instanceData[gl_InstanceID]
+
+    #define localToWorldMatrixS instance.localToWorldMatrixS
+    #define localToWorldMatrixT instance.localToWorldMatrixT
+    #define localToWorldMatrixR instance.localToWorldMatrixR
 #else
-	uniform vec4 textureMatrixS;
-	uniform vec4 textureMatrixT;
+    uniform vec4 localToWorldMatrixS;
+    uniform vec4 localToWorldMatrixT;
+    uniform vec4 localToWorldMatrixR;
 #endif
 
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+
+uniform mat4 modelViewProjectionMatrix;
+
 void main() {
-	vec4 localPos;
+    vec4 localPos;
 
 #ifdef PERFORATED
-	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
-	v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+    v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
+    v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
 #endif
 
 #ifdef GPU_SKINNING
-	skinningMatrix(in_position, localPos);
+    skinningMatrix(in_position, localPos);
 #else
-	localPos = in_position;
+    localPos = in_position;
 #endif
 
 #ifdef INSTANCING
     vec4 worldPos;
-    worldPos.x = dot(instance.localToWorldMatrixS, localPos);
-    worldPos.y = dot(instance.localToWorldMatrixT, localPos);
-    worldPos.z = dot(instance.localToWorldMatrixR, localPos);
+    worldPos.x = dot(localToWorldMatrixS, localPos);
+    worldPos.y = dot(localToWorldMatrixT, localPos);
+    worldPos.z = dot(localToWorldMatrixR, localPos);
     worldPos.w = 1.0;
     gl_Position = viewProjectionMatrix * worldPos;
 #else

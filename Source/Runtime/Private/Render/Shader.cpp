@@ -46,8 +46,13 @@ static const char *builtInConstantNames[] = {
     "constantColor",                        // ConstantColorConst
     "vertexColorScale",                     // VertexColorScaleConst
     "vertexColorAdd",                       // VertexColorAddConst
+    "perforatedAlpha",                      // PerforatedAlphaConst
     "viewOrigin",                           // ViewOriginConst
     "lightVec",                             // LightVecConst
+    "lightInvRadius",                       // LightInvRadiusConst
+    "lightTextureMatrix",                   // LightTextureMatrixConst
+    "lightColor",                           // LightColorConst
+    "lightFallOffExponent"                  // LightFallOffExponentConst
 };
 
 // NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함

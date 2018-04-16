@@ -1,25 +1,34 @@
-in vec4 in_position : POSITION;
-in vec2 in_st : TEXCOORD0;
+in HIGHP vec4 in_position   : POSITION;
+in MEDIUMP vec2 in_st       : TEXCOORD0;
 
-out vec2 v2f_texCoord;
-
-uniform mat4 modelViewProjectionMatrix;
+out MEDIUMP vec2 v2f_texCoord;
 
 #ifdef INSTANCING
 	struct InstanceData {
-		vec4 textureMatrixS;
-		vec4 textureMatrixT;
+        vec4 localToWorldMatrixS;
+        vec4 localToWorldMatrixT;
+        vec4 localToWorldMatrixR;
 	};
 
 	UNIFORM_BLOCK InstanceDataBlock {
-        InstanceData instanceData[256];
+        InstanceData instanceData[512];
     };
 
     #define instance instanceData[gl_InstanceID]
+
+    #define localToWorldMatrixS instance.localToWorldMatrixS
+    #define localToWorldMatrixT instance.localToWorldMatrixT
+    #define localToWorldMatrixR instance.localToWorldMatrixR
 #else
-	uniform vec4 textureMatrixS;
-	uniform vec4 textureMatrixT;
+    uniform vec4 localToWorldMatrixS;
+    uniform vec4 localToWorldMatrixT;
+    uniform vec4 localToWorldMatrixR;
 #endif
+
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+
+uniform mat4 modelViewProjectionMatrix;
 
 void main() {
 	vec4 localPos;

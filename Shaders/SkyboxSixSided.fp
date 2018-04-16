@@ -1,8 +1,8 @@
 in LOWP vec4 v2f_color;
 in MEDIUMP vec3 v2f_texCoord;
 
-out vec4 o_fragColor : FRAG_COLOR;
-out float o_fragDepth : FRAG_DEPTH;
+out vec4 o_fragColor    : FRAG_COLOR;
+out float o_fragDepth   : FRAG_DEPTH;
 
 uniform LOWP vec4 tint;
 uniform MEDIUMP float exposure;

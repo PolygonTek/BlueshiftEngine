@@ -34,7 +34,7 @@ shader "Lit/Phong" {
     ambientLitVersion "PhongAmbientLit.shader"
     directLitVersion "PhongDirectLit.shader"
     ambientLitDirectLitVersion "PhongAmbientLitDirectLit.shader"
-    
+
     glsl_vp {
         $include "StandardCore.vp"
     }

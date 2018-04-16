@@ -45,10 +45,6 @@ out MEDIUMP vec2 v2f_tex;
         vec4 localToWorldMatrixS;
         vec4 localToWorldMatrixT;
         vec4 localToWorldMatrixR;
-        vec4 textureMatrixS;
-        vec4 textureMatrixT;
-        LOWP vec4 vertexColorScale;
-        LOWP vec4 vertexColorAdd;
         LOWP vec4 constantColor;
     };
 
@@ -57,27 +53,31 @@ out MEDIUMP vec2 v2f_tex;
     };
 
     #define instance instanceData[gl_InstanceID]
+
+    #define localToWorldMatrixS instance.localToWorldMatrixS
+    #define localToWorldMatrixT instance.localToWorldMatrixT
+    #define localToWorldMatrixR instance.localToWorldMatrixR
+    #define constantColor instance.constantColor
 #else
     uniform vec4 localToWorldMatrixS;
     uniform vec4 localToWorldMatrixT;
     uniform vec4 localToWorldMatrixR;
-
-    #if _PARALLAX
-        uniform vec4 worldToLocalMatrixS;
-        uniform vec4 worldToLocalMatrixT;
-        uniform vec4 worldToLocalMatrixR;
-    #endif
-
-    uniform vec4 textureMatrixS;
-    uniform vec4 textureMatrixT;
-    uniform LOWP vec4 vertexColorScale;
-    uniform LOWP vec4 vertexColorAdd;
     uniform LOWP vec4 constantColor;
-
-    uniform vec3 viewOrigin;    // eye position in world space
-    uniform vec4 lightVec;      // light position or lgith direction in world space
 #endif
 
+#if _PARALLAX
+    uniform vec4 worldToLocalMatrixS;
+    uniform vec4 worldToLocalMatrixT;
+    uniform vec4 worldToLocalMatrixR;
+#endif
+
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+uniform LOWP vec4 vertexColorScale;
+uniform LOWP vec4 vertexColorAdd;
+
+uniform vec3 viewOrigin;                // eye position in world space
+uniform vec4 lightVec;                  // light position or lgith direction in world space
 uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
 uniform vec3 lightInvRadius;

@@ -26,7 +26,7 @@ shader "Lit/StandardSpec" {
         emissionMap("Emission Map") : texture = "_blackTexture"
         emissionScale("Emission Scale") : float range 0 16 0.001 = "1"
     }
-    
+
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion

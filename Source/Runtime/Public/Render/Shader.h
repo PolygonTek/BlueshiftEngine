@@ -74,8 +74,13 @@ public:
         ConstantColorConst,
         VertexColorScaleConst,
         VertexColorAddConst,
+        PerforatedAlphaConst,
         ViewOriginConst,
         LightVecConst,
+        LightInvRadiusConst,
+        LightTextureMatrixConst,
+        LightColorConst,
+        LightFallOffExponentConst,
         MaxBuiltInConstants
     };
 

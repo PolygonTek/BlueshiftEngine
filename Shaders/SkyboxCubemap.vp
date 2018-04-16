@@ -1,5 +1,5 @@
-in vec4 in_position : POSITION;
-in LOWP vec4 in_color : COLOR;
+in LOWP vec4 in_position    : POSITION;
+in LOWP vec4 in_color       : COLOR;
 
 out LOWP vec4 v2f_color;
 out MEDIUMP vec3 v2f_texCoord;
