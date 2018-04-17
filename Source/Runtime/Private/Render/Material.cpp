@@ -804,7 +804,7 @@ void Material::SetRenderingMode(RenderingMode mode) {
 }
 
 bool Material::IsLitSurface() const {
-    if (pass->shader && pass->shader->GetFlags() & Shader::LitSurface) {
+    if (pass->shader && (pass->shader->GetFlags() & Shader::LitSurface)) {
         return true;
     }
 
@@ -812,7 +812,7 @@ bool Material::IsLitSurface() const {
 }
 
 bool Material::IsSkySurface() const {
-    if (pass->shader && pass->shader->GetFlags() & Shader::SkySurface) {
+    if (pass->shader && (pass->shader->GetFlags() & Shader::SkySurface)) {
         return true;
     }
 

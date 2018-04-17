@@ -164,14 +164,10 @@ void VertexFormat::CreateSkinningVertexFormats(int originalIndex, int skinning1I
     vf->Create();
 }
 
-void VertexFormat::Free() {
+void VertexFormat::Shutdown() {
     for (int i = 0; i < COUNT_OF(vertexFormats); i++) {
         vertexFormats[i].Delete();
     }
-}
-
-VertexFormat::VertexFormat() {
-    vertexFormatHandle = RHI::NullVertexFormat;
 }
 
 void VertexFormat::Append(int stream, int offset, RHI::VertexElement::Usage usage, int components, RHI::VertexElement::Type type, bool normalize) {

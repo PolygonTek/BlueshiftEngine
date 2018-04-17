@@ -235,6 +235,7 @@ public:
     static CVar             texture_mipLevel;
 
 private:
+    void                    CreateEngineTextures();
     int                     LoadTextureInfo(const char *filename) const;
 
     static void             Cmd_ListTextures(const CmdArgs &args);

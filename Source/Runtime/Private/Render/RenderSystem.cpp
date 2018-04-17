@@ -103,7 +103,7 @@ void RenderSystem::Shutdown() {
 
     skeletonManager.Shutdown();
 
-    VertexFormat::Free();
+    VertexFormat::Shutdown();
 
     fontManager.Shutdown();
 

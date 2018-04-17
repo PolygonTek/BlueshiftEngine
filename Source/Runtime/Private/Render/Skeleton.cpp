@@ -36,7 +36,7 @@ void Skeleton::Purge() {
     }
 
     if (invBindPoseMats) {
-        Mem_AlignedFree(invBindPoseMats);	
+        Mem_AlignedFree(invBindPoseMats);
         invBindPoseMats = nullptr;
     }
 }
@@ -199,7 +199,7 @@ void Skeleton::Write(const char *filename) {
 
 bool Skeleton::Reload() {
     Str _hashName = hashName;
-    bool ret = Load(_hashName);    
+    bool ret = Load(_hashName);
     return ret;
 }
 
