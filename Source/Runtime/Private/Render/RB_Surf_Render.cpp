@@ -127,36 +127,36 @@ const Texture *RBSurf::TextureFromShaderProperties(const Material::ShaderPass *m
 }
 
 void RBSurf::SetMatrixConstants(const Shader *shader) const {
-    if (shader->builtInConstantLocations[Shader::ModelViewMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ModelViewMatrixConst], true, backEnd.modelViewMatrix);
+    if (shader->builtInConstantIndices[Shader::ModelViewMatrixConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewMatrixConst], true, backEnd.modelViewMatrix);
     }
     
-    if (shader->builtInConstantLocations[Shader::ProjectionMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ProjectionMatrixConst], true, backEnd.projMatrix);
+    if (shader->builtInConstantIndices[Shader::ProjectionMatrixConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ProjectionMatrixConst], true, backEnd.projMatrix);
     }
 
-    if (shader->builtInConstantLocations[Shader::ViewProjectionMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ViewProjectionMatrixConst], true, backEnd.viewProjMatrix);
+    if (shader->builtInConstantIndices[Shader::ViewProjectionMatrixConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ViewProjectionMatrixConst], true, backEnd.viewProjMatrix);
     }
 
-    if (shader->builtInConstantLocations[Shader::ModelViewProjectionMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ModelViewProjectionMatrixConst], true, backEnd.modelViewProjMatrix);
+    if (shader->builtInConstantIndices[Shader::ModelViewProjectionMatrixConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewProjectionMatrixConst], true, backEnd.modelViewProjMatrix);
     }
 
-    if (shader->builtInConstantLocations[Shader::ModelViewMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ModelViewMatrixTransposeConst], false, backEnd.modelViewMatrix);
+    if (shader->builtInConstantIndices[Shader::ModelViewMatrixTransposeConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewMatrixTransposeConst], false, backEnd.modelViewMatrix);
     }
 
-    if (shader->builtInConstantLocations[Shader::ProjectionMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ProjectionMatrixTransposeConst], false, backEnd.projMatrix);
+    if (shader->builtInConstantIndices[Shader::ProjectionMatrixTransposeConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ProjectionMatrixTransposeConst], false, backEnd.projMatrix);
     }
 
-    if (shader->builtInConstantLocations[Shader::ViewProjectionMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ViewProjectionMatrixTransposeConst], false, backEnd.viewProjMatrix);
+    if (shader->builtInConstantIndices[Shader::ViewProjectionMatrixTransposeConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ViewProjectionMatrixTransposeConst], false, backEnd.viewProjMatrix);
     }
 
-    if (shader->builtInConstantLocations[Shader::ModelViewProjectionMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::ModelViewProjectionMatrixTransposeConst], false, backEnd.modelViewProjMatrix);
+    if (shader->builtInConstantIndices[Shader::ModelViewProjectionMatrixTransposeConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewProjectionMatrixTransposeConst], false, backEnd.modelViewProjMatrix);
     }
 }
 
@@ -175,8 +175,8 @@ void RBSurf::SetVertexColorConstants(const Shader *shader, const Material::Verte
         vertexColorAdd.Set(1.0f, 1.0f, 1.0f, 1.0f);
     }
     
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::VertexColorScaleConst], vertexColorScale);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::VertexColorAddConst], vertexColorAdd);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::VertexColorScaleConst], vertexColorScale);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::VertexColorAddConst], vertexColorAdd);
 }
 
 void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const {
@@ -205,47 +205,52 @@ void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache
 }
 
 void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
-    if (subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfSpace->def->parms.mesh;
-        SetSkinningConstants(shader, mesh->skinningJointCache);
-    }
-
-    if (shader->builtInConstantLocations[Shader::LocalToWorldMatrixSConst] >= 0) {
-        const Mat4 &localToWorldMatrix = surfSpace->def->GetModelMatrix();
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixSConst], localToWorldMatrix[0]);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixTConst], localToWorldMatrix[1]);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::LocalToWorldMatrixRConst], localToWorldMatrix[2]);
-    }
-
-    if (shader->builtInConstantLocations[Shader::WorldToLocalMatrixSConst] >= 0) {
-        Mat3x4 worldToLocalMatrix = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixSConst], worldToLocalMatrix[0]);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixTConst], worldToLocalMatrix[1]);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::WorldToLocalMatrixRConst], worldToLocalMatrix[2]);
-    }
-
-    if (shader->builtInConstantLocations[Shader::ConstantColorConst] >= 0) {
-        Color4 color;
-        if (mtrlPass->useOwnerColor) {
-            color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
-        } else {
-            color = mtrlPass->constantColor;
+    if (0) {
+        //mtrlPass->instancingEnabled
+        //shader->SetConstantBuffer("InstanceDataBlock", 0);
+    } else {
+        if (subMesh->useGpuSkinning) {
+            const Mesh *mesh = surfSpace->def->parms.mesh;
+            SetSkinningConstants(shader, mesh->skinningJointCache);
         }
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::ConstantColorConst], color);
+
+        if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst] >= 0) {
+            const Mat4 &localToWorldMatrix = surfSpace->def->GetModelMatrix();
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst], localToWorldMatrix[0]);
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixTConst], localToWorldMatrix[1]);
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixRConst], localToWorldMatrix[2]);
+        }
+
+        if (shader->builtInConstantIndices[Shader::WorldToLocalMatrixSConst] >= 0) {
+            Mat3x4 worldToLocalMatrix = Mat3x4(surfSpace->def->parms.axis.Transpose(), -surfSpace->def->parms.origin);
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixSConst], worldToLocalMatrix[0]);
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixTConst], worldToLocalMatrix[1]);
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixRConst], worldToLocalMatrix[2]);
+        }
+
+        if (shader->builtInConstantIndices[Shader::ConstantColorConst] >= 0) {
+            Color4 color;
+            if (mtrlPass->useOwnerColor) {
+                color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
+            } else {
+                color = mtrlPass->constantColor;
+            }
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
+        }
     }
 }
 
 void RBSurf::SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
-    if (shader->builtInConstantLocations[Shader::TextureMatrixSConst] >= 0) {
+    if (shader->builtInConstantIndices[Shader::TextureMatrixSConst] >= 0) {
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixSConst], textureMatrixS);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixTConst], textureMatrixT);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
     }
 
-    if (shader->builtInConstantLocations[Shader::PerforatedAlphaConst] >= 0) {
-        shader->SetConstant1f(shader->builtInConstantLocations[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
+    if (shader->builtInConstantIndices[Shader::PerforatedAlphaConst] >= 0) {
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
     }
 
     SetVertexColorConstants(shader, mtrlPass->vertexColorMode);
@@ -305,8 +310,8 @@ void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &v
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixSConst], textureMatrixS);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixTConst], textureMatrixT);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
 
         Color4 color;
         if (mtrlPass->useOwnerColor) {
@@ -315,9 +320,9 @@ void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &v
             color = mtrlPass->constantColor;
         }
 
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::ConstantColorConst], color);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
 
-        shader->SetConstant1f(shader->builtInConstantLocations[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
     }
 
     shader->SetConstant3f("id", vec3_id);
@@ -355,8 +360,8 @@ void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixSConst], textureMatrixS);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixTConst], textureMatrixT);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
 
         Color4 color;
         if (mtrlPass->useOwnerColor) {
@@ -365,9 +370,9 @@ void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
             color = mtrlPass->constantColor;
         }
 
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::ConstantColorConst], color);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
 
-        shader->SetConstant1f(shader->builtInConstantLocations[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
     }
 
     DrawPrimitives();
@@ -408,10 +413,10 @@ void RBSurf::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixSConst], textureMatrixS);
-        shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixTConst], textureMatrixT);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
 
-        shader->SetConstant1f(shader->builtInConstantLocations[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
     }
 
     if (subMesh->useGpuSkinning) {
@@ -467,7 +472,7 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
 
     SetMaterialConstants(mtrlPass, shader);
 
-    shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
 
     DrawPrimitives();
 }
@@ -551,7 +556,7 @@ void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambien
 
     SetMaterialConstants(mtrlPass, shader);
 
-    shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
 
     DrawPrimitives();
 }
@@ -706,11 +711,11 @@ void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Sha
         lightInvRadius = 1.0f / surfLight->def->GetRadius();
     }
         
-    shader->SetConstant3f(shader->builtInConstantLocations[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.view->def->parms.origin);
 
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LightVecConst], lightVec);
-    shader->SetConstant3f(shader->builtInConstantLocations[Shader::LightInvRadiusConst], lightInvRadius);
-    shader->SetConstant1f(shader->builtInConstantLocations[Shader::LightFallOffExponentConst], surfLight->def->parms.fallOffExponent);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::LightVecConst], lightVec);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::LightInvRadiusConst], lightInvRadius);
+    shader->SetConstant1f(shader->builtInConstantIndices[Shader::LightFallOffExponentConst], surfLight->def->parms.fallOffExponent);
 
     shader->SetConstant1i("removeBackProjection", surfLight->def->parms.type == SceneLight::SpotLight ? 1 : 0);
         
@@ -773,10 +778,10 @@ void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Sha
     const Material *lightMaterial = surfLight->def->GetMaterial();
 
     shader->SetTexture("lightProjectionMap", lightMaterial->GetPass()->texture);
-    shader->SetConstant4x4f(shader->builtInConstantLocations[Shader::LightTextureMatrixConst], true, surfLight->viewProjTexMatrix);
+    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, surfLight->viewProjTexMatrix);
 
     Color4 lightColor = surfLight->lightColor * surfLight->def->parms.intensity * r_lightScale.GetFloat();
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::LightColorConst], lightColor);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::LightColorConst], lightColor);
 
     //bool useLightCube = lightStage->textureStage.texture->GetType() == TextureCubeMap ? true : false;
     //shader->SetConstant1i("useLightCube", useLightCube);
@@ -924,8 +929,8 @@ void RBSurf::RenderGui(const Material::ShaderPass *mtrlPass) const {
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixSConst], textureMatrixS);
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::TextureMatrixTConst], textureMatrixT);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
 
     Color4 color;
     if (mtrlPass->useOwnerColor) {
@@ -934,7 +939,7 @@ void RBSurf::RenderGui(const Material::ShaderPass *mtrlPass) const {
         color = mtrlPass->constantColor;
     }
 
-    shader->SetConstant4f(shader->builtInConstantLocations[Shader::ConstantColorConst], color);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
 
     SetVertexColorConstants(shader, Material::ModulateVertexColor);
 

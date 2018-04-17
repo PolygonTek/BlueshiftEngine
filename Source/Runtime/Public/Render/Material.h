@@ -101,6 +101,7 @@ public:
         Texture *           texture;
         Vec2                tcScale;
         Vec2                tcTranslation;
+        bool                instancingEnabled;
         Shader *            shader;
         Shader *            referenceShader;
         StrHashMap<Shader::Property> shaderProperties;          // define prop 이 바뀌면 reinstantiate 해야 할듯

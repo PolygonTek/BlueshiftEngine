@@ -137,7 +137,8 @@ public:
 
     void                    Bind() const;
 
-    int                     GetConstantLocation(const char *name) const;
+    int                     GetConstantIndex(const char *name) const;
+    int                     GetConstantBlockIndex(const char *name) const;
 
     void                    SetConstant1i(int index, const int constant) const;
     void                    SetConstant2i(int index, const int *constant) const;
@@ -205,8 +206,8 @@ public:
     void                    SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const;
     void                    SetConstantArray4x3f(const char *name, bool rowMajor, int num, const Mat3x4 *constant) const;
 
-    void                    SetConstantBuffer(int index, RHI::Handle bufferHandle) const;
-    void                    SetConstantBuffer(const char *name, RHI::Handle bufferHandle) const;
+    void                    SetConstantBuffer(int index, int bindingIndex) const;
+    void                    SetConstantBuffer(const char *name, int bindingIndex) const;
 
     int                     GetSamplerUnit(const char *name) const;
 
@@ -251,7 +252,7 @@ private:
     Str                     vsText;                 ///< Vertex shader souce code text
     Str                     fsText;                 ///< Fragment shader source code text
     //int                   interactionParms[MaxInteractionParms];
-    int                     builtInConstantLocations[MaxBuiltInConstants];
+    int                     builtInConstantIndices[MaxBuiltInConstants];
     int                     builtInSamplerUnits[MaxBuiltInSamplers];
 
     Array<Define>           defineArray;            ///< Define list for instantiated shader

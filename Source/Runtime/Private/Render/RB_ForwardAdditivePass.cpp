@@ -49,7 +49,7 @@ static void RB_LitPass(const viewLight_t *viewLight) {
             }
 
             if (!(shader->GetFlags() & Shader::LitSurface)) {
-                continue;    
+                continue;
             }
 
             if (surf->material != prevMaterial || surf->space != prevSpace) {

@@ -1,0 +1,32 @@
+#if _PARALLAX
+    #error "Parallax mapping doesn't support instancing"
+#endif
+
+#ifndef MAX_INSTANCE_COUNT
+    #define MAX_INSTANCE_COUNT 512
+#endif
+
+#ifdef GL_ES
+#define INSTANCE_ARRAY_SIZE (MAX_INSTANCE_COUNT / 4)
+#else
+#define INSTANCE_ARRAY_SIZE MAX_INSTANCE_COUNT
+#endif
+
+// Don't excceed 128 bytes (8 * vec4)
+struct InstanceData {
+    vec4 localToWorldMatrixS;
+    vec4 localToWorldMatrixT;
+    vec4 localToWorldMatrixR;
+    LOWP vec4 constantColor;
+};
+
+UNIFORM_BLOCK InstanceDataBlock {
+    InstanceData instanceData[INSTANCE_ARRAY_SIZE];
+};
+
+#define instance instanceData[gl_InstanceID]
+
+#define localToWorldMatrixS instance.localToWorldMatrixS
+#define localToWorldMatrixT instance.localToWorldMatrixT
+#define localToWorldMatrixR instance.localToWorldMatrixR
+#define constantColor instance.constantColor

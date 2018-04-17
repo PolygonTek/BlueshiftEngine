@@ -41,34 +41,15 @@ out MEDIUMP vec2 v2f_tex;
 #endif
 
 #ifdef INSTANCING
-    struct InstanceData {
-        vec4 localToWorldMatrixS;
-        vec4 localToWorldMatrixT;
-        vec4 localToWorldMatrixR;
-        LOWP vec4 constantColor;
-    };
-
-    UNIFORM_BLOCK InstanceDataBlock {
-        InstanceData instanceData[512];
-    };
-
-    #define instance instanceData[gl_InstanceID]
-
-    #define localToWorldMatrixS instance.localToWorldMatrixS
-    #define localToWorldMatrixT instance.localToWorldMatrixT
-    #define localToWorldMatrixR instance.localToWorldMatrixR
-    #define constantColor instance.constantColor
+$include "Instancing.vp"
 #else
     uniform vec4 localToWorldMatrixS;
     uniform vec4 localToWorldMatrixT;
     uniform vec4 localToWorldMatrixR;
-    uniform LOWP vec4 constantColor;
-#endif
-
-#if _PARALLAX
     uniform vec4 worldToLocalMatrixS;
     uniform vec4 worldToLocalMatrixT;
     uniform vec4 worldToLocalMatrixR;
+    uniform LOWP vec4 constantColor;
 #endif
 
 uniform vec4 textureMatrixS;

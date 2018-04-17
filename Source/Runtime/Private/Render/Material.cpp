@@ -108,9 +108,10 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     pass->texture           = nullptr;
     pass->shader            = nullptr;
     pass->referenceShader   = nullptr;
-    pass->constantColor.Set(1.0f, 1.0f, 1.0f, 1.0f);
-    pass->tcScale.Set(1.0f, 1.0f);
-    pass->tcTranslation.Set(0.0f, 0.0f);
+    pass->constantColor     = Color4(1.0f, 1.0f, 1.0f, 1.0f);
+    pass->tcScale           = Vec2(1.0f, 1.0f);
+    pass->tcTranslation     = Vec2(0.0f, 0.0f);
+    pass->instancingEnabled = false;
 
     if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
         return false;
@@ -291,6 +292,8 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
             lexer.ParseVec(4, pass->constantColor);
         } else if (!token.Icmp("useOwnerColor")) {
             pass->useOwnerColor = true;
+        } else if (!token.Icmp("instancingEnabled")) {
+            pass->instancingEnabled = true;
         } else {
             BE_WARNLOG(L"unknown material pass parameter '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
@@ -780,6 +783,10 @@ void Material::Write(const char *filename) {
 
     if (pass->useOwnerColor) {
         fp->Printf("%suseOwnerColor\n", indentSpace.c_str());
+    }
+
+    if (pass->instancingEnabled) {
+        fp->Printf("%sinstancingEnabled\n", indentSpace.c_str());
     }
 
     fp->Printf("%scolor (%s)\n", indentSpace.c_str(), pass->constantColor.ToString());

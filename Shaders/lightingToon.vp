@@ -16,32 +16,16 @@ out vec3 v2f_lightFallOff;
 out vec4 v2f_lightProjection;
 
 #ifdef INSTANCING
-    struct InstanceData {
-        vec4 localToWorldMatrixS;
-        vec4 localToWorldMatrixT;
-        vec4 localToWorldMatrixR;
-        vec4 worldToLocalMatrixS;
-        vec4 worldToLocalMatrixT;
-        vec4 worldToLocalMatrixR;
-    };
-
-    UNIFORM_BLOCK InstanceDataBlock {
-        InstanceData instanceData[512];
-    };
-
-    #define instance instanceData[gl_InstanceID]
+$include "Instancing.vp"
 #else
     uniform vec4 localToWorldMatrixS;
     uniform vec4 localToWorldMatrixT;
     uniform vec4 localToWorldMatrixR;
-    uniform vec4 worldToLocalMatrixS;
-    uniform vec4 worldToLocalMatrixT;
-    uniform vec4 worldToLocalMatrixR;
-    uniform vec4 textureMatrixS;
-    uniform vec4 textureMatrixT;
     uniform LOWP vec4 constantColor;
 #endif
 
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
 uniform LOWP vec4 vertexColorScale;
 uniform LOWP vec4 vertexColorAdd;
 

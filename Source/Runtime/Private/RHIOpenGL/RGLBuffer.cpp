@@ -118,9 +118,9 @@ void OpenGLRHI::BindBuffer(BufferType type, Handle bufferHandle) {
 }
 
 void OpenGLRHI::BindIndexedBuffer(BufferType type, int bindingIndex, Handle bufferHandle) {
+    // Allowed only target UniformBuffer or TransformFeedbackBuffer
+    assert(type == UniformBuffer || type == TransformFeedbackBuffer);
     int targetIndex = type - UniformBuffer;
-    // Allowed target only UniformBuffer and TransformFeedbackBuffer
-    assert(targetIndex >= 0 && targetIndex <= 1);
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
     if (*bufferHandlePtr != bufferHandle) {
         *bufferHandlePtr = bufferHandle;
@@ -130,9 +130,9 @@ void OpenGLRHI::BindIndexedBuffer(BufferType type, int bindingIndex, Handle buff
 }
 
 void OpenGLRHI::BindIndexedBufferRange(BufferType type, int bindingIndex, Handle bufferHandle, int offset, int size) {
+    // Allowed only target UniformBuffer or TransformFeedbackBuffer
+    assert(type == UniformBuffer || type == TransformFeedbackBuffer);
     int targetIndex = type - UniformBuffer;
-    // Allowed target only UniformBuffer and TransformFeedbackBuffer
-    assert(targetIndex >= 0 && targetIndex <= 1);
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
     if (*bufferHandlePtr != bufferHandle) {
         *bufferHandlePtr = bufferHandle;
@@ -140,7 +140,6 @@ void OpenGLRHI::BindIndexedBufferRange(BufferType type, int bindingIndex, Handle
         gglBindBufferRange(ToGLBufferTarget(type), bindingIndex, buffer->object, offset, size);
     }
 }
-
 
 void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset, int size) {
     GLBuffer *buffer = bufferList[bufferHandle];

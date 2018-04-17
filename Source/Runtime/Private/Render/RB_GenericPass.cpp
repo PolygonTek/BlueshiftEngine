@@ -32,7 +32,6 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         if (surf->sortKey != prevSortkey) {
             const Shader *shader = surf->material->GetPass()->shader;
-
             if (!shader) {
                 continue;
             }

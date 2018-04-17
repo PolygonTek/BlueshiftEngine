@@ -65,18 +65,22 @@ void RBSurf::DrawStaticSubMesh(SubMesh *subMesh) {
     if (this->numIndexes) {
         Flush();
     }
+
+    if (this->subMesh != subMesh) {
+        this->subMesh = subMesh;
+
+        this->vbHandle = subMesh->vertexCache->buffer;
+        this->ibHandle = subMesh->indexCache->buffer;
+
+        this->numVerts = subMesh->numVerts;
+        this->numIndexes = subMesh->numIndexes;
+
+        this->startIndex = 0;
+    }
+
+    // instancing 가능하다면 UBO 에 entity 데이터를 채운다.
     
-    this->startIndex = 0;
-    
-    this->vbHandle = subMesh->vertexCache->buffer;
-    this->ibHandle = subMesh->indexCache->buffer;
-    
-    this->numVerts = subMesh->numVerts;
-    this->numIndexes = subMesh->numIndexes;
-    
-    this->subMesh = subMesh;
-    
-    // draw static buffer immediately!
+    // instancing 가능하지 않다면 바로 Flush
     Flush();
 }
 
@@ -178,6 +182,8 @@ void RBSurf::Flush() {
     
     //vbHandle = RHI::NullBuffer;
     //ibHandle = RHI::NullBuffer;
+
+    subMesh = nullptr;
 
     numVerts = 0;
     numIndexes = 0;
@@ -364,7 +370,7 @@ void RBSurf::Flush_UnlitPass() {
     rhi.SetCullFace(mtrlPass->cullType);
 
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
-            
+
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStColor);
 
     rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);

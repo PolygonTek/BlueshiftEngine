@@ -161,8 +161,8 @@ public:
     int                     GetSamplerUnit(Handle shaderHandle, const char *name) const;
     void                    SetTexture(int unit, Handle textureHandle);
 
-                            /// Returns the location of shader constant with the given name.
-    int                     GetShaderConstantLocation(int shaderHandle, const char *name) const;
+                            /// Returns the index of shader constant with the given name.
+    int                     GetShaderConstantIndex(int shaderHandle, const char *name) const;
 
                             /// Returns the block index of shader constant with the given name.
     int                     GetShaderConstantBlockIndex(int shaderHandle, const char *name) const;
@@ -209,7 +209,7 @@ public:
     void                    SetShaderConstantArray4x4f(int index, bool rowMajor, int count, const Mat4 *constant) const;
     void                    SetShaderConstantArray4x3f(int index, bool rowMajor, int count, const Mat3x4 *constant) const;
 
-    void                    SetShaderConstantBlock(int blockIndex, int bindingIndex);
+    void                    SetShaderConstantBlock(int index, int bindingIndex);
 
     Handle                  CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch = 0, const void *data = nullptr);
     void                    DeleteBuffer(Handle bufferHandle);

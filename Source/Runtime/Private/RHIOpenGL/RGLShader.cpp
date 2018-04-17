@@ -943,7 +943,7 @@ void OpenGLRHI::SetTexture(int unit, Handle textureHandle) {
     BindTexture(textureHandle);
 }
 
-int OpenGLRHI::GetShaderConstantLocation(int shaderHandle, const char *name) const {
+int OpenGLRHI::GetShaderConstantIndex(int shaderHandle, const char *name) const {
     const GLShader *shader = shaderList[shaderHandle];
     GLUniform find;
     find.name = const_cast<char *>(name);
@@ -967,19 +967,13 @@ int OpenGLRHI::GetShaderConstantBlockIndex(int shaderHandle, const char *name) c
     return index;
 }
 
-void OpenGLRHI::SetShaderConstantBlock(int blockIndex, int bindingIndex) {
-    const GLShader *shader = shaderList[currentContext->state->shaderHandle];
-
-    gglUniformBlockBinding(shader->programObject, blockIndex, bindingIndex);
-}
-
-void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, const void *data) const {	
+void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, const void *data) const {
     if (index < 0) {
         return;
     }
 
     const GLShader *shader = shaderList[currentContext->state->shaderHandle];
-    GLUniform *uniform = &shader->uniforms[index];
+    const GLUniform *uniform = &shader->uniforms[index];
     switch (uniform->type) {
     case GL_FLOAT:
         gglUniform1fv(uniform->location, count, (const GLfloat *)data);
@@ -1146,6 +1140,13 @@ void OpenGLRHI::SetShaderConstantArray4x4f(int index, bool rowMajor, int count, 
 
 void OpenGLRHI::SetShaderConstantArray4x3f(int index, bool rowMajor, int count, const Mat3x4 *constant) const {
     SetShaderConstantGeneric(index, rowMajor, count, constant);
+}
+
+void OpenGLRHI::SetShaderConstantBlock(int index, int bindingIndex) {
+    const GLShader *shader = shaderList[currentContext->state->shaderHandle];
+    const GLUniformBlock *uniformBlock = &shader->uniformBlocks[index];
+
+    gglUniformBlockBinding(shader->programObject, uniformBlock->index, bindingIndex);
 }
 
 BE_NAMESPACE_END

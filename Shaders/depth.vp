@@ -4,21 +4,7 @@ in MEDIUMP vec2 in_st       : TEXCOORD0;
 out MEDIUMP vec2 v2f_texCoord;
 
 #ifdef INSTANCING
-    struct InstanceData {
-        vec4 localToWorldMatrixS;
-        vec4 localToWorldMatrixT;
-        vec4 localToWorldMatrixR;
-    };
-
-    UNIFORM_BLOCK InstanceDataBlock {
-        InstanceData instanceData[512];
-    };
-
-    #define instance instanceData[gl_InstanceID]
-
-    #define localToWorldMatrixS instance.localToWorldMatrixS
-    #define localToWorldMatrixT instance.localToWorldMatrixT
-    #define localToWorldMatrixR instance.localToWorldMatrixR
+$include "Instancing.vp"
 #else
     uniform vec4 localToWorldMatrixS;
     uniform vec4 localToWorldMatrixT;
