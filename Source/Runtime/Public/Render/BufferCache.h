@@ -51,14 +51,17 @@ public:
 
     bool                    AllocVertex(int numVertexes, int vertexSize, const void *data, BufferCache *vc);
     bool                    AllocIndex(int numIndexes, int indexSize, const void *data, BufferCache *vc);
+    bool                    AllocUniform(int bytes, const void *data, BufferCache *vc);
     bool                    AllocTexel(int bytes, const void *data, BufferCache *vc);
 
     byte *                  MapVertexBuffer(BufferCache *bc) const;
     byte *                  MapIndexBuffer(BufferCache *bc) const;
+    byte *                  MapUniformBuffer(BufferCache *bc) const;
     byte *                  MapTexelBuffer(BufferCache *bc) const;
 
     void                    UnmapVertexBuffer(BufferCache *bc) const;
     void                    UnmapIndexBuffer(BufferCache *bc) const;
+    void                    UnmapUniformBuffer(BufferCache *bc) const;
     void                    UnmapTexelBuffer(BufferCache *bc) const;
 
     bool                    IsCached(const BufferCache *vc) const;
@@ -77,15 +80,18 @@ private:
     struct FrameDataBufferSet {
         RHI::Handle         vertexBuffer;
         RHI::Handle         indexBuffer;
+        RHI::Handle         uniformBuffer;
         RHI::Handle         texelBuffer;
         RHI::BufferType     texelBufferType;
         Texture *           texture;
         RHI::Handle         sync;
         void *              mappedVertexBase;
         void *              mappedIndexBase;
+        void *              mappedUniformBase;
         void *              mappedTexelBase;
         PlatformAtomic      vertexMemUsed;
         PlatformAtomic      indexMemUsed;
+        PlatformAtomic      uniformMemUsed;
         PlatformAtomic      texelMemUsed;
         int                 allocations;
     };
@@ -100,6 +106,7 @@ private:
 
     int                     mostUsedVertexMem;
     int                     mostUsedIndexMem;
+    int                     mostUsedUniformMem;
     int                     mostUsedTexelMem;
 
     int                     pboWriteOffset;

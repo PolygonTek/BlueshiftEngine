@@ -31,16 +31,18 @@ static const int        TB_PITCH    = TB_BPP * TB_WIDTH;
 static const int        TB_BYTES    = TB_PITCH * TB_HEIGHT;
 
 void BufferCacheManager::Init() {
-    int vertexBytes = r_dynamicCacheVertexBytes.GetInteger();
-    int indexBytes = r_dynamicCacheIndexBytes.GetInteger();
+    int vcSize = r_dynamicVertexCacheSize.GetInteger();
+    int icSize = r_dynamicIndexCacheSize.GetInteger();
+    int ucSize = rhi.HWLimit().maxUniformBlockSize;
 
     for (int i = 0; i < COUNT_OF(frameData); i++) {
         FrameDataBufferSet *bufferSet = &frameData[i];
         
         memset(bufferSet, 0, sizeof(frameData[0]));
 
-        bufferSet->vertexBuffer = rhi.CreateBuffer(RHI::VertexBuffer, RHI::Dynamic, vertexBytes, 0, nullptr);
-        bufferSet->indexBuffer = rhi.CreateBuffer(RHI::IndexBuffer, RHI::Dynamic, indexBytes, 0, nullptr);
+        bufferSet->vertexBuffer = rhi.CreateBuffer(RHI::VertexBuffer, RHI::Dynamic, vcSize, 0, nullptr);
+        bufferSet->indexBuffer = rhi.CreateBuffer(RHI::IndexBuffer, RHI::Dynamic, icSize, 0, nullptr);
+        bufferSet->uniformBuffer = rhi.CreateBuffer(RHI::UniformBuffer, RHI::Dynamic, ucSize, 0, nullptr);
 
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
             // Create texture buffer to write directly
@@ -62,8 +64,10 @@ void BufferCacheManager::Init() {
         }
     }
     
-    BE_LOG(L"dynamic vertex buffer created (%hs x %i)\n", Str::FormatBytes(vertexBytes).c_str(), COUNT_OF(frameData));
-    BE_LOG(L"dynamic index buffer created (%hs x %i)\n", Str::FormatBytes(indexBytes).c_str(), COUNT_OF(frameData));
+    BE_LOG(L"dynamic vertex buffer created (%hs x %i)\n", Str::FormatBytes(vcSize).c_str(), COUNT_OF(frameData));
+    BE_LOG(L"dynamic index buffer created (%hs x %i)\n", Str::FormatBytes(icSize).c_str(), COUNT_OF(frameData));
+    BE_LOG(L"dynamic shader constant buffer created (%hs x %i)\n", Str::FormatBytes(ucSize).c_str(), COUNT_OF(frameData));
+
     if (frameData[0].texelBuffer) {
         BE_LOG(L"dynamic texel buffer created (%hs x %i)\n", Str::FormatBytes(TB_BYTES).c_str(), COUNT_OF(frameData));
     }
@@ -80,6 +84,7 @@ void BufferCacheManager::Init() {
 
     mostUsedVertexMem = 0;
     mostUsedIndexMem = 0;
+    mostUsedUniformMem = 0;
     mostUsedTexelMem = 0;
 
 #if PINNED_MEMORY
@@ -107,6 +112,7 @@ void BufferCacheManager::Shutdown() {
 
         rhi.DeleteBuffer(frameData[i].vertexBuffer);
         rhi.DeleteBuffer(frameData[i].indexBuffer);
+        rhi.DeleteBuffer(frameData[i].uniformBuffer);
         
         if (frameData[i].texelBuffer) {
             rhi.DeleteBuffer(frameData[i].texelBuffer);
@@ -138,6 +144,12 @@ void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
         rhi.BindBuffer(RHI::IndexBuffer, RHI::NullBuffer);
     }
 
+    if (!bufferSet.mappedUniformBase) {
+        rhi.BindBuffer(RHI::UniformBuffer, bufferSet.uniformBuffer);
+        bufferSet.mappedUniformBase = rhi.MapBufferRange(bufferSet.uniformBuffer, lockMode);
+        rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
+    }
+
     if (!bufferSet.mappedTexelBase && bufferSet.texelBuffer) {
         rhi.BindBuffer(bufferSet.texelBufferType, bufferSet.texelBuffer);
         bufferSet.mappedTexelBase = rhi.MapBufferRange(bufferSet.texelBuffer, lockMode);
@@ -160,6 +172,13 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet) {
         rhi.UnmapBuffer(bufferSet.indexBuffer);
         rhi.BindBuffer(RHI::IndexBuffer, RHI::NullBuffer);
         bufferSet.mappedIndexBase = nullptr;
+    }
+
+    if (bufferSet.mappedUniformBase) {
+        rhi.BindBuffer(RHI::UniformBuffer, bufferSet.uniformBuffer);
+        rhi.UnmapBuffer(bufferSet.uniformBuffer);
+        rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
+        bufferSet.mappedUniformBase = nullptr;
     }
 
     if (bufferSet.mappedTexelBase && bufferSet.texelBuffer) {
@@ -193,16 +212,19 @@ void BufferCacheManager::EndDrawCommand() {
 void BufferCacheManager::BeginBackEnd() {
     mostUsedVertexMem = Max(mostUsedVertexMem, (int)frameData[mappedNum].vertexMemUsed.GetValue());
     mostUsedIndexMem = Max(mostUsedIndexMem, (int)frameData[mappedNum].indexMemUsed.GetValue());
+    mostUsedUniformMem = Max(mostUsedUniformMem, (int)frameData[mappedNum].uniformMemUsed.GetValue());
     mostUsedTexelMem = Max(mostUsedTexelMem, (int)frameData[mappedNum].texelMemUsed.GetValue());
 
     if (r_showBufferCache.GetBool()) {
-        BE_LOG(L"%08d: %d alloc, vMem(%hs), iMem(%hs), tMem(%hs) : vMem(%hs), iMem(%hs), tMem(%hs)\n",
+        BE_LOG(L"%08d: %d alloc, vMem(%hs), iMem(%hs), uMem(%hs), tMem(%hs) : vMem(%hs), iMem(%hs), uMem(%hs), tMem(%hs)\n",
             frameCount, frameData[mappedNum].allocations,
             Str::FormatBytes(frameData[mappedNum].vertexMemUsed.GetValue()).c_str(),
             Str::FormatBytes(frameData[mappedNum].indexMemUsed.GetValue()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].uniformMemUsed.GetValue()).c_str(),
             Str::FormatBytes(frameData[mappedNum].texelMemUsed.GetValue()).c_str(),
             Str::FormatBytes(mostUsedVertexMem).c_str(),
             Str::FormatBytes(mostUsedIndexMem).c_str(),
+            Str::FormatBytes(mostUsedUniformMem).c_str(),
             Str::FormatBytes(mostUsedTexelMem).c_str());
     }
 
@@ -249,6 +271,9 @@ void BufferCacheManager::BeginBackEnd() {
 
     rhi.BufferRewind(frameData[mappedNum].indexBuffer);
     frameData[mappedNum].indexMemUsed.SetValue(0);
+
+    rhi.BufferRewind(frameData[mappedNum].uniformBuffer);
+    frameData[mappedNum].uniformMemUsed.SetValue(0);
 
     if (frameData[mappedNum].texelBuffer) {
         rhi.BufferRewind(frameData[mappedNum].texelBuffer);
@@ -374,6 +399,45 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
     return true;
 }
 
+bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *bc) {
+    FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
+
+    // thread safe interlocked adds
+    currentBufferSet->uniformMemUsed.Add(bytes);
+
+    //rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
+    // Check just write offset (don't write)
+    int offset = rhi.BufferWrite(currentBufferSet->uniformBuffer, 4 * sizeof(float), bytes, nullptr);
+    if (offset == -1) {
+        BE_FATALERROR(L"Out of uniform cache");
+        return false;
+    }
+    //rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
+
+    currentBufferSet->allocations++;
+
+    if (data) {
+#if PINNED_MEMORY
+        assert(currentBufferSet->mappedUniformBase);
+        WriteBuffer((byte *)currentBufferSet->mappedUniformBase + offset, data, bytes);
+#else
+        rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
+        void *base = rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::WriteOnly, offset, bytes);
+
+        WriteBuffer((byte *)base, data, bytes);
+
+        rhi.UnmapBuffer(currentBufferSet->uniformBuffer);
+        rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
+#endif
+    }
+
+    bc->buffer = currentBufferSet->uniformBuffer;
+    bc->offset = offset;
+    bc->bytes = bytes;
+    bc->frameCount = frameCount;
+    return true;
+}
+
 bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc) {
     FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
     assert(currentBufferSet->texelBuffer);
@@ -450,6 +514,17 @@ byte *BufferCacheManager::MapIndexBuffer(BufferCache *bc) const {
 #endif
 }
 
+byte *BufferCacheManager::MapUniformBuffer(BufferCache *bc) const {
+    const FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
+    assert(bc->frameCount == frameCount);
+#if PINNED_MEMORY
+    return (byte *)currentBufferSet->mappedUniformBase + bc->offset;
+#else
+    rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
+    return (byte *)rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::WriteOnly, bc->offset, bc->bytes);
+#endif
+}
+
 byte *BufferCacheManager::MapTexelBuffer(BufferCache *bc) const {
     const FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
     assert(bc->frameCount == frameCount);
@@ -478,6 +553,16 @@ void BufferCacheManager::UnmapIndexBuffer(BufferCache *bc) const {
     //rhi.FlushMappedBufferRange(currentBufferSet->indexBuffer, bc->offset, bc->bytes);
 #else
     rhi.UnmapBuffer(currentBufferSet->indexBuffer);
+#endif
+}
+
+void BufferCacheManager::UnmapUniformBuffer(BufferCache *bc) const {
+    const FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
+#if PINNED_MEMORY
+    //rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
+    //rhi.FlushMappedBufferRange(currentBufferSet->uniformBuffer, bc->offset, bc->bytes);
+#else
+    rhi.UnmapBuffer(currentBufferSet->uniformBuffer);
 #endif
 }
 
