@@ -35,6 +35,10 @@ void MaterialManager::Init() {
 
     materialHashMap.Init(1024, 65536, 1024);
 
+    CreateEngineMaterials();
+}
+
+void MaterialManager::CreateEngineMaterials() {
     // Create default lit surface material
     defaultMaterial = AllocMaterial("_defaultMaterial");
     defaultMaterial->Create(va(

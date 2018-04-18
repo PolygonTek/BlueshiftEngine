@@ -196,12 +196,12 @@ float ComVehicleWheel::GetSuspensionRelativeVelocity() const {
     return 1.0f;
 }
 
-void ComVehicleWheel::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+void ComVehicleWheel::DrawGizmos(const RenderView::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
         Vec3 worldOrigin = transform->GetMatrix() * localOrigin;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 

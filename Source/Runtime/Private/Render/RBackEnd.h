@@ -218,7 +218,7 @@ void    RB_ForwardAdditivePass(VisibleLight *visibleLights);
 void    RB_PostProcessDepth();
 void    RB_PostProcess();
 
-void    RB_DrawLightVolume(const SceneLight *light);
+void    RB_DrawLightVolume(const RenderLight *light);
 
 void    RB_ClearDebugPrimitives(int time);
 Vec3 *  RB_ReserveDebugPrimsVerts(int prims, int numVerts, const Color4 &color, const float lineWidth, const bool twoSided, const bool depthTest, const int lifeTime);

@@ -62,14 +62,14 @@ public:
     enum SkinningMethod {
         CpuSkinning,
         VertexShaderSkinning,
-        VtfSkinning
+        VertexTextureFetchSkinning
     };
 
     enum VertexTextureUpdate {
         DirectCopyUpdate,   // obsolete !
         PboUpdate,
         TboUpdate
-    };    
+    };
 
     enum FinishFlag {
         ComputeAABBFlag     = BIT(0),
@@ -99,8 +99,6 @@ public:
 
     int                     NumJoints() const { return numJoints; }
     const Joint *           GetJoints() const { return joints; }
-    int                     GetJointIndex(const char *name) const;
-    const char *            GetJointName(int jointIndex) const;
 
                             // Create instantiated mesh
     Mesh *                  InstantiateMesh(int meshType);
@@ -137,7 +135,9 @@ public:
 
     bool                    Load(const char *filename);
     bool                    Reload();
+
     void                    Write(const char *filename);
+
     const Mesh *            AddRefCount() const { refCount++; return this; }
 
 private:
@@ -235,6 +235,8 @@ public:
 private:
     static void             Cmd_ListMeshes(const CmdArgs &args);
     static void             Cmd_ReloadMesh(const CmdArgs &args);
+
+    void                    CreateEngineMeshes();
 
     StrIHashMap<Mesh *>     meshHashMap;
 

@@ -37,7 +37,7 @@ public:
     virtual void            Awake() override;
 
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
+    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
 
     float                   Length();
 

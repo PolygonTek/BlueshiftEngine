@@ -40,37 +40,37 @@ RenderWorld::~RenderWorld() {
 }
 
 void RenderWorld::ClearScene() {
-    entityDbvt.Purge();
+    objectDbvt.Purge();
     lightDbvt.Purge();
     staticMeshDbvt.Purge();
 
-    for (int i = 0; i < sceneObjects.Count(); i++) {
-        SAFE_DELETE(sceneObjects[i]);
+    for (int i = 0; i < renderObjects.Count(); i++) {
+        SAFE_DELETE(renderObjects[i]);
     }
-    for (int i = 0; i < sceneLights.Count(); i++) {
-        SAFE_DELETE(sceneLights[i]);
+    for (int i = 0; i < renderLights.Count(); i++) {
+        SAFE_DELETE(renderLights[i]);
     }
 }
 
-const SceneObject *RenderWorld::GetObject(int handle) const {
-    if (handle < 0 || handle >= sceneObjects.Count()) {
-        BE_WARNLOG(L"RenderWorld::GetObject: handle %i > %i\n", handle, sceneObjects.Count() - 1);
+const RenderObject *RenderWorld::GetObject(int handle) const {
+    if (handle < 0 || handle >= renderObjects.Count()) {
+        BE_WARNLOG(L"RenderWorld::GetObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
         return nullptr;
     }
 
-    SceneObject *sceneObject = sceneObjects[handle];
-    if (!sceneObject) {
+    RenderObject *renderObject = renderObjects[handle];
+    if (!renderObject) {
         BE_WARNLOG(L"RenderWorld::GetObject: handle %i is nullptr\n", handle);
         return nullptr;
     }
 
-    return sceneObject;
+    return renderObject;
 }
 
-int RenderWorld::AddObject(const SceneObject::Parms *parms) {
-    int handle = sceneObjects.FindNull();
+int RenderWorld::AddObject(const RenderObject::State *parms) {
+    int handle = renderObjects.FindNull();
     if (handle == -1) {
-        handle = sceneObjects.Append(nullptr);
+        handle = renderObjects.Append(nullptr);
     }
 
     UpdateObject(handle, parms);
@@ -78,183 +78,183 @@ int RenderWorld::AddObject(const SceneObject::Parms *parms) {
     return handle;
 }
 
-void RenderWorld::UpdateObject(int handle, const SceneObject::Parms *parms) {
-    while (handle >= sceneObjects.Count()) {
-        sceneObjects.Append(nullptr);
+void RenderWorld::UpdateObject(int handle, const RenderObject::State *parms) {
+    while (handle >= renderObjects.Count()) {
+        renderObjects.Append(nullptr);
     }
 
-    SceneObject *sceneObject = sceneObjects[handle];
-    if (!sceneObject) {
-        sceneObject = new SceneObject;
-        sceneObjects[handle] = sceneObject;
+    RenderObject *renderObject = renderObjects[handle];
+    if (!renderObject) {
+        renderObject = new RenderObject;
+        renderObjects[handle] = renderObject;
 
-        sceneObject->index = handle;
-        sceneObject->Update(parms);
+        renderObject->index = handle;
+        renderObject->Update(parms);
 
-        // Add proxy in the DBVT for the sceneObjects
-        sceneObject->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
-        sceneObject->proxy->sceneObject = sceneObject;
-        sceneObject->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
-        sceneObject->proxy->id = entityDbvt.CreateProxy(sceneObject->proxy->aabb, MeterToUnit(0.5f), sceneObject->proxy);
+        // Add proxy in the DBVT for the renderObjects
+        renderObject->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
+        renderObject->proxy->renderObject = renderObject;
+        renderObject->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
+        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->aabb, MeterToUnit(0.5f), renderObject->proxy);
 
-        // If this entity is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
+        // If this object is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
         if (parms->mesh && !parms->joints) {
-            sceneObject->numMeshSurfProxies = parms->mesh->NumSurfaces();
-            sceneObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(parms->mesh->NumSurfaces() * sizeof(DbvtProxy));
+            renderObject->numMeshSurfProxies = parms->mesh->NumSurfaces();
+            renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(parms->mesh->NumSurfaces() * sizeof(DbvtProxy));
 
             for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
                 const MeshSurf *meshSurf = parms->mesh->GetSurface(surfaceIndex);
 
-                DbvtProxy *meshSurfProxy = &sceneObject->meshSurfProxies[surfaceIndex];
-                meshSurfProxy->sceneObject = sceneObject;
+                DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
+                meshSurfProxy->renderObject = renderObject;
                 meshSurfProxy->mesh = parms->mesh;
                 meshSurfProxy->meshSurfIndex = surfaceIndex;
                 meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                meshSurfProxy->id = staticMeshDbvt.CreateProxy(sceneObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneObject->meshSurfProxies[surfaceIndex]);
+                meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
             }
         }
     } else {
-        bool originMatch    = (parms->origin == sceneObject->parms.origin);
-        bool axisMatch      = (parms->axis == sceneObject->parms.axis);
-        bool scaleMatch     = (parms->scale == sceneObject->parms.scale);
-        bool aabbMatch      = (parms->aabb == sceneObject->parms.aabb);
-        bool meshMatch      = (parms->mesh == sceneObject->parms.mesh);
+        bool originMatch    = (parms->origin == renderObject->state.origin);
+        bool axisMatch      = (parms->axis == renderObject->state.axis);
+        bool scaleMatch     = (parms->scale == renderObject->state.scale);
+        bool aabbMatch      = (parms->aabb == renderObject->state.aabb);
+        bool meshMatch      = (parms->mesh == renderObject->state.mesh);
         bool proxyMoved     = !originMatch || !axisMatch || !scaleMatch || !aabbMatch;
 
         if (proxyMoved || !meshMatch) {
             if (proxyMoved) {
-                sceneObject->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
-                entityDbvt.MoveProxy(sceneObject->proxy->id, sceneObject->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneObject->parms.origin);
+                renderObject->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
+                objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->aabb, MeterToUnit(0.5f), parms->origin - renderObject->state.origin);
             }
 
-            // If this entity is a static mesh
-            if (sceneObject->parms.mesh && !sceneObject->parms.joints) {
+            // If this object is a static mesh
+            if (renderObject->state.mesh && !renderObject->state.joints) {
                 // mesh surface count changed so we recreate static proxy
-                if (parms->mesh->NumSurfaces() != sceneObject->numMeshSurfProxies) {
-                    Mem_Free(sceneObject->meshSurfProxies);
+                if (parms->mesh->NumSurfaces() != renderObject->numMeshSurfProxies) {
+                    Mem_Free(renderObject->meshSurfProxies);
 
-                    sceneObject->numMeshSurfProxies = parms->mesh->NumSurfaces();
-                    sceneObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(sceneObject->numMeshSurfProxies * sizeof(DbvtProxy));
+                    renderObject->numMeshSurfProxies = parms->mesh->NumSurfaces();
+                    renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(renderObject->numMeshSurfProxies * sizeof(DbvtProxy));
 
                     for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
                         const MeshSurf *meshSurf = parms->mesh->GetSurface(surfaceIndex);
 
-                        staticMeshDbvt.DestroyProxy(sceneObject->meshSurfProxies[surfaceIndex].id);
+                        staticMeshDbvt.DestroyProxy(renderObject->meshSurfProxies[surfaceIndex].id);
 
-                        DbvtProxy *meshSurfProxy = &sceneObject->meshSurfProxies[surfaceIndex];
-                        meshSurfProxy->sceneObject = sceneObject;
+                        DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
+                        meshSurfProxy->renderObject = renderObject;
                         meshSurfProxy->mesh = parms->mesh;
                         meshSurfProxy->meshSurfIndex = surfaceIndex;
                         meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                        meshSurfProxy->id = staticMeshDbvt.CreateProxy(sceneObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &sceneObject->meshSurfProxies[surfaceIndex]);
+                        meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
                     }
                 } else {
                     for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
-                        sceneObject->meshSurfProxies[surfaceIndex].aabb.SetFromTransformedAABB(parms->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                        staticMeshDbvt.MoveProxy(sceneObject->meshSurfProxies[surfaceIndex].id, sceneObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), parms->origin - sceneObject->parms.origin);
+                        renderObject->meshSurfProxies[surfaceIndex].aabb.SetFromTransformedAABB(parms->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
+                        staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), parms->origin - renderObject->state.origin);
                     }
                 }
             }
         }
 
-        sceneObject->Update(parms);
+        renderObject->Update(parms);
     }
 }
 
 void RenderWorld::RemoveObject(int handle) {
-    if (handle < 0 || handle >= sceneObjects.Count()) {
-        BE_WARNLOG(L"RenderWorld::RemoveObject: handle %i > %i\n", handle, sceneObjects.Count() - 1);
+    if (handle < 0 || handle >= renderObjects.Count()) {
+        BE_WARNLOG(L"RenderWorld::RemoveObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
         return;
     }
 
-    SceneObject *sceneObject = sceneObjects[handle];
-    if (!sceneObject) {
+    RenderObject *renderObject = renderObjects[handle];
+    if (!renderObject) {
         BE_WARNLOG(L"RenderWorld::RemoveObject: handle %i is nullptr\n", handle);
         return;
     }
 
-    entityDbvt.DestroyProxy(sceneObject->proxy->id);
-    for (int i = 0; i < sceneObject->numMeshSurfProxies; i++) {
-        staticMeshDbvt.DestroyProxy(sceneObject->meshSurfProxies[i].id);
+    objectDbvt.DestroyProxy(renderObject->proxy->id);
+    for (int i = 0; i < renderObject->numMeshSurfProxies; i++) {
+        staticMeshDbvt.DestroyProxy(renderObject->meshSurfProxies[i].id);
     }
 
-    delete sceneObjects[handle];
-    sceneObjects[handle] = nullptr;
+    delete renderObjects[handle];
+    renderObjects[handle] = nullptr;
 }
 
-const SceneLight *RenderWorld::GetLight(int handle) const {
-    if (handle < 0 || handle >= sceneLights.Count()) {
-        BE_WARNLOG(L"RenderWorld::GetLight: handle %i > %i\n", handle, sceneLights.Count() - 1);
+const RenderLight *RenderWorld::GetLight(int handle) const {
+    if (handle < 0 || handle >= renderLights.Count()) {
+        BE_WARNLOG(L"RenderWorld::GetLight: handle %i > %i\n", handle, renderLights.Count() - 1);
         return nullptr;
     }
 
-    SceneLight *sceneLight = sceneLights[handle];
-    if (!sceneLight) {
+    RenderLight *renderLight = renderLights[handle];
+    if (!renderLight) {
         BE_WARNLOG(L"RenderWorld::GetLight: handle %i is nullptr\n", handle);
         return nullptr;
     }
 
-    return sceneLight;
+    return renderLight;
 }
 
-int RenderWorld::AddLight(const SceneLight::Parms *parms) {
-    int handle = sceneLights.FindNull();
+int RenderWorld::AddLight(const RenderLight::State *state) {
+    int handle = renderLights.FindNull();
     if (handle == -1) {
-        handle = sceneLights.Append(nullptr);
+        handle = renderLights.Append(nullptr);
     }
 
-    UpdateLight(handle, parms);
+    UpdateLight(handle, state);
 
     return handle;
 }
 
-void RenderWorld::UpdateLight(int handle, const SceneLight::Parms *parms) {
-    while (handle >= sceneLights.Count()) {
-        sceneLights.Append(nullptr);
+void RenderWorld::UpdateLight(int handle, const RenderLight::State *state) {
+    while (handle >= renderLights.Count()) {
+        renderLights.Append(nullptr);
     }
 
-    SceneLight *sceneLight = sceneLights[handle];
-    if (!sceneLight) {
-        sceneLight = new SceneLight;
-        sceneLights[handle] = sceneLight;
+    RenderLight *renderLight = renderLights[handle];
+    if (!renderLight) {
+        renderLight = new RenderLight;
+        renderLights[handle] = renderLight;
 
-        sceneLight->index = handle;
-        sceneLight->Update(parms);
+        renderLight->index = handle;
+        renderLight->Update(state);
 
-        sceneLight->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
-        sceneLight->proxy->sceneLight = sceneLight;
-        sceneLight->proxy->aabb = sceneLight->GetAABB();
-        sceneLight->proxy->id = lightDbvt.CreateProxy(sceneLight->proxy->aabb, MeterToUnit(0.0f), sceneLight->proxy);
+        renderLight->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
+        renderLight->proxy->renderLight = renderLight;
+        renderLight->proxy->aabb = renderLight->GetAABB();
+        renderLight->proxy->id = lightDbvt.CreateProxy(renderLight->proxy->aabb, MeterToUnit(0.0f), renderLight->proxy);
     } else {
-        bool originMatch    = (parms->origin == sceneLight->parms.origin);
-        bool axisMatch      = (parms->axis == sceneLight->parms.axis);
-        bool valueMatch     = (parms->value == sceneLight->parms.value);
+        bool originMatch    = (state->origin == renderLight->state.origin);
+        bool axisMatch      = (state->axis == renderLight->state.axis);
+        bool valueMatch     = (state->value == renderLight->state.value);
 
         if (!originMatch || !axisMatch || !valueMatch) {
-            sceneLight->proxy->aabb = sceneLight->proxy->sceneLight->GetAABB();
-            lightDbvt.MoveProxy(sceneLight->proxy->id, sceneLight->proxy->aabb, MeterToUnit(0.5f), parms->origin - sceneLight->parms.origin);
+            renderLight->proxy->aabb = renderLight->proxy->renderLight->GetAABB();
+            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->aabb, MeterToUnit(0.5f), state->origin - renderLight->state.origin);
         }
 
-        sceneLight->Update(parms);
+        renderLight->Update(state);
     }
 }
 
 void RenderWorld::RemoveLight(int handle) {
-    if (handle < 0 || handle >= sceneLights.Count()) {
-        BE_WARNLOG(L"RenderWorld::RemoveLight: handle %i > %i\n", handle, sceneLights.Count() - 1);
+    if (handle < 0 || handle >= renderLights.Count()) {
+        BE_WARNLOG(L"RenderWorld::RemoveLight: handle %i > %i\n", handle, renderLights.Count() - 1);
         return;
     }
 
-    SceneLight *sceneLight = sceneLights[handle];
-    if (!sceneLight) {
+    RenderLight *renderLight = renderLights[handle];
+    if (!renderLight) {
         BE_WARNLOG(L"RenderWorld::RemoveLight: handle %i is nullptr\n", handle);
         return;
     }
 
-    lightDbvt.DestroyProxy(sceneLight->proxy->id);
+    lightDbvt.DestroyProxy(renderLight->proxy->id);
 
-    delete sceneLights[handle];
-    sceneLights[handle] = nullptr;
+    delete renderLights[handle];
+    renderLights[handle] = nullptr;
 }
 
 void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
@@ -265,7 +265,7 @@ void RenderWorld::FinishMapLoading() {
 //#ifndef _DEBUG
 //    int startTime = PlatformTime::Milliseconds();
 //
-//    entityDbvt.RebuildBottomUp();
+//    objectDbvt.RebuildBottomUp();
 //    staticMeshDbvt.RebuildBottomUp();
 //    lightDbvt.RebuildBottomUp();
 //
@@ -274,23 +274,23 @@ void RenderWorld::FinishMapLoading() {
 //#endif
 }
 
-void RenderWorld::RenderScene(const SceneView *view) {
-    if (view->parms.renderRect.w <= 0.0f || view->parms.renderRect.h <= 0.0f) {
+void RenderWorld::RenderScene(const RenderView *view) {
+    if (view->state.renderRect.w <= 0.0f || view->state.renderRect.h <= 0.0f) {
         return;
     }
 
-    if (view->parms.layerMask == 0) {
+    if (view->state.layerMask == 0) {
         return;
     }
 
-    // Set current render view
+    // Create current visible view in frame data
     currentView = (VisibleView *)frameData.ClearedAlloc(sizeof(*currentView));
     currentView->def = view;
     currentView->maxDrawSurfs = MaxViewDrawSurfs;
     currentView->numDrawSurfs = 0;
     currentView->drawSurfs = (DrawSurf **)frameData.Alloc(currentView->maxDrawSurfs * sizeof(DrawSurf *));
 
-    RenderView(currentView);
+    RenderCamera(currentView);
 }
 
 void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
@@ -301,48 +301,48 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     viewCount++;
 
     // GUI view def
-    SceneView::Parms viewParms;
-    viewParms.renderRect    = Rect(0, 0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight());
-    viewParms.time          = PlatformTime::Milliseconds();
-    viewParms.orthogonal    = true;
-    viewParms.zNear         = 0.0f;
-    viewParms.zFar          = 1.0f;
-    viewParms.sizeX         = renderSystem.currentContext->GetDeviceWidth() * 0.5f;
-    viewParms.sizeY         = renderSystem.currentContext->GetDeviceHeight() * 0.5f;
-    viewParms.axis          = Mat3::identity;
-    viewParms.origin        = Vec3::origin;
+    RenderView::State renderViewDef;
+    renderViewDef.renderRect    = Rect(0, 0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight());
+    renderViewDef.time          = PlatformTime::Milliseconds();
+    renderViewDef.orthogonal    = true;
+    renderViewDef.zNear         = 0.0f;
+    renderViewDef.zFar          = 1.0f;
+    renderViewDef.sizeX         = renderSystem.currentContext->GetDeviceWidth() * 0.5f;
+    renderViewDef.sizeY         = renderSystem.currentContext->GetDeviceHeight() * 0.5f;
+    renderViewDef.axis          = Mat3::identity;
+    renderViewDef.origin        = Vec3::origin;
 
-    static SceneView sceneView;
-    new (&sceneView) SceneView();
-    sceneView.Update(&viewParms);
+    static RenderView renderView;
+    new (&renderView) RenderView();
+    renderView.Update(&renderViewDef);
 
-    // GUI entity def
-    SceneObject::Parms objectParms;
+    // GUI object def
+    RenderObject::State objectParms;
     memset(&objectParms, 0, sizeof(objectParms));
-    objectParms.scale       = Vec3::one;
-    objectParms.axis        = Mat3::identity;
-    objectParms.materialParms[SceneObject::RedParm] = 1.0f;
-    objectParms.materialParms[SceneObject::GreenParm] = 1.0f;
-    objectParms.materialParms[SceneObject::BlueParm] = 1.0f;
-    objectParms.materialParms[SceneObject::AlphaParm] = 1.0f;
-    objectParms.materialParms[SceneObject::TimeScaleParm] = 1.0f;
+    objectParms.scale = Vec3::one;
+    objectParms.axis = Mat3::identity;
+    objectParms.materialParms[RenderObject::RedParm] = 1.0f;
+    objectParms.materialParms[RenderObject::GreenParm] = 1.0f;
+    objectParms.materialParms[RenderObject::BlueParm] = 1.0f;
+    objectParms.materialParms[RenderObject::AlphaParm] = 1.0f;
+    objectParms.materialParms[RenderObject::TimeScaleParm] = 1.0f;
     
-    static SceneObject sceneObject;
-    new (&sceneObject) SceneObject();
-    sceneObject.Update(&objectParms);
+    static RenderObject renderObject;
+    new (&renderObject) RenderObject();
+    renderObject.Update(&objectParms);
 
     // GUI view
     VisibleView *guiView    = (VisibleView *)frameData.ClearedAlloc(sizeof(*guiView));
-    guiView->def            = &sceneView;
+    guiView->def            = &renderView;
     guiView->is2D           = true;
     guiView->maxDrawSurfs   = guiMesh.NumSurfaces();
     guiView->drawSurfs      = (DrawSurf **)frameData.Alloc(guiView->maxDrawSurfs * sizeof(DrawSurf *));
 
-    // GUI view entity
+    // GUI visible object
     Mat4 projMatrix;
     projMatrix.SetOrtho(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0);
 
-    VisibleObject *visibleObject = RegisterVisibleObject(guiView, &sceneObject);
+    VisibleObject *visibleObject = RegisterVisibleObject(guiView, &renderObject);
     visibleObject->modelViewMatrix.SetIdentity();
     visibleObject->modelViewMatrix.Scale(renderSystem.currentContext->GetUpscaleFactorX(), renderSystem.currentContext->GetUpscaleFactorY(), 1.0f);
     visibleObject->modelViewProjMatrix = projMatrix * visibleObject->modelViewMatrix;
@@ -1053,26 +1053,26 @@ void RenderWorld::DebugText(const char *text, const Vec3 &origin, const Mat3 &vi
     RB_AddDebugText(text, origin, viewAxis, scale, lineWidth, debugLineColor, align, lifeTime, depthTest);
 }
 
-void RenderWorld::DebugJoints(const SceneObject *ent, bool showJointsNames, const Mat3 &viewAxis) {
-    const Joint *joint = ent->parms.mesh->GetJoints();
-    const Mat3x4 *jointMat = ent->parms.joints;
+void RenderWorld::DebugJoints(const RenderObject *renderObject, bool showJointsNames, const Mat3 &viewAxis) {
+    const Joint *joint = renderObject->state.mesh->GetJoints();
+    const Mat3x4 *jointMat = renderObject->state.joints;
 
-    for (int i = 0; i < ent->parms.numJoints; i++, joint++, jointMat++) {
-        Vec3 pos = ent->parms.origin + ent->parms.axis * (ent->parms.scale * jointMat->ToTranslationVec3());
+    for (int i = 0; i < renderObject->state.numJoints; i++, joint++, jointMat++) {
+        Vec3 pos = renderObject->state.origin + renderObject->state.axis * (renderObject->state.scale * jointMat->ToTranslationVec3());
         Mat3 mat = jointMat->ToMat3();
 
         if (joint->parent) {
-            int parentNum = (int)(joint->parent - ent->parms.mesh->GetJoints());
+            int parentNum = (int)(joint->parent - renderObject->state.mesh->GetJoints());
             SetDebugColor(Color4::white, Color4::zero);
-            DebugLine(pos, ent->parms.origin + ent->parms.axis * (ent->parms.scale * ent->parms.joints[parentNum].ToTranslationVec3()), 1);
+            DebugLine(pos, renderObject->state.origin + renderObject->state.axis * (renderObject->state.scale * renderObject->state.joints[parentNum].ToTranslationVec3()), 1);
         }
 
         SetDebugColor(Color4::red, Color4::zero);
-        DebugLine(pos, pos + ent->parms.axis * mat[0] * CentiToUnit(1), 1);
+        DebugLine(pos, pos + renderObject->state.axis * mat[0] * CentiToUnit(1), 1);
         SetDebugColor(Color4::green, Color4::zero);
-        DebugLine(pos, pos + ent->parms.axis * mat[1] * CentiToUnit(1), 1);
+        DebugLine(pos, pos + renderObject->state.axis * mat[1] * CentiToUnit(1), 1);
         SetDebugColor(Color4::blue, Color4::zero);
-        DebugLine(pos, pos + ent->parms.axis * mat[2] * CentiToUnit(1), 1);
+        DebugLine(pos, pos + renderObject->state.axis * mat[2] * CentiToUnit(1), 1);
 
         if (showJointsNames) {
             SetDebugColor(Color4::white, Color4::zero);

@@ -26,6 +26,7 @@ Mesh *          MeshManager::defaultSphereMesh;
 Mesh *          MeshManager::defaultGeoSphereMesh;
 Mesh *          MeshManager::defaultCylinderMesh;
 Mesh *          MeshManager::defaultCapsuleMesh;
+
 MeshManager     meshManager;
 
 void MeshManager::Init() {
@@ -35,6 +36,10 @@ void MeshManager::Init() {
     meshHashMap.Init(1024, 64, 64);
     instantiatedMeshList.Resize(64, 64);
 
+    CreateEngineMeshes();
+}
+
+void MeshManager::CreateEngineMeshes() {
     // Create default (box shape) mesh
     defaultMesh = AllocMesh("_defaultMesh");
     defaultMesh->permanence = true;

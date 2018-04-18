@@ -35,31 +35,31 @@ enum RenderCommand {
 };
 
 struct RenderCommandBuffer {
-    byte                data[RenderCommandBufferSize];
-    int                 used;
+    byte            data[RenderCommandBufferSize];
+    int             used;
 };
 
 struct BeginContextRenderCommand {
-    int                 commandId;
-    RenderContext *     renderContext;
+    int             commandId;
+    RenderContext * renderContext;
 };
 
 struct DrawViewRenderCommand {
-    int                 commandId;
-    VisibleView         view;
+    int             commandId;
+    VisibleView     view;
 };
 
 struct ScreenShotRenderCommand {
-    int                 commandId;
-    int                 x;
-    int                 y;
-    int                 width;
-    int                 height;
-    char                filename[MaxAbsolutePath];
+    int             commandId;
+    int             x;
+    int             y;
+    int             width;
+    int             height;
+    char            filename[MaxAbsolutePath];
 };
 
 struct SwapBuffersRenderCommand {
-    int                 commandId;
+    int             commandId;
 };
 
 BE_NAMESPACE_END

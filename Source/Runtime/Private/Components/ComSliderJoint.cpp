@@ -245,12 +245,12 @@ void ComSliderJoint::SetMaxAngularMotorImpulse(float maxAngularMotorImpulse) {
     }
 }
 
-void ComSliderJoint::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+void ComSliderJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(sceneView.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
         Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 

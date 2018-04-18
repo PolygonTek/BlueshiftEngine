@@ -579,6 +579,7 @@ void GameWorld::Update(int elapsedTime) {
     time += scaledElapsedTime;
 
     if (gameStarted) {
+        // FixedUpdate() called in StepSimulation() internally
         physicsWorld->StepSimulation(scaledElapsedTime);
 
         UpdateEntities();
@@ -660,7 +661,7 @@ Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, const Arr
     return minEntity;
 }
 
-void GameWorld::RenderCamera() {
+void GameWorld::Render() {
     StaticArray<ComCamera *, 16> cameraArray;
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {

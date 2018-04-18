@@ -35,6 +35,7 @@ void BufferCacheManager::Init() {
     int icSize = r_dynamicIndexCacheSize.GetInteger();
     int ucSize = rhi.HWLimit().maxUniformBlockSize;
 
+    // Create dynamic buffer for use dynamic batching
     for (int i = 0; i < COUNT_OF(frameData); i++) {
         FrameDataBufferSet *bufferSet = &frameData[i];
         
@@ -66,7 +67,7 @@ void BufferCacheManager::Init() {
     
     BE_LOG(L"dynamic vertex buffer created (%hs x %i)\n", Str::FormatBytes(vcSize).c_str(), COUNT_OF(frameData));
     BE_LOG(L"dynamic index buffer created (%hs x %i)\n", Str::FormatBytes(icSize).c_str(), COUNT_OF(frameData));
-    BE_LOG(L"dynamic shader constant buffer created (%hs x %i)\n", Str::FormatBytes(ucSize).c_str(), COUNT_OF(frameData));
+    BE_LOG(L"dynamic uniform buffer created (%hs x %i)\n", Str::FormatBytes(ucSize).c_str(), COUNT_OF(frameData));
 
     if (frameData[0].texelBuffer) {
         BE_LOG(L"dynamic texel buffer created (%hs x %i)\n", Str::FormatBytes(TB_BYTES).c_str(), COUNT_OF(frameData));
@@ -241,7 +242,7 @@ void BufferCacheManager::BeginBackEnd() {
     unmappedNum = mappedNum;
 
     // update buffered texture
-    if (renderGlobal.skinningMethod == Mesh::VtfSkinning) {
+    if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
             // The update to the data is not guaranteed to affect the texture until next time it is bound to a texture image unit
             rhi.SelectTextureUnit(0);

@@ -184,14 +184,14 @@ void Skeleton::Write(const char *filename) {
         fp->Write(&bJoint, sizeof(bJoint));
     }
 
-    // --- bindpose ---
+    // --- bindposes ---
     for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
         fp->Write(&bindPoses[jointIndex].q, sizeof(bindPoses[jointIndex].q));
         fp->Write(&bindPoses[jointIndex].t, sizeof(bindPoses[jointIndex].t));
         fp->Write(&bindPoses[jointIndex].s, sizeof(bindPoses[jointIndex].s));
     }
 
-    // --- inverted bindpose ---
+    // --- inverted bindposes ---
     fp->Write(invBindPoseMats, numJoints * sizeof(invBindPoseMats[0]));
 
     fileSystem.CloseFile(fp);

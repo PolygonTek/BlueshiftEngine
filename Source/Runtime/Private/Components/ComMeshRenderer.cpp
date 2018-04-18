@@ -51,9 +51,9 @@ ComMeshRenderer::~ComMeshRenderer() {
 }
 
 void ComMeshRenderer::Purge(bool chainPurge) {
-    if (sceneObjectParms.mesh) {
-        meshManager.ReleaseMesh(sceneObjectParms.mesh);
-        sceneObjectParms.mesh = nullptr;
+    if (renderObjectDef.mesh) {
+        meshManager.ReleaseMesh(renderObjectDef.mesh);
+        renderObjectDef.mesh = nullptr;
     }
 
     if (referenceMesh) {
@@ -69,7 +69,7 @@ void ComMeshRenderer::Purge(bool chainPurge) {
 void ComMeshRenderer::Init() {
     ComRenderable::Init();
 
-    sceneObjectParms.aabb = referenceMesh->GetAABB();
+    renderObjectDef.aabb = referenceMesh->GetAABB();
 
     // Mark as initialized
     SetInitialized(true);
@@ -83,9 +83,9 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     }
 
     // Release the previously used instantiated mesh
-    if (sceneObjectParms.mesh) {
-        meshManager.ReleaseMesh(sceneObjectParms.mesh);
-        sceneObjectParms.mesh = nullptr;
+    if (renderObjectDef.mesh) {
+        meshManager.ReleaseMesh(renderObjectDef.mesh);
+        renderObjectDef.mesh = nullptr;
     }
 
     // Release the previously used reference mesh
@@ -95,8 +95,8 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     }
 
     // Release previously used materials
-    for (int i = 0; i < sceneObjectParms.materials.Count(); i++) {
-        materialManager.ReleaseMaterial(sceneObjectParms.materials[i]);
+    for (int i = 0; i < renderObjectDef.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(renderObjectDef.materials[i]);
     }
 
     // Get the new reference mesh
@@ -111,13 +111,13 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     int numMaterials = materialIndexArray.Count();
 
     // Get previously used number of materials
-    int oldCount = sceneObjectParms.materials.Count();
+    int oldCount = renderObjectDef.materials.Count();
 
     // Resize material slots
-    sceneObjectParms.materials.SetCount(numMaterials);
+    renderObjectDef.materials.SetCount(numMaterials);
 
-    for (int i = oldCount; i < sceneObjectParms.materials.Count(); i++) {
-        sceneObjectParms.materials[i] = materialManager.GetMaterial("_defaultMaterial");
+    for (int i = oldCount; i < renderObjectDef.materials.Count(); i++) {
+        renderObjectDef.materials[i] = materialManager.GetMaterial("_defaultMaterial");
     }
 
     // Need mesh asset to be reloaded in editor
@@ -148,39 +148,39 @@ void ComMeshRenderer::SetMeshGuid(const Guid &guid) {
 }
 
 int ComMeshRenderer::GetMaterialCount() const {
-    return sceneObjectParms.materials.Count();
+    return renderObjectDef.materials.Count();
 }
 
 void ComMeshRenderer::SetMaterialCount(int count) {
-    int oldCount = sceneObjectParms.materials.Count();
+    int oldCount = renderObjectDef.materials.Count();
 
-    sceneObjectParms.materials.SetCount(count);
+    renderObjectDef.materials.SetCount(count);
 
     if (count > oldCount) {
         for (int index = oldCount; index < count; index++) {
-            sceneObjectParms.materials[index] = materialManager.GetMaterial("_defaultMaterial");
+            renderObjectDef.materials[index] = materialManager.GetMaterial("_defaultMaterial");
         }
     }
 }
 
 Guid ComMeshRenderer::GetMaterialGuid(int index) const {
-    if (index >= 0 && index < sceneObjectParms.materials.Count()) {
-        const Str materialPath = sceneObjectParms.materials[index]->GetHashName();
+    if (index >= 0 && index < renderObjectDef.materials.Count()) {
+        const Str materialPath = renderObjectDef.materials[index]->GetHashName();
         return resourceGuidMapper.Get(materialPath);
     }
     return Guid();
 }
 
 void ComMeshRenderer::SetMaterialGuid(int index, const Guid &materialGuid) {
-    if (index >= 0 && index < sceneObjectParms.materials.Count()) {
+    if (index >= 0 && index < renderObjectDef.materials.Count()) {
         // Release the previously used material
-        if (sceneObjectParms.materials[index]) {
-            materialManager.ReleaseMaterial(sceneObjectParms.materials[index]);
+        if (renderObjectDef.materials[index]) {
+            materialManager.ReleaseMaterial(renderObjectDef.materials[index]);
         }
 
         // Get the new material
         const Str materialPath = resourceGuidMapper.Get(materialGuid);
-        sceneObjectParms.materials[index] = materialManager.GetMaterial(materialPath);
+        renderObjectDef.materials[index] = materialManager.GetMaterial(materialPath);
     }
 
     UpdateVisuals();
@@ -203,42 +203,54 @@ void ComMeshRenderer::SetMaterial(int index, const Material *material) {
 }
 
 bool ComMeshRenderer::IsUseLightProbe() const {
-    return sceneObjectParms.useLightProbe;
+    return !!(renderObjectDef.flags & RenderObject::UseLightProbeFlag);
 }
 
 void ComMeshRenderer::SetUseLightProbe(bool useLightProbe) {
-    sceneObjectParms.useLightProbe = useLightProbe;
+    if (useLightProbe) {
+        renderObjectDef.flags |= RenderObject::UseLightProbeFlag;
+    } else {
+        renderObjectDef.flags &= ~RenderObject::UseLightProbeFlag;
+    }
 
     UpdateVisuals();
 }
 
 bool ComMeshRenderer::IsCastShadows() const {
-    return sceneObjectParms.castShadows;
+    return !!(renderObjectDef.flags & RenderObject::CastShadowsFlag);
 }
 
 void ComMeshRenderer::SetCastShadows(bool castShadows) {
-    sceneObjectParms.castShadows = castShadows;
+    if (castShadows) {
+        renderObjectDef.flags |= RenderObject::CastShadowsFlag;
+    } else {
+        renderObjectDef.flags &= ~RenderObject::CastShadowsFlag;
+    }
     
     UpdateVisuals();
 }
 
 bool ComMeshRenderer::IsReceiveShadows() const {
-    return sceneObjectParms.receiveShadows;
+    return !!(renderObjectDef.flags & RenderObject::ReceiveShadowsFlag);
 }
 
 void ComMeshRenderer::SetReceiveShadows(bool receiveShadows) {
-    sceneObjectParms.receiveShadows = receiveShadows;
+    if (receiveShadows) {
+        renderObjectDef.flags |= RenderObject::ReceiveShadowsFlag;
+    } else {
+        renderObjectDef.flags &= ~RenderObject::ReceiveShadowsFlag;
+    }
 
     UpdateVisuals();
 }
 
-bool ComMeshRenderer::GetClosestVertex(const SceneView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const {
+bool ComMeshRenderer::GetClosestVertex(const RenderView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const {
     const float initialClosestDistance = closestDistance;
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    for (int surfaceIndex = 0; surfaceIndex < sceneObjectParms.mesh->NumSurfaces(); surfaceIndex++) {
-        const SubMesh *subMesh = sceneObjectParms.mesh->GetSurface(surfaceIndex)->subMesh;
+    for (int surfaceIndex = 0; surfaceIndex < renderObjectDef.mesh->NumSurfaces(); surfaceIndex++) {
+        const SubMesh *subMesh = renderObjectDef.mesh->GetSurface(surfaceIndex)->subMesh;
         const VertexGenericLit *v = subMesh->Verts();
 
         for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++, v++) {
@@ -250,7 +262,7 @@ bool ComMeshRenderer::GetClosestVertex(const SceneView *view, const Point &mouse
 
             bool isBackface;
             // Ignore backface vertices 
-            if (!view->parms.orthogonal && !worldNormal.IsZero() && worldNormal.Dot(view->parms.origin - worldPosition) < 0) {
+            if (!view->state.orthogonal && !worldNormal.IsZero() && worldNormal.Dot(view->state.origin - worldPosition) < 0) {
                 isBackface = true;
             } else {
                 isBackface = false;

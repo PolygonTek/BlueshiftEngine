@@ -764,28 +764,28 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion inclusion, Array<
 void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height) {
     char path[256];
 
-    SceneView view;
-    SceneView::Parms viewParms;
-    memset(&viewParms, 0, sizeof(viewParms));
-    viewParms.flags = SceneView::Flag::TexturedMode | SceneView::Flag::NoSubViews | SceneView::Flag::SkipPostProcess | SceneView::Flag::SkipDebugDraw;
-    viewParms.clearMethod = SceneView::SkyboxClear;
-    viewParms.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
-    viewParms.layerMask = BIT(0);
-    viewParms.renderRect.Set(0, 0, width, height);
-    viewParms.origin = origin;
-    viewParms.axis = axis;
+    RenderView renderView;
+    RenderView::State renderViewDef;
+    memset(&renderViewDef, 0, sizeof(renderViewDef));
+    renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews | RenderView::Flag::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
+    renderViewDef.clearMethod = RenderView::SkyboxClear;
+    renderViewDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
+    renderViewDef.layerMask = BIT(0);
+    renderViewDef.renderRect.Set(0, 0, width, height);
+    renderViewDef.origin = origin;
+    renderViewDef.axis = axis;
 
     Vec3 v;
     renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
-    viewParms.zFar = Max(8192.0f, origin.Distance(v));
-    viewParms.zNear = 4;
+    renderViewDef.zFar = Max(8192.0f, origin.Distance(v));
+    renderViewDef.zNear = 4;
 
-    SceneView::ComputeFov(fov, 1.25f, (float)width / height, &viewParms.fovX, &viewParms.fovY);
+    RenderView::ComputeFov(fov, 1.25f, (float)width / height, &renderViewDef.fovX, &renderViewDef.fovY);
 
-    view.Update(&viewParms);
+    renderView.Update(&renderViewDef);
 
     BeginFrame();
-    renderWorld->RenderScene(&view);
+    renderWorld->RenderScene(&renderView);
     Str::snPrintf(path, sizeof(path), "%s.png", filename);
     renderSystem.CmdScreenshot(0, 0, width, height, path);
     EndFrame();
@@ -794,18 +794,18 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
 }
 
 void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage) {    
-    SceneView view;
-    SceneView::Parms viewParms;
-    memset(&viewParms, 0, sizeof(viewParms));
-    viewParms.flags = SceneView::Flag::TexturedMode | SceneView::NoSubViews | SceneView::SkipPostProcess | SceneView::Flag::SkipDebugDraw;
-    viewParms.clearMethod = SceneView::SkyboxClear;
-    viewParms.layerMask = BIT(0);
-    viewParms.renderRect.Set(0, 0, size, size);
-    viewParms.fovX = 90;
-    viewParms.fovY = 90;
-    viewParms.zNear = 4.0f;
-    viewParms.zFar = 8192.0f;
-    viewParms.origin = origin;
+    RenderView renderView;
+    RenderView::State renderViewDef;
+    memset(&renderViewDef, 0, sizeof(renderViewDef));
+    renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::NoSubViews | RenderView::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
+    renderViewDef.clearMethod = RenderView::SkyboxClear;
+    renderViewDef.layerMask = BIT(0);
+    renderViewDef.renderRect.Set(0, 0, size, size);
+    renderViewDef.fovX = 90;
+    renderViewDef.fovY = 90;
+    renderViewDef.zNear = 4.0f;
+    renderViewDef.zFar = 8192.0f;
+    renderViewDef.origin = origin;
 
     Mat3 viewAxis[6];
     viewAxis[0] = Angles( 90,   0, 0).ToMat3();
@@ -830,12 +830,12 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
     Image faceImages[6];
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        viewParms.axis = viewAxis[faceIndex];
-        view.Update(&viewParms);
+        renderViewDef.axis = viewAxis[faceIndex];
+        renderView.Update(&renderViewDef);
 
         BeginFrame();
 
-        renderWorld->RenderScene(&view);
+        renderWorld->RenderScene(&renderView);
 
         EndFrame();
 
@@ -873,12 +873,12 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
 
         targetCubeRT->Begin(0, 0);
 
-        viewParms.axis = viewAxis[faceIndex];
-        view.Update(&viewParms);
+        renderViewDef.axis = viewAxis[faceIndex];
+        renderView.Update(&renderViewDef);
 
         BeginFrame();
         
-        renderWorld->RenderScene(&view);
+        renderWorld->RenderScene(&renderView);
         
         EndFrame();
 

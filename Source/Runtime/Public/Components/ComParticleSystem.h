@@ -15,6 +15,7 @@
 #pragma once
 
 #include "ComRenderable.h"
+#include "Render/ParticleSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -42,7 +43,7 @@ public:
     virtual void            Update() override;
 
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
+    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
 
     void                    UpdateSimulation(int currentTime);
 
@@ -78,7 +79,7 @@ protected:
     int                     currentTime;
     int                     stopTime;
 
-    SceneObject::Parms      sprite;
+    RenderObject::State     sprite;
     int                     spriteHandle;
     Mesh *                  spriteReferenceMesh;
 };

@@ -116,7 +116,7 @@ void Mesh::Instantiate(int meshType) {
             skinningJointCache->viewFrameCount = -1;
 
             // NOTE: VTF skinning 일 때만 모션블러 함
-            if (renderGlobal.skinningMethod == VtfSkinning) {
+            if (renderGlobal.skinningMethod == VertexTextureFetchSkinning) {
                 skinningJointCache->numJoints = numJoints;
                 if (r_motionBlur.GetInteger() == 2) {
                     skinningJointCache->numJoints *= 2;
@@ -323,7 +323,7 @@ bool Mesh::IsCompatibleSkeleton(const Skeleton *skeleton) const {
 bool Mesh::CapableGPUJointSkinning(SkinningMethod skinningMethod, int numJoints) const {
     assert(numJoints > 0 && numJoints < 256);
 
-    if (skinningMethod == VtfSkinning) {
+    if (skinningMethod == VertexTextureFetchSkinning) {
         return true;
     } else if (skinningMethod == VertexShaderSkinning) {
         if (numJoints <= 74) {
@@ -363,7 +363,7 @@ void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *join
 
     simdProcessor->MultiplyJoints(skinningJointCache->skinningJoints + skinningJointCache->jointIndexOffsetCurr, jointMats, skeleton->GetInvBindPoseMats(), numJoints);
 
-    if (renderGlobal.skinningMethod == VtfSkinning) {
+    if (renderGlobal.skinningMethod == VertexTextureFetchSkinning) {
         bufferCacheManager.AllocTexel(skinningJointCache->numJoints * sizeof(Mat3x4), skinningJointCache->skinningJoints, &skinningJointCache->bufferCache);
     }
 

@@ -88,7 +88,7 @@ public:
                         /// Clears existing key-value pairs and transfer key-value pairs from other
     void                TransferKeyValues(Dict &other);
 
-                        // 존재하지 않는 key-value 들을 dict 로 부터 copy
+                        // 존재하지 않는 key-value 들을 dict 로부터 copy
     void                SetDefaults(const Dict *dict);
 
                         // these return default values of 0.0, 0 and false

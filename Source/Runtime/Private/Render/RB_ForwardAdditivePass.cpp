@@ -69,7 +69,7 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
                 backEnd.modelViewMatrix = surf->space->modelViewMatrix;
                 backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                bool depthHack = surf->space->def->parms.depthHack;
+                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -108,9 +108,9 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
 
 void RB_ForwardAdditivePass(VisibleLight *visibleLights) {
     for (VisibleLight *visibleLight = visibleLights; visibleLight; visibleLight = visibleLight->next) {
-        const SceneLight *light = visibleLight->def;
+        const RenderLight *light = visibleLight->def;
 
-        if (light->parms.isPrimaryLight) {
+        if (light->state.flags & RenderLight::PrimaryLightFlag) {
             continue;
         }
 
@@ -140,7 +140,7 @@ void RB_ForwardAdditivePass(VisibleLight *visibleLights) {
         RB_SetupLight(visibleLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if (visibleLight->def->parms.castShadows && !(backEnd.view->def->parms.flags & SceneView::NoShadows)) {
+            if ((visibleLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.view->def->state.flags & RenderView::NoShadows)) {
                 RB_ShadowPass(visibleLight);
             }
         }

@@ -24,10 +24,10 @@ public:
         SkipSelection       = BIT(2)
     };
 
-    uint64_t                sortKey;
+    uint64_t                sortKey;            ///< SS00DDDDOOOOMMMM
     uint32_t                flags;
-    const VisibleObject *   space;              ///< entity of this surface
-    const Material *        material;           ///< material of this surface
+    const VisibleObject *   space;              ///< Visible object pointer of this surface
+    const Material *        material;           ///< Material pointer of this surface
     const float *           materialRegisters;
     SubMesh *               subMesh;
 };

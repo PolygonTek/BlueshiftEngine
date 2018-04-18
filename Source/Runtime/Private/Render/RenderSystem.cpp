@@ -35,7 +35,7 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
     rhi.GetGammaRamp(savedGammaRamp);
 
     if ((r_fastSkinning.GetInteger() == 2 || r_fastSkinning.GetInteger() == 3) && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
-        renderGlobal.skinningMethod = Mesh::VtfSkinning;
+        renderGlobal.skinningMethod = Mesh::VertexTextureFetchSkinning;
     } else if (r_fastSkinning.GetInteger() == 1) {
         renderGlobal.skinningMethod = Mesh::VertexShaderSkinning;
     } else {
@@ -73,9 +73,9 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
     animManager.Init();
 
     RB_Init();
-    
+
     frameData.Init();
-    
+
     primaryWorld = nullptr;
 
     currentContext = nullptr;
@@ -154,7 +154,6 @@ RenderContext *RenderSystem::AllocRenderContext(bool isMainContext) {
     if (isMainContext) {
         mainContext = rc;
     }
-
     return rc;
 }
 

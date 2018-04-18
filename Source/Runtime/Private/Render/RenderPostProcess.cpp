@@ -1051,7 +1051,7 @@ void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture,
     shader->SetTexture("downscaledDepthMap", downscaledDepthTexture);
     shader->SetTexture("randomDir4x4Map", textureManager.randomDir4x4Texture);
     shader->SetConstantArray3f("randomKernel", 8, ssaoRandomKernel);
-    shader->SetConstant2f("screenSize", Vec2(view->def->parms.renderRect.w, view->def->parms.renderRect.h));
+    shader->SetConstant2f("screenSize", Vec2(view->def->state.renderRect.w, view->def->state.renderRect.h));
     shader->SetConstant2f("screenTanHalfFov", Vec2(view->def->frustum.GetLeft() / view->def->frustum.GetFarDistance(), view->def->frustum.GetUp() / view->def->frustum.GetFarDistance()));
     shader->SetConstant4f("projComp1", Vec4(view->def->projMatrix[0][0], view->def->projMatrix[1][1], view->def->projMatrix[0][2], view->def->projMatrix[1][2]));
     shader->SetConstant4f("projComp2", Vec4(view->def->projMatrix[2][2], view->def->projMatrix[2][3], 0.0f, 0.0f));

@@ -93,12 +93,12 @@ void ComReflectionProbe::Init() {
     sphere.origin = transform->GetOrigin();
     sphere.scale = Vec3(1, 1, 1);
     sphere.axis = Mat3::identity;
-    sphere.materialParms[SceneObject::RedParm] = 1.0f;
-    sphere.materialParms[SceneObject::GreenParm] = 1.0f;
-    sphere.materialParms[SceneObject::BlueParm] = 1.0f;
-    sphere.materialParms[SceneObject::AlphaParm] = 1.0f;
-    sphere.materialParms[SceneObject::TimeOffsetParm] = 0.0f;
-    sphere.materialParms[SceneObject::TimeScaleParm] = 1.0f;
+    sphere.materialParms[RenderObject::RedParm] = 1.0f;
+    sphere.materialParms[RenderObject::GreenParm] = 1.0f;
+    sphere.materialParms[RenderObject::BlueParm] = 1.0f;
+    sphere.materialParms[RenderObject::AlphaParm] = 1.0f;
+    sphere.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
+    sphere.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComReflectionProbe::TransformUpdated, SignalObject::Unique);
 
@@ -129,7 +129,7 @@ bool ComReflectionProbe::RayIntersection(const Vec3 &start, const Vec3 &dir, boo
     return false;
 }
 
-void ComReflectionProbe::DrawGizmos(const SceneView::Parms &viewParms, bool selected) {
+void ComReflectionProbe::DrawGizmos(const RenderView::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {

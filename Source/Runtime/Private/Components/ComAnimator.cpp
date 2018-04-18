@@ -62,10 +62,10 @@ void ComAnimator::Init() {
     const Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
     bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
 
-    // Set SceneObject parameters
-    sceneObjectParms.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
-    sceneObjectParms.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
-    sceneObjectParms.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
+    // Set RenderObject parameters
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
+    renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
+    renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
 
     // Mark as initialized
     SetInitialized(true);
@@ -147,11 +147,11 @@ void ComAnimator::UpdateAnimation(int currentTime) {
 
     // Modify jointMats for IK here !
 
-    sceneObjectParms.joints = jointMats;
+    renderObjectDef.joints = jointMats;
 
     // Get AABB from animator
     animator.ComputeAABB(currentTime);
-    animator.GetAABB(sceneObjectParms.aabb);
+    animator.GetAABB(renderObjectDef.aabb);
 
     ComRenderable::UpdateVisuals();
 }
@@ -167,18 +167,18 @@ void ComAnimator::MeshUpdated() {
     if (isCompatibleSkeleton) {
         animator.ComputeAnimAABBs(referenceMesh);
 
-        sceneObjectParms.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
-        sceneObjectParms.skeleton = skeleton;
-        sceneObjectParms.numJoints = skeleton->NumJoints();
+        renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
+        renderObjectDef.skeleton = skeleton;
+        renderObjectDef.numJoints = skeleton->NumJoints();
     } else {
-        sceneObjectParms.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-        sceneObjectParms.skeleton = nullptr;
-        sceneObjectParms.numJoints = 0;
+        renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+        renderObjectDef.skeleton = nullptr;
+        renderObjectDef.numJoints = 0;
     }
 
     // temp code
-    renderWorld->RemoveObject(sceneObjectHandle);
-    sceneObjectHandle = -1;
+    renderWorld->RemoveObject(renderObjectHandle);
+    renderObjectHandle = -1;
     // temp code
     UpdateVisuals();
 }

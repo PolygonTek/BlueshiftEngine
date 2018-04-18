@@ -378,7 +378,7 @@ public:
 
     static Shader *         originalShaders[MaxPredefinedOriginalShaders];
 
-    static Shader *         drawArrayTextureShader;    
+    static Shader *         drawArrayTextureShader;
     static Shader *         simpleShader;
     static Shader *         selectionIdShader;
     static Shader *         depthShader;
@@ -411,7 +411,7 @@ public:
     static Shader *         kawaseBlurShader;
     static Shader *         radialBlurShader;
     static Shader *         aoBlurShader;
-    static Shader *         postColorTransformShader;	
+    static Shader *         postColorTransformShader;
     static Shader *         postGammaCorrectionShader;
     static Shader *         linearizeDepthShader;
     static Shader *         copyDownscaledCocToAlphaShader;
@@ -432,8 +432,6 @@ private:
     void                    InitGlobalDefines();
     void                    LoadEngineShaders();
     void                    InstantiateEngineShaders();
-    void                    InitShaders();
-    void                    FreeShaders();
 
     static void             Cmd_ListShaders(const CmdArgs &args);
     static void             Cmd_ReloadShader(const CmdArgs &args);

@@ -169,7 +169,7 @@ void SubMesh::CacheStaticDataToGpu() {
     // Fill in static vertex buffer
     if (!bufferCacheManager.IsCached(vertexCache)) {
         // skinning subMesh 라면 vertex weight 값을 vertex buffer 뒤에 write 한다
-        if (vertWeights) {//surfSpace->def->parms.joints && useGpuSkinning) {
+        if (vertWeights) {//surfSpace->def->state.joints && useGpuSkinning) {
             int sizeofVertWeight = VertexWeightSize();
             int size = sizeof(VertexGenericLit) * numVerts + sizeofVertWeight * numVerts;
             

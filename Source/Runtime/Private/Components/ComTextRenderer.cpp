@@ -29,9 +29,9 @@ END_EVENTS
 void ComTextRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("text", "Text", Str, GetText, SetText, "Hello World", 
         "", PropertyInfo::EditorFlag | PropertyInfo::MultiLinesFlag);
-    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", SceneObject::TextAnchor, GetAnchor, SetAnchor, 0, 
+    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor, GetAnchor, SetAnchor, 0, 
         "", PropertyInfo::EditorFlag).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
-    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", SceneObject::TextAlignment, GetAlignment, SetAlignment, 0, 
+    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextAlignment, GetAlignment, SetAlignment, 0, 
         "", PropertyInfo::EditorFlag).SetEnumString("Left; Center; Right");
     REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, 
         "", PropertyInfo::EditorFlag);
@@ -49,9 +49,9 @@ ComTextRenderer::~ComTextRenderer() {
 }
 
 void ComTextRenderer::Purge(bool chainPurge) {
-    if (sceneObjectParms.font) {
-        fontManager.ReleaseFont(sceneObjectParms.font);
-        sceneObjectParms.font = nullptr;
+    if (renderObjectDef.font) {
+        fontManager.ReleaseFont(renderObjectDef.font);
+        renderObjectDef.font = nullptr;
     }
 
     if (chainPurge) {
@@ -62,7 +62,7 @@ void ComTextRenderer::Purge(bool chainPurge) {
 void ComTextRenderer::Init() {
     ComRenderable::Init();
 
-    sceneObjectParms.textScale = 1.0f;
+    renderObjectDef.textScale = 1.0f;
 
     UpdateAABB();
 
@@ -73,11 +73,11 @@ void ComTextRenderer::Init() {
 }
 
 Str ComTextRenderer::GetText() const {
-    return Str(sceneObjectParms.text.c_str());
+    return Str(renderObjectDef.text.c_str());
 }
 
 void ComTextRenderer::SetText(const Str &text) {
-    sceneObjectParms.text = Str::ToWStr(text);
+    renderObjectDef.text = Str::ToWStr(text);
 
     if (IsInitialized()) {
         UpdateAABB();
@@ -95,12 +95,12 @@ void ComTextRenderer::SetTextCString(const char *text) {
     SetText(Str(text));
 }
 
-SceneObject::TextAnchor ComTextRenderer::GetAnchor() const {
-    return sceneObjectParms.textAnchor;
+RenderObject::TextAnchor ComTextRenderer::GetAnchor() const {
+    return renderObjectDef.textAnchor;
 }
 
-void ComTextRenderer::SetAnchor(SceneObject::TextAnchor anchor) {
-    sceneObjectParms.textAnchor = anchor;
+void ComTextRenderer::SetAnchor(RenderObject::TextAnchor anchor) {
+    renderObjectDef.textAnchor = anchor;
 
     if (IsInitialized()) {
         UpdateAABB();
@@ -108,12 +108,12 @@ void ComTextRenderer::SetAnchor(SceneObject::TextAnchor anchor) {
     }
 }
 
-SceneObject::TextAlignment ComTextRenderer::GetAlignment() const {
-    return sceneObjectParms.textAlignment;
+RenderObject::TextAlignment ComTextRenderer::GetAlignment() const {
+    return renderObjectDef.textAlignment;
 }
 
-void ComTextRenderer::SetAlignment(SceneObject::TextAlignment alignment) {
-    sceneObjectParms.textAlignment = alignment;
+void ComTextRenderer::SetAlignment(RenderObject::TextAlignment alignment) {
+    renderObjectDef.textAlignment = alignment;
     
     if (IsInitialized()) {
         UpdateAABB();
@@ -122,11 +122,11 @@ void ComTextRenderer::SetAlignment(SceneObject::TextAlignment alignment) {
 }
 
 float ComTextRenderer::GetLineSpacing() const {
-    return sceneObjectParms.lineSpacing;
+    return renderObjectDef.lineSpacing;
 }
 
 void ComTextRenderer::SetLineSpacing(float lineSpacing) {
-    sceneObjectParms.lineSpacing = lineSpacing;
+    renderObjectDef.lineSpacing = lineSpacing;
 
     if (IsInitialized()) {
         UpdateAABB();
@@ -135,8 +135,8 @@ void ComTextRenderer::SetLineSpacing(float lineSpacing) {
 }
 
 Guid ComTextRenderer::GetFontGuid() const {
-    if (sceneObjectParms.font) {
-        const Str fontPath = sceneObjectParms.font->GetHashName();
+    if (renderObjectDef.font) {
+        const Str fontPath = renderObjectDef.font->GetHashName();
         return resourceGuidMapper.Get(fontPath);
     }
     return Guid();
@@ -167,16 +167,16 @@ void ComTextRenderer::SetFontSize(int fontSize) {
 }
 
 void ComTextRenderer::UpdateAABB() {
-    sceneObjectParms.aabb = GetGameWorld()->GetRenderWorld()->GetTextMesh().Compute3DTextAABB(sceneObjectParms.font, sceneObjectParms.textAnchor, sceneObjectParms.lineSpacing, sceneObjectParms.textScale, sceneObjectParms.text);
+    renderObjectDef.aabb = GetGameWorld()->GetRenderWorld()->GetTextMesh().Compute3DTextAABB(renderObjectDef.font, renderObjectDef.textAnchor, renderObjectDef.lineSpacing, renderObjectDef.textScale, renderObjectDef.text);
 }
 
 void ComTextRenderer::ChangeFont(const Guid &fontGuid, int fontSize) {
-    if (sceneObjectParms.font) {
-        fontManager.ReleaseFont(sceneObjectParms.font);
+    if (renderObjectDef.font) {
+        fontManager.ReleaseFont(renderObjectDef.font);
     }
 
     const Str fontPath = resourceGuidMapper.Get(fontGuid);
-    sceneObjectParms.font = fontManager.GetFont(fontPath, fontSize);
+    renderObjectDef.font = fontManager.GetFont(fontPath, fontSize);
 }
 
 BE_NAMESPACE_END

@@ -33,8 +33,8 @@ class VisibleView;
 struct DbvtProxy {
     int32_t                     id;             // proxy id
     AABB                        aabb;           // bounding volume for this node
-    SceneObject *               sceneObject;
-    SceneLight *                sceneLight;
+    RenderObject *              renderObject;
+    RenderLight *               renderLight;
     //ReflectionProbe *         reflectionProbe;
     Mesh *                      mesh;           // static mesh
     int32_t                     meshSurfIndex;  // sub mesh index
@@ -49,16 +49,16 @@ public:
     ~RenderWorld();
 
     void                        ClearScene();
-    void                        RenderScene(const SceneView *view);
+    void                        RenderScene(const RenderView *view);
 
-    const SceneObject *         GetObject(int handle) const;
-    int                         AddObject(const SceneObject::Parms *parms);
-    void                        UpdateObject(int handle, const SceneObject::Parms *parms);
+    const RenderObject *        GetObject(int handle) const;
+    int                         AddObject(const RenderObject::State *state);
+    void                        UpdateObject(int handle, const RenderObject::State *state);
     void                        RemoveObject(int handle);
 
-    const SceneLight *          GetLight(int handle) const;
-    int                         AddLight(const SceneLight::Parms *parms);
-    void                        UpdateLight(int handle, const SceneLight::Parms *parms);
+    const RenderLight *          GetLight(int handle) const;
+    int                         AddLight(const RenderLight::State *state);
+    void                        UpdateLight(int handle, const RenderLight::State *state);
     void                        RemoveLight(int handle);
 
     void                        SetSkyboxMaterial(Material *skyboxMaterial);
@@ -99,11 +99,11 @@ public:
     void                        ClearDebugText(int time);
     void                        DebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis, float scale, float lineWidth = 1, const int align = 1, bool depthTest = false, int lifeTime = 0);
 
-    void                        DebugJoints(const SceneObject *ent, bool showJointsNames, const Mat3 &viewAxis);
+    void                        DebugJoints(const RenderObject *ent, bool showJointsNames, const Mat3 &viewAxis);
 
 private:
-    VisibleObject *             RegisterVisibleObject(VisibleView *view, SceneObject *sceneObject);
-    VisibleLight *              RegisterVisibleLight(VisibleView *view, SceneLight *sceneLight);
+    VisibleObject *             RegisterVisibleObject(VisibleView *view, RenderObject *renderObject);
+    VisibleLight *              RegisterVisibleLight(VisibleView *view, RenderLight *renderLight);
     void                        FindVisibleLightsAndObjects(VisibleView *view);
     void                        AddStaticMeshes(VisibleView *view);
     void                        AddSkinnedMeshes(VisibleView *view);
@@ -116,8 +116,8 @@ private:
     void                        AddDrawSurf(VisibleView *view, VisibleObject *entity, const Material *material, SubMesh *subMesh, int flags);
     void                        SortDrawSurfs(VisibleView *view);
 
-    void                        RenderView(VisibleView *view);
-    void                        RenderSubView(VisibleObject *visibleObject, const DrawSurf *drawSurf, const Material *material);
+    void                        RenderCamera(VisibleView *view);
+    void                        RenderSubCamera(VisibleObject *visibleObject, const DrawSurf *drawSurf, const Material *material);
 
     void                        EmitGuiFullScreen(GuiMesh &guiMesh);
 
@@ -136,15 +136,15 @@ private:
     ParticleMesh                particleMesh;       ///< particle mesh
     GuiMesh                     textMesh;           ///< 3D text mesh
 
-    Array<SceneObject *>        sceneObjects;       ///< Array of scene objects
-    Array<SceneLight *>         sceneLights;        ///< Array of scene lights
+    Array<RenderObject *>       renderObjects;      ///< Array of render objects
+    Array<RenderLight *>        renderLights;      ///< Array of render lights
     //Array<SceneReflectionProbe *>sceneReflectionProbes;
 
     //SceneReflectionProbe *      defaultReflectionProbe;
 
-    DynamicAABBTree             entityDbvt;         ///< Dynamic bounding volume tree for entities
+    DynamicAABBTree             objectDbvt;         ///< Dynamic bounding volume tree for render objects
+    DynamicAABBTree             lightDbvt;          ///< Dynamic bounding volume tree for render lights and reflection probes
     DynamicAABBTree             staticMeshDbvt;     ///< Dynamic bounding volume tree for static meshes
-    DynamicAABBTree             lightDbvt;          ///< Dynamic bounding volume tree for lights and reflection probes
 };
 
 BE_NAMESPACE_END

@@ -503,7 +503,7 @@ static void RB_DrawDebugTextWithDepthTest(bool depthTest) {
 
     const DebugText *text = rb_debugText;
     for (int i = 0; i < rb_numDebugText; i++, text++) {
-        //if (text->origin.DistanceSqr(backEnd.view->def->parms.origin) > MeterToUnit(100*100)) {
+        //if (text->origin.DistanceSqr(backEnd.view->def->state.origin) > MeterToUnit(100*100)) {
         //	continue;
         //}
 
@@ -585,7 +585,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                 backEnd.modelViewMatrix = surf->space->modelViewMatrix;
                 backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                depthhack = surf->space->def->parms.depthHack;
+                depthhack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
             
                 if (prevDepthHack != depthhack) {
                     if (depthhack) {
@@ -632,13 +632,13 @@ static void RB_DrawDebugLights(int mode) {
         shader->Bind();
         shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);
 
-        shader->SetConstant4f("color", Color4(Color3(&visibleLight->def->parms.materialParms[SceneObject::RedParm]), 0.25f));
+        shader->SetConstant4f("color", Color4(Color3(&visibleLight->def->state.materialParms[RenderObject::RedParm]), 0.25f));
         RB_DrawLightVolume(visibleLight->def);
 
         rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe | RHI::DF_LEqual);
         rhi.SetCullFace(RHI::NoCull);
 
-        shader->SetConstant4f("color", &visibleLight->def->parms.materialParms[SceneObject::RedParm]);
+        shader->SetConstant4f("color", &visibleLight->def->state.materialParms[RenderObject::RedParm]);
     
         RB_DrawLightVolume(visibleLight->def);
 
@@ -663,7 +663,7 @@ static void RB_DrawDebugLightScissorRects() {
 
         shader->Bind();
         shader->SetTexture("tex0", textureManager.whiteTexture);
-        shader->SetConstant3f("color", &visibleLight->def->parms.materialParms[SceneObject::RedParm]);
+        shader->SetConstant3f("color", &visibleLight->def->state.materialParms[RenderObject::RedParm]);
 
         Rect drawRect = visibleLight->scissorRect;
         drawRect.y = backEnd.ctx->GetRenderingHeight() - drawRect.Y2();

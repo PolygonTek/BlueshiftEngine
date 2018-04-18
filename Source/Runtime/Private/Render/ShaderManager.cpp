@@ -138,7 +138,11 @@ void ShaderManager::Init() {
 
     shaderHashMap.Init(1024, 128, 128);
 
-    InitShaders();
+    InitGlobalDefines();
+
+    LoadEngineShaders();
+
+    InstantiateEngineShaders();
 
     //defaultShader = AllocShader("_defaultShader", DefaultShaderGuid);
     //defaultShader->Create(va("{ }", DefaultShaderGuid));
@@ -159,14 +163,6 @@ void ShaderManager::Shutdown() {
     shaderHashMap.DeleteContents(true);
 
     globalHeaderList.Clear();
-}
-
-void ShaderManager::InitShaders() {
-    InitGlobalDefines();
-
-    LoadEngineShaders();
-
-    InstantiateEngineShaders();
 }
 
 void ShaderManager::InitGlobalDefines() {
@@ -194,7 +190,7 @@ void ShaderManager::InitGlobalDefines() {
         }
     }
     
-    if (renderGlobal.skinningMethod == Mesh::VtfSkinning) {
+    if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
         shaderManager.AddGlobalHeader("#define VTF_SKINNING\n");
     }
 

@@ -17,12 +17,12 @@
 /*
 -------------------------------------------------------------------------------
 
-    SceneLight
+    RenderLight
 
 -------------------------------------------------------------------------------
 */
 
-#include "Render/SceneObject.h"
+#include "Render/RenderObject.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -30,10 +30,10 @@ struct DbvtProxy;
 
 class VisibleLight;
 class Material;
-class SceneView;
+class RenderView;
 
-class SceneLight {
-    friend class SceneView;
+class RenderLight {
+    friend class RenderView;
     friend class RenderWorld;
 
 public:
@@ -43,12 +43,17 @@ public:
         DirectionalLight
     };
 
-    struct Parms {
+    enum Flag {
+        StaticFlag          = BIT(0),
+        TurnOnFlag          = BIT(1),
+        PrimaryLightFlag    = BIT(2),
+        CastShadowsFlag     = BIT(3)
+    };
+
+    struct State {
+        int                 flags;
         int                 layer;
         Type                type;
-        Material *          material;
-        float               materialParms[SceneObject::MaxMaterialParms];
-        float               intensity;
 
         Vec3                origin;
         Mat3                axis;
@@ -60,42 +65,42 @@ public:
                             // for SpotLight
         float               zNear;
 
+        float               intensity;
         float               fallOffExponent;
-        float               maxVisDist;
         float               shadowOffsetFactor;
         float               shadowOffsetUnits;
 
-        bool                turnOn;
-        bool                castShadows;
-        bool                isPrimaryLight;
-        bool                isStaticLight;
+        Material *          material;
+        float               materialParms[RenderObject::MaxMaterialParms];
+
+        float               maxVisDist;
     };
 
-    SceneLight();
-    ~SceneLight();
+    RenderLight();
+    ~RenderLight();
 
-    void                    Update(const Parms *parms);
+    void                    Update(const State *state);
 
                             /// Returns light type (Point, Spot, Directional)
-    Type                    GetType() const { return parms.type; }
+    Type                    GetType() const { return state.type; }
 
                             /// Returns light material
-    const Material *        GetMaterial() const { return parms.material; }
+    const Material *        GetMaterial() const { return state.material; }
 
                             /// Returns light origin
-    const Vec3 &            GetOrigin() const { return parms.origin; }
+    const Vec3 &            GetOrigin() const { return state.origin; }
 
                             // directional OBB 라이트의 extents
-    const Vec3 &            GetExtents() const { return parms.value; }
+    const Vec3 &            GetExtents() const { return state.value; }
 
                             // 라이트 타원체의 각 axis 당 반지름 - Point 라이트인 경우에만
-    const Vec3 &            GetRadius() const { return parms.value; }
+    const Vec3 &            GetRadius() const { return state.value; }
 
                             // axis 별 가장 큰 반지름 - Point 라이트인 경우에만
-    const float             GetMajorRadius() const { return BE1::Max3(parms.value.x, parms.value.y, parms.value.z); }
+    const float             GetMajorRadius() const { return BE1::Max3(state.value.x, state.value.y, state.value.z); }
 
                             // axis 별 반지름의 크기가 동일한가 - Point 라이트인 경우에만
-    bool                    IsRadiusUniform() const { return (parms.value.x == parms.value.y && parms.value.x == parms.value.z) ? true : false; }	
+    bool                    IsRadiusUniform() const { return (state.value.x == state.value.y && state.value.x == state.value.z) ? true : false; }
 
                             // frustum - Projected 라이트인 경우에만
     const Frustum &         GetFrustum() const { return frustum; }
@@ -128,10 +133,10 @@ public:
     bool                    CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const;
 
                             //
-    bool                    ComputeScreenClipRect(const SceneView *viewDef, Rect &clipRect) const;
+    bool                    ComputeScreenClipRect(const RenderView *viewDef, Rect &clipRect) const;
 
     int                     index;
-    Parms                   parms;
+    State                   state;
     bool                    firstUpdate;
     OBB                     obb;            // used for PointLight / DirectionalLight
     Frustum                 frustum;        // used for SpotLight

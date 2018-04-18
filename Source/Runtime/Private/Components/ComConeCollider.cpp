@@ -83,13 +83,13 @@ bool ComConeCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool b
     return false;
 }
 
-void ComConeCollider::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+void ComConeCollider::DrawGizmos(const RenderView::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
         ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
             Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;

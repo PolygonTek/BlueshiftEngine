@@ -489,12 +489,12 @@ const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait) const {
     return vec;
 }
 
-void Entity::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+void Entity::DrawGizmos(const RenderView::State &viewState, bool selected) {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component && component->IsActiveInHierarchy()) {
-            component->DrawGizmos(sceneView, selected);
+            component->DrawGizmos(viewState, selected);
         }
     }
 }

@@ -19,22 +19,27 @@
 
 BE_NAMESPACE_BEGIN
 
-SceneObject::SceneObject() {
-    memset(&parms, 0, sizeof(parms));
+RenderObject::RenderObject() {
+    memset(&state, 0, sizeof(state));
     index = 0;
-    firstUpdate = true;
+
     worldOBB.SetZero();
-    modelMatrix.SetIdentity();
+
+    worldMatrix.SetIdentity();
+
     motionBlurModelMatrix[0].SetIdentity();
     motionBlurModelMatrix[1].SetIdentity();
+
     viewCount = 0;
     visibleObject = nullptr;
     proxy = nullptr;
     meshSurfProxies = nullptr;
     numMeshSurfProxies = 0;
+
+    firstUpdate = true;
 }
 
-SceneObject::~SceneObject() {
+RenderObject::~RenderObject() {
     if (proxy) {
         Mem_Free(proxy);
     }
@@ -43,37 +48,39 @@ SceneObject::~SceneObject() {
     }
 }
 
-void SceneObject::Update(const Parms *entityParms) {
-    parms = *entityParms;
+void RenderObject::Update(const State *stateCopy) {
+    state = *stateCopy;
 
-    Clamp(parms.materialParms[RedParm], 0.0f, 1.0f);
-    Clamp(parms.materialParms[GreenParm], 0.0f, 1.0f);
-    Clamp(parms.materialParms[BlueParm], 0.0f, 1.0f);
-    Clamp(parms.materialParms[AlphaParm], 0.0f, 1.0f);
+    // Saturate object color RGBA in range [0, 1]
+    Clamp(state.materialParms[RedParm], 0.0f, 1.0f);
+    Clamp(state.materialParms[GreenParm], 0.0f, 1.0f);
+    Clamp(state.materialParms[BlueParm], 0.0f, 1.0f);
+    Clamp(state.materialParms[AlphaParm], 0.0f, 1.0f);
 
-    if (parms.joints || parms.mesh) {
-        worldOBB = OBB(GetAABB(), parms.origin, parms.axis);
+    if (state.joints || state.mesh) {
+        worldOBB = OBB(GetAABB(), state.origin, state.axis);
     }
 
-    modelMatrix.SetLinearTransform(parms.axis, parms.scale, parms.origin);
+    // Calculate world matrix
+    worldMatrix.SetLinearTransform(state.axis, state.scale, state.origin);
 
     if (firstUpdate) {
-        motionBlurModelMatrix[1] = modelMatrix;
+        motionBlurModelMatrix[1] = worldMatrix;
     } else {
         motionBlurModelMatrix[1] = motionBlurModelMatrix[0];
     }
-    motionBlurModelMatrix[0] = modelMatrix;
+    motionBlurModelMatrix[0] = worldMatrix;
 
     firstUpdate = false;
 }
 
-const AABB SceneObject::GetAABB() const {
-    if (parms.joints) {
-        return parms.aabb * parms.scale;
+const AABB RenderObject::GetAABB() const {
+    if (state.joints) {
+        return state.aabb * state.scale;
     }
 
-    assert(parms.mesh);
-    return parms.mesh->GetAABB() * parms.scale;
+    assert(state.mesh);
+    return state.mesh->GetAABB() * state.scale;
 }
 
 BE_NAMESPACE_END

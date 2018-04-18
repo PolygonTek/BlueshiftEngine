@@ -46,10 +46,10 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 continue;
             }
 
-            bool isDifferentEntity = surf->space != prevSpace ? true : false;
+            bool isDifferentObject = surf->space != prevSpace ? true : false;
             bool isDifferentMaterial = surf->material != prevMaterial ? true : false;
 
-            if (isDifferentMaterial || isDifferentEntity) {
+            if (isDifferentMaterial || isDifferentObject) {
                 if (prevMaterial) {
                     backEnd.rbsurf.Flush();
                 }
@@ -65,13 +65,13 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 prevMaterial = surf->material;
             }
 
-            if (isDifferentEntity) {
+            if (isDifferentObject) {
                 prevSpace = surf->space;
 
                 backEnd.modelViewMatrix = surf->space->modelViewMatrix;
                 backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                bool depthHack = surf->space->def->parms.depthHack;
+                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -105,7 +105,7 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         RB_SetupLight(backEnd.primaryLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if (backEnd.primaryLight->def->parms.castShadows && !(backEnd.view->def->parms.flags & SceneView::NoShadows)) {
+            if ((backEnd.primaryLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.view->def->state.flags & RenderView::NoShadows)) {
                 RB_ShadowPass(backEnd.primaryLight);
             }
         }

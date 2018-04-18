@@ -40,7 +40,7 @@ public:
     virtual void            Update() override;
 
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
+    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
 
     void                    ClearCache();
 

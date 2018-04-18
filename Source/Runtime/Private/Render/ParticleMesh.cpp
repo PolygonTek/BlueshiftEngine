@@ -160,7 +160,7 @@ void ParticleMesh::ComputeTextureCoordinates(const ParticleSystem::StandardModul
     }
 }
 
-void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const SceneObject *entity, const SceneView *view) {
+void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const RenderObject *renderObject, const RenderView *renderView) {
     Vec3 worldPos[Particle::MaxTrails + 1];
     Vec3 cameraDir[Particle::MaxTrails + 1];
     Vec3 tangentDir[Particle::MaxTrails + 1];
@@ -195,7 +195,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             currentSurf->numVerts += numVerts;
             currentSurf->numIndexes += numIndexes;
 
-            ComputeTextureCoordinates(stage.standardModule, MS2SEC(entity->parms.time) - entity->parms.stageStartDelay[stageIndex], s1, t1, s2, t2);
+            ComputeTextureCoordinates(stage.standardModule, MS2SEC(renderObject->state.time) - renderObject->state.stageStartDelay[stageIndex], s1, t1, s2, t2);
 
             float16_t hs1 = F16Converter::FromF32(s1);
             float16_t ht1 = F16Converter::FromF32(t1);
@@ -204,7 +204,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
             if (stage.standardModule.orientation != ParticleSystem::StandardModule::Aimed &&
                 stage.standardModule.orientation != ParticleSystem::StandardModule::AimedZ) {
-                localAxis = ComputeParticleAxis(stage.standardModule.orientation, entity->parms.axis, view->parms.axis);
+                localAxis = ComputeParticleAxis(stage.standardModule.orientation, renderObject->state.axis, renderView->state.axis);
             }
 
             // Cache vertices
@@ -232,7 +232,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
                     for (int pivotIndex = 0; pivotIndex < pivotCount; pivotIndex++) {
                         const Particle::Trail *trail = &particle->trails[pivotIndex];
 
-                        worldPos[pivotIndex] = entity->modelMatrix * trail->position;
+                        worldPos[pivotIndex] = renderObject->worldMatrix * trail->position;
                     }
 
                     // Compute cameraDir/tangentDir of all particle pivots including trails
@@ -240,13 +240,13 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
                         const Particle::Trail *trail = &particle->trails[pivotIndex];
 
                         if (pivotIndex == 0) {
-                            cameraDir[pivotIndex] = view->parms.origin - (worldPos[pivotIndex + 1] + worldPos[pivotIndex]) * 0.5f;
+                            cameraDir[pivotIndex] = renderView->state.origin - (worldPos[pivotIndex + 1] + worldPos[pivotIndex]) * 0.5f;
                             tangentDir[pivotIndex] = worldPos[pivotIndex + 1] - worldPos[pivotIndex];
                         } else if (pivotIndex == trailCount) {
-                            cameraDir[pivotIndex] = view->parms.origin - (worldPos[pivotIndex] + worldPos[pivotIndex - 1]) * 0.5f;
+                            cameraDir[pivotIndex] = renderView->state.origin - (worldPos[pivotIndex] + worldPos[pivotIndex - 1]) * 0.5f;
                             tangentDir[pivotIndex] = worldPos[pivotIndex] - worldPos[pivotIndex - 1];
                         } else {
-                            cameraDir[pivotIndex] = view->parms.origin - worldPos[pivotIndex];
+                            cameraDir[pivotIndex] = renderView->state.origin - worldPos[pivotIndex];
                             tangentDir[pivotIndex] = worldPos[pivotIndex + 1] - worldPos[pivotIndex - 1];
                         }
 
@@ -267,7 +267,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                         rtv.SetFromCross(cameraDir[quadIndex], tangentDir[quadIndex]);
                         rtv.Normalize();
-                        rtv = entity->parms.axis.TransposedMulVec(rtv);
+                        rtv = renderObject->state.axis.TransposedMulVec(rtv);
                         rtv *= particle->trails[0].size * 0.5f;
 
                         vertexPointer->xyz = trail[0].position - rtv;
@@ -284,7 +284,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                         rtv.SetFromCross(cameraDir[quadIndex + 1], tangentDir[quadIndex + 1]);
                         rtv.Normalize();
-                        rtv = entity->parms.axis.TransposedMulVec(rtv);
+                        rtv = renderObject->state.axis.TransposedMulVec(rtv);
                         rtv *= particle->trails[0].size * 0.5f;
 
                         vertexPointer->xyz = trail[1].position - rtv;

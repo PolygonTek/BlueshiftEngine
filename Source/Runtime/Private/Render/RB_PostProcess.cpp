@@ -68,29 +68,29 @@ void RB_PostProcess() {
     }
 
     if (r_sunShafts.GetBool() && backEnd.primaryLight) {
-        const SceneLight *sunLight = backEnd.primaryLight->def;
-        if (sunLight->parms.axis[0].Dot(backEnd.view->def->parms.axis[0]) < 0.0f) {
+        const RenderLight *sunLight = backEnd.primaryLight->def;
+        if (sunLight->state.axis[0].Dot(backEnd.view->def->state.axis[0]) < 0.0f) {
             if (!linearizeDepth) {
                 linearizeDepth = true;
                 PP_LinearizeDepth(bc->screenRT->DepthStencilTexture(), backEnd.view->def->zNear, backEnd.view->def->zFar, bc->ppRTs[PP_RT_LINEAR_DEPTH]);
             }
 
-            PP_SunShaftsMaskGen(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_LINEAR_DEPTH]->ColorTexture(), screenTc[0], screenTc[1], screenTc[2], screenTc[3], bc->ppRTs[PP_RT_2X]);			
+            PP_SunShaftsMaskGen(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_LINEAR_DEPTH]->ColorTexture(), screenTc[0], screenTc[1], screenTc[2], screenTc[3], bc->ppRTs[PP_RT_2X]);
 
             // shafts blur 8x -> 64x -> 512x
             Mat4 viewProjectionMatrix = backEnd.view->def->projMatrix * backEnd.view->def->viewMatrix.ToMat3().ToMat4();
             float invShaftsScale = 1.0f / r_sunShafts_scale.GetFloat();
-            PP_SunShaftsGen(bc->ppRTs[PP_RT_2X]->ColorTexture(), viewProjectionMatrix, sunLight->parms.origin, invShaftsScale * 0.25f, bc->ppRTs[PP_RT_TEMP_2X]);
-            PP_SunShaftsGen(bc->ppRTs[PP_RT_TEMP_2X]->ColorTexture(), viewProjectionMatrix, sunLight->parms.origin, invShaftsScale * 0.5f, bc->ppRTs[PP_RT_2X]);
-            PP_SunShaftsGen(bc->ppRTs[PP_RT_2X]->ColorTexture(), viewProjectionMatrix, sunLight->parms.origin, invShaftsScale, bc->ppRTs[PP_RT_TEMP_2X]);			
+            PP_SunShaftsGen(bc->ppRTs[PP_RT_2X]->ColorTexture(), viewProjectionMatrix, sunLight->state.origin, invShaftsScale * 0.25f, bc->ppRTs[PP_RT_TEMP_2X]);
+            PP_SunShaftsGen(bc->ppRTs[PP_RT_TEMP_2X]->ColorTexture(), viewProjectionMatrix, sunLight->state.origin, invShaftsScale * 0.5f, bc->ppRTs[PP_RT_2X]);
+            PP_SunShaftsGen(bc->ppRTs[PP_RT_2X]->ColorTexture(), viewProjectionMatrix, sunLight->state.origin, invShaftsScale, bc->ppRTs[PP_RT_TEMP_2X]);
         
             PP_PassThruPass(bc->screenRT->ColorTexture(), 0.0f, 0.0f, 1.0f, 1.0f, bc->ppRTs[PP_RT_TEMP]);
 
             Vec4 sunColor = Vec4(
-                sunLight->parms.materialParms[SceneObject::RedParm], 
-                sunLight->parms.materialParms[SceneObject::GreenParm], 
-                sunLight->parms.materialParms[SceneObject::BlueParm], 
-                sunLight->parms.materialParms[SceneObject::AlphaParm]);
+                sunLight->state.materialParms[RenderObject::RedParm], 
+                sunLight->state.materialParms[RenderObject::GreenParm],
+                sunLight->state.materialParms[RenderObject::BlueParm],
+                sunLight->state.materialParms[RenderObject::AlphaParm]);
 
             //sunColor *= sunLight->intensity;
             PP_SunShaftsDisplay(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->ppRTs[PP_RT_TEMP_2X]->ColorTexture(), sunColor, bc->screenRT);			
@@ -134,9 +134,9 @@ void RB_PostProcess() {
         float thresholdCos = Math::Cos(DEG2RAD(r_motionBlur_CameraAngleThrehold.GetFloat()));
         if (minCos < thresholdCos) {
             // 카메라의 rotation 에 대해서만 적용, translation 은 적용하지 않는다
-            backEnd.viewMatrixPrev[0][3] = -(backEnd.view->def->parms.origin.Dot(prevAxis[0]));
-            backEnd.viewMatrixPrev[1][3] = -(backEnd.view->def->parms.origin.Dot(prevAxis[1]));
-            backEnd.viewMatrixPrev[2][3] = -(backEnd.view->def->parms.origin.Dot(prevAxis[2]));
+            backEnd.viewMatrixPrev[0][3] = -(backEnd.view->def->state.origin.Dot(prevAxis[0]));
+            backEnd.viewMatrixPrev[1][3] = -(backEnd.view->def->state.origin.Dot(prevAxis[1]));
+            backEnd.viewMatrixPrev[2][3] = -(backEnd.view->def->state.origin.Dot(prevAxis[2]));
 
             Mat4 viewProjMatrix[2];
             viewProjMatrix[0] = backEnd.view->def->viewProjMatrix;
@@ -145,15 +145,15 @@ void RB_PostProcess() {
             // 카메라 rotation 정도에 따라 iterative blur
             if (minCos > Math::Cos(DEG2RAD(4.0f))) {
                 PP_PassThruPass(bc->screenRT->ColorTexture(), 0.0f, 0.0f, 1.0f, 1.0f, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->parms.origin, 1.0f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->state.origin, 1.0f, bc->frameTime, bc->screenRT);
             } else if (minCos > Math::Cos(DEG2RAD(8.0f))) {
-                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->parms.origin, 1.0f, bc->frameTime, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->parms.origin, 0.5f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->state.origin, 1.0f, bc->frameTime, bc->ppRTs[PP_RT_TEMP]);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->state.origin, 0.5f, bc->frameTime, bc->screenRT);
             } else {
                 PP_PassThruPass(bc->screenRT->ColorTexture(), 0.0f, 0.0f, 1.0f, 1.0f, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->parms.origin, 1.0f, bc->frameTime, bc->screenRT);
-                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->parms.origin, 0.5f, bc->frameTime, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->parms.origin, 0.25f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->state.origin, 1.0f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->state.origin, 0.5f, bc->frameTime, bc->ppRTs[PP_RT_TEMP]);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.view->def->state.origin, 0.25f, bc->frameTime, bc->screenRT);
             }
         }
     }

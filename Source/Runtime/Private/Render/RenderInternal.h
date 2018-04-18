@@ -24,7 +24,7 @@ struct drawSurfNode_t {
 
 class VisibleObject {
 public:
-    const SceneObject *     def;
+    const RenderObject *    def;
 
     VisibleObject *         next;
 
@@ -37,7 +37,7 @@ public:
 
 class VisibleLight {
 public:
-    const SceneLight *      def;
+    const RenderLight *     def;
 
     VisibleLight *          next;
 
@@ -61,7 +61,7 @@ public:
 
 class VisibleView {
 public:
-    const SceneView *       def;
+    const RenderView *      def;
 
     bool                    isSubview;
     bool                    isMirror;

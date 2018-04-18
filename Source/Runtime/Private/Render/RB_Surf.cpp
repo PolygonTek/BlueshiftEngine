@@ -232,7 +232,7 @@ void RBSurf::Flush_SelectionPass() {
     int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite | RHI::DF_LEqual;
     stateBits &= ~RHI::MaskBF;
 
-    if (backEnd.view->def->parms.flags & SceneView::WireFrameMode) {
+    if (backEnd.view->def->state.flags & RenderView::WireFrameMode) {
         stateBits |= RHI::PM_Wireframe;
 
         rhi.SetLineWidth(8);
@@ -242,7 +242,7 @@ void RBSurf::Flush_SelectionPass() {
 
     RenderSelection(mtrlPass, id);
 
-    if (backEnd.view->def->parms.flags & SceneView::WireFrameMode) {
+    if (backEnd.view->def->state.flags & RenderView::WireFrameMode) {
         rhi.SetLineWidth(1);
     }
 }
@@ -346,7 +346,7 @@ void RBSurf::Flush_LitPass() {
     stateBits &= ~RHI::DepthWrite;
     stateBits |= RHI::DF_Equal;
 
-    const Material *lightMaterial = surfLight->def->parms.material;
+    const Material *lightMaterial = surfLight->def->state.material;
     int lightMaterialType = lightMaterial->GetType();
     switch (lightMaterialType) {
     case Material::FogLightMaterialType:
@@ -398,10 +398,10 @@ void RBSurf::Flush_TrisPass() {
     if (r_showWireframe.GetInteger() > 0) {
         wireframeMode = r_showWireframe.GetInteger();
     } else {
-        wireframeMode = surfSpace->def->parms.wireframeMode;
+        wireframeMode = surfSpace->def->state.wireframeMode;
     }
 
-    DrawDebugWireframe(wireframeMode, surfSpace->def->parms.wireframeColor);
+    DrawDebugWireframe(wireframeMode, surfSpace->def->state.wireframeColor);
 }
 
 void RBSurf::Flush_VelocityMapPass() {
@@ -450,21 +450,21 @@ void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
         blendState = RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
     }
 
-    if (mode == SceneObject::ShowNone) {
-        mode = SceneObject::ShowVisibleFront;
+    if (mode == RenderObject::ShowNone) {
+        mode = RenderObject::ShowVisibleFront;
     }
     
     switch (mode) {
-    case SceneObject::ShowVisibleFront:
+    case RenderObject::ShowVisibleFront:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_LEqual | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(mtrlPass->cullType);
         rhi.SetDepthBias(-0.5f, -2.0f);
         break;
-    case SceneObject::ShowAllFront:
+    case RenderObject::ShowAllFront:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(mtrlPass->cullType);
         break;
-    case SceneObject::ShowAllFrontAndBack:
+    case RenderObject::ShowAllFrontAndBack:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(RHI::NoCull);
         break;  
@@ -472,7 +472,7 @@ void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
 
     RenderColor(rgba);
 
-    if (mode == SceneObject::ShowVisibleFront) {
+    if (mode == RenderObject::ShowVisibleFront) {
         rhi.SetDepthBias(0.0f, 0.0f);
     }
 }
@@ -504,7 +504,7 @@ void BackEnd::DrawDebugNormals(int mode) const {
 
     vptr = (cDrawVert *)m_dp.systemVb;
     for (i = 0; i < numVerts; i++, vptr++) {
-        //vec = m_entity->GetModelMatrix() * vptr->xyz;
+        //vec = m_entity->GetObjectToWorldMatrix() * vptr->xyz;
         //drawLength = vec.Distance(m_view.m_vieworg) * distanceScale;
         //if (drawLength < 1.0f)
         //drawLength = 1.0f;
@@ -554,7 +554,7 @@ void BackEnd::DrawDebugTangents(int mode) const {
 
     vptr = (cDrawVert *)m_dp.systemVb;
     for (i = 0; i < numVerts; i++, vptr++) {
-        //vec = m_entity->GetModelMatrix() * vptr->xyz;
+        //vec = m_entity->GetObjectToWorldMatrix() * vptr->xyz;
         //drawLength = vec.Distance(m_view.m_vieworg) * distanceScale;
         //if (drawLength < 1.0f)
         //drawLength = 1.0f;

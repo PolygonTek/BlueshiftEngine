@@ -52,7 +52,7 @@ void ComStaticMeshRenderer::Purge(bool chainPurge) {
 void ComStaticMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
-    sceneObjectParms.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
 
     // Mark as initialized
     SetInitialized(true);
@@ -68,22 +68,26 @@ void ComStaticMeshRenderer::MeshUpdated() {
         return;
     }
 
-    sceneObjectParms.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-    sceneObjectParms.aabb = referenceMesh->GetAABB();
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    renderObjectDef.aabb = referenceMesh->GetAABB();
     // temp code
-    renderWorld->RemoveObject(sceneObjectHandle);
-    sceneObjectHandle = -1;
+    renderWorld->RemoveObject(renderObjectHandle);
+    renderObjectHandle = -1;
     // temp code
 
     UpdateVisuals();
 }
 
 bool ComStaticMeshRenderer::IsOccluder() const {
-    return sceneObjectParms.occluder;
+    return !!(renderObjectDef.flags & RenderObject::OccluderFlag);
 }
 
 void ComStaticMeshRenderer::SetOccluder(bool occluder) {
-    sceneObjectParms.occluder = occluder;
+    if (occluder) {
+        renderObjectDef.flags |= RenderObject::OccluderFlag;
+    } else {
+        renderObjectDef.flags &= ~RenderObject::OccluderFlag;
+    }
     UpdateVisuals();
 }
 

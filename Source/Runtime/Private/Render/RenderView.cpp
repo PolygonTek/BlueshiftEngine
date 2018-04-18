@@ -18,85 +18,86 @@
 
 BE_NAMESPACE_BEGIN
 
-void SceneView::Update(const Parms *viewParms) {
-    parms = *viewParms;
+void RenderView::Update(const State *stateCopy) {
+    state = *stateCopy;
 
     // near/far
-    zNear = parms.zNear;
-    zFar = parms.zFar;
+    zNear = state.zNear;
+    zFar = state.zFar;
 
-    // calculate view matrix
-    R_SetViewMatrix(parms.axis, parms.origin, viewMatrix);
-
-    if (parms.orthogonal) {
-        // view bounding OBB
-        Vec3 extents((zFar - zNear) * 0.5f, parms.sizeX, parms.sizeY);
-        box.SetCenter(parms.origin + parms.axis[0] * (zNear + extents[0]));
+    if (state.orthogonal) {
+        // Set bounding volume for orthogonal view
+        Vec3 extents((zFar - zNear) * 0.5f, state.sizeX, state.sizeY);
+        box.SetCenter(state.origin + state.axis[0] * (zNear + extents[0]));
         box.SetExtents(extents);
-        box.SetAxis(parms.axis);
+        box.SetAxis(state.axis);
 
-        // calculate orthogonal projection matrix
-        R_SetOrthogonalProjectionMatrix(parms.sizeX, parms.sizeY, zNear, zFar, projMatrix);
+        // Calculate orthogonal projection matrix
+        R_SetOrthogonalProjectionMatrix(state.sizeX, state.sizeY, zNear, zFar, projMatrix);
     } else {
-        // view bounding frustum
-        frustum.SetOrigin(parms.origin);
-        frustum.SetAxis(parms.axis);
+        // Set bounding frustum for perspective view
+        frustum.SetOrigin(state.origin);
+        frustum.SetAxis(state.axis);
+        frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(state.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(state.fovY) * 0.5f));
 
-        frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(parms.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(parms.fovY) * 0.5f));
-
-        // calculate view frustum planes
+        // Calculate view frustum planes
         frustum.ToPlanes(frustumPlanes);
 
-        // calculate view frustum points
+        // Calculate view frustum points
         frustum.ToPoints(frustumPoints);
 
-        // calculate perspective projection matrix
-        R_SetPerspectiveProjectionMatrix(parms.fovX, parms.fovY, zNear, zFar, false, projMatrix);
+        // Calculate perspective projection matrix
+        R_SetPerspectiveProjectionMatrix(state.fovX, state.fovY, zNear, zFar, false, projMatrix);
     }
 
+    // Calculate view matrix
+    R_SetViewMatrix(state.axis, state.origin, viewMatrix);
+
+    // Calculate view projection matrix
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
-void SceneView::RecalcZFar(float zFar) {
+void RenderView::RecalcZFar(float zFar) {
     this->zFar = zFar;
 
-    if (parms.orthogonal) {
-        // view bounding OBB
-        Vec3 extents((zFar - zNear) * 0.5f, parms.sizeX, parms.sizeY);
-        box.SetCenter(parms.origin + parms.axis[0] * (zNear + extents[0]));
+    if (state.orthogonal) {
+        // Set bounding volume for orthogonal view
+        Vec3 extents((zFar - zNear) * 0.5f, state.sizeX, state.sizeY);
+        box.SetCenter(state.origin + state.axis[0] * (zNear + extents[0]));
         box.SetExtents(extents);
 
-        // calculate orthogonal projection matrix
-        R_SetOrthogonalProjectionMatrix(parms.sizeX, parms.sizeY, zNear, zFar, projMatrix);
+        // Calculate orthogonal projection matrix
+        R_SetOrthogonalProjectionMatrix(state.sizeX, state.sizeY, zNear, zFar, projMatrix);
     } else {
-        // view frustum
-        frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(parms.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(parms.fovY) * 0.5f));
+        // Set bounding frustum for perspective view
+        frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(state.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(state.fovY) * 0.5f));
 
-        // calculate view frustum planes
+        // Calculate view frustum planes
         frustum.ToPlanes(frustumPlanes);
 
-        // calculate view frustum points
+        // Calculate view frustum points
         frustum.ToPoints(frustumPoints);
 
-        // calculate perspective projection matrix
-        R_SetPerspectiveProjectionMatrix(parms.fovX, parms.fovY, zNear, zFar, false, projMatrix);
+        // Calculate perspective projection matrix
+        R_SetPerspectiveProjectionMatrix(state.fovX, state.fovY, zNear, zFar, false, projMatrix);
     }
 
+    // Re-calculate view projection matrix
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
-Vec4 SceneView::WorldToNormalizedDevice(const Vec3 &worldCoords) const {
-    return viewProjMatrix * Vec4(worldCoords, 1.0f);
+Vec4 RenderView::WorldToNormalizedDevice(const Vec3 &worldPosition) const {
+    return viewProjMatrix * Vec4(worldPosition, 1.0f);
 }
 
-bool SceneView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec3 &pixelCoords) const {
+bool RenderView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec3 &pixelCoords) const {
     if (normalizedDeviceCoords.w > 0) {
         float invW = 1.0f / normalizedDeviceCoords.w;
 
         float y = 1.0f - normalizedDeviceCoords.y;
 
-        pixelCoords.x = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f * (parms.renderRect.x + parms.renderRect.w);
-        pixelCoords.y = (y * invW + 1.0f) * 0.5f * (parms.renderRect.y + parms.renderRect.h);
+        pixelCoords.x = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f * (state.renderRect.x + state.renderRect.w);
+        pixelCoords.y = (y * invW + 1.0f) * 0.5f * (state.renderRect.y + state.renderRect.h);
         pixelCoords.z = normalizedDeviceCoords.z * invW; // depth value
         return true;
     } else {
@@ -104,33 +105,33 @@ bool SceneView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec3
     }
 }
 
-bool SceneView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Point &pixelPoint) const {
+bool RenderView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Point &pixelPoint) const {
     if (normalizedDeviceCoords.w > 0) {
         float invW = 1.0f / normalizedDeviceCoords.w;
 
         float y = 1.0f - normalizedDeviceCoords.y;
 
-        pixelPoint.x = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f * (parms.renderRect.x + parms.renderRect.w);
-        pixelPoint.y = (y * invW + 1.0f) * 0.5f * (parms.renderRect.y + parms.renderRect.h);
+        pixelPoint.x = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f * (state.renderRect.x + state.renderRect.w);
+        pixelPoint.y = (y * invW + 1.0f) * 0.5f * (state.renderRect.y + state.renderRect.h);
         return true;
     } else {
         return false;
     }
 }
 
-bool SceneView::WorldToPixel(const Vec3 &worldCoords, Vec3 &pixelCoords) const {
-    Vec4 normalizedDeviceCoords = WorldToNormalizedDevice(worldCoords);
+bool RenderView::WorldToPixel(const Vec3 &worldPosition, Vec3 &pixelCoords) const {
+    Vec4 normalizedDeviceCoords = WorldToNormalizedDevice(worldPosition);
 
     return NormalizedDeviceToPixel(normalizedDeviceCoords, pixelCoords);
 }
 
-bool SceneView::WorldToPixel(const Vec3 &worldCoords, Point &pixelPoint) const {
-    Vec4 normalizedDeviceCoords = WorldToNormalizedDevice(worldCoords);
+bool RenderView::WorldToPixel(const Vec3 &worldPosition, Point &pixelPoint) const {
+    Vec4 normalizedDeviceCoords = WorldToNormalizedDevice(worldPosition);
 
     return NormalizedDeviceToPixel(normalizedDeviceCoords, pixelPoint);
 }
 
-bool SceneView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const {
+bool RenderView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const {
     Vec3 planeNormal1, planeNormal2;
     int xmin, xmax, ymax, ymin;
     float x, y;
@@ -138,13 +139,13 @@ bool SceneView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) cons
     float r2 = sphere.radius * sphere.radius;
 
     // 카메라가 sphere 안에 있을 경우
-    if (parms.origin.DistanceSqr(sphere.origin) < r2) {
-        clipRect = parms.renderRect;
+    if (state.origin.DistanceSqr(sphere.origin) < r2) {
+        clipRect = state.renderRect;
         return true;
     }
 
     // sphere 의 중심좌표(L) 를 카메라 로컬좌표계(X, Y, Z = FORWARD, LEFT, UP) 로 변환
-    Vec3 localOrigin = parms.axis.TransposedMulVec(sphere.origin - parms.origin);
+    Vec3 localOrigin = state.axis.TransposedMulVec(sphere.origin - state.origin);
 
     float x2 = localOrigin.x * localOrigin.x;
     float y2 = localOrigin.y * localOrigin.y;
@@ -161,8 +162,8 @@ bool SceneView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) cons
     float d = r2 * y2 - (y2 + x2) * (r2 - x2);
 
     if (d <= 0.001f) {
-        xmin = parms.renderRect.x;
-        xmax = parms.renderRect.x + parms.renderRect.w;
+        xmin = state.renderRect.x;
+        xmax = state.renderRect.x + state.renderRect.w;
     } else {
         d = Math::Sqrt(d);
 
@@ -188,26 +189,26 @@ bool SceneView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) cons
             return false;
         }
 
-        float e = Math::Tan(DEG2RAD(parms.fovX * 0.5f));
+        float e = Math::Tan(DEG2RAD(state.fovX * 0.5f));
 
         if (pz1 < 0) {
             x = planeNormal1.y / (planeNormal1.x * e);
             Clamp(x, -1.0f, 1.0f);
-            int vx = parms.renderRect.x + (x + 1.0f) * parms.renderRect.w * 0.5f;
+            int vx = state.renderRect.x + (x + 1.0f) * state.renderRect.w * 0.5f;
 
-            xmin = Max(parms.renderRect.x, vx);
+            xmin = Max(state.renderRect.x, vx);
         } else {
-            xmin = parms.renderRect.x;
+            xmin = state.renderRect.x;
         }
 
         if (pz2 < 0) {
             x = planeNormal2.y / (planeNormal2.x * e);
             Clamp(x, -1.0f, 1.0f);
-            int vx = parms.renderRect.x + (x + 1.0f) * parms.renderRect.w * 0.5f;
+            int vx = state.renderRect.x + (x + 1.0f) * state.renderRect.w * 0.5f;
 
-            xmax = Min(parms.renderRect.x + parms.renderRect.w, vx);
+            xmax = Min(state.renderRect.x + state.renderRect.w, vx);
         } else {
-            xmax = parms.renderRect.x + parms.renderRect.w;
+            xmax = state.renderRect.x + state.renderRect.w;
         }
 
         if (xmax - xmin <= 0) {
@@ -225,8 +226,8 @@ bool SceneView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) cons
     d = r2 * z2 - (z2 + x2) * (r2 - x2);
 
     if (d <= 0.001f) {
-        ymin = parms.renderRect.y;
-        ymax = parms.renderRect.y + parms.renderRect.h;
+        ymin = state.renderRect.y;
+        ymax = state.renderRect.y + state.renderRect.h;
     } else {
         d = Math::Sqrt(d);
 
@@ -252,26 +253,26 @@ bool SceneView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) cons
             return false;
         }
 
-        float e = Math::Tan(DEG2RAD(parms.fovY * 0.5f));
+        float e = Math::Tan(DEG2RAD(state.fovY * 0.5f));
 
         if (pz1 < 0) {
             y = planeNormal1.x / (planeNormal1.z * e);
             Clamp(y, -1.0f, 1.0f);
-            int vy = parms.renderRect.y + (1.0f - y) * parms.renderRect.h * 0.5f;
+            int vy = state.renderRect.y + (1.0f - y) * state.renderRect.h * 0.5f;
 
-            ymin = Max(parms.renderRect.y, vy);
+            ymin = Max(state.renderRect.y, vy);
         } else {
-            ymin = parms.renderRect.y;
+            ymin = state.renderRect.y;
         }
 
         if (pz2 < 0) {
             y = planeNormal2.x / (planeNormal2.z * e);
             Clamp(y, -1.0f, 1.0f);
-            int vy = parms.renderRect.y + (1.0f - y) * parms.renderRect.h * 0.5f;
+            int vy = state.renderRect.y + (1.0f - y) * state.renderRect.h * 0.5f;
 
-            ymax = Min(parms.renderRect.y + parms.renderRect.h, vy);
+            ymax = Min(state.renderRect.y + state.renderRect.h, vy);
         } else {
-            ymax = parms.renderRect.y + parms.renderRect.h;
+            ymax = state.renderRect.y + state.renderRect.h;
         }
 
         if (ymax - ymin <= 0) {
@@ -287,14 +288,14 @@ bool SceneView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) cons
     return true;
 }
 
-bool SceneView::GetClipRectFromAABB(const AABB &aabb, Rect &clipRect) const {
+bool RenderView::GetClipRectFromAABB(const AABB &aabb, Rect &clipRect) const {
     return GetClipRectFromOBB(OBB(aabb, Vec3::origin, Mat3::identity), clipRect);
 }
 
-bool SceneView::GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
+bool RenderView::GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
     AABB bounds;
 
-    if (parms.orthogonal) {
+    if (state.orthogonal) {
         if (!box.ProjectionBounds(obb, bounds)) {
             return false;
         }
@@ -312,18 +313,18 @@ bool SceneView::GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
         return false;
     }
 
-    clipRect.x = parms.renderRect.x + (-bounds[1][1] + 1) * parms.renderRect.w * 0.5f;
-    clipRect.y = parms.renderRect.y + (-bounds[1][2] + 1) * parms.renderRect.h * 0.5f;
-    clipRect.w = parms.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
-    clipRect.h = parms.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
+    clipRect.x = state.renderRect.x + (-bounds[1][1] + 1) * state.renderRect.w * 0.5f;
+    clipRect.y = state.renderRect.y + (-bounds[1][2] + 1) * state.renderRect.h * 0.5f;
+    clipRect.w = state.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
+    clipRect.h = state.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
 
     return true;
 }
 
-bool SceneView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const {
+bool RenderView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const {
     AABB bounds;
 
-    if (parms.orthogonal) {
+    if (state.orthogonal) {
         if (!this->box.ProjectionBounds(frustum, bounds)) {
             return false;
         }
@@ -342,15 +343,15 @@ bool SceneView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) c
         return false;
     }
 
-    clipRect.x = parms.renderRect.x + (-bounds[1][1] + 1) * parms.renderRect.w * 0.5f;
-    clipRect.y = parms.renderRect.y + (-bounds[1][2] + 1) * parms.renderRect.h * 0.5f;
-    clipRect.w = parms.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
-    clipRect.h = parms.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
+    clipRect.x = state.renderRect.x + (-bounds[1][1] + 1) * state.renderRect.w * 0.5f;
+    clipRect.y = state.renderRect.y + (-bounds[1][2] + 1) * state.renderRect.h * 0.5f;
+    clipRect.w = state.renderRect.w * 0.5f * (bounds[1][1] - bounds[0][1]);
+    clipRect.h = state.renderRect.h * 0.5f * (bounds[1][2] - bounds[0][2]);
 
     return true;
 }
 
-bool SceneView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     float localMin = Math::Infinity;
     float localMax = -Math::Infinity;
 
@@ -379,37 +380,37 @@ bool SceneView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, cons
     return false;
 }
 
-bool SceneView::GetDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderView::GetDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[2];
-    points[0] = sphere.Origin() + parms.axis[0] * sphere.Radius();
-    points[1] = sphere.Origin() - parms.axis[0] * sphere.Radius();
+    points[0] = sphere.Origin() + state.axis[0] * sphere.Radius();
+    points[1] = sphere.Origin() - state.axis[0] * sphere.Radius();
     return GetDepthBoundsFromPoints(2, points, mvp, depthMin, depthMax);
 }
 
-bool SceneView::GetDepthBoundsFromAABB(const AABB &aabb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderView::GetDepthBoundsFromAABB(const AABB &aabb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[8];
     aabb.ToPoints(points);
     return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
 
-bool SceneView::GetDepthBoundsFromOBB(const OBB &obb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderView::GetDepthBoundsFromOBB(const OBB &obb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[8];
     obb.ToPoints(points);
     return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
 
-bool SceneView::GetDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderView::GetDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[8];
     frustum.ToPoints(points);
     return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
 
-bool SceneView::GetDepthBoundsFromLight(const SceneLight *light, const Mat4 &viewProjMatrix, float *depthMin, float *depthMax) const {
-    if (light->parms.type == SceneLight::DirectionalLight) {
+bool RenderView::GetDepthBoundsFromLight(const RenderLight *light, const Mat4 &viewProjMatrix, float *depthMin, float *depthMax) const {
+    if (light->state.type == RenderLight::DirectionalLight) {
         if (!GetDepthBoundsFromOBB(light->obb, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
-    } else if (light->parms.type == SceneLight::PointLight) {
+    } else if (light->state.type == RenderLight::PointLight) {
         if (light->IsRadiusUniform()) {
             if (!GetDepthBoundsFromSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), viewProjMatrix, depthMin, depthMax)) {
                 return false;
@@ -419,18 +420,18 @@ bool SceneView::GetDepthBoundsFromLight(const SceneLight *light, const Mat4 &vie
                 return false;
             }
         }
-    } else if (light->parms.type == SceneLight::SpotLight) {
+    } else if (light->state.type == RenderLight::SpotLight) {
         if (!GetDepthBoundsFromFrustum(light->frustum, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
     } else {
         assert(0);
-    }	
+    }
 
     return true;
 }
 
-void SceneView::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
+void RenderView::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
     float tanFovX = Math::Tan(DEG2RAD(fromFovX * 0.5f));
     float tanFovY = tanFovX / fromAspectRatio;
 
@@ -438,25 +439,25 @@ void SceneView::ComputeFov(float fromFovX, float fromAspectRatio, float toAspect
     *toFovY = RAD2DEG(Math::ATan(tanFovY) * 2.0f);
 }
 
-const Ray SceneView::RayFromScreenND(const SceneView::Parms &sceneView, float ndx, float ndy) {
+const Ray RenderView::RayFromScreenND(const RenderView::State &renderView, float ndx, float ndy) {
     Ray ray;
 
-    if (sceneView.orthogonal) {
-        ray.origin = sceneView.origin + sceneView.axis[0] * sceneView.zNear; // zNear can be negative number in orthogonal view
-        ray.origin -= sceneView.axis[1] * ndx * sceneView.sizeX;
-        ray.origin -= sceneView.axis[2] * ndy * sceneView.sizeY;
+    if (renderView.orthogonal) {
+        ray.origin = renderView.origin + renderView.axis[0] * renderView.zNear; // zNear can be negative number in orthogonal view
+        ray.origin -= renderView.axis[1] * ndx * renderView.sizeX;
+        ray.origin -= renderView.axis[2] * ndy * renderView.sizeY;
 
-        ray.direction = sceneView.axis[0];
+        ray.direction = renderView.axis[0];
         ray.direction.Normalize();
     } else {
-        float half_w = Math::Tan(DEG2RAD(sceneView.fovX * 0.5f)) * sceneView.zNear;
-        float half_h = Math::Tan(DEG2RAD(sceneView.fovY * 0.5f)) * sceneView.zNear;
+        float half_w = Math::Tan(DEG2RAD(renderView.fovX * 0.5f)) * renderView.zNear;
+        float half_h = Math::Tan(DEG2RAD(renderView.fovY * 0.5f)) * renderView.zNear;
 
-        ray.direction = sceneView.axis[0] * sceneView.zNear;
-        ray.direction -= sceneView.axis[1] * ndx * half_w;
-        ray.direction -= sceneView.axis[2] * ndy * half_h;
+        ray.direction = renderView.axis[0] * renderView.zNear;
+        ray.direction -= renderView.axis[1] * ndx * half_w;
+        ray.direction -= renderView.axis[2] * ndy * half_h;
         
-        ray.origin = sceneView.origin + ray.direction;
+        ray.origin = renderView.origin + ray.direction;
 
         ray.direction.Normalize();
     }

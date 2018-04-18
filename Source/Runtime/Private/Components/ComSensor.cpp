@@ -225,7 +225,7 @@ void ComSensor::OnInactive() {
     }
 }
 
-void ComSensor::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+void ComSensor::DrawGizmos(const RenderView::State &viewState, bool selected) {
     // TODO: draw blend mesh
     /*ComponentPtrArray colliderComponents = GetEntity()->GetComponents(ComCollider::metaObject);
 

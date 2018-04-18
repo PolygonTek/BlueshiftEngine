@@ -35,7 +35,7 @@ public:
 
     const Mesh *            GetReferenceMesh() const { return referenceMesh; }
 
-    bool                    GetClosestVertex(const SceneView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const;
+    bool                    GetClosestVertex(const RenderView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const;
 
     Guid                    GetMeshGuid() const;
     void                    SetMeshGuid(const Guid &guid);

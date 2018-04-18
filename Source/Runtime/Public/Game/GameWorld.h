@@ -81,7 +81,7 @@ public:
     Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, const Array<Entity *> &excludingList, float *scale) const;
 
                                 /// Render camera component from all registered entities
-    void                        RenderCamera();
+    void                        Render();
     
                                 /// Returns entity hierarchy.
     Hierarchy<Entity> &         GetEntityHierarchy() { return entityHierarchy; }

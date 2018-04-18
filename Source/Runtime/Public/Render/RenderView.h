@@ -17,7 +17,7 @@
 /*
 -------------------------------------------------------------------------------
 
-    SceneView
+    RenderView
 
 -------------------------------------------------------------------------------
 */
@@ -26,9 +26,9 @@
 
 BE_NAMESPACE_BEGIN
 
-class SceneLight;
+class RenderLight;
 
-class SceneView {
+class RenderView {
 public:
     enum Flag {
         WireFrameMode       = BIT(0),
@@ -46,8 +46,8 @@ public:
         SkyboxClear
     };
 
-    struct Parms {
-        int             time;               // time in milliseconds for shader effects and other time dependent rendering issues
+    struct State {
+        int             time;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
         int             flags;
         int             layerMask;
 
@@ -66,7 +66,7 @@ public:
         bool            orthogonal;         ///< True for orthogonal projection or perspective projection
     };
 
-    void                Update(const Parms *viewParms);
+    void                Update(const State *viewParms);
 
     void                RecalcZFar(float zFar);
 
@@ -93,13 +93,13 @@ public:
     bool                GetDepthBoundsFromAABB(const AABB &bounds, const Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                GetDepthBoundsFromOBB(const OBB &box, const Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                GetDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                GetDepthBoundsFromLight(const SceneLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                GetDepthBoundsFromLight(const RenderLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
 
     static void         ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
-    static const Ray    RayFromScreenND(const SceneView::Parms &sceneView, float ndx, float ndy);
+    static const Ray    RayFromScreenND(const RenderView::State &sceneView, float ndx, float ndy);
 
-    Parms               parms;
+    State               state;
 
     Mat4                viewMatrix;
     Mat4                projMatrix;

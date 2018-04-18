@@ -454,13 +454,13 @@ void ComCharacterController::SetSlopeLimit(const float slopeLimit) {
     this->slopeDotZ = Math::Cos(DEG2RAD(slopeLimit));
 }
 
-void ComCharacterController::DrawGizmos(const SceneView::Parms &sceneView, bool selected) {
+void ComCharacterController::DrawGizmos(const RenderView::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(sceneView.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
             Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
             Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();

@@ -15,7 +15,7 @@
 #pragma once
 
 #include "Render/Mesh.h"
-#include "Render/SceneLight.h"
+#include "Render/RenderLight.h"
 #include "Component.h"
 
 BE_NAMESPACE_BEGIN
@@ -39,14 +39,14 @@ public:
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) override;
+    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
 
     virtual const AABB      GetAABB() override;
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
-    SceneLight::Type        GetLightType() const;
-    void                    SetLightType(SceneLight::Type type);
+    RenderLight::Type       GetLightType() const;
+    void                    SetLightType(RenderLight::Type type);
 
     bool                    IsPrimaryLight() const;
     void                    SetPrimaryLight(bool isPrimaryLight);
@@ -102,11 +102,11 @@ protected:
     void                    LayerChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 
-    SceneLight::Parms       sceneLight;
-    int                     sceneLightHandle;
+    RenderLight::State      renderLightDef;
+    int                     renderLightHandle;
 
     Mesh *                  spriteMesh;
-    SceneObject::Parms      sprite;
+    RenderObject::State     spriteDef;
     int                     spriteHandle;
 
     RenderWorld *           renderWorld;

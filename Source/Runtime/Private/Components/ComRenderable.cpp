@@ -43,8 +43,8 @@ void ComRenderable::RegisterProperties() {
 }
 
 ComRenderable::ComRenderable() {
-    sceneObjectHandle = -1;
-    memset(&sceneObjectParms, 0, sizeof(sceneObjectParms));
+    renderObjectHandle = -1;
+    memset(&renderObjectDef, 0, sizeof(renderObjectDef));
     renderWorld = nullptr;
 }
 
@@ -53,14 +53,14 @@ ComRenderable::~ComRenderable() {
 }
 
 void ComRenderable::Purge(bool chainPurge) {
-    for (int i = 0; i < sceneObjectParms.materials.Count(); i++) {
-        materialManager.ReleaseMaterial(sceneObjectParms.materials[i]);
+    for (int i = 0; i < renderObjectDef.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(renderObjectDef.materials[i]);
     }
-    sceneObjectParms.materials.Clear();
+    renderObjectDef.materials.Clear();
 
-    if (sceneObjectHandle != -1) {
-        renderWorld->RemoveObject(sceneObjectHandle);
-        sceneObjectHandle = -1;
+    if (renderObjectHandle != -1) {
+        renderWorld->RemoveObject(renderObjectHandle);
+        renderObjectHandle = -1;
         renderWorld = nullptr;
     }
 
@@ -74,13 +74,13 @@ void ComRenderable::Init() {
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    sceneObjectParms.layer = GetEntity()->GetLayer();
-    sceneObjectParms.wireframeColor.Set(1, 1, 1, 1);
+    renderObjectDef.layer = GetEntity()->GetLayer();
+    renderObjectDef.wireframeColor.Set(1, 1, 1, 1);
 
     ComTransform *transform = GetEntity()->GetTransform();
-    sceneObjectParms.origin = transform->GetOrigin();
-    sceneObjectParms.scale = transform->GetScale();
-    sceneObjectParms.axis = transform->GetAxis();
+    renderObjectDef.origin = transform->GetOrigin();
+    renderObjectDef.scale = transform->GetScale();
+    renderObjectDef.axis = transform->GetAxis();
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
 
@@ -92,14 +92,14 @@ void ComRenderable::OnActive() {
 }
 
 void ComRenderable::OnInactive() {
-    if (sceneObjectHandle != -1) {
-        renderWorld->RemoveObject(sceneObjectHandle);
-        sceneObjectHandle = -1;
+    if (renderObjectHandle != -1) {
+        renderWorld->RemoveObject(renderObjectHandle);
+        renderObjectHandle = -1;
     }
 }
 
-bool ComRenderable::HasRenderEntity(int sceneObjectHandle) const { 
-    if (this->sceneObjectHandle == sceneObjectHandle) {
+bool ComRenderable::HasRenderEntity(int renderObjectHandle) const { 
+    if (this->renderObjectHandle == renderObjectHandle) {
         return true;
     }
 
@@ -111,39 +111,39 @@ void ComRenderable::UpdateVisuals() {
         return;
     }
 
-    if (sceneObjectHandle == -1) {
-        sceneObjectHandle = renderWorld->AddObject(&sceneObjectParms);
+    if (renderObjectHandle == -1) {
+        renderObjectHandle = renderWorld->AddObject(&renderObjectDef);
     } else {
-        renderWorld->UpdateObject(sceneObjectHandle, &sceneObjectParms);
+        renderWorld->UpdateObject(renderObjectHandle, &renderObjectDef);
     }
 }
 
 const AABB ComRenderable::GetAABB() {
     const ComTransform *transform = GetEntity()->GetTransform();
-    return sceneObjectParms.aabb * transform->GetScale();
+    return renderObjectDef.aabb * transform->GetScale();
 }
 
 bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    if (!sceneObjectParms.mesh) {
+    if (!renderObjectDef.mesh) {
         return false;
     }
 
-    Vec3 localStart = sceneObjectParms.axis.TransposedMulVec(start - sceneObjectParms.origin) / sceneObjectParms.scale;
-    Vec3 localDir = sceneObjectParms.axis.TransposedMulVec(dir) / sceneObjectParms.scale;
+    Vec3 localStart = renderObjectDef.axis.TransposedMulVec(start - renderObjectDef.origin) / renderObjectDef.scale;
+    Vec3 localDir = renderObjectDef.axis.TransposedMulVec(dir) / renderObjectDef.scale;
     localDir.Normalize();
 
-    float localS = sceneObjectParms.mesh->GetAABB().RayIntersection(localStart, localDir);
+    float localS = renderObjectDef.mesh->GetAABB().RayIntersection(localStart, localDir);
     if (localS == FLT_MAX) {
         return false;
     }
 
-    float s = localS * (localDir * sceneObjectParms.scale).Length();
+    float s = localS * (localDir * renderObjectDef.scale).Length();
     if (s > lastScale) {
         return false;
     }
 
-    if (sceneObjectParms.mesh->RayIntersection(localStart, localDir, backFaceCull, localS)) {
-        s = localS * (localDir * sceneObjectParms.scale).Length();
+    if (renderObjectDef.mesh->RayIntersection(localStart, localDir, backFaceCull, localS)) {
+        s = localS * (localDir * renderObjectDef.scale).Length();
         if (s > 0.0f && s < lastScale) {
             lastScale = s;
             return true;
@@ -154,99 +154,107 @@ bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool bac
 }
 
 void ComRenderable::SetWireframeColor(const Color4 &color) {
-    sceneObjectParms.wireframeColor = color;
+    renderObjectDef.wireframeColor = color;
 
     UpdateVisuals();
 }
 
-void ComRenderable::ShowWireframe(SceneObject::WireframeMode wireframeMode) {
-    sceneObjectParms.wireframeMode = wireframeMode;
+void ComRenderable::ShowWireframe(RenderObject::WireframeMode wireframeMode) {
+    renderObjectDef.wireframeMode = wireframeMode;
     
     UpdateVisuals();
 }
 
 void ComRenderable::LayerChanged(const Entity *entity) {
-    sceneObjectParms.layer = entity->GetProperty("layer").As<int>();
+    renderObjectDef.layer = entity->GetProperty("layer").As<int>();
     
     UpdateVisuals();
 }
 
 void ComRenderable::TransformUpdated(const ComTransform *transform) {
-    sceneObjectParms.origin = transform->GetOrigin();
-    sceneObjectParms.axis = transform->GetAxis();
-    sceneObjectParms.scale = transform->GetScale();
+    renderObjectDef.origin = transform->GetOrigin();
+    renderObjectDef.axis = transform->GetAxis();
+    renderObjectDef.scale = transform->GetScale();
 
     UpdateVisuals();
 }
 
 float ComRenderable::GetMaxVisDist() const {
-    return sceneObjectParms.maxVisDist;
+    return renderObjectDef.maxVisDist;
 }
 
 void ComRenderable::SetMaxVisDist(float maxVisDist) {
-    sceneObjectParms.maxVisDist = maxVisDist;
+    renderObjectDef.maxVisDist = maxVisDist;
 
     UpdateVisuals();
 }
 
 Color3 ComRenderable::GetColor() const {
-    return Color3(&sceneObjectParms.materialParms[SceneObject::RedParm]);
+    return Color3(&renderObjectDef.materialParms[RenderObject::RedParm]);
 }
 
 void ComRenderable::SetColor(const Color3 &color) {
-    sceneObjectParms.materialParms[SceneObject::RedParm] = color.r;
-    sceneObjectParms.materialParms[SceneObject::GreenParm] = color.g;
-    sceneObjectParms.materialParms[SceneObject::BlueParm] = color.b;
+    renderObjectDef.materialParms[RenderObject::RedParm] = color.r;
+    renderObjectDef.materialParms[RenderObject::GreenParm] = color.g;
+    renderObjectDef.materialParms[RenderObject::BlueParm] = color.b;
     
     UpdateVisuals();
 }
 
 float ComRenderable::GetAlpha() const {
-    return sceneObjectParms.materialParms[SceneObject::AlphaParm];
+    return renderObjectDef.materialParms[RenderObject::AlphaParm];
 }
 
 void ComRenderable::SetAlpha(float alpha) {
-    sceneObjectParms.materialParms[SceneObject::AlphaParm] = alpha;
+    renderObjectDef.materialParms[RenderObject::AlphaParm] = alpha;
 
     UpdateVisuals();
 }
 
 float ComRenderable::GetTimeOffset() const {
-    return sceneObjectParms.materialParms[SceneObject::TimeOffsetParm];
+    return renderObjectDef.materialParms[RenderObject::TimeOffsetParm];
 }
 
 void ComRenderable::SetTimeOffset(float timeOffset) {
-    sceneObjectParms.materialParms[SceneObject::TimeOffsetParm] = timeOffset;
+    renderObjectDef.materialParms[RenderObject::TimeOffsetParm] = timeOffset;
 
     UpdateVisuals();
 }
 
 float ComRenderable::GetTimeScale() const {
-    return sceneObjectParms.materialParms[SceneObject::TimeScaleParm];
+    return renderObjectDef.materialParms[RenderObject::TimeScaleParm];
 }
 
 void ComRenderable::SetTimeScale(float timeScale) {
-    sceneObjectParms.materialParms[SceneObject::TimeScaleParm] = timeScale;
+    renderObjectDef.materialParms[RenderObject::TimeScaleParm] = timeScale;
 
     UpdateVisuals();
 }
 
 bool ComRenderable::IsBillboard() const {
-    return sceneObjectParms.billboard;
+    return !!(renderObjectDef.flags & RenderObject::BillboardFlag);
 }
 
 void ComRenderable::SetBillboard(bool billboard) {
-    sceneObjectParms.billboard = billboard;
+    if (billboard) {
+        renderObjectDef.flags |= RenderObject::BillboardFlag;
+    } else {
+        renderObjectDef.flags &= ~RenderObject::BillboardFlag;
+    }
 
     UpdateVisuals();
 }
 
 bool ComRenderable::IsSkipSelection() const {
-    return sceneObjectParms.skipSelectionBuffer;
+    return !!(renderObjectDef.flags & RenderObject::SkipSelectionFlag);
 }
 
 void ComRenderable::SetSkipSelection(bool skip) {
-    sceneObjectParms.skipSelectionBuffer = skip;
+    if (skip) {
+        renderObjectDef.flags |= RenderObject::SkipSelectionFlag;
+    } else {
+        renderObjectDef.flags &= ~RenderObject::SkipSelectionFlag;
+    }
 
     UpdateVisuals();
 }

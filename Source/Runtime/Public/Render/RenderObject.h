@@ -17,7 +17,7 @@
 /*
 -------------------------------------------------------------------------------
 
-    SceneObject
+    RenderObject
 
 -------------------------------------------------------------------------------
 */
@@ -25,7 +25,6 @@
 #include "Core/WStr.h"
 #include "Math/Math.h"
 #include "Containers/Array.h"
-#include "ParticleSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -40,10 +39,24 @@ class Font;
 class ParticleSystem;
 class Particle;
 
-class SceneObject {
+class RenderObject {
     friend class RenderWorld;
 
 public:
+    enum Flag {
+        StaticFlag          = BIT(0),
+        FirstPersonOnlyFlag = BIT(1),
+        ThirdPersonOnlyFlag = BIT(2),
+        BillboardFlag       = BIT(3),
+        DepthHackFlag       = BIT(4),
+        UseLightProbeFlag   = BIT(5),
+        CastShadowsFlag     = BIT(6),
+        ReceiveShadowsFlag  = BIT(7),
+        OccluderFlag        = BIT(8),   // for use in HOM
+        SkipSelectionFlag   = BIT(9),
+        RichTextFlag        = BIT(10),
+    };
+
     enum MaterialParm {
         RedParm,
         GreenParm,
@@ -52,13 +65,6 @@ public:
         TimeOffsetParm,
         TimeScaleParm,
         MaxMaterialParms    // should be less than MAX_EXPR_LOCALPARMS
-    };
-
-    enum WireframeMode {
-        ShowNone,
-        ShowVisibleFront,
-        ShowAllFront,
-        ShowAllFrontAndBack
     };
 
     enum TextAnchor {
@@ -79,20 +85,30 @@ public:
         Right
     };
 
-    struct Parms {
-        Vec3                origin;
-        Vec3                scale;
-        Mat3                axis;
-        AABB                aabb;                   // non-scaled AABB (don't use cleared AABB)
-        float               maxVisDist;
+    enum WireframeMode {
+        ShowNone,
+        ShowVisibleFront,
+        ShowAllFront,
+        ShowAllFrontAndBack
+    };
+
+    struct State {
+        int                 flags;
         int                 layer;
         int                 time;
 
+        // world transform
+        Vec3                origin;
+        Vec3                scale;
+        Mat3                axis;
+
+        // static mesh or skinned mesh
         Mesh *              mesh;
         const Skeleton *    skeleton;
         int                 numJoints;
         Mat3x4 *            joints;
 
+        // text rendering
         Font *              font;
         WStr                text;
         TextAnchor          textAnchor;
@@ -100,46 +116,41 @@ public:
         float               textScale;
         float               lineSpacing;
 
+        // particle system
         ParticleSystem *    particleSystem;
         Array<Particle *>   stageParticles;
         Array<float>        stageStartDelay;
         
+        // materials
         Array<Material *>   materials;
         float               materialParms[MaxMaterialParms];
         Skin *              customSkin;
+
+        // wire frame parameters
         WireframeMode       wireframeMode;
         Color4              wireframeColor;
 
-        bool                firstPersonOnly;
-        bool                thirdPersonOnly;
-        bool                billboard;
-        bool                depthHack;
-        bool                useLightProbe;
-        bool                castShadows;
-        bool                receiveShadows;
-        bool                occluder;               // for use in HOM
-        bool                skipSelectionBuffer;
-        bool                richText;
+        AABB                aabb;           // non-scaled local AABB (don't use cleared AABB)
+
+        float               maxVisDist;
     };
 
-    SceneObject();
-    ~SceneObject();
+    RenderObject();
+    ~RenderObject();
 
-    void                    Update(const Parms *parms);
+    void                    Update(const State *state);
 
     const AABB              GetAABB() const;
 
-    const Mat4 &            GetModelMatrix() const { return modelMatrix; }
-    
     const OBB &             GetWorldOBB() const { return worldOBB; }
 
-    void                    DrawJoints() const;
+    const Mat4 &            GetObjectToWorldMatrix() const { return worldMatrix; }
 
     int                     index;
-    Parms                   parms;
+    State                   state;
     bool                    firstUpdate;
     OBB                     worldOBB;
-    Mat4                    modelMatrix;
+    Mat4                    worldMatrix;
     Mat4                    motionBlurModelMatrix[2];
     int                     viewCount;
     VisibleObject *         visibleObject;

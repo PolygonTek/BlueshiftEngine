@@ -212,6 +212,8 @@ private:
     static void             Cmd_ListMaterials(const CmdArgs &args);
     static void             Cmd_ReloadMaterial(const CmdArgs &args);
 
+    void                    CreateEngineMaterials();
+
     StrIHashMap<Material *> materialHashMap;
 };
 

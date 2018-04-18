@@ -15,7 +15,7 @@
 #pragma once
 
 #include "Core/Object.h"
-#include "Render/SceneView.h"
+#include "Render/RenderView.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -86,7 +86,7 @@ public:
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const { return false; }
 
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const SceneView::Parms &sceneView, bool selected) {}
+    virtual void            DrawGizmos(const RenderView::State &sceneView, bool selected) {}
 
 protected:
     virtual void            OnActive() {}
