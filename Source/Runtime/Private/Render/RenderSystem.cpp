@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "RBackEnd.h"
 #include "Render/Font.h"
 #include "Core/Cmds.h"
 #include "File/FileSystem.h"

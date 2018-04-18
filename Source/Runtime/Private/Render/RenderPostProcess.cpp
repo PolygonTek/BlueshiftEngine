@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "RBackEnd.h"
 #include "Core/Heap.h"
 
 BE_NAMESPACE_BEGIN

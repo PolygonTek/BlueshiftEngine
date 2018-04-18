@@ -134,16 +134,6 @@ struct LightQuery {
     int                 frameCount;
 };
 
-// HW skinning 용 joint cache
-struct SkinningJointCache {
-    int                 numJoints;              // motion blur 를 사용하면 원래 model joints 의 2배를 사용한다
-    Mat3x4 *            skinningJoints;         // animation 결과 matrix(3x4) 를 담는다.
-    int                 jointIndexOffsetCurr;   // motion blur 용 현재 프레임 joint index offset
-    int                 jointIndexOffsetPrev;   // motion blur 용 이전 프레임 joint index offset
-    BufferCache         bufferCache;            // VTF skinning 일 때 사용
-    int                 viewFrameCount;         // 현재 프레임에 계산을 마쳤음을 표시하기 위한 marking number
-};
-
 struct BackEnd {
     enum PreDefinedStencilState {
         VolumeIntersectionZPass,
@@ -227,16 +217,6 @@ void    RB_ForwardAdditivePass(viewLight_t *viewLights);
 void    RB_PostProcessDepth();
 void    RB_PostProcess();
 
-void    RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s2, float t2);
-void    RB_DrawClipRect(float s, float t, float s2, float t2);
-void    RB_DrawRectSlice(float x, float y, float x2, float y2, float s, float t, float s2, float t2, float slice);
-void    RB_DrawScreenRect(float x, float y, float w, float h, float s, float t, float s2, float t2);
-void    RB_DrawScreenRectSlice(float x, float y, float w, float h, float s, float t, float s2, float t2, float slice);
-void    RB_DrawCircle(const Vec3 &origin, const Vec3 &left, const Vec3 &up, const float radius);
-void    RB_DrawAABB(const AABB &aabb);
-void    RB_DrawOBB(const OBB &obb);
-void    RB_DrawFrustum(const Frustum &frustum);
-void    RB_DrawSphere(const Sphere &sphere, int lats, int longs);
 void    RB_DrawLightVolume(const SceneLight *light);
 
 void    RB_ClearDebugPrimitives(int time);

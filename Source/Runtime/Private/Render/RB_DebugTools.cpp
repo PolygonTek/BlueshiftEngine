@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "RBackEnd.h"
 #include "Simplex.h"
 
 BE_NAMESPACE_BEGIN
@@ -510,7 +511,7 @@ static void RB_DrawDebugTextWithDepthTest(bool depthTest) {
             continue;
         }
 
-        int num = RB_DrawTextNumVerts(text->text, 0);		
+        int num = RB_DrawTextNumVerts(text->text, 0);
 
         if (numVerts == 0) {
             prev_lineWidth = text->lineWidth;

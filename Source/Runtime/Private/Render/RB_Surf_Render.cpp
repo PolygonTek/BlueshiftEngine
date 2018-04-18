@@ -16,6 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Core/JointPose.h"
+#include "RBackEnd.h"
 
 BE_NAMESPACE_BEGIN
 
