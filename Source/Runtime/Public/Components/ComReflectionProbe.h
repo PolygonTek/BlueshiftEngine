@@ -49,11 +49,11 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    SceneEntity::Parms      probe;
+    SceneObject::Parms      probe;
     int                     probeHandle;
 
     Mesh *                  sphereMesh;
-    SceneEntity::Parms      sphere;
+    SceneObject::Parms      sphere;
     int                     sphereHandle;
 
     RenderWorld *           renderWorld;

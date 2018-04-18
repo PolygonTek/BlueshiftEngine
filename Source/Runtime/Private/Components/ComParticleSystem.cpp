@@ -47,17 +47,17 @@ ComParticleSystem::~ComParticleSystem() {
 }
 
 void ComParticleSystem::Purge(bool chainPurge) {
-    if (sceneEntity.particleSystem) {
-        particleSystemManager.ReleaseParticleSystem(sceneEntity.particleSystem);
-        sceneEntity.particleSystem = nullptr;
+    if (sceneObjectParms.particleSystem) {
+        particleSystemManager.ReleaseParticleSystem(sceneObjectParms.particleSystem);
+        sceneObjectParms.particleSystem = nullptr;
     }
 
-    if (sceneEntity.stageParticles.Count() > 0) {
-        for (int stageIndex = 0; stageIndex < sceneEntity.stageParticles.Count(); stageIndex++) {
-            Mem_Free(sceneEntity.stageParticles[stageIndex]);
+    if (sceneObjectParms.stageParticles.Count() > 0) {
+        for (int stageIndex = 0; stageIndex < sceneObjectParms.stageParticles.Count(); stageIndex++) {
+            Mem_Free(sceneObjectParms.stageParticles[stageIndex]);
         }
 
-        sceneEntity.stageParticles.Clear();
+        sceneObjectParms.stageParticles.Clear();
     }
 
     if (sprite.mesh) {
@@ -71,7 +71,7 @@ void ComParticleSystem::Purge(bool chainPurge) {
     }
 
     if (spriteHandle != -1) {
-        renderWorld->RemoveEntity(spriteHandle);
+        renderWorld->RemoveObject(spriteHandle);
         spriteHandle = -1;
     }
 
@@ -106,12 +106,12 @@ void ComParticleSystem::Init() {
     sprite.origin = GetEntity()->GetTransform()->GetOrigin();
     sprite.scale = Vec3(1, 1, 1);
     sprite.axis = Mat3::identity;
-    sprite.materialParms[SceneEntity::RedParm] = 1.0f;
-    sprite.materialParms[SceneEntity::GreenParm] = 1.0f;
-    sprite.materialParms[SceneEntity::BlueParm] = 1.0f;
-    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;
-    sprite.materialParms[SceneEntity::TimeOffsetParm] = 0.0f;
-    sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
+    sprite.materialParms[SceneObject::RedParm] = 1.0f;
+    sprite.materialParms[SceneObject::GreenParm] = 1.0f;
+    sprite.materialParms[SceneObject::BlueParm] = 1.0f;
+    sprite.materialParms[SceneObject::AlphaParm] = 1.0f;
+    sprite.materialParms[SceneObject::TimeOffsetParm] = 0.0f;
+    sprite.materialParms[SceneObject::TimeScaleParm] = 1.0f;
 
     GetEntity()->GetTransform()->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
 
@@ -129,14 +129,14 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
     }
 
     // Release the previously used particleSystem
-    if (sceneEntity.particleSystem) {
-        particleSystemManager.ReleaseParticleSystem(sceneEntity.particleSystem);
-        sceneEntity.particleSystem = nullptr;
+    if (sceneObjectParms.particleSystem) {
+        particleSystemManager.ReleaseParticleSystem(sceneObjectParms.particleSystem);
+        sceneObjectParms.particleSystem = nullptr;
     }
 
     // Get the new particleSystem
     const Str particleSystemPath = resourceGuidMapper.Get(particleSystemGuid);
-    sceneEntity.particleSystem = particleSystemManager.GetParticleSystem(particleSystemPath);
+    sceneObjectParms.particleSystem = particleSystemManager.GetParticleSystem(particleSystemPath);
 
     ResetParticles();
 
@@ -148,30 +148,30 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
 }
 
 void ComParticleSystem::ResetParticles() {
-    sceneEntity.stageStartDelay.SetCount(sceneEntity.particleSystem->NumStages());
+    sceneObjectParms.stageStartDelay.SetCount(sceneObjectParms.particleSystem->NumStages());
 
     // Free memory used for particles
-    if (sceneEntity.stageParticles.Count() > 0) {
-        for (int stageIndex = 0; stageIndex < sceneEntity.stageParticles.Count(); stageIndex++) {
-            Mem_Free(sceneEntity.stageParticles[stageIndex]);
+    if (sceneObjectParms.stageParticles.Count() > 0) {
+        for (int stageIndex = 0; stageIndex < sceneObjectParms.stageParticles.Count(); stageIndex++) {
+            Mem_Free(sceneObjectParms.stageParticles[stageIndex]);
         }
 
-        sceneEntity.stageParticles.Clear();
+        sceneObjectParms.stageParticles.Clear();
     }
 
-    sceneEntity.stageParticles.SetCount(sceneEntity.particleSystem->NumStages());
+    sceneObjectParms.stageParticles.SetCount(sceneObjectParms.particleSystem->NumStages());
 
-    for (int stageIndex = 0; stageIndex < sceneEntity.particleSystem->NumStages(); stageIndex++) {
-        const ParticleSystem::Stage *stage = sceneEntity.particleSystem->GetStage(stageIndex);
+    for (int stageIndex = 0; stageIndex < sceneObjectParms.particleSystem->NumStages(); stageIndex++) {
+        const ParticleSystem::Stage *stage = sceneObjectParms.particleSystem->GetStage(stageIndex);
 
-        sceneEntity.stageStartDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1), 0);
+        sceneObjectParms.stageStartDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1), 0);
 
         int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
         int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
         int size = stage->standardModule.count * particleSize;
 
-        sceneEntity.stageParticles[stageIndex] = (Particle *)Mem_Alloc(size);
-        memset(sceneEntity.stageParticles[stageIndex], 0, size);
+        sceneObjectParms.stageParticles[stageIndex] = (Particle *)Mem_Alloc(size);
+        memset(sceneObjectParms.stageParticles[stageIndex], 0, size);
     }
 }
 
@@ -189,7 +189,7 @@ void ComParticleSystem::OnActive() {
 
 void ComParticleSystem::OnInactive() {
     if (spriteHandle != -1) {
-        renderWorld->RemoveEntity(spriteHandle);
+        renderWorld->RemoveObject(spriteHandle);
         spriteHandle = -1;
     }
 
@@ -207,8 +207,8 @@ bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
 int ComParticleSystem::GetAliveParticleCount() const {
     int aliveCount = 0;
 
-    for (int stageIndex = 0; stageIndex < sceneEntity.particleSystem->NumStages(); stageIndex++) {
-        const ParticleSystem::Stage *stage = sceneEntity.particleSystem->GetStage(stageIndex);
+    for (int stageIndex = 0; stageIndex < sceneObjectParms.particleSystem->NumStages(); stageIndex++) {
+        const ParticleSystem::Stage *stage = sceneObjectParms.particleSystem->GetStage(stageIndex);
         const ParticleSystem::StandardModule &standardModule = stage->standardModule;
 
         int trailCount = (stage->moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage->trailsModule.count : 0;
@@ -217,7 +217,7 @@ int ComParticleSystem::GetAliveParticleCount() const {
             int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
 
             // Get the particle pointer with the given particle index
-            Particle *particle = (Particle *)((byte *)sceneEntity.stageParticles[stageIndex] + particleIndex * particleSize);
+            Particle *particle = (Particle *)((byte *)sceneObjectParms.stageParticles[stageIndex] + particleIndex * particleSize);
 
             if (particle->alive) {
                 aliveCount++;
@@ -247,22 +247,22 @@ void ComParticleSystem::Update() {
 void ComParticleSystem::UpdateSimulation(int currentTime) {
     float time = MS2SEC(currentTime);
 
-    sceneEntity.time = currentTime;
+    sceneObjectParms.time = currentTime;
 
-    sceneEntity.aabb.SetZero();
+    sceneObjectParms.aabb.SetZero();
 
     const Mat3x4 worldMatrix = GetEntity()->GetTransform()->GetMatrix();
 
     bool simulationEnded = true;
     
-    for (int stageIndex = 0; stageIndex < sceneEntity.particleSystem->NumStages(); stageIndex++) {
-        const ParticleSystem::Stage *stage = sceneEntity.particleSystem->GetStage(stageIndex);
+    for (int stageIndex = 0; stageIndex < sceneObjectParms.particleSystem->NumStages(); stageIndex++) {
+        const ParticleSystem::Stage *stage = sceneObjectParms.particleSystem->GetStage(stageIndex);
 
         // Standard module
         const ParticleSystem::StandardModule &standardModule = stage->standardModule;
 
         // Is in delay time ?
-        float simulationTime = standardModule.simulationSpeed * time - sceneEntity.stageStartDelay[stageIndex];
+        float simulationTime = standardModule.simulationSpeed * time - sceneObjectParms.stageStartDelay[stageIndex];
         if (simulationTime < 0) {
             simulationEnded = false;
             continue;
@@ -304,7 +304,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
             int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
 
             // Get the particle pointer with the given particle index
-            Particle *particle = (Particle *)((byte *)sceneEntity.stageParticles[stageIndex] + particleIndex * particleSize);
+            Particle *particle = (Particle *)((byte *)sceneObjectParms.stageParticles[stageIndex] + particleIndex * particleSize);
 
             // Check this particle is alive now 
             if (particleAge >= 0 && particleAge < standardModule.lifeTime) {
@@ -613,7 +613,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             radius = trail->size * 0.5f;
         }
 
-        sceneEntity.aabb.AddAABB(Sphere(trail->position, radius).ToAABB());
+        sceneObjectParms.aabb.AddAABB(Sphere(trail->position, radius).ToAABB());
     }
 }
 
@@ -700,9 +700,9 @@ void ComParticleSystem::UpdateVisuals() {
     }
 
     if (spriteHandle == -1) {
-        spriteHandle = renderWorld->AddEntity(&sprite);
+        spriteHandle = renderWorld->AddObject(&sprite);
     } else {
-        renderWorld->UpdateEntity(spriteHandle, &sprite);
+        renderWorld->UpdateObject(spriteHandle, &sprite);
     }
 
     ComRenderable::UpdateVisuals();
@@ -719,8 +719,8 @@ void ComParticleSystem::ParticleSystemReloaded() {
 }
 
 Guid ComParticleSystem::GetParticleSystemGuid() const {
-    if (sceneEntity.particleSystem) {
-        const Str particleSystemPath = sceneEntity.particleSystem->GetHashName();
+    if (sceneObjectParms.particleSystem) {
+        const Str particleSystemPath = sceneObjectParms.particleSystem->GetHashName();
         return resourceGuidMapper.Get(particleSystemPath);
     }
     return Guid();

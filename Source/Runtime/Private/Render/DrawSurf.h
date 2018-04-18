@@ -26,7 +26,7 @@ public:
 
     uint64_t                sortKey;
     uint32_t                flags;
-    const viewEntity_t *    space;              ///< entity of this surface
+    const VisibleObject *   space;              ///< entity of this surface
     const Material *        material;           ///< material of this surface
     const float *           materialRegisters;
     SubMesh *               subMesh;

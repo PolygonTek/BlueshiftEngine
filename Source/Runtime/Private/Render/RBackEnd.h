@@ -24,7 +24,7 @@
 
 BE_NAMESPACE_BEGIN
 
-struct viewEntity_t;
+class VisibleObject;
 
 class RBSurf {
 public:
@@ -48,7 +48,7 @@ public:
     void                Init();
     void                Shutdown();
 
-    void                Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfSpace, const viewLight_t *surfLight);
+    void                Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace, const VisibleLight *surfLight);
     void                DrawSubMesh(SubMesh *subMesh);
     void                Flush();
 
@@ -65,6 +65,7 @@ private:
     void                Flush_ShadowDepthPass();
     void                Flush_LitPass();
     void                Flush_UnlitPass();
+
     void                Flush_FinalPass();
     void                Flush_TrisPass();
     void                Flush_VelocityMapPass();
@@ -107,8 +108,8 @@ private:
     const float *       materialRegisters;
     SubMesh *           subMesh;
 
-    const viewEntity_t *surfSpace;
-    const viewLight_t * surfLight;
+    const VisibleObject *surfSpace;
+    const VisibleLight *surfLight;
 
     RHI::Handle         vbHandle;
     RHI::Handle         ibHandle;
@@ -128,7 +129,7 @@ private:
 */
 
 struct LightQuery {
-    const viewLight_t * light;
+    const VisibleLight * light;
     RHI::Handle         queryHandle;
     unsigned int        resultSamples;
     int                 frameCount;
@@ -154,10 +155,10 @@ struct BackEnd {
     RBSurf              rbsurf;
     int                 numDrawSurfs;
     DrawSurf **         drawSurfs;
-    viewEntity_t *      viewEntities;
-    viewLight_t *       viewLights;
-    viewLight_t *       primaryLight;
-    view_t *            view;
+    VisibleObject *     visibleObjects;
+    VisibleLight *      visibleLights;
+    VisibleLight *      primaryLight;
+    VisibleView *       view;
 
     Rect                renderRect;
     Rect                screenRect;
@@ -197,7 +198,7 @@ void    RB_Shutdown();
 
 void    RB_Execute(const void *data);
 
-void    RB_SetupLight(viewLight_t *viewLight);
+void    RB_SetupLight(VisibleLight *visibleLight);
 
 void    RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs);
@@ -210,9 +211,9 @@ void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);
 void    RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs);
 
-void    RB_ShadowPass(const viewLight_t *viewLight);
+void    RB_ShadowPass(const VisibleLight *visibleLight);
 void    RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_ForwardAdditivePass(viewLight_t *viewLights);
+void    RB_ForwardAdditivePass(VisibleLight *visibleLights);
 
 void    RB_PostProcessDepth();
 void    RB_PostProcess();

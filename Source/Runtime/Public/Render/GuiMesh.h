@@ -16,7 +16,7 @@
 
 #include "Core/Vertex.h"
 #include "BufferCache.h"
-#include "SceneEntity.h"
+#include "SceneObject.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -59,12 +59,12 @@ public:
     
     int                     DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode);
 
-    void                    Draw(Font *font, SceneEntity::TextAnchor anchor, SceneEntity::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text);
+    void                    Draw(Font *font, SceneObject::TextAnchor anchor, SceneObject::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text);
 
                             // Call this function when drawing ends
     void                    CacheIndexes();
 
-    AABB                    Compute3DTextAABB(Font *font, SceneEntity::TextAnchor anchor, float lineSpacing, float textScale, const wchar_t *text) const;
+    AABB                    Compute3DTextAABB(Font *font, SceneObject::TextAnchor anchor, float lineSpacing, float textScale, const wchar_t *text) const;
 
 private:
     void                    PrepareNextSurf();

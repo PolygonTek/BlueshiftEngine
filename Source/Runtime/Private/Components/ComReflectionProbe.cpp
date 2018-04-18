@@ -60,7 +60,7 @@ void ComReflectionProbe::Purge(bool chainPurge) {
     }
 
     if (sphereHandle != -1) {
-        renderWorld->RemoveEntity(sphereHandle);
+        renderWorld->RemoveObject(sphereHandle);
         sphereHandle = -1;
     }
 
@@ -93,12 +93,12 @@ void ComReflectionProbe::Init() {
     sphere.origin = transform->GetOrigin();
     sphere.scale = Vec3(1, 1, 1);
     sphere.axis = Mat3::identity;
-    sphere.materialParms[SceneEntity::RedParm] = 1.0f;
-    sphere.materialParms[SceneEntity::GreenParm] = 1.0f;
-    sphere.materialParms[SceneEntity::BlueParm] = 1.0f;
-    sphere.materialParms[SceneEntity::AlphaParm] = 1.0f;
-    sphere.materialParms[SceneEntity::TimeOffsetParm] = 0.0f;
-    sphere.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
+    sphere.materialParms[SceneObject::RedParm] = 1.0f;
+    sphere.materialParms[SceneObject::GreenParm] = 1.0f;
+    sphere.materialParms[SceneObject::BlueParm] = 1.0f;
+    sphere.materialParms[SceneObject::AlphaParm] = 1.0f;
+    sphere.materialParms[SceneObject::TimeOffsetParm] = 0.0f;
+    sphere.materialParms[SceneObject::TimeScaleParm] = 1.0f;
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComReflectionProbe::TransformUpdated, SignalObject::Unique);
 
@@ -113,7 +113,7 @@ void ComReflectionProbe::OnActive() {
 }
 
 void ComReflectionProbe::OnInactive() {
-    renderWorld->RemoveEntity(sphereHandle);
+    renderWorld->RemoveObject(sphereHandle);
     sphereHandle = -1;
 }
 
@@ -153,9 +153,9 @@ void ComReflectionProbe::UpdateVisuals() {
     }
 
     if (sphereHandle == -1) {
-        sphereHandle = renderWorld->AddEntity(&sphere);
+        sphereHandle = renderWorld->AddObject(&sphere);
     } else {
-        renderWorld->UpdateEntity(sphereHandle, &sphere);
+        renderWorld->UpdateObject(sphereHandle, &sphere);
     }
 }
 

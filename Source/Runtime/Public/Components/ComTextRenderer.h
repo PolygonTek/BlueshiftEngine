@@ -36,11 +36,11 @@ public:
     Str                     GetText() const;
     void                    SetText(const Str &text);
 
-    SceneEntity::TextAnchor GetAnchor() const;
-    void                    SetAnchor(SceneEntity::TextAnchor anchor);
+    SceneObject::TextAnchor GetAnchor() const;
+    void                    SetAnchor(SceneObject::TextAnchor anchor);
 
-    SceneEntity::TextAlignment GetAlignment() const;
-    void                    SetAlignment(SceneEntity::TextAlignment alignment);
+    SceneObject::TextAlignment GetAlignment() const;
+    void                    SetAlignment(SceneObject::TextAlignment alignment);
 
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);

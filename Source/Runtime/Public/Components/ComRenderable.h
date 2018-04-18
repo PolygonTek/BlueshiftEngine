@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Render/SceneEntity.h"
+#include "Render/SceneObject.h"
 #include "Component.h"
 
 BE_NAMESPACE_BEGIN
@@ -42,7 +42,7 @@ public:
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
     void                    SetWireframeColor(const Color4 &color);
-    void                    ShowWireframe(SceneEntity::WireframeMode wireframeMode);
+    void                    ShowWireframe(SceneObject::WireframeMode wireframeMode);
 
     float                   GetMaxVisDist() const;
     void                    SetMaxVisDist(float maxVisDist);
@@ -74,8 +74,8 @@ protected:
     void                    LayerChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 
-    SceneEntity::Parms      sceneEntity;
-    int                     sceneEntityHandle;
+    SceneObject::Parms      sceneObjectParms;
+    int                     sceneObjectHandle;
     RenderWorld *           renderWorld;
 };
 

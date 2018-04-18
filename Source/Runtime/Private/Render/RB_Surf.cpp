@@ -43,7 +43,7 @@ void RBSurf::EndFrame() {
     startIndex = -1;
 }
 
-void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const viewEntity_t *surfSpace, const viewLight_t *surfLight) {
+void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace, const VisibleLight *surfLight) {
     this->flushType = flushType;
     this->material = const_cast<Material *>(material);
     this->materialRegisters = materialRegisters;
@@ -450,21 +450,21 @@ void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
         blendState = RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
     }
 
-    if (mode == SceneEntity::ShowNone) {
-        mode = SceneEntity::ShowVisibleFront;
+    if (mode == SceneObject::ShowNone) {
+        mode = SceneObject::ShowVisibleFront;
     }
     
     switch (mode) {
-    case SceneEntity::ShowVisibleFront:
+    case SceneObject::ShowVisibleFront:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_LEqual | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(mtrlPass->cullType);
         rhi.SetDepthBias(-0.5f, -2.0f);
         break;
-    case SceneEntity::ShowAllFront:
+    case SceneObject::ShowAllFront:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(mtrlPass->cullType);
         break;
-    case SceneEntity::ShowAllFrontAndBack:
+    case SceneObject::ShowAllFrontAndBack:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(RHI::NoCull);
         break;  
@@ -472,7 +472,7 @@ void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
 
     RenderColor(rgba);
 
-    if (mode == SceneEntity::ShowVisibleFront) {
+    if (mode == SceneObject::ShowVisibleFront) {
         rhi.SetDepthBias(0.0f, 0.0f);
     }
 }

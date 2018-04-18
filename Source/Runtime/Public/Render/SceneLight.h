@@ -22,13 +22,13 @@
 -------------------------------------------------------------------------------
 */
 
-#include "Render/SceneEntity.h"
+#include "Render/SceneObject.h"
 
 BE_NAMESPACE_BEGIN
 
-struct viewLight_t;
 struct DbvtProxy;
 
+class VisibleLight;
 class Material;
 class SceneView;
 
@@ -47,7 +47,7 @@ public:
         int                 layer;
         Type                type;
         Material *          material;
-        float               materialParms[SceneEntity::MaxMaterialParms];
+        float               materialParms[SceneObject::MaxMaterialParms];
         float               intensity;
 
         Vec3                origin;
@@ -139,7 +139,7 @@ public:
     Mat4                    projMatrix;
     Mat4                    viewProjScaleBiasMatrix;
     int                     viewCount;
-    viewLight_t *           viewLight;
+    VisibleLight *          visibleLight;
     DbvtProxy *             proxy;
 };
 

@@ -185,15 +185,15 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const Frustu
     return true;
 }
 
-static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &lightViewMatrix, const Frustum &lightFrustum, const Frustum &viewFrustum, bool forceClear, int cubeMapFace) {
+static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat4 &lightViewMatrix, const Frustum &lightFrustum, const Frustum &viewFrustum, bool forceClear, int cubeMapFace) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
-    const viewEntity_t *skipEntity = nullptr;
-    const viewEntity_t *entity2 = nullptr;
+    const VisibleObject *prevSpace = nullptr;
+    const VisibleObject *skipEntity = nullptr;
+    const VisibleObject *entity2 = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
     
-    for (drawSurfNode_t *shadowCasterSurfNode = viewLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
+    for (drawSurfNode_t *shadowCasterSurfNode = visibleLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
         const DrawSurf *surf = shadowCasterSurfNode->drawSurf;
 
         if (surf->sortKey != prevSortkey) {
@@ -212,12 +212,12 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
 
             if (surf->material != prevMaterial || surf->space != prevSpace) {
                 if (!prevMaterial) {
-                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
+                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
                 } else {
                     if (surf->space != prevSpace ||
                         (prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
                         backEnd.rbsurf.Flush();
-                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
+                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
                     }
                 }
 
@@ -317,9 +317,9 @@ static bool RB_ShadowCubeMapFacePass(const viewLight_t *viewLight, const Mat4 &l
     return !firstDraw;
 }
 
-static void RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &viewFrustum) {
+static void RB_ShadowCubeMapPass(const VisibleLight *visibleLight, const Frustum &viewFrustum) {
     float zNear = r_shadowCubeMapZNear.GetFloat();
-    float zFar = viewLight->def->GetMajorRadius();
+    float zFar = visibleLight->def->GetMajorRadius();
     float zRangeInv = 1.0f / (zFar - zNear);
 
     // Zeye 에서 depth 값을 구하기 위한 projection 행렬의 33, 43 성분을 다시 W(-Zeye) 로 나눈값
@@ -330,7 +330,7 @@ static void RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &vi
     R_SetPerspectiveProjectionMatrix(fov, fov, zNear, zFar, false, backEnd.shadowProjectionMatrix);
 
     Frustum lightFrustum;
-    lightFrustum.SetOrigin(viewLight->def->parms.origin);
+    lightFrustum.SetOrigin(visibleLight->def->parms.origin);
     float size = zFar * Math::Tan(Math::OneFourthPi);
     lightFrustum.SetSize(zNear, zFar, size, size);
 
@@ -352,14 +352,14 @@ static void RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &vi
         }
 
         Mat4 lightViewMatrix;
-        R_SetViewMatrix(axis, viewLight->def->parms.origin, lightViewMatrix);
+        R_SetViewMatrix(axis, visibleLight->def->parms.origin, lightViewMatrix);
 
-        backEnd.shadowMapOffsetFactor = viewLight->def->parms.shadowOffsetFactor;
-        backEnd.shadowMapOffsetUnits = viewLight->def->parms.shadowOffsetUnits;
+        backEnd.shadowMapOffsetFactor = visibleLight->def->parms.shadowOffsetFactor;
+        backEnd.shadowMapOffsetUnits = visibleLight->def->parms.shadowOffsetUnits;
 
         rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
-        if (RB_ShadowCubeMapFacePass(viewLight, lightViewMatrix, lightFrustum, viewFrustum, true, faceIndex)) {
+        if (RB_ShadowCubeMapFacePass(visibleLight, lightViewMatrix, lightFrustum, viewFrustum, true, faceIndex)) {
             shadowMapDraw++;
         }
 
@@ -375,11 +375,11 @@ static void RB_ShadowCubeMapPass(const viewLight_t *viewLight, const Frustum &vi
 }
 
 // TODO: cascade 별로 컬링해야함
-static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFrustum, int cascadeIndex, bool forceClear) {
+static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &viewFrustum, int cascadeIndex, bool forceClear) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
-    const viewEntity_t *skipEntity = nullptr;
-    const viewEntity_t *entity2 = nullptr;
+    const VisibleObject *prevSpace = nullptr;
+    const VisibleObject *skipEntity = nullptr;
+    const VisibleObject *entity2 = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
     Rect                prevScissorRect;
@@ -391,7 +391,7 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
 
     rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
     
-    for (drawSurfNode_t *shadowCasterSurfNode = viewLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
+    for (drawSurfNode_t *shadowCasterSurfNode = visibleLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
         const DrawSurf *surf = shadowCasterSurfNode->drawSurf;
 
         if (surf->sortKey != prevSortkey) {
@@ -410,13 +410,13 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
 
             if (surf->material != prevMaterial || surf->space != prevSpace) {
                 if (!prevMaterial) {
-                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
+                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
                 } else {
                     if (surf->space != prevSpace ||
                         (prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) ||
                         (surf->material->GetCullType() != prevMaterial->GetCullType())) {
                         backEnd.rbsurf.Flush();
-                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
+                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
                     }
                 }
 
@@ -456,7 +456,7 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
         if (surf->space != entity2) {
             entity2 = surf->space;
 
-            backEnd.modelViewMatrix = viewLight->def->viewMatrix * surf->space->def->GetModelMatrix();
+            backEnd.modelViewMatrix = visibleLight->def->viewMatrix * surf->space->def->GetModelMatrix();
             backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
         }
 
@@ -499,29 +499,29 @@ static bool RB_ShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFr
     return !firstDraw;
 }
 
-static void RB_OrthogonalShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFrustum) {
+static void RB_OrthogonalShadowMapPass(const VisibleLight *visibleLight, const Frustum &viewFrustum) {
     backEnd.shadowViewProjectionScaleBiasMatrix[0].SetZero();
 
-    backEnd.shadowMapOffsetFactor = viewLight->def->parms.shadowOffsetFactor;
-    backEnd.shadowMapOffsetUnits = viewLight->def->parms.shadowOffsetUnits;
+    backEnd.shadowMapOffsetFactor = visibleLight->def->parms.shadowOffsetFactor;
+    backEnd.shadowMapOffsetUnits = visibleLight->def->parms.shadowOffsetUnits;
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(viewLight->def->parms.origin, viewLight->def->obb, viewLight->shadowCasterAABB, viewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visibleLight->def->parms.origin, visibleLight->def->obb, visibleLight->shadowCasterAABB, viewFrustum, &dNear, &dFar)) {
         return;
     }
 
-    R_SetOrthogonalProjectionMatrix(viewLight->def->obb.Extents()[1], viewLight->def->obb.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
+    R_SetOrthogonalProjectionMatrix(visibleLight->def->obb.Extents()[1], visibleLight->def->obb.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() == 2) {
         Mat4 shadowCropMatrix;
-        OBB lightOBB = viewLight->def->obb;
+        OBB lightOBB = visibleLight->def->obb;
 
-        lightOBB.SetCenter(viewLight->def->parms.origin + viewLight->def->parms.axis[0] * (dFar + dNear) * 0.5f);
+        lightOBB.SetCenter(visibleLight->def->parms.origin + visibleLight->def->parms.axis[0] * (dFar + dNear) * 0.5f);
 
         Vec3 extents = lightOBB.Extents();
         lightOBB.SetExtents(Vec3((dFar - dNear) * 0.5f, extents.y, extents.z));
 
-        if (!RB_ComputeShadowCropMatrix(lightOBB, OBB(viewLight->shadowCasterAABB), viewFrustum, shadowCropMatrix)) {
+        if (!RB_ComputeShadowCropMatrix(lightOBB, OBB(visibleLight->shadowCasterAABB), viewFrustum, shadowCropMatrix)) {
             return;
         }
 
@@ -532,38 +532,38 @@ static void RB_OrthogonalShadowMapPass(const viewLight_t *viewLight, const Frust
     backEnd.shadowMapFilterSize[0] = r_shadowMapFilterSize.GetFloat();
 
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
-    backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * viewLight->def->viewMatrix;
+    backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visibleLight->def->viewMatrix;
 
-    if (RB_ShadowMapPass(viewLight, viewFrustum, 0, false)) {
+    if (RB_ShadowMapPass(visibleLight, viewFrustum, 0, false)) {
         backEnd.ctx->renderCounter.numShadowMapDraw++;
     }
 }
 
-static void RB_ProjectedShadowMapPass(const viewLight_t *viewLight, const Frustum &viewFrustum) {
+static void RB_ProjectedShadowMapPass(const VisibleLight *visibleLight, const Frustum &viewFrustum) {
     backEnd.shadowViewProjectionScaleBiasMatrix[0].SetZero();
 
-    backEnd.shadowMapOffsetFactor = viewLight->def->parms.shadowOffsetFactor;
-    backEnd.shadowMapOffsetUnits = viewLight->def->parms.shadowOffsetUnits;
+    backEnd.shadowMapOffsetFactor = visibleLight->def->parms.shadowOffsetFactor;
+    backEnd.shadowMapOffsetUnits = visibleLight->def->parms.shadowOffsetUnits;
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(viewLight->def->frustum, viewLight->shadowCasterAABB, viewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visibleLight->def->frustum, visibleLight->shadowCasterAABB, viewFrustum, &dNear, &dFar)) {
         return;
     }
 
-    float xFov = RAD2DEG(Math::ATan(viewLight->def->frustum.GetLeft(), dFar)) * 2.0f;
-    float yFov = RAD2DEG(Math::ATan(viewLight->def->frustum.GetUp(), dFar)) * 2.0f;
+    float xFov = RAD2DEG(Math::ATan(visibleLight->def->frustum.GetLeft(), dFar)) * 2.0f;
+    float yFov = RAD2DEG(Math::ATan(visibleLight->def->frustum.GetUp(), dFar)) * 2.0f;
 
     R_SetPerspectiveProjectionMatrix(xFov, yFov, dNear, dFar, false, backEnd.shadowProjectionMatrix);
 
     /*if (r_optimizedShadowProjection.GetInteger() > 0) {
         Mat4 shadowCropMatrix;
-        Frustum lightFrustum = viewLight->def->frustum;
+        Frustum lightFrustum = visibleLight->def->frustum;
 
         lightFrustum.MoveNearDistance(dNear);
         lightFrustum.MoveFarDistance(dFar);
 
         if (r_optimizedShadowProjection.GetInteger() == 2) {
-            if (!RB_ComputeShadowCropMatrix(lightFrustum, OBB(viewLight->shadowCasterAABB), viewFrustum, shadowCropMatrix)) {
+            if (!RB_ComputeShadowCropMatrix(lightFrustum, OBB(visibleLight->shadowCasterAABB), viewFrustum, shadowCropMatrix)) {
                 return;
             }
         } else {
@@ -577,16 +577,16 @@ static void RB_ProjectedShadowMapPass(const viewLight_t *viewLight, const Frustu
     backEnd.shadowMapFilterSize[0] = r_shadowMapFilterSize.GetFloat();
 
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
-    backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * viewLight->def->viewMatrix;
+    backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visibleLight->def->viewMatrix;
 
-    if (RB_ShadowMapPass(viewLight, viewFrustum, 0, false)) {
+    if (RB_ShadowMapPass(visibleLight, viewFrustum, 0, false)) {
         backEnd.ctx->renderCounter.numShadowMapDraw++;
     }
 }
 
-static bool RB_SingleCascadedShadowMapPass(const viewLight_t *viewLight, const Frustum &splitViewFrustum, int cascadeIndex, bool forceClear) {
+static bool RB_SingleCascadedShadowMapPass(const VisibleLight *visibleLight, const Frustum &splitViewFrustum, int cascadeIndex, bool forceClear) {
     // split 된 viewFrustum 일 수 있기 때문에 컬링 가능
-    if (splitViewFrustum.CullAABB(viewLight->litSurfsAABB)) {
+    if (splitViewFrustum.CullAABB(visibleLight->litSurfsAABB)) {
         return false;
     }
 
@@ -613,23 +613,23 @@ static bool RB_SingleCascadedShadowMapPass(const viewLight_t *viewLight, const F
     }
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(viewLight->def->parms.origin, viewLight->def->obb, viewLight->shadowCasterAABB, splitViewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visibleLight->def->parms.origin, visibleLight->def->obb, visibleLight->shadowCasterAABB, splitViewFrustum, &dNear, &dFar)) {
         return false;
     }
 
-    R_SetOrthogonalProjectionMatrix(viewLight->def->obb.Extents()[1], viewLight->def->obb.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
+    R_SetOrthogonalProjectionMatrix(visibleLight->def->obb.Extents()[1], visibleLight->def->obb.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() > 0) {
         Mat4 shadowCropMatrix;
-        OBB lightOBB = viewLight->def->obb;
+        OBB lightOBB = visibleLight->def->obb;
 
-        lightOBB.SetCenter(viewLight->def->parms.origin + viewLight->def->parms.axis[0] * (dFar + dNear) * 0.5f);
+        lightOBB.SetCenter(visibleLight->def->parms.origin + visibleLight->def->parms.axis[0] * (dFar + dNear) * 0.5f);
 
         Vec3 extents = lightOBB.Extents();
         lightOBB.SetExtents(Vec3((dFar - dNear) * 0.5f, extents.y, extents.z));
 
         if (r_optimizedShadowProjection.GetInteger() == 2) {
-            if (!RB_ComputeShadowCropMatrix(lightOBB, OBB(viewLight->shadowCasterAABB), splitViewFrustum, shadowCropMatrix)) {
+            if (!RB_ComputeShadowCropMatrix(lightOBB, OBB(visibleLight->shadowCasterAABB), splitViewFrustum, shadowCropMatrix)) {
                 return false;
             }
         } else {
@@ -646,12 +646,12 @@ static bool RB_SingleCascadedShadowMapPass(const viewLight_t *viewLight, const F
     }
 
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
-    backEnd.shadowViewProjectionScaleBiasMatrix[cascadeIndex] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * viewLight->def->viewMatrix;
+    backEnd.shadowViewProjectionScaleBiasMatrix[cascadeIndex] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visibleLight->def->viewMatrix;
 
-    return RB_ShadowMapPass(viewLight, splitViewFrustum, cascadeIndex, forceClear);
+    return RB_ShadowMapPass(visibleLight, splitViewFrustum, cascadeIndex, forceClear);
 }
 
-static void RB_CascadedShadowMapPass(const viewLight_t *viewLight) {
+static void RB_CascadedShadowMapPass(const VisibleLight *visibleLight) {
     float dNear = backEnd.view->def->frustum.GetNearDistance();
     float dFar = r_CSM_maxDistance.GetFloat();
     int csmCount = r_CSM_count.GetInteger();
@@ -685,22 +685,22 @@ static void RB_CascadedShadowMapPass(const viewLight_t *viewLight) {
         splitViewFrustum.MoveNearDistance(dNear);
         splitViewFrustum.MoveFarDistance(dFar);
 
-        if (RB_SingleCascadedShadowMapPass(viewLight, splitViewFrustum, cascadeIndex, true)) {
+        if (RB_SingleCascadedShadowMapPass(visibleLight, splitViewFrustum, cascadeIndex, true)) {
             backEnd.ctx->renderCounter.numShadowMapDraw++;
         }
     }
 }
 
-void RB_ShadowPass(const viewLight_t *viewLight) {
-    if (viewLight->def->parms.type == SceneLight::PointLight) {
-        RB_ShadowCubeMapPass(viewLight, backEnd.view->def->frustum);
-    } else if (viewLight->def->parms.type == SceneLight::SpotLight) {
-        RB_ProjectedShadowMapPass(viewLight, backEnd.view->def->frustum);
-    } else if (viewLight->def->parms.type == SceneLight::DirectionalLight) {
-        if (viewLight->def->parms.isPrimaryLight && r_CSM_count.GetInteger() > 1) {
-            RB_CascadedShadowMapPass(viewLight);
+void RB_ShadowPass(const VisibleLight *visibleLight) {
+    if (visibleLight->def->parms.type == SceneLight::PointLight) {
+        RB_ShadowCubeMapPass(visibleLight, backEnd.view->def->frustum);
+    } else if (visibleLight->def->parms.type == SceneLight::SpotLight) {
+        RB_ProjectedShadowMapPass(visibleLight, backEnd.view->def->frustum);
+    } else if (visibleLight->def->parms.type == SceneLight::DirectionalLight) {
+        if (visibleLight->def->parms.isPrimaryLight && r_CSM_count.GetInteger() > 1) {
+            RB_CascadedShadowMapPass(visibleLight);
         } else {
-            RB_OrthogonalShadowMapPass(viewLight, backEnd.view->def->frustum);
+            RB_OrthogonalShadowMapPass(visibleLight, backEnd.view->def->frustum);
         }
     }
 }

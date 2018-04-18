@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-SceneEntity::SceneEntity() {
+SceneObject::SceneObject() {
     memset(&parms, 0, sizeof(parms));
     index = 0;
     firstUpdate = true;
@@ -28,13 +28,13 @@ SceneEntity::SceneEntity() {
     motionBlurModelMatrix[0].SetIdentity();
     motionBlurModelMatrix[1].SetIdentity();
     viewCount = 0;
-    viewEntity = nullptr;
+    visibleObject = nullptr;
     proxy = nullptr;
     meshSurfProxies = nullptr;
     numMeshSurfProxies = 0;
 }
 
-SceneEntity::~SceneEntity() {
+SceneObject::~SceneObject() {
     if (proxy) {
         Mem_Free(proxy);
     }
@@ -43,7 +43,7 @@ SceneEntity::~SceneEntity() {
     }
 }
 
-void SceneEntity::Update(const Parms *entityParms) {
+void SceneObject::Update(const Parms *entityParms) {
     parms = *entityParms;
 
     Clamp(parms.materialParms[RedParm], 0.0f, 1.0f);
@@ -67,7 +67,7 @@ void SceneEntity::Update(const Parms *entityParms) {
     firstUpdate = false;
 }
 
-const AABB SceneEntity::GetAABB() const {
+const AABB SceneObject::GetAABB() const {
     if (parms.joints) {
         return parms.aabb * parms.scale;
     }

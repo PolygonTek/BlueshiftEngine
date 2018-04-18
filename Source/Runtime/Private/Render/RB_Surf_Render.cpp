@@ -232,7 +232,7 @@ void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shad
         if (shader->builtInConstantIndices[Shader::ConstantColorConst] >= 0) {
             Color4 color;
             if (mtrlPass->useOwnerColor) {
-                color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
+                color = Color4(&surfSpace->def->parms.materialParms[SceneObject::RedParm]);
             } else {
                 color = mtrlPass->constantColor;
             }
@@ -316,7 +316,7 @@ void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &v
 
         Color4 color;
         if (mtrlPass->useOwnerColor) {
-            color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
+            color = Color4(&surfSpace->def->parms.materialParms[SceneObject::RedParm]);
         } else {
             color = mtrlPass->constantColor;
         }
@@ -366,7 +366,7 @@ void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
 
         Color4 color;
         if (mtrlPass->useOwnerColor) {
-            color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
+            color = Color4(&surfSpace->def->parms.materialParms[SceneObject::RedParm]);
         } else {
             color = mtrlPass->constantColor;
         }
@@ -862,7 +862,7 @@ void RBSurf::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) con
     // light texture transform matrix
     Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetModelMatrix();	
     shader->SetConstant4x4f("lightTextureMatrix", true, viewProjScaleBiasMat);
-    shader->SetConstant3f("fogColor", &surfLight->def->parms.materialParms[SceneEntity::RedParm]);
+    shader->SetConstant3f("fogColor", &surfLight->def->parms.materialParms[SceneObject::RedParm]);
 
     Vec3 vec = surfLight->def->parms.origin - backEnd.view->def->parms.origin;
     bool fogEnter = vec.Dot(surfLight->def->parms.axis[0]) < 0.0f ? true : false;
@@ -891,7 +891,7 @@ void RBSurf::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) c
         }
     }
 
-    Color3 blendColor(&surfLight->def->parms.materialParms[SceneEntity::RedParm]);
+    Color3 blendColor(&surfLight->def->parms.materialParms[SceneObject::RedParm]);
 
     if (cvarSystem.GetCVarBool(L"gl_sRGB")) {
         blendColor = blendColor.SRGBtoLinear();
@@ -935,7 +935,7 @@ void RBSurf::RenderGui(const Material::ShaderPass *mtrlPass) const {
 
     Color4 color;
     if (mtrlPass->useOwnerColor) {
-        color = Color4(&surfSpace->def->parms.materialParms[SceneEntity::RedParm]);
+        color = Color4(&surfSpace->def->parms.materialParms[SceneObject::RedParm]);
     } else {
         color = mtrlPass->constantColor;
     }

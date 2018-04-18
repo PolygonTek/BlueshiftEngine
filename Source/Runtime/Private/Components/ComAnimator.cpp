@@ -62,10 +62,10 @@ void ComAnimator::Init() {
     const Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
     bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
 
-    // Set SceneEntity parameters
-    sceneEntity.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
-    sceneEntity.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
-    sceneEntity.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
+    // Set SceneObject parameters
+    sceneObjectParms.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
+    sceneObjectParms.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
+    sceneObjectParms.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
 
     // Mark as initialized
     SetInitialized(true);
@@ -147,11 +147,11 @@ void ComAnimator::UpdateAnimation(int currentTime) {
 
     // Modify jointMats for IK here !
 
-    sceneEntity.joints = jointMats;
+    sceneObjectParms.joints = jointMats;
 
     // Get AABB from animator
     animator.ComputeAABB(currentTime);
-    animator.GetAABB(sceneEntity.aabb);
+    animator.GetAABB(sceneObjectParms.aabb);
 
     ComRenderable::UpdateVisuals();
 }
@@ -167,18 +167,18 @@ void ComAnimator::MeshUpdated() {
     if (isCompatibleSkeleton) {
         animator.ComputeAnimAABBs(referenceMesh);
 
-        sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
-        sceneEntity.skeleton = skeleton;
-        sceneEntity.numJoints = skeleton->NumJoints();
+        sceneObjectParms.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
+        sceneObjectParms.skeleton = skeleton;
+        sceneObjectParms.numJoints = skeleton->NumJoints();
     } else {
-        sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-        sceneEntity.skeleton = nullptr;
-        sceneEntity.numJoints = 0;
+        sceneObjectParms.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+        sceneObjectParms.skeleton = nullptr;
+        sceneObjectParms.numJoints = 0;
     }
 
     // temp code
-    renderWorld->RemoveEntity(sceneEntityHandle);
-    sceneEntityHandle = -1;
+    renderWorld->RemoveObject(sceneObjectHandle);
+    sceneObjectHandle = -1;
     // temp code
     UpdateVisuals();
 }

@@ -17,7 +17,7 @@
 /*
 -------------------------------------------------------------------------------
 
-    SceneEntity
+    SceneObject
 
 -------------------------------------------------------------------------------
 */
@@ -29,8 +29,8 @@
 
 BE_NAMESPACE_BEGIN
 
-struct viewEntity_t;
 struct DbvtProxy;
+class VisibleObject;
 class Mat3x4;
 class Skeleton;
 class Material;
@@ -40,7 +40,7 @@ class Font;
 class ParticleSystem;
 class Particle;
 
-class SceneEntity {
+class SceneObject {
     friend class RenderWorld;
 
 public:
@@ -122,8 +122,8 @@ public:
         bool                richText;
     };
 
-    SceneEntity();
-    ~SceneEntity();
+    SceneObject();
+    ~SceneObject();
 
     void                    Update(const Parms *parms);
 
@@ -142,7 +142,7 @@ public:
     Mat4                    modelMatrix;
     Mat4                    motionBlurModelMatrix[2];
     int                     viewCount;
-    viewEntity_t *          viewEntity;
+    VisibleObject *         visibleObject;
     DbvtProxy *             proxy;
     int                     numMeshSurfProxies;
     DbvtProxy *             meshSurfProxies;            // mesh surf proxy for static sub mesh

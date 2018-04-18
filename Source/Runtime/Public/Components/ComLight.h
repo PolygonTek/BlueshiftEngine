@@ -106,7 +106,7 @@ protected:
     int                     sceneLightHandle;
 
     Mesh *                  spriteMesh;
-    SceneEntity::Parms      sprite;
+    SceneObject::Parms      sprite;
     int                     spriteHandle;
 
     RenderWorld *           renderWorld;

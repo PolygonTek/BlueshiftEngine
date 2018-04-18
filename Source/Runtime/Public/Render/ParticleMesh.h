@@ -22,7 +22,7 @@
 BE_NAMESPACE_BEGIN
 
 class Material;
-class SceneEntity;
+class SceneObject;
 class SceneView;
 
 struct PrtMeshSurf {
@@ -46,7 +46,7 @@ public:
 
     void                    Clear();
 
-    void                    Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const SceneEntity *entity, const SceneView *view);
+    void                    Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const SceneObject *entity, const SceneView *view);
 
     void                    CacheIndexes();
 

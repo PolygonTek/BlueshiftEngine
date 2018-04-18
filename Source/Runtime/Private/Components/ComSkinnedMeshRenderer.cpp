@@ -89,10 +89,10 @@ void ComSkinnedMeshRenderer::Init() {
 
     bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
 
-    // Set SceneEntity parameters
-    sceneEntity.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
-    sceneEntity.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
-    sceneEntity.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
+    // Set SceneObject parameters
+    sceneObjectParms.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
+    sceneObjectParms.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
+    sceneObjectParms.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
 
     // Mark as initialized
     SetInitialized(true);
@@ -136,7 +136,7 @@ void ComSkinnedMeshRenderer::ChangeSkeleton(const Guid &skeletonGuid) {
 
     // Set up initial pose for skeleton
     jointMats = (Mat3x4 *)Mem_Alloc16(skeleton->NumJoints() * sizeof(jointMats[0]));
-    sceneEntity.joints = jointMats;
+    sceneObjectParms.joints = jointMats;
 
     const JointPose *bindPoses = skeleton->GetBindPoses();
     simdProcessor->ConvertJointPosesToJointMats(jointMats, bindPoses, skeleton->NumJoints());
@@ -226,9 +226,9 @@ void ComSkinnedMeshRenderer::UpdateAnimation(int currentTime) {
 
         simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
 
-        anim->GetAABB(sceneEntity.aabb, frameAABBs, time);
+        anim->GetAABB(sceneObjectParms.aabb, frameAABBs, time);
     } else {
-        sceneEntity.aabb = referenceMesh->GetAABB();
+        sceneObjectParms.aabb = referenceMesh->GetAABB();
     }
 
     ComRenderable::UpdateVisuals();
@@ -246,18 +246,18 @@ void ComSkinnedMeshRenderer::MeshUpdated() {
             anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
         }
 
-        sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
-        sceneEntity.skeleton = skeleton;
-        sceneEntity.numJoints = skeleton->NumJoints();
+        sceneObjectParms.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
+        sceneObjectParms.skeleton = skeleton;
+        sceneObjectParms.numJoints = skeleton->NumJoints();
     } else {
-        sceneEntity.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-        sceneEntity.skeleton = nullptr;
-        sceneEntity.numJoints = 0;
+        sceneObjectParms.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+        sceneObjectParms.skeleton = nullptr;
+        sceneObjectParms.numJoints = 0;
     }
 
     // temp code
-    renderWorld->RemoveEntity(sceneEntityHandle);
-    sceneEntityHandle = -1;
+    renderWorld->RemoveObject(sceneObjectHandle);
+    sceneObjectHandle = -1;
     // temp code
     UpdateVisuals();
 }

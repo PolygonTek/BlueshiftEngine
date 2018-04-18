@@ -233,7 +233,7 @@ set(ENGINE_FILES
     Public/Render/RenderContext.h  
     Public/Render/ParticleSystem.h
     Public/Render/ReflectionProbe.h
-    Public/Render/SceneEntity.h
+    Public/Render/SceneObject.h
     Public/Render/SceneLight.h
     Public/Render/SceneView.h
     Public/Render/RenderWorld.h
@@ -485,7 +485,7 @@ set(ENGINE_FILES
     Private/Render/ParticleSystem.cpp
     Private/Render/ParticleSystemManager.cpp
     Private/Render/ReflectionProbe.cpp
-    Private/Render/SceneEntity.cpp
+    Private/Render/SceneObject.cpp
     Private/Render/SceneLight.cpp
     Private/Render/SceneView.cpp
     Private/Render/RenderWorld.cpp

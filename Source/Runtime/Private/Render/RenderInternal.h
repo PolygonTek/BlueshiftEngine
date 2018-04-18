@@ -16,10 +16,17 @@
 
 BE_NAMESPACE_BEGIN
 
-struct viewEntity_t {
-    const SceneEntity *     def;
+struct drawSurfNode_t {
+    const DrawSurf *        drawSurf;
 
-    viewEntity_t *          next;
+    drawSurfNode_t *        next;
+};
+
+class VisibleObject {
+public:
+    const SceneObject *     def;
+
+    VisibleObject *         next;
 
     Mat3x4                  modelViewMatrix;
     Mat4                    modelViewProjMatrix;
@@ -28,16 +35,11 @@ struct viewEntity_t {
     bool                    shadowVisible;
 };
 
-struct drawSurfNode_t {
-    const DrawSurf *        drawSurf;
-
-    drawSurfNode_t *        next;
-};
-
-struct viewLight_t {
+class VisibleLight {
+public:
     const SceneLight *      def;
 
-    viewLight_t *           next;
+    VisibleLight *          next;
 
     float *                 materialRegisters;
 
@@ -57,7 +59,8 @@ struct viewLight_t {
     AABB                    shadowCasterAABB;
 };
 
-struct view_t {
+class VisibleView {
+public:
     const SceneView *       def;
 
     bool                    isSubview;
@@ -71,24 +74,24 @@ struct view_t {
     int                     numDrawSurfs;
     int                     maxDrawSurfs;
 
-    viewEntity_t *          viewEntities;
-    viewLight_t *           viewLights;
-    viewLight_t *           primaryLight;
+    VisibleObject *         visibleObjects;
+    VisibleLight *          visibleLights;
+    VisibleLight *          primaryLight;
+};
+
+// HW skinning 용 joint cache
+struct SkinningJointCache {
+    int                     numJoints;              // motion blur 를 사용하면 원래 model joints 의 2배를 사용한다
+    Mat3x4 *                skinningJoints;         // animation 결과 matrix(3x4) 를 담는다.
+    int                     jointIndexOffsetCurr;   // motion blur 용 현재 프레임 joint index offset
+    int                     jointIndexOffsetPrev;   // motion blur 용 이전 프레임 joint index offset
+    BufferCache             bufferCache;            // VTF skinning 일 때 사용
+    int                     viewFrameCount;         // 현재 프레임에 계산을 마쳤음을 표시하기 위한 marking number
 };
 
 struct renderGlobal_t {
     int                     skinningMethod;
     int                     vtUpdateMethod;          // vertex texture update method
-};
-
-// HW skinning 용 joint cache
-struct SkinningJointCache {
-    int                 numJoints;              // motion blur 를 사용하면 원래 model joints 의 2배를 사용한다
-    Mat3x4 *            skinningJoints;         // animation 결과 matrix(3x4) 를 담는다.
-    int                 jointIndexOffsetCurr;   // motion blur 용 현재 프레임 joint index offset
-    int                 jointIndexOffsetPrev;   // motion blur 용 이전 프레임 joint index offset
-    BufferCache         bufferCache;            // VTF skinning 일 때 사용
-    int                 viewFrameCount;         // 현재 프레임에 계산을 마쳤음을 표시하기 위한 marking number
 };
 
 extern renderGlobal_t       renderGlobal;

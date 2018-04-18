@@ -27,7 +27,7 @@
 #include "Render/ParticleMesh.h"
 #include "Render/GuiMesh.h"
 #include "Render/Anim.h"
-#include "Render/SceneEntity.h"
+#include "Render/SceneObject.h"
 #include "Render/SceneLight.h"
 #include "Render/ReflectionProbe.h"
 #include "Render/SceneView.h"

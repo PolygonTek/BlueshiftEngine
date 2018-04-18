@@ -101,7 +101,7 @@ void ComLight::Purge(bool chainPurge) {
     }
 
     if (spriteHandle != -1) {
-        renderWorld->RemoveEntity(spriteHandle);
+        renderWorld->RemoveObject(spriteHandle);
         spriteHandle = -1;
     }
 
@@ -155,12 +155,12 @@ void ComLight::Init() {
     sprite.origin = transform->GetOrigin();
     sprite.scale = Vec3(1, 1, 1);
     sprite.axis = Mat3::identity;
-    sprite.materialParms[SceneEntity::RedParm] = sceneLight.materialParms[SceneEntity::RedParm];
-    sprite.materialParms[SceneEntity::GreenParm] = sceneLight.materialParms[SceneEntity::GreenParm];
-    sprite.materialParms[SceneEntity::BlueParm] = sceneLight.materialParms[SceneEntity::BlueParm];
-    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;
-    sprite.materialParms[SceneEntity::TimeOffsetParm] = sceneLight.materialParms[SceneEntity::TimeOffsetParm];
-    sprite.materialParms[SceneEntity::TimeScaleParm] = sceneLight.materialParms[SceneEntity::TimeScaleParm];
+    sprite.materialParms[SceneObject::RedParm] = sceneLight.materialParms[SceneObject::RedParm];
+    sprite.materialParms[SceneObject::GreenParm] = sceneLight.materialParms[SceneObject::GreenParm];
+    sprite.materialParms[SceneObject::BlueParm] = sceneLight.materialParms[SceneObject::BlueParm];
+    sprite.materialParms[SceneObject::AlphaParm] = 1.0f;
+    sprite.materialParms[SceneObject::TimeOffsetParm] = sceneLight.materialParms[SceneObject::TimeOffsetParm];
+    sprite.materialParms[SceneObject::TimeScaleParm] = sceneLight.materialParms[SceneObject::TimeScaleParm];
     //
 
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
@@ -182,7 +182,7 @@ void ComLight::OnInactive() {
     }
 
     if (spriteHandle != -1) {
-        renderWorld->RemoveEntity(spriteHandle);
+        renderWorld->RemoveObject(spriteHandle);
         spriteHandle = -1;
     }
 }
@@ -273,9 +273,9 @@ void ComLight::UpdateVisuals() {
     }
 
     if (spriteHandle == -1) {
-        spriteHandle = renderWorld->AddEntity(&sprite);
+        spriteHandle = renderWorld->AddObject(&sprite);
     } else {
-        renderWorld->UpdateEntity(spriteHandle, &sprite);
+        renderWorld->UpdateObject(spriteHandle, &sprite);
     }
 }
 
@@ -385,37 +385,37 @@ void ComLight::SetMaterialGuid(const Guid &materialGuid) {
 }
 
 Color3 ComLight::GetColor() const {
-    return Color3(&sceneLight.materialParms[SceneEntity::RedParm]);
+    return Color3(&sceneLight.materialParms[SceneObject::RedParm]);
 }
 
 void ComLight::SetColor(const Color3 &color) {
-    sceneLight.materialParms[SceneEntity::RedParm] = color.r;
-    sceneLight.materialParms[SceneEntity::GreenParm] = color.g;
-    sceneLight.materialParms[SceneEntity::BlueParm] = color.b;
+    sceneLight.materialParms[SceneObject::RedParm] = color.r;
+    sceneLight.materialParms[SceneObject::GreenParm] = color.g;
+    sceneLight.materialParms[SceneObject::BlueParm] = color.b;
 
-    sprite.materialParms[SceneEntity::RedParm] = color.r;
-    sprite.materialParms[SceneEntity::GreenParm] = color.g;
-    sprite.materialParms[SceneEntity::BlueParm] = color.b;
+    sprite.materialParms[SceneObject::RedParm] = color.r;
+    sprite.materialParms[SceneObject::GreenParm] = color.g;
+    sprite.materialParms[SceneObject::BlueParm] = color.b;
 
     UpdateVisuals();
 }
 
 float ComLight::GetTimeOffset() const {
-    return sceneLight.materialParms[SceneEntity::TimeOffsetParm];
+    return sceneLight.materialParms[SceneObject::TimeOffsetParm];
 }
 
 void ComLight::SetTimeOffset(float timeOffset) {
-    sceneLight.materialParms[SceneEntity::TimeOffsetParm] = timeOffset;
+    sceneLight.materialParms[SceneObject::TimeOffsetParm] = timeOffset;
 
     UpdateVisuals();
 }
 
 float ComLight::GetTimeScale() const {
-    return sceneLight.materialParms[SceneEntity::TimeScaleParm];
+    return sceneLight.materialParms[SceneObject::TimeScaleParm];
 }
 
 void ComLight::SetTimeScale(float timeScale) {
-    sceneLight.materialParms[SceneEntity::TimeScaleParm] = timeScale;
+    sceneLight.materialParms[SceneObject::TimeScaleParm] = timeScale;
 
     UpdateVisuals();
 }

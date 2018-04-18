@@ -43,8 +43,8 @@ void ComRenderable::RegisterProperties() {
 }
 
 ComRenderable::ComRenderable() {
-    sceneEntityHandle = -1;
-    memset(&sceneEntity, 0, sizeof(sceneEntity));
+    sceneObjectHandle = -1;
+    memset(&sceneObjectParms, 0, sizeof(sceneObjectParms));
     renderWorld = nullptr;
 }
 
@@ -53,14 +53,14 @@ ComRenderable::~ComRenderable() {
 }
 
 void ComRenderable::Purge(bool chainPurge) {
-    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
-        materialManager.ReleaseMaterial(sceneEntity.materials[i]);
+    for (int i = 0; i < sceneObjectParms.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sceneObjectParms.materials[i]);
     }
-    sceneEntity.materials.Clear();
+    sceneObjectParms.materials.Clear();
 
-    if (sceneEntityHandle != -1) {
-        renderWorld->RemoveEntity(sceneEntityHandle);
-        sceneEntityHandle = -1;
+    if (sceneObjectHandle != -1) {
+        renderWorld->RemoveObject(sceneObjectHandle);
+        sceneObjectHandle = -1;
         renderWorld = nullptr;
     }
 
@@ -74,13 +74,13 @@ void ComRenderable::Init() {
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    sceneEntity.layer = GetEntity()->GetLayer();
-    sceneEntity.wireframeColor.Set(1, 1, 1, 1);
+    sceneObjectParms.layer = GetEntity()->GetLayer();
+    sceneObjectParms.wireframeColor.Set(1, 1, 1, 1);
 
     ComTransform *transform = GetEntity()->GetTransform();
-    sceneEntity.origin = transform->GetOrigin();
-    sceneEntity.scale = transform->GetScale();
-    sceneEntity.axis = transform->GetAxis();
+    sceneObjectParms.origin = transform->GetOrigin();
+    sceneObjectParms.scale = transform->GetScale();
+    sceneObjectParms.axis = transform->GetAxis();
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
 
@@ -92,14 +92,14 @@ void ComRenderable::OnActive() {
 }
 
 void ComRenderable::OnInactive() {
-    if (sceneEntityHandle != -1) {
-        renderWorld->RemoveEntity(sceneEntityHandle);
-        sceneEntityHandle = -1;
+    if (sceneObjectHandle != -1) {
+        renderWorld->RemoveObject(sceneObjectHandle);
+        sceneObjectHandle = -1;
     }
 }
 
-bool ComRenderable::HasRenderEntity(int sceneEntityHandle) const { 
-    if (this->sceneEntityHandle == sceneEntityHandle) {
+bool ComRenderable::HasRenderEntity(int sceneObjectHandle) const { 
+    if (this->sceneObjectHandle == sceneObjectHandle) {
         return true;
     }
 
@@ -111,39 +111,39 @@ void ComRenderable::UpdateVisuals() {
         return;
     }
 
-    if (sceneEntityHandle == -1) {
-        sceneEntityHandle = renderWorld->AddEntity(&sceneEntity);
+    if (sceneObjectHandle == -1) {
+        sceneObjectHandle = renderWorld->AddObject(&sceneObjectParms);
     } else {
-        renderWorld->UpdateEntity(sceneEntityHandle, &sceneEntity);
+        renderWorld->UpdateObject(sceneObjectHandle, &sceneObjectParms);
     }
 }
 
 const AABB ComRenderable::GetAABB() {
     const ComTransform *transform = GetEntity()->GetTransform();
-    return sceneEntity.aabb * transform->GetScale();
+    return sceneObjectParms.aabb * transform->GetScale();
 }
 
 bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    if (!sceneEntity.mesh) {
+    if (!sceneObjectParms.mesh) {
         return false;
     }
 
-    Vec3 localStart = sceneEntity.axis.TransposedMulVec(start - sceneEntity.origin) / sceneEntity.scale;
-    Vec3 localDir = sceneEntity.axis.TransposedMulVec(dir) / sceneEntity.scale;
+    Vec3 localStart = sceneObjectParms.axis.TransposedMulVec(start - sceneObjectParms.origin) / sceneObjectParms.scale;
+    Vec3 localDir = sceneObjectParms.axis.TransposedMulVec(dir) / sceneObjectParms.scale;
     localDir.Normalize();
 
-    float localS = sceneEntity.mesh->GetAABB().RayIntersection(localStart, localDir);
+    float localS = sceneObjectParms.mesh->GetAABB().RayIntersection(localStart, localDir);
     if (localS == FLT_MAX) {
         return false;
     }
 
-    float s = localS * (localDir * sceneEntity.scale).Length();
+    float s = localS * (localDir * sceneObjectParms.scale).Length();
     if (s > lastScale) {
         return false;
     }
 
-    if (sceneEntity.mesh->RayIntersection(localStart, localDir, backFaceCull, localS)) {
-        s = localS * (localDir * sceneEntity.scale).Length();
+    if (sceneObjectParms.mesh->RayIntersection(localStart, localDir, backFaceCull, localS)) {
+        s = localS * (localDir * sceneObjectParms.scale).Length();
         if (s > 0.0f && s < lastScale) {
             lastScale = s;
             return true;
@@ -154,99 +154,99 @@ bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool bac
 }
 
 void ComRenderable::SetWireframeColor(const Color4 &color) {
-    sceneEntity.wireframeColor = color;
+    sceneObjectParms.wireframeColor = color;
 
     UpdateVisuals();
 }
 
-void ComRenderable::ShowWireframe(SceneEntity::WireframeMode wireframeMode) {
-    sceneEntity.wireframeMode = wireframeMode;
+void ComRenderable::ShowWireframe(SceneObject::WireframeMode wireframeMode) {
+    sceneObjectParms.wireframeMode = wireframeMode;
     
     UpdateVisuals();
 }
 
 void ComRenderable::LayerChanged(const Entity *entity) {
-    sceneEntity.layer = entity->GetProperty("layer").As<int>();
+    sceneObjectParms.layer = entity->GetProperty("layer").As<int>();
     
     UpdateVisuals();
 }
 
 void ComRenderable::TransformUpdated(const ComTransform *transform) {
-    sceneEntity.origin = transform->GetOrigin();
-    sceneEntity.axis = transform->GetAxis();
-    sceneEntity.scale = transform->GetScale();
+    sceneObjectParms.origin = transform->GetOrigin();
+    sceneObjectParms.axis = transform->GetAxis();
+    sceneObjectParms.scale = transform->GetScale();
 
     UpdateVisuals();
 }
 
 float ComRenderable::GetMaxVisDist() const {
-    return sceneEntity.maxVisDist;
+    return sceneObjectParms.maxVisDist;
 }
 
 void ComRenderable::SetMaxVisDist(float maxVisDist) {
-    sceneEntity.maxVisDist = maxVisDist;
+    sceneObjectParms.maxVisDist = maxVisDist;
 
     UpdateVisuals();
 }
 
 Color3 ComRenderable::GetColor() const {
-    return Color3(&sceneEntity.materialParms[SceneEntity::RedParm]);
+    return Color3(&sceneObjectParms.materialParms[SceneObject::RedParm]);
 }
 
 void ComRenderable::SetColor(const Color3 &color) {
-    sceneEntity.materialParms[SceneEntity::RedParm] = color.r;
-    sceneEntity.materialParms[SceneEntity::GreenParm] = color.g;
-    sceneEntity.materialParms[SceneEntity::BlueParm] = color.b;
+    sceneObjectParms.materialParms[SceneObject::RedParm] = color.r;
+    sceneObjectParms.materialParms[SceneObject::GreenParm] = color.g;
+    sceneObjectParms.materialParms[SceneObject::BlueParm] = color.b;
     
     UpdateVisuals();
 }
 
 float ComRenderable::GetAlpha() const {
-    return sceneEntity.materialParms[SceneEntity::AlphaParm];
+    return sceneObjectParms.materialParms[SceneObject::AlphaParm];
 }
 
 void ComRenderable::SetAlpha(float alpha) {
-    sceneEntity.materialParms[SceneEntity::AlphaParm] = alpha;
+    sceneObjectParms.materialParms[SceneObject::AlphaParm] = alpha;
 
     UpdateVisuals();
 }
 
 float ComRenderable::GetTimeOffset() const {
-    return sceneEntity.materialParms[SceneEntity::TimeOffsetParm];
+    return sceneObjectParms.materialParms[SceneObject::TimeOffsetParm];
 }
 
 void ComRenderable::SetTimeOffset(float timeOffset) {
-    sceneEntity.materialParms[SceneEntity::TimeOffsetParm] = timeOffset;
+    sceneObjectParms.materialParms[SceneObject::TimeOffsetParm] = timeOffset;
 
     UpdateVisuals();
 }
 
 float ComRenderable::GetTimeScale() const {
-    return sceneEntity.materialParms[SceneEntity::TimeScaleParm];
+    return sceneObjectParms.materialParms[SceneObject::TimeScaleParm];
 }
 
 void ComRenderable::SetTimeScale(float timeScale) {
-    sceneEntity.materialParms[SceneEntity::TimeScaleParm] = timeScale;
+    sceneObjectParms.materialParms[SceneObject::TimeScaleParm] = timeScale;
 
     UpdateVisuals();
 }
 
 bool ComRenderable::IsBillboard() const {
-    return sceneEntity.billboard;
+    return sceneObjectParms.billboard;
 }
 
 void ComRenderable::SetBillboard(bool billboard) {
-    sceneEntity.billboard = billboard;
+    sceneObjectParms.billboard = billboard;
 
     UpdateVisuals();
 }
 
 bool ComRenderable::IsSkipSelection() const {
-    return sceneEntity.skipSelectionBuffer;
+    return sceneObjectParms.skipSelectionBuffer;
 }
 
 void ComRenderable::SetSkipSelection(bool skip) {
-    sceneEntity.skipSelectionBuffer = skip;
+    sceneObjectParms.skipSelectionBuffer = skip;
 
     UpdateVisuals();
 }

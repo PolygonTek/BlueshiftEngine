@@ -46,7 +46,7 @@ struct BeginContextRenderCommand {
 
 struct DrawViewRenderCommand {
     int                 commandId;
-    view_t              view;
+    VisibleView         view;
 };
 
 struct ScreenShotRenderCommand {

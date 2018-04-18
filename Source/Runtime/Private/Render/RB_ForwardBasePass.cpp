@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 
 static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 

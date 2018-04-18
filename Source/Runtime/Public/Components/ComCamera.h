@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Render/SceneEntity.h"
+#include "Render/SceneObject.h"
 #include "Component.h"
 
 BE_NAMESPACE_BEGIN
@@ -104,7 +104,7 @@ protected:
     RenderWorld *           renderWorld;
 
     Mesh *                  spriteMesh;
-    SceneEntity::Parms      sprite;
+    SceneObject::Parms      sprite;
     int                     spriteHandle;
 
     Guid                    oldHoverEntityGuid;

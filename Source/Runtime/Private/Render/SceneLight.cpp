@@ -29,7 +29,7 @@ SceneLight::SceneLight() {
     projMatrix.SetIdentity();
     viewProjScaleBiasMatrix.SetIdentity();
     viewCount = 0;
-    viewLight = nullptr;
+    visibleLight = nullptr;
     proxy = nullptr;
 }
 
@@ -42,10 +42,10 @@ SceneLight::~SceneLight() {
 void SceneLight::Update(const SceneLight::Parms *renderLight) {
     this->parms = *renderLight;
 
-    BE1::Clamp(parms.materialParms[SceneEntity::RedParm], 0.0f, 1.0f);
-    BE1::Clamp(parms.materialParms[SceneEntity::GreenParm], 0.0f, 1.0f);
-    BE1::Clamp(parms.materialParms[SceneEntity::BlueParm], 0.0f, 1.0f);
-    BE1::Clamp(parms.materialParms[SceneEntity::AlphaParm], 0.0f, 1.0f);
+    BE1::Clamp(parms.materialParms[SceneObject::RedParm], 0.0f, 1.0f);
+    BE1::Clamp(parms.materialParms[SceneObject::GreenParm], 0.0f, 1.0f);
+    BE1::Clamp(parms.materialParms[SceneObject::BlueParm], 0.0f, 1.0f);
+    BE1::Clamp(parms.materialParms[SceneObject::AlphaParm], 0.0f, 1.0f);
 
     // 라이트 타입 별 처리
     if (parms.type == PointLight) {

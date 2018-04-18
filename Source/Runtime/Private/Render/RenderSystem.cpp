@@ -194,7 +194,7 @@ void *RenderSystem::GetCommandBuffer(int bytes) {
     return cmds->data + cmds->used - bytes;
 }
 
-void RenderSystem::CmdDrawView(const view_t *view) {
+void RenderSystem::CmdDrawView(const VisibleView *view) {
     DrawViewRenderCommand *cmd = (DrawViewRenderCommand *)GetCommandBuffer(sizeof(DrawViewRenderCommand));
     if (!cmd) {
         return;

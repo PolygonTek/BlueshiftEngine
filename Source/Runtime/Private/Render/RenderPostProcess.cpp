@@ -1036,7 +1036,7 @@ void PP_ChromaShift(const Texture *srcTexture, RenderTarget *dstRT) {
     rhi.SetViewport(prevViewportRect);
 }
 
-void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture, const view_t *view, RenderTarget *dstRT) {
+void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture, const VisibleView *view, RenderTarget *dstRT) {
     Rect prevViewportRect = rhi.GetViewport();
     dstRT->Begin();
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));

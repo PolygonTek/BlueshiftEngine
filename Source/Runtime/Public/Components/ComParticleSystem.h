@@ -78,7 +78,7 @@ protected:
     int                     currentTime;
     int                     stopTime;
 
-    SceneEntity::Parms      sprite;
+    SceneObject::Parms      sprite;
     int                     spriteHandle;
     Mesh *                  spriteReferenceMesh;
 };

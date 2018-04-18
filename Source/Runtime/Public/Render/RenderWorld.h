@@ -27,13 +27,13 @@ BE_NAMESPACE_BEGIN
 */
 
 class DrawSurf;
-struct view_t;
+class VisibleView;
 
 // Proxy node in the dynamic bounding volume tree
 struct DbvtProxy {
     int32_t                     id;             // proxy id
     AABB                        aabb;           // bounding volume for this node
-    SceneEntity *               sceneEntity;
+    SceneObject *               sceneObject;
     SceneLight *                sceneLight;
     //ReflectionProbe *         reflectionProbe;
     Mesh *                      mesh;           // static mesh
@@ -51,10 +51,10 @@ public:
     void                        ClearScene();
     void                        RenderScene(const SceneView *view);
 
-    const SceneEntity *         GetEntity(int handle) const;
-    int                         AddEntity(const SceneEntity::Parms *parms);
-    void                        UpdateEntity(int handle, const SceneEntity::Parms *parms);
-    void                        RemoveEntity(int handle);
+    const SceneObject *         GetObject(int handle) const;
+    int                         AddObject(const SceneObject::Parms *parms);
+    void                        UpdateObject(int handle, const SceneObject::Parms *parms);
+    void                        RemoveObject(int handle);
 
     const SceneLight *          GetLight(int handle) const;
     int                         AddLight(const SceneLight::Parms *parms);
@@ -99,25 +99,25 @@ public:
     void                        ClearDebugText(int time);
     void                        DebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis, float scale, float lineWidth = 1, const int align = 1, bool depthTest = false, int lifeTime = 0);
 
-    void                        DebugJoints(const SceneEntity *ent, bool showJointsNames, const Mat3 &viewAxis);
+    void                        DebugJoints(const SceneObject *ent, bool showJointsNames, const Mat3 &viewAxis);
 
 private:
-    viewEntity_t *              RegisterViewEntity(view_t *view, SceneEntity *sceneEntity);
-    viewLight_t *               RegisterViewLight(view_t *view, SceneLight *sceneLight);
-    void                        FindViewLightsAndEntities(view_t *view);
-    void                        AddStaticMeshes(view_t *view);
-    void                        AddSkinnedMeshes(view_t *view);
-    void                        AddParticleMeshes(view_t *view);
-    void                        AddTextMeshes(view_t *view);
-    void                        AddSkyBoxMeshes(view_t *view);
-    void                        AddStaticMeshesForLights(view_t *view);
-    void                        AddSkinnedMeshesForLights(view_t *view);
-    void                        OptimizeLights(view_t *view);
-    void                        AddDrawSurf(view_t *view, viewEntity_t *entity, const Material *material, SubMesh *subMesh, int flags);
-    void                        SortDrawSurfs(view_t *view);
+    VisibleObject *             RegisterVisibleObject(VisibleView *view, SceneObject *sceneObject);
+    VisibleLight *              RegisterVisibleLight(VisibleView *view, SceneLight *sceneLight);
+    void                        FindVisibleLightsAndObjects(VisibleView *view);
+    void                        AddStaticMeshes(VisibleView *view);
+    void                        AddSkinnedMeshes(VisibleView *view);
+    void                        AddParticleMeshes(VisibleView *view);
+    void                        AddTextMeshes(VisibleView *view);
+    void                        AddSkyBoxMeshes(VisibleView *view);
+    void                        AddStaticMeshesForLights(VisibleView *view);
+    void                        AddSkinnedMeshesForLights(VisibleView *view);
+    void                        OptimizeLights(VisibleView *view);
+    void                        AddDrawSurf(VisibleView *view, VisibleObject *entity, const Material *material, SubMesh *subMesh, int flags);
+    void                        SortDrawSurfs(VisibleView *view);
 
-    void                        RenderView(view_t *view);
-    void                        RenderSubView(viewEntity_t *viewEntity, const DrawSurf *drawSurf, const Material *material);
+    void                        RenderView(VisibleView *view);
+    void                        RenderSubView(VisibleObject *visibleObject, const DrawSurf *drawSurf, const Material *material);
 
     void                        EmitGuiFullScreen(GuiMesh &guiMesh);
 
@@ -128,7 +128,7 @@ private:
     Color4                      debugLineColor;
     Color4                      debugFillColor;
 
-    view_t *                    currentView;
+    VisibleView *               currentView;
     int                         viewCount;
 
     Material *                  skyboxMaterial;
@@ -136,7 +136,7 @@ private:
     ParticleMesh                particleMesh;       ///< particle mesh
     GuiMesh                     textMesh;           ///< 3D text mesh
 
-    Array<SceneEntity *>        sceneEntities;      ///< Array of scene entities
+    Array<SceneObject *>        sceneObjects;       ///< Array of scene objects
     Array<SceneLight *>         sceneLights;        ///< Array of scene lights
     //Array<SceneReflectionProbe *>sceneReflectionProbes;
 

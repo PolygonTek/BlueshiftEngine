@@ -19,23 +19,23 @@
 
 BE_NAMESPACE_BEGIN
 
-static void RB_LitPass(const viewLight_t *viewLight) {
+static void RB_LitPass(const VisibleLight *visibleLight) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
     Rect                prevScissorRect;
 
     if (r_useLightScissors.GetBool()) {
         prevScissorRect = rhi.GetScissor();
-        rhi.SetScissor(viewLight->scissorRect);
+        rhi.SetScissor(visibleLight->scissorRect);
     }
 
     if (r_useDepthBoundTest.GetBool()) {
         rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
-    for (drawSurfNode_t *litSurfNode = viewLight->litSurfs; litSurfNode; litSurfNode = litSurfNode->next) {
+    for (drawSurfNode_t *litSurfNode = visibleLight->litSurfs; litSurfNode; litSurfNode = litSurfNode->next) {
         const DrawSurf *surf = litSurfNode->drawSurf;
 
         if (!(surf->flags & DrawSurf::AmbientVisible)) {
@@ -58,7 +58,7 @@ static void RB_LitPass(const viewLight_t *viewLight) {
                     backEnd.rbsurf.Flush();
                 }
 
-                backEnd.rbsurf.Begin(RBSurf::LitFlush, surf->material, surf->materialRegisters, surf->space, viewLight);
+                backEnd.rbsurf.Begin(RBSurf::LitFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
 
                 prevMaterial = surf->material;
             }
@@ -106,15 +106,15 @@ static void RB_LitPass(const viewLight_t *viewLight) {
     }
 }
 
-void RB_ForwardAdditivePass(viewLight_t *viewLights) {
-    for (viewLight_t *viewLight = viewLights; viewLight; viewLight = viewLight->next) {
-        const SceneLight *light = viewLight->def;
+void RB_ForwardAdditivePass(VisibleLight *visibleLights) {
+    for (VisibleLight *visibleLight = visibleLights; visibleLight; visibleLight = visibleLight->next) {
+        const SceneLight *light = visibleLight->def;
 
         if (light->parms.isPrimaryLight) {
             continue;
         }
 
-        if (r_useLightOcclusionQuery.GetBool() && !viewLight->occlusionVisible) {
+        if (r_useLightOcclusionQuery.GetBool() && !visibleLight->occlusionVisible) {
             continue;
         }
 
@@ -127,7 +127,7 @@ void RB_ForwardAdditivePass(viewLight_t *viewLights) {
 
             float visSurfDepthMin, visSurfDepthMax;
 
-            if (backEnd.view->def->GetDepthBoundsFromAABB(viewLight->litSurfsAABB, backEnd.view->def->viewProjMatrix, &visSurfDepthMin, &visSurfDepthMax)) {
+            if (backEnd.view->def->GetDepthBoundsFromAABB(visibleLight->litSurfsAABB, backEnd.view->def->viewProjMatrix, &visSurfDepthMin, &visSurfDepthMax)) {
                 // FIXME:
                 visSurfDepthMin = Max(visSurfDepthMin - 0.001, 0.0);
                 visSurfDepthMax = Min(visSurfDepthMax + 0.001, 1.0);
@@ -137,15 +137,15 @@ void RB_ForwardAdditivePass(viewLight_t *viewLights) {
             }
         }
 
-        RB_SetupLight(viewLight);
+        RB_SetupLight(visibleLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if (viewLight->def->parms.castShadows && !(backEnd.view->def->parms.flags & SceneView::NoShadows)) {
-                RB_ShadowPass(viewLight);
+            if (visibleLight->def->parms.castShadows && !(backEnd.view->def->parms.flags & SceneView::NoShadows)) {
+                RB_ShadowPass(visibleLight);
             }
         }
 
-        RB_LitPass(viewLight);
+        RB_LitPass(visibleLight);
     }
 }
 

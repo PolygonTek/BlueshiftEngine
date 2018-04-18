@@ -160,7 +160,7 @@ void ParticleMesh::ComputeTextureCoordinates(const ParticleSystem::StandardModul
     }
 }
 
-void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const SceneEntity *entity, const SceneView *view) {
+void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const SceneObject *entity, const SceneView *view) {
     Vec3 worldPos[Particle::MaxTrails + 1];
     Vec3 cameraDir[Particle::MaxTrails + 1];
     Vec3 tangentDir[Particle::MaxTrails + 1];

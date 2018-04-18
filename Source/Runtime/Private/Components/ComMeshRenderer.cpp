@@ -51,9 +51,9 @@ ComMeshRenderer::~ComMeshRenderer() {
 }
 
 void ComMeshRenderer::Purge(bool chainPurge) {
-    if (sceneEntity.mesh) {
-        meshManager.ReleaseMesh(sceneEntity.mesh);
-        sceneEntity.mesh = nullptr;
+    if (sceneObjectParms.mesh) {
+        meshManager.ReleaseMesh(sceneObjectParms.mesh);
+        sceneObjectParms.mesh = nullptr;
     }
 
     if (referenceMesh) {
@@ -69,7 +69,7 @@ void ComMeshRenderer::Purge(bool chainPurge) {
 void ComMeshRenderer::Init() {
     ComRenderable::Init();
 
-    sceneEntity.aabb = referenceMesh->GetAABB();
+    sceneObjectParms.aabb = referenceMesh->GetAABB();
 
     // Mark as initialized
     SetInitialized(true);
@@ -83,9 +83,9 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     }
 
     // Release the previously used instantiated mesh
-    if (sceneEntity.mesh) {
-        meshManager.ReleaseMesh(sceneEntity.mesh);
-        sceneEntity.mesh = nullptr;
+    if (sceneObjectParms.mesh) {
+        meshManager.ReleaseMesh(sceneObjectParms.mesh);
+        sceneObjectParms.mesh = nullptr;
     }
 
     // Release the previously used reference mesh
@@ -95,8 +95,8 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     }
 
     // Release previously used materials
-    for (int i = 0; i < sceneEntity.materials.Count(); i++) {
-        materialManager.ReleaseMaterial(sceneEntity.materials[i]);
+    for (int i = 0; i < sceneObjectParms.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sceneObjectParms.materials[i]);
     }
 
     // Get the new reference mesh
@@ -111,13 +111,13 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     int numMaterials = materialIndexArray.Count();
 
     // Get previously used number of materials
-    int oldCount = sceneEntity.materials.Count();
+    int oldCount = sceneObjectParms.materials.Count();
 
     // Resize material slots
-    sceneEntity.materials.SetCount(numMaterials);
+    sceneObjectParms.materials.SetCount(numMaterials);
 
-    for (int i = oldCount; i < sceneEntity.materials.Count(); i++) {
-        sceneEntity.materials[i] = materialManager.GetMaterial("_defaultMaterial");
+    for (int i = oldCount; i < sceneObjectParms.materials.Count(); i++) {
+        sceneObjectParms.materials[i] = materialManager.GetMaterial("_defaultMaterial");
     }
 
     // Need mesh asset to be reloaded in editor
@@ -148,39 +148,39 @@ void ComMeshRenderer::SetMeshGuid(const Guid &guid) {
 }
 
 int ComMeshRenderer::GetMaterialCount() const {
-    return sceneEntity.materials.Count();
+    return sceneObjectParms.materials.Count();
 }
 
 void ComMeshRenderer::SetMaterialCount(int count) {
-    int oldCount = sceneEntity.materials.Count();
+    int oldCount = sceneObjectParms.materials.Count();
 
-    sceneEntity.materials.SetCount(count);
+    sceneObjectParms.materials.SetCount(count);
 
     if (count > oldCount) {
         for (int index = oldCount; index < count; index++) {
-            sceneEntity.materials[index] = materialManager.GetMaterial("_defaultMaterial");
+            sceneObjectParms.materials[index] = materialManager.GetMaterial("_defaultMaterial");
         }
     }
 }
 
 Guid ComMeshRenderer::GetMaterialGuid(int index) const {
-    if (index >= 0 && index < sceneEntity.materials.Count()) {
-        const Str materialPath = sceneEntity.materials[index]->GetHashName();
+    if (index >= 0 && index < sceneObjectParms.materials.Count()) {
+        const Str materialPath = sceneObjectParms.materials[index]->GetHashName();
         return resourceGuidMapper.Get(materialPath);
     }
     return Guid();
 }
 
 void ComMeshRenderer::SetMaterialGuid(int index, const Guid &materialGuid) {
-    if (index >= 0 && index < sceneEntity.materials.Count()) {
+    if (index >= 0 && index < sceneObjectParms.materials.Count()) {
         // Release the previously used material
-        if (sceneEntity.materials[index]) {
-            materialManager.ReleaseMaterial(sceneEntity.materials[index]);
+        if (sceneObjectParms.materials[index]) {
+            materialManager.ReleaseMaterial(sceneObjectParms.materials[index]);
         }
 
         // Get the new material
         const Str materialPath = resourceGuidMapper.Get(materialGuid);
-        sceneEntity.materials[index] = materialManager.GetMaterial(materialPath);
+        sceneObjectParms.materials[index] = materialManager.GetMaterial(materialPath);
     }
 
     UpdateVisuals();
@@ -203,31 +203,31 @@ void ComMeshRenderer::SetMaterial(int index, const Material *material) {
 }
 
 bool ComMeshRenderer::IsUseLightProbe() const {
-    return sceneEntity.useLightProbe;
+    return sceneObjectParms.useLightProbe;
 }
 
 void ComMeshRenderer::SetUseLightProbe(bool useLightProbe) {
-    sceneEntity.useLightProbe = useLightProbe;
+    sceneObjectParms.useLightProbe = useLightProbe;
 
     UpdateVisuals();
 }
 
 bool ComMeshRenderer::IsCastShadows() const {
-    return sceneEntity.castShadows;
+    return sceneObjectParms.castShadows;
 }
 
 void ComMeshRenderer::SetCastShadows(bool castShadows) {
-    sceneEntity.castShadows = castShadows;
+    sceneObjectParms.castShadows = castShadows;
     
     UpdateVisuals();
 }
 
 bool ComMeshRenderer::IsReceiveShadows() const {
-    return sceneEntity.receiveShadows;
+    return sceneObjectParms.receiveShadows;
 }
 
 void ComMeshRenderer::SetReceiveShadows(bool receiveShadows) {
-    sceneEntity.receiveShadows = receiveShadows;
+    sceneObjectParms.receiveShadows = receiveShadows;
 
     UpdateVisuals();
 }
@@ -237,8 +237,8 @@ bool ComMeshRenderer::GetClosestVertex(const SceneView *view, const Point &mouse
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    for (int surfaceIndex = 0; surfaceIndex < sceneEntity.mesh->NumSurfaces(); surfaceIndex++) {
-        const SubMesh *subMesh = sceneEntity.mesh->GetSurface(surfaceIndex)->subMesh;
+    for (int surfaceIndex = 0; surfaceIndex < sceneObjectParms.mesh->NumSurfaces(); surfaceIndex++) {
+        const SubMesh *subMesh = sceneObjectParms.mesh->GetSurface(surfaceIndex)->subMesh;
         const VertexGenericLit *v = subMesh->Verts();
 
         for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++, v++) {

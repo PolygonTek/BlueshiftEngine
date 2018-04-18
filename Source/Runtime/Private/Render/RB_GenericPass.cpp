@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 
 void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -74,7 +74,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
 void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -147,7 +147,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
 void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -223,7 +223,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
 void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -295,7 +295,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
 void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -363,8 +363,8 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
 void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
-    const viewEntity_t *skipEntity = nullptr;
+    const VisibleObject *prevSpace = nullptr;
+    const VisibleObject *skipEntity = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
 
@@ -457,7 +457,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
 void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
     
@@ -531,7 +531,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
 void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
         

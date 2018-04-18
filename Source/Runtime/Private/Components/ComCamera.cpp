@@ -99,7 +99,7 @@ void ComCamera::Purge(bool chainPurge) {
     }
 
     if (spriteHandle != -1) {
-        renderWorld->RemoveEntity(spriteHandle);
+        renderWorld->RemoveObject(spriteHandle);
         spriteHandle = -1;
     }
 
@@ -145,12 +145,12 @@ void ComCamera::Init() {
     sprite.origin = transform->GetOrigin();
     sprite.scale = Vec3(1, 1, 1);
     sprite.axis = Mat3::identity;
-    sprite.materialParms[SceneEntity::RedParm] = 1.0f;
-    sprite.materialParms[SceneEntity::GreenParm] = 1.0f;
-    sprite.materialParms[SceneEntity::BlueParm] = 1.0f;
-    sprite.materialParms[SceneEntity::AlphaParm] = 1.0f;
-    sprite.materialParms[SceneEntity::TimeOffsetParm] = 0.0f;
-    sprite.materialParms[SceneEntity::TimeScaleParm] = 1.0f;
+    sprite.materialParms[SceneObject::RedParm] = 1.0f;
+    sprite.materialParms[SceneObject::GreenParm] = 1.0f;
+    sprite.materialParms[SceneObject::BlueParm] = 1.0f;
+    sprite.materialParms[SceneObject::AlphaParm] = 1.0f;
+    sprite.materialParms[SceneObject::TimeOffsetParm] = 0.0f;
+    sprite.materialParms[SceneObject::TimeScaleParm] = 1.0f;
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
 
@@ -166,7 +166,7 @@ void ComCamera::OnActive() {
 
 void ComCamera::OnInactive() {
     if (spriteHandle != -1) {
-        renderWorld->RemoveEntity(spriteHandle);
+        renderWorld->RemoveObject(spriteHandle);
         spriteHandle = -1;
     }
 }
@@ -432,9 +432,9 @@ void ComCamera::UpdateVisuals() {
     }
 
     if (spriteHandle == -1) {
-        spriteHandle = renderWorld->AddEntity(&sprite);
+        spriteHandle = renderWorld->AddObject(&sprite);
     } else {
-        renderWorld->UpdateEntity(spriteHandle, &sprite);
+        renderWorld->UpdateObject(spriteHandle, &sprite);
     }
 }
 

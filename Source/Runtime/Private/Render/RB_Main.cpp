@@ -125,8 +125,8 @@ static const void *RB_ExecuteBeginContext(const void *data) {
     return (const void *)(cmd + 1);
 }
 
-void RB_SetupLight(viewLight_t *viewLight) {
-    const SceneLight *sceneLight = viewLight->def;
+void RB_SetupLight(VisibleLight *visibleLight) {
+    const SceneLight *sceneLight = visibleLight->def;
 
     const Material *lightMaterial = sceneLight->parms.material;
 
@@ -136,23 +136,23 @@ void RB_SetupLight(viewLight_t *viewLight) {
     memcpy(&localParms[1], sceneLight->parms.materialParms, sizeof(sceneLight->parms.materialParms));
     lightMaterial->GetExprChunk()->Evaluate(localParms, outputValues);*/
 
-    viewLight->materialRegisters = nullptr;//outputValues;
+    visibleLight->materialRegisters = nullptr;//outputValues;
 
     const Material::ShaderPass *lightPass = lightMaterial->GetPass();
 
     if (lightPass->useOwnerColor) {
-        viewLight->lightColor = Color4(&sceneLight->parms.materialParms[SceneEntity::RedParm]);
+        visibleLight->lightColor = Color4(&sceneLight->parms.materialParms[SceneObject::RedParm]);
     } else {
-        viewLight->lightColor = Color4(lightPass->constantColor);
+        visibleLight->lightColor = Color4(lightPass->constantColor);
     }
 
     if (cvarSystem.GetCVarBool(L"gl_sRGB")) {
-        // Linearize viewLight color
-        viewLight->lightColor.ToColor3() = viewLight->lightColor.ToColor3().SRGBtoLinear();
+        // Linearize visibleLight color
+        visibleLight->lightColor.ToColor3() = visibleLight->lightColor.ToColor3().SRGBtoLinear();
     }
 
-    // viewLight texture transform matrix
-    const Mat4 &viewProjScaleBiasMat = viewLight->def->GetViewProjScaleBiasMatrix();
+    // visibleLight texture transform matrix
+    const Mat4 &viewProjScaleBiasMat = visibleLight->def->GetViewProjScaleBiasMatrix();
 
     float lightTexMat[2][4];
     lightTexMat[0][0] = lightPass->tcScale[0];
@@ -165,25 +165,25 @@ void RB_SetupLight(viewLight_t *viewLight) {
     lightTexMat[1][2] = 0.0f;
     lightTexMat[1][3] = lightPass->tcTranslation[1];
 
-    viewLight->viewProjTexMatrix[0][0] = lightTexMat[0][0] * viewProjScaleBiasMat[0][0] + lightTexMat[0][1] * viewProjScaleBiasMat[1][0] + lightTexMat[0][3] * viewProjScaleBiasMat[3][0];
-    viewLight->viewProjTexMatrix[0][1] = lightTexMat[0][0] * viewProjScaleBiasMat[0][1] + lightTexMat[0][1] * viewProjScaleBiasMat[1][1] + lightTexMat[0][3] * viewProjScaleBiasMat[3][1];
-    viewLight->viewProjTexMatrix[0][2] = lightTexMat[0][0] * viewProjScaleBiasMat[0][2] + lightTexMat[0][1] * viewProjScaleBiasMat[1][2] + lightTexMat[0][3] * viewProjScaleBiasMat[3][2];
-    viewLight->viewProjTexMatrix[0][3] = lightTexMat[0][0] * viewProjScaleBiasMat[0][3] + lightTexMat[0][1] * viewProjScaleBiasMat[1][3] + lightTexMat[0][3] * viewProjScaleBiasMat[3][3];
+    visibleLight->viewProjTexMatrix[0][0] = lightTexMat[0][0] * viewProjScaleBiasMat[0][0] + lightTexMat[0][1] * viewProjScaleBiasMat[1][0] + lightTexMat[0][3] * viewProjScaleBiasMat[3][0];
+    visibleLight->viewProjTexMatrix[0][1] = lightTexMat[0][0] * viewProjScaleBiasMat[0][1] + lightTexMat[0][1] * viewProjScaleBiasMat[1][1] + lightTexMat[0][3] * viewProjScaleBiasMat[3][1];
+    visibleLight->viewProjTexMatrix[0][2] = lightTexMat[0][0] * viewProjScaleBiasMat[0][2] + lightTexMat[0][1] * viewProjScaleBiasMat[1][2] + lightTexMat[0][3] * viewProjScaleBiasMat[3][2];
+    visibleLight->viewProjTexMatrix[0][3] = lightTexMat[0][0] * viewProjScaleBiasMat[0][3] + lightTexMat[0][1] * viewProjScaleBiasMat[1][3] + lightTexMat[0][3] * viewProjScaleBiasMat[3][3];
 
-    viewLight->viewProjTexMatrix[1][0] = lightTexMat[1][0] * viewProjScaleBiasMat[0][0] + lightTexMat[1][1] * viewProjScaleBiasMat[1][0] + lightTexMat[1][3] * viewProjScaleBiasMat[3][0];
-    viewLight->viewProjTexMatrix[1][1] = lightTexMat[1][0] * viewProjScaleBiasMat[0][1] + lightTexMat[1][1] * viewProjScaleBiasMat[1][1] + lightTexMat[1][3] * viewProjScaleBiasMat[3][1];
-    viewLight->viewProjTexMatrix[1][2] = lightTexMat[1][0] * viewProjScaleBiasMat[0][2] + lightTexMat[1][1] * viewProjScaleBiasMat[1][2] + lightTexMat[1][3] * viewProjScaleBiasMat[3][2];
-    viewLight->viewProjTexMatrix[1][3] = lightTexMat[1][0] * viewProjScaleBiasMat[0][3] + lightTexMat[1][1] * viewProjScaleBiasMat[1][3] + lightTexMat[1][3] * viewProjScaleBiasMat[3][3];
+    visibleLight->viewProjTexMatrix[1][0] = lightTexMat[1][0] * viewProjScaleBiasMat[0][0] + lightTexMat[1][1] * viewProjScaleBiasMat[1][0] + lightTexMat[1][3] * viewProjScaleBiasMat[3][0];
+    visibleLight->viewProjTexMatrix[1][1] = lightTexMat[1][0] * viewProjScaleBiasMat[0][1] + lightTexMat[1][1] * viewProjScaleBiasMat[1][1] + lightTexMat[1][3] * viewProjScaleBiasMat[3][1];
+    visibleLight->viewProjTexMatrix[1][2] = lightTexMat[1][0] * viewProjScaleBiasMat[0][2] + lightTexMat[1][1] * viewProjScaleBiasMat[1][2] + lightTexMat[1][3] * viewProjScaleBiasMat[3][2];
+    visibleLight->viewProjTexMatrix[1][3] = lightTexMat[1][0] * viewProjScaleBiasMat[0][3] + lightTexMat[1][1] * viewProjScaleBiasMat[1][3] + lightTexMat[1][3] * viewProjScaleBiasMat[3][3];
 
-    viewLight->viewProjTexMatrix[2][0] = viewProjScaleBiasMat[2][0];
-    viewLight->viewProjTexMatrix[2][1] = viewProjScaleBiasMat[2][1];
-    viewLight->viewProjTexMatrix[2][2] = viewProjScaleBiasMat[2][2];
-    viewLight->viewProjTexMatrix[2][3] = viewProjScaleBiasMat[2][3];
+    visibleLight->viewProjTexMatrix[2][0] = viewProjScaleBiasMat[2][0];
+    visibleLight->viewProjTexMatrix[2][1] = viewProjScaleBiasMat[2][1];
+    visibleLight->viewProjTexMatrix[2][2] = viewProjScaleBiasMat[2][2];
+    visibleLight->viewProjTexMatrix[2][3] = viewProjScaleBiasMat[2][3];
 
-    viewLight->viewProjTexMatrix[3][0] = viewProjScaleBiasMat[3][0];
-    viewLight->viewProjTexMatrix[3][1] = viewProjScaleBiasMat[3][1];
-    viewLight->viewProjTexMatrix[3][2] = viewProjScaleBiasMat[3][2];
-    viewLight->viewProjTexMatrix[3][3] = viewProjScaleBiasMat[3][3];
+    visibleLight->viewProjTexMatrix[3][0] = viewProjScaleBiasMat[3][0];
+    visibleLight->viewProjTexMatrix[3][1] = viewProjScaleBiasMat[3][1];
+    visibleLight->viewProjTexMatrix[3][2] = viewProjScaleBiasMat[3][2];
+    visibleLight->viewProjTexMatrix[3][3] = viewProjScaleBiasMat[3][3];
 }
 
 void RB_DrawLightVolume(const SceneLight *light) {
@@ -207,7 +207,7 @@ void RB_DrawLightVolume(const SceneLight *light) {
     }
 }
 
-static void RB_DrawStencilLightVolume(const viewLight_t *light, bool insideLightVolume) {
+static void RB_DrawStencilLightVolume(const VisibleLight *light, bool insideLightVolume) {
     rhi.SetStateBits(RHI::DF_LEqual);
 
     if (insideLightVolume) {
@@ -224,7 +224,7 @@ static void RB_DrawStencilLightVolume(const viewLight_t *light, bool insideLight
 }
 
 // NOTE: ambient pass 이후에 실행되므로 화면에 깊이값은 채워져있다
-static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
+static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) {
 /*	bool    insideLightVolume;
     Rect    prevScissorRect;
     int     numQueryWait = 0;
@@ -233,10 +233,10 @@ static void RB_MarkOcclusionVisibleLights(int numLights, viewLight_t **lights) {
 
     if (r_useLightScissors.GetBool()) {
         prevScissorRect = rhi.GetScissor();
-    }	
+    }
 
     for (int i = 0; i < numLights; i++) {
-        viewLight_t *light = lights[i];
+        VisibleLight *light = lights[i];
         if (light->def->parms.isPrimaryLight) {
             continue;
         }
@@ -459,7 +459,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
         DrawSurf *surf = drawSurfs[index];
 
         if (visibilityPtr[2] == 0) {
-            const viewEntity_t *space = surf->space;
+            const VisibleObject *space = surf->space;
 
             surf->flags &= ~DrawSurf::AmbientVisible;
 
@@ -483,7 +483,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
 }
 
 static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const viewEntity_t *prevSpace = nullptr;
+    const VisibleObject *prevSpace = nullptr;
 
     // count ambient occludees for culling
     AABB *occludeeAABB = (AABB *)_alloca(numDrawSurfs * sizeof(AABB));
@@ -500,7 +500,7 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
             continue;
         }
 
-        const viewEntity_t *space = surf->space;
+        const VisibleObject *space = surf->space;
 
         if (space->def->parms.joints) {
             if (space == prevSpace) {
@@ -611,7 +611,7 @@ static void RB_DrawView() {
 
         // Render all shadow and light interaction
         if (!r_skipShadowAndLitPass.GetBool()) {
-            RB_ForwardAdditivePass(backEnd.viewLights);
+            RB_ForwardAdditivePass(backEnd.visibleLights);
         }
 
         // Render wireframe for option
@@ -703,8 +703,8 @@ static const void *RB_ExecuteDrawView(const void *data) {
 
     backEnd.view            = &cmd->view;
     backEnd.time            = MS2SEC(cmd->view.def->parms.time);
-    backEnd.viewEntities    = cmd->view.viewEntities;
-    backEnd.viewLights      = cmd->view.viewLights;
+    backEnd.visibleObjects    = cmd->view.visibleObjects;
+    backEnd.visibleLights      = cmd->view.visibleLights;
     backEnd.primaryLight    = cmd->view.primaryLight;
     backEnd.numDrawSurfs    = cmd->view.numDrawSurfs;
     backEnd.drawSurfs       = cmd->view.drawSurfs;
