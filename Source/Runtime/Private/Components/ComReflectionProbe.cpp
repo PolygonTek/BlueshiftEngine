@@ -89,7 +89,7 @@ void ComReflectionProbe::Init() {
     textureManager.ReleaseTexture(spriteTexture);
 
     sphereDef.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);
-    sphereDef.aabb = sphereMesh->GetAABB();
+    sphereDef.localAABB = sphereMesh->GetAABB();
     sphereDef.origin = transform->GetOrigin();
     sphereDef.scale = Vec3(1, 1, 1);
     sphereDef.axis = Mat3::identity;

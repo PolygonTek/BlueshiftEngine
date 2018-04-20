@@ -174,11 +174,11 @@ void RenderWorld::FindVisibleLightsAndObjects(VisibleView *view) {
             visibleObject->modelViewProjMatrix *= billboardMatrix;
         }
 
-        view->aabb.AddAABB(proxy->aabb);
+        view->aabb.AddAABB(proxy->worldAABB);
 
         if (r_showAABB.GetInteger() > 0) {
             SetDebugColor(Color4::blue, Color4::zero);
-            DebugAABB(proxy->aabb, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
+            DebugAABB(proxy->worldAABB, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
         }
 
         if (visibleObject->def->state.numJoints > 0 && r_showSkeleton.GetInteger() > 0) {
@@ -245,7 +245,7 @@ void RenderWorld::AddStaticMeshes(VisibleView *view) {
 
         if (r_showAABB.GetInteger() > 0) {
             SetDebugColor(Color4(1, 1, 1, 0.5), Color4::zero);
-            DebugAABB(proxy->aabb, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
+            DebugAABB(proxy->worldAABB, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
         }
 
         return true;
@@ -471,7 +471,7 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
                 drawSurfNode->next = visibleLight->litSurfs;
 
                 visibleLight->litSurfs = drawSurfNode;
-                visibleLight->litSurfsAABB.AddAABB(proxy->aabb);
+                visibleLight->litSurfsAABB.AddAABB(proxy->worldAABB);
             }
         }
 
@@ -498,7 +498,7 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
             drawSurfNode->next = visibleLight->shadowCasterSurfs;
 
             visibleLight->shadowCasterSurfs = drawSurfNode;
-            visibleLight->shadowCasterAABB.AddAABB(proxy->aabb);
+            visibleLight->shadowCasterAABB.AddAABB(proxy->worldAABB);
         }
 
         return true;
@@ -577,14 +577,14 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
         }
 
         if (proxy->renderObject->visibleObject && proxy->renderObject->visibleObject->ambientVisible) {
-            visibleLight->litSurfsAABB.AddAABB(proxy->aabb);
+            visibleLight->litSurfsAABB.AddAABB(proxy->worldAABB);
         }
 
         if (!(proxy->renderObject->state.flags & RenderObject::CastShadowsFlag)) {
             return true;
         }
 
-        OBB obb = OBB(proxy->renderObject->GetAABB(), proxy->renderObject->state.origin, proxy->renderObject->state.axis);
+        OBB obb = OBB(proxy->renderObject->GetLocalAABB(), proxy->renderObject->state.origin, proxy->renderObject->state.axis);
         if (visibleLight->def->CullShadowCasterOBB(obb, view->def->frustum, view->aabb)) {
             return true;
         }
@@ -623,7 +623,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
             }
         }
 
-        visibleLight->shadowCasterAABB.AddAABB(proxy->aabb);
+        visibleLight->shadowCasterAABB.AddAABB(proxy->worldAABB);
 
         return true;
     };

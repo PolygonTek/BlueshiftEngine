@@ -97,10 +97,11 @@ public:
         int                 layer;
         int                 time;
 
-        // world transform
+        // transform info
         Vec3                origin;
         Vec3                scale;
         Mat3                axis;
+        AABB                localAABB;      // non-scaled local AABB (shouldn't be empty AABB)
 
         // static mesh or skinned mesh
         Mesh *              mesh;
@@ -130,8 +131,6 @@ public:
         WireframeMode       wireframeMode;
         Color4              wireframeColor;
 
-        AABB                aabb;           // non-scaled local AABB (shouldn't be empty AABB)
-
         float               maxVisDist;
     };
 
@@ -141,7 +140,7 @@ public:
     void                    Update(const State *state);
 
                             /// Returns non-scaled AABB in local space.
-    const AABB              GetAABB() const;
+    const AABB              GetLocalAABB() const;
 
                             /// Returns OBB in world space.
     const OBB &             GetWorldOBB() const { return worldOBB; }
@@ -152,11 +151,14 @@ public:
     int                     index;
     State                   state;
     bool                    firstUpdate;
+
     OBB                     worldOBB;
     Mat4                    worldMatrix;
-    Mat4                    motionBlurModelMatrix[2];
+    Mat4                    prevWorldMatrix;
+
     int                     viewCount;
     VisibleObject *         visibleObject;
+
     DbvtProxy *             proxy;
     int                     numMeshSurfProxies;
     DbvtProxy *             meshSurfProxies;            // mesh surf proxy for static sub mesh

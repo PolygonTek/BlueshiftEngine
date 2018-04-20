@@ -26,8 +26,8 @@ bool Mesh::IsDefaultMesh() const {
 }
 
 void Mesh::Purge() {
-    for (int i = 0; i < surfaces.Count(); i++) {
-        FreeSurface(surfaces[i]);
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        FreeSurface(surfaces[surfaceIndex]);
     }
     surfaces.Clear();
 
@@ -183,7 +183,7 @@ void Mesh::FinishSurfaces(int flags) {
     }*/
 
     if (flags & ComputeTangentsFlag) {
-        ComputeTangents(flags & ComputeNormalsFlag ? true : false, flags & UseUnsmoothedTangentsFlag ? true : false);
+        ComputeTangents((flags & ComputeNormalsFlag) ? true : false, (flags & UseUnsmoothedTangentsFlag) ? true : false);
     }
 
     // TODO: consider to remove this
@@ -191,11 +191,11 @@ void Mesh::FinishSurfaces(int flags) {
 }
 
 void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &translation) {
-    for (int i = 0; i < surfaces.Count(); i++) {
-        SubMesh *subMesh = surfaces[i]->subMesh;
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;
 
-        for (int j = 0; j < subMesh->numVerts; j++) {
-            subMesh->verts[j].Transform(rotation, translation);
+        for (int vertexIndex = 0; vertexIndex < subMesh->numVerts; vertexIndex++) {
+            subMesh->verts[vertexIndex].Transform(rotation, Vec3::one, translation);
         }
     }
 
@@ -203,8 +203,8 @@ void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &translation) {
 }
 
 void Mesh::OptimizeIndexedTriangles() {
-    for (int i = 0; i < surfaces.Count(); i++) {
-        SubMesh *subMesh = surfaces[i]->subMesh;
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;
         subMesh->OptimizeIndexedTriangles();
     }
 }
@@ -213,8 +213,8 @@ void Mesh::Voxelize() {
 }
 
 bool Mesh::LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
-    for (int i = 0; i < surfaces.Count(); i++) {
-        MeshSurf *surf = surfaces[i];
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        MeshSurf *surf = surfaces[surfaceIndex];
         if (surf->subMesh->LineIntersection(start, end, backFaceCull)) {
             return true;
         }
@@ -226,8 +226,8 @@ bool Mesh::LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCul
 bool Mesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &scale) const {
     float smin = Math::Infinity;
 
-    for (int i = 0; i < surfaces.Count(); i++) {
-        MeshSurf *surf = surfaces[i];
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        MeshSurf *surf = surfaces[surfaceIndex];
         if (surf->subMesh->RayIntersection(start, dir, scale, backFaceCull)) {
             if (scale > 0.0f && scale < smin) {
                 smin = scale;
@@ -244,16 +244,16 @@ bool Mesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull
 }
 
 void Mesh::SplitMirroredVerts() {
-    for (int i = 0; i < surfaces.Count(); i++) {
-        surfaces[i]->subMesh->SplitMirroredVerts();
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        surfaces[surfaceIndex]->subMesh->SplitMirroredVerts();
     }
 }
 
 void Mesh::ComputeAABB() {
     aabb.Clear();
 
-    for (int i = 0; i < surfaces.Count(); i++) {
-        SubMesh *subMesh = surfaces[i]->subMesh;
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;
         subMesh->ComputeAABB();
 
         aabb.AddAABB(subMesh->aabb);
@@ -264,22 +264,22 @@ void Mesh::ComputeAABB() {
 }
 
 void Mesh::ComputeNormals() {
-    for (int i = 0; i < surfaces.Count(); i++) {
-        surfaces[i]->subMesh->ComputeNormals();
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        surfaces[surfaceIndex]->subMesh->ComputeNormals();
     }
 }
 
 void Mesh::ComputeTangents(bool includeNormals, bool useUnsmoothedTangents) {
-    for (int i = 0; i < surfaces.Count(); i++) {
-        MeshSurf *surf = surfaces[i];
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        MeshSurf *surf = surfaces[surfaceIndex];
 
         surf->subMesh->ComputeTangents(includeNormals, useUnsmoothedTangents);
     }
 }
 
 void Mesh::ComputeEdges() {
-    for (int i = 0; i < surfaces.Count(); i++) {
-        surfaces[i]->subMesh->ComputeEdges();
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        surfaces[surfaceIndex]->subMesh->ComputeEdges();
     }
 }
 
@@ -290,9 +290,9 @@ bool Mesh::IsCompatibleSkeleton(const Skeleton *skeleton) const {
     
     const Joint *otherJoints = skeleton->GetJoints();
 
-    for (int i = 0; i < numJoints; i++) {
-        const Joint *joint = &joints[i];
-        const Joint *otherJoint = &otherJoints[i];
+    for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
+        const Joint *joint = &joints[jointIndex];
+        const Joint *otherJoint = &otherJoints[jointIndex];
         
         if (joint->name != otherJoint->name) {
             return false;

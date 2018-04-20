@@ -115,7 +115,6 @@ extern CVar     r_useDepthBoundTest;
 extern CVar     r_useDepthPrePass;
 extern CVar     r_useDeferredLighting;
 extern CVar     r_useTwoSidedStencil;
-extern CVar     r_useUnsmoothedTangents;
 extern CVar     r_useLightScissors;
 extern CVar     r_useLightOcclusionQuery;
 extern CVar     r_usePostProcessing;

@@ -141,7 +141,7 @@ void ComCamera::Init() {
     textureManager.ReleaseTexture(spriteTexture);
     
     spriteDef.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
-    spriteDef.aabb = spriteMesh->GetAABB();
+    spriteDef.localAABB = spriteMesh->GetAABB();
     spriteDef.origin = transform->GetOrigin();
     spriteDef.scale = Vec3(1, 1, 1);
     spriteDef.axis = Mat3::identity;

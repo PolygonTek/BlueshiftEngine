@@ -102,7 +102,7 @@ void ComParticleSystem::Init() {
     textureManager.ReleaseTexture(spriteTexture);
 
     spriteDef.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::StaticMesh);
-    spriteDef.aabb = spriteReferenceMesh->GetAABB();
+    spriteDef.localAABB = spriteReferenceMesh->GetAABB();
     spriteDef.origin = GetEntity()->GetTransform()->GetOrigin();
     spriteDef.scale = Vec3(1, 1, 1);
     spriteDef.axis = Mat3::identity;
@@ -249,7 +249,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
     renderObjectDef.time = currentTime;
 
-    renderObjectDef.aabb.SetZero();
+    renderObjectDef.localAABB.SetZero();
 
     const Mat3x4 worldMatrix = GetEntity()->GetTransform()->GetMatrix();
 
@@ -613,7 +613,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             radius = trail->size * 0.5f;
         }
 
-        renderObjectDef.aabb.AddAABB(Sphere(trail->position, radius).ToAABB());
+        renderObjectDef.localAABB.AddAABB(Sphere(trail->position, radius).ToAABB());
     }
 }
 

@@ -405,7 +405,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
                 Mesh *mesh = surf->space->def->state.mesh;
 
-                if (!mesh->IsSkinnedMesh() && (surf->space->def->motionBlurModelMatrix[0] == surf->space->def->motionBlurModelMatrix[1])) {
+                if (!mesh->IsSkinnedMesh() && (surf->space->def->worldMatrix == surf->space->def->prevWorldMatrix)) {
                     skipObject = surf->space;
                     continue;
                 }

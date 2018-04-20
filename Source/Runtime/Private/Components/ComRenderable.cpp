@@ -120,7 +120,7 @@ void ComRenderable::UpdateVisuals() {
 
 const AABB ComRenderable::GetAABB() {
     const ComTransform *transform = GetEntity()->GetTransform();
-    return renderObjectDef.aabb * transform->GetScale();
+    return renderObjectDef.localAABB * transform->GetScale();
 }
 
 bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {

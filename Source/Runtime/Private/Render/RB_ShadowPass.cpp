@@ -231,7 +231,7 @@ static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat
                     continue;
                 }
                 
-                OBB obb(surf->space->def->GetAABB(), surf->space->def->state.origin, surf->space->def->state.axis);
+                OBB obb(surf->space->def->GetLocalAABB(), surf->space->def->state.origin, surf->space->def->state.axis);
                 if (lightFrustum.CullOBB(obb)) {
                     skipObject = surf->space;
                     continue;

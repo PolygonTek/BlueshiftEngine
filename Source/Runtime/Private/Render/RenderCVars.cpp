@@ -38,6 +38,7 @@ CVAR(r_shadowCubeMapSize, L"1024", CVar::Integer | CVar::Archive, L"virtual shad
 CVAR(r_shadowCubeMapZNear, L"4.0", CVar::Float, L"");
 CVAR(r_shadowMapQuality, L"1", CVar::Integer | CVar::Archive, L"shadow map PCF level, 0 = HW-PCF only, 1 = HW-PCFx5, 2 = PCFx9, 3 = PCFx16 (randomly jittered sample)");
 CVAR(r_shadowMapCropAlign, L"1", CVar::Bool, L"");
+
 CVAR(r_CSM_count, L"4", CVar::Integer | CVar::Archive, L"");
 CVAR(r_CSM_maxDistance, L"4096", CVar::Float, L"");
 CVAR(r_CSM_pancaking, L"0", CVar::Bool, L"");
@@ -106,7 +107,6 @@ CVAR(r_useDepthBoundTest, L"1", CVar::Bool, L"use depth bounds test to reduce sh
 CVAR(r_useDepthPrePass, L"1", CVar::Bool | CVar::Archive, L"");
 CVAR(r_useDeferredLighting, L"0", CVar::Bool | CVar::Archive, L"");
 CVAR(r_useTwoSidedStencil, L"1", CVar::Bool, L"do stencil shadows in one pass with different ops on each side");
-CVAR(r_useUnsmoothedTangents, L"1", CVar::Bool, L"");
 CVAR(r_useLightScissors, L"1", CVar::Bool, L"use custom scissor rectangle for each light");
 CVAR(r_useLightOcclusionQuery, L"0", CVar::Bool, L"");
 CVAR(r_usePostProcessing, L"1", CVar::Bool | CVar::Archive, L"");

@@ -226,9 +226,9 @@ void ComSkinnedMeshRenderer::UpdateAnimation(int currentTime) {
 
         simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
 
-        anim->GetAABB(renderObjectDef.aabb, frameAABBs, time);
+        anim->GetAABB(renderObjectDef.localAABB, frameAABBs, time);
     } else {
-        renderObjectDef.aabb = referenceMesh->GetAABB();
+        renderObjectDef.localAABB = referenceMesh->GetAABB();
     }
 
     ComRenderable::UpdateVisuals();

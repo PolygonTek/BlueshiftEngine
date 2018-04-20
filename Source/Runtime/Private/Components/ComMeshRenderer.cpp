@@ -69,7 +69,7 @@ void ComMeshRenderer::Purge(bool chainPurge) {
 void ComMeshRenderer::Init() {
     ComRenderable::Init();
 
-    renderObjectDef.aabb = referenceMesh->GetAABB();
+    renderObjectDef.localAABB = referenceMesh->GetAABB();
 
     // Mark as initialized
     SetInitialized(true);

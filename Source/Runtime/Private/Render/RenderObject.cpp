@@ -26,9 +26,7 @@ RenderObject::RenderObject() {
     worldOBB.SetZero();
 
     worldMatrix.SetIdentity();
-
-    motionBlurModelMatrix[0].SetIdentity();
-    motionBlurModelMatrix[1].SetIdentity();
+    prevWorldMatrix.SetIdentity();
 
     viewCount = 0;
     visibleObject = nullptr;
@@ -48,8 +46,8 @@ RenderObject::~RenderObject() {
     }
 }
 
-void RenderObject::Update(const State *stateCopy) {
-    state = *stateCopy;
+void RenderObject::Update(const State *stateDef) {
+    state = *stateDef;
 
     // Saturate object color RGBA in range [0, 1]
     Clamp(state.materialParms[RedParm], 0.0f, 1.0f);
@@ -58,25 +56,23 @@ void RenderObject::Update(const State *stateCopy) {
     Clamp(state.materialParms[AlphaParm], 0.0f, 1.0f);
 
     if (state.joints || state.mesh) {
-        worldOBB = OBB(GetAABB(), state.origin, state.axis);
+        worldOBB = OBB(GetLocalAABB(), state.origin, state.axis);
     }
-
-    // Calculate world matrix
-    worldMatrix.SetLinearTransform(state.axis, state.scale, state.origin);
 
     if (firstUpdate) {
-        motionBlurModelMatrix[1] = worldMatrix;
+        worldMatrix.SetLinearTransform(state.axis, state.scale, state.origin);
+        prevWorldMatrix = worldMatrix;
     } else {
-        motionBlurModelMatrix[1] = motionBlurModelMatrix[0];
+        prevWorldMatrix = worldMatrix;
+        worldMatrix.SetLinearTransform(state.axis, state.scale, state.origin);
     }
-    motionBlurModelMatrix[0] = worldMatrix;
 
     firstUpdate = false;
 }
 
-const AABB RenderObject::GetAABB() const {
+const AABB RenderObject::GetLocalAABB() const {
     if (state.joints) {
-        return state.aabb * state.scale;
+        return state.localAABB * state.scale;
     }
 
     assert(state.mesh);

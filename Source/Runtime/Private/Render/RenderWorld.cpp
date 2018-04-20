@@ -94,8 +94,8 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *obje
         // Add proxy in the DBVT for the renderObjects
         renderObject->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         renderObject->proxy->renderObject = renderObject;
-        renderObject->proxy->aabb.SetFromTransformedAABB(objectDef->aabb * objectDef->scale, objectDef->origin, objectDef->axis);
-        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->aabb, MeterToUnit(0.5f), renderObject->proxy);
+        renderObject->proxy->worldAABB.SetFromTransformedAABB(objectDef->localAABB * objectDef->scale, objectDef->origin, objectDef->axis);
+        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, MeterToUnit(0.5f), renderObject->proxy);
 
         // If this object is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
         if (objectDef->mesh && !objectDef->joints) {
@@ -109,22 +109,22 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *obje
                 meshSurfProxy->renderObject = renderObject;
                 meshSurfProxy->mesh = objectDef->mesh;
                 meshSurfProxy->meshSurfIndex = surfaceIndex;
-                meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
-                meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
+                meshSurfProxy->worldAABB.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
+                meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
             }
         }
     } else {
         bool originMatch    = (objectDef->origin == renderObject->state.origin);
         bool axisMatch      = (objectDef->axis == renderObject->state.axis);
         bool scaleMatch     = (objectDef->scale == renderObject->state.scale);
-        bool aabbMatch      = (objectDef->aabb == renderObject->state.aabb);
+        bool aabbMatch      = (objectDef->localAABB == renderObject->state.localAABB);
         bool meshMatch      = (objectDef->mesh == renderObject->state.mesh);
         bool proxyMoved     = !originMatch || !axisMatch || !scaleMatch || !aabbMatch;
 
         if (proxyMoved || !meshMatch) {
             if (proxyMoved) {
-                renderObject->proxy->aabb.SetFromTransformedAABB(objectDef->aabb * objectDef->scale, objectDef->origin, objectDef->axis);
-                objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->aabb, MeterToUnit(0.5f), objectDef->origin - renderObject->state.origin);
+                renderObject->proxy->worldAABB.SetFromTransformedAABB(objectDef->localAABB * objectDef->scale, objectDef->origin, objectDef->axis);
+                objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.5f), objectDef->origin - renderObject->state.origin);
             }
 
             // If this object is a static mesh
@@ -145,13 +145,13 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *obje
                         meshSurfProxy->renderObject = renderObject;
                         meshSurfProxy->mesh = objectDef->mesh;
                         meshSurfProxy->meshSurfIndex = surfaceIndex;
-                        meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
-                        meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
+                        meshSurfProxy->worldAABB.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
+                        meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
                     }
                 } else {
                     for (int surfaceIndex = 0; surfaceIndex < objectDef->mesh->NumSurfaces(); surfaceIndex++) {
-                        renderObject->meshSurfProxies[surfaceIndex].aabb.SetFromTransformedAABB(objectDef->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
-                        staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), objectDef->origin - renderObject->state.origin);
+                        renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABB(objectDef->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
+                        staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.5f), objectDef->origin - renderObject->state.origin);
                     }
                 }
             }
@@ -223,16 +223,16 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *lightD
 
         renderLight->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         renderLight->proxy->renderLight = renderLight;
-        renderLight->proxy->aabb = renderLight->GetAABB();
-        renderLight->proxy->id = lightDbvt.CreateProxy(renderLight->proxy->aabb, MeterToUnit(0.0f), renderLight->proxy);
+        renderLight->proxy->worldAABB = renderLight->GetAABB();
+        renderLight->proxy->id = lightDbvt.CreateProxy(renderLight->proxy->worldAABB, MeterToUnit(0.0f), renderLight->proxy);
     } else {
         bool originMatch    = (lightDef->origin == renderLight->state.origin);
         bool axisMatch      = (lightDef->axis == renderLight->state.axis);
         bool valueMatch     = (lightDef->size == renderLight->state.size);
 
         if (!originMatch || !axisMatch || !valueMatch) {
-            renderLight->proxy->aabb = renderLight->proxy->renderLight->GetAABB();
-            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->aabb, MeterToUnit(0.5f), lightDef->origin - renderLight->state.origin);
+            renderLight->proxy->worldAABB = renderLight->proxy->renderLight->GetAABB();
+            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->worldAABB, MeterToUnit(0.5f), lightDef->origin - renderLight->state.origin);
         }
 
         renderLight->Update(lightDef);

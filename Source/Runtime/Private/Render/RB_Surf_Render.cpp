@@ -394,7 +394,7 @@ void RBSurf::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
 
     SetMatrixConstants(shader);
 
-    Mat4 prevModelViewMatrix = backEnd.view->def->viewMatrix * surfSpace->def->motionBlurModelMatrix[1];
+    Mat4 prevModelViewMatrix = backEnd.view->def->viewMatrix * surfSpace->def->prevWorldMatrix;
     //shader->SetConstantMatrix4fv("prevModelViewMatrix", 1, true, prevModelViewMatrix);
 
     Mat4 prevModelViewProjMatrix = backEnd.view->def->projMatrix * prevModelViewMatrix;

@@ -151,7 +151,7 @@ void ComAnimator::UpdateAnimation(int currentTime) {
 
     // Get AABB from animator
     animator.ComputeAABB(currentTime);
-    animator.GetAABB(renderObjectDef.aabb);
+    animator.GetAABB(renderObjectDef.localAABB);
 
     ComRenderable::UpdateVisuals();
 }

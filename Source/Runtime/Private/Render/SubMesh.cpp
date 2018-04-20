@@ -203,7 +203,7 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
     }
 
     bool unsmoothedTangents = false;
-    if (r_useUnsmoothedTangents.GetBool() && (material->GetFlags() & Material::UnsmoothTangents)) {
+    if (material->GetFlags() & Material::UnsmoothTangents) {
         unsmoothedTangents = true;
     }
 

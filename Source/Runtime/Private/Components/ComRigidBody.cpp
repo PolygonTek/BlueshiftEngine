@@ -389,6 +389,7 @@ void ComRigidBody::OnInactive() {
 
 void ComRigidBody::TransformUpdated(const ComTransform *transform) {
     if (physicsUpdating) {
+        // Cancel transform update due to physics simulation
         return;
     }
 

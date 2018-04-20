@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
+#include "Components/ComVehicleWheel.h"
 #include "Game/Entity.h"
 
 BE_NAMESPACE_BEGIN
@@ -47,7 +48,7 @@ ComTransform::~ComTransform() {
 }
 
 ComTransform *ComTransform::GetParent() const { 
-    Entity *parent = GetEntity()->GetNode().GetParent();
+    const Entity *parent = GetEntity()->GetNode().GetParent();
     if (!parent) {
         return nullptr;
     }
@@ -140,7 +141,7 @@ Mat3x4 ComTransform::GetMatrixNoScale() const {
     Mat3x4 worldMatrixNoScale;
     Mat3x4 localTransform = GetLocalMatrixNoScale();
     
-    ComTransform *parent = GetParent();
+    const ComTransform *parent = GetParent();
     if (parent) {
         worldMatrixNoScale = parent->GetMatrixNoScale() * localTransform;
     } else {
@@ -251,7 +252,8 @@ void ComTransform::InvalidateWorldMatrix() {
 
     if (physicsUpdating) {
         for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-            if (childEntity->GetComponent(&ComRigidBody::metaObject)) {
+            // Don't update children that has rigid body. they will be updated by own.
+            if (childEntity->GetComponent(&ComRigidBody::metaObject) || childEntity->GetComponent(&ComVehicleWheel::metaObject)) {
                 continue;
             }
 
@@ -267,7 +269,7 @@ void ComTransform::InvalidateWorldMatrix() {
 void ComTransform::UpdateWorldMatrix() const {
     Mat3x4 localTransform = GetLocalMatrix();
 
-    ComTransform *parent = GetParent();
+    const ComTransform *parent = GetParent();
     if (parent) {
         worldMatrix = parent->GetMatrix() * localTransform;
     } else {

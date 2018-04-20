@@ -506,7 +506,7 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
             if (space == prevSpace) {
                 continue;
             }
-            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(space->def->GetAABB(), space->def->state.origin, space->def->state.axis);
+            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(space->def->GetLocalAABB(), space->def->state.origin, space->def->state.axis);
         } else {	
             occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(surf->subMesh->GetAABB() * space->def->state.scale, space->def->state.origin, space->def->state.axis);
         }

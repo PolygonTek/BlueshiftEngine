@@ -32,7 +32,7 @@ class VisibleView;
 // Proxy node in the dynamic bounding volume tree
 struct DbvtProxy {
     int32_t                     id;             // proxy id
-    AABB                        aabb;           // bounding volume for this node
+    AABB                        worldAABB;      // bounding volume for this node
     RenderObject *              renderObject;
     RenderLight *               renderLight;
     //ReflectionProbe *         reflectionProbe;
