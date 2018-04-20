@@ -49,11 +49,11 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    RenderObject::State     probe;
+    RenderObject::State     probeDef;
     int                     probeHandle;
 
     Mesh *                  sphereMesh;
-    RenderObject::State     sphere;
+    RenderObject::State     sphereDef;
     int                     sphereHandle;
 
     RenderWorld *           renderWorld;

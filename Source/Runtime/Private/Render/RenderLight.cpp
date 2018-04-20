@@ -43,8 +43,8 @@ RenderLight::~RenderLight() {
     }
 }
 
-void RenderLight::Update(const RenderLight::State *stateCopy) {
-    state = *stateCopy;
+void RenderLight::Update(const RenderLight::State *stateDef) {
+    state = *stateDef;
 
     // Saturate light color RGBA in range [0, 1]
     BE1::Clamp(state.materialParms[RenderObject::RedParm], 0.0f, 1.0f);
@@ -54,13 +54,13 @@ void RenderLight::Update(const RenderLight::State *stateCopy) {
 
     if (state.type == PointLight) {
         // Set bounding volume for point light
-        obb = OBB(state.origin, state.value, state.axis);
+        obb = OBB(state.origin, state.size, state.axis);
 
         // Calculate point light orthogonal projection matrix
-        R_SetOrthogonalProjectionMatrix(state.value[1], state.value[2], 0.0f, state.value[0], projMatrix);
+        R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0.0f, state.size[0], projMatrix);
     } else if (state.type == DirectionalLight) {
         // Bounding volume for box light
-        obb = OBB(state.origin + state.axis[0] * state.value[0] * 0.5f, Vec3(state.value[0] * 0.5f, state.value[1], state.value[2]), state.axis);
+        obb = OBB(state.origin + state.axis[0] * state.size[0] * 0.5f, Vec3(state.size[0] * 0.5f, state.size[1], state.size[2]), state.axis);
 
         // Calculate box light orthogonal projection matrix
         R_SetOrthogonalProjectionMatrix(obb.Extents()[1], obb.Extents()[2], 0.0f, obb.Extents()[0] * 2, projMatrix);
@@ -68,7 +68,7 @@ void RenderLight::Update(const RenderLight::State *stateCopy) {
         // Set bounding frustum for spot light
         frustum.SetOrigin(state.origin);
         frustum.SetAxis(state.axis);
-        frustum.SetSize(BE1::Max(state.zNear, 3.0f), state.value[0], state.value[1], state.value[2]);
+        frustum.SetSize(BE1::Max(state.zNear, 3.0f), state.size[0], state.size[1], state.size[2]);
 
         float xFov = RAD2DEG(Math::ATan(frustum.GetLeft(), frustum.GetFarDistance())) * 2.0f;
         float yFov = RAD2DEG(Math::ATan(frustum.GetUp(), frustum.GetFarDistance())) * 2.0f;
@@ -137,7 +137,7 @@ const AABB RenderLight::GetAABB() const {
     return frustum.ToOBB().ToAABB();
 }
 
-static bool DirLight_ShadowBVFromCaster(const RenderLight *light, const OBB &casterOBB, OBB &shadowOBB) {	
+static bool DirLight_ShadowBVFromCaster(const RenderLight *light, const OBB &casterOBB, OBB &shadowOBB) {
     assert(light->state.type == RenderLight::DirectionalLight);
 
     AABB b1, b2;
@@ -209,7 +209,7 @@ bool RenderLight::Cull(const Frustum &viewFrustum) const {
         break;
     case PointLight:
         if (IsRadiusUniform()) {
-            if (viewFrustum.CullSphere(Sphere(state.origin, state.value[0]))) {
+            if (viewFrustum.CullSphere(Sphere(state.origin, state.size[0]))) {
                 return true;
             }
         } else {
@@ -239,7 +239,7 @@ bool RenderLight::Cull(const OBB &viewBox) const {
         break;
     case PointLight:
         if (IsRadiusUniform()) {
-            if (!viewBox.IsIntersectSphere(Sphere(state.origin, state.value[0]))) {
+            if (!viewBox.IsIntersectSphere(Sphere(state.origin, state.size[0]))) {
                 return true;
             }
         } else {

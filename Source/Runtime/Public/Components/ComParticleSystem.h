@@ -79,7 +79,7 @@ protected:
     int                     currentTime;
     int                     stopTime;
 
-    RenderObject::State     sprite;
+    RenderObject::State     spriteDef;
     int                     spriteHandle;
     Mesh *                  spriteReferenceMesh;
 };

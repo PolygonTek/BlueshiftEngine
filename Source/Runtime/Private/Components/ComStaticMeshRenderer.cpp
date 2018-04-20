@@ -71,7 +71,7 @@ void ComStaticMeshRenderer::MeshUpdated() {
     renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
     renderObjectDef.aabb = referenceMesh->GetAABB();
     // temp code
-    renderWorld->RemoveObject(renderObjectHandle);
+    renderWorld->RemoveRenderObject(renderObjectHandle);
     renderObjectHandle = -1;
     // temp code
 

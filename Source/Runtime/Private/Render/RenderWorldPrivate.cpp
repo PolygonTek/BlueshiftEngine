@@ -322,14 +322,15 @@ void RenderWorld::AddParticleMeshes(VisibleView *view) {
         particleMesh.CacheIndexes();
 
         for (int surfaceIndex = 0; surfaceIndex < particleMesh.surfaces.Count(); surfaceIndex++) {
-            PrtMeshSurf *prtMeshSurf = &particleMesh.surfaces[surfaceIndex];
+            const PrtMeshSurf *prtMeshSurf = &particleMesh.surfaces[surfaceIndex];
             if (!prtMeshSurf->numIndexes) {
                 break;
             }
 
             // Copy this SubMesh to the temporary frame data for use in backend
-            SubMesh *subMesh        = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
-            subMesh->alloced        = false;
+            SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
+            new (subMesh) SubMesh();
+
             subMesh->type           = Mesh::DynamicMesh;
             subMesh->numIndexes     = prtMeshSurf->numIndexes;
             subMesh->numVerts       = prtMeshSurf->numVerts;
@@ -374,8 +375,9 @@ void RenderWorld::AddTextMeshes(VisibleView *view) {
             }
 
             // Copy this SubMesh to the temporary frame data for use in back end
-            SubMesh *subMesh        = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
-            subMesh->alloced        = false;
+            SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
+            new (subMesh) SubMesh();
+
             subMesh->type           = Mesh::DynamicMesh;
             subMesh->numIndexes     = guiMeshSurf->numIndexes;
             subMesh->numVerts       = guiMeshSurf->numVerts;
@@ -712,8 +714,8 @@ void RenderWorld::SortDrawSurfs(VisibleView *view) {
 }
 
 void RenderWorld::RenderCamera(VisibleView *view) {
-    // Find visible lights/objects by querying DBVT with view frustum.
-    // And then register each lights/objects to visible view.
+    // Find visible lights/objects by querying DBVT using view frustum.
+    // And then register each lights/objects to the visible view.
     // renderObject 와 renderLight 의 pointer 에도 연결 (아래 단계에서 다시 한번 dbvt 를 seaching 할때 이미 등록된 visibleLights/visibleObjects 를 한번에 찾기위해)
     FindVisibleLightsAndObjects(view);
 
@@ -806,6 +808,7 @@ void RenderWorld::AddDrawSurf(VisibleView *view, VisibleObject *visibleObject, c
     }
 
     DrawSurf *drawSurf = (DrawSurf *)frameData.ClearedAlloc(sizeof(DrawSurf));
+
     drawSurf->space             = visibleObject;
     drawSurf->material          = realMaterial;
     drawSurf->materialRegisters = nullptr;//outputValues;

@@ -489,7 +489,7 @@ set(ENGINE_FILES
     Private/Render/RenderLight.cpp
     Private/Render/RenderView.cpp
     Private/Render/RenderWorld.cpp
-    Private/Render/RenderWorld_view.cpp
+    Private/Render/RenderWorldPrivate.cpp
     Private/Render/Shader.cpp
     Private/Render/ShaderManager.cpp
     Private/Render/Skeleton.cpp

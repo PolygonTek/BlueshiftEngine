@@ -256,7 +256,7 @@ void ComSkinnedMeshRenderer::MeshUpdated() {
     }
 
     // temp code
-    renderWorld->RemoveObject(renderObjectHandle);
+    renderWorld->RemoveRenderObject(renderObjectHandle);
     renderObjectHandle = -1;
     // temp code
     UpdateVisuals();

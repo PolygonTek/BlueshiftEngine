@@ -99,7 +99,7 @@ void ComCamera::Purge(bool chainPurge) {
     }
 
     if (spriteHandle != -1) {
-        renderWorld->RemoveObject(spriteHandle);
+        renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
 
@@ -166,7 +166,7 @@ void ComCamera::OnActive() {
 
 void ComCamera::OnInactive() {
     if (spriteHandle != -1) {
-        renderWorld->RemoveObject(spriteHandle);
+        renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
 }
@@ -432,9 +432,9 @@ void ComCamera::UpdateVisuals() {
     }
 
     if (spriteHandle == -1) {
-        spriteHandle = renderWorld->AddObject(&spriteDef);
+        spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
-        renderWorld->UpdateObject(spriteHandle, &spriteDef);
+        renderWorld->UpdateRenderObject(spriteHandle, &spriteDef);
     }
 }
 

@@ -81,7 +81,7 @@ void ComLight::Purge(bool chainPurge) {
     }
 
     if (renderLightHandle != -1) {
-        renderWorld->RemoveLight(renderLightHandle);
+        renderWorld->RemoveRenderLight(renderLightHandle);
         renderLightHandle = -1;
     }
 
@@ -101,7 +101,7 @@ void ComLight::Purge(bool chainPurge) {
     }
 
     if (spriteHandle != -1) {
-        renderWorld->RemoveObject(spriteHandle);
+        renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
 
@@ -113,10 +113,10 @@ void ComLight::Purge(bool chainPurge) {
 static const char *LightSpriteTexturePath(RenderLight::Type lightType) {
     switch (lightType) {
     case RenderLight::PointLight:
-        return "Data/EditorUI/OmniLight.png"; 
+        return "Data/EditorUI/OmniLight.png";
     case RenderLight::SpotLight:
-        return "Data/EditorUI/ProjectedLight.png"; 
-    case RenderLight::DirectionalLight: 
+        return "Data/EditorUI/ProjectedLight.png";
+    case RenderLight::DirectionalLight:
         return "Data/EditorUI/DirectionalLight.png";
     default:
         assert(0);
@@ -177,12 +177,12 @@ void ComLight::OnActive() {
 
 void ComLight::OnInactive() {
     if (renderLightHandle != -1) {
-        renderWorld->RemoveLight(renderLightHandle);
+        renderWorld->RemoveRenderLight(renderLightHandle);
         renderLightHandle = -1;
     }
 
     if (spriteHandle != -1) {
-        renderWorld->RemoveObject(spriteHandle);
+        renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
 }
@@ -210,15 +210,15 @@ void ComLight::DrawGizmos(const RenderView::State &viewState, bool selected) {
 
             if (renderLightDef.type == RenderLight::DirectionalLight) {
                 OBB box;
-                box.SetCenter(renderLightDef.origin + renderLightDef.axis[0] * renderLightDef.value[0] * 0.5f);
-                box.SetExtents(Vec3(renderLightDef.value[0] * 0.5f, renderLightDef.value[1], renderLightDef.value[2]));
+                box.SetCenter(renderLightDef.origin + renderLightDef.axis[0] * renderLightDef.size[0] * 0.5f);
+                box.SetExtents(Vec3(renderLightDef.size[0] * 0.5f, renderLightDef.size[1], renderLightDef.size[2]));
                 box.SetAxis(renderLightDef.axis);
                 renderWorld->DebugOBB(box, 1.0f, true, true);
             } else {
                 Frustum frustum;
                 frustum.SetOrigin(renderLightDef.origin);
                 frustum.SetAxis(renderLightDef.axis);
-                frustum.SetSize(renderLightDef.zNear, renderLightDef.value[0], renderLightDef.value[1], renderLightDef.value[2]);
+                frustum.SetSize(renderLightDef.zNear, renderLightDef.size[0], renderLightDef.size[1], renderLightDef.size[2]);
                 renderWorld->DebugFrustum(frustum, false, 1.0f, true, true);
             }
         }
@@ -231,19 +231,19 @@ void ComLight::DrawGizmos(const RenderView::State &viewState, bool selected) {
 
         if (selected) {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
-            renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[0], renderLightDef.axis[1], renderLightDef.value[0], renderLightDef.value[1], 1, true, true);
-            renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[1], renderLightDef.axis[2], renderLightDef.value[1], renderLightDef.value[2], 1, true, true);
-            renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[0], renderLightDef.axis[2], renderLightDef.value[0], renderLightDef.value[2], 1, true, true);
+            renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[0], renderLightDef.axis[1], renderLightDef.size[0], renderLightDef.size[1], 1, true, true);
+            renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[1], renderLightDef.axis[2], renderLightDef.size[1], renderLightDef.size[2], 1, true, true);
+            renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[0], renderLightDef.axis[2], renderLightDef.size[0], renderLightDef.size[2], 1, true, true);
 
             Color4 lightColor2 = lightColor;
             lightColor2.a = 0.2f;
             renderWorld->SetDebugColor(lightColor2, Color4::zero);
-            renderWorld->DebugLine(renderLightDef.origin - renderLightDef.axis[0] * renderLightDef.value[0] * 0.2f, renderLightDef.origin - renderLightDef.axis[0] * renderLightDef.value[0], 1, true);
-            renderWorld->DebugLine(renderLightDef.origin + renderLightDef.axis[0] * renderLightDef.value[0] * 0.2f, renderLightDef.origin + renderLightDef.axis[0] * renderLightDef.value[0], 1, true);
-            renderWorld->DebugLine(renderLightDef.origin - renderLightDef.axis[1] * renderLightDef.value[1] * 0.2f, renderLightDef.origin - renderLightDef.axis[1] * renderLightDef.value[1], 1, true);
-            renderWorld->DebugLine(renderLightDef.origin + renderLightDef.axis[1] * renderLightDef.value[1] * 0.2f, renderLightDef.origin + renderLightDef.axis[1] * renderLightDef.value[1], 1, true);
-            renderWorld->DebugLine(renderLightDef.origin - renderLightDef.axis[2] * renderLightDef.value[2] * 0.2f, renderLightDef.origin - renderLightDef.axis[2] * renderLightDef.value[2], 1, true);
-            renderWorld->DebugLine(renderLightDef.origin + renderLightDef.axis[2] * renderLightDef.value[2] * 0.2f, renderLightDef.origin + renderLightDef.axis[2] * renderLightDef.value[2], 1, true);
+            renderWorld->DebugLine(renderLightDef.origin - renderLightDef.axis[0] * renderLightDef.size[0] * 0.2f, renderLightDef.origin - renderLightDef.axis[0] * renderLightDef.size[0], 1, true);
+            renderWorld->DebugLine(renderLightDef.origin + renderLightDef.axis[0] * renderLightDef.size[0] * 0.2f, renderLightDef.origin + renderLightDef.axis[0] * renderLightDef.size[0], 1, true);
+            renderWorld->DebugLine(renderLightDef.origin - renderLightDef.axis[1] * renderLightDef.size[1] * 0.2f, renderLightDef.origin - renderLightDef.axis[1] * renderLightDef.size[1], 1, true);
+            renderWorld->DebugLine(renderLightDef.origin + renderLightDef.axis[1] * renderLightDef.size[1] * 0.2f, renderLightDef.origin + renderLightDef.axis[1] * renderLightDef.size[1], 1, true);
+            renderWorld->DebugLine(renderLightDef.origin - renderLightDef.axis[2] * renderLightDef.size[2] * 0.2f, renderLightDef.origin - renderLightDef.axis[2] * renderLightDef.size[2], 1, true);
+            renderWorld->DebugLine(renderLightDef.origin + renderLightDef.axis[2] * renderLightDef.size[2] * 0.2f, renderLightDef.origin + renderLightDef.axis[2] * renderLightDef.size[2], 1, true);
         }
     }
 
@@ -267,15 +267,15 @@ void ComLight::UpdateVisuals() {
     }
 
     if (renderLightHandle == -1) {
-        renderLightHandle = renderWorld->AddLight(&renderLightDef);
+        renderLightHandle = renderWorld->AddRenderLight(&renderLightDef);
     } else {
-        renderWorld->UpdateLight(renderLightHandle, &renderLightDef);
+        renderWorld->UpdateRenderLight(renderLightHandle, &renderLightDef);
     }
 
     if (spriteHandle == -1) {
-        spriteHandle = renderWorld->AddObject(&spriteDef);
+        spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
-        renderWorld->UpdateObject(spriteHandle, &spriteDef);
+        renderWorld->UpdateRenderObject(spriteHandle, &spriteDef);
     }
 }
 
@@ -341,14 +341,14 @@ void ComLight::SetTurnOn(bool turnOn) {
 }
 
 Vec3 ComLight::GetLightSize() const {
-    return Vec3(renderLightDef.value);
+    return Vec3(renderLightDef.size);
 }
 
 void ComLight::SetLightSize(const Vec3 &lightSize) {
-    renderLightDef.value = lightSize;
-    renderLightDef.value[0] = Max(renderLightDef.value[0], 1.0f);
-    renderLightDef.value[1] = Max(renderLightDef.value[1], 1.0f);
-    renderLightDef.value[2] = Max(renderLightDef.value[2], 1.0f);
+    renderLightDef.size = lightSize;
+    renderLightDef.size[0] = Max(renderLightDef.size[0], 1.0f);
+    renderLightDef.size[1] = Max(renderLightDef.size[1], 1.0f);
+    renderLightDef.size[2] = Max(renderLightDef.size[2], 1.0f);
 
     UpdateVisuals();
 }
@@ -483,11 +483,11 @@ void ComLight::SetIntensity(float intensity) {
 }
 
 const Vec3 &ComLight::GetRadius() const {
-    return renderLightDef.value;
+    return renderLightDef.size;
 }
 
 void ComLight::SetRadius(const Vec3 &radius) {
-    renderLightDef.value = GetProperty("radius").As<Vec3>();
+    renderLightDef.size = GetProperty("radius").As<Vec3>();
 
     UpdateVisuals();
 }

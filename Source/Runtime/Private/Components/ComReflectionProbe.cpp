@@ -41,7 +41,7 @@ void ComReflectionProbe::RegisterProperties() {
 ComReflectionProbe::ComReflectionProbe() {
     sphereHandle = -1;
     sphereMesh = nullptr;
-    memset(&sphere, 0, sizeof(sphere));
+    memset(&sphereDef, 0, sizeof(sphereDef));
 }
 
 ComReflectionProbe::~ComReflectionProbe() {
@@ -49,9 +49,9 @@ ComReflectionProbe::~ComReflectionProbe() {
 }
 
 void ComReflectionProbe::Purge(bool chainPurge) {
-    if (sphere.mesh) {
-        meshManager.ReleaseMesh(sphere.mesh);
-        sphere.mesh = nullptr;
+    if (sphereDef.mesh) {
+        meshManager.ReleaseMesh(sphereDef.mesh);
+        sphereDef.mesh = nullptr;
     }
 
     if (sphereMesh) {
@@ -60,7 +60,7 @@ void ComReflectionProbe::Purge(bool chainPurge) {
     }
 
     if (sphereHandle != -1) {
-        renderWorld->RemoveObject(sphereHandle);
+        renderWorld->RemoveRenderObject(sphereHandle);
         sphereHandle = -1;
     }
 
@@ -76,29 +76,29 @@ void ComReflectionProbe::Init() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
-    // sphere
+    // sphereDef
     sphereMesh = meshManager.GetMesh("_defaultSphereMesh");
 
-    memset(&sphere, 0, sizeof(sphere));
-    sphere.layer = TagLayerSettings::EditorLayer;
-    sphere.maxVisDist = MeterToUnit(50);
+    memset(&sphereDef, 0, sizeof(sphereDef));
+    sphereDef.layer = TagLayerSettings::EditorLayer;
+    sphereDef.maxVisDist = MeterToUnit(50);
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
-    sphere.materials.SetCount(1);
-    sphere.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sphereDef.materials.SetCount(1);
+    sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
 
-    sphere.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);
-    sphere.aabb = sphereMesh->GetAABB();
-    sphere.origin = transform->GetOrigin();
-    sphere.scale = Vec3(1, 1, 1);
-    sphere.axis = Mat3::identity;
-    sphere.materialParms[RenderObject::RedParm] = 1.0f;
-    sphere.materialParms[RenderObject::GreenParm] = 1.0f;
-    sphere.materialParms[RenderObject::BlueParm] = 1.0f;
-    sphere.materialParms[RenderObject::AlphaParm] = 1.0f;
-    sphere.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
-    sphere.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    sphereDef.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);
+    sphereDef.aabb = sphereMesh->GetAABB();
+    sphereDef.origin = transform->GetOrigin();
+    sphereDef.scale = Vec3(1, 1, 1);
+    sphereDef.axis = Mat3::identity;
+    sphereDef.materialParms[RenderObject::RedParm] = 1.0f;
+    sphereDef.materialParms[RenderObject::GreenParm] = 1.0f;
+    sphereDef.materialParms[RenderObject::BlueParm] = 1.0f;
+    sphereDef.materialParms[RenderObject::AlphaParm] = 1.0f;
+    sphereDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
+    sphereDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComReflectionProbe::TransformUpdated, SignalObject::Unique);
 
@@ -113,7 +113,7 @@ void ComReflectionProbe::OnActive() {
 }
 
 void ComReflectionProbe::OnInactive() {
-    renderWorld->RemoveObject(sphereHandle);
+    renderWorld->RemoveRenderObject(sphereHandle);
     sphereHandle = -1;
 }
 
@@ -153,9 +153,9 @@ void ComReflectionProbe::UpdateVisuals() {
     }
 
     if (sphereHandle == -1) {
-        sphereHandle = renderWorld->AddObject(&sphere);
+        sphereHandle = renderWorld->AddRenderObject(&sphereDef);
     } else {
-        renderWorld->UpdateObject(sphereHandle, &sphere);
+        renderWorld->UpdateRenderObject(sphereHandle, &sphereDef);
     }
 }
 
@@ -163,7 +163,7 @@ void ComReflectionProbe::TransformUpdated(const ComTransform *transform) {
     //viewParms.origin = transform->GetOrigin();
     //viewParms.axis = transform->GetAxis();
 
-    sphere.origin = transform->GetOrigin();
+    sphereDef.origin = transform->GetOrigin();
 
     UpdateVisuals();
 }

@@ -79,7 +79,7 @@ private:
     RenderContext *         currentContext;
     RenderContext *         mainContext;
 
-    static void             Cmd_ScreenShot(const CmdArgs &args);    
+    static void             Cmd_ScreenShot(const CmdArgs &args);
 };
 
 BE_INLINE RenderSystem::RenderSystem() {

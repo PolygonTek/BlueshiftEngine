@@ -59,7 +59,7 @@ void ComRenderable::Purge(bool chainPurge) {
     renderObjectDef.materials.Clear();
 
     if (renderObjectHandle != -1) {
-        renderWorld->RemoveObject(renderObjectHandle);
+        renderWorld->RemoveRenderObject(renderObjectHandle);
         renderObjectHandle = -1;
         renderWorld = nullptr;
     }
@@ -93,7 +93,7 @@ void ComRenderable::OnActive() {
 
 void ComRenderable::OnInactive() {
     if (renderObjectHandle != -1) {
-        renderWorld->RemoveObject(renderObjectHandle);
+        renderWorld->RemoveRenderObject(renderObjectHandle);
         renderObjectHandle = -1;
     }
 }
@@ -112,9 +112,9 @@ void ComRenderable::UpdateVisuals() {
     }
 
     if (renderObjectHandle == -1) {
-        renderObjectHandle = renderWorld->AddObject(&renderObjectDef);
+        renderObjectHandle = renderWorld->AddRenderObject(&renderObjectDef);
     } else {
-        renderWorld->UpdateObject(renderObjectHandle, &renderObjectDef);
+        renderWorld->UpdateRenderObject(renderObjectHandle, &renderObjectDef);
     }
 }
 

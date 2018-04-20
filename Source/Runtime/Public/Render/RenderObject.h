@@ -130,7 +130,7 @@ public:
         WireframeMode       wireframeMode;
         Color4              wireframeColor;
 
-        AABB                aabb;           // non-scaled local AABB (don't use cleared AABB)
+        AABB                aabb;           // non-scaled local AABB (shouldn't be empty AABB)
 
         float               maxVisDist;
     };
@@ -140,10 +140,13 @@ public:
 
     void                    Update(const State *state);
 
+                            /// Returns non-scaled AABB in local space.
     const AABB              GetAABB() const;
 
+                            /// Returns OBB in world space.
     const OBB &             GetWorldOBB() const { return worldOBB; }
 
+                            /// Returns local to world matrix.
     const Mat4 &            GetObjectToWorldMatrix() const { return worldMatrix; }
 
     int                     index;

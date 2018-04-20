@@ -14,11 +14,11 @@
 
 #include "Precompiled.h"
 #include "Render/Render.h"
+#include "Asset/Asset.h"
+#include "Asset/GuidMapper.h"
 #include "Components/ComTransform.h"
 #include "Components/ComParticleSystem.h"
 #include "Game/GameWorld.h"
-#include "Asset/Asset.h"
-#include "Asset/GuidMapper.h"
 #include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
@@ -39,7 +39,7 @@ ComParticleSystem::ComParticleSystem() {
 
     spriteHandle = -1;
     spriteReferenceMesh = nullptr;
-    memset(&sprite, 0, sizeof(sprite));
+    memset(&spriteDef, 0, sizeof(spriteDef));
 }
 
 ComParticleSystem::~ComParticleSystem() {
@@ -60,9 +60,9 @@ void ComParticleSystem::Purge(bool chainPurge) {
         renderObjectDef.stageParticles.Clear();
     }
 
-    if (sprite.mesh) {
-        meshManager.ReleaseMesh(sprite.mesh);
-        sprite.mesh = nullptr;
+    if (spriteDef.mesh) {
+        meshManager.ReleaseMesh(spriteDef.mesh);
+        spriteDef.mesh = nullptr;
     }
 
     if (spriteReferenceMesh) {
@@ -71,7 +71,7 @@ void ComParticleSystem::Purge(bool chainPurge) {
     }
 
     if (spriteHandle != -1) {
-        renderWorld->RemoveObject(spriteHandle);
+        renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
 
@@ -88,30 +88,30 @@ void ComParticleSystem::Init() {
 
     simulationStarted = false;
 
-    // 3d sprite
+    // 3d spriteDef
     spriteReferenceMesh = meshManager.GetMesh("_defaultQuadMesh");
 
-    memset(&sprite, 0, sizeof(sprite));
-    sprite.flags = RenderObject::BillboardFlag;
-    sprite.layer = TagLayerSettings::EditorLayer;
-    sprite.maxVisDist = MeterToUnit(50);
+    memset(&spriteDef, 0, sizeof(spriteDef));
+    spriteDef.flags = RenderObject::BillboardFlag;
+    spriteDef.layer = TagLayerSettings::EditorLayer;
+    spriteDef.maxVisDist = MeterToUnit(50);
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ParticleSystem.png", Texture::Clamp | Texture::HighQuality);
-    sprite.materials.SetCount(1);
-    sprite.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    spriteDef.materials.SetCount(1);
+    spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
     textureManager.ReleaseTexture(spriteTexture);
 
-    sprite.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::StaticMesh);
-    sprite.aabb = spriteReferenceMesh->GetAABB();
-    sprite.origin = GetEntity()->GetTransform()->GetOrigin();
-    sprite.scale = Vec3(1, 1, 1);
-    sprite.axis = Mat3::identity;
-    sprite.materialParms[RenderObject::RedParm] = 1.0f;
-    sprite.materialParms[RenderObject::GreenParm] = 1.0f;
-    sprite.materialParms[RenderObject::BlueParm] = 1.0f;
-    sprite.materialParms[RenderObject::AlphaParm] = 1.0f;
-    sprite.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
-    sprite.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    spriteDef.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    spriteDef.aabb = spriteReferenceMesh->GetAABB();
+    spriteDef.origin = GetEntity()->GetTransform()->GetOrigin();
+    spriteDef.scale = Vec3(1, 1, 1);
+    spriteDef.axis = Mat3::identity;
+    spriteDef.materialParms[RenderObject::RedParm] = 1.0f;
+    spriteDef.materialParms[RenderObject::GreenParm] = 1.0f;
+    spriteDef.materialParms[RenderObject::BlueParm] = 1.0f;
+    spriteDef.materialParms[RenderObject::AlphaParm] = 1.0f;
+    spriteDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
+    spriteDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
     GetEntity()->GetTransform()->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
 
@@ -189,7 +189,7 @@ void ComParticleSystem::OnActive() {
 
 void ComParticleSystem::OnInactive() {
     if (spriteHandle != -1) {
-        renderWorld->RemoveObject(spriteHandle);
+        renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
 
@@ -665,9 +665,9 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
 
 void ComParticleSystem::DrawGizmos(const RenderView::State &viewState, bool selected) {
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(sprite.origin.Distance(viewState.origin) / MeterToUnit(8), 0.01f, 1.0f);
+    float alpha = BE1::Clamp(spriteDef.origin.Distance(viewState.origin) / MeterToUnit(8), 0.01f, 1.0f);
 
-    sprite.materials[0]->GetPass()->constantColor[3] = alpha;
+    spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 bool ComParticleSystem::IsAlive() const {
@@ -700,16 +700,16 @@ void ComParticleSystem::UpdateVisuals() {
     }
 
     if (spriteHandle == -1) {
-        spriteHandle = renderWorld->AddObject(&sprite);
+        spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
-        renderWorld->UpdateObject(spriteHandle, &sprite);
+        renderWorld->UpdateRenderObject(spriteHandle, &spriteDef);
     }
 
     ComRenderable::UpdateVisuals();
 }
 
 void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
-    sprite.origin = transform->GetOrigin();
+    spriteDef.origin = transform->GetOrigin();
 
     UpdateVisuals();
 }

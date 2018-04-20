@@ -49,17 +49,18 @@ public:
     ~RenderWorld();
 
     void                        ClearScene();
+
+    const RenderObject *        GetRenderObject(int handle) const;
+    int                         AddRenderObject(const RenderObject::State *objectDef);
+    void                        UpdateRenderObject(int handle, const RenderObject::State *objectDef);
+    void                        RemoveRenderObject(int handle);
+
+    const RenderLight *         GetRenderLight(int handle) const;
+    int                         AddRenderLight(const RenderLight::State *lightDef);
+    void                        UpdateRenderLight(int handle, const RenderLight::State *lightDef);
+    void                        RemoveRenderLight(int handle);
+
     void                        RenderScene(const RenderView *view);
-
-    const RenderObject *        GetObject(int handle) const;
-    int                         AddObject(const RenderObject::State *state);
-    void                        UpdateObject(int handle, const RenderObject::State *state);
-    void                        RemoveObject(int handle);
-
-    const RenderLight *          GetLight(int handle) const;
-    int                         AddLight(const RenderLight::State *state);
-    void                        UpdateLight(int handle, const RenderLight::State *state);
-    void                        RemoveLight(int handle);
 
     void                        SetSkyboxMaterial(Material *skyboxMaterial);
 
@@ -69,6 +70,7 @@ public:
 
     void                        FinishMapLoading();
 
+                                /// Set color for the debug primitives.
     void                        SetDebugColor(const Color4 &lineColor, const Color4 &fillColor) { debugLineColor = lineColor; debugFillColor = fillColor; }
 
     void                        ClearDebugPrimitives(int time);
@@ -132,7 +134,6 @@ private:
     int                         viewCount;
 
     Material *                  skyboxMaterial;
-
     ParticleMesh                particleMesh;       ///< particle mesh
     GuiMesh                     textMesh;           ///< 3D text mesh
 

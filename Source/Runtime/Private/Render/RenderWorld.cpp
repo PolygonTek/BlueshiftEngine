@@ -52,33 +52,33 @@ void RenderWorld::ClearScene() {
     }
 }
 
-const RenderObject *RenderWorld::GetObject(int handle) const {
+const RenderObject *RenderWorld::GetRenderObject(int handle) const {
     if (handle < 0 || handle >= renderObjects.Count()) {
-        BE_WARNLOG(L"RenderWorld::GetObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
+        BE_WARNLOG(L"RenderWorld::GetRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
         return nullptr;
     }
 
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
-        BE_WARNLOG(L"RenderWorld::GetObject: handle %i is nullptr\n", handle);
+        BE_WARNLOG(L"RenderWorld::GetRenderObject: handle %i is nullptr\n", handle);
         return nullptr;
     }
 
     return renderObject;
 }
 
-int RenderWorld::AddObject(const RenderObject::State *parms) {
+int RenderWorld::AddRenderObject(const RenderObject::State *objectDef) {
     int handle = renderObjects.FindNull();
     if (handle == -1) {
         handle = renderObjects.Append(nullptr);
     }
 
-    UpdateObject(handle, parms);
+    UpdateRenderObject(handle, objectDef);
 
     return handle;
 }
 
-void RenderWorld::UpdateObject(int handle, const RenderObject::State *parms) {
+void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *objectDef) {
     while (handle >= renderObjects.Count()) {
         renderObjects.Append(nullptr);
     }
@@ -89,87 +89,87 @@ void RenderWorld::UpdateObject(int handle, const RenderObject::State *parms) {
         renderObjects[handle] = renderObject;
 
         renderObject->index = handle;
-        renderObject->Update(parms);
+        renderObject->Update(objectDef);
 
         // Add proxy in the DBVT for the renderObjects
         renderObject->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         renderObject->proxy->renderObject = renderObject;
-        renderObject->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
+        renderObject->proxy->aabb.SetFromTransformedAABB(objectDef->aabb * objectDef->scale, objectDef->origin, objectDef->axis);
         renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->aabb, MeterToUnit(0.5f), renderObject->proxy);
 
         // If this object is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
-        if (parms->mesh && !parms->joints) {
-            renderObject->numMeshSurfProxies = parms->mesh->NumSurfaces();
-            renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(parms->mesh->NumSurfaces() * sizeof(DbvtProxy));
+        if (objectDef->mesh && !objectDef->joints) {
+            renderObject->numMeshSurfProxies = objectDef->mesh->NumSurfaces();
+            renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(objectDef->mesh->NumSurfaces() * sizeof(DbvtProxy));
 
-            for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
-                const MeshSurf *meshSurf = parms->mesh->GetSurface(surfaceIndex);
+            for (int surfaceIndex = 0; surfaceIndex < objectDef->mesh->NumSurfaces(); surfaceIndex++) {
+                const MeshSurf *meshSurf = objectDef->mesh->GetSurface(surfaceIndex);
 
                 DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
                 meshSurfProxy->renderObject = renderObject;
-                meshSurfProxy->mesh = parms->mesh;
+                meshSurfProxy->mesh = objectDef->mesh;
                 meshSurfProxy->meshSurfIndex = surfaceIndex;
-                meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
+                meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
                 meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
             }
         }
     } else {
-        bool originMatch    = (parms->origin == renderObject->state.origin);
-        bool axisMatch      = (parms->axis == renderObject->state.axis);
-        bool scaleMatch     = (parms->scale == renderObject->state.scale);
-        bool aabbMatch      = (parms->aabb == renderObject->state.aabb);
-        bool meshMatch      = (parms->mesh == renderObject->state.mesh);
+        bool originMatch    = (objectDef->origin == renderObject->state.origin);
+        bool axisMatch      = (objectDef->axis == renderObject->state.axis);
+        bool scaleMatch     = (objectDef->scale == renderObject->state.scale);
+        bool aabbMatch      = (objectDef->aabb == renderObject->state.aabb);
+        bool meshMatch      = (objectDef->mesh == renderObject->state.mesh);
         bool proxyMoved     = !originMatch || !axisMatch || !scaleMatch || !aabbMatch;
 
         if (proxyMoved || !meshMatch) {
             if (proxyMoved) {
-                renderObject->proxy->aabb.SetFromTransformedAABB(parms->aabb * parms->scale, parms->origin, parms->axis);
-                objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->aabb, MeterToUnit(0.5f), parms->origin - renderObject->state.origin);
+                renderObject->proxy->aabb.SetFromTransformedAABB(objectDef->aabb * objectDef->scale, objectDef->origin, objectDef->axis);
+                objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->aabb, MeterToUnit(0.5f), objectDef->origin - renderObject->state.origin);
             }
 
             // If this object is a static mesh
             if (renderObject->state.mesh && !renderObject->state.joints) {
                 // mesh surface count changed so we recreate static proxy
-                if (parms->mesh->NumSurfaces() != renderObject->numMeshSurfProxies) {
+                if (objectDef->mesh->NumSurfaces() != renderObject->numMeshSurfProxies) {
                     Mem_Free(renderObject->meshSurfProxies);
 
-                    renderObject->numMeshSurfProxies = parms->mesh->NumSurfaces();
+                    renderObject->numMeshSurfProxies = objectDef->mesh->NumSurfaces();
                     renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(renderObject->numMeshSurfProxies * sizeof(DbvtProxy));
 
-                    for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
-                        const MeshSurf *meshSurf = parms->mesh->GetSurface(surfaceIndex);
+                    for (int surfaceIndex = 0; surfaceIndex < objectDef->mesh->NumSurfaces(); surfaceIndex++) {
+                        const MeshSurf *meshSurf = objectDef->mesh->GetSurface(surfaceIndex);
 
                         staticMeshDbvt.DestroyProxy(renderObject->meshSurfProxies[surfaceIndex].id);
 
                         DbvtProxy *meshSurfProxy = &renderObject->meshSurfProxies[surfaceIndex];
                         meshSurfProxy->renderObject = renderObject;
-                        meshSurfProxy->mesh = parms->mesh;
+                        meshSurfProxy->mesh = objectDef->mesh;
                         meshSurfProxy->meshSurfIndex = surfaceIndex;
-                        meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
+                        meshSurfProxy->aabb.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
                         meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
                     }
                 } else {
-                    for (int surfaceIndex = 0; surfaceIndex < parms->mesh->NumSurfaces(); surfaceIndex++) {
-                        renderObject->meshSurfProxies[surfaceIndex].aabb.SetFromTransformedAABB(parms->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * parms->scale, parms->origin, parms->axis);
-                        staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), parms->origin - renderObject->state.origin);
+                    for (int surfaceIndex = 0; surfaceIndex < objectDef->mesh->NumSurfaces(); surfaceIndex++) {
+                        renderObject->meshSurfProxies[surfaceIndex].aabb.SetFromTransformedAABB(objectDef->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * objectDef->scale, objectDef->origin, objectDef->axis);
+                        staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].aabb, MeterToUnit(0.5f), objectDef->origin - renderObject->state.origin);
                     }
                 }
             }
         }
 
-        renderObject->Update(parms);
+        renderObject->Update(objectDef);
     }
 }
 
-void RenderWorld::RemoveObject(int handle) {
+void RenderWorld::RemoveRenderObject(int handle) {
     if (handle < 0 || handle >= renderObjects.Count()) {
-        BE_WARNLOG(L"RenderWorld::RemoveObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
+        BE_WARNLOG(L"RenderWorld::RemoveRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
         return;
     }
 
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
-        BE_WARNLOG(L"RenderWorld::RemoveObject: handle %i is nullptr\n", handle);
+        BE_WARNLOG(L"RenderWorld::RemoveRenderObject: handle %i is nullptr\n", handle);
         return;
     }
 
@@ -182,33 +182,33 @@ void RenderWorld::RemoveObject(int handle) {
     renderObjects[handle] = nullptr;
 }
 
-const RenderLight *RenderWorld::GetLight(int handle) const {
+const RenderLight *RenderWorld::GetRenderLight(int handle) const {
     if (handle < 0 || handle >= renderLights.Count()) {
-        BE_WARNLOG(L"RenderWorld::GetLight: handle %i > %i\n", handle, renderLights.Count() - 1);
+        BE_WARNLOG(L"RenderWorld::GetRenderLight: handle %i > %i\n", handle, renderLights.Count() - 1);
         return nullptr;
     }
 
     RenderLight *renderLight = renderLights[handle];
     if (!renderLight) {
-        BE_WARNLOG(L"RenderWorld::GetLight: handle %i is nullptr\n", handle);
+        BE_WARNLOG(L"RenderWorld::GetRenderLight: handle %i is nullptr\n", handle);
         return nullptr;
     }
 
     return renderLight;
 }
 
-int RenderWorld::AddLight(const RenderLight::State *state) {
+int RenderWorld::AddRenderLight(const RenderLight::State *lightDef) {
     int handle = renderLights.FindNull();
     if (handle == -1) {
         handle = renderLights.Append(nullptr);
     }
 
-    UpdateLight(handle, state);
+    UpdateRenderLight(handle, lightDef);
 
     return handle;
 }
 
-void RenderWorld::UpdateLight(int handle, const RenderLight::State *state) {
+void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *lightDef) {
     while (handle >= renderLights.Count()) {
         renderLights.Append(nullptr);
     }
@@ -219,35 +219,35 @@ void RenderWorld::UpdateLight(int handle, const RenderLight::State *state) {
         renderLights[handle] = renderLight;
 
         renderLight->index = handle;
-        renderLight->Update(state);
+        renderLight->Update(lightDef);
 
         renderLight->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         renderLight->proxy->renderLight = renderLight;
         renderLight->proxy->aabb = renderLight->GetAABB();
         renderLight->proxy->id = lightDbvt.CreateProxy(renderLight->proxy->aabb, MeterToUnit(0.0f), renderLight->proxy);
     } else {
-        bool originMatch    = (state->origin == renderLight->state.origin);
-        bool axisMatch      = (state->axis == renderLight->state.axis);
-        bool valueMatch     = (state->value == renderLight->state.value);
+        bool originMatch    = (lightDef->origin == renderLight->state.origin);
+        bool axisMatch      = (lightDef->axis == renderLight->state.axis);
+        bool valueMatch     = (lightDef->size == renderLight->state.size);
 
         if (!originMatch || !axisMatch || !valueMatch) {
             renderLight->proxy->aabb = renderLight->proxy->renderLight->GetAABB();
-            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->aabb, MeterToUnit(0.5f), state->origin - renderLight->state.origin);
+            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->aabb, MeterToUnit(0.5f), lightDef->origin - renderLight->state.origin);
         }
 
-        renderLight->Update(state);
+        renderLight->Update(lightDef);
     }
 }
 
-void RenderWorld::RemoveLight(int handle) {
+void RenderWorld::RemoveRenderLight(int handle) {
     if (handle < 0 || handle >= renderLights.Count()) {
-        BE_WARNLOG(L"RenderWorld::RemoveLight: handle %i > %i\n", handle, renderLights.Count() - 1);
+        BE_WARNLOG(L"RenderWorld::RemoveRenderLight: handle %i > %i\n", handle, renderLights.Count() - 1);
         return;
     }
 
     RenderLight *renderLight = renderLights[handle];
     if (!renderLight) {
-        BE_WARNLOG(L"RenderWorld::RemoveLight: handle %i is nullptr\n", handle);
+        BE_WARNLOG(L"RenderWorld::RemoveRenderLight: handle %i is nullptr\n", handle);
         return;
     }
 
@@ -274,18 +274,18 @@ void RenderWorld::FinishMapLoading() {
 //#endif
 }
 
-void RenderWorld::RenderScene(const RenderView *view) {
-    if (view->state.renderRect.w <= 0.0f || view->state.renderRect.h <= 0.0f) {
+void RenderWorld::RenderScene(const RenderView *renderView) {
+    if (renderView->state.renderRect.w <= 0.0f || renderView->state.renderRect.h <= 0.0f) {
         return;
     }
 
-    if (view->state.layerMask == 0) {
+    if (renderView->state.layerMask == 0) {
         return;
     }
 
     // Create current visible view in frame data
     currentView = (VisibleView *)frameData.ClearedAlloc(sizeof(*currentView));
-    currentView->def = view;
+    currentView->def = renderView;
     currentView->maxDrawSurfs = MaxViewDrawSurfs;
     currentView->numDrawSurfs = 0;
     currentView->drawSurfs = (DrawSurf **)frameData.Alloc(currentView->maxDrawSurfs * sizeof(DrawSurf *));
@@ -317,19 +317,19 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     renderView.Update(&renderViewDef);
 
     // GUI object def
-    RenderObject::State objectParms;
-    memset(&objectParms, 0, sizeof(objectParms));
-    objectParms.scale = Vec3::one;
-    objectParms.axis = Mat3::identity;
-    objectParms.materialParms[RenderObject::RedParm] = 1.0f;
-    objectParms.materialParms[RenderObject::GreenParm] = 1.0f;
-    objectParms.materialParms[RenderObject::BlueParm] = 1.0f;
-    objectParms.materialParms[RenderObject::AlphaParm] = 1.0f;
-    objectParms.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    RenderObject::State objectDef;
+    memset(&objectDef, 0, sizeof(objectDef));
+    objectDef.scale = Vec3::one;
+    objectDef.axis = Mat3::identity;
+    objectDef.materialParms[RenderObject::RedParm] = 1.0f;
+    objectDef.materialParms[RenderObject::GreenParm] = 1.0f;
+    objectDef.materialParms[RenderObject::BlueParm] = 1.0f;
+    objectDef.materialParms[RenderObject::AlphaParm] = 1.0f;
+    objectDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
     
     static RenderObject renderObject;
     new (&renderObject) RenderObject();
-    renderObject.Update(&objectParms);
+    renderObject.Update(&objectDef);
 
     // GUI view
     VisibleView *guiView    = (VisibleView *)frameData.ClearedAlloc(sizeof(*guiView));
@@ -355,8 +355,9 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
             break;
         }
 
-        SubMesh *subMesh        = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
-        subMesh->alloced        = false;
+        SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
+        new (subMesh) SubMesh();
+
         subMesh->type           = Mesh::DynamicMesh;
         subMesh->numIndexes     = guiSurf->numIndexes;
         subMesh->numVerts       = guiSurf->numVerts;
@@ -1028,7 +1029,7 @@ void RenderWorld::DebugArrow(const Vec3 &start, const Vec3 &end, float coneSize,
     coneSize = Min(coneSize, length);
     Vec3 coneBottom = end - dir * coneSize;
 
-    Color4 _debugLineColor = debugLineColor;	
+    Color4 _debugLineColor = debugLineColor;
     Color4 _debugFillColor = debugFillColor;
 
     SetDebugColor(Color4::zero, _debugFillColor);

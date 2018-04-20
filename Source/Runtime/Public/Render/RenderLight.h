@@ -56,14 +56,10 @@ public:
         Type                type;
 
         Vec3                origin;
+        Vec3                size;   // extent for each axis
         Mat3                axis;
 
-                            // Point Light 일 경우 radius 값, 또는
-                            // Directional/Spot Light 일 경우 각 xyz axis 별 extent 값
-        Vec3                value;
-
-                            // for SpotLight
-        float               zNear;
+        float               zNear;  // near distance for SpotLight
 
         float               intensity;
         float               fallOffExponent;
@@ -81,26 +77,26 @@ public:
 
     void                    Update(const State *state);
 
-                            /// Returns light type (Point, Spot, Directional)
+                            /// Returns light type (Point, Spot, Directional).
     Type                    GetType() const { return state.type; }
 
-                            /// Returns light material
+                            /// Returns light material.
     const Material *        GetMaterial() const { return state.material; }
 
-                            /// Returns light origin
+                            /// Returns light origin in world space.
     const Vec3 &            GetOrigin() const { return state.origin; }
 
-                            // directional OBB 라이트의 extents
-    const Vec3 &            GetExtents() const { return state.value; }
+                            /// Returns extent for each axis.
+    const Vec3 &            GetExtents() const { return state.size; }
 
                             // 라이트 타원체의 각 axis 당 반지름 - Point 라이트인 경우에만
-    const Vec3 &            GetRadius() const { return state.value; }
+    const Vec3 &            GetRadius() const { return state.size; }
 
                             // axis 별 가장 큰 반지름 - Point 라이트인 경우에만
-    const float             GetMajorRadius() const { return BE1::Max3(state.value.x, state.value.y, state.value.z); }
+    const float             GetMajorRadius() const { return BE1::Max3(state.size.x, state.size.y, state.size.z); }
 
                             // axis 별 반지름의 크기가 동일한가 - Point 라이트인 경우에만
-    bool                    IsRadiusUniform() const { return (state.value.x == state.value.y && state.value.x == state.value.z) ? true : false; }
+    bool                    IsRadiusUniform() const { return (state.size.x == state.size.y && state.size.x == state.size.z) ? true : false; }
 
                             // frustum - Projected 라이트인 경우에만
     const Frustum &         GetFrustum() const { return frustum; }
@@ -111,7 +107,7 @@ public:
                             // AABB - 개략적인 bounding volume
     const AABB              GetAABB() const;
 
-                            // 라이트 view matrix
+                            /// Returns view matrix.
     const Mat4 &            GetViewMatrix() const { return viewMatrix; }
 
                             // 라이트 bias * scale * proj * view matrix (곱셈은 OpenGL 순서)
