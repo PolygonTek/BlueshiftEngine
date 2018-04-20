@@ -594,6 +594,10 @@ void Entity::SetPrefabSourceGuid(const Guid &prefabSourceGuid) {
     this->prefabSourceGuid = prefabSourceGuid;
 }
 
+void Entity::SetStatic(bool isStatic) {
+    this->isStatic = isStatic;
+}
+
 void Entity::SetFrozen(bool frozen) {
     this->frozen = frozen;
 

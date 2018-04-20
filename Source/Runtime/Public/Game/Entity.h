@@ -75,6 +75,11 @@ public:
                                 /// Sets layer index.
     void                        SetLayer(int layer);
 
+                                /// Returns if this entity is static.
+    bool                        IsStatic() const { return isStatic; }
+                                /// Sets this entity static.
+    void                        SetStatic(bool isStatic);
+
                                 /// Returns if this entity is frozen. Frozen entity will not be selectable in editor.
     bool                        IsFrozen() const { return frozen; }
                                 /// Sets this entity frozen.
