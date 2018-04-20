@@ -65,6 +65,7 @@ Entity::Entity() {
     node.SetOwner(this);
     layer = 0;
     frozen = false;
+    isStatic = false;
     prefab = false;
     prefabSourceGuid = Guid::zero;
     activeSelf = true;
