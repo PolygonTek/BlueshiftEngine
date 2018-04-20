@@ -254,6 +254,7 @@ protected:
     Guid                        prefabSourceGuid;
 
     bool                        initialized;
+    bool                        isStatic;
     bool                        awaked;
     bool                        activeSelf;         ///< Local active state
     bool                        activeInHierarchy;  ///< Actual active state 
