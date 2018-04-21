@@ -8,6 +8,7 @@ Version History
 - Added support for calculation normals with area and anglular weights
 - Added support for vehicle physics
 - Added support for slider/wheel joint components
+- Fixed rolling friction bug
 
 ### 0.4.0
 - Added support for LuaJIT (Windows / macOS)
