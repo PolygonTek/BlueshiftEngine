@@ -90,11 +90,10 @@ void ComCapsuleCollider::DrawGizmos(const RenderView::State &viewState, bool sel
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
-            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldCenter = transform->GetMatrix() * scaledCenter;
+            Vec3 worldCenter = transform->GetMatrix() * center;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + 0.25f, 1.25f, true);

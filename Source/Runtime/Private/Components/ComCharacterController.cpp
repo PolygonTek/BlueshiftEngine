@@ -461,12 +461,11 @@ void ComCharacterController::DrawGizmos(const RenderView::State &viewState, bool
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
-            Vec3 center = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
-            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
             float scaledHeight = transform->GetScale().z * capsuleHeight;
 
-            Vec3 worldCenter = transform->GetMatrix() * scaledCenter;
+            Vec3 localCenter = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
+            Vec3 worldCenter = transform->GetMatrix() * localCenter;
 
             renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
             renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);
