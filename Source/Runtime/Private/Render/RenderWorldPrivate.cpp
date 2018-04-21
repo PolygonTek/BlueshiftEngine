@@ -72,7 +72,7 @@ VisibleLight *RenderWorld::RegisterVisibleLight(VisibleView *view, RenderLight *
 void RenderWorld::FindVisibleLightsAndObjects(VisibleView *view) {
     viewCount++;
 
-    view->aabb.Clear();
+    view->worldAABB.Clear();
     view->visibleLights = nullptr;
     view->visibleObjects = nullptr;
 
@@ -175,7 +175,7 @@ void RenderWorld::FindVisibleLightsAndObjects(VisibleView *view) {
             visibleObject->modelViewProjMatrix *= billboardMatrix;
         }
 
-        view->aabb.AddAABB(proxy->worldAABB);
+        view->worldAABB.AddAABB(proxy->worldAABB);
 
         if (r_showAABB.GetInteger() > 0) {
             SetDebugColor(Color4::blue, Color4::zero);
@@ -478,7 +478,7 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
 
         if ((proxy->renderObject->state.flags & RenderObject::CastShadowsFlag) && material->IsShadowCaster()) {
             OBB surfBounds = OBB(surf->subMesh->GetAABB() * proxy->renderObject->state.scale, proxy->renderObject->state.origin, proxy->renderObject->state.axis);
-            if (visibleLight->def->CullShadowCasterOBB(surfBounds, view->def->frustum, view->aabb)) {
+            if (visibleLight->def->CullShadowCasterOBB(surfBounds, view->def->frustum, view->worldAABB)) {
                 return true;
             }
 
@@ -585,8 +585,8 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
             return true;
         }
 
-        OBB obb = OBB(proxy->renderObject->GetLocalAABB(), proxy->renderObject->state.origin, proxy->renderObject->state.axis);
-        if (visibleLight->def->CullShadowCasterOBB(obb, view->def->frustum, view->aabb)) {
+        OBB worldOBB = OBB(proxy->renderObject->GetLocalAABB(), proxy->renderObject->state.origin, proxy->renderObject->state.axis);
+        if (visibleLight->def->CullShadowCasterOBB(worldOBB, view->def->frustum, view->worldAABB)) {
             return true;
         }
 

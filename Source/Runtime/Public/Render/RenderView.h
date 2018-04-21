@@ -51,9 +51,10 @@ public:
         int             flags;
         int             layerMask;
 
-        Rect            renderRect;
         Vec3            origin;             ///< View origin
         Mat3            axis;               ///< View axis [FORWARD, LEFT, UP]
+        Rect            renderRect;
+
         ClearMethod     clearMethod;        ///< Clearing method before rendering view
         Color4          clearColor;         ///< Clearing color is needed if clearing method is set to 'ColorClear'
 
@@ -101,18 +102,18 @@ public:
 
     State               state;
 
-    Mat4                viewMatrix;
-    Mat4                projMatrix;
-    Mat4                viewProjMatrix;
-        
-    float               zNear;
-    float               zFar;
-
     OBB                 box;
 
     Frustum             frustum;
     Plane               frustumPlanes[6];
     Vec3                frustumPoints[8];
+
+    float               zNear;
+    float               zFar;
+
+    Mat4                viewMatrix;
+    Mat4                projMatrix;
+    Mat4                viewProjMatrix;
 
     Plane               clipPlane;
 };

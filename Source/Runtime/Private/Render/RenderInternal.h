@@ -67,7 +67,7 @@ public:
     bool                    isMirror;
     bool                    is2D;
 
-    AABB                    aabb;
+    AABB                    worldAABB;
 
                             // view 에 보이는 모든 surfaces 와 shadow surfaces
     DrawSurf **             drawSurfs;
