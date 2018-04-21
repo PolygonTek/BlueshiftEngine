@@ -819,25 +819,35 @@ void RenderWorld::AddDrawSurf(VisibleView *view, VisibleObject *visibleObject, c
     uint64_t materialSort = realMaterial->GetSort();
     uint64_t objectIndex = visibleObject->def->index;
     uint64_t materialIndex = materialManager.GetIndexByMaterial(realMaterial);
-    uint64_t depthDist = 0;
-    
+
+    // Rough sorting back-to-front order for translucent surfaces.
     if (materialSort == Material::TranslucentSort || materialSort == Material::OverlaySort) {
         float depthMin = 0.0f;
         float depthMax = 1.0f;
 
         view->def->GetDepthBoundsFromAABB(subMesh->GetAABB(), visibleObject->modelViewProjMatrix, &depthMin, &depthMax);
 
-        depthDist = Math::Ftoui16((1.0f - depthMin) * 0xFFFF);
-    }
+        uint64_t depthDist = Math::Ftoui16(depthMin * 0xFFFF);
+        depthDist = 0xFFFF - depthDist;
 
-    //---------------------------------------------------
-    // sortKey bits:
-    // 0xFF00000000000000 (0~15)    : material sort
-    // 0x0000FFFF00000000 (0~65535) : depth dist
-    // 0x00000000FFFF0000 (0~65535) : object index
-    // 0x000000000000FFFF (0~65535) : material index
-    //---------------------------------------------------
-    drawSurf->sortKey = ((materialSort << 56) | (depthDist << 32) | (objectIndex << 16) | materialIndex);
+        //---------------------------------------------------
+        // SortKey for translucent materials:
+        // 0xFF00000000000000 (0~15)    : material sort
+        // 0x0000FFFF00000000 (0~65535) : depth dist
+        // 0x00000000FFFF0000 (0~65535) : material index
+        // 0x000000000000FFFF (0~65535) : object index
+        //---------------------------------------------------
+        drawSurf->sortKey = ((materialSort << 56) | (depthDist << 32) | (materialIndex << 16) | objectIndex);
+    } else {
+        //---------------------------------------------------
+        // SortKey for opaque materials:
+        // 0xFF00000000000000 (0~15)    : material sort
+        // 0x0000FFFF00000000 (0~65535) : sub mesh index
+        // 0x00000000FFFF0000 (0~65535) : material index
+        // 0x000000000000FFFF (0~65535) : object index
+        //---------------------------------------------------
+        drawSurf->sortKey = ((materialSort << 56) | ((subMesh->subMeshIndex & 0xFFFF) << 32) | (materialIndex << 16) | objectIndex);
+    }
     
     view->drawSurfs[view->numDrawSurfs++] = drawSurf;
 }
