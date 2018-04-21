@@ -104,6 +104,10 @@ public:
         Mat3                axis;           // object orientation
         AABB                localAABB;      // non-scaled local AABB (shouldn't be empty)
 
+        // wire frame info
+        WireframeMode       wireframeMode;
+        Color4              wireframeColor;
+
         // static/skinned mesh
         Mesh *              mesh;           // instantiated mesh
         const Skeleton *    skeleton;       // skeleton information for skeletal mesh
@@ -127,10 +131,6 @@ public:
         Array<Material *>   materials;
         float               materialParms[MaxMaterialParms];
         Skin *              customSkin;
-
-        // wire frame parameters
-        WireframeMode       wireframeMode;
-        Color4              wireframeColor;
     };
 
     RenderObject();

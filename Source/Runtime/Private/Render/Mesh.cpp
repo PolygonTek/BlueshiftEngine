@@ -190,12 +190,12 @@ void Mesh::FinishSurfaces(int flags) {
     ComputeEdges();
 }
 
-void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &translation) {
+void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;
 
         for (int vertexIndex = 0; vertexIndex < subMesh->numVerts; vertexIndex++) {
-            subMesh->verts[vertexIndex].Transform(rotation, Vec3::one, translation);
+            subMesh->verts[vertexIndex].Transform(rotation, scale, translation);
         }
     }
 

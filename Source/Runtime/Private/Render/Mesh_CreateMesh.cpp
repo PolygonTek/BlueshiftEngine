@@ -132,7 +132,7 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
     FinishSurfaces(ComputeAABBFlag);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
-        TransformVerts(axis, origin);
+        TransformVerts(axis, Vec3::one, origin);
     }
 }
 
@@ -197,7 +197,7 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag | UseUnsmoothedTangentsFlag);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
-        TransformVerts(axis, origin);
+        TransformVerts(axis, Vec3::one, origin);
     }
 }
 
@@ -256,7 +256,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
     FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
 
     if (!origin.IsZero()) {
-        TransformVerts(Mat3::identity, origin);
+        TransformVerts(Mat3::identity, Vec3::one, origin);
     }
 }
 
@@ -363,7 +363,7 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
     FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
-        TransformVerts(axis, origin);
+        TransformVerts(axis, Vec3::one, origin);
     }
 }
 
@@ -466,7 +466,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
     FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
-        TransformVerts(axis, origin);
+        TransformVerts(axis, Vec3::one, origin);
     }
 }
 

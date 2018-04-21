@@ -109,7 +109,7 @@ public:
     MeshSurf *              AllocSurface(int numVerts, int numIndexes) const;
     void                    FinishSurfaces(int finishFlags = 0);
 
-    void                    TransformVerts(const Mat3 &rotation, const Vec3 &translation);
+    void                    TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation);
 
     void                    OptimizeIndexedTriangles();
 
