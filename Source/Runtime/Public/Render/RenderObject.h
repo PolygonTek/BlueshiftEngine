@@ -99,16 +99,16 @@ public:
         float               maxVisDist;
 
         // transform info
-        Vec3                origin;
-        Vec3                scale;
-        Mat3                axis;
-        AABB                localAABB;      // non-scaled local AABB (shouldn't be empty AABB)
+        Vec3                origin;         // object position in world space
+        Vec3                scale;          // object scaling
+        Mat3                axis;           // object orientation
+        AABB                localAABB;      // non-scaled local AABB (shouldn't be empty)
 
         // static/skinned mesh
-        Mesh *              mesh;
-        const Skeleton *    skeleton;
-        int                 numJoints;
-        Mat3x4 *            joints;
+        Mesh *              mesh;           // instantiated mesh
+        const Skeleton *    skeleton;       // skeleton information for skeletal mesh
+        int                 numJoints;      // number of joints
+        Mat3x4 *            joints;         // joint transform matrices to animate skeletal mesh
 
         // text rendering
         Font *              font;

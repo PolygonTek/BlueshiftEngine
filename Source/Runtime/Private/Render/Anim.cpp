@@ -366,7 +366,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
             switch (subMesh->MaxVertexWeights()) {
             case 8:
                 for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
-                    const VertexWeight8 *vertWeights = (const VertexWeight8 *)subMesh->VertWeights();
+                    const VertexWeight8 *vertWeights = (const VertexWeight8 *)subMesh->VertexWeights();
                     const VertexWeight8 *vw = &vertWeights[vertexIndex];
                     const Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     Vec3 resultPos = Vec3::zero;
@@ -387,7 +387,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                 break;
             case 4:
                 for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
-                    const VertexWeight4 *vertWeights = (const VertexWeight4 *)subMesh->VertWeights();
+                    const VertexWeight4 *vertWeights = (const VertexWeight4 *)subMesh->VertexWeights();
                     const VertexWeight4 *vw = &vertWeights[vertexIndex];
                     const Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     Vec3 resultPos = Vec3::zero;
@@ -407,7 +407,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                 break;
             case 1:
                 for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
-                    const VertexWeight1 *vertWeights = (const VertexWeight1 *)subMesh->VertWeights();
+                    const VertexWeight1 *vertWeights = (const VertexWeight1 *)subMesh->VertexWeights();
                     const VertexWeight1 *vw = &vertWeights[vertexIndex];
                     const Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     Vec3 resultPos = jointMats2[vw->jointIndex].Transform(pos);

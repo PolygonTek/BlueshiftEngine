@@ -78,7 +78,7 @@ public:
 
     int                     VertexWeightSize() const;
     int                     MaxVertexWeights() const;
-    void *                  VertWeights() const { return vertWeights; }
+    void *                  VertexWeights() const { return vertWeights; }
 
                             /// Finds a edge index by two vertex indexes.
                             /// if v1 is larger than v2, negative number will be returned.
@@ -154,7 +154,7 @@ private:
     bool                    useGpuSkinning;
     int                     gpuSkinningVersionIndex;    // 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 
-    AABB                    aabb;
+    AABB                    aabb;                       // AABB in local submesh space
 
     BufferCache *           vertexCache;
     BufferCache *           indexCache;

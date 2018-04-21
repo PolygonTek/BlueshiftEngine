@@ -65,7 +65,7 @@ protected:
     void                    MeshReloaded();
 
     MeshAsset *             meshAsset;
-    Mesh *                  referenceMesh;
+    Mesh *                  referenceMesh;      // shared mesh to retain shared information for instantiated mesh
 };
 
 BE_NAMESPACE_END
