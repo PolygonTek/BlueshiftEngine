@@ -407,7 +407,7 @@ bool RenderView::GetDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &m
 
 bool RenderView::GetDepthBoundsFromLight(const RenderLight *light, const Mat4 &viewProjMatrix, float *depthMin, float *depthMax) const {
     if (light->state.type == RenderLight::DirectionalLight) {
-        if (!GetDepthBoundsFromOBB(light->obb, viewProjMatrix, depthMin, depthMax)) {
+        if (!GetDepthBoundsFromOBB(light->worldOBB, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
     } else if (light->state.type == RenderLight::PointLight) {
@@ -416,12 +416,12 @@ bool RenderView::GetDepthBoundsFromLight(const RenderLight *light, const Mat4 &v
                 return false;
             }
         } else {
-            if (!GetDepthBoundsFromOBB(light->obb, viewProjMatrix, depthMin, depthMax)) {
+            if (!GetDepthBoundsFromOBB(light->worldOBB, viewProjMatrix, depthMin, depthMax)) {
                 return false;
             }
         }
     } else if (light->state.type == RenderLight::SpotLight) {
-        if (!GetDepthBoundsFromFrustum(light->frustum, viewProjMatrix, depthMin, depthMax)) {
+        if (!GetDepthBoundsFromFrustum(light->worldFrustum, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
     } else {

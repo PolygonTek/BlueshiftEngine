@@ -23,8 +23,8 @@ RenderLight::RenderLight() {
     memset(&state, 0, sizeof(state));
     index = 0;
 
-    obb.SetZero();
-    frustum.SetOrigin(Vec3::origin);
+    worldOBB.SetZero();
+    worldFrustum.SetOrigin(Vec3::origin);
 
     viewMatrix.SetIdentity();
     projMatrix.SetIdentity();
@@ -54,27 +54,27 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
 
     if (state.type == PointLight) {
         // Set bounding volume for point light
-        obb = OBB(state.origin, state.size, state.axis);
+        worldOBB = OBB(state.origin, state.size, state.axis);
 
         // Calculate point light orthogonal projection matrix
         R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0.0f, state.size[0], projMatrix);
     } else if (state.type == DirectionalLight) {
         // Bounding volume for box light
-        obb = OBB(state.origin + state.axis[0] * state.size[0] * 0.5f, Vec3(state.size[0] * 0.5f, state.size[1], state.size[2]), state.axis);
+        worldOBB = OBB(state.origin + state.axis[0] * state.size[0] * 0.5f, Vec3(state.size[0] * 0.5f, state.size[1], state.size[2]), state.axis);
 
         // Calculate box light orthogonal projection matrix
-        R_SetOrthogonalProjectionMatrix(obb.Extents()[1], obb.Extents()[2], 0.0f, obb.Extents()[0] * 2, projMatrix);
+        R_SetOrthogonalProjectionMatrix(worldOBB.Extents()[1], worldOBB.Extents()[2], 0.0f, worldOBB.Extents()[0] * 2, projMatrix);
     } else if (state.type == SpotLight) {
         // Set bounding frustum for spot light
-        frustum.SetOrigin(state.origin);
-        frustum.SetAxis(state.axis);
-        frustum.SetSize(BE1::Max(state.zNear, 3.0f), state.size[0], state.size[1], state.size[2]);
+        worldFrustum.SetOrigin(state.origin);
+        worldFrustum.SetAxis(state.axis);
+        worldFrustum.SetSize(BE1::Max(state.zNear, 3.0f), state.size[0], state.size[1], state.size[2]);
 
-        float xFov = RAD2DEG(Math::ATan(frustum.GetLeft(), frustum.GetFarDistance())) * 2.0f;
-        float yFov = RAD2DEG(Math::ATan(frustum.GetUp(), frustum.GetFarDistance())) * 2.0f;
+        float xFov = RAD2DEG(Math::ATan(worldFrustum.GetLeft(), worldFrustum.GetFarDistance())) * 2.0f;
+        float yFov = RAD2DEG(Math::ATan(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
 
         // Calculate spot light perspective projection matrix
-        R_SetPerspectiveProjectionMatrix(xFov, yFov, frustum.GetNearDistance(), frustum.GetFarDistance(), false, projMatrix);
+        R_SetPerspectiveProjectionMatrix(xFov, yFov, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), false, projMatrix);
     } else {
         assert(0);
     }
@@ -93,14 +93,14 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
 
 bool RenderLight::IsIntersectAABB(const AABB &aabb) const {
     if (state.type == DirectionalLight || state.type == PointLight) {
-        if (this->obb.IsIntersectOBB(OBB(aabb))) {
+        if (this->worldOBB.IsIntersectOBB(OBB(aabb))) {
             return true;
         }
         return false;
     }
 
     if (state.type == SpotLight) {
-        if (!frustum.CullAABB(aabb)) {
+        if (!worldFrustum.CullAABB(aabb)) {
             return true;
         }
         return false;
@@ -112,14 +112,14 @@ bool RenderLight::IsIntersectAABB(const AABB &aabb) const {
 
 bool RenderLight::IsIntersectOBB(const OBB &obb) const {
     if (state.type == DirectionalLight || state.type == PointLight) {
-        if (this->obb.IsIntersectOBB(obb)) {
+        if (this->worldOBB.IsIntersectOBB(obb)) {
             return true;
         }
         return false;
     }
 
     if (state.type == SpotLight) {
-        if (!frustum.CullOBB(obb)) {
+        if (!worldFrustum.CullOBB(obb)) {
             return true;
         }
         return false;
@@ -129,12 +129,12 @@ bool RenderLight::IsIntersectOBB(const OBB &obb) const {
     return false;
 }
 
-const AABB RenderLight::GetAABB() const {
+const AABB RenderLight::GetWorldAABB() const {
     if (state.type == DirectionalLight || state.type == PointLight) {
-        return obb.ToAABB();
+        return worldOBB.ToAABB();
     }
 
-    return frustum.ToOBB().ToAABB();
+    return worldFrustum.ToOBB().ToAABB();
 }
 
 static bool DirLight_ShadowBVFromCaster(const RenderLight *light, const OBB &casterOBB, OBB &shadowOBB) {
@@ -142,7 +142,7 @@ static bool DirLight_ShadowBVFromCaster(const RenderLight *light, const OBB &cas
 
     AABB b1, b2;
     casterOBB.AxisProjection(light->state.axis, b1); // light 축에서의 caster bounds
-    light->obb.AxisProjection(light->state.axis, b2); // light 축에서의 light bounds
+    light->worldOBB.AxisProjection(light->state.axis, b2); // light 축에서의 light bounds
 
     b1.IntersectSelf(b2);
     if (b1.IsCleared()) {
@@ -166,7 +166,7 @@ static bool PointLight_ShadowBVFromCaster(const RenderLight *light, const OBB &c
     Vec3 dir = casterOBB.Center() - light->state.origin;
     dir.Normalize();
 
-    float dFar = light->obb.Extents().Length();
+    float dFar = light->worldOBB.Extents().Length();
     if (!shadowFrustum.FromProjection(casterOBB, light->state.origin, dFar)) {
         return false;
     }
@@ -178,18 +178,18 @@ static bool PointLight_ShadowBVFromCaster(const RenderLight *light, const OBB &c
 static bool SpotLight_ShadowBVFromCaster(const RenderLight *light, const OBB &casterOBB, Frustum &shadowFrustum) {
     assert(light->state.type == RenderLight::SpotLight);
 
-    Vec3 dir = light->frustum.GetAxis()[0];
+    Vec3 dir = light->worldFrustum.GetAxis()[0];
     dir.Normalize();
 
     float dmin, dmax;
     casterOBB.AxisProjection(dir, dmin, dmax);
 
     float dNear = dmin - light->state.origin.Dot(dir);
-    if (dNear < light->frustum.GetNearDistance()) {
-        dNear = light->frustum.GetNearDistance();
+    if (dNear < light->worldFrustum.GetNearDistance()) {
+        dNear = light->worldFrustum.GetNearDistance();
     }
 
-    shadowFrustum = light->frustum;
+    shadowFrustum = light->worldFrustum;
     shadowFrustum.MoveNearDistance(dNear);
 
     return true;
@@ -198,12 +198,12 @@ static bool SpotLight_ShadowBVFromCaster(const RenderLight *light, const OBB &ca
 bool RenderLight::Cull(const Frustum &viewFrustum) const {
     switch (state.type) {
     case DirectionalLight:
-        if (viewFrustum.CullOBB(obb)) {
+        if (viewFrustum.CullOBB(worldOBB)) {
             return true;
         }
         break;
     case SpotLight:
-        if (viewFrustum.CullFrustum(frustum)) {
+        if (viewFrustum.CullFrustum(worldFrustum)) {
             return true;
         }
         break;
@@ -213,7 +213,7 @@ bool RenderLight::Cull(const Frustum &viewFrustum) const {
                 return true;
             }
         } else {
-            if (viewFrustum.CullOBB(obb)) {
+            if (viewFrustum.CullOBB(worldOBB)) {
                 return true;
             }
         }
@@ -228,12 +228,12 @@ bool RenderLight::Cull(const Frustum &viewFrustum) const {
 bool RenderLight::Cull(const OBB &viewBox) const {
     switch (state.type) {
     case DirectionalLight:
-        if (!viewBox.IsIntersectOBB(obb)) {
+        if (!viewBox.IsIntersectOBB(worldOBB)) {
             return true;
         }
         break;
     case SpotLight:
-        if (frustum.CullOBB(viewBox)) {
+        if (worldFrustum.CullOBB(viewBox)) {
             return true;
         }
         break;
@@ -243,7 +243,7 @@ bool RenderLight::Cull(const OBB &viewBox) const {
                 return true;
             }
         } else {
-            if (!viewBox.IsIntersectOBB(obb)) {
+            if (!viewBox.IsIntersectOBB(worldOBB)) {
                 return true;
             }
         }
@@ -317,12 +317,12 @@ bool RenderLight::CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewF
 bool RenderLight::ComputeScreenClipRect(const RenderView *viewDef, Rect &clipRect) const {
     switch (state.type) {
     case DirectionalLight:
-        if (!viewDef->GetClipRectFromOBB(obb, clipRect)) {
+        if (!viewDef->GetClipRectFromOBB(worldOBB, clipRect)) {
             return false;
         }
         break;
     case SpotLight:
-        if (!viewDef->GetClipRectFromFrustum(frustum, clipRect)) {
+        if (!viewDef->GetClipRectFromFrustum(worldFrustum, clipRect)) {
             return false;
         }
         break;
@@ -332,7 +332,7 @@ bool RenderLight::ComputeScreenClipRect(const RenderView *viewDef, Rect &clipRec
                 return false;
             }
         } else {
-            if (!viewDef->GetClipRectFromOBB(obb, clipRect)) {
+            if (!viewDef->GetClipRectFromOBB(worldOBB, clipRect)) {
                 return false;
             }
         }

@@ -96,6 +96,7 @@ public:
         int                 flags;
         int                 layer;
         int                 time;
+        float               maxVisDist;
 
         // transform info
         Vec3                origin;
@@ -103,7 +104,7 @@ public:
         Mat3                axis;
         AABB                localAABB;      // non-scaled local AABB (shouldn't be empty AABB)
 
-        // static mesh or skinned mesh
+        // static/skinned mesh
         Mesh *              mesh;
         const Skeleton *    skeleton;
         int                 numJoints;
@@ -130,8 +131,6 @@ public:
         // wire frame parameters
         WireframeMode       wireframeMode;
         Color4              wireframeColor;
-
-        float               maxVisDist;
     };
 
     RenderObject();
@@ -149,15 +148,16 @@ public:
     const Mat4 &            GetObjectToWorldMatrix() const { return worldMatrix; }
 
     int                     index;
-    State                   state;
     bool                    firstUpdate;
+
+    State                   state;
 
     OBB                     worldOBB;
     Mat4                    worldMatrix;
     Mat4                    prevWorldMatrix;
 
-    int                     viewCount;
     VisibleObject *         visibleObject;
+    int                     viewCount;
 
     DbvtProxy *             proxy;
     int                     numMeshSurfProxies;

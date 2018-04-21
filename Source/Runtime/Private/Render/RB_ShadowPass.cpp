@@ -506,15 +506,15 @@ static void RB_OrthogonalShadowMapPass(const VisibleLight *visibleLight, const F
     backEnd.shadowMapOffsetUnits = visibleLight->def->state.shadowOffsetUnits;
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(visibleLight->def->state.origin, visibleLight->def->obb, visibleLight->shadowCasterAABB, viewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visibleLight->def->state.origin, visibleLight->def->worldOBB, visibleLight->shadowCasterAABB, viewFrustum, &dNear, &dFar)) {
         return;
     }
 
-    R_SetOrthogonalProjectionMatrix(visibleLight->def->obb.Extents()[1], visibleLight->def->obb.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
+    R_SetOrthogonalProjectionMatrix(visibleLight->def->worldOBB.Extents()[1], visibleLight->def->worldOBB.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() == 2) {
         Mat4 shadowCropMatrix;
-        OBB lightOBB = visibleLight->def->obb;
+        OBB lightOBB = visibleLight->def->worldOBB;
 
         lightOBB.SetCenter(visibleLight->def->state.origin + visibleLight->def->state.axis[0] * (dFar + dNear) * 0.5f);
 
@@ -546,12 +546,12 @@ static void RB_ProjectedShadowMapPass(const VisibleLight *visibleLight, const Fr
     backEnd.shadowMapOffsetUnits = visibleLight->def->state.shadowOffsetUnits;
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(visibleLight->def->frustum, visibleLight->shadowCasterAABB, viewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visibleLight->def->worldFrustum, visibleLight->shadowCasterAABB, viewFrustum, &dNear, &dFar)) {
         return;
     }
 
-    float xFov = RAD2DEG(Math::ATan(visibleLight->def->frustum.GetLeft(), dFar)) * 2.0f;
-    float yFov = RAD2DEG(Math::ATan(visibleLight->def->frustum.GetUp(), dFar)) * 2.0f;
+    float xFov = RAD2DEG(Math::ATan(visibleLight->def->worldFrustum.GetLeft(), dFar)) * 2.0f;
+    float yFov = RAD2DEG(Math::ATan(visibleLight->def->worldFrustum.GetUp(), dFar)) * 2.0f;
 
     R_SetPerspectiveProjectionMatrix(xFov, yFov, dNear, dFar, false, backEnd.shadowProjectionMatrix);
 
@@ -613,15 +613,15 @@ static bool RB_SingleCascadedShadowMapPass(const VisibleLight *visibleLight, con
     }
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(visibleLight->def->state.origin, visibleLight->def->obb, visibleLight->shadowCasterAABB, splitViewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visibleLight->def->state.origin, visibleLight->def->worldOBB, visibleLight->shadowCasterAABB, splitViewFrustum, &dNear, &dFar)) {
         return false;
     }
 
-    R_SetOrthogonalProjectionMatrix(visibleLight->def->obb.Extents()[1], visibleLight->def->obb.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
+    R_SetOrthogonalProjectionMatrix(visibleLight->def->worldOBB.Extents()[1], visibleLight->def->worldOBB.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() > 0) {
         Mat4 shadowCropMatrix;
-        OBB lightOBB = visibleLight->def->obb;
+        OBB lightOBB = visibleLight->def->worldOBB;
 
         lightOBB.SetCenter(visibleLight->def->state.origin + visibleLight->def->state.axis[0] * (dFar + dNear) * 0.5f);
 

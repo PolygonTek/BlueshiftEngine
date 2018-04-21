@@ -62,12 +62,12 @@ void RenderObject::Update(const State *stateDef) {
     if (firstUpdate) {
         worldMatrix.SetLinearTransform(state.axis, state.scale, state.origin);
         prevWorldMatrix = worldMatrix;
+
+        firstUpdate = false;
     } else {
         prevWorldMatrix = worldMatrix;
         worldMatrix.SetLinearTransform(state.axis, state.scale, state.origin);
     }
-
-    firstUpdate = false;
 }
 
 const AABB RenderObject::GetLocalAABB() const {

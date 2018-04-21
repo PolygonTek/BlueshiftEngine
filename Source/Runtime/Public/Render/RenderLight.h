@@ -54,12 +54,13 @@ public:
         int                 flags;
         int                 layer;
         Type                type;
+        float               maxVisDist;
 
         Vec3                origin;
-        Vec3                size;   // extent for each axis
+        Vec3                size;       // extent for each axis
         Mat3                axis;
 
-        float               zNear;  // near distance for SpotLight
+        float               zNear;      // near distance for SpotLight
 
         float               intensity;
         float               fallOffExponent;
@@ -68,8 +69,6 @@ public:
 
         Material *          material;
         float               materialParms[RenderObject::MaxMaterialParms];
-
-        float               maxVisDist;
     };
 
     RenderLight();
@@ -98,14 +97,14 @@ public:
                             // axis 별 반지름의 크기가 동일한가 - Point 라이트인 경우에만
     bool                    IsRadiusUniform() const { return (state.size.x == state.size.y && state.size.x == state.size.z) ? true : false; }
 
+                            // AABB - 개략적인 bounding volume
+    const AABB              GetWorldAABB() const;
+
                             // frustum - Projected 라이트인 경우에만
-    const Frustum &         GetFrustum() const { return frustum; }
+    const Frustum &         GetWorldFrustum() const { return worldFrustum; }
 
                             // OBB - Directional/Point 라이트인 경우에만
-    const OBB &             GetOBB() const { return obb; }
-
-                            // AABB - 개략적인 bounding volume
-    const AABB              GetAABB() const;
+    const OBB &             GetWorldOBB() const { return worldOBB; }
 
                             /// Returns view matrix.
     const Mat4 &            GetViewMatrix() const { return viewMatrix; }
@@ -132,15 +131,19 @@ public:
     bool                    ComputeScreenClipRect(const RenderView *viewDef, Rect &clipRect) const;
 
     int                     index;
-    State                   state;
     bool                    firstUpdate;
-    OBB                     obb;            // used for PointLight / DirectionalLight
-    Frustum                 frustum;        // used for SpotLight
+
+    State                   state;
+
+    OBB                     worldOBB;           // used for PointLight / DirectionalLight
+    Frustum                 worldFrustum;       // used for SpotLight
     Mat4                    viewMatrix;
     Mat4                    projMatrix;
     Mat4                    viewProjScaleBiasMatrix;
-    int                     viewCount;
+
     VisibleLight *          visibleLight;
+    int                     viewCount;
+
     DbvtProxy *             proxy;
 };
 

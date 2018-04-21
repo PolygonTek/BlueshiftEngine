@@ -189,18 +189,18 @@ void RB_SetupLight(VisibleLight *visibleLight) {
 void RB_DrawLightVolume(const RenderLight *light) {
     switch (light->state.type) {
     case RenderLight::DirectionalLight:
-        RB_DrawOBB(light->GetOBB());
+        RB_DrawOBB(light->GetWorldOBB());
         break;
     case RenderLight::PointLight:
         if (light->IsRadiusUniform()) {
             RB_DrawSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), 16, 16);
         } else {
             // FIXME: ellipsoid 그리기로 바꾸자
-            RB_DrawOBB(light->GetOBB());
+            RB_DrawOBB(light->GetWorldOBB());
         }
         break;
     case RenderLight::SpotLight:
-        RB_DrawFrustum(light->GetFrustum());
+        RB_DrawFrustum(light->GetWorldFrustum());
         break;
     default:
         break;

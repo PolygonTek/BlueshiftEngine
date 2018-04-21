@@ -223,7 +223,7 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *lightD
 
         renderLight->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         renderLight->proxy->renderLight = renderLight;
-        renderLight->proxy->worldAABB = renderLight->GetAABB();
+        renderLight->proxy->worldAABB = renderLight->GetWorldAABB();
         renderLight->proxy->id = lightDbvt.CreateProxy(renderLight->proxy->worldAABB, MeterToUnit(0.0f), renderLight->proxy);
     } else {
         bool originMatch    = (lightDef->origin == renderLight->state.origin);
@@ -231,7 +231,7 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *lightD
         bool valueMatch     = (lightDef->size == renderLight->state.size);
 
         if (!originMatch || !axisMatch || !valueMatch) {
-            renderLight->proxy->worldAABB = renderLight->proxy->renderLight->GetAABB();
+            renderLight->proxy->worldAABB = renderLight->proxy->renderLight->GetWorldAABB();
             lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->worldAABB, MeterToUnit(0.5f), lightDef->origin - renderLight->state.origin);
         }
 

@@ -156,6 +156,7 @@ void RenderWorld::FindVisibleLightsAndObjects(VisibleView *view) {
             return true;
         }
 
+        // Register visible object form the render object
         VisibleObject *visibleObject = RegisterVisibleObject(view, renderObject);
 
         visibleObject->ambientVisible = true;
@@ -509,17 +510,17 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
 
         switch (renderLight->state.type) {
         case RenderLight::DirectionalLight:
-            staticMeshDbvt.Query(renderLight->obb, addStaticMeshSurfsForLights);
+            staticMeshDbvt.Query(renderLight->worldOBB, addStaticMeshSurfsForLights);
             break;
         case RenderLight::PointLight:
             if (renderLight->IsRadiusUniform()) {
                 staticMeshDbvt.Query(Sphere(renderLight->GetOrigin(), renderLight->GetRadius()[0]), addStaticMeshSurfsForLights);
             } else {
-                staticMeshDbvt.Query(renderLight->obb, addStaticMeshSurfsForLights);
+                staticMeshDbvt.Query(renderLight->worldOBB, addStaticMeshSurfsForLights);
             }
             break;
         case RenderLight::SpotLight:
-            staticMeshDbvt.Query(renderLight->frustum, addStaticMeshSurfsForLights);
+            staticMeshDbvt.Query(renderLight->worldFrustum, addStaticMeshSurfsForLights);
             break;
         default:
             break;
@@ -633,17 +634,17 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
 
         switch (renderLight->state.type) {
         case RenderLight::DirectionalLight:
-            objectDbvt.Query(renderLight->obb, addShadowCasterObjects);
+            objectDbvt.Query(renderLight->worldOBB, addShadowCasterObjects);
             break;
         case RenderLight::PointLight:
             if (renderLight->IsRadiusUniform()) {
                 objectDbvt.Query(Sphere(renderLight->GetOrigin(), renderLight->GetRadius()[0]), addShadowCasterObjects);
             } else {
-                objectDbvt.Query(renderLight->obb, addShadowCasterObjects);
+                objectDbvt.Query(renderLight->worldOBB, addShadowCasterObjects);
             }
             break;
         case RenderLight::SpotLight:
-            objectDbvt.Query(renderLight->frustum, addShadowCasterObjects);
+            objectDbvt.Query(renderLight->worldFrustum, addShadowCasterObjects);
             break;
         default:
             break;
@@ -658,7 +659,7 @@ void RenderWorld::OptimizeLights(VisibleView *view) {
 
     // Iterate over light linked list in view
     for (VisibleLight *light = view->visibleLights; light; light = light->next) {
-        const AABB lightAABB = light->def->GetAABB();
+        const AABB lightAABB = light->def->GetWorldAABB();
         
         // Compute effective AABB
         light->litSurfsAABB.IntersectSelf(lightAABB);
