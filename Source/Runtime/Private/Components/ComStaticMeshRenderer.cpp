@@ -54,6 +54,12 @@ void ComStaticMeshRenderer::Init() {
 
     renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
 
+    // Before game started, we need to build merged mesh informations.
+    // Check if this mesh is merged to other one.
+    // If so, skip adding render object for this mesh
+    // or if this mesh is merging with others,
+    // we need to get merged mesh instead of instantiated mesh.
+
     // Mark as initialized
     SetInitialized(true);
 
@@ -68,11 +74,13 @@ void ComStaticMeshRenderer::MeshUpdated() {
         return;
     }
 
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-    renderObjectDef.localAABB = referenceMesh->GetAABB();
-
     renderWorld->RemoveRenderObject(renderObjectHandle);
     renderObjectHandle = -1;
+
+    // Is mergeable ? static entity & etc..
+    // Check mergeable with other static meshes 
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    renderObjectDef.localAABB = referenceMesh->GetAABB();
 
     UpdateVisuals();
 }
