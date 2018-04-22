@@ -33,7 +33,7 @@ static const int        TB_BYTES    = TB_PITCH * TB_HEIGHT;
 void BufferCacheManager::Init() {
     int vcSize = r_dynamicVertexCacheSize.GetInteger();
     int icSize = r_dynamicIndexCacheSize.GetInteger();
-    int ucSize = rhi.HWLimit().maxUniformBlockSize;
+    int ucSize = r_dynamicUniformCacheSize.GetInteger();
 
     // Create dynamic buffer for use dynamic batching
     for (int i = 0; i < COUNT_OF(frameData); i++) {

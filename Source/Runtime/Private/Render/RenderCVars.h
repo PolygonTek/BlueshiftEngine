@@ -35,6 +35,7 @@ extern CVar     r_gamma;
 extern CVar     r_swapInterval;
 extern CVar     r_dynamicVertexCacheSize;
 extern CVar     r_dynamicIndexCacheSize;
+extern CVar     r_dynamicUniformCacheSize;
 
 extern CVar     r_fastSkinning;
 extern CVar     r_vertexTextureUpdate;
