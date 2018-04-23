@@ -204,8 +204,10 @@ void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache
 }
 
 void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
-    if (0) {
-        //mtrlPass->instancingEnabled
+    if (0) {//instancingEnabled && numInstances > 1) {
+        //BufferCache instanceBufferCache;
+        //bufferCacheManager.AllocUniform(numInstances * sizeof(InstanceData), instanceDataBlock, &instanceBufferCache);
+        //rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, instanceBufferCache.buffer, instanceBufferCache.offset, instanceBufferCache.bytes);
         //shader->SetConstantBuffer("InstanceDataBlock", 0);
     } else {
         if (subMesh->useGpuSkinning) {
@@ -213,7 +215,7 @@ void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shad
         }
 
         if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst] >= 0) {
-            const Mat4 &localToWorldMatrix = surfSpace->def->GetObjectToWorldMatrix();
+            const Mat3x4 &localToWorldMatrix = surfSpace->def->GetObjectToWorldMatrix();
             shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst], localToWorldMatrix[0]);
             shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixTConst], localToWorldMatrix[1]);
             shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixRConst], localToWorldMatrix[2]);
@@ -712,28 +714,25 @@ void RBSurf::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale
 
 void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const {
     Vec4 lightVec;
-    Vec3 lightInvRadius;
 
     if (surfLight->def->state.type == RenderLight::DirectionalLight) {
         lightVec = Vec4(-surfLight->def->state.axis[0], 0);
-        lightInvRadius.SetFromScalar(0);
     } else {
         lightVec = Vec4(surfLight->def->state.origin, 1);
-        lightInvRadius = 1.0f / surfLight->def->GetRadius();
     }
-        
-    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.view->def->state.origin);
-
     shader->SetConstant4f(shader->builtInConstantIndices[Shader::LightVecConst], lightVec);
-    shader->SetConstant3f(shader->builtInConstantIndices[Shader::LightInvRadiusConst], lightInvRadius);
+
+    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, surfLight->viewProjTexMatrix);
+    shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::LightFallOffMatrixConst], true, surfLight->def->fallOffMatrix);
     shader->SetConstant1f(shader->builtInConstantIndices[Shader::LightFallOffExponentConst], surfLight->def->state.fallOffExponent);
 
-    shader->SetConstant1i("removeBackProjection", surfLight->def->state.type == RenderLight::SpotLight ? 1 : 0);
-        
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.view->def->state.origin);
+
     if (useShadowMap) {
         if (surfLight->def->state.type == RenderLight::PointLight) {
             shader->SetConstant2f("shadowProjectionDepth", backEnd.shadowProjectionDepth);
             shader->SetConstant1f("vscmBiasedScale", backEnd.ctx->vscmBiasedScale);
+
             shader->SetTexture("cubicNormalCubeMap", textureManager.cubicNormalCubeMapTexture);
             shader->SetTexture("indirectionCubeMap", backEnd.ctx->indirectionCubeMapTexture);
             shader->SetTexture("shadowMap", backEnd.ctx->vscmRT->DepthStencilTexture());
@@ -789,7 +788,6 @@ void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Sha
     const Material *lightMaterial = surfLight->def->GetMaterial();
 
     shader->SetTexture("lightProjectionMap", lightMaterial->GetPass()->texture);
-    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, surfLight->viewProjTexMatrix);
 
     Color4 lightColor = surfLight->lightColor * surfLight->def->state.intensity * r_lightScale.GetFloat();
     shader->SetConstant4f(shader->builtInConstantIndices[Shader::LightColorConst], lightColor);

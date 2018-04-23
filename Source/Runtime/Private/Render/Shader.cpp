@@ -49,9 +49,9 @@ static const char *builtInConstantNames[] = {
     "perforatedAlpha",                      // PerforatedAlphaConst
     "viewOrigin",                           // ViewOriginConst
     "lightVec",                             // LightVecConst
-    "lightInvRadius",                       // LightInvRadiusConst
     "lightTextureMatrix",                   // LightTextureMatrixConst
     "lightColor",                           // LightColorConst
+    "lightFallOffMatrix",                   // LightFallOffMatrixConst
     "lightFallOffExponent"                  // LightFallOffExponentConst
 };
 

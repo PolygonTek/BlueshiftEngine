@@ -52,18 +52,30 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
     BE1::Clamp(state.materialParms[RenderObject::BlueParm], 0.0f, 1.0f);
     BE1::Clamp(state.materialParms[RenderObject::AlphaParm], 0.0f, 1.0f);
 
+    // NOTE: shader 에서 이미 한번 square 처리가 되므로 여기서 sqrt 해준다
+    state.fallOffExponent = Math::Sqrt(state.fallOffExponent);
+
+    // Calculate view matrix with the given origin and axis
+    R_SetViewMatrix(state.axis, state.origin, viewMatrix);
+
     if (state.type == PointLight) {
         // Set bounding volume for point light
         worldOBB = OBB(state.origin, state.size, state.axis);
 
         // Calculate point light orthogonal projection matrix
-        R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0.0f, state.size[0], projMatrix);
+        R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], -state.size[0], state.size[0], projMatrix);
+
+        // Calculate light fall-off matrix
+        fallOffMatrix = projMatrix * viewMatrix;
     } else if (state.type == DirectionalLight) {
         // Bounding volume for box light
         worldOBB = OBB(state.origin + state.axis[0] * state.size[0] * 0.5f, Vec3(state.size[0] * 0.5f, state.size[1], state.size[2]), state.axis);
 
         // Calculate box light orthogonal projection matrix
-        R_SetOrthogonalProjectionMatrix(worldOBB.Extents()[1], worldOBB.Extents()[2], 0.0f, worldOBB.Extents()[0] * 2, projMatrix);
+        R_SetOrthogonalProjectionMatrix(worldOBB.Extents()[1], worldOBB.Extents()[2], 0, 2 * worldOBB.Extents()[0], projMatrix);
+
+        // No fall-off for directional light
+        fallOffMatrix = Mat3x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     } else if (state.type == SpotLight) {
         // Set bounding frustum for spot light
         worldFrustum.SetOrigin(state.origin);
@@ -75,15 +87,13 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
 
         // Calculate spot light perspective projection matrix
         R_SetPerspectiveProjectionMatrix(xFov, yFov, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), false, projMatrix);
+
+        // Calculate light fall-off matrix
+        R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0, state.size[0], fallOffMatrix);
+        fallOffMatrix = fallOffMatrix * viewMatrix;
     } else {
         assert(0);
     }
-
-    // NOTE: shader 에서 이미 한번 square 처리가 되므로 여기서 sqrt 해준다
-    state.fallOffExponent = Math::Sqrt(state.fallOffExponent);
-
-    // Calculate view matrix with the given origin and axis
-    R_SetViewMatrix(state.axis, state.origin, viewMatrix);
 
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5f, 0.0f, 0.0f, 0.5f), Vec4(0.0f, 0.5f, 0.0f, 0.5f), Vec4(0.0f, 0.0f, 0.5f, 0.5f), Vec4(0.0, 0.0, 0.0, 1.0f));
     viewProjScaleBiasMatrix = textureScaleBiasMatrix * projMatrix * viewMatrix;

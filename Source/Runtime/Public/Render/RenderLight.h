@@ -140,6 +140,7 @@ public:
     Mat4                    viewMatrix;
     Mat4                    projMatrix;
     Mat4                    viewProjScaleBiasMatrix;
+    Mat3x4                  fallOffMatrix;
 
     VisibleLight *          visibleLight;
     int                     viewCount;

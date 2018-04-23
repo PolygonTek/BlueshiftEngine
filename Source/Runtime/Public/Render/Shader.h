@@ -77,9 +77,9 @@ public:
         PerforatedAlphaConst,
         ViewOriginConst,
         LightVecConst,
-        LightInvRadiusConst,
         LightTextureMatrixConst,
         LightColorConst,
+        LightFallOffMatrixConst,
         LightFallOffExponentConst,
         MaxBuiltInConstants
     };

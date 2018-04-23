@@ -25,7 +25,6 @@ uniform vec4 lightColor;
 uniform float lightFallOffExponent;
 uniform bool useLightCube;
 uniform bool useShadowMap;
-uniform bool removeBackProjection;
 
 // TODO: to be replaced by 2dmap
 float toonify(float intensity) {
@@ -53,12 +52,6 @@ void main() {
 #ifdef USE_LIGHT_CUBE_MAP
 	if (useLightCube) {
 		Cl *= texCUBE(lightCubeMap, -L);
-	}
-#endif
-
-#ifndef USE_SHADOW_POINT
-	if (removeBackProjection) {
-		Cl *= min((v2f_lightProjection.z < 0.0 ? 0.0 : 10.0) * v2f_lightProjection.z / v2f_lightProjection.w, 1.0);
 	}
 #endif
 

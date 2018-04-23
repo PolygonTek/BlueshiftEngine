@@ -62,6 +62,7 @@ uniform vec4 lightVec;                  // light position or lgith direction in 
 uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
 uniform vec3 lightInvRadius;
+uniform mat4x3 lightFallOffMatrix;
 uniform mat4 lightTextureMatrix;
 uniform bool useShadowMap;
 
@@ -149,6 +150,7 @@ void main() {
 #endif
 
 #ifdef DIRECT_LIGHTING
+    // Light direction in world space
     vec3 worldL = lightVec.xyz - lightVec.w * worldPos.xyz;
 
     #ifdef USE_SHADOW_MAP
@@ -161,7 +163,7 @@ void main() {
 
     v2f_lightVector = worldL;
     v2f_lightProjection = lightTextureMatrix * worldPos;
-    v2f_lightFallOff = worldL * lightInvRadius;
+    v2f_lightFallOff = lightFallOffMatrix * worldPos;
 #endif
 
     v2f_tex.s = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
