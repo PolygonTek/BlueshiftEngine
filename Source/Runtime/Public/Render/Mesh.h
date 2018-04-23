@@ -55,7 +55,7 @@ public:
     enum Type {
         ReferenceMesh,      // 직접적으로 사용하지 않고, 다른 type 의 mesh 가 참조하는 용도로 사용한다.
         StaticMesh,         // vertex 데이터는 static buffer 에 들어간다.
-        DynamicMesh,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (will be deprecated)
+        DynamicMesh,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (GUI, text, particle)
         SkinnedMesh         // skinning 용 mesh
     };
 

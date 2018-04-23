@@ -145,7 +145,7 @@ public:
     const OBB &             GetWorldOBB() const { return worldOBB; }
 
                             /// Returns local to world matrix.
-    const Mat4 &            GetObjectToWorldMatrix() const { return worldMatrix; }
+    const Mat3x4 &          GetObjectToWorldMatrix() const { return worldMatrix; }
 
     int                     index;
     bool                    firstUpdate;
@@ -153,8 +153,8 @@ public:
     State                   state;
 
     OBB                     worldOBB;
-    Mat4                    worldMatrix;
-    Mat4                    prevWorldMatrix;
+    Mat3x4                  worldMatrix;
+    Mat3x4                  prevWorldMatrix;
 
     VisibleObject *         visibleObject;
     int                     viewCount;

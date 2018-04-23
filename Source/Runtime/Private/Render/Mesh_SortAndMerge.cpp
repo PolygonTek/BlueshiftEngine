@@ -36,17 +36,17 @@ static bool ListSortCompareMergedAABBArea(const MeshSurfPtr &a, const MeshSurfPt
     const AABB &aAABB = (a)->subMesh->GetAABB();
     const AABB &bAABB = (b)->subMesh->GetAABB();
 
-    float area_a = (mergeAABB + aAABB).Area();
-    float area_b = (mergeAABB + bAABB).Area();
+    float aArea = (mergeAABB + aAABB).Area();
+    float bArea = (mergeAABB + bAABB).Area();
 
-    if (area_a == area_b) {
-        float dist_a = aAABB.DistanceSqr(mergeAABB.Center());
-        float dist_b = bAABB.DistanceSqr(mergeAABB.Center());
+    if (aArea == bArea) {
+        float aDist = aAABB.DistanceSqr(mergeAABB.Center());
+        float bDist = bAABB.DistanceSqr(mergeAABB.Center());
 
-        return dist_a < dist_b;
+        return aDist < bDist;
     }
 
-    return area_a < area_b;
+    return aArea < bArea;
 }
 
 void Mesh::SortAndMerge() {

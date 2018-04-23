@@ -210,11 +210,14 @@ static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat
                 continue;
             }
 
-            if (surf->material != prevMaterial || surf->space != prevSpace) {
+            bool isDifferentObject = surf->space != prevSpace;
+            bool isDifferentMaterial = surf->material != prevMaterial;
+
+            if (isDifferentMaterial || isDifferentObject) {
                 if (!prevMaterial) {
                     backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
                 } else {
-                    if (surf->space != prevSpace ||
+                    if (isDifferentObject ||
                         (prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
                         backEnd.rbsurf.Flush();
                         backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
@@ -222,22 +225,22 @@ static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat
                 }
 
                 prevMaterial = surf->material;
-            }
 
-            if (surf->space != prevSpace) {
-                prevSpace = surf->space;
+                if (isDifferentObject) {
+                    prevSpace = surf->space;
 
-                if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
-                    continue;
+                    if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
+                        continue;
+                    }
+
+                    OBB obb(surf->space->def->GetLocalAABB(), surf->space->def->state.origin, surf->space->def->state.axis);
+                    if (lightFrustum.CullOBB(obb)) {
+                        skipObject = surf->space;
+                        continue;
+                    }
+
+                    skipObject = nullptr;
                 }
-                
-                OBB obb(surf->space->def->GetLocalAABB(), surf->space->def->state.origin, surf->space->def->state.axis);
-                if (lightFrustum.CullOBB(obb)) {
-                    skipObject = surf->space;
-                    continue;
-                }
-
-                skipObject = nullptr;
             }
 
             prevSortkey = surf->sortKey;
@@ -408,11 +411,14 @@ static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &vi
                 continue;
             }
 
-            if (surf->material != prevMaterial || surf->space != prevSpace) {
+            bool isDifferentObject = surf->space != prevSpace;
+            bool isDifferentMaterial = surf->material != prevMaterial;
+
+            if (isDifferentMaterial || isDifferentObject) {
                 if (!prevMaterial) {
                     backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
                 } else {
-                    if (surf->space != prevSpace ||
+                    if (isDifferentObject ||
                         (prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) ||
                         (surf->material->GetCullType() != prevMaterial->GetCullType())) {
                         backEnd.rbsurf.Flush();
@@ -421,17 +427,17 @@ static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &vi
                 }
 
                 prevMaterial = surf->material;
-            }
 
-            if (surf->space != prevSpace) {
-                prevSpace = surf->space;
+                if (isDifferentObject) {
+                    prevSpace = surf->space;
 
-                if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
-                    skipObject = surf->space;
-                    continue;
+                    if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
+                        skipObject = surf->space;
+                        continue;
+                    }
+
+                    skipObject = nullptr;
                 }
-
-                skipObject = nullptr;
             }
 
             prevSortkey = surf->sortKey;

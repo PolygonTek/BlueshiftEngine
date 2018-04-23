@@ -569,7 +569,10 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                 continue;
             }
 
-            if (surf->material != prevMaterial || surf->space != prevSpace) {
+            bool isDifferentObject = surf->space != prevSpace;
+            bool isDifferentMaterial = surf->material != prevMaterial;
+
+            if (isDifferentMaterial || isDifferentObject) {
                 if (prevMaterial) {
                     backEnd.rbsurf.Flush();
                 }
@@ -577,24 +580,24 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                 backEnd.rbsurf.Begin(RBSurf::TriFlush, surf->material, surf->materialRegisters, surf->space, nullptr);
 
                 prevMaterial = surf->material;
-            }
 
-            if (surf->space != prevSpace) {
-                prevSpace = surf->space;
+                if (isDifferentObject) {
+                    prevSpace = surf->space;
 
-                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                    backEnd.modelViewMatrix = surf->space->modelViewMatrix;
+                    backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                depthhack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
-            
-                if (prevDepthHack != depthhack) {
-                    if (depthhack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
-                    } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                    depthhack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+
+                    if (prevDepthHack != depthhack) {
+                        if (depthhack) {
+                            rhi.SetDepthRange(0.0f, 0.1f);
+                        } else {
+                            rhi.SetDepthRange(0.0f, 1.0f);
+                        }
+
+                        prevDepthHack = depthhack;
                     }
-
-                    prevDepthHack = depthhack;
                 }
             }
 

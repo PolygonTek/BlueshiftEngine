@@ -535,9 +535,9 @@ bool GameWorld::LoadMap(const char *filename) {
     mapRenderSettings->Deserialize(map["renderSettings"]);
     mapRenderSettings->Init();
 
-    // Read entities
+    // Read and spawn entities
     SpawnEntitiesFromJson(map["entities"]);
-    
+
     fileSystem.FreeFile(text);
 
     FinishMapLoading();
