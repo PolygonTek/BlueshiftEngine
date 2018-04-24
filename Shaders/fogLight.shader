@@ -1,6 +1,7 @@
 shader "fogLight" {
 	generateGpuSkinningVersion
-	
+    generateGpuInstancingVersion
+
 	glsl_vp {
 		$include "foglight.vp" 
 	}

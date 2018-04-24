@@ -134,6 +134,7 @@ public:
     Shader *                GetSpotShadowVersion();
     Shader *                GetPointShadowVersion();
     Shader *                GetGPUSkinningVersion(int index);
+    Shader *                GetGPUInstancingVersion();
 
     void                    Bind() const;
 
@@ -227,13 +228,14 @@ public:
 
 private:
     bool                    ParseProperties(Lexer &lexer);
-    Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinning);
-    bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText);
-    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion);
-    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion);
+    Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinningWeightCount, bool instancing);
+    bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool instancing);
+    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion, bool generateGpuInstancingVersion);
+    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion, bool generateGpuInstancingVersion);
     bool                    Instantiate(const Array<Define> &defineArray);  // internal function of instantiate
 
-    bool                    Finish(bool generatePerforatedVersion, bool genereatePremulAlphaVersion, bool genereateGpuSkinningVersion, bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir);
+    bool                    Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion,
+                                bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion);
     bool                    ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
     bool                    ProcessIncludeRecursive(const char *baseDir, Str &text) const;
 
@@ -269,6 +271,7 @@ private:
     Shader *                spotShadowVersion;
     Shader *                pointShadowVersion;
     Shader *                gpuSkinningVersion[3];
+    Shader *                gpuInstancingVersion;
 
     StrHashMap<PropertyInfo> propertyInfoHashMap;
 };
@@ -291,6 +294,7 @@ BE_INLINE Shader::Shader() {
     gpuSkinningVersion[0]   = nullptr;
     gpuSkinningVersion[1]   = nullptr;
     gpuSkinningVersion[2]   = nullptr;
+    gpuInstancingVersion    = nullptr;
     originalShader          = nullptr;
 }
 

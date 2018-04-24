@@ -17,6 +17,9 @@ struct InstanceData {
     vec4 localToWorldMatrixS;
     vec4 localToWorldMatrixT;
     vec4 localToWorldMatrixR;
+    //vec4 worldToLocalMatrixS;
+    //vec4 worldToLocalMatrixT;
+    //vec4 worldToLocalMatrixR;
     LOWP vec4 constantColor;
 };
 
@@ -29,4 +32,7 @@ UNIFORM_BLOCK InstanceDataBlock {
 #define localToWorldMatrixS instance.localToWorldMatrixS
 #define localToWorldMatrixT instance.localToWorldMatrixT
 #define localToWorldMatrixR instance.localToWorldMatrixR
+//#define worldToLocalMatrixS instance.worldToLocalMatrixS
+//#define worldToLocalMatrixT instance.worldToLocalMatrixT
+//#define worldToLocalMatrixR instance.worldToLocalMatrixR
 #define constantColor instance.constantColor

@@ -1,6 +1,7 @@
 shader "constantColor" {
 	generatePerforatedVersion
 	generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
 	glsl_vp {
 		in vec4 in_position : POSITION;

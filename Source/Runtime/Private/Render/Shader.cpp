@@ -128,6 +128,11 @@ void Shader::Purge() {
         }
     }
 
+    if (gpuInstancingVersion) {
+        shaderManager.ReleaseShader(gpuInstancingVersion);
+        gpuInstancingVersion = nullptr;
+    }
+
     defineArray.Clear();
     propertyInfoHashMap.Clear();
 }
@@ -136,6 +141,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
     bool generatePerforatedVersion = false;
     bool generatePremulAlphaVersion = false;
     bool generateGpuSkinningVersion = false;
+    bool generateGpuInstancingVersion = false;
     bool generateParallelShadowVersion = false;
     bool generatePointShadowVersion = false;
     bool generateSpotShadowVersion = false;
@@ -273,12 +279,14 @@ bool Shader::Create(const char *text, const char *baseDir) {
             generatePremulAlphaVersion = true;
         } else if (!token.Icmp("generateGpuSkinningVersion")) {
             generateGpuSkinningVersion = true;
+        } else if (!token.Icmp("generateGpuInstancingVersion")) {
+            generateGpuInstancingVersion = true;
         } else if (!token.Icmp("generateParallelShadowVersion")) {
             generateParallelShadowVersion = true;
         } else if (!token.Icmp("generatePointShadowVersion")) {
             generatePointShadowVersion = true;
         } else if (!token.Icmp("generateSpotShadowVersion")) {
-            generateSpotShadowVersion = true;
+            generateSpotShadowVersion = true;        
         } else if (!token.Icmp("glsl_vp")) {
             lexer.ParseBracedSectionExact(vsText);
         } else if (!token.Icmp("glsl_fp")) {
@@ -288,7 +296,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
         }
     }
 
-    return Finish(generatePerforatedVersion, generatePremulAlphaVersion, generateGpuSkinningVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion, baseDir);
+    return Finish(generatePerforatedVersion, generateGpuSkinningVersion, generateGpuInstancingVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion);
 }
 
 bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
@@ -438,11 +446,11 @@ bool Shader::ParseProperties(Lexer &lexer) {
     return true;
 }
 
-Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinning) {
+Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinningWeightCount, bool instancing) {
     Str skinningPostfix;
     Str skinningVsHeaderText;
 
-    switch (skinning) {
+    switch (skinningWeightCount) {
     case 0:
         skinningPostfix = "";
         break;
@@ -463,7 +471,15 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         break;
     }
 
-    Str shaderName = name + shaderNamePostfix + skinningPostfix;
+    Str instancingPostfix;
+    Str instancingVsHeaderText;
+
+    if (instancing) {
+        instancingPostfix = "-instancing";
+        instancingVsHeaderText = "#define INSTANCING\n";
+    }
+
+    Str shaderName = hashName + shaderNamePostfix + skinningPostfix + instancingPostfix;
     Shader *shader = shaderManager.FindShader(shaderName);
     if (shader) {
         shader->AddRefCount();
@@ -473,7 +489,7 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
     shader = shaderManager.AllocShader(shaderName);
 
     Str text = "{\n";
-    text += "glsl_vp { " + vsHeaderText + skinningVsHeaderText + vsText + " }\n";
+    text += "glsl_vp { " + vsHeaderText + skinningVsHeaderText + instancingVsHeaderText + vsText + " }\n";
     text += "glsl_fp { " + fsHeaderText + fsText + " }\n";
     text += "}";
     if (!shader->Create(text, baseDir)) {
@@ -485,35 +501,58 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
     return shader;
 }
 
-bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText) {
+bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool generateGpuInstancingVersion) {
     if (!shader->gpuSkinningVersion[0]) {
-        shader->gpuSkinningVersion[0] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 1);
+        shader->gpuSkinningVersion[0] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 1, false);
         if (!shader->gpuSkinningVersion[0]) {
             return false;
         }
     }
 
     if (!shader->gpuSkinningVersion[1]) {
-        shader->gpuSkinningVersion[1] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 4);
+        shader->gpuSkinningVersion[1] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 4, false);
         if (!shader->gpuSkinningVersion[1]) {
             return false;
         }
     }
 
     if (!shader->gpuSkinningVersion[2]) {
-        shader->gpuSkinningVersion[2] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 8);
+        shader->gpuSkinningVersion[2] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 8, false);
         if (!shader->gpuSkinningVersion[2]) {
             return false;
+        }
+    }
+
+    if (generateGpuInstancingVersion) {
+        if (!shader->gpuSkinningVersion[0]->gpuInstancingVersion) {
+            shader->gpuSkinningVersion[0]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 1, true);
+            if (!shader->gpuSkinningVersion[0]->gpuInstancingVersion) {
+                return false;
+            }
+        }
+
+        if (!shader->gpuSkinningVersion[1]->gpuInstancingVersion) {
+            shader->gpuSkinningVersion[1]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 4, true);
+            if (!shader->gpuSkinningVersion[1]->gpuInstancingVersion) {
+                return false;
+            }
+        }
+
+        if (!shader->gpuSkinningVersion[2]->gpuInstancingVersion) {
+            shader->gpuSkinningVersion[2]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 8, true);
+            if (!shader->gpuSkinningVersion[2]->gpuInstancingVersion) {
+                return false;
+            }
         }
     }
 
     return true;
 }
 
-bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion) {
+bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
     if (!shader->perforatedVersion) {
         shader->perforatedVersion = GenerateSubShader(shaderNamePostfix + "-perforated",
-            vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", 0);
+            vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", 0, false);
         if (!shader->perforatedVersion) {
             return false;
         }
@@ -521,18 +560,35 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
 
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(shader->perforatedVersion,
-            shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n")) {
+            shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", false)) {
             return false;
+        }
+    }
+
+    if (generateGpuInstancingVersion) {
+        if (!shader->perforatedVersion->gpuInstancingVersion) {
+            shader->perforatedVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix + "-perforated",
+                vsHeaderText + "#define PERFORATED\n#define INSTANCING\n", fsHeaderText + "#define PERFORATED\n", 0, true);
+            if (!shader->perforatedVersion->gpuInstancingVersion) {
+                return false;
+            }
+        }
+
+        if (genereateGpuSkinningVersion) {
+            if (!GenerateGpuSkinningVersion(shader->perforatedVersion->gpuInstancingVersion,
+                shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n#define INSTANCING\n", fsHeaderText + "#define PERFORATED\n", true)) {
+                return false;
+            }
         }
     }
 
     return true;
 }
 
-bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion) {
+bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
     if (!shader->premulAlphaVersion) {
         shader->premulAlphaVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
-            vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0);
+            vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0, false);
         if (!shader->premulAlphaVersion) {
             return false;
         }
@@ -540,30 +596,50 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
 
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion,
-            shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n")) {
+            shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", false)) {
             return false;
+        }
+    }
+
+    if (generateGpuInstancingVersion) {
+        if (!shader->premulAlphaVersion->gpuInstancingVersion) {
+            shader->premulAlphaVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
+                vsHeaderText + "#define PREMULTIPLIED_ALPHA\n#define INSTANCING\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0, true);
+            if (!shader->premulAlphaVersion->gpuInstancingVersion) {
+                return false;
+            }
+        }
+
+        if (genereateGpuSkinningVersion) {
+            if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion->gpuInstancingVersion,
+                shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n#define INSTANCING\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", true)) {
+                return false;
+            }
         }
     }
 
     return true;
 }
 
-bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVersion, bool genereateGpuSkinningVersion, 
-    bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion, const char *baseDir) {
+bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion,
+    bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion) {
+    if (generateGpuInstancingVersion) {
+        if (!gpuInstancingVersion) {
+            gpuInstancingVersion = GenerateSubShader("", "", "", 0, true);
+            if (!gpuInstancingVersion) {
+                return false;
+            }
+        }
+    }
+
     if (genereateGpuSkinningVersion) {
-        if (!GenerateGpuSkinningVersion(this, "", "", "")) {
+        if (!GenerateGpuSkinningVersion(this, "", "", "", generateGpuInstancingVersion)) {
             return false;
         }
     }
 
     if (generatePerforatedVersion) {
-        if (!GeneratePerforatedVersion(this, "", "", "", genereateGpuSkinningVersion)) {
-            return false;
-        }
-    }
-
-    if (generatePremulAlphaVersion) {
-        if (!GeneratePremulAlphaVersion(this, "", "", "", genereateGpuSkinningVersion)) {
+        if (!GeneratePerforatedVersion(this, "", "", "", genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
             return false;
         }
     }
@@ -574,20 +650,27 @@ bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVers
         const Str fsHeaderText = "#define USE_SHADOW_CASCADE\n";
 
         if (!parallelShadowVersion) {
-            parallelShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0);
+            parallelShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
             if (!parallelShadowVersion) {
                 return false;
+            }
+
+            if (!parallelShadowVersion->gpuInstancingVersion) {
+                parallelShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+                if (!parallelShadowVersion->gpuInstancingVersion) {
+                    return false;
+                }
             }
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText)) {
+            if (!GenerateGpuSkinningVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion)) {
+            if (!GeneratePerforatedVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
@@ -599,20 +682,27 @@ bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVers
         const Str fsHeaderText = "#define USE_SHADOW_SPOT\n";
 
         if (!spotShadowVersion) {
-            spotShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0);
+            spotShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
             if (!spotShadowVersion) {
                 return false;
+            }
+
+            if (!spotShadowVersion->gpuInstancingVersion) {
+                spotShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+                if (!spotShadowVersion->gpuInstancingVersion) {
+                    return false;
+                }
             }
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText)) {
+            if (!GenerateGpuSkinningVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion)) {
+            if (!GeneratePerforatedVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
@@ -624,20 +714,27 @@ bool Shader::Finish(bool generatePerforatedVersion, bool generatePremulAlphaVers
         const Str fsHeaderText = "#define USE_SHADOW_POINT\n";
 
         if (!pointShadowVersion) {
-            pointShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0);
+            pointShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
             if (!pointShadowVersion) {
                 return false;
+            }
+
+            if (!pointShadowVersion->gpuInstancingVersion) {
+                pointShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+                if (!pointShadowVersion->gpuInstancingVersion) {
+                    return false;
+                }
             }
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText)) {
+            if (!GenerateGpuSkinningVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion)) {
+            if (!GeneratePerforatedVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
@@ -826,6 +923,21 @@ Shader *Shader::GetGPUSkinningVersion(int index) {
     return nullptr;
 }
 
+Shader *Shader::GetGPUInstancingVersion() {
+    if (gpuInstancingVersion) {
+        return gpuInstancingVersion;
+    }
+
+    if (originalShader) {
+        if (originalShader->gpuInstancingVersion) {
+            gpuInstancingVersion = originalShader->gpuInstancingVersion->InstantiateShader(defineArray);
+            return gpuInstancingVersion;
+        }
+    }
+
+    return nullptr;
+}
+
 void Shader::Reinstantiate() {
     assert(originalShader);
     Instantiate(defineArray);
@@ -955,6 +1067,20 @@ void Shader::Reinstantiate() {
                 shaderManager.ReleaseShader(gpuSkinningVersion[i]);
                 gpuSkinningVersion[i] = nullptr;
             }
+        }
+    }
+
+    if (originalShader->gpuInstancingVersion) {
+        if (gpuInstancingVersion) {
+            gpuInstancingVersion->originalShader = originalShader->gpuInstancingVersion;
+            gpuInstancingVersion->Reinstantiate();
+        } else {
+            gpuInstancingVersion = originalShader->gpuInstancingVersion->InstantiateShader(defineArray);
+        }
+    } else {
+        if (gpuInstancingVersion) {
+            shaderManager.ReleaseShader(gpuInstancingVersion);
+            gpuInstancingVersion = nullptr;
         }
     }
 }
@@ -1508,15 +1634,18 @@ void Shader::SetTextureArray(const char *name, int num, const Texture **textures
 }
 
 bool Shader::Load(const char *hashName) {
+    Str filename = hashName;
+    filename.DefaultFileExtension(".shader");
+
     char *data;
-    size_t size = fileSystem.LoadFile(hashName, true, (void **)&data);
+    size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
         return false;
     }
 
     Lexer lexer;
     lexer.Init(LexerFlag::LEXFL_NOERRORS);
-    lexer.Load(data, (int)size, hashName);
+    lexer.Load(data, (int)size, filename);
 
     if (!lexer.ExpectTokenString("shader")) {
         fileSystem.FreeFile(data);
@@ -1529,7 +1658,7 @@ bool Shader::Load(const char *hashName) {
         return false;
     }
 
-    Str baseDir = hashName;
+    Str baseDir = filename;
     baseDir.StripFileName();
     Create(data + lexer.GetCurrentOffset(), baseDir);
 

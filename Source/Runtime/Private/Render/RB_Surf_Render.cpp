@@ -22,21 +22,25 @@ BE_NAMESPACE_BEGIN
 
 void RBSurf::DrawPrimitives() const {
     rhi.BindBuffer(RHI::IndexBuffer, ibHandle);
-    
-    if (numInstances > 1) {
+
+    if (numInstances >= 1) {
         rhi.DrawElementsInstanced(RHI::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0, numInstances);
+
+        rhi.BindIndexedBuffer(RHI::UniformBuffer, 0, RHI::NullBuffer);
     } else {
         rhi.DrawElements(RHI::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0);
     }
 
+    int instanceCount = Max(numInstances, 1);
+
     if (flushType == ShadowFlush) {
         backEnd.ctx->renderCounter.shadowDrawCalls++;
-        backEnd.ctx->renderCounter.shadowDrawIndexes += numIndexes;
-        backEnd.ctx->renderCounter.shadowDrawVerts += numVerts;
+        backEnd.ctx->renderCounter.shadowDrawIndexes += numIndexes * instanceCount;
+        backEnd.ctx->renderCounter.shadowDrawVerts += numVerts * instanceCount;
     } else {
         backEnd.ctx->renderCounter.drawCalls++;
-        backEnd.ctx->renderCounter.drawIndexes += numIndexes;
-        backEnd.ctx->renderCounter.drawVerts += numVerts;
+        backEnd.ctx->renderCounter.drawIndexes += numIndexes * instanceCount;
+        backEnd.ctx->renderCounter.drawVerts += numVerts * instanceCount;
     }
 }
 
@@ -190,10 +194,19 @@ void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache
         shader->SetTexture("jointsMap", jointsMapTexture);
 
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-            shader->SetConstant1i("tcBase", cache->bufferCache.tcBase[0]);
+            if (numInstances >= 1) {
+                shader->SetConstantArray1i("tcBase", numInstances, (const int *)skinnedMeshInstanceDataTable);
+            } else {
+                shader->SetConstant1i("tcBase", cache->bufferCache.tcBase[0]);
+            }
         } else {
             shader->SetConstant2f("invJointsMapSize", Vec2(1.0f / jointsMapTexture->GetWidth(), 1.0f / jointsMapTexture->GetHeight()));
-            shader->SetConstant2f("tcBase", Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
+
+            if (numInstances >= 1) {
+                shader->SetConstantArray2f("tcBase", numInstances, (const Vec2 *)skinnedMeshInstanceDataTable);
+            } else {
+                shader->SetConstant2f("tcBase", Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
+            }
         }
 
         if (r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
@@ -204,16 +217,18 @@ void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache
 }
 
 void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
-    if (0) {//instancingEnabled && numInstances > 1) {
-        //BufferCache instanceBufferCache;
-        //bufferCacheManager.AllocUniform(numInstances * sizeof(InstanceData), instanceDataBlock, &instanceBufferCache);
-        //rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, instanceBufferCache.buffer, instanceBufferCache.offset, instanceBufferCache.bytes);
-        //shader->SetConstantBuffer("InstanceDataBlock", 0);
-    } else {
-        if (subMesh->useGpuSkinning) {
-            SetSkinningConstants(shader, surfSpace->def->state.mesh->skinningJointCache);
-        }
+    if (subMesh->useGpuSkinning) {
+        SetSkinningConstants(shader, surfSpace->def->state.mesh->skinningJointCache);
+    }
 
+    if (numInstances >= 1) {
+        BufferCache instanceBufferCache;
+        bufferCacheManager.AllocUniform(numInstances * sizeof(InstanceData), instanceDataTable, &instanceBufferCache);
+
+        rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, instanceBufferCache.buffer, instanceBufferCache.offset, instanceBufferCache.bytes);
+
+        shader->SetConstantBuffer("InstanceDataBlock", 0);
+    } else {
         if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst] >= 0) {
             const Mat3x4 &localToWorldMatrix = surfSpace->def->GetObjectToWorldMatrix();
             shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst], localToWorldMatrix[0]);
@@ -343,6 +358,12 @@ void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
+        }
+    }
+    
     shader->Bind();
 
     SetMatrixConstants(shader);
@@ -444,11 +465,17 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
             }
         }
 
+        if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+            if (shader->GetGPUInstancingVersion()) {
+                shader = shader->GetGPUInstancingVersion();
+            }
+        }
+
         shader->Bind();
         SetShaderProperties(shader, mtrlPass->shaderProperties);
     } else {
         shader = ShaderManager::standardDefaultShader;
-
+                
         if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
             if (shader->GetPerforatedVersion()) {
                 shader = shader->GetPerforatedVersion();
@@ -459,6 +486,12 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
             Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
             if (skinningShader) {
                 shader = skinningShader;
+            }
+        }
+
+        if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+            if (shader->GetGPUInstancingVersion()) {
+                shader = shader->GetGPUInstancingVersion();
             }
         }
 
@@ -492,6 +525,12 @@ void RBSurf::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSc
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
+        }
+    }
+
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
         }
     }
 
@@ -530,6 +569,12 @@ void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambien
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
+        }
+    }
+
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
         }
     }
 
@@ -610,6 +655,12 @@ void RBSurf::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float
         }
     }
 
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
+        }
+    }
+
     shader->Bind();
 
     shader->SetConstant1f("ambientScale", ambientScale);
@@ -663,6 +714,12 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, fl
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
+        }
+    }
+
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
         }
     }
 
@@ -830,6 +887,12 @@ void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const 
         }
     }
 
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
+        }
+    }
+
     shader->Bind();
 
     shader->SetConstant1f("ambientScale", 0);
@@ -866,6 +929,12 @@ void RBSurf::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) con
         }
     }
 
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
+        }
+    }
+
     shader->Bind();
 
     // light texture transform matrix
@@ -897,6 +966,12 @@ void RBSurf::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) c
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
+        }
+    }
+
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
         }
     }
 

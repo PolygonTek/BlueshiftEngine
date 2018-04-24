@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Heap.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "RBackEnd.h"
@@ -31,24 +32,83 @@ void RBSurf::Init() {
     numIndexes = 0;
     numInstances = 0;
 
+    maxInstances = rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment;
+
+    instanceDataTable = (InstanceData *)Mem_Alloc16(sizeof(InstanceData) * maxInstances);
+
+    skinnedMeshInstanceDataTable = nullptr;
+
+    if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
+        if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+            skinnedMeshInstanceDataTable = Mem_Alloc16(sizeof(int) * maxInstances);
+        } else if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
+            skinnedMeshInstanceDataTable = Mem_Alloc16(sizeof(Vec2) * maxInstances);
+        }
+    }
+
     material = nullptr;
     subMesh = nullptr;
     surfSpace = nullptr;
 }
 
 void RBSurf::Shutdown() {
+    if (instanceDataTable) {
+        Mem_AlignedFree(instanceDataTable);
+        instanceDataTable = nullptr;
+    }
+    if (skinnedMeshInstanceDataTable) {
+        Mem_AlignedFree(skinnedMeshInstanceDataTable);
+        skinnedMeshInstanceDataTable = nullptr;
+    }
 }
 
 void RBSurf::EndFrame() {
     startIndex = -1;
 }
 
-void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace, const VisibleLight *surfLight) {
+void RBSurf::SetCurrentLight(const VisibleLight *surfLight) {
+    this->surfLight = surfLight;
+}
+
+void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace) {
     this->flushType = flushType;
     this->material = const_cast<Material *>(material);
     this->materialRegisters = materialRegisters;
     this->surfSpace = surfSpace;
-    this->surfLight = surfLight;
+}
+
+void RBSurf::AddInstance(const DrawSurf *drawSurf) {
+    if (numInstances >= maxInstances) {
+        Flush();
+    }
+
+    const RenderObject *objectDef = drawSurf->space->def;
+
+    const Mat3x4 &localToWorldMatrix = objectDef->GetObjectToWorldMatrix();
+    instanceDataTable[numInstances].localToWorldMatrixS = localToWorldMatrix[0];
+    instanceDataTable[numInstances].localToWorldMatrixT = localToWorldMatrix[1];
+    instanceDataTable[numInstances].localToWorldMatrixR = localToWorldMatrix[2];
+
+    /*Mat3x4 worldToLocalMatrix = Mat3x4(surfSpace->def->state.axis.Transpose(), -surfSpace->def->state.origin);
+    instanceDataTable[numInstances].worldToLocalMatrixS = worldToLocalMatrix[0];
+    instanceDataTable[numInstances].worldToLocalMatrixT = worldToLocalMatrix[1];
+    instanceDataTable[numInstances].worldToLocalMatrixR = worldToLocalMatrix[2];*/
+
+    instanceDataTable[numInstances].constantColor = material->GetPass()->useOwnerColor ? reinterpret_cast<const Color4 &>(objectDef->state.materialParms[RenderObject::RedParm]) : material->GetPass()->constantColor;
+
+    if (drawSurf->subMesh->IsGpuSkinning()) {
+        SkinningJointCache *skinningJointCache = objectDef->state.mesh->skinningJointCache;
+
+        if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+            int *table = (int *)skinnedMeshInstanceDataTable;
+            table[numInstances] = skinningJointCache->bufferCache.tcBase[0];
+        } else {
+            Vec2 *table = (Vec2 *)skinnedMeshInstanceDataTable;
+            table[numInstances] = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
+        }
+    }
+
+    numInstances++;
 }
 
 void RBSurf::DrawSubMesh(SubMesh *subMesh) {
@@ -62,12 +122,11 @@ void RBSurf::DrawSubMesh(SubMesh *subMesh) {
 }
 
 void RBSurf::DrawStaticSubMesh(SubMesh *subMesh) {
-    // 버퍼에 남아있는 dynamic mesh 를 그린다
-    if (this->numIndexes) {
+    if (this->subMesh && this->subMesh->refSubMesh != subMesh->refSubMesh) {
         Flush();
     }
 
-    if (this->subMesh != subMesh) {
+    if (!this->subMesh || this->subMesh->refSubMesh != subMesh->refSubMesh) {
         this->subMesh = subMesh;
 
         this->vbHandle = subMesh->vertexCache->buffer;
@@ -78,11 +137,6 @@ void RBSurf::DrawStaticSubMesh(SubMesh *subMesh) {
 
         this->startIndex = 0;
     }
-
-    // instancing 가능하다면 UBO 에 entity 데이터를 채운다.
-    
-    // instancing 가능하지 않다면 바로 Flush
-    Flush();
 }
 
 void RBSurf::DrawDynamicSubMesh(SubMesh *subMesh) {

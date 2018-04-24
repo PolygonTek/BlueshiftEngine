@@ -30,10 +30,11 @@ shader "Lit/Phong" {
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
-    ambientLitVersion "PhongAmbientLit.shader"
-    directLitVersion "PhongDirectLit.shader"
-    ambientLitDirectLitVersion "PhongAmbientLitDirectLit.shader"
+    ambientLitVersion "PhongAmbientLit"
+    directLitVersion "PhongDirectLit"
+    ambientLitDirectLitVersion "PhongAmbientLitDirectLit"
 
     glsl_vp {
         $include "StandardCore.vp"

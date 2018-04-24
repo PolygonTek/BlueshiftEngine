@@ -256,6 +256,10 @@ void OpenGLRHI::InitGL() {
     gglGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &hwLimit.maxUniformBlockSize);
     BE_LOG(L"Maximum uniform block size: %i\n", hwLimit.maxUniformBlockSize);
 
+    // the minimum required alignment for uniform buffer sizes and offset.
+    gglGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &hwLimit.uniformBufferOffsetAlignment);
+    BE_LOG(L"Maximum uniform buffer alignment offset: %i\n", hwLimit.uniformBufferOffsetAlignment);
+
     // GL_ARB_framebuffer_object (3.0)
     gglGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &hwLimit.maxRenderBufferSize);
     gglGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &hwLimit.maxColorAttachments);

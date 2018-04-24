@@ -60,13 +60,16 @@ const GLenum ToGLBufferTarget(RHI::BufferType type) {
 RHI::Handle OpenGLRHI::CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch, const void *data) {
     GLenum target = ToGLBufferTarget(type);
 
-    GLBuffer *buffer    = new GLBuffer;
-    buffer->type        = type;
-    buffer->usage       = ToGLBufferUsage(usage);
-    buffer->target      = target;
-    buffer->size        = size;
-    buffer->pitch       = pitch;
+    GLBuffer *buffer = new GLBuffer;
+    buffer->type = type;
+    buffer->usage = ToGLBufferUsage(usage);
+    buffer->target = target;
+    buffer->size = size;
+    buffer->pitch = pitch;
     buffer->writeOffset = 0;
+    buffer->bindingIndex = -1;
+    buffer->bindingOffset = 0;
+    buffer->bindingSize = 0;
 
     gglGenBuffers(1, &buffer->object);
 
@@ -122,9 +125,12 @@ void OpenGLRHI::BindIndexedBuffer(BufferType type, int bindingIndex, Handle buff
     assert(type == UniformBuffer || type == TransformFeedbackBuffer);
     int targetIndex = type - UniformBuffer;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
-    if (*bufferHandlePtr != bufferHandle) {
+    GLBuffer *buffer = bufferList[bufferHandle];
+    if (*bufferHandlePtr != bufferHandle || buffer->bindingIndex != bindingIndex || buffer->bindingOffset != 0 || buffer->bindingSize != buffer->size) {
         *bufferHandlePtr = bufferHandle;
-        const GLBuffer *buffer = bufferList[bufferHandle];
+        buffer->bindingIndex = bindingIndex;
+        buffer->bindingOffset = 0;
+        buffer->bindingSize = buffer->size;
         gglBindBufferBase(ToGLBufferTarget(type), bindingIndex, buffer->object);
     }
 }
@@ -134,9 +140,12 @@ void OpenGLRHI::BindIndexedBufferRange(BufferType type, int bindingIndex, Handle
     assert(type == UniformBuffer || type == TransformFeedbackBuffer);
     int targetIndex = type - UniformBuffer;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
-    if (*bufferHandlePtr != bufferHandle) {
+    GLBuffer *buffer = bufferList[bufferHandle];
+    if (*bufferHandlePtr != bufferHandle || buffer->bindingIndex != bindingIndex || buffer->bindingOffset != offset || buffer->bindingSize != size) {
         *bufferHandlePtr = bufferHandle;
-        const GLBuffer *buffer = bufferList[bufferHandle];
+        buffer->bindingIndex = bindingIndex;
+        buffer->bindingOffset = offset;
+        buffer->bindingSize = size;
         gglBindBufferRange(ToGLBufferTarget(type), bindingIndex, buffer->object, offset, size);
     }
 }

@@ -222,7 +222,6 @@ void ShaderManager::InitGlobalDefines() {
 void ShaderManager::LoadEngineShaders() {
     for (int i = 0; i < COUNT_OF(originalShaderList); i++) {
         Str filename = originalShaderList[i].filename;
-        filename.SetFileExtension(".shader");
 
         Shader *shader = AllocShader(filename);
         if (!shader->Load(filename)) {
@@ -402,9 +401,9 @@ Shader *ShaderManager::AllocShader(const char *hashName) {
 
     Shader *shader = new Shader;
     shader->hashName = hashName;
+    shader->hashName.StripFileExtension(); // Remove '.shader'
     shader->name = hashName;
     shader->name.StripPath();
-    shader->name.StripFileExtension();
     shader->refCount = 1;
 
     shaderHashMap.Set(shader->hashName, shader);

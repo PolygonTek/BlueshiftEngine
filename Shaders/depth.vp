@@ -14,6 +14,7 @@ $include "Instancing.vp"
 uniform vec4 textureMatrixS;
 uniform vec4 textureMatrixT;
 
+uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
 
 void main() {

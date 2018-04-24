@@ -139,6 +139,9 @@ struct GLBuffer {
     int                 size;
     int                 pitch;
     int                 writeOffset;
+    int                 bindingIndex;
+    int                 bindingOffset;
+    int                 bindingSize;
 };
 
 struct GLSync {

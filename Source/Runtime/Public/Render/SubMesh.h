@@ -68,6 +68,8 @@ public:
 
     int                     GetType() const { return type; }
 
+    bool                    IsShared(const SubMesh *other) const { return refSubMesh == other->refSubMesh; }
+
     int                     NumVerts() const { return numVerts; }
     int                     NumOriginalVerts() const { return numVerts - numMirroredVerts; }
 
@@ -128,6 +130,7 @@ private:
     int                     type;
     bool                    alloced;
     const SubMesh *         refSubMesh;
+    int                     subMeshIndex;
 
     bool                    tangentsCalculated;         // is tangents calculated ?
     bool                    normalsCalculated;          // is normals calculated ?

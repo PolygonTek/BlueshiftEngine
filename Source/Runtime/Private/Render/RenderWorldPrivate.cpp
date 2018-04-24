@@ -568,7 +568,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
             const Material *material = proxy->renderObject->state.materials[surf->materialIndex];
 
             // 이미 ambient visible surf 로 등록되었고, lighting 이 필요한 surf 라면 litSurfs 리스트에 추가한다.
-            if (surf->viewCount == this->viewCount && surf->drawSurf->flags & DrawSurf::AmbientVisible && material->IsLitSurface()) {
+            if (surf->viewCount == this->viewCount && (surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
                 drawSurfNode_t *drawSurfNode = (drawSurfNode_t *)frameData.Alloc(sizeof(drawSurfNode_t));
                 drawSurfNode->drawSurf = surf->drawSurf;
                 drawSurfNode->next = visibleLight->litSurfs;
@@ -837,7 +837,7 @@ void RenderWorld::AddDrawSurf(VisibleView *view, VisibleObject *visibleObject, c
         // 0x00000000FFFF0000 (0~65535) : material index
         // 0x000000000000FFFF (0~65535) : object index
         //---------------------------------------------------
-        drawSurf->sortKey = ((materialSort << 56) | (depthDist << 32) | (materialIndex << 16) | objectIndex);
+        drawSurf->sortKey = (((materialSort & 0xFF) << 56) | (depthDist << 32) | (materialIndex << 16) | objectIndex);
     } else {
         //---------------------------------------------------
         // SortKey for opaque materials:
@@ -846,7 +846,7 @@ void RenderWorld::AddDrawSurf(VisibleView *view, VisibleObject *visibleObject, c
         // 0x00000000FFFF0000 (0~65535) : material index
         // 0x000000000000FFFF (0~65535) : object index
         //---------------------------------------------------
-        drawSurf->sortKey = ((materialSort << 56) | ((subMesh->subMeshIndex & 0xFFFF) << 32) | (materialIndex << 16) | objectIndex);
+        drawSurf->sortKey = (((materialSort & 0xFF) << 56) | (((uint64_t)subMesh->subMeshIndex & 0xFFFF) << 32) | (materialIndex << 16) | objectIndex);
     }
     
     view->drawSurfs[view->numDrawSurfs++] = drawSurf;

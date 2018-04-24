@@ -68,6 +68,7 @@ CVAR(r_lightScale, L"1.0", CVar::Float | CVar::Archive, L"all light intensities 
 CVAR(r_offsetFactor, L"1", CVar::Float, L"polygon offset parameter");
 CVAR(r_offsetUnits, L"2", CVar::Float, L"polygon offset parameter");
 CVAR(r_queryWaitFrames, L"10", CVar::Integer, L"");
+CVAR(r_instancing, L"1", CVar::Integer, L"");
 
 CVAR(r_HDR, L"2", CVar::Integer | CVar::Archive, L"HDR rendering type, 0 = no HDR, 1 = FP11 or FP16, 2 = FP16, 3 = FP32");
 CVAR(r_HDR_debug, L"0", CVar::Integer, L"");

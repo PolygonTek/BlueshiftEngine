@@ -1016,7 +1016,7 @@ void RenderContext::GenerateIrradianceEnvCubeImageSHConvolv(const Image &envCube
     //-------------------------------------------------------------------------------
     // SH projection of (Li * dw) and create 9 coefficents in a single 4x4 texture
     //-------------------------------------------------------------------------------
-    Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj.shader");
+    Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj");
     Shader *shader = weightedSHProjShader->InstantiateShader(Array<Shader::Define>());
 
     Image image;
@@ -1063,7 +1063,7 @@ void RenderContext::GenerateIrradianceEnvCubeImageSHConvolv(const Image &envCube
     
     RenderTarget *irradianceEnvCubeRT = RenderTarget::Create(irradianceEnvCubeTexture, nullptr, 0);
 
-    Shader *genDiffuseCubeMapSHConvolv = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMapSHConvolv.shader");
+    Shader *genDiffuseCubeMapSHConvolv = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMapSHConvolv");
     shader = genDiffuseCubeMapSHConvolv->InstantiateShader(Array<Shader::Define>());
 
     // Precompute ZH coefficients * sqrt(4PI/(2l + 1)) of Lambert diffuse spherical function cos(theta) / PI
@@ -1117,7 +1117,7 @@ void RenderContext::GenerateIrradianceEnvCubeImageSHConvolv(const Image &envCube
 }
 
 void RenderContext::GenerateIrradianceEnvCubeImage(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const {
-    Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMap.shader");
+    Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMap");
     Shader *shader = genDiffuseCubeMapShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *radianceCubeTexture = new Texture;
@@ -1170,7 +1170,7 @@ void RenderContext::GenerateIrradianceEnvCubeImage(const Image &envCubeImage, in
 }
 
 void RenderContext::GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const {
-    Shader *genSpecularCubeMapShader = shaderManager.GetShader("Shaders/GenPhongSpecularPrefilteredEnvCubeMap.shader");
+    Shader *genSpecularCubeMapShader = shaderManager.GetShader("Shaders/GenPhongSpecularPrefilteredEnvCubeMap");
     Shader *shader = genSpecularCubeMapShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *radianceCubeTexture = new Texture;
@@ -1236,7 +1236,7 @@ void RenderContext::GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &en
 }
 
 void RenderContext::GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const {
-    Shader *genSpecularCubeMapShader = shaderManager.GetShader("Shaders/GenGGXSpecularPrefilteredEnvCubeMap.shader");
+    Shader *genSpecularCubeMapShader = shaderManager.GetShader("Shaders/GenGGXSpecularPrefilteredEnvCubeMap");
     Shader *shader = genSpecularCubeMapShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *radianceCubeTexture = new Texture;
@@ -1298,7 +1298,7 @@ void RenderContext::GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage
 }
 
 void RenderContext::GenerateGGXIntegrationLUTImage(int size, Image &integrationImage) const {
-    Shader *genBrdfIntegrationLutShader = shaderManager.GetShader("Shaders/GenBRDFIntegrationLUT.shader");
+    Shader *genBrdfIntegrationLutShader = shaderManager.GetShader("Shaders/GenBRDFIntegrationLUT");
     Shader *shader = genBrdfIntegrationLutShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *integrationLutTexture = new Texture;

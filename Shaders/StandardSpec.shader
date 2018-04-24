@@ -30,10 +30,11 @@ shader "Lit/StandardSpec" {
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
-    ambientLitVersion "StandardSpecAmbientLit.shader"
-    directLitVersion "StandardSpecDirectLit.shader"
-    ambientLitDirectLitVersion "StandardSpecAmbientLitDirectLit.shader"
+    ambientLitVersion "StandardSpecAmbientLit"
+    directLitVersion "StandardSpecDirectLit"
+    ambientLitDirectLitVersion "StandardSpecAmbientLitDirectLit"
     
     glsl_vp {
         $include "StandardCore.vp"

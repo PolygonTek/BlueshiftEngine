@@ -186,66 +186,70 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const Frustu
 }
 
 static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat4 &lightViewMatrix, const Frustum &lightFrustum, const Frustum &viewFrustum, bool forceClear, int cubeMapFace) {
-    uint64_t            prevSortkey = -1;
     const VisibleObject *prevSpace = nullptr;
+    const SubMesh *     prevSubMesh = nullptr;
     const VisibleObject *skipObject = nullptr;
     const VisibleObject *entity2 = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
+
+    backEnd.rbsurf.SetCurrentLight(visibleLight);
     
     for (drawSurfNode_t *shadowCasterSurfNode = visibleLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
         const DrawSurf *surf = shadowCasterSurfNode->drawSurf;
 
-        if (surf->sortKey != prevSortkey) {
-            if (surf->space == skipObject) {
-                continue;
-            }
-            
-            if (surf->material->GetFlags() & Material::NoShadow) {
-                continue;
-            }
-
-            if (!(surf->material->GetSort() == Material::Sort::OpaqueSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) &&
-                !(surf->material->GetFlags() & Material::ForceShadow)) {
-                continue;
-            }
-
-            bool isDifferentObject = surf->space != prevSpace;
-            bool isDifferentMaterial = surf->material != prevMaterial;
-
-            if (isDifferentMaterial || isDifferentObject) {
-                if (!prevMaterial) {
-                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
-                } else {
-                    if (isDifferentObject ||
-                        (prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
-                        backEnd.rbsurf.Flush();
-                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
-                    }
-                }
-
-                prevMaterial = surf->material;
-
-                if (isDifferentObject) {
-                    prevSpace = surf->space;
-
-                    if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
-                        continue;
-                    }
-
-                    OBB obb(surf->space->def->GetLocalAABB(), surf->space->def->state.origin, surf->space->def->state.axis);
-                    if (lightFrustum.CullOBB(obb)) {
-                        skipObject = surf->space;
-                        continue;
-                    }
-
-                    skipObject = nullptr;
-                }
-            }
-
-            prevSortkey = surf->sortKey;
+        if (surf->space == skipObject) {
+            continue;
         }
-        
+            
+        if (surf->material->GetFlags() & Material::NoShadow) {
+            continue;
+        }
+
+        if (!(surf->material->GetSort() == Material::Sort::OpaqueSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) &&
+            !(surf->material->GetFlags() & Material::ForceShadow)) {
+            continue;
+        }
+
+        bool useInstancing = r_instancing.GetBool() && surf->material->GetPass()->instancingEnabled;
+
+        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentObject = surf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentInstance = !useInstancing || !prevSpace || isDifferentMaterial || isDifferentSubMesh || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+
+        if (isDifferentMaterial || isDifferentObject) {
+            if (prevMaterial) {
+                if ((isDifferentObject && isDifferentSubMesh) ||
+                    (isDifferentMaterial && ((prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) ||
+                    (surf->material->GetCullType() != prevMaterial->GetCullType())))) {
+                    backEnd.rbsurf.Flush();
+                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
+                }
+            } else {
+                backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
+            }
+
+            prevSubMesh = surf->subMesh;
+            prevMaterial = surf->material;
+
+            if (isDifferentObject) {
+                prevSpace = surf->space;
+
+                if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
+                    continue;
+                }
+
+                OBB obb(surf->space->def->GetLocalAABB(), surf->space->def->state.origin, surf->space->def->state.axis);
+                if (lightFrustum.CullOBB(obb)) {
+                    skipObject = surf->space;
+                    continue;
+                }
+
+                skipObject = nullptr;
+            }
+        }
+
         if (!surf->space->def->state.joints) {
             OBB obb(surf->subMesh->GetAABB() * surf->space->def->state.scale, surf->space->def->state.origin, surf->space->def->state.axis);
             if (lightFrustum.CullOBB(obb)) {
@@ -279,10 +283,14 @@ static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat
         }
 
         if (surf->space != entity2) {
-            entity2 = surf->space;
+            if (!useInstancing) {
+                backEnd.modelViewMatrix = lightViewMatrix * surf->space->def->GetObjectToWorldMatrix();
+                backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
+            } else {
+                backEnd.rbsurf.AddInstance(surf);
+            }
 
-            backEnd.modelViewMatrix = lightViewMatrix * surf->space->def->GetObjectToWorldMatrix();
-            backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
+            entity2 = surf->space;
         }
 
         backEnd.rbsurf.DrawSubMesh(surf->subMesh);
@@ -379,14 +387,16 @@ static void RB_ShadowCubeMapPass(const VisibleLight *visibleLight, const Frustum
 
 // TODO: cascade 별로 컬링해야함
 static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &viewFrustum, int cascadeIndex, bool forceClear) {
-    uint64_t            prevSortkey = -1;
     const VisibleObject *prevSpace = nullptr;
+    const SubMesh *     prevSubMesh = nullptr;
     const VisibleObject *skipObject = nullptr;
     const VisibleObject *entity2 = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
     Rect                prevScissorRect;
     Mat4                prevProjMatrix;
+
+    backEnd.rbsurf.SetCurrentLight(visibleLight);
 
     if (r_CSM_pancaking.GetBool()) {
         rhi.SetDepthClamp(true);
@@ -397,50 +407,51 @@ static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &vi
     for (drawSurfNode_t *shadowCasterSurfNode = visibleLight->shadowCasterSurfs; shadowCasterSurfNode; shadowCasterSurfNode = shadowCasterSurfNode->next) {	
         const DrawSurf *surf = shadowCasterSurfNode->drawSurf;
 
-        if (surf->sortKey != prevSortkey) {
-            if (surf->space == skipObject) {
-                continue;
+        if (surf->space == skipObject) {
+            continue;
+        }
+
+        if (surf->material->GetFlags() & Material::NoShadow) {
+            continue;
+        }
+
+        if (!(surf->material->GetSort() == Material::Sort::OpaqueSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) && 
+            !(surf->material->GetFlags() & Material::ForceShadow)) {
+            continue;
+        }
+
+        bool useInstancing = r_instancing.GetBool() && surf->material->GetPass()->instancingEnabled;
+
+        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentObject = surf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentInstance = !useInstancing || !prevSpace || isDifferentMaterial || isDifferentSubMesh || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+
+        if (isDifferentMaterial || isDifferentObject) {
+            if (prevMaterial) {
+                if ((isDifferentObject && isDifferentSubMesh) ||
+                    (isDifferentMaterial && ((prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) || 
+                    (surf->material->GetCullType() != prevMaterial->GetCullType())))) {
+                    backEnd.rbsurf.Flush();
+                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
+                }
+            } else {
+                backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
             }
 
-            if (surf->material->GetFlags() & Material::NoShadow) {
-                continue;
-            }
+            prevSubMesh = surf->subMesh;
+            prevMaterial = surf->material;
 
-            if (!(surf->material->GetSort() == Material::Sort::OpaqueSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) && 
-                !(surf->material->GetFlags() & Material::ForceShadow)) {
-                continue;
-            }
+            if (isDifferentObject) {
+                prevSpace = surf->space;
 
-            bool isDifferentObject = surf->space != prevSpace;
-            bool isDifferentMaterial = surf->material != prevMaterial;
-
-            if (isDifferentMaterial || isDifferentObject) {
-                if (!prevMaterial) {
-                    backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
-                } else {
-                    if (isDifferentObject ||
-                        (prevMaterial->GetSort() == Material::Sort::AlphaTestSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) ||
-                        (surf->material->GetCullType() != prevMaterial->GetCullType())) {
-                        backEnd.rbsurf.Flush();
-                        backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
-                    }
+                if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
+                    skipObject = surf->space;
+                    continue;
                 }
 
-                prevMaterial = surf->material;
-
-                if (isDifferentObject) {
-                    prevSpace = surf->space;
-
-                    if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
-                        skipObject = surf->space;
-                        continue;
-                    }
-
-                    skipObject = nullptr;
-                }
+                skipObject = nullptr;
             }
-
-            prevSortkey = surf->sortKey;
         }
 
         if (firstDraw) {
@@ -460,10 +471,14 @@ static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &vi
         }
 
         if (surf->space != entity2) {
-            entity2 = surf->space;
+            if (!useInstancing) {
+                backEnd.modelViewMatrix = visibleLight->def->viewMatrix * surf->space->def->GetObjectToWorldMatrix();
+                backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
+            } else {
+                backEnd.rbsurf.AddInstance(surf);
+            }
 
-            backEnd.modelViewMatrix = visibleLight->def->viewMatrix * surf->space->def->GetObjectToWorldMatrix();
-            backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
+            entity2 = surf->space;
         }
 
         backEnd.rbsurf.DrawSubMesh(surf->subMesh);

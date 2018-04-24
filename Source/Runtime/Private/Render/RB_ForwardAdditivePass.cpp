@@ -20,11 +20,13 @@
 BE_NAMESPACE_BEGIN
 
 static void RB_LitPass(const VisibleLight *visibleLight) {
-    uint64_t            prevSortkey = -1;
     const VisibleObject *prevSpace = nullptr;
+    const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
     Rect                prevScissorRect;
+
+    backEnd.rbsurf.SetCurrentLight(visibleLight);
 
     if (r_useLightScissors.GetBool()) {
         prevScissorRect = rhi.GetScissor();
@@ -42,44 +44,55 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
             continue;
         }
 
-        if (surf->sortKey != prevSortkey) {
-            if (!surf->material->IsLitSurface()) {
-                continue;
+        if (!surf->material->IsLitSurface()) {
+            continue;
+        }
+
+        bool useInstancing = r_instancing.GetBool() && surf->material->GetPass()->instancingEnabled;
+
+        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentObject = surf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentInstance = !useInstancing || !prevSpace || isDifferentMaterial || isDifferentSubMesh || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+
+        if (isDifferentMaterial || isDifferentObject) {
+            if (prevMaterial && isDifferentInstance) {
+                backEnd.rbsurf.Flush();
             }
 
-            bool isDifferentObject = surf->space != prevSpace;
-            bool isDifferentMaterial = surf->material != prevMaterial;
+            backEnd.rbsurf.Begin(RBSurf::LitFlush, surf->material, surf->materialRegisters, surf->space);
 
-            if (isDifferentMaterial || isDifferentObject) {
-                if (prevMaterial) {
-                    backEnd.rbsurf.Flush();
+            prevSubMesh = surf->subMesh;
+            prevMaterial = surf->material;
+
+            if (isDifferentObject) {
+                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+
+                if (prevDepthHack != depthHack) {
+                    if (useInstancing) {
+                        backEnd.rbsurf.Flush();
+                    }
+
+                    if (depthHack) {
+                        rhi.SetDepthRange(0.0f, 0.1f);
+                    } else {
+                        rhi.SetDepthRange(0.0f, 1.0f);
+                    }
+
+                    prevDepthHack = depthHack;
                 }
 
-                backEnd.rbsurf.Begin(RBSurf::LitFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
-
-                prevMaterial = surf->material;
-
-                if (isDifferentObject) {
-                    prevSpace = surf->space;
-
+                if (!useInstancing) {
                     backEnd.modelViewMatrix = surf->space->modelViewMatrix;
                     backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
-
-                    bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
-
-                    if (prevDepthHack != depthHack) {
-                        if (depthHack) {
-                            rhi.SetDepthRange(0.0f, 0.1f);
-                        } else {
-                            rhi.SetDepthRange(0.0f, 1.0f);
-                        }
-
-                        prevDepthHack = depthHack;
-                    }
                 }
-            }
 
-            prevSortkey = surf->sortKey;
+                prevSpace = surf->space;
+            }
+        }
+
+        if (useInstancing) {
+            backEnd.rbsurf.AddInstance(surf);
         }
 
         backEnd.rbsurf.DrawSubMesh(surf->subMesh);

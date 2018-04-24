@@ -90,11 +90,11 @@ void BufferCacheManager::Init() {
 
 #if PINNED_MEMORY
     MapBufferSet(frameData[mappedNum]);
-#if PERSISTENT_MAP
-    for (int i = mappedNum + 1; i < COUNT_OF(frameData); i++) {
-        MapBufferSet(frameData[i]);
-    }
-#endif
+    #if PERSISTENT_MAP
+        for (int i = mappedNum + 1; i < COUNT_OF(frameData); i++) {
+            MapBufferSet(frameData[i]);
+        }
+    #endif
 #endif
 }
 
@@ -127,11 +127,11 @@ void BufferCacheManager::Shutdown() {
 
 void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
 #if PINNED_MEMORY
-#if PERSISTENT_MAP
-    RHI::BufferLockMode lockMode = RHI::WriteOnlyPersistent;
-#else
-    RHI::BufferLockMode lockMode = RHI::WriteOnly;
-#endif
+    #if PERSISTENT_MAP
+        RHI::BufferLockMode lockMode = RHI::WriteOnlyPersistent;
+    #else
+        RHI::BufferLockMode lockMode = RHI::WriteOnly;
+    #endif
 
     if (!bufferSet.mappedVertexBase) {
         rhi.BindBuffer(RHI::VertexBuffer, bufferSet.vertexBuffer);
@@ -408,7 +408,7 @@ bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *
 
     //rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
     // Check just write offset (don't write)
-    int offset = rhi.BufferWrite(currentBufferSet->uniformBuffer, 4 * sizeof(float), bytes, nullptr);
+    int offset = rhi.BufferWrite(currentBufferSet->uniformBuffer, rhi.HWLimit().uniformBufferOffsetAlignment, bytes, nullptr);
     if (offset == -1) {
         BE_FATALERROR(L"Out of uniform cache");
         return false;

@@ -26,6 +26,16 @@ BE_NAMESPACE_BEGIN
 
 class VisibleObject;
 
+struct InstanceData {
+    Vec4                localToWorldMatrixS;
+    Vec4                localToWorldMatrixT;
+    Vec4                localToWorldMatrixR;
+    //Vec4                worldToLocalMatrixS;
+    //Vec4                worldToLocalMatrixT;
+    //Vec4                worldToLocalMatrixR;
+    Color4              constantColor;
+};
+
 class RBSurf {
 public:
     enum FlushType {
@@ -48,13 +58,15 @@ public:
     void                Init();
     void                Shutdown();
 
-    void                Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace, const VisibleLight *surfLight);
+    void                SetCurrentLight(const VisibleLight *surfLight);
+    void                Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace);
+    void                AddInstance(const DrawSurf *drawSurf);
     void                DrawSubMesh(SubMesh *subMesh);
     void                Flush();
 
     void                EndFrame();
 
-private:                
+private:
     void                DrawDynamicSubMesh(SubMesh *subMesh);
     void                DrawStaticSubMesh(SubMesh *subMesh);
 
@@ -114,10 +126,14 @@ private:
     RHI::Handle         vbHandle;
     RHI::Handle         ibHandle;
 
+    InstanceData *      instanceDataTable;
+    void *              skinnedMeshInstanceDataTable;
+
     int                 startIndex;
     int                 numVerts;
     int                 numIndexes;
     int                 numInstances;
+    int                 maxInstances;
 };
 
 /*

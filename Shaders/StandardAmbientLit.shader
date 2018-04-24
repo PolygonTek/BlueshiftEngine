@@ -1,10 +1,11 @@
 shader "Lit/StandardAmbientLit" {
     litSurface
-    inheritProperties "Standard.shader"
-    
+    inheritProperties "Standard"
+
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
     glsl_vp {
         #define STANDARD_METALLIC_LIGHTING

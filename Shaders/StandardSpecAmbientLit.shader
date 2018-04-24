@@ -1,10 +1,11 @@
 shader "Lit/StandardSpecAmbientLit" {
     litSurface
-    inheritProperties "StandardSpec.shader"
+    inheritProperties "StandardSpec"
 
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
     glsl_vp {
         #define STANDARD_SPECULAR_LIGHTING

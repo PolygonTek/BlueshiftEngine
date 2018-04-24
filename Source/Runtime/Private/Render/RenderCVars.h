@@ -76,6 +76,7 @@ extern CVar     r_lightScale;
 extern CVar     r_offsetFactor;
 extern CVar     r_offsetUnits;
 extern CVar     r_queryWaitFrames;
+extern CVar     r_instancing;
 
 extern CVar     r_HDR;
 extern CVar     r_HDR_debug;

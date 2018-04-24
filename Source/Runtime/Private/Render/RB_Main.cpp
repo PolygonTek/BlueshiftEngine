@@ -1076,7 +1076,8 @@ void RB_Execute(const void *data) {
 
     t1 = PlatformTime::Milliseconds();
 
-    backEnd.rbsurf.Begin(RBSurf::FinalFlush, nullptr, nullptr, nullptr, nullptr);
+    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.rbsurf.Begin(RBSurf::FinalFlush, nullptr, nullptr, nullptr);
     
     while (1) {
         int cmd = *(const int *)data;

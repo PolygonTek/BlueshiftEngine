@@ -47,6 +47,8 @@ int SubMesh::Allocated() const {
 }
 
 void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
+    static int subMeshCounter = 0;
+
     this->alloced                   = true;
     this->normalsCalculated         = false;
     this->tangentsCalculated        = false;
@@ -54,6 +56,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
 
     this->type                      = Mesh::ReferenceMesh;
     this->refSubMesh                = nullptr;
+    this->subMeshIndex              = subMeshCounter++;
 
     this->numVerts                  = numVerts;
     this->verts                     = (VertexGenericLit *)Mem_Alloc16(sizeof(VertexGenericLit) * numVerts);
@@ -90,6 +93,7 @@ void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
 
     this->type                      = meshType;
     this->refSubMesh                = static_cast<const SubMesh *>(ref);
+    this->subMeshIndex              = 0;
 
     this->numVerts                  = ref->numVerts;
     this->numMirroredVerts          = ref->numMirroredVerts;

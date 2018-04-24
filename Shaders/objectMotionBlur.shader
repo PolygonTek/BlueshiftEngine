@@ -1,7 +1,8 @@
 shader "motionBlurObject" {
 	generatePerforatedVersion
 	generateGpuSkinningVersion
-	
+    generateGpuInstancingVersion
+
 	glsl_vp {
 		$include "motionBlurObject.vp" 
 	}

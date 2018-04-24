@@ -317,6 +317,7 @@ public:
         int                 maxGeometryOutputVertices;
         int                 maxUniformBufferBindings;
         int                 maxUniformBlockSize;
+        int                 uniformBufferOffsetAlignment;
 
         int                 maxRenderBufferSize;
         int                 maxColorAttachments;
