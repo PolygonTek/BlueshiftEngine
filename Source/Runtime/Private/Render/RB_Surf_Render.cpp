@@ -347,10 +347,7 @@ void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
 
     SetMatrixConstants(shader);
 
-    if (subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfSpace->def->state.mesh;
-        SetSkinningConstants(shader, mesh->skinningJointCache);
-    }
+    SetEntityConstants(mtrlPass, shader);
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
@@ -570,6 +567,19 @@ void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambien
     DrawPrimitives();
 }
 
+static Shader *GetShadowShader(Shader *shader, RenderLight::Type lightType) {
+    if (lightType == RenderLight::PointLight) {
+        return shader->GetPointShadowVersion();
+    }
+    if (lightType == RenderLight::SpotLight) {
+        return shader->GetSpotShadowVersion();
+    }
+    if (lightType == RenderLight::DirectionalLight) {
+        return shader->GetParallelShadowVersion();
+    }
+    return shader;
+}
+
 void RBSurf::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = shader = mtrlPass->shader;
     
@@ -579,14 +589,11 @@ void RBSurf::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float
         shader = ShaderManager::standardDefaultDirectLitShader;
     }
 
-    bool useShadowMap = (r_shadows.GetInteger() == 0) || (!(surfLight->def->state.flags & RenderLight::CastShadowsFlag) || !(surfSpace->def->state.flags & RenderObject::ReceiveShadowsFlag)) ? false : true;
-    if (useShadowMap) {
-        if (surfLight->def->state.type == RenderLight::PointLight) {
-            shader = shader->GetPointShadowVersion();
-        } else if (surfLight->def->state.type == RenderLight::SpotLight) {
-            shader = shader->GetSpotShadowVersion();
-        } else if (surfLight->def->state.type == RenderLight::DirectionalLight) {
-            shader = shader->GetParallelShadowVersion();
+    bool useShadowMap = false;
+    if (r_shadows.GetInteger()) {
+        if ((surfLight->def->state.flags & RenderLight::CastShadowsFlag) && (surfSpace->def->state.flags & RenderObject::ReceiveShadowsFlag)) {
+            shader = GetShadowShader(shader, surfLight->def->state.type);
+            useShadowMap = true;
         }
     }
 
@@ -638,14 +645,11 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, fl
         shader = ShaderManager::standardDefaultAmbientLitDirectLitShader;
     }
 
-    bool useShadowMap = (r_shadows.GetInteger() == 0) || (!(surfLight->def->state.flags & RenderLight::CastShadowsFlag) || !(surfSpace->def->state.flags & RenderObject::ReceiveShadowsFlag)) ? false : true;
-    if (useShadowMap) {
-        if (surfLight->def->state.type == RenderLight::PointLight) {
-            shader = shader->GetPointShadowVersion();
-        } else if (surfLight->def->state.type == RenderLight::SpotLight) {
-            shader = shader->GetSpotShadowVersion();
-        } else if (surfLight->def->state.type == RenderLight::DirectionalLight) {
-            shader = shader->GetParallelShadowVersion();
+    bool useShadowMap = false;
+    if (r_shadows.GetInteger()) {
+        if ((surfLight->def->state.flags & RenderLight::CastShadowsFlag) && (surfSpace->def->state.flags & RenderObject::ReceiveShadowsFlag)) {
+            shader = GetShadowShader(shader, surfLight->def->state.type);
+            useShadowMap = true;
         }
     }
 
@@ -811,14 +815,11 @@ void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const 
         shader = ShaderManager::standardDefaultDirectLitShader;
     }
 
-    bool useShadowMap = (r_shadows.GetInteger() == 0) || (!(surfLight->def->state.flags & RenderLight::CastShadowsFlag) || !(surfSpace->def->state.flags & RenderObject::ReceiveShadowsFlag)) ? false : true;
-    if (useShadowMap) {
-        if (surfLight->def->state.type == RenderLight::PointLight) {
-            shader = shader->GetPointShadowVersion();
-        } else if (surfLight->def->state.type == RenderLight::SpotLight) {
-            shader = shader->GetSpotShadowVersion();
-        } else if (surfLight->def->state.type == RenderLight::DirectionalLight) {
-            shader = shader->GetParallelShadowVersion();
+    bool useShadowMap = false;
+    if (r_shadows.GetInteger()) {
+        if ((surfLight->def->state.flags & RenderLight::CastShadowsFlag) && (surfSpace->def->state.flags & RenderObject::ReceiveShadowsFlag)) {
+            shader = GetShadowShader(shader, surfLight->def->state.type);
+            useShadowMap = true;
         }
     }
 

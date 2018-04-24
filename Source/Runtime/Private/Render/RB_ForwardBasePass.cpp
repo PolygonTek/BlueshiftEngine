@@ -19,9 +19,10 @@
 
 BE_NAMESPACE_BEGIN
 
-static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
+static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLight *light) {
     uint64_t            prevSortkey = -1;
     const VisibleObject *prevSpace = nullptr;
+    const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -32,12 +33,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            const Shader *shader = surf->material->GetPass()->shader;
-            if (!shader) { 
-                continue;
-            }
-
-            if (!(shader->GetFlags() & (Shader::LitSurface | Shader::SkySurface))) {
+            if (!surf->material->IsLitSurface() && !surf->material->IsSkySurface()) {
                 continue;
             }
 
@@ -46,41 +42,36 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 continue;
             }
 
-            bool isDifferentObject = surf->space != prevSpace ? true : false;
-            bool isDifferentMaterial = surf->material != prevMaterial ? true : false;
+            bool isDifferentSubMesh = prevSubMesh ? surf->subMesh->IsShared(prevSubMesh) : false;
+            bool isDifferentObject = surf->space != prevSpace;
+            bool isDifferentMaterial = surf->material != prevMaterial;
 
             if (isDifferentMaterial || isDifferentObject) {
                 if (prevMaterial) {
                     backEnd.rbsurf.Flush();
                 }
 
-                int flushType = RBSurf::AmbientFlush;
-                const Shader *shader = surf->material->GetPass()->shader;
-                if (shader && (shader->GetFlags() & Shader::SkySurface)) {
-                    flushType = RBSurf::BackgroundFlush;
-                }
-
-                backEnd.rbsurf.Begin(flushType, surf->material, surf->materialRegisters, surf->space, backEnd.primaryLight);
+                backEnd.rbsurf.Begin(surf->material->IsSkySurface() ? RBSurf::BackgroundFlush : RBSurf::AmbientFlush, surf->material, surf->materialRegisters, surf->space, light);
 
                 prevMaterial = surf->material;
-            }
 
-            if (isDifferentObject) {
-                prevSpace = surf->space;
+                if (isDifferentObject) {
+                    prevSpace = surf->space;
 
-                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                    backEnd.modelViewMatrix = surf->space->modelViewMatrix;
+                    backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                    bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
 
-                if (prevDepthHack != depthHack) {
-                    if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
-                    } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                    if (prevDepthHack != depthHack) {
+                        if (depthHack) {
+                            rhi.SetDepthRange(0.0f, 0.1f);
+                        } else {
+                            rhi.SetDepthRange(0.0f, 1.0f);
+                        }
+
+                        prevDepthHack = depthHack;
                     }
-
-                    prevDepthHack = depthHack;
                 }
             }
 
@@ -111,9 +102,8 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
     }
 
-    RB_BackgroundPass(numDrawSurfs, drawSurfs);
-
-    RB_BasePass(numDrawSurfs, drawSurfs);
+    // BaseLit or BaseAmbient or Sky
+    RB_BasePass(numDrawSurfs, drawSurfs, backEnd.primaryLight);
 }
 
 BE_NAMESPACE_END

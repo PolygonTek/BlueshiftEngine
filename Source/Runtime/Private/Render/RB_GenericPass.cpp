@@ -19,6 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
+// Render sky only
 void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     uint64_t            prevSortkey = -1;
     const VisibleObject *prevSpace = nullptr;
@@ -32,12 +33,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            const Shader *shader = surf->material->GetPass()->shader;
-            if (!shader) {
-                continue;
-            }
-
-            if (!(shader->GetFlags() & Shader::SkySurface)) {
+            if (!surf->material->IsSkySurface()) {
                 continue;
             }
 
@@ -306,11 +302,8 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            const Shader *shader = surf->material->GetPass()->shader;
-            if (shader) {
-                if (shader->GetFlags() & (Shader::LitSurface | Shader::SkySurface)) {
-                    continue;
-                }
+            if (surf->material->IsLitSurface() || surf->material->IsSkySurface()) {
+                continue;
             }
 
             bool isDifferentObject = surf->space != prevSpace;

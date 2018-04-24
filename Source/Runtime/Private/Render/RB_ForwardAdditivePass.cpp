@@ -43,17 +43,14 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
         }
 
         if (surf->sortKey != prevSortkey) {
-            const Shader *shader = surf->material->GetPass()->shader;
-
-            if (!shader) {
+            if (!surf->material->IsLitSurface()) {
                 continue;
             }
 
-            if (!(shader->GetFlags() & Shader::LitSurface)) {
-                continue;
-            }
+            bool isDifferentObject = surf->space != prevSpace;
+            bool isDifferentMaterial = surf->material != prevMaterial;
 
-            if (surf->material != prevMaterial || surf->space != prevSpace) {
+            if (isDifferentMaterial || isDifferentObject) {
                 if (prevMaterial) {
                     backEnd.rbsurf.Flush();
                 }
@@ -61,24 +58,24 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
                 backEnd.rbsurf.Begin(RBSurf::LitFlush, surf->material, surf->materialRegisters, surf->space, visibleLight);
 
                 prevMaterial = surf->material;
-            }
 
-            if (surf->space != prevSpace) {
-                prevSpace = surf->space;
+                if (isDifferentObject) {
+                    prevSpace = surf->space;
 
-                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                    backEnd.modelViewMatrix = surf->space->modelViewMatrix;
+                    backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
 
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                    bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
 
-                if (prevDepthHack != depthHack) {
-                    if (depthHack) {
-                        rhi.SetDepthRange(0.0f, 0.1f);
-                    } else {
-                        rhi.SetDepthRange(0.0f, 1.0f);
+                    if (prevDepthHack != depthHack) {
+                        if (depthHack) {
+                            rhi.SetDepthRange(0.0f, 0.1f);
+                        } else {
+                            rhi.SetDepthRange(0.0f, 1.0f);
+                        }
+
+                        prevDepthHack = depthHack;
                     }
-
-                    prevDepthHack = depthHack;
                 }
             }
 
@@ -106,6 +103,7 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
     }
 }
 
+// Forward lighting renders each surfaces depending on lights that affect the surface.
 void RB_ForwardAdditivePass(VisibleLight *visibleLights) {
     for (VisibleLight *visibleLight = visibleLights; visibleLight; visibleLight = visibleLight->next) {
         const RenderLight *light = visibleLight->def;
