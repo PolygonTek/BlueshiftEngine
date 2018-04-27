@@ -68,7 +68,7 @@ VisibleLight *RenderWorld::RegisterVisibleLight(VisibleView *view, RenderLight *
     return visibleLight;
 }
 
-// visibleLight 와 visibleObject 들을 등록한다.
+// view volume 으로 visibleLight 와 visibleObject 들을 등록한다.
 void RenderWorld::FindVisibleLightsAndObjects(VisibleView *view) {
     viewCount++;
 
@@ -238,7 +238,9 @@ void RenderWorld::AddStaticMeshes(VisibleView *view) {
         }
 
         VisibleObject *visibleObject = proxy->renderObject->visibleObject;
-        AddDrawSurf(view, visibleObject, visibleObject->def->state.materials[surf->materialIndex], surf->subMesh, flags);
+        AddDrawSurf(view, nullptr, visibleObject, visibleObject->def->state.materials[surf->materialIndex], surf->subMesh, flags);
+
+        view->numAmbientSurfs++;
 
         surf->viewCount = this->viewCount;
         surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
@@ -293,7 +295,9 @@ void RenderWorld::AddSkinnedMeshes(VisibleView *view) {
         for (int surfaceIndex = 0; surfaceIndex < renderObjectDef.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = renderObjectDef.mesh->GetSurface(surfaceIndex);
 
-            AddDrawSurf(view, visibleObject, renderObjectDef.materials[surf->materialIndex], surf->subMesh, flags);
+            AddDrawSurf(view, nullptr, visibleObject, renderObjectDef.materials[surf->materialIndex], surf->subMesh, flags);
+
+            view->numAmbientSurfs++;
 
             surf->viewCount = viewCount;
             surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
@@ -342,7 +346,9 @@ void RenderWorld::AddParticleMeshes(VisibleView *view) {
             subMesh->indexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
             *(subMesh->indexCache)  = prtMeshSurf->indexCache;
 
-            AddDrawSurf(view, visibleObject, prtMeshSurf->material, subMesh, flags);
+            AddDrawSurf(view, nullptr, visibleObject, prtMeshSurf->material, subMesh, flags);
+
+            view->numAmbientSurfs++;
         }
     }
 }
@@ -389,7 +395,9 @@ void RenderWorld::AddTextMeshes(VisibleView *view) {
             subMesh->indexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
             *(subMesh->indexCache)  = guiMeshSurf->indexCache;
 
-            AddDrawSurf(view, visibleObject, guiMeshSurf->material, subMesh, flags);
+            AddDrawSurf(view, nullptr, visibleObject, guiMeshSurf->material, subMesh, flags);
+
+            view->numAmbientSurfs++;
         }
     }
 }
@@ -425,7 +433,9 @@ void RenderWorld::AddSkyBoxMeshes(VisibleView *view) {
     }
 
     MeshSurf *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
-    AddDrawSurf(view, visibleObject, skyboxMaterial, meshSurf->subMesh, DrawSurf::AmbientVisible);
+    AddDrawSurf(view, nullptr, visibleObject, skyboxMaterial, meshSurf->subMesh, DrawSurf::AmbientVisible);
+
+    view->numAmbientSurfs++;
 }
 
 // static mesh 들을 visibleLight 의 litSurfs/shadowCasterSurfs 리스트에 담는다.
@@ -467,11 +477,10 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
         // Is surface visible for this frame ?
         if (surf->viewCount == this->viewCount) {
             if ((surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
-                drawSurfNode_t *drawSurfNode = (drawSurfNode_t *)frameData.Alloc(sizeof(drawSurfNode_t));
-                drawSurfNode->drawSurf = surf->drawSurf;
-                drawSurfNode->next = visibleLight->litSurfs;
+                AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->def->index, 0);
 
-                visibleLight->litSurfs = drawSurfNode;
+                visibleLight->litSurfCount++;
+
                 visibleLight->litSurfsAABB.AddAABB(proxy->worldAABB);
             }
         }
@@ -482,23 +491,22 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
                 return true;
             }
 
-            // This surface is not visible but shadow might be visible as a shadow caster.
-            if (surf->viewCount != this->viewCount) {
+            if (surf->viewCount == this->viewCount) {
+                AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->def->index, 1);
+            } else {
+                // This surface is not visible but shadow might be visible as a shadow caster.
                 // Register a visibleObject used only for shadow caster
-                VisibleObject *shadowVisibleObject = RegisterVisibleObject(view, proxy->renderObject);
-                shadowVisibleObject->shadowVisible = true;
+                VisibleObject *shadowCasterObject = RegisterVisibleObject(view, proxy->renderObject);
+                shadowCasterObject->shadowVisible = true;
 
-                AddDrawSurf(view, shadowVisibleObject, material, surf->subMesh, 0);
+                AddDrawSurf(view, visibleLight, shadowCasterObject, material, surf->subMesh, 0);
 
                 surf->viewCount = this->viewCount;
                 surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
             }
 
-            drawSurfNode_t *drawSurfNode = (drawSurfNode_t *)frameData.Alloc(sizeof(drawSurfNode_t));
-            drawSurfNode->drawSurf = surf->drawSurf;
-            drawSurfNode->next = visibleLight->shadowCasterSurfs;
+            visibleLight->shadowCasterSurfCount++;
 
-            visibleLight->shadowCasterSurfs = drawSurfNode;
             visibleLight->shadowCasterAABB.AddAABB(proxy->worldAABB);
         }
 
@@ -568,12 +576,12 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
             const Material *material = proxy->renderObject->state.materials[surf->materialIndex];
 
             // 이미 ambient visible surf 로 등록되었고, lighting 이 필요한 surf 라면 litSurfs 리스트에 추가한다.
-            if (surf->viewCount == this->viewCount && (surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
-                drawSurfNode_t *drawSurfNode = (drawSurfNode_t *)frameData.Alloc(sizeof(drawSurfNode_t));
-                drawSurfNode->drawSurf = surf->drawSurf;
-                drawSurfNode->next = visibleLight->litSurfs;
+            if (surf->viewCount == this->viewCount) {
+                if ((surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
+                    AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->def->index, 0);
 
-                visibleLight->litSurfs = drawSurfNode;
+                    visibleLight->litSurfCount++;
+                }
             }
         }
 
@@ -590,7 +598,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
             return true;
         }
 
-        VisibleObject *shadowVisibleObject = nullptr;
+        VisibleObject *shadowCasterObject = nullptr;
             
         for (int surfaceIndex = 0; surfaceIndex < proxy->renderObject->state.mesh->NumSurfaces(); surfaceIndex++) {
             MeshSurf *surf = proxy->renderObject->state.mesh->GetSurface(surfaceIndex);
@@ -598,29 +606,27 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
             const Material *material = proxy->renderObject->state.materials[surf->materialIndex];
 
             if (material->IsShadowCaster()) {
-                if (surf->viewCount != this->viewCount) {
+                if (surf->viewCount == this->viewCount) {
+                    AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->def->index, 1);
+                } else {
                     // ambient visible 하지 않으므로 shadow 용 visibleObject 를 등록해준다.
-                    if (!shadowVisibleObject) {
-                        shadowVisibleObject = RegisterVisibleObject(view, proxy->renderObject);
-                        shadowVisibleObject->shadowVisible = true;
+                    if (!shadowCasterObject) {
+                        shadowCasterObject = RegisterVisibleObject(view, proxy->renderObject);
+                        shadowCasterObject->shadowVisible = true;
                     }
 
-                    if (shadowVisibleObject->def->state.skeleton && shadowVisibleObject->def->state.joints) {
-                        shadowVisibleObject->def->state.mesh->UpdateSkinningJointCache(shadowVisibleObject->def->state.skeleton, shadowVisibleObject->def->state.joints);
+                    if (shadowCasterObject->def->state.skeleton && shadowCasterObject->def->state.joints) {
+                        shadowCasterObject->def->state.mesh->UpdateSkinningJointCache(shadowCasterObject->def->state.skeleton, shadowCasterObject->def->state.joints);
                     }
 
-                    // drawSurf for shadow
-                    AddDrawSurf(view, shadowVisibleObject, material, surf->subMesh, 0);
+                    // Add drawSurf for shadow
+                    AddDrawSurf(view, visibleLight, shadowCasterObject, material, surf->subMesh, 0);
 
                     surf->viewCount = this->viewCount;
                     surf->drawSurf = view->drawSurfs[view->numDrawSurfs - 1];
                 }
-
-                drawSurfNode_t *drawSurfNode = (drawSurfNode_t *)frameData.Alloc(sizeof(drawSurfNode_t));
-                drawSurfNode->drawSurf = surf->drawSurf;
-                drawSurfNode->next = visibleLight->shadowCasterSurfs;
                 
-                visibleLight->shadowCasterSurfs = drawSurfNode;
+                visibleLight->shadowCasterSurfCount++;
             }
         }
 
@@ -697,23 +703,6 @@ void RenderWorld::OptimizeLights(VisibleView *view) {
     }
 }
 
-static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
-    const uint64_t sortKey1 = (*(DrawSurf **)elem1)->sortKey;
-    const uint64_t sortKey2 = (*(DrawSurf **)elem2)->sortKey;
-
-    if (sortKey1 < sortKey2) {
-        return -1;
-    }
-    if (sortKey1 > sortKey2) {
-        return 1;
-    }
-    return 0;
-}
-
-void RenderWorld::SortDrawSurfs(VisibleView *view) {
-    qsort(view->drawSurfs, view->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);
-}
-
 void RenderWorld::RenderCamera(VisibleView *view) {
     // Find visible lights/objects by querying DBVT using view frustum.
     // And then register each lights/objects to the visible view.
@@ -731,9 +720,6 @@ void RenderWorld::RenderCamera(VisibleView *view) {
     AddTextMeshes(view);
 
     AddSkyBoxMeshes(view);
-
-    // 등록된 모든 ambient visible 한 drawSurfs 들을 sorting
-    SortDrawSurfs(view);
     
     /*if (!(view->def->state.flags & NoSubViews)) {
         for (int i = 0; i < view->numDrawSurfs; i++) {
@@ -768,6 +754,9 @@ void RenderWorld::RenderCamera(VisibleView *view) {
     // 바로 윗 단계와 비슷하나 entity 단위로 컬링하고 skinned mesh 의 surf 를 한꺼번에 등록
     AddSkinnedMeshesForLights(view);
 
+    // Sort all drawSurfs
+    SortDrawSurfs(view);
+
     OptimizeLights(view);
 
     renderSystem.CmdDrawView(view);
@@ -776,7 +765,7 @@ void RenderWorld::RenderCamera(VisibleView *view) {
 void RenderWorld::RenderSubCamera(VisibleObject *visibleObject, const DrawSurf *drawSurf, const Material *material) {
 }
 
-void RenderWorld::AddDrawSurf(VisibleView *view, VisibleObject *visibleObject, const Material *material, SubMesh *subMesh, int flags) {
+void RenderWorld::AddDrawSurf(VisibleView *view, VisibleLight *visibleLight, VisibleObject *visibleObject, const Material *material, SubMesh *subMesh, int flags) {
     if (view->numDrawSurfs + 1 > view->maxDrawSurfs) {
         BE_WARNLOG(L"RenderWorld::AddDrawSurf: not enough renderable surfaces\n");
         return;
@@ -808,17 +797,29 @@ void RenderWorld::AddDrawSurf(VisibleView *view, VisibleObject *visibleObject, c
         }
     }
 
+    if (r_instancing.GetBool() && realMaterial->GetPass()->instancingEnabled) {
+        if (subMesh->IsGpuSkinning()) {
+            if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
+                flags |= DrawSurf::UseInstancing;
+            }
+        } else {
+            flags |= DrawSurf::UseInstancing;
+        }
+    }
+
     DrawSurf *drawSurf = (DrawSurf *)frameData.ClearedAlloc(sizeof(DrawSurf));
 
-    drawSurf->space             = visibleObject;
-    drawSurf->material          = realMaterial;
+    drawSurf->space = visibleObject;
+    drawSurf->material = realMaterial;
     drawSurf->materialRegisters = nullptr;//outputValues;
-    drawSurf->subMesh           = subMesh;
-    drawSurf->flags             = flags;
+    drawSurf->subMesh = subMesh;
+    drawSurf->flags = flags;
 
     uint64_t materialSort = realMaterial->GetSort();
     uint64_t objectIndex = visibleObject->def->index;
     uint64_t materialIndex = materialManager.GetIndexByMaterial(realMaterial);
+    uint64_t lightIndex = visibleLight ? visibleLight->def->index + 1 : 0;
+    uint64_t shadowBit = !(flags & DrawSurf::AmbientVisible);
 
     // Rough sorting back-to-front order for translucent surfaces.
     if (materialSort == Material::TranslucentSort || materialSort == Material::OverlaySort) {
@@ -831,25 +832,88 @@ void RenderWorld::AddDrawSurf(VisibleView *view, VisibleObject *visibleObject, c
         depthDist = 0xFFFF - depthDist;
 
         //---------------------------------------------------
-        // SortKey for translucent materials:
-        // 0xFF00000000000000 (0~15)    : material sort
+        // SortKey for translucent materials:       
+        // 0x8000000000000000 (0~1)     : shadow bit
+        // 0x7FF0000000000000 (0~2047)  : light index
+        // 0x000F000000000000 (0~15)    : material sort
         // 0x0000FFFF00000000 (0~65535) : depth dist
         // 0x00000000FFFF0000 (0~65535) : material index
         // 0x000000000000FFFF (0~65535) : object index
         //---------------------------------------------------
-        drawSurf->sortKey = (((materialSort & 0xFF) << 56) | (depthDist << 32) | (materialIndex << 16) | objectIndex);
+        drawSurf->sortKey = ((shadowBit << 63) | (lightIndex << 52) | (materialSort << 48) | (depthDist << 32) | (materialIndex << 16) | objectIndex);
     } else {
+        uint64_t subMeshIndex = ((uint64_t)subMesh->subMeshIndex & 0xFFFF);
+
         //---------------------------------------------------
         // SortKey for opaque materials:
-        // 0xFF00000000000000 (0~15)    : material sort
+        // 0x8000000000000000 (0~1)     : shadow bit
+        // 0x7FF0000000000000 (0~2047)  : light index
+        // 0x000F000000000000 (0~15)    : material sort
         // 0x0000FFFF00000000 (0~65535) : sub mesh index
         // 0x00000000FFFF0000 (0~65535) : material index
         // 0x000000000000FFFF (0~65535) : object index
         //---------------------------------------------------
-        drawSurf->sortKey = (((materialSort & 0xFF) << 56) | (((uint64_t)subMesh->subMeshIndex & 0xFFFF) << 32) | (materialIndex << 16) | objectIndex);
+        drawSurf->sortKey = ((shadowBit << 63) | (lightIndex << 52) | (materialSort << 48) | (subMeshIndex << 32) | (materialIndex << 16) | objectIndex);
     }
-    
+
     view->drawSurfs[view->numDrawSurfs++] = drawSurf;
+}
+
+void RenderWorld::AddLightDrawSurfFromAmbient(VisibleView *view, const DrawSurf *from, int lightIndex, int shadowBit) {
+    if (view->numDrawSurfs + 1 > view->maxDrawSurfs) {
+        BE_WARNLOG(L"RenderWorld::AddLightDrawSurfFromAmbient: not enough renderable surfaces\n");
+        return;
+    }
+
+    DrawSurf *drawSurf = (DrawSurf *)frameData.Alloc(sizeof(DrawSurf));
+    drawSurf->sortKey = (from->sortKey & 0x000FFFFFFFFFFFFF) | ((uint64_t)shadowBit << 63) | ((uint64_t)(lightIndex + 1) << 52);
+    drawSurf->flags = from->flags;
+    drawSurf->space = from->space;
+    drawSurf->material = from->material;
+    drawSurf->materialRegisters = from->materialRegisters;
+    drawSurf->subMesh = from->subMesh;
+
+    view->drawSurfs[view->numDrawSurfs++] = drawSurf;
+}
+
+static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
+    const uint64_t sortKey1 = (*(DrawSurf **)elem1)->sortKey;
+    const uint64_t sortKey2 = (*(DrawSurf **)elem2)->sortKey;
+
+    if (sortKey1 < sortKey2) {
+        return -1;
+    }
+    if (sortKey1 > sortKey2) {
+        return 1;
+    }
+    return 0;
+}
+
+void RenderWorld::SortDrawSurfs(VisibleView *view) {
+    qsort(view->drawSurfs, view->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);
+
+    int prevLightIndex = -1;
+    int prevShadowBit = -1;
+
+    for (int i = 0; i < view->numDrawSurfs; i++) {
+        const DrawSurf *drawSurf = view->drawSurfs[i];
+        
+        int shadowBit  = (drawSurf->sortKey & 0x8000000000000000) >> 63;
+        int lightIndex = (drawSurf->sortKey & 0x7FF0000000000000) >> 52;
+
+        if (lightIndex >= 1) {
+            if (lightIndex != prevLightIndex || shadowBit != prevShadowBit) {
+                if (shadowBit) {
+                    renderLights[lightIndex - 1]->visibleLight->shadowCasterSurfFirst = i;
+                } else {
+                    renderLights[lightIndex - 1]->visibleLight->litSurfFirst = i;
+                }
+
+                prevLightIndex = lightIndex;
+                prevShadowBit = shadowBit;
+            }
+        }
+    }
 }
 
 BE_NAMESPACE_END

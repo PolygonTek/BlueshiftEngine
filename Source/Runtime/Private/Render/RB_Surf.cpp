@@ -20,8 +20,6 @@
 
 BE_NAMESPACE_BEGIN
 
-#define MAX_DYNAMIC_VERTS   (VCACHE_SIZE / sizeof(VertexGenericLit))
-
 void RBSurf::Init() {
     startIndex = -1;
 
@@ -32,7 +30,7 @@ void RBSurf::Init() {
     numIndexes = 0;
     numInstances = 0;
 
-    maxInstances = rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment;
+    maxInstances = rhi.HWLimit().maxUniformBlockSize / 128;// rhi.HWLimit().uniformBufferOffsetAlignment;
 
     instanceDataTable = (InstanceData *)Mem_Alloc16(sizeof(InstanceData) * maxInstances);
 
@@ -99,12 +97,14 @@ void RBSurf::AddInstance(const DrawSurf *drawSurf) {
     if (drawSurf->subMesh->IsGpuSkinning()) {
         SkinningJointCache *skinningJointCache = objectDef->state.mesh->skinningJointCache;
 
-        if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-            int *table = (int *)skinnedMeshInstanceDataTable;
-            table[numInstances] = skinningJointCache->bufferCache.tcBase[0];
-        } else {
-            Vec2 *table = (Vec2 *)skinnedMeshInstanceDataTable;
-            table[numInstances] = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
+        if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
+            if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+                int *table = (int *)skinnedMeshInstanceDataTable;
+                table[numInstances] = skinningJointCache->bufferCache.tcBase[0];
+            } else {
+                Vec2 *table = (Vec2 *)skinnedMeshInstanceDataTable;
+                table[numInstances] = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
+            }
         }
     }
 
@@ -524,7 +524,7 @@ void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
         break;  
     }
 
-    RenderColor(rgba);
+    RenderColor(mtrlPass, rgba);
 
     if (mode == RenderObject::ShowVisibleFront) {
         rhi.SetDepthBias(0.0f, 0.0f);

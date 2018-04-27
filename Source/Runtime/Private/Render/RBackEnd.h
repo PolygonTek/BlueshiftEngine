@@ -97,7 +97,7 @@ private:
 
     void                SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const;
 
-    void                RenderColor(const Color4 &color) const;
+    void                RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const;
     void                RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &vec3_id) const;
     void                RenderDepth(const Material::ShaderPass *mtrlPass) const;
     void                RenderVelocity(const Material::ShaderPass *mtrlPass) const;
@@ -170,6 +170,7 @@ struct BackEnd {
 
     RBSurf              rbsurf;
     int                 numDrawSurfs;
+    int                 numAmbientSurfs;
     DrawSurf **         drawSurfs;
     VisibleObject *     visibleObjects;
     VisibleLight *      visibleLights;

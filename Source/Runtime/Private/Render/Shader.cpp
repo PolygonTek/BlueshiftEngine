@@ -489,7 +489,7 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
     shader = shaderManager.AllocShader(shaderName);
 
     Str text = "{\n";
-    text += "glsl_vp { " + vsHeaderText + skinningVsHeaderText + instancingVsHeaderText + vsText + " }\n";
+    text += "glsl_vp { " + vsHeaderText + instancingVsHeaderText + skinningVsHeaderText + vsText + " }\n";
     text += "glsl_fp { " + fsHeaderText + fsText + " }\n";
     text += "}";
     if (!shader->Create(text, baseDir)) {
@@ -568,7 +568,7 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
     if (generateGpuInstancingVersion) {
         if (!shader->perforatedVersion->gpuInstancingVersion) {
             shader->perforatedVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix + "-perforated",
-                vsHeaderText + "#define PERFORATED\n#define INSTANCING\n", fsHeaderText + "#define PERFORATED\n", 0, true);
+                vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", 0, true);
             if (!shader->perforatedVersion->gpuInstancingVersion) {
                 return false;
             }
@@ -576,7 +576,7 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
 
         if (genereateGpuSkinningVersion) {
             if (!GenerateGpuSkinningVersion(shader->perforatedVersion->gpuInstancingVersion,
-                shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n#define INSTANCING\n", fsHeaderText + "#define PERFORATED\n", true)) {
+                shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", true)) {
                 return false;
             }
         }
@@ -604,7 +604,7 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
     if (generateGpuInstancingVersion) {
         if (!shader->premulAlphaVersion->gpuInstancingVersion) {
             shader->premulAlphaVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
-                vsHeaderText + "#define PREMULTIPLIED_ALPHA\n#define INSTANCING\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0, true);
+                vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0, true);
             if (!shader->premulAlphaVersion->gpuInstancingVersion) {
                 return false;
             }
@@ -612,7 +612,7 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
 
         if (genereateGpuSkinningVersion) {
             if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion->gpuInstancingVersion,
-                shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n#define INSTANCING\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", true)) {
+                shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", true)) {
                 return false;
             }
         }

@@ -21,7 +21,8 @@ public:
     enum Flag {
         AmbientVisible      = BIT(0),           ///< means visible surface (can be invisible for shadow caster surface)
         ShowWires           = BIT(1),           ///< means to draw wireframes
-        SkipSelection       = BIT(2)
+        SkipSelection       = BIT(2),
+        UseInstancing       = BIT(3)
     };
 
     uint64_t                sortKey;

@@ -227,6 +227,10 @@ void OpenGLRHI::InitGL() {
     gglGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &hwLimit.maxVertexUniformComponents);
     BE_LOG(L"Maximum vertex uniform components: %i\n", hwLimit.maxVertexUniformComponents);
 
+    // the maximum number of vector floating point, integer, or boolean values that can be held in uniform variable storage for a vertex shader.
+    gglGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &hwLimit.maxVertexUniformVectors);
+    BE_LOG(L"Maximum vertex uniform vectors: %i\n", hwLimit.maxVertexUniformVectors);
+
     // the maximum supported texture image units that can be used to access texture maps from the vertex shader.
     gglGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &hwLimit.maxVertexTextureImageUnits);
     BE_LOG(L"Maximum vertex texture image units: %i\n", hwLimit.maxVertexTextureImageUnits);
@@ -234,6 +238,10 @@ void OpenGLRHI::InitGL() {
     // the maximum number of individual floating point, integer, or boolean values that can be held in uniform variable storage for a fragment shader.
     gglGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &hwLimit.maxFragmentUniformComponents);
     BE_LOG(L"Maximum fragment uniform components: %i\n", hwLimit.maxFragmentUniformComponents);
+
+    // the maximum number of vector floating point, integer, or boolean values that can be held in uniform variable storage for a fragment shader.
+    gglGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS, &hwLimit.maxFragmentUniformVectors);
+    BE_LOG(L"Maximum fragment uniform vectors: %i\n", hwLimit.maxFragmentUniformVectors);
 
     // the maximum number of components of the inputs read by the fragment shader.
     gglGetIntegerv(GL_MAX_FRAGMENT_INPUT_COMPONENTS, &hwLimit.maxFragmentInputComponents);

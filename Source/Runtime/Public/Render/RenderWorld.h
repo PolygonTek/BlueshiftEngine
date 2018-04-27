@@ -115,7 +115,8 @@ private:
     void                        AddStaticMeshesForLights(VisibleView *view);
     void                        AddSkinnedMeshesForLights(VisibleView *view);
     void                        OptimizeLights(VisibleView *view);
-    void                        AddDrawSurf(VisibleView *view, VisibleObject *entity, const Material *material, SubMesh *subMesh, int flags);
+    void                        AddDrawSurf(VisibleView *view, VisibleLight *light, VisibleObject *entity, const Material *material, SubMesh *subMesh, int flags);
+    void                        AddLightDrawSurfFromAmbient(VisibleView *view, const DrawSurf *from, int lightIndex, int shadowBit);
     void                        SortDrawSurfs(VisibleView *view);
 
     void                        RenderCamera(VisibleView *view);

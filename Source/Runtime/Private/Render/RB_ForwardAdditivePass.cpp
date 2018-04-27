@@ -37,8 +37,8 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
         rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
-    for (drawSurfNode_t *litSurfNode = visibleLight->litSurfs; litSurfNode; litSurfNode = litSurfNode->next) {
-        const DrawSurf *surf = litSurfNode->drawSurf;
+    for (int i = 0; i < visibleLight->litSurfCount; i++) {
+        const DrawSurf *surf = backEnd.drawSurfs[visibleLight->litSurfFirst + i];
 
         if (!(surf->flags & DrawSurf::AmbientVisible)) {
             continue;
@@ -48,14 +48,12 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
             continue;
         }
 
-        bool useInstancing = r_instancing.GetBool() && surf->material->GetPass()->instancingEnabled;
-
-        bool isDifferentMaterial = surf->material != prevMaterial;
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentInstance = !useInstancing || !prevSpace || isDifferentMaterial || isDifferentSubMesh || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
 
-        if (isDifferentMaterial || isDifferentObject) {
+        if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.rbsurf.Flush();
             }
@@ -69,7 +67,7 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
                 bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
-                    if (useInstancing) {
+                    if (surf->flags & DrawSurf::UseInstancing) {
                         backEnd.rbsurf.Flush();
                     }
 
@@ -82,7 +80,7 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
                     prevDepthHack = depthHack;
                 }
 
-                if (!useInstancing) {
+                if (!(surf->flags & DrawSurf::UseInstancing)) {
                     backEnd.modelViewMatrix = surf->space->modelViewMatrix;
                     backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
                 }
@@ -91,7 +89,7 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
             }
         }
 
-        if (useInstancing) {
+        if (surf->flags & DrawSurf::UseInstancing) {
             backEnd.rbsurf.AddInstance(surf);
         }
 

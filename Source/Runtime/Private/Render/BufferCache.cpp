@@ -76,6 +76,7 @@ void BufferCacheManager::Init() {
     // Create stream buffer for use in debug drawing
     streamVertexBuffer = rhi.CreateBuffer(RHI::VertexBuffer, RHI::Stream, 0);
     streamIndexBuffer = rhi.CreateBuffer(RHI::IndexBuffer, RHI::Stream, 0);
+    streamUniformBuffer = rhi.CreateBuffer(RHI::UniformBuffer, RHI::Stream, 0);
 
     pboWriteOffset = 0;
 
@@ -101,6 +102,7 @@ void BufferCacheManager::Init() {
 void BufferCacheManager::Shutdown() {
     rhi.DeleteBuffer(streamVertexBuffer);
     rhi.DeleteBuffer(streamIndexBuffer);
+    rhi.DeleteBuffer(streamUniformBuffer);
 
     for (int i = 0; i < COUNT_OF(frameData); i++) {
 #if PINNED_MEMORY

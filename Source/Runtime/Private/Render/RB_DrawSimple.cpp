@@ -29,7 +29,7 @@ void RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s
         { Vec2(x2, y2), Vec2(s2, t2) }, 
         { Vec2(x, y2), Vec2(s, t2) }
     };
-        
+
     rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, 4 * sizeof(verts[0]), verts);
 

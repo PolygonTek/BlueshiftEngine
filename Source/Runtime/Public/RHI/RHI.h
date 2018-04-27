@@ -310,8 +310,10 @@ public:
 
         int                 maxVertexAttribs;
         int                 maxVertexUniformComponents;
+        int                 maxVertexUniformVectors;
         int                 maxVertexTextureImageUnits;
         int                 maxFragmentUniformComponents;
+        int                 maxFragmentUniformVectors;
         int                 maxFragmentInputComponents;
         int                 maxGeometryTextureImageUnits;
         int                 maxGeometryOutputVertices;

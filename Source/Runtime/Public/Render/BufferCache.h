@@ -73,6 +73,7 @@ public:
 
     RHI::Handle             streamVertexBuffer;
     RHI::Handle             streamIndexBuffer;
+    RHI::Handle             streamUniformBuffer;
 
 private:
     static const int        NumFrames = 3;

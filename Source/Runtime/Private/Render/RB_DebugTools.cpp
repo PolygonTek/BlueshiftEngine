@@ -570,14 +570,12 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             continue;
         }
 
-        bool useInstancing = r_instancing.GetBool() && surf->material->GetPass()->instancingEnabled;
-
-        bool isDifferentMaterial = surf->material != prevMaterial;
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentInstance = !useInstancing || !prevSpace || isDifferentMaterial || isDifferentSubMesh || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
 
-        if (isDifferentMaterial || isDifferentObject) {
+        if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.rbsurf.Flush();
             }
@@ -591,7 +589,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                 depthhack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthhack) {
-                    if (useInstancing) {
+                    if (surf->flags & DrawSurf::UseInstancing) {
                         backEnd.rbsurf.Flush();
                     }
 
@@ -611,7 +609,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             }
         }
 
-        if (useInstancing) {
+        if (surf->flags & DrawSurf::UseInstancing) {
             backEnd.rbsurf.AddInstance(surf);
         }
 

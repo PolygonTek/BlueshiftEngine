@@ -6,6 +6,15 @@ shader "constantColor" {
 	glsl_vp {
 		in vec4 in_position : POSITION;
 
+        #ifdef INSTANCING
+            $include "Instancing.vp"
+        #else
+            uniform vec4 localToWorldMatrixS;
+            uniform vec4 localToWorldMatrixT;
+            uniform vec4 localToWorldMatrixR;
+        #endif
+
+        uniform mat4 viewProjectionMatrix;
 		uniform mat4 modelViewProjectionMatrix;
 
 		void main() {
@@ -17,7 +26,16 @@ shader "constantColor" {
 			localPos = in_position;
 		#endif
 
-			gl_Position = modelViewProjectionMatrix * localPos;
+        #ifdef INSTANCING
+            vec4 worldPos;
+            worldPos.x = dot(localToWorldMatrixS, localPos);
+            worldPos.y = dot(localToWorldMatrixT, localPos);
+            worldPos.z = dot(localToWorldMatrixR, localPos);
+            worldPos.w = 1.0;
+            gl_Position = viewProjectionMatrix * worldPos;
+        #else
+            gl_Position = modelViewProjectionMatrix * localPos;
+        #endif
 		}
 	}
 

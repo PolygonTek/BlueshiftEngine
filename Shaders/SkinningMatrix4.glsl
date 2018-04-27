@@ -10,12 +10,12 @@ in vec4 in_weightValue : WEIGHT_VALUE;
 		#define TC_TYPE vec2
 	#endif
 
-	#ifdef SKINNED_INSTANCING
-		uniform TC_TYPE tcBase[256];	// indexed by gl_InstanceID
-		#define BASE_TC	tcBase[gl_InstanceID]
+	#ifdef INSTANCING
+		uniform TC_TYPE tcBase[256];
+		#define BASE_TC tcBase[gl_InstanceID]
 	#else
 		uniform TC_TYPE tcBase;
-		#define BASE_TC	tcBase
+		#define BASE_TC tcBase
 	#endif
 
 	uniform vec2 invJointsMapSize;

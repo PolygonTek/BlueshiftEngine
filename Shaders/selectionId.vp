@@ -14,6 +14,7 @@ $include "Instancing.vp"
 uniform vec4 textureMatrixS;
 uniform vec4 textureMatrixT;
 
+uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
 
 void main() {
@@ -30,5 +31,14 @@ void main() {
 	localPos = in_position;
 #endif
 
-	gl_Position = modelViewProjectionMatrix * localPos;
+#ifdef INSTANCING
+    vec4 worldPos;
+    worldPos.x = dot(localToWorldMatrixS, localPos);
+    worldPos.y = dot(localToWorldMatrixT, localPos);
+    worldPos.z = dot(localToWorldMatrixR, localPos);
+    worldPos.w = 1.0;
+    gl_Position = viewProjectionMatrix * worldPos;
+#else
+    gl_Position = modelViewProjectionMatrix * localPos;
+#endif
 }

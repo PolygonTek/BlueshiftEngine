@@ -9,8 +9,8 @@ in float in_weightIndex : WEIGHT_INDEX;
 		#define TC_TYPE vec2
 	#endif
 
-	#ifdef SKINNED_INSTANCING
-		uniform TC_TYPE tcBase[256];	// indexed by gl_InstanceID
+	#ifdef INSTANCING
+		uniform TC_TYPE tcBase[256];
 		#define BASE_TC	tcBase[gl_InstanceID]
 	#else
 		uniform TC_TYPE tcBase;

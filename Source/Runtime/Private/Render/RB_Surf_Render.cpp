@@ -222,10 +222,11 @@ void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shad
     }
 
     if (numInstances >= 1) {
-        BufferCache instanceBufferCache;
-        bufferCacheManager.AllocUniform(numInstances * sizeof(InstanceData), instanceDataTable, &instanceBufferCache);
+        rhi.BindBuffer(RHI::UniformBuffer, bufferCacheManager.streamUniformBuffer);
+        rhi.BufferDiscardWrite(bufferCacheManager.streamUniformBuffer, numInstances * sizeof(InstanceData), instanceDataTable);
+        rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
 
-        rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, instanceBufferCache.buffer, instanceBufferCache.offset, instanceBufferCache.bytes);
+        rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, bufferCacheManager.streamUniformBuffer, 0, numInstances * sizeof(InstanceData));
 
         shader->SetConstantBuffer("InstanceDataBlock", 0);
     } else {
@@ -266,7 +267,7 @@ void RBSurf::SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Sh
     SetVertexColorConstants(shader, mtrlPass->vertexColorMode);
 }
 
-void RBSurf::RenderColor(const Color4 &color) const {
+void RBSurf::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const {
     Shader *shader = ShaderManager::constantColorShader;
 
     if (subMesh->useGpuSkinning) {
@@ -276,14 +277,17 @@ void RBSurf::RenderColor(const Color4 &color) const {
         }
     }
 
+    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
+        }
+    }
+
     shader->Bind();
 
     SetMatrixConstants(shader);
 
-    if (subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfSpace->def->state.mesh;
-        SetSkinningConstants(shader, mesh->skinningJointCache);
-    }
+    SetEntityConstants(mtrlPass, shader);
 
     shader->SetConstant4f("color", color);
 
@@ -310,10 +314,7 @@ void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &v
 
     SetMatrixConstants(shader);
 
-    if (subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfSpace->def->state.mesh;
-        SetSkinningConstants(shader, mesh->skinningJointCache);
-    }
+    SetEntityConstants(mtrlPass, shader);
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
@@ -324,15 +325,6 @@ void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &v
 
         shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
         shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
-
-        Color4 color;
-        if (mtrlPass->useOwnerColor) {
-            color = Color4(&surfSpace->def->state.materialParms[RenderObject::RedParm]);
-        } else {
-            color = mtrlPass->constantColor;
-        }
-
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
 
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
     }
@@ -379,15 +371,6 @@ void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
 
         shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
         shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
-
-        Color4 color;
-        if (mtrlPass->useOwnerColor) {
-            color = Color4(&surfSpace->def->state.materialParms[RenderObject::RedParm]);
-        } else {
-            color = mtrlPass->constantColor;
-        }
-
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
 
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
     }

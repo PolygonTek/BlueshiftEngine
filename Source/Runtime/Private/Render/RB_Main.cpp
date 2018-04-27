@@ -569,7 +569,7 @@ static void RB_DrawView() {
         rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
         rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4::white, 1.0f, 0);
 
-        RB_SelectionPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+        RB_SelectionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
         backEnd.ctx->screenSelectionRT->End();
     }
@@ -585,23 +585,23 @@ static void RB_DrawView() {
     if (backEnd.view->def->state.flags & RenderView::TexturedMode) {
         if (r_HOM.GetBool()) {
             // Render occluder to HiZ occlusion buffer
-            RB_RenderOcclusionMap(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
             // Generate depth hierarchy
             RB_GenerateOcclusionMapHierarchy();
 
             // Test all the ambient occludee's AABB using HiZ occlusion buffer
-            RB_TestOccludeeBounds(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_TestOccludeeBounds(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
         // Render depth only first for early-z culling
         if (r_useDepthPrePass.GetBool()) {
-            RB_DepthPrePass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_DepthPrePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
         // Render all solid (non-translucent) geometry (depth + ambient + [primary lit])
         if (!r_skipAmbientPass.GetBool()) {
-            RB_ForwardBasePass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_ForwardBasePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
         // depth buffer 와 관련된 post processing 을 먼저 한다
@@ -615,36 +615,36 @@ static void RB_DrawView() {
         }
 
         // Render wireframe for option
-        RB_DrawTris(backEnd.numDrawSurfs, backEnd.drawSurfs, false);
+        RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, false);
 
         // Render any stage with unlit surfaces
         if (!r_skipBlendPass.GetBool()) {
-            RB_UnlitPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_UnlitPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
         // Render to velocity map
         if (!(backEnd.view->def->state.flags & RenderView::SkipPostProcess) && r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
-            RB_VelocityMapPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_VelocityMapPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
         // Render no lighting interaction surfaces
         if (!r_skipFinalPass.GetBool()) {
-            RB_FinalPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_FinalPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
     }
 
     if (backEnd.view->def->state.flags & RenderView::WireFrameMode) {
         if (!(backEnd.view->def->state.flags & RenderView::TexturedMode)) {
-            RB_BackgroundPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+            RB_BackgroundPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
         // Render wireframes
-        RB_DrawTris(backEnd.numDrawSurfs, backEnd.drawSurfs, true);
+        RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, true);
     }
 
     // Render debug tools
     if (!(backEnd.view->def->state.flags & RenderView::SkipDebugDraw)) {
-        RB_DebugPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+        RB_DebugPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
     }
 
     backEnd.ctx->screenRT->End();
@@ -703,10 +703,11 @@ static const void *RB_ExecuteDrawView(const void *data) {
 
     backEnd.view            = &cmd->view;
     backEnd.time            = MS2SEC(cmd->view.def->state.time);
-    backEnd.visibleObjects    = cmd->view.visibleObjects;
-    backEnd.visibleLights      = cmd->view.visibleLights;
+    backEnd.visibleObjects  = cmd->view.visibleObjects;
+    backEnd.visibleLights   = cmd->view.visibleLights;
     backEnd.primaryLight    = cmd->view.primaryLight;
     backEnd.numDrawSurfs    = cmd->view.numDrawSurfs;
+    backEnd.numAmbientSurfs = cmd->view.numAmbientSurfs;
     backEnd.drawSurfs       = cmd->view.drawSurfs;
     backEnd.projMatrix      = cmd->view.def->projMatrix;
     backEnd.viewProjMatrix  = cmd->view.def->viewProjMatrix;

@@ -16,12 +16,6 @@
 
 BE_NAMESPACE_BEGIN
 
-struct drawSurfNode_t {
-    const DrawSurf *        drawSurf;
-
-    drawSurfNode_t *        next;
-};
-
 class VisibleObject {
 public:
     const RenderObject *    def;
@@ -51,11 +45,13 @@ public:
     Color4                  lightColor;
 
                             // light bounding volume 에 포함되고, view frustum 에 보이는 surfaces
-    drawSurfNode_t *        litSurfs;
+    int                     litSurfFirst;
+    int                     litSurfCount;
     AABB                    litSurfsAABB;
 
-                            // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfs 를 포함한다)
-    drawSurfNode_t *        shadowCasterSurfs;
+                            // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfs 를 포함한다)    
+    int                     shadowCasterSurfFirst;
+    int                     shadowCasterSurfCount;
     AABB                    shadowCasterAABB;
 };
 
@@ -69,10 +65,12 @@ public:
 
     AABB                    worldAABB;
 
-                            // view 에 보이는 모든 surfaces 와 shadow surfaces
-    DrawSurf **             drawSurfs;
     int                     numDrawSurfs;
     int                     maxDrawSurfs;
+                            // view 에 보이는 모든 surfaces 와 shadow surfaces
+    DrawSurf **             drawSurfs;
+
+    int                     numAmbientSurfs;
 
     VisibleObject *         visibleObjects;
     VisibleLight *          visibleLights;

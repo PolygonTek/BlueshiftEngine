@@ -371,7 +371,9 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
         subMesh->vertexCache    = &guiSurf->vertexCache;
         subMesh->indexCache     = &guiSurf->indexCache;
 #endif
-        AddDrawSurf(guiView, visibleObject, guiSurf->material, subMesh, 0);
+        AddDrawSurf(guiView, nullptr, visibleObject, guiSurf->material, subMesh, 0);
+
+        guiView->numAmbientSurfs++;
     }
 
     renderSystem.CmdDrawView(guiView);
