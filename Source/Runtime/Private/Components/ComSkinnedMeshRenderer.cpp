@@ -94,6 +94,8 @@ void ComSkinnedMeshRenderer::Init() {
     renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
     renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
 
+    playStartTime = GetGameWorld()->GetTime();
+
     // Mark as initialized
     SetInitialized(true);
 
@@ -143,7 +145,7 @@ void ComSkinnedMeshRenderer::ChangeSkeleton(const Guid &skeletonGuid) {
     simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
 
     if (anim) {
-        anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
+        //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
     }
 
     // Need to connect skeleton asset to be reloaded in Editor
@@ -185,12 +187,11 @@ void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
                 anim = nullptr;
                 return;
             }
+
+            // FIXME: Slow!!
+            //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
         }
-
-        anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
     }
-
-    playStartTime = GetGameWorld() ? GetGameWorld()->GetTime() : 0;
    
     // Need to connect anim asset to be reloaded in Editor
     animAsset = (AnimAsset *)AnimAsset::FindInstance(animGuid);
@@ -199,8 +200,10 @@ void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
     }
 }
 
-void ComSkinnedMeshRenderer::Update() {
-    UpdateVisuals();
+void ComSkinnedMeshRenderer::Update() { 
+    if (IsVisibleInPreviousFrame()) {
+        UpdateVisuals();
+    }
 }
 
 void ComSkinnedMeshRenderer::UpdateVisuals() {
@@ -208,16 +211,27 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
         return;
     }
 
-    int currentTime = GetGameWorld()->GetTime();
+    int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + SEC2MS(GetTimeOffset());
 
-    UpdateAnimation(currentTime);
+    UpdateAnim(currentTime);
+
+    if (anim) {
+#if 0
+        anim->GetAABB(renderObjectDef.localAABB, frameAABBs, time);
+#else
+        renderObjectDef.localAABB = renderObjectDef.mesh->GetAABB();
+#endif
+    } else {
+        renderObjectDef.localAABB = referenceMesh->GetAABB();
+    }
+
+    ComRenderable::UpdateVisuals();
 }
 
-void ComSkinnedMeshRenderer::UpdateAnimation(int currentTime) {
+void ComSkinnedMeshRenderer::UpdateAnim(int animTime) {
     if (anim) {
-        int time = currentTime - playStartTime;
         Anim::FrameInterpolation frameInterpolation;
-        anim->TimeToFrameInterpolation(time, frameInterpolation);
+        anim->TimeToFrameInterpolation(animTime, frameInterpolation);
 
         JointPose *jointFrame = (JointPose *)_alloca16(skeleton->NumJoints() * sizeof(jointFrame[0]));
         anim->GetInterpolatedFrame(frameInterpolation, jointIndexes.Count(), jointIndexes.Ptr(), jointFrame);
@@ -225,13 +239,7 @@ void ComSkinnedMeshRenderer::UpdateAnimation(int currentTime) {
         simdProcessor->ConvertJointPosesToJointMats(jointMats, jointFrame, skeleton->NumJoints());
 
         simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
-
-        anim->GetAABB(renderObjectDef.localAABB, frameAABBs, time);
-    } else {
-        renderObjectDef.localAABB = referenceMesh->GetAABB();
     }
-
-    ComRenderable::UpdateVisuals();
 }
 
 void ComSkinnedMeshRenderer::MeshUpdated() {
@@ -243,7 +251,7 @@ void ComSkinnedMeshRenderer::MeshUpdated() {
 
     if (isCompatibleSkeleton) {
         if (anim) {
-            anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
+            //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
         }
 
         renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
@@ -300,6 +308,13 @@ void ComSkinnedMeshRenderer::SetAnimGuid(const Guid &guid) {
     ChangeAnim(guid);
 
     MeshUpdated();
+}
+
+float ComSkinnedMeshRenderer::GetAnimSeconds() const {
+    if (anim) {
+        return MS2SEC(anim->Length());
+    }
+    return 0;
 }
 
 BE_NAMESPACE_END

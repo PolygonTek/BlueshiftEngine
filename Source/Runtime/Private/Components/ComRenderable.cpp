@@ -118,6 +118,15 @@ void ComRenderable::UpdateVisuals() {
     }
 }
 
+bool ComRenderable::IsVisibleInPreviousFrame() const {
+    if (renderObjectHandle == -1) {
+        return false;
+    }
+    
+    const RenderObject *renderObject = renderWorld->GetRenderObject(renderObjectHandle);
+    return renderWorld->GetViewCount() - renderObject->viewCount <= 1;
+}
+
 const AABB ComRenderable::GetAABB() {
     const ComTransform *transform = GetEntity()->GetTransform();
     return renderObjectDef.localAABB * transform->GetScale();

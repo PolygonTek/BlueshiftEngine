@@ -65,6 +65,8 @@ public:
     bool                    IsSkipSelection() const;
     void                    SetSkipSelection(bool skip);
 
+    bool                    IsVisibleInPreviousFrame() const;
+
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;

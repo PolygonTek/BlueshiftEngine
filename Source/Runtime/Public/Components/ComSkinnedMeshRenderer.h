@@ -23,6 +23,8 @@ class AnimAsset;
 class Anim;
 
 class ComSkinnedMeshRenderer : public ComMeshRenderer {
+    friend class LuaVM;
+
 public:
     OBJECT_PROTOTYPE(ComSkinnedMeshRenderer);
 
@@ -40,7 +42,7 @@ public:
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-    void                    UpdateAnimation(int time);
+    void                    UpdateAnim(int time);
 
     Guid                    GetSkeletonGuid() const;
     void                    SetSkeletonGuid(const Guid &skeletonGuid);
@@ -49,6 +51,8 @@ public:
     void                    SetAnimGuid(const Guid &animGuid);
 
     Anim *                  GetAnim() const { return anim; }
+
+    float                   GetAnimSeconds() const;
 
     int                     GetPlayStartTime() const { return playStartTime; }
 
