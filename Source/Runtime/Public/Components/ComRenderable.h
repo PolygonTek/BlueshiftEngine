@@ -42,7 +42,9 @@ public:
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
     void                    SetWireframeColor(const Color4 &color);
-    void                    ShowWireframe(RenderObject::WireframeMode wireframeMode);
+
+    RenderObject::WireframeMode GetWireframeMode() const { return renderObjectDef.wireframeMode; }
+    void                    SetWireframeMode(RenderObject::WireframeMode wireframeMode);
 
     float                   GetMaxVisDist() const;
     void                    SetMaxVisDist(float maxVisDist);

@@ -168,9 +168,9 @@ void ComRenderable::SetWireframeColor(const Color4 &color) {
     UpdateVisuals();
 }
 
-void ComRenderable::ShowWireframe(RenderObject::WireframeMode wireframeMode) {
+void ComRenderable::SetWireframeMode(RenderObject::WireframeMode wireframeMode) {
     renderObjectDef.wireframeMode = wireframeMode;
-    
+
     UpdateVisuals();
 }
 

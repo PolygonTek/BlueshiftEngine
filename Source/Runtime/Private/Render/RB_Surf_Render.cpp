@@ -37,11 +37,11 @@ void RBSurf::DrawPrimitives() const {
         backEnd.ctx->renderCounter.shadowDrawCalls++;
         backEnd.ctx->renderCounter.shadowDrawIndexes += numIndexes * instanceCount;
         backEnd.ctx->renderCounter.shadowDrawVerts += numVerts * instanceCount;
-    } else {
-        backEnd.ctx->renderCounter.drawCalls++;
-        backEnd.ctx->renderCounter.drawIndexes += numIndexes * instanceCount;
-        backEnd.ctx->renderCounter.drawVerts += numVerts * instanceCount;
     }
+
+    backEnd.ctx->renderCounter.drawCalls++;
+    backEnd.ctx->renderCounter.drawIndexes += numIndexes * instanceCount;
+    backEnd.ctx->renderCounter.drawVerts += numVerts * instanceCount;
 }
 
 void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
