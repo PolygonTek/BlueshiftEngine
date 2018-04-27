@@ -28,7 +28,7 @@ CVAR(r_dynamicVertexCacheSize, L"0x800000", CVar::Integer, L"size of dynamic ver
 CVAR(r_dynamicIndexCacheSize, L"0x300000", CVar::Integer, L"size of dynamic index buffer");
 CVAR(r_dynamicUniformCacheSize, L"0x100000", CVar::Integer, L"size of dynamic uniform buffer");
 
-CVAR(r_fastSkinning, L"3", CVar::Integer | CVar::Archive, L"matrix skinning calculation, 0 = CPU skinning, 1 = VS skinning, 2 = VTF skinning, 3 = VTF skinning with instancing");
+CVAR(r_fastSkinning, L"2", CVar::Integer | CVar::Archive, L"matrix skinning calculation, 0 = CPU skinning, 1 = VS skinning, 2 = VTF skinning");
 CVAR(r_vertexTextureUpdate, L"2", CVar::Integer | CVar::Archive, L"texel fetch buffer, 0 = direct copy, 1 = PBO, 2 = TBO");
 
 CVAR(r_shadows, L"1", CVar::Integer | CVar::Archive, L"enable shadows, 1 = shadow map");

@@ -34,7 +34,7 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
     // Save current gamma ramp table
     rhi.GetGammaRamp(savedGammaRamp);
 
-    if ((r_fastSkinning.GetInteger() == 2 || r_fastSkinning.GetInteger() == 3) && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
+    if (r_fastSkinning.GetInteger() == 2 && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
         renderGlobal.skinningMethod = Mesh::VertexTextureFetchSkinning;
     } else if (r_fastSkinning.GetInteger() == 1) {
         renderGlobal.skinningMethod = Mesh::VertexShaderSkinning;

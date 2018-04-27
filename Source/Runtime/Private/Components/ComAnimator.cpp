@@ -116,7 +116,7 @@ void ComAnimator::UpdateVisuals() {
 
     int currentTime = GetGameWorld()->GetTime();
 
-    UpdateAnimation(currentTime);
+    UpdateAnim(currentTime);
 }
 
 void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
@@ -140,7 +140,7 @@ void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
     }
 }
 
-void ComAnimator::UpdateAnimation(int currentTime) {
+void ComAnimator::UpdateAnim(int currentTime) {
     animator.ComputeFrame(currentTime);
 
     Mat3x4 *jointMats = animator.GetFrame();

@@ -23,8 +23,9 @@ void LuaVM::RegisterSkinnedMeshRendererComponent(LuaCpp::Module &module) {
 
     _ComSkinnedMeshRenderer.SetClass<ComSkinnedMeshRenderer>(module["ComMeshRenderer"]);
     _ComSkinnedMeshRenderer.AddClassMembers<ComSkinnedMeshRenderer>(
-        "play_starttime", &ComSkinnedMeshRenderer::GetPlayStartTime,
-        "update_animation", &ComSkinnedMeshRenderer::UpdateAnimation);
+        "anim_start_time", &ComSkinnedMeshRenderer::GetPlayStartTime,
+        "anim_seconds", &ComSkinnedMeshRenderer::GetAnimSeconds,
+        "update_anim", &ComSkinnedMeshRenderer::UpdateAnim);
 
     _ComSkinnedMeshRenderer["meta_object"] = ComSkinnedMeshRenderer::metaObject;
 }

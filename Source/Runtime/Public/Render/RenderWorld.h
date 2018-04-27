@@ -60,6 +60,8 @@ public:
     void                        UpdateRenderLight(int handle, const RenderLight::State *lightDef);
     void                        RemoveRenderLight(int handle);
 
+    int                         GetViewCount() const { return viewCount; }
+
     void                        RenderScene(const RenderView *view);
 
     void                        SetSkyboxMaterial(Material *skyboxMaterial);

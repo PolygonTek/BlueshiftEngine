@@ -39,7 +39,7 @@ public:
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-    void                    UpdateAnimation(int time);
+    void                    UpdateAnim(int time);
 
     Vec3                    GetTranslation(int currentTime) const;
 

@@ -30,7 +30,7 @@ void LuaVM::RegisterAnimatorComponent(LuaCpp::Module &module) {
         "reset_anim_state", &ComAnimator::ResetAnimState,
         "current_anim_state", &ComAnimator::GetCurrentAnimState,
         "transit_anim_state", &ComAnimator::TransitAnimState,
-        "update_animation", &ComAnimator::UpdateAnimation);
+        "update_anim", &ComAnimator::UpdateAnim);
 
     _ComAnimator["meta_object"] = ComAnimator::metaObject;
 }

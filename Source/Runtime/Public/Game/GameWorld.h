@@ -59,6 +59,8 @@ public:
 
     LuaVM &                     GetLuaVM() { return luaVM; }
 
+    Random &                    GetRandom() { return random; }
+
     void                        SetDebuggable(bool isDebuggable) { this->isDebuggable = isDebuggable; }
 
     int                         GetTime() const { return time; }
@@ -163,6 +165,8 @@ private:
     Hierarchy<Entity>           entityHierarchy;
 
     Json::Value                 snapshotValues;
+
+    Random                      random;
 
     LuaVM                       luaVM;
 

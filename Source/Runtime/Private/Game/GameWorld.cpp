@@ -90,6 +90,8 @@ void GameWorld::Reset() {
     time = 0;
     prevTime = 0;
 
+    random.SetSeed(0);
+
     renderWorld->ClearDebugPrimitives(0);
     renderWorld->ClearDebugText(0);
 }
