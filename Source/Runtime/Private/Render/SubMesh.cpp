@@ -93,7 +93,7 @@ void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
 
     this->type                      = meshType;
     this->refSubMesh                = static_cast<const SubMesh *>(ref);
-    this->subMeshIndex              = 0;
+    this->subMeshIndex              = refSubMesh->subMeshIndex;
 
     this->numVerts                  = ref->numVerts;
     this->numMirroredVerts          = ref->numMirroredVerts;
