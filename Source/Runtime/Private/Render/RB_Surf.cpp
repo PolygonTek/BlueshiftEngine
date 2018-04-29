@@ -30,9 +30,12 @@ void RBSurf::Init() {
     numIndexes = 0;
     numInstances = 0;
 
-    maxInstances = rhi.HWLimit().maxUniformBlockSize / 128;// rhi.HWLimit().uniformBufferOffsetAlignment;
+    maxInstances = rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment;
+ 
+    instanceIndexes = (int32_t *)Mem_Alloc16(maxInstances * sizeof(int32_t));
 
-    instanceDataTable = (InstanceData *)Mem_Alloc16(sizeof(InstanceData) * maxInstances);
+    instanceStartIndex = -1;
+    instanceEndIndex = -1;
 
     skinnedMeshInstanceDataTable = nullptr;
 
@@ -50,10 +53,11 @@ void RBSurf::Init() {
 }
 
 void RBSurf::Shutdown() {
-    if (instanceDataTable) {
-        Mem_AlignedFree(instanceDataTable);
-        instanceDataTable = nullptr;
+    if (instanceIndexes) {
+        Mem_AlignedFree(instanceIndexes);
+        instanceIndexes = nullptr;
     }
+
     if (skinnedMeshInstanceDataTable) {
         Mem_AlignedFree(skinnedMeshInstanceDataTable);
         skinnedMeshInstanceDataTable = nullptr;
@@ -76,25 +80,23 @@ void RBSurf::Begin(int flushType, const Material *material, const float *materia
 }
 
 void RBSurf::AddInstance(const DrawSurf *drawSurf) {
-    if (numInstances >= maxInstances) {
+    if (instanceEndIndex - instanceStartIndex + 1 >= maxInstances) {
         Flush();
     }
 
-    const RenderObject *objectDef = drawSurf->space->def;
+    if (instanceStartIndex < 0) {
+        instanceStartIndex = drawSurf->space->instanceIndex;
+    }
 
-    const Mat3x4 &localToWorldMatrix = objectDef->GetObjectToWorldMatrix();
-    instanceDataTable[numInstances].localToWorldMatrixS = localToWorldMatrix[0];
-    instanceDataTable[numInstances].localToWorldMatrixT = localToWorldMatrix[1];
-    instanceDataTable[numInstances].localToWorldMatrixR = localToWorldMatrix[2];
+    if (instanceEndIndex < drawSurf->space->instanceIndex) {
+        instanceEndIndex = drawSurf->space->instanceIndex;
+    }
 
-    /*Mat3x4 worldToLocalMatrix = Mat3x4(surfSpace->def->state.axis.Transpose(), -surfSpace->def->state.origin);
-    instanceDataTable[numInstances].worldToLocalMatrixS = worldToLocalMatrix[0];
-    instanceDataTable[numInstances].worldToLocalMatrixT = worldToLocalMatrix[1];
-    instanceDataTable[numInstances].worldToLocalMatrixR = worldToLocalMatrix[2];*/
-
-    instanceDataTable[numInstances].constantColor = material->GetPass()->useOwnerColor ? reinterpret_cast<const Color4 &>(objectDef->state.materialParms[RenderObject::RedParm]) : material->GetPass()->constantColor;
+    instanceIndexes[numInstances] = drawSurf->space->instanceIndex - instanceStartIndex;
 
     if (drawSurf->subMesh->IsGpuSkinning()) {
+        const RenderObject *objectDef = drawSurf->space->def;
+
         SkinningJointCache *skinningJointCache = objectDef->state.mesh->skinningJointCache;
 
         if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
@@ -234,7 +236,7 @@ void RBSurf::Flush() {
     }
 
     startIndex = -1;
-    
+
     //vbHandle = RHI::NullBuffer;
     //ibHandle = RHI::NullBuffer;
 
@@ -242,7 +244,11 @@ void RBSurf::Flush() {
 
     numVerts = 0;
     numIndexes = 0;
+
     numInstances = 0;
+
+    instanceStartIndex = -1;
+    instanceEndIndex = -1;
 }
 
 // Converts 24-bit ID to Vec3

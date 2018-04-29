@@ -287,8 +287,11 @@ void RenderWorld::RenderScene(const RenderView *renderView) {
     currentView = (VisibleView *)frameData.ClearedAlloc(sizeof(*currentView));
     currentView->def = renderView;
     currentView->maxDrawSurfs = MaxViewDrawSurfs;
-    currentView->numDrawSurfs = 0;
     currentView->drawSurfs = (DrawSurf **)frameData.Alloc(currentView->maxDrawSurfs * sizeof(DrawSurf *));
+    currentView->instanceBufferCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+
+    new (&currentView->visibleObjects) LinkList<VisibleObject>();
+    new (&currentView->visibleLights) LinkList<VisibleLight>();
 
     RenderCamera(currentView);
 }
@@ -337,6 +340,9 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     guiView->is2D           = true;
     guiView->maxDrawSurfs   = guiMesh.NumSurfaces();
     guiView->drawSurfs      = (DrawSurf **)frameData.Alloc(guiView->maxDrawSurfs * sizeof(DrawSurf *));
+
+    new (&guiView->visibleObjects) LinkList<VisibleObject>();
+    new (&guiView->visibleLights) LinkList<VisibleLight>();
 
     // GUI visible object
     Mat4 projMatrix;

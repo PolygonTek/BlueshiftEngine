@@ -14,26 +14,32 @@
 
 #pragma once
 
+#include "Containers/LinkList.h"
+
 BE_NAMESPACE_BEGIN
 
 class VisibleObject {
 public:
-    const RenderObject *    def;
+    int                     index;
 
-    VisibleObject *         next;
+    const RenderObject *    def;
 
     Mat3x4                  modelViewMatrix;
     Mat4                    modelViewProjMatrix;
 
+    int                     instanceIndex;
+
     bool                    ambientVisible;
     bool                    shadowVisible;
+
+    LinkList<VisibleObject> node;
 };
 
 class VisibleLight {
 public:
-    const RenderLight *     def;
+    int                     index;
 
-    VisibleLight *          next;
+    const RenderLight *     def;
 
     float *                 materialRegisters;
 
@@ -53,6 +59,8 @@ public:
     int                     shadowCasterSurfFirst;
     int                     shadowCasterSurfCount;
     AABB                    shadowCasterAABB;
+
+    LinkList<VisibleLight>  node;
 };
 
 class VisibleView {
@@ -72,8 +80,13 @@ public:
 
     int                     numAmbientSurfs;
 
-    VisibleObject *         visibleObjects;
-    VisibleLight *          visibleLights;
+    int                     numVisibleObjects;
+    int                     numVisibleLights;
+
+    BufferCache *           instanceBufferCache;
+
+    LinkList<VisibleObject> visibleObjects;
+    LinkList<VisibleLight>  visibleLights;
     VisibleLight *          primaryLight;
 };
 
@@ -87,9 +100,20 @@ struct SkinningJointCache {
     int                     viewFrameCount;         // 현재 프레임에 계산을 마쳤음을 표시하기 위한 marking number
 };
 
+struct InstanceData {
+    Vec4                    localToWorldMatrixS;
+    Vec4                    localToWorldMatrixT;
+    Vec4                    localToWorldMatrixR;
+    //Vec4                  worldToLocalMatrixS;
+    //Vec4                  worldToLocalMatrixT;
+    //Vec4                  worldToLocalMatrixR;
+    Color4                  constantColor;
+};
+
 struct renderGlobal_t {
     int                     skinningMethod;
     int                     vtUpdateMethod;          // vertex texture update method
+    void *                  instanceBufferData;
 };
 
 extern renderGlobal_t       renderGlobal;

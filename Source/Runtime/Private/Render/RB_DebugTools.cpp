@@ -631,7 +631,7 @@ static void RB_DrawDebugLights(int mode) {
         rhi.SetDepthRange(0.0f, 0.0f);
     }
 
-    for (VisibleLight *visibleLight = backEnd.visibleLights; visibleLight; visibleLight = visibleLight->next) {
+    for (VisibleLight *visibleLight = backEnd.visibleLights->Next(); visibleLight; visibleLight = visibleLight->node.Next()) {
         if (r_useLightOcclusionQuery.GetBool() && !visibleLight->occlusionVisible) {
             continue;
         }
@@ -663,7 +663,7 @@ static void RB_DrawDebugLights(int mode) {
 }
 
 static void RB_DrawDebugLightScissorRects() {
-    for (VisibleLight *visibleLight = backEnd.visibleLights; visibleLight; visibleLight = visibleLight->next) {
+    for (VisibleLight *visibleLight = backEnd.visibleLights->Next(); visibleLight; visibleLight = visibleLight->node.Next()) {
         if (r_useLightOcclusionQuery.GetBool() && !visibleLight->occlusionVisible) {
             continue;
         }

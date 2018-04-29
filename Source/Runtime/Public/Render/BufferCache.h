@@ -41,30 +41,30 @@ public:
     void                    BeginBackEnd();
 
                             /// Allocates vertex buffer in the local device memory
-    void                    AllocStaticVertex(int bytes, const void *data, BufferCache *vc);
+    void                    AllocStaticVertex(int bytes, const void *data, BufferCache *bufferCache);
                             /// Allocates index buffer in the local device memory
-    void                    AllocStaticIndex(int bytes, const void *data, BufferCache *vc);
+    void                    AllocStaticIndex(int bytes, const void *data, BufferCache *bufferCache);
                             /// Allocates uniform buffer in the local device memory
-    void                    AllocStaticUniform(int bytes, const void *data, BufferCache *vc);
+    void                    AllocStaticUniform(int bytes, const void *data, BufferCache *bufferCache);
                             /// Allocates texel buffer in the local device memory
-    void                    AllocStaticTexel(int bytes, const void *data, BufferCache *vc);
+    void                    AllocStaticTexel(int bytes, const void *data, BufferCache *bufferCache);
 
-    bool                    AllocVertex(int numVertexes, int vertexSize, const void *data, BufferCache *vc);
-    bool                    AllocIndex(int numIndexes, int indexSize, const void *data, BufferCache *vc);
-    bool                    AllocUniform(int bytes, const void *data, BufferCache *vc);
-    bool                    AllocTexel(int bytes, const void *data, BufferCache *vc);
+    bool                    AllocVertex(int numVertexes, int vertexSize, const void *data, BufferCache *bufferCache);
+    bool                    AllocIndex(int numIndexes, int indexSize, const void *data, BufferCache *bufferCache);
+    bool                    AllocUniform(int bytes, const void *data, BufferCache *bufferCache);
+    bool                    AllocTexel(int bytes, const void *data, BufferCache *bufferCache);
 
-    byte *                  MapVertexBuffer(BufferCache *bc) const;
-    byte *                  MapIndexBuffer(BufferCache *bc) const;
-    byte *                  MapUniformBuffer(BufferCache *bc) const;
-    byte *                  MapTexelBuffer(BufferCache *bc) const;
+    byte *                  MapVertexBuffer(BufferCache *bufferCache) const;
+    byte *                  MapIndexBuffer(BufferCache *bufferCache) const;
+    byte *                  MapUniformBuffer(BufferCache *bufferCache) const;
+    byte *                  MapTexelBuffer(BufferCache *bufferCache) const;
 
-    void                    UnmapVertexBuffer(BufferCache *bc) const;
-    void                    UnmapIndexBuffer(BufferCache *bc) const;
-    void                    UnmapUniformBuffer(BufferCache *bc) const;
-    void                    UnmapTexelBuffer(BufferCache *bc) const;
+    void                    UnmapVertexBuffer(BufferCache *bufferCache) const;
+    void                    UnmapIndexBuffer(BufferCache *bufferCache) const;
+    void                    UnmapUniformBuffer(BufferCache *bufferCache) const;
+    void                    UnmapTexelBuffer(BufferCache *bufferCache) const;
 
-    bool                    IsCached(const BufferCache *vc) const;
+    bool                    IsCached(const BufferCache *bufferCache) const;
 
                             // Update PBO to Texture
     void                    UpdatePBOTexture() const;

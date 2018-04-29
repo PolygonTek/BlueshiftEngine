@@ -115,11 +115,11 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
 }
 
 // Forward lighting renders each surfaces depending on lights that affect the surface.
-void RB_ForwardAdditivePass(VisibleLight *visibleLights) {
-    for (VisibleLight *visibleLight = visibleLights; visibleLight; visibleLight = visibleLight->next) {
-        const RenderLight *light = visibleLight->def;
+void RB_ForwardAdditivePass(const LinkList<VisibleLight> *visibleLights) {
+    for (VisibleLight *visibleLight = visibleLights->Next(); visibleLight; visibleLight = visibleLight->node.Next()) {
+        const RenderLight *renderLight = visibleLight->def;
 
-        if (light->state.flags & RenderLight::PrimaryLightFlag) {
+        if (renderLight->state.flags & RenderLight::PrimaryLightFlag) {
             continue;
         }
 
@@ -130,7 +130,7 @@ void RB_ForwardAdditivePass(VisibleLight *visibleLights) {
         if (r_useDepthBoundTest.GetBool()) {
             float lightDepthMin, lightDepthMax;
 
-            if (!backEnd.view->def->GetDepthBoundsFromLight(light, backEnd.view->def->viewProjMatrix, &lightDepthMin, &lightDepthMax)) {
+            if (!backEnd.view->def->GetDepthBoundsFromLight(renderLight, backEnd.view->def->viewProjMatrix, &lightDepthMin, &lightDepthMax)) {
                 continue;
             }
 

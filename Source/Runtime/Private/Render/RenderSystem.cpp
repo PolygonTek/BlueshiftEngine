@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Heap.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "RBackEnd.h"
@@ -49,6 +50,8 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
     } else {
         renderGlobal.vtUpdateMethod = Mesh::DirectCopyUpdate;
     }
+
+    renderGlobal.instanceBufferData = Mem_Alloc16(4096 * rhi.HWLimit().uniformBufferOffsetAlignment);
 
     textureManager.Init();
 
@@ -115,6 +118,8 @@ void RenderSystem::Shutdown() {
     shaderManager.Shutdown();
 
     textureManager.Shutdown();
+
+    Mem_AlignedFree(renderGlobal.instanceBufferData);
 
     rhi.Shutdown();
 

@@ -116,6 +116,7 @@ private:
     void                        AddSkyBoxMeshes(VisibleView *view);
     void                        AddStaticMeshesForLights(VisibleView *view);
     void                        AddSkinnedMeshesForLights(VisibleView *view);
+    void                        CacheInstanceBuffer(VisibleView *view);
     void                        OptimizeLights(VisibleView *view);
     void                        AddDrawSurf(VisibleView *view, VisibleLight *light, VisibleObject *entity, const Material *material, SubMesh *subMesh, int flags);
     void                        AddLightDrawSurfFromAmbient(VisibleView *view, const DrawSurf *from, int lightIndex, int shadowBit);

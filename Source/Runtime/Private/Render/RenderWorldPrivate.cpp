@@ -27,12 +27,13 @@ VisibleObject *RenderWorld::RegisterVisibleObject(VisibleView *view, RenderObjec
 
     VisibleObject *visibleObject = (VisibleObject *)frameData.ClearedAlloc(sizeof(*visibleObject));
 
-    // data reference
-    visibleObject->def = renderObject; 
+    new (&visibleObject->node) LinkList<VisibleObject>();
+    visibleObject->node.SetOwner(visibleObject);
+    visibleObject->node.AddToEnd(view->visibleObjects);
 
-    // view 에 linked list 로 연결
-    visibleObject->next = view->visibleObjects;
-    view->visibleObjects = visibleObject;
+    visibleObject->index = view->numVisibleObjects++;
+
+    visibleObject->def = renderObject;
 
     // visibleObject 를 renderObject 에 연결
     renderObject->visibleObject = visibleObject;
@@ -52,12 +53,16 @@ VisibleLight *RenderWorld::RegisterVisibleLight(VisibleView *view, RenderLight *
 
     VisibleLight *visibleLight = (VisibleLight *)frameData.ClearedAlloc(sizeof(*visibleLight));
 
-    // data reference
+    new (&visibleLight->node) LinkList<VisibleLight>();
+    visibleLight->node.SetOwner(visibleLight);
+    visibleLight->node.AddToEnd(view->visibleLights);
+
+    visibleLight->index = view->numVisibleLights++;
+
     visibleLight->def = renderLight;
 
-    // view 에 linked list 로 연결
-    visibleLight->next = view->visibleLights;
-    view->visibleLights = visibleLight;
+    visibleLight->litSurfsAABB.Clear();
+    visibleLight->shadowCasterAABB.Clear();
 
     // visibleLight 를 renderLight 에 연결
     renderLight->visibleLight = visibleLight;
@@ -73,8 +78,8 @@ void RenderWorld::FindVisibleLightsAndObjects(VisibleView *view) {
     viewCount++;
 
     view->worldAABB.Clear();
-    view->visibleLights = nullptr;
-    view->visibleObjects = nullptr;
+    view->visibleLights.Clear();
+    view->visibleObjects.Clear();
 
     // Called for each scene lights that intersects with view frustum.
     // Returns true if it want to proceed next query.
@@ -120,9 +125,6 @@ void RenderWorld::FindVisibleLightsAndObjects(VisibleView *view) {
         visibleLight->scissorRect = screenClipRect;
         // glScissor 의 x, y 좌표는 lower left corner 이므로 y 좌표를 밑에서 증가되도록 뒤집는다.
         visibleLight->scissorRect.y = renderSystem.currentContext->GetRenderingHeight() - (screenClipRect.y + screenClipRect.h);
-
-        visibleLight->litSurfsAABB.Clear();
-        visibleLight->shadowCasterAABB.Clear();
 
         return true;
     };
@@ -263,7 +265,7 @@ void RenderWorld::AddStaticMeshes(VisibleView *view) {
 
 // skinned mesh 들을 ambient drawSurfs 에 담는다. 
 void RenderWorld::AddSkinnedMeshes(VisibleView *view) {
-    for (VisibleObject *visibleObject = view->visibleObjects; visibleObject; visibleObject = visibleObject->next) {
+    for (VisibleObject *visibleObject = view->visibleObjects.Next(); visibleObject; visibleObject = visibleObject->node.Next()) {
         if (!visibleObject->ambientVisible) {
             continue;
         }
@@ -306,7 +308,7 @@ void RenderWorld::AddSkinnedMeshes(VisibleView *view) {
 }
 
 void RenderWorld::AddParticleMeshes(VisibleView *view) {
-    for (VisibleObject *visibleObject = view->visibleObjects; visibleObject; visibleObject = visibleObject->next) {
+    for (VisibleObject *visibleObject = view->visibleObjects.Next(); visibleObject; visibleObject = visibleObject->node.Next()) {
         if (!visibleObject->ambientVisible) {
             continue;
         }
@@ -354,7 +356,7 @@ void RenderWorld::AddParticleMeshes(VisibleView *view) {
 }
 
 void RenderWorld::AddTextMeshes(VisibleView *view) {
-    for (VisibleObject *visibleObject = view->visibleObjects; visibleObject; visibleObject = visibleObject->next) {
+    for (VisibleObject *visibleObject = view->visibleObjects.Next(); visibleObject; visibleObject = visibleObject->node.Next()) {
         if (!visibleObject->ambientVisible) {
             continue;
         }
@@ -440,7 +442,7 @@ void RenderWorld::AddSkyBoxMeshes(VisibleView *view) {
 
 // static mesh 들을 visibleLight 의 litSurfs/shadowCasterSurfs 리스트에 담는다.
 void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
-    VisibleLight *visibleLight = view->visibleLights;
+    VisibleLight *visibleLight;
 
     // Called for static mesh surfaces intersecting with each light volume
     // Returns true if it want to proceed next query
@@ -477,7 +479,7 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
         // Is surface visible for this frame ?
         if (surf->viewCount == this->viewCount) {
             if ((surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
-                AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->def->index, 0);
+                AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->index, 0);
 
                 visibleLight->litSurfCount++;
 
@@ -492,7 +494,7 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
             }
 
             if (surf->viewCount == this->viewCount) {
-                AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->def->index, 1);
+                AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->index, 1);
             } else {
                 // This surface is not visible but shadow might be visible as a shadow caster.
                 // Register a visibleObject used only for shadow caster
@@ -513,7 +515,7 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
         return true;
     };
 
-    while (visibleLight) {
+    for (visibleLight = view->visibleLights.Next(); visibleLight; visibleLight = visibleLight->node.Next()) {
         const RenderLight *renderLight = visibleLight->def;
 
         switch (renderLight->state.type) {
@@ -533,14 +535,12 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *view) {
         default:
             break;
        }
-
-       visibleLight = visibleLight->next;
     }
 }
 
 // skinned mesh 들을 visibleLight 의 litSurfs/shadowCasterSurfs 리스트에 담는다.
 void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
-    VisibleLight *visibleLight = view->visibleLights;
+    VisibleLight *visibleLight;
 
     // Called for entities intersecting with each light volume
     // Returns true if it want to proceed next query
@@ -578,7 +578,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
             // 이미 ambient visible surf 로 등록되었고, lighting 이 필요한 surf 라면 litSurfs 리스트에 추가한다.
             if (surf->viewCount == this->viewCount) {
                 if ((surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
-                    AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->def->index, 0);
+                    AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->index, 0);
 
                     visibleLight->litSurfCount++;
                 }
@@ -607,7 +607,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
 
             if (material->IsShadowCaster()) {
                 if (surf->viewCount == this->viewCount) {
-                    AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->def->index, 1);
+                    AddLightDrawSurfFromAmbient(view, surf->drawSurf, visibleLight->index, 1);
                 } else {
                     // ambient visible 하지 않으므로 shadow 용 visibleObject 를 등록해준다.
                     if (!shadowCasterObject) {
@@ -635,7 +635,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
         return true;
     };
     
-    while (visibleLight) {
+    for (visibleLight = view->visibleLights.Next(); visibleLight; visibleLight = visibleLight->node.Next()) {
         const RenderLight *renderLight = visibleLight->def;
 
         switch (renderLight->state.type) {
@@ -655,51 +655,86 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *view) {
         default:
             break;
         }
-
-        visibleLight = visibleLight->next;
     }
 }
 
+void RenderWorld::CacheInstanceBuffer(VisibleView *view) {
+    int numInstances = 0;
+
+    for (VisibleObject *visibleObject = view->visibleObjects.Next(); visibleObject; visibleObject = visibleObject->node.Next()) {
+        const RenderObject *renderObject = visibleObject->def;
+
+        if (!renderObject->state.mesh) {
+            continue;
+        }
+
+        for (int surfaceIndex = 0; surfaceIndex < renderObject->state.mesh->NumSurfaces(); surfaceIndex++) {
+            const MeshSurf *surf = renderObject->state.mesh->GetSurface(surfaceIndex);
+
+            if (surf->viewCount != viewCount) {
+                continue;
+            }
+
+            if (surf->drawSurf->flags & DrawSurf::UseInstancing) {
+                InstanceData *instanceData = (InstanceData *)((byte *)renderGlobal.instanceBufferData + numInstances * rhi.HWLimit().uniformBufferOffsetAlignment);
+
+                const Mat3x4 &localToWorldMatrix = renderObject->GetObjectToWorldMatrix();
+                instanceData->localToWorldMatrixS = localToWorldMatrix[0];
+                instanceData->localToWorldMatrixT = localToWorldMatrix[1];
+                instanceData->localToWorldMatrixR = localToWorldMatrix[2];
+
+                /*Mat3x4 worldToLocalMatrix = Mat3x4(renderObject->state.axis.Transpose(), -renderObject->state.origin);
+                instanceData->worldToLocalMatrixS = worldToLocalMatrix[0];
+                instanceData->worldToLocalMatrixT = worldToLocalMatrix[1];
+                instanceData->worldToLocalMatrixR = worldToLocalMatrix[2];*/
+
+                instanceData->constantColor = surf->drawSurf->material->GetPass()->useOwnerColor ?
+                    reinterpret_cast<const Color4 &>(renderObject->state.materialParms[RenderObject::RedParm]) : 
+                    surf->drawSurf->material->GetPass()->constantColor;
+
+                visibleObject->instanceIndex = numInstances++;
+                break;
+            }
+        }
+    }
+
+    bufferCacheManager.AllocUniform(numInstances * rhi.HWLimit().uniformBufferOffsetAlignment, renderGlobal.instanceBufferData, view->instanceBufferCache);
+}
+
 void RenderWorld::OptimizeLights(VisibleView *view) {
-    VisibleLight *prevLight = nullptr;
+    LinkList<VisibleLight> *nextNode;
 
     // Iterate over light linked list in view
-    for (VisibleLight *light = view->visibleLights; light; light = light->next) {
-        const AABB lightAABB = light->def->GetWorldAABB();
+    for (LinkList<VisibleLight> *node = view->visibleLights.NextNode(); node; node = nextNode) {
+        nextNode = node->NextNode();
+
+        VisibleLight *visibleLight = node->Owner();
+
+        const AABB lightAABB = visibleLight->def->GetWorldAABB();
         
         // Compute effective AABB
-        light->litSurfsAABB.IntersectSelf(lightAABB);
-        light->shadowCasterAABB.IntersectSelf(lightAABB);
+        visibleLight->litSurfsAABB.IntersectSelf(lightAABB);
+        visibleLight->shadowCasterAABB.IntersectSelf(lightAABB);
         
-        if (light->def->state.flags & RenderLight::PrimaryLightFlag) {
-            view->primaryLight = light;
+        if (visibleLight->def->state.flags & RenderLight::PrimaryLightFlag) {
+            view->primaryLight = visibleLight;
             continue;
         }
 
         Rect screenClipRect;
-        if (!view->def->GetClipRectFromAABB(light->litSurfsAABB, screenClipRect)) {
-            if (prevLight) {
-                prevLight->next = light->next;
-            } else {
-                view->visibleLights = light->next;
-            }
+        if (!view->def->GetClipRectFromAABB(visibleLight->litSurfsAABB, screenClipRect)) {
+            node->Remove();
             continue;
         }
 
         Rect visScissorRect = screenClipRect;
         visScissorRect.y = renderSystem.currentContext->GetRenderingHeight() - (screenClipRect.y + screenClipRect.h);
-        light->scissorRect.IntersectSelf(visScissorRect);
+        visibleLight->scissorRect.IntersectSelf(visScissorRect);
 
-        if (light->scissorRect.IsEmpty()) {
-            if (prevLight) {
-                prevLight->next = light->next;
-            } else {
-                view->visibleLights = light->next;
-            }
+        if (visibleLight->scissorRect.IsEmpty()) {
+            node->Remove();
             continue;
         }
-
-        prevLight = light;
     }
 }
 
@@ -753,6 +788,10 @@ void RenderWorld::RenderCamera(VisibleView *view) {
 
     // 바로 윗 단계와 비슷하나 entity 단위로 컬링하고 skinned mesh 의 surf 를 한꺼번에 등록
     AddSkinnedMeshesForLights(view);
+
+    if (r_instancing.GetBool()) {
+        CacheInstanceBuffer(view);
+    }
 
     // Sort all drawSurfs
     SortDrawSurfs(view);
@@ -816,9 +855,9 @@ void RenderWorld::AddDrawSurf(VisibleView *view, VisibleLight *visibleLight, Vis
     drawSurf->flags = flags;
 
     uint64_t materialSort = realMaterial->GetSort();
-    uint64_t objectIndex = visibleObject->def->index;
+    uint64_t objectIndex = visibleObject->index;
     uint64_t materialIndex = materialManager.GetIndexByMaterial(realMaterial);
-    uint64_t lightIndex = visibleLight ? visibleLight->def->index + 1 : 0;
+    uint64_t lightIndex = visibleLight ? visibleLight->index + 1 : 0;
     uint64_t shadowBit = !(flags & DrawSurf::AmbientVisible);
 
     // Rough sorting back-to-front order for translucent surfaces.

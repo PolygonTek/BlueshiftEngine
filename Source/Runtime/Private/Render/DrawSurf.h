@@ -31,6 +31,7 @@ public:
     const Material *        material;           ///< Material pointer of this surface
     const float *           materialRegisters;
     SubMesh *               subMesh;
+    int                     instanceIndex;
 };
 
 BE_NAMESPACE_END

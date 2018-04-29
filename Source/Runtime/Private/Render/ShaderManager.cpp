@@ -189,6 +189,8 @@ void ShaderManager::InitGlobalDefines() {
             shaderManager.AddGlobalHeader("#define HIGH_QUALITY_SSAO\n");
         }
     }
+
+    shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment));
     
     if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
         shaderManager.AddGlobalHeader("#define VTF_SKINNING\n");

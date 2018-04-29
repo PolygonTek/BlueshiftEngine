@@ -703,12 +703,13 @@ static const void *RB_ExecuteDrawView(const void *data) {
 
     backEnd.view            = &cmd->view;
     backEnd.time            = MS2SEC(cmd->view.def->state.time);
-    backEnd.visibleObjects  = cmd->view.visibleObjects;
-    backEnd.visibleLights   = cmd->view.visibleLights;
+    backEnd.visibleObjects  = &cmd->view.visibleObjects;
+    backEnd.visibleLights   = &cmd->view.visibleLights;
     backEnd.primaryLight    = cmd->view.primaryLight;
     backEnd.numDrawSurfs    = cmd->view.numDrawSurfs;
     backEnd.numAmbientSurfs = cmd->view.numAmbientSurfs;
     backEnd.drawSurfs       = cmd->view.drawSurfs;
+    backEnd.instanceBufferCache = cmd->view.instanceBufferCache;
     backEnd.projMatrix      = cmd->view.def->projMatrix;
     backEnd.viewProjMatrix  = cmd->view.def->viewProjMatrix;
     backEnd.renderRect      = cmd->view.def->state.renderRect;

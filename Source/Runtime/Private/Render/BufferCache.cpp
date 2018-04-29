@@ -35,7 +35,7 @@ void BufferCacheManager::Init() {
     int icSize = r_dynamicIndexCacheSize.GetInteger();
     int ucSize = r_dynamicUniformCacheSize.GetInteger();
 
-    // Create dynamic buffer for use dynamic batching
+    // Create dynamic buffer to use for dynamic batching
     for (int i = 0; i < COUNT_OF(frameData); i++) {
         FrameDataBufferSet *bufferSet = &frameData[i];
         

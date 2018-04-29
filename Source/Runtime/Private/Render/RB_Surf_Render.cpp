@@ -25,8 +25,6 @@ void RBSurf::DrawPrimitives() const {
 
     if (numInstances >= 1) {
         rhi.DrawElementsInstanced(RHI::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0, numInstances);
-
-        rhi.BindIndexedBuffer(RHI::UniformBuffer, 0, RHI::NullBuffer);
     } else {
         rhi.DrawElements(RHI::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0);
     }
@@ -222,13 +220,14 @@ void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shad
     }
 
     if (numInstances >= 1) {
-        rhi.BindBuffer(RHI::UniformBuffer, bufferCacheManager.streamUniformBuffer);
-        rhi.BufferDiscardWrite(bufferCacheManager.streamUniformBuffer, numInstances * sizeof(InstanceData), instanceDataTable);
-        rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
+        int bufferOffset = backEnd.instanceBufferCache->offset + instanceStartIndex * rhi.HWLimit().uniformBufferOffsetAlignment;
+        int bufferSize = (instanceEndIndex - instanceStartIndex + 1) * rhi.HWLimit().uniformBufferOffsetAlignment;
 
-        rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, bufferCacheManager.streamUniformBuffer, 0, numInstances * sizeof(InstanceData));
+        // 0-indexed buffer for instance buffer
+        rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
 
-        shader->SetConstantBuffer("InstanceDataBlock", 0);
+        shader->SetConstantBuffer("instanceDataBlock", 0);
+        shader->SetConstantArray1i("instanceIndexes", numInstances, instanceIndexes);
     } else {
         if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst] >= 0) {
             const Mat3x4 &localToWorldMatrix = surfSpace->def->GetObjectToWorldMatrix();
