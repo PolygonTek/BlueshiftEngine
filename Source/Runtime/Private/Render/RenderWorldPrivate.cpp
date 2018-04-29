@@ -700,7 +700,9 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *view) {
         }
     }
 
-    bufferCacheManager.AllocUniform(numInstances * rhi.HWLimit().uniformBufferOffsetAlignment, renderGlobal.instanceBufferData, view->instanceBufferCache);
+    if (numInstances > 0) {
+        bufferCacheManager.AllocUniform(numInstances * rhi.HWLimit().uniformBufferOffsetAlignment, renderGlobal.instanceBufferData, view->instanceBufferCache);
+    }
 }
 
 void RenderWorld::OptimizeLights(VisibleView *view) {

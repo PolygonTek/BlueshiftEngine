@@ -25,7 +25,6 @@ BE_NAMESPACE_BEGIN
 static const char *directiveInclude = "$include";
 
 // NOTE: BuiltInConstant enum 과 반드시 순서가 같아야 함
-// NOTE2: 나중에 자동으로 모든 shader 에 추가되는 구조로 바꾸면 편할 듯
 static const char *builtInConstantNames[] = {
     "modelViewMatrix",                      // ModelViewMatrixConst
     "modelViewMatrixTranspose",             // ModelViewMatrixTransposeConst

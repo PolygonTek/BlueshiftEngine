@@ -36,8 +36,8 @@ void BufferCacheManager::Init() {
     int ucSize = r_dynamicUniformCacheSize.GetInteger();
 
     // Create dynamic buffer to use for dynamic batching
-    for (int i = 0; i < COUNT_OF(frameData); i++) {
-        FrameDataBufferSet *bufferSet = &frameData[i];
+    for (int frameDataIndex = 0; frameDataIndex < COUNT_OF(frameData); frameDataIndex++) {
+        FrameDataBufferSet *bufferSet = &frameData[frameDataIndex];
         
         memset(bufferSet, 0, sizeof(frameData[0]));
 
@@ -49,7 +49,7 @@ void BufferCacheManager::Init() {
             // Create texture buffer to write directly
             bufferSet->texelBufferType = RHI::TexelBuffer;
             bufferSet->texelBuffer = rhi.CreateBuffer(bufferSet->texelBufferType, RHI::Dynamic, TB_BYTES, 0, nullptr);
-            bufferSet->texture = textureManager.AllocTexture(va("_tbTexture%i", i));
+            bufferSet->texture = textureManager.AllocTexture(va("_tbTexture%i", frameDataIndex));
             bufferSet->texture->CreateFromBuffer(Image::RGBA_32F_32F_32F_32F, bufferSet->texelBuffer);
         } else if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
             // Create unpack buffer to translate data from PBO to VTF texture
@@ -57,7 +57,7 @@ void BufferCacheManager::Init() {
             // http://www.songho.ca/opengl/gl_pbo.html
             bufferSet->texelBufferType = RHI::PixelUnpackBuffer;
             bufferSet->texelBuffer = rhi.CreateBuffer(bufferSet->texelBufferType, RHI::Dynamic, TB_BYTES, TB_PITCH, nullptr);
-            if (i == 0) {
+            if (frameDataIndex == 0) {
                 bufferSet->texture = textureManager.AllocTexture("_tbTexture");
                 bufferSet->texture->CreateEmpty(RHI::Texture2D, TB_WIDTH, TB_HEIGHT, 1, 1, 1,
                     Image::RGBA_32F_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality | Texture::HighPriority);
