@@ -24,7 +24,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const VisibleObject *prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -41,10 +41,10 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         if (isDifferentMaterial || isDifferentObject) {
             if (prevMaterial) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::BackgroundFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::BackgroundFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevMaterial = surf->material;
 
@@ -56,11 +56,11 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
 }
 
@@ -69,7 +69,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -90,12 +90,12 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
 
             if (!prevMaterial) {
-                backEnd.rbsurf.Begin(RBSurf::SelectionFlush, surf->material, surf->materialRegisters, surf->space);
+                backEnd.batch.Begin(Batch::SelectionFlush, surf->material, surf->materialRegisters, surf->space);
             } else {
                 if (isDifferentObject || prevMaterial->GetCullType() != surf->material->GetCullType() ||
                     (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
-                    backEnd.rbsurf.Flush();
-                    backEnd.rbsurf.Begin(RBSurf::SelectionFlush, surf->material, surf->materialRegisters, surf->space);
+                    backEnd.batch.Flush();
+                    backEnd.batch.Begin(Batch::SelectionFlush, surf->material, surf->materialRegisters, surf->space);
                 }
             }
 
@@ -121,11 +121,11 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
     
     // restore depthHack
@@ -139,7 +139,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -164,11 +164,11 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }*/
 
             if (!prevMaterial) {
-                backEnd.rbsurf.Begin(RBSurf::OccluderFlush, surf->material, surf->materialRegisters, surf->space);
+                backEnd.batch.Begin(Batch::OccluderFlush, surf->material, surf->materialRegisters, surf->space);
             } else {
                 if (isDifferentObject) {
-                    backEnd.rbsurf.Flush();
-                    backEnd.rbsurf.Begin(RBSurf::OccluderFlush, surf->material, surf->materialRegisters, surf->space);
+                    backEnd.batch.Flush();
+                    backEnd.batch.Begin(Batch::OccluderFlush, surf->material, surf->materialRegisters, surf->space);
                 }
             }
 
@@ -194,11 +194,11 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
 
     // restore depthHack
@@ -213,7 +213,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -236,10 +236,10 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::DepthFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::DepthFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -249,7 +249,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
-                        backEnd.rbsurf.Flush();
+                        backEnd.batch.Flush();
                     }
 
                     if (depthHack) {
@@ -271,14 +271,14 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.rbsurf.AddInstance(surf);
+            backEnd.batch.AddInstance(surf);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
     
     // restore depthHack
@@ -293,7 +293,7 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -312,10 +312,10 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::UnlitFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::UnlitFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -325,7 +325,7 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
-                        backEnd.rbsurf.Flush();
+                        backEnd.batch.Flush();
                     }
 
                     if (depthHack) {
@@ -347,14 +347,14 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.rbsurf.AddInstance(surf);
+            backEnd.batch.AddInstance(surf);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
 
     // restore depthHack
@@ -369,7 +369,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -390,12 +390,12 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             
         if (isDifferentMaterial || isDifferentObject) {
             if (!prevMaterial) {
-                backEnd.rbsurf.Begin(RBSurf::VelocityFlush, surf->material, surf->materialRegisters, surf->space);
+                backEnd.batch.Begin(Batch::VelocityFlush, surf->material, surf->materialRegisters, surf->space);
             } else {
                 if (isDifferentObject || prevMaterial->GetCullType() != surf->material->GetCullType() ||
                     (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
-                    backEnd.rbsurf.Flush();
-                    backEnd.rbsurf.Begin(RBSurf::VelocityFlush, surf->material, surf->materialRegisters, surf->space);
+                    backEnd.batch.Flush();
+                    backEnd.batch.Begin(Batch::VelocityFlush, surf->material, surf->materialRegisters, surf->space);
                 }
             }
 
@@ -428,11 +428,11 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (!firstDraw) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
 
         backEnd.ctx->ppRTs[PP_RT_VEL]->End();
         
@@ -460,7 +460,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
     
     if (backEnd.ctx->updateCurrentRenderTexture) {
         backEnd.ctx->updateCurrentRenderTexture = false;
@@ -488,10 +488,10 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::FinalFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::FinalFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -501,7 +501,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
-                        backEnd.rbsurf.Flush();
+                        backEnd.batch.Flush();
                     }
 
                     if (depthHack) {
@@ -523,14 +523,14 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.rbsurf.AddInstance(surf);
+            backEnd.batch.AddInstance(surf);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
 
     // restore depthHack
@@ -544,7 +544,7 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
         
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -554,10 +554,10 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         if (isDifferentMaterial || isDifferentObject) {
             if (prevMaterial) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::GuiFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::GuiFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevMaterial = surf->material;
 
@@ -581,11 +581,11 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
         
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
 
     // restore depthHack

@@ -36,7 +36,7 @@ class Shader;
 class Material {
     friend class MaterialManager;
     friend class ::MaterialEditor;
-    friend class RBSurf;
+    friend class Batch;
 
 public:
     enum Flag {

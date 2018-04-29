@@ -69,7 +69,7 @@ static void RB_FreeLightQueries() {
 }
 
 void RB_Init() {
-    backEnd.rbsurf.Init();
+    backEnd.batch.Init();
 
     RB_InitStencilStates();
     
@@ -114,7 +114,7 @@ void RB_Shutdown() {
 
     RB_FreeStencilStates();
 
-    backEnd.rbsurf.Shutdown();
+    backEnd.batch.Shutdown();
 }
 
 static const void *RB_ExecuteBeginContext(const void *data) {
@@ -1039,9 +1039,7 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
 
     // Draw redundant surfaces
-    backEnd.rbsurf.Flush();
-
-    backEnd.rbsurf.EndFrame();
+    backEnd.batch.Flush();
 
     rhi.SetViewport(backEnd.screenRect);
     rhi.SetScissor(backEnd.screenRect);
@@ -1078,8 +1076,8 @@ void RB_Execute(const void *data) {
 
     t1 = PlatformTime::Milliseconds();
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
-    backEnd.rbsurf.Begin(RBSurf::FinalFlush, nullptr, nullptr, nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
+    backEnd.batch.Begin(Batch::FinalFlush, nullptr, nullptr, nullptr);
     
     while (1) {
         int cmd = *(const int *)data;

@@ -20,92 +20,86 @@
 
 BE_NAMESPACE_BEGIN
 
-void RBSurf::Init() {
-    startIndex = -1;
-
+void Batch::Init() {
     vbHandle = RHI::NullBuffer;
     ibHandle = RHI::NullBuffer;
+
+    startIndex = -1;
 
     numVerts = 0;
     numIndexes = 0;
     numInstances = 0;
 
-    maxInstances = rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment;
- 
-    instanceIndexes = (int32_t *)Mem_Alloc16(maxInstances * sizeof(int32_t));
+    maxInstancingCount = Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment);
 
     instanceStartIndex = -1;
     instanceEndIndex = -1;
 
-    skinnedMeshInstanceDataTable = nullptr;
+    instanceLocalIndexes = (int *)Mem_Alloc16(maxInstancingCount * sizeof(instanceLocalIndexes[0]));
+
+    skinnedMeshInstanceBaseTcs = nullptr;
 
     if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-            skinnedMeshInstanceDataTable = Mem_Alloc16(sizeof(int) * maxInstances);
+            skinnedMeshInstanceBaseTcs = Mem_Alloc16(sizeof(int) * maxInstancingCount);
         } else if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
-            skinnedMeshInstanceDataTable = Mem_Alloc16(sizeof(Vec2) * maxInstances);
+            skinnedMeshInstanceBaseTcs = Mem_Alloc16(sizeof(Vec2) * maxInstancingCount);
         }
     }
 
     material = nullptr;
     subMesh = nullptr;
+
     surfSpace = nullptr;
+    surfLight = nullptr;
 }
 
-void RBSurf::Shutdown() {
-    if (instanceIndexes) {
-        Mem_AlignedFree(instanceIndexes);
-        instanceIndexes = nullptr;
+void Batch::Shutdown() {
+    if (instanceLocalIndexes) {
+        Mem_AlignedFree(instanceLocalIndexes);
+        instanceLocalIndexes = nullptr;
     }
 
-    if (skinnedMeshInstanceDataTable) {
-        Mem_AlignedFree(skinnedMeshInstanceDataTable);
-        skinnedMeshInstanceDataTable = nullptr;
+    if (skinnedMeshInstanceBaseTcs) {
+        Mem_AlignedFree(skinnedMeshInstanceBaseTcs);
+        skinnedMeshInstanceBaseTcs = nullptr;
     }
 }
 
-void RBSurf::EndFrame() {
-    startIndex = -1;
-}
-
-void RBSurf::SetCurrentLight(const VisibleLight *surfLight) {
+void Batch::SetCurrentLight(const VisibleLight *surfLight) {
     this->surfLight = surfLight;
 }
 
-void RBSurf::Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace) {
+void Batch::Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace) {
     this->flushType = flushType;
     this->material = const_cast<Material *>(material);
     this->materialRegisters = materialRegisters;
     this->surfSpace = surfSpace;
 }
 
-void RBSurf::AddInstance(const DrawSurf *drawSurf) {
-    if (instanceEndIndex - instanceStartIndex + 1 >= maxInstances) {
-        Flush();
-    }
-
+void Batch::AddInstance(const DrawSurf *drawSurf) {
     if (instanceStartIndex < 0) {
+        instanceStartIndex = drawSurf->space->instanceIndex;
+    } else if (drawSurf->space->instanceIndex - instanceStartIndex + 1 >= maxInstancingCount) {
+        Flush();
+
         instanceStartIndex = drawSurf->space->instanceIndex;
     }
 
-    if (instanceEndIndex < drawSurf->space->instanceIndex) {
-        instanceEndIndex = drawSurf->space->instanceIndex;
-    }
+    instanceEndIndex = drawSurf->space->instanceIndex;
 
-    instanceIndexes[numInstances] = drawSurf->space->instanceIndex - instanceStartIndex;
+    instanceLocalIndexes[numInstances] = drawSurf->space->instanceIndex - instanceStartIndex;
 
     if (drawSurf->subMesh->IsGpuSkinning()) {
-        const RenderObject *objectDef = drawSurf->space->def;
-
-        SkinningJointCache *skinningJointCache = objectDef->state.mesh->skinningJointCache;
+        SkinningJointCache *skinningJointCache = drawSurf->space->def->state.mesh->skinningJointCache;
 
         if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
             if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-                int *table = (int *)skinnedMeshInstanceDataTable;
-                table[numInstances] = skinningJointCache->bufferCache.tcBase[0];
+                int *baseTcs = (int *)skinnedMeshInstanceBaseTcs;
+                baseTcs[numInstances] = skinningJointCache->bufferCache.tcBase[0];
             } else {
-                Vec2 *table = (Vec2 *)skinnedMeshInstanceDataTable;
-                table[numInstances] = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
+                Vec2 *baseTcs = (Vec2 *)skinnedMeshInstanceBaseTcs;
+                baseTcs[numInstances] = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
             }
         }
     }
@@ -113,7 +107,7 @@ void RBSurf::AddInstance(const DrawSurf *drawSurf) {
     numInstances++;
 }
 
-void RBSurf::DrawSubMesh(SubMesh *subMesh) {
+void Batch::DrawSubMesh(SubMesh *subMesh) {
     if (subMesh->GetType() == Mesh::ReferenceMesh || 
         subMesh->GetType() == Mesh::StaticMesh || 
         subMesh->GetType() == Mesh::SkinnedMesh) {
@@ -123,7 +117,7 @@ void RBSurf::DrawSubMesh(SubMesh *subMesh) {
     }
 }
 
-void RBSurf::DrawStaticSubMesh(SubMesh *subMesh) {
+void Batch::DrawStaticSubMesh(SubMesh *subMesh) {
     if (this->subMesh && this->subMesh->refSubMesh != subMesh->refSubMesh) {
         Flush();
     }
@@ -131,17 +125,17 @@ void RBSurf::DrawStaticSubMesh(SubMesh *subMesh) {
     if (!this->subMesh || this->subMesh->refSubMesh != subMesh->refSubMesh) {
         this->subMesh = subMesh;
 
-        this->vbHandle = subMesh->vertexCache->buffer;
-        this->ibHandle = subMesh->indexCache->buffer;
+        vbHandle = subMesh->vertexCache->buffer;
+        ibHandle = subMesh->indexCache->buffer;
 
-        this->numVerts = subMesh->numVerts;
-        this->numIndexes = subMesh->numIndexes;
+        numVerts = subMesh->numVerts;
+        numIndexes = subMesh->numIndexes;
 
-        this->startIndex = 0;
+        startIndex = 0;
     }
 }
 
-void RBSurf::DrawDynamicSubMesh(SubMesh *subMesh) {
+void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
     if (startIndex < 0) {
         // startIndex 는 Flush 후에 -1 로 세팅된다
         startIndex = subMesh->indexCache->offset / sizeof(TriIndex);
@@ -156,16 +150,16 @@ void RBSurf::DrawDynamicSubMesh(SubMesh *subMesh) {
         }
     }
 
-    this->vbHandle = subMesh->vertexCache->buffer;
-    this->ibHandle = subMesh->indexCache->buffer;
+    vbHandle = subMesh->vertexCache->buffer;
+    ibHandle = subMesh->indexCache->buffer;
 
-    this->numVerts += subMesh->numVerts;
-    this->numIndexes += subMesh->numIndexes;
+    numVerts += subMesh->numVerts;
+    numIndexes += subMesh->numIndexes;
 
     this->subMesh = subMesh;
 }
 
-void RBSurf::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex) const {
+void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex) const {
     // HACK!!
     // TODO: check vertex type of the subMesh instead of this
     int vertexSize = subMesh->GetType() != Mesh::DynamicMesh ? sizeof(VertexGenericLit) : sizeof(VertexGeneric);
@@ -182,7 +176,7 @@ void RBSurf::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatInde
     }
 }
 
-void RBSurf::Flush() {
+void Batch::Flush() {
     if (!numIndexes) {
         return;
     }
@@ -276,7 +270,7 @@ static Vec4 MakeVec4Id(uint32_t id) {
     return Vec4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, (float)a / 255.0f);
 }
 
-void RBSurf::Flush_SelectionPass() {
+void Batch::Flush_SelectionPass() {
     const Vec3 id = MakeVec3Id(surfSpace->def->index);
 
     const Material::ShaderPass *mtrlPass = material->GetPass();
@@ -307,7 +301,7 @@ void RBSurf::Flush_SelectionPass() {
     }
 }
 
-void RBSurf::Flush_BackgroundPass() {
+void Batch::Flush_BackgroundPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     rhi.SetCullFace(mtrlPass->cullType);
@@ -321,7 +315,7 @@ void RBSurf::Flush_BackgroundPass() {
     RenderGeneric(mtrlPass);
 }
 
-void RBSurf::Flush_DepthPass() {
+void Batch::Flush_DepthPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     if (!(mtrlPass->stateBits & RHI::DepthWrite) || mtrlPass->stateBits & RHI::MaskBF) {
@@ -341,7 +335,7 @@ void RBSurf::Flush_DepthPass() {
     RenderDepth(mtrlPass);
 }
 
-void RBSurf::Flush_ShadowDepthPass() {
+void Batch::Flush_ShadowDepthPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     if (!(mtrlPass->stateBits & RHI::DepthWrite) || mtrlPass->stateBits & RHI::MaskBF) {
@@ -361,7 +355,7 @@ void RBSurf::Flush_ShadowDepthPass() {
     RenderDepth(mtrlPass);
 }
 
-void RBSurf::Flush_AmbientPass() {
+void Batch::Flush_AmbientPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     rhi.SetCullFace(mtrlPass->cullType);
@@ -387,7 +381,7 @@ void RBSurf::Flush_AmbientPass() {
     RenderBase(mtrlPass, r_ambientScale.GetFloat());
 }
 
-void RBSurf::Flush_LitPass() {
+void Batch::Flush_LitPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     if (!material->IsLitSurface()) {
@@ -425,7 +419,7 @@ void RBSurf::Flush_LitPass() {
     }
 }
 
-void RBSurf::Flush_UnlitPass() {
+void Batch::Flush_UnlitPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     rhi.SetCullFace(mtrlPass->cullType);
@@ -439,7 +433,7 @@ void RBSurf::Flush_UnlitPass() {
     RenderGeneric(mtrlPass);
 }
 
-void RBSurf::Flush_FinalPass() {
+void Batch::Flush_FinalPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     rhi.SetCullFace(mtrlPass->cullType);
@@ -453,7 +447,7 @@ void RBSurf::Flush_FinalPass() {
     RenderGeneric(mtrlPass);
 }
 
-void RBSurf::Flush_TrisPass() {
+void Batch::Flush_TrisPass() {
     int wireframeMode;
     if (r_showWireframe.GetInteger() > 0) {
         wireframeMode = r_showWireframe.GetInteger();
@@ -464,7 +458,7 @@ void RBSurf::Flush_TrisPass() {
     DrawDebugWireframe(wireframeMode, surfSpace->def->state.wireframeColor);
 }
 
-void RBSurf::Flush_VelocityMapPass() {
+void Batch::Flush_VelocityMapPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     rhi.SetCullFace(mtrlPass->cullType);
@@ -481,7 +475,7 @@ void RBSurf::Flush_VelocityMapPass() {
     RenderVelocity(mtrlPass);
 }
 
-void RBSurf::Flush_GuiPass() {
+void Batch::Flush_GuiPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     rhi.SetCullFace(RHI::NoCull);
@@ -498,7 +492,7 @@ void RBSurf::Flush_GuiPass() {
     RenderGui(mtrlPass);
 }
 
-void RBSurf::DrawDebugWireframe(int mode, const Color4 &rgba) const {
+void Batch::DrawDebugWireframe(int mode, const Color4 &rgba) const {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     rhi.BindBuffer(RHI::VertexBuffer, vbHandle);

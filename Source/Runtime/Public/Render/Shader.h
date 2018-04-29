@@ -34,7 +34,7 @@ class Texture;
 
 class Shader {
     friend class ShaderManager;
-    friend class RBSurf;
+    friend class Batch;
 
 public:
     enum Flag {
@@ -63,6 +63,7 @@ public:
         ViewProjectionMatrixTransposeConst,
         ModelViewProjectionMatrixConst,
         ModelViewProjectionMatrixTransposeConst,
+        InstanceIndexesConst,
         LocalToWorldMatrixSConst,
         LocalToWorldMatrixTConst,
         LocalToWorldMatrixRConst,

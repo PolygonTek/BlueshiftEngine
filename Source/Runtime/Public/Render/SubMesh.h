@@ -56,7 +56,7 @@ class SubMesh {
     friend class Mesh;
     friend class MeshManager;
     friend class RenderWorld;
-    friend class RBSurf;
+    friend class Batch;
     friend class ::MeshImporter;
     
 public:

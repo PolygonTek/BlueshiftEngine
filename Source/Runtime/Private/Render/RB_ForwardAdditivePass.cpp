@@ -26,7 +26,7 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
     bool                prevDepthHack = false;
     Rect                prevScissorRect;
 
-    backEnd.rbsurf.SetCurrentLight(visibleLight);
+    backEnd.batch.SetCurrentLight(visibleLight);
 
     if (r_useLightScissors.GetBool()) {
         prevScissorRect = rhi.GetScissor();
@@ -55,10 +55,10 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::LitFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::LitFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -68,7 +68,7 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
-                        backEnd.rbsurf.Flush();
+                        backEnd.batch.Flush();
                     }
 
                     if (depthHack) {
@@ -90,14 +90,14 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
         }
 
         if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.rbsurf.AddInstance(surf);
+            backEnd.batch.AddInstance(surf);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
 
     // restore depthHack

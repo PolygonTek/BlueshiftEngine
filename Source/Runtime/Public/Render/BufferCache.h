@@ -65,6 +65,7 @@ public:
     void                    UnmapTexelBuffer(BufferCache *bufferCache) const;
 
     bool                    IsCached(const BufferCache *bufferCache) const;
+    bool                    IsCacheStatic(const BufferCache *bufferCache) const;
 
                             // Update PBO to Texture
     void                    UpdatePBOTexture() const;

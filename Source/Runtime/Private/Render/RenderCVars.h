@@ -33,6 +33,7 @@ extern CVar     r_multiSamples;
 
 extern CVar     r_gamma;
 extern CVar     r_swapInterval;
+
 extern CVar     r_dynamicVertexCacheSize;
 extern CVar     r_dynamicIndexCacheSize;
 extern CVar     r_dynamicUniformCacheSize;
@@ -77,6 +78,7 @@ extern CVar     r_offsetFactor;
 extern CVar     r_offsetUnits;
 extern CVar     r_queryWaitFrames;
 extern CVar     r_instancing;
+extern CVar     r_maxInstancingCount;
 
 extern CVar     r_HDR;
 extern CVar     r_HDR_debug;
@@ -145,5 +147,6 @@ extern CVar     r_showLightScissorRects;
 extern CVar     r_drawEntities;
 extern CVar     r_noSubView;
 extern CVar     r_subViewOnly;
+extern CVar     r_singleTriangle;
 
 BE_NAMESPACE_END

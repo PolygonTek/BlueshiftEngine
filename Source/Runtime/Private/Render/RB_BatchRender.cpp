@@ -20,13 +20,13 @@
 
 BE_NAMESPACE_BEGIN
 
-void RBSurf::DrawPrimitives() const {
+void Batch::DrawPrimitives() const {
     rhi.BindBuffer(RHI::IndexBuffer, ibHandle);
 
     if (numInstances >= 1) {
-        rhi.DrawElementsInstanced(RHI::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0, numInstances);
+        rhi.DrawElementsInstanced(RHI::TrianglesPrim, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0, numInstances);
     } else {
-        rhi.DrawElements(RHI::TrianglesPrim, startIndex, numIndexes, sizeof(TriIndex), 0);
+        rhi.DrawElements(RHI::TrianglesPrim, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0);
     }
 
     int instanceCount = Max(numInstances, 1);
@@ -42,7 +42,7 @@ void RBSurf::DrawPrimitives() const {
     backEnd.ctx->renderCounter.drawVerts += numVerts * instanceCount;
 }
 
-void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
+void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
     const auto &propertyInfoHashMap = shader->GetPropertyInfoHashMap();
 
     // Iterate over all shader property specs
@@ -111,7 +111,7 @@ void RBSurf::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::
     }
 }
 
-const Texture *RBSurf::TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const {
+const Texture *Batch::TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const {
     const auto *entry = mtrlPass->shader->GetPropertyInfoHashMap().Get(textureName);
     if (!entry) {
         return nullptr;
@@ -126,7 +126,7 @@ const Texture *RBSurf::TextureFromShaderProperties(const Material::ShaderPass *m
     return prop.texture;
 }
 
-void RBSurf::SetMatrixConstants(const Shader *shader) const {
+void Batch::SetMatrixConstants(const Shader *shader) const {
     if (shader->builtInConstantIndices[Shader::ModelViewMatrixConst] >= 0) {
         shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewMatrixConst], true, backEnd.modelViewMatrix);
     }
@@ -160,7 +160,7 @@ void RBSurf::SetMatrixConstants(const Shader *shader) const {
     }
 }
 
-void RBSurf::SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const {
+void Batch::SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const {
     Vec4 vertexColorScale;
     Vec4 vertexColorAdd;
 
@@ -179,7 +179,7 @@ void RBSurf::SetVertexColorConstants(const Shader *shader, const Material::Verte
     shader->SetConstant4f(shader->builtInConstantIndices[Shader::VertexColorAddConst], vertexColorAdd);
 }
 
-void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const {
+void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const {
     if (renderGlobal.skinningMethod == Mesh::CpuSkinning) {
         return;
     }
@@ -193,7 +193,7 @@ void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache
 
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
             if (numInstances >= 1) {
-                shader->SetConstantArray1i("tcBase", numInstances, (const int *)skinnedMeshInstanceDataTable);
+                shader->SetConstantArray1i("tcBase", numInstances, (const int *)skinnedMeshInstanceBaseTcs);
             } else {
                 shader->SetConstant1i("tcBase", cache->bufferCache.tcBase[0]);
             }
@@ -201,7 +201,7 @@ void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache
             shader->SetConstant2f("invJointsMapSize", Vec2(1.0f / jointsMapTexture->GetWidth(), 1.0f / jointsMapTexture->GetHeight()));
 
             if (numInstances >= 1) {
-                shader->SetConstantArray2f("tcBase", numInstances, (const Vec2 *)skinnedMeshInstanceDataTable);
+                shader->SetConstantArray2f("tcBase", numInstances, (const Vec2 *)skinnedMeshInstanceBaseTcs);
             } else {
                 shader->SetConstant2f("tcBase", Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
             }
@@ -214,7 +214,7 @@ void RBSurf::SetSkinningConstants(const Shader *shader, const SkinningJointCache
     }
 }
 
-void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
+void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
     if (subMesh->useGpuSkinning) {
         SetSkinningConstants(shader, surfSpace->def->state.mesh->skinningJointCache);
     }
@@ -227,7 +227,7 @@ void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shad
         rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
 
         shader->SetConstantBuffer("instanceDataBlock", 0);
-        shader->SetConstantArray1i("instanceIndexes", numInstances, instanceIndexes);
+        shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::InstanceIndexesConst], numInstances, instanceLocalIndexes);
     } else {
         if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst] >= 0) {
             const Mat3x4 &localToWorldMatrix = surfSpace->def->GetObjectToWorldMatrix();
@@ -250,7 +250,7 @@ void RBSurf::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shad
     }
 }
 
-void RBSurf::SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
+void Batch::SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
     if (shader->builtInConstantIndices[Shader::TextureMatrixSConst] >= 0) {
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -266,7 +266,7 @@ void RBSurf::SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Sh
     SetVertexColorConstants(shader, mtrlPass->vertexColorMode);
 }
 
-void RBSurf::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const {
+void Batch::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const {
     Shader *shader = ShaderManager::constantColorShader;
 
     if (subMesh->useGpuSkinning) {
@@ -293,7 +293,7 @@ void RBSurf::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &col
     DrawPrimitives();
 }
 
-void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &vec3_id) const {
+void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &idInVec3) const {
     Shader *shader = ShaderManager::selectionIdShader;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
@@ -328,12 +328,12 @@ void RBSurf::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &v
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
     }
 
-    shader->SetConstant3f("id", vec3_id);
+    shader->SetConstant3f("id", idInVec3);
 
     DrawPrimitives();
 }
 
-void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
+void Batch::RenderDepth(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::depthShader;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
@@ -377,7 +377,7 @@ void RBSurf::RenderDepth(const Material::ShaderPass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
+void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::objectMotionBlurShader;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
@@ -428,7 +428,7 @@ void RBSurf::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
+void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
     Shader *shader;
 
     if (mtrlPass->shader) {
@@ -494,7 +494,7 @@ void RBSurf::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
     DrawPrimitives();
 }
 
-void RBSurf::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const {
+void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = ShaderManager::standardDefaultShader;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
@@ -532,7 +532,7 @@ void RBSurf::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSc
     DrawPrimitives();
 }
 
-void RBSurf::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
+void Batch::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = shader = mtrlPass->shader;
 
     if (shader && shader->GetAmbientLitVersion()) {
@@ -607,7 +607,7 @@ static Shader *GetShadowShader(Shader *shader, RenderLight::Type lightType) {
     return shader;
 }
 
-void RBSurf::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
+void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = shader = mtrlPass->shader;
     
     if (shader && shader->GetDirectLitVersion()) {
@@ -669,7 +669,7 @@ void RBSurf::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float
     DrawPrimitives();
 }
 
-void RBSurf::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
+void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     Shader *shader = shader = mtrlPass->shader;
 
     if (shader && shader->GetAmbientLitDirectLitVersion()) {
@@ -739,7 +739,7 @@ void RBSurf::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, fl
     DrawPrimitives();
 }
 
-void RBSurf::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const {
+void Batch::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     if (r_ambientLit.GetBool()) {
         if (surfLight) {
             RenderAmbientLit_DirectLit(mtrlPass, ambientScale);
@@ -755,7 +755,7 @@ void RBSurf::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale
     }
 }
 
-void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const {
+void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const {
     Vec4 lightVec;
 
     if (surfLight->def->state.type == RenderLight::DirectionalLight) {
@@ -845,7 +845,7 @@ void RBSurf::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Sha
     }*/
 }
 
-void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
+void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = mtrlPass->shader;
 
     if (shader && shader->GetDirectLitVersion()) {
@@ -901,7 +901,7 @@ void RBSurf::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const 
     DrawPrimitives();
 }
 
-void RBSurf::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) const {
+void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::fogLightShader;
 
     if (subMesh->useGpuSkinning) {
@@ -921,7 +921,7 @@ void RBSurf::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) con
 
     // light texture transform matrix
     Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetObjectToWorldMatrix();
-    shader->SetConstant4x4f("lightTextureMatrix", true, viewProjScaleBiasMat);
+    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, viewProjScaleBiasMat);
     shader->SetConstant3f("fogColor", &surfLight->def->state.materialParms[RenderObject::RedParm]);
 
     Vec3 vec = surfLight->def->state.origin - backEnd.view->def->state.origin;
@@ -941,7 +941,7 @@ void RBSurf::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) con
     DrawPrimitives();
 }
 
-void RBSurf::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) const {
+void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::blendLightShader;
 
     if (subMesh->useGpuSkinning) {
@@ -967,7 +967,7 @@ void RBSurf::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) c
 
     // light texture transform matrix
     Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetObjectToWorldMatrix();
-    shader->SetConstant4x4f("lightTextureMatrix", true, viewProjScaleBiasMat);
+    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, viewProjScaleBiasMat);
     shader->SetConstant3f("blendColor", blendColor);
 
     const Material *lightMaterial = surfLight->def->state.material;
@@ -976,7 +976,7 @@ void RBSurf::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) c
     DrawPrimitives();
 }
 
-void RBSurf::RenderGui(const Material::ShaderPass *mtrlPass) const {
+void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
     const Shader *shader;
 
     if (mtrlPass->shader) {

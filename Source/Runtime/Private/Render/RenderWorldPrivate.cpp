@@ -683,10 +683,12 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *view) {
                 instanceData->localToWorldMatrixT = localToWorldMatrix[1];
                 instanceData->localToWorldMatrixR = localToWorldMatrix[2];
 
-                /*Mat3x4 worldToLocalMatrix = Mat3x4(renderObject->state.axis.Transpose(), -renderObject->state.origin);
-                instanceData->worldToLocalMatrixS = worldToLocalMatrix[0];
-                instanceData->worldToLocalMatrixT = worldToLocalMatrix[1];
-                instanceData->worldToLocalMatrixR = worldToLocalMatrix[2];*/
+                /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyInfoHashMap().Get("_PARALLAX")) {
+                    Mat3x4 worldToLocalMatrix = Mat3x4(renderObject->state.axis.Transpose(), -renderObject->state.origin);
+                    instanceData->worldToLocalMatrixS = worldToLocalMatrix[0];
+                    instanceData->worldToLocalMatrixT = worldToLocalMatrix[1];
+                    instanceData->worldToLocalMatrixR = worldToLocalMatrix[2];
+                }*/
 
                 instanceData->constantColor = surf->drawSurf->material->GetPass()->useOwnerColor ?
                     reinterpret_cast<const Color4 &>(renderObject->state.materialParms[RenderObject::RedParm]) : 

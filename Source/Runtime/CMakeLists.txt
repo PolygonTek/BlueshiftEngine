@@ -524,8 +524,8 @@ set(ENGINE_FILES
     Private/Render/RB_ForwardBasePass.cpp
     Private/Render/RB_ForwardAdditivePass.cpp
     Private/Render/RB_PostProcess.cpp
-    Private/Render/RB_Surf.cpp
-    Private/Render/RB_Surf_Render.cpp
+    Private/Render/RB_Batch.cpp
+    Private/Render/RB_BatchRender.cpp
     Private/Render/RenderCVars.cpp
     Private/Render/RenderPostProcess.cpp
     Private/Render/RenderTarget.cpp

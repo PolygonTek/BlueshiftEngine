@@ -43,6 +43,7 @@ void MaterialManager::CreateEngineMaterials() {
     defaultMaterial = AllocMaterial("_defaultMaterial");
     defaultMaterial->Create(va(
         "pass {\n"
+        "   instancingEnabled\n"
         "   shader \"%s\" {\n"
         "       _ALBEDO \"1\"\n"
         "       albedoMap \"%s\"\n"
@@ -55,6 +56,7 @@ void MaterialManager::CreateEngineMaterials() {
     whiteMaterial->Create(va(
         "pass {\n"
         "   useOwnerColor\n"
+        "   instancingEnabled\n"
         "   shader \"%s\" {\n"
         "       _ALBEDO \"1\"\n"
         "       albedoMap \"%s\"\n"

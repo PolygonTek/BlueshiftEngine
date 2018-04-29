@@ -11,10 +11,10 @@ in float in_weightIndex : WEIGHT_INDEX;
 
 	#ifdef INSTANCING
 		uniform TC_TYPE tcBase[512];
-		#define BASE_TC	tcBase[gl_InstanceID]
+		#define BASE_TC tcBase[gl_InstanceID]
 	#else
 		uniform TC_TYPE tcBase;
-		#define BASE_TC	tcBase
+		#define BASE_TC tcBase
 	#endif
 
 	uniform vec2 invJointsMapSize;

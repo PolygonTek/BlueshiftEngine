@@ -17,7 +17,7 @@
 /*
 -------------------------------------------------------------------------------
 
-    RBSurf
+    Batch
 
 -------------------------------------------------------------------------------
 */
@@ -26,7 +26,7 @@ BE_NAMESPACE_BEGIN
 
 class VisibleObject;
 
-class RBSurf {
+class Batch {
 public:
     enum FlushType {
         BadFlush,
@@ -52,9 +52,8 @@ public:
     void                    Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace);
     void                    AddInstance(const DrawSurf *drawSurf);
     void                    DrawSubMesh(SubMesh *subMesh);
-    void                    Flush();
 
-    void                    EndFrame();
+    void                    Flush();
 
 private:
     void                    DrawDynamicSubMesh(SubMesh *subMesh);
@@ -88,7 +87,7 @@ private:
     void                    SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const;
 
     void                    RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const;
-    void                    RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &vec3_id) const;
+    void                    RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &idInVec3) const;
     void                    RenderDepth(const Material::ShaderPass *mtrlPass) const;
     void                    RenderVelocity(const Material::ShaderPass *mtrlPass) const;
     void                    RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const;
@@ -116,17 +115,17 @@ private:
     RHI::Handle             vbHandle;
     RHI::Handle             ibHandle;
 
-    void *                  skinnedMeshInstanceDataTable;
+    void *                  skinnedMeshInstanceBaseTcs;
 
+    int                     maxInstancingCount;
     int                     instanceStartIndex;
     int                     instanceEndIndex;
-    int32_t *               instanceIndexes;
+    int *                   instanceLocalIndexes;
 
     int                     startIndex;
     int                     numVerts;
     int                     numIndexes;
     int                     numInstances;
-    int                     maxInstances;
 };
 
 /*
@@ -161,7 +160,7 @@ struct BackEnd {
 
     RenderContext *         ctx;
 
-    RBSurf                  rbsurf;
+    Batch                  batch;
     int                     numDrawSurfs;
     int                     numAmbientSurfs;
     DrawSurf **             drawSurfs;

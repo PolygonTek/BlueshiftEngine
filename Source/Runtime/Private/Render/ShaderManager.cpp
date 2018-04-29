@@ -190,6 +190,7 @@ void ShaderManager::InitGlobalDefines() {
         }
     }
 
+    shaderManager.AddGlobalHeader(va("#define INSTANCE_DATA_SIZE %i\n", rhi.HWLimit().uniformBufferOffsetAlignment));
     shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment));
     
     if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {

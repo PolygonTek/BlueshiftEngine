@@ -193,7 +193,7 @@ static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
 
-    backEnd.rbsurf.SetCurrentLight(visibleLight);
+    backEnd.batch.SetCurrentLight(visibleLight);
     
     for (int i = 0; i < visibleLight->shadowCasterSurfCount; i++) {
         const DrawSurf *surf = backEnd.drawSurfs[visibleLight->shadowCasterSurfFirst + i];
@@ -218,10 +218,10 @@ static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -280,17 +280,17 @@ static bool RB_ShadowCubeMapFacePass(const VisibleLight *visibleLight, const Mat
                 backEnd.modelViewMatrix = lightViewMatrix * surf->space->def->GetObjectToWorldMatrix();
                 backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
             } else {
-                backEnd.rbsurf.AddInstance(surf);
+                backEnd.batch.AddInstance(surf);
             }
 
             entity2 = surf->space;
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (!firstDraw) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
 
         backEnd.ctx->vscmRT->End();
     } else if (forceClear && !backEnd.ctx->vscmCleared[cubeMapFace]) {
@@ -390,7 +390,7 @@ static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &vi
     bool                firstDraw = true;
     Rect                prevScissorRect;
 
-    backEnd.rbsurf.SetCurrentLight(visibleLight);
+    backEnd.batch.SetCurrentLight(visibleLight);
 
     if (r_CSM_pancaking.GetBool()) {
         rhi.SetDepthClamp(true);
@@ -440,10 +440,10 @@ static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &vi
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -459,14 +459,14 @@ static bool RB_ShadowMapPass(const VisibleLight *visibleLight, const Frustum &vi
         }
 
         if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.rbsurf.AddInstance(surf);
+            backEnd.batch.AddInstance(surf);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (!firstDraw) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
 
         backEnd.ctx->shadowMapRT->End();
 

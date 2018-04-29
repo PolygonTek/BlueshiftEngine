@@ -26,7 +26,7 @@ CVAR(r_gamma, L"1.0", CVar::Float | CVar::Archive, L"changes gamma tables");
 CVAR(r_swapInterval, L"0", CVar::Integer | CVar::Archive, L"");
 CVAR(r_dynamicVertexCacheSize, L"0x800000", CVar::Integer, L"size of dynamic vertex buffer");
 CVAR(r_dynamicIndexCacheSize, L"0x300000", CVar::Integer, L"size of dynamic index buffer");
-CVAR(r_dynamicUniformCacheSize, L"0x100000", CVar::Integer, L"size of dynamic uniform buffer");
+CVAR(r_dynamicUniformCacheSize, L"0x200000", CVar::Integer, L"size of dynamic uniform buffer");
 
 CVAR(r_fastSkinning, L"2", CVar::Integer | CVar::Archive, L"matrix skinning calculation, 0 = CPU skinning, 1 = VS skinning, 2 = VTF skinning");
 CVAR(r_vertexTextureUpdate, L"2", CVar::Integer | CVar::Archive, L"texel fetch buffer, 0 = direct copy, 1 = PBO, 2 = TBO");
@@ -69,6 +69,7 @@ CVAR(r_offsetFactor, L"1", CVar::Float, L"polygon offset parameter");
 CVAR(r_offsetUnits, L"2", CVar::Float, L"polygon offset parameter");
 CVAR(r_queryWaitFrames, L"10", CVar::Integer, L"");
 CVAR(r_instancing, L"1", CVar::Integer, L"");
+CVAR(r_maxInstancingCount, L"512", CVar::Integer | CVar::Archive, L"");
 
 CVAR(r_HDR, L"2", CVar::Integer | CVar::Archive, L"HDR rendering type, 0 = no HDR, 1 = FP11 or FP16, 2 = FP16, 3 = FP32");
 CVAR(r_HDR_debug, L"0", CVar::Integer, L"");
@@ -138,5 +139,6 @@ CVAR(r_showLightScissorRects, L"0", CVar::Integer, L"");
 CVAR(r_drawEntities, L"1", CVar::Bool, L"");
 CVAR(r_noSubView, L"0", CVar::Bool, L"");
 CVAR(r_subViewOnly, L"0", CVar::Bool, L"");
+CVAR(r_singleTriangle, L"0", CVar::Bool, L"only draw a single triangle per primitive");
 
 BE_NAMESPACE_END

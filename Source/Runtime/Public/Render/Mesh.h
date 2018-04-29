@@ -48,7 +48,7 @@ public:
 
 class Mesh {
     friend class MeshManager;
-    friend class RBSurf;
+    friend class Batch;
     friend class ::MeshImporter;
 
 public:    

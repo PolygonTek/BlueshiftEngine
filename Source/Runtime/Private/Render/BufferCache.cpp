@@ -591,6 +591,13 @@ bool BufferCacheManager::IsCached(const BufferCache *bc) const {
     return false;
 }
 
+bool BufferCacheManager::IsCacheStatic(const BufferCache *bc) const {
+    if (bc->frameCount == 0xFFFFFFFF) {
+        return true;
+    }
+    return false;
+}
+
 void BufferCacheManager::UpdatePBOTexture() const {
     const FrameDataBufferSet *currentBufferSet = &frameData[unmappedNum];
 

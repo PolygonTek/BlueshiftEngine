@@ -553,7 +553,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
     bool                depthhack = false;
     bool                prevDepthHack = false;
 
-    backEnd.rbsurf.SetCurrentLight(nullptr);
+    backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -577,10 +577,10 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(RBSurf::TriFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::TriFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -590,7 +590,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
 
                 if (prevDepthHack != depthhack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
-                        backEnd.rbsurf.Flush();
+                        backEnd.batch.Flush();
                     }
 
                     if (depthhack) {
@@ -610,14 +610,14 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
         }
 
         if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.rbsurf.AddInstance(surf);
+            backEnd.batch.AddInstance(surf);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
 
     // restore depthhack

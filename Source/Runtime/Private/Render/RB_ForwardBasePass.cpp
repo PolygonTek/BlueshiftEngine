@@ -25,7 +25,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLig
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
-    backEnd.rbsurf.SetCurrentLight(light);
+    backEnd.batch.SetCurrentLight(light);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
@@ -50,10 +50,10 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLig
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
-                backEnd.rbsurf.Flush();
+                backEnd.batch.Flush();
             }
 
-            backEnd.rbsurf.Begin(surf->material->IsSkySurface() ? RBSurf::BackgroundFlush : RBSurf::AmbientFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(surf->material->IsSkySurface() ? Batch::BackgroundFlush : Batch::AmbientFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -63,7 +63,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLig
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
-                        backEnd.rbsurf.Flush();
+                        backEnd.batch.Flush();
                     }
 
                     if (depthHack) {
@@ -85,14 +85,14 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLig
         }
 
         if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.rbsurf.AddInstance(surf);
+            backEnd.batch.AddInstance(surf);
         }
 
-        backEnd.rbsurf.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
     if (prevMaterial) {
-        backEnd.rbsurf.Flush();
+        backEnd.batch.Flush();
     }
 
     // restore depthHack

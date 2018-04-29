@@ -51,7 +51,7 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
         renderGlobal.vtUpdateMethod = Mesh::DirectCopyUpdate;
     }
 
-    renderGlobal.instanceBufferData = Mem_Alloc16(4096 * rhi.HWLimit().uniformBufferOffsetAlignment);
+    renderGlobal.instanceBufferData = Mem_Alloc16(8192 * rhi.HWLimit().uniformBufferOffsetAlignment);
 
     textureManager.Init();
 

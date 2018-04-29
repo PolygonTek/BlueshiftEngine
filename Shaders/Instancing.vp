@@ -2,16 +2,17 @@
     #error "Parallax mapping doesn't support instancing"
 #endif
 
-// Don't excceed 256 bytes (16 * vec4)
+#define INSTANCE_DATA_PADDING_VECTORS ((INSTANCE_DATA_SIZE / 4 - 16) / 4)
+
 struct InstanceData {
-    vec4 localToWorldMatrixS;
-    vec4 localToWorldMatrixT;
-    vec4 localToWorldMatrixR;
+    vec4 localToWorldMatrixS;       // 16
+    vec4 localToWorldMatrixT;       // 32
+    vec4 localToWorldMatrixR;       // 48
     //vec4 worldToLocalMatrixS;
     //vec4 worldToLocalMatrixT;
     //vec4 worldToLocalMatrixR;
-    vec4 constantColor;
-    vec4 reserved[12];
+    vec4 constantColor;             // 64
+    vec4 padding[INSTANCE_DATA_PADDING_VECTORS];
 };
 
 UNIFORM_BLOCK instanceDataBlock {
