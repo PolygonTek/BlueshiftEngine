@@ -18,10 +18,11 @@
 
 BE_NAMESPACE_BEGIN
 
-// renderObject 로부터 visObject 를 등록, 같은 visView 에 여러번 등록 방지
+// Add visible object from render object.
+// Prevent to add multiple times in same view.
 VisibleObject *RenderWorld::RegisterVisibleObject(VisibleView *visView, RenderObject *renderObject) {
+    // Already registered for this frame
     if (renderObject->viewCount == viewCount) {
-        // already registered for this frame
         return renderObject->visObject;
     }
 
@@ -35,16 +36,17 @@ VisibleObject *RenderWorld::RegisterVisibleObject(VisibleView *visView, RenderOb
 
     visObject->def = renderObject;
 
-    // visObject 를 renderObject 에 연결
+    // Connect visible object to render object for use in this view frame
     renderObject->visObject = visObject;
 
-    // RenderCamera() 에서 1 씩 증가되는 viewCount
+    // Increase in RenderCamera()
     renderObject->viewCount = viewCount;
 
     return visObject;
 }
 
-// renderLight 로부터 visLight 를 등록, 같은 visView 에 여러번 등록 방지
+// Add visible light from render light.
+// Prevent to add multiple times in same view.
 VisibleLight *RenderWorld::RegisterVisibleLight(VisibleView *visView, RenderLight *renderLight) {
     if (renderLight->viewCount == viewCount) {
         // already registered for this frame
@@ -64,22 +66,22 @@ VisibleLight *RenderWorld::RegisterVisibleLight(VisibleView *visView, RenderLigh
     visLight->litSurfsAABB.Clear();
     visLight->shadowCasterAABB.Clear();
 
-    // visLight 를 renderLight 에 연결
+    // Connect visible light to render light for use in this view frame
     renderLight->visLight = visLight;
 
-    // RenderCamera() 에서 1 씩 증가되는 viewCount
+    // Increase in RenderCamera()
     renderLight->viewCount = viewCount;
 
     return visLight;
 }
 
-// visView volume 으로 visLight 와 visObject 들을 등록한다.
+// Add visible lights/objects using view volume.
 void RenderWorld::FindVisibleLightsAndObjects(VisibleView *visView) {
     viewCount++;
 
     visView->worldAABB.Clear();
     visView->visLights.Clear();
-    visView->visLights.Clear();
+    visView->visObjects.Clear();
 
     // Called for each scene lights that intersects with visView frustum.
     // Returns true if it want to proceed next query.
@@ -197,7 +199,7 @@ void RenderWorld::FindVisibleLightsAndObjects(VisibleView *visView) {
     }
 }
 
-// static mesh 들을 ambient drawSurfs 에 담는다.
+// Add drawSurf for visible static meshes.
 void RenderWorld::AddStaticMeshes(VisibleView *visView) {
     // Called for each static mesh surfaces intersecting with visView frustum 
     // Returns true if it want to proceed next query
@@ -259,7 +261,7 @@ void RenderWorld::AddStaticMeshes(VisibleView *visView) {
     }
 }
 
-// skinned mesh 들을 ambient drawSurfs 에 담는다. 
+// Add drawSurf for visible skinned meshes.
 void RenderWorld::AddSkinnedMeshes(VisibleView *visView) {
     for (VisibleObject *visObject = visView->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -303,6 +305,7 @@ void RenderWorld::AddSkinnedMeshes(VisibleView *visView) {
     }
 }
 
+// Add drawSurf for visible particle meshes.
 void RenderWorld::AddParticleMeshes(VisibleView *visView) {
     for (VisibleObject *visObject = visView->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -351,6 +354,7 @@ void RenderWorld::AddParticleMeshes(VisibleView *visView) {
     }
 }
 
+// Add drawSurf for visible text meshes.
 void RenderWorld::AddTextMeshes(VisibleView *visView) {
     for (VisibleObject *visObject = visView->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -400,12 +404,13 @@ void RenderWorld::AddTextMeshes(VisibleView *visView) {
     }
 }
 
+// Add drawSurf for an skybox.
 void RenderWorld::AddSkyBoxMeshes(VisibleView *visView) {
     if (visView->def->state.clearMethod != RenderView::SkyboxClear) {
         return;
     }
 
-    // skybox entity parameters
+    // Skybox object parameters
     RenderObject::State renderObjectDef;
     memset(&renderObjectDef, 0, sizeof(renderObjectDef));
     renderObjectDef.origin = visView->def->state.origin;
@@ -417,7 +422,7 @@ void RenderWorld::AddSkyBoxMeshes(VisibleView *visView) {
     new (&renderObject) RenderObject();
     renderObject.Update(&renderObjectDef);
 
-    // skybox visView entity
+    // Add skybox object
     VisibleObject *visObject = RegisterVisibleObject(visView, &renderObject);
 
     if (visView->def->state.orthogonal) {
@@ -436,7 +441,7 @@ void RenderWorld::AddSkyBoxMeshes(VisibleView *visView) {
     visView->numAmbientSurfs++;
 }
 
-// static mesh 들을 visLight 의 litSurfs/shadowCasterSurfs 리스트에 담는다.
+// Add lit drawSurfs for visible static meshes for each light.
 void RenderWorld::AddStaticMeshesForLights(VisibleView *visView) {
     VisibleLight *visLight;
 
@@ -538,7 +543,7 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *visView) {
     }
 }
 
-// skinned mesh 들을 visLight 의 litSurfs/shadowCasterSurfs 리스트에 담는다.
+// Add lit drawSurfs for visible skinned meshes for each light.
 void RenderWorld::AddSkinnedMeshesForLights(VisibleView *visView) {
     VisibleLight *visLight;
 
