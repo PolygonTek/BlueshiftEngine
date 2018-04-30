@@ -450,6 +450,8 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *visView) {
     auto addStaticMeshSurfsForLights = [this, visView, &visLight](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)staticMeshDbvt.GetUserData(proxyId);
 
+        RenderObject *renderObject = proxy->renderObject;
+
         MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
 
         if (!surf) {
@@ -457,26 +459,26 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *visView) {
         }
 
         // Skip first person visView only object in sub camera
-        if ((proxy->renderObject->state.flags & RenderObject::FirstPersonOnlyFlag) && visView->isSubview) {
+        if ((renderObject->state.flags & RenderObject::FirstPersonOnlyFlag) && visView->isSubview) {
             return true;
         }
 
         // Skip 3rd person visView only object in sub camera
-        if ((proxy->renderObject->state.flags & RenderObject::ThirdPersonOnlyFlag) && !visView->isSubview) {
+        if ((renderObject->state.flags & RenderObject::ThirdPersonOnlyFlag) && !visView->isSubview) {
             return true;
         }
 
         // Skip if the entity is farther than maximum visible distance
-        if (proxy->renderObject->state.origin.DistanceSqr(visView->def->state.origin) > proxy->renderObject->state.maxVisDist * proxy->renderObject->state.maxVisDist) {
+        if (renderObject->state.origin.DistanceSqr(visView->def->state.origin) > renderObject->state.maxVisDist * renderObject->state.maxVisDist) {
             return true;
         }
 
-        const Material *material = proxy->renderObject->state.materials[surf->materialIndex];
+        const Material *material = renderObject->state.materials[surf->materialIndex];
         bool isShadowCaster = false;
 
         if (visLight->def->state.flags & RenderLight::CastShadowsFlag) {
-            if ((proxy->renderObject->state.flags & RenderObject::CastShadowsFlag) && material->IsShadowCaster()) {
-                OBB surfBounds = OBB(surf->subMesh->GetAABB() * proxy->renderObject->state.scale, proxy->renderObject->state.origin, proxy->renderObject->state.axis);
+            if ((renderObject->state.flags & RenderObject::CastShadowsFlag) && material->IsShadowCaster()) {
+                OBB surfBounds = OBB(surf->subMesh->GetAABB() * renderObject->state.scale, renderObject->state.origin, renderObject->state.axis);
                 if (!visLight->def->CullShadowCasterOBB(surfBounds, visView->def->frustum, visView->worldAABB)) {
                     isShadowCaster = true;
 
@@ -501,7 +503,7 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *visView) {
         } else if (isShadowCaster) {
             // This surface is not visible but shadow might be visible as a shadow caster.
             // Register a visObject used only for shadow caster
-            VisibleObject *shadowCasterObject = RegisterVisibleObject(visView, proxy->renderObject);
+            VisibleObject *shadowCasterObject = RegisterVisibleObject(visView, renderObject);
             shadowCasterObject->shadowVisible = true;
 
             AddDrawSurf(visView, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowCaster);
@@ -551,30 +553,31 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *visView) {
     // Returns true if it want to proceed next query
     auto addShadowCasterObjects = [this, visView, &visLight](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)this->objectDbvt.GetUserData(proxyId);
+        RenderObject *renderObject = proxy->renderObject;
 
         // renderObject 가 없다면 mesh 가 아님
-        if (!proxy->renderObject) {
+        if (!renderObject) {
             return true;
         }
 
-        if (!proxy->renderObject->state.joints) {
+        if (!renderObject->state.joints) {
             return true;
         }
 
         // Skip first person visView only object in sub camera 
-        if ((proxy->renderObject->state.flags & RenderObject::FirstPersonOnlyFlag) && visView->isSubview) {
+        if ((renderObject->state.flags & RenderObject::FirstPersonOnlyFlag) && visView->isSubview) {
             return true;
         }
 
         // Skip 3rd person visView only object in sub camera
-        if ((proxy->renderObject->state.flags & RenderObject::ThirdPersonOnlyFlag) && !visView->isSubview) {
+        if ((renderObject->state.flags & RenderObject::ThirdPersonOnlyFlag) && !visView->isSubview) {
             return true;
         }
 
         bool isShadowCaster = false;
 
-        if ((visLight->def->state.flags & RenderLight::CastShadowsFlag) && (proxy->renderObject->state.flags & RenderObject::CastShadowsFlag)) {
-            OBB worldOBB = OBB(proxy->renderObject->GetLocalAABB(), proxy->renderObject->state.origin, proxy->renderObject->state.axis);
+        if ((visLight->def->state.flags & RenderLight::CastShadowsFlag) && (renderObject->state.flags & RenderObject::CastShadowsFlag)) {
+            OBB worldOBB = OBB(renderObject->GetLocalAABB(), renderObject->state.origin, renderObject->state.axis);
             if (!visLight->def->CullShadowCasterOBB(worldOBB, visView->def->frustum, visView->worldAABB)) {
                 isShadowCaster = true;
             }
@@ -582,10 +585,10 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *visView) {
 
         VisibleObject *shadowCasterObject = nullptr;
 
-        for (int surfaceIndex = 0; surfaceIndex < proxy->renderObject->state.mesh->NumSurfaces(); surfaceIndex++) {
-            MeshSurf *surf = proxy->renderObject->state.mesh->GetSurface(surfaceIndex);
+        for (int surfaceIndex = 0; surfaceIndex < renderObject->state.mesh->NumSurfaces(); surfaceIndex++) {
+            MeshSurf *surf = renderObject->state.mesh->GetSurface(surfaceIndex);
 
-            const Material *material = proxy->renderObject->state.materials[surf->materialIndex];
+            const Material *material = renderObject->state.materials[surf->materialIndex];
 
             // Already visible in this frame
             if (surf->viewCount == this->viewCount) {
@@ -604,7 +607,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *visView) {
                 // This surface is not visible but shadow might be visible as a shadow caster.
                 // Register a visObject used only for shadow caster
                 if (!shadowCasterObject) {
-                    shadowCasterObject = RegisterVisibleObject(visView, proxy->renderObject);
+                    shadowCasterObject = RegisterVisibleObject(visView, renderObject);
                     shadowCasterObject->shadowVisible = true;
                 }
 
