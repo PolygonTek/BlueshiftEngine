@@ -290,8 +290,8 @@ void RenderWorld::RenderScene(const RenderView *renderView) {
     currentView->drawSurfs = (DrawSurf **)frameData.Alloc(currentView->maxDrawSurfs * sizeof(DrawSurf *));
     currentView->instanceBufferCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
 
-    new (&currentView->visibleObjects) LinkList<VisibleObject>();
-    new (&currentView->visibleLights) LinkList<VisibleLight>();
+    new (&currentView->visObjects) LinkList<VisibleObject>();
+    new (&currentView->visLights) LinkList<VisibleLight>();
 
     RenderCamera(currentView);
 }
@@ -341,17 +341,17 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     guiView->maxDrawSurfs   = guiMesh.NumSurfaces();
     guiView->drawSurfs      = (DrawSurf **)frameData.Alloc(guiView->maxDrawSurfs * sizeof(DrawSurf *));
 
-    new (&guiView->visibleObjects) LinkList<VisibleObject>();
-    new (&guiView->visibleLights) LinkList<VisibleLight>();
+    new (&guiView->visObjects) LinkList<VisibleObject>();
+    new (&guiView->visLights) LinkList<VisibleLight>();
 
     // GUI visible object
     Mat4 projMatrix;
     projMatrix.SetOrtho(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0);
 
-    VisibleObject *visibleObject = RegisterVisibleObject(guiView, &renderObject);
-    visibleObject->modelViewMatrix.SetIdentity();
-    visibleObject->modelViewMatrix.Scale(renderSystem.currentContext->GetUpscaleFactorX(), renderSystem.currentContext->GetUpscaleFactorY(), 1.0f);
-    visibleObject->modelViewProjMatrix = projMatrix * visibleObject->modelViewMatrix;
+    VisibleObject *visObject = RegisterVisibleObject(guiView, &renderObject);
+    visObject->modelViewMatrix.SetIdentity();
+    visObject->modelViewMatrix.Scale(renderSystem.currentContext->GetUpscaleFactorX(), renderSystem.currentContext->GetUpscaleFactorY(), 1.0f);
+    visObject->modelViewProjMatrix = projMatrix * visObject->modelViewMatrix;
 
     guiMesh.CacheIndexes();
     
@@ -377,7 +377,7 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
         subMesh->vertexCache    = &guiSurf->vertexCache;
         subMesh->indexCache     = &guiSurf->indexCache;
 #endif
-        AddDrawSurf(guiView, nullptr, visibleObject, guiSurf->material, subMesh, 0);
+        AddDrawSurf(guiView, nullptr, visObject, guiSurf->material, subMesh, 0);
 
         guiView->numAmbientSurfs++;
     }

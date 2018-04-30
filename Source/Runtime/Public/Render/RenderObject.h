@@ -156,7 +156,7 @@ public:
     Mat3x4                  worldMatrix;
     Mat3x4                  prevWorldMatrix;
 
-    VisibleObject *         visibleObject;
+    VisibleObject *         visObject;
     int                     viewCount;
 
     DbvtProxy *             proxy;

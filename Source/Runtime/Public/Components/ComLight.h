@@ -51,9 +51,6 @@ public:
     bool                    IsPrimaryLight() const;
     void                    SetPrimaryLight(bool isPrimaryLight);
 
-    bool                    IsTurnOn() const;
-    void                    SetTurnOn(bool turnOn);
-
     Vec3                    GetLightSize() const;
     void                    SetLightSize(const Vec3 &lightSize);
 

@@ -106,24 +106,24 @@ public:
     void                        DebugJoints(const RenderObject *ent, bool showJointsNames, const Mat3 &viewAxis);
 
 private:
-    VisibleObject *             RegisterVisibleObject(VisibleView *view, RenderObject *renderObject);
-    VisibleLight *              RegisterVisibleLight(VisibleView *view, RenderLight *renderLight);
-    void                        FindVisibleLightsAndObjects(VisibleView *view);
-    void                        AddStaticMeshes(VisibleView *view);
-    void                        AddSkinnedMeshes(VisibleView *view);
-    void                        AddParticleMeshes(VisibleView *view);
-    void                        AddTextMeshes(VisibleView *view);
-    void                        AddSkyBoxMeshes(VisibleView *view);
-    void                        AddStaticMeshesForLights(VisibleView *view);
-    void                        AddSkinnedMeshesForLights(VisibleView *view);
-    void                        CacheInstanceBuffer(VisibleView *view);
-    void                        OptimizeLights(VisibleView *view);
-    void                        AddDrawSurf(VisibleView *view, VisibleLight *light, VisibleObject *entity, const Material *material, SubMesh *subMesh, int flags);
-    void                        AddLightDrawSurfFromAmbient(VisibleView *view, const DrawSurf *from, int lightIndex, int shadowBit);
-    void                        SortDrawSurfs(VisibleView *view);
+    VisibleObject *             RegisterVisibleObject(VisibleView *visView, RenderObject *renderObject);
+    VisibleLight *              RegisterVisibleLight(VisibleView *visView, RenderLight *renderLight);
+    void                        FindVisibleLightsAndObjects(VisibleView *visView);
+    void                        AddStaticMeshes(VisibleView *visView);
+    void                        AddSkinnedMeshes(VisibleView *visView);
+    void                        AddParticleMeshes(VisibleView *visView);
+    void                        AddTextMeshes(VisibleView *visView);
+    void                        AddSkyBoxMeshes(VisibleView *visView);
+    void                        AddStaticMeshesForLights(VisibleView *visView);
+    void                        AddSkinnedMeshesForLights(VisibleView *visView);
+    void                        CacheInstanceBuffer(VisibleView *visView);
+    void                        OptimizeLights(VisibleView *visView);
+    void                        AddDrawSurf(VisibleView *visView, VisibleLight *light, VisibleObject *entity, const Material *material, SubMesh *subMesh, int flags);
+    void                        AddDrawSurfFromAmbient(VisibleView *visView, const VisibleLight *light, bool isShadowCaster, const DrawSurf *ambientDrawSurf);
+    void                        SortDrawSurfs(VisibleView *visView);
 
-    void                        RenderCamera(VisibleView *view);
-    void                        RenderSubCamera(VisibleObject *visibleObject, const DrawSurf *drawSurf, const Material *material);
+    void                        RenderCamera(VisibleView *visView);
+    void                        RenderSubCamera(VisibleObject *visObject, const DrawSurf *drawSurf, const Material *material);
 
     void                        EmitGuiFullScreen(GuiMesh &guiMesh);
 

@@ -29,7 +29,7 @@ RenderObject::RenderObject() {
     prevWorldMatrix.SetIdentity();
 
     viewCount = 0;
-    visibleObject = nullptr;
+    visObject = nullptr;
     proxy = nullptr;
     meshSurfProxies = nullptr;
     numMeshSurfProxies = 0;

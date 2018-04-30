@@ -19,32 +19,28 @@
 
 BE_NAMESPACE_BEGIN
 
-static void RB_LitPass(const VisibleLight *visibleLight) {
+static void RB_LitPass(const VisibleLight *visLight) {
     const VisibleObject *prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
     Rect                prevScissorRect;
 
-    backEnd.batch.SetCurrentLight(visibleLight);
+    backEnd.batch.SetCurrentLight(visLight);
 
     if (r_useLightScissors.GetBool()) {
         prevScissorRect = rhi.GetScissor();
-        rhi.SetScissor(visibleLight->scissorRect);
+        rhi.SetScissor(visLight->scissorRect);
     }
 
     if (r_useDepthBoundTest.GetBool()) {
         rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
     }
 
-    for (int i = 0; i < visibleLight->litSurfCount; i++) {
-        const DrawSurf *surf = backEnd.drawSurfs[visibleLight->litSurfFirst + i];
+    for (int i = 0; i < visLight->numDrawSurfs; i++) {
+        const DrawSurf *surf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
 
         if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
-
-        if (!surf->material->IsLitSurface()) {
             continue;
         }
 
@@ -115,15 +111,15 @@ static void RB_LitPass(const VisibleLight *visibleLight) {
 }
 
 // Forward lighting renders each surfaces depending on lights that affect the surface.
-void RB_ForwardAdditivePass(const LinkList<VisibleLight> *visibleLights) {
-    for (VisibleLight *visibleLight = visibleLights->Next(); visibleLight; visibleLight = visibleLight->node.Next()) {
-        const RenderLight *renderLight = visibleLight->def;
+void RB_ForwardAdditivePass(const LinkList<VisibleLight> *visLights) {
+    for (VisibleLight *visLight = visLights->Next(); visLight; visLight = visLight->node.Next()) {
+        const RenderLight *renderLight = visLight->def;
 
         if (renderLight->state.flags & RenderLight::PrimaryLightFlag) {
             continue;
         }
 
-        if (r_useLightOcclusionQuery.GetBool() && !visibleLight->occlusionVisible) {
+        if (r_useLightOcclusionQuery.GetBool() && !visLight->occlusionVisible) {
             continue;
         }
 
@@ -136,7 +132,7 @@ void RB_ForwardAdditivePass(const LinkList<VisibleLight> *visibleLights) {
 
             float visSurfDepthMin, visSurfDepthMax;
 
-            if (backEnd.view->def->GetDepthBoundsFromAABB(visibleLight->litSurfsAABB, backEnd.view->def->viewProjMatrix, &visSurfDepthMin, &visSurfDepthMax)) {
+            if (backEnd.view->def->GetDepthBoundsFromAABB(visLight->litSurfsAABB, backEnd.view->def->viewProjMatrix, &visSurfDepthMin, &visSurfDepthMax)) {
                 // FIXME:
                 visSurfDepthMin = Max(visSurfDepthMin - 0.001, 0.0);
                 visSurfDepthMax = Min(visSurfDepthMax + 0.001, 1.0);
@@ -146,15 +142,15 @@ void RB_ForwardAdditivePass(const LinkList<VisibleLight> *visibleLights) {
             }
         }
 
-        RB_SetupLight(visibleLight);
+        RB_SetupLight(visLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((visibleLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.view->def->state.flags & RenderView::NoShadows)) {
-                RB_ShadowPass(visibleLight);
+            if ((visLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.view->def->state.flags & RenderView::NoShadows)) {
+                RB_ShadowPass(visLight);
             }
         }
 
-        RB_LitPass(visibleLight);
+        RB_LitPass(visLight);
     }
 }
 

@@ -67,7 +67,7 @@ private:
     void *                  GetCommandBuffer(int bytes);
     void                    IssueCommands();
 
-    void                    CmdDrawView(const VisibleView *view);
+    void                    CmdDrawView(const VisibleView *visView);
     void                    CmdScreenshot(int x, int y, int width, int height, const char *filename);
 
     bool                    initialized;

@@ -631,8 +631,8 @@ static void RB_DrawDebugLights(int mode) {
         rhi.SetDepthRange(0.0f, 0.0f);
     }
 
-    for (VisibleLight *visibleLight = backEnd.visibleLights->Next(); visibleLight; visibleLight = visibleLight->node.Next()) {
-        if (r_useLightOcclusionQuery.GetBool() && !visibleLight->occlusionVisible) {
+    for (VisibleLight *visLight = backEnd.visLights->Next(); visLight; visLight = visLight->node.Next()) {
+        if (r_useLightOcclusionQuery.GetBool() && !visLight->occlusionVisible) {
             continue;
         }
         
@@ -644,17 +644,17 @@ static void RB_DrawDebugLights(int mode) {
         shader->Bind();
         shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);
 
-        shader->SetConstant4f("color", Color4(Color3(&visibleLight->def->state.materialParms[RenderObject::RedParm]), 0.25f));
-        RB_DrawLightVolume(visibleLight->def);
+        shader->SetConstant4f("color", Color4(Color3(&visLight->def->state.materialParms[RenderObject::RedParm]), 0.25f));
+        RB_DrawLightVolume(visLight->def);
 
         rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe | RHI::DF_LEqual);
         rhi.SetCullFace(RHI::NoCull);
 
-        shader->SetConstant4f("color", &visibleLight->def->state.materialParms[RenderObject::RedParm]);
+        shader->SetConstant4f("color", &visLight->def->state.materialParms[RenderObject::RedParm]);
     
-        RB_DrawLightVolume(visibleLight->def);
+        RB_DrawLightVolume(visLight->def);
 
-        RB_DrawAABB(visibleLight->litSurfsAABB);
+        RB_DrawAABB(visLight->litSurfsAABB);
     }
 
     if (mode == 2) {
@@ -663,8 +663,8 @@ static void RB_DrawDebugLights(int mode) {
 }
 
 static void RB_DrawDebugLightScissorRects() {
-    for (VisibleLight *visibleLight = backEnd.visibleLights->Next(); visibleLight; visibleLight = visibleLight->node.Next()) {
-        if (r_useLightOcclusionQuery.GetBool() && !visibleLight->occlusionVisible) {
+    for (VisibleLight *visLight = backEnd.visLights->Next(); visLight; visLight = visLight->node.Next()) {
+        if (r_useLightOcclusionQuery.GetBool() && !visLight->occlusionVisible) {
             continue;
         }
 
@@ -675,9 +675,9 @@ static void RB_DrawDebugLightScissorRects() {
 
         shader->Bind();
         shader->SetTexture("tex0", textureManager.whiteTexture);
-        shader->SetConstant3f("color", &visibleLight->def->state.materialParms[RenderObject::RedParm]);
+        shader->SetConstant3f("color", &visLight->def->state.materialParms[RenderObject::RedParm]);
 
-        Rect drawRect = visibleLight->scissorRect;
+        Rect drawRect = visLight->scissorRect;
         drawRect.y = backEnd.ctx->GetRenderingHeight() - drawRect.Y2();
 
         float x = drawRect.x * backEnd.upscaleFactor.x;

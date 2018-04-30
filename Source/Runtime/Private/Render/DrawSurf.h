@@ -20,9 +20,10 @@ class DrawSurf {
 public:
     enum Flag {
         AmbientVisible      = BIT(0),           ///< means visible surface (can be invisible for shadow caster surface)
-        ShowWires           = BIT(1),           ///< means to draw wireframes
-        SkipSelection       = BIT(2),
-        UseInstancing       = BIT(3)
+        ShadowCaster        = BIT(1),
+        ShowWires           = BIT(2),           ///< means to draw wireframes
+        SkipSelection       = BIT(3),
+        UseInstancing       = BIT(4)
     };
 
     uint64_t                sortKey;

@@ -35,8 +35,6 @@ void ComLight::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetMetaObject(&MaterialAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("turnOn", "Turn On", bool, IsTurnOn, SetTurnOn, true, 
-        "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false, 
         "", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("lightSize", "Light Size", Vec3, GetLightSize, SetLightSize, Vec3(200, 200, 200), 
@@ -321,20 +319,6 @@ void ComLight::SetPrimaryLight(bool isPrimaryLight) {
         renderLightDef.flags |= RenderLight::PrimaryLightFlag;
     } else {
         renderLightDef.flags &= ~RenderLight::PrimaryLightFlag;
-    }
-
-    UpdateVisuals();
-}
-
-bool ComLight::IsTurnOn() const {
-    return !!(renderLightDef.flags & RenderLight::TurnOnFlag);
-}
-
-void ComLight::SetTurnOn(bool turnOn) {
-    if (turnOn) {
-        renderLightDef.flags |= RenderLight::TurnOnFlag;
-    } else {
-        renderLightDef.flags &= ~RenderLight::TurnOnFlag;
     }
 
     UpdateVisuals();

@@ -45,9 +45,8 @@ public:
 
     enum Flag {
         StaticFlag          = BIT(0),
-        TurnOnFlag          = BIT(1),
-        PrimaryLightFlag    = BIT(2),
-        CastShadowsFlag     = BIT(3)
+        CastShadowsFlag     = BIT(1),
+        PrimaryLightFlag    = BIT(2)
     };
 
     struct State {
@@ -142,7 +141,7 @@ public:
     Mat4                    viewProjScaleBiasMatrix;
     Mat3x4                  fallOffMatrix;
 
-    VisibleLight *          visibleLight;
+    VisibleLight *          visLight;
     int                     viewCount;
 
     DbvtProxy *             proxy;

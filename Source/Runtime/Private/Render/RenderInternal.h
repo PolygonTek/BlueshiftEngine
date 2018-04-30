@@ -50,14 +50,13 @@ public:
 
     Color4                  lightColor;
 
+    int                     firstDrawSurf;
+    int                     numDrawSurfs;
+
                             // light bounding volume 에 포함되고, view frustum 에 보이는 surfaces
-    int                     litSurfFirst;
-    int                     litSurfCount;
     AABB                    litSurfsAABB;
 
-                            // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfs 를 포함한다)    
-    int                     shadowCasterSurfFirst;
-    int                     shadowCasterSurfCount;
+                            // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfs 를 포함한다)
     AABB                    shadowCasterAABB;
 
     LinkList<VisibleLight>  node;
@@ -85,8 +84,8 @@ public:
 
     BufferCache *           instanceBufferCache;
 
-    LinkList<VisibleObject> visibleObjects;
-    LinkList<VisibleLight>  visibleLights;
+    LinkList<VisibleObject> visObjects;
+    LinkList<VisibleLight>  visLights;
     VisibleLight *          primaryLight;
 };
 

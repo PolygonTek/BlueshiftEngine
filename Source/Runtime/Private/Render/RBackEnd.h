@@ -165,8 +165,8 @@ struct BackEnd {
     int                     numAmbientSurfs;
     DrawSurf **             drawSurfs;
     BufferCache *           instanceBufferCache;
-    LinkList<VisibleObject> *visibleObjects;
-    LinkList<VisibleLight> *visibleLights;
+    LinkList<VisibleObject> *visObjects;
+    LinkList<VisibleLight> *visLights;
     VisibleLight *          primaryLight;
     VisibleView *           view;
 
@@ -208,7 +208,7 @@ void    RB_Shutdown();
 
 void    RB_Execute(const void *data);
 
-void    RB_SetupLight(VisibleLight *visibleLight);
+void    RB_SetupLight(VisibleLight *visLight);
 
 void    RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs);
@@ -221,9 +221,9 @@ void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);
 void    RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs);
 
-void    RB_ShadowPass(const VisibleLight *visibleLight);
+void    RB_ShadowPass(const VisibleLight *visLight);
 void    RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_ForwardAdditivePass(const LinkList<VisibleLight> *visibleLights);
+void    RB_ForwardAdditivePass(const LinkList<VisibleLight> *visLights);
 
 void    RB_PostProcessDepth();
 void    RB_PostProcess();

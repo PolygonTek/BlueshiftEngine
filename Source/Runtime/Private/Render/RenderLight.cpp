@@ -31,7 +31,7 @@ RenderLight::RenderLight() {
     viewProjScaleBiasMatrix.SetIdentity();
 
     viewCount = 0;
-    visibleLight = nullptr;
+    visLight = nullptr;
     proxy = nullptr;
 
     firstUpdate = true;
