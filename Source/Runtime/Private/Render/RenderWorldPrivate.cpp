@@ -481,8 +481,6 @@ void RenderWorld::AddStaticMeshesForLights(VisibleView *visView) {
                 OBB surfBounds = OBB(surf->subMesh->GetAABB() * renderObject->state.scale, renderObject->state.origin, renderObject->state.axis);
                 if (!visLight->def->CullShadowCasterOBB(surfBounds, visView->def->frustum, visView->worldAABB)) {
                     isShadowCaster = true;
-
-                    
                 }
             }
         }
@@ -713,6 +711,11 @@ void RenderWorld::OptimizeLights(VisibleView *visView) {
 
         VisibleLight *visLight = node->Owner();
 
+        if (visLight->numDrawSurfs == 0) {
+            node->Remove();
+            continue;
+        }
+
         const AABB lightAABB = visLight->def->GetWorldAABB();
         
         // Compute effective AABB
@@ -787,13 +790,13 @@ void RenderWorld::RenderCamera(VisibleView *visView) {
 
     AddSkinnedMeshesForLights(visView);
 
+    OptimizeLights(visView);
+
     if (r_instancing.GetBool()) {
         CacheInstanceBuffer(visView);
     }
 
     SortDrawSurfs(visView);
-
-    OptimizeLights(visView);
 
     renderSystem.CmdDrawView(visView);
 }
@@ -939,7 +942,7 @@ void RenderWorld::SortDrawSurfs(VisibleView *visView) {
 
         if (lightIndex != prevLightIndex) {
             visLight->firstDrawSurf = i;
-            //assert(i + visLight->numDrawSurfs <= visView->numDrawSurfs);
+            assert(i + visLight->numDrawSurfs <= visView->numDrawSurfs);
 
             prevLightIndex = lightIndex;
 

@@ -384,8 +384,8 @@ void RenderSystem::CheckModifiedCVars() {
         RecreateShadowMapRT();
     }
 
-    if (r_shadowMapFloat.IsModified()) {
-        r_shadowMapFloat.ClearModified();
+    if (r_shadowCubeMapFloat.IsModified()) {
+        r_shadowCubeMapFloat.ClearModified();
         RecreateShadowMapRT();
     }
 

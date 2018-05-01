@@ -31,20 +31,20 @@ END_EVENTS
 void ComLight::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("lightType", "Light Type", RenderLight::Type, GetLightType, SetLightType, 0, 
         "", PropertyInfo::EditorFlag).SetEnumString("Point;Spot;Directional");
+    REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false,
+        "", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("material", "Material", Guid, GetMaterialGuid, SetMaterialGuid, GuidMapper::zeroClampLightMaterialGuid, 
         "", PropertyInfo::EditorFlag).SetMetaObject(&MaterialAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false, 
-        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("intensity", "Intensity", float, GetIntensity, SetIntensity, 2.f,
+        "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("fallOffExponent", "Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, 1.25f,
+        "", PropertyInfo::EditorFlag).SetRange(0.01f, 100, 0.1f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("lightSize", "Light Size", Vec3, GetLightSize, SetLightSize, Vec3(200, 200, 200), 
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("lightZNear", "Near Distance", float, GetLightZNear, SetLightZNear, 10.f,
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(1, 200, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("fallOffExponent", "Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, 1.25f, 
-        "", PropertyInfo::EditorFlag).SetRange(0.01f, 100, 0.1f);
-    REGISTER_ACCESSOR_PROPERTY("intensity", "Intensity", float, GetIntensity, SetIntensity, 2.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.01f);
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(1, 200, 0.01f);    
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Shadows/Cast Shadows", bool, IsCastShadows, SetCastShadows, false,
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("shadowOffsetFactor", "Shadows/Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, 3.f,

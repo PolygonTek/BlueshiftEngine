@@ -160,7 +160,7 @@ struct BackEnd {
 
     RenderContext *         ctx;
 
-    Batch                  batch;
+    Batch                   batch;
     int                     numDrawSurfs;
     int                     numAmbientSurfs;
     DrawSurf **             drawSurfs;

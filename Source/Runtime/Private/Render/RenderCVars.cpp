@@ -34,9 +34,9 @@ CVAR(r_vertexTextureUpdate, L"2", CVar::Integer | CVar::Archive, L"texel fetch b
 CVAR(r_shadows, L"1", CVar::Integer | CVar::Archive, L"enable shadows, 1 = shadow map");
 CVAR(r_shadowMapSize, L"1024", CVar::Integer | CVar::Archive, L"directional/projected shadow map size");
 CVAR(r_shadowMapFilterSize, L"1.0", CVar::Float | CVar::Archive, L"shadow map blurring filter size in centi-meter unit");
-CVAR(r_shadowMapFloat, L"0", CVar::Bool | CVar::Archive, L"use float texture for shadow map");
 CVAR(r_shadowCubeMapSize, L"1024", CVar::Integer | CVar::Archive, L"virtual shadow cube map size of each face");
 CVAR(r_shadowCubeMapZNear, L"4.0", CVar::Float, L"");
+CVAR(r_shadowCubeMapFloat, L"0", CVar::Bool | CVar::Archive, L"use float texture for shadow cube map");
 CVAR(r_shadowMapQuality, L"1", CVar::Integer | CVar::Archive, L"shadow map PCF level, 0 = HW-PCF only, 1 = HW-PCFx5, 2 = PCFx9, 3 = PCFx16 (randomly jittered sample)");
 CVAR(r_shadowMapCropAlign, L"1", CVar::Bool, L"");
 
