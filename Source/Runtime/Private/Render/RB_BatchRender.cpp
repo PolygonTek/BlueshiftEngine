@@ -276,7 +276,7 @@ void Batch::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &colo
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -349,7 +349,7 @@ void Batch::RenderDepth(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -447,7 +447,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
             }
         }
 
-        if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (numInstances >= 1) {
             if (shader->GetGPUInstancingVersion()) {
                 shader = shader->GetGPUInstancingVersion();
             }
@@ -471,7 +471,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
             }
         }
 
-        if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+        if (numInstances >= 1) {
             if (shader->GetGPUInstancingVersion()) {
                 shader = shader->GetGPUInstancingVersion();
             }
@@ -510,7 +510,7 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -554,7 +554,7 @@ void Batch::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambient
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -637,7 +637,7 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -699,7 +699,7 @@ void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, flo
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -869,7 +869,7 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -911,7 +911,7 @@ void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) cons
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -951,7 +951,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
         }
     }
 
-    if (r_instancing.GetBool() && mtrlPass->instancingEnabled) {
+    if (numInstances >= 1) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }

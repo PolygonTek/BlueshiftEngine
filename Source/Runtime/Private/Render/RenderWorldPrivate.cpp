@@ -713,6 +713,8 @@ void RenderWorld::OptimizeLights(VisibleView *visView) {
 
         if (visLight->numDrawSurfs == 0) {
             node->Remove();
+
+            visView->numVisibleLights--;
             continue;
         }
 
@@ -730,6 +732,8 @@ void RenderWorld::OptimizeLights(VisibleView *visView) {
         Rect screenClipRect;
         if (!visView->def->GetClipRectFromAABB(visLight->litSurfsAABB, screenClipRect)) {
             node->Remove();
+
+            visView->numVisibleLights--;
             continue;
         }
 
@@ -739,6 +743,8 @@ void RenderWorld::OptimizeLights(VisibleView *visView) {
 
         if (visLight->scissorRect.IsEmpty()) {
             node->Remove();
+
+            visView->numVisibleLights--;
             continue;
         }
     }
@@ -930,21 +936,16 @@ void RenderWorld::SortDrawSurfs(VisibleView *visView) {
 
     VisibleLight *visLight = visView->visLights.Next();
 
-    int prevLightIndex = -1;
-
     for (int i = 0; i < visView->numDrawSurfs; i++) {
-        const DrawSurf *drawSurf = visView->drawSurfs[i];
-        
-        int lightIndex = (drawSurf->sortKey & 0xFFF0000000000000) >> 52;
-        if (lightIndex == 0) {
-            continue;
+        if (!visLight) {
+            break;
         }
+        
+        int lightIndex = (visView->drawSurfs[i]->sortKey & 0xFFF0000000000000) >> 52;
 
-        if (lightIndex != prevLightIndex) {
+        if (lightIndex - 1 == visLight->index) {
             visLight->firstDrawSurf = i;
             assert(i + visLight->numDrawSurfs <= visView->numDrawSurfs);
-
-            prevLightIndex = lightIndex;
 
             visLight = visLight->node.Next();
         }
