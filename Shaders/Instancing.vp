@@ -2,7 +2,7 @@
     #error "Parallax mapping doesn't support instancing"
 #endif
 
-#define INSTANCE_DATA_PADDING_VECTORS ((INSTANCE_DATA_SIZE / 4 - 16) / 4)
+#define INSTANCE_DATA_PADDING_VECTORS ((INSTANCE_DATA_SIZE - 64) / 16)
 
 struct InstanceData {
     vec4 localToWorldMatrixS;       // 16

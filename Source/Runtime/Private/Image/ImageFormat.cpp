@@ -1580,7 +1580,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     // depth --------------------------------------------------------------------------------------
     { "Depth_16",               2,  1,  0,  0,  0,  0,  Image::Depth, nullptr, nullptr, nullptr, nullptr },
     { "Depth_24",               3,  1,  0,  0,  0,  0,  Image::Depth, nullptr, nullptr, nullptr, nullptr },
-    { "Depth_32F",              4,  1,  0,  0,  0,  0,  Image::Depth, nullptr, nullptr, nullptr, nullptr },
+    { "Depth_32F",              4,  1,  0,  0,  0,  0,  Image::Depth | Image::Float, nullptr, nullptr, nullptr, nullptr },
     { "DepthStencil_24_8",      4,  2,  0,  0,  0,  0,  Image::DepthStencil, nullptr, nullptr, nullptr, nullptr },
     { "DepthStencil_32F_8",     5,  2,  0,  0,  0,  0,  Image::DepthStencil, nullptr, nullptr, nullptr, nullptr },
 };

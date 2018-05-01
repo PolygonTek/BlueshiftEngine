@@ -658,6 +658,8 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *visView) {
 void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
     int numInstances = 0;
 
+    const int instanceDataAlignSize = rhi.HWLimit().uniformBufferOffsetAlignment;
+
     for (VisibleObject *visObject = visView->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         const RenderObject *renderObject = visObject->def;
 
@@ -673,7 +675,7 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
             }
 
             if (surf->drawSurf->flags & DrawSurf::UseInstancing) {
-                InstanceData *instanceData = (InstanceData *)((byte *)renderGlobal.instanceBufferData + numInstances * rhi.HWLimit().uniformBufferOffsetAlignment);
+                InstanceData *instanceData = (InstanceData *)((byte *)renderGlobal.instanceBufferData + numInstances * instanceDataAlignSize);
 
                 const Mat3x4 &localToWorldMatrix = renderObject->GetObjectToWorldMatrix();
                 instanceData->localToWorldMatrixS = localToWorldMatrix[0];
@@ -698,7 +700,7 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
     }
 
     if (numInstances > 0) {
-        bufferCacheManager.AllocUniform(numInstances * rhi.HWLimit().uniformBufferOffsetAlignment, renderGlobal.instanceBufferData, visView->instanceBufferCache);
+        bufferCacheManager.AllocUniform(numInstances * instanceDataAlignSize, renderGlobal.instanceBufferData, visView->instanceBufferCache);
     }
 }
 
