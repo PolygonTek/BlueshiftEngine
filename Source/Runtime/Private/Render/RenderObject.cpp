@@ -60,13 +60,13 @@ void RenderObject::Update(const State *stateDef) {
     }
 
     if (firstUpdate) {
-        worldMatrix.SetLinearTransform(state.axis, state.scale, state.origin);
+        worldMatrix.SetTRS(state.origin, state.axis, state.scale);
         prevWorldMatrix = worldMatrix;
 
         firstUpdate = false;
     } else {
         prevWorldMatrix = worldMatrix;
-        worldMatrix.SetLinearTransform(state.axis, state.scale, state.origin);
+        worldMatrix.SetTRS(state.origin, state.axis, state.scale);
     }
 }
 

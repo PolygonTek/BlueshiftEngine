@@ -160,11 +160,11 @@ public:
                         /// Change tiny numbers to zero
     bool                FixDenormals();
 
-    void                SetScaleRotation(const Vec3 &s, const Mat3 &m);
+    void                SetRotationScale(const Mat3 &rotation, const Vec3 &scale);
                         /// Sets the translation part of this matrix.
     void                SetTranslation(const Vec3 &t);
-                        /// Sets linear transformation matrix.
-    void                SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &origin);
+                        /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
+    void                SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale);
 
                         /// Inverts this matrix.
     Mat3x4              Inverse() const;
@@ -324,18 +324,18 @@ BE_INLINE Mat3x4::Mat3x4(const float *data) {
     memcpy(mat, data, sizeof(float) * Rows * Cols);
 }
 
-BE_INLINE void Mat3x4::SetScaleRotation(const Vec3 &s, const Mat3 &m) {
-    mat[0][0] = m[0][0] * s[0];
-    mat[0][1] = m[1][0] * s[1];
-    mat[0][2] = m[2][0] * s[2];
+BE_INLINE void Mat3x4::SetRotationScale(const Mat3 &rotation, const Vec3 &scale) {
+    mat[0][0] = rotation[0][0] * scale[0];
+    mat[0][1] = rotation[1][0] * scale[1];
+    mat[0][2] = rotation[2][0] * scale[2];
 
-    mat[1][0] = m[0][1] * s[0];
-    mat[1][1] = m[1][1] * s[1];
-    mat[1][2] = m[2][1] * s[2];
+    mat[1][0] = rotation[0][1] * scale[0];
+    mat[1][1] = rotation[1][1] * scale[1];
+    mat[1][2] = rotation[2][1] * scale[2];
 
-    mat[2][0] = m[0][2] * s[0];
-    mat[2][1] = m[1][2] * s[1];
-    mat[2][2] = m[2][2] * s[2];
+    mat[2][0] = rotation[0][2] * scale[0];
+    mat[2][1] = rotation[1][2] * scale[1];
+    mat[2][2] = rotation[2][2] * scale[2];
 }
 
 BE_INLINE void Mat3x4::SetTranslation(const Vec3 &t) {
@@ -344,22 +344,22 @@ BE_INLINE void Mat3x4::SetTranslation(const Vec3 &t) {
     mat[2][3] = t[2];
 }
 
-BE_INLINE void Mat3x4::SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &origin) {
+BE_INLINE void Mat3x4::SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale) {
     // T * R * S
-    mat[0][0] = axis[0].x * scale.x;
-    mat[0][1] = axis[1].x * scale.y;
-    mat[0][2] = axis[2].x * scale.z;
-    mat[0][3] = origin.x;
+    mat[0][0] = rotation[0].x * scale.x;
+    mat[0][1] = rotation[1].x * scale.y;
+    mat[0][2] = rotation[2].x * scale.z;
+    mat[0][3] = translation.x;
 
-    mat[1][0] = axis[0].y * scale.x;
-    mat[1][1] = axis[1].y * scale.y;
-    mat[1][2] = axis[2].y * scale.z;
-    mat[1][3] = origin.y;
+    mat[1][0] = rotation[0].y * scale.x;
+    mat[1][1] = rotation[1].y * scale.y;
+    mat[1][2] = rotation[2].y * scale.z;
+    mat[1][3] = translation.y;
 
-    mat[2][0] = axis[0].z * scale.x;
-    mat[2][1] = axis[1].z * scale.y;
-    mat[2][2] = axis[2].z * scale.z;
-    mat[2][3] = origin.z;
+    mat[2][0] = rotation[0].z * scale.x;
+    mat[2][1] = rotation[1].z * scale.y;
+    mat[2][2] = rotation[2].z * scale.z;
+    mat[2][3] = translation.z;
 }
 
 BE_INLINE const Vec4 &Mat3x4::operator[](int index) const {

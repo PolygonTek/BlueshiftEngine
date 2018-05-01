@@ -61,6 +61,10 @@ in MEDIUMP vec2 v2f_tex;
     #endif
 #endif
 
+#ifdef USE_SHADOW_MAP
+$include "ShadowLibrary.fp"
+#endif
+
 out vec4 o_fragColor : FRAG_COLOR;
 
 // Material parameters
@@ -131,10 +135,6 @@ uniform LOWP float ambientLerp;
 $include "StandardBRDF.glsl"
 $include "PhongBRDF.glsl"
 $include "IBL.glsl"
-
-#ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.fp"
-#endif
 
 #if _NORMAL == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
 #undef _NORMAL

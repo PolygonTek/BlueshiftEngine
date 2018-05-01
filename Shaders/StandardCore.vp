@@ -7,10 +7,6 @@ in MEDIUMP vec2 in_st       : TEXCOORD0;
     in LOWP vec4 in_tangent : TANGENT;
 #endif
 
-#ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.vp"
-#endif
-
 out LOWP vec4 v2f_color;
 out MEDIUMP vec2 v2f_tex;
 
@@ -38,6 +34,10 @@ out MEDIUMP vec2 v2f_tex;
         out vec4 v2f_toWorldAndPackedWorldPosT;
         out vec4 v2f_toWorldAndPackedWorldPosR;
     #endif
+#endif
+
+#ifdef USE_SHADOW_MAP
+$include "ShadowLibrary.vp"
 #endif
 
 #ifdef INSTANCING

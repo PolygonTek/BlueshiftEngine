@@ -190,8 +190,8 @@ public:
     void                SetOrtho(float left, float right, float bottom, float top, float znear, float zfar);
                         /// Sets reflection matrix with the given reflection plane.
     void                SetReflect(const Plane &plane);
-                        /// Sets linear transformation matrix.
-    void                SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &origin);
+                        /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
+    void                SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale);
 
                         /// Returns the sum of the diagonal elements of this matrix.
                         /// Mathematically, this means sum of all eigenvalues

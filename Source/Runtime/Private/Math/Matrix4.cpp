@@ -681,7 +681,7 @@ void Mat4::SetReflect(const Plane &plane) {
     mat[3][3] = 1.0f;
 }
 
-void Mat4::SetLinearTransform(const Mat3 &axis, const Vec3 &scale, const Vec3 &origin) {
+void Mat4::SetTRS(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
     // T * R * S
     mat[0][0] = axis[0].x * scale.x;
     mat[0][1] = axis[1].x * scale.y;

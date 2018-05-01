@@ -121,7 +121,7 @@ BE_INLINE void VertexGeneric::Lerp(const VertexGeneric &a, const VertexGeneric &
 
 BE_INLINE void VertexGeneric::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
     Mat4 matrix;
-    matrix.SetLinearTransform(rotation, scale, translation);
+    matrix.SetTRS(translation, rotation, scale);
     xyz = matrix * xyz;
 }
 
@@ -374,7 +374,7 @@ BE_INLINE void VertexGenericLit::Lerp(const VertexGenericLit &a, const VertexGen
 
 BE_INLINE void VertexGenericLit::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
     Mat4 matrix;
-    matrix.SetLinearTransform(rotation, scale, translation);
+    matrix.SetTRS(translation, rotation, scale);
     xyz = matrix * xyz;
     SetNormal(matrix.ToMat3() * GetNormal());
     SetTangent(matrix.ToMat3() * GetTangent());

@@ -3,10 +3,6 @@ in vec3 in_normal : NORMAL;
 in vec4 in_color : COLOR;
 in vec2 in_st : TEXCOORD0;
 
-#ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.vp"
-#endif
-
 out vec4 v2f_color;
 out vec3 v2f_normal;
 out vec3 v2f_lightVector;
@@ -14,6 +10,10 @@ out vec2 v2f_texCoord;
 out vec3 v2f_viewVector;
 out vec3 v2f_lightFallOff;
 out vec4 v2f_lightProjection;
+
+#ifdef USE_SHADOW_MAP
+$include "ShadowLibrary.vp"
+#endif
 
 #ifdef INSTANCING
 $include "Instancing.vp"

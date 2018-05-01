@@ -1,9 +1,5 @@
 $include "fragment_common.glsl"
 
-#ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.fp"
-#endif
-
 in vec4 v2f_color;
 in vec3 v2f_normal;
 in vec3 v2f_lightVector;
@@ -11,6 +7,10 @@ in vec2 v2f_texCoord;
 in vec3 v2f_viewVector;
 in vec3 v2f_lightFallOff;
 in vec4 v2f_lightProjection;
+
+#ifdef USE_SHADOW_MAP
+$include "ShadowLibrary.fp"
+#endif
 
 out vec4 o_fragColor : FRAG_COLOR;
 

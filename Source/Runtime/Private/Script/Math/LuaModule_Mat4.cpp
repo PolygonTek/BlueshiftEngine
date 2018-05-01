@@ -52,7 +52,7 @@ void LuaVM::RegisterMat4(LuaCpp::Module &module) {
         "set_perspective", static_cast<void(Mat4::*)(float, float, float, float)>(&Mat4::SetPerspective),
         "set_ortho", &Mat4::SetOrtho,
         "set_reflect", &Mat4::SetReflect,
-        "set_linear_transform", &Mat4::SetLinearTransform,
+        "set_trs", &Mat4::SetTRS,
         "trace", &Mat4::Trace,
         "determinant", &Mat4::Determinant,
         "transpose", &Mat4::Transpose,

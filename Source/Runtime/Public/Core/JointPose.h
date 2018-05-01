@@ -77,64 +77,28 @@ BE_INLINE JointPose JointPose::operator-(const JointPose &baseJointPose) const {
 }
 
 BE_INLINE void JointPose::SetFromMat3x4(const Mat3x4 &mat) {
-    constexpr int next[3] = { 1, 2, 0 };
-    float s, t;
-
     this->s[0] = Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
     this->s[1] = Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]);
     this->s[2] = Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]);
 
-    float inv_sx = 1.0f / this->s[0];
-    float inv_sy = 1.0f / this->s[1];
-    float inv_sz = 1.0f / this->s[2];
-
-    // same row major order
-    float nmat[3][3];
-    nmat[0][0] = mat[0][0] * inv_sx;
-    nmat[0][1] = mat[0][1] * inv_sy;
-    nmat[0][2] = mat[0][2] * inv_sz;
-    nmat[1][0] = mat[1][0] * inv_sx;
-    nmat[1][1] = mat[1][1] * inv_sy;
-    nmat[1][2] = mat[1][2] * inv_sz;
-    nmat[2][0] = mat[2][0] * inv_sx;
-    nmat[2][1] = mat[2][1] * inv_sy;
-    nmat[2][2] = mat[2][2] * inv_sz;
-
-    float trace = nmat[0][0] + nmat[1][1] + nmat[2][2];
-
-    if (trace > 0.0f) {
-        t = trace + 1.0f;
-        s = Math::InvSqrt(t) * 0.5f;
-
-        this->q.w = s * t;
-        this->q.x = (nmat[2][1] - nmat[1][2]) * s;
-        this->q.y = (nmat[0][2] - nmat[2][0]) * s;
-        this->q.z = (nmat[1][0] - nmat[0][1]) * s;
-    } else {
-        int i = 0;
-        if (nmat[1][1] > nmat[0][0]) {
-            i = 1;
-        }
-
-        if (nmat[2][2] > nmat[i][i]) {
-            i = 2;
-        }
-
-        int j = next[i];
-        int k = next[j];
-
-        t = (nmat[i][i] - (nmat[j][j] + nmat[k][k])) + 1.0f;
-        s = Math::InvSqrt(t) * 0.5f;
-
-        this->q[i] = s * t;
-        this->q[j] = (nmat[j][i] + nmat[i][j]) * s;
-        this->q[k] = (nmat[k][i] + nmat[i][k]) * s;
-        this->q.w = (nmat[k][j] - nmat[j][k]) * s;
-    }
-
     this->t[0] = mat[0][3];
     this->t[1] = mat[1][3];
     this->t[2] = mat[2][3];
+
+    // column major order 3x3 matrix that has rotation only
+    Vec3 invS = 1.0f / this->s;
+    Mat3 r;
+    r[0][0] = mat[0][0] * invS.x;
+    r[0][1] = mat[1][0] * invS.x;
+    r[0][2] = mat[2][0] * invS.x;
+    r[1][0] = mat[0][1] * invS.y;
+    r[1][1] = mat[1][1] * invS.y;
+    r[1][2] = mat[2][1] * invS.y;
+    r[2][0] = mat[0][2] * invS.z;
+    r[2][1] = mat[1][2] * invS.z;
+    r[2][2] = mat[2][2] * invS.z;
+
+    this->q = r.ToQuat();
 }
 
 /*

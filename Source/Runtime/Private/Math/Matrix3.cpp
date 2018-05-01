@@ -545,7 +545,7 @@ Rotation Mat3::ToRotation() const {
 //
 //-------------------------------------------------------------------------------------------
 Quat Mat3::ToQuat() const {
-    static constexpr int next[3] = { 1, 2, 0 };
+    constexpr int next[3] = { 1, 2, 0 };
     float s, t;
     Quat q;
 
@@ -554,7 +554,7 @@ Quat Mat3::ToQuat() const {
     // check the diagonal
     if (trace > 0.0f) {
         t = trace + 1.0f;
-        s = 0.5f * Math::InvSqrt(t);
+        s = Math::InvSqrt(t) * 0.5f;
 
         q.w = s * t;
         q.x = (mat[1][2] - mat[2][1]) * s;
@@ -579,7 +579,7 @@ Quat Mat3::ToQuat() const {
         q[i] = s * t;
         q[j] = (mat[i][j] + mat[j][i]) * s;
         q[k] = (mat[i][k] + mat[k][i]) * s;
-        q.w = (mat[j][k] - mat[k][j]) * s;
+        q[3] = (mat[j][k] - mat[k][j]) * s;
     }
 
     return q;

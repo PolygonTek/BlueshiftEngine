@@ -186,7 +186,7 @@ void BE_FASTCALL SIMD_Generic::ConvertJointPosesToJointMats(Mat3x4 *jointMats, c
     int i;
 
     for (i = 0; i < numJoints; i++) {
-        jointMats[i].SetScaleRotation(jointPoses[i].s, jointPoses[i].q.ToMat3());
+        jointMats[i].SetRotationScale(jointPoses[i].q.ToMat3(), jointPoses[i].s);
         jointMats[i].SetTranslation(jointPoses[i].t);
     }
 }
