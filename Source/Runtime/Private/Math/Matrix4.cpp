@@ -681,27 +681,31 @@ void Mat4::SetReflect(const Plane &plane) {
     mat[3][3] = 1.0f;
 }
 
-void Mat4::SetTRS(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
+void Mat4::SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale) {
     // T * R * S
-    mat[0][0] = axis[0].x * scale.x;
-    mat[0][1] = axis[1].x * scale.y;
-    mat[0][2] = axis[2].x * scale.z;
-    mat[0][3] = origin.x;
+    mat[0][0] = rotation[0][0] * scale.x;
+    mat[0][1] = rotation[1][0] * scale.y;
+    mat[0][2] = rotation[2][0] * scale.z;
+    mat[0][3] = translation.x;
 
-    mat[1][0] = axis[0].y * scale.x;
-    mat[1][1] = axis[1].y * scale.y;
-    mat[1][2] = axis[2].y * scale.z;
-    mat[1][3] = origin.y;
+    mat[1][0] = rotation[0][1] * scale.x;
+    mat[1][1] = rotation[1][1] * scale.y;
+    mat[1][2] = rotation[2][1] * scale.z;
+    mat[1][3] = translation.y;
 
-    mat[2][0] = axis[0].z * scale.x;
-    mat[2][1] = axis[1].z * scale.y;
-    mat[2][2] = axis[2].z * scale.z;
-    mat[2][3] = origin.z;
+    mat[2][0] = rotation[0][2] * scale.x;
+    mat[2][1] = rotation[1][2] * scale.y;
+    mat[2][2] = rotation[2][2] * scale.z;
+    mat[2][3] = translation.z;
 
     mat[3][0] = 0.0f;
     mat[3][1] = 0.0f;
     mat[3][2] = 0.0f;
     mat[3][3] = 1.0f;
+}
+
+void Mat4::SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &scale) {
+    SetTRS(translation, rotation.ToMat3(), scale);
 }
 
 Mat4 Mat4::FromString(const char *str) {

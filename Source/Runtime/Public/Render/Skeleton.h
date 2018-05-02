@@ -61,7 +61,7 @@ public:
 
     const JointPose *       GetBindPoses() const { return bindPoses; }
 
-    const Mat3x4 *          GetInvBindPoseMats() const { return invBindPoseMats; }
+    const Mat3x4 *          GetInvBindPoseMatrices() const { return invBindPoseMats; }
 
     bool                    CheckHierarchy(const Skeleton *otherSkeleton) const;
 

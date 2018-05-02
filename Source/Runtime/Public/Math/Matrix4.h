@@ -192,6 +192,8 @@ public:
     void                SetReflect(const Plane &plane);
                         /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
     void                SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale);
+                        /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
+    void                SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &scale);
 
                         /// Returns the sum of the diagonal elements of this matrix.
                         /// Mathematically, this means sum of all eigenvalues

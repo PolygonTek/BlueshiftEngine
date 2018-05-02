@@ -89,6 +89,64 @@ Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
     return dst;
 }
 
+void Mat3x4::SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale) {
+    // T * R * S
+    mat[0][0] = rotation[0][0] * scale.x;
+    mat[0][1] = rotation[1][0] * scale.y;
+    mat[0][2] = rotation[2][0] * scale.z;
+    mat[0][3] = translation.x;
+
+    mat[1][0] = rotation[0][1] * scale.x;
+    mat[1][1] = rotation[1][1] * scale.y;
+    mat[1][2] = rotation[2][1] * scale.z;
+    mat[1][3] = translation.y;
+
+    mat[2][0] = rotation[0][2] * scale.x;
+    mat[2][1] = rotation[1][2] * scale.y;
+    mat[2][2] = rotation[2][2] * scale.z;
+    mat[2][3] = translation.z;
+}
+
+void Mat3x4::SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &scale) {
+    SetTRS(translation, rotation.ToMat3(), scale);
+}
+
+// Euclidean inverse (TRS)^{-1} = S^{-1} R^T (-T)
+void Mat3x4::InverseSelf() {
+#if 0
+    * this = Mat3x4(ToMat4().Inverse());
+#else
+    float tmp[3];
+
+    // get squared inverse scale factor
+    float inv_sx2 = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
+    float inv_sy2 = 1.0f / (mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]);
+    float inv_sz2 = 1.0f / (mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]);
+
+    // negate inverse rotated translation part
+    tmp[0] = mat[0][0] * mat[0][3] + mat[1][0] * mat[1][3] + mat[2][0] * mat[2][3];
+    tmp[1] = mat[0][1] * mat[0][3] + mat[1][1] * mat[1][3] + mat[2][1] * mat[2][3];
+    tmp[2] = mat[0][2] * mat[0][3] + mat[1][2] * mat[1][3] + mat[2][2] * mat[2][3];
+    mat[0][3] = -tmp[0] * inv_sx2;
+    mat[1][3] = -tmp[1] * inv_sy2;
+    mat[2][3] = -tmp[2] * inv_sz2;
+
+    // transpose rotation part
+    mat[0][0] *= inv_sx2;
+    tmp[0] = mat[0][1] * inv_sy2;
+    mat[0][1] = mat[1][0] * inv_sx2;
+    mat[1][0] = tmp[0];
+    mat[1][1] *= inv_sy2;
+    tmp[1] = mat[0][2] * inv_sz2;
+    mat[0][2] = mat[2][0] * inv_sx2;
+    mat[2][0] = tmp[1];
+    tmp[2] = mat[1][2] * inv_sz2;
+    mat[1][2] = mat[2][1] * inv_sy2;
+    mat[2][1] = tmp[2];
+    mat[2][2] *= inv_sz2;
+#endif
+}
+
 Mat3x4 &Mat3x4::TransformSelf(const Mat3x4 &a) {
     float dst[3];
 

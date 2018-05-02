@@ -226,7 +226,7 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
         // 0-indexed buffer for instance buffer
         rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
 
-        shader->SetConstantBuffer("instanceDataBlock", 0);
+        shader->SetConstantBuffer("instanceDataBuffer", 0);
         shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::InstanceIndexesConst], numInstances, instanceLocalIndexes);
     } else {
         if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst] >= 0) {

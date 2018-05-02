@@ -361,7 +361,7 @@ void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *join
         skinningJointCache->jointIndexOffsetCurr = 0;
     }
 
-    simdProcessor->MultiplyJoints(skinningJointCache->skinningJoints + skinningJointCache->jointIndexOffsetCurr, jointMats, skeleton->GetInvBindPoseMats(), numJoints);
+    simdProcessor->MultiplyJoints(skinningJointCache->skinningJoints + skinningJointCache->jointIndexOffsetCurr, jointMats, skeleton->GetInvBindPoseMatrices(), numJoints);
 
     if (renderGlobal.skinningMethod == VertexTextureFetchSkinning) {
         bufferCacheManager.AllocTexel(skinningJointCache->numJoints * sizeof(Mat3x4), skinningJointCache->skinningJoints, &skinningJointCache->bufferCache);

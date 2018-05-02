@@ -119,6 +119,10 @@ public:
 
     static Quat         FromAngleAxis(float angle, const Vec3 &axis);
 
+    Quat &              SetFromAngles(const Angles &angles);
+
+    static Quat         FromAngles(const Angles &angles);
+
                         /// Compute a quaternion that rotates unit-length vector "from" to unit-length vector "to"
     Quat &              SetFromTwoVectors(const Vec3 &from, const Vec3 &to);
 
@@ -318,6 +322,12 @@ BE_INLINE void Quat::SetIdentity() {
 BE_INLINE Quat Quat::FromAngleAxis(float angle, const Vec3 &axis) {
     Quat q;
     q.SetFromAngleAxis(angle, axis);
+    return q;
+}
+
+BE_INLINE Quat Quat::FromAngles(const Angles &angles) {
+    Quat q;
+    q.SetFromAngles(angles);
     return q;
 }
 

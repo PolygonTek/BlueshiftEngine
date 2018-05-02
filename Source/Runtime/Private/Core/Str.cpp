@@ -1436,13 +1436,13 @@ const char *Str::FloatArrayToString(const float *arr, const int length, const in
     index = (index + 1) & 3;
 
     char format[16];
-    Str::snPrintf(format, sizeof(format), "%%.%df", precision);
+    Str::snPrintf(format, sizeof(format), "%%.%if", precision);
     int n = Str::snPrintf(s, sizeof(str[0]), format, arr[0]);
     if (precision > 0) {
         while (n > 0 && s[n-1] == '0') s[--n] = '\0';
         while (n > 0 && s[n-1] == '.') s[--n] = '\0';
     }
-    Str::snPrintf(format, sizeof(format), " %%.%df", precision);
+    Str::snPrintf(format, sizeof(format), " %%.%if", precision);
     for (int i = 1; i < length; i++) {
         n += Str::snPrintf(s + n, sizeof(str[0]) - n, format, arr[i]);
         if (precision > 0) {

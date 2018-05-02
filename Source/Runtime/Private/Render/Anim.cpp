@@ -356,7 +356,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
 
         simdProcessor->TransformJoints(jointMats, jointParents, 1, numJoints - 1);
 
-        simdProcessor->MultiplyJoints(jointMats2, jointMats, skeleton->GetInvBindPoseMats(), numJoints);
+        simdProcessor->MultiplyJoints(jointMats2, jointMats, skeleton->GetInvBindPoseMatrices(), numJoints);
 
         frameAABB.Clear();
 

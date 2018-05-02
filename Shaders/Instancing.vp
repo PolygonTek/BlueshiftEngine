@@ -15,7 +15,7 @@ struct InstanceData {
     vec4 padding[INSTANCE_DATA_PADDING_VECTORS];
 };
 
-UNIFORM_BLOCK instanceDataBlock {
+UNIFORM_BLOCK instanceDataBuffer {
     InstanceData instanceData[MAX_INSTANCE_COUNT];
 };
 
