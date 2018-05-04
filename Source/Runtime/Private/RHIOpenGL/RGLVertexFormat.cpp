@@ -79,7 +79,7 @@ int OpenGLRHI::GetTypeSize(const VertexElement::Type type) const {
 // vertex.normal                    vertex.attrib[2]
 // vertex.color                     vertex.attrib[3]
 // vertex.color.primary             vertex.attrib[3]
-// vertex.color.secondary           vertex.attrib[4]        
+// vertex.color.secondary           vertex.attrib[4]
 // vertex.fogcoord                  vertex.attrib[5]
 // vertex.texcoord                  vertex.attrib[8]
 // vertex.texcoord[0]               vertex.attrib[8]
