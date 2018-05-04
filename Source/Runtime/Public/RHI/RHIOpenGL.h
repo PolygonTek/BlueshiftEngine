@@ -66,6 +66,7 @@ public:
     bool                    SupportsTextureCompressionS3TC() const;
     bool                    SupportsTextureCompressionLATC() const;
     bool                    SupportsTextureCompressionETC2() const;
+    bool                    SupportsInstancedArrays() const;
     bool                    SupportsDebugLabel() const;
 
     Handle                  CreateContext(WindowHandle windowHandle, bool useSharedContext);

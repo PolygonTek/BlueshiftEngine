@@ -135,6 +135,8 @@ public:
     static bool             SupportsTextureCompressionLATC() { return false; }
     static bool             SupportsTextureCompressionETC2() { return true; }
     static bool             SupportsCompressedGenMipmaps() { return false; }
+    static bool             SupportsInstancedArrays() { return true; }
+    static bool             SupportsMultiDrawIndirect() { return false; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
 
     static void             PolygonMode(GLenum face, GLenum mode) { }

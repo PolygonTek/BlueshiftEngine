@@ -48,6 +48,7 @@ public:
 
 class Mesh {
     friend class MeshManager;
+    friend class RenderWorld;
     friend class Batch;
     friend class ::MeshImporter;
 
@@ -69,6 +70,12 @@ public:
         DirectCopyUpdate,   // obsolete !
         PboUpdate,
         TboUpdate
+    };
+
+    enum InstancingMethod {
+        NoInstancing,
+        UniformBufferInstancing,
+        InstancedArraysInstancing
     };
 
     enum FinishFlag {

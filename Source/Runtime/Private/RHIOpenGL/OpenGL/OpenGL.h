@@ -298,6 +298,8 @@ public:
     static bool             SupportsTextureCompressionATC() { return supportsTextureCompressionATC; }
     static bool             SupportsCompressedGenMipmaps() { return false; }
     static bool             SupportsGeometryShader() { return supportsGeometryShader; }
+    static bool             SupportsInstancedArrays() { return false; }
+    static bool             SupportsMultiDrawIndirect() { return false; }
     static bool             SupportsDebugLabel() { return supportsDebugLabel; }
     static bool             SupportsDebugMarker() { return supportsDebugMarker; }
     static bool             SupportsDebugOutput() { return supportsDebugOutput; }

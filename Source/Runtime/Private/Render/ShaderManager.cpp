@@ -190,9 +190,14 @@ void ShaderManager::InitGlobalDefines() {
         }
     }
 
-    shaderManager.AddGlobalHeader(va("#define INSTANCE_DATA_SIZE %i\n", rhi.HWLimit().uniformBufferOffsetAlignment));
-    shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment));
-    
+    if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+        shaderManager.AddGlobalHeader(va("#define INSTANCE_DATA_SIZE %i\n", renderGlobal.instanceBufferOffsetAlignment));
+        shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", r_maxInstancingCount.GetInteger()));
+    } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
+        shaderManager.AddGlobalHeader(va("#define INSTANCE_DATA_SIZE %i\n", renderGlobal.instanceBufferOffsetAlignment));
+        shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment)));
+    }
+
     if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
         shaderManager.AddGlobalHeader("#define VTF_SKINNING\n");
     }

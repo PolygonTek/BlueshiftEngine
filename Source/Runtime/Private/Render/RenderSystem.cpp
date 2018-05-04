@@ -51,7 +51,18 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
         renderGlobal.vtUpdateMethod = Mesh::DirectCopyUpdate;
     }
 
-    renderGlobal.instanceBufferData = Mem_Alloc16(8192 * rhi.HWLimit().uniformBufferOffsetAlignment);
+    if (r_instancing.GetInteger() == 2 && rhi.SupportsInstancedArrays()) {
+        renderGlobal.instancingMethod = Mesh::InstancedArraysInstancing;
+        renderGlobal.instanceBufferOffsetAlignment = sizeof(InstanceData);
+    } else if (r_instancing.GetInteger() == 1) {
+        renderGlobal.instancingMethod = Mesh::UniformBufferInstancing;
+        renderGlobal.instanceBufferOffsetAlignment = rhi.HWLimit().uniformBufferOffsetAlignment;
+    } else {
+        renderGlobal.instancingMethod = Mesh::NoInstancing;
+        renderGlobal.instanceBufferOffsetAlignment = 0;
+    }
+
+    renderGlobal.instanceBufferData = Mem_Alloc16(8192 * renderGlobal.instanceBufferOffsetAlignment);
 
     textureManager.Init();
 

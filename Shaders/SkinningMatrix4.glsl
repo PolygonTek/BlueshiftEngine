@@ -11,8 +11,7 @@ in vec4 in_weightValue : WEIGHT_VALUE;
 	#endif
 
 	#ifdef INSTANCING
-		uniform TC_TYPE tcBase[512];
-		#define BASE_TC tcBase[gl_InstanceID]
+		#define BASE_TC instance.tcBase
 	#else
 		uniform TC_TYPE tcBase;
 		#define BASE_TC tcBase

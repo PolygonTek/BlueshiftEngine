@@ -30,21 +30,21 @@ void Batch::Init() {
     numIndexes = 0;
     numInstances = 0;
 
-    maxInstancingCount = Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / rhi.HWLimit().uniformBufferOffsetAlignment);
-
     instanceStartIndex = -1;
     instanceEndIndex = -1;
 
-    instanceLocalIndexes = (int *)Mem_Alloc16(maxInstancingCount * sizeof(instanceLocalIndexes[0]));
+    instanceLocalIndexes = nullptr;
 
-    skinnedMeshInstanceBaseTcs = nullptr;
+    if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+        maxInstancingCount = r_maxInstancingCount.GetInteger();
+    } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
+        maxInstancingCount = Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment);
+    } else {
+        maxInstancingCount = 0;
+    }
 
-    if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
-        if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-            skinnedMeshInstanceBaseTcs = Mem_Alloc16(sizeof(int) * maxInstancingCount);
-        } else if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
-            skinnedMeshInstanceBaseTcs = Mem_Alloc16(sizeof(Vec2) * maxInstancingCount);
-        }
+    if (maxInstancingCount > 0) {
+        instanceLocalIndexes = (int *)Mem_Alloc16(maxInstancingCount * sizeof(instanceLocalIndexes[0]));
     }
 
     material = nullptr;
@@ -58,11 +58,6 @@ void Batch::Shutdown() {
     if (instanceLocalIndexes) {
         Mem_AlignedFree(instanceLocalIndexes);
         instanceLocalIndexes = nullptr;
-    }
-
-    if (skinnedMeshInstanceBaseTcs) {
-        Mem_AlignedFree(skinnedMeshInstanceBaseTcs);
-        skinnedMeshInstanceBaseTcs = nullptr;
     }
 }
 
@@ -89,20 +84,6 @@ void Batch::AddInstance(const DrawSurf *drawSurf) {
     instanceEndIndex = drawSurf->space->instanceIndex;
 
     instanceLocalIndexes[numInstances] = drawSurf->space->instanceIndex - instanceStartIndex;
-
-    if (drawSurf->subMesh->IsGpuSkinning()) {
-        SkinningJointCache *skinningJointCache = drawSurf->space->def->state.mesh->skinningJointCache;
-
-        if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
-            if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-                int *baseTcs = (int *)skinnedMeshInstanceBaseTcs;
-                baseTcs[numInstances] = skinningJointCache->bufferCache.tcBase[0];
-            } else {
-                Vec2 *baseTcs = (Vec2 *)skinnedMeshInstanceBaseTcs;
-                baseTcs[numInstances] = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
-            }
-        }
-    }
 
     numInstances++;
 }

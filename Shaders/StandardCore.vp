@@ -40,7 +40,7 @@ out MEDIUMP vec2 v2f_tex;
 $include "ShadowLibrary.vp"
 #endif
 
-#ifdef INSTANCING
+#if defined(INSTANCING)
 $include "Instancing.vp"
 #else
     uniform vec4 localToWorldMatrixS;
@@ -50,6 +50,14 @@ $include "Instancing.vp"
     uniform vec4 worldToLocalMatrixT;
     uniform vec4 worldToLocalMatrixR;
     uniform LOWP vec4 constantColor;
+#endif
+
+#if defined(GPU_SKINNING_1_WEIGHTS)
+    $include "SkinningMatrix1.glsl"
+#elif defined(GPU_SKINNING_4_WEIGHTS)
+    $include "SkinningMatrix4.glsl"
+#elif defined(GPU_SKINNING_8_WEIGHTS)
+    $include "SkinningMatrix8.glsl"
 #endif
 
 uniform vec4 textureMatrixS;

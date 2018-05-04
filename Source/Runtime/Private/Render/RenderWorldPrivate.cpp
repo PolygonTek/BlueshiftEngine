@@ -656,8 +656,6 @@ void RenderWorld::AddSkinnedMeshesForLights(VisibleView *visView) {
 void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
     int numInstances = 0;
 
-    const int instanceDataAlignSize = rhi.HWLimit().uniformBufferOffsetAlignment;
-
     for (VisibleObject *visObject = visView->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         const RenderObject *renderObject = visObject->def;
 
@@ -673,23 +671,33 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
             }
 
             if (surf->drawSurf->flags & DrawSurf::UseInstancing) {
-                InstanceData *instanceData = (InstanceData *)((byte *)renderGlobal.instanceBufferData + numInstances * instanceDataAlignSize);
+                InstanceData *instanceData = (InstanceData *)((byte *)renderGlobal.instanceBufferData + numInstances * renderGlobal.instanceBufferOffsetAlignment);
 
                 const Mat3x4 &localToWorldMatrix = renderObject->GetObjectToWorldMatrix();
-                instanceData->localToWorldMatrixS = localToWorldMatrix[0];
-                instanceData->localToWorldMatrixT = localToWorldMatrix[1];
-                instanceData->localToWorldMatrixR = localToWorldMatrix[2];
+                instanceData->data[0] = localToWorldMatrix[0];
+                instanceData->data[1] = localToWorldMatrix[1];
+                instanceData->data[2] = localToWorldMatrix[2];
 
                 /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyInfoHashMap().Get("_PARALLAX")) {
                     Mat3x4 worldToLocalMatrix = Mat3x4(renderObject->state.axis.Transpose(), -renderObject->state.origin);
-                    instanceData->worldToLocalMatrixS = worldToLocalMatrix[0];
-                    instanceData->worldToLocalMatrixT = worldToLocalMatrix[1];
-                    instanceData->worldToLocalMatrixR = worldToLocalMatrix[2];
+                    instanceData->data[3] = worldToLocalMatrix[0];
+                    instanceData->data[4] = worldToLocalMatrix[1];
+                    instanceData->data[5] = worldToLocalMatrix[2];
                 }*/
 
-                instanceData->constantColor = surf->drawSurf->material->GetPass()->useOwnerColor ?
+                *reinterpret_cast<Color4 *>(&instanceData->data[3]) = surf->drawSurf->material->GetPass()->useOwnerColor ?
                     reinterpret_cast<const Color4 &>(renderObject->state.materialParms[RenderObject::RedParm]) : 
                     surf->drawSurf->material->GetPass()->constantColor;
+
+                if (surf->subMesh->IsGpuSkinning()) {
+                    const SkinningJointCache *skinningJointCache = renderObject->state.mesh->skinningJointCache;
+
+                    if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+                        *reinterpret_cast<int *>(&instanceData->data[4]) = skinningJointCache->bufferCache.tcBase[0];
+                    } else {
+                        *reinterpret_cast<Vec2 *>(&instanceData->data[4]) = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
+                    }
+                }
 
                 visObject->instanceIndex = numInstances++;
                 break;
@@ -698,7 +706,11 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
     }
 
     if (numInstances > 0) {
-        bufferCacheManager.AllocUniform(numInstances * instanceDataAlignSize, renderGlobal.instanceBufferData, visView->instanceBufferCache);
+        if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+            bufferCacheManager.AllocVertex(numInstances, renderGlobal.instanceBufferOffsetAlignment, renderGlobal.instanceBufferData, visView->instanceBufferCache);
+        } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
+            bufferCacheManager.AllocUniform(numInstances * renderGlobal.instanceBufferOffsetAlignment, renderGlobal.instanceBufferData, visView->instanceBufferCache);
+        }
     }
 }
 
@@ -798,7 +810,7 @@ void RenderWorld::RenderCamera(VisibleView *visView) {
 
     OptimizeLights(visView);
 
-    if (r_instancing.GetBool()) {
+    if (renderGlobal.instancingMethod != Mesh::NoInstancing) {
         CacheInstanceBuffer(visView);
     }
 
@@ -842,13 +854,15 @@ void RenderWorld::AddDrawSurf(VisibleView *visView, VisibleLight *visLight, Visi
         }
     }
 
-    if (r_instancing.GetBool() && actualMaterial->GetPass()->instancingEnabled) {
-        if (subMesh->IsGpuSkinning()) {
-            if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
+    if (renderGlobal.instancingMethod != Mesh::NoInstancing) {
+        if (actualMaterial->GetPass()->instancingEnabled) {
+            if (subMesh->IsGpuSkinning()) {
+                if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
+                    flags |= DrawSurf::UseInstancing;
+                }
+            } else {
                 flags |= DrawSurf::UseInstancing;
             }
-        } else {
-            flags |= DrawSurf::UseInstancing;
         }
     }
 

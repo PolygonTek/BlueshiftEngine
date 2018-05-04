@@ -456,15 +456,15 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         break;
     case 1:
         skinningPostfix = "-skinning1";
-        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"SkinningMatrix1.glsl\"\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n#define GPU_SKINNING_1_WEIGHTS\n";
         break;
     case 4:
         skinningPostfix = "-skinning4";
-        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"SkinningMatrix4.glsl\"\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n#define GPU_SKINNING_4_WEIGHTS\n";
         break;
     case 8:
         skinningPostfix = "-skinning8";
-        skinningVsHeaderText = "#define GPU_SKINNING\n$include \"SkinningMatrix8.glsl\"\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n#define GPU_SKINNING_8_WEIGHTS\n";
         break;
     default:
         assert(0);

@@ -380,6 +380,10 @@ bool OpenGLRHI::SupportsTextureCompressionETC2() const {
     return OpenGL::SupportsTextureCompressionETC2();
 }
 
+bool OpenGLRHI::SupportsInstancedArrays() const {
+    return OpenGL::SupportsInstancedArrays();
+}
+
 bool OpenGLRHI::SupportsDebugLabel() const {
     return OpenGL::SupportsDebugLabel();
 }

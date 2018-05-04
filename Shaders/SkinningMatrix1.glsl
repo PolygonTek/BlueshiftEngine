@@ -10,8 +10,7 @@ in float in_weightIndex : WEIGHT_INDEX;
 	#endif
 
 	#ifdef INSTANCING
-		uniform TC_TYPE tcBase[512];
-		#define BASE_TC tcBase[gl_InstanceID]
+		#define BASE_TC instance.tcBase
 	#else
 		uniform TC_TYPE tcBase;
 		#define BASE_TC tcBase

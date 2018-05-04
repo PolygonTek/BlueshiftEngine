@@ -115,8 +115,6 @@ private:
     RHI::Handle             vbHandle;
     RHI::Handle             ibHandle;
 
-    void *                  skinnedMeshInstanceBaseTcs;
-
     int                     maxInstancingCount;
     int                     instanceStartIndex;
     int                     instanceEndIndex;

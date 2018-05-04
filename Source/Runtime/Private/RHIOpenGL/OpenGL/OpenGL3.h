@@ -17,7 +17,7 @@
 /*
 ===============================================================================
 
-    OpenGL 3.3
+    OpenGL 3.2
 
 ===============================================================================
 */
@@ -31,6 +31,8 @@ public:
     static const int        GLSL_VERSION = 150;
     static const char *     GLSL_VERSION_STRING;
 
+    static void             Init();
+
     static bool             SupportsPolygonMode() { return true; }
     static bool             SupportsPackedFloat() { return true; }
     static bool             SupportsDepthClamp() { return true; }
@@ -43,6 +45,8 @@ public:
     static bool             SupportsTextureCompressionS3TC() { return true; }
     static bool             SupportsTextureCompressionLATC() { return true; }
     static bool             SupportsCompressedGenMipmaps() { return true; }
+    static bool             SupportsInstancedArrays() { return supportsInstancedArrays; }
+    static bool             SupportsMultiDrawIndirect() { return supportsMultiDrawIndirect; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
     
     static void APIENTRY    DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
@@ -59,6 +63,10 @@ public:
     static bool             SupportedImageFormat(Image::Format imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
     static Image::Format    ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap);
     static Image::Format    ToUncompressedImageFormat(Image::Format inFormat);
+
+private:
+    static bool             supportsInstancedArrays;
+    static bool             supportsMultiDrawIndirect;
 };
 
 BE_NAMESPACE_END

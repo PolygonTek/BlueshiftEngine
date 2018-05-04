@@ -192,17 +192,13 @@ void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache 
         shader->SetTexture("jointsMap", jointsMapTexture);
 
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-            if (numInstances >= 1) {
-                shader->SetConstantArray1i("tcBase", numInstances, (const int *)skinnedMeshInstanceBaseTcs);
-            } else {
+            if (numInstances == 0) {
                 shader->SetConstant1i("tcBase", cache->bufferCache.tcBase[0]);
             }
         } else {
             shader->SetConstant2f("invJointsMapSize", Vec2(1.0f / jointsMapTexture->GetWidth(), 1.0f / jointsMapTexture->GetHeight()));
 
-            if (numInstances >= 1) {
-                shader->SetConstantArray2f("tcBase", numInstances, (const Vec2 *)skinnedMeshInstanceBaseTcs);
-            } else {
+            if (numInstances == 0) {
                 shader->SetConstant2f("tcBase", Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
             }
         }

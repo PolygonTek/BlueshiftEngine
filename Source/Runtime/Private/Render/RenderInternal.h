@@ -100,18 +100,14 @@ struct SkinningJointCache {
 };
 
 struct InstanceData {
-    Vec4                    localToWorldMatrixS;
-    Vec4                    localToWorldMatrixT;
-    Vec4                    localToWorldMatrixR;
-    //Vec4                  worldToLocalMatrixS;
-    //Vec4                  worldToLocalMatrixT;
-    //Vec4                  worldToLocalMatrixR;
-    Color4                  constantColor;
+    Vec4                    data[8];                // 16 * 8 = 128 bytes
 };
 
 struct renderGlobal_t {
     int                     skinningMethod;
     int                     vtUpdateMethod;          // vertex texture update method
+    int                     instancingMethod;
+    int                     instanceBufferOffsetAlignment;
     void *                  instanceBufferData;
 };
 

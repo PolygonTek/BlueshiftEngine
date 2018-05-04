@@ -13,11 +13,10 @@ in vec4 in_weightValue1 : WEIGHT_VALUE1;
 	#endif
 
 	#ifdef INSTANCING
-		uniform TC_TYPE tcBase[512];
-		#define BASE_TC	tcBase[gl_InstanceID]
+		#define BASE_TC instance.tcBase
 	#else
 		uniform TC_TYPE tcBase;
-		#define BASE_TC	tcBase
+		#define BASE_TC tcBase
 	#endif
 
 	uniform vec2 invJointsMapSize;
@@ -31,7 +30,7 @@ void accumulateJointMatrices(out vec4 R0, out vec4 R1, out vec4 R2, int jointInd
 	float invNorm = 1.0 / (dot(in_weightValue0, vec4(1.0)) + dot(in_weightValue1, vec4(1.0)));
 	vec4 w0 = in_weightValue0 * invNorm;
 	vec4 w1 = in_weightValue1 * invNorm;
-    
+
 #ifdef VTF_SKINNING
 	#ifdef USE_BUFFER_TEXTURE
 		int baseS = BASE_TC + (jointIndexOffset + int(in_weightIndex0.x)) * 3;

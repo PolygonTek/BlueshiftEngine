@@ -20,6 +20,21 @@ BE_NAMESPACE_BEGIN
 
 const char *OpenGL3::GLSL_VERSION_STRING = "330";
 
+bool OpenGL3::supportsInstancedArrays = false;
+bool OpenGL3::supportsMultiDrawIndirect = false;
+
+void OpenGL3::Init() {
+    OpenGLBase::Init();
+
+#ifdef GL_ARB_instanced_arrays // 3.3
+    supportsInstancedArrays = gglext._GL_ARB_instanced_arrays ? true : false;
+#endif
+
+#ifdef GL_ARB_multi_draw_indirect // 4.3
+    supportsMultiDrawIndirect = gglext._GL_ARB_multi_draw_indirect ? true : false;
+#endif
+}
+
  void OpenGL3::DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
     int severityLevel;
     switch (severity) {
