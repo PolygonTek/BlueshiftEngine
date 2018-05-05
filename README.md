@@ -13,7 +13,7 @@ Features
 -------------------
 
   * Cross-platform (Windows, macOS, iOS and Android)
-  * OpenGL 3.2, OpenGL ES 3.0 rendering
+  * OpenGL 3.2+, OpenGL ES 3.0 rendering
   * Skeletal (with hardware skinning) animation
   * Parametric animation blending
   * Directional, spot, point lights
@@ -23,7 +23,7 @@ Features
   * PBR rendering
   * Physics using [Bullet](http://www.bulletphysics.org/)
   * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
-  * 2D and 3D audio static/streaming playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
+  * Audio static/streaming playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
   * TrueType font rendering using [FreeType](https://www.freetype.org/)
   * Component based entity system
   * Playable WYSIWYG editor using [Qt](https://www.qt.io/) with undo & redo capabilities
