@@ -18,11 +18,22 @@
 
 BE_NAMESPACE_BEGIN
 
-const GLenum toGLType[] = {
+static const GLenum toGLType[] = {
+    GL_BYTE,
     GL_UNSIGNED_BYTE,
+    GL_INT,
     GL_UNSIGNED_INT,
     GL_FLOAT,
     GL_HALF_FLOAT,
+};
+
+static const int GLTypeSize[] = { 
+    sizeof(GLbyte),
+    sizeof(GLubyte),
+    sizeof(GLint),
+    sizeof(GLuint),
+    sizeof(GLfloat),
+    sizeof(GLhalf)
 };
 
 RHI::Handle OpenGLRHI::CreateVertexFormat(int numElements, const VertexElement *elements) {
@@ -37,14 +48,13 @@ RHI::Handle OpenGLRHI::CreateVertexFormat(int numElements, const VertexElement *
         int stream = element->stream;
 
         GLVertexElementInternal *ve = &vertexFormat->vertexElements[element->usage];
-        ve->stream          = stream;
-        ve->offset          = element->offset;
-        ve->components      = element->components;
-        ve->divisor         = element->divisor;
-        ve->type            = toGLType[element->type];
-        ve->normalize       = element->normalize;
-        ve->isIntegerType   = !element->normalize && (ve->type == GL_UNSIGNED_BYTE || ve->type == GL_UNSIGNED_INT);
-        //ve->offset        = vertexFormat.vertexSize[stream];
+        ve->stream = stream;
+        ve->offset = element->offset;
+        ve->components = element->components;
+        ve->divisor = element->divisor;
+        ve->type = toGLType[element->type];
+        ve->normalize = element->normalize;
+        ve->shouldConvertToFloat = element->normalize || ve->type != GL_UNSIGNED_INT;
         vertexFormat->vertexSize[stream] += GetTypeSize(element->type);
     }
 
@@ -68,8 +78,7 @@ void OpenGLRHI::DeleteVertexFormat(Handle vertexFormatHandle) {
 }
 
 int OpenGLRHI::GetTypeSize(const VertexElement::Type type) const {
-    static int typeSize[] = { sizeof(byte), sizeof(float), sizeof(float16_t) };
-    return typeSize[type];
+    return GLTypeSize[type];
 }
 
 // ------------------------------   -------------------------
@@ -177,23 +186,42 @@ void OpenGLRHI::SetVertexFormat(Handle vertexFormatHandle) {
 void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride) {
     const GLVertexFormat *vertexFormat = vertexFormatList[currentContext->state->vertexFormatHandle];
     const GLVertexElementInternal *ve;
+    GLVertexAttrib *currentVertexAttrib;
 
     BindBuffer(VertexBuffer, vertexBufferHandle);
 
 #if 1
     for (int i = 0; i < VertexElement::MaxUsages; i++) {
+        currentVertexAttrib = &currentContext->state->vertexAttribs[i];
         ve = &vertexFormat->vertexElements[i];
-        if (ve->stream == stream && ve->components > 0) {
-            // if normalized is set to GL_TRUE, it indicates that values stored in an integer format are to be mapped to the range[-1, 1]
-            // (for signed values) or [0, 1](for unsigned values) when they are accessed and converted to floating point. Otherwise, 
-            // values will be converted to floats directly without normalization.
-            //if (ve->isIntegerType) {
-            //    gglVertexAttribIPointer(i, ve->components, ve->type, stride, BUFFER_OFFSET(base + ve->offset));
-            //} else {
-                gglVertexAttribPointer(i, ve->components, ve->type, ve->normalize, stride, BUFFER_OFFSET(base + ve->offset));
-            //}
 
-            OpenGL::VertexAttribDivisor(i, ve->divisor);
+        if (ve->stream == stream && ve->components > 0) {
+            if (currentVertexAttrib->vertexBufferHandle != vertexBufferHandle ||
+                currentVertexAttrib->components != ve->components ||
+                currentVertexAttrib->type != ve->type ||
+                currentVertexAttrib->normalize != ve->normalize ||
+                currentVertexAttrib->stride != stride ||
+                currentVertexAttrib->ptr != BUFFER_OFFSET(base + ve->offset) ||
+                currentVertexAttrib->divisor != ve->divisor) {
+                if (!ve->shouldConvertToFloat) {
+                    gglVertexAttribIPointer(i, ve->components, ve->type, stride, BUFFER_OFFSET(base + ve->offset));
+                } else {
+                    // if normalized is set to GL_TRUE, it indicates that values stored in an integer format are to be mapped to the range[-1, 1]
+                    // (for signed values) or [0, 1](for unsigned values) when they are accessed and converted to floating point. Otherwise, 
+                    // values will be converted to floats directly without normalization.
+                    gglVertexAttribPointer(i, ve->components, ve->type, ve->normalize, stride, BUFFER_OFFSET(base + ve->offset));
+                }
+
+                OpenGL::VertexAttribDivisor(i, ve->divisor);
+
+                currentVertexAttrib->vertexBufferHandle = vertexBufferHandle;
+                currentVertexAttrib->components = ve->components;
+                currentVertexAttrib->type = ve->type;
+                currentVertexAttrib->normalize = ve->normalize;
+                currentVertexAttrib->stride = stride;
+                currentVertexAttrib->ptr = BUFFER_OFFSET(base + ve->offset);
+                currentVertexAttrib->divisor = ve->divisor;
+            }
         }
     }
 #else

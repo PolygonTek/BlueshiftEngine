@@ -703,7 +703,7 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
                     const SkinningJointCache *skinningJointCache = renderObject->state.mesh->skinningJointCache;
 
                     if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-                        *(float *)instanceData = (float)skinningJointCache->bufferCache.tcBase[0];
+                        *(uint32_t *)instanceData = (uint32_t)skinningJointCache->bufferCache.tcBase[0];
                     } else {
                         *(Vec2 *)instanceData = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
                     }

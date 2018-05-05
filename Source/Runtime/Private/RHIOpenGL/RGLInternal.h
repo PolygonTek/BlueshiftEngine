@@ -52,7 +52,19 @@ OBJC_CLASS(EAGLView);
 
 BE_NAMESPACE_BEGIN
 
-#define BUFFER_OFFSET(i)            ((byte *)nullptr + (i))
+#define BUFFER_OFFSET(i)    ((byte *)nullptr + (i))
+
+struct GLVertexAttrib {
+    RHI::Handle         vertexBufferHandle;
+    GLint               components;
+    GLenum              type;
+    GLboolean           normalize;
+    GLsizei             stride;
+    const void *        ptr;
+    GLuint              divisor;
+
+    GLVertexAttrib() : vertexBufferHandle(RHI::NullBuffer), components(0), type(0), normalize(false), stride(-1), ptr(nullptr), divisor(-1) {}
+};
 
 struct GLState {
     int                 tmu; // current texture map unit
@@ -61,6 +73,7 @@ struct GLState {
     RHI::Handle         bufferHandles[RHI::MaxBufferTypes];
     RHI::Handle         indexedBufferHandles[2]; // 0: UniformBuffer, 1: TransformFeedbackBuffer
     RHI::Handle         vertexFormatHandle;
+    GLVertexAttrib      vertexAttribs[RHI::VertexElement::MaxUsages];
     RHI::Handle         renderTargetHandle;
     RHI::Handle         renderTargetHandleStack[16];
     int                 renderTargetHandleStackDepth;
@@ -72,6 +85,14 @@ struct GLState {
     Rect                scissorRect;
     int                 oldUnpackAlignment;
     int                 newUnpackAlignment;
+
+    GLState() : tmu(0), 
+        shaderHandle(RHI::NullShader), vertexFormatHandle(RHI::NullVertexFormat), renderTargetHandle(RHI::NullRenderTarget), renderTargetHandleStackDepth(0), stencilStateHandle(RHI::NullStencilState), 
+        renderState(0), cull(RHI::BackCull), viewportRect(Rect::empty), scissorRect(Rect::empty), oldUnpackAlignment(0), newUnpackAlignment(0) {
+        memset(textureHandles, 0, sizeof(textureHandles));
+        memset(bufferHandles, 0, sizeof(textureHandles));
+        memset(indexedBufferHandles, 0, sizeof(indexedBufferHandles));
+    }
 };
 
 struct GLContext {
@@ -199,7 +220,7 @@ struct GLVertexElementInternal {
     int                 components;
     GLenum              type;
     GLboolean           normalize;
-    bool                isIntegerType;
+    bool                shouldConvertToFloat;
     int                 divisor;
 };
 

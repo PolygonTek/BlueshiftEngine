@@ -256,10 +256,12 @@ public:
     
     struct VertexElement {
         enum Type {
-            UByteType                       = 0,
-            UIntType                        = 1,
-            FloatType                       = 2,
-            HalfType                        = 3,
+            ByteType                        = 0,
+            UByteType                       = 1,
+            IntType                         = 2,
+            UIntType                        = 3,
+            FloatType                       = 4,
+            HalfType                        = 5,
         };
 
         enum Usage {

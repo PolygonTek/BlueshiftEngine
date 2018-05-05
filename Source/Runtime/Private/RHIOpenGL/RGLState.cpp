@@ -41,8 +41,8 @@ const GLenum toGLStencilOp[] = {
 };
 
 void OpenGLRHI::SetDefaultState() {
-    memset(currentContext->state, 0, sizeof(GLState));
-    
+    *currentContext->state = GLState();
+
     renderTargetList[0]->fbo = currentContext->defaultFramebuffer;
     
     gglBindVertexArray(currentContext->defaultVAO);
