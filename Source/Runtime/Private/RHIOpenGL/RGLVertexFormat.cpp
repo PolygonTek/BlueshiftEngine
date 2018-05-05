@@ -37,12 +37,14 @@ RHI::Handle OpenGLRHI::CreateVertexFormat(int numElements, const VertexElement *
         int stream = element->stream;
 
         GLVertexElementInternal *ve = &vertexFormat->vertexElements[element->usage];
-        ve->stream      = stream;
-        ve->offset      = element->offset;
-        ve->components  = element->components;
-        ve->type        = toGLType[element->type];
-        ve->normalize   = element->normalize;
-        //ve->offset    = vertexFormat.vertexSize[stream];
+        ve->stream          = stream;
+        ve->offset          = element->offset;
+        ve->components      = element->components;
+        ve->divisor         = element->divisor;
+        ve->type            = toGLType[element->type];
+        ve->normalize       = element->normalize;
+        ve->isIntegerType   = !element->normalize && (ve->type == GL_UNSIGNED_BYTE || ve->type == GL_UNSIGNED_INT);
+        //ve->offset        = vertexFormat.vertexSize[stream];
         vertexFormat->vertexSize[stream] += GetTypeSize(element->type);
     }
 
@@ -185,7 +187,13 @@ void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base,
             // if normalized is set to GL_TRUE, it indicates that values stored in an integer format are to be mapped to the range[-1, 1]
             // (for signed values) or [0, 1](for unsigned values) when they are accessed and converted to floating point. Otherwise, 
             // values will be converted to floats directly without normalization.
-            gglVertexAttribPointer(i, ve->components, ve->type, ve->normalize, stride, BUFFER_OFFSET(base + ve->offset));
+            if (ve->isIntegerType) {
+                gglVertexAttribIPointer(i, ve->components, ve->type, stride, BUFFER_OFFSET(base + ve->offset));
+            } else {
+                gglVertexAttribPointer(i, ve->components, ve->type, ve->normalize, stride, BUFFER_OFFSET(base + ve->offset));
+            }
+
+            OpenGL::VertexAttribDivisor(i, ve->divisor);
         }
     }
 #else

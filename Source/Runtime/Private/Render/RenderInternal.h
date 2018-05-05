@@ -99,10 +99,6 @@ struct SkinningJointCache {
     int                     viewFrameCount;         // 현재 프레임에 계산을 마쳤음을 표시하기 위한 marking number
 };
 
-struct InstanceData {
-    Vec4                    data[8];                // 16 * 8 = 128 bytes
-};
-
 struct renderGlobal_t {
     int                     skinningMethod;
     int                     vtUpdateMethod;          // vertex texture update method

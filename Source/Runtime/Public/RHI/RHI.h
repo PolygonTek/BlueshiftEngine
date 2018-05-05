@@ -166,6 +166,7 @@ public:
         UniformBuffer,
         TransformFeedbackBuffer,
         CopyReadBuffer,
+        DrawIndirectBuffer,
         MaxBufferTypes
     };
     
@@ -291,12 +292,28 @@ public:
         int                 components;
         Type                type;
         bool                normalize;
+        int                 divisor;
     };
     
     struct SamplerInfo {
         Str                 name;
         unsigned int        unit;
         bool                isPublic;
+    };
+
+    struct DrawArraysIndirectCommand {
+        uint32_t            vertexCount;
+        uint32_t            instanceCount;
+        uint32_t            firstVertex;
+        uint32_t            baseInstance;
+    };
+
+    struct DrawElementsIndirectCommand {
+        uint32_t            vertexCount;
+        uint32_t            instanceCount;
+        uint32_t            firstIndex;
+        uint32_t            baseVertex;
+        uint32_t            baseInstance;
     };
     
     struct HWLimit {

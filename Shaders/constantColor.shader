@@ -14,12 +14,14 @@ shader "constantColor" {
             uniform vec4 localToWorldMatrixR;
         #endif
 
-        #if defined(GPU_SKINNING_1_WEIGHTS)
-            $include "SkinningMatrix1.glsl"
-        #elif defined(GPU_SKINNING_4_WEIGHTS)
-            $include "SkinningMatrix4.glsl"
-        #elif defined(GPU_SKINNING_8_WEIGHTS)
-            $include "SkinningMatrix8.glsl"
+        #ifdef GPU_SKINNING
+            #if defined(GPU_SKINNING_1_WEIGHTS)
+                $include "SkinningMatrix1.glsl"
+            #elif defined(GPU_SKINNING_4_WEIGHTS)
+                $include "SkinningMatrix4.glsl"
+            #elif defined(GPU_SKINNING_8_WEIGHTS)
+                $include "SkinningMatrix8.glsl"
+            #endif
         #endif
 
         uniform mat4 viewProjectionMatrix;

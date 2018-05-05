@@ -384,6 +384,10 @@ bool OpenGLRHI::SupportsInstancedArrays() const {
     return OpenGL::SupportsInstancedArrays();
 }
 
+bool OpenGLRHI::SupportsMultiDrawIndirect() const {
+    return OpenGL::SupportsMultiDrawIndirect();
+}
+
 bool OpenGLRHI::SupportsDebugLabel() const {
     return OpenGL::SupportsDebugLabel();
 }
@@ -498,6 +502,20 @@ void OpenGLRHI::DrawElementsInstancedBaseVertex(Primitive primitives, int startI
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
     // Require GL_EXT_draw_elements_base_vertex for OpenGL ES 3.0
     gglDrawElementsInstancedBaseVertex(toGLPrim[primitives], numIndices, indexType, indices, instanceCount, baseVertexIndex);
+}
+
+void OpenGLRHI::DrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset) const {
+    GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
+#ifdef GL_ARB_draw_indirect // 4.0
+    gglDrawElementsIndirect(toGLPrim[primitives], indexType, BUFFER_OFFSET(indirectBufferOffset));
+#endif
+}
+
+void OpenGLRHI::MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const {
+    GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
+#ifdef GL_ARB_multi_draw_indirect // 4.3
+    gglMultiDrawElementsIndirect(toGLPrim[primitives], indexType, BUFFER_OFFSET(indirectBufferOffset), drawCount, stride);
+#endif
 }
 
 extern "C" void CheckGLError(const char *msg);

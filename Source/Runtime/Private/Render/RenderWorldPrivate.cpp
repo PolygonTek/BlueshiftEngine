@@ -671,31 +671,41 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
             }
 
             if (surf->drawSurf->flags & DrawSurf::UseInstancing) {
-                InstanceData *instanceData = (InstanceData *)((byte *)renderGlobal.instanceBufferData + numInstances * renderGlobal.instanceBufferOffsetAlignment);
+                byte *instanceData = ((byte *)renderGlobal.instanceBufferData + numInstances * renderGlobal.instanceBufferOffsetAlignment);
 
                 const Mat3x4 &localToWorldMatrix = renderObject->GetObjectToWorldMatrix();
-                instanceData->data[0] = localToWorldMatrix[0];
-                instanceData->data[1] = localToWorldMatrix[1];
-                instanceData->data[2] = localToWorldMatrix[2];
+                *(Mat3x4 *)instanceData = localToWorldMatrix; 
+                instanceData += 48;
 
                 /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyInfoHashMap().Get("_PARALLAX")) {
                     Mat3x4 worldToLocalMatrix = Mat3x4(renderObject->state.axis.Transpose(), -renderObject->state.origin);
-                    instanceData->data[3] = worldToLocalMatrix[0];
-                    instanceData->data[4] = worldToLocalMatrix[1];
-                    instanceData->data[5] = worldToLocalMatrix[2];
+                    *(Mat3x4 *)instanceData = worldToLocalMatrix; 
+                    instanceData += 48;
                 }*/
 
-                *reinterpret_cast<Color4 *>(&instanceData->data[3]) = surf->drawSurf->material->GetPass()->useOwnerColor ?
-                    reinterpret_cast<const Color4 &>(renderObject->state.materialParms[RenderObject::RedParm]) : 
-                    surf->drawSurf->material->GetPass()->constantColor;
+                if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+                    if (surf->drawSurf->material->GetPass()->useOwnerColor) {
+                        *(uint32_t *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]).ToUInt32();
+                    } else {
+                        *(uint32_t *)instanceData = surf->drawSurf->material->GetPass()->constantColor.ToUInt32();
+                    }
+                    instanceData += 4;
+                } else {
+                    if (surf->drawSurf->material->GetPass()->useOwnerColor) {
+                        *(Color4 *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]);
+                    } else {
+                        *(Color4 *)instanceData = surf->drawSurf->material->GetPass()->constantColor;
+                    }
+                    instanceData += 16;
+                }
 
                 if (surf->subMesh->IsGpuSkinning()) {
                     const SkinningJointCache *skinningJointCache = renderObject->state.mesh->skinningJointCache;
 
                     if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-                        *reinterpret_cast<int *>(&instanceData->data[4]) = skinningJointCache->bufferCache.tcBase[0];
+                        *(float *)instanceData = (float)skinningJointCache->bufferCache.tcBase[0];
                     } else {
-                        *reinterpret_cast<Vec2 *>(&instanceData->data[4]) = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
+                        *(Vec2 *)instanceData = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
                     }
                 }
 

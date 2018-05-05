@@ -199,6 +199,8 @@ struct GLVertexElementInternal {
     int                 components;
     GLenum              type;
     GLboolean           normalize;
+    bool                isIntegerType;
+    int                 divisor;
 };
 
 struct GLVertexFormat {

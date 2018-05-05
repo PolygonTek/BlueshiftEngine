@@ -136,6 +136,7 @@ public:
     static bool             SupportsTextureCompressionETC2() { return true; }
     static bool             SupportsCompressedGenMipmaps() { return false; }
     static bool             SupportsInstancedArrays() { return true; }
+    static bool             SupportsDrawIndirect() { return false; }
     static bool             SupportsMultiDrawIndirect() { return false; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
 

@@ -67,6 +67,7 @@ public:
     bool                    SupportsTextureCompressionLATC() const;
     bool                    SupportsTextureCompressionETC2() const;
     bool                    SupportsInstancedArrays() const;
+    bool                    SupportsMultiDrawIndirect() const;
     bool                    SupportsDebugLabel() const;
 
     Handle                  CreateContext(WindowHandle windowHandle, bool useSharedContext);
@@ -249,6 +250,8 @@ public:
     void                    DrawElementsBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const;
     void                    DrawElementsInstanced(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const;
     void                    DrawElementsInstancedBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const;
+    void                    DrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset) const;
+    void                    MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;
 
     Handle                  CreateQuery();
     void                    DeleteQuery(Handle queryHandle);

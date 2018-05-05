@@ -52,12 +52,14 @@ $include "Instancing.vp"
     uniform LOWP vec4 constantColor;
 #endif
 
-#if defined(GPU_SKINNING_1_WEIGHTS)
-    $include "SkinningMatrix1.glsl"
-#elif defined(GPU_SKINNING_4_WEIGHTS)
-    $include "SkinningMatrix4.glsl"
-#elif defined(GPU_SKINNING_8_WEIGHTS)
-    $include "SkinningMatrix8.glsl"
+#ifdef GPU_SKINNING
+    #if defined(GPU_SKINNING_1_WEIGHTS)
+        $include "SkinningMatrix1.glsl"
+    #elif defined(GPU_SKINNING_4_WEIGHTS)
+        $include "SkinningMatrix4.glsl"
+    #elif defined(GPU_SKINNING_8_WEIGHTS)
+        $include "SkinningMatrix8.glsl"
+    #endif
 #endif
 
 uniform vec4 textureMatrixS;
@@ -66,7 +68,7 @@ uniform LOWP vec4 vertexColorScale;
 uniform LOWP vec4 vertexColorAdd;
 
 uniform vec3 viewOrigin;                // eye position in world space
-uniform vec4 lightVec;                  // light position or lgith direction in world space
+uniform vec4 lightVec;                  // light position or light direction in world space
 uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
 uniform vec3 lightInvRadius;

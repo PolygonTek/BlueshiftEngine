@@ -112,18 +112,25 @@ private:
     const VisibleObject *   surfSpace;
     const VisibleLight *    surfLight;
 
-    RHI::Handle             vbHandle;
-    RHI::Handle             ibHandle;
-
-    int                     maxInstancingCount;
-    int                     instanceStartIndex;
-    int                     instanceEndIndex;
-    int *                   instanceLocalIndexes;
+    RHI::Handle             vertexBuffer;
+    RHI::Handle             indexBuffer;
+    RHI::Handle             indirectBuffer;
 
     int                     startIndex;
     int                     numVerts;
     int                     numIndexes;
+
+    int                     maxInstancingCount;
     int                     numInstances;
+
+    // variables for instancing with uniform buffer
+    int                     instanceStartIndex;
+    int                     instanceEndIndex;
+    int *                   instanceLocalIndexes;
+
+    // variables for instancing with instanced array
+    RHI::DrawElementsIndirectCommand *indirectCommands;
+    int                     numIndirectCommands;
 };
 
 /*

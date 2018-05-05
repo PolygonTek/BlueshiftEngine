@@ -51,6 +51,8 @@ const GLenum ToGLBufferTarget(RHI::BufferType type) {
         return GL_TRANSFORM_FEEDBACK_BUFFER;
     case RHI::CopyReadBuffer:
         return GL_COPY_READ_BUFFER;
+    case RHI::DrawIndirectBuffer:
+        return GL_DRAW_INDIRECT_BUFFER;
     default:
         assert(0);
         return 0;

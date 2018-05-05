@@ -21,30 +21,37 @@
 BE_NAMESPACE_BEGIN
 
 void Batch::Init() {
-    vbHandle = RHI::NullBuffer;
-    ibHandle = RHI::NullBuffer;
+    vertexBuffer = RHI::NullBuffer;
+    indexBuffer = RHI::NullBuffer;
+    indirectBuffer = rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
 
     startIndex = -1;
 
     numVerts = 0;
     numIndexes = 0;
     numInstances = 0;
+    numIndirectCommands = 0;
 
     instanceStartIndex = -1;
     instanceEndIndex = -1;
 
     instanceLocalIndexes = nullptr;
+    indirectCommands = nullptr;
 
     if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
         maxInstancingCount = r_maxInstancingCount.GetInteger();
+
+        if (maxInstancingCount > 0) {
+            indirectCommands = (RHI::DrawElementsIndirectCommand *)Mem_Alloc16(maxInstancingCount * sizeof(indirectCommands[0]));
+        }
     } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
         maxInstancingCount = Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment);
+
+        if (maxInstancingCount > 0) {
+            instanceLocalIndexes = (int *)Mem_Alloc16(maxInstancingCount * sizeof(instanceLocalIndexes[0]));
+        }
     } else {
         maxInstancingCount = 0;
-    }
-
-    if (maxInstancingCount > 0) {
-        instanceLocalIndexes = (int *)Mem_Alloc16(maxInstancingCount * sizeof(instanceLocalIndexes[0]));
     }
 
     material = nullptr;
@@ -59,6 +66,12 @@ void Batch::Shutdown() {
         Mem_AlignedFree(instanceLocalIndexes);
         instanceLocalIndexes = nullptr;
     }
+    if (indirectCommands) {
+        Mem_AlignedFree(indirectCommands);
+        indirectCommands = nullptr;
+    }
+
+    rhi.DeleteBuffer(indirectBuffer);
 }
 
 void Batch::SetCurrentLight(const VisibleLight *surfLight) {
@@ -73,19 +86,49 @@ void Batch::Begin(int flushType, const Material *material, const float *material
 }
 
 void Batch::AddInstance(const DrawSurf *drawSurf) {
-    if (instanceStartIndex < 0) {
-        instanceStartIndex = drawSurf->space->instanceIndex;
-    } else if (drawSurf->space->instanceIndex - instanceStartIndex + 1 >= maxInstancingCount) {
-        Flush();
+    if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+        if (numIndirectCommands > 0) {
+            RHI::DrawElementsIndirectCommand *currentIndirectCommand = &indirectCommands[numIndirectCommands - 1];
 
-        instanceStartIndex = drawSurf->space->instanceIndex;
+            // Check if continuous instance index
+            if (currentIndirectCommand->baseInstance + currentIndirectCommand->instanceCount == drawSurf->space->instanceIndex) {
+                if (currentIndirectCommand->instanceCount < maxInstancingCount) {
+                    currentIndirectCommand->instanceCount++;
+                    numInstances++;
+                    return;
+                }
+
+                Flush();
+            } else {
+                if (numIndirectCommands >= maxInstancingCount) {
+                    Flush();
+                }
+            }
+        }
+
+        indirectCommands[numIndirectCommands].vertexCount = drawSurf->subMesh->numIndexes;
+        indirectCommands[numIndirectCommands].instanceCount = 1;
+        indirectCommands[numIndirectCommands].firstIndex = 0;
+        indirectCommands[numIndirectCommands].baseVertex = 0;
+        indirectCommands[numIndirectCommands].baseInstance = drawSurf->space->instanceIndex;
+        numIndirectCommands++;
+        numInstances++;
+    } else { 
+        //assert(renderGlobal.instancingMethod == Mesh::UniformBufferInstancing);
+        if (instanceStartIndex < 0) {
+            instanceStartIndex = drawSurf->space->instanceIndex;
+        } else if (drawSurf->space->instanceIndex - instanceStartIndex + 1 >= maxInstancingCount) {
+            Flush();
+
+            instanceStartIndex = drawSurf->space->instanceIndex;
+        }
+
+        instanceEndIndex = drawSurf->space->instanceIndex;
+
+        instanceLocalIndexes[numInstances] = drawSurf->space->instanceIndex - instanceStartIndex;
+
+        numInstances++;
     }
-
-    instanceEndIndex = drawSurf->space->instanceIndex;
-
-    instanceLocalIndexes[numInstances] = drawSurf->space->instanceIndex - instanceStartIndex;
-
-    numInstances++;
 }
 
 void Batch::DrawSubMesh(SubMesh *subMesh) {
@@ -106,8 +149,8 @@ void Batch::DrawStaticSubMesh(SubMesh *subMesh) {
     if (!this->subMesh || this->subMesh->refSubMesh != subMesh->refSubMesh) {
         this->subMesh = subMesh;
 
-        vbHandle = subMesh->vertexCache->buffer;
-        ibHandle = subMesh->indexCache->buffer;
+        vertexBuffer = subMesh->vertexCache->buffer;
+        indexBuffer = subMesh->indexCache->buffer;
 
         numVerts = subMesh->numVerts;
         numIndexes = subMesh->numIndexes;
@@ -123,16 +166,16 @@ void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
     } else {
         // indexCache 가 순차적으로 연결되지 않는다면 한꺼번에 그릴 수 없으므로 Flush
         if (startIndex + numIndexes != subMesh->indexCache->offset / sizeof(TriIndex) ||
-            vbHandle != subMesh->vertexCache->buffer ||
-            ibHandle != subMesh->indexCache->buffer) {
+            vertexBuffer != subMesh->vertexCache->buffer ||
+            indexBuffer != subMesh->indexCache->buffer) {
             Flush();
 
             startIndex = subMesh->indexCache->offset / sizeof(TriIndex);
         }
     }
 
-    vbHandle = subMesh->vertexCache->buffer;
-    ibHandle = subMesh->indexCache->buffer;
+    vertexBuffer = subMesh->vertexCache->buffer;
+    indexBuffer = subMesh->indexCache->buffer;
 
     numVerts += subMesh->numVerts;
     numIndexes += subMesh->numIndexes;
@@ -145,15 +188,30 @@ void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex
     // TODO: check vertex type of the subMesh instead of this
     int vertexSize = subMesh->GetType() != Mesh::DynamicMesh ? sizeof(VertexGenericLit) : sizeof(VertexGeneric);
 
-    if (subMesh->useGpuSkinning) {
-        rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
+    if (numIndirectCommands > 0 && renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+        if (subMesh->useGpuSkinning) {
+            rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4 + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
-        rhi.SetStreamSource(0, vbHandle, 0, vertexSize);
-        rhi.SetStreamSource(1, vbHandle, vertexSize * numVerts, subMesh->VertexWeightSize());
+            rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
+            rhi.SetStreamSource(1, vertexBuffer, vertexSize * numVerts, subMesh->VertexWeightSize());
+            rhi.SetStreamSource(2, backEnd.instanceBufferCache->buffer, backEnd.instanceBufferCache->offset, renderGlobal.instanceBufferOffsetAlignment);
+        } else {
+            rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4].vertexFormatHandle);
+
+            rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
+            rhi.SetStreamSource(1, backEnd.instanceBufferCache->buffer, backEnd.instanceBufferCache->offset, renderGlobal.instanceBufferOffsetAlignment);
+        }
     } else {
-        rhi.SetVertexFormat(vertexFormats[vertexFormatIndex].vertexFormatHandle);
-        
-        rhi.SetStreamSource(0, vbHandle, 0, vertexSize);
+        if (subMesh->useGpuSkinning) {
+            rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
+
+            rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
+            rhi.SetStreamSource(1, vertexBuffer, vertexSize * numVerts, subMesh->VertexWeightSize());
+        } else {
+            rhi.SetVertexFormat(vertexFormats[vertexFormatIndex].vertexFormatHandle);
+
+            rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
+        }
     }
 }
 
@@ -212,8 +270,8 @@ void Batch::Flush() {
 
     startIndex = -1;
 
-    //vbHandle = RHI::NullBuffer;
-    //ibHandle = RHI::NullBuffer;
+    //vertexBuffer = RHI::NullBuffer;
+    //indexBuffer = RHI::NullBuffer;
 
     subMesh = nullptr;
 
@@ -221,6 +279,7 @@ void Batch::Flush() {
     numIndexes = 0;
 
     numInstances = 0;
+    numIndirectCommands = 0;
 
     instanceStartIndex = -1;
     instanceEndIndex = -1;
@@ -258,7 +317,7 @@ void Batch::Flush_SelectionPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
         VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
@@ -287,7 +346,7 @@ void Batch::Flush_BackgroundPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzSt);
 
@@ -305,7 +364,7 @@ void Batch::Flush_DepthPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
         VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
@@ -325,7 +384,7 @@ void Batch::Flush_ShadowDepthPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
     
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
         VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
@@ -341,7 +400,7 @@ void Batch::Flush_AmbientPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
         VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
@@ -371,7 +430,7 @@ void Batch::Flush_LitPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
  
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
         VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
@@ -405,7 +464,7 @@ void Batch::Flush_UnlitPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStColor);
 
@@ -419,7 +478,7 @@ void Batch::Flush_FinalPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStNT);
 
@@ -444,7 +503,7 @@ void Batch::Flush_VelocityMapPass() {
 
     rhi.SetCullFace(mtrlPass->cullType);
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzNormal);
 
@@ -461,7 +520,7 @@ void Batch::Flush_GuiPass() {
 
     rhi.SetCullFace(RHI::NoCull);
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStColor);
 
@@ -476,7 +535,7 @@ void Batch::Flush_GuiPass() {
 void Batch::DrawDebugWireframe(int mode, const Color4 &rgba) const {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    rhi.BindBuffer(RHI::VertexBuffer, vbHandle);
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyz);
 
@@ -624,7 +683,7 @@ void BackEnd::DrawDebugTangents(int mode) const {
 }
 
 void BackEnd::DrawDebugTangentSpace(int tangentIndex) const {
-    GL_BindBuffer(BGL_VERTEX_BUFFER, vbHandle);
+    GL_BindBuffer(BGL_VERTEX_BUFFER, vertexBuffer);
 
     bglColor4ub(255, 255, 255, 255);
 
@@ -649,7 +708,7 @@ void BackEnd::DrawDebugTangentSpace(int tangentIndex) const {
 void BackEnd::DrawDebugBatch(const byte *rgb) const {
     GL_BindShader(BGL_NULL_SHADER);
 
-    GL_BindBuffer(BGL_VERTEX_BUFFER, vbHandle);
+    GL_BindBuffer(BGL_VERTEX_BUFFER, vertexBuffer);
 
     //g_textureManager.m_whiteTexture->Bind();
 

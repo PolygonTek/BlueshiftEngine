@@ -3,20 +3,15 @@ in float in_weightIndex : WEIGHT_INDEX;
 #ifdef VTF_SKINNING
 	#ifdef USE_BUFFER_TEXTURE
 		uniform samplerBuffer jointsMap;
-		#define TC_TYPE int
 	#else
 		uniform sampler2D jointsMap;
-		#define TC_TYPE vec2
+        uniform vec2 invJointsMapSize;
 	#endif
 
-	#ifdef INSTANCING
-		#define BASE_TC instance.tcBase
-	#else
-		uniform TC_TYPE tcBase;
-		#define BASE_TC tcBase
+	#ifndef INSTANCING
+		uniform VTF_SKINNING_TC_TYPE skinningBaseTc;
 	#endif
 
-	uniform vec2 invJointsMapSize;
 	uniform int jointIndexOffsetCurr;
 	uniform int jointIndexOffsetPrev;
 #else
@@ -26,12 +21,12 @@ in float in_weightIndex : WEIGHT_INDEX;
 void accumulateJointMatrices(out vec4 R0, out vec4 R1, out vec4 R2, int jointIndexOffset) {
 #ifdef VTF_SKINNING
 	#ifdef USE_BUFFER_TEXTURE
-		int baseS = BASE_TC + (jointIndexOffset + int(in_weightIndex)) * 3;
+		int baseS = skinningBaseTc + (jointIndexOffset + int(in_weightIndex)) * 3;
 		R0 = texelFetch(jointsMap, baseS + 0);
 		R1 = texelFetch(jointsMap, baseS + 1);
 		R2 = texelFetch(jointsMap, baseS + 2);
 	#else
-		vec2 baseST = BASE_TC + vec2((float(jointIndexOffset) + in_weightIndex) * 3.0, 0.0);
+		vec2 baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex) * 3.0, 0.0);
 		R0 = tex2Dlod(jointsMap, vec4((baseST + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 		R1 = tex2Dlod(jointsMap, vec4((baseST + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 		R2 = tex2Dlod(jointsMap, vec4((baseST + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));

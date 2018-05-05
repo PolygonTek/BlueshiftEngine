@@ -21,9 +21,11 @@
 BE_NAMESPACE_BEGIN
 
 void Batch::DrawPrimitives() const {
-    rhi.BindBuffer(RHI::IndexBuffer, ibHandle);
+    rhi.BindBuffer(RHI::IndexBuffer, indexBuffer);
 
-    if (numInstances >= 1) {
+    if (numIndirectCommands > 0) {
+        rhi.MultiDrawElementsIndirect(RHI::TrianglesPrim, sizeof(TriIndex), 0, numIndirectCommands, sizeof(RHI::DrawElementsIndirectCommand));
+    } else if (numInstances > 0) {
         rhi.DrawElementsInstanced(RHI::TrianglesPrim, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0, numInstances);
     } else {
         rhi.DrawElements(RHI::TrianglesPrim, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0);
@@ -193,13 +195,13 @@ void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache 
 
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
             if (numInstances == 0) {
-                shader->SetConstant1i("tcBase", cache->bufferCache.tcBase[0]);
+                shader->SetConstant1i("skinningBaseTc", cache->bufferCache.tcBase[0]);
             }
         } else {
             shader->SetConstant2f("invJointsMapSize", Vec2(1.0f / jointsMapTexture->GetWidth(), 1.0f / jointsMapTexture->GetHeight()));
 
             if (numInstances == 0) {
-                shader->SetConstant2f("tcBase", Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
+                shader->SetConstant2f("skinningBaseTc", Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
             }
         }
 
@@ -215,14 +217,17 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
         SetSkinningConstants(shader, surfSpace->def->state.mesh->skinningJointCache);
     }
 
-    if (numInstances >= 1) {
+    if (numIndirectCommands > 0) {
+        rhi.BindBuffer(RHI::DrawIndirectBuffer, indirectBuffer);
+        rhi.BufferDiscardWrite(indirectBuffer, numIndirectCommands * sizeof(indirectCommands[0]), indirectCommands);
+    } else if (numInstances > 0) {
         int bufferOffset = backEnd.instanceBufferCache->offset + instanceStartIndex * rhi.HWLimit().uniformBufferOffsetAlignment;
         int bufferSize = (instanceEndIndex - instanceStartIndex + 1) * rhi.HWLimit().uniformBufferOffsetAlignment;
 
         // 0-indexed buffer for instance buffer
         rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
-
         shader->SetConstantBuffer("instanceDataBuffer", 0);
+
         shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::InstanceIndexesConst], numInstances, instanceLocalIndexes);
     } else {
         if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst] >= 0) {
@@ -272,7 +277,7 @@ void Batch::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &colo
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -345,7 +350,7 @@ void Batch::RenderDepth(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -443,7 +448,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
             }
         }
 
-        if (numInstances >= 1) {
+        if (numInstances > 0) {
             if (shader->GetGPUInstancingVersion()) {
                 shader = shader->GetGPUInstancingVersion();
             }
@@ -467,7 +472,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
             }
         }
 
-        if (numInstances >= 1) {
+        if (numInstances > 0) {
             if (shader->GetGPUInstancingVersion()) {
                 shader = shader->GetGPUInstancingVersion();
             }
@@ -506,7 +511,7 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -550,7 +555,7 @@ void Batch::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambient
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -633,7 +638,7 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -695,7 +700,7 @@ void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, flo
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -865,7 +870,7 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -907,7 +912,7 @@ void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) cons
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }
@@ -947,7 +952,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
         }
     }
 
-    if (numInstances >= 1) {
+    if (numInstances > 0) {
         if (shader->GetGPUInstancingVersion()) {
             shader = shader->GetGPUInstancingVersion();
         }

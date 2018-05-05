@@ -449,6 +449,15 @@ bool Shader::ParseProperties(Lexer &lexer) {
 Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinningWeightCount, bool instancing) {
     Str skinningPostfix;
     Str skinningVsHeaderText;
+    Str skinningVsHeaderTextCommon;
+
+    skinningVsHeaderTextCommon = "#ifdef VTF_SKINNING\n" 
+        "#ifdef USE_BUFFER_TEXTURE\n"
+        "#define VTF_SKINNING_TC_TYPE int\n"
+        "#else\n"
+        "#define VTF_SKINNING_TC_TYPE vec2\n"
+        "#endif\n"
+        "#endif\n";
 
     switch (skinningWeightCount) {
     case 0:
@@ -456,15 +465,15 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         break;
     case 1:
         skinningPostfix = "-skinning1";
-        skinningVsHeaderText = "#define GPU_SKINNING\n#define GPU_SKINNING_1_WEIGHTS\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n" "#define GPU_SKINNING_1_WEIGHTS\n" + skinningVsHeaderTextCommon;
         break;
     case 4:
         skinningPostfix = "-skinning4";
-        skinningVsHeaderText = "#define GPU_SKINNING\n#define GPU_SKINNING_4_WEIGHTS\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n" "#define GPU_SKINNING_4_WEIGHTS\n" + skinningVsHeaderTextCommon;
         break;
     case 8:
         skinningPostfix = "-skinning8";
-        skinningVsHeaderText = "#define GPU_SKINNING\n#define GPU_SKINNING_8_WEIGHTS\n";
+        skinningVsHeaderText = "#define GPU_SKINNING\n" "#define GPU_SKINNING_8_WEIGHTS\n" + skinningVsHeaderTextCommon;
         break;
     default:
         assert(0);

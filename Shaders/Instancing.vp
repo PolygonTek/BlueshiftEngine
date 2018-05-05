@@ -2,17 +2,27 @@
     #error "Parallax mapping doesn't support instancing"
 #endif
 
-#if INSTANCED_ARRAY
+#ifdef INSTANCED_ARRAY
 
-in HIGHP vec4 in_localToWorldMatrixS    : TEXCOORD2;
-in HIGHP vec4 in_localToWorldMatrixT    : TEXCOORD3;
-in HIGHP vec4 in_localToWorldMatrixR    : TEXCOORD4;
-in LOWP vec4 in_constantColor           : TEXCOORD5;
+in HIGHP vec4 in_localToWorldMatrixS    : TEXCOORD1;
+in HIGHP vec4 in_localToWorldMatrixT    : TEXCOORD2;
+in HIGHP vec4 in_localToWorldMatrixR    : TEXCOORD3;
+in LOWP  vec4 in_constantColor          : TEXCOORD4;
+
+#ifdef GPU_SKINNING
+    #ifdef VTF_SKINNING
+        in HIGHP VTF_SKINNING_TC_TYPE in_skinningBaseTc : TEXCOORD5;
+    #endif
+#endif
 
 #define localToWorldMatrixS in_localToWorldMatrixS
 #define localToWorldMatrixT in_localToWorldMatrixT
 #define localToWorldMatrixR in_localToWorldMatrixR
+//#define worldToLocalMatrixS in_worldToLocalMatrixS
+//#define worldToLocalMatrixT in_worldToLocalMatrixT
+//#define worldToLocalMatrixR in_worldToLocalMatrixR
 #define constantColor in_constantColor
+#define skinningBaseTc in_skinningBaseTc
 
 #else
 
@@ -25,9 +35,9 @@ struct InstanceData {
     //vec4 worldToLocalMatrixR;
     vec4 constantColor;             // 64
 #ifdef USE_BUFFER_TEXTURE
-    int tcBase;                     // 80
+    int skinningBaseTc;             // 80
 #else
-    vec2 tcBase;                    // 80
+    vec2 skinningBaseTc;            // 80
 #endif
     vec4 padding[(INSTANCE_DATA_SIZE - 80) / 16];
 };
@@ -48,5 +58,6 @@ uniform int instanceIndexes[MAX_INSTANCE_COUNT];
 //#define worldToLocalMatrixT instance.worldToLocalMatrixT
 //#define worldToLocalMatrixR instance.worldToLocalMatrixR
 #define constantColor instance.constantColor
+#define skinningBaseTc instance.skinningBaseTc
 
 #endif // INSTANCED_ARRAY

@@ -46,6 +46,7 @@ public:
     static bool             SupportsTextureCompressionLATC() { return true; }
     static bool             SupportsCompressedGenMipmaps() { return true; }
     static bool             SupportsInstancedArrays() { return supportsInstancedArrays; }
+    static bool             SupportsDrawIndirect() { return supportsDrawIndirect; }
     static bool             SupportsMultiDrawIndirect() { return supportsMultiDrawIndirect; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
     
@@ -66,6 +67,7 @@ public:
 
 private:
     static bool             supportsInstancedArrays;
+    static bool             supportsDrawIndirect;
     static bool             supportsMultiDrawIndirect;
 };
 
