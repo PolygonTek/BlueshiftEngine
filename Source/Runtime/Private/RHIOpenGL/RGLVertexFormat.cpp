@@ -187,11 +187,11 @@ void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base,
             // if normalized is set to GL_TRUE, it indicates that values stored in an integer format are to be mapped to the range[-1, 1]
             // (for signed values) or [0, 1](for unsigned values) when they are accessed and converted to floating point. Otherwise, 
             // values will be converted to floats directly without normalization.
-            if (ve->isIntegerType) {
-                gglVertexAttribIPointer(i, ve->components, ve->type, stride, BUFFER_OFFSET(base + ve->offset));
-            } else {
+            //if (ve->isIntegerType) {
+            //    gglVertexAttribIPointer(i, ve->components, ve->type, stride, BUFFER_OFFSET(base + ve->offset));
+            //} else {
                 gglVertexAttribPointer(i, ve->components, ve->type, ve->normalize, stride, BUFFER_OFFSET(base + ve->offset));
-            }
+            //}
 
             OpenGL::VertexAttribDivisor(i, ve->divisor);
         }
