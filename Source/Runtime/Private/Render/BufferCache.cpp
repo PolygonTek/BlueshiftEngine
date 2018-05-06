@@ -327,28 +327,24 @@ void BufferCacheManager::AllocStaticTexel(int bytes, const void *data, BufferCac
 }
 
 static void WriteBuffer(void *dst, const void *src, int numBytes) {
-    assert_16_byte_aligned(dst);
+    //assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);
     memcpy(dst, src, numBytes);
 }
 
 bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void *data, BufferCache *bc) {
-    int bytes = vertexSize * numVertexes;
-
     FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
 
-    // thread safe interlocked adds
-    currentBufferSet->vertexMemUsed.Add(bytes);
+    int bytes = vertexSize * numVertexes;
 
-    //rhi.BindBuffer(RHI::VertexBuffer, currentBufferSet->vertexBuffer);
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->vertexBuffer, vertexSize, bytes, nullptr);
     if (offset == -1) {
         BE_FATALERROR(L"Out of vertex cache");
         return false;
     }
-    //rhi.BindBuffer(RHI::VertexBuffer, RHI::NullBuffer);
 
+    currentBufferSet->vertexMemUsed = offset + bytes;
     currentBufferSet->allocations++;
 
     if (data) {
@@ -374,22 +370,18 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void
 }
 
 bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *data, BufferCache *bc) {
-    int bytes = numIndexes * indexSize;
-    
     FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
 
-    // thread safe interlocked adds
-    currentBufferSet->indexMemUsed.Add(bytes);
+    int bytes = numIndexes * indexSize;
 
-    //rhi.BindBuffer(RHI::IndexBuffer, currentBufferSet->indexBuffer);
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->indexBuffer, indexSize, bytes, nullptr);
     if (offset == -1) {
         BE_FATALERROR(L"Out of index cache");
         return false;
     }
-    //rhi.BindBuffer(RHI::IndexBuffer, RHI::NullBuffer);
 
+    currentBufferSet->indexMemUsed = offset + bytes;
     currentBufferSet->allocations++;
 
     if (data) {
@@ -417,18 +409,14 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
 bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *bc) {
     FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
 
-    // thread safe interlocked adds
-    currentBufferSet->uniformMemUsed.Add(bytes);
-
-    //rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->uniformBuffer, rhi.HWLimit().uniformBufferOffsetAlignment, bytes, nullptr);
     if (offset == -1) {
         BE_FATALERROR(L"Out of uniform cache");
         return false;
     }
-    //rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
 
+    currentBufferSet->uniformMemUsed = offset + bytes;
     currentBufferSet->allocations++;
 
     if (data) {
@@ -457,18 +445,14 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
     FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
     assert(currentBufferSet->texelBuffer);
 
-    // thread safe interlocked adds
-    currentBufferSet->texelMemUsed.Add(bytes);
-
-    //rhi.BindBuffer(currentBufferSet->texelBufferType, currentBufferSet->texelBuffer);
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->texelBuffer, TB_BPP, bytes, nullptr);
     if (offset == -1) {
         BE_FATALERROR(L"Out of texel cache");
         return false;
     }
-    //rhi.BindBuffer(currentBufferSet->texelBufferType, RHI::NullBuffer);
 
+    currentBufferSet->texelMemUsed = offset + bytes;
     currentBufferSet->allocations++;
 
     if (data) {
