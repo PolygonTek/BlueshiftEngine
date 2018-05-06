@@ -111,6 +111,8 @@ private:
     int                     mostUsedUniformMem;
     int                     mostUsedTexelMem;
 
+    bool                    usePersistentMappedBuffers;
+
     int                     pboWriteOffset;
 };
 

@@ -384,6 +384,10 @@ bool OpenGLRHI::SupportsInstancedArrays() const {
     return OpenGL::SupportsInstancedArrays();
 }
 
+bool OpenGLRHI::SupportsBufferStorage() const {
+    return OpenGL::SupportsBufferStorage();
+}
+
 bool OpenGLRHI::SupportsMultiDrawIndirect() const {
     return OpenGL::SupportsMultiDrawIndirect();
 }

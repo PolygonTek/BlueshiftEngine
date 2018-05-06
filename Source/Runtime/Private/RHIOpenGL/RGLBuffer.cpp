@@ -96,7 +96,7 @@ RHI::Handle OpenGLRHI::CreateBuffer(BufferType type, BufferUsage usage, int size
     return (Handle)handle;
 }
 
-void OpenGLRHI::DeleteBuffer(Handle bufferHandle) {
+void OpenGLRHI::DestroyBuffer(Handle bufferHandle) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
     for (int i = 0; i < COUNT_OF(currentContext->state->bufferHandles); i++) {
@@ -162,11 +162,13 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, in
     assert(offset + size <= buffer->size);
 
     GLbitfield access = 0;
-    access |= GL_MAP_UNSYNCHRONIZED_BIT;
 
     switch (lockMode) {
     case WriteOnly:
         access |= GL_MAP_WRITE_BIT;
+        break;
+    case WriteOnlyUnsynchronized:
+        access |= (GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         break;
     case WriteOnlyExplicitFlush:
         access |= (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
@@ -175,7 +177,8 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, in
         access |= GL_MAP_WRITE_BIT;
 #ifdef GL_ARB_buffer_storage
         if (OpenGL::SupportsBufferStorage()) {
-            access |= (GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+            access |= (GL_MAP_PERSISTENT_BIT |  // keep mapped while using by GPU
+                GL_MAP_COHERENT_BIT);           // writes automatically visible to GPU
 
             gglBufferStorage(buffer->target, size, 0, access);
         }
@@ -187,7 +190,7 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, in
     if (offset > 0 || offset + size < buffer->size) {
         ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
     } else {
-        ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_BUFFER_BIT);
+        ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
     }
 
     assert(ptr);

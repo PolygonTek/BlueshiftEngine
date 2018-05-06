@@ -67,6 +67,7 @@ public:
     bool                    SupportsTextureCompressionLATC() const;
     bool                    SupportsTextureCompressionETC2() const;
     bool                    SupportsInstancedArrays() const;
+    bool                    SupportsBufferStorage() const;
     bool                    SupportsMultiDrawIndirect() const;
     bool                    SupportsDebugLabel() const;
 
@@ -114,11 +115,11 @@ public:
     void                    SetLineWidth(float width);
 
     Handle                  CreateStencilState(int readMask, int writeMask, StencilFunc funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc funcFront, int failFront, int zfailFront, int zpassFront);
-    void                    DeleteStencilState(Handle stencilStateHandle);
+    void                    DestroyStencilState(Handle stencilStateHandle);
     void                    SetStencilState(Handle stencilStateHandle, int ref);
 
     Handle                  CreateTexture(TextureType type);
-    void                    DeleteTexture(Handle textureHandle);
+    void                    DestroyTexture(Handle textureHandle);
     void                    SelectTextureUnit(unsigned int unit);
     void                    BindTexture(Handle textureHandle);
 
@@ -151,13 +152,13 @@ public:
     void                    GetTextureImageRect(Image::Format format, void *pixels);
 
     Handle                  CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, bool sRGB, int flags);
-    void                    DeleteRenderTarget(Handle renderTargetHandle);
+    void                    DestroyRenderTarget(Handle renderTargetHandle);
     void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0, unsigned int mrtBitMask = 0);
     void                    EndRenderTarget();
     void                    BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const;
 
     Handle                  CreateShader(const char *name, const char *vsText, const char *fsText);
-    void                    DeleteShader(Handle shaderHandle);
+    void                    DestroyShader(Handle shaderHandle);
     void                    BindShader(Handle shaderHandle);
 
     int                     GetSamplerUnit(Handle shaderHandle, const char *name) const;
@@ -214,7 +215,7 @@ public:
     void                    SetShaderConstantBlock(int index, int bindingIndex);
 
     Handle                  CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch = 0, const void *data = nullptr);
-    void                    DeleteBuffer(Handle bufferHandle);
+    void                    DestroyBuffer(Handle bufferHandle);
     void                    BindBuffer(BufferType type, Handle bufferHandle);
 
     void                    BindIndexedBuffer(BufferType type, int bindingIndex, Handle bufferHandle);
@@ -234,12 +235,15 @@ public:
                             // write offset 을 0 으로 만든다.
     void                    BufferRewind(Handle bufferHandle);
 
-    Handle                  FenceSync();
+    Handle                  CreateSync();
+    void                    DestroySync(Handle syncHandle);
+    bool                    IsSync(Handle syncHandle) const;
+    void                    FenceSync(Handle syncHandle);
     void                    DeleteSync(Handle syncHandle);
     void                    WaitSync(Handle syncHandle);
 
     Handle                  CreateVertexFormat(int numElements, const VertexElement *elements);
-    void                    DeleteVertexFormat(Handle vertexFormatHandle);
+    void                    DestroyVertexFormat(Handle vertexFormatHandle);
     void                    SetVertexFormat(Handle vertexFormatHandle);
                             // D3D 의 SetStreamSource 와 유사. (SetVertexFormat 호출 후에 실행되어야 한다)
     void                    SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride);
@@ -254,7 +258,7 @@ public:
     void                    MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;
 
     Handle                  CreateQuery();
-    void                    DeleteQuery(Handle queryHandle);
+    void                    DestroyQuery(Handle queryHandle);
     void                    BeginQuery(Handle queryHandle);
     void                    EndQuery();
     bool                    QueryResultAvailable(Handle queryHandle) const;

@@ -178,6 +178,7 @@ public:
 
     enum BufferLockMode {
         WriteOnly,
+        WriteOnlyUnsynchronized,
         WriteOnlyExplicitFlush,
         WriteOnlyPersistent,
     };

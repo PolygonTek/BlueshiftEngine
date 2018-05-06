@@ -20,7 +20,6 @@
 BE_NAMESPACE_BEGIN
 
 #define PINNED_MEMORY   1
-#define PERSISTENT_MAP  0
 
 BufferCacheManager      bufferCacheManager;
 
@@ -63,6 +62,10 @@ void BufferCacheManager::Init() {
                     Image::RGBA_32F_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality | Texture::HighPriority);
             }
         }
+
+#if PINNED_MEMORY
+        frameData[frameDataIndex].sync = rhi.CreateSync();
+#endif
     }
     
     BE_LOG(L"dynamic vertex buffer created (%hs x %i)\n", Str::FormatBytes(vcSize).c_str(), COUNT_OF(frameData));
@@ -89,36 +92,37 @@ void BufferCacheManager::Init() {
     mostUsedUniformMem = 0;
     mostUsedTexelMem = 0;
 
+    usePersistentMappedBuffers = rhi.SupportsBufferStorage();
+
 #if PINNED_MEMORY
     MapBufferSet(frameData[mappedNum]);
-    #if PERSISTENT_MAP
+        
+    if (usePersistentMappedBuffers) {
         for (int i = mappedNum + 1; i < COUNT_OF(frameData); i++) {
             MapBufferSet(frameData[i]);
         }
-    #endif
+    }
 #endif
 }
 
 void BufferCacheManager::Shutdown() {
-    rhi.DeleteBuffer(streamVertexBuffer);
-    rhi.DeleteBuffer(streamIndexBuffer);
-    rhi.DeleteBuffer(streamUniformBuffer);
+    rhi.DestroyBuffer(streamVertexBuffer);
+    rhi.DestroyBuffer(streamIndexBuffer);
+    rhi.DestroyBuffer(streamUniformBuffer);
 
     for (int i = 0; i < COUNT_OF(frameData); i++) {
 #if PINNED_MEMORY
         UnmapBufferSet(frameData[i]);
 
-        if (frameData[i].sync != RHI::NullSync) {
-            rhi.DeleteSync(frameData[i].sync);
-        }
+        rhi.DestroySync(frameData[i].sync);
 #endif
 
-        rhi.DeleteBuffer(frameData[i].vertexBuffer);
-        rhi.DeleteBuffer(frameData[i].indexBuffer);
-        rhi.DeleteBuffer(frameData[i].uniformBuffer);
+        rhi.DestroyBuffer(frameData[i].vertexBuffer);
+        rhi.DestroyBuffer(frameData[i].indexBuffer);
+        rhi.DestroyBuffer(frameData[i].uniformBuffer);
         
         if (frameData[i].texelBuffer) {
-            rhi.DeleteBuffer(frameData[i].texelBuffer);
+            rhi.DestroyBuffer(frameData[i].texelBuffer);
         }
         
         if (frameData[i].texture) {
@@ -129,12 +133,8 @@ void BufferCacheManager::Shutdown() {
 
 void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
 #if PINNED_MEMORY
-    #if PERSISTENT_MAP
-        RHI::BufferLockMode lockMode = RHI::WriteOnlyPersistent;
-    #else
-        RHI::BufferLockMode lockMode = RHI::WriteOnly;
-    #endif
-
+    RHI::BufferLockMode lockMode = usePersistentMappedBuffers ? RHI::WriteOnlyPersistent : RHI::WriteOnlyUnsynchronized;
+    
     if (!bufferSet.mappedVertexBase) {
         rhi.BindBuffer(RHI::VertexBuffer, bufferSet.vertexBuffer);
         bufferSet.mappedVertexBase = rhi.MapBufferRange(bufferSet.vertexBuffer, lockMode);
@@ -196,7 +196,7 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet) {
 void BufferCacheManager::BeginWrite() {
 #if PINNED_MEMORY
     // Wait until the gpu is no longer using the buffer
-    if (frameData[mappedNum].sync != RHI::NullSync) {
+    if (rhi.IsSync(frameData[mappedNum].sync)) {
         rhi.WaitSync(frameData[mappedNum].sync);
     }
 #endif
@@ -204,11 +204,11 @@ void BufferCacheManager::BeginWrite() {
 
 void BufferCacheManager::EndDrawCommand() {
 #if PINNED_MEMORY
-    if (frameData[unmappedNum].sync != RHI::NullSync) {
+    if (rhi.IsSync(frameData[unmappedNum].sync)) {
         rhi.DeleteSync(frameData[unmappedNum].sync);
     }
     // Place a fence which will be removed when the draw command has finished
-    frameData[unmappedNum].sync = rhi.FenceSync();
+    rhi.FenceSync(frameData[unmappedNum].sync);
 #endif
 }
 
@@ -231,44 +231,48 @@ void BufferCacheManager::BeginBackEnd() {
             Str::FormatBytes(mostUsedTexelMem).c_str());
     }
 
-#if PINNED_MEMORY && !PERSISTENT_MAP
-    // unmap the current frame so the GPU can read it
-    const uint32_t startUnmap = PlatformTime::Milliseconds();
-    UnmapBufferSet(frameData[mappedNum]);
-    const uint32_t endUnmap = PlatformTime::Milliseconds();
-    if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1) {
-        BE_DLOG(L"BufferCacheManager::BeginBackEnd: unmap took %i msec\n", endUnmap - startUnmap);
+#if PINNED_MEMORY
+    if (!usePersistentMappedBuffers) {
+        // Unmap the current frame so the GPU can read it
+        const uint32_t startUnmap = PlatformTime::Milliseconds();
+        UnmapBufferSet(frameData[mappedNum]);
+        const uint32_t endUnmap = PlatformTime::Milliseconds();
+        if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1) {
+            BE_DLOG(L"BufferCacheManager::BeginBackEnd: unmap took %i msec\n", endUnmap - startUnmap);
+        }
     }
 #endif
 
     unmappedNum = mappedNum;
 
-    // update buffered texture
+    // Update buffered texture
     if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
             // The update to the data is not guaranteed to affect the texture until next time it is bound to a texture image unit
             rhi.SelectTextureUnit(0);
             frameData[unmappedNum].texture->Bind();
         }  else if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
-            // unmapped PBO -> texture
+            // Unmapped PBO -> texture
             UpdatePBOTexture();
         }
     }
 
-    // prepare the next frame for writing to by the CPU
+    // Prepare the next frame for writing to by the CPU
     frameCount++;
     mappedNum = frameCount % COUNT_OF(frameData);
     
-#if PINNED_MEMORY && !PERSISTENT_MAP
-    const uint32_t startMap = PlatformTime::Milliseconds();
-    MapBufferSet(frameData[mappedNum]);
-    const uint32_t endMap = PlatformTime::Milliseconds();
-    if (r_showBufferCacheTiming.GetBool() && endMap - startMap > 1) {
-        BE_DLOG(L"BufferCacheManager::BeginBackEnd: map took %i msec\n", endMap - startMap);
+#if PINNED_MEMORY
+    if (!usePersistentMappedBuffers) {
+        const uint32_t startMap = PlatformTime::Milliseconds();
+        MapBufferSet(frameData[mappedNum]);
+        const uint32_t endMap = PlatformTime::Milliseconds();
+        if (r_showBufferCacheTiming.GetBool() && endMap - startMap > 1) {
+            BE_DLOG(L"BufferCacheManager::BeginBackEnd: map took %i msec\n", endMap - startMap);
+        }
     }
 #endif
 
-    // clear current frame data
+    // Clear current frame data
     rhi.BufferRewind(frameData[mappedNum].vertexBuffer);
     frameData[mappedNum].vertexMemUsed.SetValue(0);
 
