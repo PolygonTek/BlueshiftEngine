@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-RHI::Handle OpenGLRHI::FenceSync() {
+RHI::Handle OpenGLRHI::CreateSync() {
     GLSync *sync = new GLSync;
 
     int handle = syncList.FindNull();
@@ -28,17 +28,42 @@ RHI::Handle OpenGLRHI::FenceSync() {
         syncList[handle] = sync;
     }
 
-    sync->sync = gglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    sync->sync = nullptr;
+
     return (Handle)handle;
+}
+
+void OpenGLRHI::DestroySync(Handle syncHandle) {
+    GLSync *sync = syncList[syncHandle];
+
+    if (gglIsSync(sync->sync)) {
+        gglDeleteSync(sync->sync);
+        sync->sync = nullptr;
+    }
+
+    delete syncList[syncHandle];
+    syncList[syncHandle] = nullptr;
+}
+
+bool OpenGLRHI::IsSync(Handle syncHandle) const {
+    GLSync *sync = syncList[syncHandle];
+
+    if (syncHandle == NullSync || !sync->sync || !gglIsSync(sync->sync)) {
+        return false;
+    }
+    return true;
+}
+
+void OpenGLRHI::FenceSync(Handle syncHandle) {
+    GLSync *sync = syncList[syncHandle];
+
+    sync->sync = gglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 }
 
 void OpenGLRHI::DeleteSync(Handle syncHandle) {
     GLSync *sync = syncList[syncHandle];
 
     gglDeleteSync(sync->sync);
-
-    delete syncList[syncHandle];
-    syncList[syncHandle] = nullptr;
 }
 
 void OpenGLRHI::WaitSync(Handle syncHandle) {

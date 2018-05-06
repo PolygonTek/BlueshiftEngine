@@ -119,7 +119,7 @@ RHI::Handle OpenGLRHI::CreateTexture(TextureType type) {
     return (Handle)handle;
 }
 
-void OpenGLRHI::DeleteTexture(Handle textureHandle) {
+void OpenGLRHI::DestroyTexture(Handle textureHandle) {
     GLTexture *texture = textureList[textureHandle];
     assert(texture);
 

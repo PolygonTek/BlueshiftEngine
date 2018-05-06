@@ -71,7 +71,7 @@ void Batch::Shutdown() {
         indirectCommands = nullptr;
     }
 
-    rhi.DeleteBuffer(indirectBuffer);
+    rhi.DestroyBuffer(indirectBuffer);
 }
 
 void Batch::SetCurrentLight(const VisibleLight *surfLight) {

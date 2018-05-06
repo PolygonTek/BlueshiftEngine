@@ -621,7 +621,7 @@ void Texture::GetTexelsRect(Image::Format format, void *pixels) const {
 
 void Texture::Purge() {
     if (textureHandle != RHI::NullTexture) {
-        rhi.DeleteTexture(textureHandle);
+        rhi.DestroyTexture(textureHandle);
     }
 
     textureHandle = RHI::NullTexture;

@@ -400,7 +400,7 @@ RHI::Handle OpenGLRHI::CreateStencilState(int readMask, int writeMask, StencilFu
     return (Handle)handle;
 }
 
-void OpenGLRHI::DeleteStencilState(Handle stencilStateHandle) {
+void OpenGLRHI::DestroyStencilState(Handle stencilStateHandle) {
     delete stencilStateList[stencilStateHandle];
     stencilStateList[stencilStateHandle] = nullptr;
 }

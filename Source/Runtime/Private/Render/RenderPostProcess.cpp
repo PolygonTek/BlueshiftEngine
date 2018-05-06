@@ -68,7 +68,7 @@ void PP_Init() {
 }
 
 void PP_Free() {
-    rhi.DeleteBuffer(sphereVB);
+    rhi.DestroyBuffer(sphereVB);
 }
 
 void PP_PassThruPass(const Texture *srcTexture, float s, float t, float s2, float t2, RenderTarget *dstRT) {

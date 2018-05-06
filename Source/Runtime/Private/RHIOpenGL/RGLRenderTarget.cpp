@@ -216,15 +216,15 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
     return (Handle)handle;
 }
 
-void OpenGLRHI::DeleteRenderTarget(Handle renderTargetHandle) {
+void OpenGLRHI::DestroyRenderTarget(Handle renderTargetHandle) {
     if (renderTargetHandle == NullRenderTarget) {
-        BE_WARNLOG(L"OpenGLRHI::DeleteRenderTarget: invalid render target\n");
+        BE_WARNLOG(L"OpenGLRHI::DestroyRenderTarget: invalid render target\n");
         return;
     }
     
     if (currentContext->state->renderTargetHandleStackDepth > 0 && 
         currentContext->state->renderTargetHandleStack[currentContext->state->renderTargetHandleStackDepth - 1] == renderTargetHandle) {
-        BE_WARNLOG(L"OpenGLRHI::DeleteRenderTarget: render target is using\n");
+        BE_WARNLOG(L"OpenGLRHI::DestroyRenderTarget: render target is using\n");
         return;
     }
 

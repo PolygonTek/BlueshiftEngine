@@ -49,7 +49,7 @@ static void RB_InitStencilStates() {
 
 static void RB_FreeStencilStates() {
     for (int i = 0; i < BackEnd::MaxPredefinedStencilStates; i++) {
-        rhi.DeleteStencilState(backEnd.stencilStates[i]);
+        rhi.DestroyStencilState(backEnd.stencilStates[i]);
     }
 }
 
@@ -64,7 +64,7 @@ static void RB_InitLightQueries() {
 
 static void RB_FreeLightQueries() {
     /*for (int i = 0; i < MAX_LIGHTS; i++) {
-        rhi.DeleteQuery(backEnd.lightQueries[i].queryHandle);
+        rhi.DestroyQuery(backEnd.lightQueries[i].queryHandle);
     }*/
 }
 

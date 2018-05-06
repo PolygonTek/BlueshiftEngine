@@ -896,7 +896,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     return (Handle)handle;
 }
 
-void OpenGLRHI::DeleteShader(Handle shaderHandle) {
+void OpenGLRHI::DestroyShader(Handle shaderHandle) {
     if (currentContext->state->shaderHandle == shaderHandle) {
         BindShader(NullShader);
     }

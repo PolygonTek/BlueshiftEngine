@@ -35,7 +35,7 @@ RHI::Handle OpenGLRHI::CreateQuery() {
     return (Handle)handle;
 }
 
-void OpenGLRHI::DeleteQuery(Handle queryHandle) {
+void OpenGLRHI::DestroyQuery(Handle queryHandle) {
     GLQuery *query = queryList[queryHandle];
     gglDeleteQueries(1, &query->id);
 

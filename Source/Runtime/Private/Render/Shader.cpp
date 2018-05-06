@@ -77,7 +77,7 @@ const StrHashMap<PropertyInfo> &Shader::GetPropertyInfoHashMap() const {
 
 void Shader::Purge() {
     if (shaderHandle != RHI::NullShader) {
-        rhi.DeleteShader(shaderHandle);
+        rhi.DestroyShader(shaderHandle);
         shaderHandle = RHI::NullShader;
     }
 
@@ -1106,7 +1106,7 @@ bool Shader::Instantiate(const Array<Define> &defineArray) {
     }
 
     if (shaderHandle != RHI::NullShader) {
-        rhi.DeleteShader(shaderHandle);
+        rhi.DestroyShader(shaderHandle);
     }
 
     shaderHandle = rhi.CreateShader(hashName, processedVsText, processedFsText);

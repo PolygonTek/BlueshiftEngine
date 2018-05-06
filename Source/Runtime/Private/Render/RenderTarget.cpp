@@ -162,7 +162,7 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
 }
 
 void RenderTarget::Delete(RenderTarget *renderTarget) {
-    rhi.DeleteRenderTarget(renderTarget->rtHandle);
+    rhi.DestroyRenderTarget(renderTarget->rtHandle);
     rts.RemoveIndex(rts.FindIndex(renderTarget));
     delete renderTarget;
 }

@@ -68,7 +68,7 @@ RHI::Handle OpenGLRHI::CreateVertexFormat(int numElements, const VertexElement *
     return (Handle)handle;
 }
 
-void OpenGLRHI::DeleteVertexFormat(Handle vertexFormatHandle) {
+void OpenGLRHI::DestroyVertexFormat(Handle vertexFormatHandle) {
     if (currentContext->state->vertexFormatHandle == vertexFormatHandle) {
         SetVertexFormat(NullVertexFormat);
     }
