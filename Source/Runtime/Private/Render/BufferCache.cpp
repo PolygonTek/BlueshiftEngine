@@ -112,7 +112,7 @@ void BufferCacheManager::Shutdown() {
 
     for (int i = 0; i < COUNT_OF(frameData); i++) {
 #if PINNED_MEMORY
-        UnmapBufferSet(frameData[i]);
+        UnmapBufferSet(frameData[i], false);
 
         rhi.DestroySync(frameData[i].sync);
 #endif
@@ -132,8 +132,7 @@ void BufferCacheManager::Shutdown() {
 }
 
 void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
-#if PINNED_MEMORY
-    RHI::BufferLockMode lockMode = usePersistentMappedBuffers ? RHI::WriteOnlyPersistent : RHI::WriteOnlyUnsynchronized;
+    RHI::BufferLockMode lockMode = usePersistentMappedBuffers ? RHI::WriteOnlyPersistent : RHI::WriteOnlyExplicitFlush;
     
     if (!bufferSet.mappedVertexBase) {
         rhi.BindBuffer(RHI::VertexBuffer, bufferSet.vertexBuffer);
@@ -158,13 +157,14 @@ void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
         bufferSet.mappedTexelBase = rhi.MapBufferRange(bufferSet.texelBuffer, lockMode);
         rhi.BindBuffer(bufferSet.texelBufferType, RHI::NullBuffer);
     }
-#endif
 }
 
-void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet) {
-#if PINNED_MEMORY
+void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flush) {
     if (bufferSet.mappedVertexBase) {
         rhi.BindBuffer(RHI::VertexBuffer, bufferSet.vertexBuffer);
+        if (flush && bufferSet.vertexMemUsed.GetValue() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.vertexBuffer, 0, bufferSet.vertexMemUsed.GetValue());
+        }
         rhi.UnmapBuffer(bufferSet.vertexBuffer);
         rhi.BindBuffer(RHI::VertexBuffer, RHI::NullBuffer);
         bufferSet.mappedVertexBase = nullptr;
@@ -172,6 +172,9 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet) {
 
     if (bufferSet.mappedIndexBase) {
         rhi.BindBuffer(RHI::IndexBuffer, bufferSet.indexBuffer);
+        if (flush && bufferSet.indexMemUsed.GetValue() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.indexBuffer, 0, bufferSet.indexMemUsed.GetValue());
+        }
         rhi.UnmapBuffer(bufferSet.indexBuffer);
         rhi.BindBuffer(RHI::IndexBuffer, RHI::NullBuffer);
         bufferSet.mappedIndexBase = nullptr;
@@ -179,6 +182,9 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet) {
 
     if (bufferSet.mappedUniformBase) {
         rhi.BindBuffer(RHI::UniformBuffer, bufferSet.uniformBuffer);
+        if (flush && bufferSet.uniformMemUsed.GetValue() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.uniformBuffer, 0, bufferSet.uniformMemUsed.GetValue());
+        }
         rhi.UnmapBuffer(bufferSet.uniformBuffer);
         rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
         bufferSet.mappedUniformBase = nullptr;
@@ -186,11 +192,13 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet) {
 
     if (bufferSet.mappedTexelBase && bufferSet.texelBuffer) {
         rhi.BindBuffer(bufferSet.texelBufferType, bufferSet.texelBuffer);
+        if (flush && bufferSet.texelMemUsed.GetValue() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.texelBuffer, 0, bufferSet.texelMemUsed.GetValue());
+        }
         rhi.UnmapBuffer(bufferSet.texelBuffer);
         rhi.BindBuffer(bufferSet.texelBufferType, RHI::NullBuffer);
         bufferSet.mappedTexelBase = nullptr;
     }
-#endif
 }
 
 void BufferCacheManager::BeginWrite() {
@@ -235,7 +243,7 @@ void BufferCacheManager::BeginBackEnd() {
     if (!usePersistentMappedBuffers) {
         // Unmap the current frame so the GPU can read it
         const uint32_t startUnmap = PlatformTime::Milliseconds();
-        UnmapBufferSet(frameData[mappedNum]);
+        UnmapBufferSet(frameData[mappedNum], true);
         const uint32_t endUnmap = PlatformTime::Milliseconds();
         if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1) {
             BE_DLOG(L"BufferCacheManager::BeginBackEnd: unmap took %i msec\n", endUnmap - startUnmap);

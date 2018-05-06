@@ -152,6 +152,11 @@ void OpenGLRHI::BindIndexedBufferRange(BufferType type, int bindingIndex, Handle
     }
 }
 
+// GL_MAP_INVALIDATE_RANGE_BIT -- previous contents of the specified range may be discarded
+// GL_MAP_UNSYNCHRONIZED_BIT -- GL should not attempt to synchronize pending operations on the buffer prior to returning from glMapBufferRange
+// GL_MAP_FLUSH_EXPLICIT_BIT -- modifications to each subrange must be explicitly flushed (DMA) by calling glFlushMappedBufferRange()
+// GL_MAP_PERSISTENT_BIT -- keep mapping and that the client intends to hold and use the returned pointer during subsequent GL operation
+// GL_MAP_COHERENT_BIT -- persistent mapping is also to be coherent (automatically visible to GPU)
 void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset, int size) {
     GLBuffer *buffer = bufferList[bufferHandle];
     
@@ -167,25 +172,21 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, in
     case WriteOnly:
         access |= GL_MAP_WRITE_BIT;
         break;
-    case WriteOnlyUnsynchronized:
-        access |= (GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-        break;
     case WriteOnlyExplicitFlush:
-        access |= (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+        access |= (GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
         break;
     case WriteOnlyPersistent:
         access |= GL_MAP_WRITE_BIT;
 #ifdef GL_ARB_buffer_storage
         if (OpenGL::SupportsBufferStorage()) {
-            access |= (GL_MAP_PERSISTENT_BIT |  // keep mapped while using by GPU
-                GL_MAP_COHERENT_BIT);           // writes automatically visible to GPU
+            access |= GL_MAP_PERSISTENT_BIT;
 
             gglBufferStorage(buffer->target, size, 0, access);
         }
 #endif
         break;
     }
-    
+
     void *ptr = nullptr;
     if (offset > 0 || offset + size < buffer->size) {
         ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_INVALIDATE_RANGE_BIT);

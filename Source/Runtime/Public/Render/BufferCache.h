@@ -99,7 +99,7 @@ private:
     };
 
     void                    MapBufferSet(FrameDataBufferSet &bufferSet);
-    void                    UnmapBufferSet(FrameDataBufferSet &bufferSet);
+    void                    UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flush);
 
     FrameDataBufferSet      frameData[NumFrames];
     uint32_t                frameCount;
