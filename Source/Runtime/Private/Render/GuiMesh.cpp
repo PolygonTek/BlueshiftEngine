@@ -246,7 +246,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
     DrawQuad(localVerts, material);
 }
 
-int GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode) {
+float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode) {
     if (charCode == L' ') {
         return font->GetGlyphAdvance(charCode) * sx;
     }
@@ -280,8 +280,8 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::Te
     const wchar_t *textLines[MaxTextLines];
     int lineLen[MaxTextLines];
     int numLines = 0;
-    int lineWidth = 0;
-    int maxWidth = 0;
+    float lineWidth = 0;
+    float maxWidth = 0;
 
     textLines[0] = (const wchar_t *)text;
     
@@ -299,7 +299,7 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::Te
             }
             lineWidth = 0;
         } else {
-            int charWidth = font->GetGlyphAdvance(*ptr) * textScale;
+            float charWidth = font->GetGlyphAdvance(*ptr) * textScale;
             lineWidth += charWidth;
         }
 
@@ -309,16 +309,20 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::Te
     if (ptr - textLines[numLines] > 0) {
         lineLen[numLines] = (int)(ptr - textLines[numLines]);
         numLines++;
+
+        if (lineWidth > maxWidth) {
+            maxWidth = lineWidth;
+        }
     }
 
     // Calculate the coordinate y
-    int y = 0;
+    float y = 0;
     if (anchor == RenderObject::TextAnchor::LowerLeft || anchor == RenderObject::TextAnchor::LowerCenter || anchor == RenderObject::TextAnchor::LowerRight) {
-        int totalHeight = font->GetFontHeight() * textScale * numLines + lineSpacing * (numLines - 1);
+        float totalHeight = font->GetFontHeight() * textScale * numLines + lineSpacing * (numLines - 1);
 
         y = -totalHeight;
     } else if (anchor == RenderObject::TextAnchor::MiddleLeft || anchor == RenderObject::TextAnchor::MiddleCenter || anchor == RenderObject::TextAnchor::MiddleRight) {
-        int totalHeight = font->GetFontHeight() * textScale * numLines + lineSpacing * (numLines - 1);
+        float totalHeight = font->GetFontHeight() * textScale * numLines + lineSpacing * (numLines - 1);
 
         y = -totalHeight / 2;
     }
@@ -329,7 +333,7 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::Te
         ptr = textLines[lineIndex];
 
         // Calculate the coordinate x
-        int x = 0;
+        float x = 0;
         if (anchor == RenderObject::TextAnchor::UpperRight || anchor == RenderObject::TextAnchor::MiddleRight || anchor == RenderObject::TextAnchor::LowerRight) {
             x = -maxWidth;
         } else if (anchor == RenderObject::TextAnchor::UpperCenter || anchor == RenderObject::TextAnchor::MiddleCenter || anchor == RenderObject::TextAnchor::LowerCenter) {
@@ -356,8 +360,8 @@ AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor anchor, flo
     const wchar_t *textLines[MaxTextLines];
     int lineLen[MaxTextLines];
     int numLines = 0;
-    int lineWidth = 0;
-    int maxWidth = 0;
+    float lineWidth = 0;
+    float maxWidth = 0;
 
     textLines[0] = (const wchar_t *)text;
 
@@ -375,7 +379,7 @@ AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor anchor, flo
             }
             lineWidth = 0;
         } else {
-            int charWidth = font->GetGlyphAdvance(*ptr) * textScale;
+            float charWidth = font->GetGlyphAdvance(*ptr) * textScale;
             lineWidth += charWidth;
         }
 
@@ -391,7 +395,7 @@ AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor anchor, flo
         }
     }
 
-    int totalHeight = font->GetFontHeight() * textScale * numLines + lineSpacing * (numLines - 1);
+    float totalHeight = font->GetFontHeight() * textScale * numLines + lineSpacing * (numLines - 1);
 
     AABB bounds;
     bounds[0][0] = -CentiToUnit(0.1f);

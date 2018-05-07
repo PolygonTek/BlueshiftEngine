@@ -57,7 +57,7 @@ public:
 
     void                    DrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
     
-    int                     DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode);
+    float                   DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode);
 
     void                    Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text);
 

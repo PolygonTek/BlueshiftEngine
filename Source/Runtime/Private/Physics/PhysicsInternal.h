@@ -62,10 +62,10 @@ BE_INLINE btTransform ToBtTransform(const Mat3 &rotation, const Vec3 &translatio
 }
 
 template <typename T>
-BE_INLINE T SystemUnitToPhysicsUnit(T x) { return (x * 0.25); }
+BE_INLINE T SystemUnitToPhysicsUnit(T x) { return UnitToCenti(x) * 0.25f; }
 
 template <typename T>
-BE_INLINE T PhysicsUnitToSystemUnit(T x) { return (x * 4); }
+BE_INLINE T PhysicsUnitToSystemUnit(T x) { return x / SystemUnitToPhysicsUnit(1.0f); }
 
 class PhysDebugDraw : public btIDebugDraw {
 public:

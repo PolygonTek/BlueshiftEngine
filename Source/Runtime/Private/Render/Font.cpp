@@ -71,9 +71,9 @@ int Font::GetGlyphAdvance(int charCode) const {
     return 0;
 }
 
-int Font::StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak, bool allowColoredText, float xscale) const {
-    int maxWidth = 0;
-    int width = 0;
+float Font::StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak, bool allowColoredText, float xscale) const {
+    float maxWidth = 0;
+    float width = 0;
     wchar_t *ptr = (wchar_t *)text;
 
     while (*ptr && maxLen != 0) {

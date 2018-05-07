@@ -580,10 +580,12 @@ BE_FORCE_INLINE float ClampFloat(float min, float max, float value) {
     return value;
 }
 
-BE_FORCE_INLINE constexpr float UnitToCenti(float x) { return x * 1.0f; }
-BE_FORCE_INLINE constexpr float UnitToMeter(float x) { return UnitToCenti(x) * 0.01f; }
-BE_FORCE_INLINE constexpr float CentiToUnit(float x) { return x / UnitToCenti(1.0f); }
-BE_FORCE_INLINE constexpr float MeterToUnit(float x) { return CentiToUnit(x * 100.0f); }
+BE_FORCE_INLINE constexpr float UnitToMeter(float x) { return x * 0.01f; }
+BE_FORCE_INLINE constexpr float MeterToUnit(float x) { return x / UnitToMeter(1.0f); }
+BE_FORCE_INLINE constexpr float UnitToCenti(float x) { return UnitToMeter(x) * 100.0f; }
+BE_FORCE_INLINE constexpr float CentiToUnit(float x) { return MeterToUnit(x * 0.01f); }
+BE_FORCE_INLINE constexpr float UnitToKm(float x) { return UnitToMeter(x) * 0.001f; }
+BE_FORCE_INLINE constexpr float KmToUnit(float x) { return MeterToUnit(x * 1000.0f); }
 
 void BE_CDECL BE_API Log(int logLevel, const wchar_t *msg, ...);
 void BE_CDECL BE_API Error(int errLevel, const wchar_t *msg, ...);

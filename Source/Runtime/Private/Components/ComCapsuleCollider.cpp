@@ -96,7 +96,7 @@ void ComCapsuleCollider::DrawGizmos(const RenderView::State &viewState, bool sel
             Vec3 worldCenter = transform->GetMatrix() * center;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + 0.25f, 1.25f, true);
+            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + BE1::CentiToUnit(0.15f), 1.25f, true);
         }
     }
 }

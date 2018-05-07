@@ -62,7 +62,7 @@ void ComTextRenderer::Purge(bool chainPurge) {
 void ComTextRenderer::Init() {
     ComRenderable::Init();
 
-    renderObjectDef.textScale = 1.0f;
+    renderObjectDef.textScale = CentiToUnit(1.0f);
 
     UpdateAABB();
 

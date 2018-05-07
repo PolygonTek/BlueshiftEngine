@@ -60,7 +60,7 @@ public:
                             /// Returns a offset for a next character 
     int                     GetGlyphAdvance(int charCode) const;
 
-    int                     StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
+    float                   StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
 
     void                    Purge();
     bool                    Load(const char *filename);
