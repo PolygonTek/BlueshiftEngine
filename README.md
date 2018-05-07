@@ -15,6 +15,7 @@ Features
   * Cross-platform (Windows, macOS, iOS and Android)
   * OpenGL 3.2+, OpenGL ES 3.0 rendering
   * Skeletal (with hardware skinning) animation
+  * GPU instancing with skinned mesh
   * Parametric animation blending
   * Directional, spot, point lights
   * Shadow mapping (cascaded shadow map, omni directional shadow map, projected shadow map)
@@ -22,10 +23,11 @@ Features
   * Post-processing
   * PBR rendering
   * Physics using [Bullet](http://www.bulletphysics.org/)
+  * Vehicle physics
   * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
   * Audio static/streaming playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
   * TrueType font rendering using [FreeType](https://www.freetype.org/)
-  * Component based entity system
+  * Component based scene objects
   * Playable WYSIWYG editor using [Qt](https://www.qt.io/) with undo & redo capabilities
 
 Downloads
