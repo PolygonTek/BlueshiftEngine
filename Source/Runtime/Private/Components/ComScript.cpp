@@ -118,11 +118,13 @@ void ComScript::Deserialize(const Json::Value &in) {
 }
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {
+#if 1
     // Disconnect with previously connected script asset
     if (scriptAsset) {
         scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
         scriptAsset = nullptr;
     }
+#endif
 
     if (!sandboxName.IsEmpty()) {
         state->SetToNil(sandboxName.c_str());
@@ -183,6 +185,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         }
     }
 
+#if 1
     // Need to script asset to be reloaded in editor
     Object *scriptObject = ScriptAsset::FindInstance(scriptGuid);
     if (scriptObject) {
@@ -192,6 +195,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
             scriptAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::Queued);
         }
     }
+#endif
 }
 
 void ComScript::InitScriptFields() {

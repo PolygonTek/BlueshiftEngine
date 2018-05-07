@@ -76,11 +76,13 @@ void ComMeshRenderer::Init() {
 }
 
 void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
+#if 1
     // Disconnect with previously connected mesh asset
     if (meshAsset) {
         meshAsset->Disconnect(&Asset::SIG_Reloaded, this);
         meshAsset = nullptr;
     }
+#endif
 
     // Release the previously used instantiated mesh
     if (renderObjectDef.mesh) {
@@ -120,11 +122,13 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
         renderObjectDef.materials[i] = materialManager.GetMaterial("_defaultMaterial");
     }
 
+#if 1
     // Need mesh asset to be reloaded in editor
     meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
     if (meshAsset) {
         meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
     }
+#endif
 }
 
 void ComMeshRenderer::MeshReloaded() {

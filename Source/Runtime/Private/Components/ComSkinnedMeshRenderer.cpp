@@ -103,11 +103,13 @@ void ComSkinnedMeshRenderer::Init() {
 }
 
 void ComSkinnedMeshRenderer::ChangeSkeleton(const Guid &skeletonGuid) {
+#if 1
     // Disconnect with previously connected skeleton asset
     if (skeletonAsset) {
         skeletonAsset->Disconnect(&Asset::SIG_Reloaded, this);
         skeletonAsset = nullptr;
     }
+#endif
 
     if (skeleton) {
         skeletonManager.ReleaseSkeleton(skeleton);
@@ -148,11 +150,13 @@ void ComSkinnedMeshRenderer::ChangeSkeleton(const Guid &skeletonGuid) {
         //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
     }
 
+#if 1
     // Need to connect skeleton asset to be reloaded in Editor
     skeletonAsset = (SkeletonAsset *)SkeletonAsset::FindInstance(skeletonGuid);
     if (skeletonAsset) {
         skeletonAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::SkeletonReloaded, SignalObject::Queued);
     }
+#endif
 }
 
 void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
@@ -161,11 +165,13 @@ void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
         return;
     }
 
+#if 1
     // Disconnect with previously connected anim asset
     if (animAsset) {
         animAsset->Disconnect(&Asset::SIG_Reloaded, this);
         animAsset = nullptr;
     }
+#endif
 
     // Release the previously used anim
     if (anim) {
@@ -193,11 +199,13 @@ void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
         }
     }
    
+#if 1
     // Need to connect anim asset to be reloaded in Editor
     animAsset = (AnimAsset *)AnimAsset::FindInstance(animGuid);
     if (animAsset) {
         animAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::AnimReloaded, SignalObject::Queued);
     }
+#endif
 }
 
 void ComSkinnedMeshRenderer::Update() { 

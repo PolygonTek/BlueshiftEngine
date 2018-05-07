@@ -122,11 +122,13 @@ void ComParticleSystem::Init() {
 }
 
 void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
+#if 1
     // Disconnect with previously connected particleSystem asset
     if (particleSystemAsset) {
         particleSystemAsset->Disconnect(&Asset::SIG_Reloaded, this);
         particleSystemAsset = nullptr;
     }
+#endif
 
     // Release the previously used particleSystem
     if (renderObjectDef.particleSystem) {
@@ -140,11 +142,13 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
 
     ResetParticles();
 
+#if 1
     // Need to particleSystem asset to be reloaded in editor
     particleSystemAsset = (ParticleSystemAsset *)ParticleSystemAsset::FindInstance(particleSystemGuid);
     if (particleSystemAsset) {
         particleSystemAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::Queued);
     }
+#endif
 }
 
 void ComParticleSystem::ResetParticles() {
