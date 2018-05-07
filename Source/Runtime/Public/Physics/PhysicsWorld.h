@@ -20,10 +20,11 @@ class btTransform;
 class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
 class btBroadphaseInterface;
-class btSequentialImpulseConstraintSolver;
+class btConstraintSolver;
+class btSoftBodySolver;
 class btGhostPairCallback;
 struct btOverlapFilterCallback;
-class btDiscreteDynamicsWorld;
+class btDynamicsWorld;
 
 #include "Core/SignalObject.h"
 #include "Containers/HashTable.h"
@@ -166,10 +167,11 @@ private:
     btDefaultCollisionConfiguration *collisionConfiguration;
     btCollisionDispatcher *  collisionDispatcher;
     btBroadphaseInterface *  broadphase;
-    btSequentialImpulseConstraintSolver *solver;
-    btGhostPairCallback *    ghostPairCallback;
+    btConstraintSolver *    constraintSolver;
+    btSoftBodySolver *      softBodySolver;
+    btGhostPairCallback *   ghostPairCallback;
     btOverlapFilterCallback *filterCallback;
-    btDiscreteDynamicsWorld *dynamicsWorld;
+    btDynamicsWorld *       dynamicsWorld;
 };
 
 BE_NAMESPACE_END

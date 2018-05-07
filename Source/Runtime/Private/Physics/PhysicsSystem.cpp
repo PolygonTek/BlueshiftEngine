@@ -338,7 +338,7 @@ void PhysicsSystem::CheckModifiedCVars() {
         physics_showWireframe.ClearModified();
 
         for (int i = 0; i < physicsWorlds.Count(); i++) {
-            btDiscreteDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
+            btDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
 
             int debugMode = dynamicsWorld->getDebugDrawer()->getDebugMode();
             if (physics_showWireframe.GetBool()) {
@@ -355,7 +355,7 @@ void PhysicsSystem::CheckModifiedCVars() {
         physics_showAABB.ClearModified();
 
          for (int i = 0; i < physicsWorlds.Count(); i++) {
-            btDiscreteDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
+             btDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
 
             int debugMode = dynamicsWorld->getDebugDrawer()->getDebugMode();
             if (physics_showAABB.GetBool()) {
@@ -372,7 +372,7 @@ void PhysicsSystem::CheckModifiedCVars() {
         physics_showContactPoints.ClearModified();
 
          for (int i = 0; i < physicsWorlds.Count(); i++) {
-            btDiscreteDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
+             btDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
 
             int debugMode = dynamicsWorld->getDebugDrawer()->getDebugMode();
             if (physics_showContactPoints.GetBool()) {
@@ -389,7 +389,7 @@ void PhysicsSystem::CheckModifiedCVars() {
         physics_showNormals.ClearModified();
 
          for (int i = 0; i < physicsWorlds.Count(); i++) {
-            btDiscreteDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
+             btDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
 
             int debugMode = dynamicsWorld->getDebugDrawer()->getDebugMode();
             if (physics_showNormals.GetBool()) {
@@ -406,7 +406,7 @@ void PhysicsSystem::CheckModifiedCVars() {
         physics_showConstraints.ClearModified();
 
          for (int i = 0; i < physicsWorlds.Count(); i++) {
-            btDiscreteDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
+             btDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
 
             int debugMode = dynamicsWorld->getDebugDrawer()->getDebugMode();
             if (physics_showConstraints.GetBool()) {
@@ -423,7 +423,7 @@ void PhysicsSystem::CheckModifiedCVars() {
         physics_noDeactivation.ClearModified();
 
          for (int i = 0; i < physicsWorlds.Count(); i++) {
-            btDiscreteDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
+            btDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
 
             int debugMode = dynamicsWorld->getDebugDrawer()->getDebugMode();
             if (physics_noDeactivation.GetBool()) {
@@ -440,7 +440,7 @@ void PhysicsSystem::CheckModifiedCVars() {
         physics_enableCCD.ClearModified();
 
          for (int i = 0; i < physicsWorlds.Count(); i++) {
-            btDiscreteDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
+             btDynamicsWorld *dynamicsWorld = physicsWorlds[i]->dynamicsWorld;
 
             int debugMode = dynamicsWorld->getDebugDrawer()->getDebugMode();
             if (physics_enableCCD.GetBool()) {

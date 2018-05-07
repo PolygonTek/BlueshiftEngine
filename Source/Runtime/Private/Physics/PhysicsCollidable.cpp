@@ -209,6 +209,11 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
         physicsWorld->dynamicsWorld->addRigidBody(rigidBody, filterGroup, filterMask);
         break; 
     }
+    case Type::SoftBody: {
+        btSoftBody *softBody = static_cast<btSoftBody *>(collisionObject);
+        ((btSoftRigidDynamicsWorld *)physicsWorld->dynamicsWorld)->addSoftBody(softBody);
+        break;
+    }
     case Type::Sensor:
         physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::SensorTrigger, 
             btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter /* FIXME: remove? */ | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter);
@@ -230,6 +235,9 @@ void PhysCollidable::RemoveFromWorld() {
     switch (type) {
     case Type::RigidBody:
         physicsWorld->dynamicsWorld->removeRigidBody(static_cast<btRigidBody *>(collisionObject));
+        break;
+    case Type::SoftBody:
+        ((btSoftRigidDynamicsWorld *)physicsWorld->dynamicsWorld)->removeSoftBody(static_cast<btSoftBody *>(collisionObject));
         break;
     case Type::Sensor:
         physicsWorld->dynamicsWorld->removeCollisionObject(collisionObject);

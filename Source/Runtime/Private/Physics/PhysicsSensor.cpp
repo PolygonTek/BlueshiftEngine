@@ -44,7 +44,7 @@ void PhysSensor::GetContacts(Array<Contact> &contacts) {
     btVector3 minAabb, maxAabb;
     shape->getAabb(ghostObject->getWorldTransform(), minAabb, maxAabb);
 
-    btDiscreteDynamicsWorld *dynamicsWorld = physicsWorld->dynamicsWorld;
+    btDynamicsWorld *dynamicsWorld = physicsWorld->dynamicsWorld;
     dynamicsWorld->getBroadphase()->setAabb(ghostObject->getBroadphaseHandle(), minAabb, maxAabb, dynamicsWorld->getDispatcher());
     dynamicsWorld->getDispatcher()->dispatchAllCollisionPairs(overlappingPairCache, dynamicsWorld->getDispatchInfo(), dynamicsWorld->getDispatcher());
     
@@ -104,7 +104,7 @@ void PhysSensor::GetOverlaps(Array<PhysCollidable *> &collidables) {
     btVector3 minAabb, maxAabb;
     shape->getAabb(ghostObject->getWorldTransform(), minAabb, maxAabb);
 
-    btDiscreteDynamicsWorld *dynamicsWorld = physicsWorld->dynamicsWorld;
+    btDynamicsWorld *dynamicsWorld = physicsWorld->dynamicsWorld;
     dynamicsWorld->getBroadphase()->setAabb(ghostObject->getBroadphaseHandle(), minAabb, maxAabb, dynamicsWorld->getDispatcher());
     dynamicsWorld->getDispatcher()->dispatchAllCollisionPairs(overlappingPairCache, dynamicsWorld->getDispatchInfo(), dynamicsWorld->getDispatcher());
 

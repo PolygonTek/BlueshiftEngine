@@ -63,6 +63,8 @@ public:
 PhysicsWorld::PhysicsWorld() {
     // collision configuration contains default setup for memory, collision setup
     collisionConfiguration = new btDefaultCollisionConfiguration();
+    //collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();
+
     //collisionConfiguration->setConvexConvexMultipointIterations();
 
     // use the default collision dispatcher. For parallel processing you can use a different dispatcher (see Extras/BulletMultiThreaded)
@@ -82,9 +84,15 @@ PhysicsWorld::PhysicsWorld() {
 
     // the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
     solverType = SequentialImpulseSolver;
-    solver = new btSequentialImpulseConstraintSolver;
-    dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, solver, collisionConfiguration);
-    //dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; // for direct solver it is better to have a small A matrix 
+    constraintSolver = new btSequentialImpulseConstraintSolver;
+    dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver, collisionConfiguration);
+
+    softBodySolver = nullptr;
+    //softBodySolver = new btDefaultSoftBodySolver;
+    //dynamicsWorld = new btSoftRigidDynamicsWorld(collisionDispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
+
+    // for direct solver it is better to have a small A matrix 
+    //dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; 
     
     // the polyhedral contact clipping can use either GJK or SAT test to find the separating axis
     //dynamicsWorld->getDispatchInfo().m_enableSatConvex = false;
@@ -129,7 +137,8 @@ PhysicsWorld::~PhysicsWorld() {
     SAFE_DELETE(collisionConfiguration);
     SAFE_DELETE(collisionDispatcher);
     SAFE_DELETE(broadphase);
-    SAFE_DELETE(solver);
+    SAFE_DELETE(constraintSolver);
+    SAFE_DELETE(softBodySolver);
     SAFE_DELETE(dynamicsWorld);
     SAFE_DELETE(ghostPairCallback);
     SAFE_DELETE(filterCallback);
@@ -173,16 +182,16 @@ void PhysicsWorld::SetConstraintSolver(ConstraintSolver solverType) {
     // NOTE: rolling friction is not working with MLCP solver ! (bullet bug)
     switch (solverType) {
     case SequentialImpulseSolver:
-        solver = new btSequentialImpulseConstraintSolver;
+        constraintSolver = new btSequentialImpulseConstraintSolver;
         break;
     case NNCGSolver:
-        solver = new btNNCGConstraintSolver;
+        constraintSolver = new btNNCGConstraintSolver;
         break;
     case ProjectedGaussSeidelSolver:
-        solver = new btMLCPSolver(new btSolveProjectedGaussSeidel);
+        constraintSolver = new btMLCPSolver(new btSolveProjectedGaussSeidel);
         break;
     case DantzigSolver:
-        solver = new btMLCPSolver(new btDantzigSolver());
+        constraintSolver = new btMLCPSolver(new btDantzigSolver());
         break;
     default:
         assert(0);
@@ -191,7 +200,7 @@ void PhysicsWorld::SetConstraintSolver(ConstraintSolver solverType) {
 
     this->solverType = solverType;
 
-    dynamicsWorld->setConstraintSolver(solver);
+    dynamicsWorld->setConstraintSolver(constraintSolver);
 
     // for direct solver it is better to have a small A matrix 
     //dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 128;
