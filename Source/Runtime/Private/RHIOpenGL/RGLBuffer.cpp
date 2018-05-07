@@ -152,6 +152,7 @@ void OpenGLRHI::BindIndexedBufferRange(BufferType type, int bindingIndex, Handle
     }
 }
 
+// https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glMapBufferRange.xhtml
 // GL_MAP_INVALIDATE_RANGE_BIT -- previous contents of the specified range may be discarded
 // GL_MAP_UNSYNCHRONIZED_BIT -- GL should not attempt to synchronize pending operations on the buffer prior to returning from glMapBufferRange
 // GL_MAP_FLUSH_EXPLICIT_BIT -- modifications to each subrange must be explicitly flushed (DMA) by calling glFlushMappedBufferRange()

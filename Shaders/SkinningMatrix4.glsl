@@ -13,8 +13,7 @@ in vec4 in_weightValue : WEIGHT_VALUE;
 		uniform VTF_SKINNING_TC_TYPE skinningBaseTc;
 	#endif
 
-	uniform int jointIndexOffsetCurr;
-	uniform int jointIndexOffsetPrev;
+	uniform ivec2 jointIndexOffset;
 #else
     uniform vec4 joints[MAX_SHADER_JOINTSX3];   // 4x3 matrix
 #endif

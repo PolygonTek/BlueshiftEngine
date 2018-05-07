@@ -52,13 +52,26 @@ static const char *builtInConstantNames[] = {
     "lightTextureMatrix",                   // LightTextureMatrixConst
     "lightColor",                           // LightColorConst
     "lightFallOffMatrix",                   // LightFallOffMatrixConst
-    "lightFallOffExponent"                  // LightFallOffExponentConst
+    "lightFallOffExponent",                 // LightFallOffExponentConst
+    "joints",                               // JointsConst
+    "invJointsMapSize",                     // InvJointsMapSizeConst
+    "skinningBaseTc",                       // SkinningBaseTcConst
+    "jointIndexOffset",                     // JointIndexOffsetConst
+    "shadowProjMatrix",                     // ShadowProjMatrixConst
+    "shadowCascadeProjMatrix",              // ShadowCascadeProjMatrixConst
+    "shadowSplitFar",                       // ShadowSplitFarConst
 };
 
 // NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함
 static const char *builtInSamplerNames[] = {
-    "albedoMap",
-    "normalMap"
+    "cubicNormalCubeMap",                   // CubicNormalCubeMapSampler
+    "indirectionCubeMap",                   // IndirectionCubeMapSampler
+    "albedoMap",                            // AlbedoMapSampler
+    "normalMap",                            // NormalMapSampler
+    "jointsMap",                            // JointsMapSampler
+    "lightProjectionMap",                   // LightProjectionMapSampler
+    "shadowMap",                            // ShadowMapSampler
+    "shadowArrayMap",                       // ShadowArrayMapSampler
 };
 
 int Shader::GetFlags() const {

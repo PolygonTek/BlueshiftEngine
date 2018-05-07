@@ -2,7 +2,7 @@ void skinningMatrix(vec4 position, out vec4 transformedPosition) {
 	vec4 R0, R1, R2;
 	
 #ifdef OBJECT_MOTION_BLUR
-	accumulateJointMatrices(R0, R1, R2, jointIndexOffsetCurr);
+	accumulateJointMatrices(R0, R1, R2, jointIndexOffset[0]);
 #else
 	accumulateJointMatrices(R0, R1, R2, 0);
 #endif
@@ -18,7 +18,7 @@ void skinningMatrix(vec4 position, out vec4 transformedPosition, vec3 normal, ou
  	vec4 R0, R1, R2;
 
 #ifdef OBJECT_MOTION_BLUR
-	accumulateJointMatrices(R0, R1, R2, jointIndexOffsetCurr);
+	accumulateJointMatrices(R0, R1, R2, jointIndexOffset[0]);
 #else
 	accumulateJointMatrices(R0, R1, R2, 0);
 #endif
@@ -40,7 +40,7 @@ void skinningMatrix(vec4 position, out vec4 transformedPosition, vec3 normal, ou
 	vec4 R0, R1, R2;
 
 #ifdef OBJECT_MOTION_BLUR
-	accumulateJointMatrices(R0, R1, R2, jointIndexOffsetCurr);
+	accumulateJointMatrices(R0, R1, R2, jointIndexOffset[0]);
 #else
 	accumulateJointMatrices(R0, R1, R2, 0);
 #endif
@@ -70,7 +70,7 @@ void skinningPrevMatrix(vec4 position, out vec4 transformedPosition) {
 	vec4 R0, R1, R2;
 
 #ifdef OBJECT_MOTION_BLUR
-	accumulateJointMatrices(R0, R1, R2, jointIndexOffsetPrev);
+	accumulateJointMatrices(R0, R1, R2, jointIndexOffset[1]);
 #else
 	accumulateJointMatrices(R0, R1, R2, 0);
 #endif

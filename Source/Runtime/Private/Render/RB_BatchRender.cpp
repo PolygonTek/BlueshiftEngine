@@ -187,27 +187,26 @@ void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache 
     }
 
     if (renderGlobal.skinningMethod == Mesh::VertexShaderSkinning) {
-        shader->SetConstantArray4f("joints", cache->numJoints * 3, cache->skinningJoints[0].Ptr());
+        shader->SetConstantArray4f(shader->builtInConstantIndices[Shader::JointsConst], cache->numJoints * 3, cache->skinningJoints[0].Ptr());
     } else if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
         const Texture *jointsMapTexture = cache->bufferCache.texture;
 
-        shader->SetTexture("jointsMap", jointsMapTexture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::JointsMapSampler], jointsMapTexture);
 
         if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
             if (numInstances == 0) {
-                shader->SetConstant1i("skinningBaseTc", cache->bufferCache.tcBase[0]);
+                shader->SetConstant1i(shader->builtInConstantIndices[Shader::SkinningBaseTcConst], cache->bufferCache.tcBase[0]);
             }
         } else {
-            shader->SetConstant2f("invJointsMapSize", Vec2(1.0f / jointsMapTexture->GetWidth(), 1.0f / jointsMapTexture->GetHeight()));
+            shader->SetConstant2f(shader->builtInConstantIndices[Shader::InvJointsMapSizeConst], Vec2(1.0f / jointsMapTexture->GetWidth(), 1.0f / jointsMapTexture->GetHeight()));
 
             if (numInstances == 0) {
-                shader->SetConstant2f("skinningBaseTc", Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
+                shader->SetConstant2f(shader->builtInConstantIndices[Shader::SkinningBaseTcConst], Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
             }
         }
 
         if (r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
-            shader->SetConstant1i("jointIndexOffsetCurr", cache->jointIndexOffsetCurr);
-            shader->SetConstant1i("jointIndexOffsetPrev", cache->jointIndexOffsetPrev);
+            shader->SetConstant2i(shader->builtInConstantIndices[Shader::JointIndexOffsetConst], cache->jointIndexOffset);
         }
     }
 }
@@ -777,14 +776,14 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
             shader->SetConstant2f("shadowProjectionDepth", backEnd.shadowProjectionDepth);
             shader->SetConstant1f("vscmBiasedScale", backEnd.ctx->vscmBiasedScale);
 
-            shader->SetTexture("cubicNormalCubeMap", textureManager.cubicNormalCubeMapTexture);
-            shader->SetTexture("indirectionCubeMap", backEnd.ctx->indirectionCubeMapTexture);
-            shader->SetTexture("shadowMap", backEnd.ctx->vscmRT->DepthStencilTexture());
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::CubicNormalCubeMapSampler], textureManager.cubicNormalCubeMapTexture);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::IndirectionCubeMapSampler], backEnd.ctx->indirectionCubeMapTexture);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::ShadowMapSampler], backEnd.ctx->vscmRT->DepthStencilTexture());
         } else if (surfLight->def->state.type == RenderLight::SpotLight) {
-            shader->SetConstant4x4f("shadowProjMatrix", true, backEnd.shadowViewProjectionScaleBiasMatrix[0]);
-            shader->SetTexture("shadowArrayMap", backEnd.ctx->shadowMapRT->DepthStencilTexture());
+            shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ShadowProjMatrixConst], true, backEnd.shadowViewProjectionScaleBiasMatrix[0]);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::ShadowArrayMapSampler], backEnd.ctx->shadowMapRT->DepthStencilTexture());
         } else if (surfLight->def->state.type == RenderLight::DirectionalLight) {
-            shader->SetConstantArray4x4f("shadowCascadeProjMatrix", true, r_CSM_count.GetInteger(), backEnd.shadowViewProjectionScaleBiasMatrix);
+            shader->SetConstantArray4x4f(shader->builtInConstantIndices[Shader::ShadowCascadeProjMatrixConst], true, r_CSM_count.GetInteger(), backEnd.shadowViewProjectionScaleBiasMatrix);
 
             if (r_CSM_selectionMethod.GetInteger() == 0) {
                 // z-based selection shader needs shadowSplitFar value
@@ -794,11 +793,11 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
                     sFar[cascadeIndex] = (backEnd.projMatrix[2][2] * -dFar + backEnd.projMatrix[2][3]) / dFar;
                     sFar[cascadeIndex] = sFar[cascadeIndex] * 0.5f + 0.5f;
                 }
-                shader->SetConstant4f("shadowSplitFar", sFar);
+                shader->SetConstant4f(shader->builtInConstantIndices[Shader::ShadowSplitFarConst], sFar);
             }
             shader->SetConstant1f("cascadeBlendSize", r_CSM_blendSize.GetFloat());
             shader->SetConstantArray1f("shadowMapFilterSize", r_CSM_count.GetInteger(), backEnd.shadowMapFilterSize);
-            shader->SetTexture("shadowArrayMap", backEnd.ctx->shadowMapRT->DepthStencilTexture());
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::ShadowArrayMapSampler], backEnd.ctx->shadowMapRT->DepthStencilTexture());
         }
 
         if (r_shadowMapQuality.GetInteger() == 3) {
@@ -831,7 +830,7 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
 
     const Material *lightMaterial = surfLight->def->GetMaterial();
 
-    shader->SetTexture("lightProjectionMap", lightMaterial->GetPass()->texture);
+    shader->SetTexture(shader->builtInSamplerUnits[Shader::LightProjectionMapSampler], lightMaterial->GetPass()->texture);
 
     Color4 lightColor = surfLight->lightColor * surfLight->def->state.intensity * r_lightScale.GetFloat();
     shader->SetConstant4f(shader->builtInConstantIndices[Shader::LightColorConst], lightColor);

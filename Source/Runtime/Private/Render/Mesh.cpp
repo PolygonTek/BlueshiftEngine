@@ -123,8 +123,8 @@ void Mesh::Instantiate(int meshType) {
                 }
                 skinningJointCache->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * skinningJointCache->numJoints);
 
-                skinningJointCache->jointIndexOffsetCurr = 0;
-                skinningJointCache->jointIndexOffsetPrev = 0;
+                skinningJointCache->jointIndexOffset[0] = 0;
+                skinningJointCache->jointIndexOffset[1] = 0;
             } else {
                 skinningJointCache->numJoints = numJoints;
                 skinningJointCache->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * skinningJointCache->numJoints);
@@ -353,15 +353,15 @@ void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *join
 
     if (r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
         if (skinningJointCache->viewFrameCount == renderSystem.GetCurrentRenderContext()->frameCount) {
-            skinningJointCache->jointIndexOffsetPrev = skinningJointCache->jointIndexOffsetCurr;
-            skinningJointCache->jointIndexOffsetCurr = skinningJointCache->jointIndexOffsetCurr == 0 ? numJoints : 0;
+            skinningJointCache->jointIndexOffset[1] = skinningJointCache->jointIndexOffset[0];
+            skinningJointCache->jointIndexOffset[0] = skinningJointCache->jointIndexOffset[0] == 0 ? numJoints : 0;
         }
     } else {
-        skinningJointCache->jointIndexOffsetPrev = 0;
-        skinningJointCache->jointIndexOffsetCurr = 0;
+        skinningJointCache->jointIndexOffset[1] = 0;
+        skinningJointCache->jointIndexOffset[0] = 0;
     }
 
-    simdProcessor->MultiplyJoints(skinningJointCache->skinningJoints + skinningJointCache->jointIndexOffsetCurr, jointMats, skeleton->GetInvBindPoseMatrices(), numJoints);
+    simdProcessor->MultiplyJoints(skinningJointCache->skinningJoints + skinningJointCache->jointIndexOffset[0], jointMats, skeleton->GetInvBindPoseMatrices(), numJoints);
 
     if (renderGlobal.skinningMethod == VertexTextureFetchSkinning) {
         bufferCacheManager.AllocTexel(skinningJointCache->numJoints * sizeof(Mat3x4), skinningJointCache->skinningJoints, &skinningJointCache->bufferCache);

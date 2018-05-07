@@ -82,12 +82,25 @@ public:
         LightColorConst,
         LightFallOffMatrixConst,
         LightFallOffExponentConst,
+        JointsConst,
+        InvJointsMapSizeConst,
+        SkinningBaseTcConst,
+        JointIndexOffsetConst,
+        ShadowProjMatrixConst,
+        ShadowCascadeProjMatrixConst,
+        ShadowSplitFarConst,
         MaxBuiltInConstants
     };
 
     enum BuiltInSampler {
+        CubicNormalCubeMapSampler,
+        IndirectionCubeMapSampler,
         AlbedoMapSampler,
         NormalMapSampler,
+        JointsMapSampler,
+        LightProjectionMapSampler,
+        ShadowMapSampler,
+        ShadowArrayMapSampler,
         MaxBuiltInSamplers
     };
 
