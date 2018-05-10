@@ -119,7 +119,7 @@
 #include "Input/InputSystem.h"
 
 // Script
-#include "Script/LuaVM.h"
+#include "Scripting/LuaVM.h"
 
 // Render
 #include "Render/Render.h"

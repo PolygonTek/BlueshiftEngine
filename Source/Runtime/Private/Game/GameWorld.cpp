@@ -27,7 +27,7 @@
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 #include "Game/GameSettings.h"
-#include "Script/LuaVM.h"
+#include "Scripting/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
 

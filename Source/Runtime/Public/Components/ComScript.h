@@ -16,7 +16,7 @@
 
 #include "Containers/HashMap.h"
 #include "ComLogic.h"
-#include "Script/LuaVM.h"
+#include "Scripting/LuaVM.h"
 
 BE_NAMESPACE_BEGIN
 
