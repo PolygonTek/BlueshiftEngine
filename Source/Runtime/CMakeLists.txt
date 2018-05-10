@@ -773,6 +773,8 @@ elseif (WIN32)
         list(APPEND RENDERER_FILES
             Private/RHIOpenGL/OpenGL/OpenGL3.h
             Private/RHIOpenGL/OpenGL/OpenGL3.cpp
+            Private/RHIOpenGL/OpenGL/OpenGL4.h
+            Private/RHIOpenGL/OpenGL/OpenGL4.cpp
             Private/RHIOpenGL/OpenGL/WinOpenGL.h
             Private/RHIOpenGL/RGLPlatformWin.cpp)
     endif ()
