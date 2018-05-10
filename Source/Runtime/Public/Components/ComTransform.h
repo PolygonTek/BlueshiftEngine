@@ -18,8 +18,6 @@
 
 BE_NAMESPACE_BEGIN
 
-class PhysRigidBody;
-
 class ComTransform : public Component {
     friend class Entity;
 

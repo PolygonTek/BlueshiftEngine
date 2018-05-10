@@ -20,11 +20,8 @@
 BE_NAMESPACE_BEGIN
 
 class Mesh;
-class RenderContext;
 class RenderWorld;
 class ComTransform;
-class ComRigidBody;
-class PhysRigidBody;
 
 class ComCamera : public Component {
     friend class GameWorld;

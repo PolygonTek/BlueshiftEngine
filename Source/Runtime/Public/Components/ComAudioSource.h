@@ -19,7 +19,6 @@
 BE_NAMESPACE_BEGIN
 
 class ComTransform;
-class PhysRigidBody;
 class Sound;
 
 class ComAudioSource : public Component {

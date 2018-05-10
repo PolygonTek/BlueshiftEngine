@@ -22,7 +22,6 @@ BE_NAMESPACE_BEGIN
 
 class LuaVM;
 class ComTransform;
-class PhysCollidable;
 class PhysRigidBody;
 class PhysSensor;
 

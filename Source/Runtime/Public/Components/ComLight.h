@@ -20,7 +20,6 @@
 
 BE_NAMESPACE_BEGIN
 
-class PhysRigidBody;
 class RenderWorld;
 class ComTransform;
 
