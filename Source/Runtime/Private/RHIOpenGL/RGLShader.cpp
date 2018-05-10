@@ -418,7 +418,15 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
         headerText += "#define GPU_SHADER 3\n";
     }
 #endif
-    
+
+#ifdef GL_ARB_explicit_attrib_location
+    if (OpenGL::GLSL_VERSION < 330) {
+        if (gglext._GL_ARB_explicit_attrib_location) {
+            headerText += "#extension GL_ARB_explicit_attrib_location : enable\n";
+        }
+    }
+#endif
+
 #ifdef GL_ARB_shader_texture_lod
     if (gglext._GL_ARB_shader_texture_lod) {
         headerText += "#extension GL_ARB_shader_texture_lod : enable\n";
