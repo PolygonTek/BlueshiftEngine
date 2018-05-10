@@ -51,11 +51,13 @@ ComMeshRenderer::~ComMeshRenderer() {
 }
 
 void ComMeshRenderer::Purge(bool chainPurge) {
+    // Release instantiated mesh
     if (renderObjectDef.mesh) {
         meshManager.ReleaseMesh(renderObjectDef.mesh);
         renderObjectDef.mesh = nullptr;
     }
 
+    // Release reference mesh
     if (referenceMesh) {
         meshManager.ReleaseMesh(referenceMesh);
         referenceMesh = nullptr;
@@ -118,6 +120,7 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     // Resize material slots
     renderObjectDef.materials.SetCount(numMaterials);
 
+    // Set default materials to material slots
     for (int i = oldCount; i < renderObjectDef.materials.Count(); i++) {
         renderObjectDef.materials[i] = materialManager.GetMaterial("_defaultMaterial");
     }
@@ -160,6 +163,7 @@ void ComMeshRenderer::SetMaterialCount(int count) {
 
     renderObjectDef.materials.SetCount(count);
 
+    // Set default materials to appended material slots
     if (count > oldCount) {
         for (int index = oldCount; index < count; index++) {
             renderObjectDef.materials[index] = materialManager.GetMaterial("_defaultMaterial");
@@ -253,8 +257,8 @@ bool ComMeshRenderer::GetClosestVertex(const RenderView *view, const Point &mous
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    for (int surfaceIndex = 0; surfaceIndex < renderObjectDef.mesh->NumSurfaces(); surfaceIndex++) {
-        const SubMesh *subMesh = renderObjectDef.mesh->GetSurface(surfaceIndex)->subMesh;
+    for (int surfaceIndex = 0; surfaceIndex < referenceMesh->NumSurfaces(); surfaceIndex++) {
+        const SubMesh *subMesh = referenceMesh->GetSurface(surfaceIndex)->subMesh;
         const VertexGenericLit *v = subMesh->Verts();
 
         for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++, v++) {
