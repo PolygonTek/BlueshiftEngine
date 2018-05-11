@@ -13,14 +13,13 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "File/FileSystem.h"
+#include "Asset/Asset.h"
+#include "Asset/GuidMapper.h"
 #include "Components/ComScript.h"
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Game/GameWorld.h"
-#include "Asset/Asset.h"
-#include "Asset/GuidMapper.h"
-#include "File/FileSystem.h"
-#include "Core/CVars.h"
 
 BE_NAMESPACE_BEGIN
 

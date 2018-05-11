@@ -135,7 +135,7 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
 }
 
 void ComMeshRenderer::MeshReloaded() {
-    ChangeMesh(GetProperty("mesh").As<Guid>());
+    ChangeMesh(GetMeshGuid());
 
     MeshUpdated();
 }

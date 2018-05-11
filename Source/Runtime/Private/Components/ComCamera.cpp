@@ -34,9 +34,9 @@ void ComCamera::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, 
         "", PropertyInfo::EditorFlag).SetEnumString("Perspective;Orthographic");
     REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 10.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(1, 20000, 10);
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1), MeterToUnit(100), CentiToUnit(10));
     REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 8192.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(1, 20000, 10);
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1), MeterToUnit(1000), CentiToUnit(10));
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
         "", PropertyInfo::EditorFlag).SetRange(1, 179, 1);
     REGISTER_PROPERTY("size", "Size", float, size, 1000.f, 
@@ -49,15 +49,15 @@ void ComCamera::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("h", "Viewport Rect/H", float, nh, 1.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)), 
-        "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", RenderView::ClearMethod, GetClearMethod, SetClearMethod, 1, 
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear/Clear Method", RenderView::ClearMethod, GetClearMethod, SetClearMethod, 1, 
         "", PropertyInfo::EditorFlag).SetEnumString("No Clear;Depth Only;Color;Skybox");
-    REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3::black, 
+    REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear/Color", Color3, GetClearColor, SetClearColor, Color3::black, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear/Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("order", "Order", int, order, 0, 
+    REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)),
+        "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("order", "Order", int, order, 0,
         "", PropertyInfo::EditorFlag);
 }
 

@@ -32,11 +32,11 @@ void ComCharacterController::RegisterProperties() {
     REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.1f);
     REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, MeterToUnit(0.5f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(MeterToUnit(0.01f), MeterToUnit(0.5f), MeterToUnit(0.01f));
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1), MeterToUnit(0.5f), CentiToUnit(1));
     REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, MeterToUnit(0.8f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(MeterToUnit(0.01f), MeterToUnit(0.5f), MeterToUnit(0.01f));
-    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, MeterToUnit(0.4f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0, MeterToUnit(0.1f), MeterToUnit(0.01f));
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1), MeterToUnit(0.5f), CentiToUnit(1));
+    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, CentiToUnit(40),
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0, CentiToUnit(10), CentiToUnit(1));
     REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 90, 1);
 }
