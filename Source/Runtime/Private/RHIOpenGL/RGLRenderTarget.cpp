@@ -50,8 +50,8 @@ static bool CheckFBOStatus() {
         BE_WARNLOG(L"FBO has invalid read buffer\n");
         return false;
 #endif
-#ifdef GL_EXT_geometry_shader
-    case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT:
+#ifdef GL_VERSION_3_2
+    case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
         BE_WARNLOG(L"FBO missing layer target\n");
         return false;
 #endif

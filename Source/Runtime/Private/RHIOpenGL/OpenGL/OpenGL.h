@@ -297,7 +297,7 @@ public:
     static bool             SupportsTextureCompressionETC2() { return supportsTextureCompressionETC2; }
     static bool             SupportsTextureCompressionATC() { return supportsTextureCompressionATC; }
     static bool             SupportsCompressedGenMipmaps() { return false; }
-    static bool             SupportsGeometryShader() { return supportsGeometryShader; }
+    static bool             SupportsGeometryShader() { return false; }
     static bool             SupportsInstancedArrays() { return false; }
     static bool             SupportsDrawIndirect() { return false; }
     static bool             SupportsMultiDrawIndirect() { return false; }
@@ -335,7 +335,6 @@ private:
     static bool             supportsTextureCompressionRGTC;
     static bool             supportsTextureCompressionETC2;
     static bool             supportsTextureCompressionATC;
-    static bool             supportsGeometryShader;
     static bool             supportsDebugLabel;
     static bool             supportsDebugMarker;
     static bool             supportsDebugOutput;

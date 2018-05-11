@@ -30,7 +30,6 @@ bool OpenGLBase::supportsTextureCompressionLATC = false;
 bool OpenGLBase::supportsTextureCompressionRGTC = false;
 bool OpenGLBase::supportsTextureCompressionETC2 = false;
 bool OpenGLBase::supportsTextureCompressionATC = false;
-bool OpenGLBase::supportsGeometryShader = false;
 bool OpenGLBase::supportsDebugLabel = false;
 bool OpenGLBase::supportsDebugMarker = false;
 bool OpenGLBase::supportsDebugOutput = false;
@@ -44,15 +43,15 @@ void OpenGLBase::Init() {
 #ifdef GL_ARB_depth_clamp // 3.2
     supportsDepthClamp = gglext._GL_ARB_depth_clamp ? true : false;
 #endif
-    
+
 #ifdef GL_EXT_depth_bounds_test
     supportsDepthBoundsTest = gglext._GL_EXT_depth_bounds_test ? true : false;
 #endif
-    
+
 #ifdef GL_NV_depth_buffer_float // 3.0
     supportsDepthBufferFloat = gglext._GL_NV_depth_buffer_float ? true : false;
 #endif
-    
+
 #ifdef GL_ARB_pixel_buffer_object // 2.1
     supportsPixelBufferObject = gglext._GL_ARB_pixel_buffer_object ? true : false;
 #endif
@@ -60,7 +59,7 @@ void OpenGLBase::Init() {
 #ifdef GL_ARB_texture_rectangle // 3.1
     supportsTextureRectangle = gglext._GL_ARB_texture_rectangle ? true : false;
 #endif
-    
+
 #ifdef GL_EXT_texture_array // 3.0
     supportsTextureArray = gglext._GL_EXT_texture_array ? true : false;
 #endif
@@ -68,46 +67,42 @@ void OpenGLBase::Init() {
 #ifdef GL_EXT_texture_filter_anisotropic
     supportsTextureFilterAnisotropic = gglext._GL_EXT_texture_filter_anisotropic ? true : false;
 #endif
-    
+
 #ifdef GL_EXT_texture_compression_s3tc
     supportsTextureCompressionS3TC = gglext._GL_EXT_texture_compression_s3tc ? true : false;
 #endif
-    
+
 #ifdef GL_EXT_texture_compression_latc
     supportsTextureCompressionLATC = gglext._GL_EXT_texture_compression_latc ? true : false;
 #endif
-    
+
 #ifdef GL_EXT_texture_compression_rgtc
     supportsTextureCompressionRGTC = gglext._GL_EXT_texture_compression_rgtc ? true : false;
 #endif
-    
+
 #ifdef GL_ARB_ES3_compatibility
     supportsTextureCompressionETC2 = gglext._GL_ARB_ES3_compatibility ? true : false;
 #endif
-    
+
 #ifdef GL_AMD_compressed_ATC_texture
     supportsTextureCompressionATC = gglext._GL_AMD_compressed_ATC_texture ? true : false;
 #endif
-    
-#ifdef GL_EXT_geometry_shader
-    supportsGeometryShader = gglext._GL_EXT_geometry_shader ? true : false;
-#endif
-    
+
 #ifdef GL_EXT_debug_label
     supportsDebugLabel = gglext._GL_EXT_debug_label ? true : false;
 #endif
-    
+
 #ifdef GL_EXT_debug_marker
     supportsDebugMarker = gglext._GL_EXT_debug_marker ? true : false;
 #endif
-    
+
 #ifdef GL_ARB_debug_output
     supportsDebugOutput = gglext._GL_ARB_debug_output ? true : false;
 #endif
 
 #ifdef GL_ARB_buffer_storage
     supportsBufferStorage = gglext._GL_ARB_buffer_storage ? true : false;
-#endif    
+#endif
 }
 
 bool OpenGLBase::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {

@@ -721,12 +721,12 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     uint32_t programHash = 0;
     Array<InOut> vsInArray(32);
     Array<InOut> fsOutArray(32);
-    
+
     Str vsppText = PreprocessShaderText(name, true, vsText, vsInArray);
     Str fsppText = PreprocessShaderText(name, false, fsText, fsOutArray);
-    
+
     bool shouldCompileProgram = true;
-    
+
     if (OpenGL::SupportsProgramBinary()) {
         const uint32_t vsHash = MD5_BlockChecksum(vsppText.c_str(), vsppText.Length());
         const uint32_t fsHash = MD5_BlockChecksum(fsppText.c_str(), fsppText.Length());

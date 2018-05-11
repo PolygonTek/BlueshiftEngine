@@ -45,6 +45,7 @@ public:
     static bool             SupportsTextureCompressionS3TC() { return true; }
     static bool             SupportsTextureCompressionLATC() { return true; }
     static bool             SupportsCompressedGenMipmaps() { return true; }
+    static bool             SupportsGeometryShader() { return true; }
     static bool             SupportsInstancedArrays() { return supportsInstancedArrays; }
     static bool             SupportsDrawIndirect() { return supportsDrawIndirect; }
     static bool             SupportsMultiDrawIndirect() { return supportsMultiDrawIndirect; }
