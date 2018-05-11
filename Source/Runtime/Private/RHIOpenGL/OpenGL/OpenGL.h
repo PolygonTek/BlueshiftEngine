@@ -156,7 +156,7 @@
     ARB_sample_shading
     ARB_shader_subroutine
     ARB_tessellation_shader
-    ARB_texture_bufer_object_rgb32
+    ARB_texture_buffer_object_rgb32
     ARB_texture_cube_map_array
     ARB_texture_gather
     ARB_texture_query_lod
