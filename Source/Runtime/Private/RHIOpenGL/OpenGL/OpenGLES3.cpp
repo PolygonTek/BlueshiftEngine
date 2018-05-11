@@ -56,9 +56,43 @@ void OpenGLES3::Init() {
     BE_LOG(L"Fragment shader highp int precision: %d\n", shaderFloatPrecisionHigh);
 }
 
+void OpenGLES3::DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {
+#ifdef GL_EXT_draw_elements_base_vertex
+    if (gglext._GL_EXT_draw_elements_base_vertex) {
+        gglDrawElementsBaseVertexEXT(mode, count, type, indices, basevertex);
+    }
+#endif
+}
+
+void OpenGLES3::DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex) {
+#ifdef GL_EXT_draw_elements_base_vertex
+    if (gglext._GL_EXT_draw_elements_base_vertex) {
+        gglDrawElementsInstancedBaseVertexEXT(mode, count, type, indices, instancecount, basevertex);
+    }
+#endif
+}
+
+void OpenGLES3::DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect) {
+#ifdef GL_EXT_multi_draw_indirect
+    if (gglext._GL_EXT_multi_draw_indirect) {
+        gglMultiDrawElementsIndirectEXT(mode, type, indirect, 1, 0);
+    }
+#endif
+}
+
+void OpenGLES3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride) {
+#ifdef GL_EXT_multi_draw_indirect
+    if (gglext._GL_EXT_multi_draw_indirect) {
+        gglMultiDrawElementsIndirectEXT(mode, type, indirect, drawcount, stride);
+    }
+#endif
+}
+
 void OpenGLES3::TexBuffer(GLenum internalFormat, GLuint buffer) {
 #ifdef GL_EXT_texture_buffer
-    gglTexBufferEXT(GL_TEXTURE_BUFFER, internalFormat, buffer);
+    if (gglext._GL_EXT_texture_buffer) {
+        gglTexBufferEXT(GL_TEXTURE_BUFFER, internalFormat, buffer);
+    }
 #endif
 }
 

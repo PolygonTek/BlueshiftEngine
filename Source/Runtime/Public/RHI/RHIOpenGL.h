@@ -251,8 +251,8 @@ public:
     void                    DrawArrays(Primitive primitives, int startVertex, int numVerts) const;
     void                    DrawArraysInstanced(Primitive primitives, int startVertex, int numVerts, int instanceCount) const;
     void                    DrawElements(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr) const;
-    void                    DrawElementsBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const;
     void                    DrawElementsInstanced(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const;
+    void                    DrawElementsBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const;
     void                    DrawElementsInstancedBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const;
     void                    DrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset) const;
     void                    MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;

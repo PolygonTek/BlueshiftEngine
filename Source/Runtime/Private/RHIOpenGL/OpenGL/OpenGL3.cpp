@@ -36,6 +36,22 @@ void OpenGL3::Init() {
 #endif
 }
 
+void OpenGL3::DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect) {
+#ifdef GL_ARB_draw_indirect // 4.0
+    if (gglext._GL_ARB_draw_indirect) {
+        gglDrawElementsIndirect(mode, type, indirect);
+    }
+#endif
+}
+
+void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride) {
+#ifdef GL_ARB_multi_draw_indirect // 4.3
+    if (gglext._GL_ARB_multi_draw_indirect) {
+        gglMultiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
+    }
+#endif
+}
+
  void OpenGL3::DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
     int severityLevel;
     switch (severity) {

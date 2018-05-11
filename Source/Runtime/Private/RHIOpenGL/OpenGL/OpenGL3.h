@@ -58,6 +58,10 @@ public:
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffer(buffer); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer) { gglTexBuffer(GL_TEXTURE_BUFFER, internalFormat, buffer); }
     static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisorARB(index, divisor); }
+    static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) { gglDrawElementsBaseVertex(mode, count, type, indices, basevertex); }
+    static void             DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex) { gglDrawElementsInstancedBaseVertex(mode, count, type, indices, instancecount, basevertex); }
+    static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect);
+    static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
 
     static void             SetTextureSwizzling(GLenum target, Image::Format format);
     static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);

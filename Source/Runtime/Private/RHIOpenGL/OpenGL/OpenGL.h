@@ -313,7 +313,11 @@ public:
     static void             DrawBuffer(GLenum buffer) {}
     static void             BindDefaultFBO() { gglBindFramebuffer(GL_FRAMEBUFFER, 0); }
     static void             VertexAttribDivisor(int index, int divisor) {}
-    
+    static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {}
+    static void             DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex) {}
+    static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect) {}
+    static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride) {}
+
     static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
     static Image::Format    ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap);
     

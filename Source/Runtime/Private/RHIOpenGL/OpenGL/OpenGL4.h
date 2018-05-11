@@ -32,6 +32,9 @@ public:
     static const char *     GLSL_VERSION_STRING;
 
     static void             Init();
+
+    static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect) { gglDrawElementsIndirect(mode, type, indirect); }
+    static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride) { gglMultiDrawElementsIndirect(mode, type, indirect, drawcount, stride); }
 };
 
 BE_NAMESPACE_END
