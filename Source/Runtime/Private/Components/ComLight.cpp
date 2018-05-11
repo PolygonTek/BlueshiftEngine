@@ -41,9 +41,9 @@ void ComLight::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("fallOffExponent", "Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, 1.25f,
         "", PropertyInfo::EditorFlag).SetRange(0.01f, 100, 0.1f);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("lightSize", "Light Size", Vec3, GetLightSize, SetLightSize, Vec3(200, 200, 200), 
+    REGISTER_MIXED_ACCESSOR_PROPERTY("lightSize", "Light Size", Vec3, GetLightSize, SetLightSize, Vec3(MeterToUnit(3.0f)),
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("lightZNear", "Near Distance", float, GetLightZNear, SetLightZNear, 10.f,
+    REGISTER_ACCESSOR_PROPERTY("lightZNear", "Near Distance", float, GetLightZNear, SetLightZNear, MeterToUnit(0.1f),
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(1, 200, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Shadows/Cast Shadows", bool, IsCastShadows, SetCastShadows, false,
         "", PropertyInfo::EditorFlag);

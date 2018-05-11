@@ -39,10 +39,10 @@ void ComAudioSource::RegisterProperties() {
         "", PropertyInfo::EditorFlag);
     REGISTER_PROPERTY("volume", "Volume", float, volume, 1.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.1);
-    REGISTER_PROPERTY("minDistance", "Min Distance", float, minDistance, 400.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0, 10000, 1);
-    REGISTER_PROPERTY("maxDistance", "Max Distance", float, maxDistance, 1600.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0, 10000, 1);
+    REGISTER_PROPERTY("minDistance", "Min Distance", float, minDistance, MeterToUnit(4.0f),
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("maxDistance", "Max Distance", float, maxDistance, MeterToUnit(16.0f),
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
 }
 
 ComAudioSource::ComAudioSource() {
