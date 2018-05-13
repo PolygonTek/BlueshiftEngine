@@ -431,6 +431,8 @@ set(ENGINE_FILES
     Private/Game/TagLayerSettings.cpp
     Private/Game/PhysicsSettings.cpp
     Private/Game/PlayerSettings.cpp
+    Private/Game/MeshCombiner.h
+    Private/Game/MeshCombiner.cpp
 
     Private/Core/Event.cpp
     Private/Core/Object.cpp

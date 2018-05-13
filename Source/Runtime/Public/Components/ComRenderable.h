@@ -20,9 +20,12 @@
 BE_NAMESPACE_BEGIN
 
 class RenderWorld;
+class MeshCombiner;
 class ComTransform;
 
 class ComRenderable : public Component {
+    friend class MeshCombiner;
+
 public:
     ABSTRACT_PROTOTYPE(ComRenderable);
 

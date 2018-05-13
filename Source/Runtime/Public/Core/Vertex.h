@@ -70,6 +70,7 @@ struct BE_API VertexGeneric {
 
     void            Lerp(const VertexGeneric &a, const VertexGeneric &b, const float f);
 
+    void            Transform(const Mat3x4 &transform);
     void            Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation);
 };
 
@@ -117,6 +118,10 @@ BE_INLINE void VertexGeneric::Lerp(const VertexGeneric &a, const VertexGeneric &
     color[1] = (byte)(a.color[1] + f * (b.color[1] - a.color[1]));
     color[2] = (byte)(a.color[2] + f * (b.color[2] - a.color[2]));
     color[3] = (byte)(a.color[3] + f * (b.color[3] - a.color[3]));
+}
+
+BE_INLINE void VertexGeneric::Transform(const Mat3x4 &transform) {
+    xyz = transform * xyz;
 }
 
 BE_INLINE void VertexGeneric::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
@@ -176,6 +181,7 @@ struct BE_API VertexGenericLit : public VertexGeneric {
 
     void            Lerp(const VertexGenericLit &a, const VertexGenericLit &b, const float f);
 
+    void            Transform(const Mat3x4 &transform);
     void            Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation);
 };
 
@@ -370,6 +376,12 @@ BE_INLINE void VertexGenericLit::Lerp(const VertexGenericLit &a, const VertexGen
     SetNormal(normal);
     SetTangent(tangent);
     SetBiTangent(bitangent);
+}
+
+BE_INLINE void VertexGenericLit::Transform(const Mat3x4 &transform) {
+    xyz = transform * xyz;
+    SetNormal(transform.ToMat3() * GetNormal());
+    SetTangent(transform.ToMat3() * GetTangent());
 }
 
 BE_INLINE void VertexGenericLit::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {

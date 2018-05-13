@@ -19,6 +19,7 @@
 #include "Game/Entity.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"
+//#include "Game/StaticBatch.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -44,6 +45,7 @@ void ComMeshRenderer::RegisterProperties() {
 ComMeshRenderer::ComMeshRenderer() {
     meshAsset = nullptr;
     referenceMesh = nullptr;
+    staticBatchIndex = -1;
 }
 
 ComMeshRenderer::~ComMeshRenderer() {
@@ -62,6 +64,8 @@ void ComMeshRenderer::Purge(bool chainPurge) {
         meshManager.ReleaseMesh(referenceMesh);
         referenceMesh = nullptr;
     }
+
+    staticBatchIndex = -1;
 
     if (chainPurge) {
         ComRenderable::Purge();

@@ -244,6 +244,49 @@ Mesh *MeshManager::GetMesh(const char *hashName) {
     return mesh;
 }
 
+Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<SubMesh *> &subMeshes, const Array<Mat3x4> &subMeshMatrices) {
+    int numTotalVerts = 0;
+    int numTotalIndexes = 0;
+
+    for (int subMeshIndex = 0; subMeshIndex < subMeshes.Count(); subMeshIndex++) {
+        const SubMesh *subMesh = subMeshes[subMeshIndex];
+
+        numTotalVerts += subMesh->NumVerts();
+        numTotalIndexes += subMesh->NumIndexes();
+    }
+
+    Mesh *mesh = AllocMesh(hashName);
+    MeshSurf *surf = mesh->AllocSurface(numTotalVerts, numTotalIndexes);
+    mesh->surfaces.Append(surf);
+
+    VertexGenericLit *dstVerts = surf->subMesh->verts;
+    TriIndex *dstIndexes = surf->subMesh->indexes;
+    int baseVertex = 0;
+
+    for (int subMeshIndex = 0; subMeshIndex < subMeshes.Count(); subMeshIndex++) {
+        const SubMesh *srcSubMesh = subMeshes[subMeshIndex];
+
+        for (int index = 0; index < srcSubMesh->numVerts; index++) {
+            *dstVerts = srcSubMesh->verts[index];
+            dstVerts->Transform(subMeshMatrices[subMeshIndex]);
+            dstVerts++;
+        }
+
+        dstVerts += srcSubMesh->numVerts;
+
+        for (int index = 0; index < srcSubMesh->numIndexes; index++) {
+            *dstIndexes = srcSubMesh->indexes[index] + baseVertex;
+            dstIndexes++;
+        }
+
+        baseVertex += srcSubMesh->numVerts;
+    }
+
+    mesh->FinishSurfaces(Mesh::ComputeAABBFlag);
+
+    return mesh;
+}
+
 void MeshManager::EndLevelLoad() {
 #if 0
     for (int i = 0; i < meshHashMap.Count(); i++) {

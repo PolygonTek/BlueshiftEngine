@@ -20,8 +20,11 @@ BE_NAMESPACE_BEGIN
 
 class MeshAsset;
 class Material;
+class MeshCombiner;
 
 class ComMeshRenderer : public ComRenderable {
+    friend class MeshCombiner;
+
 public:
     ABSTRACT_PROTOTYPE(ComMeshRenderer);
 
@@ -66,6 +69,7 @@ protected:
 
     MeshAsset *             meshAsset;
     Mesh *                  referenceMesh;      // shared mesh to retain shared information for instantiated mesh
+    int                     staticBatchIndex;
 };
 
 BE_NAMESPACE_END
