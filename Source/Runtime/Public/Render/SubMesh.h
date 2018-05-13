@@ -52,6 +52,8 @@ struct JointWeight {
 
 struct BufferCache;
 
+class Material;
+
 class SubMesh {
     friend class Mesh;
     friend class MeshManager;

@@ -13,9 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Render/Mesh.h"
-#include "Render/SubMesh.h"
-#include "Render/Material.h"
+#include "Render/Render.h"
 #include "Game/Entity.h"
 #include "Components/ComTransform.h"
 #include "Components/ComRenderable.h"
@@ -49,13 +47,13 @@ void MeshCombiner::EnumerateStaticChildren(const Entity *parent, Array<Entity *>
     }
 }
 
-void MeshCombiner::CombineMeshes(Hierarchy<Entity> &entityHierarchy) {
+void MeshCombiner::CombineAll(Hierarchy<Entity> &entityHierarchy) {
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->GetNode().GetNext()) {
-        CombineMeshes(ent);
+        CombineRoot(ent);
     }
 }
 
-void MeshCombiner::CombineMeshes(Entity *staticRoot) {
+void MeshCombiner::CombineRoot(Entity *staticRoot) {
     const auto *meshRenderer = staticRoot->GetComponent<ComMeshRenderer>();
     if (meshRenderer->staticBatchIndex >= 0) {
         return;
@@ -87,8 +85,8 @@ void MeshCombiner::CombineMeshes(Entity *staticRoot) {
     for (int childIndex = 0; childIndex < staticChildren.Count(); childIndex++) {
         Entity *childEntity = staticChildren[childIndex];
 
-        const ComMeshRenderer *meshRenderer = childEntity->GetComponent<ComMeshRenderer>();
-        const int numVerts = meshRenderer->referenceMesh->GetSurface(0)->subMesh->NumVerts();
+        ComMeshRenderer *meshRenderer = childEntity->GetComponent<ComMeshRenderer>();
+        int numVerts = meshRenderer->referenceMesh->GetSurface(0)->subMesh->NumVerts();
         const Material *material = meshRenderer->renderObjectDef.materials[0];
 
         if (prevMaterial != material || numCombinedVerts + numVerts >= maxCombinedVerts) {

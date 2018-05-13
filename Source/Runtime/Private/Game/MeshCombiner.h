@@ -33,8 +33,8 @@ private:
 
 class MeshCombiner {
 public:
-    static void CombineMeshes(Hierarchy<Entity> &entityHierarchy);
-    static void CombineMeshes(Entity *staticRoot);
+    static void CombineAll(Hierarchy<Entity> &entityHierarchy);
+    static void CombineRoot(Entity *staticRoot);
 
 private:
     static void EnumerateStaticChildren(const Entity *parent, Array<Entity *> &staticChildren);
