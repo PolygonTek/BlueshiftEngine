@@ -18,6 +18,7 @@
 #include "Components/ComRigidBody.h"
 #include "Components/ComRenderable.h"
 #include "Game/GameWorld.h"
+#include "StaticBatching/StaticBatch.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -45,6 +46,7 @@ void ComRenderable::RegisterProperties() {
 ComRenderable::ComRenderable() {
     renderObjectHandle = -1;
     memset(&renderObjectDef, 0, sizeof(renderObjectDef));
+    staticBatchIndex = -1;
     renderWorld = nullptr;
 }
 
@@ -63,6 +65,8 @@ void ComRenderable::Purge(bool chainPurge) {
         renderObjectHandle = -1;
         renderWorld = nullptr;
     }
+
+    staticBatchIndex = -1;
 
     if (chainPurge) {
         Component::Purge();
@@ -109,6 +113,13 @@ bool ComRenderable::HasRenderEntity(int renderObjectHandle) const {
 void ComRenderable::UpdateVisuals() {
     if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
+    }
+
+    if (staticBatchIndex >= 0) {
+        const StaticBatch *staticBatch = StaticBatch::GetStaticBatchByIndex(staticBatchIndex);
+        if (staticBatch->GetRootEntity() != GetEntity()) {
+            return;
+        }
     }
 
     if (renderObjectHandle == -1) {

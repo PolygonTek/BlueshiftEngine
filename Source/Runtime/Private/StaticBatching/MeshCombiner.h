@@ -16,29 +16,16 @@
 
 BE_NAMESPACE_BEGIN
 
-class MeshCombiner;
-
-class StaticBatch {
-    friend class MeshCombiner;
-
-public:
-    StaticBatch(Entity *rootEntity);
-
-    Mesh *          GetMesh() const { return referenceMesh; }
-
-private:
-    Entity *        rootEntity;
-    Mesh *          referenceMesh;
-};
+class ComStaticMeshRenderer;
+class Entity;
 
 class MeshCombiner {
 public:
-    static void CombineAll(Hierarchy<Entity> &entityHierarchy);
     static void CombineRoot(Entity *staticRoot);
 
 private:
-    static void EnumerateStaticChildren(const Entity *parent, Array<Entity *> &staticChildren);
-    static void MakeCombinedMesh(Entity *staticRoot, Array<ComMeshRenderer *> &meshRenderers);
+    static void EnumerateStaticChildren(const Entity *parentEntity, Array<Entity *> &staticChildren);
+    static void MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMeshRenderer *> &meshRenderers, int batchIndex);
 };
 
 BE_NAMESPACE_END

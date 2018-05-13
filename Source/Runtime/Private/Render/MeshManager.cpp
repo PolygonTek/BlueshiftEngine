@@ -259,24 +259,22 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<SubMesh 
     MeshSurf *surf = mesh->AllocSurface(numTotalVerts, numTotalIndexes);
     mesh->surfaces.Append(surf);
 
-    VertexGenericLit *dstVerts = surf->subMesh->verts;
-    TriIndex *dstIndexes = surf->subMesh->indexes;
+    VertexGenericLit *dstVertPtr = surf->subMesh->verts;
+    TriIndex *dstIndexPtr = surf->subMesh->indexes;
     int baseVertex = 0;
 
     for (int subMeshIndex = 0; subMeshIndex < subMeshes.Count(); subMeshIndex++) {
         const SubMesh *srcSubMesh = subMeshes[subMeshIndex];
 
         for (int index = 0; index < srcSubMesh->numVerts; index++) {
-            *dstVerts = srcSubMesh->verts[index];
-            dstVerts->Transform(subMeshMatrices[subMeshIndex]);
-            dstVerts++;
+            *dstVertPtr = srcSubMesh->verts[index];
+            dstVertPtr->Transform(subMeshMatrices[subMeshIndex]);
+            dstVertPtr++;
         }
 
-        dstVerts += srcSubMesh->numVerts;
-
         for (int index = 0; index < srcSubMesh->numIndexes; index++) {
-            *dstIndexes = srcSubMesh->indexes[index] + baseVertex;
-            dstIndexes++;
+            *dstIndexPtr = srcSubMesh->indexes[index] + baseVertex;
+            dstIndexPtr++;
         }
 
         baseVertex += srcSubMesh->numVerts;

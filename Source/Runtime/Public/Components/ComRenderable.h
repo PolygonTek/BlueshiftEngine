@@ -20,10 +20,12 @@
 BE_NAMESPACE_BEGIN
 
 class RenderWorld;
+class StaticBatch;
 class MeshCombiner;
 class ComTransform;
 
 class ComRenderable : public Component {
+    friend class StaticBatch;
     friend class MeshCombiner;
 
 public:
@@ -82,6 +84,7 @@ protected:
 
     RenderObject::State     renderObjectDef;
     int                     renderObjectHandle;
+    int                     staticBatchIndex;
     RenderWorld *           renderWorld;
 };
 

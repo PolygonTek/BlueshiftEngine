@@ -28,6 +28,8 @@
 #include "Game/GameWorld.h"
 #include "Game/GameSettings.h"
 #include "Scripting/LuaVM.h"
+#include "StaticBatching/StaticBatch.h"
+#include "../StaticBatching/MeshCombiner.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -454,6 +456,8 @@ void GameWorld::StartGame() {
 
     timeScale = 1.0f;
 
+    StaticBatch::CombineAll(entityHierarchy);
+
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Awake();
     }
@@ -472,6 +476,8 @@ void GameWorld::StopGame(bool stopAllSounds) {
     }
 
     gameStarted = false;
+
+    StaticBatch::ClearAllStaticBatches();
 
     if (stopAllSounds) {
         soundSystem.StopAllSounds();

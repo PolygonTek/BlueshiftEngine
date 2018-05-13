@@ -69,7 +69,6 @@ protected:
 
     MeshAsset *             meshAsset;
     Mesh *                  referenceMesh;      // shared mesh to retain shared information for instantiated mesh
-    int                     staticBatchIndex;
 };
 
 BE_NAMESPACE_END
