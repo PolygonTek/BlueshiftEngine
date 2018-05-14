@@ -24,19 +24,34 @@ BE_NAMESPACE_BEGIN
 
 Array<StaticBatch *> StaticBatch::staticBatches;
 
+StaticBatch::StaticBatch() {
+    index = -1;
+    rootEntity = nullptr;
+    referenceMesh = nullptr;
+}
+
+StaticBatch::~StaticBatch() {
+    if (referenceMesh) {
+        meshManager.ReleaseMesh(referenceMesh, true);
+    }
+}
+
 StaticBatch *StaticBatch::AllocStaticBatch(Entity *rootEntity) {
     StaticBatch *staticBatch = new StaticBatch;
     staticBatch->index = staticBatches.Append(staticBatch);
     staticBatch->rootEntity = rootEntity;
-    staticBatch->referenceMesh = nullptr;
 
     return staticBatch;
 }
 
+void StaticBatch::DestroyStaticBatch(StaticBatch *staticBatch) {
+    staticBatches.Remove(staticBatch);
+
+    delete staticBatch;
+}
+
 void StaticBatch::CombineAll(Hierarchy<Entity> &entityHierarchy) {
-    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->GetNode().GetNext()) {
-        MeshCombiner::CombineRoot(ent);
-    }
+    MeshCombiner::CombineRoot(entityHierarchy);
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->GetNode().GetNext()) {
         ComStaticMeshRenderer *staticMeshRenderer = ent->GetComponent<ComStaticMeshRenderer>();

@@ -23,7 +23,11 @@ class Mesh;
 
 class StaticBatch {
 public:
+    StaticBatch();
+    ~StaticBatch();
+
     static StaticBatch *        AllocStaticBatch(Entity *rootEntity);
+    static void                 DestroyStaticBatch(StaticBatch *staticBatch);
 
     static void                 ClearAllStaticBatches();
 

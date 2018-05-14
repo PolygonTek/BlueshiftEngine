@@ -21,10 +21,10 @@ class Entity;
 
 class MeshCombiner {
 public:
-    static void CombineRoot(Entity *staticRoot);
+    static void CombineRoot(const Hierarchy<Entity> &staticRoot);
 
 private:
-    static void EnumerateStaticChildren(const Entity *parentEntity, Array<Entity *> &staticChildren);
+    static void EnumerateStaticChildren(const Hierarchy<Entity> &parentNode, Array<Entity *> &staticChildren);
     static void MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMeshRenderer *> &meshRenderers, int batchIndex);
 };
 
