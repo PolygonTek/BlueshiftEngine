@@ -770,7 +770,7 @@ const char *Shader::MangleNameWithDefineList(const Str &basename, const Array<Sh
     
     if (defineArray.Count() > 0) {
         Array<Shader::Define> sortedDefineArray = defineArray;
-        sortedDefineArray.Sort([](const Shader::Define &a, const Shader::Define &b) -> bool {
+        sortedDefineArray.StableSort([](const Shader::Define &a, const Shader::Define &b) -> bool {
             return (a.name).Icmp(b.name) < 0;
         });
     

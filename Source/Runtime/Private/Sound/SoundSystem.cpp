@@ -327,7 +327,7 @@ void SoundSystem::Update() {
     }
 
     // Sort sounds by priority decending order
-    prioritySounds.Sort([](const Sound *a, const Sound *b) {
+    prioritySounds.StableSort([](const Sound *a, const Sound *b) {
         return a->priority - b->priority > 0;
     });
 

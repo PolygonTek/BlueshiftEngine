@@ -243,6 +243,10 @@ public:
     void            Sort(Functor &&compare);
     void            Sort() { Sort(std::less<T>()); }
 
+    template <typename Functor>
+    void            StableSort(Functor &&compare);
+    void            StableSort() { StableSort(std::less<T>()); }
+
                     /// Sorts sub-section using predicate 'compare'.
     template <typename Functor> 
     void            SortSubSection(int startIndex, int endIndex, Functor &&compare);
@@ -781,6 +785,12 @@ template <typename T>
 template <typename Functor>
 BE_INLINE void Array<T>::Sort(Functor &&compare) {
     std::sort(elements, elements + count, std::forward<Functor>(compare));
+}
+
+template <typename T>
+template <typename Functor>
+BE_INLINE void Array<T>::StableSort(Functor &&compare) {
+    std::stable_sort(elements, elements + count, std::forward<Functor>(compare));
 }
 
 template <typename T> 
