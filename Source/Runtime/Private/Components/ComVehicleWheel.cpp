@@ -30,13 +30,13 @@ void ComVehicleWheel::RegisterProperties() {
         "Wheel position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero,
         "Wheel angles in local space", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, 40.f,
+    REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, MeterToUnit(0.5f),
         "Wheel radius", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("susDistance", "Suspension/Distance", float, GetSuspensionDistance, SetSuspensionDistance, 0.f,
+    REGISTER_ACCESSOR_PROPERTY("susDistance", "Suspension/Distance", float, GetSuspensionDistance, SetSuspensionDistance, MeterToUnit(0.0f),
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("susMaxDistance", "Suspension/Max Distance", float, GetSuspensionMaxDistance, SetSuspensionMaxDistance, 30.f,
+    REGISTER_ACCESSOR_PROPERTY("susMaxDistance", "Suspension/Max Distance", float, GetSuspensionMaxDistance, SetSuspensionMaxDistance, MeterToUnit(0.3f),
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("susMaxForce", "Suspension/Max Force", float, GetSuspensionMaxForce, SetSuspensionMaxForce, 1000000.f,
+    REGISTER_ACCESSOR_PROPERTY("susMaxForce", "Suspension/Max Force", float, GetSuspensionMaxForce, SetSuspensionMaxForce, MeterToUnit(100.0f),
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension/Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 60.f,
         "", PropertyInfo::EditorFlag);
@@ -201,7 +201,7 @@ void ComVehicleWheel::DrawGizmos(const RenderView::State &viewState, bool select
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localOrigin;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 

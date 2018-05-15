@@ -263,7 +263,7 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
 
     // reference: http://kmamou.blogspot.kr/2011/11/hacd-parameters.html
     HACD::HACD myHACD;
-    myHACD.SetScaleFactor(MeterToUnit(20)); // FIXME
+    myHACD.SetScaleFactor(MeterToUnit(20.0f)); // FIXME
     myHACD.SetPoints(hacdPoints.Ptr());
     myHACD.SetNPoints(hacdPoints.Count());
     myHACD.SetTriangles(hacdTris.Ptr());
@@ -462,7 +462,7 @@ bool Collider::Load(const char *filename, bool convexHull, const Vec3 &scale) {
         
         if (!mesh->IsDefaultMesh()) {
             if (convexHull) {
-                CreateConvexHull(mesh, scale, CentiToUnit(1));
+                CreateConvexHull(mesh, scale, CentiToUnit(1.0f));
                 //CreateConvexDecomp(mesh, scale);
             } else {
                 CreateBVH(mesh, false, scale);

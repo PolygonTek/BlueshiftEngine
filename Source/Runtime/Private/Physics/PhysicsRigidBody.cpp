@@ -236,7 +236,7 @@ const Vec3 PhysRigidBody::GetTotalForce() const {
 
 const Vec3 PhysRigidBody::GetTotalTorque() const {
     const btVector3 &totalTorque = GetRigidBody()->getTotalTorque();
-    return PhysicsUnitToSystemUnit(PhysicsUnitToSystemUnit(ToVec3(totalTorque)));
+    return PhysicsUnitToSystemUnit(ToVec3(totalTorque));
 }
 
 bool PhysRigidBody::IsCCD() const {
@@ -281,7 +281,7 @@ void PhysRigidBody::ApplyForce(const Vec3 &force, const Vec3 &worldPos) {
 
 void PhysRigidBody::ApplyTorque(const Vec3 &torque) {
     GetRigidBody()->activate();
-    GetRigidBody()->applyTorque(ToBtVector3(SystemUnitToPhysicsUnit(SystemUnitToPhysicsUnit(torque))));
+    GetRigidBody()->applyTorque(ToBtVector3(SystemUnitToPhysicsUnit(torque)));
 }
 
 void PhysRigidBody::ApplyCentralImpulse(const Vec3 &impulse) {

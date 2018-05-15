@@ -81,7 +81,7 @@ void ComReflectionProbe::Init() {
 
     memset(&sphereDef, 0, sizeof(sphereDef));
     sphereDef.layer = TagLayerSettings::EditorLayer;
-    sphereDef.maxVisDist = MeterToUnit(50);
+    sphereDef.maxVisDist = MeterToUnit(50.0f);
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
     sphereDef.materials.SetCount(1);
@@ -144,7 +144,7 @@ void ComReflectionProbe::DrawGizmos(const RenderView::State &viewState, bool sel
 }
 
 const AABB ComReflectionProbe::GetAABB() {
-    return Sphere(Vec3::origin, MeterToUnit(0.5)).ToAABB();
+    return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 
 void ComReflectionProbe::UpdateVisuals() {

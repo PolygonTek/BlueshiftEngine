@@ -778,8 +778,8 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
 
     Vec3 v;
     renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
-    renderViewDef.zFar = Max(BE1::MeterToUnit(100), origin.Distance(v));
-    renderViewDef.zNear = BE1::CentiToUnit(5);
+    renderViewDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
+    renderViewDef.zNear = BE1::CentiToUnit(5.0f);
 
     RenderView::ComputeFov(fov, 1.25f, (float)width / height, &renderViewDef.fovX, &renderViewDef.fovY);
 
@@ -804,8 +804,8 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
     renderViewDef.renderRect.Set(0, 0, size, size);
     renderViewDef.fovX = 90;
     renderViewDef.fovY = 90;
-    renderViewDef.zNear = BE1::CentiToUnit(5);
-    renderViewDef.zFar = BE1::MeterToUnit(100);
+    renderViewDef.zNear = BE1::CentiToUnit(5.0f);
+    renderViewDef.zFar = BE1::MeterToUnit(100.0f);
     renderViewDef.origin = origin;
 
     Mat3 viewAxis[6];

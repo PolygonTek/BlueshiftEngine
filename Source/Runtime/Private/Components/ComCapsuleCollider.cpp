@@ -89,7 +89,7 @@ void ComCapsuleCollider::DrawGizmos(const RenderView::State &viewState, bool sel
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 

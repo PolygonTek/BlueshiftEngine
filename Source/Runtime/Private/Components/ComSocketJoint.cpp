@@ -120,9 +120,9 @@ void ComSocketJoint::DrawGizmos(const RenderView::State &viewState, bool selecte
     Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
     
     renderWorld->SetDebugColor(Color4::red, Color4::zero);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(1), worldOrigin + Mat3::identity[0] * CentiToUnit(1), 1);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(1), worldOrigin + Mat3::identity[1] * CentiToUnit(1), 1);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(1), worldOrigin + Mat3::identity[2] * CentiToUnit(1), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[0] * CentiToUnit(1.0f), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[1] * CentiToUnit(1.0f), 1);
+    renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[2] * CentiToUnit(1.0f), 1);
 }
 
 BE_NAMESPACE_END

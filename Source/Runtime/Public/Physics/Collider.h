@@ -64,13 +64,13 @@ public:
     void                        Purge();
 
                                 /// Create box shaped collider with the given parameters.
-    void                        CreateBox(const Vec3 &center, const Vec3 &extents, float margin = CentiToUnit(0.1));
+    void                        CreateBox(const Vec3 &center, const Vec3 &extents, float margin = CentiToUnit(0.1f));
 
                                 /// Create cylinder shaped collider with the given parameters.
-    void                        CreateCylinder(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1));
+    void                        CreateCylinder(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
 
                                 /// Create cone shaped collider with the given parameters.
-    void                        CreateCone(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1));
+    void                        CreateCone(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
 
                                 /// Create sphere shaped collider with the given parameters.
     void                        CreateSphere(const Vec3 &center, float radius);
@@ -96,8 +96,8 @@ private:
     int                         NumCollisionMeshes() const { return collisionMeshes.Count(); }
     CollisionMesh *             GetCollisionMesh(int index) const { assert(index >= 0 && index < collisionMeshes.Count()); return collisionMeshes[index]; }
     CollisionMesh *             AllocCollisionMesh(int numVerts, int numIndexes, bool materialIndexes = false) const;
-    void                        CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1));
-    void                        CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1));
+    void                        CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1f));
+    void                        CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1f));
     void                        CreateBVH(const Mesh *mesh, bool multiMaterials = false, const Vec3 &scale = Vec3::one);
     void                        CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale = Vec3::one);
     void                        CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale = Vec3::one);

@@ -78,7 +78,7 @@ void ComSphereCollider::DrawGizmos(const RenderView::State &viewState, bool sele
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
             Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
 

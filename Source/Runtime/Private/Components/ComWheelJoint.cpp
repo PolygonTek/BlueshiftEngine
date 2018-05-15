@@ -247,26 +247,26 @@ void ComWheelJoint::DrawGizmos(const RenderView::State &viewState, bool selected
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         // Draw wheel circle
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugCircle(worldOrigin, worldAxis[0], CentiToUnit(5));
-        renderWorld->DebugCircle(worldOrigin, worldAxis[0], CentiToUnit(15));
+        renderWorld->DebugCircle(worldOrigin, worldAxis[0], CentiToUnit(5.0f));
+        renderWorld->DebugCircle(worldOrigin, worldAxis[0], CentiToUnit(15.0f));
 
         // Draw axle axis
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5), worldOrigin + worldAxis[0] * CentiToUnit(5), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5.0f), worldOrigin + worldAxis[0] * CentiToUnit(5.0f), 1);
 
         // Draw forward direction
         renderWorld->SetDebugColor(Color4::green, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[1] * CentiToUnit(5), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[1] * CentiToUnit(5.0f), 1);
 
         // Draw suspension direction
         renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * CentiToUnit(5), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * CentiToUnit(5.0f), 1);
     }
 }
 

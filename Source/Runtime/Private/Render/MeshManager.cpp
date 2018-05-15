@@ -48,27 +48,27 @@ void MeshManager::CreateEngineMeshes() {
     // Create default quad mesh
     defaultQuadMesh = AllocMesh("_defaultQuadMesh");
     defaultQuadMesh->permanence = true;
-    defaultQuadMesh->CreatePlane(Vec3::origin, Angles(0, 90, 0).ToMat3(), MeterToUnit(1), 1);
+    defaultQuadMesh->CreatePlane(Vec3::origin, Angles(0, 90, 0).ToMat3(), MeterToUnit(1.0f), 1);
 
     // Create default plane mesh
     defaultPlaneMesh = AllocMesh("_defaultPlaneMesh");
     defaultPlaneMesh->permanence = true;
-    defaultPlaneMesh->CreatePlane(Vec3::origin, Mat3::identity, MeterToUnit(10), 10);
+    defaultPlaneMesh->CreatePlane(Vec3::origin, Mat3::identity, MeterToUnit(10.0f), 10);
 
     // Create default box mesh
     defaultBoxMesh = AllocMesh("_defaultBoxMesh");
     defaultBoxMesh->permanence = true;
-    defaultBoxMesh->CreateBox(Vec3::origin, Mat3::identity, Vec3(MeterToUnit(0.5)));
+    defaultBoxMesh->CreateBox(Vec3::origin, Mat3::identity, Vec3(MeterToUnit(0.5f)));
 
     // Create default sphere mesh
     defaultSphereMesh = AllocMesh("_defaultSphereMesh");
     defaultSphereMesh->permanence = true;
-    defaultSphereMesh->CreateSphere(Vec3::origin, Mat3::identity, MeterToUnit(0.5), 32);
+    defaultSphereMesh->CreateSphere(Vec3::origin, Mat3::identity, MeterToUnit(0.5f), 32);
 
     // Create default geosphere mesh
     defaultGeoSphereMesh = AllocMesh("_defaultGeoSphereMesh");
     defaultGeoSphereMesh->permanence = true;
-    defaultGeoSphereMesh->CreateGeosphere(Vec3::origin, MeterToUnit(0.5), 3);
+    defaultGeoSphereMesh->CreateGeosphere(Vec3::origin, MeterToUnit(0.5f), 3);
 
     // Create default cone mesh
     //defaultConeMesh = AllocMesh("_defaultConeMesh");
@@ -78,12 +78,12 @@ void MeshManager::CreateEngineMeshes() {
     // Create default cylinder mesh
     defaultCylinderMesh = AllocMesh("_defaultCylinderMesh");
     defaultCylinderMesh->permanence = true;
-    defaultCylinderMesh->CreateCylinder(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(2), 32);
+    defaultCylinderMesh->CreateCylinder(Vec3::origin, Mat3::identity, MeterToUnit(0.5f), MeterToUnit(2.0f), 32);
 
     // Create default capsule mesh
     defaultCapsuleMesh = AllocMesh("_defaultCapsuleMesh");
     defaultCapsuleMesh->permanence = true;
-    defaultCapsuleMesh->CreateCapsule(Vec3::origin, Mat3::identity, MeterToUnit(0.5), MeterToUnit(1), 32);
+    defaultCapsuleMesh->CreateCapsule(Vec3::origin, Mat3::identity, MeterToUnit(0.5f), MeterToUnit(1.0f), 32);
 }
 
 void MeshManager::Shutdown() {

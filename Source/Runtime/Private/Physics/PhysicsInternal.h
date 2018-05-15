@@ -62,7 +62,7 @@ BE_INLINE btTransform ToBtTransform(const Mat3 &rotation, const Vec3 &translatio
 }
 
 template <typename T>
-BE_INLINE T SystemUnitToPhysicsUnit(T x) { return UnitToCenti(x) * 0.25f; }
+BE_INLINE T SystemUnitToPhysicsUnit(T x) { return UnitToMeter(x) * 22.5f; }
 
 template <typename T>
 BE_INLINE T PhysicsUnitToSystemUnit(T x) { return x / SystemUnitToPhysicsUnit(1.0f); }

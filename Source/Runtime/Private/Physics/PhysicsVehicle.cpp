@@ -132,21 +132,21 @@ int PhysVehicle::AddWheel(const Vec3 &chassisLocalOrigin, const Mat3 &chassisLoc
 
 float PhysVehicle::GetTorque(int wheelIndex) const {
     btWheelInfo &wheelInfo = vehicle->getWheelInfo(wheelIndex);
-    return PhysicsUnitToSystemUnit(PhysicsUnitToSystemUnit(wheelInfo.m_engineForce));
+    return PhysicsUnitToSystemUnit(wheelInfo.m_engineForce);
 }
 
 void PhysVehicle::SetTorque(int wheelIndex, float torque) {
-    vehicle->applyEngineForce(SystemUnitToPhysicsUnit(SystemUnitToPhysicsUnit(torque)), wheelIndex);
+    vehicle->applyEngineForce(SystemUnitToPhysicsUnit(torque), wheelIndex);
 }
 
 float PhysVehicle::GetBrakingTorque(int wheelIndex) const {
     btWheelInfo &wheelInfo = vehicle->getWheelInfo(wheelIndex);
 
-    return PhysicsUnitToSystemUnit(PhysicsUnitToSystemUnit(wheelInfo.m_brake));
+    return PhysicsUnitToSystemUnit(wheelInfo.m_brake);
 }
 
 void PhysVehicle::SetBrakingTorque(int wheelIndex, float torque) {
-    vehicle->setBrake(SystemUnitToPhysicsUnit(SystemUnitToPhysicsUnit(torque)), wheelIndex);
+    vehicle->setBrake(SystemUnitToPhysicsUnit(torque), wheelIndex);
 }
 
 float PhysVehicle::GetSteeringAngle(int wheelIndex) const {

@@ -33,10 +33,10 @@ END_EVENTS
 void ComCamera::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, 
         "", PropertyInfo::EditorFlag).SetEnumString("Perspective;Orthographic");
-    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 10.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1), MeterToUnit(100), CentiToUnit(10));
-    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 8192.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1), MeterToUnit(1000), CentiToUnit(10));
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, MeterToUnit(0.1f),
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1.0f), MeterToUnit(100.0f), CentiToUnit(10.0f));
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, MeterToUnit(500.0f),
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1.0f), MeterToUnit(1000.0f), CentiToUnit(10.0f));
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
         "", PropertyInfo::EditorFlag).SetRange(1, 179, 1);
     REGISTER_PROPERTY("size", "Size", float, size, 1000.f, 
@@ -133,7 +133,7 @@ void ComCamera::Init() {
     memset(&spriteDef, 0, sizeof(spriteDef));
     spriteDef.flags = RenderObject::BillboardFlag;
     spriteDef.layer = TagLayerSettings::EditorLayer;
-    spriteDef.maxVisDist = MeterToUnit(50);
+    spriteDef.maxVisDist = MeterToUnit(50.0f);
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
     spriteDef.materials.SetCount(1);
@@ -240,13 +240,13 @@ void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected
     }
 
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.origin.Distance(renderViewDef.origin) / MeterToUnit(8), 0.01f, 1.0f);
+    float alpha = BE1::Clamp(spriteDef.origin.Distance(renderViewDef.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComCamera::GetAABB() {
-    return Sphere(Vec3::origin, MeterToUnit(0.5)).ToAABB();
+    return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 
 float ComCamera::GetAspectRatio() const {
@@ -328,7 +328,7 @@ void ComCamera::ProcessPointerInput(const Point &screenPoint) {
 
     CastResultEx castResult;
     // FIXME: ray cast against corresponding layer entities
-    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(100000)),
+    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)),
         PhysCollidable::DefaultGroup, 
         PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::CharacterGroup, castResult)) {
         ComRigidBody *hitRigidBody = castResult.GetRigidBody();

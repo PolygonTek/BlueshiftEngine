@@ -108,6 +108,7 @@ const Vec3 &ComSpringJoint::GetLocalAnchor() const {
 
 void ComSpringJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
     }
@@ -190,17 +191,17 @@ void ComSpringJoint::DrawGizmos(const RenderView::State &viewState, bool selecte
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(2.5), worldOrigin + worldAxis[0] * CentiToUnit(2.5), 1);
-        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(2.5), worldOrigin + worldAxis[1] * CentiToUnit(2.5), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(2.5f), worldOrigin + worldAxis[0] * CentiToUnit(2.5f), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(2.5f), worldOrigin + worldAxis[1] * CentiToUnit(2.5f), 1);
 
-        renderWorld->DebugCircle(worldOrigin - worldAxis[2] * CentiToUnit(2), worldAxis[2], CentiToUnit(2.5));
-        renderWorld->DebugCircle(worldOrigin, worldAxis[2], CentiToUnit(2.5));
-        renderWorld->DebugCircle(worldOrigin + worldAxis[2] * CentiToUnit(2), worldAxis[2], CentiToUnit(2.5));
+        renderWorld->DebugCircle(worldOrigin - worldAxis[2] * CentiToUnit(2.0f), worldAxis[2], CentiToUnit(2.5f));
+        renderWorld->DebugCircle(worldOrigin, worldAxis[2], CentiToUnit(2.5f));
+        renderWorld->DebugCircle(worldOrigin + worldAxis[2] * CentiToUnit(2.0f), worldAxis[2], CentiToUnit(2.5f));
     }
 }
 

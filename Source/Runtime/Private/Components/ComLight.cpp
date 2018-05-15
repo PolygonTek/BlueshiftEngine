@@ -44,7 +44,7 @@ void ComLight::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("lightSize", "Light Size", Vec3, GetLightSize, SetLightSize, Vec3(MeterToUnit(3.0f)),
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("lightZNear", "Near Distance", float, GetLightZNear, SetLightZNear, MeterToUnit(0.1f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(1, 200, 0.01f);
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(MeterToUnit(0.01f), 100, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Shadows/Cast Shadows", bool, IsCastShadows, SetCastShadows, false,
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("shadowOffsetFactor", "Shadows/Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, 3.f,
@@ -141,7 +141,7 @@ void ComLight::Init() {
     memset(&spriteDef, 0, sizeof(spriteDef));
     spriteDef.flags = RenderObject::BillboardFlag;
     spriteDef.layer = TagLayerSettings::EditorLayer;
-    spriteDef.maxVisDist = MeterToUnit(50);
+    spriteDef.maxVisDist = MeterToUnit(50.0f);
 
     Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Clamp | Texture::HighQuality);
     spriteDef.materials.SetCount(1);
@@ -246,13 +246,13 @@ void ComLight::DrawGizmos(const RenderView::State &viewState, bool selected) {
     }
 
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.origin.Distance(viewState.origin) / MeterToUnit(8), 0.01f, 1.0f);
+    float alpha = BE1::Clamp(spriteDef.origin.Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 
 const AABB ComLight::GetAABB() {
-    return Sphere(Vec3::origin, MeterToUnit(0.5)).ToAABB();
+    return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 
 bool ComLight::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
@@ -330,6 +330,7 @@ Vec3 ComLight::GetLightSize() const {
 
 void ComLight::SetLightSize(const Vec3 &lightSize) {
     renderLightDef.size = lightSize;
+
     renderLightDef.size[0] = Max(renderLightDef.size[0], 1.0f);
     renderLightDef.size[1] = Max(renderLightDef.size[1], 1.0f);
     renderLightDef.size[2] = Max(renderLightDef.size[2], 1.0f);
@@ -343,7 +344,7 @@ float ComLight::GetLightZNear() const {
 
 void ComLight::SetLightZNear(float lightZNear) {
     renderLightDef.zNear = lightZNear;
-    
+
     UpdateVisuals();
 }
 

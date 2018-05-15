@@ -32,11 +32,11 @@ void ComCharacterController::RegisterProperties() {
     REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.1f);
     REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, MeterToUnit(0.5f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1), MeterToUnit(0.5f), CentiToUnit(1));
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, MeterToUnit(0.8f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1), MeterToUnit(0.5f), CentiToUnit(1));
-    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, CentiToUnit(40),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0, CentiToUnit(10), CentiToUnit(1));
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, CentiToUnit(40.0f),
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0, CentiToUnit(50.0f), CentiToUnit(1.0f));
     REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 90, 1);
 }
@@ -177,8 +177,8 @@ void ComCharacterController::GroundTrace() {
     Vec3 p1 = origin;
     Vec3 p2 = p1;
 
-    // 땅에 닿아있는지 체크하기위해 z 축으로 2.5cm 만큼 내려서 이동시켜 본다
-    p2.z -= CentiToUnit(2.5);
+    // 땅에 닿아있는지 체크하기위해 z 축으로 6cm 만큼 내려서 이동시켜 본다
+    p2.z -= CentiToUnit(6.0f);
     if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2,
         PhysCollidable::CharacterGroup,
         PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup, groundTrace)) {
@@ -460,7 +460,7 @@ void ComCharacterController::DrawGizmos(const RenderView::State &viewState, bool
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
             float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
             float scaledHeight = transform->GetScale().z * capsuleHeight;
 

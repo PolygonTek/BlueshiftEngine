@@ -94,7 +94,7 @@ void ComParticleSystem::Init() {
     memset(&spriteDef, 0, sizeof(spriteDef));
     spriteDef.flags = RenderObject::BillboardFlag;
     spriteDef.layer = TagLayerSettings::EditorLayer;
-    spriteDef.maxVisDist = MeterToUnit(50);
+    spriteDef.maxVisDist = MeterToUnit(50.0f);
 
     Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ParticleSystem.png", Texture::Clamp | Texture::HighQuality);
     spriteDef.materials.SetCount(1);
@@ -375,7 +375,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
 
     particle->initialSpeed = MeterToUnit(stage->standardModule.startSpeed.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
 
-    particle->initialSize = CentiToUnit(stage->standardModule.startSize.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
+    particle->initialSize = MeterToUnit(stage->standardModule.startSize.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
 
     particle->initialAspectRatio = stage->standardModule.startAspectRatio.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac);
 
@@ -530,11 +530,11 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
 
         // Compute size
         if (stage->moduleFlags & BIT(ParticleSystem::LTSizeModuleBit)) {
-            trail->size = particle->initialSize * CentiToUnit(stage->sizeOverLifetimeModule.size.Evaluate(particle->randomSize, trailFrac));
+            trail->size = particle->initialSize * stage->sizeOverLifetimeModule.size.Evaluate(particle->randomSize, trailFrac);
         } else if (stage->moduleFlags & BIT(ParticleSystem::SizeBySpeedModuleBit)) {
             float l = Math::Fabs(stage->sizeBySpeedModule.speedRange[1] - stage->sizeBySpeedModule.speedRange[0]);
             float speedFrac = (UnitToMeter(trailSpeed) - stage->sizeBySpeedModule.speedRange[0]) / l;
-            trail->size = particle->initialSize * CentiToUnit(stage->sizeBySpeedModule.size.Evaluate(particle->randomSize, speedFrac));
+            trail->size = particle->initialSize * stage->sizeBySpeedModule.size.Evaluate(particle->randomSize, speedFrac);
         } else {
             trail->size = particle->initialSize;
         }
@@ -669,7 +669,7 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
 
 void ComParticleSystem::DrawGizmos(const RenderView::State &viewState, bool selected) {
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.origin.Distance(viewState.origin) / MeterToUnit(8), 0.01f, 1.0f);
+    float alpha = BE1::Clamp(spriteDef.origin.Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }

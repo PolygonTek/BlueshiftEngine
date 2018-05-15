@@ -250,7 +250,7 @@ void ComSliderJoint::DrawGizmos(const RenderView::State &viewState, bool selecte
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
@@ -261,15 +261,15 @@ void ComSliderJoint::DrawGizmos(const RenderView::State &viewState, bool selecte
 
         if (enableLimitAngles) {
             renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5), minAngle, maxAngle, true);
+            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5f), minAngle, maxAngle, true);
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5), 1);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5f), 1);
         }
 
         renderWorld->SetDebugColor(Color4::red, Color4::red);
-        renderWorld->DebugArrow(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(5), CentiToUnit(3), CentiToUnit(0.5));
-        renderWorld->DebugArrow(worldOrigin, worldOrigin - worldAxis[0] * CentiToUnit(5), CentiToUnit(3), CentiToUnit(0.5));
+        renderWorld->DebugArrow(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(5.0f), CentiToUnit(3.0f), CentiToUnit(0.5f));
+        renderWorld->DebugArrow(worldOrigin, worldOrigin - worldAxis[0] * CentiToUnit(5.0f), CentiToUnit(3.0f), CentiToUnit(0.5f));
     }
 }
 

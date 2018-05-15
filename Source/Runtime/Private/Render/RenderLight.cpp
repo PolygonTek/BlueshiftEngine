@@ -80,7 +80,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         // Set bounding frustum for spot light
         worldFrustum.SetOrigin(state.origin);
         worldFrustum.SetAxis(state.axis);
-        worldFrustum.SetSize(BE1::Max(state.zNear, 3.0f), state.size[0], state.size[1], state.size[2]);
+        worldFrustum.SetSize(BE1::Max(state.zNear, 0.01f), state.size[0], state.size[1], state.size[2]);
 
         float xFov = RAD2DEG(Math::ATan(worldFrustum.GetLeft(), worldFrustum.GetFarDistance())) * 2.0f;
         float yFov = RAD2DEG(Math::ATan(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;

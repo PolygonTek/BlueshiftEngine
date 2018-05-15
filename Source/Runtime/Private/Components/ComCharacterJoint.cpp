@@ -121,6 +121,7 @@ const Vec3 &ComCharacterJoint::GetLocalAnchor() const {
 
 void ComCharacterJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
     }
@@ -252,7 +253,7 @@ void ComCharacterJoint::DrawGizmos(const RenderView::State &viewState, bool sele
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(200) * MeterToUnit(200)) {
+    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
@@ -262,13 +263,13 @@ void ComCharacterJoint::DrawGizmos(const RenderView::State &viewState, bool sele
         }
 
         renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], CentiToUnit(5), lowerLimit.x, upperLimit.x, true);
-        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], CentiToUnit(5), lowerLimit.y, upperLimit.y, true);
-        renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], CentiToUnit(5), lowerLimit.z, upperLimit.z, true);
+        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], CentiToUnit(5.0f), lowerLimit.x, upperLimit.x, true);
+        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], CentiToUnit(5.0f), lowerLimit.y, upperLimit.y, true);
+        renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], CentiToUnit(5.0f), lowerLimit.z, upperLimit.z, true);
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(5), 1);
-        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * CentiToUnit(5), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(5.0f), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * CentiToUnit(5.0f), 1);
     }
 }
 

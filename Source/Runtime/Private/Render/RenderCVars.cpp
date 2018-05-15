@@ -35,15 +35,15 @@ CVAR(r_shadows, L"1", CVar::Integer | CVar::Archive, L"enable shadows, 1 = shado
 CVAR(r_shadowMapSize, L"1024", CVar::Integer | CVar::Archive, L"directional/projected shadow map size");
 CVAR(r_shadowMapFilterSize, L"1.0", CVar::Float | CVar::Archive, L"shadow map blurring filter size in centi-meter unit");
 CVAR(r_shadowCubeMapSize, L"1024", CVar::Integer | CVar::Archive, L"virtual shadow cube map size of each face");
-CVAR(r_shadowCubeMapZNear, L"4.0", CVar::Float, L"");
+CVAR(r_shadowCubeMapZNear, L"0.04", CVar::Float, L"");
 CVAR(r_shadowCubeMapFloat, L"0", CVar::Bool | CVar::Archive, L"use float texture for shadow cube map");
 CVAR(r_shadowMapQuality, L"1", CVar::Integer | CVar::Archive, L"shadow map PCF level, 0 = HW-PCF only, 1 = HW-PCFx5, 2 = PCFx9, 3 = PCFx16 (randomly jittered sample)");
 CVAR(r_shadowMapCropAlign, L"1", CVar::Bool, L"");
 
 CVAR(r_CSM_count, L"4", CVar::Integer | CVar::Archive, L"");
-CVAR(r_CSM_maxDistance, L"4096", CVar::Float, L"");
+CVAR(r_CSM_maxDistance, L"50", CVar::Float, L"");
 CVAR(r_CSM_pancaking, L"0", CVar::Bool, L"");
-CVAR(r_CSM_nonCachedDistance, L"4096", CVar::Float, L"");
+CVAR(r_CSM_nonCachedDistance, L"50", CVar::Float, L"");
 CVAR(r_CSM_updateRatio, L"1.0", CVar::Float, L"");
 CVAR(r_CSM_selectionMethod, L"1", CVar::Integer, L"cascade selection method, 0 = z-based selection, 1 = map-based selection");
 CVAR(r_CSM_splitLamda, L"0.9", CVar::Float, L"");
@@ -87,8 +87,8 @@ CVAR(r_SSAO, L"1", CVar::Bool | CVar::Archive, L"screen space ambient occlusion"
 CVAR(r_SSAO_quality, L"2", CVar::Integer | CVar::Archive, L"");
 CVAR(r_SSAO_blur, L"1", CVar::Integer | CVar::Archive, L"");
 CVAR(r_SSAO_radius, L"64.0", CVar::Float, L"SSAO occlusion maximum ray radius in centi-meter unit");
-CVAR(r_SSAO_validRange, L"32.0", CVar::Float, L"");
-CVAR(r_SSAO_threshold, L"4.0", CVar::Float, L"");
+CVAR(r_SSAO_validRange, L"32.0", CVar::Float, L"SSAO valid range in centi-meter unit");
+CVAR(r_SSAO_threshold, L"4.0", CVar::Float, L"SSAO threshold in centi-meter unit");
 CVAR(r_SSAO_power, L"0.2", CVar::Float, L"");
 CVAR(r_SSAO_intensity, L"1.0", CVar::Float, L"");
 
