@@ -168,6 +168,11 @@ public:
                         /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
     void                SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &scale);
 
+                        /// Decomposes this matrix to translation, rotation and scale parts.
+    void                GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const;
+                        /// Decomposes this matrix to translation, rotation and scale parts.
+    void                GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const;
+
                         /// Inverts this matrix.
     Mat3x4              Inverse() const;
                         /// Inverts this matrix, in-place.
@@ -608,11 +613,12 @@ BE_INLINE Mat4 Mat3x4::ToMat4() const {
         0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-BE_INLINE Mat3x4 Mat4::ToMat3x4() const {
-    return Mat3x4(
-        mat[0][0], mat[0][1], mat[0][2], mat[0][3],
-        mat[1][0], mat[1][1], mat[1][2], mat[1][3],
-        mat[2][0], mat[2][1], mat[2][2], mat[2][3]);
+BE_INLINE const Mat3x4 &Mat4::ToMat3x4() const {
+    return *reinterpret_cast<const Mat3x4 *>(this);
+}
+
+BE_INLINE Mat3x4 &Mat4::ToMat3x4() {
+    return *reinterpret_cast<Mat3x4 *>(this);
 }
 
 BE_INLINE Vec3 Mat3x4::ToScaleVec3() const {

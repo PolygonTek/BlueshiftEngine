@@ -195,6 +195,11 @@ public:
                         /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
     void                SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &scale);
 
+                        /// Decomposes this matrix to translation, rotation and scale parts.
+    void                GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const;
+                        /// Decomposes this matrix to translation, rotation and scale parts.
+    void                GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const;
+
                         /// Returns the sum of the diagonal elements of this matrix.
                         /// Mathematically, this means sum of all eigenvalues
     float               Trace() const;
@@ -260,7 +265,8 @@ public:
                         /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
                         /// Returns upper 3x4 part.
-    Mat3x4              ToMat3x4() const;
+    const Mat3x4 &      ToMat3x4() const;
+    Mat3x4 &            ToMat3x4();
                         /// Returns scale part.
     Vec3                ToScaleVec3() const;
                         /// Returns translation vector part.

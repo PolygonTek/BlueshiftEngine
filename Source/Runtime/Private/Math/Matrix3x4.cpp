@@ -111,6 +111,28 @@ void Mat3x4::SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &s
     SetTRS(translation, rotation.ToMat3(), scale);
 }
 
+void Mat3x4::GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const {
+    translation.x = mat[0][3];
+    translation.y = mat[1][3];
+    translation.z = mat[2][3];
+
+    rotation = ToMat3();
+
+    scale.x = rotation[0].Length();
+    scale.y = rotation[1].Length();
+    scale.z = rotation[2].Length();
+    
+    rotation[0] *= 1.f / scale.x;
+    rotation[1] *= 1.f / scale.y;
+    rotation[2] *= 1.f / scale.z;
+}
+
+void Mat3x4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
+    Mat3 r;
+    GetTRS(translation, r, scale);
+    rotation = r.ToQuat();
+}
+
 // Euclidean inverse (TRS)^{-1} = S^{-1} R^T (-T)
 void Mat3x4::InverseSelf() {
 #if 0

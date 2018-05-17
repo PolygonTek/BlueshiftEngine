@@ -708,6 +708,16 @@ void Mat4::SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &sca
     SetTRS(translation, rotation.ToMat3(), scale);
 }
 
+void Mat4::GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const {
+    ToMat3x4().GetTRS(translation, rotation, scale);
+}
+
+void Mat4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
+    Mat3 r;
+    GetTRS(translation, r, scale);
+    rotation = r.ToQuat();
+}
+
 Mat4 Mat4::FromString(const char *str) {
     Mat4 m;
     sscanf(str, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[0].w, &m[1].x, &m[1].y, &m[1].z, &m[1].w, &m[2].x, &m[2].y, &m[2].z, &m[2].w, &m[3].x, &m[3].y, &m[3].z, &m[3].w);
