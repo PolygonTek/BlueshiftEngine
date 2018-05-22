@@ -97,6 +97,11 @@ Prefab *PrefabManager::GetPrefab(const char *hashName) {
     return prefab;
 }
 
+void PrefabManager::DestroyPrefab(Prefab *prefab) {
+    prefabHashMap.Remove(prefab->hashName);
+    delete prefab;
+}
+
 void PrefabManager::RenamePrefab(Prefab *prefab, const Str &newName) {
     const auto *entry = prefabHashMap.Get(prefab->hashName);
     if (entry) {

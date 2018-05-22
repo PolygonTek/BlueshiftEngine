@@ -89,6 +89,8 @@ public:
     Prefab *                    FindPrefab(const char *hashName) const;
     Prefab *                    GetPrefab(const char *filename);
 
+    void                        DestroyPrefab(Prefab *prefab);
+
     void                        RenamePrefab(Prefab *prefab, const Str &newName);
 
     static Json::Value          CreatePrefabValue(const Entity *entity);
