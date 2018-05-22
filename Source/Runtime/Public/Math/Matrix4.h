@@ -710,21 +710,21 @@ BE_INLINE Vec3 Mat4::TransformNormal(const Vec3 &n) const {
 
 BE_INLINE Mat4 Mat4::Inverse() const {
     Mat4 invMat = *this;
-    int r = invMat.InverseSelf();
+    bool r = invMat.InverseSelf();
     assert(r);
     return invMat;
 }
 
 BE_INLINE Mat4 Mat4::AffineInverse() const {
     Mat4 invMat = *this;
-    int r = invMat.AffineInverseSelf();
+    bool r = invMat.AffineInverseSelf();
     assert(r);
     return invMat;
 }
 
 BE_INLINE Mat4 Mat4::EuclideanInverse() const {
     Mat4 invMat = *this;
-    int r = invMat.EuclideanInverseSelf();
+    bool r = invMat.EuclideanInverseSelf();
     assert(r);
     return invMat;
 }

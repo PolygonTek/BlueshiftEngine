@@ -139,7 +139,7 @@ float Mat4::Determinant() const {
 }
 
 bool Mat4::InverseSelf() {
-#if 0
+#if 1
     // 84+4+16 = 104 multiplications
     //             1 division
     double det, invDet;

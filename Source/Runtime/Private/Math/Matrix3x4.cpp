@@ -136,7 +136,7 @@ void Mat3x4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
 // Euclidean inverse (TRS)^{-1} = S^{-1} R^T (-T)
 void Mat3x4::InverseSelf() {
 #if 0
-    * this = Mat3x4(ToMat4().Inverse());
+    *this = Mat3x4(ToMat4().Inverse());
 #else
     float tmp[3];
 

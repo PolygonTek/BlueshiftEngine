@@ -394,7 +394,7 @@ BE_INLINE Mat2 &Mat2::TransposeSelf() {
 
 BE_INLINE Mat2 Mat2::Inverse() const {
     Mat2 invMat = *this;
-    int r = invMat.InverseSelf();
+    bool r = invMat.InverseSelf();
     assert(r);
     return invMat;
 }

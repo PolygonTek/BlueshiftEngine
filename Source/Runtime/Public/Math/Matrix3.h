@@ -500,7 +500,7 @@ BE_INLINE bool Mat3::FixDenormals() {
 
 BE_INLINE Mat3 Mat3::Inverse() const {
     Mat3 invMat = *this;
-    int r = invMat.InverseSelf();
+    bool r = invMat.InverseSelf();
     assert(r);
     return invMat;
 }
