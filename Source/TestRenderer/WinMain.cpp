@@ -245,7 +245,7 @@ void ShutdownInstance() {
 #endif
 
     if (mainContext) {
-        BE1::rhi.DeleteRenderTarget(mainRenderTarget);
+        BE1::rhi.DestroyRenderTarget(mainRenderTarget);
 
         HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(mainContext);
         BE1::rhi.DestroyContext(mainContext);

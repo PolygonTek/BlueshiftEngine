@@ -149,12 +149,12 @@ void Application::LoadResources() {
 }
     
 void Application::FreeResources() {
-    BE1::rhi.DeleteTexture(defaultTexture);
-    BE1::rhi.DeleteShader(defaultShader);
-    BE1::rhi.DeleteBuffer(defaultVertexBuffer);
-    BE1::rhi.DeleteVertexFormat(vertex2DFormat);
-    BE1::rhi.DeleteVertexFormat(vertex3DFormat);
-    BE1::rhi.DeleteBuffer(streamBuffer);
+    BE1::rhi.DestroyTexture(defaultTexture);
+    BE1::rhi.DestroyShader(defaultShader);
+    BE1::rhi.DestroyBuffer(defaultVertexBuffer);
+    BE1::rhi.DestroyVertexFormat(vertex2DFormat);
+    BE1::rhi.DestroyVertexFormat(vertex3DFormat);
+    BE1::rhi.DestroyBuffer(streamBuffer);
 }
 
 BE1::RHI::Handle Application::CreateRenderTarget(const BE1::RHI::Handle contextHandle) {
@@ -200,7 +200,7 @@ void Application::DrawToRenderTarget(BE1::RHI::Handle renderTargetHandle, float 
     BE1::rhi.SetCullFace(BE1::RHI::NoCull);
     
     BE1::rhi.BindShader(defaultShader);
-    BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantLocation(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
+    BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantIndex(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
     BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(defaultShader, "baseMap"), defaultTexture);
     
     BE1::rhi.BindBuffer(BE1::RHI::VertexBuffer, defaultVertexBuffer);
@@ -233,7 +233,7 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     BE1::rhi.SetCullFace(BE1::RHI::NoCull);
         
     BE1::rhi.BindShader(defaultShader);
-    BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantLocation(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
+    BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantIndex(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
     BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(defaultShader, "baseMap"), renderTargetTexture);
 
     BE1::rhi.BindBuffer(BE1::RHI::VertexBuffer, defaultVertexBuffer);
