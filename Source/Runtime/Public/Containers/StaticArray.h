@@ -182,6 +182,9 @@ public:
     template <typename CompatibleT>
     bool            RemoveAll(CompatibleT &&value);
 
+                    /// Assigns same value to all elements.
+    void            Fill(const T &value);
+
                     /// Sorts using predicate 'compare'.
     template <typename Functor>
     void            Sort(Functor &&compare);
@@ -487,6 +490,13 @@ BE_INLINE bool StaticArray<T, capacity>::RemoveAll(CompatibleT &&value) {
     }
 
     return removed;
+}
+
+template <typename T, int capacity>
+BE_INLINE void StaticArray<T, capacity>::Fill(const T &value) {
+    for (int i = 0; i < count; i++) {
+        elements[i] = value;
+    }
 }
 
 template <typename T, int capacity>

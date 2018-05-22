@@ -229,6 +229,9 @@ public:
     template <typename CompatibleT>
     bool            RemoveAll(CompatibleT &&value);
 
+                    /// Assigns same value to all elements.
+    void            Fill(const T &value);
+
                     /// Removes the element at index position 'index' and returns it.
     T               TakeAt(int index);
 
@@ -739,6 +742,13 @@ BE_INLINE bool Array<T>::RemoveAll(CompatibleT &&value) {
     }
 
     return removed;
+}
+
+template <typename T>
+BE_INLINE void Array<T>::Fill(const T &value) {
+    for (int i = 0; i < count; i++) {
+        elements[i] = value;
+    }
 }
 
 template <typename T>
