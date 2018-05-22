@@ -9,6 +9,7 @@ Version History
 - Added support for vehicle physics
 - Added support for slider/wheel joint components
 - Changed engine unit from centi-meters to meters
+- Changed FBX importing process in editor
 - Fixed rolling friction bug
 
 ### 0.4.0

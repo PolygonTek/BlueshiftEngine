@@ -7,6 +7,8 @@ Blueshift Game Engine
 Blueshift is a cross-platform 3D game engine implemented in C++. it's free, open-source, and works on Windows, macOS, iOS, and Android.
 The project is currently in an early stage of development.
 
+See the [change log](CHANGELOG.md) for changes.
+
 <a href='https://ko-fi.com/V7V66PEJ' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://az743702.vo.msecnd.net/cdn/kofi1.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 Features
