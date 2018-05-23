@@ -224,18 +224,16 @@ void ComRigidBody::CreateBody() {
 
     // Collect collider shadpes in this entity
     ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
-    if (colliders.Count() > 0) {
-        for (int i = 0; i < colliders.Count(); i++) {
-            ComCollider *collider = colliders[i]->Cast<ComCollider>();
-            collider->CreateCollider();
+    for (int colliderIndex = 0; colliderIndex < colliders.Count(); colliderIndex++) {
+        ComCollider *collider = colliders[colliderIndex]->Cast<ComCollider>();
+        collider->CreateCollider();
 
-            PhysShapeDesc shapeDesc;
-            shapeDesc.localOrigin = Vec3::zero;
-            shapeDesc.localAxis.SetIdentity();
-            shapeDesc.collider = collider->GetCollider();
+        PhysShapeDesc shapeDesc;
+        shapeDesc.localOrigin = Vec3::zero;
+        shapeDesc.localAxis.SetIdentity();
+        shapeDesc.collider = collider->GetCollider();
 
-            physicsDesc.shapes.Append(shapeDesc);
-        }
+        physicsDesc.shapes.Append(shapeDesc);
     }
 
     // Collect collider shadpes in children recursively
