@@ -748,6 +748,7 @@ void ToolWindowManager::simplifyLayout()
       }
       // QTimer::singleShot(1000, area, SLOT(deleteLater()));
       area->deleteLater();
+      simplifyLayout();
     }
   }
 }
