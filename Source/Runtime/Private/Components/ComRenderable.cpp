@@ -37,7 +37,7 @@ void ComRenderable::RegisterProperties() {
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, 
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 20000.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 1000.f, 
         "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("skipSelection", "Skip Selection", bool, IsSkipSelection, SetSkipSelection, false, 
         "", PropertyInfo::SkipSerializationFlag);

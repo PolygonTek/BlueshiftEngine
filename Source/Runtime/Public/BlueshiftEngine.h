@@ -118,7 +118,7 @@
 #include "Input/KeyCmd.h"
 #include "Input/InputSystem.h"
 
-// Script
+// Scripting
 #include "Scripting/LuaVM.h"
 
 // Render

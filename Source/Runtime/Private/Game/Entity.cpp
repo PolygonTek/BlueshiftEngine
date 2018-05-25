@@ -447,37 +447,56 @@ void Entity::SetActiveInHierarchy(bool active) {
     }
 }
 
-const AABB Entity::GetAABB() const {
-    AABB aabb;
-    aabb.SetZero();
+const AABB Entity::GetLocalAABB(bool includingChildren) const {
+    AABB localAabb;
+    localAabb.SetZero();
 
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
-            aabb.AddAABB(component->GetAABB());
+            localAabb.AddAABB(component->GetAABB());
         }
     }
 
-    return aabb;
+    if (includingChildren) {
+        Mat3x4 rootMatrixInverse = GetTransform()->GetMatrixNoScale().Inverse();
+
+        Array<Entity *> children;
+        GetChildren(children);
+
+        for (int childIndex = 0; childIndex < children.Count(); childIndex++) {
+            const Entity *child = children[childIndex];
+
+            Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrixNoScale();
+            Vec3 translation, scale;
+            Mat3 rotation;
+            localMatrix.GetTRS(translation, rotation, scale);
+
+            AABB aabb;
+            aabb.SetFromTransformedAABB(child->GetLocalAABB(), translation, rotation);
+            localAabb += aabb;
+        }
+    }
+    return localAabb;
 }
 
-const AABB Entity::GetWorldAABB() const {
+const AABB Entity::GetWorldAABB(bool includingChildren) const {
     const ComTransform *transform = GetTransform();
 
     AABB worldAabb;
-    worldAabb.SetFromTransformedAABB(GetAABB(), transform->GetOrigin(), transform->GetAxis());
+    worldAabb.SetFromTransformedAABB(GetLocalAABB(includingChildren), transform->GetOrigin(), transform->GetAxis());
     return worldAabb;
 }
 
-const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait) const {
+const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait, bool includingChildren) const {
     Vec3 vec;
-    
+
     if (posTrait == Pivot) {
         vec = GetTransform()->GetOrigin();
     } else {
-        AABB aabb = GetWorldAABB();
-            
+        AABB aabb = GetWorldAABB(includingChildren);
+
         if (posTrait == Minimum) {
             vec = aabb.b[0];
         } else if (posTrait == Maximum) {

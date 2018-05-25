@@ -203,11 +203,11 @@ public:
     void                        SetActive(bool active);
 
                                 /// Returns AABB in local space.
-    const AABB                  GetAABB() const;
+    const AABB                  GetLocalAABB(bool includingChildren = false) const;
                                 /// Returns AABB in world space.
-    const AABB                  GetWorldAABB() const;
+    const AABB                  GetWorldAABB(bool includingChildren = false) const;
                                 /// Returns position in world space with given trait.
-    const Vec3                  GetWorldPosition(WorldPosTrait posTrait = Pivot) const;
+    const Vec3                  GetWorldPosition(WorldPosTrait posTrait, bool includingChildren = false) const;
 
                                 /// Visualizes the component in editor.
     void                        DrawGizmos(const RenderView::State &viewState, bool selected);
