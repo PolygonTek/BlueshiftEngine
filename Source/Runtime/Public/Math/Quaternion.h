@@ -71,24 +71,44 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
+                        /// Negates the quaternion.
+                        /// @note Negating a quaternion will not produce the inverse rotation. Call Quat::Inverse() to generate the inverse rotation.
     Quat                operator-() const;
 
+                        /// Adds two quaternions.
+                        /// @note Adding two quaternions does not concatenate the two rotation operations. Use quaternion multiplication to achieve that.
     Quat                operator+(const Quat &rhs) const;
-
+                        
+                        /// Subtracts the quaternion from this quternion.
     Quat                operator-(const Quat &rhs) const;
 
-    Quat                operator*(const Quat &rhs) const;
-    
-    Vec3                operator*(const Vec3 &rhs) const;
-    friend Vec3         operator*(const Vec3 &lhs, const Quat &rhs);
-    
+                        /// Multiplies a quaternion by a scalar.
     Quat                operator*(float rhs) const;
     friend Quat         operator*(const float lhs, const Quat &rhs);
 
+                        /// Multiplies two quaternions together.
+                        /// The product q1 * q2 returns a quaternion that concatenates the two orientation rotations. The rotation
+                        /// q2 is applied first before q1.
+    Quat                operator*(const Quat &rhs) const;
+
+                        /// Transforms the given vector by this Quaternion.
+                        /// @note Technically, this function does not perform a simple multiplication of 'q * v',
+                        /// but instead performs a conjugation operation 'q * v * q^{-1}'. This corresponds to transforming
+                        /// the given vector by this Quaternion.
+    Vec3                operator*(const Vec3 &rhs) const;
+    friend Vec3         operator*(const Vec3 &lhs, const Quat &rhs);
+
+                        /// Adds a quaternion to this quaternion, in-place.
     Quat &              operator+=(const Quat &rhs);
+
+                        /// Subtracts a quaternion to this quaternion, in-place.
     Quat &              operator-=(const Quat &rhs);
-    Quat &              operator*=(const Quat &rhs);
+
+                        /// Multiplies a quaternion by a scalar, in-place.
     Quat &              operator*=(float rhs);
+
+                        /// Multiplies two quaternions, in-place.
+    Quat &              operator*=(const Quat &rhs);
 
                         /// Exact compare, no epsilon
     bool                Equals(const Quat &a) const;
@@ -99,13 +119,18 @@ public:
                         /// Exact compare, no epsilon
     bool                operator!=(const Quat &rhs) const { return !Equals(rhs); }
 
+                        /// Sets all elements of this quaternion.
     void                Set(float x, float y, float z, float w);
+
+                        /// Sets identity quaternion (0, 0, 0, 1)
     void                SetIdentity();
 
     float               CalcW() const;
 
                         // Compute square root of norm
     float               Length();
+
+    float               LengthSqr();
 
                         /// Normalizes this quaternion in-place.
     Quat &              Normalize();
@@ -115,17 +140,18 @@ public:
                         /// Inverts this quaternion, in-place.
     Quat &              InverseSelf();
 
+                        /// Sets this quaternion by specifying the axis about which the rotation is performed, and the angle of rotation.
     Quat &              SetFromAngleAxis(float angle, const Vec3 &axis);
-
+                        /// Returns the quaternion with the given angle and axis.
     static Quat         FromAngleAxis(float angle, const Vec3 &axis);
-
+                        /// Sets this quaternion by specifying the Euler angles.
     Quat &              SetFromAngles(const Angles &angles);
-
+                        /// Returns the quaternion with the given Euler angles.
     static Quat         FromAngles(const Angles &angles);
 
-                        /// Compute a quaternion that rotates unit-length vector "from" to unit-length vector "to"
+                        /// Compute a quaternion that rotates unit-length vector "from" to unit-length vector "to".
     Quat &              SetFromTwoVectors(const Vec3 &from, const Vec3 &to);
-
+                        /// Returns the quaternion that rotates unit-length vector "from" to unit-length vector "to".
     static Quat         FromTwoVectors(const Vec3 &from, const Vec3 &to);
 
     Quat &              SetFromSlerp(const Quat &from, const Quat &to, float t);
@@ -298,6 +324,10 @@ BE_INLINE float Quat::CalcW() const {
 
 BE_INLINE float Quat::Length() {
     return Math::Sqrt(x * x + y * y + z * z + w * w);
+}
+
+BE_INLINE float Quat::LengthSqr() {
+    return x * x + y * y + z * z + w * w;
 }
 
 BE_INLINE Quat &Quat::Normalize() {

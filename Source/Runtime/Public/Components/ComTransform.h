@@ -103,7 +103,7 @@ public:
                             /// Sets rotation axis in world space.
     void                    SetAxis(const Mat3 &axis);
                             /// Sets position angles in world space.
-    void                    SetAngles(const Angles &angles) { SetAxis(angles.ToMat3()); }
+    void                    SetAngles(const Angles &angles) { SetRotation(angles.ToQuat()); }
                             /// Sets position, rotation in world space.
     void                    SetOriginAxis(const Vec3 &origin, const Mat3 &axis);
                             /// Sets position, rotation and scale in world space as an atomic operation.
