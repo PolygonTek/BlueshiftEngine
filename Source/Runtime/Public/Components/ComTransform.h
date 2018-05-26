@@ -46,31 +46,41 @@ public:
                             /// Returns scale in local space.
     const Vec3 &            GetLocalScale() const { return localScale; }
                             /// Returns rotation axis in local space.
-    const Mat3 &            GetLocalAxis() const { return localAxis; }
+    const Quat &            GetLocalRotation() const { return localRotation; }
+                            /// Returns rotation axis in local space.
+    Mat3                    GetLocalAxis() const { return localRotation.ToMat3(); }
                             /// Returns Euler angles in local space.
-    Angles                  GetLocalAngles() const { return GetLocalAxis().ToAngles(); }
+    Angles                  GetLocalAngles() const { return localRotation.ToAngles(); }
                             /// Returns local space transform matrix.
-    Mat3x4                  GetLocalMatrix() const { return Mat3x4(localScale, localAxis, localOrigin); }
+    Mat3x4                  GetLocalMatrix() const { return Mat3x4(localScale, localRotation.ToMat3(), localOrigin); }
                             /// Returns local space transform matrix without scaling.
-    Mat3x4                  GetLocalMatrixNoScale() const { return Mat3x4(localAxis, localOrigin); }
+    Mat3x4                  GetLocalMatrixNoScale() const { return Mat3x4(localRotation.ToMat3(), localOrigin); }
 
                             /// Sets position in local space.
     void                    SetLocalOrigin(const Vec3 &origin);
                             /// Sets scale in local space.
     void                    SetLocalScale(const Vec3 &scale);
+                            /// Sets rotation in local space.
+    void                    SetLocalRotation(const Quat &rotation);
+                            /// Sets position, rotation in local space.
+    void                    SetLocalOriginRotation(const Vec3 &origin, const Quat &rotation);
+                            /// Sets position, rotation and scale in local space as an atomic operation.
+    void                    SetLocalOriginRotationScale(const Vec3 &origin, const Quat &rotation, const Vec3 &scale = Vec3::one);
                             /// Sets rotation axis in local space.
     void                    SetLocalAxis(const Mat3 &axis);
                             /// Sets Euler angles in local space.
-    void                    SetLocalAngles(const Angles &localAngles) { SetLocalAxis(localAngles.ToMat3()); }
-                            /// Sets position, rotation in local space.
+    void                    SetLocalAngles(const Angles &localAngles) { SetLocalRotation(localAngles.ToQuat()); }
+                            /// Sets position, rotation axis in local space.
     void                    SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis);
-                            /// Sets position, rotation and scale in local space as an atomic operation.
+                            /// Sets position, rotation axis and scale in local space as an atomic operation.
     void                    SetLocalOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale = Vec3::one);
 
                             /// Returns position in world space.
     Vec3                    GetOrigin() const;
                             /// Returns scale in world space.
     Vec3                    GetScale() const;
+                            /// Returns rotation in world space.
+    Quat                    GetRotation() const;
                             /// Returns rotation axis in world space.
     Mat3                    GetAxis() const;
                             /// Returns rotation angles in world space.
@@ -84,6 +94,12 @@ public:
     void                    SetOrigin(const Vec3 &origin);
                             /// Sets scale in world space.
     void                    SetScale(const Vec3 &scale);
+                            /// Sets rotation in world space.
+    void                    SetRotation(const Quat &rotation);
+                            /// Sets position, rotation in world space.
+    void                    SetOriginRotation(const Vec3 &origin, const Quat &rotation);
+                            /// Sets position, rotation and scale in world space as an atomic operation.
+    void                    SetOriginRotationScale(const Vec3 &origin, const Quat &rotation, const Vec3 &scale = Vec3::one);
                             /// Sets rotation axis in world space.
     void                    SetAxis(const Mat3 &axis);
                             /// Sets position angles in world space.
@@ -120,7 +136,7 @@ protected:
 
     Vec3                    localOrigin;            ///< Position in local space.
     Vec3                    localScale;             ///< Scale in local space.
-    Mat3                    localAxis;              ///< Rotation axis in local space.
+    Quat                    localRotation;          ///< Rotation in local space.
 
     mutable Mat3x4          worldMatrix;
     mutable bool            worldMatrixInvalidated;

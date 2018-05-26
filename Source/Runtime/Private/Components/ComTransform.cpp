@@ -38,7 +38,7 @@ void ComTransform::RegisterProperties() {
 ComTransform::ComTransform() {
     localOrigin = Vec3::zero;
     localScale = Vec3::one;
-    localAxis = Mat3::identity;
+    localRotation = Quat::identity;
     worldMatrix = Mat3x4::identity;
     worldMatrixInvalidated = false;
     physicsUpdating = false;
@@ -80,8 +80,35 @@ void ComTransform::SetLocalScale(const Vec3 &scale) {
     }
 }
 
+void ComTransform::SetLocalRotation(const Quat &rotation) {
+    this->localRotation = rotation;
+
+    if (IsInitialized()) {
+        InvalidateWorldMatrix();
+    }
+}
+
+void ComTransform::SetLocalOriginRotation(const Vec3 &origin, const Quat &rotation) {
+    this->localOrigin = origin;
+    this->localRotation = rotation;
+
+    if (IsInitialized()) {
+        InvalidateWorldMatrix();
+    }
+}
+
+void ComTransform::SetLocalOriginRotationScale(const Vec3 &origin, const Quat &rotation, const Vec3 &scale) {
+    this->localOrigin = origin;
+    this->localRotation = rotation;
+    this->localScale = scale;
+
+    if (IsInitialized()) {
+        InvalidateWorldMatrix();
+    }
+}
+
 void ComTransform::SetLocalAxis(const Mat3 &axis) {
-    this->localAxis = axis;
+    this->localRotation = axis.ToQuat();
 
     if (IsInitialized()) {
         InvalidateWorldMatrix();
@@ -90,7 +117,7 @@ void ComTransform::SetLocalAxis(const Mat3 &axis) {
 
 void ComTransform::SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis) {
     this->localOrigin = origin;
-    this->localAxis = axis;
+    this->localRotation = axis.ToQuat();
 
     if (IsInitialized()) {
         InvalidateWorldMatrix();
@@ -99,7 +126,7 @@ void ComTransform::SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis) {
 
 void ComTransform::SetLocalOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
     this->localOrigin = origin;
-    this->localAxis = axis;
+    this->localRotation = axis.ToQuat();
     this->localScale = scale;
 
     if (IsInitialized()) {
@@ -114,6 +141,22 @@ Vec3 ComTransform::GetOrigin() const {
     return worldMatrix.ToTranslationVec3();
 }
 
+Vec3 ComTransform::GetScale() const {
+    if (worldMatrixInvalidated) {
+        UpdateWorldMatrix();
+    }
+    return worldMatrix.ToScaleVec3();
+}
+
+Quat ComTransform::GetRotation() const {
+    if (worldMatrixInvalidated) {
+        UpdateWorldMatrix();
+    }
+    Mat3 rotation = worldMatrix.ToMat3();
+    rotation.OrthoNormalizeSelf();
+    return rotation.ToQuat();
+}
+
 Mat3 ComTransform::GetAxis() const {
     if (worldMatrixInvalidated) {
         UpdateWorldMatrix();
@@ -121,13 +164,6 @@ Mat3 ComTransform::GetAxis() const {
     Mat3 axis = worldMatrix.ToMat3();
     axis.OrthoNormalizeSelf();
     return axis;
-}
-
-Vec3 ComTransform::GetScale() const {
-    if (worldMatrixInvalidated) {
-        UpdateWorldMatrix();
-    }
-    return worldMatrix.ToScaleVec3();
 }
 
 const Mat3x4 &ComTransform::GetMatrix() const {
@@ -155,14 +191,37 @@ void ComTransform::SetOrigin(const Vec3 &origin) {
     SetLocalOrigin(parent ? parent->GetMatrix().Inverse() * origin : origin);
 }
 
-void ComTransform::SetAxis(const Mat3 &axis) {
-    const ComTransform *parent = GetParent();
-    SetLocalAxis(parent ? parent->GetAxis().Transpose() * axis : axis);
-}
-
 void ComTransform::SetScale(const Vec3 &scale) {
     const ComTransform *parent = GetParent();
     SetLocalScale(parent ? scale / parent->GetScale() : scale);
+}
+
+void ComTransform::SetRotation(const Quat &rotation) {
+    const ComTransform *parent = GetParent();
+    SetLocalRotation(parent ? parent->GetRotation().Inverse() * rotation : rotation);
+}
+
+void ComTransform::SetOriginRotation(const Vec3 &origin, const Quat &rotation) {
+    const ComTransform *parent = GetParent();
+    if (parent) {
+        SetLocalOriginRotation(parent->GetMatrix().Inverse() * origin, parent->GetRotation().Inverse() * rotation);
+    } else {
+        SetLocalOriginRotation(origin, rotation);
+    }
+}
+
+void ComTransform::SetOriginRotationScale(const Vec3 &origin, const Quat &rotation, const Vec3 &scale) {
+    const ComTransform *parent = GetParent();
+    if (parent) {
+        SetLocalOriginRotationScale(parent->GetMatrix().Inverse() * origin, parent->GetRotation().Inverse() * rotation, scale / parent->GetScale());
+    } else {
+        SetLocalOriginRotationScale(origin, rotation, scale);
+    }
+}
+
+void ComTransform::SetAxis(const Mat3 &axis) {
+    const ComTransform *parent = GetParent();
+    SetLocalAxis(parent ? parent->GetAxis().Transpose() * axis : axis);
 }
 
 void ComTransform::SetOriginAxis(const Vec3 &origin, const Mat3 &axis) {
@@ -198,7 +257,7 @@ void ComTransform::LookAt(const Vec3 &targetPosition, const Vec3 &worldUp) {
 
 Vec3 ComTransform::Forward(TransformSpace space) const {
     if (space == LocalSpace) {
-        return localAxis[0];
+        return localRotation.ToMat3()[0];
     } else {
         return GetAxis()[0];
     }
@@ -206,7 +265,7 @@ Vec3 ComTransform::Forward(TransformSpace space) const {
 
 Vec3 ComTransform::Right(TransformSpace space) const {
     if (space == LocalSpace) {
-        return localAxis[1];
+        return localRotation.ToMat3()[1];
     } else {
         return GetAxis()[1];
     }
@@ -214,7 +273,7 @@ Vec3 ComTransform::Right(TransformSpace space) const {
 
 Vec3 ComTransform::Up(TransformSpace space) const { 
     if (space == LocalSpace) {
-        return localAxis[2];
+        return localRotation.ToMat3()[2];
     } else {
         return GetAxis()[2];
     }
@@ -229,12 +288,12 @@ void ComTransform::Translate(const Vec3 &translation, TransformSpace space) {
 }
 
 void ComTransform::Rotate(const Vec3 &rotVec, float angle, TransformSpace space) {
-    Mat3 rotation = Rotation(Vec3::zero, rotVec, angle).ToMat3();
+    Quat rotation = Quat::FromAngleAxis(angle, rotVec);
 
     if (space == LocalSpace) {
-        SetLocalAxis(rotation * GetLocalAxis());
+        SetLocalRotation(rotation * GetLocalRotation());
     } else {
-        SetAxis(rotation * GetAxis());
+        SetRotation(rotation * GetRotation());
     }
 }
 
