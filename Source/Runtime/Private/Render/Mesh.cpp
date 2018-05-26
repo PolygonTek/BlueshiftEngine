@@ -32,13 +32,7 @@ void Mesh::Purge() {
     surfaces.Clear();
 
     if (isInstantiated) {
-        if (skinningJointCache) {
-            if (skinningJointCache->skinningJoints) {
-                Mem_AlignedFree(skinningJointCache->skinningJoints);
-            }
-            delete skinningJointCache;
-            skinningJointCache = nullptr;
-        }
+        SAFE_DELETE(skinningJointCache);
 
         if (originalMesh) {
             originalMesh->instantiatedMeshes.Remove(this);
@@ -100,35 +94,15 @@ void Mesh::Instantiate(int meshType) {
     }
 
     // Free previously allocated skinning joint cache
-    if (skinningJointCache) {
-        if (skinningJointCache->skinningJoints) {
-            Mem_AlignedFree(skinningJointCache->skinningJoints);
-        }
-        delete skinningJointCache;
-        skinningJointCache = nullptr;
-    }
+    SAFE_DELETE(skinningJointCache);
 
     if (isSkinnedMesh) {
-        useGpuSkinning = CapableGPUJointSkinning((Mesh::SkinningMethod)renderGlobal.skinningMethod, numJoints);
+        useGpuSkinning = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod)renderGlobal.skinningMethod, numJoints);
 
         if (useGpuSkinning) {
-            skinningJointCache = new SkinningJointCache;
-            skinningJointCache->viewFrameCount = -1;
+            skinningJointCache = new SkinningJointCache(numJoints);
 
-            // NOTE: VTF skinning 일 때만 모션블러 함
-            if (renderGlobal.skinningMethod == VertexTextureFetchSkinning) {
-                skinningJointCache->numJoints = numJoints;
-                if (r_motionBlur.GetInteger() == 2) {
-                    skinningJointCache->numJoints *= 2;
-                }
-                skinningJointCache->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * skinningJointCache->numJoints);
-
-                skinningJointCache->jointIndexOffset[0] = 0;
-                skinningJointCache->jointIndexOffset[1] = 0;
-            } else {
-                skinningJointCache->numJoints = numJoints;
-                skinningJointCache->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * skinningJointCache->numJoints);
-            }
+            
         }
     }
 
@@ -320,52 +294,12 @@ bool Mesh::IsCompatibleSkeleton(const Skeleton *skeleton) const {
     return true;
 }
 
-bool Mesh::CapableGPUJointSkinning(SkinningMethod skinningMethod, int numJoints) const {
-    assert(numJoints > 0 && numJoints < 256);
-
-    if (skinningMethod == VertexTextureFetchSkinning) {
-        return true;
-    } else if (skinningMethod == VertexShaderSkinning) {
-        if (numJoints <= 74) {
-            if (rhi.HWLimit().maxVertexUniformComponents >= 256) {
-                return true;
-            }
-        } else if (numJoints <= 256) {
-            if (rhi.HWLimit().maxVertexUniformComponents >= 2048) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *jointMats) {
     if (!useGpuSkinning || !skinningJointCache) {
         return;
     }
 
-    if (skinningJointCache->viewFrameCount == renderSystem.GetCurrentRenderContext()->frameCount) {
-        return;
-    }
-
-    skinningJointCache->viewFrameCount = renderSystem.GetCurrentRenderContext()->frameCount;
-
-    if (r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
-        if (skinningJointCache->viewFrameCount == renderSystem.GetCurrentRenderContext()->frameCount) {
-            skinningJointCache->jointIndexOffset[1] = skinningJointCache->jointIndexOffset[0];
-            skinningJointCache->jointIndexOffset[0] = skinningJointCache->jointIndexOffset[0] == 0 ? numJoints : 0;
-        }
-    } else {
-        skinningJointCache->jointIndexOffset[1] = 0;
-        skinningJointCache->jointIndexOffset[0] = 0;
-    }
-
-    simdProcessor->MultiplyJoints(skinningJointCache->skinningJoints + skinningJointCache->jointIndexOffset[0], jointMats, skeleton->GetInvBindPoseMatrices(), numJoints);
-
-    if (renderGlobal.skinningMethod == VertexTextureFetchSkinning) {
-        bufferCacheManager.AllocTexel(skinningJointCache->numJoints * sizeof(Mat3x4), skinningJointCache->skinningJoints, &skinningJointCache->bufferCache);
-    }
+    skinningJointCache->Update(skeleton, jointMats);
 
     renderSystem.GetCurrentRenderContext()->renderCounter.numSkinningEntities++;
 }

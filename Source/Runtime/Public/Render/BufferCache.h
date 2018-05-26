@@ -32,6 +32,12 @@ struct BufferCache {
 
 class BufferCacheManager {
 public:
+    enum VertexTextureUpdate {
+        DirectCopyUpdate,   // obsolete !
+        PboUpdate,
+        TboUpdate
+    };
+
     void                    Init();
     void                    Shutdown();
 

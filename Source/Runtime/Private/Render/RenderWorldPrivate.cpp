@@ -702,10 +702,10 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
                 if (surf->subMesh->IsGpuSkinning()) {
                     const SkinningJointCache *skinningJointCache = renderObject->state.mesh->skinningJointCache;
 
-                    if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
-                        *(uint32_t *)instanceData = (uint32_t)skinningJointCache->bufferCache.tcBase[0];
+                    if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+                        *(uint32_t *)instanceData = (uint32_t)skinningJointCache->GetBufferCache().tcBase[0];
                     } else {
-                        *(Vec2 *)instanceData = Vec2(skinningJointCache->bufferCache.tcBase[0], skinningJointCache->bufferCache.tcBase[1]);
+                        *(Vec2 *)instanceData = Vec2(skinningJointCache->GetBufferCache().tcBase[0], skinningJointCache->GetBufferCache().tcBase[1]);
                     }
                 }
 
@@ -867,7 +867,7 @@ void RenderWorld::AddDrawSurf(VisibleView *visView, VisibleLight *visLight, Visi
     if (renderGlobal.instancingMethod != Mesh::NoInstancing) {
         if (actualMaterial->GetPass()->instancingEnabled) {
             if (subMesh->IsGpuSkinning()) {
-                if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
+                if (renderGlobal.skinningMethod == SkinningJointCache::VertexTextureFetchSkinning) {
                     flags |= DrawSurf::UseInstancing;
                 }
             } else {

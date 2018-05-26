@@ -89,15 +89,6 @@ public:
     VisibleLight *          primaryLight;
 };
 
-// HW skinning 용 joint cache
-struct SkinningJointCache {
-    int                     numJoints;              // motion blur 를 사용하면 원래 model joints 의 2배를 사용한다
-    Mat3x4 *                skinningJoints;         // result matrix for animation
-    int                     jointIndexOffset[2];    // current/previous frame joint index offset for motion blur
-    BufferCache             bufferCache;            // use for VTF skinning
-    int                     viewFrameCount;         // 현재 프레임에 계산을 마쳤음을 표시하기 위한 marking number
-};
-
 struct renderGlobal_t {
     int                     skinningMethod;
     int                     vtUpdateMethod;          // vertex texture update method

@@ -36,19 +36,19 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
     rhi.GetGammaRamp(savedGammaRamp);
 
     if (r_fastSkinning.GetInteger() == 2 && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
-        renderGlobal.skinningMethod = Mesh::VertexTextureFetchSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::VertexTextureFetchSkinning;
     } else if (r_fastSkinning.GetInteger() == 1) {
-        renderGlobal.skinningMethod = Mesh::VertexShaderSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::VertexShaderSkinning;
     } else {
-        renderGlobal.skinningMethod = Mesh::CpuSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::CpuSkinning;
     }
 
     if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBufferObject()) {
-        renderGlobal.vtUpdateMethod = Mesh::TboUpdate;
+        renderGlobal.vtUpdateMethod = BufferCacheManager::TboUpdate;
     } else if (r_vertexTextureUpdate.GetInteger() == 1 && rhi.SupportsPixelBufferObject()) {
-        renderGlobal.vtUpdateMethod = Mesh::PboUpdate;
+        renderGlobal.vtUpdateMethod = BufferCacheManager::PboUpdate;
     } else {
-        renderGlobal.vtUpdateMethod = Mesh::DirectCopyUpdate;
+        renderGlobal.vtUpdateMethod = BufferCacheManager::DirectCopyUpdate;
     }
 
     if (r_instancing.GetInteger() == 2 && rhi.SupportsInstancedArrays() && rhi.SupportsMultiDrawIndirect()) {

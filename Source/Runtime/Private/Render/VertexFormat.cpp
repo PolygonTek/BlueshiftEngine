@@ -202,7 +202,7 @@ void VertexFormat::CreateInstancingVertexFormats(int stream, int originalIndex, 
     vertexFormats[instancingIndex].Append(stream, 48, RHI::VertexElement::TexCoord4, 4, RHI::VertexElement::UByteType, true, 1);  // entityColor
 
     if (useVtfSkinning) {
-        if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+        if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
             vertexFormats[instancingIndex].Append(stream, 52, RHI::VertexElement::TexCoord5, 1, RHI::VertexElement::UIntType, false, 1);
         } else {
             vertexFormats[instancingIndex].Append(stream, 52, RHI::VertexElement::TexCoord5, 2, RHI::VertexElement::FloatType, false, 1);

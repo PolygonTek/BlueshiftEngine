@@ -225,6 +225,7 @@ set(ENGINE_FILES
 
     Public/Render/Anim.h
     Public/Render/BufferCache.h
+    Public/Render/SkinningJointCache.h
     Public/Render/Font.h
     Public/Render/ParticleMesh.h
     Public/Render/GuiMesh.h
@@ -477,6 +478,7 @@ set(ENGINE_FILES
     Private/Render/Anim_optimize.cpp
     Private/Render/AnimManager.cpp
     Private/Render/BufferCache.cpp
+    Private/Render/SkinningJointCache.cpp
     Private/Render/ParticleMesh.cpp
     Private/Render/GuiMesh.cpp
     Private/Render/Material.cpp

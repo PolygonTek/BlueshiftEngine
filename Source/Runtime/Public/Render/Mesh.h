@@ -34,7 +34,7 @@ class CmdArgs;
 class Skeleton;
 class Joint;
 class Mat3x4;
-struct SkinningJointCache;
+class SkinningJointCache;
 class DrawSurf;
 class SubMesh;
 
@@ -58,19 +58,7 @@ public:
         StaticMesh,         // vertex 데이터는 static buffer 에 들어간다.
         DynamicMesh,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (GUI, text, particle)
         SkinnedMesh         // skinning 용 mesh
-    };
-
-    enum SkinningMethod {
-        CpuSkinning,
-        VertexShaderSkinning,
-        VertexTextureFetchSkinning
-    };
-
-    enum VertexTextureUpdate {
-        DirectCopyUpdate,   // obsolete !
-        PboUpdate,
-        TboUpdate
-    };
+    };    
 
     enum InstancingMethod {
         NoInstancing,
@@ -160,8 +148,6 @@ private:
     void                    ComputeNormals();
     void                    ComputeTangents(bool includeNormals, bool useUnsmoothedTangents);
     void                    ComputeEdges();
-
-    bool                    CapableGPUJointSkinning(SkinningMethod skinningMethod, int numJoints) const;
 
     bool                    LoadBinaryMesh(const char *filename);
     void                    WriteBinaryMesh(const char *filename);

@@ -44,13 +44,13 @@ void BufferCacheManager::Init() {
         bufferSet->indexBuffer = rhi.CreateBuffer(RHI::IndexBuffer, RHI::Dynamic, icSize, 0, nullptr);
         bufferSet->uniformBuffer = rhi.CreateBuffer(RHI::UniformBuffer, RHI::Dynamic, ucSize, 0, nullptr);
 
-        if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+        if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
             // Create texture buffer to write directly
             bufferSet->texelBufferType = RHI::TexelBuffer;
             bufferSet->texelBuffer = rhi.CreateBuffer(bufferSet->texelBufferType, RHI::Dynamic, TB_BYTES, 0, nullptr);
             bufferSet->texture = textureManager.AllocTexture(va("_tbTexture%i", frameDataIndex));
             bufferSet->texture->CreateFromBuffer(Image::RGBA_32F_32F_32F_32F, bufferSet->texelBuffer);
-        } else if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
+        } else if (renderGlobal.vtUpdateMethod == BufferCacheManager::PboUpdate) {
             // Create unpack buffer to translate data from PBO to VTF texture
             // See below link if you want to know what PBO is 
             // http://www.songho.ca/opengl/gl_pbo.html
@@ -254,12 +254,12 @@ void BufferCacheManager::BeginBackEnd() {
     unmappedNum = mappedNum;
 
     // Update buffered texture
-    if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
-        if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::VertexTextureFetchSkinning) {
+        if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
             // The update to the data is not guaranteed to affect the texture until next time it is bound to a texture image unit
             rhi.SelectTextureUnit(0);
             frameData[unmappedNum].texture->Bind();
-        }  else if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
+        }  else if (renderGlobal.vtUpdateMethod == BufferCacheManager::PboUpdate) {
             // Unmapped PBO -> texture
             UpdatePBOTexture();
         }
@@ -470,11 +470,11 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
 #endif
     }
 
-    if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+    if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
         bc->tcBase[0] = offset / TB_BPP;
         bc->tcBase[1] = 0;
         bc->texture = currentBufferSet->texture;
-    } else if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
+    } else if (renderGlobal.vtUpdateMethod == BufferCacheManager::PboUpdate) {
         int texelOffset = offset / TB_BPP;
         bc->tcBase[0] = texelOffset % TB_WIDTH;
         bc->tcBase[1] = texelOffset / TB_WIDTH;
@@ -623,7 +623,7 @@ void BufferCacheManager::UpdatePBOTexture() const {
 }
 
 const Texture *BufferCacheManager::GetFrameTexture() const {
-    if (renderGlobal.vtUpdateMethod == Mesh::PboUpdate) {
+    if (renderGlobal.vtUpdateMethod == BufferCacheManager::PboUpdate) {
         return frameData[0].texture;
     }
     return frameData[unmappedNum].texture;

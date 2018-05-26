@@ -182,18 +182,18 @@ void Batch::SetVertexColorConstants(const Shader *shader, const Material::Vertex
 }
 
 void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const {
-    if (renderGlobal.skinningMethod == Mesh::CpuSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::CpuSkinning) {
         return;
     }
 
-    if (renderGlobal.skinningMethod == Mesh::VertexShaderSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::VertexShaderSkinning) {
         shader->SetConstantArray4f(shader->builtInConstantIndices[Shader::JointsConst], cache->numJoints * 3, cache->skinningJoints[0].Ptr());
-    } else if (renderGlobal.skinningMethod == Mesh::VertexTextureFetchSkinning) {
+    } else if (renderGlobal.skinningMethod == SkinningJointCache::VertexTextureFetchSkinning) {
         const Texture *jointsMapTexture = cache->bufferCache.texture;
 
         shader->SetTexture(shader->builtInSamplerUnits[Shader::JointsMapSampler], jointsMapTexture);
 
-        if (renderGlobal.vtUpdateMethod == Mesh::TboUpdate) {
+        if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
             if (numInstances == 0) {
                 shader->SetConstant1i(shader->builtInConstantIndices[Shader::SkinningBaseTcConst], cache->bufferCache.tcBase[0]);
             }
