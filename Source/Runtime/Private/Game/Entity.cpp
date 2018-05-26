@@ -448,14 +448,14 @@ void Entity::SetActiveInHierarchy(bool active) {
 }
 
 const AABB Entity::GetLocalAABB(bool includingChildren) const {
-    AABB localAabb;
-    localAabb.SetZero();
+    AABB outAabb;
+    outAabb.SetZero();
 
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
-            localAabb.AddAABB(component->GetAABB());
+            outAabb.AddAABB(component->GetAABB());
         }
     }
 
@@ -473,12 +473,16 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
             Mat3 rotation;
             localMatrix.GetTRS(translation, rotation, scale);
 
-            AABB aabb;
-            aabb.SetFromTransformedAABB(child->GetLocalAABB(), translation, rotation);
-            localAabb += aabb;
+            AABB childLocalAabb;
+            childLocalAabb = child->GetLocalAABB();
+            if (childLocalAabb != AABB::zero) {
+                childLocalAabb.SetFromTransformedAABB(childLocalAabb, translation, rotation);
+
+                outAabb += childLocalAabb;
+            }
         }
     }
-    return localAabb;
+    return outAabb;
 }
 
 const AABB Entity::GetWorldAABB(bool includingChildren) const {
