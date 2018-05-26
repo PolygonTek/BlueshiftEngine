@@ -58,8 +58,8 @@ void SkinningJointCache::Update(const Skeleton *skeleton, const Mat3x4 *jointMat
             jointIndexOffset[0] = jointIndexOffset[0] == 0 ? numJoints : 0;
         }
     } else {
-        jointIndexOffset[1] = 0;
         jointIndexOffset[0] = 0;
+        jointIndexOffset[1] = 0;
     }
 
     simdProcessor->MultiplyJoints(skinningJoints + jointIndexOffset[0], jointMats, skeleton->GetInvBindPoseMatrices(), numJoints);

@@ -116,7 +116,7 @@ public:
     Entity *                    CreateEmptyEntity(const char *name);
 
     Entity *                    InstantiateEntity(const Entity *originalEntity);
-    Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Angles &angles);
+    Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Quat &rotation);
 
     bool                        SpawnEntityFromJson(Json::Value &entityValue, Entity **ent = nullptr);
     void                        SpawnEntitiesFromJson(Json::Value &entitiesValue);

@@ -355,11 +355,11 @@ Entity *GameWorld::InstantiateEntity(const Entity *originalEntity) {
     return clonedEntity;
 }
 
-Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Angles &angles) {
+Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Quat &rotation) {
     Entity *clonedEntity = CloneEntity(originalEntity);
     
     ComTransform *transform = clonedEntity->GetTransform();
-    transform->SetLocalOriginAxisScale(origin, angles.ToMat3(), Vec3::one);
+    transform->SetLocalOriginRotation(origin, rotation);
 
     RegisterEntity(clonedEntity);
 
