@@ -101,8 +101,6 @@ void Mesh::Instantiate(int meshType) {
 
         if (useGpuSkinning) {
             skinningJointCache = new SkinningJointCache(numJoints);
-
-            
         }
     }
 
@@ -114,8 +112,8 @@ void Mesh::Instantiate(int meshType) {
         surfaces.Clear();
     }
 
-    for (int i = 0; i < originalMesh->surfaces.Count(); i++) {
-        MeshSurf *surf = AllocInstantiatedSurface(originalMesh->surfaces[i], meshType);
+    for (int surfaceIndex = 0; surfaceIndex < originalMesh->surfaces.Count(); surfaceIndex++) {
+        MeshSurf *surf = AllocInstantiatedSurface(originalMesh->surfaces[surfaceIndex], meshType);
         surfaces.Append(surf);
     }
 }

@@ -421,8 +421,7 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
     }
 
     if (subMesh->useGpuSkinning) {
-        const Mesh *mesh = surfSpace->def->state.mesh;
-        SetSkinningConstants(shader, mesh->skinningJointCache);
+        SetSkinningConstants(shader, surfSpace->def->state.mesh->skinningJointCache);
     }
 
     DrawPrimitives();
