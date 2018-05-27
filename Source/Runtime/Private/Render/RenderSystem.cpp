@@ -67,13 +67,13 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
 
     textureManager.Init();
 
+    fontManager.Init();
+
     shaderManager.Init();
 
     materialManager.Init();
 
     //skinManager.Init();
-
-    fontManager.Init();
 
     bufferCacheManager.Init();
 
@@ -121,11 +121,11 @@ void RenderSystem::Shutdown() {
 
     VertexFormat::Shutdown();
 
-    fontManager.Shutdown();
-
     //skinManager.Shutdown();
 
     materialManager.Shutdown();
+
+    fontManager.Shutdown();
 
     shaderManager.Shutdown();
 
