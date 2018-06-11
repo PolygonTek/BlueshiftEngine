@@ -42,7 +42,7 @@ public:
     /// Constructs from another string.
     Str(const Str &str);
     /// Constructs from rvalue string.
-    Str(Str &&str);
+    Str(Str &&str) noexcept;
     /// Constructs from a null-terminated C string.
     Str(const char *text);
     /// Constructs from a null-terminated wide character string.
@@ -104,7 +104,7 @@ public:
     /// Assign a string.
     Str &operator=(const Str &rhs);
     /// Move a string.
-    Str &operator=(Str &&rhs);
+    Str &operator=(Str &&rhs) noexcept;
     /// Assign a null-terminated C string.
     Str &operator=(const char *rhs);
     /// Destructs.
@@ -471,7 +471,7 @@ BE_INLINE Str::Str(const Str &str) : Str() {
     len = l;
 }
 
-BE_INLINE Str::Str(Str &&str) : Str() {
+BE_INLINE Str::Str(Str &&str) noexcept : Str() {
     // just call move assignment operator
     *this = std::move(str);
 }
@@ -550,7 +550,7 @@ BE_INLINE Str &Str::operator=(const Str &rhs) {
     return *this;
 }
 
-BE_INLINE Str &Str::operator=(Str &&rhs) {
+BE_INLINE Str &Str::operator=(Str &&rhs) noexcept {
     BE1::Swap(len, rhs.len);
     BE1::Swap(alloced, rhs.alloced);
     BE1::Swap(data, rhs.data);

@@ -34,7 +34,7 @@ public:
     /// Construct from another string.
     WStr(const WStr &str);
     /// Construct from rvalue string
-    WStr(WStr &&str);
+    WStr(WStr &&str) noexcept;
     /// Construct from a null-terminated C string.
     WStr(const char *text);
     /// Construct from a null-terminated wide character array.
@@ -116,7 +116,7 @@ public:
     /// Assign a wide string.
     WStr &operator=(const WStr &a);
     /// Move a wide string.
-    WStr &operator=(WStr &&a);
+    WStr &operator=(WStr &&a) noexcept;
     /// Assign a null-terminated wide character C string.
     WStr &operator=(const wchar_t *text);
     /// Destructs.
@@ -500,7 +500,7 @@ BE_INLINE WStr::WStr(const WStr &wstr) : WStr() {
     len = l;
 }
 
-BE_INLINE WStr::WStr(WStr &&wstr) : WStr() {
+BE_INLINE WStr::WStr(WStr &&wstr) noexcept : WStr() {
     // just call move assignment operator
     *this = std::move(wstr);
 }
@@ -580,7 +580,7 @@ BE_INLINE WStr &WStr::operator=(const WStr &a) {
     return *this;
 }
 
-BE_INLINE WStr &WStr::operator=(WStr &&a) {
+BE_INLINE WStr &WStr::operator=(WStr &&a) noexcept {
     BE1::Swap(len, a.len);
     BE1::Swap(alloced, a.alloced);
     BE1::Swap(data, a.data);
