@@ -282,6 +282,11 @@ inline const ptrdiff_t offset_of(T1 T2::*member) {
     return ptrdiff_t(intptr_t(&(obj->*member)) - intptr_t(obj));
 }
 
+template <typename T, std::size_t N>
+constexpr std::size_t count_of(T (&)[N]) {
+    return N;
+}
+
 //----------------------------------------------------------------------------------------------
 // Win32
 //----------------------------------------------------------------------------------------------

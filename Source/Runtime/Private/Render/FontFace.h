@@ -52,12 +52,12 @@ public:
     FontFaceBitmap();
     virtual ~FontFaceBitmap();
 
-    virtual int             GetFontHeight() const;
+    virtual int             GetFontHeight() const override;
 
-    virtual FontGlyph *     GetGlyph(int charcode);
-    virtual int             GetGlyphAdvance(int charcode) const;
+    virtual FontGlyph *     GetGlyph(int charcode) override;
+    virtual int             GetGlyphAdvance(int charcode) const override;
 
-    virtual bool            Load(const char *filename, int fontSize);
+    virtual bool            Load(const char *filename, int fontSize) override;
 
 private:
     void                    Purge();
@@ -78,12 +78,12 @@ public:
     FontFaceFreeType();
     virtual ~FontFaceFreeType();
 
-    virtual int             GetFontHeight() const;
+    virtual int             GetFontHeight() const override;
 
-    virtual FontGlyph *     GetGlyph(int charcode);
-    virtual int             GetGlyphAdvance(int charcode) const;
+    virtual FontGlyph *     GetGlyph(int charcode) override;
+    virtual int             GetGlyphAdvance(int charcode) const override;
 
-    virtual bool            Load(const char *filename, int fontSize);
+    virtual bool            Load(const char *filename, int fontSize) override;
 
                             // FreeType libary 초기화/종료 함수
     static void             Init();
