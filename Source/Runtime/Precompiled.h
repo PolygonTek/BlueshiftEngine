@@ -524,7 +524,7 @@ BE_FORCE_INLINE constexpr int Min3Index(const T &x, const T &y, const T &z) { re
 
 /// Swaps two values.
 template <typename T> 
-BE_FORCE_INLINE void Swap(T &a, T &b) { T c = std::move(a); a = std::move(b); b = std::move(c); }
+BE_FORCE_INLINE void Swap(T &a, T &b) noexcept { T c = std::move(a); a = std::move(b); b = std::move(c); }
 
 /// Clamps a number to a range.
 template <typename T>
