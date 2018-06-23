@@ -18,10 +18,6 @@
 
 BE_NAMESPACE_BEGIN
 
-class SkeletonAsset;
-class AnimAsset;
-class Anim;
-
 class ComSkinnedMeshRenderer : public ComMeshRenderer {
     friend class LuaVM;
 
@@ -42,44 +38,20 @@ public:
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-    void                    UpdateAnim(int time);
+    Guid                    GetRootGuid() const;
+    void                    SetRootGuid(const Guid &rootGuid);
 
-    Guid                    GetSkeletonGuid() const;
-    void                    SetSkeletonGuid(const Guid &skeletonGuid);
-
-    Guid                    GetAnimGuid() const;
-    void                    SetAnimGuid(const Guid &animGuid);
-
-    Anim *                  GetAnim() const { return anim; }
-
-    float                   GetAnimSeconds() const;
-
-    int                     GetPlayStartTime() const { return playStartTime; }
+    static const SignalDef  SIG_SkeletonUpdated;
 
 protected:
+    void                    UpdateSkeleton();
+
     virtual void            UpdateVisuals() override;
 
     virtual void            MeshUpdated() override;
 
-    void                    ChangeAnim(const Guid &animGuid);
-    void                    AnimReloaded();
-
-    void                    ChangeSkeleton(const Guid &skeletonGuid);
-    void                    SkeletonReloaded();
-
-    Skeleton *              skeleton;
-    SkeletonAsset *         skeletonAsset;
-    
-    Anim *                  anim;
-    AnimAsset *             animAsset;
-    Guid                    animGuid;
-
-    Array<int>              jointIndexes;
-    Array<int>              jointParents;
-    Mat3x4 *                jointMats;
+    Guid                    rootGuid;
     Array<AABB>             frameAABBs;
-
-    int                     playStartTime;
 };
 
 BE_NAMESPACE_END

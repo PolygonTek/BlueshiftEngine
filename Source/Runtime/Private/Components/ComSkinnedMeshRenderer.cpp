@@ -13,39 +13,29 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformTime.h"
 #include "Render/Render.h"
 #include "Components/ComTransform.h"
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
+#include "Components/ComAnimation.h"
+#include "Components/ComAnimator.h"
+#include "AnimController/AnimController.h"
 #include "Game/GameWorld.h"
-#include "Asset/Asset.h"
-#include "Asset/GuidMapper.h"
-#include "Core/JointPose.h"
-#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
+
+const SignalDef ComSkinnedMeshRenderer::SIG_SkeletonUpdated("ComSkinnedMeshRenderer::SkeletonUpdated", "a");
 
 OBJECT_DECLARATION("Skinned Mesh Renderer", ComSkinnedMeshRenderer, ComMeshRenderer)
 BEGIN_EVENTS(ComSkinnedMeshRenderer)
 END_EVENTS
 
 void ComSkinnedMeshRenderer::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&SkeletonAsset::metaObject);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("anim", "Animation", Guid, GetAnimGuid, SetAnimGuid, Guid::zero, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&AnimAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("root", "Root", Guid, GetRootGuid, SetRootGuid, Guid::zero,
+        "Root Entity", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
 }
 
 ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {
-    jointMats = nullptr;
-
-    skeletonAsset = nullptr;
-    skeleton = nullptr;
-
-    animAsset = nullptr;
-    anim = nullptr;
-    animGuid = Guid::zero;
 }
 
 ComSkinnedMeshRenderer::~ComSkinnedMeshRenderer() {
@@ -60,21 +50,6 @@ bool ComSkinnedMeshRenderer::IsConflictComponent(const MetaObject &componentClas
 }
 
 void ComSkinnedMeshRenderer::Purge(bool chainPurge) {
-    if (jointMats) {
-        Mem_AlignedFree(jointMats);
-        jointMats = nullptr;
-    }
-
-    if (skeleton) {
-        skeletonManager.ReleaseSkeleton(skeleton);
-        skeleton = nullptr;
-    }
-
-    if (anim) {
-        animManager.ReleaseAnim(anim);
-        anim = nullptr;
-    }
-
     if (chainPurge) {
         ComMeshRenderer::Purge();
     }
@@ -83,129 +58,48 @@ void ComSkinnedMeshRenderer::Purge(bool chainPurge) {
 void ComSkinnedMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
-    if (!anim) {
-        ChangeAnim(animGuid);
-    }
-
-    bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
-
-    // Set RenderObject parameters
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
-    renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
-    renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
-
-    playStartTime = GetGameWorld()->GetTime();
-
     // Mark as initialized
     SetInitialized(true);
+
+    UpdateSkeleton();
 
     UpdateVisuals();
 }
 
-void ComSkinnedMeshRenderer::ChangeSkeleton(const Guid &skeletonGuid) {
-#if 1
-    // Disconnect with previously connected skeleton asset
-    if (skeletonAsset) {
-        skeletonAsset->Disconnect(&Asset::SIG_Reloaded, this);
-        skeletonAsset = nullptr;
-    }
-#endif
+void ComSkinnedMeshRenderer::UpdateSkeleton() {
+    const Skeleton *skeleton = nullptr;
+    Mat3x4 *joints = nullptr;
 
-    if (skeleton) {
-        skeletonManager.ReleaseSkeleton(skeleton);
-        skeleton = nullptr;
-    }
+    // Root object should have ComAnimation or ComAnimator component
+    Object *rootObject = Entity::FindInstance(rootGuid);
+    if (rootObject) {
+        Entity *rootEntity = rootObject->Cast<Entity>();
 
-    const Str skeletonPath = resourceGuidMapper.Get(skeletonGuid);
-    skeleton = skeletonManager.GetSkeleton(skeletonPath);
+        if (rootEntity->HasComponent(&ComAnimation::metaObject)) {
+            ComAnimation *animationComponent = rootEntity->GetComponent<ComAnimation>();
 
-    jointIndexes.SetGranularity(1);
-    jointIndexes.SetCount(skeleton->NumJoints());
+            skeleton = animationComponent->GetSkeleton();
+            joints = animationComponent->GetJointMatrices();
+        } else if (rootEntity->HasComponent(&ComAnimator::metaObject)) {
+            ComAnimator *animatorComponent = rootEntity->GetComponent<ComAnimator>();
 
-    jointParents.SetGranularity(1);
-    jointParents.SetCount(skeleton->NumJoints());
-
-    const Joint *skeletonJoints = skeleton->GetJoints();
-    const Joint *skeletonJoint = skeletonJoints;
-
-    for (int i = 0; i < skeleton->NumJoints(); i++, skeletonJoint++) {
-        jointIndexes[i] = i;
-
-        if (skeletonJoint->parent) {
-            jointParents[i] = static_cast<int>(skeletonJoint->parent - skeletonJoints);
-        } else {
-            jointParents[i] = -1;
+            skeleton = animatorComponent->GetAnimator().GetAnimController()->GetSkeleton();
+            joints = animatorComponent->GetJointMatrices();
         }
     }
 
-    // Set up initial pose for skeleton
-    jointMats = (Mat3x4 *)Mem_Alloc16(skeleton->NumJoints() * sizeof(jointMats[0]));
-    renderObjectDef.joints = jointMats;
+    bool isCompatibleSkeleton = skeleton && referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
 
-    const JointPose *bindPoses = skeleton->GetBindPoses();
-    simdProcessor->ConvertJointPosesToJointMats(jointMats, bindPoses, skeleton->NumJoints());
-    simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
-
-    if (anim) {
-        //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
+    if (renderObjectDef.mesh) {
+        meshManager.ReleaseMesh(renderObjectDef.mesh);
     }
 
-#if 1
-    // Need to connect skeleton asset to be reloaded in Editor
-    skeletonAsset = (SkeletonAsset *)SkeletonAsset::FindInstance(skeletonGuid);
-    if (skeletonAsset) {
-        skeletonAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::SkeletonReloaded, SignalObject::Queued);
-    }
-#endif
-}
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
+    renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
+    renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
+    renderObjectDef.joints = joints;
 
-void ComSkinnedMeshRenderer::ChangeAnim(const Guid &animGuid) {
-    if (!referenceMesh) {
-        this->animGuid = animGuid;
-        return;
-    }
-
-#if 1
-    // Disconnect with previously connected anim asset
-    if (animAsset) {
-        animAsset->Disconnect(&Asset::SIG_Reloaded, this);
-        animAsset = nullptr;
-    }
-#endif
-
-    // Release the previously used anim
-    if (anim) {
-        animManager.ReleaseAnim(anim);
-        anim = nullptr;
-    }
-
-    const Str animPath = resourceGuidMapper.Get(animGuid);
-    anim = animManager.GetAnim(animPath);
-     
-    if (anim) {
-        if (skeleton) {
-            if (skeleton->NumJoints() != anim->NumJoints()) {
-                const JointPose *bindPoses = skeleton->GetBindPoses();
-                simdProcessor->ConvertJointPosesToJointMats(jointMats, bindPoses, skeleton->NumJoints());
-                simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
-
-                animManager.ReleaseAnim(anim);
-                anim = nullptr;
-                return;
-            }
-
-            // FIXME: Slow!!
-            //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
-        }
-    }
-   
-#if 1
-    // Need to connect anim asset to be reloaded in Editor
-    animAsset = (AnimAsset *)AnimAsset::FindInstance(animGuid);
-    if (animAsset) {
-        animAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComSkinnedMeshRenderer::AnimReloaded, SignalObject::Queued);
-    }
-#endif
+    UpdateVisuals();
 }
 
 void ComSkinnedMeshRenderer::Update() { 
@@ -219,34 +113,30 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
         return;
     }
 
-    int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + SEC2MS(GetTimeOffset());
-
-    UpdateAnim(currentTime);
-
-    if (anim) {
-#if 0
-        anim->GetAABB(renderObjectDef.localAABB, frameAABBs, time);
-#else
-        renderObjectDef.localAABB = renderObjectDef.mesh->GetAABB();
-#endif
-    } else {
-        renderObjectDef.localAABB = referenceMesh->GetAABB();
-    }
+    // FIXME
+    renderObjectDef.localAABB = referenceMesh->GetAABB();
 
     ComRenderable::UpdateVisuals();
 }
 
-void ComSkinnedMeshRenderer::UpdateAnim(int animTime) {
-    if (anim) {
-        Anim::FrameInterpolation frameInterpolation;
-        anim->TimeToFrameInterpolation(animTime, frameInterpolation);
+Guid ComSkinnedMeshRenderer::GetRootGuid() const {
+    return rootGuid;
+}
 
-        JointPose *jointFrame = (JointPose *)_alloca16(skeleton->NumJoints() * sizeof(jointFrame[0]));
-        anim->GetInterpolatedFrame(frameInterpolation, jointIndexes.Count(), jointIndexes.Ptr(), jointFrame);
+void ComSkinnedMeshRenderer::SetRootGuid(const Guid &guid) {
+    rootGuid = guid;
 
-        simdProcessor->ConvertJointPosesToJointMats(jointMats, jointFrame, skeleton->NumJoints());
+    Object *rootObject = Entity::FindInstance(rootGuid);
+    if (rootObject) {
+        Entity *rootEntity = rootObject->Cast<Entity>();
 
-        simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
+        if (rootEntity->HasComponent(&ComAnimation::metaObject)) {
+            ComAnimation *animationComponent = rootEntity->GetComponent<ComAnimation>();
+            animationComponent->Connect(&SIG_SkeletonUpdated, this, (SignalCallback)&ComSkinnedMeshRenderer::UpdateSkeleton, SignalObject::Unique);
+        } else if (rootEntity->HasComponent(&ComAnimator::metaObject)) {
+            ComAnimator *animatorComponent = rootEntity->GetComponent<ComAnimator>();
+            animatorComponent->Connect(&SIG_SkeletonUpdated, this, (SignalCallback)&ComSkinnedMeshRenderer::UpdateSkeleton, SignalObject::Unique);
+        }
     }
 }
 
@@ -255,74 +145,14 @@ void ComSkinnedMeshRenderer::MeshUpdated() {
         return;
     }
 
-    bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
-
-    if (isCompatibleSkeleton) {
-        if (anim) {
-            //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
-        }
-
-        renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
-        renderObjectDef.skeleton = skeleton;
-        renderObjectDef.numJoints = skeleton->NumJoints();
-    } else {
-        renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-        renderObjectDef.skeleton = nullptr;
-        renderObjectDef.numJoints = 0;
+    if (renderObjectHandle != -1) {
+        renderWorld->RemoveRenderObject(renderObjectHandle);
+        renderObjectHandle = -1;
     }
 
-    // temp code
-    renderWorld->RemoveRenderObject(renderObjectHandle);
-    renderObjectHandle = -1;
-    // temp code
+    UpdateSkeleton();
+
     UpdateVisuals();
-}
-
-void ComSkinnedMeshRenderer::SkeletonReloaded() {
-    ChangeSkeleton(GetProperty("skeleton").As<Guid>());
-
-    MeshUpdated();
-}
-
-void ComSkinnedMeshRenderer::AnimReloaded() {
-    ChangeAnim(GetProperty("anim").As<Guid>());
-
-    MeshUpdated();
-}
-
-Guid ComSkinnedMeshRenderer::GetSkeletonGuid() const {
-    if (skeleton) {
-        const Str skeletonPath = skeleton->GetHashName();
-        return resourceGuidMapper.Get(skeletonPath);
-    }
-    return Guid();
-}
-
-void ComSkinnedMeshRenderer::SetSkeletonGuid(const Guid &guid) {
-    ChangeSkeleton(guid);
-
-    MeshUpdated();
-}
-
-Guid ComSkinnedMeshRenderer::GetAnimGuid() const {
-    if (anim) {
-        const Str animPath = anim->GetHashName();
-        return resourceGuidMapper.Get(animPath);
-    }
-    return Guid();
-}
-
-void ComSkinnedMeshRenderer::SetAnimGuid(const Guid &guid) {
-    ChangeAnim(guid);
-
-    MeshUpdated();
-}
-
-float ComSkinnedMeshRenderer::GetAnimSeconds() const {
-    if (anim) {
-        return MS2SEC(anim->Length());
-    }
-    return 0;
 }
 
 BE_NAMESPACE_END
