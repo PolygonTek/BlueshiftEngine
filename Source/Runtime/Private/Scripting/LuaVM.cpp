@@ -198,6 +198,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterMeshRendererComponent(module);
         RegisterStaticMeshRendererComponent(module);
         RegisterSkinnedMeshRendererComponent(module);
+        RegisterAnimationComponent(module);
         RegisterAnimatorComponent(module);
         RegisterTextRendererComponent(module);
         RegisterParticleSystemComponent(module);

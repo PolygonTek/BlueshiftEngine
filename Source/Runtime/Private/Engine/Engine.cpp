@@ -113,6 +113,7 @@ static void RegisterEngineObjects() {
     ComMeshRenderer::RegisterProperties();
     ComStaticMeshRenderer::RegisterProperties();
     ComSkinnedMeshRenderer::RegisterProperties();
+    ComAnimation::RegisterProperties();
     ComAnimator::RegisterProperties();
     ComParticleSystem::RegisterProperties();
     ComTextRenderer::RegisterProperties();

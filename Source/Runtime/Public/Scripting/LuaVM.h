@@ -124,6 +124,7 @@ private:
     void                    RegisterMeshRendererComponent(LuaCpp::Module &module);
     void                    RegisterStaticMeshRendererComponent(LuaCpp::Module &module);
     void                    RegisterSkinnedMeshRendererComponent(LuaCpp::Module &module);
+    void                    RegisterAnimationComponent(LuaCpp::Module &module);
     void                    RegisterAnimatorComponent(LuaCpp::Module &module);
     void                    RegisterTextRendererComponent(LuaCpp::Module &module);
     void                    RegisterParticleSystemComponent(LuaCpp::Module &module);

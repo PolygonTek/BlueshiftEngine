@@ -154,6 +154,7 @@ set(ENGINE_FILES
     Public/Animator/Animator.h
     Public/Animator/AnimStateBlender.h
 
+    Public/Components/ComAnimation.h
     Public/Components/ComAnimator.h
     Public/Components/ComAudioListener.h
     Public/Components/ComAudioSource.h
@@ -386,6 +387,7 @@ set(ENGINE_FILES
     Private/Animator/Animator.cpp
     Private/Animator/AnimStateBlender.cpp
   
+    Private/Components/ComAnimation.cpp
     Private/Components/ComAnimator.cpp
     Private/Components/ComAudioListener.cpp
     Private/Components/ComAudioSource.cpp
@@ -614,6 +616,7 @@ set(ENGINE_FILES
     Private/Scripting/Components/LuaModule_ComMeshRenderer.cpp
     Private/Scripting/Components/LuaModule_ComStaticMeshRenderer.cpp
     Private/Scripting/Components/LuaModule_ComSkinnedMeshRenderer.cpp
+    Private/Scripting/Components/LuaModule_ComAnimation.cpp
     Private/Scripting/Components/LuaModule_ComAnimator.cpp
     Private/Scripting/Components/LuaModule_ComTextRenderer.cpp
     Private/Scripting/Components/LuaModule_ComParticleSystem.cpp
