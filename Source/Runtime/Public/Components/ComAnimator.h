@@ -14,14 +14,14 @@
 
 #pragma once
 
+#include "Component.h"
 #include "Animator/Animator.h"
-#include "ComMeshRenderer.h"
 
 BE_NAMESPACE_BEGIN
 
 class AnimControllerAsset;
 
-class ComAnimator : public ComMeshRenderer {
+class ComAnimator : public Component {
 public:
     OBJECT_PROTOTYPE(ComAnimator);
 
@@ -42,29 +42,23 @@ public:
     void                    UpdateAnim(int time);
 
     Vec3                    GetTranslation(int currentTime) const;
-
     Vec3                    GetTranslationDelta(int fromTime, int toTime) const;
-
     Mat3                    GetRotationDelta(int fromTime, int toTime) const;
 
     void                    SetAnimParameter(const char *parm, float value);
 
     const char *            GetCurrentAnimState(int layerNum) const;
-
     void                    ResetAnimState();
-
     void                    TransitAnimState(int layerNum, const char *stateName, int blendOffset, int blendDuration, bool isAtomic);
-
-    Animator &              GetAnimator() { return animator; }
 
     Guid                    GetAnimControllerGuid() const;
     void                    SetAnimControllerGuid(const Guid &animControllerGuid);
 
+    Animator &              GetAnimator() { return animator; }
+
+    Mat3x4 *                GetJointMatrices() const { return animator.GetFrame(); }
+
 protected:
-    virtual void            UpdateVisuals() override;
-
-    virtual void            MeshUpdated() override;
-
     void                    ChangeAnimController(const Guid &animControllerGuid);
     void                    AnimControllerReloaded();
 

@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 void LuaVM::RegisterAnimatorComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComAnimator = module["ComAnimator"];
 
-    _ComAnimator.SetClass<ComAnimator>(module["ComMeshRenderer"]);
+    _ComAnimator.SetClass<ComAnimator>(module["Component"]);
     _ComAnimator.AddClassMembers<ComAnimator>(
         "translation", &ComAnimator::GetTranslation,
         "translation_delta", &ComAnimator::GetTranslationDelta,

@@ -16,13 +16,14 @@
 #include "Render/Render.h"
 #include "AnimController/AnimController.h"
 #include "Components/ComAnimator.h"
+#include "Components/ComSkinnedMeshRenderer.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Animator", ComAnimator, ComMeshRenderer)
+OBJECT_DECLARATION("Animator", ComAnimator, Component)
 BEGIN_EVENTS(ComAnimator)
 END_EVENTS
 
@@ -50,47 +51,19 @@ void ComAnimator::Purge(bool chainPurge) {
     animator.ClearAnimController();
 
     if (chainPurge) {
-        ComMeshRenderer::Purge();
+        Component::Purge();
     }
 }
 
 void ComAnimator::Init() {
-    ComMeshRenderer::Init();
-
-    animator.ComputeAnimAABBs(referenceMesh);
-
-    const Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
-    bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
-
-    // Set RenderObject parameters
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
-    renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
-    renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
+    Component::Init();
 
     // Mark as initialized
     SetInitialized(true);
-
-    UpdateVisuals();
-}
-
-void ComAnimator::ResetAnimState() {
-    animator.ResetState(GetGameWorld()->GetTime());
-}
-
-const char *ComAnimator::GetCurrentAnimState(int layerNum) const {
-    const AnimState *animState = animator.CurrentAnimState(layerNum);
-    if (animState) {
-        return animState->GetName().c_str();
-    }
-    return "";
-}
-
-void ComAnimator::TransitAnimState(int layerNum, const char *stateName, int blendOffset, int blendDuration, bool isAtomic) {
-    animator.TransitState(layerNum, stateName, GetGameWorld()->GetTime(), blendOffset, blendDuration, isAtomic);
 }
 
 void ComAnimator::Update() {
-    if (!IsActiveInHierarchy()) { 
+    if (!IsActiveInHierarchy()) {
         return;
     }
 
@@ -106,17 +79,54 @@ void ComAnimator::Update() {
 
     animator.UpdateFrame(GetEntity(), GetGameWorld()->GetPrevTime(), GetGameWorld()->GetTime());
 
-    UpdateVisuals();
-}
-
-void ComAnimator::UpdateVisuals() {
-    if (!IsInitialized() || !IsActiveInHierarchy()) {
-        return;
-    }
-
     int currentTime = GetGameWorld()->GetTime();
 
     UpdateAnim(currentTime);
+}
+
+void ComAnimator::UpdateAnim(int currentTime) {
+    animator.ComputeFrame(currentTime);
+
+    // Modify jointMats for IK here !
+
+    // Get AABB from animator
+    /*animator.ComputeAABB(currentTime);
+
+    animator.GetAABB(renderObjectDef.localAABB);*/
+}
+
+const char *ComAnimator::GetCurrentAnimState(int layerNum) const {
+    const AnimState *animState = animator.CurrentAnimState(layerNum);
+    if (animState) {
+        return animState->GetName().c_str();
+    }
+    return "";
+}
+
+void ComAnimator::ResetAnimState() {
+    animator.ResetState(GetGameWorld()->GetTime());
+}
+
+void ComAnimator::TransitAnimState(int layerNum, const char *stateName, int blendOffset, int blendDuration, bool isAtomic) {
+    animator.TransitState(layerNum, stateName, GetGameWorld()->GetTime(), blendOffset, blendDuration, isAtomic);
+}
+
+Guid ComAnimator::GetAnimControllerGuid() const {
+    if (animator.GetAnimController()) {
+        const Str animControllerPath = animator.GetAnimController()->GetHashName();
+        return resourceGuidMapper.Get(animControllerPath);
+    }
+    return Guid();
+}
+
+void ComAnimator::SetAnimControllerGuid(const Guid &guid) {
+    ChangeAnimController(guid);
+
+    EmitSignal(&ComSkinnedMeshRenderer::SIG_SkeletonUpdated, this);
+}
+
+void ComAnimator::AnimControllerReloaded() {
+    SetAnimControllerGuid(GetProperty("animController").As<Guid>());
 }
 
 void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
@@ -142,67 +152,6 @@ void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
         animControllerAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimator::AnimControllerReloaded, SignalObject::Queued);
     }
 #endif
-}
-
-void ComAnimator::UpdateAnim(int currentTime) {
-    animator.ComputeFrame(currentTime);
-
-    Mat3x4 *jointMats = animator.GetFrame();
-
-    // Modify jointMats for IK here !
-
-    renderObjectDef.joints = jointMats;
-
-    // Get AABB from animator
-    animator.ComputeAABB(currentTime);
-    animator.GetAABB(renderObjectDef.localAABB);
-
-    ComRenderable::UpdateVisuals();
-}
-
-void ComAnimator::MeshUpdated() {
-    if (!IsInitialized()) {
-        return;
-    }
-
-    const Skeleton *skeleton = animator.GetAnimController()->GetSkeleton();
-    bool isCompatibleSkeleton = referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
-
-    if (isCompatibleSkeleton) {
-        animator.ComputeAnimAABBs(referenceMesh);
-
-        renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::SkinnedMesh);
-        renderObjectDef.skeleton = skeleton;
-        renderObjectDef.numJoints = skeleton->NumJoints();
-    } else {
-        renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-        renderObjectDef.skeleton = nullptr;
-        renderObjectDef.numJoints = 0;
-    }
-
-    // temp code
-    renderWorld->RemoveRenderObject(renderObjectHandle);
-    renderObjectHandle = -1;
-    // temp code
-    UpdateVisuals();
-}
-
-void ComAnimator::AnimControllerReloaded() {
-    SetAnimControllerGuid(GetProperty("animController").As<Guid>());
-}
-
-Guid ComAnimator::GetAnimControllerGuid() const {
-    if (animator.GetAnimController()) {
-        const Str animControllerPath = animator.GetAnimController()->GetHashName();
-        return resourceGuidMapper.Get(animControllerPath);
-    }
-    return Guid();
-}
-
-void ComAnimator::SetAnimControllerGuid(const Guid &guid) {
-    ChangeAnimController(guid);
-
-    MeshUpdated();
 }
 
 BE_NAMESPACE_END
