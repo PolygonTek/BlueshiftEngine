@@ -157,7 +157,7 @@ public:
     bool                        SwapComponent(int fromIndex, int toIndex);
 
                                 /// Adds new component to the entity in real-time.
-    Component *                 NewComponent(const MetaObject *type);
+    Component *                 AddNewComponent(const MetaObject *type);
 
     bool                        HasRenderEntity(int renderEntityHandle) const;
 

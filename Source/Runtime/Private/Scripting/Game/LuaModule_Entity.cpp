@@ -43,6 +43,7 @@
 #include "Components/ComMeshRenderer.h"
 #include "Components/ComStaticMeshRenderer.h"
 #include "Components/ComSkinnedMeshRenderer.h"
+#include "Components/ComAnimation.h"
 #include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
 #include "Components/ComParticleSystem.h"
@@ -103,6 +104,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "mesh_renderer", static_cast<ComMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComMeshRenderer>),
         "static_mesh_renderer", static_cast<ComStaticMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComStaticMeshRenderer>),
         "skinned_mesh_renderer", static_cast<ComSkinnedMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComSkinnedMeshRenderer>),
+        "animation", static_cast<ComAnimation*(Entity::*)()const>(&Entity::GetComponent<ComAnimation>),
         "animator", static_cast<ComAnimator*(Entity::*)()const>(&Entity::GetComponent<ComAnimator>),
         "text_renderer", static_cast<ComTextRenderer*(Entity::*)()const>(&Entity::GetComponent<ComTextRenderer>),
         "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),
@@ -110,7 +112,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),
         "script", static_cast<ComScript*(Entity::*)()const>(&Entity::GetComponent<ComScript>),        
-        "new_component", &Entity::NewComponent);
+        "add_new_component", &Entity::AddNewComponent);
 
     _Entity["meta_object"] = Entity::metaObject;
     _Entity["destroy"].SetFunc(Entity::DestroyInstance);
