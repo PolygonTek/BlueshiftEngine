@@ -82,7 +82,7 @@ void ComBoxCollider::DrawGizmos(const RenderView::State &viewState, bool selecte
             Vec3 scaledCenter = transform->GetScale() * center;
             Vec3 scaledExtents = transform->GetScale() * extents;
 
-            OBB obb(transform->GetMatrix() * scaledCenter, scaledExtents + CentiToUnit(0.15f), transform->GetAxis());
+            OBB obb(transform->GetMatrixNoScale() * scaledCenter, scaledExtents + CentiToUnit(0.15f), transform->GetAxis());
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugOBB(obb, 1.25f);
