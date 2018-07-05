@@ -94,10 +94,13 @@ bool RenderView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec
     if (normalizedDeviceCoords.w > 0) {
         float invW = 1.0f / normalizedDeviceCoords.w;
 
-        float y = 1.0f - normalizedDeviceCoords.y;
+        float fx = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f;
+        float fy = (normalizedDeviceCoords.y * invW + 1.0f) * 0.5f;
 
-        pixelCoords.x = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f * (state.renderRect.x + state.renderRect.w);
-        pixelCoords.y = (y * invW + 1.0f) * 0.5f * (state.renderRect.y + state.renderRect.h);
+        fy = 1.0f - fy; // invert Y axis
+
+        pixelCoords.x = fx * (state.renderRect.x + state.renderRect.w);
+        pixelCoords.y = fy * (state.renderRect.y + state.renderRect.h);
         pixelCoords.z = normalizedDeviceCoords.z * invW; // depth value
         return true;
     } else {
@@ -109,10 +112,13 @@ bool RenderView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Poi
     if (normalizedDeviceCoords.w > 0) {
         float invW = 1.0f / normalizedDeviceCoords.w;
 
-        float y = 1.0f - normalizedDeviceCoords.y;
+        float fx = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f;
+        float fy = (normalizedDeviceCoords.y * invW + 1.0f) * 0.5f;
 
-        pixelPoint.x = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f * (state.renderRect.x + state.renderRect.w);
-        pixelPoint.y = (y * invW + 1.0f) * 0.5f * (state.renderRect.y + state.renderRect.h);
+        fy = 1.0f - fy; // invert Y axis
+
+        pixelPoint.x = fx * (state.renderRect.x + state.renderRect.w);
+        pixelPoint.y = fy * (state.renderRect.y + state.renderRect.h);
         return true;
     } else {
         return false;
