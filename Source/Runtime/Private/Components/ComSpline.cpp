@@ -238,18 +238,18 @@ void ComSpline::DrawGizmos(const RenderView::State &viewState, bool selected) {
         Vec3 p1 = transform->GetMatrix() * originCurve->GetCurrentValue(t + dt);
 
         renderWorld->SetDebugColor(Color4::white, Color4::orange);
-        renderWorld->DebugLine(p0, p1, 2, true);
+        renderWorld->DebugLine(p0, p1, MeterToUnit(0.02), true);
 
         Mat3 axis = transform->GetMatrix().ToMat3() * anglesCurve->GetCurrentValue(t).ToMat3();
 
         renderWorld->SetDebugColor(Color4::red, Color4::orange);
-        renderWorld->DebugLine(p0, p0 + axis[0] * 30, 2, true);
+        renderWorld->DebugLine(p0, p0 + axis[0] * MeterToUnit(0.3), 2, true);
 
         renderWorld->SetDebugColor(Color4::green, Color4::orange);
-        renderWorld->DebugLine(p0, p0 + axis[1] * 30, 2, true);
+        renderWorld->DebugLine(p0, p0 + axis[1] * MeterToUnit(0.3), 2, true);
         
         renderWorld->SetDebugColor(Color4::blue, Color4::orange);
-        renderWorld->DebugLine(p0, p0 + axis[2] * 30, 2, true);
+        renderWorld->DebugLine(p0, p0 + axis[2] * MeterToUnit(0.3), 2, true);
 
         t += dt;
     }
@@ -269,7 +269,7 @@ void ComSpline::DrawGizmos(const RenderView::State &viewState, bool selected) {
         }
 
         Vec3 pos = pointTransform->GetOrigin();
-        renderWorld->DebugOBB(OBB(pos, Vec3(4.0f), pointTransform->GetAxis()), 1.0f, false, true);
+        renderWorld->DebugOBB(OBB(pos, Vec3(MeterToUnit(0.04)), pointTransform->GetAxis()), 1.0f, false, true);
     }
 }
 
