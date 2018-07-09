@@ -53,6 +53,8 @@ void LuaVM::RegisterVec2(LuaCpp::Module &module) {
         "clamp", &Vec2::Clamp,
         "dot", &Vec2::Dot,
         "cross", &Vec2::Cross,
+        "angle_between", &Vec2::AngleBetween,
+        "angle_between_norm", &Vec2::AngleBetweenNorm,
         "set_from_lerp", &Vec2::SetFromLerp,
         "to_angle", &Vec2::ToAngle,
         "set_from_angle", &Vec2::SetFromAngle,

@@ -71,6 +71,8 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "set_parent", &Entity::SetParent,
         "children", &Entity::GetChildren,
         "find_child", &Entity::FindChild,
+        "local_aabb", &Entity::GetLocalAABB,
+        "world_aabb", &Entity::GetWorldAABB,
         "num_components", &Entity::NumComponents,
         "has_component", &Entity::HasComponent,
         "component_index", &Entity::GetComponentIndex,

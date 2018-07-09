@@ -38,6 +38,8 @@ void LuaVM::RegisterPoint(LuaCpp::Module &module) {
         "distance", &Point::Distance,
         "distance_squared", &Point::DistanceSqr,
         "to_string", static_cast<const char*(Point::*)()const>(&Point::ToString));
+
+    _Point["zero"] = Point::zero;
 }
 
 BE_NAMESPACE_END
