@@ -207,19 +207,21 @@ void ComVehicleWheel::DrawGizmos(const RenderView::State &viewState, bool select
 
         // Draw wheel circle
         renderWorld->SetDebugColor(Color4::green, Color4::zero);
-        renderWorld->DebugCircle(worldOrigin, worldAxis[1], radius);
+        renderWorld->DebugCircle(worldOrigin, worldAxis[1], radius, 1, true, true);
 
-        // Draw forward direction
-        renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * radius, 1);
+        if (selected) {
+            // Draw forward direction
+            renderWorld->SetDebugColor(Color4::red, Color4::zero);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * radius, 1);
 
-        // Draw axle axis
-        renderWorld->SetDebugColor(Color4::green, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[1] * radius, 1);
+            // Draw axle axis
+            renderWorld->SetDebugColor(Color4::green, Color4::zero);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[1] * radius, 1);
 
-        // Draw suspension direction
-        renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * radius, 1);
+            // Draw suspension direction
+            renderWorld->SetDebugColor(Color4::blue, Color4::zero);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * radius, 1);
+        }
     }
 }
 
