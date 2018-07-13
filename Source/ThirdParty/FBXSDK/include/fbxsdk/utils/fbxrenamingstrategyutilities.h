@@ -1,6 +1,6 @@
 /****************************************************************************************
  
-   Copyright (C) 2015 Autodesk, Inc.
+   Copyright (C) 2017 Autodesk, Inc.
    All rights reserved.
  
    Use of this software is subject to the terms of the Autodesk license agreement
@@ -86,6 +86,17 @@ public:
     */
     static bool DecodeCaseInsensitive(FbxString &pString);
 
+	/** Returns a name with its prefix removed.
+	* \param pName    A name containing a prefix.
+	* \return         The part of pName following the "::"
+	*/
+	static FbxString NoPrefixName(const char* pName);
+
+	/** Returns a name with its prefix removed.
+	* \param pName    A name containing a prefix.
+	* \return         The part of pName following the "::"
+	*/
+	static FbxString NoPrefixName(FbxString& pName);
 };
 
 #include <fbxsdk/fbxsdk_nsend.h>

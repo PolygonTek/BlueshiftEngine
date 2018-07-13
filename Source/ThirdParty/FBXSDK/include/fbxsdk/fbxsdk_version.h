@@ -1,6 +1,6 @@
 /****************************************************************************************
  
-   Copyright (C) 2015 Autodesk, Inc.
+   Copyright (C) 2017 Autodesk, Inc.
    All rights reserved.
  
    Use of this software is subject to the terms of the Autodesk license agreement
@@ -20,14 +20,10 @@
 #define _FBXSDK_VERSION_H_
 
 //FBX SDK version defines
-#define FBXSDK_VERSION_MAJOR	2016		//<! Integer, version major number
-#define FBXSDK_VERSION_MINOR	1			//<! Integer, version minor number
-#define FBXSDK_VERSION_POINT	2			//<! Integer, version point number
-#define FBXSDK_VERSION_NAME		"Release"		//<! String, version name, example: Alpha, Beta, RC, Release
-
-#define FBXSDK_VERSION_YEAR     2015		//<! Integer, release date year
-#define FBXSDK_VERSION_MONTH	09			//<! Integer, release date month
-#define FBXSDK_VERSION_DAY		10			//<! Integer, release date day
+#define FBXSDK_VERSION_MAJOR	2019		//<! Integer, version major number
+#define FBXSDK_VERSION_MINOR	0   		//<! Integer, version minor number
+#define FBXSDK_VERSION_POINT	0			//<! Integer, version point number
+#define FBXSDK_VERSION_NAME		"Release"	    //<! String, version name, example: Alpha, Beta, RC, Release
 
 #ifndef FBXSDK_VERSION_REVISION
 	#define FBXSDK_VERSION_REVISION	0		//<! Integer, version revision number, set by build environment. Do not edit here!
@@ -46,7 +42,6 @@
 //FBX SDK version strings
 #define FBXSDK_VERSION_STRING		FBXSDK_VER_TO_STR(FBXSDK_VERSION_MAJOR, FBXSDK_VERSION_MINOR, FBXSDK_VERSION_POINT)
 #define FBXSDK_VERSION_STRING_FULL	FBXSDK_VERSION_STRING " " FBXSDK_VERSION_NAME " (" FBX_STRINGIFY(FBXSDK_VERSION_REVISION) ")"
-#define FBXSDK_VERSION_DATE			FBX_STRINGIFY(FBXSDK_VERSION_YEAR) "" FBX_STRINGIFY(FBXSDK_VERSION_MONTH) "" FBX_STRINGIFY(FBXSDK_VERSION_DAY)
 
 //FBX SDK namespace definition
 #ifndef FBXSDK_DEFINE_NAMESPACE

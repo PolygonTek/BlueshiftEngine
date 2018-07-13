@@ -1,6 +1,6 @@
 /****************************************************************************************
  
-   Copyright (C) 2015 Autodesk, Inc.
+   Copyright (C) 2017 Autodesk, Inc.
    All rights reserved.
  
    Use of this software is subject to the terms of the Autodesk license agreement
@@ -680,8 +680,9 @@ public:
 		* resulting binormal to correct for mirrored geometry.
 		* \param pUVSetName The UVSet name to generate tangents data with. The UVSet on the first layer is the the default UVSet to generate.
 		* \param pOverwrite If true, re-generate tangents data regardless of availability, otherwise left untouched if exist.
+		* \param pIgnoreTangentFlip If true, don't test for the tangent flip when deciding which smoothing group to assign.
 		* \return \c true if successfully generated tangents data, or if already available and pOverwrite is false. */
-		bool GenerateTangentsData(const char* pUVSetName=NULL, bool pOverwrite=false);
+		bool GenerateTangentsData(const char* pUVSetName=NULL, bool pOverwrite=false, bool pIgnoreTangentFlip = false);
 
 		/** Generate tangents data for UVSet in specific layer.
 		* Note that the UV winding order is stored in the W component of the tangent.
@@ -691,8 +692,9 @@ public:
 		* resulting binormal to correct for mirrored geometry.
 		* \param pUVSetLayerIndex The layer to generate tangents data with.
 		* \param pOverwrite If true, re-generate tangents data regardless of availability, otherwise left untouched if exist.
+		* \param pIgnoreTangentFlip If true, don't test for the tangent flip when deciding which smoothing group to assign.
 		* \return \c true if successfully generated tangents data, or if already available and pOverwrite is false. */
-		bool GenerateTangentsData(int pUVSetLayerIndex, bool pOverwrite=false);
+		bool GenerateTangentsData(int pUVSetLayerIndex, bool pOverwrite=false, bool pIgnoreTangentFlip = false);
 
     
 		/** Generate tangents data for all UVSets in all layers.
@@ -702,8 +704,9 @@ public:
 		* In the case of a left-handed tangent, this function automatically flips the
 		* resulting binormal to correct for mirrored geometry.
 		* \param pOverwrite If true, re-generate tangents data regardless of availability, otherwise left untouched if exist.
+		* \param pIgnoreTangentFlip If true, don't test for the tangent flip when deciding which smoothing group to assign.
 		* \return \c true if successfully generated tangents data, or if already available and pOverwrite is false. */
-		bool GenerateTangentsDataForAllUVSets(bool pOverwrite=false);
+		bool GenerateTangentsDataForAllUVSets(bool pOverwrite=false, bool pIgnoreTangentFlip=false);
     //@}
 
 /*****************************************************************************************************************************
@@ -741,7 +744,7 @@ public:
 	
 	// Internal structure used to keep the mapping information between the control points and the
 	// vertices referencing them
-	class ControlPointToVerticesMap
+	class FBXSDK_DLL ControlPointToVerticesMap
 	{
 	public:
 		ControlPointToVerticesMap();
@@ -816,7 +819,7 @@ protected:
 	friend class FbxGeometryConverter;
 
 private:
-    bool GenerateTangentsData(FbxLayerElementUV* pUVSet, int pLayerIndex, bool pOverwrite=false);
+    bool GenerateTangentsData(FbxLayerElementUV* pUVSet, int pLayerIndex, bool pOverwrite=false, bool pIgnoreTangentFlip = false);
     void FillMeshEdgeTable(FbxArray<int>& pTable, int* pValue, void (*FillFct)(FbxArray<int>& pTable, int pIndex, int* pValue));
     void ComputeNormalsPerCtrlPoint(FbxArray<VertexNormalInfo>& lNormalInfo, bool pCW=false);
     void ComputeNormalsPerPolygonVertex(FbxArray<VertexNormalInfo>& lNormalInfo, bool pCW=false);
