@@ -41,7 +41,7 @@ class GameWorld : public Object {
 
 public:
     enum { 
-        EntityNumBits           = 13,
+        EntityNumBits           = 16,
         MaxEntities             = (1 << EntityNumBits),
         BadEntityNum            = (MaxEntities - 1),
         MaxEntityNum            = (MaxEntities - 2)

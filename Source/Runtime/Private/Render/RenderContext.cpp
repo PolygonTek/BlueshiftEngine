@@ -791,7 +791,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     renderSystem.CmdScreenshot(0, 0, width, height, path);
     EndFrame();
 
-    BE_LOG(L"Screenshot saved to \"%hs\"\n", path);
+    BE_DLOG(L"Screenshot saved to \"%hs\"\n", path);
 }
 
 void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage) {    
