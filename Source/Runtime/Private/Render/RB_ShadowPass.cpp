@@ -586,7 +586,7 @@ static void RB_ProjectedShadowMapPass(const VisibleLight *visLight, const Frustu
 static bool RB_SingleCascadedShadowMapPass(const VisibleLight *visLight, const Frustum &splitViewFrustum, int cascadeIndex, bool forceClear) {
     // split 된 viewFrustum 일 수 있기 때문에 컬링 가능
     if (splitViewFrustum.CullAABB(visLight->litSurfsAABB)) {
-        return false;
+        //return false;
     }
 
     backEnd.shadowViewProjectionScaleBiasMatrix[cascadeIndex].SetZero();
