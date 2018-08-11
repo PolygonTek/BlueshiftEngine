@@ -64,6 +64,8 @@ public:
                             /// Called on physics late-update, fixed timestep.
     void                    FixedLateUpdate(float timeStep);
 
+    virtual void            OnValidate();
+
     virtual void            OnPointerEnter();
     virtual void            OnPointerExit();
     virtual void            OnPointerOver();
@@ -113,10 +115,11 @@ protected:
     LuaCpp::State *         state;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
+    bool                    executeInEditMode = false;
     bool                    hasError;
 
-    Array<PropertyInfo>     fieldInfos;
-    HashMap<Str, Variant>   fieldValues;
+    Array<PropertyInfo>     fieldInfos;                 ///< Script variable infos
+    HashMap<Str, Variant>   fieldValues;                ///< Script variable values
 
     LuaCpp::Selector        awakeFunc;
     LuaCpp::Selector        startFunc;
@@ -124,6 +127,7 @@ protected:
     LuaCpp::Selector        lateUpdateFunc;
     LuaCpp::Selector        fixedUpdateFunc;
     LuaCpp::Selector        fixedLateUpdateFunc;
+    LuaCpp::Selector        onValidateFunc;
     LuaCpp::Selector        onEnableFunc;
     LuaCpp::Selector        onDisableFunc;
     LuaCpp::Selector        onPointerEnterFunc;
