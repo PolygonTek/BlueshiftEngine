@@ -116,7 +116,8 @@ protected:
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
     bool                    executeInEditMode = false;
-    bool                    hasError;
+    bool                    hasError = false;
+    bool                    deserializing = false;
 
     Array<PropertyInfo>     fieldInfos;                 ///< Script variable infos
     HashMap<Str, Variant>   fieldValues;                ///< Script variable values

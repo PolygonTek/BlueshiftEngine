@@ -34,7 +34,6 @@ void ComScript::RegisterProperties() {
 
 ComScript::ComScript() {
     state = nullptr;
-    hasError = false;
     scriptAsset = nullptr;
 }
 
@@ -114,7 +113,11 @@ void ComScript::Deserialize(const Json::Value &in) {
 
     ChangeScript(scriptGuid);
 
+    deserializing = true;
+
     Serializable::Deserialize(in);
+
+    deserializing = false;
 }
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {
@@ -290,10 +293,12 @@ void ComScript::InitScriptFields() {
                             pairPtr->second = value;
 
 #if 1
-                            if (executeInEditMode && IsInitialized()) {
+                            if (executeInEditMode) {
                                 sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                                OnValidate();
+                                if (!deserializing) {
+                                    OnValidate();
+                                }
                             }
 #endif
                         }
@@ -312,10 +317,12 @@ void ComScript::InitScriptFields() {
                             pairPtr->second = value;
 
 #if 1
-                            if (executeInEditMode && IsInitialized()) {
+                            if (executeInEditMode) {
                                 sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                                OnValidate();
+                                if (!deserializing) {
+                                    OnValidate();
+                                }
                             }
 #endif
                         }
@@ -335,9 +342,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
+                        if (executeInEditMode) {
                             sandbox[pairPtr->first.c_str()] = value;
-                            OnValidate();
+
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -356,10 +366,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
+                        if (executeInEditMode) {
                             sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -386,10 +398,12 @@ void ComScript::InitScriptFields() {
                             pairPtr->second = value;
 
 #if 1
-                            if (executeInEditMode && IsInitialized()) {
+                            if (executeInEditMode) {
                                 sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                                OnValidate();
+                                if (!deserializing) {
+                                    OnValidate();
+                                }
                             }
 #endif
                         }
@@ -408,10 +422,12 @@ void ComScript::InitScriptFields() {
                             pairPtr->second = value;
 
 #if 1
-                            if (executeInEditMode && IsInitialized()) {
+                            if (executeInEditMode) {
                                 sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                                OnValidate();
+                                if (!deserializing) {
+                                    OnValidate();
+                                }
                             }
 #endif
                         }
@@ -429,10 +445,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Vec2 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -449,10 +467,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Vec3 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -469,10 +489,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Vec4 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -489,10 +511,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Color3 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -509,10 +533,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Color4 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -529,10 +555,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Angles &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -549,10 +577,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Quat &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -569,10 +599,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Mat2 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -589,10 +621,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Mat3 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -609,10 +643,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Mat3x4 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -629,10 +665,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Mat4 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -649,10 +687,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Point &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -669,10 +709,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            (Rect &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -689,10 +731,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value.c_str();
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
@@ -712,10 +756,12 @@ void ComScript::InitScriptFields() {
                         pairPtr->second = value;
 
 #if 1
-                        if (executeInEditMode && IsInitialized()) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
+                        if (executeInEditMode) {
+                            sandbox["properties"][pairPtr->first.c_str()]["value"] = Object::FindInstance(value);
 
-                            OnValidate();
+                            if (!deserializing) {
+                                OnValidate();
+                            }
                         }
 #endif
                     }
