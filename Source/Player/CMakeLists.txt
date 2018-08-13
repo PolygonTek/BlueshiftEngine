@@ -265,7 +265,7 @@ else ()
         endif ()
     endif ()
 
-    if (BUILD_ENGINE)
+    if (BUILD_RUNTIME)
         set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
 
         target_link_libraries(${PROJECT_NAME} BlueshiftEngine)

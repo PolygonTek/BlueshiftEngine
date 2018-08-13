@@ -10,4 +10,4 @@ if [ -d "XamarinIOS" ]; then
 fi
 mkdir XamarinIOS
 cd XamarinIOS
-cmake -DCMAKE_TOOLCHAIN_FILE="CMake/iOS.toolchain.cmake" -DBUILD_ENGINE=1 -DBUILD_PLAYER=1 -DXAMARIN=1 -G "Xcode" ../..
+cmake -DCMAKE_TOOLCHAIN_FILE="CMake/iOS.toolchain.cmake" -DBUILD_RUNTIME=1 -DBUILD_PLAYER=1 -DXAMARIN=1 -G "Xcode" ../..

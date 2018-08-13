@@ -19,12 +19,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(CMakeDependentOption)
 include(BlueshiftCommon)
 
-option(BUILD_ENGINE "Build Blueshift Engine Runtime libraies" OFF)
+option(BUILD_RUNTIME "Build Blueshift Runtime libraies" OFF)
 option(BUILD_PLAYER "Build Blueshift Player executable" OFF)
 option(BUILD_EDITOR "Build Blueshift Editor executable" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 
-if (BUILD_ENGINE)
+if (BUILD_RUNTIME)
     set(ROOT_PROJECT_NAME Blueshift)
 
     set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
@@ -32,7 +32,7 @@ if (BUILD_ENGINE)
 elseif (BUILD_PLAYER)
     set(ROOT_PROJECT_NAME BlueshiftPlayer)
 else ()
-    message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
+    message(FATAL_ERROR "Neither BUILD_RUNTIME nor BUILD_PLAYER are set")
 endif ()
 
 project(${ROOT_PROJECT_NAME})
@@ -238,7 +238,7 @@ endforeach()
 ################################################################################
 # Sub projects
 ################################################################################
-if (BUILD_ENGINE)
+if (BUILD_RUNTIME)
     # Override subdirectory options
     set(JSONCPP_WITH_TESTS OFF CACHE "" INTERNAL FORCE)
     set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE "" INTERNAL FORCE)

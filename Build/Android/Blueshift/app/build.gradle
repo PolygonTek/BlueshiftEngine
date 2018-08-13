@@ -8,7 +8,7 @@ android {
         targetSdkVersion 24
         externalNativeBuild {
             cmake {
-                arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_static', '-DBUILD_ENGINE=1', '-DBUILD_PLAYER=1', '-DBS_USE_ADMOB_REWARD_BASED_VIDEO=0'
+                arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_static', '-DBUILD_RUNTIME=1', '-DBUILD_PLAYER=1', '-DBS_USE_ADMOB_REWARD_BASED_VIDEO=0'
             }
         }
         splits {
