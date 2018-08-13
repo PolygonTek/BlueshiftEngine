@@ -126,7 +126,7 @@ if (XAMARIN)
         lua
         luasocket
         LuaCpp
-        BlueshiftEngine
+        BlueshiftRuntime
     )
 	if (ANDROID)
 	    target_link_libraries(${PROJECT_NAME} nvidia)
@@ -268,7 +268,7 @@ else ()
     if (BUILD_RUNTIME)
         set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Blueshift)
 
-        target_link_libraries(${PROJECT_NAME} BlueshiftEngine)
+        target_link_libraries(${PROJECT_NAME} BlueshiftRuntime)
     elseif (BUILD_PLAYER)
         set(THIRDPARTY_LIB_FILES
             zlib
@@ -298,7 +298,7 @@ else ()
             include_directories(${PROJECT_NAME} ${ENGINE_INCLUDE_DIR}/ThirdParty/lua)
         endif ()
 
-        set(IMPORTED_LIB_FILES ${THIRDPARTY_LIB_FILES} BlueshiftEngine)
+        set(IMPORTED_LIB_FILES ${THIRDPARTY_LIB_FILES} BlueshiftRuntime)
 
         if (ANDROID)
             target_link_libraries(${PROJECT_NAME} 
@@ -340,8 +340,8 @@ else ()
         set_property(TARGET minizip PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES zlib)
         set_property(TARGET libpng PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES zlib)
         set_property(TARGET libvorbis PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES libogg)
-        set_property(TARGET BlueshiftEngine PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES ${THIRDPARTY_LIB_FILES})
+        set_property(TARGET BlueshiftRuntime PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES ${THIRDPARTY_LIB_FILES})
 
-        target_link_libraries(${PROJECT_NAME} ${THIRDPARTY_LIB_FILES} BlueshiftEngine)
+        target_link_libraries(${PROJECT_NAME} ${THIRDPARTY_LIB_FILES} BlueshiftRuntime)
     endif ()
 endif ()
