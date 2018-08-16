@@ -10,7 +10,8 @@ Version History
 - Added support for slider/wheel joint components
 - Changed engine unit from centi-meters to meters
 - Changed FBX importing process in editor
-- Fixed rolling friction bug
+- Fixed an issue where rolling friction was not working correctly
+- Fixed an issue where inspector updating in play mode would slow down the game 
 
 ### 0.4.0
 - Added support for LuaJIT (Windows / macOS)
