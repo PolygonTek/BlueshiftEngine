@@ -120,7 +120,7 @@ protected:
     bool                    deserializing = false;
 
     Array<PropertyInfo>     fieldInfos;                 ///< Script variable infos
-    HashMap<Str, Variant>   fieldValues;                ///< Script variable values
+    HashMap<Str, Variant>   fieldGuids;                 ///< Script variable GUIDs
 
     LuaCpp::Selector        awakeFunc;
     LuaCpp::Selector        startFunc;

@@ -54,7 +54,7 @@ void ComScript::Purge(bool chainPurge) {
     hasError = false;
 
     fieldInfos.Clear();
-    fieldValues.Clear();
+    fieldGuids.Clear();
 
     if (chainPurge) {
         Component::Purge();
@@ -187,7 +187,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         UpdateFunctionMap();
 
         fieldInfos.Clear();
-        fieldValues.Clear();
+        fieldGuids.Clear();
 
         // Get the script property informations with this sandboxed script
         if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
@@ -209,53 +209,15 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
 }
 
 void ComScript::InitScriptFields() {
-    // Get default values of script properties to list up fieldValues
-    auto fieldValueEnumerator = [this](LuaCpp::Selector &selector) {
+    // Set zero values of object script properties
+    auto fieldGuidEnumerator = [this](LuaCpp::Selector &selector) {
         const char *name = selector;
         auto prop = sandbox["properties"][name];
         const char *type = prop["type"];
         LuaCpp::Selector value = prop["value"];
 
-        if (!Str::Cmp(type, "int")) {
-            fieldValues.Set(name, (int)value);
-        } else if (!Str::Cmp(type, "enum")) {
-            fieldValues.Set(name, (int)value);
-        } else if (!Str::Cmp(type, "bool")) {
-            fieldValues.Set(name, (bool)value);
-        } else if (!Str::Cmp(type, "float")) {
-            fieldValues.Set(name, (float)value);
-        } else if (!Str::Cmp(type, "vec2")) {
-            fieldValues.Set(name, (Vec2 &)value);
-        } else if (!Str::Cmp(type, "vec3")) {
-            fieldValues.Set(name, (Vec3 &)value);
-        } else if (!Str::Cmp(type, "vec4")) {
-            fieldValues.Set(name, (Vec4 &)value);
-        } else if (!Str::Cmp(type, "color3")) {
-            fieldValues.Set(name, (Color3 &)value);
-        } else if (!Str::Cmp(type, "color4")) {
-            fieldValues.Set(name, (Color4 &)value);
-        } else if (!Str::Cmp(type, "angles")) {
-            fieldValues.Set(name, (Angles &)value);
-        } else if (!Str::Cmp(type, "quat")) {
-            fieldValues.Set(name, (Quat &)value);
-        } else if (!Str::Cmp(type, "mat2")) {
-            fieldValues.Set(name, (Mat2 &)value);
-        } else if (!Str::Cmp(type, "mat3")) {
-            fieldValues.Set(name, (Mat3 &)value);
-        } else if (!Str::Cmp(type, "mat3x4")) {
-            fieldValues.Set(name, (Mat3x4 &)value);
-        } else if (!Str::Cmp(type, "mat4")) {
-            fieldValues.Set(name, (Mat4 &)value);
-        } else if (!Str::Cmp(type, "point")) {
-            fieldValues.Set(name, (Point &)value);
-        } else if (!Str::Cmp(type, "rect")) {
-            fieldValues.Set(name, (Rect &)value);
-        } else if (!Str::Cmp(type, "string")) {
-            fieldValues.Set(name, Str((const char *)value));
-        } else if (!Str::Cmp(type, "object")) {
-            fieldValues.Set(name, Guid::FromString((const char *)value));
-        } else {
-            BE_WARNLOG(L"Invalid property type '%hs' for %hs\n", type, name);
+        if (!Str::Cmp(type, "object")) {
+            fieldGuids.Set(name, Guid::zero);
         }
     };
 
@@ -266,12 +228,11 @@ void ComScript::InitScriptFields() {
         const char *label = prop["label"];
         const char *desc = prop["description"];
         const char *type = prop["type"];
+        auto propValue = prop["value"];
 
         if (!label) {
             label = name;
         }
-
-        auto pairPtr = fieldValues.Get(name);
 
         if (!Str::Cmp(type, "int")) {
             if (prop["minimum"].LuaType() == LUA_TNUMBER && prop["maximum"].LuaType() == LUA_TNUMBER) {
@@ -286,23 +247,20 @@ void ComScript::InitScriptFields() {
 
                 auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
                     new PropertyLambdaAccessorImpl<Class, int>(
-                        [pairPtr]() {
-                            return pairPtr->second.As<int>();
+                        [propValue, this]() {
+                            return (int)propValue;
                         },
-                        [pairPtr, this](int value) {
-                            pairPtr->second = value;
-
+                        [propValue, this](int value) {
+                            propValue = value;
 #if 1
                             if (executeInEditMode) {
-                                sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                                 if (!deserializing) {
                                     OnValidate();
                                 }
                             }
 #endif
                         }
-                    ), pairPtr->second.As<int>(), desc, PropertyInfo::EditorFlag);
+                    ), (int)propValue, desc, PropertyInfo::EditorFlag);
 
                 propInfo.SetRange(minimum, maximum, step);
 
@@ -310,23 +268,20 @@ void ComScript::InitScriptFields() {
             } else {
                 auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
                     new PropertyLambdaAccessorImpl<Class, int>(
-                        [pairPtr]() {
-                            return pairPtr->second.As<int>();
+                        [propValue]() {
+                            return (int)propValue;
                         },
-                        [pairPtr, this](int value) {
-                            pairPtr->second = value;
-
+                        [propValue, this](int value) {
+                            propValue = value;
 #if 1
                             if (executeInEditMode) {
-                                sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                                 if (!deserializing) {
                                     OnValidate();
                                 }
                             }
 #endif
                         }
-                    ), pairPtr->second.As<int>(), desc, PropertyInfo::EditorFlag);
+                    ), (int)propValue, desc, PropertyInfo::EditorFlag);
 
                 fieldInfos.Append(propInfo);
             }
@@ -335,23 +290,20 @@ void ComScript::InitScriptFields() {
 
             auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, int>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<int>();
+                    [propValue]() {
+                        return (int)propValue;
                     },
-                    [pairPtr, this](int value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](int value) {
+                        propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            sandbox[pairPtr->first.c_str()] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<int>(), desc, PropertyInfo::EditorFlag);
+                ), (int)propValue, desc, PropertyInfo::EditorFlag);
 
                 propInfo.SetEnumString(enumSequence);
 
@@ -359,23 +311,20 @@ void ComScript::InitScriptFields() {
         } else if (!Str::Cmp(type, "bool")) {
             auto propInfo = PropertyInfo(name, label, VariantType<bool>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, bool>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<bool>();
+                    [propValue]() {
+                        return (bool)propValue;
                     },
-                    [pairPtr, this](bool value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](bool value) {
+                        propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<bool>(), desc, PropertyInfo::EditorFlag);
+                ), (bool)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "float")) {
@@ -391,23 +340,20 @@ void ComScript::InitScriptFields() {
 
                 auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), 
                     new PropertyLambdaAccessorImpl<Class, float>(
-                        [pairPtr]() {
-                            return pairPtr->second.As<float>();
+                        [propValue]() {
+                            return (float)propValue;
                         },
-                        [pairPtr, this](float value) {
-                            pairPtr->second = value;
-
+                        [propValue, this](float value) {
+                            propValue = value;
 #if 1
                             if (executeInEditMode) {
-                                sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                                 if (!deserializing) {
                                     OnValidate();
                                 }
                             }
 #endif
                         }
-                    ), pairPtr->second.As<float>(), desc, PropertyInfo::EditorFlag);
+                    ), (float)propValue, desc, PropertyInfo::EditorFlag);
 
                 propInfo.SetRange(minimum, maximum, step);
 
@@ -415,337 +361,294 @@ void ComScript::InitScriptFields() {
             } else {
                 auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), 
                     new PropertyLambdaAccessorImpl<Class, float>(
-                        [pairPtr]() {
-                            return pairPtr->second.As<float>();
+                        [propValue]() {
+                            return (float)propValue;
                         },
-                        [pairPtr, this](float value) {
-                            pairPtr->second = value;
-
+                        [propValue, this](float value) {
+                            propValue = value;
 #if 1
                             if (executeInEditMode) {
-                                sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                                 if (!deserializing) {
                                     OnValidate();
                                 }
                             }
 #endif
                         }
-                    ), pairPtr->second.As<float>(), desc, PropertyInfo::EditorFlag);
+                    ), (float)propValue, desc, PropertyInfo::EditorFlag);
 
                 fieldInfos.Append(propInfo);
             }
         } else if (!Str::Cmp(type, "vec2")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Vec2>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Vec2, MixedPropertyTrait>(
-                    [pairPtr]() { 
-                        return pairPtr->second.As<Vec2>(); 
+                    [propValue]() {
+                        return (Vec2 &)propValue;
                     },
-                    [pairPtr, this](const Vec2 &value) { 
-                        pairPtr->second = value;
-
+                    [propValue, this](const Vec2 &value) { 
+                        (Vec2 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Vec2 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Vec2>(), desc, PropertyInfo::EditorFlag);
+                ), (Vec2 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "vec3")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Vec3>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Vec3, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Vec3>();
+                    [propValue]() {
+                        return (Vec3 &)propValue;
                     },
-                    [pairPtr, this](const Vec3 &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Vec3 &value) {
+                        (Vec3 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Vec3 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Vec3>(), desc, PropertyInfo::EditorFlag);
+                ), (Vec3 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "vec4")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Vec4>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Vec4, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Vec4>();
+                    [propValue]() {
+                        return (Vec4 &)propValue;
                     },
-                    [pairPtr, this](const Vec4 &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Vec4 &value) {
+                        (Vec4 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Vec4 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Vec4>(), desc, PropertyInfo::EditorFlag);
+                ), (Vec4 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "color3")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Color3>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Color3, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Color3>();
+                    [propValue]() {
+                        return (Color3 &)propValue;
                     },
-                    [pairPtr, this](const Color3 &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Color3 &value) {
+                        (Color3 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Color3 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Color3>(), desc, PropertyInfo::EditorFlag);
+                ), (Color3 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "color4")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Color4>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Color4, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Color4>();
+                    [propValue]() {
+                        return (Color4 &)propValue;
                     },
-                    [pairPtr, this](const Color4 &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Color4 &value) {
+                        (Color4 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Color4 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Color4>(), desc, PropertyInfo::EditorFlag);
+                ), (Color4 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "angles")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Angles>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Angles, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Angles>();
+                    [propValue]() {
+                        return (Angles &)propValue;
                     },
-                    [pairPtr, this](const Angles &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Angles &value) {
+                        (Angles &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Angles &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Angles>(), desc, PropertyInfo::EditorFlag);
+                ), (Angles &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "quat")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Quat>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Quat, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Quat>();
+                    [propValue]() {
+                        return (Quat &)propValue;
                     },
-                    [pairPtr, this](const Quat &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Quat &value) {
+                        (Quat &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Quat &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Quat>(), desc, PropertyInfo::EditorFlag);
+                ), (Quat &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "mat2")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Mat2>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Mat2, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Mat2>();
+                    [propValue]() {
+                        return (Mat2 &)propValue;
                     },
-                    [pairPtr, this](const Mat2 &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Mat2 &value) {
+                        (Mat2 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Mat2 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Mat2>(), desc, PropertyInfo::EditorFlag);
+                ), (Mat2 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "mat3")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Mat3>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Mat3, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Mat3>();
+                    [propValue]() {
+                        return (Mat3 &)propValue;
                     },
-                    [pairPtr, this](const Mat3 &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Mat3 &value) {
+                        (Mat3 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Mat3 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Mat3>(), desc, PropertyInfo::EditorFlag);
+                ), (Mat3 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "mat3x4")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Mat3x4>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Mat3x4, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Mat3x4>();
+                    [propValue]() {
+                        return (Mat3x4 &)propValue;
                     },
-                    [pairPtr, this](const Mat3x4 &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Mat3x4 &value) {
+                        (Mat3x4 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Mat3x4 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Mat3x4>(), desc, PropertyInfo::EditorFlag);
+                ), (Mat3x4 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "mat4")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Mat4>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Mat4, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Mat4>();
+                    [propValue]() {
+                        return (Mat4 &)propValue;
                     },
-                    [pairPtr, this](const Mat4 &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Mat4 &value) {
+                        (Mat4 &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Mat4 &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Mat4>(), desc, PropertyInfo::EditorFlag);
+                ), (Mat4 &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "point")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Point>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Point, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Point>();
+                    [propValue]() {
+                        return (Point &)propValue;
                     },
-                    [pairPtr, this](const Point &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Point &value) {
+                        (Point &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Point &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Point>(), desc, PropertyInfo::EditorFlag);
+                ), (Point &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "rect")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Rect>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Rect, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Rect>();
+                    [propValue]() {
+                        return (Rect &)propValue;
                     },
-                    [pairPtr, this](const Rect &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Rect &value) {
+                        (Rect &)propValue = value;
 #if 1
                         if (executeInEditMode) {
-                            (Rect &)sandbox["properties"][pairPtr->first.c_str()]["value"] = value;
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Rect>(), desc, PropertyInfo::EditorFlag);
+                ), (Rect &)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "string")) {
             auto propInfo = PropertyInfo(name, label, VariantType<Str>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Str, MixedPropertyTrait>(
-                    [pairPtr]() {
-                        return pairPtr->second.As<Str>();
+                    [propValue]() {
+                        return (const char *)propValue;
                     },
-                    [pairPtr, this](const Str &value) {
-                        pairPtr->second = value;
-
+                    [propValue, this](const Str &value) {
+                        propValue = value.c_str();
 #if 1
                         if (executeInEditMode) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = value.c_str();
-
                             if (!deserializing) {
                                 OnValidate();
                             }
                         }
 #endif
                     }
-                ), pairPtr->second.As<Str>(), desc, PropertyInfo::EditorFlag);
+                ), (const char *)propValue, desc, PropertyInfo::EditorFlag);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "object")) {
             const char *classname = prop["classname"];
             const MetaObject *metaObject = Object::FindMetaObject(classname);
+
+            auto pairPtr = fieldGuids.Get(name);
 
             auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Guid, MixedPropertyTrait>(
@@ -754,11 +657,8 @@ void ComScript::InitScriptFields() {
                     },
                     [pairPtr, this](const Guid &value) {
                         pairPtr->second = value;
-
 #if 1
                         if (executeInEditMode) {
-                            sandbox["properties"][pairPtr->first.c_str()]["value"] = Object::FindInstance(value);
-
                             if (!deserializing) {
                                 OnValidate();
                             }
@@ -773,7 +673,7 @@ void ComScript::InitScriptFields() {
         }
     };
 
-    sandbox["property_names"].Enumerate(fieldValueEnumerator);
+    sandbox["property_names"].Enumerate(fieldGuidEnumerator);
     sandbox["property_names"].Enumerate(fieldInfoEnumerator);
 }
 
@@ -784,6 +684,7 @@ void ComScript::ClearFunctionMap() {
     lateUpdateFunc = LuaCpp::Selector();
     fixedUpdateFunc = LuaCpp::Selector();
     fixedLateUpdateFunc = LuaCpp::Selector();
+    onValidateFunc = LuaCpp::Selector();
     onEnableFunc = LuaCpp::Selector();
     onDisableFunc = LuaCpp::Selector();
     onPointerEnterFunc = LuaCpp::Selector();
@@ -859,17 +760,11 @@ void ComScript::SetScriptProperties() {
         case Variant::IntType:
             property["value"] = value.As<int>();
             break;
-        case Variant::Int64Type:
-            property["value"] = value.As<int64_t>();
-            break;
         case Variant::BoolType:
             property["value"] = value.As<bool>();
             break;
         case Variant::FloatType:
             property["value"] = value.As<float>();
-            break;
-        case Variant::DoubleType:
-            property["value"] = value.As<double>();
             break;
         case Variant::Vec2Type:
             (Vec2 &)property["value"] = value.As<Vec2>();
@@ -980,6 +875,8 @@ void ComScript::FixedLateUpdate(float timeStep) {
 void ComScript::OnValidate() {
     if (onValidateFunc.IsValid()) {
         onValidateFunc();
+
+        EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
     }
 }
 
@@ -1085,8 +982,10 @@ void ComScript::ScriptReloaded() {
 
     Deserialize(value);
 
+#if 1
     // Update editor UI
     EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
+#endif
 }
 
 Guid ComScript::GetScriptGuid() const {
@@ -1098,10 +997,12 @@ void ComScript::SetScriptGuid(const Guid &guid) {
         ChangeScript(guid);
     }
 
+#if 1
     if (IsInitialized()) {
         // Update editor UI
         EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
     }
+#endif
 }
 
 BE_NAMESPACE_END
