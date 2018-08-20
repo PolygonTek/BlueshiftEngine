@@ -24,16 +24,16 @@ void LuaVM::RegisterAngles(LuaCpp::Module &module) {
     _Angles.SetClass<Angles>();
     _Angles.AddClassCtor<Angles, float, float, float>();
     _Angles.AddClassMembers<Angles>(
-        "yaw", &Angles::GetYaw,
-        "pitch", &Angles::GetPitch,
         "roll", &Angles::GetRoll,
+        "pitch", &Angles::GetPitch,
+        "yaw", &Angles::GetYaw,
         "at", &Angles::At, // index start from zero
         "element", static_cast<float(Angles::*)(int)const>(&Angles::operator[]), // index start from zero
         "assign", static_cast<Angles&(Angles::*)(const Angles&)>(&Angles::operator=),
         "set", &Angles::Set,
-        "set_yaw", &Angles::SetYaw,
-        "set_pitch", &Angles::SetPitch,
         "set_roll", &Angles::SetRoll,
+        "set_pitch", &Angles::SetPitch,
+        "set_yaw", &Angles::SetYaw,
         "equals", static_cast<bool(Angles::*)(const Angles&, const float)const>(&Angles::Equals),
         "to_forward", &Angles::ToForward,
         "to_right", &Angles::ToRight,

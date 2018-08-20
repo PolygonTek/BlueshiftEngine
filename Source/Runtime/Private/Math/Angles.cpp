@@ -38,23 +38,22 @@ Angles &Angles::Normalize360() {
 
 Angles &Angles::Normalize180() {
     Normalize360();
-
-    if (yaw > 180.0f) {
-        yaw -= 360.0f;
-    }        
-    if (pitch > 180.0f) {
-        pitch -= 360.0f;
-    }    
+    
     if (roll > 180.0f) {
         roll -= 360.0f;
     }
-
+    if (pitch > 180.0f) {
+        pitch -= 360.0f;
+    }
+    if (yaw > 180.0f) {
+        yaw -= 360.0f;
+    }
     return *this;
 }
 
 Angles Angles::FromString(const char *str) {
     Angles a;
-    sscanf(str, "%f %f %f", &a.yaw, &a.pitch, &a.roll);
+    sscanf(str, "%f %f %f", &a.roll, &a.pitch, &a.yaw);
     return a;
 }
 

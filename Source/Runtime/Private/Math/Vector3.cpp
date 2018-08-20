@@ -263,7 +263,7 @@ Angles Vec3::ToAngles() const {
         }
     }
 
-    return Angles(yaw, -pitch, 0.0f);
+    return Angles(0, -pitch, yaw);
 }
 
 Mat3 Vec3::ToMat3() const {

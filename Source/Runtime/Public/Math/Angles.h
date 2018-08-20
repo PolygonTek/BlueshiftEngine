@@ -24,7 +24,7 @@ class Mat4;
 class Quat;
 class Rotation;
 
-/// Euler angles - yaw, pitch, roll
+/// Euler angles - roll, pitch, yaw
 class BE_API Angles {
 public:
     /// Specifies the number of elements in this class.
@@ -32,15 +32,15 @@ public:
 
     /// Angles indexes
     enum Index {
-        Yaw,
+        Roll,
         Pitch,
-        Roll
+        Yaw
     };
 
     /// The default constructor does not initialize any members of this class.
     Angles() = default;
-    /// Constructs a Angles with the value (yaw, pitch, roll).
-    Angles(float yaw, float pitch, float roll);
+    /// Constructs a Angles with the value (roll, pitch, yaw).
+    Angles(float roll, float pitch, float yaw);
     /// Copy constructor
     explicit Angles(const Vec3 &v);
     /// Assignment operator
@@ -48,13 +48,13 @@ public:
 
                         /// Casts this Angles to a C array.
                         /// This function simply returns a C pointer view to this data structure.
-    const float *       Ptr() const { return (const float *)&yaw; }
-    float *             Ptr() { return (float *)&yaw; }
+    const float *       Ptr() const { return (const float *)this; }
+    float *             Ptr() { return (float *)this; }
                         /// Casts this Angles to a C array.
                         /// This function simply returns a C pointer view to this data structure.
                         /// This function is identical to the member function Ptr().
-                        operator const float *() const { return (const float *)&yaw; }
-                        operator float *() { return (float *)&yaw; }
+                        operator const float *() const { return (const float *)this; }
+                        operator float *() { return (float *)this; }
 
                         /// Accesses an element.
     float &             At(int index) { return (*this)[index]; }
@@ -68,17 +68,17 @@ public:
     Angles &            operator/=(const float rhs);
 
                         /// Negate angles, in general not the inverse rotation
-    Angles              operator-() const { return Angles(-yaw, -pitch, -roll); }
+    Angles              operator-() const { return Angles(-roll , -pitch, -yaw); }
 
-    Angles              operator+(const Angles &rhs) const { return Angles(yaw + rhs.yaw, pitch + rhs.pitch, roll + rhs.roll); }
-    Angles              operator-(const Angles &rhs) const { return Angles(yaw - rhs.yaw, pitch - rhs.pitch, roll - rhs.roll); }
-    Angles              operator*(const float rhs) const { return Angles(yaw * rhs, pitch * rhs, roll * rhs); }
+    Angles              operator+(const Angles &rhs) const { return Angles(roll + rhs.roll, pitch + rhs.pitch, yaw + rhs.yaw); }
+    Angles              operator-(const Angles &rhs) const { return Angles(roll - rhs.roll, pitch - rhs.pitch, yaw - rhs.yaw); }
+    Angles              operator*(const float rhs) const { return Angles(roll * rhs, pitch * rhs, yaw * rhs); }
     
-    friend Angles       operator*(const float lhs, const Angles &rhs) { return Angles(lhs * rhs.yaw, lhs * rhs.pitch, lhs * rhs.roll); }
+    friend Angles       operator*(const float lhs, const Angles &rhs) { return Angles(lhs * rhs.roll, lhs * rhs.pitch, lhs * rhs.yaw); }
     Angles              operator/(const float rhs) const;
     
                         /// Exact compare, no epsilon
-    bool                Equals(const Angles &a) const { return ((a.yaw == yaw) && (a.pitch == pitch) && (a.roll == roll)); }
+    bool                Equals(const Angles &a) const { return ((a.roll == roll) && (a.pitch == pitch) && (a.yaw == yaw)); }
                         /// Compare with epsilon
     bool                Equals(const Angles &a, const float epsilon) const;
                         /// Exact compare, no epsilon
@@ -86,14 +86,14 @@ public:
                         /// Exact compare, no epsilon
     bool                operator!=(const Angles &rhs) const { return !Equals(rhs); }
 
-    float               GetYaw() const { return yaw; }
-    float               GetPitch() const { return pitch; }
     float               GetRoll() const { return roll; }
+    float               GetPitch() const { return pitch; }
+    float               GetYaw() const { return yaw; }
 
-    void                Set(float yaw, float pitch, float roll);
-    void                SetYaw(float yaw) { this->yaw = yaw; }
-    void                SetPitch(float pitch) { this->pitch = pitch; }
+    void                Set(float roll, float pitch, float yaw);
     void                SetRoll(float roll) { this->roll = roll; }
+    void                SetPitch(float pitch) { this->pitch = pitch; }
+    void                SetYaw(float yaw) { this->yaw = yaw; }
     Angles &            SetZero();
 
                         /// Normalize to the range [0 <= angle < 360]
@@ -126,38 +126,38 @@ public:
 
     static const Angles zero;
 
-    float               yaw;        ///< Angle of rotation around up axis in degrees
-    float               pitch;      ///< Angle of rotation around left axis in degrees
     float               roll;       ///< Angle of rotation around forward axis in degrees
+    float               pitch;      ///< Angle of rotation around left axis in degrees
+    float               yaw;        ///< Angle of rotation around up axis in degrees
 };
 
-BE_INLINE Angles::Angles(float yaw, float pitch, float roll) {
-    this->yaw = yaw;
-    this->pitch = pitch;
+BE_INLINE Angles::Angles(float roll, float pitch, float yaw) {
     this->roll = roll;
+    this->pitch = pitch;
+    this->yaw = yaw;
 }
 
 BE_INLINE Angles::Angles(const Vec3 &v) {
-    this->yaw = v[0];
+    this->roll = v[0];
     this->pitch = v[1];
-    this->roll = v[2];
+    this->yaw = v[2];
 }
 
 BE_INLINE Angles &Angles::operator=(const Angles &a) {
-    yaw = a.yaw;
-    pitch = a.pitch;
     roll = a.roll;
+    pitch = a.pitch;
+    yaw = a.yaw;
     return *this;
 }
 
-BE_INLINE void Angles::Set(float yaw, float pitch, float roll) {
-    this->yaw = yaw;
-    this->pitch = pitch;
+BE_INLINE void Angles::Set(float roll, float pitch, float yaw) {
     this->roll = roll;
+    this->pitch = pitch;
+    this->yaw = yaw;
 }
 
 BE_INLINE Angles &Angles::SetZero() {
-    yaw = pitch = roll = 0.0f;
+    roll = pitch = pitch = 0.0f;
     return *this;
 }
 
@@ -167,65 +167,65 @@ BE_INLINE const char *Angles::ToString(int precision) const {
 
 BE_INLINE float Angles::operator[](int index) const {
     assert((index >= 0) && (index < Size));
-    return (&yaw)[index];
+    return ((float *)this)[index];
 }
 
 BE_INLINE float &Angles::operator[](int index) {
     assert((index >= 0) && (index < Size));
-    return (&yaw)[index];
+    return ((float *)this)[index];
 }
 
 BE_INLINE Angles &Angles::operator+=(const Angles &a) {
-    yaw += a.yaw;
-    pitch += a.pitch;
     roll += a.roll;
+    pitch += a.pitch;
+    yaw += a.yaw;
     return *this;
 }
 
 BE_INLINE Angles &Angles::operator-=(const Angles &a) {
-    yaw -= a.yaw;
-    pitch -= a.pitch;
     roll -= a.roll;
+    pitch -= a.pitch;
+    yaw -= a.yaw;
     return *this;
 }
 
 BE_INLINE Angles &Angles::operator*=(float a) {
-    yaw *= a;
-    pitch *= a;
     roll *= a;
+    pitch *= a;
+    yaw *= a;
     return *this;
 }
 
 BE_INLINE Angles Angles::operator/(const float a) const {
-    float inva = 1.0f / a;
-    return Angles(yaw * inva, pitch * inva, roll * inva);
+    float invA = 1.0f / a;
+    return Angles(roll * invA, pitch * invA, yaw * invA);
 }
 
 BE_INLINE Angles &Angles::operator/=(float a) {
-    float inva = 1.0f / a;
-    yaw *= inva;
-    pitch *= inva;
-    roll *= inva;
+    float invA = 1.0f / a;
+    roll *= invA;
+    pitch *= invA;
+    yaw *= invA;
     return *this;
 }
 
 BE_INLINE bool Angles::Equals(const Angles &a, const float epsilon) const {
-    if (Math::Fabs(yaw - a.yaw) > epsilon) {
+    if (Math::Fabs(roll - a.roll) > epsilon) {
         return false;
     }
     if (Math::Fabs(pitch - a.pitch) > epsilon) {
         return false;
-    }            
-    if (Math::Fabs(roll - a.roll) > epsilon) {
+    }
+    if (Math::Fabs(yaw - a.yaw) > epsilon) {
         return false;
     }
     return true;
 }
 
 BE_INLINE void Angles::Clamp(const Angles &min, const Angles &max) {
-    BE1::Clamp(yaw,   min.yaw,   max.yaw);
+    BE1::Clamp(roll, min.roll, max.roll);
     BE1::Clamp(pitch, min.pitch, max.pitch);
-    BE1::Clamp(roll,  min.roll,  max.roll);
+    BE1::Clamp(yaw, min.yaw, max.yaw);
 }
 
 BE_NAMESPACE_END

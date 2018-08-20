@@ -809,12 +809,12 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
     renderViewDef.origin = origin;
 
     Mat3 viewAxis[6];
-    viewAxis[0] = Angles( 90,   0, 0).ToMat3();
-    viewAxis[1] = Angles(-90,   0, 0).ToMat3();
-    viewAxis[2] = Angles(  0, -90, 0).ToMat3();
-    viewAxis[3] = Angles(  0,  90, 0).ToMat3();
-    viewAxis[4] = Angles(  0,   0, 0).ToMat3();
-    viewAxis[5] = Angles(180,   0, 0).ToMat3();
+    viewAxis[0] = Angles(0,   0,  90).ToMat3();
+    viewAxis[1] = Angles(0,   0, -90).ToMat3();
+    viewAxis[2] = Angles(0, -90,   0).ToMat3();
+    viewAxis[3] = Angles(0,  90,   0).ToMat3();
+    viewAxis[4] = Angles(0,   0,   0).ToMat3();
+    viewAxis[5] = Angles(0,   0, 180).ToMat3();
 
 #if 1
     Image image;
