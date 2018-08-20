@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 
 const SignalDef Serializable::SIG_PropertyChanged("Serializable::PropertyChanged", "si");
 const SignalDef Serializable::SIG_PropertyArrayCountChanged("Serializable::PropertyArrayCountChanged", "s");
-const SignalDef Serializable::SIG_PropertyInfoUpdated("Serializable::PropertyInfoUpdated");
+const SignalDef Serializable::SIG_PropertyInfoUpdated("Serializable::PropertyInfoUpdated", "i");
 
 bool Serializable::GetPropertyInfo(int index, PropertyInfo &propertyInfo) const {
     Array<PropertyInfo> propertyInfoList;

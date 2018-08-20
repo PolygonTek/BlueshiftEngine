@@ -876,7 +876,7 @@ void ComScript::OnValidate() {
     if (onValidateFunc.IsValid()) {
         onValidateFunc();
 
-        EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
+        EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 0);
     }
 }
 
@@ -984,7 +984,7 @@ void ComScript::ScriptReloaded() {
 
 #if 1
     // Update editor UI
-    EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
+    EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
 #endif
 }
 
@@ -1000,7 +1000,7 @@ void ComScript::SetScriptGuid(const Guid &guid) {
 #if 1
     if (IsInitialized()) {
         // Update editor UI
-        EmitSignal(&Serializable::SIG_PropertyInfoUpdated);
+        EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
     }
 #endif
 }
