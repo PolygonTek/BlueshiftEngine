@@ -49,6 +49,8 @@ public:
 
     virtual const AABB      GetAABB() override;
 
+    float                   GetSize() const { return size; }
+
     float                   GetAspectRatio() const;
 
     const Point             WorldToScreen(const Vec3 &position) const;
