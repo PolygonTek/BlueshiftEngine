@@ -30,7 +30,7 @@ void ComTransform::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("origin", "Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero, 
         "xyz position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, 
-        "yaw, pitch, roll in degree in local space", PropertyInfo::EditorFlag);
+        "roll, pitch, yaw in degree in local space", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("scale", "Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one, 
         "xyz scale in local space", PropertyInfo::EditorFlag);
 }
