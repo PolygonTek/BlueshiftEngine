@@ -191,9 +191,17 @@ void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     if (selected) {
-        const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
-        float w = ctx->GetRenderingWidth() * nw;
-        float h = ctx->GetRenderingHeight() * nh;
+        int renderingWidth = 100;
+        int renderingHeight = 100;
+
+        const RenderContext *ctx = renderSystem.GetMainRenderContext();
+        if (ctx) {
+            renderingWidth = ctx->GetRenderingWidth();
+            renderingHeight = ctx->GetRenderingHeight();
+        }
+
+        float w = renderingWidth * nw;
+        float h = renderingHeight * nh;
         float aspectRatio = w / h;
 
         if (this->renderViewDef.orthogonal) {
@@ -221,11 +229,14 @@ void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected
             renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
         }
 
-        if (1) {
-            int w = ctx->GetRenderingWidth() * 0.25f;
-            int h = ctx->GetRenderingHeight() * 0.25f;
-            int x = ctx->GetRenderingWidth() - (w + 10 / ctx->GetUpscaleFactorX());
-            int y = ctx->GetRenderingHeight() - (h + 10 / ctx->GetUpscaleFactorY());
+        if (ctx) {
+            float upscaleFactorX = ctx->GetUpscaleFactorX();
+            float upscaleFactorY = ctx->GetUpscaleFactorY();
+            
+            int w = renderingWidth * 0.25f;
+            int h = renderingHeight * 0.25f;
+            int x = renderingWidth - (w + 10 / upscaleFactorX);
+            int y = renderingHeight - (h + 10 / upscaleFactorY);
 
             RenderView::State previewViewState = this->renderViewDef;
 
@@ -251,18 +262,25 @@ const AABB ComCamera::GetAABB() {
 
 float ComCamera::GetAspectRatio() const {
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
+    if (!ctx) {
+        return 1.0f;
+    }
 
-    const int screenWidth = ctx->GetScreenWidth();
-    const int screenHeight = ctx->GetScreenHeight();
+    int screenWidth = ctx->GetScreenWidth();
+    int screenHeight = ctx->GetScreenHeight();
 
     return (float)screenWidth / screenHeight;
 }
 
 const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
-    const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
+    int screenWidth = 100;
+    int screenHeight = 100;
 
-    const int screenWidth = mainRenderContext->GetScreenWidth();
-    const int screenHeight = mainRenderContext->GetScreenHeight();
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
+    if (ctx) {
+        screenWidth = ctx->GetScreenWidth();
+        screenHeight = ctx->GetScreenHeight();
+    }
 
     Vec3 localPos = renderViewDef.axis.TransposedMulVec(worldPos - renderViewDef.origin);
     Point screenPoint;
@@ -270,7 +288,7 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
     float aspectRatio = (float)screenWidth / screenHeight;
 
     if (renderViewDef.orthogonal) {
-        // right/down normalized screen coordinates [ -1.0 ~ 1.0 ]
+        // Compute right/down normalized screen coordinates [ -1.0 ~ 1.0 ]
         float ndx = -localPos.y / size;
         float ndy = -localPos.z / (size / aspectRatio);
 
@@ -293,10 +311,14 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
 }
 
 const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
-    const RenderContext *mainRenderContext = renderSystem.GetMainRenderContext();
+    int screenWidth = 100;
+    int screenHeight = 100;
 
-    const int screenWidth = mainRenderContext->GetScreenWidth();
-    const int screenHeight = mainRenderContext->GetScreenHeight();
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
+    if (ctx) {
+        screenWidth = ctx->GetScreenWidth();
+        screenHeight = ctx->GetScreenHeight();
+    }
 
     Rect screenRect;
     screenRect.x = screenWidth * nx;
@@ -396,6 +418,9 @@ void ComCamera::ProcessPointerInput(const Point &screenPoint) {
 void ComCamera::RenderScene() {
     // Get current render context which is unique for each OS-level window in general
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
+    if (!ctx) {
+        return;
+    }
 
     // Get the actual screen rendering resolution
     float renderingWidth = ctx->GetRenderingWidth();
