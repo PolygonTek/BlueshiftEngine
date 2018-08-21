@@ -276,6 +276,8 @@ static void WindowSizeChanged(int w, int h) {
     if (app.mainRenderContext) {
         app.mainRenderContext->OnResize(w, h);
     }
+
+    app.OnApplicationResize(w, h);
 }
 
 // Process the next main command.

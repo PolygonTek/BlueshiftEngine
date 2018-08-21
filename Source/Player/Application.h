@@ -30,6 +30,7 @@ public:
     bool                    LoadAppScript(const char *sandboxName);
     void                    StartAppScript();
     
+    void                    OnApplicationResize(int width, int height);
     void                    OnApplicationPause(bool pause);
     void                    OnApplicationTerminate();
 

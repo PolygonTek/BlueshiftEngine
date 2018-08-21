@@ -199,6 +199,12 @@ Entity *GameWorld::FindEntityByRenderEntity(int renderEntityHandle) const {
     return nullptr;
 }
 
+void GameWorld::OnApplicationResize(int width, int height) {
+    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
+        ent->OnApplicationResize(width, height);
+    }
+}
+
 void GameWorld::OnApplicationTerminate() {
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->OnApplicationTerminate();

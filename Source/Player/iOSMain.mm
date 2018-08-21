@@ -98,8 +98,11 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
         // Adjust your views
         float nativeScale = [[UIScreen mainScreen] nativeScale];
-        app.mainRenderContext->OnResize(size.width * nativeScale, size.height * nativeScale);
+        int actualWidth = size.width * nativeScale;
+        int actualHeight = size.height * nativeScale;
+        app.mainRenderContext->OnResize(actualWidth, actualHeight);
 
+        app.OnApplicationResize(actualWidth, actualHeight);
     } completion:^(id<UIViewControllerTransitionCoordinatorContext> context) {
         // Anything else you need to do at the end
     }];

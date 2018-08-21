@@ -97,6 +97,10 @@ void Application::StartAppScript() {
     }
 }
 
+void Application::OnApplicationResize(int width, int height) {
+    gameWorld->OnApplicationResize(width, height);
+}
+
 void Application::OnApplicationTerminate() {
     gameWorld->OnApplicationTerminate();
 }

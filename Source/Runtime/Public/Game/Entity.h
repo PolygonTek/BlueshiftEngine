@@ -244,6 +244,8 @@ protected:
 
     virtual void                Event_ImmediateDestroy() override;
 
+                                /// Called when the application resizes.
+    void                        OnApplicationResize(int width, int height);
                                 /// Called when the application terminates.
     void                        OnApplicationTerminate();
                                 /// Called when the application pauses.

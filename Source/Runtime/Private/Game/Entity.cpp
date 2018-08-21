@@ -324,6 +324,16 @@ bool Entity::HasRenderEntity(int renderEntityHandle) const {
     return false;
 }
 
+void Entity::OnApplicationResize(int width, int height) {
+    ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
+    for (int i = 0; i < scriptComponents.Count(); i++) {
+        ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+
+        scriptComponent->OnApplicationResize(width, height);
+    }
+}
+
+
 void Entity::OnApplicationTerminate() {
     ComponentPtrArray scriptComponents = GetComponents(&ComScript::metaObject);
     for (int i = 0; i < scriptComponents.Count(); i++) {

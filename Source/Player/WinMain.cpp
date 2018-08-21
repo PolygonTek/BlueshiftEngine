@@ -316,10 +316,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     case WM_SIZE:
         if (wParam == SIZE_MINIMIZED) {
         }
-
         if (app.mainRenderContext) {
             app.mainRenderContext->OnResize(LOWORD(lParam), HIWORD(lParam));
         }
+        app.OnApplicationResize(LOWORD(lParam), HIWORD(lParam));
         return 0;
     case WM_DPICHANGED:
         break;

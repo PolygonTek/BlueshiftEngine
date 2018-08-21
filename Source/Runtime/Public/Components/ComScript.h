@@ -30,7 +30,7 @@ public:
     ComScript();
     virtual ~ComScript();
 
-                            /// Returns true if the same component is allowed
+                            /// Returns true if the same component is allowed.
     virtual bool            AllowSameComponent() const override { return true; }
 
                             /// Gets full list of property info including script properties.
@@ -45,11 +45,11 @@ public:
     virtual void            Init() override;
 
                             /// Called once when game started before Start()
-                            /// When game already started, called immediately after spawned
+                            /// When game already started, called immediately after spawned.
     virtual void            Awake() override;
 
                             /// Called once when game started.
-                            /// When game already started, called immediately after spawned
+                            /// When game already started, called immediately after spawned.
     void                    Start();
 
                             /// Called on game world update, variable timestep.
@@ -83,7 +83,8 @@ public:
     virtual void            OnSensorStay(const Entity *entity);
 
     virtual void            OnParticleCollision(const Entity *entity);
-    
+
+    void                    OnApplicationResize(int width, int height);
     void                    OnApplicationTerminate();
     void                    OnApplicationPause(bool pause);
 
@@ -115,6 +116,7 @@ protected:
     LuaCpp::State *         state;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
+
     bool                    executeInEditMode = false;
     bool                    hasError = false;
     bool                    deserializing = false;
@@ -145,6 +147,7 @@ protected:
     LuaCpp::Selector        onSensorExitFunc;
     LuaCpp::Selector        onSensorStayFunc;
     LuaCpp::Selector        onParticleCollisionFunc;
+    LuaCpp::Selector        onApplicationResizeFunc;
     LuaCpp::Selector        onApplicationTerminateFunc;
     LuaCpp::Selector        onApplicationPauseFunc;
 };

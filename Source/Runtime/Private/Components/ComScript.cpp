@@ -701,6 +701,7 @@ void ComScript::ClearFunctionMap() {
     onSensorExitFunc = LuaCpp::Selector();
     onSensorStayFunc = LuaCpp::Selector();
     onParticleCollisionFunc = LuaCpp::Selector();
+    onApplicationResizeFunc = LuaCpp::Selector();
     onApplicationTerminateFunc = LuaCpp::Selector();
     onApplicationPauseFunc = LuaCpp::Selector();
 }
@@ -737,6 +738,7 @@ void ComScript::UpdateFunctionMap() {
     onSensorExitFunc = CacheFunction("on_sensor_exit");
     onSensorStayFunc = CacheFunction("on_sensor_stay");
     onParticleCollisionFunc = CacheFunction("on_particle_collision");
+    onApplicationResizeFunc = CacheFunction("on_application_resize");
     onApplicationTerminateFunc = CacheFunction("on_application_terminate");
     onApplicationPauseFunc = CacheFunction("on_application_pause");
 }
@@ -961,6 +963,12 @@ void ComScript::OnSensorStay(const Entity *entity) {
 void ComScript::OnParticleCollision(const Entity *entity) {
     if (onParticleCollisionFunc.IsValid()) {
         onParticleCollisionFunc(entity);
+    }
+}
+
+void ComScript::OnApplicationResize(int width, int height) {
+    if (onApplicationResizeFunc.IsValid()) {
+        onApplicationResizeFunc(width, height);
     }
 }
 
