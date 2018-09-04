@@ -38,9 +38,9 @@ void LuaVM::RegisterComponent(LuaCpp::Module &module) {
         Component::DestroyInstance(component);
     });
     
-    LuaCpp::Selector _ComponentPtrList = module["ComponentPtrArray"];
-    _ComponentPtrList.SetClass<ComponentPtrArray>();
-    _ComponentPtrList.AddClassMembers<ComponentPtrArray>(
+    LuaCpp::Selector _ComponentPtrArray = module["ComponentPtrArray"];
+    _ComponentPtrArray.SetClass<ComponentPtrArray>();
+    _ComponentPtrArray.AddClassMembers<ComponentPtrArray>(
         "at", static_cast<ComponentPtr&(ComponentPtrArray::*)(int)>(&ComponentPtrArray::operator[]),
         "count", &ComponentPtrArray::Count,
         "append", &ComponentPtrArray::Append<ComponentPtr &>,

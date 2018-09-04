@@ -113,7 +113,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "audio_source", static_cast<ComAudioSource*(Entity::*)()const>(&Entity::GetComponent<ComAudioSource>),
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),
-        "script", static_cast<ComScript*(Entity::*)()const>(&Entity::GetComponent<ComScript>),        
+        "script", static_cast<ComScript*(Entity::*)()const>(&Entity::GetComponent<ComScript>),
         "add_new_component", &Entity::AddNewComponent);
 
     _Entity["meta_object"] = Entity::metaObject;
@@ -121,10 +121,11 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
 
     using EntityPtr = Entity*;
     using EntityPtrArray = Array<EntityPtr>;
-    LuaCpp::Selector _EntityPtrList = module["EntityPtrArray"];
-    _EntityPtrList.SetClass<EntityPtrArray>();
-    _EntityPtrList.AddClassMembers<EntityPtrArray>(
-        "at", static_cast<Entity *&(EntityPtrArray::*)(int)>(&EntityPtrArray::operator[]),
+
+    LuaCpp::Selector _EntityPtrArray = module["EntityPtrArray"];
+    _EntityPtrArray.SetClass<EntityPtrArray>();
+    _EntityPtrArray.AddClassMembers<EntityPtrArray>(
+        "at", static_cast<EntityPtr&(EntityPtrArray::*)(int)>(&EntityPtrArray::operator[]),
         "count", &EntityPtrArray::Count,
         "append", &EntityPtrArray::Append<EntityPtr &>,
         "insert", &EntityPtrArray::Insert<EntityPtr &>,
