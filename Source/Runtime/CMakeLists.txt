@@ -578,6 +578,7 @@ set(ENGINE_FILES
     Private/Scripting/Screen/LuaModule_Screen.cpp
     Private/Scripting/Physics/LuaModule_Physics.cpp
     Private/Scripting/Core/LuaModule_Str.cpp
+    Private/Scripting/Core/LuaModule_Guid.cpp
     Private/Scripting/Core/LuaModule_Object.cpp
     Private/Scripting/File/LuaModule_FileSystem.cpp
     Private/Scripting/File/LuaModule_File.cpp

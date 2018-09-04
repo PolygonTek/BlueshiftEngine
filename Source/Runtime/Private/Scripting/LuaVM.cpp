@@ -155,6 +155,8 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterPhysics(module);
         // Str
         RegisterStr(module);
+        // Guid
+        RegisterGuid(module);
         // File
         RegisterFile(module);
         RegisterFileSystem(module);

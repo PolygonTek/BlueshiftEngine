@@ -81,6 +81,7 @@ private:
     void                    RegisterPhysics(LuaCpp::Module &module);
 
     void                    RegisterStr(LuaCpp::Module &module);
+    void                    RegisterGuid(LuaCpp::Module &module);
 
     void                    RegisterFile(LuaCpp::Module &module);
     void                    RegisterFileSystem(LuaCpp::Module &module);
