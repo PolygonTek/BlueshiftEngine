@@ -94,6 +94,7 @@ void ComScript::SetOwnerValues() {
     owner["entity"] = GetEntity();
     owner["name"] = GetEntity()->GetName().c_str();
     owner["transform"] = GetEntity()->GetTransform();
+    owner["script"] = this;
 }
 
 void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {

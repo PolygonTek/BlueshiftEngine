@@ -23,7 +23,8 @@ void LuaVM::RegisterScriptComponent(LuaCpp::Module &module) {
 
     _ComScript.SetClass<ComScript>(module["Component"]);
     _ComScript.AddClassMembers<ComScript>(
-        "sandbox_name", &ComScript::GetSandboxName);
+        "sandbox_name", &ComScript::GetSandboxName,
+        "script_guid", &ComScript::GetScriptGuid);
 
     _ComScript["meta_object"] = ComScript::metaObject;
 }
