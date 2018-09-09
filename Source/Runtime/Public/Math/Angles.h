@@ -239,7 +239,9 @@ BE_INLINE void Angles::SetFromLerp(const Angles &a1, const Angles &a2, const flo
     } else if (t >= 1.0f) {
         (*this) = a2;
     } else {
-        (*this) = a1 + t * (a2 - a1);
+        roll = a1.roll + Math::AngleDelta(a2.roll, a1.roll) * t;
+        pitch = a1.pitch + Math::AngleDelta(a2.pitch, a1.pitch) * t;
+        yaw = a1.yaw + Math::AngleDelta(a2.yaw, a1.yaw) * t;
     }
 }
 
