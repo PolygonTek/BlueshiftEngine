@@ -651,7 +651,25 @@ void GameWorld::ProcessPointerInput() {
     }
 }
 
-Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, const Array<Entity *> &excludingArray, float *scale) const {
+Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask) const {
+    Entity *minEntity = nullptr;
+
+    float minScale = FLT_MAX;
+
+    for (Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
+        if (!(ent->GetLayer() & layerMask)) {
+            continue;
+        }
+
+        if (ent->RayIntersection(start, dir, true, minScale)) {
+            minEntity = ent;
+        }
+    }
+
+    return minEntity;
+}
+
+Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask, const Array<Entity *> &excludingArray, float *scale) const {
     Entity *minEntity = nullptr;
 
     float minScale = FLT_MAX;
@@ -660,6 +678,10 @@ Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, const Arr
     }
 
     for (Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
+        if (!(ent->GetLayer() & layerMask)) {
+            continue;
+        }
+
         if (excludingArray.Find(ent)) {
             continue;
         }

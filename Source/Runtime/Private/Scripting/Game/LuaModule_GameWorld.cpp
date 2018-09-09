@@ -34,6 +34,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "find_entity_by_guid", &GameWorld::FindEntityByGuid,
         "find_entity_by_tag", &GameWorld::FindEntityByTag,
         "find_entities_by_tag", &GameWorld::FindEntitiesByTag,
+        "ray_intersection", static_cast<Entity*(GameWorld::*)(const Vec3 &, const Vec3 &, int)const>(&GameWorld::RayIntersection),
         "instantiate_entity", &GameWorld::InstantiateEntity,
         "instantiate_entity_with_transform", &GameWorld::InstantiateEntityWithTransform,
         "loded_map_name", &GameWorld::MapName,

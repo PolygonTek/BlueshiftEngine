@@ -79,8 +79,10 @@ public:
                                 /// Process mouse (touch) input feedback for all responsive entities
     void                        ProcessPointerInput();
 
-                                /// Ray intersection test for all entities
-    Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, const Array<Entity *> &excludingList, float *scale) const;
+                                /// Ray intersection test for all entities.
+    Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask) const;
+                                /// Ray intersection test for all entities.
+    Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask, const Array<Entity *> &excludingList, float *scale) const;
 
                                 /// Render camera component from all registered entities
     void                        Render();
