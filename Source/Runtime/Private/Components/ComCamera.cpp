@@ -283,29 +283,28 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
     }
 
     Vec3 localPos = renderViewDef.axis.TransposedMulVec(worldPos - renderViewDef.origin);
-    Point screenPoint;
-
     float aspectRatio = (float)screenWidth / screenHeight;
+    float ndx, ndy;
 
     if (renderViewDef.orthogonal) {
         // Compute right/down normalized screen coordinates [ -1.0 ~ 1.0 ]
-        float ndx = -localPos.y / size;
-        float ndy = -localPos.z / (size / aspectRatio);
-
-        screenPoint.x = screenWidth * (ndx + 1.0f) * 0.5f;
-        screenPoint.y = screenHeight * (ndy + 1.0f) * 0.5f;
+        ndx = -localPos.y / size;
+        ndy = -localPos.z / (size / aspectRatio);
     } else {
         float tanFovX = Math::Tan(DEG2RAD(fov * 0.5f));
         float tanFovY = tanFovX / 1.25f;
+
         tanFovX = tanFovY * aspectRatio;
 
-        // right/down normalized screen coordinates [ -1.0 ~ 1.0 ]
-        float ndx = -localPos.y / (localPos.x * tanFovX);
-        float ndy = -localPos.z / (localPos.x * tanFovY);
-
-        screenPoint.x = screenWidth * (ndx + 1.0f) * 0.5f;
-        screenPoint.y = screenHeight * (ndy + 1.0f) * 0.5f;
+        // Compute right/down normalized screen coordinates [ -1.0 ~ 1.0 ]
+        ndx = -localPos.y / (localPos.x * tanFovX);
+        ndy = -localPos.z / (localPos.x * tanFovY);
     }
+
+    // Compute screen coordinates
+    Point screenPoint;
+    screenPoint.x = screenWidth * (ndx + 1.0f) * 0.5f;
+    screenPoint.y = screenHeight * (ndy + 1.0f) * 0.5f;
     
     return screenPoint;
 }
