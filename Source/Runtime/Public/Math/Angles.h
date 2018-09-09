@@ -103,6 +103,11 @@ public:
 
     void                Clamp(const Angles &min, const Angles &max);
 
+                        /// Sets from linear interpolation between the angles a1 and the angles a2.
+    void                SetFromLerp(const Angles &a1, const Angles &a2, const float t);
+                        /// Returns linear interpolation between the angles a1 and the angles a2.
+    static Angles       FromLerp(const Angles &a1, const Angles &a2, const float t);
+
     void                ToVectors(Vec3 *forward, Vec3 *right = nullptr, Vec3 *up = nullptr) const;
     Vec3                ToForward() const;
     Vec3                ToRight() const;
@@ -226,6 +231,22 @@ BE_INLINE void Angles::Clamp(const Angles &min, const Angles &max) {
     BE1::Clamp(roll, min.roll, max.roll);
     BE1::Clamp(pitch, min.pitch, max.pitch);
     BE1::Clamp(yaw, min.yaw, max.yaw);
+}
+
+BE_INLINE void Angles::SetFromLerp(const Angles &a1, const Angles &a2, const float t) {
+    if (t <= 0.0f) {
+        (*this) = a1;
+    } else if (t >= 1.0f) {
+        (*this) = a2;
+    } else {
+        (*this) = a1 + t * (a2 - a1);
+    }
+}
+
+BE_INLINE Angles Angles::FromLerp(const Angles &a1, const Angles &a2, const float t) {
+    Angles a;
+    a.SetFromLerp(a1, a2, t);
+    return a;
 }
 
 BE_NAMESPACE_END

@@ -53,7 +53,8 @@ void LuaVM::RegisterAngles(LuaCpp::Module &module) {
         "inv_scale_self", static_cast<Angles&(Angles::*)(const float)>(&Angles::operator/=),
         "normalize360", &Angles::Normalize360,
         "normalize180", &Angles::Normalize180,
-        "clamp", &Angles::Clamp
+        "clamp", &Angles::Clamp,
+        "set_from_lerp", &Angles::SetFromLerp
     );
     _Angles.AddClassMembers<Angles>(
         "__tostring", static_cast<const char*(Angles::*)(void)const>(&Angles::ToString),
@@ -64,6 +65,8 @@ void LuaVM::RegisterAngles(LuaCpp::Module &module) {
     );
 
     _Angles["zero"] = Angles::zero;
+
+    _Angles["from_lerp"].SetFunc(Angles::FromLerp);
 }
 
 BE_NAMESPACE_END
