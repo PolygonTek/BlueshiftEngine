@@ -79,11 +79,10 @@ void ComSphereCollider::DrawGizmos(const RenderView::State &viewState, bool sele
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
-            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugSphereSimple(transform->GetMatrixNoScale() * scaledCenter, transform->GetAxis(), scaledRadius + BE1::CentiToUnit(0.15f), 1.25f, true);
+            renderWorld->DebugSphereSimple(transform->GetMatrix() * center, transform->GetAxis(), scaledRadius + BE1::CentiToUnit(0.15f), 1.25f, true);
         }
     }
 }

@@ -79,10 +79,9 @@ void ComBoxCollider::DrawGizmos(const RenderView::State &viewState, bool selecte
         ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
-            Vec3 scaledCenter = transform->GetScale() * center;
             Vec3 scaledExtents = transform->GetScale() * extents;
 
-            OBB obb(transform->GetMatrixNoScale() * scaledCenter, scaledExtents + CentiToUnit(0.15f), transform->GetAxis());
+            OBB obb(transform->GetMatrix() * center, scaledExtents + CentiToUnit(0.15f), transform->GetAxis());
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugOBB(obb, 1.25f);

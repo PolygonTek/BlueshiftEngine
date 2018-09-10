@@ -90,11 +90,10 @@ void ComCylinderCollider::DrawGizmos(const RenderView::State &viewState, bool se
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
-            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldCenter = transform->GetMatrixNoScale() * scaledCenter;
+            Vec3 worldCenter = transform->GetMatrix() * center;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + BE1::CentiToUnit(0.15f), 1.25f, true);

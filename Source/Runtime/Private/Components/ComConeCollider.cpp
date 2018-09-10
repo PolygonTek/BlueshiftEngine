@@ -90,11 +90,10 @@ void ComConeCollider::DrawGizmos(const RenderView::State &viewState, bool select
         ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
-            Vec3 scaledCenter = transform->GetScale() * center;
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldOrigin = transform->GetMatrixNoScale() * scaledCenter - transform->GetAxis()[2] * scaledHeight * 0.5f;
+            Vec3 worldOrigin = transform->GetMatrix() * center - transform->GetAxis()[2] * scaledHeight * 0.5f;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius + BE1::CentiToUnit(0.15f), false, 1.25f);
