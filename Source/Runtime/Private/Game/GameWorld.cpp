@@ -657,7 +657,7 @@ Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layer
     float minScale = FLT_MAX;
 
     for (Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
-        if (!(ent->GetLayer() & layerMask)) {
+        if (!(BIT(ent->GetLayer()) & layerMask)) {
             continue;
         }
 
@@ -678,7 +678,7 @@ Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layer
     }
 
     for (Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
-        if (!(ent->GetLayer() & layerMask)) {
+        if (!(BIT(ent->GetLayer()) & layerMask)) {
             continue;
         }
 

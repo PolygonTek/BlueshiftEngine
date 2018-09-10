@@ -90,12 +90,14 @@ void ComSensor::Awake() {
     if (!sensor) {
         CreateSensor();
 
-        if (IsActiveInHierarchy()) {
-            sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-        }
+        if (sensor) {
+            if (IsActiveInHierarchy()) {
+                sensor->AddToWorld(GetGameWorld()->GetPhysicsWorld());
+            }
 
-        ComTransform *transform = GetEntity()->GetTransform();
-        transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
+            ComTransform *transform = GetEntity()->GetTransform();
+            transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
+        }
     }
 
     oldColliders.Clear();
@@ -121,8 +123,6 @@ void ComSensor::CreateSensor() {
 
             physicsDesc.shapes.Append(shapeDesc);
         }
-    } else {
-        return;
     }
 
     // Collect collider shadpes in children recursively
