@@ -106,7 +106,25 @@ void LuaVM::Init() {
         return true;
     });
 
+    LoadWaitSupport();
+
     //state->Require("blueshift.io", luaopen_file);
+}
+
+void LuaVM::LoadWaitSupport() {
+    const char *filename = "Scripts/wait_support.lua";
+    char *data;
+    size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
+    if (data) {
+        if (state->RunBuffer(filename, data, size)) {
+            LuaCpp::Selector waitSupport = (*state)["wait_support"];
+
+            wakeUpWatingThreads = waitSupport["wake_up_waiting_threads"];
+            if (!wakeUpWatingThreads.IsFunction()) {
+                wakeUpWatingThreads = LuaCpp::Selector();
+            }
+        }
+    }
 }
 
 void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
@@ -225,6 +243,8 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 void LuaVM::Shutdown() {
     engineModuleCallbacks.Clear();
 
+    wakeUpWatingThreads = LuaCpp::Selector();
+
     startDebuggee = LuaCpp::Selector();
     stopDebuggee = LuaCpp::Selector();
     pollDebuggee = LuaCpp::Selector();
@@ -254,6 +274,12 @@ const char *LuaVM::GetLuaJitVersion() const {
 
 void LuaVM::EnableJIT(bool enabled) {
     state->EnableJIT(enabled);
+}
+
+void LuaVM::WakeUpWatingThreads(float deltaTime) {
+    if (wakeUpWatingThreads.IsFunction()) {
+        wakeUpWatingThreads(deltaTime);
+    }
 }
 
 void LuaVM::StartDebuggee() {

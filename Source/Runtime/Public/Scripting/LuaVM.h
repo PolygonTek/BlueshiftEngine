@@ -39,6 +39,8 @@ public:
 
     void                    EnableJIT(bool enabled);
 
+    void                    WakeUpWatingThreads(float deltaTime);
+
     void                    StartDebuggee();
     void                    StopDebuggee();
     void                    PollDebuggee();
@@ -48,6 +50,8 @@ public:
     void                    InitEngineModule(const GameWorld *gameWorld);
 
 private:
+    void                    LoadWaitSupport();
+
     void                    RegisterMath(LuaCpp::Module &module);
     void                    RegisterComplex(LuaCpp::Module &module);
     void                    RegisterVec2(LuaCpp::Module &module);
@@ -140,9 +144,11 @@ private:
     void                    RegisterGameWorld(LuaCpp::Module &module);
 
     LuaCpp::State *         state;
+    LuaCpp::Selector        wakeUpWatingThreads;
     LuaCpp::Selector        startDebuggee;
     LuaCpp::Selector        stopDebuggee;
     LuaCpp::Selector        pollDebuggee;
+
     bool                    debuggeeStarted = false;
 
     Array<EngineModuleCallback> engineModuleCallbacks;

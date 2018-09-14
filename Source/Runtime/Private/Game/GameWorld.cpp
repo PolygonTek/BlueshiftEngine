@@ -593,6 +593,9 @@ void GameWorld::Update(int elapsedTime) {
     time += scaledElapsedTime;
 
     if (gameStarted) {
+        // Wake up waiting coroutine in Lua script
+        luaVM.WakeUpWatingThreads(MS2SEC(scaledElapsedTime));
+
         // FixedUpdate() called in StepSimulation() internally
         physicsWorld->StepSimulation(scaledElapsedTime);
 
