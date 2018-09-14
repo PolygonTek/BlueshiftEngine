@@ -453,7 +453,7 @@ void Entity::SetActiveInHierarchy(bool active) {
     }
 
     for (Entity *childEnt = node.GetChild(); childEnt; childEnt = childEnt->node.GetNextSibling()) {
-        childEnt->SetActiveInHierarchy(active);
+        childEnt->SetActiveInHierarchy(active && childEnt->activeSelf);
     }
 }
 
