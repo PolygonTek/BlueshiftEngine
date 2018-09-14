@@ -13,10 +13,18 @@ local CURRENT_TIME = 0
 
 wait_support = {}
 
-function wait_support.wake_up_waiting_threads(deltaTime)
+function wait_support.clear_waiting_threads()
+	for k, _ in pairs(WAITING_ON_TIME) do
+  		WAITING_ON_TIME[k] = nil
+	end
+
+	CURRENT_TIME = 0
+end
+
+function wait_support.wake_up_waiting_threads(currentTime)
     -- This function should be called once per game logic update with the amount of time
     -- that has passed since it was last called
-    CURRENT_TIME = CURRENT_TIME + deltaTime
+    CURRENT_TIME = currentTime
 
     -- First, grab a list of the threads that need to be woken up. They'll need to be removed
     -- from the WAITING_ON_TIME table which we don't want to try and do while we're iterating

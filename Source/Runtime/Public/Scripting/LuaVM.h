@@ -39,6 +39,7 @@ public:
 
     void                    EnableJIT(bool enabled);
 
+    void                    ClearWatingThreads();
     void                    WakeUpWatingThreads(float deltaTime);
 
     void                    StartDebuggee();
@@ -144,6 +145,7 @@ private:
     void                    RegisterGameWorld(LuaCpp::Module &module);
 
     LuaCpp::State *         state;
+    LuaCpp::Selector        clearWatingThreads;
     LuaCpp::Selector        wakeUpWatingThreads;
     LuaCpp::Selector        startDebuggee;
     LuaCpp::Selector        stopDebuggee;

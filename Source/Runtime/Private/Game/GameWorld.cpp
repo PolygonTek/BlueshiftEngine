@@ -458,6 +458,8 @@ void GameWorld::StartGame() {
         luaVM.StartDebuggee();
     }
 
+    luaVM.ClearWatingThreads();
+
     gameStarted = true;
 
     timeScale = 1.0f;
@@ -480,6 +482,8 @@ void GameWorld::StopGame(bool stopAllSounds) {
     if (isDebuggable) {
         luaVM.StopDebuggee();
     }
+
+    luaVM.ClearWatingThreads();
 
     gameStarted = false;
 
@@ -593,15 +597,15 @@ void GameWorld::Update(int elapsedTime) {
     time += scaledElapsedTime;
 
     if (gameStarted) {
-        // Wake up waiting coroutine in Lua script
-        luaVM.WakeUpWatingThreads(MS2SEC(scaledElapsedTime));
-
         // FixedUpdate() called in StepSimulation() internally
         physicsWorld->StepSimulation(scaledElapsedTime);
 
         UpdateEntities();
 
         LateUpdateEntities();
+
+        // Wake up waiting coroutine in Lua script
+        luaVM.WakeUpWatingThreads(MS2SEC(time));
 
         luaVM.State().ForceGC();
     }

@@ -119,6 +119,11 @@ void LuaVM::LoadWaitSupport() {
         if (state->RunBuffer(filename, data, size)) {
             LuaCpp::Selector waitSupport = (*state)["wait_support"];
 
+            clearWatingThreads = waitSupport["clear_waiting_threads"];
+            if (!clearWatingThreads.IsFunction()) {
+                clearWatingThreads = LuaCpp::Selector();
+            }
+
             wakeUpWatingThreads = waitSupport["wake_up_waiting_threads"];
             if (!wakeUpWatingThreads.IsFunction()) {
                 wakeUpWatingThreads = LuaCpp::Selector();
@@ -243,6 +248,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 void LuaVM::Shutdown() {
     engineModuleCallbacks.Clear();
 
+    clearWatingThreads = LuaCpp::Selector();
     wakeUpWatingThreads = LuaCpp::Selector();
 
     startDebuggee = LuaCpp::Selector();
@@ -276,9 +282,15 @@ void LuaVM::EnableJIT(bool enabled) {
     state->EnableJIT(enabled);
 }
 
-void LuaVM::WakeUpWatingThreads(float deltaTime) {
+void LuaVM::ClearWatingThreads() {
+    if (clearWatingThreads.IsFunction()) {
+        clearWatingThreads();
+    }
+}
+
+void LuaVM::WakeUpWatingThreads(float currentTime) {
     if (wakeUpWatingThreads.IsFunction()) {
-        wakeUpWatingThreads(deltaTime);
+        wakeUpWatingThreads(currentTime);
     }
 }
 
