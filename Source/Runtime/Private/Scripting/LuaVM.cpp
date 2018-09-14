@@ -36,7 +36,7 @@ static CVAR(lua_debug, L"0", CVar::Bool | CVar::Archive, L"Enable Lua debugging"
 static CVAR(lua_debuggerServer, L"localhost", CVar::Archive, L"Lua debugger server address for remote debugging");
 static CVAR(lua_debuggeeController, L"mobdebug_controller", 0, L"Lua debuggee controller script name");
 
-static int engine_print(lua_State* L) {
+static int engine_print(lua_State *L) {
     int nargs = lua_gettop(L);
     for (int i = 1; i <= nargs; ++i) {
         const char *s = lua_tostring(L, i);

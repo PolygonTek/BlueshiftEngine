@@ -14,7 +14,6 @@ local CURRENT_TIME = 0
 wait_support = {}
 
 function wait_support.wake_up_waiting_threads(deltaTime)
-    print(deltaTime)
     -- This function should be called once per game logic update with the amount of time
     -- that has passed since it was last called
     CURRENT_TIME = CURRENT_TIME + deltaTime
@@ -81,5 +80,3 @@ function wait_support.start(func)
     local co = coroutine.create(func)
     return coroutine.resume(co)
 end
-
-return wait_support
