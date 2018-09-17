@@ -36,7 +36,7 @@ public:
                         /// Sets the object that this node is associated with.
     void                SetOwner(T *owner) { this->owner = owner; }
 
-                        /// node 가 this 의 parent 라면 true 를 리턴
+                        /// Returns true if the given node is parent of this node.
     bool                IsParentedBy(const Hierarchy &node) const;
                         
                         /// Makes the given node the parent.
@@ -62,9 +62,9 @@ public:
                         /// Previous node with the same parent. Returns nullptr if no parent, or if it is the first child
     T *                 GetPrevSibling() const;
 
-                        /// 모든 node 방문 (depth-first order)
+                        /// Get next node in depth-first order
     T *                 GetNext() const;
-                        /// 모든 leaf 방문 (depth-first order)
+                        /// Get next leaf in depth-first order
     T *                 GetNextLeaf() const;
 
 private:

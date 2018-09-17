@@ -129,16 +129,20 @@ public:
                     /// Releases any memory not required to store the items.
     void            Squeeze();
 
-                    // elements 개수 설정, 필요하다면 resize 한다.
+                    /// Sets count of array to 'newCount'. If 'newCount' is greater than current count, elements are added to the end. 
+                    /// The new elements are initialized with a default constructor.
     void            SetCount(int newCount, bool forceResize = true);
 
-                    // 주어진 개수의 elements 를 재할당 없이 사용할 수 있도록 보장한다.
+                    /// Sets capacity of array to 'newCapacity'. If 'newCapacity' is greater than current capacity, memory will be resized.
+                    /// The new elements are initialized with a default constructor.
     void            Reserve(int newCapacity);
 
-                    // 주어진 개수의 elements 를 재할당 없이 사용할 수 있도록 보장하고, 추가된 elements 들은 초기값 세팅
+                    /// Sets capacity of array to 'newCapacity'. If 'newCapacity' is greater than current capacity, memory will be resized.
+                    /// The new elements are initialized with a default constructor and assigned with initialValue.
     void            Reserve(int newCapacity, const T &initialValue);
 
-                    // 주어진 개수의 elements 를 재할당 없이 사용할 수 있도록 보장하고, 추가된 elements 들은 할당자를 이용해서 new 초기화
+                    /// Sets capacity of array to 'newCapacity'. If 'newCapacity' is greater than current capacity, memory will be resized.
+                    /// The new elements are initialized with a default constructor and assigned with allocator function.
                     /// This is valid operation only for pointer typed array.
     void            ReserveAlloc(int newCapacity, NewFunc *allocator);
 
@@ -203,24 +207,22 @@ public:
 
                     /// Calculate the index using valid element pointer.
                     /// This is valid operation only for pointer typed array.
-                    // 메모리 포인터끼리 빼는 연산이므로 index 가 항상 array 에 존재하는 것은 아니다. 
-                    // 범위를 넘어가는 index 일 경우 debug 모드에서는 assert 에러가 발생한다.
     int             IndexOf(const T *value) const;
                     
                     /// Removes the element at index position 'index'.
-                    // 제거되고 이후의 element 들이 빈공간을 메꾸기 위해 앞으로 이동된다.
+                    /// 'index' must be a valid index position in the array.
+                    /// All elements after the removed one are moved forward to fill the empty space.
                     /// Returns false if failed to remove.
     bool            RemoveIndex(int index);
 
                     /// Removes the element at index position 'index' fast.
-                    // 제거될 element 이후의 전체 element 들을 이동하는 대신, 삭제된 element 는 마지막 element 로 대치된다.
-                    // 따라서 element 의 순서가 바뀐다.
+                    /// Instead of moving the entire elements after the element to be removed, removed element is replaced with the last one.
                     /// Returns false if failed to remove.
     bool            RemoveIndexFast(int index);
 
                     /// Removes the first element that compares equal to 'value' from the array.
                     /// Returns whether an element was, in fact, removed.
-                    // 제거되고 이후의 element 들이 빈공간을 메꾸기 위해 앞으로 이동된다.
+                    /// All elements after the removed one are moved forward to fill the empty space.
     template <typename CompatibleT>
     bool            Remove(CompatibleT &&value);
 
@@ -246,6 +248,7 @@ public:
     void            Sort(Functor &&compare);
     void            Sort() { Sort(std::less<T>()); }
 
+                    /// Sorts using predicate 'compare' and preserves the relative ordering of equivalent elements.
     template <typename Functor>
     void            StableSort(Functor &&compare);
     void            StableSort() { StableSort(std::less<T>()); }
@@ -376,7 +379,6 @@ BE_INLINE void Array<T>::Reserve(int newCapacity, const T &initialValue) {
 
         newCapacity += granularity - 1;
         newCapacity -= newCapacity % granularity;
-        count = capacity;
         Resize(newCapacity);
 
         for (int i = count; i < newCapacity; i++) {
@@ -394,7 +396,6 @@ BE_INLINE void Array<T>::ReserveAlloc(int newCapacity, NewFunc *allocator) {
 
         newCapacity += granularity - 1;
         newCapacity -= newCapacity % granularity;
-        count = capacity;
         Resize(newCapacity);
 
         for (int i = count; i < newCapacity; i++) {

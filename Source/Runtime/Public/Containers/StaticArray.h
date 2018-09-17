@@ -162,18 +162,16 @@ public:
 
                     /// Calculate the index using valid element pointer.
                     /// This is valid operation only for pointer typed list.
-                    // 메모리 포인터끼리 빼는 연산이므로 index 가 항상 array 에 존재하는 것은 아니다. 
-                    // 범위를 넘어가는 index 일 경우 debug 모드에서는 assert 에러가 발생한다.
     int             IndexOf(const T *value) const;
 
                     /// Removes the element at index position 'index'.
-                    // 제거되고 이후의 element 들이 빈공간을 메꾸기 위해 앞으로 이동된다.
+                    /// All elements after the removed one are moved forward to fill the empty space.
                     /// Returns false if failed to remove.
     bool            RemoveIndex(int index);
 
                     /// Removes the first element that compares equal to 'value' from the array.
                     /// Returns whether an element was, in fact, removed.
-                    // 제거되고 이후의 element 들이 빈공간을 메꾸기 위해 앞으로 이동된다.
+                    /// All elements after the removed one are moved forward to fill the empty space.
     template <typename CompatibleT>
     bool            Remove(CompatibleT &&value);
 
@@ -190,9 +188,10 @@ public:
     void            Sort(Functor &&compare);
     void            Sort() { Sort(std::less<T>()); }
 
+                    /// Sorts using predicate 'compare' and preserves the relative ordering of equivalent elements.
     template <typename Functor>
     void            StableSort(Functor &&compare);
-    void            StableSort() { Sort(std::less<T>()); }
+    void            StableSort() { StableSort(std::less<T>()); }
 
                     /// Sorts sub-section using predicate 'compare'.
     template <typename Functor>
