@@ -90,9 +90,11 @@ void SoundSource::UpdateStream() {
 
         for (int bufferIndex = 0; bufferIndex < sound->soundBuffer->streamBufferCount; bufferIndex++) {
             int readSize = pcm.Read(pcmBufferSize, pcmBuffer);
+
             if (sound->looping) {
                 while (readSize < pcmBufferSize) {
                     pcm.Seek(0);
+
                     readSize += pcm.Read(pcmBufferSize - readSize, pcmBuffer + readSize);
                 }
             } else {
@@ -124,13 +126,15 @@ void SoundSource::UpdateStream() {
         if (delta < 0) {
             delta += sound->soundBuffer->streamBufferSize * sound->soundBuffer->streamBufferCount;
         }
-        
+
         int numProcessedBuffers = delta / sound->soundBuffer->streamBufferSize;
         while (numProcessedBuffers > 0) {
             int readSize = pcm.Read(pcmBufferSize, pcmBuffer);
+
             if (sound->looping) {
                 while (readSize < pcmBufferSize) {
                     pcm.Seek(0);
+
                     readSize += pcm.Read(pcmBufferSize - readSize, pcmBuffer + readSize);
                 }
             } else {
@@ -138,8 +142,6 @@ void SoundSource::UpdateStream() {
                     memset(pcmBuffer + readSize, 0, pcmBufferSize - readSize);
 
                     if (!streamEnded) {
-                        dsBuffer->Stop();
-                        dsBuffer->Play(0, 0, 0);
                         streamEnded = true;
                     }
                 }
@@ -151,7 +153,7 @@ void SoundSource::UpdateStream() {
             if (!SUCCEEDED(hr)) {
                 BE_ERRLOG(L"SoundSource::UpdateStream: failed to lock buffer\n");
                 return;
-            }            
+            }
 
             simdProcessor->Memcpy(lockedPtr, pcmBuffer, lockedSize);
             dsBuffer->Unlock(lockedPtr, lockedSize, nullptr, 0);
