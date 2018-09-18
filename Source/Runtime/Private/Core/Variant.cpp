@@ -253,37 +253,37 @@ Json::Value Variant::ToJsonValue() const {
         break;
     }
     case Vec2Type:
-        value = As<Vec2>().ToString();
+        value = As<Vec2>().ToString(10);
         break;
     case Vec3Type:
-        value = As<Vec3>().ToString();
+        value = As<Vec3>().ToString(10);
         break;
     case Vec4Type:
-        value = As<Vec4>().ToString();
+        value = As<Vec4>().ToString(10);
         break;
     case Color3Type:
-        value = As<Color3>().ToString();
+        value = As<Color3>().ToString(10);
         break;
     case Color4Type:
-        value = As<Color4>().ToString();
+        value = As<Color4>().ToString(10);
         break;
     case Mat2Type:
-        value = As<Mat2>().ToString();
+        value = As<Mat2>().ToString(10);
         break;
     case Mat3Type:
-        value = As<Mat3>().ToString();
+        value = As<Mat3>().ToString(10);
         break;
     case Mat4Type:
-        value = As<Mat4>().ToString();
+        value = As<Mat4>().ToString(10);
         break;
     case Mat3x4Type:
-        value = As<Mat3x4>().ToString();
+        value = As<Mat3x4>().ToString(10);
         break;
     case AnglesType:
-        value = As<Angles>().ToString();
+        value = As<Angles>().ToString(10);
         break;
     case QuatType:
-        value = As<Quat>().ToString();
+        value = As<Quat>().ToString(10);
         break;
     case PointType:
         value = As<Point>().ToString();
@@ -332,27 +332,27 @@ Str Variant::ToString() const {
         return Str(str);
     }
     case Vec2Type:
-        return (reinterpret_cast<const Vec2 *>(&value))->ToString();
+        return (reinterpret_cast<const Vec2 *>(&value))->ToString(10);
     case Vec3Type:
-        return (reinterpret_cast<const Vec3 *>(&value))->ToString();
+        return (reinterpret_cast<const Vec3 *>(&value))->ToString(10);
     case Vec4Type:
-        return (reinterpret_cast<const Vec4 *>(&value))->ToString();
+        return (reinterpret_cast<const Vec4 *>(&value))->ToString(10);
     case Color3Type:
-        return (reinterpret_cast<const Color3 *>(&value))->ToString();
+        return (reinterpret_cast<const Color3 *>(&value))->ToString(10);
     case Color4Type:
-        return (reinterpret_cast<const Color4 *>(&value))->ToString();
+        return (reinterpret_cast<const Color4 *>(&value))->ToString(10);
     case Mat2Type:
-        return (reinterpret_cast<const Mat2 *>(&value))->ToString();
+        return (reinterpret_cast<const Mat2 *>(&value))->ToString(10);
     case Mat3Type:
-        return (reinterpret_cast<const Mat3 *>(value.ptr1))->ToString();
+        return (reinterpret_cast<const Mat3 *>(value.ptr1))->ToString(10);
     case Mat4Type:
-        return (reinterpret_cast<const Mat4 *>(value.ptr1))->ToString();
+        return (reinterpret_cast<const Mat4 *>(value.ptr1))->ToString(10);
     case Mat3x4Type:
-        return (reinterpret_cast<const Mat3x4 *>(value.ptr1))->ToString();
+        return (reinterpret_cast<const Mat3x4 *>(value.ptr1))->ToString(10);
     case AnglesType:
-        return (reinterpret_cast<const Angles *>(&value))->ToString();
+        return (reinterpret_cast<const Angles *>(&value))->ToString(10);
     case QuatType:
-        return (reinterpret_cast<const Quat *>(&value))->ToString();
+        return (reinterpret_cast<const Quat *>(&value))->ToString(10);
     case PointType:
         return (reinterpret_cast<const Point *>(&value))->ToString();
     case RectType:
