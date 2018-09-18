@@ -56,7 +56,7 @@ class Sound;
 class SoundBuffer {
 public:
     static const int        MaxStreamBuffers = 3;
-    static const int        StreamBufferSeconds = 1;
+    static const int        StreamBufferSeconds = 2;
 
     SoundBuffer();
     ~SoundBuffer();

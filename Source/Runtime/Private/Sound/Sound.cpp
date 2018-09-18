@@ -66,7 +66,7 @@ void Sound::Create(Pcm &pcm) {
     duration        = SEC2MS(pcm.Duration());
     playingTime     = 0;
 
-    if (pcm.Duration() <= 6.0f) {
+    if (pcm.DataSize() <= 0x10000) {
         CreateStatic(pcm);
     } else {
         CreateStream(pcm);

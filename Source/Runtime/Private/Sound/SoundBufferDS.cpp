@@ -115,7 +115,7 @@ bool SoundBuffer::CreateStreamBuffer(int numChannels, int bitsWidth, int sampleR
     dsbd.dwFlags        = dwFlags;
     dsbd.dwReserved     = 0;
     dsbd.dwBufferBytes  = streamBufferSize * streamBufferCount;
-    dsbd.lpwfxFormat    = &fmt;    
+    dsbd.lpwfxFormat    = &fmt;
 
     HRESULT hr = soundSystem.dsDevice->CreateSoundBuffer(&dsbd, &dsBuffer, nullptr);
     if (hr != DS_OK) {

@@ -321,7 +321,7 @@ void SoundSystem::Update() {
         } else {
             float fallOff = listenerPosition.DistanceSqr(sound->origin) / (sound->maxDistance * sound->maxDistance);
             sound->priority = 1.0f - Min(fallOff, 1.0f);
-        }        
+        }
 
         prioritySounds.Append(sound);
     }
