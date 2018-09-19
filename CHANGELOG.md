@@ -8,6 +8,7 @@ Version History
 - Added support for calculation normals with area and anglular weights
 - Added support for vehicle physics
 - Added support for slider/wheel joint components
+- Added support for copy & paste component values
 - Changed engine unit from centi-meters to meters
 - Changed FBX importing process in editor
 - Fixed an issue where rolling friction was not working correctly
