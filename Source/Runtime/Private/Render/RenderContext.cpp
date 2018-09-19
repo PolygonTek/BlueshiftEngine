@@ -771,7 +771,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews | RenderView::Flag::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
     renderViewDef.clearMethod = RenderView::SkyboxClear;
     renderViewDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
-    renderViewDef.layerMask = BIT(0);
+    renderViewDef.layerMask = -1;
     renderViewDef.renderRect.Set(0, 0, width, height);
     renderViewDef.origin = origin;
     renderViewDef.axis = axis;
