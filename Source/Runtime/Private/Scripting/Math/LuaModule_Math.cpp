@@ -51,6 +51,7 @@ void LuaVM::RegisterMath(LuaCpp::Module &module) {
     _Math["angle_normalize_180"].SetFunc(Math::AngleNormalize180);
     _Math["angle_delta"].SetFunc(Math::AngleDelta);
     _Math["random"].SetFunc(Math::Random);
+    _Math["lerp"].SetFunc(Lerp<float>);
 }
 
 BE_NAMESPACE_END
