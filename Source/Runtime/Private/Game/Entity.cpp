@@ -253,14 +253,17 @@ bool Entity::HasChildren() const {
 }
 
 void Entity::GetChildren(EntityPtrArray &children) const {
-    for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
+    Entity *end = node.GetNextSibling();
+
+    for (Entity *child = node.GetNext(); child != end; child = child->node.GetNext()) {
         children.Append(child);
-        child->GetChildren(children);
     }
 }
 
 Entity *Entity::FindChild(const char *name) const {
-    for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
+    Entity *end = node.GetNextSibling();
+
+    for (Entity *child = node.GetNext(); child != end; child = child->node.GetNext()) {
         if (!Str::Cmp(child->GetName(), name)) {
             return child;
         }
@@ -271,11 +274,11 @@ Entity *Entity::FindChild(const char *name) const {
 Component *Entity::GetComponent(const MetaObject *type) const {
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
+
         if (component->GetMetaObject()->IsTypeOf(*type)) {
             return component;
         }
     }
-
     return nullptr;
 }
 
@@ -289,7 +292,6 @@ ComponentPtrArray Entity::GetComponents(const MetaObject *type) const {
             subComponents.Append(component);
         }
     }
-
     return subComponents;
 }
 
