@@ -469,6 +469,8 @@ void GameWorld::StartGame() {
 
     StaticBatch::CombineAll(entityHierarchy);
 
+    gameStarted = true;
+
     gameAwaking = true;
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
@@ -480,8 +482,6 @@ void GameWorld::StartGame() {
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Start();
     }
-
-    gameStarted = true;
 
     physicsWorld->Connect(&PhysicsWorld::SIG_PreStep, this, (SignalCallback)&GameWorld::FixedUpdateEntities);
     physicsWorld->Connect(&PhysicsWorld::SIG_PostStep, this, (SignalCallback)&GameWorld::FixedLateUpdateEntities);
