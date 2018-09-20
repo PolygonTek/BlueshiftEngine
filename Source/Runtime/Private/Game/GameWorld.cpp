@@ -61,6 +61,7 @@ GameWorld::GameWorld() {
 
     isDebuggable = false;
     isMapLoading = false;
+    gameAwaking = false;
     gameStarted = false;
 
     timeScale = 1.0f;
@@ -263,10 +264,14 @@ void GameWorld::RegisterEntity(Entity *ent, int spawn_entnum) {
     entities[spawn_entnum] = ent;
 
     ent->entityNum = spawn_entnum;
-    
-    if (gameStarted && !isMapLoading) {
-        ent->Awake();
-        ent->Start();
+
+    if (!isMapLoading) {
+        if (gameAwaking) {
+            ent->Awake();
+        } else if (gameStarted) {
+            ent->Awake();
+            ent->Start();
+        }
     }
 
     EmitSignal(&SIG_EntityRegistered, ent);
@@ -460,19 +465,23 @@ void GameWorld::StartGame() {
 
     luaVM.ClearWatingThreads();
 
-    gameStarted = true;
-
     timeScale = 1.0f;
 
     StaticBatch::CombineAll(entityHierarchy);
+
+    gameAwaking = true;
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Awake();
     }
 
+    gameAwaking = false;
+
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Start();
     }
+
+    gameStarted = true;
 
     physicsWorld->Connect(&PhysicsWorld::SIG_PreStep, this, (SignalCallback)&GameWorld::FixedUpdateEntities);
     physicsWorld->Connect(&PhysicsWorld::SIG_PostStep, this, (SignalCallback)&GameWorld::FixedLateUpdateEntities);

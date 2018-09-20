@@ -184,6 +184,7 @@ private:
     int                         prevTime;
     float                       timeScale;
 
+    bool                        gameAwaking;
     bool                        gameStarted;
     bool                        isDebuggable;
     bool                        isMapLoading;
