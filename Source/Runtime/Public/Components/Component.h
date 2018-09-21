@@ -35,23 +35,23 @@ public:
     Component();
     virtual ~Component() = 0;
 
-                            /// Components share the same name with the entity
+                            /// Components share the same name with the entity.
     virtual Str             ToString() const override;
     
-                            /// Get the entity that own this component
+                            /// Get the entity that own this component.
     Entity *                GetEntity() const { return entity; }
 
     void                    SetEntity(Entity *entity) { this->entity = entity; }
     
-                            /// Get the game world object
+                            /// Get the game world object.
     GameWorld *             GetGameWorld() const;
 
-                            /// Returns true if the same component is allowed
+                            /// Returns true if the same component is allowed.
     virtual bool            AllowSameComponent() const { return false; }
-                            /// Returns true if this component conflicts with the given component
+                            /// Returns true if this component conflicts with the given component.
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const { return false; }
 
-                            /// Returns true if this component have render entity by checking renderEntityHandle
+                            /// Returns true if this component have render entity by checking renderEntityHandle.
     virtual bool            HasRenderEntity(int renderEntityHandle) const { return false; }
 
                             /// Is initialized ? (initialized should be set to true after calling Init function)
@@ -61,7 +61,7 @@ public:
     virtual bool            CanDisable() const { return true; }
                             /// Is enabled ?
     bool                    IsEnabled() const { return enabled; }
-                            /// Set enabled/disabled this component
+                            /// Set enabled/disabled this component.
     void                    SetEnabled(bool enable);
 
     bool                    IsActiveInHierarchy() const;
@@ -72,8 +72,8 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init();
 
-                            /// Called once when game started before Start()
-                            /// When game already started, called immediately after spawned
+                            /// Called once when game started before Start().
+                            /// When game already started, called immediately after spawned.
     virtual void            Awake() {}
 
                             /// Called on scene update, variable timestep.
@@ -85,7 +85,7 @@ public:
                             ///
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const { return false; }
 
-                            /// Visualize the component in editor
+                            /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderView::State &sceneView, bool selected) {}
 
 protected:
