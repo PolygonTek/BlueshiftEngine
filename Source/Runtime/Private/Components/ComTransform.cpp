@@ -291,7 +291,7 @@ void ComTransform::Rotate(const Vec3 &rotVec, float angle, TransformSpace space)
     Quat rotation = Quat::FromAngleAxis(angle, rotVec);
 
     if (space == LocalSpace) {
-        SetLocalRotation(rotation * GetLocalRotation());
+        SetLocalRotation(GetLocalRotation() * rotation);
     } else {
         SetRotation(rotation * GetRotation());
     }

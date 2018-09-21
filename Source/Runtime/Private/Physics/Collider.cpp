@@ -457,25 +457,17 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
 bool Collider::Load(const char *filename, bool convexHull, const Vec3 &scale) {
     Purge();
 
-    if (Str::CheckExtension(filename, ".bmesh")) {
-        Mesh *mesh = meshManager.GetMesh(filename);
-        
-        if (!mesh->IsDefaultMesh()) {
-            if (convexHull) {
-                CreateConvexHull(mesh, scale, CentiToUnit(1.0f));
-                //CreateConvexDecomp(mesh, scale);
-            } else {
-                CreateBVH(mesh, false, scale);
-            }
+    Mesh *mesh = meshManager.GetMesh(filename);
 
-            meshManager.ReleaseMesh(mesh);
-            return true;
-        }
-
-        meshManager.ReleaseMesh(mesh);
+    if (convexHull) {
+        CreateConvexHull(mesh, scale, CentiToUnit(1.0f));
+        //CreateConvexDecomp(mesh, scale);
+    } else {
+        CreateBVH(mesh, false, scale);
     }
 
-    return false;
+    meshManager.ReleaseMesh(mesh);
+    return true;
 }
 
 bool Collider::Reload() {
