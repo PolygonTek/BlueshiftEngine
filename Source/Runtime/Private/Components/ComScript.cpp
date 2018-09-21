@@ -51,6 +51,7 @@ void ComScript::Purge(bool chainPurge) {
         sandbox = LuaCpp::Selector();
     }
 
+    started = false;
     hasError = false;
 
     fieldInfos.Clear();
@@ -63,6 +64,10 @@ void ComScript::Purge(bool chainPurge) {
 
 void ComScript::OnActive() {
     if (IsInitialized()) {
+        if (!started) {
+            Start();
+        }
+
         if (onEnableFunc.IsValid()) {
             onEnableFunc();
         }
@@ -849,6 +854,7 @@ void ComScript::Start() {
     if (startFunc.IsValid()) {
         startFunc();
     }
+    started = true;
 }
 
 void ComScript::Update() {

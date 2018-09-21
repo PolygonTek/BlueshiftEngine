@@ -117,6 +117,7 @@ protected:
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
 
+    bool                    started = false;
     bool                    executeInEditMode = false;
     bool                    hasError = false;
     bool                    deserializing = false;

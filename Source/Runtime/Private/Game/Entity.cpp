@@ -148,8 +148,8 @@ void Entity::Awake() {
 void Entity::Start() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
-        
-        if (scriptComponent) {
+
+        if (scriptComponent && scriptComponent->IsActiveInHierarchy()) {
             scriptComponent->Start();
         }
     }
