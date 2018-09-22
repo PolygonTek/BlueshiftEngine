@@ -64,7 +64,7 @@ void ComScript::Purge(bool chainPurge) {
 
 void ComScript::OnActive() {
     if (IsInitialized()) {
-        if (!started) {
+        if (GetGameWorld()->IsGameStarted() && !started) {
             Start();
         }
 
