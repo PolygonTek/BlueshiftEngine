@@ -179,6 +179,7 @@ bool SoundSource::IsFinished() {
             return false;
         }
     }
+
     return true;
 }
 
@@ -186,6 +187,7 @@ bool SoundSource::Stop() {
     if (!sound) {
         return false;
     }
+
     dsBuffer->Stop();
     dsBuffer->SetCurrentPosition(0);
 

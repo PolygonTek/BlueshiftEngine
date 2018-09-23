@@ -315,9 +315,9 @@ void SoundSystem::Update() {
         nextNode = node->NextNode();
 
         Sound *sound = node->Owner();
-        
+
         if (sound->localSound) {
-            sound->priority = sound->volume * (sound->looping ? 1.0f : (1.0f - (float)sound->playingTime / sound->duration));
+            sound->priority = sound->volume * (sound->looping ? 1.0f : (1.0f - (float)sound->playingTime / (sound->duration + 100)));
         } else {
             float fallOff = listenerPosition.DistanceSqr(sound->origin) / (sound->maxDistance * sound->maxDistance);
             sound->priority = 1.0f - Min(fallOff, 1.0f);
@@ -371,19 +371,19 @@ void SoundSystem::Update() {
     }
 
     // Update playing time of each playing sounds
+    // FIXME: playingTime is not precise for now
     for (node = soundPlayLinkList.NextNode(); node; node = nextNode) {
         nextNode = node->NextNode();
 
         Sound *sound = node->Owner();
 
         sound->playingTime += elapsedTime;
+
         if (sound->playingTime > sound->duration) {
             if (sound->looping) {
                 while (sound->playingTime >= sound->duration) {
                     sound->playingTime -= sound->duration;
                 }
-            } else {
-                sound->playingTime = sound->duration;
             }
         }
     }
