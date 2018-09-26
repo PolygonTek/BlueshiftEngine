@@ -128,7 +128,7 @@ public:
         MinMaxCurve             startDelay;             ///< Delay from start for the first particle to emit 
         Color4                  startColor;             ///< Start color (RGBA) of particles
         MinMaxCurve             startSpeed;             ///< Start speed of particles in meter
-        MinMaxCurve             startSize;              ///< Start size of particles in centimeter
+        MinMaxCurve             startSize;              ///< Start size of particles in meter
         MinMaxCurve             startAspectRatio;       ///< Start aspect ratio of particles
         MinMaxCurve             startRotation;          ///< Start angle of particles in degrees
         float                   randomizeRotation;      ///< Bias [0, 1] of randomized angle
@@ -204,7 +204,7 @@ public:
     struct RotationBySpeedModule {
         void                    Reset() { rotation.Reset(MinMaxCurve::CurveType, 180.0f, 0.0f, 0.0f); speedRange.Set(0, 1); }
 
-        MinMaxCurve             rotation;               ///< size in centimeter
+        MinMaxCurve             rotation;
         Vec2                    speedRange;
     };
 
@@ -212,14 +212,14 @@ public:
     struct LTSizeModule {
         void                    Reset() { size.Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 1.0f); }
 
-        MinMaxCurve             size;                   ///< size in centimeter
+        MinMaxCurve             size;                   ///< size in meter
     };
 
     // size by speed module
     struct SizeBySpeedModule {
         void                    Reset() { size.Reset(MinMaxCurve::CurveType, 1.0f, 0.0f, 1.0f); speedRange.Set(0, 1); }
 
-        MinMaxCurve             size;                   ///< size in centimeter
+        MinMaxCurve             size;                   ///< size in meter
         Vec2                    speedRange;
     };
 
@@ -340,7 +340,7 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
     startDelay.Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f);
     startColor.Set(1, 1, 1, 1);
     startSpeed.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f);
-    startSize.Reset(MinMaxCurve::ConstantType, 10.0f, 1.0f, 1.0f);
+    startSize.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f);
     startAspectRatio.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f);
     startRotation.Reset(MinMaxCurve::ConstantType, 180.0f, 0.0f, 0.0f);
     randomizeRotation = 1.0f;

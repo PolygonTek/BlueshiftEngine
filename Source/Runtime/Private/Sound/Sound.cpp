@@ -214,6 +214,7 @@ void Sound::SetVolume(float vol) {
     volume = vol;
 
     if (soundSource) {
+        // The volume of each sound must be multiplied by the master volume.
         soundSource->SetVolume(volume * SoundSystem::s_volume.GetFloat());
     }
 }
