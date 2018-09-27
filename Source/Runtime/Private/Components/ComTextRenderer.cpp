@@ -32,7 +32,7 @@ void ComTextRenderer::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor, GetAnchor, SetAnchor, 0, 
         "Which point of the text shares the position of the Transform.", PropertyInfo::EditorFlag).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
     REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextAlignment, GetAlignment, SetAlignment, 0, 
-        "How lines of text are aligned (Left, Right, Center).", PropertyInfo::EditorFlag).SetEnumString("Left; Center; Right");
+        "How lines of text are aligned (Left, Right, Center).", PropertyInfo::EditorFlag).SetEnumString("Left;Center;Right");
     REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, 
         "How much space will be in-between lines of text.", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14, 
