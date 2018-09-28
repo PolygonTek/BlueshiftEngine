@@ -40,6 +40,9 @@ public:
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
+    float                   GetVolume() const;
+    void                    SetVolume(float volume);
+
 protected:
     void                    TransformUpdated(const ComTransform *transform);
 };

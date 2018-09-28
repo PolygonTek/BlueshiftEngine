@@ -22,6 +22,9 @@ void LuaVM::RegisterAudioListenerComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComAudioListener = module["ComAudioListener"];
 
     _ComAudioListener.SetClass<ComAudioListener>(module["Component"]);
+    _ComAudioListener.AddClassMembers<ComAudioListener>(
+        "set_volume", &ComAudioListener::SetVolume,
+        "volume", &ComAudioListener::GetVolume);
     
     _ComAudioListener["meta_object"] = ComAudioListener::metaObject;
 }
