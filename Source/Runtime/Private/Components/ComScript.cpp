@@ -219,6 +219,10 @@ void ComScript::InitScriptFields() {
     auto fieldGuidEnumerator = [this](LuaCpp::Selector &selector) {
         const char *name = selector;
         auto prop = sandbox["properties"][name];
+        if (!prop.IsValid()) {
+            return;
+        }
+
         const char *type = prop["type"];
         LuaCpp::Selector value = prop["value"];
 
@@ -231,6 +235,10 @@ void ComScript::InitScriptFields() {
     auto fieldInfoEnumerator = [this](LuaCpp::Selector &selector) {
         const char *name = selector;
         auto prop = sandbox["properties"][name];
+        if (!prop.IsValid()) {
+            return;
+        }
+
         const char *label = prop["label"];
         const char *desc = prop["description"];
         const char *type = prop["type"];

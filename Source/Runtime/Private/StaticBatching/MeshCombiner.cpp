@@ -157,7 +157,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
     Str combinedMeshName = "Combined Mesh (" + staticBatchRoot->GetName() + ")";
     if (batchIndex > 0) {
-        combinedMeshName += " " + (batchIndex + 1);
+        combinedMeshName += " " + Str(batchIndex + 1);
     }
 
     Mesh *combinedMesh = meshManager.CreateCombinedMesh(combinedMeshName, subMeshes, localMatrices);

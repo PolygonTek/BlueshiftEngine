@@ -255,6 +255,7 @@ bool Entity::HasChildren() const {
 void Entity::GetChildren(EntityPtrArray &children) const {
     for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
         children.Append(child);
+
         child->GetChildren(children);
     }
 }
@@ -263,6 +264,11 @@ Entity *Entity::FindChild(const char *name) const {
     for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
         if (!Str::Cmp(child->GetName(), name)) {
             return child;
+        }
+
+        Entity *foundEntity = child->FindChild(name);
+        if (foundEntity) {
+            return foundEntity;
         }
     }
     return nullptr;
