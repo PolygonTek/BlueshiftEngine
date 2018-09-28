@@ -39,8 +39,11 @@ public:
 
     void                    EnableJIT(bool enabled);
 
+    void                    ClearTweeners();
+    void                    UpdateTweeners(float deltaTime);
+
     void                    ClearWatingThreads();
-    void                    WakeUpWatingThreads(float deltaTime);
+    void                    WakeUpWatingThreads(float currentTime);
 
     void                    StartDebuggee();
     void                    StopDebuggee();
@@ -51,6 +54,7 @@ public:
     void                    InitEngineModule(const GameWorld *gameWorld);
 
 private:
+    void                    LoadTween();
     void                    LoadWaitSupport();
 
     void                    RegisterMath(LuaCpp::Module &module);
@@ -145,6 +149,8 @@ private:
     void                    RegisterGameWorld(LuaCpp::Module &module);
 
     LuaCpp::State *         state;
+    LuaCpp::Selector        clearTweeners;
+    LuaCpp::Selector        updateTweeners;
     LuaCpp::Selector        clearWatingThreads;
     LuaCpp::Selector        wakeUpWatingThreads;
     LuaCpp::Selector        startDebuggee;

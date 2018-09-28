@@ -106,6 +106,7 @@ void LuaVM::Init() {
         return true;
     });
 
+    LoadTween();
     LoadWaitSupport();
 
     //state->Require("blueshift.io", luaopen_file);
@@ -114,6 +115,7 @@ void LuaVM::Init() {
 void LuaVM::LoadWaitSupport() {
     const char *filename = "Scripts/wait_support.lua";
     char *data;
+
     size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
     if (data) {
         if (state->RunBuffer(filename, data, size)) {
@@ -127,6 +129,28 @@ void LuaVM::LoadWaitSupport() {
             wakeUpWatingThreads = waitSupport["wake_up_waiting_threads"];
             if (!wakeUpWatingThreads.IsFunction()) {
                 wakeUpWatingThreads = LuaCpp::Selector();
+            }
+        }
+    }
+}
+
+void LuaVM::LoadTween() {
+    const char *filename = "Scripts/tween.lua";
+    char *data;
+
+    size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
+    if (data) {
+        if (state->RunBuffer(filename, data, size)) {
+            LuaCpp::Selector tween = (*state)["tween"];
+
+            clearTweeners = tween["clear_tweeners"];
+            if (!clearTweeners.IsFunction()) {
+                clearTweeners = LuaCpp::Selector();
+            }
+
+            updateTweeners = tween["update_tweeners"];
+            if (!updateTweeners.IsFunction()) {
+                updateTweeners = LuaCpp::Selector();
             }
         }
     }
@@ -248,6 +272,9 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 void LuaVM::Shutdown() {
     engineModuleCallbacks.Clear();
 
+    clearTweeners = LuaCpp::Selector();
+    updateTweeners = LuaCpp::Selector();
+
     clearWatingThreads = LuaCpp::Selector();
     wakeUpWatingThreads = LuaCpp::Selector();
 
@@ -280,6 +307,18 @@ const char *LuaVM::GetLuaJitVersion() const {
 
 void LuaVM::EnableJIT(bool enabled) {
     state->EnableJIT(enabled);
+}
+
+void LuaVM::ClearTweeners() {
+    if (clearTweeners.IsFunction()) {
+        clearTweeners();
+    }
+}
+
+void LuaVM::UpdateTweeners(float deltaTime) {
+    if (updateTweeners.IsFunction()) {
+        updateTweeners(deltaTime);
+    }
 }
 
 void LuaVM::ClearWatingThreads() {

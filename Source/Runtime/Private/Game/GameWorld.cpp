@@ -463,6 +463,8 @@ void GameWorld::StartGame() {
         luaVM.StartDebuggee();
     }
 
+    luaVM.ClearTweeners();
+
     luaVM.ClearWatingThreads();
 
     timeScale = 1.0f;
@@ -491,6 +493,8 @@ void GameWorld::StopGame(bool stopAllSounds) {
     if (isDebuggable) {
         luaVM.StopDebuggee();
     }
+
+    luaVM.ClearTweeners();
 
     luaVM.ClearWatingThreads();
 
@@ -613,8 +617,11 @@ void GameWorld::Update(int elapsedTime) {
 
         LateUpdateEntities();
 
-        // Wake up waiting coroutine in Lua script
+        // Wake up waiting coroutine in Lua scripts
         luaVM.WakeUpWatingThreads(MS2SEC(time));
+
+        // Update tweeners in Lua scripts
+        luaVM.UpdateTweeners(MS2SEC(scaledElapsedTime));
 
         luaVM.State().ForceGC();
     }
