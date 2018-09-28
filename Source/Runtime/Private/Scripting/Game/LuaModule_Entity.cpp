@@ -114,6 +114,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),
         "script", static_cast<ComScript*(Entity::*)()const>(&Entity::GetComponent<ComScript>),
+        "nth_script", static_cast<ComScript*(Entity::*)(int)const>(&Entity::GetComponent<ComScript>),
         "add_new_component", &Entity::AddNewComponent);
 
     _Entity["meta_object"] = Entity::metaObject;

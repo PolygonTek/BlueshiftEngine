@@ -134,6 +134,8 @@ public:
     Component *                 GetComponent(const MetaObject *type) const;
                                 /// Returns a component pointer by the given type T.
     template <typename T> T *   GetComponent() const;
+                                /// Returns a component pointer by the given type T.
+    template <typename T> T *   GetComponent(int index) const;
                                 /// Returns all component pointers.
     ComponentPtrArray &         GetComponents() { return components; }
                                 /// Returns all component pointers by the given meta object.
@@ -278,6 +280,17 @@ BE_INLINE T *Entity::GetComponent() const {
     Component *component = GetComponent(&T::metaObject);
     if (component) {
         return component->Cast<T>();
+    }
+
+    return nullptr;
+}
+
+template <typename T>
+BE_INLINE T *Entity::GetComponent(int index) const {
+    ComponentPtrArray components = GetComponents(&T::metaObject);
+    int numComponents = components.Count();
+    if (numComponents > 0 && index < numComponents) {
+        return components[index]->Cast<T>();
     }
 
     return nullptr;
