@@ -30,6 +30,7 @@ void LuaVM::RegisterSoundAsset(LuaCpp::Module &module) {
         "stop", &Sound::Stop,
         "is_playing", &Sound::IsPlaying,
         "duration", &Sound::Duration,
+        "volume", &Sound::GetVolume,
         "set_volume", &Sound::SetVolume,
         "get_playing_time", &Sound::GetPlayingTime,
         "set_playing_time", &Sound::SetPlayingTime,
