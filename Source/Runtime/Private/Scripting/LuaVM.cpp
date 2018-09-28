@@ -100,7 +100,9 @@ void LuaVM::Init() {
             }
         }
 
-        state->RunBuffer(name, data, size, name.c_str());
+        if (!state->RunBuffer(name, data, size, name.c_str())) {
+            BE_ERRLOG(L"Failed to run %hs\n", filename.c_str());
+        }
 
         fileSystem.FreeFile(data);
         return true;
@@ -108,8 +110,6 @@ void LuaVM::Init() {
 
     LoadTween();
     LoadWaitSupport();
-
-    //state->Require("blueshift.io", luaopen_file);
 }
 
 void LuaVM::LoadWaitSupport() {
