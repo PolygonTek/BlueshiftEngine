@@ -361,6 +361,7 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 //
 //--------------------------------------------------------------------------------------------
 Angles Mat3::ToAngles() const {
+#if 0
     float sp = mat[0][2];
     // asin 의 NAN 값을 피하기위해 clamp
     Clamp(sp, -1.0f, 1.0f);
@@ -380,6 +381,20 @@ Angles Mat3::ToAngles() const {
     } 
 
     return angles;
+#else
+    Angles angles;
+    float s = Math::Sqrt(mat[0][0] * mat[0][0] + mat[0][1] * mat[0][1]);
+    if (s > Math::FloatEpsilon) {
+        angles.pitch = RAD2DEG(-Math::ATan(mat[0][2], s));
+        angles.yaw = RAD2DEG(Math::ATan(mat[0][1], mat[0][0]));
+        angles.roll = RAD2DEG(Math::ATan(mat[1][2], mat[2][2]));
+    } else {
+        angles.pitch = mat[0][2] < 0.0f ? 90.0f : -90.0f;
+        angles.yaw = RAD2DEG(-Math::ATan(mat[1][0], mat[1][1]));
+        angles.roll = 0.0f;
+    }
+    return angles;
+#endif
 }
 
 //-------------------------------------------------------------------------------------------
