@@ -72,6 +72,8 @@ void LuaVM::RegisterVec3(LuaCpp::Module &module) {
         "__unm", static_cast<Vec3(Vec3::*)()const>(&Vec3::operator-),
         "__add", &Vec3::Add,
         "__sub", &Vec3::Sub,
+        "__mul", &Vec3::Mul,
+        "__div", &Vec3::Div,
         "__eq", static_cast<bool(Vec3::*)(const Vec3&)const>(&Vec3::operator==)
     );
 

@@ -61,6 +61,8 @@ void LuaVM::RegisterVec4(LuaCpp::Module &module) {
         "__unm", static_cast<Vec4(Vec4::*)(void)const>(&Vec4::operator-),
         "__add", &Vec4::Add,
         "__sub", &Vec4::Sub,
+        "__mul", &Vec4::Mul,
+        "__div", &Vec4::Div,
         "__eq", static_cast<bool(Vec4::*)(const Vec4&)const>(&Vec4::operator==)
     );
 

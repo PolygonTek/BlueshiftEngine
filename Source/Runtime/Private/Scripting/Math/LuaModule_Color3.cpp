@@ -50,6 +50,10 @@ void LuaVM::RegisterColor3(LuaCpp::Module &module) {
     );
     _Color3.AddClassMembers<Color3>(
         "__tostring", static_cast<const char *(Color3::*)(void) const>(&Color3::ToString),
+        "__add", &Color3::Add,
+        "__sub", &Color3::Sub,
+        "__mul", &Color3::Mul,
+        "__div", &Color3::Div,
         "__eq", static_cast<bool(Color3::*)(const Color3&)const>(&Color3::operator==)
     );
 

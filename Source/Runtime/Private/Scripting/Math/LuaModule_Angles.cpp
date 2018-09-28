@@ -61,6 +61,8 @@ void LuaVM::RegisterAngles(LuaCpp::Module &module) {
         "__unm", static_cast<Angles(Angles::*)() const>(&Angles::operator-),
         "__add", static_cast<Angles(Angles::*)(const Angles&)const>(&Angles::operator+),
         "__sub", static_cast<Angles(Angles::*)(const Angles&)const>(&Angles::operator-),
+        "__mul", static_cast<Angles(Angles::*)(float)const>(&Angles::operator*),
+        "__div", static_cast<Angles(Angles::*)(float)const>(&Angles::operator/),
         "__eq", static_cast<bool(Angles::*)(const Angles&)const>(&Angles::operator==)
     );
 

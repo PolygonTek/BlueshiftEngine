@@ -53,6 +53,10 @@ void LuaVM::RegisterColor4(LuaCpp::Module &module) {
         );
     _Color4.AddClassMembers<Color4>(
         "__tostring", static_cast<const char *(Color4::*)(void) const>(&Color4::ToString),
+        "__add", &Color4::Add,
+        "__sub", &Color4::Sub,
+        "__mul", &Color4::Mul,
+        "__div", &Color4::Div,
         "__eq", static_cast<bool(Color4::*)(const Color4&)const>(&Color4::operator==)
         );
 
