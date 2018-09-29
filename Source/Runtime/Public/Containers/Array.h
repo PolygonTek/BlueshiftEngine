@@ -226,6 +226,12 @@ public:
     template <typename CompatibleT>
     bool            Remove(CompatibleT &&value);
 
+                    /// Removes the first element that compares equal to 'value' fast from the array.
+                    /// Instead of moving the entire elements after the element to be removed, removed element is replaced with the last one.
+                    /// Returns whether an element was, in fact, removed.
+    template <typename CompatibleT>
+    bool            RemoveFast(CompatibleT &&value);
+
                     /// Removes all elements that compare equal to 'value' from the array.
                     /// Returns the number of elements removed.
     template <typename CompatibleT>
@@ -726,6 +732,17 @@ BE_INLINE bool Array<T>::Remove(CompatibleT &&value) {
         return RemoveIndex(index);
     }
     
+    return false;
+}
+
+template <typename T>
+template <typename CompatibleT>
+BE_INLINE bool Array<T>::RemoveFast(CompatibleT &&value) {
+    int index = FindIndex(std::forward<CompatibleT>(value));
+    if (index >= 0) {
+        return RemoveIndexFast(index);
+    }
+
     return false;
 }
 
