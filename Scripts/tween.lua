@@ -311,5 +311,13 @@ function tween.add(easeType, duration, a, b, func)
 		b = b, 
 		func = func
 	}
+
+	return tweeners[func]
+end
+
+function tween.cancel(tweener)
+	if tweener then
+		tweeners[tweener.func] = nil
+	end
 end
 
