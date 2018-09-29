@@ -161,7 +161,7 @@ Mesh *MeshManager::AllocInstantiatedMesh(Mesh *refMesh) {
 
 void MeshManager::DestroyMesh(Mesh *mesh) {
     if (mesh->isInstantiated) {
-        instantiatedMeshList.Remove(mesh);
+        instantiatedMeshList.RemoveFast(mesh);
         delete mesh;
         return;
     }
@@ -181,7 +181,7 @@ void MeshManager::ReleaseMesh(Mesh *mesh, bool immediateDestroy) {
     }
 
     if (mesh->isInstantiated) {
-        instantiatedMeshList.Remove(mesh);
+        instantiatedMeshList.RemoveFast(mesh);
         delete mesh;
         return;
     }

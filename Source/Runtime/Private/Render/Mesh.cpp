@@ -35,7 +35,7 @@ void Mesh::Purge() {
         SAFE_DELETE(skinningJointCache);
 
         if (originalMesh) {
-            originalMesh->instantiatedMeshes.Remove(this);
+            originalMesh->instantiatedMeshes.RemoveFast(this);
             originalMesh = nullptr;
         }
     } else {

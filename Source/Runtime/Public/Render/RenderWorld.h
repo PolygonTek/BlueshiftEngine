@@ -142,7 +142,7 @@ private:
     GuiMesh                     textMesh;           ///< 3D text mesh
 
     Array<RenderObject *>       renderObjects;      ///< Array of render objects
-    Array<RenderLight *>        renderLights;      ///< Array of render lights
+    Array<RenderLight *>        renderLights;       ///< Array of render lights
     //Array<SceneReflectionProbe *>sceneReflectionProbes;
 
     //SceneReflectionProbe *      defaultReflectionProbe;

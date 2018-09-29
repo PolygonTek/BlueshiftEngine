@@ -49,6 +49,8 @@ void GameWorld::RegisterProperties() {
 GameWorld::GameWorld() {
     memset(entities, 0, sizeof(entities));
 
+    firstFreeIndex = 0;
+
     // Create render settings
     mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
     mapRenderSettings->gameWorld = this;
@@ -58,13 +60,6 @@ GameWorld::GameWorld() {
 
     // Create physics world
     physicsWorld = physicsSystem.AllocPhysicsWorld();
-
-    isDebuggable = false;
-    isMapLoading = false;
-    gameAwaking = false;
-    gameStarted = false;
-
-    timeScale = 1.0f;
 
     luaVM.Init();
 
@@ -101,37 +96,34 @@ void GameWorld::Reset() {
 
 int GameWorld::GetDeltaTime() const {
     int dt = time - prevTime;
+
     return dt;
 }
 
 void GameWorld::ClearAllEntities() {
-    // List up all of the destructable entities in depth first order
-    EntityPtrArray entityList;
+    // List up all of the entities to remove in depth first order
+    EntityPtrArray entitiesToRemove;
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
-        entityList.Append(ent);
+        entitiesToRemove.Append(ent);
     }
 
-    // Delete entities in reverse depth first order
-    for (int i = entityList.Count() - 1; i >= 0; i--) {
-        Entity *ent = entityList[i];
-
-        int entityNum = ent->entityNum;
+    // Remove entities in reverse depth first order
+    for (int i = entitiesToRemove.Count() - 1; i >= 0; i--) {
+        Entity *ent = entitiesToRemove[i];
 
         ent->node.RemoveFromHierarchy();
+
+        entityHash.Remove(ent->nameHash, ent->entityNum);
+        entityTagHash.Remove(ent->tagHash, ent->entityNum);
+
+        int entityNum = ent->entityNum;
 
         Entity::DestroyInstanceImmediate(ent);
 
         entities[entityNum] = nullptr;
     }
 
-    firstFreeIndex = 16; // TEMP
-
-    entityHash.Free();
-    entityTagHash.Free();
-
-    physicsWorld->ClearScene();
-
-    renderWorld->ClearScene();
+    physicsWorld->Reset();
 }
 
 Entity *GameWorld::FindEntity(const char *name) const {

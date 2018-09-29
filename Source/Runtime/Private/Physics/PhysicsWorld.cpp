@@ -164,12 +164,17 @@ void PhysicsWorld::ClearScene() {
         userColObj->RemoveFromWorld();
         physicsSystem.DestroyCollidable(userColObj);
     }
-    
+
+    Reset();
+}
+
+void PhysicsWorld::Reset() {
     // Reset some internal cached data in the broadphase
     dynamicsWorld->getBroadphase()->resetPool(dynamicsWorld->getDispatcher());
     dynamicsWorld->getConstraintSolver()->reset();
 
     time = 0;
+    accumulatedTimeDelta = 0;
 }
 
 PhysicsWorld::ConstraintSolver PhysicsWorld::GetConstraintSolver() const {

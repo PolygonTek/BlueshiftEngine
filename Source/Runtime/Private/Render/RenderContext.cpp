@@ -747,7 +747,7 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion inclusion, Array<
                     byte *data_ptr = &data[pitch + x * bpp];
 
                     int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
-                    indexes.Remove(id);
+                    indexes.RemoveFast(id);
                 }
             }
         }

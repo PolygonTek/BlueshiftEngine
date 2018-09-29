@@ -154,7 +154,6 @@ private:
     void                        BeginMapLoading();
     void                        FinishMapLoading();
     Entity *                    CloneEntity(const Entity *originalEntity);
-    void                        SaveObject(const char *filename, const Object *object) const;
     void                        ClearAllEntities();
     void                        FixedUpdateEntities(float timeStep);
     void                        FixedLateUpdateEntities(float timeStep);
@@ -182,12 +181,12 @@ private:
 
     int                         time;
     int                         prevTime;
-    float                       timeScale;
+    float                       timeScale = 1.0f;
 
-    bool                        gameAwaking;
-    bool                        gameStarted;
-    bool                        isDebuggable;
-    bool                        isMapLoading;
+    bool                        gameAwaking = false;
+    bool                        gameStarted = false;
+    bool                        isDebuggable = false;
+    bool                        isMapLoading = false;
 };
 
 BE_NAMESPACE_END

@@ -110,6 +110,7 @@ public:
     ~PhysicsWorld();
 
     void                    ClearScene();
+    void                    Reset();
     void                    StepSimulation(int frameTime);
 
     int                     GetConstraintSolverIterations() const;
