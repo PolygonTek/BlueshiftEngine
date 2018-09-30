@@ -281,7 +281,6 @@ Sound *SoundSystem::GetSound(const char *hashName) {
 
 // TODO: SoundSystem::Update 함수를 별도 쓰레드로 바꿀것
 void SoundSystem::Update() {
-    static float lastTime = PlatformTime::Milliseconds();
     LinkList<Sound> *node;
     LinkList<Sound> *nextNode;
 
@@ -289,6 +288,7 @@ void SoundSystem::Update() {
         return;
     }
 
+    static float lastTime = PlatformTime::Milliseconds();
     int currentTime = PlatformTime::Milliseconds();
     int elapsedTime = currentTime - lastTime;
     lastTime = currentTime;
@@ -420,7 +420,8 @@ void SoundSystem::Cmd_ListSounds(const CmdArgs &args) {
         int bits = sound->BitsWidth();
 
         BE_LOG(L"%3d refs %6hs %5i khz %2i bits %hs %hs\n",
-            sound->refCount, channels > 1 ? "stereo" : "mono", samples, bits, Str::FormatBytes(sound->Bytes()).c_str(), sound->hashName.c_str());
+            sound->refCount, channels > 1 ? "stereo" : "mono", samples, bits,
+            Str::FormatBytes(sound->Bytes()).c_str(), sound->hashName.c_str());
 
         count++;
     }
@@ -436,8 +437,7 @@ void SoundSystem::Cmd_PlaySound(const CmdArgs &args) {
     Str filename = WStr::ToStr(args.Argv(1));
 
     Sound *sound = soundSystem.GetSound(filename);
-    Sound *s = sound->Instantiate();
-    s->Play2D();
+    sound->Instantiate()->Play2D();
     soundSystem.ReleaseSound(sound);
 }
 
