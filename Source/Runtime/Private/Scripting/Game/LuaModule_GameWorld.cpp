@@ -36,7 +36,8 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "ray_intersection", static_cast<Entity*(GameWorld::*)(const Vec3 &, const Vec3 &, int)const>(&GameWorld::RayIntersection),
         "instantiate_entity", &GameWorld::InstantiateEntity,
         "instantiate_entity_with_transform", &GameWorld::InstantiateEntityWithTransform,
-        "loded_map_name", &GameWorld::MapName,
+        "dont_destroy_on_load", &GameWorld::DontDestroyOnLoad,
+        "map_name", &GameWorld::MapName,
         "restart_game", &GameWorld::RestartGame,
         "stop_all_sounds", &GameWorld::StopAllSounds);
 

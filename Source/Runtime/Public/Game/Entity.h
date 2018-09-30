@@ -218,7 +218,7 @@ public:
     bool                        RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
 
                                 /// Creates an entity by JSON text.
-    static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr);
+    static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr, int sceneIndex = 0);
 
                                 /// Makes copy of JSON value of an entity and then replace each GUIDs of entity/components to the new ones.
     static Json::Value          CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap);
@@ -265,12 +265,14 @@ protected:
     bool                        initialized;
     bool                        isStatic;
     bool                        awaked;
+    bool                        started;
     bool                        activeSelf;         ///< Local active state
     bool                        activeInHierarchy;  ///< Actual active state 
     bool                        prefab;
     bool                        frozen;
 
     GameWorld *                 gameWorld;
+    int                         sceneIndex = -1;
 
     ComponentPtrArray           components;         ///< 0'th component is always transform component
 };

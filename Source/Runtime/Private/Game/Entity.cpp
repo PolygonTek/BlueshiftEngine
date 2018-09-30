@@ -71,6 +71,7 @@ Entity::Entity() {
     activeSelf = true;
     activeInHierarchy = true;
     awaked = false;
+    started = false;
     initialized = false;
 }
 
@@ -88,6 +89,7 @@ void Entity::Purge() {
     }
 
     awaked = false;
+    started = false;
     initialized = false;
 }
 
@@ -153,6 +155,8 @@ void Entity::Start() {
             scriptComponent->Start();
         }
     }
+
+    started = true;
 }
 
 void Entity::FixedUpdate(float timeStep) {
@@ -616,7 +620,8 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
         node.SetParent(parentEntity->node);
     } else {
         if (gameWorld) {
-            node.SetParent(gameWorld->GetRootNode());
+            assert(sceneIndex >= 0);
+            node.SetParent(gameWorld->GetScenes()[sceneIndex].root);
         }
     }
 
@@ -650,14 +655,16 @@ void Entity::SetFrozen(bool frozen) {
     }
 }
 
-Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld) {
+Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld, int sceneIndex) {
     Guid entityGuid = Guid::FromString(entityValue.get("guid", Guid::zero.ToString()).asCString());
     if (entityGuid.IsZero()) {
         entityGuid = Guid::CreateGuid();
     }
 
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
+
     entity->gameWorld = gameWorld;
+    entity->sceneIndex = sceneIndex;
     entity->Deserialize(entityValue);
 
     return entity;

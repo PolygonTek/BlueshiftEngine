@@ -95,7 +95,7 @@ extern const EventDef EV_ImmediateDestroy;
     BE1::MetaObject *classname::GetMetaObject() const { return &classname::metaObject; } \
     BE1::Object *classname::CreateInstance(const BE1::Guid &guid) { \
         classname *ptr = new classname; \
-        ptr->InitInstance(guid); \
+        if (!ptr->InitInstance(guid)) return nullptr;\
         return ptr; \
     } \
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
@@ -242,7 +242,7 @@ public:
     static void                 ListClasses(const CmdArgs &args);
 
 protected:
-    void                        InitInstance(Guid guid);
+    bool                        InitInstance(Guid guid);
 
     virtual void                Event_ImmediateDestroy();
 

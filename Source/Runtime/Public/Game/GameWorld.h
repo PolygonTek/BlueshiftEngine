@@ -22,6 +22,7 @@
 -------------------------------------------------------------------------------
 */
 
+#include "Containers/StaticArray.h"
 #include "Entity.h"
 #include "Scripting/LuaVM.h"
 
@@ -35,16 +36,29 @@ class TagLayerSettings;
 class PhysicsSettings;
 class MapRenderSettings;
 class PlayerSettings;
+class GameWorld;
+
+struct GameScene {
+    Hierarchy<Entity>           root;
+};
 
 class GameWorld : public Object {
     friend class GameEdit;
 
 public:
-    enum { 
+    enum {
+        MaxScenes               = 16,
+        DontDestroyOnLoadSceneNum = MaxScenes - 1,
         EntityNumBits           = 16,
         MaxEntities             = (1 << EntityNumBits),
         BadEntityNum            = (MaxEntities - 1),
         MaxEntityNum            = (MaxEntities - 2)
+    };
+
+    enum LoadSceneMode {
+        Single,
+        Additive,
+        Editor
     };
 
     OBJECT_PROTOTYPE(GameWorld);
@@ -69,9 +83,12 @@ public:
 
     float                       GetTimeScale() const { return timeScale; }
     void                        SetTimeScale(float timeScale) { this->timeScale = timeScale; }
-    
-                                /// Reset all entities in this game world.
+
     void                        Reset();
+
+    void                        ClearEntities(bool clearAll = true);
+
+    void                        DontDestroyOnLoad(Entity *entity);
 
                                 /// Simulates physics system and update all registered entities.
     void                        Update(int elapsedTime);
@@ -86,13 +103,12 @@ public:
 
                                 /// Render camera component from all registered entities.
     void                        Render();
-    
-                                /// Returns root node of entity hierarchy.
-    Hierarchy<Entity> &         GetRootNode() { return entityHierarchy; }
 
-                                /// Calls function for each entity.
+                                /// Calls function for each entities for each scenes.
     template <typename Func>
     void                        IterateEntities(Func func) const;
+
+    auto                        GetScenes() { return scenes; }
 
                                 /// Returns the entity with the given entity index.
     Entity *                    GetEntity(int index) const { return entities[index]; }
@@ -124,8 +140,8 @@ public:
     Entity *                    InstantiateEntity(const Entity *originalEntity);
     Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Quat &rotation);
 
-    bool                        SpawnEntityFromJson(Json::Value &entityValue, Entity **ent = nullptr);
-    void                        SpawnEntitiesFromJson(Json::Value &entitiesValue);
+    Entity *                    SpawnEntityFromJson(Json::Value &entityValue, int sceneIndex = 0);
+    void                        SpawnEntitiesFromJson(Json::Value &entitiesValue, int sceneIndex = 0);
 
     void                        SaveSnapshot();
     void                        RestoreSnapshot();
@@ -146,7 +162,7 @@ public:
     const char *                MapName() const { return mapName.c_str(); }
 
     void                        NewMap();
-    bool                        LoadMap(const char *filename);
+    bool                        LoadMap(const char *filename, LoadSceneMode mode);
     void                        SaveMap(const char *filename);
 
     static const SignalDef      SIG_EntityRegistered;
@@ -158,7 +174,6 @@ private:
     void                        BeginMapLoading();
     void                        FinishMapLoading();
     Entity *                    CloneEntity(const Entity *originalEntity);
-    void                        ClearAllEntities();
     void                        FixedUpdateEntities(float timeStep);
     void                        FixedLateUpdateEntities(float timeStep);
     void                        UpdateEntities();
@@ -169,7 +184,7 @@ private:
     HashIndex                   entityTagHash;
     int                         firstFreeIndex;
 
-    Hierarchy<Entity>           entityHierarchy;
+    GameScene                   scenes[MaxScenes];
 
     Json::Value                 snapshotValues;
 
@@ -196,9 +211,11 @@ private:
 
 template <typename Func>
 BE_INLINE void GameWorld::IterateEntities(Func func) const {
-    for (BE1::Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
-        if (!func(ent)) {
-            break;
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        for (Entity *ent = scenes[sceneIndex].root.GetNext(); ent; ent = ent->GetNode().GetNext()) {
+            if (!func(ent)) {
+                break;
+            }
         }
     }
 }

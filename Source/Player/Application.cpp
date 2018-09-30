@@ -133,7 +133,7 @@ void Application::Draw() {
 }
 
 void Application::LoadMap(const char *mapName) {
-    gameWorld->LoadMap(mapName);
+    gameWorld->LoadMap(mapName, BE1::GameWorld::LoadSceneMode::Single);
 
     gameWorld->StartGame();
 }
