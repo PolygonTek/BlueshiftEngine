@@ -411,7 +411,7 @@ void SubMesh::ComputeNormals() {
     Vec3 *tempNormals = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
 
     for (int i = 0; i < numVerts; i++) {
-        tempNormals[i] = BE1::Vec3::zero;
+        tempNormals[i] = Vec3::zero;
     }
 
     for (int i = 0; i < numIndexes; i += 3) {
@@ -486,8 +486,8 @@ static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int nu
         // area sign bit
         const float area = baST[0] * caST[1] - baST[1] * caST[0]; // determinant
         if (fabs(area) < 1e-20f) {
-            triangleTangents[triIndex] = BE1::Vec3::zero;
-            triangleBitangents[triIndex] = BE1::Vec3::zero;
+            triangleTangents[triIndex] = Vec3::zero;
+            triangleBitangents[triIndex] = Vec3::zero;
             continue;
         }
 
@@ -515,8 +515,8 @@ static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int nu
 
     // Clear the tangents
     for (int i = 0; i < numVerts; i++) {
-        vertexTangents[i] = BE1::Vec3::zero;
-        vertexBitangents[i] = BE1::Vec3::zero;
+        vertexTangents[i] = Vec3::zero;
+        vertexBitangents[i] = Vec3::zero;
     }
 
     // Sum up the neighbors

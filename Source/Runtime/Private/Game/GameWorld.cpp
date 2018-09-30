@@ -131,20 +131,10 @@ Entity *GameWorld::FindEntity(const char *name) const {
         return nullptr;
     }
 
-    int hash = entityHash.GenerateHash(name, false);
+    int hash = entityHash.GenerateHash(name);
     for (int i = entityHash.First(hash); i != -1; i = entityHash.Next(i)) {
-        if (!Str::Icmp(entities[i]->GetName(), name)) {
+        if (!Str::Cmp(entities[i]->GetName(), name)) {
             return entities[i];
-        }
-    }
-
-    return nullptr;
-}
-
-Entity *GameWorld::FindEntityByGuid(const Guid &guid) const {
-    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
-        if (ent->GetGuid() == guid) {
-            return ent;
         }
     }
 
@@ -156,9 +146,9 @@ Entity *GameWorld::FindEntityByTag(const char *tagName) const {
         return nullptr;
     }
 
-    int hash = entityTagHash.GenerateHash(tagName, false);
+    int hash = entityTagHash.GenerateHash(tagName);
     for (int i = entityTagHash.First(hash); i != -1; i = entityTagHash.Next(i)) {
-        if (!Str::Icmp(entities[i]->GetTag(), tagName)) {
+        if (!Str::Cmp(entities[i]->GetTag(), tagName)) {
             return entities[i];
         }
     }
@@ -172,9 +162,9 @@ const EntityPtrArray GameWorld::FindEntitiesByTag(const char *tagName) const {
     }
 
     EntityPtrArray resultEntities;
-    int hash = entityTagHash.GenerateHash(tagName, false);
+    int hash = entityTagHash.GenerateHash(tagName);
     for (int i = entityTagHash.First(hash); i != -1; i = entityTagHash.Next(i)) {
-        if (!Str::Icmp(entities[i]->GetTag(), tagName)) {
+        if (!Str::Cmp(entities[i]->GetTag(), tagName)) {
             resultEntities.Append(entities[i]);
         }
     }
@@ -213,7 +203,7 @@ void GameWorld::OnApplicationPause(bool pause) {
 void GameWorld::OnEntityNameChanged(Entity *ent) {
     entityHash.Remove(ent->nameHash, ent->entityNum);
 
-    int nameHash = entityHash.GenerateHash(ent->GetName(), false);
+    int nameHash = entityHash.GenerateHash(ent->GetName());
     ent->nameHash = nameHash;
     entityHash.Add(nameHash, ent->entityNum);
 }
@@ -221,21 +211,21 @@ void GameWorld::OnEntityNameChanged(Entity *ent) {
 void GameWorld::OnEntityTagChanged(Entity *ent) {
     entityTagHash.Remove(ent->tagHash, ent->entityNum);
 
-    int tagHash = entityTagHash.GenerateHash(ent->GetTag(), false);
+    int tagHash = entityTagHash.GenerateHash(ent->GetTag());
     ent->tagHash = tagHash;
-    entityHash.Add(tagHash, ent->entityNum);
+    entityTagHash.Add(tagHash, ent->entityNum);
 }
 
 bool GameWorld::IsRegisteredEntity(const Entity *ent) const {
     return ent->entityNum == BadEntityNum ? false : true;
 }
 
-void GameWorld::RegisterEntity(Entity *ent, int spawn_entnum) {
-    int nameHash = entityHash.GenerateHash(ent->GetName(), false);
-    int tagHash = entityTagHash.GenerateHash(ent->GetTag(), false);
+void GameWorld::RegisterEntity(Entity *ent, int entityIndex) {
+    int nameHash = entityHash.GenerateHash(ent->GetName());
+    int tagHash = entityTagHash.GenerateHash(ent->GetTag());
 
-    // 인덱스를 미리 정해주지 않은 경우 entities[] 의 빈곳을 찾는다
-    if (spawn_entnum < 0) {
+    // If entityIndex is not given, find a blank space in entities[]
+    if (entityIndex < 0) {
         while (entities[firstFreeIndex] && firstFreeIndex < MaxEntityNum) {
             firstFreeIndex++;
         }
@@ -244,18 +234,17 @@ void GameWorld::RegisterEntity(Entity *ent, int spawn_entnum) {
             BE_FATALERROR(L"no free entities");
         }
     
-        spawn_entnum = firstFreeIndex++;
+        entityIndex = firstFreeIndex++;
     }
 
+    entities[entityIndex] = ent;
+
+    ent->entityNum = entityIndex;
     ent->nameHash = nameHash;
     ent->tagHash = tagHash;
 
-    entityHash.Add(nameHash, spawn_entnum);
-    entityTagHash.Add(tagHash, spawn_entnum);
-
-    entities[spawn_entnum] = ent;
-
-    ent->entityNum = spawn_entnum;
+    entityHash.Add(nameHash, entityIndex);
+    entityTagHash.Add(tagHash, entityIndex);
 
     if (!isMapLoading) {
         if (gameAwaking) {
@@ -270,10 +259,8 @@ void GameWorld::RegisterEntity(Entity *ent, int spawn_entnum) {
 }
 
 void GameWorld::UnregisterEntity(Entity *ent) {
-    assert(ent);
-
     if (!IsRegisteredEntity(ent)) {
-        assert(0);
+        BE_WARNLOG(L"GameWorld::UnregisterEntity: Entity '%hs' is already unregistered\n", ent->GetName().c_str());
         return;
     }
 
@@ -379,7 +366,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
 bool GameWorld::SpawnEntityFromJson(Json::Value &entityValue, Entity **ent) {
     const char *classname = entityValue["classname"].asCString();
     if (Str::Cmp(classname, Entity::metaObject.ClassName()) != 0) {
-        BE_WARNLOG(L"bad classname '%hs' for entity\n", classname);
+        BE_WARNLOG(L"GameWorld::SpawnEntityFromJson: Bad classname '%hs' for entity\n", classname);
         return false;
     }
 
@@ -402,13 +389,7 @@ void GameWorld::SpawnEntitiesFromJson(Json::Value &entitiesValue) {
     for (int i = 0; i < entitiesValue.size(); i++) {
         Json::Value entityValue = entitiesValue[i];
 
-        const char *classname = entityValue["classname"].asCString();
-
-        if (!Str::Cmp(classname, Entity::metaObject.ClassName())) {
-            SpawnEntityFromJson(entityValue);
-        } else {
-            BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
-        }
+        SpawnEntityFromJson(entityValue);
     }
 }
 
@@ -493,8 +474,6 @@ void GameWorld::StopGame(bool stopAllSounds) {
     luaVM.ClearTweeners();
 
     luaVM.ClearWatingThreads();
-
-    luaVM.State().ForceGC();
 
     StaticBatch::ClearAllStaticBatches();
 
@@ -606,7 +585,7 @@ void GameWorld::Update(int elapsedTime) {
     time += scaledElapsedTime;
 
     if (gameStarted) {
-        // FixedUpdate() called in StepSimulation() internally
+        // FixedUpdate() is called in StepSimulation() internally
         physicsWorld->StepSimulation(scaledElapsedTime);
 
         UpdateEntities();
@@ -717,7 +696,7 @@ Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layer
 }
 
 void GameWorld::Render() {
-    StaticArray<ComCamera *, 16> cameraArray;
+    StaticArray<ComCamera *, 16> cameraComponents;
 
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ComCamera *camera = ent->GetComponent<ComCamera>();
@@ -725,7 +704,7 @@ void GameWorld::Render() {
             continue;
         }
 
-        if (cameraArray.Append(camera) == -1) {
+        if (cameraComponents.Append(camera) == -1) {
             break;
         }
     }
@@ -733,10 +712,10 @@ void GameWorld::Render() {
     auto compareFunc = [](const ComCamera *arg1, const ComCamera *arg2) -> bool {
         return arg1->GetOrder() < arg2->GetOrder() ? true : false;
     };
-    cameraArray.Sort(compareFunc);
+    cameraComponents.Sort(compareFunc);
 
-    for (int i = 0; i < cameraArray.Count(); i++) {
-        cameraArray[i]->RenderScene();
+    for (int i = 0; i < cameraComponents.Count(); i++) {
+        cameraComponents[i]->RenderScene();
     }
 }
 
@@ -748,8 +727,6 @@ void GameWorld::SaveSnapshot() {
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->GetNode().GetNextSibling()) {
         Entity::SerializeHierarchy(ent, snapshotValues["entities"]);
     }
-
-    //BE_LOG(L"%i entities snapshot saved\n", snapshotValues["entities"].size());
 }
 
 void GameWorld::RestoreSnapshot() {
@@ -761,8 +738,6 @@ void GameWorld::RestoreSnapshot() {
     mapRenderSettings->Init();
 
     SpawnEntitiesFromJson(snapshotValues["entities"]);
-
-    //BE_LOG(L"%i entities snapshot restored\n", snapshotValues["entities"].size());
 
     FinishMapLoading();
 }

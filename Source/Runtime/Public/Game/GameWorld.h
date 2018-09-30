@@ -99,8 +99,6 @@ public:
 
                                 /// Returns the entity that have given name.
     Entity *                    FindEntity(const char *name) const;
-                                /// Returns the entity that have given GUID.
-    Entity *                    FindEntityByGuid(const Guid &guid) const;
                                 /// Returns the entity that have given tag.
     Entity *                    FindEntityByTag(const char *tag) const;
                                 /// Returns all of the entities that match given tag.
@@ -115,7 +113,9 @@ public:
     void                        OnEntityTagChanged(Entity *ent);
 
     bool                        IsRegisteredEntity(const Entity *ent) const;
-    void                        RegisterEntity(Entity *ent, int spawn_entnum = -1);
+
+    void                        RegisterEntity(Entity *ent, int entityIndex = -1);
+
     void                        UnregisterEntity(Entity *ent);
 
                                 /// Creates an entity that has no components but transform component.
