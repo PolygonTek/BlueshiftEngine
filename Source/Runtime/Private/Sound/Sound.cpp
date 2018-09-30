@@ -198,12 +198,31 @@ void Sound::Stop() {
         playNode.Remove();
 
         if (soundSource) {
+            int sourceIndex = soundSystem.sources.FindIndex(soundSource);
+            soundSystem.freeSources[sourceIndex] = soundSource;
+
             soundSource->Stop();
+            soundSource->sound = nullptr;
             soundSource = nullptr;
         }
     }
 
     playingTime = 0;
+}
+
+void Sound::Pause() {
+    int oldPlayingTime = playingTime;
+
+    Stop();
+
+    playingTime = oldPlayingTime;
+}
+
+void Sound::Resume() {
+    if (!playNode.InList()) {
+        this->playNode.SetOwner(this);
+        this->playNode.AddToEnd(soundSystem.soundPlayLinkList);
+    }
 }
 
 bool Sound::IsPlaying() const {

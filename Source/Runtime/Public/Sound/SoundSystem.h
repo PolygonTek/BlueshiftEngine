@@ -165,6 +165,9 @@ public:
     void                    Play3D(const Vec3 &origin, float minDistance, float maxDistance, float volume = 1.0f, bool looping = false);
     void                    Stop();
 
+    void                    Pause();
+    void                    Resume();
+
                             /// Is currently playing ?
     bool                    IsPlaying() const;
 
@@ -226,7 +229,7 @@ class SoundSystem {
     friend class SoundSource;
 
 public:
-    SoundSystem() { initialized = false; }
+    SoundSystem() {}
     ~SoundSystem() {}
 
     void                    Init(void *windowHandle = nullptr);
@@ -270,7 +273,7 @@ private:
     static void             Cmd_ListSounds(const CmdArgs &args);
     static void             Cmd_PlaySound(const CmdArgs &args);
 
-    bool                    initialized;
+    bool                    initialized = false;
 
     StrIHashMap<Sound *>    soundHashMap;
     LinkList<Sound>         soundPlayLinkList;
