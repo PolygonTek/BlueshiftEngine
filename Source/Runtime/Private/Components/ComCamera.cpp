@@ -229,7 +229,7 @@ void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected
             renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
         }
 
-        if (ctx) {
+        /*if (ctx) {
             float upscaleFactorX = ctx->GetUpscaleFactorX();
             float upscaleFactorY = ctx->GetUpscaleFactorY();
             
@@ -247,7 +247,7 @@ void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected
             previewView.Update(&previewViewState);
 
             GetGameWorld()->GetRenderWorld()->RenderScene(&previewView);
-        }
+        }*/
     }
 
     // Fade icon alpha in near distance
