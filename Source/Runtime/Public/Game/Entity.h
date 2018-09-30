@@ -327,8 +327,8 @@ BE_INLINE Component *Entity::GetConflictingComponent(const MetaObject *type) con
 
 BE_INLINE Entity *Entity::GetRoot() const {
     const Entity *ent = this;
-    while (ent->GetParent()) {
-        ent = ent->GetParent();
+    while (const Entity *parent = ent->GetParent()) {
+        ent = parent;
     }
     return const_cast<Entity *>(ent);
 }

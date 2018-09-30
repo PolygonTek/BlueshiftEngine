@@ -70,13 +70,13 @@ public:
     float                       GetTimeScale() const { return timeScale; }
     void                        SetTimeScale(float timeScale) { this->timeScale = timeScale; }
     
-                                /// Reset all entities in this game world
+                                /// Reset all entities in this game world.
     void                        Reset();
 
-                                /// Simulates physics system and update all registered entities 
+                                /// Simulates physics system and update all registered entities.
     void                        Update(int elapsedTime);
 
-                                /// Process mouse (touch) input feedback for all responsive entities
+                                /// Process mouse (touch) input feedback for all responsive entities.
     void                        ProcessPointerInput();
 
                                 /// Ray intersection test for all entities.
@@ -84,11 +84,15 @@ public:
                                 /// Ray intersection test for all entities.
     Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask, const Array<Entity *> &excludingList, float *scale) const;
 
-                                /// Render camera component from all registered entities
+                                /// Render camera component from all registered entities.
     void                        Render();
     
                                 /// Returns entity hierarchy.
     Hierarchy<Entity> &         GetEntityHierarchy() { return entityHierarchy; }
+
+                                /// Calls function for each entity.
+    template <typename Func>
+    void                        IterateEntities(Func func) const;
 
                                 /// Returns the entity with the given entity index.
     Entity *                    GetEntity(int index) const { return entities[index]; }
@@ -114,7 +118,7 @@ public:
     void                        RegisterEntity(Entity *ent, int spawn_entnum = -1);
     void                        UnregisterEntity(Entity *ent);
 
-                                /// Creates an entity that has no components but transform component
+                                /// Creates an entity that has no components but transform component.
     Entity *                    CreateEmptyEntity(const char *name);
 
     Entity *                    InstantiateEntity(const Entity *originalEntity);
@@ -165,6 +169,7 @@ private:
     HashIndex                   entityTagHash;
     int                         firstFreeIndex;
     Hierarchy<Entity>           entityHierarchy;
+    //Hierarchy<Entity>           dontDestroyHierarchy;
 
     Json::Value                 snapshotValues;
 
@@ -188,5 +193,14 @@ private:
     bool                        isDebuggable = false;
     bool                        isMapLoading = false;
 };
+
+template <typename Func>
+BE_INLINE void GameWorld::IterateEntities(Func func) const {
+    for (BE1::Entity *ent = entityHierarchy.GetNext(); ent; ent = ent->GetNode().GetNext()) {
+        if (!func(ent)) {
+            break;
+        }
+    }
+}
 
 BE_NAMESPACE_END
