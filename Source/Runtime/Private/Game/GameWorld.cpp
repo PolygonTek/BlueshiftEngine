@@ -482,6 +482,8 @@ void GameWorld::StartGame() {
 }
 
 void GameWorld::StopGame(bool stopAllSounds) {
+    gameStarted = false;
+
     if (isDebuggable) {
         luaVM.StopDebuggee();
     }
@@ -489,8 +491,6 @@ void GameWorld::StopGame(bool stopAllSounds) {
     luaVM.ClearTweeners();
 
     luaVM.ClearWatingThreads();
-
-    gameStarted = false;
 
     StaticBatch::ClearAllStaticBatches();
 
@@ -511,7 +511,7 @@ void GameWorld::StopAllSounds() {
 }
 
 void GameWorld::Event_RestartGame(const char *mapName) {
-    StopGame();
+    StopGame(false);
     
     LoadMap(mapName);
     
