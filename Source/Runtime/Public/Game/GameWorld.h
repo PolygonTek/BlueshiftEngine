@@ -87,8 +87,8 @@ public:
                                 /// Render camera component from all registered entities.
     void                        Render();
     
-                                /// Returns entity hierarchy.
-    Hierarchy<Entity> &         GetEntityHierarchy() { return entityHierarchy; }
+                                /// Returns root node of entity hierarchy.
+    Hierarchy<Entity> &         GetRootNode() { return entityHierarchy; }
 
                                 /// Calls function for each entity.
     template <typename Func>
@@ -168,8 +168,8 @@ private:
     HashIndex                   entityHash;
     HashIndex                   entityTagHash;
     int                         firstFreeIndex;
+
     Hierarchy<Entity>           entityHierarchy;
-    //Hierarchy<Entity>           dontDestroyHierarchy;
 
     Json::Value                 snapshotValues;
 

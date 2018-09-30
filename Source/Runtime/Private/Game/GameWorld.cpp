@@ -451,6 +451,10 @@ bool GameWorld::CheckScriptError() const {
 }
 
 void GameWorld::StartGame() {
+    gameStarted = true;
+
+    timeScale = 1.0f;
+
     if (isDebuggable) {
         luaVM.StartDebuggee();
     }
@@ -459,11 +463,7 @@ void GameWorld::StartGame() {
 
     luaVM.ClearWatingThreads();
 
-    timeScale = 1.0f;
-
     StaticBatch::CombineAll(entityHierarchy);
-
-    gameStarted = true;
 
     gameAwaking = true;
 
@@ -476,6 +476,8 @@ void GameWorld::StartGame() {
     for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->node.GetNext()) {
         ent->Start();
     }
+
+    luaVM.State().ForceGC();
 
     physicsWorld->Connect(&PhysicsWorld::SIG_PreStep, this, (SignalCallback)&GameWorld::FixedUpdateEntities);
     physicsWorld->Connect(&PhysicsWorld::SIG_PostStep, this, (SignalCallback)&GameWorld::FixedLateUpdateEntities);
@@ -491,6 +493,8 @@ void GameWorld::StopGame(bool stopAllSounds) {
     luaVM.ClearTweeners();
 
     luaVM.ClearWatingThreads();
+
+    luaVM.State().ForceGC();
 
     StaticBatch::ClearAllStaticBatches();
 
@@ -551,6 +555,8 @@ bool GameWorld::LoadMap(const char *filename) {
         return false;
     }
 
+    fileSystem.FreeFile(text);
+
     // Read map version
     int mapVersion = map["version"].asInt();
 
@@ -560,8 +566,6 @@ bool GameWorld::LoadMap(const char *filename) {
 
     // Read and spawn entities
     SpawnEntitiesFromJson(map["entities"]);
-
-    fileSystem.FreeFile(text);
 
     FinishMapLoading();
 
@@ -741,8 +745,8 @@ void GameWorld::SaveSnapshot() {
 
     mapRenderSettings->Serialize(snapshotValues["renderSettings"]);
 
-    for (Entity *child = entityHierarchy.GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        Entity::SerializeHierarchy(child, snapshotValues["entities"]);
+    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->GetNode().GetNextSibling()) {
+        Entity::SerializeHierarchy(ent, snapshotValues["entities"]);
     }
 
     //BE_LOG(L"%i entities snapshot saved\n", snapshotValues["entities"].size());

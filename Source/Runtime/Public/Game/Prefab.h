@@ -33,7 +33,7 @@ public:
     const char *                GetName() const { return name; }
     Str                         GetFilename() const { return hashName; }
 
-    Hierarchy<Entity> &         GetEntityHierarchy() { return entityHierarchy; }
+    Hierarchy<Entity> &         GetRootNode() { return entityHierarchy; }
     Entity *                    GetRootEntity() { return entityHierarchy.GetChild(); }
 
     void                        Clear();

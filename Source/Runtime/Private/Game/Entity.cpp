@@ -616,7 +616,7 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
         node.SetParent(parentEntity->node);
     } else {
         if (gameWorld) {
-            node.SetParent(gameWorld->GetEntityHierarchy());
+            node.SetParent(gameWorld->GetRootNode());
         }
     }
 
