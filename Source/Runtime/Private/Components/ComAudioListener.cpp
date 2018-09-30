@@ -26,8 +26,6 @@ BEGIN_EVENTS(ComAudioListener)
 END_EVENTS
 
 void ComAudioListener::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("volume", "Volume", float, GetVolume, SetVolume, 1.0f,
-        "Control sound volume [0, 1].", PropertyInfo::EditorFlag);
 }
 
 ComAudioListener::ComAudioListener() {
