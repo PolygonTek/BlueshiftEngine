@@ -113,8 +113,10 @@ public:
                                 /// Returns the entity with the given entity index.
     Entity *                    GetEntity(int index) const { return entities[index]; }
 
+                                /// Returns the entity that have given path.
+    Entity *                    FindEntity(const char *path) const;
                                 /// Returns the entity that have given name.
-    Entity *                    FindEntity(const char *name) const;
+    Entity *                    FindEntityByName(const char *name) const;
                                 /// Returns the entity that have given tag.
     Entity *                    FindEntityByTag(const char *tag) const;
                                 /// Returns all of the entities that match given tag.
@@ -171,6 +173,8 @@ public:
 private:
     void                        Event_RestartGame(const char *mapName);
 
+    Entity *                    FindRootEntityByName(const char *name) const;
+    Entity *                    FindEntityRelativePath(const Entity *entity, const char *path) const;
     void                        BeginMapLoading();
     void                        FinishMapLoading();
     Entity *                    CloneEntity(const Entity *originalEntity);

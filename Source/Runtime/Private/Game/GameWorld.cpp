@@ -135,7 +135,7 @@ void GameWorld::ClearEntities(bool clearAll) {
     }
 }
 
-Entity *GameWorld::FindEntity(const char *name) const {
+Entity *GameWorld::FindEntityByName(const char *name) const {
     if (!name || !name[0]) {
         return nullptr;
     }
@@ -144,6 +144,59 @@ Entity *GameWorld::FindEntity(const char *name) const {
     for (int i = entityHash.First(hash); i != -1; i = entityHash.Next(i)) {
         if (!Str::Cmp(entities[i]->GetName(), name)) {
             return entities[i];
+        }
+    }
+
+    return nullptr;
+}
+
+Entity *GameWorld::FindRootEntityByName(const char *name) const {
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+            if (ent->name == name) {
+                return ent;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+Entity *GameWorld::FindEntity(const char *path) const {
+    bool findInRoot = false;
+    Str name = path;
+    int slashIndex = Str::FindChar(name, '/');
+    if (slashIndex == 0) {
+        findInRoot = true;
+        slashIndex = Str::FindChar(name, '/', 1);
+    }
+
+    if (slashIndex >= 0) {
+        name[slashIndex] = '\0';
+    }
+
+    Entity *entity = findInRoot ? FindRootEntityByName(name) : FindEntityByName(name);
+    if (!entity || slashIndex < 0) {
+        return entity;
+    }
+
+    return FindEntityRelativePath(entity, &name[slashIndex + 1]);
+}
+
+Entity *GameWorld::FindEntityRelativePath(const Entity *entity, const char *path) const {
+    Str name = path;
+    int slashIndex = Str::FindChar(name, '/');
+    if (slashIndex >= 0) {
+        name[slashIndex] = '\0';
+    }
+
+    for (Entity *ent = entity->node.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+        if (ent->name == name) {
+            if (slashIndex >= 0) {
+                return FindEntityRelativePath(ent, &name[slashIndex + 1]);
+            } else {
+                return ent;
+            }
         }
     }
 

@@ -31,6 +31,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "set_time_scale", &GameWorld::SetTimeScale,
         "create_empty_entity", &GameWorld::CreateEmptyEntity,
         "find_entity", &GameWorld::FindEntity,
+        "find_entity_by_name", &GameWorld::FindEntityByName,
         "find_entity_by_tag", &GameWorld::FindEntityByTag,
         "find_entities_by_tag", &GameWorld::FindEntitiesByTag,
         "ray_intersection", static_cast<Entity*(GameWorld::*)(const Vec3 &, const Vec3 &, int)const>(&GameWorld::RayIntersection),
