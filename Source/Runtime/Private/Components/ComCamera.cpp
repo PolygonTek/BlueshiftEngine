@@ -341,7 +341,7 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
     return RenderView::RayFromScreenND(renderViewDef, ndx, ndy);
 }
 
-void ComCamera::ProcessPointerInput(const Point &screenPoint) {
+bool ComCamera::ProcessPointerInput(const Point &screenPoint) {
     Entity *oldHoverEntity = (Entity *)Entity::FindInstance(oldHoverEntityGuid);
     Entity *hoverEntity = nullptr;
 
@@ -409,9 +409,11 @@ void ComCamera::ProcessPointerInput(const Point &screenPoint) {
         }
 
         oldHoverEntityGuid = hoverEntity->GetGuid();
-    } else {
-        oldHoverEntityGuid = Guid::zero;
+        return true;
     }
+    
+    oldHoverEntityGuid = Guid::zero;
+    return false;
 }
 
 void ComCamera::RenderScene() {

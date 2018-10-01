@@ -81,7 +81,7 @@ public:
 private:
     int                     GetOrder() const { return order; }
 
-    void                    ProcessPointerInput(const Point &screenPoint);
+    bool                    ProcessPointerInput(const Point &screenPoint);
 
     void                    RenderScene();
 

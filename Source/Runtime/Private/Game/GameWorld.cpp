@@ -741,6 +741,8 @@ void GameWorld::ProcessPointerInput() {
         return;
     }
 
+    StaticArray<ComCamera *, 16> cameraComponents;
+
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
             ComCamera *camera = ent->GetComponent<ComCamera>();
@@ -748,7 +750,21 @@ void GameWorld::ProcessPointerInput() {
                 continue;
             }
 
-            camera->ProcessPointerInput(inputSystem.GetMousePos());
+            if (cameraComponents.Append(camera) == -1) {
+                break;
+            }
+        }
+    }
+
+    // Process pointer input in reverse order
+    auto compareFunc = [](const ComCamera *arg1, const ComCamera *arg2) -> bool {
+        return arg1->GetOrder() > arg2->GetOrder() ? true : false;
+    };
+    cameraComponents.Sort(compareFunc);
+
+    for (int i = 0; i < cameraComponents.Count(); i++) {
+        if (cameraComponents[i]->ProcessPointerInput(inputSystem.GetMousePos())) {
+            break;
         }
     }
 }
