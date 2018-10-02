@@ -8,9 +8,9 @@ Version History
 - Added support for calculation normals with area and anglular weights
 - Added support for vehicle physics
 - Added support for slider/wheel joint components
-- Added support for copy & paste component values
+- Added support for copy & paste component values in editor
 - Changed engine unit from centi-meters to meters
-- Changed FBX importing process in editor
+- Changed FBX importing process to support hierarchical mesh in editor
 - Fixed an issue where rolling friction was not working correctly
 - Fixed an issue where inspector updating in play mode would slow down the game 
 
