@@ -28,7 +28,6 @@ const SignalDef Asset::SIG_Reloaded("Asset::Reloaded");
 const SignalDef Asset::SIG_Modified("Asset::Modified", "i");
 
 void Asset::RegisterProperties() {
-    REGISTER_PROPERTY("timeStamp", "Time Stamp", Str, timeStamp, "0", "", 0);
 }
 
 Asset::Asset() {
