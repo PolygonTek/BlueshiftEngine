@@ -63,10 +63,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     BE1::gameClient.RunFrame();
     
     app.Update();
-    
-    BE1::gameClient.EndFrame();
-    
+
     app.Draw();
+
+    BE1::gameClient.EndFrame();
 }
 
 - (void)loadView {

@@ -77,9 +77,9 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 	app.Update();
 
-	BE1::gameClient.EndFrame();
+    app.Draw();
 
-	app.Draw();
+	BE1::gameClient.EndFrame();
 
 	t0 = t;
 }
