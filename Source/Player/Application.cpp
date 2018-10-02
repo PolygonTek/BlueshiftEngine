@@ -98,15 +98,21 @@ void Application::StartAppScript() {
 }
 
 void Application::OnApplicationResize(int width, int height) {
-    gameWorld->OnApplicationResize(width, height);
+    if (gameWorld) {
+        gameWorld->OnApplicationResize(width, height);
+    }
 }
 
 void Application::OnApplicationTerminate() {
-    gameWorld->OnApplicationTerminate();
+    if (gameWorld) {
+        gameWorld->OnApplicationTerminate();
+    }
 }
 
 void Application::OnApplicationPause(bool pause) {
-    gameWorld->OnApplicationPause(pause);
+    if (gameWorld) {
+        gameWorld->OnApplicationPause(pause);
+    }
 }
 
 void Application::Update() {
