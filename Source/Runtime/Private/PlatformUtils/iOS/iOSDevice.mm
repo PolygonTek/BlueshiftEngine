@@ -213,13 +213,21 @@ IOSDevice::Type IOSDevice::GetIOSDeviceType() {
             } else if (minor == 3 || minor == 6) {
                 deviceType = IOS_IPhoneX;
             }
-        } else if (major >= 10) {
+        } else if (major == 11) {
+            if (minor == 2) {
+                deviceType = IOS_IPhoneXS;
+            } else if (minor == 4 || minor == 6) {
+                deviceType = IOS_IPhoneXSMax;
+            } else if (minor == 8) {
+                deviceType = IOS_IPhoneXR;
+            }
+        } else if (major >= 11) {
             // for going forward into unknown devices (like 8/8+?), we can't use minor,
             // so treat devices with a scale > 2.5 to be 6SPlus type devices, < 2.5 to be 6S type devices
             if ([UIScreen mainScreen].scale > 2.5f) {
-                deviceType = IOS_IPhone8Plus;
+                deviceType = IOS_IPhoneXSMax;
             } else {
-                deviceType = IOS_IPhone8;
+                deviceType = IOS_IPhoneXS;
             }
         }
     } else if (!deviceIDString.Cmpn("x86", 3)) { // simulator

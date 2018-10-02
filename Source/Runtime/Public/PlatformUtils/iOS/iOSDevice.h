@@ -33,6 +33,9 @@ public:
         IOS_IPhone8,
         IOS_IPhone8Plus,
         IOS_IPhoneX,        // (2436x1125)
+        IOS_IPhoneXS,
+        IOS_IPhoneXSMax,    // (2688x1242)
+        IOS_IPhoneXR,       // (1792x828)
         
         IOS_IPodTouch4,     // (960x640)
         IOS_IPodTouch5,     // (1136x640)
