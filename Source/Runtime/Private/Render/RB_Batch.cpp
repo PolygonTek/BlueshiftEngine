@@ -23,7 +23,7 @@ BE_NAMESPACE_BEGIN
 void Batch::Init() {
     vertexBuffer = RHI::NullBuffer;
     indexBuffer = RHI::NullBuffer;
-    indirectBuffer = rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
+    indirectBuffer = RHI::NullBuffer;
 
     startIndex = -1;
 
@@ -39,12 +39,16 @@ void Batch::Init() {
     indirectCommands = nullptr;
 
     if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+        rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
+        
         maxInstancingCount = r_maxInstancingCount.GetInteger();
 
         if (maxInstancingCount > 0) {
             indirectCommands = (RHI::DrawElementsIndirectCommand *)Mem_Alloc16(maxInstancingCount * sizeof(indirectCommands[0]));
         }
     } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
+        rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
+        
         maxInstancingCount = Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment);
 
         if (maxInstancingCount > 0) {

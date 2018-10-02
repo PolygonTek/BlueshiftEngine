@@ -18,6 +18,8 @@ class btRigidBody;
 
 BE_NAMESPACE_BEGIN
 
+class PhysVehicle;
+
 class PhysRigidBody : public PhysCollidable {
     friend class PhysicsSystem;
     friend class PhysConstraint;
