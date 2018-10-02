@@ -306,8 +306,12 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     initParms.baseDir = appDir;
     
     BE1::Str dataDir = appDir + "/Data";
-    initParms.searchPath = dataDir;
-    
+
+    BE1::Str assetDir = dataDir;
+    assetDir.AppendPath("Contents", '/');
+
+    initParms.searchPath = assetDir + ";" + dataDir;
+
     BE1::Engine::Init(&initParms);
     // -------------------------------
     

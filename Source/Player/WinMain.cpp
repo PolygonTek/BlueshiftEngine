@@ -169,7 +169,11 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     initParms.baseDir = playerDir;
 
     BE1::Str dataDir = playerDir + "\\Data";
-    initParms.searchPath = dataDir;
+
+    BE1::Str assetDir = dataDir;
+    assetDir.AppendPath("Contents", '/');
+
+    initParms.searchPath = assetDir + ";" + dataDir;
 
     BE1::Engine::Init(&initParms);
 

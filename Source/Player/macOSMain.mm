@@ -427,8 +427,12 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     initParms.baseDir = playerDir;
     
     BE1::Str dataDir = playerDir + "/Data";
-    initParms.searchPath = dataDir;
-    
+
+	BE1::Str assetDir = dataDir;
+    assetDir.AppendPath("Contents", '/');
+
+    initParms.searchPath = assetDir + ";" + dataDir;
+
     BE1::Engine::Init(&initParms);
     
     BE1::resourceGuidMapper.Read("Data/guidmap");

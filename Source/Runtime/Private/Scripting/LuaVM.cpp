@@ -94,7 +94,7 @@ void LuaVM::Init() {
         char *data;
         size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
         if (!data) {
-            size = fileSystem.LoadFile("Contents/" + filename, true, (void **)&data);
+            size = fileSystem.LoadFile("Scripts/" + filename, true, (void **)&data);
             if (!data) {
                 return false;
             }
