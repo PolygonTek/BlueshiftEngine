@@ -246,9 +246,6 @@ protected:
 
     virtual void                Event_ImmediateDestroy();
 
-    Guid                        guid;
-    int                         instanceID;
-
 private:
     void                        SetClassName(const Str &classname);
 
@@ -256,6 +253,9 @@ private:
     bool                        ProcessEventArgs(const EventDef *evdef, int numArgs, ...);
 
     void                        Event_Destroy();
+
+    Guid                        guid;
+    int                         instanceID;
 
     static bool                 initialized;
     static Array<MetaObject *>  types;          // in alphabetical order
