@@ -136,8 +136,6 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
 
         BE1::platform->QueEvent(BE1::Platform::TouchBeganEvent, touchId, locationQword, 0, nullptr);        
-        BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, location.x, location.y, 0, nullptr);
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, true, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
@@ -170,7 +168,6 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
         
         BE1::platform->QueEvent(BE1::Platform::TouchEndedEvent, touchId, locationQword, 0, nullptr);
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
@@ -186,7 +183,6 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t touchId = [touch hash];
 
         BE1::platform->QueEvent(BE1::Platform::TouchCanceledEvent, touchId, 0, 0, nullptr);        
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, false, 0, nullptr);
         
         touch = [enumerator nextObject];
     }

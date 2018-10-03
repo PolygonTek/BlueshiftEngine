@@ -82,6 +82,7 @@ private:
     int                     GetOrder() const { return order; }
 
     bool                    ProcessPointerInput(const Point &screenPoint);
+    bool                    ProcessTouchInput();
 
     void                    RenderScene();
 
@@ -106,7 +107,7 @@ protected:
     RenderObject::State     spriteDef;
     int                     spriteHandle;
 
-    Guid                    oldHoverEntityGuid;
+    Guid                    oldHitTestEntityGuid;
     Guid                    captureEntityGuid;
 };
 

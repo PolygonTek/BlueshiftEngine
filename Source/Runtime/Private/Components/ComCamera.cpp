@@ -69,7 +69,7 @@ ComCamera::ComCamera() {
     spriteMesh = nullptr;
     memset(&spriteDef, 0, sizeof(spriteDef));
 
-    oldHoverEntityGuid = Guid::zero;
+    oldHitTestEntityGuid = Guid::zero;
     captureEntityGuid = Guid::zero;
 }
 
@@ -342,19 +342,18 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
 }
 
 bool ComCamera::ProcessPointerInput(const Point &screenPoint) {
-    Entity *oldHoverEntity = (Entity *)Entity::FindInstance(oldHoverEntityGuid);
-    Entity *hoverEntity = nullptr;
-
+    Entity *oldHitTestEntity = (Entity *)Entity::FindInstance(oldHitTestEntityGuid);
+    Entity *hitTestEntity = nullptr;
+    CastResultEx castResult;
     Ray ray = ScreenToRay(screenPoint);
 
-    CastResultEx castResult;
     // FIXME: ray cast against corresponding layer entities
     if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)),
         PhysCollidable::DefaultGroup, 
         PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::CharacterGroup, castResult)) {
-        ComRigidBody *hitRigidBody = castResult.GetRigidBody();
-        if (hitRigidBody) {
-            hoverEntity = hitRigidBody->GetEntity();
+        ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
+        if (hitTestRigidBody) {
+            hitTestEntity = hitTestRigidBody->GetEntity();
         }
     }
 
@@ -368,7 +367,7 @@ bool ComCamera::ProcessPointerInput(const Point &screenPoint) {
 
                 scriptComponent->OnPointerUp();
 
-                if (hoverEntity == captureEntity) {
+                if (hitTestEntity == captureEntity) {
                     scriptComponent->OnPointerClick();
                 }
             }
@@ -377,12 +376,12 @@ bool ComCamera::ProcessPointerInput(const Point &screenPoint) {
         captureEntityGuid = Guid::zero;
     }
 
-    if (oldHoverEntity) {
-        ComponentPtrArray scriptComponents = oldHoverEntity->GetComponents(&ComScript::metaObject);
+    if (oldHitTestEntity) {
+        ComponentPtrArray scriptComponents = oldHitTestEntity->GetComponents(&ComScript::metaObject);
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
-            if (oldHoverEntity == hoverEntity) {
+            if (oldHitTestEntity == hitTestEntity) {
                 scriptComponent->OnPointerOver();
             } else {
                 scriptComponent->OnPointerExit();
@@ -390,30 +389,74 @@ bool ComCamera::ProcessPointerInput(const Point &screenPoint) {
         }
     }
 
-    if (hoverEntity) {
-        ComponentPtrArray scriptComponents = hoverEntity->GetComponents(&ComScript::metaObject);
+    if (hitTestEntity) {
+        ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
-            if (hoverEntity != oldHoverEntity) {
+            if (hitTestEntity != oldHitTestEntity) {
                 scriptComponent->OnPointerEnter();
             }
 
             if (inputSystem.IsKeyDown(KeyCode::Mouse1)) {
                 scriptComponent->OnPointerDown();
 
-                captureEntityGuid = hoverEntity->GetGuid();
+                captureEntityGuid = hitTestEntity->GetGuid();
             } else if (inputSystem.IsKeyPressed(KeyCode::Mouse1)) {
                 scriptComponent->OnPointerDrag();
             }
         }
 
-        oldHoverEntityGuid = hoverEntity->GetGuid();
+        oldHitTestEntityGuid = hitTestEntity->GetGuid();
         return true;
     }
     
-    oldHoverEntityGuid = Guid::zero;
+    oldHitTestEntityGuid = Guid::zero;
     return false;
+}
+
+bool ComCamera::ProcessTouchInput() {
+    bool touched = false;
+
+    for (int touchIndex = 0; touchIndex < inputSystem.GetTouchCount(); touchIndex++) {
+        InputSystem::Touch touch = inputSystem.GetTouch(touchIndex);
+
+        if (touch.phase == InputSystem::Touch::Started ||
+            touch.phase == InputSystem::Touch::Ended ||
+            touch.phase == InputSystem::Touch::Moved) {
+            Entity *hitTestEntity = nullptr;
+            CastResultEx castResult;
+            Ray ray = ScreenToRay(touch.position);
+
+            if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)),
+                PhysCollidable::DefaultGroup,
+                PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::CharacterGroup, castResult)) {
+                ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
+                if (hitTestRigidBody) {
+                    hitTestEntity = hitTestRigidBody->GetEntity();
+                }
+            }
+            
+            if (hitTestEntity) {
+                ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
+                for (int i = 0; i < scriptComponents.Count(); i++) {
+                    ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+
+                    if (touch.phase == InputSystem::Touch::Started) {
+                        scriptComponent->OnPointerDown();
+                    } else if (touch.phase == InputSystem::Touch::Ended) {
+                        scriptComponent->OnPointerUp();
+                    } else if (touch.phase == InputSystem::Touch::Moved) {
+                        scriptComponent->OnPointerDrag();
+                    }
+
+                    touched = true;
+                }
+            }
+        }
+    }
+
+    return touched;
 }
 
 void ComCamera::RenderScene() {
