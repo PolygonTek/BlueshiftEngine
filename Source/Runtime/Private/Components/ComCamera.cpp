@@ -351,6 +351,7 @@ bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
     }
 
     Ray ray = ScreenToRay(screenPoint);
+
     Entity *hitTestEntity = nullptr;
     CastResultEx castResult;
 
@@ -430,54 +431,51 @@ bool ComCamera::ProcessTouchPointerInput() {
     for (int touchIndex = 0; touchIndex < inputSystem.GetTouchCount(); touchIndex++) {
         InputSystem::Touch touch = inputSystem.GetTouch(touchIndex);
 
-        if (touch.phase == InputSystem::Touch::Started ||
-            touch.phase == InputSystem::Touch::Ended ||
-            touch.phase == InputSystem::Touch::Moved) {
-            Ray ray = ScreenToRay(touch.position);
-            Entity *hitTestEntity = nullptr;
-            CastResultEx castResult;
+        Ray ray = ScreenToRay(touch.position);
 
-            if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)),
-                PhysCollidable::DefaultGroup,
-                PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::CharacterGroup, castResult)) {
-                ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
-                if (hitTestRigidBody) {
-                    hitTestEntity = hitTestRigidBody->GetEntity();
-                }
+        Entity *hitTestEntity = nullptr;
+        CastResultEx castResult;
+
+        if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)),
+            PhysCollidable::DefaultGroup,
+            PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup | PhysCollidable::KinematicGroup | PhysCollidable::CharacterGroup, castResult)) {
+            ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
+            if (hitTestRigidBody) {
+                hitTestEntity = hitTestRigidBody->GetEntity();
             }
+        }
             
-            if (hitTestEntity) {
-                ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
-                for (int i = 0; i < scriptComponents.Count(); i++) {
-                    ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+        if (hitTestEntity) {
+            ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
+            for (int i = 0; i < scriptComponents.Count(); i++) {
+                ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
-                    if (touch.phase == InputSystem::Touch::Started) {
-                        touchTable.Set(touch.id, hitTestEntity);
+                if (touch.phase == InputSystem::Touch::Started) {
+                    touchTable.Set(touch.id, hitTestEntity);
 
-                        scriptComponent->OnPointerDown();
-                    } else if (touch.phase == InputSystem::Touch::Ended) {
-                        touchTable.Remove(touch.id);
+                    scriptComponent->OnPointerDown();
+                } else if (touch.phase == InputSystem::Touch::Ended || touch.phase == InputSystem::Touch::Canceled) {
+                    scriptComponent->OnPointerUp();
 
-                        scriptComponent->OnPointerUp();
+                    Entity *oldHitTestEntity;
 
-                        Entity *oldHitTestEntity;
-
+                    if (touch.phase == InputSystem::Touch::Ended) {
                         if (touchTable.Get(touch.id, &oldHitTestEntity) && oldHitTestEntity == hitTestEntity) {
                             scriptComponent->OnPointerClick();
                         }
-                    } else if (touch.phase == InputSystem::Touch::Moved) {
-                        Entity *oldHitTestEntity;
-
-                        if (touchTable.Get(touch.id, &oldHitTestEntity) && oldHitTestEntity == hitTestEntity) {
-                            scriptComponent->OnPointerDrag();
-                        }
                     }
 
-                    touched = true;
+                    touchTable.Remove(touch.id);
+                } else if (touch.phase == InputSystem::Touch::Moved) {
+                    Entity *oldHitTestEntity;
+
+                    if (touchTable.Get(touch.id, &oldHitTestEntity) && oldHitTestEntity == hitTestEntity) {
+                        scriptComponent->OnPointerDrag();
+                    }
                 }
+
+                touched = true;
             }
-        } else if (touch.phase == InputSystem::Touch::Canceled) {
-            touchTable.Remove(touch.id);
         }
     }
 
