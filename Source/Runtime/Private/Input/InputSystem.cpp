@@ -25,9 +25,11 @@ InputSystem::Touch InputSystem::nullTouch = { 0, };
 
 InputSystem::InputSystem() {
     inputUpdated = false;
+    mouseExist = false;
 }
 
 void InputSystem::Init() {
+    mousePos.Set(0, 0);
     axisDelta.Set(0, 0);
 }
 
@@ -76,6 +78,7 @@ void InputSystem::MouseMoveEvent(int x, int y, int time) {
     mousePos.x = x;
     mousePos.y = y;
 
+    mouseExist = true;
     inputUpdated = true;
 }
 
@@ -96,10 +99,16 @@ void InputSystem::TouchEvent(InputSystem::Touch::Phase phase, uint64_t id, int x
     newEvent->touch.position = Point(x, y);
     newEvent->node.SetOwner(newEvent);
     touchEventQueue.Add(newEvent->node);
+
+    inputUpdated = true;
 }
 
 bool InputSystem::IsUpdated() const {
     return inputUpdated;
+}
+
+bool InputSystem::IsMouseExist() const {
+    return mouseExist;
 }
 
 bool InputSystem::IsKeyDown(KeyCode::Enum keynum) const {

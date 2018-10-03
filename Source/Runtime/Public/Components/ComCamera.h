@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "Containers/HashTable.h"
 #include "Render/RenderObject.h"
 #include "Component.h"
 
@@ -81,8 +82,8 @@ public:
 private:
     int                     GetOrder() const { return order; }
 
-    bool                    ProcessPointerInput(const Point &screenPoint);
-    bool                    ProcessTouchInput();
+    bool                    ProcessMousePointerInput(const Point &screenPoint);
+    bool                    ProcessTouchPointerInput();
 
     void                    RenderScene();
 
@@ -109,6 +110,7 @@ protected:
 
     Guid                    oldHitTestEntityGuid;
     Guid                    captureEntityGuid;
+    HashTable<int32_t, Entity *> touchTable;
 };
 
 BE_NAMESPACE_END

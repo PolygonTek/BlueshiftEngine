@@ -59,6 +59,7 @@ public:
     void                    EndFrame();
 
     bool                    IsUpdated() const;
+    bool                    IsMouseExist() const;
 
     void                    ClearKeyEvents();
     void                    ClearTouches();
@@ -66,6 +67,7 @@ public:
     bool                    IsKeyDown(KeyCode::Enum keynum) const;
     bool                    IsKeyUp(KeyCode::Enum keynum) const;
     bool                    IsKeyPressed(KeyCode::Enum keynum) const;
+
     int                     GetTouchCount() const;
     const Touch             GetTouch(int touchIndex) const;
 
@@ -92,6 +94,7 @@ private:
     Point                   mousePos;
     Point                   axisDelta;
 
+    bool                    mouseExist;
     bool                    inputUpdated;
 };
 

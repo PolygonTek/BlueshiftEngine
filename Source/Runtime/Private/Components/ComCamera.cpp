@@ -103,6 +103,8 @@ void ComCamera::Purge(bool chainPurge) {
         spriteHandle = -1;
     }
 
+    touchTable.Clear();
+
     if (chainPurge) {
         Component::Purge();
     }
@@ -165,6 +167,8 @@ void ComCamera::OnActive() {
 }
 
 void ComCamera::OnInactive() {
+    touchTable.Clear();
+
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
@@ -341,11 +345,14 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
     return RenderView::RayFromScreenND(renderViewDef, ndx, ndy);
 }
 
-bool ComCamera::ProcessPointerInput(const Point &screenPoint) {
-    Entity *oldHitTestEntity = (Entity *)Entity::FindInstance(oldHitTestEntityGuid);
+bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
+    if (!inputSystem.IsMouseExist()) {
+        return false;
+    }
+
+    Ray ray = ScreenToRay(screenPoint);
     Entity *hitTestEntity = nullptr;
     CastResultEx castResult;
-    Ray ray = ScreenToRay(screenPoint);
 
     // FIXME: ray cast against corresponding layer entities
     if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)),
@@ -375,6 +382,8 @@ bool ComCamera::ProcessPointerInput(const Point &screenPoint) {
 
         captureEntityGuid = Guid::zero;
     }
+
+    Entity *oldHitTestEntity = (Entity *)Entity::FindInstance(oldHitTestEntityGuid);
 
     if (oldHitTestEntity) {
         ComponentPtrArray scriptComponents = oldHitTestEntity->GetComponents(&ComScript::metaObject);
@@ -415,7 +424,7 @@ bool ComCamera::ProcessPointerInput(const Point &screenPoint) {
     return false;
 }
 
-bool ComCamera::ProcessTouchInput() {
+bool ComCamera::ProcessTouchPointerInput() {
     bool touched = false;
 
     for (int touchIndex = 0; touchIndex < inputSystem.GetTouchCount(); touchIndex++) {
@@ -424,9 +433,9 @@ bool ComCamera::ProcessTouchInput() {
         if (touch.phase == InputSystem::Touch::Started ||
             touch.phase == InputSystem::Touch::Ended ||
             touch.phase == InputSystem::Touch::Moved) {
+            Ray ray = ScreenToRay(touch.position);
             Entity *hitTestEntity = nullptr;
             CastResultEx castResult;
-            Ray ray = ScreenToRay(touch.position);
 
             if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)),
                 PhysCollidable::DefaultGroup,
@@ -443,16 +452,32 @@ bool ComCamera::ProcessTouchInput() {
                     ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
                     if (touch.phase == InputSystem::Touch::Started) {
+                        touchTable.Set(touch.id, hitTestEntity);
+
                         scriptComponent->OnPointerDown();
                     } else if (touch.phase == InputSystem::Touch::Ended) {
+                        touchTable.Remove(touch.id);
+
                         scriptComponent->OnPointerUp();
+
+                        Entity *oldHitTestEntity;
+
+                        if (touchTable.Get(touch.id, &oldHitTestEntity) && oldHitTestEntity == hitTestEntity) {
+                            scriptComponent->OnPointerClick();
+                        }
                     } else if (touch.phase == InputSystem::Touch::Moved) {
-                        scriptComponent->OnPointerDrag();
+                        Entity *oldHitTestEntity;
+
+                        if (touchTable.Get(touch.id, &oldHitTestEntity) && oldHitTestEntity == hitTestEntity) {
+                            scriptComponent->OnPointerDrag();
+                        }
                     }
 
                     touched = true;
                 }
             }
+        } else if (touch.phase == InputSystem::Touch::Canceled) {
+            touchTable.Remove(touch.id);
         }
     }
 
