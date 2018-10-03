@@ -38,12 +38,14 @@ void SoundSource::Init(Sound *sound) {
         // farther, it won't be any quieter than if they were at this distance)
         alSourcef(alSourceId, AL_MAX_DISTANCE, sound->maxDistance);
 
-        alSource3f(alSourceId, AL_POSITION, sound->origin.x, sound->origin.y, sound->origin.z);
+        alSourcef(alSourceId, AL_GAIN, sound->volume * s_volume.GetFloat());
     } else {
         alSourcei(alSourceId, AL_SOURCE_RELATIVE, AL_TRUE);
         alSourcef(alSourceId, AL_ROLLOFF_FACTOR, 0);
         
         alSource3f(alSourceId, AL_POSITION, 0, 0, 0);
+
+        alSourcef(alSourceId, AL_GAIN, sound->volume * s_volume.GetFloat());
     }
 
     Update();
@@ -51,7 +53,7 @@ void SoundSource::Init(Sound *sound) {
 
 void SoundSource::Update() {
     if (sound->isStream) {
-        UpdateStream();        
+        UpdateStream();
     }
 
     if (sound->NumChannels() == 1 && !sound->localSound) {

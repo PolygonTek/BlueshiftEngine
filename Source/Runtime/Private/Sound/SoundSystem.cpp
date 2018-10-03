@@ -299,8 +299,10 @@ void SoundSystem::Update() {
 
         if (source->IsFinished()) {
             if (source->Stop()) {
-                // Remove from the play list
-                source->sound->playNode.Remove();
+                if (!source->sound->looping) {
+                    // Remove from the play list
+                    source->sound->playNode.Remove();
+                }
                 source->sound->soundSource = nullptr;
                 source->sound = nullptr;
 

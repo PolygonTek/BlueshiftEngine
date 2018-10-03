@@ -49,6 +49,10 @@ void SoundSource::Init(Sound *sound) {
         ds3dBuffer->SetMaxDistance(DS3D_DEFAULTMAXDISTANCE, DS3D_DEFERRED);
     }
 
+    if (sound->NumChannels() > 1 || sound->localSound) {
+        SetVolume(sound->volume * SoundSystem::s_volume.GetFloat());
+    }
+
     Update();
 }
 
@@ -70,8 +74,6 @@ void SoundSource::Update() {
         Clamp(distance, sound->minDistance, sound->maxDistance);
         float gain = (1.0f - (distance - sound->minDistance) / (sound->maxDistance - sound->minDistance));
         SetVolume(sound->volume * gain * SoundSystem::s_volume.GetFloat());
-    } else {
-        SetVolume(sound->volume * SoundSystem::s_volume.GetFloat());
     }
 }
 
