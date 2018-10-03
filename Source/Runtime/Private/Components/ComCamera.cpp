@@ -447,7 +447,8 @@ bool ComCamera::ProcessTouchPointerInput() {
             }
 
             if (hitTestEntity) {
-                touchTable.Set(touch.id, (Guid)hitTestEntity->GetGuid());
+                Guid hitTestEntityGuid = hitTestEntity->GetGuid();
+                touchTable.Set(touch.id, hitTestEntityGuid);
 
                 ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
                 for (int i = 0; i < scriptComponents.Count(); i++) {
