@@ -110,7 +110,7 @@ protected:
 
     Guid                    oldHitTestEntityGuid;
     Guid                    captureEntityGuid;
-    HashTable<int32_t, Entity *> touchTable;
+    HashTable<int32_t, Guid> touchTable;
 };
 
 BE_NAMESPACE_END
