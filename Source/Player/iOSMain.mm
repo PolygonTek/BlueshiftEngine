@@ -81,6 +81,11 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 - (void)viewDidAppear:(BOOL)animated {
     _eaglView = [self.view subviews][0]; // EAGLView
     _eaglView.multipleTouchEnabled = YES;
+
+    // Fix touch lag
+    for (UIGestureRecognizer *gestureRecognizer in self.view.window.gestureRecognizers) {
+    	gestureRecognizer.delaysTouchesBegan = FALSE;
+    }
 }
 
 // Notifies that its view is about to be removed from a view hierarchy.
