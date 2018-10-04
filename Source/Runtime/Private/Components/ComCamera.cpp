@@ -69,8 +69,8 @@ ComCamera::ComCamera() {
     spriteMesh = nullptr;
     memset(&spriteDef, 0, sizeof(spriteDef));
 
-    oldHitTestEntityGuid = Guid::zero;
-    captureEntityGuid = Guid::zero;
+    mousePointerState.oldHitEntityGuid = Guid::zero;
+    mousePointerState.captureEntityGuid = Guid::zero;
 }
 
 ComCamera::~ComCamera() {
@@ -103,7 +103,10 @@ void ComCamera::Purge(bool chainPurge) {
         spriteHandle = -1;
     }
 
-    touchTable.Clear();
+    mousePointerState.oldHitEntityGuid = Guid::zero;
+    mousePointerState.captureEntityGuid = Guid::zero;
+
+    touchPointerStateTable.Clear();
 
     if (chainPurge) {
         Component::Purge();
@@ -167,7 +170,7 @@ void ComCamera::OnActive() {
 }
 
 void ComCamera::OnInactive() {
-    touchTable.Clear();
+    touchPointerStateTable.Clear();
 
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
@@ -365,11 +368,12 @@ bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
         }
     }
 
-    Entity *captureEntity = (Entity *)Entity::FindInstance(captureEntityGuid);
+    Entity *captureEntity = (Entity *)Entity::FindInstance(mousePointerState.captureEntityGuid);
 
     if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
         if (captureEntity) {
             ComponentPtrArray scriptComponents = captureEntity->GetComponents(&ComScript::metaObject);
+
             for (int i = 0; i < scriptComponents.Count(); i++) {
                 ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
@@ -381,17 +385,18 @@ bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
             }
         }
 
-        captureEntityGuid = Guid::zero;
+        mousePointerState.captureEntityGuid = Guid::zero;
     }
 
-    Entity *oldHitTestEntity = (Entity *)Entity::FindInstance(oldHitTestEntityGuid);
+    Entity *oldHitEntity = (Entity *)Entity::FindInstance(mousePointerState.oldHitEntityGuid);
 
-    if (oldHitTestEntity) {
-        ComponentPtrArray scriptComponents = oldHitTestEntity->GetComponents(&ComScript::metaObject);
+    if (oldHitEntity) {
+        ComponentPtrArray scriptComponents = oldHitEntity->GetComponents(&ComScript::metaObject);
+
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
-            if (oldHitTestEntity == hitTestEntity) {
+            if (oldHitEntity == hitTestEntity) {
                 scriptComponent->OnPointerOver();
             } else {
                 scriptComponent->OnPointerExit();
@@ -401,40 +406,44 @@ bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
 
     if (hitTestEntity) {
         ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
+
         for (int i = 0; i < scriptComponents.Count(); i++) {
             ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
-            if (hitTestEntity != oldHitTestEntity) {
+            if (hitTestEntity != oldHitEntity) {
                 scriptComponent->OnPointerEnter();
             }
 
             if (inputSystem.IsKeyDown(KeyCode::Mouse1)) {
                 scriptComponent->OnPointerDown();
 
-                captureEntityGuid = hitTestEntity->GetGuid();
+                mousePointerState.captureEntityGuid = hitTestEntity->GetGuid();
             } else if (inputSystem.IsKeyPressed(KeyCode::Mouse1)) {
                 scriptComponent->OnPointerDrag();
             }
         }
 
-        oldHitTestEntityGuid = hitTestEntity->GetGuid();
-        return true;
+        mousePointerState.oldHitEntityGuid = hitTestEntity->GetGuid();
+    } else {
+        mousePointerState.oldHitEntityGuid = Guid::zero;
     }
-    
-    oldHitTestEntityGuid = Guid::zero;
-    return false;
+
+    return (hitTestEntity || !mousePointerState.captureEntityGuid.IsZero());
 }
 
 bool ComCamera::ProcessTouchPointerInput() {
-    bool processed = false;
+    int hitCount = 0;
 
     for (int touchIndex = 0; touchIndex < inputSystem.GetTouchCount(); touchIndex++) {
         InputSystem::Touch touch = inputSystem.GetTouch(touchIndex);
 
-        if (touch.phase == InputSystem::Touch::Started) {
+        Entity *hitTestEntity = nullptr;
+
+        if (touch.phase == InputSystem::Touch::Started ||
+            touch.phase == InputSystem::Touch::Ended ||
+            touch.phase == InputSystem::Touch::Moved) {
             Ray ray = ScreenToRay(touch.position);
 
-            Entity *hitTestEntity = nullptr;
             CastResultEx castResult;
 
             if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)),
@@ -445,25 +454,30 @@ bool ComCamera::ProcessTouchPointerInput() {
                     hitTestEntity = hitTestRigidBody->GetEntity();
                 }
             }
+        }
 
+        if (touch.phase == InputSystem::Touch::Started) {
             if (hitTestEntity) {
-                Guid hitTestEntityGuid = hitTestEntity->GetGuid();
-                touchTable.Set(touch.id, hitTestEntityGuid);
+                PointerState touchPointerState;
+                touchPointerState.oldHitEntityGuid = hitTestEntity->GetGuid();
+                touchPointerState.captureEntityGuid = hitTestEntity->GetGuid();
+
+                touchPointerStateTable.Set(touch.id, touchPointerState);
 
                 ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
+
                 for (int i = 0; i < scriptComponents.Count(); i++) {
                     ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
+                    scriptComponent->OnPointerEnter();
                     scriptComponent->OnPointerDown();
                 }
-
-                processed = true;
             }
         } else if (touch.phase == InputSystem::Touch::Ended || touch.phase == InputSystem::Touch::Canceled) {
-            Guid capturedEntityGuid;
+            PointerState touchPointerState;
 
-            if (touchTable.Get(touch.id, &capturedEntityGuid)) {
-                Entity *capturedEntity = (Entity *)Entity::FindInstance(capturedEntityGuid);
+            if (touchPointerStateTable.Get(touch.id, &touchPointerState)) {
+                Entity *capturedEntity = (Entity *)Entity::FindInstance(touchPointerState.captureEntityGuid);
 
                 if (capturedEntity) {
                     ComponentPtrArray scriptComponents = capturedEntity->GetComponents(&ComScript::metaObject);
@@ -473,21 +487,21 @@ bool ComCamera::ProcessTouchPointerInput() {
 
                         scriptComponent->OnPointerUp();
 
-                        if (touch.phase == InputSystem::Touch::Ended) {
+                        if (touch.phase == InputSystem::Touch::Ended && hitTestEntity == capturedEntity) {
                             scriptComponent->OnPointerClick();
+                            scriptComponent->OnPointerExit();
                         }
                     }
                 }
 
-                touchTable.Remove(touch.id);
-
-                processed = true;
+                touchPointerStateTable.Remove(touch.id);
             }
         } else if (touch.phase == InputSystem::Touch::Moved) {
-            Guid capturedEntityGuid;
+            PointerState touchPointerState;
 
-            if (touchTable.Get(touch.id, &capturedEntityGuid)) {
-                Entity *capturedEntity = (Entity *)Entity::FindInstance(capturedEntityGuid);
+            if (touchPointerStateTable.Get(touch.id, &touchPointerState)) {
+                Entity *capturedEntity = (Entity *)Entity::FindInstance(touchPointerState.captureEntityGuid);
+                Entity *oldHitEntity = (Entity *)Entity::FindInstance(touchPointerState.oldHitEntityGuid);
 
                 if (capturedEntity) {
                     ComponentPtrArray scriptComponents = capturedEntity->GetComponents(&ComScript::metaObject);
@@ -495,15 +509,33 @@ bool ComCamera::ProcessTouchPointerInput() {
                     for (int i = 0; i < scriptComponents.Count(); i++) {
                         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
+                        if (hitTestEntity != oldHitEntity) {
+                            if (capturedEntity == hitTestEntity) {
+                                scriptComponent->OnPointerEnter();
+                            } else {
+                                scriptComponent->OnPointerExit();
+                            }
+                        }
+
                         scriptComponent->OnPointerDrag();
                     }
                 }
-
-                processed = true;
             }
+
+            touchPointerState.oldHitEntityGuid = hitTestEntity->GetGuid();
+            touchPointerStateTable.Set(touch.id, touchPointerState);
+        }
+
+        if (hitTestEntity) {
+            hitCount++;
         }
     }
-    return processed;
+
+    if (inputSystem.GetTouchCount() == 0) {
+        touchPointerStateTable.Clear();
+    }
+
+    return (hitCount > 0 || touchPointerStateTable.Count() > 0);
 }
 
 void ComCamera::RenderScene() {

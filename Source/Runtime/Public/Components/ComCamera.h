@@ -108,9 +108,13 @@ protected:
     RenderObject::State     spriteDef;
     int                     spriteHandle;
 
-    Guid                    oldHitTestEntityGuid;
-    Guid                    captureEntityGuid;
-    HashTable<int32_t, Guid> touchTable;
+    struct PointerState {
+        Guid                oldHitEntityGuid;
+        Guid                captureEntityGuid;
+    };
+
+    PointerState            mousePointerState;
+    HashTable<int32_t, PointerState> touchPointerStateTable;
 };
 
 BE_NAMESPACE_END
