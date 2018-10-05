@@ -433,29 +433,20 @@ RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
     return (WindowHandle)ctx->nativeWindow;
 }
 
-void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) const {
+void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
-    if (windowWidth || windowHeight || backingWidth || backingHeight) {
-        EGLint surfaceWidth;
-        EGLint surfaceHeight;
+    EGLint surfaceWidth;
+    EGLint surfaceHeight;
 
-        eglQuerySurface(ctx->eglDisplay, ctx->eglSurface, EGL_WIDTH, &surfaceWidth);
-        eglQuerySurface(ctx->eglDisplay, ctx->eglSurface, EGL_HEIGHT, &surfaceHeight);
+    eglQuerySurface(ctx->eglDisplay, ctx->eglSurface, EGL_WIDTH, &surfaceWidth);
+    eglQuerySurface(ctx->eglDisplay, ctx->eglSurface, EGL_HEIGHT, &surfaceHeight);
 
-        if (windowWidth) {
-            *windowWidth = surfaceWidth;
-        }
-        if (windowHeight) {
-            *windowHeight = surfaceHeight;
-        }
-        if (backingWidth) {
-            *backingWidth = surfaceWidth;
-        }
-        if (backingHeight) {
-            *backingHeight = surfaceHeight;
-        }
-    }
+    displayMetrics->screenWidth = surfaceWidth;
+    displayMetrics->screenHeight = surfaceHeight;
+    displayMetrics->backingWidth = surfaceWidth;
+    displayMetrics->backingHeight = surfaceHeight;
+    displayMetrics->safeAreaInsets.Set(0, 0, 0, 0);
 }
 
 bool OpenGLRHI::IsFullscreen() const {

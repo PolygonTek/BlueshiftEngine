@@ -398,15 +398,16 @@ void android_main(android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            int backingWidth, backingHeight;
-            BE1::rhi.GetContextSize(mainContext, nullptr, nullptr, &backingWidth, &backingHeight);
-            if (backingWidth != currentWindowWidth || backingHeight != currentWindowHeight) {
-                WindowSizeChanged(backingWidth, backingHeight);
+            DisplayMetrics displayMetrics;
+            BE1::rhi.GetDisplayMetrics(mainContext, &displayMetrics);
+
+            if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {
+                WindowSizeChanged(displayMetrics.backingWidth, displayMetrics.backingHeight);
             }
 
             app.RunFrame();
 
-            BE1::rhi.DisplayContext(mainContext);           
+            BE1::rhi.DisplayContext(mainContext);
         }
     }
 }

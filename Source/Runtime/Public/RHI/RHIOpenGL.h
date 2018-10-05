@@ -79,7 +79,7 @@ public:
     void                    SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing);
     void                    DisplayContext(Handle ctxHandle);
     WindowHandle            GetWindowHandleFromContext(Handle ctxHandle);
-    void                    GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) const;
+    void                    GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const;
 
     bool                    IsFullscreen() const;
     bool                    SetFullscreen(Handle windowHandle, int width, int height);

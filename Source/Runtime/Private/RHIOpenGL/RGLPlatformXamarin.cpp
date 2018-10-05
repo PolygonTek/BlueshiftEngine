@@ -403,7 +403,7 @@ RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
 	return (WindowHandle) ctx->rootView;
 }
 
-void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
+void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
     GLContext *ctx = contextList[ctxHandle];
     
 	if (windowWidth || windowHeight) {

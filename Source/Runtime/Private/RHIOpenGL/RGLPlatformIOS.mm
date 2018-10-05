@@ -405,19 +405,23 @@ RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
     return (__bridge WindowHandle)ctx->rootView;
 }
 
-void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) const {
+void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
+
+    // FIXME: Cache the metrics result in advance
+    CGSize viewSize = [ctx->eaglView bounds].size;
+    displayMetrics->screenWidth = viewSize.width;
+    displayMetrics->screenHeight = viewSize.height;
     
-    if (windowWidth || windowHeight) {
-        CGSize viewSize = [ctx->eaglView bounds].size;
-        *windowWidth = viewSize.width;
-        *windowHeight = viewSize.height;
-    }
-    
-    if (backingWidth || backingHeight) {
-        CGSize backingSize = [ctx->eaglView backingPixelSize];
-        *backingWidth = backingSize.width;
-        *backingHeight = backingSize.height;
+    CGSize backingSize = [ctx->eaglView backingPixelSize];
+    displayMetrics->backingWidth = backingSize.width;
+    displayMetrics->backingHeight = backingSize.height;
+
+    if (@available(iOS 11, *)) {
+        UIEdgeInsets insets = [[ctx->eaglView superview] safeAreaInsets];
+        displayMetrics->safeAreaInsets.Set(insets.left, insets.top, insets.right, insets.bottom);
+    } else {
+        displayMetrics->safeAreaInsets.Set(0, 0, 0, 0);
     }
 }
 

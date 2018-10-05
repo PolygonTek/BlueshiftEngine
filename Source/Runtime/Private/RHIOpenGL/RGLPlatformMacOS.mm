@@ -769,20 +769,18 @@ RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
     return (__bridge WindowHandle)ctx->contentView;
 }
 
-void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) const {
+void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
-    if (windowWidth || windowHeight) {
-        CGSize windowSize = [ctx->glView bounds].size;
-        *windowWidth = windowSize.width;
-        *windowHeight = windowSize.height;
-    }
+    CGSize windowSize = [ctx->glView bounds].size;
+    displayMetrics->screenWidth = windowSize.width;
+    displayMetrics->screenHeight = windowSize.height;
+    
+    CGSize backingSize = [ctx->glView backingPixelSize];
+    displayMetrics->backingWidth = backingSize.width;
+    displayMetrics->backingHeight = backingSize.height;
 
-    if (backingWidth || backingHeight) {
-        CGSize backingSize = [ctx->glView backingPixelSize];
-        *backingWidth = backingSize.width;
-        *backingHeight = backingSize.height;
-    }
+    displayMetrics->safeAreaInsets.Set(0, 0, 0, 0);
 }
 
 bool OpenGLRHI::IsFullscreen() const {

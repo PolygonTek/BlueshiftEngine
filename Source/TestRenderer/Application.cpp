@@ -216,15 +216,16 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     
     DrawToRenderTarget(renderTargetHandle, t);
 
-    BE1::rhi.GetContextSize(contextHandle, NULL, NULL, &screenWidth, &screenHeight);
+    DisplayMetrics displayMetrics;
+    BE1::rhi.GetDisplayMetrics(contextHandle, &displayMetrics);
     
-    BE1::Rect rect = BE1::Rect(0, 0, screenWidth, screenHeight);
+    BE1::Rect rect = BE1::Rect(0, 0, displayMetrics.screenWidth, displayMetrics.screenHeight);
     BE1::rhi.SetViewport(rect);
     
     BE1::Mat4 modelMatrix = BE1::Rotation(BE1::Vec3(0, 0, 0), BE1::Vec3(0, 0, 1), t * 40.0f).ToMat4();
 
     BE1::Mat4 projMatrix;
-    projMatrix.SetOrtho(-screenWidth * 0.5f, screenWidth * 0.5f, -screenHeight * 0.5f, screenHeight * 0.5f, -1, 1);
+    projMatrix.SetOrtho(-displayMetrics.screenWidth * 0.5f, displayMetrics.screenWidth * 0.5f, -screenHeight * 0.5f, screenHeight * 0.5f, -1, 1);
     
     modelViewProjMatrix = projMatrix * modelMatrix;
 

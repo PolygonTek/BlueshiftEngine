@@ -28,6 +28,7 @@ void LuaVM::RegisterScreen(LuaCpp::Module &module) {
     _Screen["device_height"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetDeviceHeight(); });
     _Screen["render_width"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetRenderingWidth(); });
     _Screen["render_height"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetRenderingHeight(); });
+    _Screen["safe_area_insets"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetSafeAreaInsets(); });
     _Screen["upscale_factor_x"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetUpscaleFactorX(); });
     _Screen["upscale_factor_y"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetUpscaleFactorY(); });
 }

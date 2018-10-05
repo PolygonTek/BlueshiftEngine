@@ -477,35 +477,26 @@ RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
     return (WindowHandle)ctx->hwnd;
 }
 
-void OpenGLRHI::GetContextSize(Handle ctxHandle, int *windowWidth, int *windowHeight, int *backingWidth, int *backingHeight) {
+void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) {
     GLContext *ctx = contextList[ctxHandle];
 
-    if (windowWidth || windowHeight || backingWidth || backingHeight) {
 #if 0
-        //DPI_AWARENESS dpiAwareness = GetAwarenessFromDpiAwarenessContext(GetWindowDpiAwarenessContext(ctx->hwnd));
-        // Number of pixels per logical inch along the screen size.
-        // In a system with multiple display monitors, this value is the same for all monitors.
-        //int dpi = GetDpiForWindow(ctx->hwnd);
-        int dpi = GetDeviceCaps(ctx->hdc, LOGPIXELSX);
-        float dpiScale = Math::Rint(dpi / 96.0f);
+    //DPI_AWARENESS dpiAwareness = GetAwarenessFromDpiAwarenessContext(GetWindowDpiAwarenessContext(ctx->hwnd));
+    // Number of pixels per logical inch along the screen size.
+    // In a system with multiple display monitors, this value is the same for all monitors.
+    //int dpi = GetDpiForWindow(ctx->hwnd);
+    int dpi = GetDeviceCaps(ctx->hdc, LOGPIXELSX);
+    float dpiScale = Math::Rint(dpi / 96.0f);
 #else
-        float dpiScale = 1.0f;
+    float dpiScale = 1.0f;
 #endif
-        RECT rc;
-        GetClientRect(ctx->hwnd, &rc);
-        if (windowWidth) {
-            *windowWidth = rc.right / dpiScale;
-        }
-        if (windowHeight) {
-            *windowHeight = rc.bottom / dpiScale;
-        }
-        if (backingWidth) {
-            *backingWidth = rc.right;
-        }
-        if (backingHeight) {
-            *backingHeight = rc.bottom;
-        }
-    }
+    RECT rc;
+    GetClientRect(ctx->hwnd, &rc);
+    displayMetrics->screenWidth = rc.right / dpiScale;
+    displayMetrics->screenHeight = rc.bottom / dpiScale;
+    displayMetrics->backingWidth = rc.right;
+    displayMetrics->backingHeight = rc.bottom;
+    displayMetrics->safeAreaInsets.Set(0, 0, 0, 0);
 }
 
 bool OpenGLRHI::IsFullscreen() const {

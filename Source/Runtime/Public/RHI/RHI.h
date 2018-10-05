@@ -348,6 +348,14 @@ public:
         int                 nvFragmentProgramVersion;
     };
 
+    struct DisplayMetrics {
+        int                 screenWidth;
+        int                 screenHeight;
+        int                 backingWidth;
+        int                 backingHeight;
+        Rect                safeAreaInsets;
+    };
+
     struct Settings {       
         int                 colorBits;
         int                 alphaBits;

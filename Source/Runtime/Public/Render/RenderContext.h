@@ -118,6 +118,8 @@ public:
     float                   GetUpscaleFactorX() const { return (float)deviceWidth / renderingWidth; }
     float                   GetUpscaleFactorY() const { return (float)deviceHeight / renderingHeight; }
 
+    Rect                    GetSafeAreaInsets() const { return safeAreaInsets; }
+
     void                    OnResize(int width, int height);
 
     void                    Display();
@@ -194,6 +196,7 @@ public:
     int                     renderingWidth;
     int                     renderingHeight;
     float                   screenSelectionScale;
+    Rect                    safeAreaInsets;         // left, top, right, bottom
 
     Random                  random;
 

@@ -523,10 +523,11 @@ void android_main(android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            int backingWidth, backingHeight;
-            BE1::rhi.GetContextSize(app.mainRenderContext->GetContextHandle(), nullptr, nullptr, &backingWidth, &backingHeight);
-            if (backingWidth != currentWindowWidth || backingHeight != currentWindowHeight) {
-                WindowSizeChanged(backingWidth, backingHeight);
+            RHI::DisplayMetrics displayMetrics;
+            BE1::rhi.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
+            
+            if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {
+                WindowSizeChanged(displayMetrics.backingWidth, displayMetrics.backingHeight);
             }
 
             int t = BE1::PlatformTime::Milliseconds();

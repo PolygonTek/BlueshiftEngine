@@ -77,8 +77,14 @@ RenderContext::RenderContext() {
 void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderingHeight, RHI::DisplayContextFunc displayFunc, void *displayFuncDataPtr, int flags) {
     this->contextHandle = rhi.CreateContext(hwnd, (flags & Flag::UseSharedContext) ? true : false);
     this->flags = flags;
-    
-    rhi.GetContextSize(this->contextHandle, &this->windowWidth, &this->windowHeight, &this->deviceWidth, &this->deviceHeight);
+
+    RHI::DisplayMetrics displayMetrics;
+    rhi.GetDisplayMetrics(this->contextHandle, &displayMetrics);
+
+    this->windowWidth = displayMetrics.screenWidth;
+    this->windowHeight = displayMetrics.screenHeight;
+    this->deviceWidth = displayMetrics.backingWidth;
+    this->deviceHeight = displayMetrics.backingHeight;
     
     // actual rendering resolution that will be upscaled if it is smaller than device resolution
     this->renderingWidth = renderingWidth;
@@ -481,12 +487,15 @@ void RenderContext::OnResize(int width, int height) {
     float upscaleX = GetUpscaleFactorX();
     float upscaleY = GetUpscaleFactorY();
 
-    rhi.GetContextSize(this->contextHandle, &this->windowWidth, &this->windowHeight, &this->deviceWidth, &this->deviceHeight);
+    RHI::DisplayMetrics displayMetrics;
 
-    //this->windowWidth = width;
-    //this->windowHeight = height;
-    //this->deviceWidth = width;
-    //this->deviceHeight = height;
+    rhi.GetDisplayMetrics(this->contextHandle, &displayMetrics);
+
+    this->windowWidth = displayMetrics.screenWidth;
+    this->windowHeight = displayMetrics.screenHeight;
+    this->deviceWidth = displayMetrics.backingWidth;
+    this->deviceHeight = displayMetrics.backingHeight;
+    this->safeAreaInsets = displayMetrics.safeAreaInsets;
 
     // deferred resizing render targets
     renderingWidth = this->deviceWidth / upscaleX;
