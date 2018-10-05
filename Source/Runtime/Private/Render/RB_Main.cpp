@@ -84,13 +84,13 @@ void RB_Init() {
 
     // FIXME: TEMPORARY CODE
     backEnd.envCubeTexture = textureManager.AllocTexture("envCubeMap");
-    backEnd.envCubeTexture->Load("env.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    backEnd.envCubeTexture->Load("EnvProbes/env.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     backEnd.irradianceEnvCubeTexture = textureManager.AllocTexture("irradianceEnvCubeMap");
-    backEnd.irradianceEnvCubeTexture->Load("iem.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    backEnd.irradianceEnvCubeTexture->Load("EnvProbes/iem.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     backEnd.prefilteredEnvCubeTexture = textureManager.AllocTexture("prefilteredEnvCubeMap");
-    backEnd.prefilteredEnvCubeTexture->Load("pem.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
+    backEnd.prefilteredEnvCubeTexture->Load("EnvProbes/pem.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
 
     if (r_HOM.GetBool()) {
         // TODO: create one for each context
