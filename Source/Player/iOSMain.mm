@@ -82,9 +82,17 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     _eaglView = [self.view subviews][0]; // EAGLView
     _eaglView.multipleTouchEnabled = YES;
 
+    // First update of current render context size
+    CGRect screenBounds = [[UIScreen mainScreen] bounds];
+    float nativeScale = [[UIScreen mainScreen] nativeScale];
+    int actualWidth = screenBounds.size.width * nativeScale;
+    int actualHeight = screenBounds.size.height * nativeScale;
+
+    app.mainRenderContext->OnResize(actualWidth, actualHeight);
+
     // Fix touch lag
     for (UIGestureRecognizer *gestureRecognizer in self.view.window.gestureRecognizers) {
-    	gestureRecognizer.delaysTouchesBegan = FALSE;
+        gestureRecognizer.delaysTouchesBegan = FALSE;
     }
 }
 
@@ -105,6 +113,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         float nativeScale = [[UIScreen mainScreen] nativeScale];
         int actualWidth = size.width * nativeScale;
         int actualHeight = size.height * nativeScale;
+
         app.mainRenderContext->OnResize(actualWidth, actualHeight);
 
         app.OnApplicationResize(actualWidth, actualHeight);
