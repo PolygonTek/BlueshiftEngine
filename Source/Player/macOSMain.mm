@@ -449,6 +449,10 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
     app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[mainWindow contentView], 1280, 720, DisplayContext, NULL);
     
+	app.mainRenderContext->OnResize(1280, 720);
+
+    app.OnApplicationResize(1280, 720);    
+
     [mainWindow makeKeyAndOrderFront:nil];
     
     if (disp_fullscreen.GetBool()) {

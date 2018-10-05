@@ -161,6 +161,10 @@ static void InitDisplay(ANativeWindow *window) {
         app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
         app.mainRenderContext->Init(window, renderWidth, renderHeight, DisplayContext, nullptr);
 
+        //app.mainRenderContext->OnResize(renderWidth, renderHeight);
+    
+        //app.OnApplicationResize(renderWidth, renderHeight);
+
         app.Init();
 
 #ifdef USE_ADMOB_REWARD_BASED_VIDEO

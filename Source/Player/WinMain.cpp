@@ -204,6 +204,10 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
     app.mainRenderContext->Init(mainWnd, 1280, 720, DisplayContext, NULL);
 
+    app.mainRenderContext->OnResize(1280, 720);
+
+    app.OnApplicationResize(1280, 720);
+     
     if (disp_fullscreen.GetBool()) {
         BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), disp_width.GetInteger(), disp_height.GetInteger());
     }
