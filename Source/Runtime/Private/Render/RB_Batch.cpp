@@ -39,7 +39,7 @@ void Batch::Init() {
     indirectCommands = nullptr;
 
     if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
-        rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
+        indirectBuffer = rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
         
         maxInstancingCount = r_maxInstancingCount.GetInteger();
 
@@ -47,7 +47,7 @@ void Batch::Init() {
             indirectCommands = (RHI::DrawElementsIndirectCommand *)Mem_Alloc16(maxInstancingCount * sizeof(indirectCommands[0]));
         }
     } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
-        rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
+        indirectBuffer = rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
         
         maxInstancingCount = Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment);
 
