@@ -22,15 +22,60 @@ BE_NAMESPACE_BEGIN
 void LuaVM::RegisterScreen(LuaCpp::Module &module) {
     LuaCpp::Selector _Screen = module["Screen"];
 
-    _Screen["screen_width"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetScreenWidth(); });
-    _Screen["screen_height"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetScreenHeight(); });
-    _Screen["device_width"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetDeviceWidth(); });
-    _Screen["device_height"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetDeviceHeight(); });
-    _Screen["render_width"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetRenderingWidth(); });
-    _Screen["render_height"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetRenderingHeight(); });
-    _Screen["safe_area_insets"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetSafeAreaInsets(); });
-    _Screen["upscale_factor_x"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetUpscaleFactorX(); });
-    _Screen["upscale_factor_y"].SetFunc([]() { return renderSystem.GetMainRenderContext()->GetUpscaleFactorY(); });
+    _Screen["screen_width"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetScreenWidth();
+        }
+        return 0;
+    });
+    _Screen["screen_height"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetScreenHeight();
+        }
+        return 0;
+    });
+    _Screen["device_width"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetDeviceWidth();
+        }
+        return 0;
+    });
+    _Screen["device_height"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetDeviceHeight();
+        }
+        return 0;
+    });
+    _Screen["render_width"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetRenderingWidth();
+        }
+        return 0;
+    });
+    _Screen["render_height"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetRenderingHeight();
+        }
+        return 0;
+    });
+    _Screen["safe_area_insets"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetSafeAreaInsets();
+        }
+        return Rect::empty;
+    });
+    _Screen["upscale_factor_x"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetUpscaleFactorX();
+        }
+        return 1.0f;
+    });
+    _Screen["upscale_factor_y"].SetFunc([]() { 
+        if (renderSystem.GetMainRenderContext()) {
+            return renderSystem.GetMainRenderContext()->GetUpscaleFactorY();
+        }
+        return 1.0f;
+    });
 }
 
 BE_NAMESPACE_END
