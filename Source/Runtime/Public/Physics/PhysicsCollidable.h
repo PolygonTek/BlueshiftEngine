@@ -49,17 +49,6 @@ class PhysCollidable {
     friend class CollisionFilterCallback;
 
 public:
-    // same order with btCollisionObject::CollisionFilterGroups
-    enum CollisionFilterGroup {
-        DefaultGroup        = BIT(0),
-        StaticGroup         = BIT(1),
-        KinematicGroup      = BIT(2),
-        //DebrisGroup         = BIT(3),
-        SensorGroup         = BIT(4),
-        CharacterGroup      = BIT(5),
-        AllGroup            = -1
-    };
-
     enum Type {
         RigidBody,
         SoftBody,
@@ -109,8 +98,8 @@ public:
 
     void                    SetIgnoreCollisionCheck(const PhysCollidable &collidable, bool ignoreCollisionCheck);
 
-    unsigned int            GetCustomCollisionFilterIndex() const { return customFilterIndex; }
-    void                    SetCustomCollisionFilterIndex(unsigned int index);
+    unsigned int            GetCollisionFilterBit() const { return collisionFilterBit; }
+    void                    SetCollisionFilterBit(int bit);
 
     void                    SetDebugDraw(bool draw);
 
@@ -120,7 +109,8 @@ public:
 protected:
     Type                    type;                   ///< Collidable type
     Vec3                    centroid;               ///< Position of the center of mass in system units
-    unsigned int            customFilterIndex;
+    int                     collisionFilterBit;
+    int                     collisionFilterMask;
     btCollisionObject *     collisionObject;
     PhysCollisionListener * collisionListener;
     void *                  userPointer;

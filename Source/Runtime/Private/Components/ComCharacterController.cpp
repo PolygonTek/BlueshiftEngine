@@ -129,7 +129,7 @@ void ComCharacterController::CreateBodyAndSensor() {
     desc.shapes.Append(shapeDesc);
 
     body = (PhysRigidBody *)physicsSystem.CreateCollidable(desc);
-    body->SetCustomCollisionFilterIndex(GetEntity()->GetLayer());
+    body->SetCollisionFilterBit(GetEntity()->GetLayer());
     body->SetAngularFactor(Vec3(0, 0, 0));
     body->SetCharacter(true);
     body->SetUserPointer(this);
@@ -179,9 +179,10 @@ void ComCharacterController::GroundTrace() {
 
     // 땅에 닿아있는지 체크하기위해 z 축으로 6cm 만큼 내려서 이동시켜 본다
     p2.z -= CentiToUnit(6.0f);
-    if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2,
-        PhysCollidable::CharacterGroup,
-        PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup, groundTrace)) {
+
+    int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
+
+    if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2, filterMask, groundTrace)) {
         onGround = false;
         isValidGroundTrace = false;
         return;
@@ -288,9 +289,9 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
     for (int bumpCount = 0; bumpCount < 4; bumpCount++) {
         Vec3 targetPos = origin + moveVec * f;
 
+        int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
         // origin 에서 targetPos 로 capsule cast 
-        GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, origin, targetPos, 
-            PhysCollidable::CharacterGroup, PhysCollidable::DefaultGroup | PhysCollidable::StaticGroup, trace);
+        GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, origin, targetPos, filterMask, trace);
 
         // 이동 가능한 fraction 만큼 origin 이동
         if (trace.fraction > 0.0f) {

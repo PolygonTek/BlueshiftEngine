@@ -136,12 +136,12 @@ public:
     const Vec3              GetGravity() const;
     void                    SetGravity(const Vec3 &gravityAcceleration);
 
-    uint32_t                GetCollisionFilterMask(int index) const;
-    void                    SetCollisionFilterMask(int index, uint32_t mask);
+    int                     GetCollisionFilterMask(int bit) const;
+    void                    SetCollisionFilterMask(int bit, int mask);
 
-    bool                    RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const;
-    bool                    RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, Array<CastResult> &traceList) const;
-    bool                    ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const;
+    bool                    RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const;
+    bool                    RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &traceList) const;
+    bool                    ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const;
 
     void                    PreStep(float timeStep);
     void                    PostStep(float timeStep);
@@ -153,9 +153,9 @@ public:
 
 private:
     void                    ProcessCollision();
-    bool                    ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, CastResult &trace) const;
-    bool                    AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, Array<CastResult> &traceList) const;
-    bool                    ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, CastResult &trace) const;
+    bool                    ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const;
+    bool                    AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, Array<CastResult> &traceList) const;
+    bool                    ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const;
     void                    CheckModifiedCVars();
 
     float                   time;
@@ -164,14 +164,14 @@ private:
     float                   frameTimeDelta;
     float                   maximumAllowedTimeStep;
     ConstraintSolver        solverType;
-    uint32_t                filterMasks[32];
+    int                     filterMasks[32];
     btDefaultCollisionConfiguration *collisionConfiguration;
     btCollisionDispatcher *  collisionDispatcher;
     btBroadphaseInterface *  broadphase;
     btConstraintSolver *    constraintSolver;
     btSoftBodySolver *      softBodySolver;
     btGhostPairCallback *   ghostPairCallback;
-    btOverlapFilterCallback *filterCallback;
+    //btOverlapFilterCallback *filterCallback;
     btDynamicsWorld *       dynamicsWorld;
 };
 

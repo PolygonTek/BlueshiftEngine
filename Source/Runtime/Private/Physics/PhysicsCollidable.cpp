@@ -22,7 +22,8 @@ PhysCollidable::PhysCollidable(PhysCollidable::Type type, btCollisionObject *col
     this->type = type;
     this->collisionObject = collisionObject;
     this->centroid = centroid;
-    this->customFilterIndex = 0;
+    this->collisionFilterBit = 0;
+    this->collisionFilterMask = BIT(0);
     this->collisionListener = nullptr;
     this->userPointer = nullptr;
     this->physicsWorld = nullptr;
@@ -153,10 +154,10 @@ void PhysCollidable::SetIgnoreCollisionCheck(const PhysCollidable &collidable, b
     collisionObject->setIgnoreCollisionCheck(collidable.collisionObject, ignoreCollisionCheck);
 }
 
-void PhysCollidable::SetCustomCollisionFilterIndex(unsigned int index) {
-    assert(index >= 0 && index < 31);
+void PhysCollidable::SetCollisionFilterBit(int bit) {
+    assert(bit >= 0 && bit <= 31 - 6);
 
-    customFilterIndex = index;
+    collisionFilterBit = bit;
 }
 
 /*void PhysCollidable::SetCollisionFilterMask(short mask) {
@@ -193,31 +194,79 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
         return;
     }
 
+    int internalGroup, internalMask;
+    int collisionFilterMask = physicsWorld->GetCollisionFilterMask(collisionFilterBit);
+
     switch (type) {
-    case Type::RigidBody: {
+    case Type::RigidBody: 
+    {
         btRigidBody *rigidBody = static_cast<btRigidBody *>(collisionObject);
 
         bool isStatic = rigidBody->isStaticObject();
         bool isKinematic = rigidBody->isKinematicObject();
-        
-        short filterGroup = IsCharacter() ? btBroadphaseProxy::CharacterFilter : (isStatic ? (isKinematic ? (btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::DefaultFilter);
-        short filterMask = btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger | btBroadphaseProxy::CharacterFilter;
-        if (isStatic) {
-            filterMask = filterMask & ~btBroadphaseProxy::StaticFilter;
+
+        if (collisionFilterBit == 0) {
+            internalGroup = isStatic ? (isKinematic ? (btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::DefaultFilter;
+        } else {
+            internalGroup = (BIT(collisionFilterBit) & ~1) << 5;
         }
 
-        physicsWorld->dynamicsWorld->addRigidBody(rigidBody, filterGroup, filterMask);
-        break; 
+        internalMask = (collisionFilterMask & ~1) << 5;
+
+        if (collisionFilterMask & BIT(0)) {
+            internalMask |= btBroadphaseProxy::DefaultFilter;
+            
+            if (!isStatic) {
+                if (!isKinematic) {
+                    internalMask |= (btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger);
+                } else {
+                    internalMask |= (btBroadphaseProxy::SensorTrigger);
+                }
+            }
+        }
+
+        physicsWorld->dynamicsWorld->addRigidBody(rigidBody, internalGroup, internalMask);
+        break;
     }
-    case Type::SoftBody: {
+    case Type::SoftBody:
+    {
         btSoftBody *softBody = static_cast<btSoftBody *>(collisionObject);
-        ((btSoftRigidDynamicsWorld *)physicsWorld->dynamicsWorld)->addSoftBody(softBody);
+        int internalGroup, internalMask;
+
+        if (collisionFilterBit == 0) {
+            internalGroup = btBroadphaseProxy::DefaultFilter;
+        } else {
+            internalGroup = (BIT(collisionFilterBit) & ~1) << 5;
+        }
+
+        internalMask = (collisionFilterMask & ~1) << 5;
+
+        if (collisionFilterMask & BIT(0)) {
+            internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger);
+        }
+
+        ((btSoftRigidDynamicsWorld *)physicsWorld->dynamicsWorld)->addSoftBody(softBody, internalGroup, internalMask);
         break;
     }
     case Type::Sensor:
-        physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, btBroadphaseProxy::SensorTrigger, 
-            btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter /* FIXME: remove? */ | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter);
+    {
+        int internalGroup, internalMask;
+
+        if (collisionFilterBit == 0) {
+            internalGroup = btBroadphaseProxy::SensorTrigger;
+        } else {
+            internalGroup = (BIT(collisionFilterBit) & ~1) << 5;
+        }
+
+        internalMask = (collisionFilterMask & ~1) << 5;
+
+        if (collisionFilterMask & BIT(0)) {
+            internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+        }
+
+        physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, internalGroup, internalMask);
         break;
+    }
     default:
         BE_WARNLOG(L"PhysCollidable::AddToWorld: invalid collidable type %i\n", type);
         break;

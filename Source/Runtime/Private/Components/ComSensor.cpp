@@ -136,7 +136,7 @@ void ComSensor::CreateSensor() {
 
     sensor = static_cast<PhysSensor *>(physicsSystem.CreateCollidable(physicsDesc));
     sensor->SetUserPointer(this);
-    sensor->SetCustomCollisionFilterIndex(entity->GetLayer());
+    sensor->SetCollisionFilterBit(entity->GetLayer());
 }
 
 void ComSensor::Update() {

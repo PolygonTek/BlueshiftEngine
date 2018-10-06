@@ -261,7 +261,7 @@ void ComRigidBody::CreateBody() {
     // Create a rigid body
     body = static_cast<PhysRigidBody *>(physicsSystem.CreateCollidable(physicsDesc));
     body->SetUserPointer(this);
-    body->SetCustomCollisionFilterIndex(entity->GetLayer());
+    body->SetCollisionFilterBit(entity->GetLayer());
     body->SetCollisionListener(collisionListener);
 
     // Collect vehicle wheels in children recursively

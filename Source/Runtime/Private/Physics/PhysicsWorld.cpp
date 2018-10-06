@@ -36,7 +36,7 @@ static void PostTickCallback(btDynamicsWorld *world, btScalar timeStep) {
     static_cast<PhysicsWorld *>(world->getWorldUserInfo())->PostStep(timeStep);
 }
 
-class CollisionFilterCallback : public btOverlapFilterCallback {
+/*class CollisionFilterCallback : public btOverlapFilterCallback {
 public:
     // return true when pairs need collision
     virtual bool needBroadphaseCollision(btBroadphaseProxy *proxy0, btBroadphaseProxy *proxy1) const {
@@ -46,19 +46,15 @@ public:
         const PhysCollidable *userColObj0 = (const PhysCollidable *)colObj0->getUserPointer();
         const PhysCollidable *userColObj1 = (const PhysCollidable *)colObj1->getUserPointer();
 
-        const PhysicsWorld *pw = userColObj0->physicsWorld;
+        const PhysicsWorld *physicsWorld = userColObj0->physicsWorld;
 
-        if (pw->GetCollisionFilterMask(userColObj0->customFilterIndex) & BIT(userColObj1->customFilterIndex)) {
+        if (physicsWorld->GetCollisionFilterMask(userColObj0->customFilterIndex) & BIT(userColObj1->customFilterIndex)) {
             return true;
         }
 
-        /*if (pw->GetCollisionFilterMask(userColObj1->customFilterIndex) & BIT(userColObj0->customFilterIndex)) {
-            return true;
-        }*/
-
         return false;
     }
-};
+};*/
 
 PhysicsWorld::PhysicsWorld() {
     // collision configuration contains default setup for memory, collision setup
@@ -104,8 +100,8 @@ PhysicsWorld::PhysicsWorld() {
     ghostPairCallback = new btGhostPairCallback();
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(ghostPairCallback);
 
-    filterCallback = new CollisionFilterCallback();
-    dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
+    //filterCallback = new CollisionFilterCallback();
+    //dynamicsWorld->getPairCache()->setOverlapFilterCallback(filterCallback);
 
 #ifdef DETERMINISTIC
     dynamicsWorld->getSimulationIslandManager()->setSplitIslands(false);
@@ -141,7 +137,7 @@ PhysicsWorld::~PhysicsWorld() {
     SAFE_DELETE(softBodySolver);
     SAFE_DELETE(dynamicsWorld);
     SAFE_DELETE(ghostPairCallback);
-    SAFE_DELETE(filterCallback);
+    //SAFE_DELETE(filterCallback);
 }
 
 void PhysicsWorld::ClearScene() {
@@ -277,27 +273,39 @@ void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
     dynamicsWorld->setGravity(ToBtVector3(SystemUnitToPhysicsUnit(gravityAcceleration)));
 }
 
-uint32_t PhysicsWorld::GetCollisionFilterMask(int index) const {
-    assert(index >= 0 && index < COUNT_OF(filterMasks));
+int PhysicsWorld::GetCollisionFilterMask(int bit) const {
+    assert(bit >= 0 && bit < COUNT_OF(filterMasks) - 6);
 
-    return filterMasks[index];
+    return filterMasks[bit];
 }
 
-void PhysicsWorld::SetCollisionFilterMask(int index, uint32_t mask) {
-    assert(index >= 0 && index < COUNT_OF(filterMasks));
+void PhysicsWorld::SetCollisionFilterMask(int bit, int mask) {
+    assert(bit >= 0 && bit < COUNT_OF(filterMasks) - 6);
 
-    filterMasks[index] = mask;
+    filterMasks[bit] = mask;
 }
 
-bool PhysicsWorld::RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const {
-    return ClosestRayTest(me ? me->collisionObject : nullptr, start, end, filterGroup, filterMask, trace);
+bool PhysicsWorld::RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const {
+    int internalGroup = me ? (((BIT(me->collisionFilterBit) & ~1) << 5) | (BIT(me->collisionFilterBit) & 1)) : btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    return ClosestRayTest(me ? me->collisionObject : nullptr, start, end, internalGroup, internalMask, trace);
 }
 
-bool PhysicsWorld::RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, Array<CastResult> &resultArray) const {
-    return AllHitsRayTest(me ? me->collisionObject : nullptr, start, end, filterGroup, filterMask, resultArray);
+bool PhysicsWorld::RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &resultArray) const {
+    int internalGroup = me ? (((BIT(me->collisionFilterBit) & ~1) << 5) | (BIT(me->collisionFilterBit) & 1)) : btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    return AllHitsRayTest(me ? me->collisionObject : nullptr, start, end, internalGroup, internalMask, resultArray);
 }
 
-bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, short filterGroup, short filterMask, CastResult &trace) const {
+bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const {
     btTransform shapeTransform;
 
     btCollisionShape *shape = collider->shape;
@@ -322,10 +330,16 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
         return false;
     }
 
-    return ClosestConvexTest(me ? me->collisionObject : nullptr, static_cast<btConvexShape *>(shape), shapeTransform, axis, start, end, filterGroup, filterMask, trace);
+    int internalGroup = me ? (((BIT(me->collisionFilterBit) & ~1) << 5) | (BIT(me->collisionFilterBit) & 1)) : btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    return ClosestConvexTest(me ? me->collisionObject : nullptr, static_cast<btConvexShape *>(shape), shapeTransform, axis, start, end, internalGroup, internalMask, trace);
 }
 
-bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, CastResult &trace) const {
+bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const {
     if (origin.Equals(dest)) {
         return false;
     }
@@ -382,13 +396,14 @@ bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origi
     } else {
         trace.hitObject = nullptr;
         trace.fraction = 1.0f;
+        trace.endPos = dest;
         trace.surfaceFlags = 0;
     }
 
     return false;
 }
 
-bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, Array<CastResult> &resultArray) const {
+bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, Array<CastResult> &resultArray) const {
     class MyAllHitsRayResultCallback : public btCollisionWorld::AllHitsRayResultCallback {
     public:
         MyAllHitsRayResultCallback(const btCollisionObject *me, const btVector3 &rayFromWorld, const btVector3 &rayToWorld) : 
@@ -447,7 +462,7 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
     return false;
 }
 
-bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, short filterGroup, short filterMask, CastResult &trace) const {
+bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const {
     class MyClosestConvexResultCallback : public btCollisionWorld::ClosestConvexResultCallback {
     public:
         MyClosestConvexResultCallback(const btCollisionObject *me, const btVector3 &rayFromWorld, const btVector3 &rayToWorld) : 
