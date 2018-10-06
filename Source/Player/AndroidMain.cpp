@@ -527,7 +527,7 @@ void android_main(android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            RHI::DisplayMetrics displayMetrics;
+            BE1::RHI::DisplayMetrics displayMetrics;
             BE1::rhi.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
             
             if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {
