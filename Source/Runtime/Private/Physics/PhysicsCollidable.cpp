@@ -204,6 +204,7 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
 
         bool isStatic = rigidBody->isStaticObject();
         bool isKinematic = rigidBody->isKinematicObject();
+        bool isDynamic = !isStatic && !isKinematic;
 
         if (collisionFilterBit == 0) {
             internalGroup = isStatic ? (isKinematic ? (btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::DefaultFilter;
@@ -214,14 +215,10 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
         internalMask = (collisionFilterMask & ~1) << 5;
 
         if (collisionFilterMask & BIT(0)) {
-            internalMask |= btBroadphaseProxy::DefaultFilter;
-            
-            if (!isStatic) {
-                if (!isKinematic) {
-                    internalMask |= (btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::SensorTrigger);
-                } else {
-                    internalMask |= (btBroadphaseProxy::SensorTrigger);
-                }
+            internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::SensorTrigger);
+
+            if (isDynamic) {
+                internalMask |= (btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
             }
         }
 
