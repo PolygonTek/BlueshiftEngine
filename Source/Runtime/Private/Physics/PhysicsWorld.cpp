@@ -340,6 +340,11 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
 }
 
 bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const {
+    trace.hitObject = nullptr;
+    trace.fraction = 1.0f;
+    trace.endPos = dest;
+    trace.surfaceFlags = 0;
+
     if (origin.Equals(dest)) {
         return false;
     }
@@ -386,18 +391,9 @@ bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origi
                 btMultimaterialTriangleMeshShape *_shape = (btMultimaterialTriangleMeshShape *)shape;
                 const CollisionMaterial *props = (CollisionMaterial *)_shape->getMaterialProperties(cb.m_localShapeInfo->m_shapePart, cb.m_localShapeInfo->m_triangleIndex);
                 trace.surfaceFlags = props->surfaceFlags;
-            } else {
-                trace.surfaceFlags = 0;
             }
-        } else {
-            trace.surfaceFlags = 0;
         }
         return true;
-    } else {
-        trace.hitObject = nullptr;
-        trace.fraction = 1.0f;
-        trace.endPos = dest;
-        trace.surfaceFlags = 0;
     }
 
     return false;
@@ -463,6 +459,11 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
 }
 
 bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const {
+    trace.hitObject = nullptr;
+    trace.fraction = 1.0f;
+    trace.endPos = dest;
+    trace.surfaceFlags = 0;
+
     class MyClosestConvexResultCallback : public btCollisionWorld::ClosestConvexResultCallback {
     public:
         MyClosestConvexResultCallback(const btCollisionObject *me, const btVector3 &rayFromWorld, const btVector3 &rayToWorld) : 
@@ -521,10 +522,6 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
     };
 
     if (origin.DistanceSqr(dest) < Math::FloatEpsilon) {
-        trace.hitObject = nullptr;
-        trace.fraction = 1.0f;
-        trace.endPos = origin;
-        trace.surfaceFlags = 0;
         return false;
     }
 
@@ -560,20 +557,10 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
                 btMultimaterialTriangleMeshShape *_shape = (btMultimaterialTriangleMeshShape *)shape;
                 const CollisionMaterial *props = (CollisionMaterial *)_shape->getMaterialProperties(cb.m_localShapeInfo->m_shapePart, cb.m_localShapeInfo->m_triangleIndex);
                 trace.surfaceFlags = props->surfaceFlags;
-            } else {
-                trace.surfaceFlags = 0;
             }
-        } else {
-            trace.surfaceFlags = 0;
         }
         return true;
-    } else {
-        trace.hitObject = nullptr;
-        trace.fraction = 1.0f;
-        trace.endPos = dest;
-        trace.surfaceFlags = 0;
     }
-
     return false;
 }
 
