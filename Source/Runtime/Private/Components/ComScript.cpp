@@ -853,7 +853,7 @@ void ComScript::Awake() {
         awakeFunc();
     }
 
-    if (GetEntity()->IsActiveSelf() && onEnableFunc.IsValid()) {
+    if (GetEntity()->IsActiveInHierarchy() && onEnableFunc.IsValid()) {
         onEnableFunc();
     }
 }
