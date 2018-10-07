@@ -414,7 +414,7 @@ void RenderWorld::AddSkyBoxMeshes(VisibleView *visView) {
     RenderObject::State renderObjectDef;
     memset(&renderObjectDef, 0, sizeof(renderObjectDef));
     renderObjectDef.origin = visView->def->state.origin;
-    renderObjectDef.scale = Vec3::one;
+    renderObjectDef.scale = Vec3(visView->def->zNear * 4);
     renderObjectDef.axis = Mat3::identity;
     renderObjectDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
