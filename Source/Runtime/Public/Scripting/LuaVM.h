@@ -40,7 +40,7 @@ public:
     void                    EnableJIT(bool enabled);
 
     void                    ClearTweeners();
-    void                    UpdateTweeners(float deltaTime);
+    void                    UpdateTweeners(float unscaledDeltaTime, float timeScale);
 
     void                    ClearWatingThreads();
     void                    WakeUpWatingThreads(float currentTime);

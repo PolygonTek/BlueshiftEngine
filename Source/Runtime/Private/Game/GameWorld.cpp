@@ -690,7 +690,7 @@ void GameWorld::Update(int elapsedTime) {
         luaVM.WakeUpWatingThreads(MS2SEC(time));
 
         // Update tweeners in Lua scripts
-        luaVM.UpdateTweeners(MS2SEC(scaledElapsedTime));
+        luaVM.UpdateTweeners(MS2SEC(elapsedTime), timeScale);
 
         luaVM.State().ForceGC();
     }

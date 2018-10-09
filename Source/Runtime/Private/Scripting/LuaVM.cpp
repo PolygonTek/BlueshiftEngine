@@ -315,9 +315,9 @@ void LuaVM::ClearTweeners() {
     }
 }
 
-void LuaVM::UpdateTweeners(float deltaTime) {
+void LuaVM::UpdateTweeners(float unscaledDeltaTime, float timeScale) {
     if (updateTweeners.IsFunction()) {
-        updateTweeners(deltaTime);
+        updateTweeners(unscaledDeltaTime, timeScale);
     }
 }
 

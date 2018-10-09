@@ -1,4 +1,5 @@
-local tweeners = {}
+local scaledTimeTweeners = {}
+local unscaledTimeTweeners = {}
 
 local EaseIn = 0
 local EaseOut = 1
@@ -282,11 +283,11 @@ function tween.clear_tweeners()
 	end
 end
 
-function tween.update_tweeners(deltaTime)
+function tween.update_tweeners(deltaTime, timeScale)
 	local tweenersToRemove = {}
 
     for key, tweener in pairs(tweeners) do
-    	tweener.time = math.min(tweener.time + deltaTime, tweener.duration)
+    	tweener.time = math.min(tweener.time + deltaTime * ((not tweener.unscaled) and timeScale or 1), tweener.duration)
 
     	tweener.func(tweenFunc(tweener.easeType, tweener.a, tweener.b, tweener.time / tweener.duration))
 
@@ -306,6 +307,23 @@ function tween.add(easeType, duration, a, b, func)
 	tweeners[func] = {
 		easeType = easeType,
 		duration = duration,
+		unscaled = false,
+		time = 0,
+		a = a, 
+		b = b, 
+		func = func
+	}
+
+	return tweeners[func]
+end
+
+function tween.add_unscaled_time(easeType, duration, a, b, func)
+	func(tweenFunc(easeType, a, b, 0))
+
+	tweeners[func] = {
+		easeType = easeType,
+		duration = duration,
+		unscaled = true,
 		time = 0,
 		a = a, 
 		b = b, 
