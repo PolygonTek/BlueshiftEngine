@@ -460,7 +460,7 @@ static void InitInstance(android_app *appState) {
     appState->onInputEvent = HandleInput; // input event callback
 
 #ifdef USE_NDK_PROFILER
-    monstartup("libTestRenderer.so");
+    monstartup("libBlueshiftPlayer.so");
 #endif
 
     // Prepare to monitor accelerometer

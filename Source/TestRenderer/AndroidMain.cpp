@@ -342,7 +342,7 @@ static void ShutdownInstance() {
     app.FreeResources();
 
     if (mainContext) {
-        BE1::rhi.DeleteRenderTarget(mainRenderTarget);
+        BE1::rhi.DestroyRenderTarget(mainRenderTarget);
 
         BE1::rhi.DestroyContext(mainContext);
     }
@@ -398,7 +398,7 @@ void android_main(android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            DisplayMetrics displayMetrics;
+            BE1::RHI::DisplayMetrics displayMetrics;
             BE1::rhi.GetDisplayMetrics(mainContext, &displayMetrics);
 
             if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {

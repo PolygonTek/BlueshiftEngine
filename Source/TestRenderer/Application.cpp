@@ -216,7 +216,7 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     
     DrawToRenderTarget(renderTargetHandle, t);
 
-    DisplayMetrics displayMetrics;
+    BE1::RHI::DisplayMetrics displayMetrics;
     BE1::rhi.GetDisplayMetrics(contextHandle, &displayMetrics);
     
     BE1::Rect rect = BE1::Rect(0, 0, displayMetrics.screenWidth, displayMetrics.screenHeight);
