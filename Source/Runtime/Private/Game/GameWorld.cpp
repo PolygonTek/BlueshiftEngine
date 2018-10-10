@@ -483,6 +483,8 @@ void GameWorld::FinishMapLoading() {
     colliderManager.DestroyUnusedColliders();
     soundSystem.DestroyUnusedSounds();
     //meshManager.EndLevelLoad();
+
+    StaticBatch::ClearAllStaticBatches();
 }
 
 bool GameWorld::CheckScriptError() const {
@@ -514,8 +516,6 @@ void GameWorld::StartGame() {
     luaVM.ClearTweeners();
 
     luaVM.ClearWatingThreads();
-
-    StaticBatch::ClearAllStaticBatches();
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         StaticBatch::CombineAll(scenes[sceneIndex].root);
