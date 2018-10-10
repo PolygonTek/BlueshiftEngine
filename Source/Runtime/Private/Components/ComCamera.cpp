@@ -490,8 +490,9 @@ bool ComCamera::ProcessTouchPointerInput() {
 
                         if (touch.phase == InputSystem::Touch::Ended && hitTestEntity == capturedEntity) {
                             scriptComponent->OnPointerClick();
-                            scriptComponent->OnPointerExit();
                         }
+
+                        scriptComponent->OnPointerExit();
                     }
                 }
 
