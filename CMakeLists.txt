@@ -134,7 +134,7 @@ elseif (APPLE)
     add_compile_options("-Wno-unused-function")
     add_compile_options("-Wno-reorder")
     add_compile_options("-Wno-inconsistent-missing-override")
-    add_compile_options("-Wtautological-undefined-compare")
+    add_compile_options("-Wno-tautological-undefined-compare")
 
     if (IOS)
         add_compile_options("-DIOS")
