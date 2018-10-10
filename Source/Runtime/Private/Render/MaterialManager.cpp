@@ -29,6 +29,9 @@ Material *          MaterialManager::defaultSkyboxMaterial;
 
 MaterialManager     materialManager;
 
+static int          materialCounter = 0;
+static const int    MaxMaterialCount = 65536;
+
 void MaterialManager::Init() {
     cmdSystem.AddCommand(L"listMaterials", Cmd_ListMaterials);
     cmdSystem.AddCommand(L"reloadMaterial", Cmd_ReloadMaterial);
@@ -141,6 +144,10 @@ Material *MaterialManager::AllocMaterial(const char *hashName) {
     if (materialHashMap.Get(hashName)) {
         BE_FATALERROR(L"%hs material already allocated", hashName);
     }
+
+    if (materialHashMap.Count() == MaterialManager::MaxCount) {
+        BE_FATALERROR(L"Material exceed maximum limits %i", MaterialManager::MaxCount);
+    }
     
     Material *material = new Material;
     material->hashName = hashName;
@@ -148,7 +155,7 @@ Material *MaterialManager::AllocMaterial(const char *hashName) {
     material->name.StripPath();
     material->name.StripFileExtension();
     material->refCount = 1;
-    material->index = materialHashMap.Count();
+    material->index = materialCounter++ % MaterialManager::MaxCount;
     materialHashMap.Set(material->hashName, material);
 
     return material;
@@ -162,15 +169,6 @@ void MaterialManager::DestroyMaterial(Material *material) {
     materialHashMap.Remove(material->hashName);
 
     delete material;
-}
-
-Material *MaterialManager::GetMaterialByIndex(int index) const { 
-    const auto *entry = materialHashMap.GetByIndex(index);
-    if (!entry) {
-        return nullptr;
-    }
-
-    return entry->second;
 }
 
 Material *MaterialManager::FindMaterial(const char *hashName) const {

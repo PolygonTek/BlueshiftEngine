@@ -154,7 +154,7 @@ private:
     Str                     name;
     mutable int             refCount;               // reference count
     bool                    permanence;             // is permanent material ?
-    int                     index;                  // index of materialHashMap
+    int                     index;                  // index for sorting materials when rendering
 
     int                     flags;
     Type                    type;
@@ -198,7 +198,6 @@ public:
     void                    RenameMaterial(Material *material, const Str &newName);
 
     int                     GetIndexByMaterial(const Material *material) const { return material->index; }
-    Material *              GetMaterialByIndex(int index) const;
 
                             // pre-defined materials
     static Material *       defaultMaterial;
@@ -207,6 +206,8 @@ public:
     static Material *       whiteLightMaterial;
     static Material *       zeroClampLightMaterial;
     static Material *       defaultSkyboxMaterial;
+
+    static const int        MaxCount = 65536;
 
 private:
     static void             Cmd_ListMaterials(const CmdArgs &args);
