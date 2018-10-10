@@ -60,18 +60,16 @@ void MeshCombiner::CombineRoot(const Hierarchy<Entity> &staticRoot) {
         }
     }
 
-    Array<Entity *> staticEntities;
-    if (staticRootEntity) {
-        staticEntities.Append(staticRootEntity);
-    }
-    EnumerateStaticChildren(staticRoot, staticEntities);
+    // Enumerate combinable entities
+    Array<Entity *> combinableEntities;
+    EnumerateCombinableEntities(staticRoot, combinableEntities);
 
-    if (staticEntities.Count() <= 1) {
+    if (combinableEntities.Count() <= 1) {
         return;
     }
 
-    // Sort entities
-    staticEntities.Sort([](Entity *e1, Entity *e2) -> bool {
+    // Sort entities by material
+    combinableEntities.Sort([](Entity *e1, Entity *e2) -> bool {
         const auto *renderable1 = e1->GetComponent<ComRenderable>();
         const auto *renderable2 = e2->GetComponent<ComRenderable>();
 
@@ -91,23 +89,13 @@ void MeshCombiner::CombineRoot(const Hierarchy<Entity> &staticRoot) {
     int numCombinedVerts = 0;
     int batchIndex = 0;
 
-    for (int entityIndex = 0; entityIndex < staticEntities.Count(); entityIndex++) {
-        Entity *entity = staticEntities[entityIndex];
+    for (int entityIndex = 0; entityIndex < combinableEntities.Count(); entityIndex++) {
+        Entity *entity = combinableEntities[entityIndex];
 
         ComStaticMeshRenderer *meshRenderer = entity->GetComponent<ComStaticMeshRenderer>();
-        if (!meshRenderer || !meshRenderer->referenceMesh) {
-            continue;
-        }
-
-        if (meshRenderer->referenceMesh->NumSurfaces() > 1) {
-            continue;
-        }
-
-        if (meshRenderer->renderObjectDef.materials.Count() > 1) {
-            continue;
-        }
 
         int numVerts = meshRenderer->referenceMesh->GetSurface(0)->subMesh->NumVerts();
+
         const RenderObject::State *renderObjectDef = &meshRenderer->renderObjectDef;
 
         if (!combineRoot) {
@@ -164,15 +152,26 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
     staticBatch->SetMesh(combinedMesh);
 }
 
-void MeshCombiner::EnumerateStaticChildren(const Hierarchy<Entity> &parentNode, Array<Entity *> &staticChildren) {
-    for (Entity *entity = parentNode.GetChild(); entity; entity = entity->GetNode().GetNextSibling()) {
+void MeshCombiner::EnumerateCombinableEntities(const Hierarchy<Entity> &rootNode, Array<Entity *> &staticChildren) {
+    for (Entity *entity = rootNode.GetChild(); entity; entity = entity->GetNode().GetNext()) {
         if (!entity->IsStatic()) {
             continue;
         }
 
-        staticChildren.Append(entity);
+        ComStaticMeshRenderer *meshRenderer = entity->GetComponent<ComStaticMeshRenderer>();
+        if (!meshRenderer || !meshRenderer->referenceMesh) {
+            continue;
+        }
 
-        EnumerateStaticChildren(entity->GetNode(), staticChildren);
+        if (meshRenderer->referenceMesh->NumSurfaces() > 1) {
+            continue;
+        }
+
+        if (meshRenderer->renderObjectDef.materials.Count() > 1) {
+            continue;
+        }
+
+        staticChildren.Append(entity);
     }
 }
 

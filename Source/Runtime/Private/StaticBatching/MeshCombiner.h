@@ -24,7 +24,7 @@ public:
     static void CombineRoot(const Hierarchy<Entity> &staticRoot);
 
 private:
-    static void EnumerateStaticChildren(const Hierarchy<Entity> &parentNode, Array<Entity *> &staticChildren);
+    static void EnumerateCombinableEntities(const Hierarchy<Entity> &parentNode, Array<Entity *> &staticChildren);
     static void MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMeshRenderer *> &meshRenderers, int batchIndex);
 };
 

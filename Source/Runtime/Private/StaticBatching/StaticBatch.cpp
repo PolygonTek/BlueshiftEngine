@@ -57,9 +57,9 @@ void StaticBatch::CombineAll(Hierarchy<Entity> &entityHierarchy) {
         ComStaticMeshRenderer *staticMeshRenderer = ent->GetComponent<ComStaticMeshRenderer>();
         
         if (staticMeshRenderer && staticMeshRenderer->staticBatchIndex >= 0) {
-            const StaticBatch *staticBatch = StaticBatch::GetStaticBatchByIndex(staticMeshRenderer->staticBatchIndex);
-
             staticMeshRenderer->OnInactive();
+
+            const StaticBatch *staticBatch = StaticBatch::GetStaticBatchByIndex(staticMeshRenderer->staticBatchIndex);
 
             if (staticBatch->GetRootEntity() == ent) {
                 if (staticMeshRenderer->renderObjectDef.mesh) {

@@ -69,6 +69,8 @@ GameWorld::GameWorld() {
 GameWorld::~GameWorld() {
     ClearEntities();
 
+    StaticBatch::ClearAllStaticBatches();
+
     if (mapRenderSettings) {
         MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
     }
@@ -513,6 +515,8 @@ void GameWorld::StartGame() {
 
     luaVM.ClearWatingThreads();
 
+    StaticBatch::ClearAllStaticBatches();
+
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         StaticBatch::CombineAll(scenes[sceneIndex].root);
     }
@@ -553,8 +557,6 @@ void GameWorld::StopGame(bool stopAllSounds) {
     luaVM.ClearTweeners();
 
     luaVM.ClearWatingThreads();
-
-    StaticBatch::ClearAllStaticBatches();
 
     if (stopAllSounds) {
         soundSystem.StopAllSounds();
