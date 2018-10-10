@@ -152,7 +152,7 @@ void RenderContext::InitScreenMapRT() {
 
     if (r_useDeferredLighting.GetBool()) {
         screenNormalTexture = textureManager.AllocTexture(va("_%i_screenNormal", (int)contextHandle));
-        screenNormalTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::LA_16F_16F, screenTextureFlags | Texture::Nearest);		
+        screenNormalTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::LA_16F_16F, screenTextureFlags | Texture::Nearest);
 
         Texture *colorTextures[2];
         colorTextures[0] = screenColorTexture;
@@ -771,7 +771,7 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion inclusion, Array<
     return false;
 }
 
-void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height) {
+void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height) {
     char path[256];
 
     RenderView renderView;
@@ -780,7 +780,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews | RenderView::Flag::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
     renderViewDef.clearMethod = RenderView::SkyboxClear;
     renderViewDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
-    renderViewDef.layerMask = -1;
+    renderViewDef.layerMask = layerMask;
     renderViewDef.renderRect.Set(0, 0, width, height);
     renderViewDef.origin = origin;
     renderViewDef.axis = axis;
@@ -803,13 +803,13 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     BE_DLOG(L"Screenshot saved to \"%hs\"\n", path);
 }
 
-void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &origin, int size, Image &envCubeImage) {    
+void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage) {
     RenderView renderView;
     RenderView::State renderViewDef;
     memset(&renderViewDef, 0, sizeof(renderViewDef));
     renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::NoSubViews | RenderView::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
     renderViewDef.clearMethod = RenderView::SkyboxClear;
-    renderViewDef.layerMask = BIT(0);
+    renderViewDef.layerMask = layerMask;
     renderViewDef.renderRect.Set(0, 0, size, size);
     renderViewDef.fovX = 90;
     renderViewDef.fovY = 90;
@@ -913,9 +913,9 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, const Vec3 &or
 #endif
 }
 
-void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin, int size) {
+void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size) {
     Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, origin, size, envCubeImage);
+    CaptureEnvCubeImage(renderWorld, layerMask, origin, size, envCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
@@ -925,9 +925,9 @@ void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, 
     BE_LOG(L"Environment cubemap snapshot saved to \"%hs\"\n", path);
 }
 
-void RenderContext::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin) {
+void RenderContext::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin) {
     Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, origin, 256, envCubeImage);
+    CaptureEnvCubeImage(renderWorld, layerMask, origin, 256, envCubeImage);
 
     Image irradianceEnvCubeImage;
 #if 1
@@ -944,9 +944,9 @@ void RenderContext::TakeIrradianceEnvShot(const char *filename, RenderWorld *ren
     BE_LOG(L"Generated diffuse irradiance cubemap to \"%hs\"\n", path);
 }
 
-void RenderContext::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, const Vec3 &origin) {
+void RenderContext::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin) {
     Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, origin, 256, envCubeImage);
+    CaptureEnvCubeImage(renderWorld, layerMask, origin, 256, envCubeImage);
 
     Image prefilteredCubeImage;
 #if 1
