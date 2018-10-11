@@ -217,7 +217,7 @@ void RB_PostProcess() {
 
         shader->Bind();
         shader->SetTexture("tex0", bc->screenRT->ColorTexture());
-        
+ 
         RB_DrawClipRect(screenTc[0], screenTc[1], screenTc[2], screenTc[3]);
     }
 }

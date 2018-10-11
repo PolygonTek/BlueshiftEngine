@@ -320,7 +320,7 @@ void OpenGLRHI::EndRenderTarget() {
     gglBindFramebuffer(GL_FRAMEBUFFER, oldRenderTarget->fbo);
 
     if (gl_sRGB.GetBool()) {
-        if (oldRenderTarget->fbo == currentContext->defaultFramebuffer || oldRenderTarget->sRGB) {
+        if (oldRenderTarget->sRGB) {
             SetSRGBWrite(true);
         } else {
             SetSRGBWrite(false);

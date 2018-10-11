@@ -80,7 +80,7 @@ void RB_Init() {
     memset(backEnd.csmUpdate, 0, sizeof(backEnd.csmUpdate));
 
     backEnd.integrationLUTTexture = textureManager.AllocTexture("integrationLUT");
-    backEnd.integrationLUTTexture->Load("Data/EngineTextures/IntegrationLUT_GGX.dds", Image::LinearSpaceFlag | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    backEnd.integrationLUTTexture->Load("Data/EngineTextures/IntegrationLUT_GGX.dds", Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
 
     // FIXME: TEMPORARY CODE
     backEnd.envCubeTexture = textureManager.AllocTexture("envCubeMap");

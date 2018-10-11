@@ -207,6 +207,8 @@ void ShaderManager::InitGlobalDefines() {
         shaderManager.AddGlobalHeader("#define USE_BUFFER_TEXTURE\n");
     }
 
+    shaderManager.AddGlobalHeader(va("#define USE_SRGB_TEXTURE %i\n", TextureManager::texture_sRGB.GetBool() ? 1 : 0));
+
     if (r_shadows.GetInteger() == 1) {
         shaderManager.AddGlobalHeader("#define USE_SHADOW_MAP\n");
     }

@@ -328,7 +328,7 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
 
         int sRGB = *dataPtr++;
         if (sRGB) {
-            flags |= Texture::SRGB;
+            flags |= Texture::SRGBColorSpace;
         }
 
         if (version >= 2) {
@@ -339,7 +339,7 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
         }
 
         if (flags & Texture::NormalMap) {
-            flags &= ~Texture::SRGB;
+            flags &= ~Texture::SRGBColorSpace;
         }
     }
 

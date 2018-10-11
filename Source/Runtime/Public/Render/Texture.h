@@ -39,24 +39,24 @@ public:
     enum Flag {
         Repeat              = BIT(0),
         MirroredRepeat      = BIT(1),
-        Clamp               = BIT(2),       ///< set wrap mode to Clamp (can be set with Mirror)
-        ClampToBorder       = BIT(3),       ///< set wrap mode to ClampToBorder (can be set with Mirror)
-        ZeroClamp           = BIT(4),       ///< set wrap mode to ClampToBorder and set border color to black
-        Shadow              = BIT(5),       ///< set shadow func (shader 에서 samperXDShadow 를 사용하려면 이 플래그를 켜야한다)
-        Nearest             = BIT(6),       ///< use nearest filtering (should be set with NoMipmaps)
-        NoMipmaps           = BIT(7),       ///< don't use mipmaps
-        NoScaleDown         = BIT(8),       ///< texture_mip 값으로 사이즈를 줄이기를 하지 않는다
-        NoCompression       = BIT(9),       ///< texture_useCompression 값으로 압축 텍스쳐 사용하지 않는다 (format이 원래 압축 이미지일 경우는 소용없다)
-        NonPowerOfTwo       = BIT(10),      ///< non power of two texture
-        NormalMap           = BIT(11),      ///< this is normal map !
+        Clamp               = BIT(2),       ///< Set wrap mode to Clamp (can be set with Mirror).
+        ClampToBorder       = BIT(3),       ///< Set wrap mode to ClampToBorder (can be set with Mirror).
+        ZeroClamp           = BIT(4),       ///< Set wrap mode to ClampToBorder and set border color to black.
+        Shadow              = BIT(5),       ///< Set shadow func (You must turn this flag on to use samperXDShadow on the shader).
+        Nearest             = BIT(6),       ///< Use nearest filtering (should be set with NoMipmaps).
+        NoMipmaps           = BIT(7),       ///< Don't use mipmaps.
+        NoScaleDown         = BIT(8),       ///< Don't reduce size by texture_mip cvar value.
+        NoCompression       = BIT(9),       ///< Don't use compression by texture_useCompression cvar value. (Useless if original format is compressed).
+        NonPowerOfTwo       = BIT(10),      ///< This is a non-power-of-two texture.
+        NormalMap           = BIT(11),      ///< This is a normal map.
         HighPriority        = BIT(12),
         LowPriority         = BIT(13),
-        SRGB                = BIT(14),      ///< generally color image is encoded in sRGB
+        SRGBColorSpace      = BIT(14),      ///< Generally color images are encoded in sRGB space. So we need to tell the GPU to upload it to memory in a linear fashion.
         Trilinear           = BIT(15),
         HighQuality         = NoScaleDown | NoCompression,
-        CubeMap             = BIT(28),      ///< cube map
+        CubeMap             = BIT(28),      ///< This is a cube map.
         CameraCubeMap       = BIT(29),
-        LoadedFromFile      = BIT(30),      ///< mark it is loaded from the file
+        LoadedFromFile      = BIT(30),      ///< Mark it as loaded from a file.
         Permanence          = BIT(31)
     };
 

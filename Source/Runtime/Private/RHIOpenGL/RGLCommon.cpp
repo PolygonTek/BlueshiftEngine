@@ -318,13 +318,16 @@ void OpenGLRHI::InitGL() {
     }
 #endif
 
-#if 0
+#if 1
     GLint encoding;
-    gglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, desktop ? GL_FRONT_LEFT : GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING, &encoding);
+    gglBindFramebuffer(GL_FRAMEBUFFER, mainContext->defaultFramebuffer);
+    gglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK_LEFT, GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING, &encoding);
     BE_LOG(L"default frame buffer encoding : ");
     if (encoding == GL_SRGB) {
+        linearFrameBuffer = false;
         BE_LOG(L"SRGB\n");
     } else if (encoding == GL_LINEAR) {
+        linearFrameBuffer = true;
         BE_LOG(L"Linear\n");
     } else {
         assert(0);

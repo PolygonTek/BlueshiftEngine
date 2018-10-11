@@ -212,6 +212,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
         attribs[numAttribs++] = WGL_STENCIL_BITS_ARB;
         attribs[numAttribs++] = WGL_SAMPLE_BUFFERS_ARB;
         attribs[numAttribs++] = WGL_SAMPLES_ARB;
+        attribs[numAttribs++] = WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB;
         attribs[numAttribs++] = 0;
 
         int attribList[MAX_PIXEL_FORMAT][MAX_ATTRIB_SIZE];
@@ -271,6 +272,11 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
 
             // WGL_SAMPLE_BUFFERS_ARB
             if (attr[9] == GL_FALSE && inMultiSamples > 0) {
+                continue;
+            }
+
+            // WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB
+            if (attr[11] == GL_FALSE) {
                 continue;
             }
 
@@ -343,6 +349,9 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
         attribs[numAttribs++] = attribList[best-1][9];
         attribs[numAttribs++] = WGL_SAMPLES_ARB;
         attribs[numAttribs++] = attribList[best-1][10];
+        attribs[numAttribs++] = WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB;
+        attribs[numAttribs++] = attribList[best - 1][11];
+
         attribs[numAttribs++] = 0;
         attribs[numAttribs++] = 0;
 

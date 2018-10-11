@@ -107,7 +107,7 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
         textureType     = colorTextures[0]->type;
         width           = colorTextures[0]->width;
         height          = colorTextures[0]->height;
-        sRGB            = !Image::IsFloatFormat(colorTextures[0]->format) && !Image::IsHalfFormat(colorTextures[0]->format) && (colorTextures[0]->flags & Texture::SRGB);
+        sRGB            = !Image::IsFloatFormat(colorTextures[0]->format) && !Image::IsHalfFormat(colorTextures[0]->format) && (colorTextures[0]->flags & Texture::SRGBColorSpace);
     }
 
     if (depthStencilTexture) {

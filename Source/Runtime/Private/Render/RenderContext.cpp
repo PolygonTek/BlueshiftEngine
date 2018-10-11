@@ -145,7 +145,7 @@ void RenderContext::InitScreenMapRT() {
     Image::Format screenImageFormat = GetScreenImageFormat();
 
     screenColorTexture = textureManager.AllocTexture(va("_%i_screenColor", (int)contextHandle));
-    screenColorTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGB);
+    screenColorTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGBColorSpace);
     
     screenDepthTexture = textureManager.AllocTexture(va("_%i_screenDepthstencil", (int)contextHandle));
     screenDepthTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Depth_24, screenTextureFlags | Texture::Nearest);
@@ -161,7 +161,7 @@ void RenderContext::InitScreenMapRT() {
         //screenRT->SetMRTMask(3);
 
         screenLitAccTexture = textureManager.AllocTexture(va("_%i_screenLitAcc", (int)contextHandle));
-        screenLitAccTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::Nearest | Texture::SRGB);
+        screenLitAccTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::Nearest | Texture::SRGBColorSpace);
         screenLitAccRT = RenderTarget::Create(screenLitAccTexture, nullptr, 0);
     } else {
         screenRT = RenderTarget::Create(screenColorTexture, screenDepthTexture, 0);
@@ -194,27 +194,27 @@ void RenderContext::InitScreenMapRT() {
     //--------------------------------------	
 
     ppTextures[PP_TEXTURE_COLOR_2X] = textureManager.AllocTexture(va("_%i_screenColorD2x", (int)contextHandle));
-    ppTextures[PP_TEXTURE_COLOR_2X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 1, renderingHeight >> 1, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGB);
+    ppTextures[PP_TEXTURE_COLOR_2X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 1, renderingHeight >> 1, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGBColorSpace);
     ppRTs[PP_RT_2X] = RenderTarget::Create(ppTextures[PP_TEXTURE_COLOR_2X], nullptr, 0);
 
     ppTextures[PP_TEXTURE_COLOR_4X] = textureManager.AllocTexture(va("_%i_screenColorD4x", (int)contextHandle));
-    ppTextures[PP_TEXTURE_COLOR_4X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 2, renderingHeight >> 2, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGB);
+    ppTextures[PP_TEXTURE_COLOR_4X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 2, renderingHeight >> 2, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGBColorSpace);
     ppRTs[PP_RT_4X] = RenderTarget::Create(ppTextures[PP_TEXTURE_COLOR_4X], nullptr, 0);
 
     ppTextures[PP_TEXTURE_COLOR_TEMP] = textureManager.AllocTexture(va("_%i_screenColorTemp", (int)contextHandle));
-    ppTextures[PP_TEXTURE_COLOR_TEMP]->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGB);
+    ppTextures[PP_TEXTURE_COLOR_TEMP]->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGBColorSpace);
     ppRTs[PP_RT_TEMP] = RenderTarget::Create(ppTextures[PP_TEXTURE_COLOR_TEMP], nullptr, 0);
 
     ppTextures[PP_TEXTURE_COLOR_TEMP_2X] = textureManager.AllocTexture(va("_%i_screenColorTempD2x", (int)contextHandle));
-    ppTextures[PP_TEXTURE_COLOR_TEMP_2X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 1, renderingHeight >> 1, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGB);
+    ppTextures[PP_TEXTURE_COLOR_TEMP_2X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 1, renderingHeight >> 1, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGBColorSpace);
     ppRTs[PP_RT_TEMP_2X] = RenderTarget::Create(ppTextures[PP_TEXTURE_COLOR_TEMP_2X], nullptr, 0);
 
     ppTextures[PP_TEXTURE_COLOR_TEMP_4X] = textureManager.AllocTexture(va("_%i_screenColorTempD4x", (int)contextHandle));
-    ppTextures[PP_TEXTURE_COLOR_TEMP_4X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 2, renderingHeight >> 2, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGB);
+    ppTextures[PP_TEXTURE_COLOR_TEMP_4X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 2, renderingHeight >> 2, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGBColorSpace);
     ppRTs[PP_RT_TEMP_4X] = RenderTarget::Create(ppTextures[PP_TEXTURE_COLOR_TEMP_4X], nullptr, 0);
 
     //ppTextures[PP_TEXTURE_COLOR_TEMP_4X] = textureManager.AllocTexture(va("_%i_screenColorTempD4x", (int)contextHandle));
-    //ppTextures[PP_TEXTURE_COLOR_TEMP_4X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 2, renderingHeight >> 2, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGB);
+    //ppTextures[PP_TEXTURE_COLOR_TEMP_4X]->CreateEmpty(RHI::Texture2D, renderingWidth >> 2, renderingHeight >> 2, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGBColorSpace);
     //ppRTs[PP_RT_BLUR] = RenderTarget::Create(ppTextures[PP_TEXTURE_COLOR_TEMP_4X], nullptr, 0);
 
     ppTextures[PP_TEXTURE_LINEAR_DEPTH] = textureManager.AllocTexture(va("_%i_screenLinearDepth", (int)contextHandle));
@@ -255,7 +255,7 @@ void RenderContext::InitScreenMapRT() {
 
     currentRenderTexture->Purge();
     currentRenderTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat,
-        Texture::Clamp | Texture::NoMipmaps | Texture::NonPowerOfTwo | Texture::HighPriority | Texture::SRGB);
+        Texture::Clamp | Texture::NoMipmaps | Texture::NonPowerOfTwo | Texture::HighPriority | Texture::SRGBColorSpace);
 }
 
 void RenderContext::FreeScreenMapRT() {

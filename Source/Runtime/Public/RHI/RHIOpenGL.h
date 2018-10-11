@@ -296,6 +296,7 @@ protected:
     int                     depthBits;
     int                     stencilBits;
     int                     multiSamples;
+    bool                    linearFrameBuffer;
 
     RHI::HWLimit            hwLimit;
 

@@ -356,7 +356,7 @@ public:
         Rect                safeAreaInsets;
     };
 
-    struct Settings {       
+    struct Settings {
         int                 colorBits;
         int                 alphaBits;
         int                 depthBits;
