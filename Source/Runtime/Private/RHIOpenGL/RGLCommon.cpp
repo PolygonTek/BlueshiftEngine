@@ -330,7 +330,7 @@ void OpenGLRHI::InitGL() {
         linearFrameBuffer = true;
         BE_LOG(L"Linear\n");
     } else {
-        assert(0);
+        BE_LOG(L"%i\n", encoding);
     }
 #endif
 
