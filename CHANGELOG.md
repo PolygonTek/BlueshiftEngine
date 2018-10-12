@@ -1,7 +1,7 @@
 Version History
 ---------------
 
-### 0.5.0 (work in progress)
+### 0.5.0
 - Added support for GPU instancing for static/skinned meshes
 - Added support for static batching
 - Added support for calculation tangent vectors using MikkTSpace
