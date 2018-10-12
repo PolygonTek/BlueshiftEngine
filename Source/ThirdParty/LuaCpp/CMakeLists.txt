@@ -45,14 +45,14 @@ add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
 if (USE_LUAJIT)
-    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${ENGINE_INCLUDE_DIR}/ThirdParty/luaJIT/src>)
-
     include(FindLuaJIT)
     set(LUA_LIBRARY ${LUAJIT_LIBRARY})
-else ()
-    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${ENGINE_INCLUDE_DIR}/ThirdParty/lua>)
 
+    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${ENGINE_INCLUDE_DIR}/ThirdParty/luaJIT/src>)
+else ()
     set(LUA_LIBRARY lua)
+
+    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${ENGINE_INCLUDE_DIR}/ThirdParty/lua>)
 endif ()
 
 target_link_libraries(${PROJECT_NAME} ${LUA_LIBRARY})

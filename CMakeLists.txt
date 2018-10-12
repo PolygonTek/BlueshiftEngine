@@ -3,7 +3,12 @@
 ################################################################################
 cmake_minimum_required(VERSION 3.1)
 
-cmake_policy(SET CMP0025 NEW)
+if (COMMAND cmake_policy)
+    if (POLICY CMP0025)
+        # Compiler id for Apple Clang is now AppleClang.
+        cmake_policy(SET CMP0025 NEW)
+    endif ()
+endif ()
 
 set(CMAKE_OBJECT_PATH_MAX 512)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -14,12 +19,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(CMakeDependentOption)
 include(BlueshiftCommon)
 
-option(BUILD_ENGINE "Build Blueshift Engine" OFF)
-option(BUILD_PLAYER "Build Blueshift Player" OFF)
-option(BUILD_EDITOR "Build Blueshift Editor" OFF)
+option(BUILD_RUNTIME "Build Blueshift Runtime libraies" OFF)
+option(BUILD_PLAYER "Build Blueshift Player executable" OFF)
+option(BUILD_EDITOR "Build Blueshift Editor executable" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 
-if (BUILD_ENGINE)
+if (BUILD_RUNTIME)
     set(ROOT_PROJECT_NAME Blueshift)
 
     set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
@@ -27,7 +32,7 @@ if (BUILD_ENGINE)
 elseif (BUILD_PLAYER)
     set(ROOT_PROJECT_NAME BlueshiftPlayer)
 else ()
-    message(FATAL_ERROR "Neither BUILD_ENGINE nor BUILD_PLAYER are set")
+    message(FATAL_ERROR "Neither BUILD_RUNTIME nor BUILD_PLAYER are set")
 endif ()
 
 project(${ROOT_PROJECT_NAME})
@@ -55,7 +60,7 @@ else ()
 endif ()
 
 set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
-set(VERSION_MINOR 4 CACHE INTERNAL "Project minor version number.")
+set(VERSION_MINOR 5 CACHE INTERNAL "Project minor version number.")
 set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
@@ -129,6 +134,7 @@ elseif (APPLE)
     add_compile_options("-Wno-unused-function")
     add_compile_options("-Wno-reorder")
     add_compile_options("-Wno-inconsistent-missing-override")
+    add_compile_options("-Wno-tautological-undefined-compare")
 
     if (IOS)
         add_compile_options("-DIOS")
@@ -156,6 +162,7 @@ elseif (ANDROID)
     add_compile_options("-Wparentheses-equality")
     add_compile_options("-Wlogical-not-parentheses")
     add_compile_options("-Wshift-overflow")
+    add_compile_options("-Wtautological-undefined-compare")
 endif ()
 
 ################################################################################
@@ -233,7 +240,7 @@ endforeach()
 ################################################################################
 # Sub projects
 ################################################################################
-if (BUILD_ENGINE)
+if (BUILD_RUNTIME)
     # Override subdirectory options
     set(JSONCPP_WITH_TESTS OFF CACHE "" INTERNAL FORCE)
     set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE "" INTERNAL FORCE)
@@ -264,18 +271,19 @@ if (BUILD_ENGINE)
     add_subdirectory(Source/ThirdParty/luasocket)
     add_subdirectory(Source/ThirdParty/LuaCpp)
   
-    add_subdirectory(Source/BlueshiftEngine)
+    add_subdirectory(Source/Runtime)
 
     add_subdirectory(Shaders)
 endif ()
 
 if (BUILD_PLAYER)
-    add_subdirectory(Source/BlueshiftPlayer)
+    add_subdirectory(Source/Player)
 endif ()
 
 if (BUILD_EDITOR)
+	add_subdirectory(Source/ThirdParty/mikktspace)
     add_subdirectory(Source/ThirdParty/ToolWindowManager)
-    add_subdirectory(Source/BlueshiftEditor)
+    add_subdirectory(Source/Editor)
 endif ()
 
 if (BUILD_TEST)

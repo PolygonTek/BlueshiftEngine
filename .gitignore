@@ -100,9 +100,7 @@ Build/Android/TestRenderer/app/*
 !Build/Android/TestRenderer/app/build.gradle
 Library/*
 Documents/html/*
-Source/BlueshiftEditor
-Source/Player/Data
-Source/Player/Config
+Source/Editor
 Source/ThirdParty/luaJIT/lib/
 Source/ThirdParty/luaJIT/src/*.lib
 Source/ThirdParty/luaJIT/src/*.exp

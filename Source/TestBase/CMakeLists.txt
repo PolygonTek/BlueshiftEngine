@@ -19,7 +19,7 @@ auto_source_group(${ALL_FILES})
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
-    ${ENGINE_INCLUDE_DIR}/BlueshiftEngine/Public
+    ${ENGINE_INCLUDE_DIR}/Runtime/Public
     ${ENGINE_INCLUDE_DIR}/ThirdParty
 )
 
@@ -33,7 +33,7 @@ else ()
     add_executable(${PROJECT_NAME} ${ALL_FILES})
 endif ()
 
-target_link_libraries(${PROJECT_NAME} BlueshiftEngine LuaCpp)
+target_link_libraries(${PROJECT_NAME} BlueshiftRuntime LuaCpp)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
 

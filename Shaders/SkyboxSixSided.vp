@@ -1,5 +1,5 @@
-in vec4 in_position : POSITION;
-in LOWP vec4 in_color : COLOR;
+in LOWP vec4 in_position    : POSITION;
+in LOWP vec4 in_color       : COLOR;
 
 out LOWP vec4 v2f_color;
 out MEDIUMP vec3 v2f_texCoord;
@@ -7,37 +7,16 @@ out MEDIUMP vec3 v2f_texCoord;
 uniform mat4 modelViewMatrix;
 uniform mat4 modelViewProjectionMatrix;
 
-#ifdef INSTANCED_DRAW
-    struct entityData_t {
-        vec4 worldMatrixS;
-        vec4 worldMatrixT;
-        vec4 worldMatrixR;
-        vec3 localViewOrigin;
-        mat3 localLightAxis;
-        vec4 localLightOrigin;
-        vec4 textureMatrixS;
-        vec4 textureMatrixT;
-        vec4 LOWP vertexColorScale;
-        vec4 LOWP vertexColorAdd;
-        vec4 LOWP constantColor;
-    };
+uniform vec4 localToWorldMatrixS;
+uniform vec4 localToWorldMatrixT;
+uniform vec4 localToWorldMatrixR;
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+uniform LOWP vec4 constantColor;
 
-    uniform entityData_t entityData[256];
-    #define ED entityData[gl_InstanceIDARB]
-#else
-    uniform vec4 worldMatrixS;
-    uniform vec4 worldMatrixT;
-    uniform vec4 worldMatrixR;
-    uniform vec3 localViewOrigin;
-    uniform mat3 localLightAxis;
-    uniform vec4 localLightOrigin;
-    uniform vec4 textureMatrixS;
-    uniform vec4 textureMatrixT;
-    uniform LOWP vec4 vertexColorScale;
-    uniform LOWP vec4 vertexColorAdd;
-    uniform LOWP vec4 constantColor;
-#endif
-
+uniform LOWP vec4 vertexColorScale;
+uniform LOWP vec4 vertexColorAdd;
+uniform MEDIUMP vec4 lightOrigin;
 uniform MEDIUMP float rotation;
 
 void main() {

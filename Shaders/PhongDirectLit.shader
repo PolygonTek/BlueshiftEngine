@@ -1,10 +1,11 @@
 shader "Lit/PhongDirectLit" {
     litSurface
-    inheritProperties "Phong.shader"
+    inheritProperties "Phong"
     
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
     generateParallelShadowVersion
     generateSpotShadowVersion
     generatePointShadowVersion

@@ -65,7 +65,7 @@ shader "SSAO" {
 			viewPos.z = depthToViewZ(depth);
 			viewPos.xy = viewPos.z * v2f_texCoord1.xy;
 
-			float distanceScale = min((4.0 - viewPos.z) / 100.0, 1.0);
+			float distanceScale = min((0.01 - viewPos.z) / 100.0, 1.0);
 
 			float vRayLen = radius * distanceScale;
 			vec2 vRange = vec2(validRange, validRange * 0.5) * distanceScale;

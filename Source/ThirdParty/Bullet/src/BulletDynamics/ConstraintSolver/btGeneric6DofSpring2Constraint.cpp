@@ -729,6 +729,21 @@ int btGeneric6DofSpring2Constraint::get_limit_motor_info2(
 	if (limot->m_enableMotor && limot->m_servoMotor)
 	{
 		btScalar error = limot->m_currentPosition - limot->m_servoTarget;
+		btScalar curServoTarget = limot->m_servoTarget;
+		if (rotational)
+		{
+			if (error > SIMD_PI)
+			{
+				error -= SIMD_2_PI;
+				curServoTarget +=SIMD_2_PI;
+			}
+			if (error < -SIMD_PI)
+			{
+				error += SIMD_2_PI;
+				curServoTarget -=SIMD_2_PI;
+			}
+		}
+
 		calculateJacobi(limot,transA,transB,info,srow,ax1,rotational,rotAllowed);
 		btScalar targetvelocity = error<0 ? -limot->m_targetVelocity : limot->m_targetVelocity;
 		btScalar tag_vel = -targetvelocity;
@@ -739,13 +754,13 @@ int btGeneric6DofSpring2Constraint::get_limit_motor_info2(
 			btScalar hiLimit;
 			if(limot->m_loLimit > limot->m_hiLimit)
 			{
-				lowLimit = error > 0 ? limot->m_servoTarget : -SIMD_INFINITY;
-				hiLimit  = error < 0 ? limot->m_servoTarget :  SIMD_INFINITY;
+				lowLimit = error > 0 ? curServoTarget : -SIMD_INFINITY;
+				hiLimit  = error < 0 ? curServoTarget :  SIMD_INFINITY;
 			}
 			else
 			{
-				lowLimit = error > 0 && limot->m_servoTarget>limot->m_loLimit ? limot->m_servoTarget : limot->m_loLimit;
-				hiLimit  = error < 0 && limot->m_servoTarget<limot->m_hiLimit ? limot->m_servoTarget : limot->m_hiLimit;
+				lowLimit = error > 0 && curServoTarget>limot->m_loLimit ? curServoTarget : limot->m_loLimit;
+				hiLimit  = error < 0 && curServoTarget<limot->m_hiLimit ? curServoTarget : limot->m_hiLimit;
 			}
 			mot_fact = getMotorFactor(limot->m_currentPosition, lowLimit, hiLimit, tag_vel, info->fps * limot->m_motorERP);
 		} 
@@ -782,6 +797,12 @@ int btGeneric6DofSpring2Constraint::get_limit_motor_info2(
 		btScalar cfm = BT_ZERO;
 		btScalar mA = BT_ONE / m_rbA.getInvMass();
 		btScalar mB = BT_ONE / m_rbB.getInvMass();
+		if (rotational) {
+			btScalar rrA = (m_calculatedTransformA.getOrigin() - transA.getOrigin()).length2();
+			btScalar rrB = (m_calculatedTransformB.getOrigin() - transB.getOrigin()).length2();
+			if (m_rbA.getInvMass()) mA = mA * rrA + 1 / (m_rbA.getInvInertiaTensorWorld() * ax1).length();
+			if (m_rbB.getInvMass()) mB = mB * rrB + 1 / (m_rbB.getInvInertiaTensorWorld() * ax1).length();
+		}
 		btScalar m = mA > mB ? mB : mA;
 		btScalar angularfreq = sqrt(ks / m);
 
@@ -800,7 +821,18 @@ int btGeneric6DofSpring2Constraint::get_limit_motor_info2(
 		btScalar fd = -kd * (vel) * (rotational ? -1 : 1) * dt;
 		btScalar f = (fs+fd);
 
-		info->m_constraintError[srow] = (vel + f * (rotational ? -1 : 1)) ;
+		// after the spring force affecting the body(es) the new velocity will be
+		// vel + f / m * (rotational ? -1 : 1)
+		// so in theory this should be set here for m_constraintError
+		// (with m_constraintError we set a desired velocity for the affected body(es))
+		// however in practice any value is fine as long as it is greater then the "proper" velocity,
+		// because the m_lowerLimit and the m_upperLimit will determinate the strength of the final pulling force
+		// so it is much simpler (and more robust) just to simply use inf (with the proper sign)
+		// you may also wonder what if the current velocity (vel) so high that the pulling force will not change its direction (in this iteration)
+		// will we not request a velocity with the wrong direction ?
+		// and the answare is not, because in practice during the solving the current velocity is subtracted from the m_constraintError
+		// so the sign of the force that is really matters
+		info->m_constraintError[srow] = (rotational ? -1 : 1) * (f < 0 ? -SIMD_INFINITY : SIMD_INFINITY);
 
 		btScalar minf = f < fd ? f : fd;
 		btScalar maxf = f < fd ? fd : f;
@@ -998,13 +1030,49 @@ void btGeneric6DofSpring2Constraint::setTargetVelocity(int index, btScalar veloc
 		m_angularLimits[index - 3].m_targetVelocity = velocity;
 }
 
-void btGeneric6DofSpring2Constraint::setServoTarget(int index, btScalar target)
+
+
+void btGeneric6DofSpring2Constraint::setServoTarget(int index, btScalar targetOrg)
 {
 	btAssert((index >= 0) && (index < 6));
 	if (index<3)
-		m_linearLimits.m_servoTarget[index] = target;
+	{
+		m_linearLimits.m_servoTarget[index] = targetOrg;
+	}
 	else
+	{
+		//wrap between -PI and PI, see also
+		//https://stackoverflow.com/questions/4633177/c-how-to-wrap-a-float-to-the-interval-pi-pi
+
+		btScalar target = targetOrg+SIMD_PI;
+		if (1)
+		{
+			btScalar m = target - SIMD_2_PI * floor(target/SIMD_2_PI);
+			// handle boundary cases resulted from floating-point cut off:
+			{
+				if (m>=SIMD_2_PI)
+				{
+					target = 0;
+				} else
+				{
+					if (m<0 )
+					{
+						if (SIMD_2_PI+m == SIMD_2_PI)
+							target = 0;
+						else
+							target = SIMD_2_PI+m;
+					}
+					else
+					{
+						target = m;
+					}
+				}
+			}
+			target -= SIMD_PI;
+		}
+		
 		m_angularLimits[index - 3].m_servoTarget = target;
+	}
 }
 
 void btGeneric6DofSpring2Constraint::setMaxMotorForce(int index, btScalar force)

@@ -1,25 +1,34 @@
-in vec4 in_position : POSITION;
-in vec2 in_st : TEXCOORD0;
+in HIGHP vec4 in_position   : POSITION;
+in MEDIUMP vec2 in_st       : TEXCOORD0;
 
-out vec2 v2f_texCoord;
+out MEDIUMP vec2 v2f_texCoord;
 
-uniform mat4 modelViewProjectionMatrix;
-
-#ifdef INSTANCED_DRAW
-	struct entityData_t {
-		vec4 textureMatrixS;
-		vec4 textureMatrixT;
-	};
-
-	uniform entityData_t entityData[256];
-	#define ED entityData[gl_InstanceIDARB]
+#if defined(INSTANCING)
+$include "Instancing.vp"
 #else
-	uniform vec4 textureMatrixS;
-	uniform vec4 textureMatrixT;
+    uniform vec4 localToWorldMatrixS;
+    uniform vec4 localToWorldMatrixT;
+    uniform vec4 localToWorldMatrixR;
 #endif
 
+#ifdef GPU_SKINNING
+    #if defined(GPU_SKINNING_1_WEIGHTS)
+        $include "SkinningMatrix1.glsl"
+    #elif defined(GPU_SKINNING_4_WEIGHTS)
+        $include "SkinningMatrix4.glsl"
+    #elif defined(GPU_SKINNING_8_WEIGHTS)
+        $include "SkinningMatrix8.glsl"
+    #endif
+#endif
+
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+
+uniform mat4 viewProjectionMatrix;
+uniform mat4 modelViewProjectionMatrix;
+
 void main() {
-	vec4 localVertex;
+	vec4 localPos;
 
 #ifdef PERFORATED
 	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
@@ -27,10 +36,19 @@ void main() {
 #endif
 
 #ifdef GPU_SKINNING
-	skinningMatrix(in_position, localVertex);
+	skinningMatrix(in_position, localPos);
 #else
-	localVertex = in_position;
+	localPos = in_position;
 #endif
 
-	gl_Position = modelViewProjectionMatrix * localVertex;
+#ifdef INSTANCING
+    vec4 worldPos;
+    worldPos.x = dot(localToWorldMatrixS, localPos);
+    worldPos.y = dot(localToWorldMatrixT, localPos);
+    worldPos.z = dot(localToWorldMatrixR, localPos);
+    worldPos.w = 1.0;
+    gl_Position = viewProjectionMatrix * worldPos;
+#else
+    gl_Position = modelViewProjectionMatrix * localPos;
+#endif
 }

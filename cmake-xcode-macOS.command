@@ -10,4 +10,4 @@ if [ -d "xcode-macOS" ]; then
 fi
 mkdir xcode-macOS
 cd xcode-macOS
-cmake -DBUILD_ENGINE=1 -DBUILD_PLAYER=1 -G "Xcode" ../..
+cmake -DBUILD_RUNTIME=1 -DBUILD_PLAYER=1 -G "Xcode" ../..

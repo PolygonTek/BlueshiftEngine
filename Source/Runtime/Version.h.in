@@ -1,0 +1,7 @@
+// Generated automatically by cmake
+// Don't modify this file manually !
+
+#define B_ENGINE_VERSION_MAJOR ${VERSION_MAJOR}
+#define B_ENGINE_VERSION_MINOR ${VERSION_MINOR}
+#define B_ENGINE_VERSION_PATCH ${VERSION_PATCH}
+

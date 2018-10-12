@@ -1,11 +1,12 @@
-shader "depth" {
-	generatePerforatedVersion
-	generateGpuSkinningVersion
-
-	glsl_vp {
-		$include "depth.vp"
-	}
-	glsl_fp {
-		$include "depth.fp"
-	}
+shader "Depth" {
+    generatePerforatedVersion
+    generateGpuSkinningVersion
+    generateGpuInstancingVersion
+    
+    glsl_vp {
+        $include "Depth.vp"
+    }
+    glsl_fp {
+        $include "Depth.fp"
+    }
 }

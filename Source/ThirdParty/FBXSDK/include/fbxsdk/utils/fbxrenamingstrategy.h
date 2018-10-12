@@ -1,6 +1,6 @@
 /****************************************************************************************
  
-   Copyright (C) 2015 Autodesk, Inc.
+   Copyright (C) 2017 Autodesk, Inc.
    All rights reserved.
  
    Use of this software is subject to the terms of the Autodesk license agreement
@@ -26,7 +26,7 @@ class FbxNode;
 /** This base class is an abstract implementation of a renaming strategy for avoiding name clashes.
   * An implementation of a reader (FbxReader) or writer (FbxWriter) class must call a concrete implementation
   * of "FbxRenamingStrategyInterface::Rename()" every time a name is imported or exported to avoid name clashes.
-  * Any class deriving from FbxRenamingStrategyBase must implement FbxRenamingStrategyInterface::Clear(),
+  * Any class deriving from FbxRenamingStrategyInterface must implement FbxRenamingStrategyInterface::Clear(),
   * FbxRenamingStrategyInterface::Rename(), and FbxRenamingStrategyInterface::Clone().
   * \nosubgrouping
   * \see FbxNameHandler FbxRenamingStrategyNumber
@@ -56,8 +56,8 @@ public:
 };
 
 /** Implements a renaming strategy that resolves name clashes by adding number postfixes.
-  * For example, when there are three objects with the same names "MyObject",
-  * and they will be renamed to "MyObject", "MyObject1" and "MyObject2".
+  * For example, when there are three objects with the same name "MyObject",
+  * they will be renamed to "MyObject", "MyObject1" and "MyObject2".
   * \nosubgrouping
   * \see FbxNameHandler FbxRenamingStrategyBase
   */
@@ -108,6 +108,9 @@ private:
 /** The FbxRenamingStrategy object can be set to rename all the objects in a scene.
   * It can remove name clashing, remove illegal characters, manage namespaces and manage backward compatibility.
   * It is better to choose FbxSceneRenamer instead of this class to simplify the usage.
+  * \remark This class implements a legacy renaming strategy where unsupported characters are replaced with the
+  *         underscore character. Improved renaming strategies solvers can be implemented using the functions provided
+  *         by the FbxRenamingStrategyUtils class and the FbxRenamingStrategyBase.
   * \nosubgrouping
   * \see FbxSceneRenamer
   */
@@ -147,7 +150,7 @@ public:
       */
     virtual FbxRenamingStrategyInterface* Clone();
 
-	/** \enum EClashType
+    /** \enum EClashType
       * - \e eNameClashAuto
       * - \e eNameClashType1
       * - \e eNameClashType2
@@ -162,19 +165,7 @@ public:
     /** Setup the strategy to perform this algorithm
       * \param pType 
       */
-    void SetClashSoverType(EClashType pType);
-
-    /** Returns a name with its prefix removed.
-     * \param pName    A name containing a prefix.
-     * \return         The part of pName following the "::"
-     */
-    static char* NoPrefixName (const char* pName);
-
-    /** Returns a name with its prefix removed.
-    * \param pName    A name containing a prefix.
-    * \return         The part of pName following the "::"
-    */
-    static char* NoPrefixName (FbxString& pName);
+    void SetClashSolverType(EClashType pType);
 
     /** Get the namespace of the last renamed object.
      * \return     Char pointer to the namespace.
@@ -209,12 +200,14 @@ public:
     /** Recursively renames all the unparented namespaced objects (Prefix mode) starting from this node.
      * \param pNode       Parent node.
      * \param pIsRoot     The root node.
+     * \return            \c true if the "_NSclash" have been added to one or more node.
      * \remarks           This function adds "_NSclash" when it encounters an unparented namespaced object.
      */
     virtual bool RenameUnparentNameSpace(FbxNode* pNode, bool pIsRoot = false);
 
     /** Recursively removes all the unparented namespaced "key" starting from this node.
      * \param pNode     Parent node.
+     * \return          \c true if successfully removed the "_NSclash" from one or more nodes.
      * \remarks         This function removes "_NSclash" when encountered. This is the opposite from RenameUnparentNameSpace.
      */
     virtual bool RemoveImportNameSpaceClash(FbxNode* pNode);
@@ -229,6 +222,8 @@ public:
      * \param pNode        Current node.
      * \param OldNS        The old namespace to be replaced with the NewNs.
      * \param NewNS        The new namespace to replace OldNs.
+     * \return             \c true if successfull
+     * \remarks            This function only replaces the first occurence of OldNS with NewNS.
      */
     virtual bool PropagateNameSpaceChange(FbxNode* pNode, FbxString OldNS, FbxString NewNS);
 
@@ -256,15 +251,15 @@ protected:
         int mInstanceCount;        
     };
 
-    FbxCharPtrSet		mStringNameArray;
-    FbxArray<NameCell*>	mExistingNsList;
-    bool				mOnCreationRun;
-    bool				mCaseSensitive;
-    bool				mReplaceNonAlphaNum;
-    bool				mFirstNotNum;
-    FbxString			mNameSpace;
-    FbxString			mInNameSpaceSymbol; //symbol identifying a name space
-    FbxString			mOutNameSpaceSymbol; 
+    FbxCharPtrSet       mStringNameArray;
+    FbxArray<NameCell*> mExistingNsList;
+    bool                mOnCreationRun;
+    bool                mCaseSensitive;
+    bool                mReplaceNonAlphaNum;
+    bool                mFirstNotNum;
+    FbxString           mNameSpace;
+    FbxString           mInNameSpaceSymbol; //symbol identifying a name space
+    FbxString           mOutNameSpaceSymbol; 
 #endif /* !DOXYGEN_SHOULD_SKIP_THIS *****************************************************************************************/
 };
 
@@ -344,10 +339,10 @@ public:
 *****************************************************************************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 private:
-    void ResolveNameClashing(    bool pFromFbx, bool pIgnoreNS, bool pIsCaseSensitive,
-                                bool pReplaceNonAlphaNum, bool pFirstNotNum,
-                                FbxString pInNameSpaceSymbol, FbxString pOutNameSpaceSymbol,
-                                bool pNoUnparentNS/*for MB < 7.5*/, bool pRemoveNameSpaceClash);
+    void ResolveNameClashing(bool pFromFbx, bool pIgnoreNS, bool pIsCaseSensitive,
+                             bool pReplaceNonAlphaNum, bool pFirstNotNum,
+                             FbxString pInNameSpaceSymbol, FbxString pOutNameSpaceSymbol,
+                             bool pNoUnparentNS/*for MB < 7.5*/, bool pRemoveNameSpaceClash);
 
     FbxRenamingStrategyInterface* mNodeRenamingStrategy;
     FbxScene* mScene;

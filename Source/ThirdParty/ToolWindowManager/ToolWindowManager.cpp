@@ -533,7 +533,7 @@ void ToolWindowManager::raiseToolWindow(QWidget *toolWindow)
   // if the parent is a ToolWindowManagerArea, switch tabs
   QWidget *parent = toolWindow->parentWidget();
   ToolWindowManagerArea *area = qobject_cast<ToolWindowManagerArea *>(parent);
-  if(area == NULL)
+  if(area == NULL && parent)
     parent = parent->parentWidget();
 
   area = qobject_cast<ToolWindowManagerArea *>(parent);
@@ -748,6 +748,7 @@ void ToolWindowManager::simplifyLayout()
       }
       // QTimer::singleShot(1000, area, SLOT(deleteLater()));
       area->deleteLater();
+      simplifyLayout();
     }
   }
 }
@@ -893,7 +894,10 @@ void ToolWindowManager::updateDragPosition()
     // cursor and pick an area to map to.
     if(hoverWrapper)
     {
-      QSplitter *splitter = qobject_cast<QSplitter *>(hoverWrapper->layout()->itemAt(0)->widget());
+      QLayout *layout = hoverWrapper->layout();
+      QLayoutItem *layoutitem = layout ? layout->itemAt(0) : NULL;
+      QWidget *layoutwidget = layoutitem ? layoutitem->widget() : NULL;
+      QSplitter *splitter = qobject_cast<QSplitter *>(layoutwidget);
 
       while(splitter)
       {

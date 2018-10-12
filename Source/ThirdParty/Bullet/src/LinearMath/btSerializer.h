@@ -26,7 +26,7 @@ subject to the following restrictions:
 
 
 
-///only the 32bit versions for now
+
 extern char sBulletDNAstr[];
 extern int sBulletDNAlen;
 extern char sBulletDNAstr64[];
@@ -62,7 +62,8 @@ enum	btSerializationFlags
 {
 	BT_SERIALIZE_NO_BVH = 1,
 	BT_SERIALIZE_NO_TRIANGLEINFOMAP = 2,
-	BT_SERIALIZE_NO_DUPLICATE_ASSERT = 4
+	BT_SERIALIZE_NO_DUPLICATE_ASSERT = 4,
+	BT_SERIALIZE_CONTACT_MANIFOLDS = 8,
 };
 
 class	btSerializer
@@ -115,6 +116,7 @@ public:
 
 
 #define BT_MULTIBODY_CODE       BT_MAKE_ID('M','B','D','Y')
+#define BT_MB_LINKCOLLIDER_CODE BT_MAKE_ID('M','B','L','C')
 #define BT_SOFTBODY_CODE		BT_MAKE_ID('S','B','D','Y')
 #define BT_COLLISIONOBJECT_CODE BT_MAKE_ID('C','O','B','J')
 #define BT_RIGIDBODY_CODE		BT_MAKE_ID('R','B','D','Y')
@@ -127,8 +129,8 @@ public:
 #define BT_SBMATERIAL_CODE		BT_MAKE_ID('S','B','M','T')
 #define BT_SBNODE_CODE			BT_MAKE_ID('S','B','N','D')
 #define BT_DYNAMICSWORLD_CODE	BT_MAKE_ID('D','W','L','D')
+#define BT_CONTACTMANIFOLD_CODE BT_MAKE_ID('C','O','N','T')
 #define BT_DNA_CODE				BT_MAKE_ID('D','N','A','1')
-
 
 struct	btPointerUid
 {
@@ -391,7 +393,8 @@ public:
 
 
 		btDefaultSerializer(int totalSize=0, unsigned char*	buffer=0)
-			:m_totalSize(totalSize),
+			:m_uniqueIdGenerator(0),
+			m_totalSize(totalSize),
 			m_currentSize(0),
 			m_dna(0),
 			m_dnaLength(0),
@@ -446,6 +449,26 @@ public:
 				btAlignedFree(m_dna);
 		}
 
+		static int getMemoryDnaSizeInBytes()
+		{
+			const bool VOID_IS_8 = ((sizeof(void*) == 8));
+
+			if (VOID_IS_8)
+			{
+				return sBulletDNAlen64;
+			}
+			return sBulletDNAlen;
+		}
+		static const char* getMemoryDna()
+		{
+			const bool VOID_IS_8 = ((sizeof(void*) == 8));
+			if (VOID_IS_8)
+			{
+				return (const char*)sBulletDNAstr64;
+			}
+			return (const char*)sBulletDNAstr;
+		}
+
 		void	insertHeader()
 		{
 			writeHeader(m_buffer);
@@ -484,7 +507,7 @@ public:
 
 			buffer[9] = '2';
 			buffer[10] = '8';
-			buffer[11] = '4';
+			buffer[11] = '8';
 
 		}
 
@@ -541,6 +564,7 @@ public:
 
 		virtual	void*	getUniquePointer(void*oldPtr)
 		{
+			btAssert(m_uniqueIdGenerator >= 0);
 			if (!oldPtr)
 				return 0;
 

@@ -1,36 +1,54 @@
-in vec4 in_position : POSITION;
-in MEDIUMP vec2 in_st : TEXCOORD0;
+in HIGHP vec4 in_position   : POSITION;
+in MEDIUMP vec2 in_st       : TEXCOORD0;
 
 out MEDIUMP vec2 v2f_texCoord;
 
-uniform mat4 modelViewProjectionMatrix;
-
-#ifdef INSTANCED_DRAW
-	struct entityData_t {
-		vec4 textureMatrixS;
-		vec4 textureMatrixT;
-	};
-
-	uniform entityData_t entityData[256];
-	#define ED entityData[gl_InstanceIDARB]
+#if defined(INSTANCING)
+$include "Instancing.vp"
 #else
-	uniform vec4 textureMatrixS;
-	uniform vec4 textureMatrixT;
-#endif
-
-void main() {
-	vec4 localVertex;
-
-#ifdef PERFORATED
-	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
-	v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+    uniform vec4 localToWorldMatrixS;
+    uniform vec4 localToWorldMatrixT;
+    uniform vec4 localToWorldMatrixR;
 #endif
 
 #ifdef GPU_SKINNING
-	skinningMatrix(in_position, localVertex);
-#else
-	localVertex = in_position;
+    #if defined(GPU_SKINNING_1_WEIGHTS)
+        $include "SkinningMatrix1.glsl"
+    #elif defined(GPU_SKINNING_4_WEIGHTS)
+        $include "SkinningMatrix4.glsl"
+    #elif defined(GPU_SKINNING_8_WEIGHTS)
+        $include "SkinningMatrix8.glsl"
+    #endif
 #endif
 
-	gl_Position = modelViewProjectionMatrix * localVertex;
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+
+uniform mat4 viewProjectionMatrix;
+uniform mat4 modelViewProjectionMatrix;
+
+void main() {
+    vec4 localPos;
+
+#ifdef PERFORATED
+    v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
+    v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+#endif
+
+#ifdef GPU_SKINNING
+    skinningMatrix(in_position, localPos);
+#else
+    localPos = in_position;
+#endif
+
+#ifdef INSTANCING
+    vec4 worldPos;
+    worldPos.x = dot(localToWorldMatrixS, localPos);
+    worldPos.y = dot(localToWorldMatrixT, localPos);
+    worldPos.z = dot(localToWorldMatrixR, localPos);
+    worldPos.w = 1.0;
+    gl_Position = viewProjectionMatrix * worldPos;
+#else
+    gl_Position = modelViewProjectionMatrix * localPos;
+#endif
 }

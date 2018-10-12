@@ -342,7 +342,7 @@ static void ShutdownInstance() {
     app.FreeResources();
 
     if (mainContext) {
-        BE1::rhi.DeleteRenderTarget(mainRenderTarget);
+        BE1::rhi.DestroyRenderTarget(mainRenderTarget);
 
         BE1::rhi.DestroyContext(mainContext);
     }
@@ -398,15 +398,16 @@ void android_main(android_app *appState) {
         }
 
         if (surfaceCreated && !suspended) {
-            int backingWidth, backingHeight;
-            BE1::rhi.GetContextSize(mainContext, nullptr, nullptr, &backingWidth, &backingHeight);
-            if (backingWidth != currentWindowWidth || backingHeight != currentWindowHeight) {
-                WindowSizeChanged(backingWidth, backingHeight);
+            BE1::RHI::DisplayMetrics displayMetrics;
+            BE1::rhi.GetDisplayMetrics(mainContext, &displayMetrics);
+
+            if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {
+                WindowSizeChanged(displayMetrics.backingWidth, displayMetrics.backingHeight);
             }
 
             app.RunFrame();
 
-            BE1::rhi.DisplayContext(mainContext);           
+            BE1::rhi.DisplayContext(mainContext);
         }
     }
 }

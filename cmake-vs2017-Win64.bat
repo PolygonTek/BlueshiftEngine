@@ -9,7 +9,7 @@ cd "Build"
 if exist "msvc2017" rd "msvc2017" /s /q
 md msvc2017
 cd msvc2017
-cmake -DBUILD_ENGINE=1 -DBUILD_PLAYER=1 -G "Visual Studio 15 2017 Win64" ..\..
+cmake -DBUILD_RUNTIME=1 -DBUILD_PLAYER=1 -G "Visual Studio 15 2017 Win64" ..\..
 @echo:
 @echo Solution created in %~dp0Build\msvc2017
 @echo:

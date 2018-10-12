@@ -2,7 +2,7 @@ in vec4 in_position : POSITION;
 in vec3 in_normal : NORMAL;
 in vec4 in_color : COLOR;
 in vec2 in_st : TEXCOORD0;
-in vec4 in_tangent : TEXCOORD1;
+in vec4 in_tangent : TANGENT;
 
 out vec3 v2f_color;
 out vec2 v2f_texCoord;
@@ -12,32 +12,29 @@ out vec3 v2f_toWorldS;
 out vec3 v2f_toWorldT;
 out vec3 v2f_toWorldR;
 
-#ifdef INSTANCED_DRAW
-	struct entityData_t {
-		vec4 worldMatrixS;
-		vec4 worldMatrixT;
-		vec4 worldMatrixR;
-		vec3 localViewOrigin;
-		vec4 textureMatrixS;
-		vec4 textureMatrixT;
-		vec4 vertexColorScale;
-		vec4 vertexColorAdd;
-		vec4 constantColor;
-	};
-
-	uniform entityData_t entityData[256];
-	#define ED entityData[gl_InstanceIDARB]
+#if defined(INSTANCING)
+$include "Instancing.vp"
 #else
-	uniform vec4 worldMatrixS;
-	uniform vec4 worldMatrixT;
-	uniform vec4 worldMatrixR;
-	uniform vec3 localViewOrigin;
-	uniform vec4 textureMatrixS;
-	uniform vec4 textureMatrixT;
-	uniform vec4 vertexColorScale;
-	uniform vec4 vertexColorAdd;
+	uniform vec4 localToWorldMatrixS;
+	uniform vec4 localToWorldMatrixT;
+	uniform vec4 localToWorldMatrixR;
 	uniform vec4 constantColor;
 #endif
+
+#ifdef GPU_SKINNING
+    #if defined(GPU_SKINNING_1_WEIGHTS)
+        $include "SkinningMatrix1.glsl"
+    #elif defined(GPU_SKINNING_4_WEIGHTS)
+        $include "SkinningMatrix4.glsl"
+    #elif defined(GPU_SKINNING_8_WEIGHTS)
+        $include "SkinningMatrix8.glsl"
+    #endif
+#endif
+
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+uniform vec4 vertexColorScale;
+uniform vec4 vertexColorAdd;
 
 uniform mat4 modelViewProjectionMatrix;
 uniform mat4 modelViewMatrixTranspose;
@@ -60,9 +57,9 @@ void main() {
 
 	v2f_eyeVector.xyz = E * TBN;
 
-	v2f_toWorldS = worldMatrixS.xyz * TBN;
-	v2f_toWorldT = worldMatrixT.xyz * TBN;
-	v2f_toWorldR = worldMatrixR.xyz * TBN;
+	v2f_toWorldS = localToWorldMatrixS.xyz * TBN;
+	v2f_toWorldT = localToWorldMatrixT.xyz * TBN;
+	v2f_toWorldR = localToWorldMatrixR.xyz * TBN;
 
 	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
 	v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));

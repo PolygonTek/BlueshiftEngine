@@ -5,10 +5,10 @@ android {
     defaultConfig {
         applicationId 'com.polygontek.TestRenderer'
         minSdkVersion 19
-        targetSdkVersion 24
+        targetSdkVersion 26
         externalNativeBuild {
             cmake {
-                arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_static', '-DBUILD_ENGINE=1', '-DBUILD_TEST=1'
+                arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_shared', '-DBUILD_RUNTIME=1', '-DBUILD_TEST=1'
             }
         }
     }

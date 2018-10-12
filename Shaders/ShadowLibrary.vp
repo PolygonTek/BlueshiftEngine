@@ -2,19 +2,16 @@ out vec4 v2f_shadowVec;
 
 uniform mat4 shadowProjMatrix;
 
-void ShadowTransform(vec4 worldVertex) {
+void ShadowTransform(vec4 worldPos) {
 #ifdef USE_SHADOW_CASCADE
-	v2f_shadowVec = worldVertex;
+    v2f_shadowVec = worldPos;
 #else
-	v2f_shadowVec = shadowProjMatrix * worldVertex;
+    v2f_shadowVec = shadowProjMatrix * worldPos;
 #endif
 }
 
 // output value is world light direction vector
-void ShadowCubeTransform(vec4 localVertex, vec3 localLightOrigin, vec3 worldMatrixS, vec3 worldMatrixT, vec3 worldMatrixR) {
-	vec3 lightVec = localVertex.xyz - localLightOrigin;
-	v2f_shadowVec.x = dot(worldMatrixS, lightVec);
-	v2f_shadowVec.y = dot(worldMatrixT, lightVec);
-	v2f_shadowVec.z = dot(worldMatrixR, lightVec);
-	v2f_shadowVec.w = 1.0;
+void ShadowCubeTransform(vec3 worldL) {
+    v2f_shadowVec.xyz = -worldL;
+    v2f_shadowVec.w = 1.0;
 }

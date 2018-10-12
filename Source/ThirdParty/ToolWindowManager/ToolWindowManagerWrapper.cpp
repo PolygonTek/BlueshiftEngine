@@ -186,7 +186,7 @@ void ToolWindowManagerWrapper::closeEvent(QCloseEvent *event)
     if(m_manager->toolWindowProperties(toolWindow) & ToolWindowManager::HideOnClose)
       m_manager->hideToolWindow(toolWindow);
     else
-      m_manager->removeToolWindow(toolWindow);
+      m_manager->removeToolWindow(toolWindow, true);
   }
 }
 
@@ -443,7 +443,6 @@ QRect ToolWindowManagerWrapper::titleRect()
 
 QVariantMap ToolWindowManagerWrapper::saveState()
 {
-  m_manager->simplifyLayout();
   if(layout()->count() > 2)
   {
     qWarning("too many children for wrapper");

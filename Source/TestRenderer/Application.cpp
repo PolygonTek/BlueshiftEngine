@@ -118,9 +118,9 @@ void Application::LoadResources() {
     streamBuffer = BE1::rhi.CreateBuffer(BE1::RHI::VertexBuffer, BE1::RHI::Stream, 0);
 
     const Vertex3D verts[] = {
-        { BE1::Vec3(0.0f,  288.7f, 0), BE1::Vec2(0.5,    1.0), 0x00FFFFFF },
-        { BE1::Vec3(-250.0f, -144.3f, 0), BE1::Vec2(0.067,  0.25), 0x00FFFFFF },
-        { BE1::Vec3(250.0f, -144.3f, 0), BE1::Vec2(0.933,  0.25), 0x00FFFFFF }
+        { BE1::Vec3(0.0f, 288.7f, 0), BE1::Vec2(0.5, 1.0), 0x00FFFFFF },
+        { BE1::Vec3(-250.0f, -144.3f, 0), BE1::Vec2(0.067, 0.25), 0x00FFFFFF },
+        { BE1::Vec3(250.0f, -144.3f, 0), BE1::Vec2(0.933, 0.25), 0x00FFFFFF }
     };
 
     defaultVertexBuffer = BE1::rhi.CreateBuffer(BE1::RHI::VertexBuffer, BE1::RHI::Static, sizeof(Vertex3D) * COUNT_OF(verts), 0, verts);
@@ -149,12 +149,12 @@ void Application::LoadResources() {
 }
     
 void Application::FreeResources() {
-    BE1::rhi.DeleteTexture(defaultTexture);
-    BE1::rhi.DeleteShader(defaultShader);
-    BE1::rhi.DeleteBuffer(defaultVertexBuffer);
-    BE1::rhi.DeleteVertexFormat(vertex2DFormat);
-    BE1::rhi.DeleteVertexFormat(vertex3DFormat);
-    BE1::rhi.DeleteBuffer(streamBuffer);
+    BE1::rhi.DestroyTexture(defaultTexture);
+    BE1::rhi.DestroyShader(defaultShader);
+    BE1::rhi.DestroyBuffer(defaultVertexBuffer);
+    BE1::rhi.DestroyVertexFormat(vertex2DFormat);
+    BE1::rhi.DestroyVertexFormat(vertex3DFormat);
+    BE1::rhi.DestroyBuffer(streamBuffer);
 }
 
 BE1::RHI::Handle Application::CreateRenderTarget(const BE1::RHI::Handle contextHandle) {
@@ -200,7 +200,7 @@ void Application::DrawToRenderTarget(BE1::RHI::Handle renderTargetHandle, float 
     BE1::rhi.SetCullFace(BE1::RHI::NoCull);
     
     BE1::rhi.BindShader(defaultShader);
-    BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantLocation(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
+    BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantIndex(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
     BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(defaultShader, "baseMap"), defaultTexture);
     
     BE1::rhi.BindBuffer(BE1::RHI::VertexBuffer, defaultVertexBuffer);
@@ -216,35 +216,36 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     
     DrawToRenderTarget(renderTargetHandle, t);
 
-    BE1::rhi.GetContextSize(contextHandle, NULL, NULL, &screenWidth, &screenHeight);
+    BE1::RHI::DisplayMetrics displayMetrics;
+    BE1::rhi.GetDisplayMetrics(contextHandle, &displayMetrics);
     
-    BE1::Rect rect = BE1::Rect(0, 0, screenWidth, screenHeight);
+    BE1::Rect rect = BE1::Rect(0, 0, displayMetrics.screenWidth, displayMetrics.screenHeight);
     BE1::rhi.SetViewport(rect);
-    
+
     BE1::Mat4 modelMatrix = BE1::Rotation(BE1::Vec3(0, 0, 0), BE1::Vec3(0, 0, 1), t * 40.0f).ToMat4();
 
     BE1::Mat4 projMatrix;
-    projMatrix.SetOrtho(-screenWidth * 0.5f, screenWidth * 0.5f, -screenHeight * 0.5f, screenHeight * 0.5f, -1, 1);
+    projMatrix.SetOrtho(-displayMetrics.screenWidth * 0.5f, displayMetrics.screenWidth * 0.5f, -screenHeight * 0.5f, screenHeight * 0.5f, -1, 1);
     
     modelViewProjMatrix = projMatrix * modelMatrix;
 
     BE1::rhi.SetStateBits(BE1::RHI::ColorWrite | BE1::RHI::AlphaWrite);
     BE1::rhi.Clear(BE1::RHI::ColorBit | BE1::RHI::DepthBit, BE1::Color4(0.5f, 0.5f, 0.5f, 0), 0, 0);
     BE1::rhi.SetCullFace(BE1::RHI::NoCull);
-        
+
+    /*BE1::rhi.BindShader(clipRectShader);
+    BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(clipRectShader, "baseMap"), defaultTexture);
+
+    DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);*/
+
     BE1::rhi.BindShader(defaultShader);
-    BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantLocation(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
+    BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantIndex(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
     BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(defaultShader, "baseMap"), renderTargetTexture);
 
     BE1::rhi.BindBuffer(BE1::RHI::VertexBuffer, defaultVertexBuffer);
     BE1::rhi.SetVertexFormat(vertex3DFormat);
     BE1::rhi.SetStreamSource(0, defaultVertexBuffer, 0, sizeof(Vertex3D));
     BE1::rhi.DrawArrays(BE1::RHI::TrianglesPrim, 0, 3);
-
-    /*BE1::rhi.BindShader(clipRectShader);
-    BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(clipRectShader, "baseMap"), defaultTexture);
-
-    DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);*/
 
     BE1::rhi.SwapBuffers();
 }

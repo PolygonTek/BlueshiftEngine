@@ -2,9 +2,12 @@ Blueshift Game Engine
 =======================
 
 [![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)]()
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/9m56bx55uxe88rgs/branch/master?svg=true)](https://ci.appveyor.com/project/juhl48312/blueshiftengine/branch/master)
 
 Blueshift is a cross-platform 3D game engine implemented in C++. it's free, open-source, and works on Windows, macOS, iOS, and Android.
 The project is currently in an early stage of development.
+
+See the [change log](CHANGELOG.md) for changes.
 
 <a href='https://ko-fi.com/V7V66PEJ' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://az743702.vo.msecnd.net/cdn/kofi1.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
@@ -12,8 +15,9 @@ Features
 -------------------
 
   * Cross-platform (Windows, macOS, iOS and Android)
-  * OpenGL 3.2, OpenGL ES 3.0 rendering
+  * OpenGL 3.2+, OpenGL ES 3.0 rendering
   * Skeletal (with hardware skinning) animation
+  * GPU instancing with skinned mesh
   * Parametric animation blending
   * Directional, spot, point lights
   * Shadow mapping (cascaded shadow map, omni directional shadow map, projected shadow map)
@@ -21,10 +25,11 @@ Features
   * Post-processing
   * PBR rendering
   * Physics using [Bullet](http://www.bulletphysics.org/)
+  * Vehicle physics
   * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
-  * 2D and 3D audio static/streaming playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
+  * Audio static/streaming playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
   * TrueType font rendering using [FreeType](https://www.freetype.org/)
-  * Component based entity system
+  * Component based scene objects
   * Playable WYSIWYG editor using [Qt](https://www.qt.io/) with undo & redo capabilities
 
 Downloads

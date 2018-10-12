@@ -3,10 +3,6 @@ in vec3 in_normal : NORMAL;
 in vec4 in_color : COLOR;
 in vec2 in_st : TEXCOORD0;
 
-#ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.vp"
-#endif
-
 out vec4 v2f_color;
 out vec3 v2f_normal;
 out vec3 v2f_lightVector;
@@ -15,37 +11,37 @@ out vec3 v2f_viewVector;
 out vec3 v2f_lightFallOff;
 out vec4 v2f_lightProjection;
 
-#ifdef INSTANCED_DRAW
-	struct entityData_t {
-		vec4 worldMatrixS;
-		vec4 worldMatrixT;
-		vec4 worldMatrixR;
-		vec3 localViewOrigin;
-		mat3 localLightAxis;
-		vec4 localLightOrigin;
-		vec4 textureMatrixS;
-		vec4 textureMatrixT;
-		vec4 vertexColorScale;
-		vec4 vertexColorAdd;
-		vec4 constantColor;
-	};
-
-	uniform entityData_t entityData[256];
-	#define ED entityData[gl_InstanceIDARB]
-#else
-	uniform vec4 worldMatrixS;
-	uniform vec4 worldMatrixT;
-	uniform vec4 worldMatrixR;
-	uniform vec3 localViewOrigin;
-	uniform mat3 localLightAxis;
-	uniform vec4 localLightOrigin;
-	uniform vec4 textureMatrixS;
-	uniform vec4 textureMatrixT;
-	uniform vec4 vertexColorScale;
-	uniform vec4 vertexColorAdd;
-	uniform vec4 constantColor;
+#ifdef USE_SHADOW_MAP
+$include "ShadowLibrary.vp"
 #endif
 
+#if defined(INSTANCING)
+$include "Instancing.vp"
+#else
+    uniform vec4 localToWorldMatrixS;
+    uniform vec4 localToWorldMatrixT;
+    uniform vec4 localToWorldMatrixR;
+    uniform LOWP vec4 constantColor;
+#endif
+
+#ifdef GPU_SKINNING
+    #if defined(GPU_SKINNING_1_WEIGHTS)
+        $include "SkinningMatrix1.glsl"
+    #elif defined(GPU_SKINNING_4_WEIGHTS)
+        $include "SkinningMatrix4.glsl"
+    #elif defined(GPU_SKINNING_8_WEIGHTS)
+        $include "SkinningMatrix8.glsl"
+    #endif
+#endif
+
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+uniform LOWP vec4 vertexColorScale;
+uniform LOWP vec4 vertexColorAdd;
+
+uniform vec3 viewOrigin;
+uniform vec4 lightVec;
+uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
 uniform vec3 lightInvRadius;
 uniform mat4 lightTextureMatrix;
@@ -58,45 +54,51 @@ void main() {
 	vec3 vNormal = in_normal.xyz;
 #endif
 
-	vec4 localVertex;
+	vec4 localPos;
 	vec3 localNormal;
 
 #ifdef GPU_SKINNING
-	skinningMatrix(in_position, localVertex, vNormal, localNormal);
+	skinningMatrix(in_position, localPos, vNormal, localNormal);
 #else
-	localVertex = in_position;
+	localPos = in_position;
 	localNormal = vNormal;
 #endif
 
-	vec4 worldVertex;
-	worldVertex.x = dot(worldMatrixS, localVertex);
-	worldVertex.y = dot(worldMatrixT, localVertex);
-	worldVertex.z = dot(worldMatrixR, localVertex);
-	worldVertex.w = 1.0;
+	vec4 worldPos;
+	worldPos.x = dot(localToWorldMatrixS, localPos);
+	worldPos.y = dot(localToWorldMatrixT, localPos);
+	worldPos.z = dot(localToWorldMatrixR, localPos);
+	worldPos.w = 1.0;
 
-	v2f_lightProjection = lightTextureMatrix * worldVertex;
+    vec3 worldV = viewOrigin.xyz - worldPos.xyz;
+    v2f_viewVector = worldV;
+
+    v2f_normal.x = dot(localToWorldMatrixS.xyz, localNormal);
+    v2f_normal.y = dot(localToWorldMatrixT.xyz, localNormal);
+    v2f_normal.z = dot(localToWorldMatrixR.xyz, localNormal);
+
+    vec3 worldL = lightVec.xyz - lightVec.w * worldPos.xyz;
 
 #ifdef USE_SHADOW_MAP
 	#ifdef USE_SHADOW_POINT
-		ShadowCubeTransform(localVertex, localLightOrigin.xyz, worldMatrixS.xyz, worldMatrixT.xyz, worldMatrixR.xyz);
+		ShadowCubeTransform(worldL);
 	#elif defined(USE_SHADOW_SPOT) || defined(USE_SHADOW_CASCADE)
-		ShadowTransform(worldVertex);
+		ShadowTransform(worldPos);
 	#endif
 #endif
 
-	vec3 L = localLightOrigin.xyz + (localLightOrigin.w - 1.0) * localVertex.xyz;
-	vec3 V = localViewOrigin.xyz - localVertex.xyz;
-
-	v2f_lightFallOff = (L * localLightAxis) * lightInvRadius;
-	v2f_lightVector = L;
-	v2f_viewVector = V;
-
-	v2f_normal = localNormal;
+	v2f_lightVector = worldL;
+    v2f_lightProjection = lightTextureMatrix * worldPos;
+    v2f_lightFallOff = worldL * lightInvRadius;
 
 	v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
 	v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
 
 	v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
-	gl_Position = modelViewProjectionMatrix * localVertex;
+#ifdef INSTANCING
+    gl_Position = viewProjectionMatrix * worldPos;
+#else
+    gl_Position = modelViewProjectionMatrix * localPos;
+#endif
 }

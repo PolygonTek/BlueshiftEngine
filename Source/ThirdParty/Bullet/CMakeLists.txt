@@ -18,6 +18,7 @@ endif()
 set(SRC_FILES
     src/btBulletCollisionCommon.h
     src/btBulletDynamicsCommon.h
+
     src/BulletCollision/BroadphaseCollision/btAxisSweep3.h
     src/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h
     src/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h
@@ -25,21 +26,21 @@ set(SRC_FILES
     src/BulletCollision/BroadphaseCollision/btDbvt.h
     src/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h
     src/BulletCollision/BroadphaseCollision/btDispatcher.h
-    src/BulletCollision/BroadphaseCollision/btMultiSapBroadphase.h
     src/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h
     src/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h
     src/BulletCollision/BroadphaseCollision/btQuantizedBvh.h
     src/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h
     src/BulletCollision/BroadphaseCollision/btAxisSweep3.cpp
+    src/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h
     src/BulletCollision/BroadphaseCollision/btBroadphaseProxy.cpp
     src/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.cpp
     src/BulletCollision/BroadphaseCollision/btDbvt.cpp
     src/BulletCollision/BroadphaseCollision/btDbvtBroadphase.cpp
     src/BulletCollision/BroadphaseCollision/btDispatcher.cpp
-    src/BulletCollision/BroadphaseCollision/btMultiSapBroadphase.cpp
     src/BulletCollision/BroadphaseCollision/btOverlappingPairCache.cpp
     src/BulletCollision/BroadphaseCollision/btQuantizedBvh.cpp
     src/BulletCollision/BroadphaseCollision/btSimpleBroadphase.cpp
+
     src/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h
     src/BulletCollision/CollisionDispatch/btBox2dBox2dCollisionAlgorithm.h
     src/BulletCollision/CollisionDispatch/btBoxBoxCollisionAlgorithm.h
@@ -47,6 +48,7 @@ set(SRC_FILES
     src/BulletCollision/CollisionDispatch/btCollisionConfiguration.h
     src/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h
     src/BulletCollision/CollisionDispatch/btCollisionDispatcher.h
+    src/BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h
     src/BulletCollision/CollisionDispatch/btCollisionObject.h
     src/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h
     src/BulletCollision/CollisionDispatch/btCollisionWorld.h
@@ -73,6 +75,7 @@ set(SRC_FILES
     src/BulletCollision/CollisionDispatch/btBoxBoxCollisionAlgorithm.cpp
     src/BulletCollision/CollisionDispatch/btBoxBoxDetector.cpp
     src/BulletCollision/CollisionDispatch/btCollisionDispatcher.cpp
+    src/BulletCollision/CollisionDispatch/btCollisionDispatcherMt.cpp
     src/BulletCollision/CollisionDispatch/btCollisionObject.cpp
     src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp
     src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp
@@ -94,6 +97,7 @@ set(SRC_FILES
     src/BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.cpp
     src/BulletCollision/CollisionDispatch/btUnionFind.cpp
     src/BulletCollision/CollisionDispatch/SphereTriangleDetector.cpp
+
     src/BulletCollision/CollisionShapes/btBox2dShape.h
     src/BulletCollision/CollisionShapes/btBoxShape.h
     src/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h
@@ -170,16 +174,19 @@ set(SRC_FILES
     src/BulletCollision/CollisionShapes/btTriangleMesh.cpp
     src/BulletCollision/CollisionShapes/btTriangleMeshShape.cpp
     src/BulletCollision/CollisionShapes/btUniformScalingShape.cpp
+
     src/BulletCollision/Gimpact/btBoxCollision.h
     src/BulletCollision/Gimpact/btClipPolygon.h
     src/BulletCollision/Gimpact/btCompoundFromGimpact.h
     src/BulletCollision/Gimpact/btContactProcessing.h
+    src/BulletCollision/Gimpact/btContactProcessingStructs.h
     src/BulletCollision/Gimpact/btGenericPoolAllocator.h
     src/BulletCollision/Gimpact/btGeometryOperations.h
     src/BulletCollision/Gimpact/btGImpactBvh.h
     src/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h
     src/BulletCollision/Gimpact/btGImpactMassUtil.h
     src/BulletCollision/Gimpact/btGImpactQuantizedBvh.h
+    src/BulletCollision/Gimpact/btGImpactQuantizedBvhStructs.h
     src/BulletCollision/Gimpact/btGImpactShape.h
     src/BulletCollision/Gimpact/btQuantization.h
     src/BulletCollision/Gimpact/btTriangleShapeEx.h
@@ -209,6 +216,7 @@ set(SRC_FILES
     src/BulletCollision/Gimpact/gim_contact.cpp
     src/BulletCollision/Gimpact/gim_memory.cpp
     src/BulletCollision/Gimpact/gim_tri_collision.cpp
+
     src/BulletCollision/NarrowPhaseCollision/btComputeGjkEpaPenetration.h
     src/BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.h
     src/BulletCollision/NarrowPhaseCollision/btConvexCast.h
@@ -241,9 +249,11 @@ set(SRC_FILES
     src/BulletCollision/NarrowPhaseCollision/btRaycastCallback.cpp
     src/BulletCollision/NarrowPhaseCollision/btSubSimplexConvexCast.cpp
     src/BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.cpp
+
     src/BulletDynamics/Character/btCharacterControllerInterface.h
     src/BulletDynamics/Character/btKinematicCharacterController.h
     src/BulletDynamics/Character/btKinematicCharacterController.cpp
+
     src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h
     src/BulletDynamics/ConstraintSolver/btConstraintSolver.h
     src/BulletDynamics/ConstraintSolver/btContactConstraint.h
@@ -281,32 +291,45 @@ set(SRC_FILES
     src/BulletDynamics/ConstraintSolver/btSolve2LinearConstraint.cpp
     src/BulletDynamics/ConstraintSolver/btTypedConstraint.cpp
     src/BulletDynamics/ConstraintSolver/btUniversalConstraint.cpp
+
     src/BulletDynamics/Dynamics/btActionInterface.h
     src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h
+    src/BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h
     src/BulletDynamics/Dynamics/btDynamicsWorld.h
     src/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h
+    src/BulletDynamics/Dynamics/btSimulationIslandManagerMt.h
     src/BulletDynamics/Dynamics/btRigidBody.h
     src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp
+    src/BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.cpp
     src/BulletDynamics/Dynamics/btRigidBody.cpp
     src/BulletDynamics/Dynamics/btSimpleDynamicsWorld.cpp
+    src/BulletDynamics/Dynamics/btSimulationIslandManagerMt.cpp
+    
     src/BulletDynamics/Featherstone/btMultiBody.h
     src/BulletDynamics/Featherstone/btMultiBodyConstraint.h
     src/BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h
     src/BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h
+    src/BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h
+    src/BulletDynamics/Featherstone/btMultiBodyGearConstraint.h
     src/BulletDynamics/Featherstone/btMultiBodyJointFeedback.h
     src/BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h
     src/BulletDynamics/Featherstone/btMultiBodyJointMotor.h
     src/BulletDynamics/Featherstone/btMultiBodyLink.h
     src/BulletDynamics/Featherstone/btMultiBodyLinkCollider.h
     src/BulletDynamics/Featherstone/btMultiBodyPoint2Point.h
+    src/BulletDynamics/Featherstone/btMultiBodySliderConstraint.h
     src/BulletDynamics/Featherstone/btMultiBodySolverConstraint.h
     src/BulletDynamics/Featherstone/btMultiBody.cpp
     src/BulletDynamics/Featherstone/btMultiBodyConstraint.cpp
     src/BulletDynamics/Featherstone/btMultiBodyConstraintSolver.cpp
     src/BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.cpp
+    src/BulletDynamics/Featherstone/btMultiBodyFixedConstraint.cpp
+    src/BulletDynamics/Featherstone/btMultiBodyGearConstraint.cpp
     src/BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.cpp
     src/BulletDynamics/Featherstone/btMultiBodyJointMotor.cpp
     src/BulletDynamics/Featherstone/btMultiBodyPoint2Point.cpp
+    src/BulletDynamics/Featherstone/btMultiBodySliderConstraint.cpp
+
     src/BulletDynamics/MLCPSolvers/btDantzigLCP.h
     src/BulletDynamics/MLCPSolvers/btDantzigSolver.h
     src/BulletDynamics/MLCPSolvers/btLemkeAlgorithm.h
@@ -318,17 +341,36 @@ set(SRC_FILES
     src/BulletDynamics/MLCPSolvers/btDantzigLCP.cpp
     src/BulletDynamics/MLCPSolvers/btLemkeAlgorithm.cpp
     src/BulletDynamics/MLCPSolvers/btMLCPSolver.cpp
+
     src/BulletDynamics/Vehicle/btRaycastVehicle.h
     src/BulletDynamics/Vehicle/btVehicleRaycaster.h
     src/BulletDynamics/Vehicle/btWheelInfo.h
     src/BulletDynamics/Vehicle/btRaycastVehicle.cpp
     src/BulletDynamics/Vehicle/btWheelInfo.cpp
+
+    src/BulletInverseDynamics/details/IDEigenInterface.hpp
+    src/BulletInverseDynamics/details/IDLinearMathInterface.hpp
+    src/BulletInverseDynamics/details/IDMatVec.hpp
+    src/BulletInverseDynamics/details/MultiBodyTreeImpl.hpp
+    src/BulletInverseDynamics/details/MultiBodyTreeImpl.cpp
+    src/BulletInverseDynamics/details/MultiBodyTreeInitCache.hpp
+    src/BulletInverseDynamics/details/MultiBodyTreeInitCache.cpp
+    src/BulletInverseDynamics/IDConfig.hpp
+    src/BulletInverseDynamics/IDConfigBuiltin.hpp
+    src/BulletInverseDynamics/IDConfigEigen.hpp
+    src/BulletInverseDynamics/IDErrorMessages.hpp
+    src/BulletInverseDynamics/IDMath.hpp
+    src/BulletInverseDynamics/IDMath.cpp
+    src/BulletInverseDynamics/MultiBodyTree.hpp
+    src/BulletInverseDynamics/MultiBodyTree.cpp
+
     src/BulletSoftBody/btDefaultSoftBodySolver.h
     src/BulletSoftBody/btSoftBody.h
     src/BulletSoftBody/btSoftBodyConcaveCollisionAlgorithm.h
     src/BulletSoftBody/btSoftBodyData.h
     src/BulletSoftBody/btSoftBodyHelpers.h
     src/BulletSoftBody/btSoftBodyInternals.h
+    src/BulletSoftBody/btSoftMultiBodyDynamicsWorld.h
     src/BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h
     src/BulletSoftBody/btSoftBodySolvers.h
     src/BulletSoftBody/btSoftBodySolverVertexBuffer.h
@@ -341,9 +383,11 @@ set(SRC_FILES
     src/BulletSoftBody/btSoftBodyConcaveCollisionAlgorithm.cpp
     src/BulletSoftBody/btSoftBodyHelpers.cpp
     src/BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.cpp
+    src/BulletSoftBody/btSoftMultiBodyDynamicsWorld.cpp
     src/BulletSoftBody/btSoftRigidCollisionAlgorithm.cpp
     src/BulletSoftBody/btSoftRigidDynamicsWorld.cpp
     src/BulletSoftBody/btSoftSoftCollisionAlgorithm.cpp
+
     src/LinearMath/btAabbUtil2.h
     src/LinearMath/btAlignedAllocator.h
     src/LinearMath/btAlignedObjectArray.h
@@ -372,6 +416,7 @@ set(SRC_FILES
     src/LinearMath/btStackAlloc.h
     src/LinearMath/btTransform.h
     src/LinearMath/btTransformUtil.h
+    src/LinearMath/btThreads.h
     src/LinearMath/btVector3.h
     src/LinearMath/btAlignedAllocator.cpp
     src/LinearMath/btConvexHull.cpp
@@ -380,7 +425,10 @@ set(SRC_FILES
     src/LinearMath/btPolarDecomposition.cpp
     src/LinearMath/btQuickprof.cpp
     src/LinearMath/btSerializer.cpp
+    src/LinearMath/btSerializer64.cpp
+    src/LinearMath/btThreads.cpp
     src/LinearMath/btVector3.cpp
+
     Extras/ConvexDecomposition/bestfit.h
     Extras/ConvexDecomposition/bestfitobb.h
     Extras/ConvexDecomposition/cd_hull.h
@@ -410,6 +458,7 @@ set(SRC_FILES
     Extras/ConvexDecomposition/raytri.cpp
     Extras/ConvexDecomposition/splitplane.cpp
     Extras/ConvexDecomposition/vlookup.cpp
+
     Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h
     Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.cpp
 )
@@ -422,6 +471,7 @@ auto_source_group(${SRC_FILES})
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/Extras")
+include_directories("${PROJECT_SOURCE_DIR}/Extras/ConvexDecomposition")
 
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 

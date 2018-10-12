@@ -5,10 +5,10 @@ shader "Lit/Standard" {
         albedoColor("Albedo Color") : color3 = "1 1 1"
         albedoAlpha("Albedo Alpha") : float range 0 1.0 0.001 = "1"
         albedoMap("Albedo Map") : texture = "_whiteTexture"
-        _METALLIC("Metallic") : enum "Scale;Texture (R)" = "0" (shaderDefine)
+        _METALLIC("Metallic") : enum "Scale;Texture (R);Texture (G);Texture (B);Texture (A)" = "0" (shaderDefine)
         metallicMap("Metallic Map") : texture = "_whiteTexture"
         metallicScale("Metallic Scale") : float range 0 1.0 0.01 = "1.0"
-        _ROUGHNESS("Roughness") : enum "Scale;From Metallic Map (G);Texture (R);Inverted Texture (R)" = "0" (shaderDefine)
+        _ROUGHNESS("Roughness") : enum "Scale;Texture (R);Inverted Texture (R);From Metallic Map (R);From Metallic Map (G);From Metallic Map (B);From Metallic Map (A)" = "0" (shaderDefine)
         roughnessMap("Roughness Map") : texture = "_whiteTexture"
         roughnessScale("Roughness Scale") : float range 0 1.0 0.01 = "1.0"
         _NORMAL("Normal") : enum "Vertex;Texture;Texture + Detail Texture" = "0" (shaderDefine)
@@ -18,7 +18,7 @@ shader "Lit/Standard" {
         _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" (shaderDefine)
         heightMap("Height Map") : texture = "_whiteTexture"
         heightScale("Height Scale") : float range 0.01 1.0 0.001 = "0.008"
-        _OCCLUSION("Occlusion") : enum "None;Texture (R);From Metallic Map (B)" = "0" (shaderDefine)
+        _OCCLUSION("Occlusion") : enum "None;Texture (R);From Metallic Map (R);From Metallic Map (G);From Metallic Map (B);From Metallic Map (A)" = "0" (shaderDefine)
         occlusionMap("Occlusion Map") : texture = "_whiteTexture"
         occlusionStrength("Occlusion Strength") : float range 0 1 0.001 = "1"
         _EMISSION("Emission") : enum "None;Color;Texture" = "0" (shaderDefine)
@@ -30,10 +30,11 @@ shader "Lit/Standard" {
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
-    ambientLitVersion "StandardAmbientLit.shader"
-    directLitVersion "StandardDirectLit.shader"
-    ambientLitDirectLitVersion "StandardAmbientLitDirectLit.shader"
+    ambientLitVersion "StandardAmbientLit"
+    directLitVersion "StandardDirectLit"
+    ambientLitDirectLitVersion "StandardAmbientLitDirectLit"
     
     glsl_vp {
         $include "StandardCore.vp"

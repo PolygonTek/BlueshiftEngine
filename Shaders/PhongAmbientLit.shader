@@ -1,10 +1,11 @@
 shader "Lit/PhongAmbientLit" {
     litSurface
-    inheritProperties "Phong.shader"
+    inheritProperties "Phong"
 
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
     glsl_vp {
         #define LEGACY_PHONG_LIGHTING

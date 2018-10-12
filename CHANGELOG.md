@@ -1,6 +1,19 @@
 Version History
 ---------------
 
+### 0.5.0 (work in progress)
+- Added support for GPU instancing for static/skinned meshes
+- Added support for static batching
+- Added support for calculation tangent vectors using MikkTSpace
+- Added support for calculation normals with area and anglular weights
+- Added support for vehicle physics
+- Added support for slider/wheel joint components
+- Added support for copy & paste component values in editor
+- Changed engine unit from centi-meters to meters
+- Changed FBX importing process to support hierarchical mesh in editor
+- Fixed an issue where rolling friction was not working correctly
+- Fixed an issue where inspector updating in play mode would slow down the game 
+
 ### 0.4.0
 - Added support for LuaJIT (Windows / macOS)
 - Added support for debugging Lua script in [ZeroBrane Studio](https://studio.zerobrane.com/)

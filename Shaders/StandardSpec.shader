@@ -18,7 +18,7 @@ shader "Lit/StandardSpec" {
         _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" (shaderDefine)
         heightMap("Height Map") : texture = "_whiteTexture"
         heightScale("Height Scale") : float range 0.01 1.0 0.001 = "0.008"
-        _OCCLUSION("Occlusion") : enum "None;Texture (R);From Metallic Map (B)" = "0" (shaderDefine)
+        _OCCLUSION("Occlusion") : enum "None;Texture (R);From Albedo Map (A);From Specular Map (A)" = "0" (shaderDefine)
         occlusionMap("Occlusion Map") : texture = "_whiteTexture"
         occlusionStrength("Occlusion Strength") : float range 0 1 0.001 = "1"
         _EMISSION("Emission") : enum "None;Color;Texture" = "0" (shaderDefine)
@@ -26,14 +26,15 @@ shader "Lit/StandardSpec" {
         emissionMap("Emission Map") : texture = "_blackTexture"
         emissionScale("Emission Scale") : float range 0 16 0.001 = "1"
     }
-    
+
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
-    ambientLitVersion "StandardSpecAmbientLit.shader"
-    directLitVersion "StandardSpecDirectLit.shader"
-    ambientLitDirectLitVersion "StandardSpecAmbientLitDirectLit.shader"
+    ambientLitVersion "StandardSpecAmbientLit"
+    directLitVersion "StandardSpecDirectLit"
+    ambientLitDirectLitVersion "StandardSpecAmbientLitDirectLit"
     
     glsl_vp {
         $include "StandardCore.vp"

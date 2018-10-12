@@ -1,10 +1,10 @@
 shader "showTangentSpace" {
 	glsl_vp {
 		in vec4 in_position : POSITION;
-		in vec3 in_normal : NORMAL;
-		in vec4 in_tangent : TEXCOORD1;
+		in LOWP vec3 in_normal : NORMAL;
+		in LOWP vec4 in_tangent : TEXCOORD1;
 
-		out vec4 v2f_color;
+		out LOWP vec4 v2f_color;
 
 		uniform int tangentIndex;
 		uniform mat4 modelViewProjectionMatrix;

@@ -18,8 +18,8 @@ uniform mat4 prevModelViewMatrix;			// currViewM * prevModelM
 //#define STRETCH_VERTEX
 
 void main() {
-	vec4 localVertex;
-	vec4 localVertexPrev;
+	vec4 localPos;
+	vec4 localPosPrev;
 	vec3 localNormal;
 
 #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
@@ -29,28 +29,28 @@ void main() {
 #endif
 
 #ifdef GPU_SKINNING
-	skinningMatrix(in_position, localVertex, vNormal, localNormal);
-	skinningPrevMatrix(in_position, localVertexPrev);
+	skinningMatrix(in_position, localPos, vNormal, localNormal);
+	skinningPrevMatrix(in_position, localPosPrev);
 #else
-	localVertex = in_position;
+	localPos = in_position;
 	localNormal = vNormal;
-	localVertexPrev = in_position;
+	localPosPrev = in_position;
 #endif
 
 #ifdef STRETCH_VERTEX
-	vec4 P = modelViewMatrix * localVertex;
-	vec4 Pprev = prevModelViewMatrix * localVertexPrev;
+	vec4 P = modelViewMatrix * localPos;
+	vec4 Pprev = prevModelViewMatrix * localPosPrev;
 
 	vec3 viewNormal = mat3(modelViewMatrix) * localNormal;
 	vec3 motionVector = P.xyz - Pprev.xyz;
 
-	v2f_motionVec = modelViewProjectionMatrix * localVertex;
-	v2f_motionVecPrev = prevModelViewProjectionMatrix * localVertexPrev;
+	v2f_motionVec = modelViewProjectionMatrix * localPos;
+	v2f_motionVecPrev = prevModelViewProjectionMatrix * localPosPrev;
 
 	gl_Position = dot(motionVector, viewNormal) > 0.0 ? v2f_motionVec : v2f_motionVecPrev;
 #else
-	v2f_motionVec = modelViewProjectionMatrix * localVertex;
-	v2f_motionVecPrev = prevModelViewProjectionMatrix * localVertexPrev;
+	v2f_motionVec = modelViewProjectionMatrix * localPos;
+	v2f_motionVecPrev = prevModelViewProjectionMatrix * localPosPrev;
 
 	gl_Position = v2f_motionVec;
 #endif

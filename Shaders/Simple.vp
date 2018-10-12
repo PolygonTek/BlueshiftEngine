@@ -1,24 +1,26 @@
-in vec4 in_position : POSITION;
-in MEDIUMP vec2 in_st : TEXCOORD0;
-in LOWP vec4 in_color : COLOR;
+in HIGHP vec4 in_position   : POSITION;
+in MEDIUMP vec2 in_st       : TEXCOORD0;
+in LOWP vec4 in_color       : COLOR;
 
 out MEDIUMP vec2 v2f_texCoord;
 out LOWP vec4 v2f_color;
 
-uniform mat4 modelViewProjectionMatrix;
 uniform vec4 textureMatrixS;
 uniform vec4 textureMatrixT;
-uniform LOWP vec4 vertexColorScale;
-uniform LOWP vec4 vertexColorAdd;
 uniform LOWP vec4 constantColor;
 
+uniform LOWP vec4 vertexColorScale;
+uniform LOWP vec4 vertexColorAdd;
+
+uniform mat4 modelViewProjectionMatrix;
+
 void main() {
-    vec4 localVertex;
+    vec4 localPos;
 
 #ifdef GPU_SKINNING
-    skinningMatrix(in_position, localVertex);
+    skinningMatrix(in_position, localPos);
 #else
-    localVertex = in_position;
+    localPos = in_position;
 #endif
 
     v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
@@ -26,5 +28,5 @@ void main() {
 
     v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
-    gl_Position = modelViewProjectionMatrix * localVertex;
+    gl_Position = modelViewProjectionMatrix * localPos;
 }

@@ -39,20 +39,30 @@ in MEDIUMP vec2 v2f_tex;
     in LOWP vec3 v2f_normal;
 #endif
 
+#if _PARALLAX
+    in vec3 v2f_tangentViewDir;
+#endif
+
 #ifdef DIRECT_LIGHTING
     in vec3 v2f_lightVector;
     in vec3 v2f_lightFallOff;
     in vec4 v2f_lightProjection;
 #endif
 
-#ifdef INDIRECT_LIGHTING
-    in vec4 v2f_toWorldAndPackedWorldPosS;
-    in vec4 v2f_toWorldAndPackedWorldPosT;
-    in vec4 v2f_toWorldAndPackedWorldPosR;
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
+    in vec3 v2f_viewVector;
+
+    #if _NORMAL == 0
+        in vec3 v2f_worldPos;
+    #else
+        in vec4 v2f_toWorldAndPackedWorldPosS;
+        in vec4 v2f_toWorldAndPackedWorldPosT;
+        in vec4 v2f_toWorldAndPackedWorldPosR;
+    #endif
 #endif
 
-#if defined(INDIRECT_LIGHTING) || defined(DIRECT_LIGHTING) || _PARALLAX != 0
-    in vec3 v2f_viewVector;
+#ifdef USE_SHADOW_MAP
+$include "ShadowLibrary.fp"
 #endif
 
 out vec4 o_fragColor : FRAG_COLOR;
@@ -126,10 +136,6 @@ $include "StandardBRDF.glsl"
 $include "PhongBRDF.glsl"
 $include "IBL.glsl"
 
-#ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.fp"
-#endif
-
 #if _NORMAL == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
 #undef _NORMAL
 #define _NORMAL 1
@@ -140,7 +146,7 @@ $include "ShadowLibrary.fp"
 #define _PARALLAX 0
 #endif
 
-#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC == 1 || (_ROUGHNESS == 2 || _ROUGHNESS == 3) || _PARALLAX != 0 || _EMISSION == 2
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2
 #define NEED_BASE_TC
 #endif
 
@@ -148,23 +154,23 @@ $include "ShadowLibrary.fp"
 
 void main() {
 #ifdef DIRECT_LIGHTING
-    float A = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
-    A = pow(A, lightFallOffExponent);
+    float attenuation = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
+    attenuation = pow(attenuation, lightFallOffExponent);
 
-    vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * A;
+    vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * attenuation;
     /*if (Cl == vec3(0.0)) {
         discard;
     }*/
 #endif
 
-#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING) || _PARALLAX != 0
-    vec3 V = normalize(v2f_viewVector);
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
+    vec3 worldV = normalize(v2f_viewVector.yzx);
 #endif
 
 #ifdef NEED_BASE_TC
     #if _PARALLAX != 0
         float h = tex2D(heightMap, v2f_tex).x * 2.0 - 1.0;
-        vec2 baseTc = offsetTexcoord(h, v2f_tex, V, heightScale * 0.1);
+        vec2 baseTc = v2f_tex + h * heightScale * 0.1 * (v2f_tangentViewDir.xy / v2f_tangentViewDir.z);
     #else
         vec2 baseTc = v2f_tex;
     #endif
@@ -184,14 +190,25 @@ void main() {
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     #if _NORMAL == 0
-        vec3 N = normalize(v2f_normal);
-    #elif _NORMAL == 1 || _NORMAL == 2
-        vec3 N = normalize(getNormal(normalMap, baseTc));
+        vec3 worldN = normalize(v2f_normal.yzx);
+    #else
+        vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
+        vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
+        vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
+        //vec3 toWorldMatrixR = normalize(cross(toWorldMatrixS, toWorldMatrixT) * v2f_toWorldT.w);
+
+        vec3 tangentN = normalize(getNormal(normalMap, baseTc)); 
 
         #if _NORMAL == 2
-            vec3 DN = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
-            N = normalize(N + DN);
+            vec3 tangentN2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
+            tangentN = normalize(tangentN + tangentN2);
         #endif
+
+        vec3 worldN;
+        // Convert coordinates from tangent space to GL world space
+        worldN.x = dot(toWorldMatrixS, tangentN);
+        worldN.y = dot(toWorldMatrixT, tangentN);
+        worldN.z = dot(toWorldMatrixR, tangentN);
     #endif
 
     #if defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
@@ -220,82 +237,74 @@ void main() {
         #endif
     #elif defined(STANDARD_METALLIC_LIGHTING)
         #if _METALLIC == 0
-            vec4 metallic = vec4(metallicScale, 0.0, 0.0, 0.0);
-        #elif _METALLIC == 1
+            vec4 metallic = vec4(1.0, 0.0, 0.0, 0.0);
+        #elif _METALLIC >= 1
             vec4 metallic = tex2D(metallicMap, baseTc);
-            metallic.r *= metallicScale;
+        #endif
+
+        #if _METALLIC == 0
+            float metalness = metallicScale;
+        #elif _METALLIC == 1
+            float metalness = metallic.r * metallicScale;
+        #elif _METALLIC == 2
+            float metalness = metallic.g * metallicScale;
+        #elif _METALLIC == 3
+            float metalness = metallic.b * metallicScale;
+        #elif _METALLIC == 4
+            float metalness = metallic.a * metallicScale;
         #endif
 
         #if _ROUGHNESS == 0
             float roughness = roughnessScale;
         #elif _ROUGHNESS == 1
-            float roughness = metallic.g * roughnessScale;
-        #elif _ROUGHNESS == 2
             float roughness = tex2D(roughnessMap, baseTc).r * roughnessScale;
-        #elif _ROUGHNESS == 3
+        #elif _ROUGHNESS == 2
             float roughness = (1.0 - tex2D(roughnessMap, baseTc).r) * roughnessScale;
+        #elif _ROUGHNESS == 3
+            float roughness = metallic.r * roughnessScale;
+        #elif _ROUGHNESS == 4
+            float roughness = metallic.g * roughnessScale;
+        #elif _ROUGHNESS == 5
+            float roughness = metallic.b * roughnessScale;
+        #elif _ROUGHNESS == 6
+            float roughness = metallic.a * roughnessScale;
         #endif
 
-        vec4 specular = vec4(mix(vec3(0.04), albedo.rgb, metallic.r), 1.0);
+        vec4 specular = vec4(mix(vec3(0.04), albedo.rgb, metalness), 1.0);
         
-        vec4 diffuse = vec4(albedo.rgb * ((1.0 - 0.04) - metallic.r), albedo.a);
+        vec4 diffuse = vec4(albedo.rgb * ((1.0 - 0.04) - metalness), albedo.a);
     #endif
 #endif
 
-    vec3 C = vec3(0.0);
+    vec3 shadingColor = vec3(0.0);
 
 #if (defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)) || !defined(DIRECT_LIGHTING)
     #if _EMISSION == 1
-        C += emissionColor * emissionScale;
+        shadingColor += emissionColor * emissionScale;
     #elif _EMISSION == 2
-        C += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
+        shadingColor += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
     #endif
 #endif
 
 #ifdef INDIRECT_LIGHTING
-    vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
-    vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
-    vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
-    //vec3 toWorldMatrixR = normalize(cross(toWorldMatrixS, toWorldMatrixT) * v2f_toWorldT.w);
-
     #ifdef BRUTE_FORCE_IBL
-        vec3 worldN;
-        // Convert coordinates from z-up to GL axis
-        worldN.z = dot(toWorldMatrixS, N);
-        worldN.x = dot(toWorldMatrixT, N);
-        worldN.y = dot(toWorldMatrixR, N);
-
-        vec3 worldV;
-        // Convert coordinates from z-up to GL axis
-        worldV.z = dot(toWorldMatrixS, V);
-        worldV.x = dot(toWorldMatrixT, V);
-        worldV.y = dot(toWorldMatrixR, V);
-
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-            C += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, roughness);
+            shadingColor += IBLDiffuseLambertWithSpecularGGX(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            C += IBLPhongWithFresnel(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, specularPower, roughness);
+            shadingColor += IBLPhongWithFresnel(envCubeMap, worldN, worldV, diffuse.rgb, specular.rgb, specularPower, roughness);
         #endif
     #else
-        vec3 worldN;
-        // Convert coordinates from z-up to GL axis
-        worldN.z = dot(toWorldMatrixS, N);
-        worldN.x = dot(toWorldMatrixT, N);
-        worldN.y = dot(toWorldMatrixR, N);
-
-        vec3 S = reflect(-V, N);
-        vec3 worldS;
-        // Convert coordinates from z-up to GL axis
-        worldS.z = dot(toWorldMatrixS, S);
-        worldS.x = dot(toWorldMatrixT, S);
-        worldS.y = dot(toWorldMatrixR, S);
+        vec3 worldS = reflect(-worldV, worldN);
 
         #ifdef PARALLAX_CORRECTED_INDIRECT_LIGHTING
-            // Convert coordinates from z-up to GL axis
-            vec3 worldPos;
-            worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
-            worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
-            worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
+            #if _NORMAL == 0
+                worldPos = v2f_worldPos.yzx;
+            #else
+                vec3 worldPos;
+                worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
+                worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
+                worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
+            #endif
 
             vec4 sampleVec;
             sampleVec.xyz = boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 250, 1.0), vec3(-2500, 0, -2500), vec3(2500, 250, 2500)); // FIXME
@@ -304,16 +313,16 @@ void main() {
             sampleVec.xyz = worldS;
         #endif
 
-        float NdotV = max(dot(N, V), 0.0);
+        float NdotV = max(dot(worldN, worldV), 0.0);
 
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-            C += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
+            shadingColor += IndirectLit_Standard(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, roughness);
         #elif defined(LEGACY_PHONG_LIGHTING)
-            C += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, specularPower, roughness);
+            shadingColor += IndirectLit_PhongFresnel(worldN, sampleVec.xyz, NdotV, diffuse.rgb, specular.rgb, specularPower, roughness);
         #endif
     #endif
 #else
-    C += albedo.rgb * ambientScale;
+    shadingColor += albedo.rgb * ambientScale;
 #endif
 
 #ifdef DIRECT_LIGHTING
@@ -323,18 +332,18 @@ void main() {
         vec3 shadowLighting = vec3(1.0);
     #endif
 
-    vec3 L = normalize(v2f_lightVector);
+    vec3 worldL = normalize(v2f_lightVector.yzx);
 
     #ifdef USE_LIGHT_CUBE_MAP
         if (useLightCube) {
-            Cl *= texCUBE(lightCubeMap, -L);
+            Cl *= texCUBE(lightCubeMap, -worldL);
         }
     #endif
 
     #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-        vec3 lightingColor = DirectLit_Standard(L, N, V, diffuse.rgb, specular.rgb, roughness);
+        vec3 lightingColor = DirectLit_Standard(worldL, worldN, worldV, diffuse.rgb, specular.rgb, roughness);
     #elif defined(LEGACY_PHONG_LIGHTING)
-        vec3 lightingColor = DirectLit_PhongFresnel(L, N, V, diffuse.rgb, specular.rgb, specularPower);
+        vec3 lightingColor = DirectLit_PhongFresnel(worldL, worldN, worldV, diffuse.rgb, specular.rgb, specularPower);
     #endif
 
     #if defined(_SUB_SURFACE_SCATTERING)
@@ -343,24 +352,44 @@ void main() {
         lightingColor += subLamb * tex2D(subSurfaceColorMap, baseTc).xyz * (shadowLighting * (1.0 - subSurfaceShadowDensity) + subSurfaceShadowDensity);
     #endif
 
-    C += Cl * lightingColor * shadowLighting;
+    shadingColor += Cl * lightingColor * shadowLighting;
 #endif
 
-#if _OCCLUSION != 0
-    #if _OCCLUSION == 1
-        float occ = tex2D(occlusionMap, baseTc).r;
-    #elif _OCCLUSION == 2
-        float occ = metallic.b;
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
+    #if _OCCLUSION != 0
+        #if _OCCLUSION == 1
+            float occ = tex2D(occlusionMap, baseTc).r;
+        #elif defined(STANDARD_METALLIC_LIGHTING)
+            #if _OCCLUSION == 2
+                float occ = metallic.r;
+            #elif _OCCLUSION == 3
+                float occ = metallic.g;
+            #elif _OCCLUSION == 4
+                float occ = metallic.b;
+            #elif _OCCLUSION == 5
+                float occ = metallic.a;
+            #else
+                float occ = 1.0;
+            #endif
+        #elif defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
+            #if _OCCLUSION == 2
+                float occ = albedo.a;
+            #elif _OCCLUSION == 3
+                float occ = specular.a;
+            #else
+                float occ = 1.0;
+            #endif
+        #endif
+
+        shadingColor *= (1.0 - occlusionStrength) + occ * occlusionStrength;
     #endif
-
-    C *= (1.0 - occlusionStrength) + occ * occlusionStrength;
 #endif
 
-    vec4 outputColor = v2f_color * vec4(C, albedo.a);
+    vec4 finalColor = v2f_color * vec4(shadingColor, albedo.a);
 
 #ifdef LOGLUV_HDR
-    o_fragColor = encodeLogLuv(outputColor.xyz);
+    o_fragColor = encodeLogLuv(finalColor.xyz);
 #else
-    o_fragColor = outputColor;
+    o_fragColor = finalColor;
 #endif
 }

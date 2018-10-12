@@ -1,10 +1,11 @@
 shader "Lit/StandardSpecDirectLit" {
     litSurface
-    inheritProperties "StandardSpec.shader"
+    inheritProperties "StandardSpec"
     
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
+    generateGpuInstancingVersion
     generateParallelShadowVersion
     generateSpotShadowVersion
     generatePointShadowVersion

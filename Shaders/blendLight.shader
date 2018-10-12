@@ -1,5 +1,6 @@
 shader "blendLight" {
 	generateGpuSkinningVersion
+    generateGpuInstancingVersion
 
 	glsl_vp {
 		$include "blendlight.vp" 

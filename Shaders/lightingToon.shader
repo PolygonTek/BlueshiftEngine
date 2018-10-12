@@ -7,6 +7,7 @@ shader "Lighting/Toon" {
 
 	generatePerforatedVersion
 	generateGpuSkinningVersion
+    generateGpuInstancingVersion
 	generateParallelShadowVersion
 	generateSpotShadowVersion
 	generatePointShadowVersion
