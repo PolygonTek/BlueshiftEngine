@@ -1,5 +1,5 @@
 #if _PARALLAX
-    #error "Parallax mapping doesn't support instancing"
+    #error "Parallax mapping does not support instancing"
 #endif
 
 #ifdef INSTANCED_ARRAY
