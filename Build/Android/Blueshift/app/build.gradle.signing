@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId 'com.polygontek.BlueshiftPlayer'
         minSdkVersion 19
-        targetSdkVersion 24
+        targetSdkVersion 26
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_shared', '-DBUILD_RUNTIME=1', '-DBUILD_PLAYER=1', '-DBS_USE_ADMOB_REWARD_BASED_VIDEO=0'
