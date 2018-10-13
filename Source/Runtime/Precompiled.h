@@ -130,7 +130,7 @@
 // Common platform
 //----------------------------------------------------------------------------------------------
 
-//#pragma setlocale ("kor")
+//#pragma setlocale ("kor") // We don't need this because we don't use character literal in other language.
 
 // C RunTime Header Files
 #include <stdio.h>

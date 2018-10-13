@@ -114,7 +114,7 @@ int FontFaceBitmap::GetFontHeight() const {
     return fontHeight;
 }
 
-FontGlyph *FontFaceBitmap::GetGlyph(int charCode) {
+FontGlyph *FontFaceBitmap::GetGlyph(wchar_t charCode) {
     const auto *entry = glyphHashMap.Get(charCode);
     if (entry) {
         return entry->second;
@@ -123,7 +123,7 @@ FontGlyph *FontFaceBitmap::GetGlyph(int charCode) {
     return nullptr;
 }
 
-int FontFaceBitmap::GetGlyphAdvance(int charCode) const {
+int FontFaceBitmap::GetGlyphAdvance(wchar_t charCode) const {
     const auto *entry = glyphHashMap.Get(charCode);
     if (entry) {
         return entry->second->advance;

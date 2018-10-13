@@ -421,7 +421,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
     Entity *clonedEntity = CloneEntity(originalEntity);
     
     ComTransform *transform = clonedEntity->GetTransform();
-    transform->SetLocalOriginRotation(origin, rotation);
+    transform->SetOriginRotation(origin, rotation);
 
     RegisterEntity(clonedEntity);
 

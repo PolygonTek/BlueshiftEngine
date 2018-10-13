@@ -25,6 +25,7 @@ static streamOutFunc_t logFuncPtr = nullptr;
 static streamOutFunc_t errFuncPtr = nullptr;
 
 void Engine::InitBase(const char *baseDir, bool forceGenericSIMD, const streamOutFunc_t logFunc, const streamOutFunc_t errFunc) {
+    // Set user-default ANSI code page obtained from the operating system
     setlocale(LC_ALL, "");
 
     logFuncPtr = logFunc;

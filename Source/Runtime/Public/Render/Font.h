@@ -55,10 +55,10 @@ public:
     int                     GetFontHeight() const;
 
                             /// Returns pointer to the glyph structure corresponding to a character. Return null if glyph not found.
-    FontGlyph *             GetGlyph(int charCode);
+    FontGlyph *             GetGlyph(wchar_t charCode);
 
                             /// Returns a offset for a next character 
-    int                     GetGlyphAdvance(int charCode) const;
+    int                     GetGlyphAdvance(wchar_t charCode) const;
 
     float                   StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
 

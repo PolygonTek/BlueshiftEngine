@@ -57,14 +57,14 @@ int Font::GetFontHeight() const {
     return 0;
 }
 
-FontGlyph *Font::GetGlyph(int charCode) {
+FontGlyph *Font::GetGlyph(wchar_t charCode) {
     if (fontFace) {
         return fontFace->GetGlyph(charCode);
     }
     return nullptr;
 }
 
-int Font::GetGlyphAdvance(int charCode) const {
+int Font::GetGlyphAdvance(wchar_t charCode) const {
     if (fontFace) {
         return fontFace->GetGlyphAdvance(charCode);
     }

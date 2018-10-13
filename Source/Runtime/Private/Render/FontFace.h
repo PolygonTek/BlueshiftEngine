@@ -27,15 +27,15 @@ public:
 
     virtual int             GetFontHeight() const = 0;
 
-    virtual FontGlyph *     GetGlyph(int charCode) = 0;
+    virtual FontGlyph *     GetGlyph(wchar_t charCode) = 0;
 
-    // 다음 문자를 위한 charCode 문자 간격
-    virtual int             GetGlyphAdvance(int charCode) const = 0;
+                            // Returns width of charCode character for the next character in string.
+    virtual int             GetGlyphAdvance(wchar_t charCode) const = 0;
 
     virtual bool            Load(const char *filename, int fontSize) = 0;
 
 protected:
-    // 2 byte 문자 코드에 대한 해시키 생성
+    // Hash generator for the wide character
     struct HashGeneratorCharCode {
         template <typename Type>
         static int Hash(const HashIndex &hasher, const Type &value) {
@@ -43,7 +43,7 @@ protected:
         }
     };
 
-    using GlyphHashMap      = HashMap<int, FontGlyph *, HashCompareDefault, HashGeneratorCharCode>;
+    using GlyphHashMap      = HashMap<wchar_t, FontGlyph *, HashCompareDefault, HashGeneratorCharCode>;
     GlyphHashMap            glyphHashMap;
 };
 
@@ -54,8 +54,8 @@ public:
 
     virtual int             GetFontHeight() const override;
 
-    virtual FontGlyph *     GetGlyph(int charcode) override;
-    virtual int             GetGlyphAdvance(int charcode) const override;
+    virtual FontGlyph *     GetGlyph(wchar_t charcode) override;
+    virtual int             GetGlyphAdvance(wchar_t charcode) const override;
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
@@ -80,27 +80,27 @@ public:
 
     virtual int             GetFontHeight() const override;
 
-    virtual FontGlyph *     GetGlyph(int charcode) override;
-    virtual int             GetGlyphAdvance(int charcode) const override;
+    virtual FontGlyph *     GetGlyph(wchar_t charcode) override;
+    virtual int             GetGlyphAdvance(wchar_t charcode) const override;
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
-                            // FreeType libary 초기화/종료 함수
+                            // Init/Shutdown function for FreeType libary.
     static void             Init();
     static void             Shutdown();
     
 private:
     void                    Purge();
 
-    bool                    LoadFTGlyph(unsigned short charcode) const;
-    void                    DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) const;	
+    bool                    LoadFTGlyph(wchar_t charcode) const;
+    void                    DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) const;
 
     int                     faceIndex;
     int                     fontHeight;
 
     byte *                  ftFontFileData;             // FreeType font flie data
     FT_Face                 ftFace;
-    mutable unsigned short  ftLastLoadedCharCode;
+    mutable wchar_t         ftLastLoadedCharCode;
     byte *                  glyphBuffer;
 };
 

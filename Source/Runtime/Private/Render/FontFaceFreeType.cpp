@@ -159,7 +159,7 @@ int FontFaceFreeType::GetFontHeight() const {
 }
 
 // glyph bitmap 을 얻기 위해 glyph slot 에 glyph 을 로드
-bool FontFaceFreeType::LoadFTGlyph(unsigned short charCode) const {
+bool FontFaceFreeType::LoadFTGlyph(wchar_t charCode) const {
     if (ftLastLoadedCharCode != charCode) {
         unsigned int glyph_index = FT_Get_Char_Index(ftFace, charCode);
         if (glyph_index == 0) {
@@ -320,7 +320,7 @@ static Texture *AllocGlyphTexture(int width, int height, int *x, int *y) {
 }
 
 // 문자코드에 따른 glyph 을 texture 에 캐싱
-FontGlyph *FontFaceFreeType::GetGlyph(int charCode) {
+FontGlyph *FontFaceFreeType::GetGlyph(wchar_t charCode) {
     const auto *entry = glyphHashMap.Get(charCode);
     if (entry) {
         return entry->second;
@@ -398,7 +398,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(int charCode) {
     return glyph;
 }
 
-int FontFaceFreeType::GetGlyphAdvance(int charCode) const {
+int FontFaceFreeType::GetGlyphAdvance(wchar_t charCode) const {
     // glyph 캐시에 있다면 미리 구한 advance 를 리턴
     const auto *entry = glyphHashMap.Get(charCode);
     if (entry) {
