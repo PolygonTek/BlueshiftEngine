@@ -17,6 +17,7 @@ set(ENGINE_FILES
     Public/Core/Checksum_MD5.h
     Public/Core/Heap.h
     Public/Core/Range.h
+    Public/Core/UTF.h
     Public/Core/Str.h
     Public/Core/Variant.h
     Public/Core/VariantArg.h
@@ -258,6 +259,8 @@ set(ENGINE_FILES
     Private/Core/Checksum_CRC32.cpp
     Private/Core/Checksum_MD5.cpp
     Private/Core/Heap.cpp
+    Private/Core/UTF8.cpp
+    Private/Core/UTF16.cpp
     Private/Core/Str.cpp
     Private/Core/WStr.cpp
     Private/Core/Guid.cpp

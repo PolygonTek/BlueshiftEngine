@@ -22,6 +22,8 @@
 -------------------------------------------------------------------------------
 */
 
+#include "UTF.h"
+
 BE_NAMESPACE_BEGIN
 
 class WStr;
@@ -29,14 +31,6 @@ class WStr;
 /// String class.
 class BE_API Str {
 public:
-    enum UTF8Encoding {
-        UTF8_PURE_ASCII,        ///< no characters with values > 127
-        UTF8_ENCODED_BOM,       ///< characters > 128 encoded with UTF8, with a byte-order-marker at the beginning
-        UTF8_ENCODED_NO_BOM,    ///< characters > 128 encoded with UTF8, but no byte-order-marker at the beginning
-        UTF8_INVALID,           ///< has values > 127 but isn't valid UTF8 
-        UTF8_INVALID_BOM        ///< has a byte-order-marker at the beginning, but isn't valuid UTF8 -- it's messed up
-    };    
-
     /// Constructs empty string.
     Str();
     /// Constructs from another string.
@@ -66,7 +60,7 @@ public:
 #ifdef QSTRING_H
     /// Constructs from a QString.
     Str(const QString &qstr) : Str() {
-        const QByteArray bytes = qstr.toLatin1(); // qstr.toUtf8();
+        const QByteArray bytes = qstr.toUtf8();
         int l = bytes.length();
         EnsureAlloced(l + 1, false);
         strcpy(data, (const char *)bytes.constData());
@@ -231,14 +225,23 @@ public:
                         /// Removes n characters from the end of the string.
     void                Chop(int n);
 
-                        /// Fills with a characters with the given length
+                        /// Fills with a character with the given length.
     void                Fill(const char ch, int newLen);
 
-                        /// Calculate number of characters in UTF8 content.
-    int                 UTF8Length() { return UTF8Length((byte *)data); }
-    uint32_t            UTF8Char(int &idx) { return UTF8Char((byte *)data, idx); }
-    void                AppendUTF8Char(uint32_t c);
-    void                ConvertToUTF8();
+                        /// Returns number of characters in UTF8 content.
+    int                 UTF8Length() { return UTF8::Length((byte *)data); }
+
+                        /// Returns Unicode character with then given index.
+                        /// The index idx will be increased by the amount of character bytes.
+    uint32_t            UTF8Char(int &idx) { return UTF8::Char((byte *)data, idx); }
+
+                        /// Appends Unicode character at the end as UTF8.
+    void                AppendUTF8Char(uint32_t unicodeChar);
+
+                        /// Sets UTF8 content from Latin1.
+    void                SetUTF8FromLatin1(const char *str);
+                        /// Sets UTF8 content from wide characters.
+    void                SetUTF8FromWChar(const wchar_t *str);
 
                         /// Returns index to the first occurrence of a character, or -1 if not found.
     int                 Find(const char ch, int start = 0, int end = -1) const;
@@ -367,16 +370,7 @@ public:
     
     friend int BE_CDECL sprintf(Str &dest, const char *fmt, ...);
     friend int BE_CDECL vsprintf(Str &dest, const char *fmt, va_list ap);
-
-    static int          UTF8Length(const byte *s);
-    static uint32_t     UTF8Char(const char *s, int &idx) { return UTF8Char((byte *)s, idx); }
-    static uint32_t     UTF8Char(const byte *s, int &idx);
-
-    static bool         IsValidUTF8(const uint8_t *s, const int maxLen, UTF8Encoding &encoding);
-    static bool         IsValidUTF8(const char *s, const int maxLen, UTF8Encoding &encoding) { return IsValidUTF8((const uint8_t *)s, maxLen, encoding); }
-    static bool         IsValidUTF8(const uint8_t *s, const int maxLen) { UTF8Encoding encoding; return IsValidUTF8(s, maxLen, encoding); }
-    static bool         IsValidUTF8(const char *s, const int maxLen) { return IsValidUTF8((const uint8_t *)s, maxLen); }
-
+ 
     static int          Hash(const char *string);
     static int          Hash(const char *string, int length);
     static int          IHash(const char *string);
@@ -873,12 +867,35 @@ BE_INLINE void Str::Fill(const char ch, int newLen) {
     data[len] = 0;
 }
 
-BE_INLINE void Str::ConvertToUTF8() {
-    Str temp(*this);
+BE_INLINE void Str::SetUTF8FromLatin1(const char *str) {
     Clear();
-    for (int index = 0; index < temp.Length(); ++index) {
-        AppendUTF8Char(temp[index]);
+
+    while (*str) {
+        AppendUTF8Char(*str++);
     }
+}
+
+BE_INLINE void Str::SetUTF8FromWChar(const wchar_t *str) {
+    char temp[7];
+
+    Clear();
+
+#ifdef _WIN32
+    while (*str) {
+        uint32_t unicodeChar = UTF16::Decode(str);
+        char *dest = temp;
+        UTF8::Encode(dest, unicodeChar);
+        *dest = 0;
+        Append(temp);
+    }
+#else
+    while (*str) {
+        char *dest = temp;
+        UTF8::Encode(dest, (uint32_t)*str++);
+        *dest = 0;
+        Append(temp);
+    }
+#endif
 }
 
 BE_INLINE int Str::Find(const char ch, int start, int end) const {
