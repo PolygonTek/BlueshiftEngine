@@ -151,7 +151,10 @@ ProcessHandle PlatformWinProcess::CreateProccess(const wchar_t *appPath, const w
     wchar_t commandLine[32768];
     WStr::snPrintf(commandLine, COUNT_OF(commandLine), L"%s %s", appPath, args);
 
-    if (!CreateProcessW(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, workingDirectory, &si, &pi)) {
+    wchar_t workingDirectory2[256];
+    ExpandEnvironmentStringsW(workingDirectory, workingDirectory2, COUNT_OF(workingDirectory2));
+
+    if (!CreateProcessW(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, workingDirectory2, &si, &pi)) {
         WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_WARNLOG(L"Failed to CreateProcess : %ls", lastErrorText.c_str());
         return ProcessHandle();
