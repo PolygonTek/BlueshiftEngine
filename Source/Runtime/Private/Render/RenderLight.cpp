@@ -89,8 +89,9 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         R_SetPerspectiveProjectionMatrix(xFov, yFov, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), false, projMatrix);
 
         // Calculate light fall-off matrix
-        R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0, state.size[0], fallOffMatrix);
-        fallOffMatrix = fallOffMatrix * viewMatrix;
+        Mat4 orthoProjMatrix;
+        R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0, state.size[0], orthoProjMatrix);
+        fallOffMatrix = orthoProjMatrix * viewMatrix;
     } else {
         assert(0);
     }
