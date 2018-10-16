@@ -162,7 +162,7 @@ elseif (ANDROID)
     add_compile_options("-Wparentheses-equality")
     add_compile_options("-Wlogical-not-parentheses")
     add_compile_options("-Wshift-overflow")
-    add_compile_options("-Wtautological-undefined-compare")
+    add_compile_options("-Wno-tautological-undefined-compare")
 endif ()
 
 ################################################################################
