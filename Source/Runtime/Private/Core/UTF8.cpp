@@ -27,7 +27,7 @@ static const byte trailingBytes[64] = {
 
 static const uint32_t trailingMask[6] = { 0x0000007f, 0x0000001f, 0x0000000f, 0x00000007, 0x00000003, 0x00000001 };
 
-bool UTF8::IsValid(const uint8_t *s, const int maxLen, Encoding &encoding) {
+bool UTF8::IsValid(const char *s, const int maxLen, Encoding &encoding) {
     struct Local {
         static int GetNumEncodedUTF8Bytes(const uint8_t c) {
             if (c < 0x80) { // 0xxxxxxx
@@ -74,7 +74,7 @@ bool UTF8::IsValid(const uint8_t *s, const int maxLen, Encoding &encoding) {
             continue;   // just low ASCII
         } else if (numBytes == 2) {
             // 2 byte encoding - the next byte must begin with bit pattern 10
-            if (!Local::RemainingCharsAreUTF8FollowingBytes(s, i, maxLen, 1)) {
+            if (!Local::RemainingCharsAreUTF8FollowingBytes((const uint8_t *)s, i, maxLen, 1)) {
                 return false;
             }
             // skip over UTF-8 character
@@ -82,7 +82,7 @@ bool UTF8::IsValid(const uint8_t *s, const int maxLen, Encoding &encoding) {
             encoding = utf8Type;
         } else if (numBytes == 3) {
             // 3 byte encoding - the next 2 bytes must begin with bit pattern 10
-            if (!Local::RemainingCharsAreUTF8FollowingBytes(s, i, maxLen, 2)) {
+            if (!Local::RemainingCharsAreUTF8FollowingBytes((const uint8_t *)s, i, maxLen, 2)) {
                 return false;
             }
             // skip over UTF-8 character
@@ -90,7 +90,7 @@ bool UTF8::IsValid(const uint8_t *s, const int maxLen, Encoding &encoding) {
             encoding = utf8Type;
         } else if (numBytes == 4) {
             // 4 byte encoding - the next 3 bytes must begin with bit pattern 10
-            if (!Local::RemainingCharsAreUTF8FollowingBytes(s, i, maxLen, 3)) {
+            if (!Local::RemainingCharsAreUTF8FollowingBytes((const uint8_t *)s, i, maxLen, 3)) {
                 return false;
             }
             // skip over UTF-8 character
@@ -109,7 +109,7 @@ bool UTF8::IsValid(const uint8_t *s, const int maxLen, Encoding &encoding) {
     return true;
 }
 
-void UTF8::Encode(char *&dest, uint32_t unicodeChar) {
+void UTF8::Encode(char *&dest, char32_t unicodeChar) {
     if (unicodeChar < 0x80) {
         *dest++ = (char)unicodeChar;
     } else if (unicodeChar < 0x800) { // 11 bits
@@ -147,7 +147,7 @@ void UTF8::Encode(char *&dest, uint32_t unicodeChar) {
 
 #define GET_NEXT_CONTINUATION_BYTE(ptr) *ptr; if ((byte)*ptr < 0x80 || (byte)*ptr >= 0xC0) return '?'; else ++ptr;
 
-uint32_t UTF8::Decode(const char *&src) {
+char32_t UTF8::Decode(const char *&src) {
     if (!src) {
         return 0;
     }
@@ -166,38 +166,38 @@ uint32_t UTF8::Decode(const char *&src) {
         return char1;
     } else if (char1 < 0xE0) {
         byte char2 = GET_NEXT_CONTINUATION_BYTE(src);
-        return (uint32_t)((char2 & 0x3F) | ((char1 & 0x1F) << 6));
+        return (char32_t)((char2 & 0x3F) | ((char1 & 0x1F) << 6));
     } else if (char1 < 0xF0) {
         byte char2 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char3 = GET_NEXT_CONTINUATION_BYTE(src);
-        return (uint32_t)((char3 & 0x3F) | ((char2 & 0x3F) << 6) | ((char1 & 0xF) << 12));
+        return (char32_t)((char3 & 0x3F) | ((char2 & 0x3F) << 6) | ((char1 & 0xF) << 12));
     } else if (char1 < 0xF8) {
         byte char2 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char3 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char4 = GET_NEXT_CONTINUATION_BYTE(src);
-        return (uint32_t)((char4 & 0x3F) | ((char3 & 0x3F) << 6) | ((char2 & 0x3F) << 12) | ((char1 & 0x7) << 18));
+        return (char32_t)((char4 & 0x3F) | ((char3 & 0x3F) << 6) | ((char2 & 0x3F) << 12) | ((char1 & 0x7) << 18));
     } else if (char1 < 0xFC) {
         byte char2 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char3 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char4 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char5 = GET_NEXT_CONTINUATION_BYTE(src);
-        return (uint32_t)((char5 & 0x3F) | ((char4 & 0x3F) << 6) | ((char3 & 0x3F) << 12) | ((char2 & 0x3F) << 18) | ((char1 & 0x3) << 24));
+        return (char32_t)((char5 & 0x3F) | ((char4 & 0x3F) << 6) | ((char3 & 0x3F) << 12) | ((char2 & 0x3F) << 18) | ((char1 & 0x3) << 24));
     } else {
         byte char2 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char3 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char4 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char5 = GET_NEXT_CONTINUATION_BYTE(src);
         byte char6 = GET_NEXT_CONTINUATION_BYTE(src);
-        return (uint32_t)((char6 & 0x3F) | ((char5 & 0x3F) << 6) | ((char4 & 0x3F) << 12) | ((char3 & 0x3F) << 18) | ((char2 & 0x3F) << 24) | ((char1 & 0x1) << 30));
+        return (char32_t)((char6 & 0x3F) | ((char5 & 0x3F) << 6) | ((char4 & 0x3F) << 12) | ((char3 & 0x3F) << 18) | ((char2 & 0x3F) << 24) | ((char1 & 0x1) << 30));
     }
 }
 
-int UTF8::Length(const byte *s) {
+int UTF8::Length(const char *s) {
     int mbLen = 0;
     int charLen = 0;
 
     while (s[mbLen] != '\0') {
-        uint32_t cindex = s[mbLen];
+        uint32_t cindex = (byte)s[mbLen];
 
         if (cindex < 0x80) {
             mbLen++;
@@ -213,12 +213,13 @@ int UTF8::Length(const byte *s) {
     return charLen;
 }
 
-uint32_t UTF8::Char(const byte *s, int &idx) {
-    if (idx >= 0) {
-        while (s[idx] != '\0') {
-            uint32_t cindex = s[idx];
+char32_t UTF8::CharAdvance(const char *s, int &offset) {
+    if (offset >= 0) {
+        uint32_t cindex = (byte)s[offset];
+
+        if (cindex != '\0') {
             if (cindex < 0x80) {
-                idx++;
+                offset++;
                 return cindex;
             }
             int trailing = 0;
@@ -228,14 +229,54 @@ uint32_t UTF8::Char(const byte *s, int &idx) {
             cindex &= trailingMask[trailing];
             while (trailing-- > 0) {
                 cindex <<= 6;
-                cindex += s[++idx] & 0x0000003f;
+                cindex += ((byte)s[++offset]) & 0x0000003f;
             }
-            idx++;
+            offset++;
             return cindex;
         }
     }
-    idx++;
+    offset++;
     return 0;   // return a null terminator if out of range
+}
+
+char32_t UTF8::CharPrevious(const char *s, int &offset) {
+    if (Previous(s, offset)) {
+        return Char(s, offset);
+    }
+    return 0;
+}
+
+bool UTF8::Advance(const char *s, int &offset) {
+    if (offset >= 0) {
+        uint32_t cindex = (byte)s[offset];
+
+        if (cindex != '\0') {
+            if (cindex < 0x80) {
+                offset++;
+                return true;
+            }
+            int trailing = 0;
+            if (cindex >= 0xc0) {
+                trailing = trailingBytes[cindex - 0xc0];
+            }
+            offset += trailing + 1;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool UTF8::Previous(const char *s, int &offset) {
+    if (offset <= 0) {
+        return false;
+    }
+
+    while ((((byte)s[--offset]) >> 6) == 2) {
+        if (offset < 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 BE_NAMESPACE_END

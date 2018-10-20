@@ -790,7 +790,7 @@ void SubMesh::ComputeDominantTris() {
 
         // Now dominantTri is [i, dominantTriVertex2, dominantTriVertex3]
         if (dominantTriVertex2 == -1 || dominantTriVertex3 == -1) {
-            BE_FATALERROR(L"SubMesh::ComputeDominantTris: dominant triangle is not exist");
+            BE_FATALERROR("SubMesh::ComputeDominantTris: dominant triangle is not exist");
         }
 
         dominantTris[i].v2 = dominantTriVertex2;
@@ -956,7 +956,7 @@ void SubMesh::ComputeEdges() {
 
     // 2개 이상 공유된 edge 개수를 경고 출력.
     if (numDisjunctiveEdges > 0) {
-        BE_WARNLOG(L"%i disjunctive edges found\n", numDisjunctiveEdges);
+        BE_WARNLOG("%i disjunctive edges found\n", numDisjunctiveEdges);
     }
 
     numEdges = numTempEdges;

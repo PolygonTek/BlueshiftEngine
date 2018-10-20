@@ -76,7 +76,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
     case TGA_RLEMONO:
         break;
     default:
-        BE_LOG(L"Image::LoadTGAFromMemory: %hs has bad image_type %i\n", name, header->image_type);
+        BE_LOG("Image::LoadTGAFromMemory: %s has bad image_type %i\n", name, header->image_type);
         return false;
     }
 
@@ -87,7 +87,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
     case 32:
         break;
     default:
-        BE_WARNLOG(L"Image::LoadTGAFromMemory: %hs has bad bpp %i\n", name, header->bpp);
+        BE_WARNLOG("Image::LoadTGAFromMemory: %s has bad bpp %i\n", name, header->bpp);
         return false;
     }
 
@@ -106,7 +106,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         case 32:
             break;
         default:
-            BE_WARNLOG(L"Image::LoadTGAFromMemory: %hs has bad %i bpp colormaps\n", name, header->bpp);
+            BE_WARNLOG("Image::LoadTGAFromMemory: %s has bad %i bpp colormaps\n", name, header->bpp);
             return false;
         }
 
@@ -260,7 +260,7 @@ PixEncode:
 bool Image::WriteTGA(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Image::WriteTGA: file open error\n");
+        BE_WARNLOG("Image::WriteTGA: file open error\n");
         return false;
     }
 

@@ -37,7 +37,7 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
         break;
     case Image::XGBR_DXT5:
         DecompressDXT5(srcImage, dstImage);
-        BE_WARNLOG(L"XGBR_DXT5n\n");
+        BE_WARNLOG("XGBR_DXT5n\n");
         break;
     case Image::DXN2:
         DecompressDXN2(srcImage, dstImage);
@@ -65,7 +65,7 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
         DecompressETC2_RGB8A1(srcImage, dstImage);
         break;
     default:
-        BE_WARNLOG(L"DecompressImage: unsupported format %hs\n", srcImage.FormatName());
+        BE_WARNLOG("DecompressImage: unsupported format %s\n", srcImage.FormatName());
         return false;
     }
 
@@ -104,12 +104,12 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
         CompressETC2_RGBA1(srcImage, dstImage, compressoinQuality);
         break;
     default:
-        BE_WARNLOG(L"CompressImage: unsupported format %hs\n", dstImage.FormatName());
+        BE_WARNLOG("CompressImage: unsupported format %s\n", dstImage.FormatName());
         return false;
     }
 
     //uint64_t endClocks = rdtsc();
-    //BE_LOG(L"%DXT compression in %" PRIu64 " clocks\n", endClocks - startClocks);
+    //BE_LOG("%DXT compression in %" PRIu64 " clocks\n", endClocks - startClocks);
 
     return true;
 }
@@ -173,7 +173,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
     ImagePackFunc packFunc = toFloat ? dstFormatInfo->packRGBA32F : dstFormatInfo->packRGBA8888;
     
     if (!unpackFunc || !packFunc) {
-        BE_WARNLOG(L"Image::ConvertFormat: unsupported convert type (from %hs to %hs)\n", srcImage->FormatName(), dstImage.FormatName());
+        BE_WARNLOG("Image::ConvertFormat: unsupported convert type (from %s to %s)\n", srcImage->FormatName(), dstImage.FormatName());
         dstImage.Clear();
         return false;
     }

@@ -16,6 +16,7 @@
 #include "File/FileSystem.h"
 #include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinFile.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 #include "Platform/PlatformProcess.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -161,7 +162,9 @@ PlatformWinFile *PlatformWinFile::OpenFileRead(const char *filename) {
     DWORD access = GENERIC_READ;
     DWORD shareMode = FILE_SHARE_READ;
     DWORD creation = OPEN_EXISTING;
-    HANDLE handle = CreateFileA(NormalizeFilename(filename), access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    HANDLE handle = CreateFileW(wFilename, access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE) {
         return nullptr;
     }
@@ -172,10 +175,12 @@ PlatformWinFile *PlatformWinFile::OpenFileWrite(const char *filename) {
     DWORD access = GENERIC_WRITE;
     DWORD shareMode = 0;
     DWORD creation = CREATE_ALWAYS;
-    HANDLE handle = CreateFileA(NormalizeFilename(filename), access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    HANDLE handle = CreateFileW(wFilename, access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE) {
-        WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_WARNLOG(L"Failed to CreateFile : %ls", lastErrorText.c_str());
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_WARNLOG("Failed to CreateFile : %s", lastErrorText.c_str());
         return nullptr;
     }
     return new PlatformWinFile(handle);
@@ -185,7 +190,9 @@ PlatformWinFile *PlatformWinFile::OpenFileAppend(const char *filename) {
     DWORD access = GENERIC_WRITE;
     DWORD shareMode = 0;
     DWORD creation = OPEN_ALWAYS;
-    HANDLE handle = CreateFileA(NormalizeFilename(filename), access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    HANDLE handle = CreateFileW(wFilename, access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE) {
         return nullptr;
     }
@@ -194,7 +201,9 @@ PlatformWinFile *PlatformWinFile::OpenFileAppend(const char *filename) {
 
 bool PlatformWinFile::FileExists(const char *filename) {
     struct _stat fileInfo;
-    if (_stat(NormalizeFilename(filename), &fileInfo) == 0 && (fileInfo.st_mode & S_IFREG)) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    if (_wstat(wFilename, &fileInfo) == 0 && (fileInfo.st_mode & S_IFREG)) {
         return true;
     }
     return false;
@@ -202,7 +211,9 @@ bool PlatformWinFile::FileExists(const char *filename) {
 
 size_t PlatformWinFile::FileSize(const char *filename) {
     WIN32_FILE_ATTRIBUTE_DATA info;
-    if (!!GetFileAttributesExA(NormalizeFilename(filename), GetFileExInfoStandard, &info)) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    if (!!GetFileAttributesExW(wFilename, GetFileExInfoStandard, &info)) {
         if ((info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
             LARGE_INTEGER li;
             li.HighPart = info.nFileSizeHigh;
@@ -215,14 +226,18 @@ size_t PlatformWinFile::FileSize(const char *filename) {
 
 bool PlatformWinFile::IsFileWritable(const char *filename) {
     struct _stat fileInfo;
-    if (_stat(NormalizeFilename(filename), &fileInfo) == -1) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    if (_wstat(wFilename, &fileInfo) == -1) {
         return true;
     }
     return (fileInfo.st_mode & S_IWRITE) != 0;
 }
 
 bool PlatformWinFile::IsReadOnly(const char *filename) {
-    DWORD result = GetFileAttributesA(NormalizeFilename(filename));
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    DWORD result = GetFileAttributesW(wFilename);
     if (result == 0xFFFFFFFF) {
         return false;
     }
@@ -230,22 +245,30 @@ bool PlatformWinFile::IsReadOnly(const char *filename) {
 }
 
 bool PlatformWinFile::SetReadOnly(const char *filename, bool readOnly) {
-    return !!SetFileAttributesA(NormalizeFilename(filename), readOnly ? FILE_ATTRIBUTE_READONLY : FILE_ATTRIBUTE_NORMAL);
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    return !!SetFileAttributesW(wFilename, readOnly ? FILE_ATTRIBUTE_READONLY : FILE_ATTRIBUTE_NORMAL);
 }
 
 bool PlatformWinFile::RemoveFile(const char *filename) {
-    return !!DeleteFileA(NormalizeFilename(filename));
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    return !!DeleteFileW(wFilename);
 }
 
 bool PlatformWinFile::MoveFile(const char *from, const char *to) {
-    Str normalizedFrom = NormalizeFilename(from);
-    Str normalizedTo = NormalizeFilename(to);
-    return !!MoveFileA(normalizedFrom, normalizedTo);
+    wchar_t wFrom[1024];
+    wchar_t wTo[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(from), wFrom, COUNT_OF(wFrom));
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(to), wTo, COUNT_OF(wTo));
+    return !!MoveFileW(wFrom, wTo);
 }
 
 int PlatformWinFile::GetFileMode(const char *filename) {
     struct _stat fileInfo;
-    if (_stat(NormalizeFilename(filename), &fileInfo) != 0) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    if (_wstat(wFilename, &fileInfo) != 0) {
         return -1;
     }
     int fileMode = 0;
@@ -272,13 +295,17 @@ void PlatformWinFile::SetFileMode(const char *filename, int fileMode) {
     if (fileMode & Executable) {
         mode |= _S_IEXEC;
     }
-    _chmod(NormalizeFilename(filename), mode);
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    _wchmod(wFilename, mode);
 }
 
 DateTime PlatformWinFile::GetTimeStamp(const char *filename) {
     static const DateTime epoch(1970, 1, 1);
     struct _stat fileInfo;
-    if (_stat(NormalizeFilename(filename), &fileInfo) == -1) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    if (_wstat(wFilename, &fileInfo) == -1) {
         return DateTime::MinValue();
     }
     
@@ -288,50 +315,56 @@ DateTime PlatformWinFile::GetTimeStamp(const char *filename) {
 
 void PlatformWinFile::SetTimeStamp(const char *filename, const DateTime &timeStamp) {
     static const DateTime epoch(1970, 1, 1);
-    struct stat fileInfo;
-    if (stat(NormalizeFilename(filename), &fileInfo) == -1) {
+    struct _stat fileInfo;
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    if (_wstat(wFilename, &fileInfo) == -1) {
         return;
     }
     
     struct _utimbuf times;
     times.actime = fileInfo.st_atime;
     times.modtime = (timeStamp - epoch).TotalSeconds();
-    _utime(filename, &times);
+    _wutime(wFilename, &times);
 }
 
-bool PlatformWinFile::DirectoryExists(const char *dirname) {
+bool PlatformWinFile::DirectoryExists(const char *filename) {
     struct _stat fileInfo;
-    if (_stat(NormalizeFilename(dirname), &fileInfo) == 0 && (fileInfo.st_mode & S_IFDIR)) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    if (_wstat(wFilename, &fileInfo) == 0 && (fileInfo.st_mode & S_IFDIR)) {
         return true;
     }
     return false;
 }
 
-bool PlatformWinFile::CreateDirectory(const char *dirname) {
-    if (DirectoryExists(dirname)) {
+bool PlatformWinFile::CreateDirectory(const char *filename) {
+    if (DirectoryExists(filename)) {
         return true;
     }
-    return _mkdir(NormalizeFilename(dirname)) == 0;
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    return _wmkdir(wFilename) == 0;
 }
 
-static bool RemoveDirRecursive(const char *path) {
-    char findPath[MAX_PATH];
-    strcpy(findPath, path);
-    strcat(findPath, "\\*");
-    
-    char filename[MAX_PATH];
-    strcpy(filename, path);
-    strcat(filename, "\\");
-    
-    _finddata_t finddata;
-    intptr_t handle = _findfirst(findPath, &finddata);
+static bool RemoveDirRecursive(const wchar_t *path) {
+    wchar_t findPath[MAX_PATH];
+    wcscpy(findPath, path);
+    wcscat(findPath, L"\\*");
+
+    wchar_t filename[MAX_PATH];
+    wcscpy(filename, path);
+    wcscat(filename, L"\\");
+
+    _wfinddata_t finddata;
+    intptr_t handle = _wfindfirst(findPath, &finddata);
     if (handle == -1) {
         return false;
     }
-    strcpy(findPath, filename);
+    wcscpy(findPath, filename);
     
     while (1) {
-        if (_findnext(handle, &finddata) == -1) {
+        if (_wfindnext(handle, &finddata) == -1) {
             if (GetLastError() == ERROR_NO_MORE_FILES) {
                 break;
             } else {
@@ -341,11 +374,11 @@ static bool RemoveDirRecursive(const char *path) {
             }
         }
         
-        if (!strcmp(finddata.name, ".") || !strcmp(finddata.name, "..")) {
+        if (!wcscmp(finddata.name, L".") || !wcscmp(finddata.name, L"..")) {
             continue;
         }
         
-        strcat(filename, finddata.name);
+        wcscat(filename, finddata.name);
         
         if (finddata.attrib & _A_SUBDIR) {
             if (!RemoveDirRecursive(filename)) {
@@ -355,90 +388,101 @@ static bool RemoveDirRecursive(const char *path) {
             }
             
             // remove the empty directory
-            RemoveDirectoryA(filename);
-            strcpy(filename, findPath);
+            RemoveDirectoryW(filename);
+            wcscpy(filename, findPath);
         } else {
             if (finddata.attrib & _A_RDONLY) {
                 // change read-only file mode
-                _chmod(filename, _S_IWRITE);
+                _wchmod(filename, _S_IWRITE);
             }
             
-            if (!DeleteFileA(filename)) {
+            if (!DeleteFileW(filename)) {
                 _findclose(handle);
                 return false;
             }
             
-            strcpy(filename, findPath);
+            wcscpy(filename, findPath);
         }
     }
     
     _findclose(handle);
     
     // remove the empty directory
-    if (!RemoveDirectoryA(path)) {
-        WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_WARNLOG(L"Failed to RemoveDirectory : %ls", lastErrorText.c_str());
+    if (!RemoveDirectoryW(path)) {
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_WARNLOG("Failed to RemoveDirectory : %s", lastErrorText.c_str());
         return false;
     }
     
     return true;
 }
 
-bool PlatformWinFile::RemoveDirectoryTree(const char *dirname) {
-    Str normalizedDirname = NormalizeFilename(dirname);
-    return RemoveDirRecursive(normalizedDirname);
+bool PlatformWinFile::RemoveDirectoryTree(const char *filename) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    return RemoveDirRecursive(wFilename);
 }
 
-bool PlatformWinFile::RemoveDirectory(const char *dirname) {
-    Str normalizedDirname = NormalizeFilename(dirname);
-    return _rmdir(normalizedDirname) == 0;
+bool PlatformWinFile::RemoveDirectory(const char *filename) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    return _wrmdir(wFilename) == 0;
 }
 
 const char *PlatformWinFile::Cwd() {
+    wchar_t wCwd[MaxAbsolutePath];
+    _wgetcwd(wCwd, COUNT_OF(wCwd));
+    wCwd[COUNT_OF(wCwd) - 1] = 0;
+
     static char cwd[MaxAbsolutePath];
-    
-    _getcwd(cwd, sizeof(cwd) - 1);
-    cwd[sizeof(cwd) - 1] = 0;
+    PlatformWinUtils::UCS2ToUTF8(wCwd, cwd, COUNT_OF(cwd));
     return cwd;
 }
 
-bool PlatformWinFile::SetCwd(const char *dirname) {
-    return _chdir(dirname) == 0 ? true : false;
+bool PlatformWinFile::SetCwd(const char *filename) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    return _wchdir(wFilename) == 0 ? true : false;
 }
 
 const char *PlatformWinFile::ExecutablePath() {
-    static char path[MaxAbsolutePath];
-    GetModuleFileNameA(nullptr, path, COUNT_OF(path));
+    wchar_t wExePath[MaxAbsolutePath];
 
-    for (int i = strlen(path) - 1; i >= 0; i--) {
-        if (path[i] == '\\') {
-            path[i + 1] = '\0';
+    GetModuleFileNameW(nullptr, wExePath, COUNT_OF(wExePath));
+
+    // Remove executable filename
+    for (int i = wcslen(wExePath) - 1; i >= 0; i--) {
+        if (wExePath[i] == L'\\') {
+            wExePath[i + 1] = L'\0';
             break;
         }
     }
-    return path;
+
+    static char exePath[MaxAbsolutePath];
+    PlatformWinUtils::UCS2ToUTF8(wExePath, exePath, COUNT_OF(exePath));
+    return exePath;
 }
 
-void PlatformWinFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
-    FileInfo    fileInfo;
-    _finddata_t finddata;
-    char        pattern[MaxAbsolutePath];
-    char        subpath[MaxAbsolutePath];
-    char        filename[MaxAbsolutePath];
+static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
+    FileInfo fileInfo;
+    _wfinddata_t finddata;
+    wchar_t pattern[MaxAbsolutePath];
+    char subpath[MaxAbsolutePath];
+    char filename[MaxAbsolutePath];
 
     if (subdir[0]) {
-        Str::snPrintf(pattern, sizeof(pattern), "%s%s\\*", directory, subdir);
+        WStr::snPrintf(pattern, COUNT_OF(pattern), L"%hs%hs\\*", directory, subdir);
     } else {
-        Str::snPrintf(pattern, sizeof(pattern), "%s*", directory);
+        WStr::snPrintf(pattern, COUNT_OF(pattern), L"%hs*", directory);
     }
 
-    intptr_t handle = _findfirst(pattern, &finddata);
+    intptr_t handle = _wfindfirst(pattern, &finddata);
     if (handle == -1) {
         return;
     }
 
     do {
-        if (!Str::Cmp(finddata.name, ".") || !Str::Cmp(finddata.name, "..")) {
+        if (!wcscmp(finddata.name, L".") || !wcscmp(finddata.name, L"..")) {
             continue;
         }
 
@@ -446,9 +490,9 @@ void PlatformWinFile::ListFilesRecursive(const char *directory, const char *subd
 
         if (finddata.attrib & _A_SUBDIR) {
             if (subdir[0]) {
-                Str::snPrintf(subpath, sizeof(subpath), "%s\\%s", subdir, finddata.name);
+                Str::snPrintf(subpath, sizeof(subpath), "%s\\%ls", subdir, finddata.name);
             } else {
-                Str::snPrintf(subpath, sizeof(subpath), "%s", finddata.name);
+                Str::snPrintf(subpath, sizeof(subpath), "%ls", finddata.name);
             }
 
             fileInfo.isSubDir = true;
@@ -462,17 +506,20 @@ void PlatformWinFile::ListFilesRecursive(const char *directory, const char *subd
             fileInfo.isSubDir = false;
         }
 
-        if (Str::Filter(nameFilter, finddata.name, false)) {
+        char name[1024];
+        PlatformWinUtils::UCS2ToUTF8(finddata.name, name, COUNT_OF(name));
+
+        if (Str::Filter(nameFilter, name, false)) {
             if (subdir[0]) {
-                Str::snPrintf(filename, sizeof(filename), "%s\\%s", subdir, finddata.name);
+                Str::snPrintf(filename, sizeof(filename), "%s\\%ls", subdir, finddata.name);
             } else {
-                Str::snPrintf(filename, sizeof(filename), "%s", finddata.name);
+                Str::snPrintf(filename, sizeof(filename), "%ls", finddata.name);
             }
 
             fileInfo.relativePath = filename;
             files.Append(fileInfo);
         }
-    } while (_findnext(handle, &finddata) != -1);
+    } while (_wfindnext(handle, &finddata) != -1);
 
     _findclose(handle);
 }
@@ -483,17 +530,17 @@ int PlatformWinFile::ListFiles(const char *directory, const char *nameFilter, bo
     }
 
     files.Clear();
-    
-    Str normalizedDirectory = NormalizeDirectory(directory);
 
+    Str normalizedDirectory = NormalizeDirectory(directory);
+    
     if (recursive) {
         ListFilesRecursive(normalizedDirectory, "", nameFilter, includeSubDir, files);
     } else {
-        char pattern[MaxAbsolutePath];
-        Str::snPrintf(pattern, sizeof(pattern), "%s\\%s", normalizedDirectory.c_str(), nameFilter);
+        wchar_t pattern[MaxAbsolutePath];
+        WStr::snPrintf(pattern, COUNT_OF(pattern), L"%hs\\%hs", normalizedDirectory.c_str(), nameFilter);
 
-        _finddata_t finddata;
-        intptr_t handle = _findfirst(pattern, &finddata);
+        _wfinddata_t finddata;
+        intptr_t handle = _wfindfirst(pattern, &finddata);
         if (handle == -1) {
             return 0;
         }
@@ -509,11 +556,14 @@ int PlatformWinFile::ListFiles(const char *directory, const char *nameFilter, bo
                 fileInfo.isSubDir = false;
             }
 
+            char name[1024];
+            PlatformWinUtils::UCS2ToUTF8(finddata.name, name, COUNT_OF(name));
+
             //fileInfo.size = finddata.size;
-            fileInfo.relativePath = finddata.name;
+            fileInfo.relativePath = name;
 
             files.Append(fileInfo);
-        } while (_findnext(handle, &finddata) != -1);
+        } while (_wfindnext(handle, &finddata) != -1);
 
         _findclose(handle);
     }

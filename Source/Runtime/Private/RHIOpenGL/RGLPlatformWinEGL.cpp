@@ -33,10 +33,10 @@ static int          deviceBpp = 0;
 static int          deviceHz = 0;
 static HGLRC        hrcMain;
 
-static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
-static CVar         gl_debugLevel(L"gl_debugLevel", L"1", CVar::Integer, L"");
-static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"");
-static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
+static CVar         gl_debug("gl_debug", "1", CVar::Bool, "");
+static CVar         gl_debugLevel("gl_debugLevel", "1", CVar::Integer, "");
+static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Bool, "");
+static CVar         gl_finish("gl_finish", "0", CVar::Bool, "");
 
 static LRESULT CALLBACK FakeWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -58,7 +58,7 @@ static HWND CreateFakeWindow() {
         wc.lpszMenuName = _T("");
         wc.lpszClassName = FAKE_WINDOW_CLASSNAME;
         if (!RegisterClass(&wc)) {
-            BE_FATALERROR(L"Couldn't register fake window class");
+            BE_FATALERROR("Couldn't register fake window class");
         }
     }
 
@@ -67,7 +67,7 @@ static HWND CreateFakeWindow() {
         nullptr, nullptr, wc.hInstance, nullptr);
 
     if (!hwndFake) {
-        BE_FATALERROR(L"Couldn't create fake window");
+        BE_FATALERROR("Couldn't create fake window");
     }
 
     // hide fake window
@@ -226,7 +226,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     //mainContext->eglDisplay = eglGetDisplay(mainContext->hdc);
     mainContext->eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (mainContext->eglDisplay == EGL_NO_DISPLAY) {
-        BE_FATALERROR(L"Couldn't get EGL display");
+        BE_FATALERROR("Couldn't get EGL display");
     }
 
     // Initialize EGL for this display
@@ -237,10 +237,10 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     eglClientAPIs = eglQueryString(mainContext->eglDisplay, EGL_CLIENT_APIS);
     eglExtensions = eglQueryString(mainContext->eglDisplay, EGL_EXTENSIONS);
 
-    BE_LOG(L"EGL version: %hs\n", eglVersion.c_str());
-    BE_LOG(L"EGL vendor: %hs\n", eglVendor.c_str());
-    BE_LOG(L"EGL client APIs: %hs\n", eglClientAPIs.c_str());
-    BE_LOG(L"EGL extensions: %hs\n", eglExtensions.c_str());
+    BE_LOG("EGL version: %s\n", eglVersion.c_str());
+    BE_LOG("EGL vendor: %s\n", eglVendor.c_str());
+    BE_LOG("EGL client APIs: %s\n", eglClientAPIs.c_str());
+    BE_LOG("EGL extensions: %s\n", eglExtensions.c_str());
 
     // Set the current rendering API
     eglBindAPI(1 ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
@@ -253,19 +253,19 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
     mainContext->eglContext = eglCreateContext(mainContext->eglDisplay, mainContext->eglConfig, EGL_NO_CONTEXT, contextAttribs);
     if (mainContext->eglContext == EGL_NO_CONTEXT) {
-        BE_FATALERROR(L"Couldn't create EGL context");
+        BE_FATALERROR("Couldn't create EGL context");
     }
 
     // Once we've got a valid configuration we can create a window surface that'll be used for rendering
     EGLint surfaceAttribs[] = { EGL_NONE };
     mainContext->eglSurface = eglCreateWindowSurface(mainContext->eglDisplay, mainContext->eglConfig, mainContext->hwnd, surfaceAttribs);
     if (mainContext->eglSurface == EGL_NO_SURFACE) {
-        BE_FATALERROR(L"Couldn't create EGL window surface");
+        BE_FATALERROR("Couldn't create EGL window surface");
     }
 
     // Associate the EGL context with the EGL surface
     if (!eglMakeCurrent(mainContext->eglDisplay, mainContext->eglSurface, mainContext->eglSurface, mainContext->eglContext)) {
-        BE_FATALERROR(L"Couldn't make current context");
+        BE_FATALERROR("Couldn't make current context");
     }
 
     GetGLVersion(&majorVersion, &minorVersion);
@@ -286,23 +286,23 @@ void OpenGLRHI::FreeMainContext() {
     eglMakeCurrent(mainContext->eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
     if (!eglDestroyContext(mainContext->eglDisplay, mainContext->eglContext)) {
-        BE_FATALERROR(L"destroying main context EGL context: failed");
+        BE_FATALERROR("destroying main context EGL context: failed");
     }
 
     if (!eglDestroySurface(mainContext->eglDisplay, mainContext->eglSurface)) {
-        BE_FATALERROR(L"destroying main context EGL surface: failed");
+        BE_FATALERROR("destroying main context EGL surface: failed");
     }
 
     if (!eglTerminate(mainContext->eglDisplay)) {
-        BE_FATALERROR(L"terminating main context EGL display: failed");
+        BE_FATALERROR("terminating main context EGL display: failed");
     }
 
     if (!ReleaseDC(mainContext->hwnd, mainContext->hdc)) {
-        BE_FATALERROR(L"releasing main context DC: failed");
+        BE_FATALERROR("releasing main context DC: failed");
     }
 
     if (!DestroyWindow(mainContext->hwnd)) {
-        BE_FATALERROR(L"destroying main context window: failed");
+        BE_FATALERROR("destroying main context window: failed");
     }
 
     SAFE_DELETE(mainContext->state);
@@ -341,7 +341,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     ctx->hwnd = (HWND)windowHandle;
     ctx->hdc = GetDC(ctx->hwnd);
     if (!ctx->hdc) {
-        BE_FATALERROR(L"get DC: failed");
+        BE_FATALERROR("get DC: failed");
     }
     
     SetWindowLongPtr(ctx->hwnd, GWLP_USERDATA, (LONG_PTR)ctx);
@@ -361,7 +361,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         EGLint surfaceAttribs[] = { EGL_NONE };
         ctx->eglSurface = eglCreateWindowSurface(ctx->eglDisplay, ctx->eglConfig, ctx->hwnd, surfaceAttribs);
         if (ctx->eglSurface == EGL_NO_SURFACE) {
-            BE_FATALERROR(L"Couldn't create EGL window surface");
+            BE_FATALERROR("Couldn't create EGL window surface");
         }
     } else {
         ctx->state = new GLState;
@@ -369,7 +369,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ctx->eglDisplay = mainContext->eglDisplay;
         /*ctx->eglDisplay = eglGetDisplay(ctx->hdc);
         if (ctx->eglDisplay == EGL_NO_DISPLAY) {
-            BE_FATALERROR(L"Couldn't get EGL display");
+            BE_FATALERROR("Couldn't get EGL display");
         }
         
         // Initialize EGL for this display
@@ -381,13 +381,13 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
         ctx->eglContext = eglCreateContext(ctx->eglDisplay, ctx->eglConfig, mainContext->eglContext, contextAttribs);
         if (ctx->eglContext == EGL_NO_CONTEXT) {
-            BE_FATALERROR(L"Couldn't create EGL context");
+            BE_FATALERROR("Couldn't create EGL context");
         }
 
         EGLint surfaceAttribs[] = { EGL_NONE };
         ctx->eglSurface = eglCreateWindowSurface(ctx->eglDisplay, ctx->eglConfig, ctx->hwnd, surfaceAttribs);
         if (ctx->eglSurface == EGL_NO_SURFACE) {
-            BE_FATALERROR(L"Couldn't create EGL window surface");
+            BE_FATALERROR("Couldn't create EGL window surface");
         }
     }
 
@@ -413,14 +413,14 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
         gglDeleteVertexArrays(1, &ctx->defaultVAO);
 
         if (!eglDestroyContext(ctx->eglDisplay, ctx->eglContext)) {
-            BE_FATALERROR(L"destroying context EGL context: failed");
+            BE_FATALERROR("destroying context EGL context: failed");
         }
-        BE_DLOG(L"destroying context EGL context: ok\n");
+        BE_DLOG("destroying context EGL context: ok\n");
 
         if (!eglDestroySurface(ctx->eglDisplay, ctx->eglSurface)) {
-            BE_FATALERROR(L"destroying context EGL surface: failed");
+            BE_FATALERROR("destroying context EGL surface: failed");
         }
-        BE_DLOG(L"destroying context EGL surface: ok\n");
+        BE_DLOG("destroying context EGL surface: ok\n");
 
         delete ctx->state;
     }
@@ -452,7 +452,7 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     }
 
     if (!eglMakeCurrent(ctx->eglDisplay, ctx->eglSurface, ctx->eglSurface, ctx->eglContext)) {
-        BE_FATALERROR(L"OpenGLRHI::SetContext: Couldn't make current context");
+        BE_FATALERROR("OpenGLRHI::SetContext: Couldn't make current context");
     }
     
     this->currentContext = ctx;
@@ -506,7 +506,7 @@ bool OpenGLRHI::IsFullscreen() const {
 bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     HDC hdc;
 
-    BE_LOG(L"Changing display setting...\n");
+    BE_LOG("Changing display setting...\n");
     
     DEVMODE dm;
     memset(&dm, 0, sizeof(dm));
@@ -529,9 +529,9 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
             dm.dmFields |= DM_BITSPERPEL;
             dm.dmBitsPerPel = 16;
 
-            BE_LOG(L"using color bits of %i\n", 16);
+            BE_LOG("using color bits of %i\n", 16);
         } else {
-            BE_LOG(L"using desktop display depth of %i\n", bpp);
+            BE_LOG("using desktop display depth of %i\n", bpp);
         }
     }
 
@@ -541,7 +541,7 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     }
     
     if (ChangeDisplaySettings(&dm, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL) {
-        BE_WARNLOG(L"Can't change fullscreen mode");
+        BE_WARNLOG("Can't change fullscreen mode");
         return false;
     }
 
@@ -552,7 +552,7 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     deviceHz = GetDeviceCaps(hdc, VREFRESH);
     ReleaseDC(nullptr, hdc);
 
-    BE_LOG(L"set fullscreen mode: %ix%i %ibpp %ihz\n", width, height, deviceBpp, deviceHz);
+    BE_LOG("set fullscreen mode: %ix%i %ibpp %ihz\n", width, height, deviceBpp, deviceHz);
     return true;
 }
 
@@ -563,11 +563,11 @@ void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
 
     deviceFullscreen = false;
 
-    BE_LOG(L"resetting display setting: ");
+    BE_LOG("resetting display setting: ");
     if (ChangeDisplaySettings(nullptr, 0) == DISP_CHANGE_SUCCESSFUL) {
-        BE_LOG(L"ok\n");
+        BE_LOG("ok\n");
     } else {
-        BE_LOG(L"failed\n");
+        BE_LOG("failed\n");
     }
 
     HDC hdc = GetDC(nullptr);
@@ -575,7 +575,7 @@ void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
     deviceHz = GetDeviceCaps(hdc, VREFRESH);
     ReleaseDC(nullptr, hdc);
 
-    BE_LOG(L"set window mode: %ibpp %ihz\n", deviceBpp, deviceHz);
+    BE_LOG("set window mode: %ibpp %ihz\n", deviceBpp, deviceHz);
 }
 
 void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {

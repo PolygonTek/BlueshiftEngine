@@ -8,12 +8,12 @@ BE_NAMESPACE_BEGIN
 
 static const int MaxSources = 12;
 
-static CVar     s_khz(L"s_khz", L"44", CVar::Integer | CVar::Archive, L"");
-static CVar     s_doppler(L"s_doppler", L"1.0", CVar::Float | CVar::Archive, L"");
-static CVar     s_rolloff(L"s_rolloff", L"2.0", CVar::Float | CVar::Archive, L"");
+static CVar     s_khz("s_khz", "44", CVar::Integer | CVar::Archive, "");
+static CVar     s_doppler("s_doppler", "1.0", CVar::Float | CVar::Archive, "");
+static CVar     s_rolloff("s_rolloff", "2.0", CVar::Float | CVar::Archive, "");
 
 bool SoundSystem::InitDevice(void *windowHandle) {
-    BE_LOG(L"Initializing OpenSL ES...\n");
+    BE_LOG("Initializing OpenSL ES...\n");
 
     // Create the SL engine object
     SLresult result = slCreateEngine(&slEngineObject, 0, nullptr, 0, nullptr, nullptr);
@@ -58,7 +58,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
 }
 
 void SoundSystem::ShutdownDevice() {
-    BE_LOG(L"Shutting down OpenSL ES...\n");
+    BE_LOG("Shutting down OpenSL ES...\n");
 
     // Delete sources
     for (int sourceIndex = 0; sourceIndex < sources.Count(); sourceIndex++) {

@@ -33,8 +33,8 @@ static int          materialCounter = 0;
 static const int    MaxMaterialCount = 65536;
 
 void MaterialManager::Init() {
-    cmdSystem.AddCommand(L"listMaterials", Cmd_ListMaterials);
-    cmdSystem.AddCommand(L"reloadMaterial", Cmd_ReloadMaterial);
+    cmdSystem.AddCommand("listMaterials", Cmd_ListMaterials);
+    cmdSystem.AddCommand("reloadMaterial", Cmd_ReloadMaterial);
 
     materialHashMap.Init(1024, 65536, 1024);
 
@@ -111,8 +111,8 @@ void MaterialManager::CreateEngineMaterials() {
 }
 
 void MaterialManager::Shutdown() {
-    cmdSystem.RemoveCommand(L"listMaterials");
-    cmdSystem.RemoveCommand(L"reloadMaterial");
+    cmdSystem.RemoveCommand("listMaterials");
+    cmdSystem.RemoveCommand("reloadMaterial");
     
     for (int i = 0; i < materialHashMap.Count(); i++) {
         const auto *entry = materialManager.materialHashMap.GetByIndex(i);
@@ -142,11 +142,11 @@ void MaterialManager::DestroyUnusedMaterials() {
 
 Material *MaterialManager::AllocMaterial(const char *hashName) {
     if (materialHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs material already allocated", hashName);
+        BE_FATALERROR("%s material already allocated", hashName);
     }
 
     if (materialHashMap.Count() == MaterialManager::MaxCount) {
-        BE_FATALERROR(L"Material exceed maximum limits %i", MaterialManager::MaxCount);
+        BE_FATALERROR("Material exceed maximum limits %i", MaterialManager::MaxCount);
     }
     
     Material *material = new Material;
@@ -163,7 +163,7 @@ Material *MaterialManager::AllocMaterial(const char *hashName) {
 
 void MaterialManager::DestroyMaterial(Material *material) {
     if (material->refCount > 1) {
-        BE_LOG(L"MaterialManager::DestroyMaterial: material '%hs' has %i reference count\n", material->hashName.c_str(), material->refCount);
+        BE_LOG("MaterialManager::DestroyMaterial: material '%s' has %i reference count\n", material->hashName.c_str(), material->refCount);
     }
 
     materialHashMap.Remove(material->hashName);
@@ -318,13 +318,13 @@ void MaterialManager::ReleaseMaterial(Material *material, bool immediateDestroy)
 void MaterialManager::Cmd_ListMaterials(const CmdArgs &args) {
     int count = 0;
     
-    BE_LOG(L"NUM. REF. NAME\n");
+    BE_LOG("NUM. REF. NAME\n");
 
     for (int i = 0; i < materialManager.materialHashMap.Count(); i++) {
         const auto *entry = materialManager.materialHashMap.GetByIndex(i);
         Material *material = entry->second;
  
-        BE_LOG(L"%4d %4d %hs\n",
+        BE_LOG("%4d %4d %s\n",
             i,
             material->refCount,
             material->hashName.c_str());
@@ -332,16 +332,16 @@ void MaterialManager::Cmd_ListMaterials(const CmdArgs &args) {
         count++;
     }
 
-    BE_LOG(L"total %i materials\n", count);
+    BE_LOG("total %i materials\n", count);
 }
 
 void MaterialManager::Cmd_ReloadMaterial(const CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"reloadMaterial <filename>\n");
+        BE_LOG("reloadMaterial <filename>\n");
         return;
     }
 
-    if (!WStr::Icmp(args.Argv(1), L"all")) {
+    if (!Str::Icmp(args.Argv(1), "all")) {
         int count = materialManager.materialHashMap.Count();
 
         for (int i = 0; i < count; i++) {
@@ -354,9 +354,9 @@ void MaterialManager::Cmd_ReloadMaterial(const CmdArgs &args) {
             material->Reload();
         }
     } else {
-        Material *material = materialManager.FindMaterial(WStr::ToStr(args.Argv(1)));
+        Material *material = materialManager.FindMaterial(args.Argv(1));
         if (!material) {
-            BE_WARNLOG(L"Couldn't find material to reload \"%ls\"\n", args.Argv(1));
+            BE_WARNLOG("Couldn't find material to reload \"%s\"\n", args.Argv(1));
             return;
         }
 

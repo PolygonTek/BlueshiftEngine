@@ -78,7 +78,6 @@
 // Utils
 #include "Core/ByteOrder.h"
 #include "Core/Lexer.h"
-#include "Core/WLexer.h"
 #include "Core/Dict.h"
 #include "Core/Expr.h"
 #include "Core/CmdArgs.h"

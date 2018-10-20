@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Core/WStr.h"
+#include "Core/Str.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -22,7 +22,7 @@ class BE_API CmdArgs {
 public:
     CmdArgs() { numArgs = 0; }
     CmdArgs(const CmdArgs &other) { *this = other; }
-    CmdArgs(const wchar_t *text, bool keepAsStrings);
+    CmdArgs(const char *text, bool keepAsStrings);
 
                         /// Copy from another.
     CmdArgs &           operator=(const CmdArgs &rhs);
@@ -33,34 +33,34 @@ public:
                         /// Takes a null terminated string and breaks the string up into arg tokens.
                         /// Does not need to be /n terminated.
                         /// Set keepAsStrings to true to only seperate tokens from whitespace and comments, ignoring punctuation
-    void                TokenizeString(const wchar_t *text, bool keepAsStrings);
+    void                TokenizeString(const char *text, bool keepAsStrings);
 
                         /// Returns the number of arguments.
     int                 Argc() const { return numArgs; }
 
                         /// Returns a argument string with the given index.
                         /// Returns empty string if index is not in valid range.
-    const wchar_t *     Argv(int index) const { return (index >= 0 && index < numArgs) ? argPtrs[index] : L""; }
+    const char *        Argv(int index) const { return (index >= 0 && index < numArgs) ? argPtrs[index] : ""; }
 
                         /// Returns a single string containing argv(start) to argv(end) separated by ' '
-    const wchar_t *     Args(int start = 0, int end = -1) const;
+    const char *        Args(int start = 0, int end = -1) const;
 
                         /// Tests if matched argument found.
-    bool                CheckArg(const wchar_t *arg, bool caseSensitive = true) const;
+    bool                CheckArg(const char *arg, bool caseSensitive = true) const;
 
                         /// Append a argument at the end of the arguments list
-    void                AppendArg(const wchar_t *arg);
+    void                AppendArg(const char *arg);
 
 private:
     static const int    MaxCommandArgs = 64;
     static const int    MaxCommandString = 2048;
 
     int                 numArgs;                        ///< Number of arguments
-    wchar_t *           argPtrs[MaxCommandArgs];        ///< Array of argument pointers that points into tokenized
-    wchar_t             tokenized[MaxCommandString];    ///< text buffer
+    char *              argPtrs[MaxCommandArgs];        ///< Array of argument pointers that points into tokenized
+    char                tokenized[MaxCommandString];    ///< text buffer
 };
 
-BE_INLINE CmdArgs::CmdArgs(const wchar_t *text, bool keepAsStrings) { 
+BE_INLINE CmdArgs::CmdArgs(const char *text, bool keepAsStrings) {
     TokenizeString(text, keepAsStrings); 
 }
 
@@ -75,10 +75,11 @@ BE_INLINE CmdArgs &CmdArgs::operator=(const CmdArgs &rhs) {
     return *this;
 }
 
-BE_INLINE bool CmdArgs::CheckArg(const wchar_t *arg, bool caseSensitive) const {
+BE_INLINE bool CmdArgs::CheckArg(const char *arg, bool caseSensitive) const {
     for (int i = 0; i < numArgs; i++) {
-        if (!(caseSensitive ? WStr::Cmp(argPtrs[i], arg) : WStr::Icmp(argPtrs[i], arg)))
+        if (!(caseSensitive ? Str::Cmp(argPtrs[i], arg) : Str::Icmp(argPtrs[i], arg))) {
             return true;
+        }
     }
 
     return false;

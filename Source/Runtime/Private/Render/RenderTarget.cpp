@@ -113,7 +113,7 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
     if (depthStencilTexture) {
         if (numColorTextures > 0) {
             if ((textureType != depthStencilTexture->type) || (width != depthStencilTexture->width) || (height != depthStencilTexture->height)) {
-                BE_ERRLOG(L"RenderTarget::Create: color textures and depth texture must have same type and size");
+                BE_ERRLOG("RenderTarget::Create: color textures and depth texture must have same type and size");
                 return nullptr;
             }
         } else {
@@ -138,7 +138,7 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
         break;
     default:
         rtType = RHI::RenderTarget2D; // to suppress a warning
-        BE_FATALERROR(L"RenderTarget::Create: invalid texture for render target");
+        BE_FATALERROR("RenderTarget::Create: invalid texture for render target");
         break;
     }
     

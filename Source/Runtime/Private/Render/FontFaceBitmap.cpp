@@ -56,7 +56,7 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
     byte *data;
     fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
-        BE_WARNLOG(L"Couldn't open font %hs\n", filename);
+        BE_WARNLOG("Couldn't open font %s\n", filename);
         return false;
     }
 
@@ -114,8 +114,8 @@ int FontFaceBitmap::GetFontHeight() const {
     return fontHeight;
 }
 
-FontGlyph *FontFaceBitmap::GetGlyph(wchar_t charCode) {
-    const auto *entry = glyphHashMap.Get(charCode);
+FontGlyph *FontFaceBitmap::GetGlyph(char32_t unicodeChar) {
+    const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second;
     }
@@ -123,8 +123,8 @@ FontGlyph *FontFaceBitmap::GetGlyph(wchar_t charCode) {
     return nullptr;
 }
 
-int FontFaceBitmap::GetGlyphAdvance(wchar_t charCode) const {
-    const auto *entry = glyphHashMap.Get(charCode);
+int FontFaceBitmap::GetGlyphAdvance(char32_t unicodeChar) const {
+    const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second->advance;
     }

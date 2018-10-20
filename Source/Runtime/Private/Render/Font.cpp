@@ -57,47 +57,52 @@ int Font::GetFontHeight() const {
     return 0;
 }
 
-FontGlyph *Font::GetGlyph(wchar_t charCode) {
+FontGlyph *Font::GetGlyph(char32_t unicodeChar) {
     if (fontFace) {
-        return fontFace->GetGlyph(charCode);
+        return fontFace->GetGlyph(unicodeChar);
     }
     return nullptr;
 }
 
-int Font::GetGlyphAdvance(wchar_t charCode) const {
+int Font::GetGlyphAdvance(char32_t unicodeChar) const {
     if (fontFace) {
-        return fontFace->GetGlyphAdvance(charCode);
+        return fontFace->GetGlyphAdvance(unicodeChar);
     }
     return 0;
 }
 
-float Font::StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak, bool allowColoredText, float xscale) const {
+float Font::StringWidth(const Str &text, int maxLength, bool allowLineBreak, bool allowColoredText, float xScale) const {
     float maxWidth = 0;
     float width = 0;
-    wchar_t *ptr = (wchar_t *)text;
+    int offset = 0;
+    char32_t unicodeChar;
 
-    while (*ptr && maxLen != 0) {
-        if (allowLineBreak && *ptr == L'\n') {
+    while ((unicodeChar = text.UTF8CharAdvance(offset)) && maxLength != 0) {
+        if (allowLineBreak && unicodeChar == U'\n') {
             if (width > maxWidth) {
                 maxWidth = width;
             }
 
-            ptr++;
-            maxLen--;
+            maxLength--;
             continue;
         }
 
         if (allowColoredText) {
-            if (WS_IS_COLOR(ptr)) {
-                ptr += 2;
-                maxLen -= 2;
-                continue;
+            if (unicodeChar == UC_COLOR_ESCAPE) {
+                int prevOffset = offset;
+                uint32_t nextUnicodeChar = text.UTF8CharAdvance(offset);
+
+                if (nextUnicodeChar != 0 && nextUnicodeChar != UC_COLOR_ESCAPE) {
+                    maxLength -= 2;
+                    continue;
+                } else {
+                    offset = prevOffset;
+                }
             }
         }
 
-        width += GetGlyphAdvance(*ptr) * xscale;
-        ptr++;
-        maxLen--;
+        width += GetGlyphAdvance(unicodeChar) * xScale;
+        maxLength--;
     }
 
     if (width > maxWidth) {
@@ -106,5 +111,5 @@ float Font::StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak, bo
 
     return maxWidth;
 }
-    
+
 BE_NAMESPACE_END

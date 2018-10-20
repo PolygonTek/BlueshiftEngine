@@ -354,7 +354,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                 lexer.ReadToken(&token);
 
                 if (token.IsEmpty()) {
-                    BE_WARNLOG(L"no matching '}' found\n");
+                    BE_WARNLOG("no matching '}' found\n");
                     break;
                 } else if (token[0] == '}') {
                     break;
@@ -546,15 +546,15 @@ static bool VerifyCompiledShader(GLuint shaderObject, const char *shaderName, co
             char *infoLog = (char *)Mem_Alloc(infoLogLength);
             gglGetShaderInfoLog(shaderObject, infoLogLength, &infoLogLength, infoLog);
 
-            BE_WARNLOG(L"SHADER COMPILE ERROR : '%hs'\n%hs\n", shaderName, infoLog);
+            BE_WARNLOG("SHADER COMPILE ERROR : '%s'\n%s\n", shaderName, infoLog);
 
             Array<Str> lines;
             TextToLineList(shaderText, lines);
-            BE_LOG(L"-----------------\n");
+            BE_LOG("-----------------\n");
             for (int i = 0; i < lines.Count(); i++) {
-                BE_LOG(L"%3d: %hs\n", i + 1, lines[i].c_str());
+                BE_LOG("%3d: %s\n", i + 1, lines[i].c_str());
             }
-            BE_LOG(L"-----------------\n");
+            BE_LOG("-----------------\n");
 
             Mem_Free(infoLog);
         }
@@ -576,7 +576,7 @@ static bool VerifyLinkedProgram(GLuint programObject, const char *shaderName) {
             char *infoLog = (char *)Mem_Alloc(infoLogLength);
             gglGetProgramInfoLog(programObject, infoLogLength, nullptr, infoLog);
 
-            BE_WARNLOG(L"SHADER LINK ERROR : '%hs'\n%hs\n", shaderName, infoLog);
+            BE_WARNLOG("SHADER LINK ERROR : '%s'\n%s\n", shaderName, infoLog);
             Mem_Free(infoLog);
         }
         return false;

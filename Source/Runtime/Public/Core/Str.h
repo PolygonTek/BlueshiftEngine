@@ -229,19 +229,31 @@ public:
     void                Fill(const char ch, int newLen);
 
                         /// Returns number of characters in UTF8 content.
-    int                 UTF8Length() { return UTF8::Length((byte *)data); }
+    int                 UTF8Length() const { return UTF8::Length(data); }
 
-                        /// Returns Unicode character with then given index.
-                        /// The index idx will be increased by the amount of character bytes.
-    uint32_t            UTF8Char(int &idx) { return UTF8::Char((byte *)data, idx); }
+                        /// Increase byte offset by the amount of current character bytes.
+    bool                UTF8Advance(int &offset) const { return UTF8::Advance(data, offset); }
+                        /// Decrease byte offset by the amount of previous character bytes.
+    bool                UTF8Previous(int &offset) const { return UTF8::Previous(data, offset); }
+
+                        /// Returns Unicode character with the given byte offset.
+    char32_t            UTF8Char(int offset) const { return UTF8::Char(data, offset); }
+                        /// Returns Unicode character with the given byte offset.
+                        /// The offset will be increased by the amount of current character bytes.
+    char32_t            UTF8CharAdvance(int &offset) const { return UTF8::CharAdvance(data, offset); }
+                        /// Returns Unicode character with the given byte offset.
+                        /// The offset will be decreased by the amount of previous character bytes.
+    char32_t            UTF8CharPrevious(int &offset) const { return UTF8::CharPrevious(data, offset); }
 
                         /// Appends Unicode character at the end as UTF8.
-    void                AppendUTF8Char(uint32_t unicodeChar);
+    void                AppendUTF8Char(char32_t unicodeChar);
 
-                        /// Sets UTF8 content from Latin1.
+                        /// Sets UTF8 content from Latin1 string.
     void                SetUTF8FromLatin1(const char *str);
-                        /// Sets UTF8 content from wide characters.
-    void                SetUTF8FromWChar(const wchar_t *str);
+                        /// Sets UTF8 content from wide character string.
+    void                SetUTF8FromWCharString(const wchar_t *str);
+                        /// Returns UTF8 string from wide character string.
+    static Str          UTF8StrFromWCharString(const wchar_t *str);
 
                         /// Returns index to the first occurrence of a character, or -1 if not found.
     int                 Find(const char ch, int start = 0, int end = -1) const;
@@ -352,8 +364,8 @@ public:
 
     static float        FuzzyScore(const char *s1, const char *s2, float fuzziness = 0.0f);
 
-    static void         Append(char *dest, int size, const char *src);
-    static void         Copynz(char *dest, const char *src, int destsize);
+    static void         Append(char *dest, int n, const char *src);
+    static void         Copynz(char *dest, const char *src, int n);
     static int          FindChar(const char *str, const char c, int start = 0, int end = -1);
     static int          FindLastChar(const char *str, const char c, int start = 0, int end = -1);
     static int          FindText(const char *str, const char *text, bool caseSensitive = true, int start = 0, int end = -1);
@@ -386,8 +398,6 @@ public:
     static bool         CharIsTab(int c);
     static int          ColorIndex(int c);
 
-                        /// Convert string to WStr
-    static WStr         ToWStr(const char *str);
 #if __OBJC__
                         /// Convert Str to Objective-C NSString
     NSString *          ToNSString() const {
@@ -398,17 +408,20 @@ public:
 #ifdef QSTRING_H
                         /// Convert Str to QString
     QString             ToQString() const {
-        return QString::fromLatin1(data, len);
+        return QString::fromUtf8(data, len);
     }
 #endif
 
 #ifdef __ANDROID__
-    /// Convert Str to jstring
+                        /// Convert Str to jstring
     jstring             ToJavaString(JNIEnv *env) const {
         jstring javaString = env->NewStringUTF(data);
         return javaString;
     }
 #endif
+
+                        /// Ensures string data buffer is large enough.
+    void                EnsureAlloced(int amount, bool keepOld = true);
 
     void                ReAllocate(int amount, bool keepOld);
     void                FreeData();
@@ -416,9 +429,6 @@ public:
     static Str          empty;
 
 private:
-                        /// Ensures string data buffer is large enough.
-    void                EnsureAlloced(int amount, bool keepOld = true);
-
     static constexpr int BaseLength = 20;
     static constexpr int AllocGranularity = 32;
     static constexpr int FileNameHashSize = 1024;
@@ -875,27 +885,33 @@ BE_INLINE void Str::SetUTF8FromLatin1(const char *str) {
     }
 }
 
-BE_INLINE void Str::SetUTF8FromWChar(const wchar_t *str) {
+BE_INLINE void Str::SetUTF8FromWCharString(const wchar_t *string) {
     char temp[7];
 
     Clear();
 
 #ifdef _WIN32
-    while (*str) {
-        uint32_t unicodeChar = UTF16::Decode(str);
+    while (*string) {
+        char32_t unicodeChar = UTF16::Decode(string);
         char *dest = temp;
         UTF8::Encode(dest, unicodeChar);
         *dest = 0;
         Append(temp);
     }
 #else
-    while (*str) {
+    while (*string) {
         char *dest = temp;
-        UTF8::Encode(dest, (uint32_t)*str++);
+        UTF8::Encode(dest, (uint32_t)*string++);
         *dest = 0;
         Append(temp);
     }
 #endif
+}
+
+BE_INLINE Str Str::UTF8StrFromWCharString(const wchar_t *string) {
+    Str str;
+    str.SetUTF8FromWCharString(string);
+    return str;
 }
 
 BE_INLINE int Str::Find(const char ch, int start, int end) const {
@@ -1081,19 +1097,19 @@ BE_INLINE bool Str::IsAlpha(const char *s) {
 }
 
 BE_INLINE int32_t Str::ToI32(const char *s) {
-    return (int32_t)strtol(s, nullptr, 10);
+    return (int32_t)strtol(s, nullptr, 0);
 }
 
 BE_INLINE uint32_t Str::ToUI32(const char *s) {
-    return (uint32_t)strtoul(s, nullptr, 10);
+    return (uint32_t)strtoul(s, nullptr, 0);
 }
 
 BE_INLINE int64_t Str::ToI64(const char *s) {
-    return strtoll(s, nullptr, 10);
+    return strtoll(s, nullptr, 0);
 }
 
 BE_INLINE uint64_t Str::ToUI64(const char *s) {
-    return strtoull(s, nullptr, 10);
+    return strtoull(s, nullptr, 0);
 }
 
 BE_INLINE bool Str::CheckExtension(const char *ext) const {

@@ -64,7 +64,7 @@ bool PhysVehicle::IsInWorld() const {
 
 void PhysVehicle::AddToWorld(PhysicsWorld *physicsWorld) {
     if (IsInWorld()) {
-        BE_WARNLOG(L"PhysVehicle::AddToWorld: already added\n");
+        BE_WARNLOG("PhysVehicle::AddToWorld: already added\n");
         return;
     }
 
@@ -79,7 +79,7 @@ void PhysVehicle::AddToWorld(PhysicsWorld *physicsWorld) {
 
 void PhysVehicle::RemoveFromWorld() {
     if (!IsInWorld()) {
-        BE_WARNLOG(L"PhysVehicle::RemoveFromWorld: already removed\n");
+        BE_WARNLOG("PhysVehicle::RemoveFromWorld: already removed\n");
         return;
     }
 

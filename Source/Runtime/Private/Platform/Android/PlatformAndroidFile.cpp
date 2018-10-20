@@ -102,7 +102,7 @@ size_t PlatformAndroidFile::Read(void *buffer, size_t bytesToRead) const {
     if (fp) {
         size_t readBytes = fread(buffer, 1, bytesToRead, fp);
         if (readBytes == -1) {
-            BE_FATALERROR(L"PlatformAndroidFile::Read: -1 bytes read");
+            BE_FATALERROR("PlatformAndroidFile::Read: -1 bytes read");
             return 0;
         }
         return readBytes;
@@ -138,12 +138,12 @@ bool PlatformAndroidFile::Write(const void *buffer, size_t bytesToWrite) {
                 failedOnce = true;
             }
             else {
-                BE_WARNLOG(L"PlatformAndroidFile::Write: 0 bytes written");
+                BE_WARNLOG("PlatformAndroidFile::Write: 0 bytes written");
                 return false;
             }
         }
         else if (written == -1) {
-            BE_WARNLOG(L"PlatformAndroidFile::Write: -1 bytes written");
+            BE_WARNLOG("PlatformAndroidFile::Write: -1 bytes written");
             return false;
         }
 
@@ -290,7 +290,7 @@ bool PlatformAndroidFile::SetReadOnly(const char *filename, bool readOnly) {
 bool PlatformAndroidFile::RemoveFile(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     if (remove(normalizedFilename)) {
-        BE_LOG(L"failed to remove file '%hs'\n", normalizedFilename.c_str());
+        BE_LOG("failed to remove file '%s'\n", normalizedFilename.c_str());
         return false;
     }
 
@@ -402,7 +402,7 @@ const char *PlatformAndroidFile::ExecutablePath() {
     return AndroidJNI::activity->externalDataPath;
 }
 
-void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
+static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
     char		path[MaxAbsolutePath];
     char		subpath[MaxAbsolutePath];

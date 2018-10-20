@@ -190,7 +190,7 @@ bool PhysCollidable::IsInWorld() const {
 
 void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
     if (IsInWorld()) {
-        BE_WARNLOG(L"PhysCollidable::AddToWorld: already added\n");
+        BE_WARNLOG("PhysCollidable::AddToWorld: already added\n");
         return;
     }
 
@@ -265,7 +265,7 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
         break;
     }
     default:
-        BE_WARNLOG(L"PhysCollidable::AddToWorld: invalid collidable type %i\n", type);
+        BE_WARNLOG("PhysCollidable::AddToWorld: invalid collidable type %i\n", type);
         break;
     }
 
@@ -274,7 +274,7 @@ void PhysCollidable::AddToWorld(PhysicsWorld *physicsWorld) {
 
 void PhysCollidable::RemoveFromWorld() {
     if (!IsInWorld()) {
-        BE_WARNLOG(L"PhysCollidable::RemoveFromWorld: already removed\n");
+        BE_WARNLOG("PhysCollidable::RemoveFromWorld: already removed\n");
         return;
     }
 
@@ -289,7 +289,7 @@ void PhysCollidable::RemoveFromWorld() {
         physicsWorld->dynamicsWorld->removeCollisionObject(collisionObject);
         break;
     default:
-        BE_WARNLOG(L"PhysCollidable::RemoveFromWorld: invalid collidable type %i\n", type);
+        BE_WARNLOG("PhysCollidable::RemoveFromWorld: invalid collidable type %i\n", type);
         break;
     }
 

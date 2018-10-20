@@ -27,11 +27,11 @@ static TCHAR                szTitle[100];    // The title bar text
 
 LRESULT CALLBACK            WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-static BE1::CVar            disp_width(L"disp_width", L"1280", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_height(L"disp_height", L"720", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_fullscreen(L"disp_fullscreen", L"0", BE1::CVar::Bool | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_bpp(L"disp_bpp", L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_frequency(L"disp_frequency", L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"");
+static BE1::CVar            disp_width("disp_width", "1280", BE1::CVar::Integer | BE1::CVar::Archive, "");
+static BE1::CVar            disp_height("disp_height", "720", BE1::CVar::Integer | BE1::CVar::Archive, "");
+static BE1::CVar            disp_fullscreen("disp_fullscreen", "0", BE1::CVar::Bool | BE1::CVar::Archive, "");
+static BE1::CVar            disp_bpp("disp_bpp", "0", BE1::CVar::Integer | BE1::CVar::Archive, "");
+static BE1::CVar            disp_frequency("disp_frequency", "0", BE1::CVar::Integer | BE1::CVar::Archive, "");
 
 static HWND CreateRenderWindow(const TCHAR *title, const TCHAR *classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
@@ -151,7 +151,9 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     BE1::Engine::InitParms initParms;
-//  initParms.args.TokenizeString(lpCmdLine, false);
+
+    //BE1::Str cmdLine = Str::UTF8StrFromWCharString(lpCmdLine);
+    //initParms.args.TokenizeString(cmdLine, false);
 
     BE1::Str playerDir;
 #if 0
@@ -178,7 +180,7 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     BE1::Engine::Init(&initParms);
 
     if (!BE1::resourceGuidMapper.Read("Data\\guidmap")) {
-        BE_FATALERROR(L"Couldn't open guidmap !");
+        BE_FATALERROR("Couldn't open guidmap !");
     }
 
     WNDCLASSEX wcex;
@@ -195,9 +197,9 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     wcex.lpszClassName      = mainWindowClassName;
     RegisterClassEx(&wcex);
 
-    const wchar_t *title = BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    const wchar_t *fullTitle = BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
 
-    mainWnd = CreateRenderWindow(title, mainWindowClassName, disp_width.GetInteger(), disp_height.GetInteger(), disp_fullscreen.GetBool());
+    mainWnd = CreateRenderWindow(fullTitle, mainWindowClassName, disp_width.GetInteger(), disp_height.GetInteger(), disp_fullscreen.GetBool());
 
     BE1::gameClient.Init(mainWnd, true);
 
@@ -307,6 +309,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     WORD fActive;
     BOOL fMinimize;
     wchar_t compStr[3];
+    wchar_t *charPtr;
     int key;
 
     switch (message) {
@@ -376,9 +379,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         BE1::platform->QueEvent(BE1::Platform::KeyEvent, key, false, 0, NULL);
         return 0;
     case WM_SYSCHAR:
-    case WM_CHAR: // WM_CHAR message uses Unicode Transformation Format (UTF)-16
+    case WM_CHAR: // WM_CHAR message uses Unicode Transformation Format UCS-2
     case WM_IME_CHAR:
-        BE1::platform->QueEvent(BE1::Platform::CharEvent, wParam, 0, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::CharEvent, (char32_t)wParam, 0, 0, NULL);
         return 0;
     case WM_IME_KEYDOWN:
     case WM_IME_KEYUP:
@@ -393,15 +396,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             int bytes = ImmGetCompositionString(hImmContext, GCS_COMPSTR, NULL, 0);
             if (bytes > 0) {
                 ImmGetCompositionString(hImmContext, GCS_COMPSTR, compStr, bytes);
-                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, compStr[0], 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, (char32_t)compStr[0], 0, 0, NULL);
             } else {
-                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, L'\b', 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, (char32_t)'\b', 0, 0, NULL);
             }
         } else if (lParam & GCS_RESULTSTR) {
             int bytes = ImmGetCompositionString(hImmContext, GCS_RESULTSTR, NULL, 0);
             if (bytes > 0) {
                 ImmGetCompositionString(hImmContext, GCS_RESULTSTR, compStr, bytes);
-                BE1::platform->QueEvent(BE1::Platform::CharEvent, compStr[0], 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::CharEvent, (char32_t)compStr[0], 0, 0, NULL);
             }
         }
                 

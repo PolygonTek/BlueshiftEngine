@@ -207,7 +207,7 @@ ComTransform *Entity::GetTransform() const {
 
 Component *Entity::AddNewComponent(const MetaObject *type) {
     if (!type->IsTypeOf(Component::metaObject)) {
-        BE_ERRLOG(L"Entity::AddNewComponent: %hs is not component type\n", type->ClassName());
+        BE_ERRLOG("Entity::AddNewComponent: %s is not component type\n", type->ClassName());
         return nullptr;
     }
     Component *component = (Component *)type->CreateInstance();
@@ -405,10 +405,10 @@ void Entity::Deserialize(const Json::Value &entityValue) {
 
                 AddComponent(component);
             } else {
-                BE_WARNLOG(L"'%hs' is not a component class\n", classname);
+                BE_WARNLOG("'%s' is not a component class\n", classname);
             }
         } else {
-            BE_WARNLOG(L"Unknown component class '%hs'\n", classname);
+            BE_WARNLOG("Unknown component class '%s'\n", classname);
         }
     }
 }

@@ -47,24 +47,24 @@ public:
     };
 
     struct State {
-        int             time;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
-        int             flags;
+        int             time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
+        int             flags = TexturedMode;
         int             layerMask;
 
-        Vec3            origin;             ///< View origin
-        Mat3            axis;               ///< View axis [FORWARD, LEFT, UP]
+        Vec3            origin;                 ///< View origin
+        Mat3            axis;                   ///< View axis [FORWARD, LEFT, UP]
         Rect            renderRect;
 
-        ClearMethod     clearMethod;        ///< Clearing method before rendering view
-        Color4          clearColor;         ///< Clearing color is needed if clearing method is set to 'ColorClear'
+        ClearMethod     clearMethod = NoClear;  ///< Clearing method before rendering view
+        Color4          clearColor;             ///< Clearing color is needed if clearing method is set to 'ColorClear'
 
-        float           fovX;               ///< Perspective projection FOV in horizontal axis
-        float           fovY;               ///< Perspective projection FOV in vertical axis
-        float           sizeX;              ///< Orthogonal projection size in horizontal axis
-        float           sizeY;              ///< Orthogonal projection size in vertical axis
-        float           zNear;              ///< Near distance in z axis
-        float           zFar;               ///< Far distance in z axis
-        bool            orthogonal;         ///< True for orthogonal projection or perspective projection
+        float           fovX;                   ///< Perspective projection FOV in horizontal axis
+        float           fovY;                   ///< Perspective projection FOV in vertical axis
+        float           sizeX;                  ///< Orthogonal projection size in horizontal axis
+        float           sizeY;                  ///< Orthogonal projection size in vertical axis
+        float           zNear;                  ///< Near distance in z axis
+        float           zFar;                   ///< Far distance in z axis
+        bool            orthogonal = false;     ///< True for orthogonal projection or perspective projection
     };
 
     void                Update(const State *viewParms);

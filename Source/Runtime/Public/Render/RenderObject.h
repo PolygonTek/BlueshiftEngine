@@ -22,7 +22,7 @@
 -------------------------------------------------------------------------------
 */
 
-#include "Core/WStr.h"
+#include "Core/Str.h"
 #include "Math/Math.h"
 #include "Containers/Array.h"
 
@@ -93,44 +93,44 @@ public:
     };
 
     struct State {
-        int                 flags;
-        int                 layer;
-        int                 time;
-        float               maxVisDist;
+        int                 flags = 0;
+        int                 layer = 0;
+        int                 time = 0;
+        float               maxVisDist = MeterToUnit(100);
 
         // transform info
-        Vec3                origin;             // object position in world space
-        Vec3                scale;              // object scaling
-        Mat3                axis;               // object orientation
-        AABB                localAABB;          // non-scaled local AABB (shouldn't be empty)
+        Vec3                origin = Vec3::origin;  // object position in world space
+        Vec3                scale = Vec3::one;      // object scaling
+        Mat3                axis = Mat3::identity;  // object orientation
+        AABB                localAABB = AABB::zero; // non-scaled local AABB (shouldn't be empty)
 
         // wire frame info
-        WireframeMode       wireframeMode;
-        Color4              wireframeColor;
+        WireframeMode       wireframeMode = ShowNone;
+        Color4              wireframeColor = Color4::white;
 
         // static/skinned mesh
-        Mesh *              mesh;               // instantiated mesh
-        const Skeleton *    skeleton;           // skeleton information for skeletal mesh
-        int                 numJoints;          // number of joints
-        Mat3x4 *            joints;             // joint transform matrices to animate skeletal mesh
+        Mesh *              mesh = nullptr;         // instantiated mesh
+        const Skeleton *    skeleton = nullptr;     // skeleton information for skeletal mesh
+        int                 numJoints = 0;          // number of joints
+        Mat3x4 *            joints = nullptr;       // joint transform matrices to animate skeletal mesh
 
         // text rendering
-        Font *              font;
-        WStr                text;
-        TextAnchor          textAnchor;
-        TextAlignment       textAlignment;
-        float               textScale;
-        float               lineSpacing;
+        Font *              font = nullptr;
+        Str                 text;                   // UTF8 encoded string
+        TextAnchor          textAnchor = UpperLeft;
+        TextAlignment       textAlignment = Left;
+        float               textScale = 1.0f;
+        float               lineSpacing = 1.0f;
 
         // particle system
-        ParticleSystem *    particleSystem;
+        ParticleSystem *    particleSystem = nullptr;
         Array<Particle *>   stageParticles;
         Array<float>        stageStartDelay;
         
         // materials
         Array<Material *>   materials;
-        float               materialParms[MaxMaterialParms];
-        Skin *              customSkin;
+        float               materialParms[MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
+        Skin *              customSkin = nullptr;
     };
 
     RenderObject();

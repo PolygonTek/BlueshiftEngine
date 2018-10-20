@@ -73,11 +73,11 @@ void ComTextRenderer::Init() {
 }
 
 Str ComTextRenderer::GetText() const {
-    return Str(renderObjectDef.text.c_str());
+    return renderObjectDef.text;
 }
 
 void ComTextRenderer::SetText(const Str &text) {
-    renderObjectDef.text = Str::ToWStr(text);
+    renderObjectDef.text = text;
 
     if (IsInitialized()) {
         UpdateAABB();

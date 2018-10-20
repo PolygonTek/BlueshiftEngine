@@ -92,9 +92,6 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
         case VariantArg::StringType:
             this->argSize += MaxSignalStringLen * sizeof(char);
             break;
-        case VariantArg::WStringType:
-            this->argSize += MaxSignalStringLen * sizeof(wchar_t);
-            break;
         default:
             signalErrorOccured = true;
             ::sprintf(signalErrorMsg, "SignalDef::SignalDef : Invalid arg format '%s' string for '%s' event.", formatSpec, name);
@@ -172,29 +169,29 @@ void SignalSystem::Clear() {
 }
 
 void SignalSystem::Init() {
-    BE_LOG(L"Initializing signal system\n");
+    BE_LOG("Initializing signal system\n");
 
     if (signalErrorOccured) {
-        BE_ERRLOG(L"%hs", signalErrorMsg);
+        BE_ERRLOG("%s", signalErrorMsg);
     }
 
     Clear();
 
     if (initialized) {
-        BE_LOG(L"...already initialized\n");
+        BE_LOG("...already initialized\n");
         return;
     }
 
-    BE_LOG(L"...%i signal definitions\n", SignalDef::NumSignals());
+    BE_LOG("...%i signal definitions\n", SignalDef::NumSignals());
 
     initialized = true;
 }
 
 void SignalSystem::Shutdown() {
-    BE_LOG(L"Shutdown signal system\n");
+    BE_LOG("Shutdown signal system\n");
 
     if (!initialized) {
-        BE_LOG(L"...not started\n");
+        BE_LOG("...not started\n");
         return;
     }
 
@@ -219,7 +216,7 @@ void SignalSystem::FreeSignal(Signal *signal) {
 
 Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback callback, int numArgs, va_list args) {
     if (freeSignals.IsListEmpty()) {
-        BE_ERRLOG(L"SignalSystem::AllocSignal: No more free signals\n");
+        BE_ERRLOG("SignalSystem::AllocSignal: No more free signals\n");
     }
 
     Signal *newSignal = freeSignals.Next();
@@ -228,7 +225,7 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
     newSignal->callback = callback;
 
     if (numArgs != sigdef->GetNumArgs()) {
-        BE_ERRLOG(L"SignalSystem::AllocSignal: Wrong number of args for '%hs' signal.\n", sigdef->GetName());
+        BE_ERRLOG("SignalSystem::AllocSignal: Wrong number of args for '%s' signal.\n", sigdef->GetName());
     }
 
     size_t size = sigdef->GetArgSize();
@@ -244,7 +241,7 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
         VariantArg *arg = va_arg(args, VariantArg *);
         if (format[argIndex] != arg->type) {
-            BE_ERRLOG(L"SignalSystem::AllocSignal: Wrong type passed in for arg #%d on '%hs' signal.\n", argIndex, sigdef->GetName());
+            BE_ERRLOG("SignalSystem::AllocSignal: Wrong type passed in for arg #%d on '%s' signal.\n", argIndex, sigdef->GetName());
         }
 
         byte *dataPtr = &newSignal->data[sigdef->GetArgOffset(argIndex)];
@@ -294,13 +291,8 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
                 Str::Copynz(reinterpret_cast<char *>(dataPtr), reinterpret_cast<const char *>(arg->pointer), MaxSignalStringLen);
             }
             break;
-        case VariantArg::WStringType:
-            if (arg->pointer) {
-                WStr::Copynz(reinterpret_cast<wchar_t *>(dataPtr), reinterpret_cast<const wchar_t *>(arg->pointer), MaxSignalStringLen);
-            }
-            break;
         default:
-            BE_ERRLOG(L"SignalSystem::AllocSignal: Invalid arg format '%hs' string for '%hs' signal.\n", format, sigdef->GetName());
+            BE_ERRLOG("SignalSystem::AllocSignal: Invalid arg format '%s' string for '%s' signal.\n", format, sigdef->GetName());
             break;
         }
     }
@@ -310,7 +302,7 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
 
 void SignalSystem::CopyArgPtrs(const SignalDef *sigdef, int numArgs, va_list args, intptr_t argPtrs[EventDef::MaxArgs]) {
     if (numArgs != sigdef->GetNumArgs()) { 
-        BE_ERRLOG(L"SignalSystem::CopyArgPtrs: Wrong number of args for '%hs' signal.\n", sigdef->GetName());
+        BE_ERRLOG("SignalSystem::CopyArgPtrs: Wrong number of args for '%s' signal.\n", sigdef->GetName());
     }
 
     const char *format = sigdef->GetArgFormat();
@@ -318,7 +310,7 @@ void SignalSystem::CopyArgPtrs(const SignalDef *sigdef, int numArgs, va_list arg
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
         VariantArg *arg = va_arg(args, VariantArg *);
         if (format[argIndex] != arg->type) {
-            BE_ERRLOG(L"SignalSystem::CopyArgPtrs: Wrong type passed in for arg #%d on '%hs' signal.\n", argIndex, sigdef->GetName());
+            BE_ERRLOG("SignalSystem::CopyArgPtrs: Wrong type passed in for arg #%d on '%s' signal.\n", argIndex, sigdef->GetName());
         }
 
         argPtrs[argIndex] = arg->pointer;
@@ -399,11 +391,8 @@ void SignalSystem::ServiceSignal(Signal *signal) {
         case VariantArg::StringType:
             *reinterpret_cast<const char **>(&argPtrs[i]) = reinterpret_cast<const char *>(&data[offset]);
             break;
-        case VariantArg::WStringType:
-            *reinterpret_cast<const wchar_t **>(&argPtrs[i]) = reinterpret_cast<const wchar_t *>(&data[offset]);
-            break;
         default:
-            BE_ERRLOG(L"SignalSystem::ServiceEvent : Invalid arg format '%hs' string for '%hs' signal.\n", formatSpec, sigdef->GetName());
+            BE_ERRLOG("SignalSystem::ServiceEvent: Invalid arg format '%s' string for '%s' signal.\n", formatSpec, sigdef->GetName());
         }
     }
 
@@ -428,7 +417,7 @@ void SignalSystem::ServiceSignals() {
 
         processedCount++;
         if (processedCount > MaxSignalsPerFrame) {
-            BE_ERRLOG(L"Signal overflow.  Possible infinite loop in script.\n");
+            BE_ERRLOG("Signal overflow.  Possible infinite loop in script.\n");
         }
     }
 }

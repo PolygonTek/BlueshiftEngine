@@ -37,8 +37,8 @@ public:
     void                    ClearStates();
     void                    KeyEvent(KeyCode::Enum keynum, bool down);
 
-    const wchar_t *         GetBinding(KeyCode::Enum keynum) const;
-    void                    SetBinding(KeyCode::Enum keynum, const wchar_t *cmd);
+    const char *            GetBinding(KeyCode::Enum keynum) const;
+    void                    SetBinding(KeyCode::Enum keynum, const char *cmd);
     void                    WriteBindings(File *fp) const;
 
     bool                    IsPressed(KeyCode::Enum keynum) const;
@@ -51,7 +51,7 @@ private:
     struct Key {
         bool                is_down;
         int                 count;
-        wchar_t *           binding;
+        char *              binding;
     };
 
     Key                     keyList[(int)KeyCode::LastKey];

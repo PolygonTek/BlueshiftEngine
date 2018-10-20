@@ -39,7 +39,6 @@ ComParticleSystem::ComParticleSystem() {
 
     spriteHandle = -1;
     spriteReferenceMesh = nullptr;
-    memset(&spriteDef, 0, sizeof(spriteDef));
 }
 
 ComParticleSystem::~ComParticleSystem() {
@@ -91,7 +90,6 @@ void ComParticleSystem::Init() {
     // 3d spriteDef
     spriteReferenceMesh = meshManager.GetMesh("_defaultQuadMesh");
 
-    memset(&spriteDef, 0, sizeof(spriteDef));
     spriteDef.flags = RenderObject::BillboardFlag;
     spriteDef.layer = TagLayerSettings::EditorLayer;
     spriteDef.maxVisDist = MeterToUnit(50.0f);

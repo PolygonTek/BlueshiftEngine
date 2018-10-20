@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "Precompiled.h"
-#include "Core/CVars.h"
+#pragma once
 
 BE_NAMESPACE_BEGIN
 
-CVAR(physics_enable, "1", CVar::Bool, "");
-CVAR(physics_showWireframe, "0", CVar::Integer, "show debug wireframe in physics engine");
-CVAR(physics_showAABB, "0", CVar::Integer, "show debug AABB in physics engine");
-CVAR(physics_showContactPoints, "0", CVar::Integer, "");
-CVAR(physics_showNormals, "0", CVar::Integer, "");
-CVAR(physics_showConstraints, "0", CVar::Integer, "");
-CVAR(physics_noDeactivation, "0", CVar::Bool, "");
-CVAR(physics_enableCCD, "1", CVar::Bool, "");
+class PlatformWinUtils {
+public:
+                    // Converts string from UCS2 to UTF8.
+                    // Returns number of characters in UTF8 string.
+    static int      UCS2ToUTF8(const wchar_t *src, char *dest, int destLen);
+
+                    // Converts string from UTF8 to UCS2.
+                    // Returns number of characters in UCS2 string.
+    static int      UTF8ToUCS2(const char *src, wchar_t *dest, int destLen);
+};
 
 BE_NAMESPACE_END

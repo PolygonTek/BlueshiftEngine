@@ -720,7 +720,7 @@ bool SignalObject::ExecuteCallback(const SignalCallback &callback, const SignalD
         (this->*(EventCallback_ffffff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
         return true;
     default:
-        BE_WARNLOG(L"Invalid formatSpec on signal '%hs'\n", sigdef->GetName());
+        BE_WARNLOG("Invalid formatSpec on signal '%s'\n", sigdef->GetName());
         break;
     }
 

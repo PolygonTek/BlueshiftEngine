@@ -32,7 +32,7 @@ bool Anim::LoadBinaryAnim(const char *filename) {
     byte *ptr = data + sizeof(BAnimHeader);
     
     if (bAnimHeader->ident != BANIM_IDENT) {
-        BE_WARNLOG(L"Anim::LoadBinaryAnim: bad format %hs\n", filename);
+        BE_WARNLOG("Anim::LoadBinaryAnim: bad format %s\n", filename);
         fileSystem.FreeFile(data);
         return false;
     }
@@ -112,7 +112,7 @@ bool Anim::LoadBinaryAnim(const char *filename) {
 void Anim::WriteBinaryAnim(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Anim::WriteBinaryAnim: file open error\n");
+        BE_WARNLOG("Anim::WriteBinaryAnim: file open error\n");
         return;
     }
 
@@ -166,7 +166,7 @@ void Anim::WriteBinaryAnim(const char *filename) {
     // --- total delta ---
     fp->Write(&totalDelta, sizeof(totalDelta));
 
-    fileSystem.CloseFile(fp);    
+    fileSystem.CloseFile(fp);
 }
 
 BE_NAMESPACE_END

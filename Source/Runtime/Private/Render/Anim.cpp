@@ -186,7 +186,7 @@ Anim *Anim::CreateAdditiveAnim(const char *hashName, const JointPose *firstFrame
 
 Anim *Anim::CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, const int *jointIndexes) {
     if (NumJoints() != skeleton->NumJoints()) {
-        BE_WARNLOG(L"different joint count for creating additive anim\n");
+        BE_WARNLOG("different joint count for creating additive anim\n");
         return nullptr;
     }
 
@@ -202,7 +202,7 @@ Anim *Anim::CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, co
 
 Anim *Anim::CreateAdditiveAnim(const Anim *refAnim, int numJointIndexes, const int *jointIndexes) {
     if (NumJoints() != refAnim->NumJoints()) {
-        BE_WARNLOG(L"different joint count for creating additive anim\n");
+        BE_WARNLOG("different joint count for creating additive anim\n");
         return nullptr;
     }
 
@@ -210,7 +210,7 @@ Anim *Anim::CreateAdditiveAnim(const Anim *refAnim, int numJointIndexes, const i
     newName += "-";
     newName += refAnim->hashName;
 
-    JointPose *firstFrame = (JointPose *)_alloca16(numJoints * sizeof(firstFrame[0]));	
+    JointPose *firstFrame = (JointPose *)_alloca16(numJoints * sizeof(firstFrame[0]));
     refAnim->GetSingleFrame(0, numJointIndexes, jointIndexes, firstFrame);
 
     return CreateAdditiveAnim(newName.c_str(), firstFrame, numJointIndexes, jointIndexes);
@@ -224,7 +224,7 @@ bool Anim::Load(const char *filename) {
         bAnimFilename.SetFileExtension(".banim");
     }
 
-    BE_LOG(L"Loading anim '%hs'...\n", bAnimFilename.c_str());
+    BE_LOG("Loading anim '%s'...\n", bAnimFilename.c_str());
 
     bool ret = LoadBinaryAnim(filename);
     if (!ret) {
@@ -252,7 +252,7 @@ void Anim::Write(const char *filename) {
 
 bool Anim::CheckHierarchy(const Skeleton *skeleton) const {
     if (jointInfo.Count() != skeleton->NumJoints()) {
-        BE_ERRLOG(L"Mesh '%hs' has different number of joints than anim '%hs'", skeleton->GetHashName(), hashName.c_str());
+        BE_ERRLOG("Mesh '%s' has different number of joints than anim '%s'", skeleton->GetHashName(), hashName.c_str());
         return false;
     }
 
@@ -260,7 +260,7 @@ bool Anim::CheckHierarchy(const Skeleton *skeleton) const {
     for (int i = 0; i < jointInfo.Count(); i++) {
         int jointNum = jointInfo[i].nameIndex;
         if (otherJoints[i].name != animManager.JointNameByIndex(jointNum)) {
-            BE_ERRLOG(L"Skeleton '%hs''s joint names don't match anim '%hs''s", skeleton->GetHashName(), hashName.c_str());
+            BE_ERRLOG("Skeleton '%s''s joint names don't match anim '%s''s", skeleton->GetHashName(), hashName.c_str());
             return false;
         }
 
@@ -272,7 +272,7 @@ bool Anim::CheckHierarchy(const Skeleton *skeleton) const {
         }
 
         if (parent != jointInfo[i].parentNum) {
-            BE_ERRLOG(L"Skeleton '%hs' has different joint hierarchy than anim '%hs'", skeleton->GetHashName(), hashName.c_str());
+            BE_ERRLOG("Skeleton '%s' has different joint hierarchy than anim '%s'", skeleton->GetHashName(), hashName.c_str());
             return false;
         }
     }
@@ -306,7 +306,7 @@ void Anim::ComputeTotalDelta() {
         }
     }
 
-    BE_DLOG(L"animation '%hs' total delta (%.4f, %.4f, %.4f)\n", name.c_str(), totalDelta.x, totalDelta.y, totalDelta.z);
+    BE_DLOG("animation '%s' total delta (%.4f, %.4f, %.4f)\n", name.c_str(), totalDelta.x, totalDelta.y, totalDelta.z);
 }
 
 void Anim::ComputeTimeFrames() {
@@ -715,7 +715,7 @@ void Anim::GetAABB(AABB &outAabb, const Array<AABB> &frameAABBs, int time) const
     TimeToFrameInterpolation(time, frame);
 
     if (frame.frame1 > frameAABBs.Count() - 1 || frame.frame2 > frameAABBs.Count() - 1) {
-        BE_WARNLOG(L"Anim::GetAABB: AABB frame index out of range");
+        BE_WARNLOG("Anim::GetAABB: AABB frame index out of range");
         return;
     }
 

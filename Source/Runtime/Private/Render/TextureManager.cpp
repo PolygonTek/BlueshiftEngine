@@ -34,23 +34,23 @@ static const struct {
 
 TextureManager textureManager;
 
-CVar TextureManager::texture_filter(L"texture_filter", L"LinearMipmapLinear", CVar::Archive, L"changes texture filtering on mipmapped texture");
-CVar TextureManager::texture_anisotropy(L"texture_anisotropy", L"8", CVar::Archive | CVar::Integer, L"set the maximum texture anisotropy if available");
-CVar TextureManager::texture_lodBias(L"texture_lodBias", L"0", CVar::Archive | CVar::Integer, L"change lod bias on mipmapped images");
-CVar TextureManager::texture_sRGB(L"texture_sRGB", L"1", CVar::Archive | CVar::Bool, L"");
-CVar TextureManager::texture_useCompression(L"texture_useCompression", L"1", CVar::Archive | CVar::Bool, L"");
-CVar TextureManager::texture_useNormalCompression(L"texture_useNormalCompression", L"1", CVar::Bool | CVar::Archive, L"normal map compression");
-CVar TextureManager::texture_mipLevel(L"texture_mipLevel", L"0", CVar::Archive | CVar::Integer, L"");
+CVar TextureManager::texture_filter("texture_filter", "LinearMipmapLinear", CVar::Archive, "changes texture filtering on mipmapped texture");
+CVar TextureManager::texture_anisotropy("texture_anisotropy", "8", CVar::Archive | CVar::Integer, "set the maximum texture anisotropy if available");
+CVar TextureManager::texture_lodBias("texture_lodBias", "0", CVar::Archive | CVar::Integer, "change lod bias on mipmapped images");
+CVar TextureManager::texture_sRGB("texture_sRGB", "1", CVar::Archive | CVar::Bool, "");
+CVar TextureManager::texture_useCompression("texture_useCompression", "1", CVar::Archive | CVar::Bool, "");
+CVar TextureManager::texture_useNormalCompression("texture_useNormalCompression", "1", CVar::Bool | CVar::Archive, "normal map compression");
+CVar TextureManager::texture_mipLevel("texture_mipLevel", "0", CVar::Archive | CVar::Integer, "");
 
 void TextureManager::Init() {
-    cmdSystem.AddCommand(L"listTextures", Cmd_ListTextures);
-    cmdSystem.AddCommand(L"reloadTexture", Cmd_ReloadTexture);
-    cmdSystem.AddCommand(L"convertNormalAR2RGB", Cmd_ConvertNormalAR2RGB);
+    cmdSystem.AddCommand("listTextures", Cmd_ListTextures);
+    cmdSystem.AddCommand("reloadTexture", Cmd_ReloadTexture);
+    cmdSystem.AddCommand("convertNormalAR2RGB", Cmd_ConvertNormalAR2RGB);
 
     textureHashMap.Init(1024, 1024, 1024);
 
     // Set texture filtering mode
-    SetFilter(WStr::ToStr(texture_filter.GetString()));//"LinearMipmapNearest");
+    SetFilter(texture_filter.GetString());//"LinearMipmapNearest");
 
     // Set texture anisotropy mode
     SetAnisotropy(texture_anisotropy.GetFloat());
@@ -60,9 +60,9 @@ void TextureManager::Init() {
 }
 
 void TextureManager::Shutdown() {
-    cmdSystem.RemoveCommand(L"listTextures");
-    cmdSystem.RemoveCommand(L"reloadTexture");
-    cmdSystem.RemoveCommand(L"convertNormalAR2RGB");
+    cmdSystem.RemoveCommand("listTextures");
+    cmdSystem.RemoveCommand("reloadTexture");
+    cmdSystem.RemoveCommand("convertNormalAR2RGB");
 
     textureHashMap.DeleteContents(true);
 }
@@ -176,7 +176,7 @@ void TextureManager::SetFilter(const char *filterName) {
     }
 
     if (mode == 6) {
-        BE_LOG(L"bad filter name\n");
+        BE_LOG("bad filter name\n");
         return;
     }
 
@@ -218,7 +218,7 @@ void TextureManager::SetLodBias(float lodBias) const {
 
 Texture *TextureManager::AllocTexture(const char *hashName) {
     if (textureHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs texture already allocated", hashName);
+        BE_FATALERROR("%s texture already allocated", hashName);
     }
     
     Texture *texture = new Texture;
@@ -235,7 +235,7 @@ Texture *TextureManager::AllocTexture(const char *hashName) {
 
 void TextureManager::DestroyTexture(Texture *texture) {
     if (texture->refCount > 1) {
-        BE_LOG(L"TextureManager::DestroyTexture: texture '%hs' has %i reference count\n", texture->hashName.c_str(), texture->refCount);
+        BE_LOG("TextureManager::DestroyTexture: texture '%s' has %i reference count\n", texture->hashName.c_str(), texture->refCount);
     }
 
     textureHashMap.Remove(texture->hashName);
@@ -353,7 +353,7 @@ Texture *TextureManager::TextureFromGenerator(const char *hashName, const Textur
 
     texture = FindTexture(hashName);
     if (texture) {
-        BE_LOG(L"TextureManager::TextureFromGenerator: same name already exist\n");
+        BE_LOG("TextureManager::TextureFromGenerator: same name already exist\n");
         texture->refCount++;
         return texture;
     }
@@ -401,7 +401,7 @@ void TextureManager::Cmd_ListTextures(const CmdArgs &args) {
     int count = 0;
     int totalBytes = 0;
     
-    BE_LOG(L"NUM. REF. TEX. .W.. .H.. .D.. BYTES..... FORMAT.............. MM ADDR NAME\n");
+    BE_LOG("NUM. REF. TEX. .W.. .H.. .D.. BYTES..... FORMAT.............. MM ADDR NAME\n");
 
     for (int i = 0; i < textureManager.textureHashMap.Count(); i++) {
         const auto *entry = textureManager.textureHashMap.GetByIndex(i);
@@ -428,7 +428,7 @@ void TextureManager::Cmd_ListTextures(const CmdArgs &args) {
         int numMipmaps = texture->hasMipmaps ? Image::MaxMipMapLevels(texture->width, texture->height, texture->depth) : 1;
         int bytes = Image::MemRequired(texture->width, texture->height, texture->depth, numMipmaps, texture->format) * texture->numSlices;
         
-        BE_LOG(L"%4d %4d %hs %4d %4d %4d %10hs %-20hs %hs %hs %hs\n",
+        BE_LOG("%4d %4d %s %4d %4d %4d %10s %-20s %s %s %s\n",
             i,
             texture->refCount,
             type,
@@ -445,17 +445,17 @@ void TextureManager::Cmd_ListTextures(const CmdArgs &args) {
         count++;
     }
 
-    BE_LOG(L"total %hs (including mipmaps)\n", Str::FormatBytes(totalBytes).c_str());
-    BE_LOG(L"total %i textures\n", count);
+    BE_LOG("total %s (including mipmaps)\n", Str::FormatBytes(totalBytes).c_str());
+    BE_LOG("total %i textures\n", count);
 }
 
 void TextureManager::Cmd_ReloadTexture(const CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"reloadTexture <filename>\n");
+        BE_LOG("reloadTexture <filename>\n");
         return;
     }
 
-    if (!WStr::Icmp(args.Argv(1), L"all")) {
+    if (!Str::Icmp(args.Argv(1), "all")) {
         int count = textureManager.textureHashMap.Count();
 
         for (int i = 0; i < count; i++) {
@@ -464,9 +464,9 @@ void TextureManager::Cmd_ReloadTexture(const CmdArgs &args) {
             texture->Reload();
         }
     } else {
-        Texture *texture = textureManager.FindTexture(WStr::ToStr(args.Argv(1)));
+        Texture *texture = textureManager.FindTexture(args.Argv(1));
         if (!texture) {
-            BE_WARNLOG(L"Couldn't find texture to reload \"%ls\"\n", args.Argv(1));
+            BE_WARNLOG("Couldn't find texture to reload \"%s\"\n", args.Argv(1));
             return;
         }
 
@@ -478,14 +478,14 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
     char path[MaxAbsolutePath];
     
     if (args.Argc() != 3) {
-        BE_LOG(L"convertNormalAR2RGB <rootdir> <filter>\n");
+        BE_LOG("convertNormalAR2RGB <rootdir> <filter>\n");
         return;
     }
     
     FileArray fileArray;
-    int numFiles = fileSystem.ListFiles(WStr::ToStr(args.Argv(1)), WStr::ToStr(args.Argv(2)), fileArray);
+    int numFiles = fileSystem.ListFiles(args.Argv(1), args.Argv(2), fileArray);
     if (!numFiles) {
-        BE_WARNLOG(L"no files found\n");
+        BE_WARNLOG("no files found\n");
         return;
     }
 
@@ -498,7 +498,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
         if (image1.IsEmpty())
             continue;
 
-        BE_LOG(L"converting '%hs'\n", path);
+        BE_LOG("converting '%s'\n", path);
 
         if (image1.GetFormat() != Image::RGBA_8_8_8_8) {
             image1.ConvertFormatSelf(Image::RGBA_8_8_8_8);
@@ -518,9 +518,9 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
 
         image2.FlipY();
         image2.Write(path);
-    }	
+    }
 
-    BE_LOG(L"all done\n");
+    BE_LOG("all done\n");
 }
 
 BE_NAMESPACE_END

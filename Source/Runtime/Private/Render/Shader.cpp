@@ -194,7 +194,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
                     propertyInfoHashMap = shader->propertyInfoHashMap;
                 }
             } else {
-                BE_WARNLOG(L"missing inheritProperties name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing inheritProperties name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("ambientLitVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -203,7 +203,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 ambientLitVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing ambientLitVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing ambientLitVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("directLitVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -212,7 +212,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 directLitVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing directLitVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing directLitVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("ambientLitDirectLitVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -221,7 +221,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 ambientLitDirectLitVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing ambientLitDirectLitVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing ambientLitDirectLitVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("perforatedVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -230,7 +230,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 perforatedVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing perforatedVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing perforatedVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("parallelShadowVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -239,7 +239,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 parallelShadowVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing parallelShadowVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing parallelShadowVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("spotShadowVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -248,7 +248,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 spotShadowVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing spotShadowVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing spotShadowVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("pointShadowVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -257,7 +257,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 pointShadowVersion = shaderManager.GetShader(path); 
             } else {
-                BE_WARNLOG(L"missing pointShadowVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing pointShadowVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("gpuSkinningVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -278,13 +278,13 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                         gpuSkinningVersion[2] = shaderManager.FindShader(path);
                     } else {
-                        BE_WARNLOG(L"missing gpuSkinningVersion name in shader '%hs'\n", hashName.c_str());
+                        BE_WARNLOG("missing gpuSkinningVersion name in shader '%s'\n", hashName.c_str());
                     }
                 } else {
-                    BE_WARNLOG(L"missing gpuSkinningVersion name in shader '%hs'\n", hashName.c_str());
+                    BE_WARNLOG("missing gpuSkinningVersion name in shader '%s'\n", hashName.c_str());
                 }
             } else {
-                BE_WARNLOG(L"missing gpuSkinningVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing gpuSkinningVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("generatePerforatedVersion")) {
             generatePerforatedVersion = true;
@@ -305,7 +305,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
         } else if (!token.Icmp("glsl_fp")) {
             lexer.ParseBracedSectionExact(fsText);
         } else {
-            BE_WARNLOG(L"unknown parameter %hs in shader '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown parameter %s in shader '%s'\n", token.c_str(), hashName.c_str());
         }
     }
 
@@ -439,7 +439,7 @@ bool Shader::ParseProperties(Lexer &lexer) {
         }
         else {
             if (propertyInfoHashMap.Get(token)) {
-                BE_WARNLOG(L"same property name '%hs' ignored in shader '%hs'\n", token.c_str(), hashName.c_str());
+                BE_WARNLOG("same property name '%s' ignored in shader '%s'\n", token.c_str(), hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
             }
@@ -447,7 +447,7 @@ bool Shader::ParseProperties(Lexer &lexer) {
             lexer.UnreadToken(&token);
 
             if (!ParseShaderPropertyInfo(lexer, propInfo)) {
-                BE_WARNLOG(L"error occured in parsing property propInfo in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("error occured in parsing property propInfo in shader '%s'\n", hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
             }
@@ -1180,7 +1180,7 @@ bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
         char *includingText;
         size_t fileLen = fileSystem.LoadFile(path.c_str(), true, (void **)&includingText);
         if (!fileLen) {
-            BE_FATALERROR(L"Shader::ProcessIncludeRecursive: Cannot open include file '%hs'", path.c_str());
+            BE_FATALERROR("Shader::ProcessIncludeRecursive: Cannot open include file '%s'", path.c_str());
             return false;
         }
 
@@ -1337,7 +1337,7 @@ void Shader::SetConstantBuffer(int index, int bindingIndex) const {
 void Shader::SetConstant1i(const char *name, int x) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant1i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant1i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant1i(index, x);
@@ -1346,7 +1346,7 @@ void Shader::SetConstant1i(const char *name, int x) const {
 void Shader::SetConstant2i(const char *name, const int *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant2i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant2i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant2i(index, constant);
@@ -1355,7 +1355,7 @@ void Shader::SetConstant2i(const char *name, const int *constant) const {
 void Shader::SetConstant3i(const char *name, const int *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant3i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant3i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant3i(index, constant);
@@ -1364,7 +1364,7 @@ void Shader::SetConstant3i(const char *name, const int *constant) const {
 void Shader::SetConstant4i(const char *name, const int *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4i(index, constant);
@@ -1373,7 +1373,7 @@ void Shader::SetConstant4i(const char *name, const int *constant) const {
 void Shader::SetConstant1f(const char *name, float x) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant1f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant1f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant1f(index, x);
@@ -1382,7 +1382,7 @@ void Shader::SetConstant1f(const char *name, float x) const {
 void Shader::SetConstant2f(const char *name, const float *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant2f(index, constant);
@@ -1391,7 +1391,7 @@ void Shader::SetConstant2f(const char *name, const float *constant) const {
 void Shader::SetConstant3f(const char *name, const float *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant3f(index, constant);
@@ -1400,7 +1400,7 @@ void Shader::SetConstant3f(const char *name, const float *constant) const {
 void Shader::SetConstant4f(const char *name, const float *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4f(index, constant);
@@ -1409,7 +1409,7 @@ void Shader::SetConstant4f(const char *name, const float *constant) const {
 void Shader::SetConstant2f(const char *name, const Vec2 &constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant2f(index, constant);
@@ -1418,7 +1418,7 @@ void Shader::SetConstant2f(const char *name, const Vec2 &constant) const {
 void Shader::SetConstant3f(const char *name, const Vec3 &constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant3f(index, constant);
@@ -1427,7 +1427,7 @@ void Shader::SetConstant3f(const char *name, const Vec3 &constant) const {
 void Shader::SetConstant4f(const char *name, const Vec4 &constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4f(index, constant);
@@ -1436,7 +1436,7 @@ void Shader::SetConstant4f(const char *name, const Vec4 &constant) const {
 void Shader::SetConstant2x2f(const char *name, bool rowMajor, const Mat2 &constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant2x2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant2x2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant2x2f(index, rowMajor, constant);
@@ -1445,7 +1445,7 @@ void Shader::SetConstant2x2f(const char *name, bool rowMajor, const Mat2 &consta
 void Shader::SetConstant3x3f(const char *name, bool rowMajor, const Mat3 &constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant3x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant3x3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant3x3f(index, rowMajor, constant);
@@ -1454,7 +1454,7 @@ void Shader::SetConstant3x3f(const char *name, bool rowMajor, const Mat3 &consta
 void Shader::SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4x4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4x4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4x4f(index, rowMajor, constant);
@@ -1463,7 +1463,7 @@ void Shader::SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &consta
 void Shader::SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4x3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4x3f(index, rowMajor, constant);
@@ -1472,7 +1472,7 @@ void Shader::SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &cons
 void Shader::SetConstantArray1i(const char *name, int num, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray1i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray1i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray1i(index, num, constant);
@@ -1481,7 +1481,7 @@ void Shader::SetConstantArray1i(const char *name, int num, const int *constant) 
 void Shader::SetConstantArray2i(const char *name, int num, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray2i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray2i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray2i(index, num, constant);
@@ -1490,7 +1490,7 @@ void Shader::SetConstantArray2i(const char *name, int num, const int *constant) 
 void Shader::SetConstantArray3i(const char *name, int num, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray3i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray3i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray3i(index, num, constant);
@@ -1499,7 +1499,7 @@ void Shader::SetConstantArray3i(const char *name, int num, const int *constant) 
 void Shader::SetConstantArray4i(const char *name, int num, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4i(index, num, constant);
@@ -1508,7 +1508,7 @@ void Shader::SetConstantArray4i(const char *name, int num, const int *constant) 
 void Shader::SetConstantArray1f(const char *name, int num, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray1f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray1f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray1f(index, num, constant);
@@ -1517,7 +1517,7 @@ void Shader::SetConstantArray1f(const char *name, int num, const float *constant
 void Shader::SetConstantArray2f(const char *name, int num, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray2f(index, num, constant);
@@ -1526,7 +1526,7 @@ void Shader::SetConstantArray2f(const char *name, int num, const float *constant
 void Shader::SetConstantArray3f(const char *name, int num, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray3f(index, num, constant);
@@ -1535,7 +1535,7 @@ void Shader::SetConstantArray3f(const char *name, int num, const float *constant
 void Shader::SetConstantArray4f(const char *name, int num, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4f(index, num, constant);
@@ -1544,7 +1544,7 @@ void Shader::SetConstantArray4f(const char *name, int num, const float *constant
 void Shader::SetConstantArray2f(const char *name, int num, const Vec2 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray2f(index, num, constant);
@@ -1553,7 +1553,7 @@ void Shader::SetConstantArray2f(const char *name, int num, const Vec2 *constant)
 void Shader::SetConstantArray3f(const char *name, int num, const Vec3 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray3f(index, num, constant);
@@ -1562,7 +1562,7 @@ void Shader::SetConstantArray3f(const char *name, int num, const Vec3 *constant)
 void Shader::SetConstantArray4f(const char *name, int num, const Vec4 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4f(index, num, constant);
@@ -1571,7 +1571,7 @@ void Shader::SetConstantArray4f(const char *name, int num, const Vec4 *constant)
 void Shader::SetConstantArray2x2f(const char *name, bool rowMajor, int num, const Mat2 *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray2x2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray2x2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray2x2f(index, rowMajor, num, constant);
@@ -1580,7 +1580,7 @@ void Shader::SetConstantArray2x2f(const char *name, bool rowMajor, int num, cons
 void Shader::SetConstantArray3x3f(const char *name, bool rowMajor, int num, const Mat3 *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray3x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray3x3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray3x3f(index, rowMajor, num, constant);
@@ -1589,7 +1589,7 @@ void Shader::SetConstantArray3x3f(const char *name, bool rowMajor, int num, cons
 void Shader::SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const { 
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4x4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4x4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4x4f(index, rowMajor, num, constant);
@@ -1598,7 +1598,7 @@ void Shader::SetConstantArray4x4f(const char *name, bool rowMajor, int num, cons
 void Shader::SetConstantArray4x3f(const char *name, bool rowMajor, int num, const Mat3x4 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4x3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4x3f(index, rowMajor, num, constant);
@@ -1607,7 +1607,7 @@ void Shader::SetConstantArray4x3f(const char *name, bool rowMajor, int num, cons
 void Shader::SetConstantBuffer(const char *name, int bindingIndex) const {
     int index = rhi.GetShaderConstantBlockIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantBuffer: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantBuffer: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantBlock(index, bindingIndex);
@@ -1628,7 +1628,7 @@ void Shader::SetTexture(int unit, const Texture *texture) const {
 void Shader::SetTexture(const char *name, const Texture *texture) const {
     int unit = rhi.GetSamplerUnit(shaderHandle, name);
     if (unit < 0) {
-        //BE_WARNLOG(L"Shader::SetTexture: invalid texture name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetTexture: invalid texture name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
 
@@ -1647,7 +1647,7 @@ void Shader::SetTextureArray(const char *name, int num, const Texture **textures
 
         int unit = rhi.GetSamplerUnit(shaderHandle, temp);
         if (unit < 0) {
-            //BE_WARNLOG(L"Shader::SetTextureArray: invalid texture name '%hs' in shader '%hs'\n", temp, this->hashName.c_str());
+            //BE_WARNLOG("Shader::SetTextureArray: invalid texture name '%s' in shader '%s'\n", temp, this->hashName.c_str());
             return;
         }
 

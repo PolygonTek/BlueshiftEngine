@@ -94,7 +94,7 @@ bool Pcm::Open(const char *filename) {
         }
     } 
 
-    BE_WARNLOG(L"Unsupported sound file '%hs'\n", filename);
+    BE_WARNLOG("Unsupported sound file '%s'\n", filename);
     fileSystem.CloseFile(fp);
 
     return false;

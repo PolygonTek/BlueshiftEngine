@@ -14,7 +14,6 @@
 
 #include "Precompiled.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Core/Heap.h"
 #include "File/File.h"
 #include "Core/Cmds.h"
@@ -30,7 +29,7 @@ BE_NAMESPACE_BEGIN
 
 CVar *      CVar::staticVars = nullptr;
 
-void CVar::Init(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description, float valueMin, float valueMax) {
+void CVar::Init(const char *name, const char *value, int flags, const char *description, float valueMin, float valueMax) {
     this->name          = name;
     this->defaultValue  = value;
     this->desc          = description;
@@ -50,7 +49,7 @@ void CVar::Init(const wchar_t *name, const wchar_t *value, int flags, const wcha
     }
 }
 
-void CVar::SetString(const wchar_t *value) {
+void CVar::SetString(const char *value) {
     cvarSystem.SetCVarString(name, value);
 }
 
@@ -69,21 +68,21 @@ void CVarSystem::Init() {
 
     CVar::RegisterStaticCVars();
 
-    cmdSystem.AddCommand(L"listCvars", Cmd_ListCVars);
-    cmdSystem.AddCommand(L"cvar_restart", Cmd_Restart);
-    cmdSystem.AddCommand(L"reset", Cmd_Reset);
-    cmdSystem.AddCommand(L"set", Cmd_Set);
-    cmdSystem.AddCommand(L"toggle", Cmd_Toggle);
+    cmdSystem.AddCommand("listCvars", Cmd_ListCVars);
+    cmdSystem.AddCommand("cvar_restart", Cmd_Restart);
+    cmdSystem.AddCommand("reset", Cmd_Reset);
+    cmdSystem.AddCommand("set", Cmd_Set);
+    cmdSystem.AddCommand("toggle", Cmd_Toggle);
 }
 
 void CVarSystem::Shutdown() {
     initialized = false;
 
-    cmdSystem.RemoveCommand(L"listCvars");
-    cmdSystem.RemoveCommand(L"cvar_restart");
-    cmdSystem.RemoveCommand(L"reset");
-    cmdSystem.RemoveCommand(L"set");
-    cmdSystem.RemoveCommand(L"toggle");
+    cmdSystem.RemoveCommand("listCvars");
+    cmdSystem.RemoveCommand("cvar_restart");
+    cmdSystem.RemoveCommand("reset");
+    cmdSystem.RemoveCommand("set");
+    cmdSystem.RemoveCommand("toggle");
 
     for (int i = 0; i < cvars.Count(); i++) {
         Mem_Free(cvars[i]->valueString);
@@ -91,6 +90,7 @@ void CVarSystem::Shutdown() {
         if (!(cvars[i]->flags & CVar::Static)) {
             Mem_Free((void *)cvars[i]->name);
             Mem_Free((void *)cvars[i]->defaultValue);
+
             delete cvars[i];
         }
     }
@@ -99,8 +99,8 @@ void CVarSystem::Shutdown() {
     cvarHash.Free();
 }
 
-const wchar_t *CVarSystem::CompleteVariable(const wchar_t *partial) {	
-    int len = WStr::Length(partial);
+const char *CVarSystem::CompleteVariable(const char *partial) {
+    int len = Str::Length(partial);
     if (!len) {
         return nullptr;
     }
@@ -109,14 +109,14 @@ const wchar_t *CVarSystem::CompleteVariable(const wchar_t *partial) {
 
     // Check full name 
     for (i = 0; i < cvars.Count(); i++) {
-        if (!WStr::Icmp(partial, cvars[i]->name)) {
+        if (!Str::Icmp(partial, cvars[i]->name)) {
             return cvars[i]->name;
         }
     }
 
     // Check partial name
     for (i = 0; i < cvars.Count(); i++) {
-        if (!WStr::Icmpn(partial, cvars[i]->name, len)) {
+        if (!Str::Icmpn(partial, cvars[i]->name, len)) {
             return cvars[i]->name;
         }
     }
@@ -124,15 +124,15 @@ const wchar_t *CVarSystem::CompleteVariable(const wchar_t *partial) {
     return nullptr;
 }
 
-CVar *CVarSystem::Find(const wchar_t *name) const {
-    if (!name || WStr::FindChar(name, L'\\') != -1 || WStr::FindChar(name, L'\"') != -1 || WStr::FindChar(name, L';') != -1) {
-        BE_WARNLOG(L"CVarSystem::Find: invalid cvar name string: %ls", name);
+CVar *CVarSystem::Find(const char *name) const {
+    if (!name || Str::FindChar(name, '\\') != -1 || Str::FindChar(name, '\"') != -1 || Str::FindChar(name, ';') != -1) {
+        BE_WARNLOG("CVarSystem::Find: invalid cvar name string: %s", name);
         return nullptr;
     }
 
     int hash = cvarHash.GenerateHash(name, false);
     for (int i = cvarHash.First(hash); i != -1; i = cvarHash.Next(i)) {
-        if (!WStr::Icmp(cvars[i]->name, name)) {
+        if (!Str::Icmp(cvars[i]->name, name)) {
             return cvars[i];
         }
     }
@@ -144,19 +144,19 @@ void CVarSystem::Register(CVar *cvar) {
     int hash = cvarHash.GenerateHash(cvar->name, false);
     int i;
     for (i = cvarHash.First(hash); i != -1; i = cvarHash.Next(i)) {
-        if (!WStr::Icmp(cvars[i]->name, cvar->name)) {
+        if (!Str::Icmp(cvars[i]->name, cvar->name)) {
             break;
         }
     }
     
     if (i == -1) {
-        cvar->valueString   = (wchar_t *)Mem_AllocWideString(cvar->defaultValue);
-        cvar->valueFloat    = (float)wcstof(cvar->valueString, nullptr);
-        cvar->valueInteger  = (int)wcstoul(cvar->valueString, nullptr, 0);
+        cvar->valueString   = (char *)Mem_AllocString(cvar->defaultValue);
+        cvar->valueFloat    = (float)atof(cvar->valueString);
+        cvar->valueInteger  = (int)Str::ToI32(cvar->valueString);
 
         i = cvars.Append(cvar);
         cvarHash.Add(hash, i);
-    }	
+    }
 }
 
 void CVarSystem::WriteVariables(File *fp) const {
@@ -164,14 +164,14 @@ void CVarSystem::WriteVariables(File *fp) const {
         CVar *cvar = cvars[i];
 
         if (cvar->flags & CVar::Archive) {
-            fp->Printf("set %ls \"%ls\"\n", cvar->name, cvar->valueString);
+            fp->Printf("set %s \"%s\"\n", cvar->name, cvar->valueString);
         }
     }
 }
 
-CVar *CVarSystem::Set(const wchar_t *name, const wchar_t *value) {
-    if (!name || WStr::FindChar(name, L'\\') != -1 || WStr::FindChar(name, L'\"') != -1 || WStr::FindChar(name, L';') != -1) {
-        BE_WARNLOG(L"CVarSystem::Set: invalid cvar name string: %ls", name);
+CVar *CVarSystem::Set(const char *name, const char *value) {
+    if (!name || Str::FindChar(name, '\\') != -1 || Str::FindChar(name, '\"') != -1 || Str::FindChar(name, ';') != -1) {
+        BE_WARNLOG("CVarSystem::Set: invalid cvar name string: %s", name);
         return nullptr;
     }
 
@@ -179,7 +179,7 @@ CVar *CVarSystem::Set(const wchar_t *name, const wchar_t *value) {
     int hash = cvarHash.GenerateHash(name, false);
     int i;
     for (i = cvarHash.First(hash); i != -1; i = cvarHash.Next(i)) {
-        if (!WStr::Icmp(cvars[i]->name, name)) {
+        if (!Str::Icmp(cvars[i]->name, name)) {
             cvar = cvars[i];
             break;
         }
@@ -190,7 +190,7 @@ CVar *CVarSystem::Set(const wchar_t *name, const wchar_t *value) {
     }
 
     if (cvar->flags & CVar::ReadOnly) {
-        BE_LOG(L"%ls is readonly\n", name);
+        BE_LOG("%s is readonly\n", name);
         return cvar;
     }
 
@@ -198,45 +198,45 @@ CVar *CVarSystem::Set(const wchar_t *name, const wchar_t *value) {
         value = cvar->defaultValue;
     }
 
-    if (!WStr::Cmp(cvar->valueString, value)) {
+    if (!Str::Cmp(cvar->valueString, value)) {
         return cvar;
     }
 
     cvar->flags |= CVar::Modified;
     Mem_Free(cvar->valueString);
-    cvar->valueString   = Mem_AllocWideString(value);
-    cvar->valueFloat    = wcstof(value, nullptr);
-    cvar->valueInteger  = (int)wcstoul(value, nullptr, 0);
+    cvar->valueString   = Mem_AllocString(value);
+    cvar->valueFloat    = atof(value);
+    cvar->valueInteger  = Str::ToI32(value);
     ValidateMinMax(cvar);
 
     return cvar;
 }
 
-CVar *CVarSystem::SetCVarString(const wchar_t *name, const wchar_t *value) {
+CVar *CVarSystem::SetCVarString(const char *name, const char *value) {
     return Set(name, value);
 }
 
-CVar *CVarSystem::SetCVarBool(const wchar_t *name, const bool value) {
-    return Set(name, (value ? L"1" : L"0"));
+CVar *CVarSystem::SetCVarBool(const char *name, const bool value) {
+    return Set(name, (value ? "1" : "0"));
 }
 
-CVar *CVarSystem::SetCVarFloat(const wchar_t *name, const float value) {
-    return Set(name, wva(L"%f", value));
+CVar *CVarSystem::SetCVarFloat(const char *name, const float value) {
+    return Set(name, va("%f", value));
 }
 
-CVar *CVarSystem::SetCVarInteger(const wchar_t *name, const int value) {
-    return Set(name, wva(L"%i", value));
+CVar *CVarSystem::SetCVarInteger(const char *name, const int value) {
+    return Set(name, va("%i", value));
 }
 
-const wchar_t *CVarSystem::GetCVarString(const wchar_t *name) const {
+const char *CVarSystem::GetCVarString(const char *name) const {
     CVar *cvar = Find(name);
     if (!cvar) {
-        return L"";
+        return "";
     }
     return cvar->valueString;
 }
 
-bool CVarSystem::GetCVarBool(const wchar_t *name) const {
+bool CVarSystem::GetCVarBool(const char *name) const {
     CVar *cvar = Find(name);
     if (!cvar) {
         return false;
@@ -244,7 +244,7 @@ bool CVarSystem::GetCVarBool(const wchar_t *name) const {
     return (cvar->valueInteger ? true : false);
 }
 
-float CVarSystem::GetCVarFloat(const wchar_t *name) const {
+float CVarSystem::GetCVarFloat(const char *name) const {
     CVar *cvar = Find(name);
     if (!cvar) {
         return 0.0f;
@@ -252,7 +252,7 @@ float CVarSystem::GetCVarFloat(const wchar_t *name) const {
     return cvar->valueFloat;
 }
 
-int CVarSystem::GetCVarInteger(const wchar_t *name) const {
+int CVarSystem::GetCVarInteger(const char *name) const {
     CVar *cvar = Find(name);
     if (!cvar) {
         return 0;
@@ -275,7 +275,7 @@ bool CVarSystem::Command(const CmdArgs &args) {
 
     if (args.Argc() == 1) {
         // Print cvar information if no parameters are specified
-        BE_LOG(L"%ls is: \"%ls\" default: \"%ls\"\ndescription: %ls\n", cvar->name, cvar->valueString, cvar->defaultValue, cvar->desc);
+        BE_LOG("%s is: \"%s\" default: \"%s\"\ndescription: %s\n", cvar->name, cvar->valueString, cvar->defaultValue, cvar->desc);
         return true;
     }
 
@@ -286,13 +286,13 @@ bool CVarSystem::Command(const CmdArgs &args) {
 void CVarSystem::ValidateMinMax(CVar *cvar) {
     if (cvar->flags & (CVar::Float | CVar::Integer) && (cvar->valueMax - cvar->valueMin) > 0.0f) {
         if (cvar->valueFloat < cvar->valueMin) {
-            BE_WARNLOG(L"cvar '%ls' out of range (%.3f < %.3f)\n", cvar->name, cvar->valueFloat, cvar->valueMin);
+            BE_WARNLOG("cvar '%s' out of range (%.3f < %.3f)\n", cvar->name, cvar->valueFloat, cvar->valueMin);
             cvar->SetFloat(cvar->valueMin);
             return;
         }
 
         if (cvar->valueFloat > cvar->valueMax) {
-            BE_WARNLOG(L"cvar '%ls' out of range (%.3f > %.3f)\n", cvar->name, cvar->valueFloat, cvar->valueMax);
+            BE_WARNLOG("cvar '%s' out of range (%.3f > %.3f)\n", cvar->name, cvar->valueFloat, cvar->valueMax);
             cvar->SetFloat(cvar->valueMax);
             return;
         }
@@ -306,12 +306,12 @@ void CVarSystem::ValidateMinMax(CVar *cvar) {
 //--------------------------------------------------------------------------------------------------
 
 void CVarSystem::Cmd_ListCVars(const CmdArgs &args) {
-    const wchar_t *partialString;
+    const char *partialString;
     int len;
 
     if (args.Argc() > 1) {
         partialString = args.Argv(1);
-        len = WStr::Length(partialString);
+        len = Str::Length(partialString);
     } else {
         partialString = nullptr;
         len = 0;
@@ -321,36 +321,36 @@ void CVarSystem::Cmd_ListCVars(const CmdArgs &args) {
     for (int i = 0; i < cvarSystem.cvars.Count(); i++) {
         CVar *cvar = cvarSystem.cvars[i];
 
-        if (partialString && WStr::Icmpn(partialString, cvar->name, len)) {
+        if (partialString && Str::Icmpn(partialString, cvar->name, len)) {
             continue;
         }
 
-        wchar_t flags[32];
-        flags[0] = cvar->flags & CVar::Archive  ? L'A' : L' ';
-        flags[1] = cvar->flags & CVar::ReadOnly ? L'R' : L' ';
+        char flags[32];
+        flags[0] = cvar->flags & CVar::Archive  ? 'A' : ' ';
+        flags[1] = cvar->flags & CVar::ReadOnly ? 'R' : ' ';
         flags[2] = 0;
         
-        const wchar_t *type;
+        const char *type;
         if (cvar->flags & CVar::Float) {
-            type = L"float";
+            type = "float";
         } else if (cvar->flags & CVar::Integer) {
-            type = L"integer";
+            type = "integer";
         } else if (cvar->flags & CVar::Bool) {
-            type = L"bool";
+            type = "bool";
         } else {
-            type = L"string";
+            type = "string";
         }
 
-        BE_LOG(L"%4s %8s %ls = %ls\n", flags, type, cvar->name, cvar->valueString);
+        BE_LOG("%4s %8s %s = %s\n", flags, type, cvar->name, cvar->valueString);
 
         num++;
     }
 
-    BE_LOG(L"%i total cvars", num);
+    BE_LOG("%i total cvars", num);
     if (partialString) {
-        BE_LOG(L" beginning with \"%ls\"", partialString);
+        BE_LOG(" beginning with \"%s\"", partialString);
     }
-    BE_LOG(L"\n");
+    BE_LOG("\n");
 }
 
 void CVarSystem::Cmd_Restart(const CmdArgs &args) {
@@ -359,14 +359,14 @@ void CVarSystem::Cmd_Restart(const CmdArgs &args) {
         cvarSystem.Set(cvar->name, cvar->defaultValue);
     }
 
-    BE_LOG(L"all cvars set to default\n");
+    BE_LOG("all cvars set to default\n");
 }
 
 void CVarSystem::Cmd_Reset(const CmdArgs &args) {
     if (args.Argc() > 1) {
         cvarSystem.Set(args.Argv(1), nullptr);
     } else {
-        BE_LOG(L"usage: reset <variable>\n");
+        BE_LOG("usage: reset <variable>\n");
     }
 }
 
@@ -374,44 +374,44 @@ void CVarSystem::Cmd_Set(const CmdArgs &args) {
     if (args.Argc() > 2) {
         cvarSystem.Set(args.Argv(1), args.Argv(2));
     } else {
-        BE_LOG(L"usage: set <variable> <value>\n");
+        BE_LOG("usage: set <variable> <value>\n");
     }
 }
 
 void CVarSystem::Cmd_Toggle(const CmdArgs &args) {
     if (args.Argc() == 1) {
-        BE_LOG(L"usage:\n");
-        BE_LOG(L"toggle <variable> - toggles between 0 and 1\n");
-        BE_LOG(L"toggle <variable> <value> - toggles between 0 and <value>\n");
-        BE_LOG(L"toggle <variable> [string-1] [string-2]...[string-n] - cycles through all strings\n");
+        BE_LOG("usage:\n");
+        BE_LOG("toggle <variable> - toggles between 0 and 1\n");
+        BE_LOG("toggle <variable> <value> - toggles between 0 and <value>\n");
+        BE_LOG("toggle <variable> [string-1] [string-2]...[string-n] - cycles through all strings\n");
         return;
     }
 
-    const wchar_t *arg = args.Argv(1);
+    const char *arg = args.Argv(1);
     CVar *cvar = cvarSystem.Find(arg);
     if (!cvar) {
-        BE_LOG(L"unknown variable\n");
+        BE_LOG("unknown variable\n");
         return;
     }
 
     if (args.Argc() == 2) {
         if (cvar->GetBool()) {
-            cvarSystem.Set(arg, L"0");
+            cvarSystem.Set(arg, "0");
         } else {
-            cvarSystem.Set(arg, L"1");
+            cvarSystem.Set(arg, "1");
         }
     } else if (args.Argc() == 3) {
-        const wchar_t *arg2 = args.Argv(2);
+        const char *arg2 = args.Argv(2);
         
-        if (cvar->GetInteger() == wcstoul(arg2, nullptr, 0)) {
-            cvarSystem.Set(arg, L"0");
+        if (cvar->GetInteger() == Str::ToI32(arg2)) {
+            cvarSystem.Set(arg, "0");
         } else {
             cvarSystem.Set(arg, arg2);
         }
     } else {
         int i;
         for (i = 0; i < args.Argc() - 2; i++) {
-            if (!WStr::Cmp(args.Argv(2 + i), cvar->valueString)) {
+            if (!Str::Cmp(args.Argv(2 + i), cvar->valueString)) {
                 i++;
                 break;
             }

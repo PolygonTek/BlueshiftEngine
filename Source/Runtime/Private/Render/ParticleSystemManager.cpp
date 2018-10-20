@@ -36,7 +36,7 @@ void ParticleSystemManager::Shutdown() {
 
 ParticleSystem *ParticleSystemManager::AllocParticleSystem(const char *hashName) {
     if (particleSystemHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs particleSystem already allocated", hashName);
+        BE_FATALERROR("%s particleSystem already allocated", hashName);
     }
 
     ParticleSystem *particleSystem = new ParticleSystem;
@@ -66,7 +66,7 @@ void ParticleSystemManager::RenameParticleSystem(ParticleSystem *particleSystem,
 
 void ParticleSystemManager::DestroyParticleSystem(ParticleSystem *particleSystem) {
     if (particleSystem->refCount > 1) {
-        BE_WARNLOG(L"ParticleSystemManager::DestroyParticleSystem: particleSystem '%hs' has %i reference count\n", particleSystem->name.c_str(), particleSystem->refCount);
+        BE_WARNLOG("ParticleSystemManager::DestroyParticleSystem: particleSystem '%s' has %i reference count\n", particleSystem->name.c_str(), particleSystem->refCount);
     }
 
     particleSystemHashMap.Remove(particleSystem->hashName);

@@ -21,11 +21,11 @@ BE_NAMESPACE_BEGIN
 AnimManager     animManager;
 
 void AnimManager::Init() {
-    cmdSystem.AddCommand(L"listAnims", Cmd_ListAnims);
+    cmdSystem.AddCommand("listAnims", Cmd_ListAnims);
 }
 
 void AnimManager::Shutdown() {
-    cmdSystem.RemoveCommand(L"listAnims");
+    cmdSystem.RemoveCommand("listAnims");
         
     animHashMap.DeleteContents(true);
     
@@ -35,7 +35,7 @@ void AnimManager::Shutdown() {
 
 Anim *AnimManager::AllocAnim(const char *hashName) {
     if (animHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs anim already allocated", hashName);
+        BE_FATALERROR("%s anim already allocated", hashName);
     }
     
     Anim *anim = new Anim;
@@ -76,7 +76,7 @@ void AnimManager::ReleaseAnim(Anim *anim, bool immediateDestroy) {
 
 void AnimManager::DestroyAnim(Anim *anim) {
     if (anim->refCount > 1) {
-        BE_LOG(L"AnimManager::DestroyAnim: material '%hs' has %i reference count\n", anim->hashName.c_str(), anim->refCount);
+        BE_LOG("AnimManager::DestroyAnim: material '%s' has %i reference count\n", anim->hashName.c_str(), anim->refCount);
     }
 
     animHashMap.Remove(anim->hashName);
@@ -142,7 +142,7 @@ Anim *AnimManager::GetAnim(const char *name) {
 
     anim = AllocAnim(name);
     if (!anim->Load(name)) {
-        BE_WARNLOG(L"Couldn't load anim '%hs'\n", name);
+        BE_WARNLOG("Couldn't load anim '%s'\n", name);
         DestroyAnim(anim);
         anim = nullptr;
     }
@@ -186,7 +186,7 @@ void AnimManager::Cmd_ListAnims(const CmdArgs &args) {
 
         if (anim) {
             size_t s = anim->Size();
-            BE_LOG(L"%2i refs %9hs %.2f secs: %hs\n", 
+            BE_LOG("%2i refs %9s %.2f secs: %s\n", 
                 anim->refCount, Str::FormatBytes((int)s).c_str(), anim->animLength / 1000.0f, anim->hashName.c_str());
 
             size += s;
@@ -199,8 +199,8 @@ void AnimManager::Cmd_ListAnims(const CmdArgs &args) {
         namesize += animManager.jointNameList[i].Size();
     }
 
-    BE_LOG(L"total %hs used in %i anims\n", Str::FormatBytes((int)size).c_str(), num);
-    BE_LOG(L"total %hs used in %i joint names\n", Str::FormatBytes((int)namesize).c_str(), animManager.jointNameList.Count());
+    BE_LOG("total %s used in %i anims\n", Str::FormatBytes((int)size).c_str(), num);
+    BE_LOG("total %s used in %i joint names\n", Str::FormatBytes((int)namesize).c_str(), animManager.jointNameList.Count());
 }
 
 BE_NAMESPACE_END

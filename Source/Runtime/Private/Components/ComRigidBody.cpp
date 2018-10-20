@@ -63,7 +63,7 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
             body->collisions.Append(collision);
         } else if (impulse > existingCollision->impulse) {
             existingCollision->impulse = impulse;
-            //BE_LOG(L"Collide with %hs, n = (%.2f %.2f %.2f), impulse = %.2f\n", collision.entity->GetName(), normal.x, normal.y, normal.z, impulse);
+            //BE_LOG("Collide with %s, n = (%.2f %.2f %.2f), impulse = %.2f\n", collision.entity->GetName(), normal.x, normal.y, normal.z, impulse);
         }
     }
 }
@@ -243,7 +243,7 @@ void ComRigidBody::CreateBody() {
 
 #if 0
     if (physicsDesc.shapes.Count() == 0) {
-        BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
+        BE_WARNLOG("Entity %s has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
     }
 #endif
 

@@ -45,7 +45,7 @@ static void SetAffinity(HANDLE thread, int affinity) {
     groupAffinity.Group = (WORD)group;
     groupAffinity.Mask = (KAFFINITY)(uint64_t(1) << number);
     if (!SetThreadGroupAffinity(thread, &groupAffinity, nullptr)) {
-        BE_FATALERROR(L"cannot set thread group affinity");
+        BE_FATALERROR("cannot set thread group affinity");
     }
 
     PROCESSOR_NUMBER processorNumber;
@@ -53,14 +53,14 @@ static void SetAffinity(HANDLE thread, int affinity) {
     processorNumber.Number = number;
     processorNumber.Reserved = 0;
     if (!SetThreadIdealProcessorEx(thread, &processorNumber, nullptr)) {
-        BE_FATALERROR(L"cannot set thread ideal processor");
+        BE_FATALERROR("cannot set thread ideal processor");
     }
 #else
     if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64(1) << affinity))) {
-        BE_FATALERROR(L"cannot set thread affinity mask");
+        BE_FATALERROR("cannot set thread affinity mask");
     }
     if (SetThreadIdealProcessor(thread, (DWORD)affinity) == (DWORD)-1) {
-        BE_FATALERROR(L"cannot set thread ideal processor");
+        BE_FATALERROR("cannot set thread ideal processor");
     }
 #endif
 }
@@ -69,7 +69,7 @@ static void SetAffinity(HANDLE thread, int affinity) {
 PlatformWinThread *PlatformWinThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     HANDLE threadHandle = CreateThread(nullptr, stackSize, (LPTHREAD_START_ROUTINE)startProc, param, 0, nullptr);
     if (threadHandle == nullptr) {
-        BE_FATALERROR(L"cannot create thread");
+        BE_FATALERROR("cannot create thread");
     }
 
     BE1::SetAffinity(threadHandle, affinity);

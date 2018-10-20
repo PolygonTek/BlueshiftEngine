@@ -536,7 +536,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     if (!p[i]) {
                         i = atoi(p);
                         if (i >= numRegisters) {
-                            BE_ERRLOG(L"register 'r%i' used without having been initialized\n", i);
+                            BE_ERRLOG("register 'r%i' used without having been initialized\n", i);
                         }
                         g_operandStack[++g_operandStackPointer] = MAKE_REG_OUTPUT(i);
                         continue;
@@ -576,7 +576,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     }
                 }
                 
-                BE_ERRLOG(L"undefined identifier '%hs'\n", token.c_str());
+                BE_ERRLOG("undefined identifier '%s'\n", token.c_str());
                 return false;
             } else if (tokenType & TokenType::TT_NUMBER) {
                 if (!(lastParseState & (EmptyState | OpState | BuiltInOpState | LParenState))) {
@@ -595,25 +595,25 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
         }
 
         next = false;
-        goto END_OF_EXPRESSION;               
+        goto END_OF_EXPRESSION; 
 
 SYNTAX_ERROR:
-        BE_ERRLOG(L"syntax error: '%hs'\n", token.c_str());
+        BE_ERRLOG("syntax error: '%s'\n", token.c_str());
         return false;
 
 END_OF_EXPRESSION:
         if (lastParseState == OpState) {
-            BE_ERRLOG(L"missing operand before '%hs'\n", token.c_str());
+            BE_ERRLOG("missing operand before '%s'\n", token.c_str());
             return false;
         }
 
         if (parenthese) {
-            BE_ERRLOG(L"missing ')' before '%hs'\n", token.c_str());
+            BE_ERRLOG("missing ')' before '%s'\n", token.c_str());
             return false;
         }
 
         if (sqbracket) {
-            BE_ERRLOG(L"missing ']' before '%hs'\n", token.c_str());
+            BE_ERRLOG("missing ']' before '%s'\n", token.c_str());
             return false;
         }
 
@@ -625,7 +625,7 @@ END_OF_EXPRESSION:
         outputRegisters[index++] = MAKE_REG_OUTPUT(numRegisters++);
 
         if ((!next && index < numExpressions) || (next && index == numExpressions)) {
-            BE_ERRLOG(L"expression does not take %i arguments\n", index);
+            BE_ERRLOG("expression does not take %i arguments\n", index);
             return false;
         }
 
@@ -662,7 +662,7 @@ float ExprChunk::GetValue(int reg) const {
     case OutputRegister:
         return g_outputValues[GET_REG_INDEX(reg)];
     case TempRegister:
-        return g_tempRegisters[GET_REG_INDEX(reg)];		
+        return g_tempRegisters[GET_REG_INDEX(reg)];
     case ConstantRegister:
         return constantRegisters[GET_REG_INDEX(reg)];
     case LocalParmRegister:
@@ -670,7 +670,7 @@ float ExprChunk::GetValue(int reg) const {
     case GlobalParmRegister:
         return data->GetParmValue(GET_REG_INDEX(reg));
     case TableRegister:
-        BE_FATALERROR(L"ExprChunk::GetValue: Could not read from table register %i\n", reg);
+        BE_FATALERROR("ExprChunk::GetValue: Could not read from table register %i\n", reg);
     }
 
     return 0.0f;
@@ -688,7 +688,7 @@ void ExprChunk::SetValue(int reg, float value) {
     case LocalParmRegister:
     case GlobalParmRegister:
     case TableRegister:
-        BE_FATALERROR(L"ExprChunk::SetValue: Could not write to register %i\n", reg);
+        BE_FATALERROR("ExprChunk::SetValue: Could not write to register %i\n", reg);
         break;
     }
 }
@@ -861,7 +861,7 @@ void ExprData::SetTable(const char *name, int numElements, const float *elements
     for (int i = 0; i < numTables; i++) {
         if (!Str::Cmp(tables[i].name, name)) {
             if (tables[i].numElements != numElements) {
-                BE_FATALERROR(L"ExprData::SetTable: table elements(%i) != numElements(%i)", tables[i].numElements, numElements);
+                BE_FATALERROR("ExprData::SetTable: table elements(%i) != numElements(%i)", tables[i].numElements, numElements);
                 return;
             }
 
@@ -884,7 +884,7 @@ void ExprData::SetTable(const char *name, int numElements, const float *elements
 float ExprData::GetParmValue(int reg) const {
     int i = GET_REG_INDEX(reg);
     if (i >= numParms) {
-        BE_FATALERROR(L"ExprData::GetParmValue: %i > numParms - 1 (%i)", i, numParms);
+        BE_FATALERROR("ExprData::GetParmValue: %i > numParms - 1 (%i)", i, numParms);
     }
 
     return parms[i].value;
@@ -896,7 +896,7 @@ float ExprData::GetTableValue(int reg, float findex) const {
 
     int i = GET_REG_INDEX(reg);
     if (i >= numTables) {
-        BE_FATALERROR(L"ExprData::GetTableValue: %i > numTables - 1 (%i)", i, numTables);
+        BE_FATALERROR("ExprData::GetTableValue: %i > numTables - 1 (%i)", i, numTables);
     }
 
     const Table *table = &tables[i];

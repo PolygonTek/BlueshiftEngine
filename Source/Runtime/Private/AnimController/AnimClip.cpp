@@ -78,7 +78,7 @@ void AnimClip::GetAABB(int time, const Array<AABB> &frameAABBs, AABB &outAabb) c
 bool AnimClip::Load(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::ReadMode);
     if (!fp) {
-        BE_WARNLOG(L"AnimClip::Load: file open error\n");
+        BE_WARNLOG("AnimClip::Load: file open error\n");
         return false;
     }
 
@@ -96,7 +96,7 @@ bool AnimClip::Reload() {
 void AnimClip::Write(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"AnimClip::Write: file open error\n");
+        BE_WARNLOG("AnimClip::Write: file open error\n");
         return;
     }
 

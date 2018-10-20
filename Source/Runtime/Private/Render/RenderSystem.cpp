@@ -27,7 +27,7 @@ renderGlobal_t      renderGlobal;
 RenderSystem        renderSystem;
 
 void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
-    cmdSystem.AddCommand(L"screenshot", Cmd_ScreenShot);
+    cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
 
     // Initialize OpenGL renderer
     rhi.Init(windowHandle, settings);
@@ -103,7 +103,7 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
 }
 
 void RenderSystem::Shutdown() {
-    cmdSystem.RemoveCommand(L"screenshot");
+    cmdSystem.RemoveCommand("screenshot");
 
     frameData.Shutdown();
 
@@ -201,7 +201,7 @@ void *RenderSystem::GetCommandBuffer(int bytes) {
     RenderCommandBuffer *cmds = frameData.GetCommands();
 
     if (cmds->used + bytes + sizeof(RenderCommand) >= RenderCommandBufferSize) {
-        BE_WARNLOG(L"RenderSystem::GetCommandBuffer: not enough command buffer space\n");
+        BE_WARNLOG("RenderSystem::GetCommandBuffer: not enough command buffer space\n");
         return nullptr;
     }
 
@@ -281,7 +281,7 @@ void RenderSystem::CheckModifiedCVars() {
     if (TextureManager::texture_filter.IsModified()) {
         TextureManager::texture_filter.ClearModified();
 
-        textureManager.SetFilter(WStr::ToStr(TextureManager::texture_filter.GetString()));
+        textureManager.SetFilter(TextureManager::texture_filter.GetString());
     }
 
     if (TextureManager::texture_anisotropy.IsModified()) {
@@ -518,7 +518,7 @@ void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
         }
 
         if (index == 1000) {
-            BE_WARNLOG(L"too many screenshot exist\n");
+            BE_WARNLOG("too many screenshot exist\n");
             return;
         }
     }

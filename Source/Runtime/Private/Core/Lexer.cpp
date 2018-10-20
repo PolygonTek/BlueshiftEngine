@@ -148,7 +148,7 @@ void Lexer::Warning(const char *fmt, ...) {
     ::vsprintf(text, fmt, argptr);
     va_end(argptr);
 
-    BE_WARNLOG(L"%hs(%i) : %hs\n", filename, line, text);
+    BE_WARNLOG("%s(%i) : %s\n", filename, line, text);
 }
 
 void Lexer::Error(const char *fmt, ...) {
@@ -163,7 +163,7 @@ void Lexer::Error(const char *fmt, ...) {
     ::vsprintf(text, fmt, argptr);
     va_end(argptr);
 
-    BE_ERRLOG(L"%hs(%i) : %hs\n", filename, line, text);
+    BE_ERRLOG("%s(%i) : %s\n", filename, line, text);
 }
 
 void Lexer::SetPunctuations(const Punctuation *punctuations) {
@@ -399,7 +399,7 @@ bool Lexer::ReadToken(Str *token, bool allowLineBreaks) {
     int oldLine;
 
     if (!loaded) {
-        BE_ERRLOG(L"Lexer::ReadToken: no file loaded\n");
+        BE_ERRLOG("Lexer::ReadToken: no file loaded\n");
         return false;
     }
 
@@ -487,7 +487,7 @@ bool Lexer::ReadToken(Str *token, bool allowLineBreaks) {
 
 void Lexer::UnreadToken(const Str *token) {
     if (tokenAvailable) {
-        BE_FATALERROR(L"Lexer::UnreadToken, unread token twice\n");
+        BE_FATALERROR("Lexer::UnreadToken, unread token twice\n");
     }
 
     this->token = *token;
@@ -684,7 +684,7 @@ const char *Lexer::ParseBracedSectionExact(Str &out, int tabs) {
             
             skipWhite = false;
             for (; i > 0; i--) {
-                out += '\t';	
+                out += '\t';
             }
         }
         out += c;

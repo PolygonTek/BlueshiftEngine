@@ -35,7 +35,7 @@ void PlatformWinTime::Init() {
     unsigned int hpart;
 
     if (!QueryPerformanceFrequency(&hrt_frequency)) {
-        BE_FATALERROR(L"No hardware timer available");
+        BE_FATALERROR("No hardware timer available");
         return;
     }
 

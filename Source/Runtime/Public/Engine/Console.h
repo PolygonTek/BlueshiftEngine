@@ -16,12 +16,12 @@
 
 #include "Core/Signal.h"
 #include "Core/SignalObject.h"
+#include "Containers/StrArray.h"
 
 BE_NAMESPACE_BEGIN
 
 class CmdArgs;
 
-#define	CONSOLE_TEXT_SIZE       0x40000
 #define CONSOLE_NOTIFY_TIMES    4
 
 class Console : public SignalObject {
@@ -31,27 +31,18 @@ public:
     void                Init();
     void                Shutdown();
 
-    const wchar_t *     GetText() const { return text; }
-
-    void                CheckResize(int newSizeOfLine);
-
     void                Clear();
-    void                ClearNotify();
-    void                LineFeed();
 
-    void                Print(const wchar_t *txt);
+    int                 GetFirstLineIndex() const;
+
+    void                Print(const Str &string);
 
     void                DumpToFile(const char *filename);
 
     bool                initialized;
 
-    wchar_t             text[CONSOLE_TEXT_SIZE];
-    int                 sizeOfLine;
-    int                 totalLines;
-    int                 currentLine;
-    int                 cursorPos;
-
-    int                 notifyTimes[CONSOLE_NOTIFY_TIMES];
+    StrArray            textLines;
+    int                 currentLineIndex;
 
     static void         Cmd_ConClear(const CmdArgs &args);
     static void         Cmd_ConDump(const CmdArgs &args);

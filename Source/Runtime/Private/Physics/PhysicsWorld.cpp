@@ -312,7 +312,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
     if (shape->isCompound()) {
         btCompoundShape *compoundShape = static_cast<btCompoundShape *>(shape);
         if (compoundShape->getNumChildShapes() != 1) {
-            BE_WARNLOG(L"PhysicsWorld::ConvexCast: multiple compound shape is not allowed\n");
+            BE_WARNLOG("PhysicsWorld::ConvexCast: multiple compound shape is not allowed\n");
             return false;
         }
 
@@ -326,7 +326,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
     }
 
     if (!shape->isConvex()) {
-        BE_WARNLOG(L"PhysicsWorld::ConvexCast: non convex collision shape is not allowed\n");
+        BE_WARNLOG("PhysicsWorld::ConvexCast: non convex collision shape is not allowed\n");
         return false;
     }
 

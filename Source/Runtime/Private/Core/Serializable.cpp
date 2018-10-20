@@ -323,7 +323,7 @@ Variant Serializable::GetPropertyDefault(const char *name) const {
     Variant out;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetPropertyDefault: invalid property name '%hs'\n", name);
+        BE_WARNLOG("Serializable::GetPropertyDefault: invalid property name '%s'\n", name);
         return out;
     }
 
@@ -336,7 +336,7 @@ Variant Serializable::GetPropertyDefault(int index) const {
     Variant out;
 
     if (!GetPropertyInfo(index, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetPropertyDefault: invalid property index %i\n", index);
+        BE_WARNLOG("Serializable::GetPropertyDefault: invalid property index %i\n", index);
         return out;
     }
 
@@ -349,7 +349,7 @@ Variant Serializable::GetProperty(int index) const {
     Variant out;
 
     if (!GetPropertyInfo(index, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetProperty: invalid property index %i\n", index);
+        BE_WARNLOG("Serializable::GetProperty: invalid property index %i\n", index);
         return out;
     }
 
@@ -362,7 +362,7 @@ Variant Serializable::GetProperty(const char *name) const {
     Variant out;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetProperty: invalid property name '%hs'\n", name);
+        BE_WARNLOG("Serializable::GetProperty: invalid property name '%s'\n", name);
         return out;
     }
 
@@ -455,7 +455,7 @@ Variant Serializable::GetArrayProperty(int index, int elementIndex) const {
     Variant out;
 
     if (!GetPropertyInfo(index, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetArrayProperty: invalid property index %i\n", index);
+        BE_WARNLOG("Serializable::GetArrayProperty: invalid property index %i\n", index);
         return out;
     }
 
@@ -468,7 +468,7 @@ Variant Serializable::GetArrayProperty(const char *name, int elementIndex) const
     Variant out;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetArrayProperty: invalid property name '%hs'\n", name);
+        BE_WARNLOG("Serializable::GetArrayProperty: invalid property name '%s'\n", name);
         return out;
     }
 
@@ -478,7 +478,7 @@ Variant Serializable::GetArrayProperty(const char *name, int elementIndex) const
 
 void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, Variant &out) const {
     if (!(propertyInfo.GetFlags() & PropertyInfo::ArrayFlag)) {
-        BE_WARNLOG(L"Serializable::GetArrayProperty: property '%hs' is not array\n", propertyInfo.name.c_str());
+        BE_WARNLOG("Serializable::GetArrayProperty: property '%s' is not array\n", propertyInfo.name.c_str());
         return;
     }
 
@@ -563,7 +563,7 @@ bool Serializable::SetProperty(const char *name, const Variant &value, bool forc
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::SetProperty: invalid property name '%hs'\n", name);
+        BE_WARNLOG("Serializable::SetProperty: invalid property name '%s'\n", name);
         return false;
     }
 
@@ -574,7 +574,7 @@ bool Serializable::SetProperty(int index, const Variant &value, bool forceWrite)
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(index, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::SetProperty: invalid property index %i\n", index);
+        BE_WARNLOG("Serializable::SetProperty: invalid property index %i\n", index);
         return false;
     }
 
@@ -584,7 +584,7 @@ bool Serializable::SetProperty(int index, const Variant &value, bool forceWrite)
 bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &value, bool forceWrite) {
     // You can force to write a value even though a property has read only flag.
     if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::ReadOnlyFlag)) {
-        BE_WARNLOG(L"Serializable::SetProperty: property '%hs' is readonly\n", propertyInfo.name.c_str());
+        BE_WARNLOG("Serializable::SetProperty: property '%s' is readonly\n", propertyInfo.name.c_str());
         return false;
     }
 
@@ -823,7 +823,7 @@ bool Serializable::SetArrayProperty(const char *name, int elementIndex, const Va
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::SetArrayProperty: invalid property name '%hs'\n", name);
+        BE_WARNLOG("Serializable::SetArrayProperty: invalid property name '%s'\n", name);
         return false;
     }
 
@@ -834,7 +834,7 @@ bool Serializable::SetArrayProperty(int index, int elementIndex, const Variant &
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(index, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::SetArrayProperty: invalid property index %i\n", index);
+        BE_WARNLOG("Serializable::SetArrayProperty: invalid property index %i\n", index);
         return false;
     }
 
@@ -843,12 +843,12 @@ bool Serializable::SetArrayProperty(int index, int elementIndex, const Variant &
 
 bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, const Variant &value, bool forceWrite) {
     if (!(propertyInfo.GetFlags() & PropertyInfo::ArrayFlag)) {
-        BE_WARNLOG(L"Serializable::SetArrayProperty: property '%hs' is not array\n", propertyInfo.name.c_str());
+        BE_WARNLOG("Serializable::SetArrayProperty: property '%s' is not array\n", propertyInfo.name.c_str());
         return false;
     }
 
     if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::ReadOnlyFlag)) {
-        BE_WARNLOG(L"Serializable::SetArrayProperty: property '%hs' is readonly\n", propertyInfo.name.c_str());
+        BE_WARNLOG("Serializable::SetArrayProperty: property '%s' is readonly\n", propertyInfo.name.c_str());
         return false;
     }
 
@@ -1087,7 +1087,7 @@ int Serializable::GetPropertyArrayCount(const char *name) const {
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetPropertyArrayCount: invalid property name '%hs'\n", name);
+        BE_WARNLOG("Serializable::GetPropertyArrayCount: invalid property name '%s'\n", name);
         return 0;
     }
 
@@ -1098,7 +1098,7 @@ int Serializable::GetPropertyArrayCount(int index) const {
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(index, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::GetPropertyArrayCount: invalid property index %i\n", index);
+        BE_WARNLOG("Serializable::GetPropertyArrayCount: invalid property index %i\n", index);
         return 0;
     }
 
@@ -1107,7 +1107,7 @@ int Serializable::GetPropertyArrayCount(int index) const {
 
 int Serializable::GetPropertyArrayCount(const PropertyInfo &propertyInfo) const {
     if (!(propertyInfo.GetFlags() & PropertyInfo::ArrayFlag)) {
-        BE_WARNLOG(L"Serializable::GetPropertyArrayCount: property '%hs' is not array\n", propertyInfo.name.c_str());
+        BE_WARNLOG("Serializable::GetPropertyArrayCount: property '%s' is not array\n", propertyInfo.name.c_str());
         return 0;
     }
 
@@ -1123,7 +1123,7 @@ void Serializable::SetPropertyArrayCount(const char *name, int count) {
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(name, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::SetPropertyArrayCount: invalid property name '%hs'\n", name);
+        BE_WARNLOG("Serializable::SetPropertyArrayCount: invalid property name '%s'\n", name);
         return;
     }
 
@@ -1134,7 +1134,7 @@ void Serializable::SetPropertyArrayCount(int index, int count) {
     PropertyInfo propertyInfo;
 
     if (!GetPropertyInfo(index, propertyInfo)) {
-        BE_WARNLOG(L"Serializable::SetPropertyArrayCount: invalid property index %i'\n", index);
+        BE_WARNLOG("Serializable::SetPropertyArrayCount: invalid property index %i'\n", index);
         return;
     }
 
@@ -1143,12 +1143,12 @@ void Serializable::SetPropertyArrayCount(int index, int count) {
 
 void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int count) {
     if (!(propertyInfo.GetFlags() & PropertyInfo::ArrayFlag)) {
-        BE_WARNLOG(L"Serializable::SetPropertyArrayCount: property '%hs' is not array\n", propertyInfo.name.c_str());
+        BE_WARNLOG("Serializable::SetPropertyArrayCount: property '%s' is not array\n", propertyInfo.name.c_str());
         return;
     }
 
     if (propertyInfo.GetFlags() & PropertyInfo::ReadOnlyFlag) {
-        BE_WARNLOG(L"Serializable::SetPropertyArrayCount: property '%hs' is readonly\n", propertyInfo.name.c_str());
+        BE_WARNLOG("Serializable::SetPropertyArrayCount: property '%s' is readonly\n", propertyInfo.name.c_str());
         return;
     }
 

@@ -21,9 +21,9 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformLinuxProcess : public PlatformPosixProcess {
 public:
-    static const wchar_t *      ExecutableFileName();
-    static const wchar_t *		ComputerName();
-    static const wchar_t *		UserName();
+    static const char *         ExecutableFileName();
+    static const char *         ComputerName();
+    static const char *         UserName();
 };
 
 #ifndef USE_BASE_PLATFORM_LINUX_PROCESS

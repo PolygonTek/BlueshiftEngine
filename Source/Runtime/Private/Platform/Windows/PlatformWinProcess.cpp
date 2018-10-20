@@ -16,6 +16,7 @@
 #include "Core/Str.h"
 #include "Platform/PlatformProcess.h"
 #include "Platform/Windows/PlatformWinProcess.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -34,30 +35,42 @@
 BE_NAMESPACE_BEGIN
 
 // get the full path to the running executable
-const wchar_t *PlatformWinProcess::ExecutableFileName() {
-    static wchar_t filename[1024] = L"";
+const char *PlatformWinProcess::ExecutableFileName() {
+    static char filename[1024] = "";
+
     if (!filename[0]) {
-        GetModuleFileName(nullptr, filename, COUNT_OF(filename));
+        wchar_t wFilename[1024];
+        GetModuleFileNameW(nullptr, wFilename, COUNT_OF(filename));
+
+        PlatformWinUtils::UCS2ToUTF8(wFilename, filename, COUNT_OF(filename));
     }
     return filename;
 }
 
-const wchar_t *PlatformWinProcess::ComputerName() {
-    static wchar_t name[256] = L"";
-    if (!name[0]) {
-        DWORD size = COUNT_OF(name);
-        GetComputerName(name, &size);
+const char *PlatformWinProcess::ComputerName() {
+    static char computeName[256] = "";
+
+    if (!computeName[0]) {
+        wchar_t wComputerName[256];
+        DWORD size = COUNT_OF(wComputerName);
+        GetComputerNameW(wComputerName, &size);
+
+        PlatformWinUtils::UCS2ToUTF8(wComputerName, computeName, COUNT_OF(computeName));
     }
-    return name;
+    return computeName;
 }
 
-const wchar_t *PlatformWinProcess::UserName() {
-    static wchar_t name[256] = L"";
-    if (!name[0]) {
-        DWORD size = COUNT_OF(name);
-        GetUserName(name, &size);
+const char *PlatformWinProcess::UserName() {
+    static char userName[256] = "";
+
+    if (!userName[0]) {
+        wchar_t wUserName[256];
+        DWORD size = COUNT_OF(wUserName);
+        GetUserNameW(wUserName, &size);
+
+        PlatformWinUtils::UCS2ToUTF8(wUserName, userName, COUNT_OF(userName));
     }
-    return name;
+    return userName;
 }
 
 // return the number of logical threads of the system
@@ -79,7 +92,7 @@ int PlatformWinProcess::NumberOfLogicalProcessors() {
 WStr PlatformWinProcess::GetLastErrorText() {
     TCHAR *errorText;
     DWORD errCode = GetLastError();
-    
+
     if (!FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, errCode,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         (LPTSTR)&errorText, 0, nullptr)) {
@@ -99,8 +112,8 @@ SharedLib PlatformWinProcess::OpenLibrary(const char *filename) {
         handle = LoadLibraryA(str);
         // So you can see what the error is in the debugger...
         if (!handle) {
-            WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
-            BE_WARNLOG(L"Failed to LoadLibrary : %ls", lastErrorText.c_str());
+            Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+            BE_WARNLOG("Failed to LoadLibrary : %s", lastErrorText.c_str());
         }
     }
 
@@ -117,7 +130,7 @@ void PlatformWinProcess::CloseLibrary(SharedLib lib) {
     }
 }
 
-ProcessHandle PlatformWinProcess::CreateProccess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingDirectory) {
+ProcessHandle PlatformWinProcess::CreateProccess(const char *appPath, const char *args, const char *workingDirectory) {
     SECURITY_ATTRIBUTES secAttr;
     secAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
     secAttr.lpSecurityDescriptor = nullptr;
@@ -138,25 +151,27 @@ ProcessHandle PlatformWinProcess::CreateProccess(const wchar_t *appPath, const w
 
     STARTUPINFO si;
     memset(&si, 0, sizeof(si));
-    si.cb           = sizeof(si);
-    si.dwFlags      = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-    si.wShowWindow  = FALSE;
-    si.hStdInput    = hStdInRead;
-    si.hStdOutput   = hStdOutWrite;
-    si.hStdError    = hStdOutWrite;
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    si.wShowWindow = FALSE;
+    si.hStdInput = hStdInRead;
+    si.hStdOutput = hStdOutWrite;
+    si.hStdError = hStdOutWrite;
 
     PROCESS_INFORMATION pi;
     memset(&pi, 0, sizeof(pi));
 
     wchar_t commandLine[32768];
-    WStr::snPrintf(commandLine, COUNT_OF(commandLine), L"%s %s", appPath, args);
+    WStr::snPrintf(commandLine, COUNT_OF(commandLine), L"%hs %hs", appPath, args);
 
     wchar_t workingDirectory2[256];
-    ExpandEnvironmentStringsW(workingDirectory, workingDirectory2, COUNT_OF(workingDirectory2));
+    wchar_t expandedWorkingDirectory[256];
+    PlatformWinUtils::UTF8ToUCS2(workingDirectory, workingDirectory2, 256);
+    ExpandEnvironmentStringsW(workingDirectory2, expandedWorkingDirectory, COUNT_OF(expandedWorkingDirectory));
 
-    if (!CreateProcessW(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, workingDirectory ? workingDirectory2 : 0, &si, &pi)) {
-        WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_WARNLOG(L"Failed to CreateProcess : %ls", lastErrorText.c_str());
+    if (!CreateProcessW(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, expandedWorkingDirectory, &si, &pi)) {
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_WARNLOG("Failed to CreateProcess : %s", lastErrorText.c_str());
         return ProcessHandle();
     }
 

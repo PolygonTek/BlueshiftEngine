@@ -27,10 +27,10 @@ public:
 
     virtual int             GetFontHeight() const = 0;
 
-    virtual FontGlyph *     GetGlyph(wchar_t charCode) = 0;
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) = 0;
 
                             // Returns width of charCode character for the next character in string.
-    virtual int             GetGlyphAdvance(wchar_t charCode) const = 0;
+    virtual int             GetGlyphAdvance(char32_t unicodeChar) const = 0;
 
     virtual bool            Load(const char *filename, int fontSize) = 0;
 
@@ -43,7 +43,7 @@ protected:
         }
     };
 
-    using GlyphHashMap      = HashMap<wchar_t, FontGlyph *, HashCompareDefault, HashGeneratorCharCode>;
+    using GlyphHashMap      = HashMap<char32_t, FontGlyph *, HashCompareDefault, HashGeneratorCharCode>;
     GlyphHashMap            glyphHashMap;
 };
 
@@ -54,8 +54,8 @@ public:
 
     virtual int             GetFontHeight() const override;
 
-    virtual FontGlyph *     GetGlyph(wchar_t charcode) override;
-    virtual int             GetGlyphAdvance(wchar_t charcode) const override;
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
+    virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
@@ -80,8 +80,8 @@ public:
 
     virtual int             GetFontHeight() const override;
 
-    virtual FontGlyph *     GetGlyph(wchar_t charcode) override;
-    virtual int             GetGlyphAdvance(wchar_t charcode) const override;
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
+    virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
@@ -92,7 +92,7 @@ public:
 private:
     void                    Purge();
 
-    bool                    LoadFTGlyph(wchar_t charcode) const;
+    bool                    LoadFTGlyph(char32_t unicodeChar) const;
     void                    DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) const;
 
     int                     faceIndex;
@@ -100,7 +100,7 @@ private:
 
     byte *                  ftFontFileData;             // FreeType font flie data
     FT_Face                 ftFace;
-    mutable wchar_t         ftLastLoadedCharCode;
+    mutable char32_t        ftLastLoadedChar;
     byte *                  glyphBuffer;
 };
 

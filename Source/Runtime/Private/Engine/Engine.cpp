@@ -162,23 +162,23 @@ void Engine::RunFrame(int elapsedMsec) {
     common.RunFrame(elapsedMsec);
 }
 
-void Log(int logLevel, const wchar_t *fmt, ...) {
-    wchar_t buffer[16384];
+void Log(int logLevel, const char *fmt, ...) {
+    char buffer[16384];
     va_list args;
 
     va_start(args, fmt);
-    WStr::vsnPrintf(buffer, COUNT_OF(buffer), fmt, args);
+    Str::vsnPrintf(buffer, COUNT_OF(buffer), fmt, args);
     va_end(args);
 
     (*logFuncPtr)(logLevel, buffer);
 }
 
-void Error(int errLevel, const wchar_t *fmt, ...) {
-    wchar_t buffer[16384];
+void Error(int errLevel, const char *fmt, ...) {
+    char buffer[16384];
     va_list args;
 
     va_start(args, fmt);
-    WStr::vsnPrintf(buffer, COUNT_OF(buffer), fmt, args);
+    Str::vsnPrintf(buffer, COUNT_OF(buffer), fmt, args);
     va_end(args);
 
     (*errFuncPtr)(errLevel, buffer);
@@ -186,7 +186,7 @@ void Error(int errLevel, const wchar_t *fmt, ...) {
 
 void Assert(bool expr) {
     if (!expr) {
-        BE_ERRLOG(L"Assert Failed\n");
+        BE_ERRLOG("Assert Failed\n");
         assert(0);
     }
 }

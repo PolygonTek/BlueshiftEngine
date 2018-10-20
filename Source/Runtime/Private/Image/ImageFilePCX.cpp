@@ -46,7 +46,7 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
     ptr += sizeof(PcxHeader);
     
     if (header->bpp != 8 || (header->planes != 1 && header->planes != 3)) {
-        BE_WARNLOG(L"Image::LoadPCXFromMemory: bad PCX format %hs\n", name);
+        BE_WARNLOG("Image::LoadPCXFromMemory: bad PCX format %s\n", name);
         return false;
     }
     
@@ -103,10 +103,10 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
     return true;
 }
 
-bool Image::WritePCX(const char *filename) const {	
+bool Image::WritePCX(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Image::WritePCX: file open error\n");
+        BE_WARNLOG("Image::WritePCX: file open error\n");
         return false;
     }
 

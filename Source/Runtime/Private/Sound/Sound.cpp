@@ -89,7 +89,7 @@ void Sound::CreateStatic(Pcm &pcm) {
         pcmData = (byte *)Mem_Alloc16(pcmDataSize);
         pcm.Read(pcmDataSize, pcmData);
     } else {
-        BE_WARNLOG(L"Empty PCM data '%hs'\n", name.c_str());
+        BE_WARNLOG("Empty PCM data '%s'\n", name.c_str());
         return;
     }
 
@@ -270,7 +270,7 @@ void Sound::UpdatePosition(const Vec3 &origin) {
 bool Sound::Load(const char *filename) {
     Purge();
 
-    BE_LOG(L"Loading sound '%hs'...\n", filename);
+    BE_LOG("Loading sound '%s'...\n", filename);
 
     Pcm pcm;
     if (!pcm.Open(filename)) {

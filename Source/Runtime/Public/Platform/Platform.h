@@ -27,7 +27,7 @@ public:
     enum EventType {
         NoEvent,                // time is still valid
         KeyEvent,               // value is a key code, value2 is the down flag
-        CharEvent,              // value is an ascii char
+        CharEvent,              // value is an unicode char (char32_t)
         CompositionEvent,       // value is composition wide character code
         MouseDeltaEvent,        // value and value2 are reletive signed x / y moves
         MouseMoveEvent,         // value and value2 are absolute coordinates in the window's client area.
@@ -64,8 +64,8 @@ public:
     virtual void            SetMainWindowHandle(void *windowHandle) = 0;
 
     virtual void            Quit() = 0;
-    virtual void            Log(const wchar_t *msg) = 0;
-    virtual void            Error(const wchar_t *msg) = 0;
+    virtual void            Log(const char *msg) = 0;
+    virtual void            Error(const char *msg) = 0;
 
     virtual void            GetEvent(Platform::Event *ev) = 0;
     virtual void            QueEvent(Platform::EventType type, int64_t value, int64_t value2, int ptrLength, void *ptr) = 0;

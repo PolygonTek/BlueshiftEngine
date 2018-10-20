@@ -80,7 +80,7 @@ void PlatformGeneric::QueEvent(Platform::EventType type, int64_t value, int64_t 
     Platform::Event *ev = &eventQueue[numEvents & (Platform::MaxPlatformEvents - 1)];
 
     if (numEvents - numProcessedEvents == Platform::MaxPlatformEvents) {
-        BE_LOG(L"PlatformGeneric::QueEvent: overflow\n");
+        BE_LOG("PlatformGeneric::QueEvent: overflow\n");
         if (ev->ptr) {
             Mem_Free(ev->ptr);
         }
@@ -110,7 +110,7 @@ void PlatformGeneric::AppActivate(bool active, bool minimized) {
     if (active && !minimized) {
         this->active = true;
         if (renderSystem.IsInitialized()) {
-            renderSystem.SetGamma(cvarSystem.GetCVarFloat(L"r_gamma"));
+            renderSystem.SetGamma(cvarSystem.GetCVarFloat("r_gamma"));
         }
     } else {
         this->active = false;

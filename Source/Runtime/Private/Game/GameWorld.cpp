@@ -303,7 +303,7 @@ void GameWorld::RegisterEntity(Entity *ent, int entityIndex) {
         }
     
         if (firstFreeIndex >= MaxEntityNum) {
-            BE_FATALERROR(L"no free entities");
+            BE_FATALERROR("no free entities");
         }
     
         entityIndex = firstFreeIndex++;
@@ -332,7 +332,7 @@ void GameWorld::RegisterEntity(Entity *ent, int entityIndex) {
 
 void GameWorld::UnregisterEntity(Entity *ent) {
     if (!IsRegisteredEntity(ent)) {
-        BE_WARNLOG(L"GameWorld::UnregisterEntity: Entity '%hs' is already unregistered\n", ent->GetName().c_str());
+        BE_WARNLOG("GameWorld::UnregisterEntity: Entity '%s' is already unregistered\n", ent->GetName().c_str());
         return;
     }
 
@@ -438,7 +438,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
 Entity *GameWorld::SpawnEntityFromJson(Json::Value &entityValue, int sceneIndex) {
     const char *classname = entityValue["classname"].asCString();
     if (Str::Cmp(classname, Entity::metaObject.ClassName()) != 0) {
-        BE_WARNLOG(L"GameWorld::SpawnEntityFromJson: Bad classname '%hs' for entity\n", classname);
+        BE_WARNLOG("GameWorld::SpawnEntityFromJson: Bad classname '%s' for entity\n", classname);
         return nullptr;
     }
 
@@ -594,7 +594,7 @@ void GameWorld::NewMap() {
 }
 
 bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
-    BE_LOG(L"Loading map '%hs'...\n", filename);
+    BE_LOG("Loading map '%s'...\n", filename);
 
     if (mode != LoadSceneMode::Additive) {
         ClearEntities(mode == LoadSceneMode::Editor);
@@ -607,7 +607,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
     char *text = nullptr;
     fileSystem.LoadFile(filename, true, (void **)&text);
     if (!text) {
-        BE_WARNLOG(L"Couldn't load '%hs'\n", filename);
+        BE_WARNLOG("Couldn't load '%s'\n", filename);
         FinishMapLoading();
         return false;
     }
@@ -617,7 +617,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
     Json::Value map;
     Json::Reader jsonReader;
     if (!jsonReader.parse(text, map)) {
-        BE_WARNLOG(L"Failed to parse JSON text\n");
+        BE_WARNLOG("Failed to parse JSON text\n");
         return false;
     }
 
@@ -648,7 +648,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
 }
 
 void GameWorld::SaveMap(const char *filename) {
-    BE_LOG(L"Saving map '%hs'...\n", filename);
+    BE_LOG("Saving map '%s'...\n", filename);
 
     Json::Value map;
 

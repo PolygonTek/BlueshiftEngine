@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/WStr.h"
 #include "Platform/PlatformSystem.h"
 #include "Platform/PlatformFile.h"
 

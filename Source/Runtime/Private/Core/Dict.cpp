@@ -100,7 +100,7 @@ void Dict::TransferKeyValues(Dict &other) {
     }
     
     if (other.kvArray.Count() && other.kvArray[0].key->GetPool() != keyPool) {
-        BE_FATALERROR(L"Dict::TransferKeyValues: can't transfer values across a DLL boundary");
+        BE_FATALERROR("Dict::TransferKeyValues: can't transfer values across a DLL boundary");
         return;
     }
 
@@ -154,7 +154,7 @@ int	Dict::Checksum() const {
 
 const KeyValue *Dict::FindKeyValue(const char *key) const {
     if (key == nullptr || key[0] == '\0') {
-        BE_DLOG(L"Dict::FindKeyValue: empty key");
+        BE_DLOG("Dict::FindKeyValue: empty key");
         return nullptr;
     }
 
@@ -170,7 +170,7 @@ const KeyValue *Dict::FindKeyValue(const char *key) const {
 
 int Dict::FindKeyValueIndex(const char *key) const {
     if (key == nullptr || key[0] == '\0') {
-        BE_WARNLOG(L"Dict::FindKeyValueIndex: empty key");
+        BE_WARNLOG("Dict::FindKeyValueIndex: empty key");
         return 0;
     }
 
@@ -223,7 +223,7 @@ bool Dict::GetFloat(const char *key, const char *defaultString, float &out) cons
 bool Dict::GetInt(const char *key, const char *defaultString, int &out) const {
     const char *s;
     bool found = GetString(key, defaultString, &s);
-    out = atoi(s);
+    out = Str::ToI32(s);
     return found;
 }
 
@@ -237,7 +237,7 @@ bool Dict::GetInt64(const char *key, const char *defaultString, int64_t &out) co
 bool Dict::GetBool(const char *key, const char *defaultString, bool &out) const {
     const char *s;
     bool found = GetString(key, defaultString, &s);
-    out = (atoi(s) != 0);
+    out = (Str::ToI32(s) != 0);
     return found;
 }
 
@@ -414,7 +414,7 @@ void Dict::Clear() {
 void Dict::Print() const {
     int n = kvArray.Count();
     for (int i = 0; i < n; i++) {
-        BE_LOG(L"%hs = %hs\n", kvArray[i].GetKey().c_str(), kvArray[i].GetValue().c_str());
+        BE_LOG("%s = %s\n", kvArray[i].GetKey().c_str(), kvArray[i].GetValue().c_str());
     }
 }
 

@@ -28,7 +28,7 @@ class FontFace;
 
 // Freetype / bitmap font 에 공통으로 쓰이는 glyph 정보 구조체
 struct FontGlyph {
-    int                     charCode;
+    uint32_t                charCode;
     int                     width, height;
     int                     bearingX, bearingY;
     int                     advance;
@@ -55,12 +55,12 @@ public:
     int                     GetFontHeight() const;
 
                             /// Returns pointer to the glyph structure corresponding to a character. Return null if glyph not found.
-    FontGlyph *             GetGlyph(wchar_t charCode);
+    FontGlyph *             GetGlyph(char32_t unicodeChar);
 
                             /// Returns a offset for a next character 
-    int                     GetGlyphAdvance(wchar_t charCode) const;
+    int                     GetGlyphAdvance(char32_t unicodeChar) const;
 
-    float                   StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
+    float                   StringWidth(const Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
 
     void                    Purge();
     bool                    Load(const char *filename);

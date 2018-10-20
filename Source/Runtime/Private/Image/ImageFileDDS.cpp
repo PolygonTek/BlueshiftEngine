@@ -330,7 +330,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     ptr += sizeof(uint32_t);
     
     if (fourcc != DDS_MAGIC) {
-        BE_WARNLOG(L"Image::LoadDDSFromMemory: bad DDS format %hs\n", name);
+        BE_WARNLOG("Image::LoadDDSFromMemory: bad DDS format %s\n", name);
         return false;
     }
 
@@ -340,7 +340,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     int essentialFlags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT;
     
     if (header->size != sizeof(DdsFileHeader) || (header->flags & essentialFlags) != essentialFlags) {
-        BE_WARNLOG(L"Image::LoadDDSFromMemory: bad DDS format %hs\n", name);
+        BE_WARNLOG("Image::LoadDDSFromMemory: bad DDS format %s\n", name);
         return false;
     }
 
@@ -371,7 +371,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         case DX10_FORMAT_BC4_UNORM: format = DXN1; break;
         case DX10_FORMAT_BC5_UNORM: format = DXN2; break;
         default:
-            BE_WARNLOG(L"Image::LoadDDSFromMemory: Unsupported pixel format %hs\n", name);
+            BE_WARNLOG("Image::LoadDDSFromMemory: Unsupported pixel format %s\n", name);
             return false;
         }
     } else {
@@ -466,7 +466,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
                 }
                 break;
             default:
-                BE_WARNLOG(L"Image::LoadDDSFromMemory: Unsupported pixel format %hs\n", name);
+                BE_WARNLOG("Image::LoadDDSFromMemory: Unsupported pixel format %s\n", name);
                 return false;
             }
             break;
@@ -550,7 +550,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
             this->format = DXN2;
             break;
         default:
-            BE_WARNLOG(L"Image::LoadDDSFromMemory: Unsupported pixel format %hs\n", name);
+            BE_WARNLOG("Image::LoadDDSFromMemory: Unsupported pixel format %s\n", name);
             return false;
         }
     }
@@ -592,7 +592,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
 bool Image::WriteDDS(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Image::WriteDDS: file open error\n");
+        BE_WARNLOG("Image::WriteDDS: file open error\n");
         return false;
     }
 
@@ -949,7 +949,7 @@ bool Image::WriteDDS(const char *filename) const {
         break;
     default:
         fileSystem.CloseFile(fp);
-        BE_WARNLOG(L"Image::WriteDDS: invalid format '%hs' for DDS\n", Image::FormatName(format));
+        BE_WARNLOG("Image::WriteDDS: invalid format '%s' for DDS\n", Image::FormatName(format));
         return false;
     }
 

@@ -44,7 +44,7 @@ AnimBlendTree::AnimBlendTree(AnimLayer *animLayer, const AnimBlendTree *animBlen
 void AnimBlendTree::SetChildBlendSpaceVector(int childIndex, const Vec3 &blendSpaceVector) {
     const AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
     if (childIndex < 0 || childIndex >= node->children.Count()) {
-        BE_WARNLOG(L"AnimBlendTree::SetChildBlendSpaceVector: childIndex out of range\n");
+        BE_WARNLOG("AnimBlendTree::SetChildBlendSpaceVector: childIndex out of range\n");
         return;
     }
 
@@ -54,7 +54,7 @@ void AnimBlendTree::SetChildBlendSpaceVector(int childIndex, const Vec3 &blendSp
 const Vec3 AnimBlendTree::GetChildBlendSpaceVector(int childIndex) const {
     const AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
     if (childIndex < 0 || childIndex >= node->children.Count()) {
-        BE_WARNLOG(L"AnimBlendTree::GetChildBlendSpaceVector: childIndex out of range\n");
+        BE_WARNLOG("AnimBlendTree::GetChildBlendSpaceVector: childIndex out of range\n");
         return Vec3::zero;
     }
 
@@ -69,7 +69,7 @@ int AnimBlendTree::NumChildren() const {
 int32_t AnimBlendTree::GetChild(int childIndex) const {
     AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
     if (childIndex < 0 || childIndex >= node->children.Count()) {
-        BE_WARNLOG(L"AnimBlendTree::GetChild: childIndex out of range\n");
+        BE_WARNLOG("AnimBlendTree::GetChild: childIndex out of range\n");
         return INVALID_ANIM_NODE;
     }
 
@@ -108,7 +108,7 @@ int32_t AnimBlendTree::InsertChildClip(int index, AnimClip *animClip, const Vec3
     AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
     // Check the maximum children
     if (node->children.Count() >= AnimLayer::MaxBlendTreeChildren) {
-        BE_WARNLOG(L"AnimBlendTree::AddChildClip: exceed MaxBlendTreeChildren\n");
+        BE_WARNLOG("AnimBlendTree::AddChildClip: exceed MaxBlendTreeChildren\n");
         return INVALID_ANIM_NODE;
     }
 
@@ -132,7 +132,7 @@ int32_t AnimBlendTree::InsertChildBlendTree(int index, AnimBlendTree *animBlendT
     AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
     // Check the maximum children
     if (node->children.Count() >= AnimLayer::MaxBlendTreeChildren) {
-        BE_WARNLOG(L"AnimBlendTree::AddChildBlendTree: exceed MaxBlendTreeChildren\n");
+        BE_WARNLOG("AnimBlendTree::AddChildBlendTree: exceed MaxBlendTreeChildren\n");
         return INVALID_ANIM_NODE;
     }
 
@@ -155,7 +155,7 @@ int32_t AnimBlendTree::AddChildBlendTree(AnimBlendTree *animBlendTree, const Vec
 void AnimBlendTree::RemoveChild(int childIndex) {
     AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
     if (childIndex < 0 || childIndex >= node->children.Count()) {
-        BE_WARNLOG(L"AnimBlendTree::RemoveChild: childIndex out of range\n");
+        BE_WARNLOG("AnimBlendTree::RemoveChild: childIndex out of range\n");
         return;
     }
 
@@ -241,7 +241,7 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
             weights[indexA] = barycentricCoord[0];
             weights[indexB] = barycentricCoord[1];
             weights[indexC] = barycentricCoord[2];
-            //BE_LOG(L"(%f %f) %f (%f %f) %f (%f %f) %f\n", a.x, a.y, barycentricCoord.x, b.x, b.y, barycentricCoord.y, c.x, c.y, barycentricCoord.z);
+            //BE_LOG("(%f %f) %f (%f %f) %f (%f %f) %f\n", a.x, a.y, barycentricCoord.x, b.x, b.y, barycentricCoord.y, c.x, c.y, barycentricCoord.z);
             return;
         }
     }
@@ -257,7 +257,7 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
 
             weights[indexA] = barycentricCoord[0];
             weights[indexB] = barycentricCoord[1];
-            //BE_LOG(L"(%f) %f (%f) %f\n", a, barycentricCoord.x, b, barycentricCoord.y);
+            //BE_LOG("(%f) %f (%f) %f\n", a, barycentricCoord.x, b, barycentricCoord.y);
             return;
         }
     }
@@ -325,7 +325,7 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
             Vec2 c = animLayer->GetNodeBlendSpaceVector(node->children[originIndex]).ToVec2();
             Vec3 barycentricCoord = Vec3::Compute3DBarycentricCoords(a, b, c, currentPoint);
 
-            //BE_LOG(L"%f %f %f\n", barycentricCoord.x, barycentricCoord.y, barycentricCoord.z);
+            //BE_LOG("%f %f %f\n", barycentricCoord.x, barycentricCoord.y, barycentricCoord.z);
 
             bool isConvexHull = 
                 barycentricCoord.x >= 0.0f && barycentricCoord.x <= 1.0f && 

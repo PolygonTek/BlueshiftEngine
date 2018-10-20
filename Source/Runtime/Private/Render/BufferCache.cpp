@@ -68,12 +68,12 @@ void BufferCacheManager::Init() {
 #endif
     }
     
-    BE_LOG(L"dynamic vertex buffer created (%hs x %i)\n", Str::FormatBytes(vcSize).c_str(), COUNT_OF(frameData));
-    BE_LOG(L"dynamic index buffer created (%hs x %i)\n", Str::FormatBytes(icSize).c_str(), COUNT_OF(frameData));
-    BE_LOG(L"dynamic uniform buffer created (%hs x %i)\n", Str::FormatBytes(ucSize).c_str(), COUNT_OF(frameData));
+    BE_LOG("dynamic vertex buffer created (%s x %i)\n", Str::FormatBytes(vcSize).c_str(), COUNT_OF(frameData));
+    BE_LOG("dynamic index buffer created (%s x %i)\n", Str::FormatBytes(icSize).c_str(), COUNT_OF(frameData));
+    BE_LOG("dynamic uniform buffer created (%s x %i)\n", Str::FormatBytes(ucSize).c_str(), COUNT_OF(frameData));
 
     if (frameData[0].texelBuffer) {
-        BE_LOG(L"dynamic texel buffer created (%hs x %i)\n", Str::FormatBytes(TB_BYTES).c_str(), COUNT_OF(frameData));
+        BE_LOG("dynamic texel buffer created (%s x %i)\n", Str::FormatBytes(TB_BYTES).c_str(), COUNT_OF(frameData));
     }
     
     // Create stream buffer for use in debug drawing
@@ -227,7 +227,7 @@ void BufferCacheManager::BeginBackEnd() {
     mostUsedTexelMem = Max(mostUsedTexelMem, (int)frameData[mappedNum].texelMemUsed.GetValue());
 
     if (r_showBufferCache.GetBool()) {
-        BE_LOG(L"%08d: %d alloc, vMem(%hs), iMem(%hs), uMem(%hs), tMem(%hs) : vMem(%hs), iMem(%hs), uMem(%hs), tMem(%hs)\n",
+        BE_LOG("%08d: %d alloc, vMem(%s), iMem(%s), uMem(%s), tMem(%s) : vMem(%s), iMem(%s), uMem(%s), tMem(%s)\n",
             frameCount, frameData[mappedNum].allocations,
             Str::FormatBytes(frameData[mappedNum].vertexMemUsed.GetValue()).c_str(),
             Str::FormatBytes(frameData[mappedNum].indexMemUsed.GetValue()).c_str(),
@@ -246,7 +246,7 @@ void BufferCacheManager::BeginBackEnd() {
         UnmapBufferSet(frameData[mappedNum], true);
         const uint32_t endUnmap = PlatformTime::Milliseconds();
         if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1) {
-            BE_DLOG(L"BufferCacheManager::BeginBackEnd: unmap took %i msec\n", endUnmap - startUnmap);
+            BE_DLOG("BufferCacheManager::BeginBackEnd: unmap took %i msec\n", endUnmap - startUnmap);
         }
     }
 #endif
@@ -275,7 +275,7 @@ void BufferCacheManager::BeginBackEnd() {
         MapBufferSet(frameData[mappedNum]);
         const uint32_t endMap = PlatformTime::Milliseconds();
         if (r_showBufferCacheTiming.GetBool() && endMap - startMap > 1) {
-            BE_DLOG(L"BufferCacheManager::BeginBackEnd: map took %i msec\n", endMap - startMap);
+            BE_DLOG("BufferCacheManager::BeginBackEnd: map took %i msec\n", endMap - startMap);
         }
     }
 #endif
@@ -340,7 +340,7 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->vertexBuffer, vertexSize, bytes, nullptr);
     if (offset == -1) {
-        BE_FATALERROR(L"Out of vertex cache");
+        BE_FATALERROR("Out of vertex cache");
         return false;
     }
 
@@ -377,7 +377,7 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->indexBuffer, indexSize, bytes, nullptr);
     if (offset == -1) {
-        BE_FATALERROR(L"Out of index cache");
+        BE_FATALERROR("Out of index cache");
         return false;
     }
 
@@ -412,7 +412,7 @@ bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->uniformBuffer, rhi.HWLimit().uniformBufferOffsetAlignment, bytes, nullptr);
     if (offset == -1) {
-        BE_FATALERROR(L"Out of uniform cache");
+        BE_FATALERROR("Out of uniform cache");
         return false;
     }
 
@@ -448,7 +448,7 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->texelBuffer, TB_BPP, bytes, nullptr);
     if (offset == -1) {
-        BE_FATALERROR(L"Out of texel cache");
+        BE_FATALERROR("Out of texel cache");
         return false;
     }
 
@@ -615,7 +615,7 @@ void BufferCacheManager::UpdatePBOTexture() const {
 
         const uint32_t endUpdatePBO = PlatformTime::Milliseconds();
         if (endUpdatePBO - startUpdatePBO > 1) {
-            BE_DLOG(L"BufferCacheManager::UpdatePBOTexture: update pbo took %i msec\n", endUpdatePBO - startUpdatePBO);
+            BE_DLOG("BufferCacheManager::UpdatePBOTexture: update pbo took %i msec\n", endUpdatePBO - startUpdatePBO);
         }
 
         rhi.BindBuffer(currentBufferSet->texelBufferType, RHI::NullBuffer);

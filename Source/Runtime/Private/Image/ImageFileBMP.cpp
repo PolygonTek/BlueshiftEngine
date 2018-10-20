@@ -55,7 +55,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
     ptr += sizeof(BmpHeader);
 
     if (bmfh->type != TYPE_BM) {
-        BE_WARNLOG(L"Image::LoadBMPFromMemory: bad BMP format %hs\n", name);
+        BE_WARNLOG("Image::LoadBMPFromMemory: bad BMP format %s\n", name);
         return false;
     }
     
@@ -63,7 +63,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
     ptr += sizeof(BmpInfoHeader);
 
     if (bmih->bpp != 8 && bmih->bpp != 16 && bmih->bpp != 24 && bmih->bpp != 32) {
-        BE_WARNLOG(L"Image::LoadBMPFromMemory: unsupported color depth %hs\n", name);
+        BE_WARNLOG("Image::LoadBMPFromMemory: unsupported color depth %s\n", name);
         return false;
     }
 
@@ -178,7 +178,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
 bool Image::WriteBMP(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Image::WriteBMP: file open error\n");
+        BE_WARNLOG("Image::WriteBMP: file open error\n");
         return false;
     }
 
@@ -226,7 +226,7 @@ bool Image::WriteBMP(const char *filename) const {
         fp->Write(temp, pad);
     }
 
-    fileSystem.CloseFile(fp);	
+    fileSystem.CloseFile(fp);
 
     return true;
 }

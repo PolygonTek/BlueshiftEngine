@@ -43,10 +43,10 @@ static int          deviceBpp = 0;
 static int          deviceHz = 0;
 static HGLRC        hrcMain;
 
-static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
-static CVar         gl_debugLevel(L"gl_debugLevel", L"1", CVar::Integer, L"");
-static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"");
-static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
+static CVar         gl_debug("gl_debug", "1", CVar::Bool, "");
+static CVar         gl_debugLevel("gl_debugLevel", "1", CVar::Integer, "");
+static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Bool, "");
+static CVar         gl_finish("gl_finish", "0", CVar::Bool, "");
 
 static LRESULT CALLBACK FakeWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -68,7 +68,7 @@ static HWND CreateFakeWindow() {
         wc.lpszMenuName = _T("");
         wc.lpszClassName = FAKE_WINDOW_CLASSNAME;
         if (!RegisterClass(&wc)) {
-            BE_FATALERROR(L"Couldn't register fake window class");
+            BE_FATALERROR("Couldn't register fake window class");
         }
     }
 
@@ -77,7 +77,7 @@ static HWND CreateFakeWindow() {
         nullptr, nullptr, wc.hInstance, nullptr);
 
     if (!hwndFake) {
-        BE_FATALERROR(L"Couldn't create fake window");
+        BE_FATALERROR("Couldn't create fake window");
     }
 
     // hide fake window
@@ -89,19 +89,19 @@ static HWND CreateFakeWindow() {
 static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int inDepthBits, int inStencilBits, int inMultiSamples) { 
     int	best = 0;
 
-    BE_LOG(L"ChoosePixelFormat(%i, %i, %i, %i)\n", inColorBits, inAlphaBits, inDepthBits, inStencilBits);
+    BE_LOG("ChoosePixelFormat(%i, %i, %i, %i)\n", inColorBits, inAlphaBits, inDepthBits, inStencilBits);
 
     if (!gwglChoosePixelFormatARB) {
         // DC 에서 지원하는 모든 pixel format 개수를 얻어온다
         unsigned int numFormats = DescribePixelFormat(hDC, 0, 0, nullptr);
         if (numFormats > MAX_PIXEL_FORMAT) {
-            BE_WARNLOG(L"numFormats > MAX_PIXEL_FORMAT\n");
+            BE_WARNLOG("numFormats > MAX_PIXEL_FORMAT\n");
             numFormats = MAX_PIXEL_FORMAT;
         } else if (numFormats < 1) {
-            BE_FATALERROR(L"no pixel formats found");
+            BE_FATALERROR("no pixel formats found");
         }
 
-        BE_LOG(L"%i pixel formats found\n", numFormats);
+        BE_LOG("%i pixel formats found\n", numFormats);
 
         DWORD dwTargetFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 
@@ -117,22 +117,22 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
         for (int i = 1; i <= numFormats; i++, pfd++) {
             // is supported by GDI software implementation ?
             if (pfd->dwFlags & PFD_GENERIC_FORMAT) { 
-                BE_DLOG(L"PF %i rejected, software implementation\n", i);
+                BE_DLOG("PF %i rejected, software implementation\n", i);
                 continue;
             }
 
             if ((pfd->dwFlags & dwTargetFlags) != dwTargetFlags) {
-                BE_DLOG(L"PF %i rejected, improper flags (%x instead of %x)\n", i, pfd->dwFlags, dwTargetFlags);
+                BE_DLOG("PF %i rejected, improper flags (%x instead of %x)\n", i, pfd->dwFlags, dwTargetFlags);
                 continue;
             }
 
             // is color index pixel type ?
             if (pfd->iPixelType != PFD_TYPE_RGBA) { 
-                BE_DLOG(L"PF %i rejected, not RGBA\n", i);
+                BE_DLOG("PF %i rejected, not RGBA\n", i);
                 continue;
             }
 
-            BE_DLOG(L"PF %3i: color(%2i-bits) alpha(%2i-bits), depth(%2i-bits) stencil(%2i-bits)\n", i, pfd->cColorBits, pfd->cAlphaBits, pfd->cDepthBits, pfd->cStencilBits);
+            BE_DLOG("PF %3i: color(%2i-bits) alpha(%2i-bits), depth(%2i-bits) stencil(%2i-bits)\n", i, pfd->cColorBits, pfd->cAlphaBits, pfd->cDepthBits, pfd->cStencilBits);
 
             if (pfd->cDepthBits < 16 && inDepthBits > 0) {
                 continue;
@@ -182,7 +182,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
 
         // best PFD choosed !!
         if (!(best = ::ChoosePixelFormat(hDC, &pfdList[best-1]))) {
-            BE_FATALERROR(L"ChoosePixelFormat: failed");
+            BE_FATALERROR("ChoosePixelFormat: failed");
         }
     } else {
         int results[MAX_ATTRIB_SIZE];
@@ -192,13 +192,13 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
         unsigned int numFormats = results[0];
 
         if (numFormats > MAX_PIXEL_FORMAT) {
-            BE_WARNLOG(L"numFormats > MAX_PIXEL_FORMAT\n");
+            BE_WARNLOG("numFormats > MAX_PIXEL_FORMAT\n");
             numFormats = MAX_PIXEL_FORMAT;
         } else if (numFormats < 1) {
-            BE_FATALERROR(L"no pixel formats found");
+            BE_FATALERROR("no pixel formats found");
         }
 
-        BE_LOG(L"%i pixel formats found\n", numFormats);
+        BE_LOG("%i pixel formats found\n", numFormats);
 
         int numAttribs = 0;
         attribs[numAttribs++] = WGL_SUPPORT_OPENGL_ARB;
@@ -225,35 +225,35 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
 
             // WGL_SUPPORT_OPENGL_ARB
             if (attr[0] != GL_TRUE) {
-                BE_DLOG(L"PF %i rejected, software implementation\n", i);
+                BE_DLOG("PF %i rejected, software implementation\n", i);
                 continue;
             }
 
             // WGL_ACCELERATION_ARB
             if (attr[1] != WGL_FULL_ACCELERATION_ARB) {
-                BE_DLOG(L"PF %i rejected, full hw-acceleration required\n", i);
+                BE_DLOG("PF %i rejected, full hw-acceleration required\n", i);
                 continue;
             }
 
             // WGL_DOUBLE_BUFFER_ARB
             if (attr[2] != GL_TRUE) {
-                BE_DLOG(L"PF %i rejected, double buffer required\n", i);
+                BE_DLOG("PF %i rejected, double buffer required\n", i);
                 continue;
             }
 
             // WGL_DRAW_TO_WINDOW_ARB
             if (attr[3] != GL_TRUE) {
-                BE_DLOG(L"PF %i rejected, draw to windows required\n", i);
+                BE_DLOG("PF %i rejected, draw to windows required\n", i);
                 continue;
             }
 
             // WGL_PIXEL_TYPE_ARB
             if (attr[4] != WGL_TYPE_RGBA_ARB) {
-                BE_DLOG(L"PF %i rejected, not RGBA\n", i);
+                BE_DLOG("PF %i rejected, not RGBA\n", i);
                 continue;
             }
 
-            BE_DLOG(L"PF %3i: color(%2i-bits) alpha(%2i-bits) depth(%2i-bits), stencil(%2i-bits), multisamples(%2ix)\n", i, attr[5], attr[6], attr[7], attr[8], attr[10]);
+            BE_DLOG("PF %3i: color(%2i-bits) alpha(%2i-bits) depth(%2i-bits), stencil(%2i-bits), multisamples(%2ix)\n", i, attr[5], attr[6], attr[7], attr[8], attr[10]);
 
             // WGL_ALPHA_BITS_ARB
             if (attr[6] <= 0 && inAlphaBits > 0) {
@@ -356,11 +356,11 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
         attribs[numAttribs++] = 0;
 
         if (!gwglChoosePixelFormatARB(hDC, attribs, nullptr, 1, &best, &numFormats)) {
-            BE_FATALERROR(L"gwglChoosePixelFormatARB: failed");
+            BE_FATALERROR("gwglChoosePixelFormatARB: failed");
         }
     }
 
-    BE_LOG(L"PIXELFORMAT %i choosed\n", best);
+    BE_LOG("PIXELFORMAT %i choosed\n", best);
 
     return best;
 }
@@ -433,13 +433,13 @@ static void InitGLFunctions() {
 
     int pixelFormat = ChoosePixelFormat(hdcFake, &pfd);
     if (!SetPixelFormat(hdcFake, pixelFormat, nullptr)) {
-        BE_FATALERROR(L"set pixel format: failed");
+        BE_FATALERROR("set pixel format: failed");
     }
-    BE_DLOG(L"set pixel format: ok\n");
+    BE_DLOG("set pixel format: ok\n");
 
     HGLRC hrcFake = wglCreateContext(hdcFake);
     if (!hrcFake) {
-        BE_FATALERROR(L"Couldn't create fake RC");
+        BE_FATALERROR("Couldn't create fake RC");
     }
 
     wglMakeCurrent(hdcFake, hrcFake);
@@ -470,18 +470,18 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     // Set PF for the main DC
     int pixelFormat = ChooseBestPixelFormat(mainContext->hdc, settings->colorBits, settings->alphaBits, settings->depthBits, settings->stencilBits, settings->multiSamples);
     if (!SetPixelFormat(mainContext->hdc, pixelFormat, nullptr)) {
-        BE_FATALERROR(L"set pixel format: failed");
+        BE_FATALERROR("set pixel format: failed");
     }
-    BE_DLOG(L"set pixel format: ok\n");
+    BE_DLOG("set pixel format: ok\n");
 
     // Create rendering context
     mainContext->hrc = CreateContextAttribs(mainContext->hdc, nullptr, contextProfile, contextMajorVersion, contextMinorVersion);
     if (!mainContext->hrc) {
-        BE_FATALERROR(L"Couldn't create RC");
+        BE_FATALERROR("Couldn't create RC");
     }
 
     if (!wglMakeCurrent(mainContext->hdc, mainContext->hrc)) {
-        BE_FATALERROR(L"Couldn't make current context");
+        BE_FATALERROR("Couldn't make current context");
     }
 
     GetGLVersion(&majorVersion, &minorVersion);
@@ -489,7 +489,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     if (contextProfile == CompatibilityProfile) {
         int decimalVersion = majorVersion * 10 + minorVersion;
         if (decimalVersion < 32) {
-            BE_FATALERROR(L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.2 or higher graphic card");
+            BE_FATALERROR("Minimum OpenGL extensions missing !!\nRequired OpenGL 3.2 or higher graphic card");
         }
     }
 
@@ -517,15 +517,15 @@ void OpenGLRHI::FreeMainContext() {
     wglMakeCurrent(nullptr, nullptr);
 
     if (!wglDeleteContext(mainContext->hrc)) {
-        BE_FATALERROR(L"deleting main context RC: failed");
+        BE_FATALERROR("deleting main context RC: failed");
     }
 
     if (!ReleaseDC(mainContext->hwnd, mainContext->hdc)) {
-        BE_FATALERROR(L"releasing main context DC: failed");
+        BE_FATALERROR("releasing main context DC: failed");
     }
 
     if (!DestroyWindow(mainContext->hwnd)) {
-        BE_FATALERROR(L"destroying main context window: failed");
+        BE_FATALERROR("destroying main context window: failed");
     }
 
     SAFE_DELETE(mainContext->state);
@@ -564,7 +564,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     ctx->hwnd = (HWND)windowHandle;
     ctx->hdc = GetDC(ctx->hwnd);
     if (!ctx->hdc) {
-        BE_FATALERROR(L"get DC: failed");
+        BE_FATALERROR("get DC: failed");
     }
     
     SetWindowLongPtr(ctx->hwnd, GWLP_USERDATA, (LONG_PTR)ctx);
@@ -573,9 +573,9 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     // All rendering contexts use an identical pixel format
     int pixelFormat = GetPixelFormat(mainContext->hdc);
     if (!SetPixelFormat(ctx->hdc, pixelFormat, nullptr)) {
-        BE_FATALERROR(L"set pixel format: failed");	
+        BE_FATALERROR("set pixel format: failed");
     }
-    BE_DLOG(L"set pixel format: ok\n");
+    BE_DLOG("set pixel format: ok\n");
 
     if (!useSharedContext) {
         // main context will be reused
@@ -588,14 +588,14 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         if (gwglCreateContextAttribsARB) {
             ctx->hrc = CreateContextAttribs(ctx->hdc, mainContext->hrc, contextProfile, contextMajorVersion, contextMinorVersion);
             if (!ctx->hrc) {
-                BE_FATALERROR(L"Couldn't create RC");
+                BE_FATALERROR("Couldn't create RC");
             }
 
             wglMakeCurrent(nullptr, nullptr); 
         } else {
             ctx->hrc = wglCreateContext(ctx->hdc);
             if (!ctx->hrc) {
-                BE_FATALERROR(L"Couldn't create RC");
+                BE_FATALERROR("Couldn't create RC");
             }
 
             // Allow sharing of all display list and texture objects between rendering context
@@ -629,9 +629,9 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
         gglDeleteVertexArrays(1, &ctx->defaultVAO);
 
         if (!wglDeleteContext(ctx->hrc)) {
-            BE_FATALERROR(L"deleting RC: failed");
+            BE_FATALERROR("deleting RC: failed");
         }
-        BE_DLOG(L"deleting RC: ok\n");
+        BE_DLOG("deleting RC: ok\n");
 
         delete ctx->state;
     }
@@ -670,7 +670,7 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     }
 
     if (!wglMakeCurrent(ctx->hdc, ctx->hrc)) {
-        BE_FATALERROR(L"OpenGLRHI::SetContext: Couldn't make current context");
+        BE_FATALERROR("OpenGLRHI::SetContext: Couldn't make current context");
     }
 
     this->currentContext = ctx;
@@ -724,7 +724,7 @@ bool OpenGLRHI::IsFullscreen() const {
 bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     HDC hdc;
 
-    BE_LOG(L"Changing display setting...\n");
+    BE_LOG("Changing display setting...\n");
     
     DEVMODE dm;
     memset(&dm, 0, sizeof(dm));
@@ -747,9 +747,9 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
             dm.dmFields |= DM_BITSPERPEL;
             dm.dmBitsPerPel = 16;
 
-            BE_LOG(L"using color bits of %i\n", 16);
+            BE_LOG("using color bits of %i\n", 16);
         } else {
-            BE_LOG(L"using desktop display depth of %i\n", bpp);
+            BE_LOG("using desktop display depth of %i\n", bpp);
         }
     }
 
@@ -759,7 +759,7 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     }
     
     if (ChangeDisplaySettings(&dm, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL) {
-        BE_WARNLOG(L"Can't change fullscreen mode");
+        BE_WARNLOG("Can't change fullscreen mode");
         return false;
     }
 
@@ -770,7 +770,7 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     deviceHz = GetDeviceCaps(hdc, VREFRESH);
     ReleaseDC(nullptr, hdc);
 
-    BE_LOG(L"set fullscreen mode: %ix%i %ibpp %ihz\n", width, height, deviceBpp, deviceHz);
+    BE_LOG("set fullscreen mode: %ix%i %ibpp %ihz\n", width, height, deviceBpp, deviceHz);
     return true;
 }
 
@@ -781,11 +781,11 @@ void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
 
     deviceFullscreen = false;
 
-    BE_LOG(L"resetting display setting: ");
+    BE_LOG("resetting display setting: ");
     if (ChangeDisplaySettings(nullptr, 0) == DISP_CHANGE_SUCCESSFUL) {
-        BE_LOG(L"ok\n");
+        BE_LOG("ok\n");
     } else {
-        BE_LOG(L"failed\n");
+        BE_LOG("failed\n");
     }
 
     HDC hdc = GetDC(nullptr);
@@ -793,7 +793,7 @@ void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
     deviceHz = GetDeviceCaps(hdc, VREFRESH);
     ReleaseDC(nullptr, hdc);
 
-    BE_LOG(L"set window mode: %ibpp %ihz\n", deviceBpp, deviceHz);
+    BE_LOG("set window mode: %ibpp %ihz\n", deviceBpp, deviceHz);
 }
 
 void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
@@ -817,8 +817,8 @@ bool OpenGLRHI::SwapBuffers() {
 
     BOOL succeeded = ::SwapBuffers(currentContext->hdc);
     if (!succeeded) {
-        WStr lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_WARNLOG(L"Failed to SwapBuffers : %ls", lastErrorText.c_str());
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_WARNLOG("Failed to SwapBuffers : %s", lastErrorText.c_str());
         return false;
     }
 

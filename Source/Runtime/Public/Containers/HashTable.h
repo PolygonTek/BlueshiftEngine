@@ -33,7 +33,6 @@
 #include "Core/Allocator.h"
 #include "Core/Guid.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Math/Math.h"
 
 BE_NAMESPACE_BEGIN
@@ -135,52 +134,6 @@ public:
     Str                     key;
     ValueT                  value;
     HashBucket<Str, ValueT> *next;
-};
-
-// HashBucket class template specialization with hash key type is given WStr
-template <typename ValueT>
-class HashBucket<WStr, ValueT> {
-public:
-    HashBucket() {}
-    HashBucket(const WStr &key, const ValueT &value, HashBucket *next)
-        : key(key), value(value), next(next) {
-    }
-
-    static int GenerateHash(const WStr &key, const int tableMask) {
-        return WStr::Hash(key) & tableMask;
-    }
-
-    static int Compare(const WStr &key1, const WStr &key2) {
-        return WStr::Icmp(key1, key2);
-    }
-
-public:
-    WStr                    key;
-    ValueT                  value;
-    HashBucket<WStr, ValueT> *next;
-};
-
-// HashBucket class template specialization with hash key type is given wide string pointer
-template <typename ValueT>
-class HashBucket<const wchar_t *, ValueT> {
-public:
-    HashBucket() {}
-    HashBucket(const wchar_t * const &key, const ValueT &value, HashBucket *next)
-        : key(key), value(value), next(next) {
-    }
-
-    static int GenerateHash(const wchar_t * const &key, const int tableMask) {
-        return WStr::Hash(key) & tableMask;
-    }
-
-    static int Compare(const wchar_t * const &key1, const wchar_t * const &key2) {
-        return WStr::Icmp(key1, key2);
-    }
-
-public:
-    WStr                    key;
-    ValueT                  value;
-    HashBucket<WStr, ValueT> *next;
 };
 
 /// Hash table

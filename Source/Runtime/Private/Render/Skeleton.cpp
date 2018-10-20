@@ -104,7 +104,7 @@ bool Skeleton::Load(const char *filename) {
         bSkelFilename.SetFileExtension(".bskel");
     }
 
-    BE_LOG(L"Loading skeleton '%hs'...\n", filename);
+    BE_LOG("Loading skeleton '%s'...\n", filename);
 
     byte *data;
     fileSystem.LoadFile(filename, true, (void **)&data);
@@ -116,7 +116,7 @@ bool Skeleton::Load(const char *filename) {
     byte *ptr = data + sizeof(BSkelHeader);
 
     if (bSkelHeader->ident != BSKEL_IDENT) {
-        BE_WARNLOG(L"Skeleton::Load: bad format %hs\n", filename);
+        BE_WARNLOG("Skeleton::Load: bad format %s\n", filename);
         fileSystem.FreeFile(data);
         return false;
     }
@@ -163,7 +163,7 @@ bool Skeleton::Load(const char *filename) {
 void Skeleton::Write(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Skeleton::Write: file open error\n");
+        BE_WARNLOG("Skeleton::Write: file open error\n");
         return;
     }
 

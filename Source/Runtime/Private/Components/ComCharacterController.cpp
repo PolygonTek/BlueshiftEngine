@@ -229,7 +229,7 @@ void ComCharacterController::RecoverFromPenetration() {
                 // 한번에 밀어내지 않고, 가장 깊이 penetration 된 contact 부터 조금씩 밀어낸다.
                 origin -= contact.normal * contact.dist * 0.25f;
 
-                //BE_LOG(L"%hs (%f) -> %hs\n", contact.normal.ToString(), contact.dist, origin.ToString());
+                //BE_LOG("%s (%f) -> %s\n", contact.normal.ToString(), contact.dist, origin.ToString());
             }
         }
 
@@ -307,7 +307,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
         // 이동한 만큼 이동거리를 빼준다.
         f -= f * trace.fraction;
 
-        //BE_LOG(L"%i %f\n", bumpCount, trace.normal.z);
+        //BE_LOG("%i %f\n", bumpCount, trace.normal.z);
         //GetGameWorld()->GetRenderWorld()->SetDebugColor(Vec4Color::cyan, Vec4(0, 0, 0, 0));
         //GetGameWorld()->GetRenderWorld()->DebugLine(trace.point, trace.point + trace.normal * 10, 1, false, 10000);
 

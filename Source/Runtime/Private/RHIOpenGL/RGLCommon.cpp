@@ -33,7 +33,7 @@ OpenGLRHI       rhi;
 
 Str             GLShader::programCacheDir;
 
-CVar            gl_sRGB(L"gl_sRGB", L"1", CVar::Bool | CVar::Archive, L"enable sRGB color calibration");
+CVar            gl_sRGB("gl_sRGB", "1", CVar::Bool | CVar::Archive, "enable sRGB color calibration");
 
 OpenGLRHI::OpenGLRHI() {
     initialized = false;
@@ -42,7 +42,7 @@ OpenGLRHI::OpenGLRHI() {
 }
 
 void OpenGLRHI::Init(WindowHandle windowHandle, const Settings *settings) {
-    BE_LOG(L"Initializing OpenGL Renderer...\n");
+    BE_LOG("Initializing OpenGL Renderer...\n");
 
     InitHandles();
 
@@ -66,7 +66,7 @@ void OpenGLRHI::Init(WindowHandle windowHandle, const Settings *settings) {
 }
 
 void OpenGLRHI::Shutdown() {
-    BE_LOG(L"Shutting down OpenGL Renderer...\n");
+    BE_LOG("Shutting down OpenGL Renderer...\n");
 
     initialized = false;
 
@@ -142,32 +142,32 @@ void OpenGLRHI::InitGL() {
     OpenGL::Init();
 
     vendorString = (const char *)gglGetString(GL_VENDOR);
-    BE_LOG(L"GL vendor: %hs\n", vendorString);
+    BE_LOG("GL vendor: %s\n", vendorString);
 
     rendererString = (const char *)gglGetString(GL_RENDERER);
-    BE_LOG(L"GL renderer: %hs\n", rendererString);
+    BE_LOG("GL renderer: %s\n", rendererString);
 
     versionString = (const char *)gglGetString(GL_VERSION);
     version = atof(versionString);
-    BE_LOG(L"GL version: %hs\n", versionString);	
+    BE_LOG("GL version: %s\n", versionString);
 
-    BE_LOG(L"GL extensions:");
+    BE_LOG("GL extensions:");
     GLint numExtensions = 0;
     gglGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
     for (int i = 0; i < numExtensions; i++) {
         const char *extension = (const char *)gglGetStringi(GL_EXTENSIONS, i);
-        BE_LOG(L" %hs", extension);
+        BE_LOG(" %s", extension);
     }
-    BE_LOG(L"\n");
+    BE_LOG("\n");
 
 #if defined(__WIN32__)
     const char *winExtensions = (const char *)gwglGetExtensionsStringARB(mainContext->hdc);
-    BE_LOG(L"WGL extensions: %hs\n", winExtensions);
+    BE_LOG("WGL extensions: %s\n", winExtensions);
 #endif
 
 #if defined(__ANDROID__)
     const char *eglExtensions = (const char *)geglQueryString(mainContext->eglDisplay, EGL_EXTENSIONS);
-    BE_LOG(L"EGL extensions: %hs\n", eglExtensions);
+    BE_LOG("EGL extensions: %s\n", eglExtensions);
 #endif
 
     glslVersionString = (const char *)gglGetString(GL_SHADING_LANGUAGE_VERSION);
@@ -176,7 +176,7 @@ void OpenGLRHI::InitGL() {
     }
     glslVersion = atof(glslVersionString);
 
-    BE_LOG(L"GLSL version: %hs\n", glslVersionString);
+    BE_LOG("GLSL version: %s\n", glslVersionString);
 
     /*int red, green, blue, alpha;
     gglGetIntegerv(GL_RED_BITS, &red);
@@ -186,96 +186,96 @@ void OpenGLRHI::InitGL() {
     gglGetIntegerv(GL_DEPTH_BITS, &depthBits);
     gglGetIntegerv(GL_STENCIL_BITS, &stencilBits);
     colorBits = red + green + blue + alpha;
-    BE_LOG(L"Pixel format: color(%i-bits) depth(%i-bits) stencil(%i-bits)\n", colorBits, depthBits, stencilBits);*/
+    BE_LOG("Pixel format: color(%i-bits) depth(%i-bits) stencil(%i-bits)\n", colorBits, depthBits, stencilBits);*/
 
     memset(&hwLimit, 0, sizeof(hwLimit));
 
     // texture limits
     gglGetIntegerv(GL_MAX_TEXTURE_SIZE, &hwLimit.maxTextureSize);
-    BE_LOG(L"Maximum texture size: %i\n", hwLimit.maxTextureSize);
+    BE_LOG("Maximum texture size: %i\n", hwLimit.maxTextureSize);
 
     gglGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &hwLimit.max3dTextureSize);
-    BE_LOG(L"Maximum 3d texture size: %i\n", hwLimit.max3dTextureSize);
+    BE_LOG("Maximum 3d texture size: %i\n", hwLimit.max3dTextureSize);
 
     gglGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &hwLimit.maxCubeMapTextureSize);
-    BE_LOG(L"Maximum cube map texture size: %i\n", hwLimit.maxCubeMapTextureSize);
+    BE_LOG("Maximum cube map texture size: %i\n", hwLimit.maxCubeMapTextureSize);
 
 #ifdef GL_ARB_texture_rectangle
     gglGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE, &hwLimit.maxRectangleTextureSize);
-    BE_LOG(L"Maximum rectangle texture size: %i\n", hwLimit.maxRectangleTextureSize);
+    BE_LOG("Maximum rectangle texture size: %i\n", hwLimit.maxRectangleTextureSize);
 #endif
     
     if (OpenGL::SupportsTextureBufferObject()) {
         gglGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &hwLimit.maxTextureBufferSize);
-        BE_LOG(L"Maximum texture buffer size: %i\n", hwLimit.maxTextureBufferSize);
+        BE_LOG("Maximum texture buffer size: %i\n", hwLimit.maxTextureBufferSize);
     }
     
     if (OpenGL::SupportsTextureFilterAnisotropic()) {
         gglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &hwLimit.maxTextureAnisotropy);
-        BE_LOG(L"Maximum texture anisotropy: %i\n", hwLimit.maxTextureAnisotropy);
+        BE_LOG("Maximum texture anisotropy: %i\n", hwLimit.maxTextureAnisotropy);
     }
     
     // the maximum supported texture image units that can be used to access texture maps from the fragment shader.
     gglGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &hwLimit.maxTextureImageUnits);
-    BE_LOG(L"Maximum texture image units: %i\n", hwLimit.maxTextureImageUnits);
+    BE_LOG("Maximum texture image units: %i\n", hwLimit.maxTextureImageUnits);
 
     // the maximum number of 4 component generic vertex attributes accessible to a vertex shader.
     gglGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &hwLimit.maxVertexAttribs);
-    BE_LOG(L"Maximum vertex attribs: %i\n", hwLimit.maxVertexAttribs);
+    BE_LOG("Maximum vertex attribs: %i\n", hwLimit.maxVertexAttribs);
 
     // the maximum number of individual floating point, integer, or boolean values that can be held in uniform variable storage for a vertex shader.
     gglGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &hwLimit.maxVertexUniformComponents);
-    BE_LOG(L"Maximum vertex uniform components: %i\n", hwLimit.maxVertexUniformComponents);
+    BE_LOG("Maximum vertex uniform components: %i\n", hwLimit.maxVertexUniformComponents);
 
     // the maximum number of vector floating point, integer, or boolean values that can be held in uniform variable storage for a vertex shader.
     gglGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &hwLimit.maxVertexUniformVectors);
-    BE_LOG(L"Maximum vertex uniform vectors: %i\n", hwLimit.maxVertexUniformVectors);
+    BE_LOG("Maximum vertex uniform vectors: %i\n", hwLimit.maxVertexUniformVectors);
 
     // the maximum supported texture image units that can be used to access texture maps from the vertex shader.
     gglGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &hwLimit.maxVertexTextureImageUnits);
-    BE_LOG(L"Maximum vertex texture image units: %i\n", hwLimit.maxVertexTextureImageUnits);
+    BE_LOG("Maximum vertex texture image units: %i\n", hwLimit.maxVertexTextureImageUnits);
 
     // the maximum number of individual floating point, integer, or boolean values that can be held in uniform variable storage for a fragment shader.
     gglGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &hwLimit.maxFragmentUniformComponents);
-    BE_LOG(L"Maximum fragment uniform components: %i\n", hwLimit.maxFragmentUniformComponents);
+    BE_LOG("Maximum fragment uniform components: %i\n", hwLimit.maxFragmentUniformComponents);
 
     // the maximum number of vector floating point, integer, or boolean values that can be held in uniform variable storage for a fragment shader.
     gglGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS, &hwLimit.maxFragmentUniformVectors);
-    BE_LOG(L"Maximum fragment uniform vectors: %i\n", hwLimit.maxFragmentUniformVectors);
+    BE_LOG("Maximum fragment uniform vectors: %i\n", hwLimit.maxFragmentUniformVectors);
 
     // the maximum number of components of the inputs read by the fragment shader.
     gglGetIntegerv(GL_MAX_FRAGMENT_INPUT_COMPONENTS, &hwLimit.maxFragmentInputComponents);
-    BE_LOG(L"Maximum fragment input components: %i\n", hwLimit.maxFragmentInputComponents);
+    BE_LOG("Maximum fragment input components: %i\n", hwLimit.maxFragmentInputComponents);
 
     if (OpenGL::SupportsGeometryShader()) {
         // the maximum supported texture image units that can be used to access texture maps from the geometry shader.
         gglGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &hwLimit.maxGeometryTextureImageUnits);
-        BE_LOG(L"Maximum geometry texture image units: %i\n", hwLimit.maxGeometryTextureImageUnits);
+        BE_LOG("Maximum geometry texture image units: %i\n", hwLimit.maxGeometryTextureImageUnits);
         
         gglGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &hwLimit.maxGeometryOutputVertices);
-        BE_LOG(L"Maximum geometry output vertices: %i\n", hwLimit.maxGeometryOutputVertices);
+        BE_LOG("Maximum geometry output vertices: %i\n", hwLimit.maxGeometryOutputVertices);
     }
 
     // the maximum number of uniform buffer binding points on the context.
     gglGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &hwLimit.maxUniformBufferBindings);
-    BE_LOG(L"Maximum uniform buffer bindings: %i\n", hwLimit.maxUniformBufferBindings);
+    BE_LOG("Maximum uniform buffer bindings: %i\n", hwLimit.maxUniformBufferBindings);
 
     // the maximum size in basic machine units of a uniform block.
     gglGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &hwLimit.maxUniformBlockSize);
-    BE_LOG(L"Maximum uniform block size: %i\n", hwLimit.maxUniformBlockSize);
+    BE_LOG("Maximum uniform block size: %i\n", hwLimit.maxUniformBlockSize);
 
     // the minimum required alignment for uniform buffer sizes and offset.
     gglGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &hwLimit.uniformBufferOffsetAlignment);
-    BE_LOG(L"Maximum uniform buffer offset alignment: %i\n", hwLimit.uniformBufferOffsetAlignment);
+    BE_LOG("Maximum uniform buffer offset alignment: %i\n", hwLimit.uniformBufferOffsetAlignment);
 
     // GL_ARB_framebuffer_object (3.0)
     gglGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &hwLimit.maxRenderBufferSize);
     gglGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &hwLimit.maxColorAttachments);
-    BE_LOG(L"Maximum render buffer size: %i\n", hwLimit.maxRenderBufferSize);
+    BE_LOG("Maximum render buffer size: %i\n", hwLimit.maxRenderBufferSize);
 
     // GL_ARB_draw_buffers (2.0)
     gglGetIntegerv(GL_MAX_DRAW_BUFFERS, &hwLimit.maxDrawBuffers);
-    BE_LOG(L"Maximum MRT: %i\n", hwLimit.maxDrawBuffers);
+    BE_LOG("Maximum MRT: %i\n", hwLimit.maxDrawBuffers);
 
     // Checking NVDIA vertex program version
 #ifdef GL_NV_vertex_program4
@@ -322,15 +322,15 @@ void OpenGLRHI::InitGL() {
     GLint encoding;
     gglBindFramebuffer(GL_FRAMEBUFFER, mainContext->defaultFramebuffer);
     gglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING, &encoding);
-    BE_LOG(L"default frame buffer encoding : ");
+    BE_LOG("default frame buffer encoding : ");
     if (encoding == GL_SRGB) {
         linearFrameBuffer = false;
-        BE_LOG(L"SRGB\n");
+        BE_LOG("SRGB\n");
     } else if (encoding == GL_LINEAR) {
         linearFrameBuffer = true;
-        BE_LOG(L"Linear\n");
+        BE_LOG("Linear\n");
     } else {
-        BE_LOG(L"%i\n", encoding);
+        BE_LOG("%i\n", encoding);
     }
 #endif
 
@@ -459,7 +459,7 @@ void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format im
     GLenum  type;
     
     if (!OpenGL::ImageFormatToGLFormat(imageFormat, false, &format, &type, nullptr)) {
-        BE_WARNLOG(L"OpenGLRHI::ReadPixels: Unsupported image format %hs\n", Image::FormatName(imageFormat));
+        BE_WARNLOG("OpenGLRHI::ReadPixels: Unsupported image format %s\n", Image::FormatName(imageFormat));
         return;
     }
     

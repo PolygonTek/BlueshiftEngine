@@ -62,12 +62,10 @@ void ComCamera::RegisterProperties() {
 }
 
 ComCamera::ComCamera() {
-    memset(&renderViewDef, 0, sizeof(renderViewDef));
     renderView = nullptr;
 
     spriteHandle = -1;
     spriteMesh = nullptr;
-    memset(&spriteDef, 0, sizeof(spriteDef));
 
     mousePointerState.oldHitEntityGuid = Guid::zero;
     mousePointerState.captureEntityGuid = Guid::zero;
@@ -135,7 +133,6 @@ void ComCamera::Init() {
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
-    memset(&spriteDef, 0, sizeof(spriteDef));
     spriteDef.flags = RenderObject::BillboardFlag;
     spriteDef.layer = TagLayerSettings::EditorLayer;
     spriteDef.maxVisDist = MeterToUnit(50.0f);

@@ -66,8 +66,6 @@ protected:
     static Str              NormalizeFilename(const char *filename);
     static Str              NormalizeDirectory(const char *dirname);
 
-    static void             ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files);
-
     HANDLE                  fileHandle;
 };
 

@@ -146,7 +146,7 @@ extern "C" void CheckGLError(const char *msg) {
                 break;
         }
         
-        BE_WARNLOG(L"GL Error: %hs in %hs\n", errCode, msg);
+        BE_WARNLOG("GL Error: %s in %s\n", errCode, msg);
     }	
 }
 

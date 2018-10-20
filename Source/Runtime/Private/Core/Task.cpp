@@ -82,7 +82,7 @@ void TaskScheduler::AddTask(taskFunction_t function, void *data) {
     task.function = function;
     task.data = data;
     if (taskList.size() >= MaxTasks) {
-        BE_FATALERROR(L"too many tasks generated");
+        BE_FATALERROR("too many tasks generated");
     }
     taskList.push_back(task);
     numActiveTasks++;

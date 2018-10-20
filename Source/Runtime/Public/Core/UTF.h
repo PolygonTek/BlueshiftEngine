@@ -35,22 +35,28 @@ public:
     };
 
                         /// Encode Unicode character to UTF8. Pointer will be incremented.
-    static void         Encode(char *&dest, uint32_t unicodeChar);
+    static void         Encode(char *&dest, char32_t unicodeChar);
                         /// Decode Unicode character from UTF8. Pointer will be incremented.
-    static uint32_t     Decode(const char *&src);
+    static char32_t     Decode(const char *&src);
 
                         /// Returns number of characters in UTF8 content.
-    static int          Length(const byte *s);
+    static int          Length(const char *s);
 
-                        /// Returns Unicode character with then given index. Index will be incremented.
-    static uint32_t     Char(const char *s, int &idx) { return Char((byte *)s, idx); }
-                        /// Returns Unicode character with then given index. Index will be incremented.
-    static uint32_t     Char(const byte *s, int &idx);
+                        /// Returns Unicode character with the given offset.
+    static char32_t     Char(const char *s, int offset) { return CharAdvance(s, offset); }
 
-    static bool         IsValid(const uint8_t *s, const int maxLen, Encoding &encoding);
-    static bool         IsValid(const char *s, const int maxLen, Encoding &encoding) { return IsValid((const uint8_t *)s, maxLen, encoding); }
-    static bool         IsValid(const uint8_t *s, const int maxLen) { Encoding encoding; return IsValid(s, maxLen, encoding); }
-    static bool         IsValid(const char *s, const int maxLen) { return IsValid((const uint8_t *)s, maxLen); }
+                        /// Returns current Unicode character with the given offset. Offset will be incremented.
+    static char32_t     CharAdvance(const char *s, int &offset);
+                        /// Returns previous Unicode character with the given offset. Offset will be decremented.
+    static char32_t     CharPrevious(const char *s, int &offset);
+
+                        /// Increase byte offset by the amount of current character bytes.
+    static bool         Advance(const char *s, int &offset);
+                        /// Decrease byte offset by the amount of previous character bytes.
+    static bool         Previous(const char *s, int &offset);
+
+    static bool         IsValid(const char *s, const int maxLen, Encoding &encoding);
+    static bool         IsValid(const char *s, const int maxLen) { Encoding encoding; return IsValid(s, maxLen, encoding); }
 };
 
 /*
@@ -63,10 +69,10 @@ public:
 
 class UTF16 {
 public:
-    /// Encode Unicode character to UTF16. Pointer will be incremented.
-    static void         Encode(wchar_t *&dest, uint32_t unicodeChar);
-    /// Decode Unicode character from UTF16. Pointer will be incremented.
-    static uint32_t     Decode(const wchar_t *&src);
+                        /// Encode Unicode character to UTF16. Pointer will be incremented.
+    static void         Encode(wchar_t *&dest, char32_t unicodeChar);
+                        /// Decode Unicode character from UTF16. Pointer will be incremented.
+    static char32_t     Decode(const wchar_t *&src);
 };
 
 BE_NAMESPACE_END

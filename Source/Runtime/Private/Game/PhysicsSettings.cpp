@@ -115,7 +115,7 @@ PhysicsSettings *PhysicsSettings::Load(const char *filename, PhysicsWorld *physi
     fileSystem.LoadFile(filename, true, (void **)&text);
     if (text) {
         if (!jsonReader.parse(text, jsonNode)) {
-            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
+            BE_WARNLOG("Failed to parse JSON text '%s'\n", filename);
             failedToParse = true;
         }
 
@@ -132,7 +132,7 @@ PhysicsSettings *PhysicsSettings::Load(const char *filename, PhysicsWorld *physi
     const char *classname = jsonNode["classname"].asCString();
 
     if (Str::Cmp(classname, PhysicsSettings::metaObject.ClassName())) {
-        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
+        BE_WARNLOG("Unknown classname '%s'\n", classname);
         return nullptr;
     }
 

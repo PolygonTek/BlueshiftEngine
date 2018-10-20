@@ -171,12 +171,12 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
     assert(dstWidth && dstHeight);
     
     if (IsPacked() || IsCompressed()) {
-        BE_WARNLOG(L"Couldn't resize from source image format %hs\n", FormatName());
+        BE_WARNLOG("Couldn't resize from source image format %s\n", FormatName());
         return false;
     }
 
     if (depth != 1) {
-        BE_WARNLOG(L"Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
+        BE_WARNLOG("Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
         return false;
     }
 
@@ -206,12 +206,12 @@ bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter
     assert(dstWidth && dstHeight);
 
     if (IsPacked() || IsCompressed()) {
-        BE_WARNLOG(L"Couldn't resize from source image format %hs\n", FormatName());
+        BE_WARNLOG("Couldn't resize from source image format %s\n", FormatName());
         return false;
     }
 
     if (depth != 1) {
-        BE_WARNLOG(L"Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
+        BE_WARNLOG("Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
         return false;
     }
 

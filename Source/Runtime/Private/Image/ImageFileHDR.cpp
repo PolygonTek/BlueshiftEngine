@@ -133,7 +133,7 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
     }
 
     if (Str::Cmp(headerInfo.signature, "#?RADIANCE") != 0) {
-        BE_WARNLOG(L"Image::LoadHDRFromMemory: bad RGBE signature '%hs' %hs\n", headerInfo.signature, name);
+        BE_WARNLOG("Image::LoadHDRFromMemory: bad RGBE signature '%s' %s\n", headerInfo.signature, name);
         return false;
     }
 
@@ -217,7 +217,7 @@ bool Image::WriteHDR(const char *filename) const {
 
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Image::WriteHDR: file open error\n");
+        BE_WARNLOG("Image::WriteHDR: file open error\n");
         return false;
     }
 

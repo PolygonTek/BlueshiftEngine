@@ -73,15 +73,6 @@ char *Mem_AllocString(const char *str) {
     return ptr;
 }
 
-wchar_t *Mem_AllocWideString(const wchar_t *str) {
-    wchar_t *ptr = (wchar_t *)Mem_Alloc((wcslen(str) + 1) * sizeof(wchar_t));
-    if (!ptr) {
-        return nullptr;
-    }
-    wcscpy(ptr, str);
-    return ptr;
-}
-
 void Mem_Free(void *ptr) {
     if (ptr) {
 #ifdef SJPARK
@@ -149,15 +140,6 @@ char *DebugMem_AllocString(const char *str, const char *filename, const int line
         return nullptr;
     }
     strcpy(ptr, str);
-    return ptr;
-}
-
-wchar_t *DebugMem_AllocWideString(const wchar_t *str, const char *filename, const int lineNumber) {
-    wchar_t *ptr = (wchar_t *)DebugMem_Alloc(sizeof(wchar_t) * (wcslen(str) + 1), filename, lineNumber);
-    if (!ptr) {
-        return nullptr;
-    }
-    wcscpy(ptr, str);
     return ptr;
 }
 

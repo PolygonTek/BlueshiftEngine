@@ -50,24 +50,24 @@ public:
     };
 
     struct State {
-        int                 flags;
-        int                 layer;
-        Type                type;
-        float               maxVisDist;
+        int                 flags = 0;
+        int                 layer = 0;
+        Type                type = PointLight;
+        float               maxVisDist = MeterToUnit(10);
 
         Vec3                origin;
-        Vec3                size;       // extent for each axis
-        Mat3                axis;
+        Vec3                size = Vec3(1.0);       // extent for each axis
+        Mat3                axis = Mat3::identity;
 
-        float               zNear;      // near distance for SpotLight
+        float               zNear = 1.0f;           // near distance for SpotLight
 
-        float               intensity;
-        float               fallOffExponent;
-        float               shadowOffsetFactor;
-        float               shadowOffsetUnits;
+        float               intensity = 1.0f;
+        float               fallOffExponent = 1.25f;
+        float               shadowOffsetFactor = 3.f;
+        float               shadowOffsetUnits = 200.f;
 
-        Material *          material;
-        float               materialParms[RenderObject::MaxMaterialParms];
+        Material *          material = nullptr;
+        float               materialParms[RenderObject::MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
     };
 
     RenderLight();

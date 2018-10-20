@@ -33,7 +33,6 @@ set(ENGINE_FILES
     Public/Core/Dict.h
     Public/Core/Expr.h
     Public/Core/Lexer.h
-    Public/Core/WLexer.h
     Public/Core/Task.h
     Public/Core/Event.h
     Public/Core/Object.h
@@ -339,7 +338,6 @@ set(ENGINE_FILES
     Private/Core/Expr.cpp
     Private/Core/MinMaxCurve.cpp
     Private/Core/Lexer.cpp
-    Private/Core/WLexer.cpp
     Private/Core/Task.cpp
     Private/Core/Variant.cpp
 
@@ -675,12 +673,15 @@ elseif (WIN32)
         Public/Platform/Windows/PlatformWinThread.h
         Public/Platform/Windows/PlatformWinTime.h
         Public/Platform/Windows/PlatformWinSystem.h
+        Public/Platform/Windows/PlatformWinUtils.h
 
         Private/Platform/Windows/PlatformWinProcess.cpp
         Private/Platform/Windows/PlatformWinFile.cpp
         Private/Platform/Windows/PlatformWinThread.cpp
         Private/Platform/Windows/PlatformWinTime.cpp
         Private/Platform/Windows/PlatformWinSystem.cpp
+        Private/Platform/Windows/PlatformWinUtils.cpp
+
         Private/Platform/PlatformWin.h
         Private/Platform/PlatformWin.cpp
 

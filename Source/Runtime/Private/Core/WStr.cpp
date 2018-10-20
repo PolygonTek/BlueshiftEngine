@@ -987,29 +987,29 @@ float WStr::FuzzyScore(const wchar_t *s1, const wchar_t *s2, float fuzziness) {
 }
 
 // Safe strncpy that ensures a trailing zero
-void WStr::Copynz(wchar_t *dest, const wchar_t *src, int destsize) {
+void WStr::Copynz(wchar_t *dest, const wchar_t *src, int n) {
     if (!src) {
-        BE_WARNLOG(L"WStr::Copynz: nullptr src\n");
+        BE_WARNLOG("WStr::Copynz: nullptr src\n");
         return;
     }
 
-    if (destsize < 1) {
-        BE_WARNLOG(L"WStr::Copynz: destsize < 1\n"); 
+    if (n < 1) {
+        BE_WARNLOG("WStr::Copynz: destsize < 1\n"); 
         return;
     }
 
-    wcsncpy(dest, src, destsize - 1);
-    dest[destsize - 1] = 0;
+    wcsncpy(dest, src, n - 1);
+    dest[n - 1] = 0;
 }
 
 // never goes past bounds or leaves without a terminating 0
-void WStr::Append(wchar_t *dest, int size, const wchar_t *src) {
+void WStr::Append(wchar_t *dest, int n, const wchar_t *src) {
     int l1 = (int)wcslen(dest);
-    if (l1 >= size) {
-        BE_ERRLOG(L"WStr::Append: already overflowed\n");
+    if (l1 >= n) {
+        BE_ERRLOG("WStr::Append: already overflowed\n");
     }
 
-    WStr::Copynz(dest + l1, src, size - l1);
+    WStr::Copynz(dest + l1, src, n - l1);
 }
 
 // returns -1 if not found otherwise the index of the wchar_t
@@ -1256,10 +1256,11 @@ const wchar_t *WStr::IntegerArrayToString(const int *arr, const int length) {
 
     int n = 0;
     for (int i = 0; i < length; i++) {
-        n += WStr::snPrintf(s + n, sizeof(str[0]) - n, L"%i", arr[i]);
+        n += WStr::snPrintf(s + n, COUNT_OF(str[0]) - n, L"%i", arr[i]);
     }
     return s;
 }
+
 const wchar_t *WStr::FloatArrayToString(const float *arr, const int length, const int precision) {
     static int index = 0;
     static wchar_t str[4][16384];   // in case called by nested functions	
@@ -1269,16 +1270,16 @@ const wchar_t *WStr::FloatArrayToString(const float *arr, const int length, cons
     index = (index + 1) & 3;
 
     wchar_t format[16];
-    WStr::snPrintf(format, sizeof(format), L"%%.%df", precision);
-    int n = WStr::snPrintf(s, sizeof(str[0]), format, arr[0]);
+    WStr::snPrintf(format, COUNT_OF(format), L"%%.%df", precision);
+    int n = WStr::snPrintf(s, COUNT_OF(str[0]), format, arr[0]);
     if (precision > 0) {
         while (n > 0 && s[n-1] == L'0') s[--n] = L'\0';
         while (n > 0 && s[n-1] == L'.') s[--n] = L'\0';
     }
 
-    WStr::snPrintf(format, sizeof(format), L" %%.%df", precision);
+    WStr::snPrintf(format, COUNT_OF(format), L" %%.%df", precision);
     for (int i = 1; i < length; i++) {
-        n += WStr::snPrintf(s + n, sizeof(str[0]) - n, format, arr[i]);
+        n += WStr::snPrintf(s + n, COUNT_OF(str[0]) - n, format, arr[i]);
         if (precision > 0) {
             while (n > 0 && s[n-1] == L'0') s[--n] = L'\0';
             while (n > 0 && s[n-1] == L'.') s[--n] = L'\0';
@@ -1295,11 +1296,11 @@ int BE_CDECL WStr::snPrintf(wchar_t *dest, int size, const wchar_t *fmt, ...) {
     va_end(argptr);
 
     if (len >= COUNT_OF(buffer)) {
-        BE_FATALERROR(L"WStr::snPrintf: overflowed buffer\n");
+        BE_FATALERROR("WStr::snPrintf: overflowed buffer\n");
     }
 
     if (len >= size) {
-        BE_WARNLOG(L"WStr::snPrintf: overflow of %i in %i\n", len, size);
+        BE_WARNLOG("WStr::snPrintf: overflow of %i in %i\n", len, size);
         len = size;
     }
 

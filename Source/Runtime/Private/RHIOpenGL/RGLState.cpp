@@ -122,7 +122,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
                     OpenGL::PolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                     break;
                 default:
-                    BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid polygon mode state bits");
+                    BE_FATALERROR("OpenGLRHI::SetStateBits: invalid polygon mode state bits");
                     break;
             }
         }
@@ -157,7 +157,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
                         gglDepthFunc(GL_NEVER);
                         break;
                     default:
-                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid depth func state bits");
+                        BE_FATALERROR("OpenGLRHI::SetStateBits: invalid depth func state bits");
                         break;
                 }
                 
@@ -201,7 +201,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
                         break;
                     default:
                         blend_src = GL_ONE;
-                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid src blend state bits");
+                        BE_FATALERROR("OpenGLRHI::SetStateBits: invalid src blend state bits");
                         break;
                 }
                 
@@ -233,7 +233,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
                         break;
                     default:
                         blend_dst = GL_ONE;
-                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid dst blend state bits");
+                        BE_FATALERROR("OpenGLRHI::SetStateBits: invalid dst blend state bits");
                         break;
                 }
                 

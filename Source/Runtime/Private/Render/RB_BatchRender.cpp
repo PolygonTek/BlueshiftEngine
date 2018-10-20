@@ -958,7 +958,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
 
     Color3 blendColor(&surfLight->def->state.materialParms[RenderObject::RedParm]);
 
-    if (cvarSystem.GetCVarBool(L"gl_sRGB")) {
+    if (cvarSystem.GetCVarBool("gl_sRGB")) {
         blendColor = blendColor.SRGBtoLinear();
     }
 

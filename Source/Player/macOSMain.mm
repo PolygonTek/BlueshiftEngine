@@ -62,7 +62,7 @@ static BE1::CVar            disp_frequency(L"disp_frequency", L"0", BE1::CVar::I
 
 @implementation AppDelegate
 
-- (BOOL)translateKeyCode:(unsigned short)keyCode modifiers:(UInt16)modifiers keyDown:(BOOL)keyDown character:(wchar_t *)outChar {
+- (BOOL)translateKeyCode:(unsigned short)keyCode modifiers:(UInt16)modifiers keyDown:(BOOL)keyDown character:(char32_t *)outChar {
     UInt32 deadKeyState = 0;
     UniChar unicodeChars[4];
     UniCharCount actualLength;
@@ -86,7 +86,8 @@ static BE1::CVar            disp_frequency(L"disp_frequency", L"0", BE1::CVar::I
                    unicodeChars);
     
     if (actualLength == 1) {
-        *outChar = (wchar_t)unicodeChars[0];
+        // FIXME: need to implement UTF16 to UTF32 conversion
+        *outChar = unicodeChars[0];
         return true;
     }
     
@@ -257,13 +258,14 @@ static const struct {
     BE1::platform->QueEvent(BE1::Platform::KeyEvent, scancode, keyDown ? true : false, 0, NULL);
     
     if (keyDown) {
-#if 0
+#if 1
         NSString *str = [event characters];
-        const wchar_t *wchars = (const wchar_t *)[str cStringUsingEncoding:NSUTF32LittleEndianStringEncoding];
-        wchar_t ch = wchars[0];
+        const char32_t *chars = (const char32_t *)[str cStringUsingEncoding:NSUTF32LittleEndianStringEncoding];
+        char32_t ch = chars[0];
+        BE1::platform->QueEvent(BE1::Platform::CharEvent, ch, 0, 0, NULL);
 #else
-        wchar_t ch;
-        if ([self translateKeyCode:[event keyCode] modifiers:modifiers keyDown:keyDown character:&ch]) {
+        char32_t ch;
+        if ([self translateKeyCode:nativeVirtualKey modifiers:modifiers keyDown:keyDown character:&ch]) {
             BE1::platform->QueEvent(BE1::Platform::CharEvent, ch, 0, 0, NULL);
         }
 #endif
@@ -439,10 +441,10 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
         
     currentKeyboard = TISCopyCurrentKeyboardInputSource();
     
-    const wchar_t *title = BE1::wva(L"%ls %hs %hs %hs", L"Blueshift Player", BE1::PlatformBaseProcess::PlatformName(), __DATE__, __TIME__);
-    NSString *nstitle = (__bridge NSString *)WideStringToCFString(title);
+    const wchar_t *fullTitle = BE1::wva(L"%ls %hs %hs %hs", L"Blueshift Player", BE1::PlatformBaseProcess::PlatformName(), __DATE__, __TIME__);
+    NSString *nsFullTitle = (__bridge NSString *)WideStringToCFString(fullTitle);
     
-    mainWindow = [self createGLWindow:NSMakeSize(1280, 720) title:nstitle];
+    mainWindow = [self createGLWindow:NSMakeSize(1280, 720) title:nsFullTitle];
 
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
     

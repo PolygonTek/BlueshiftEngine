@@ -30,30 +30,30 @@
 
 BE_NAMESPACE_BEGIN
 
-static CVAR(developer, L"0", CVar::Bool, L"");
-static CVAR(logFile, L"0", CVar::Bool, L"");
-static CVAR(forceGenericSIMD, L"0", CVar::Bool, L"");
+static CVAR(developer, "0", CVar::Bool, "");
+static CVAR(logFile, "0", CVar::Bool, "");
+static CVAR(forceGenericSIMD, "0", CVar::Bool, "");
 
 static File *   consoleLogFile;
 
 Common          common;
 
-static void Common_Log(const int logLevel, const wchar_t *msg) {
-    wchar_t buffer[16384];
-    const wchar_t *bufptr;
+static void Common_Log(const int logLevel, const char *msg) {
+    char buffer[16384];
+    const char *bufptr;
 
     if (logLevel == DevLog && !developer.GetBool()) {
         return;
     }
     
     if (logLevel == DevLog) {
-        WStr::snPrintf(buffer, COUNT_OF(buffer), WS_COLOR_CYAN L"%ls", msg);
+        Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_CYAN "%s", msg);
         bufptr = buffer;
     } else if (logLevel == WarningLog) {
-        WStr::snPrintf(buffer, COUNT_OF(buffer), WS_COLOR_YELLOW L"WARNING: %ls", msg);
+        Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_YELLOW "WARNING: %s", msg);
         bufptr = buffer;
     } else if (logLevel == ErrorLog) {
-        WStr::snPrintf(buffer, COUNT_OF(buffer), WS_COLOR_RED L"ERROR: %ls", msg);
+        Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_RED "ERROR: %s", msg);
         bufptr = buffer;
     } else {
         bufptr = msg;
@@ -66,13 +66,13 @@ static void Common_Log(const int logLevel, const wchar_t *msg) {
                 time_t t;
                 time(&t);
                 tm *local_time = localtime(&t);
-                BE_LOG(L"logFile opened on %hs\n", asctime(local_time));
+                BE_LOG("logFile opened on %s\n", asctime(local_time));
             } else {
                 logFile.SetBool(false);
-                BE_WARNLOG(L"can't open the log file\n");
+                BE_WARNLOG("Can't open the log file\n");
             }
         } else {
-            consoleLogFile->Write(bufptr, WStr::Length(bufptr));
+            consoleLogFile->Write(bufptr, strlen(bufptr));
         }
     }
 
@@ -81,12 +81,12 @@ static void Common_Log(const int logLevel, const wchar_t *msg) {
     console.Print(bufptr);
 }
 
-static void Common_Error(const int errLevel, const wchar_t *msg) {
+static void Common_Error(const int errLevel, const char *msg) {
     static bool errorEntered = false;
 
     if (errLevel == FatalErr) {
         if (errorEntered) {
-            platform->Error(wva(L"Recursive error after: %ls", msg));
+            platform->Error(va("Recursive error after: %s", msg));
         }
 
         errorEntered = true;
@@ -95,7 +95,7 @@ static void Common_Error(const int errLevel, const wchar_t *msg) {
             fileSystem.CloseFile(consoleLogFile);
         }
 
-        cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, L"condump \"Log/log\"\n");
+        cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, "condump \"Log/log\"\n");
 
         //common.Shutdown();
 
@@ -116,11 +116,11 @@ void Common::Init(const char *baseDir) {
 
     keyCmdSystem.Init();
 
-    cmdSystem.AddCommand(L"version", Cmd_Version);
-    cmdSystem.AddCommand(L"error", Cmd_Error);
-    cmdSystem.AddCommand(L"quit", Cmd_Quit);
+    cmdSystem.AddCommand("version", Cmd_Version);
+    cmdSystem.AddCommand("error", Cmd_Error);
+    cmdSystem.AddCommand("quit", Cmd_Quit);
 
-    cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, L"exec \"Config/config.cfg\"\n");
+    cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, "exec \"Config/config.cfg\"\n");
     cvarSystem.ClearModified();
 
     random.SetSeed(0);
@@ -133,13 +133,13 @@ void Common::Init(const char *baseDir) {
 }
 
 void Common::Shutdown() {
-    cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, L"condump \"Log/log\"\n");
+    cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, "condump \"Log/log\"\n");
 
     SaveConfig("Config/config.cfg");
 
-    cmdSystem.RemoveCommand(L"version");
-    cmdSystem.RemoveCommand(L"quit");
-    cmdSystem.RemoveCommand(L"error");
+    cmdSystem.RemoveCommand("version");
+    cmdSystem.RemoveCommand("quit");
+    cmdSystem.RemoveCommand("error");
 
     keyCmdSystem.Shutdown();
 
@@ -214,7 +214,7 @@ int Common::ProcessPlatformEvent() {
             gameClient.KeyEvent((KeyCode::Enum)ev.value, ev.value2 ? true : false);
             break;
         case Platform::CharEvent:
-            gameClient.CharEvent((wchar_t)ev.value);
+            gameClient.CharEvent((char32_t)ev.value);
             break;
         case Platform::CompositionEvent:
             gameClient.CompositionEvent((int)ev.value);
@@ -241,13 +241,13 @@ int Common::ProcessPlatformEvent() {
             gameClient.TouchEvent(InputSystem::Touch::Canceled, ev.value, 0, 0, ev.time);
             break;
         case Platform::ConsoleEvent:
-            cmdSystem.BufferCommandText(CmdSystem::Append, (const wchar_t *)ev.ptr);
-            cmdSystem.BufferCommandText(CmdSystem::Append, L"\n");
+            cmdSystem.BufferCommandText(CmdSystem::Append, (const char *)ev.ptr);
+            cmdSystem.BufferCommandText(CmdSystem::Append, "\n");
             break;
         case Platform::PacketEvent:
             break;
         default:
-            BE_FATALERROR(L"Common::ProcessPlatformEvent: bad event type %i", ev.type);
+            BE_FATALERROR("Common::ProcessPlatformEvent: bad event type %i", ev.type);
         }
 
         if (ev.ptr) {
@@ -263,13 +263,13 @@ void Common::GetPlatformEvent(Platform::Event *ev) {
 }
 
 void Common::Cmd_Version(const CmdArgs &args) {
-    BE_LOG(L"%hs-%hs %i.%i.%i %hs %hs\n", B_ENGINE_NAME, PlatformProcess::PlatformName(),
+    BE_LOG("%s-%s %i.%i.%i %s %s\n", B_ENGINE_NAME, PlatformProcess::PlatformName(),
         B_ENGINE_VERSION_MAJOR, B_ENGINE_VERSION_MINOR, B_ENGINE_VERSION_PATCH, __DATE__, __TIME__);
 }
 
 void Common::Cmd_Error(const CmdArgs &args) {
     if (args.Argv(1)) {
-        BE_FATALERROR(L"%ls", args.Argv(1));
+        BE_FATALERROR("%s", args.Argv(1));
     }
 }
 

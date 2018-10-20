@@ -49,7 +49,7 @@ void AnimControllerManager::Shutdown() {
 
 AnimController *AnimControllerManager::AllocAnimController(const char *hashName) {
     if (animControllerHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs animController already allocated", hashName);
+        BE_FATALERROR("%s animController already allocated", hashName);
     }
 
     AnimController *animController = new AnimController;
@@ -66,7 +66,7 @@ AnimController *AnimControllerManager::AllocAnimController(const char *hashName)
 
 void AnimControllerManager::DestroyAnimController(AnimController *animController) {
     if (animController->refCount > 1) {
-        BE_WARNLOG(L"AnimControllerManager::DestroyAnimController: animController '%hs' has %i reference count\n", animController->hashName.c_str(), animController->refCount);
+        BE_WARNLOG("AnimControllerManager::DestroyAnimController: animController '%s' has %i reference count\n", animController->hashName.c_str(), animController->refCount);
     }
 
     animControllerHashMap.Remove(animController->hashName);
@@ -202,7 +202,7 @@ void AnimController::Copy(const AnimController *def) {
 }
 
 bool AnimController::Load(const char *filename) {
-    BE_LOG(L"Loading animcon '%hs'...\n", filename);
+    BE_LOG("Loading animcon '%s'...\n", filename);
 
     char *data;
     int size = (int)fileSystem.LoadFile(filename, true, (void **)&data);
@@ -254,7 +254,7 @@ const JointInfo *AnimController::GetJoint(const char *name) const {
 
 const JointInfo *AnimController::GetJoint(int jointIndex) const {
     if ((jointIndex < 0) || (jointIndex > joints.Count())) {
-        BE_FATALERROR(L"AnimController::GetJoint : joint index out of range");
+        BE_FATALERROR("AnimController::GetJoint : joint index out of range");
     }
 
     return &joints[jointIndex];
@@ -266,7 +266,7 @@ const char *AnimController::GetJointName(int jointIndex) const {
     }
 
     if ((jointIndex < 0) || (jointIndex > joints.Count())) {
-        BE_FATALERROR(L"AnimController::GetJointName : joint index out of range");
+        BE_FATALERROR("AnimController::GetJointName : joint index out of range");
     }
 
     const Joint *joint = skeleton->GetJoints();
@@ -320,7 +320,7 @@ void AnimController::GetJointNumListByString(const char *jointNames, Array<int> 
 
         const JointInfo *joint = GetJoint(jointName);
         if (!joint) {
-            BE_WARNLOG(L"Unknown joint '%hs' in '%hs' for skeleton '%hs'\n", jointName.c_str(), jointNames, skeleton->GetHashName());
+            BE_WARNLOG("Unknown joint '%s' in '%s' for skeleton '%s'\n", jointName.c_str(), jointNames, skeleton->GetHashName());
             continue;
         }
 
@@ -366,7 +366,7 @@ AnimClip *AnimController::LoadAnimClip(const Guid &animGuid) {
     }
 
     if (!anim->CheckHierarchy(GetSkeleton())) {
-        BE_ERRLOG(L"mismatch hierarchy '%hs' with skeleton '%hs'\n", anim->GetName(), GetSkeleton()->GetName());
+        BE_ERRLOG("mismatch hierarchy '%s' with skeleton '%s'\n", anim->GetName(), GetSkeleton()->GetName());
         animManager.ReleaseAnim(anim);
         return nullptr;
     }
@@ -495,7 +495,7 @@ void AnimController::BuildBindPoseMats(int *numJoints, Mat3x4 **jointMats) const
 
     int num = skeleton->NumJoints();
     if (!num) {
-        BE_FATALERROR(L"skeleton '%hs' has no joints", skeleton->GetHashName());
+        BE_FATALERROR("skeleton '%s' has no joints", skeleton->GetHashName());
     }
  
     // Set up initial pose for skeleton
@@ -546,7 +546,7 @@ bool AnimController::Create(const char *text) {
         } else if (token == "parameter") {
             if (!ParseParameter(lexer)) {
                 return false;
-            }	
+            }
         } else if (token == "baseLayer") {
             if (!ParseBaseAnimLayer(lexer)) {
                 return false;
@@ -750,7 +750,7 @@ bool AnimController::ParseParameter(Lexer &lexer) {
 void AnimController::Write(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"AnimController::Write: file open error\n");
+        BE_WARNLOG("AnimController::Write: file open error\n");
         return;
     }
 

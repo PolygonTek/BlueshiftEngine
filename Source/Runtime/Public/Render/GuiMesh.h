@@ -57,14 +57,14 @@ public:
 
     void                    DrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
     
-    float                   DrawChar(float x, float y, float sx, float sy, Font *font, wchar_t charCode);
+    float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar);
 
-    void                    Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::TextAlignment alignment, float lineSpacing, float textScale, const wchar_t *text);
+    void                    Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::TextAlignment alignment, float lineSpacing, float textScale, const Str &text);
 
                             // Call this function when drawing ends
     void                    CacheIndexes();
 
-    AABB                    Compute3DTextAABB(Font *font, RenderObject::TextAnchor anchor, float lineSpacing, float textScale, const wchar_t *text) const;
+    AABB                    Compute3DTextAABB(Font *font, RenderObject::TextAnchor anchor, float lineSpacing, float textScale, const Str &text) const;
 
 private:
     void                    PrepareNextSurf();

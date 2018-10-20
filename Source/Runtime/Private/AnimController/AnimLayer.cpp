@@ -226,7 +226,7 @@ void AnimLayer::DeleteState(AnimState *state) {
 
 const AnimState *AnimLayer::GetDefaultState() const {
     if (defaultStateNum < 0 || defaultStateNum >= stateHashMap.Count()) {
-        BE_WARNLOG(L"AnimLayer::GetDefaultState: stateNum out of range\n");
+        BE_WARNLOG("AnimLayer::GetDefaultState: stateNum out of range\n");
         return nullptr;
     }
     
@@ -267,7 +267,7 @@ bool AnimLayer::ListTransitionsFrom(const char *srcStateName, Array<const AnimTr
 
 AnimLayer::AnimTransition *AnimLayer::CreateTransition(const char *srcStateName, const char *dstStateName) {
     if (FindTransition(srcStateName, dstStateName)) {
-        BE_LOG(L"AnimLayer::CreateTransition: same transition exist\n");
+        BE_LOG("AnimLayer::CreateTransition: same transition exist\n");
         return nullptr;
     }
 

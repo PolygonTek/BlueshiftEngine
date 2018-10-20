@@ -79,7 +79,7 @@ const float userContentScaleFactor = 2.0f;
     const float nativeScale = [[UIScreen mainScreen] scale];
     
     self.contentScaleFactor = userContentScaleFactor;
-    BE_LOG(L"Setting contentScaleFactor to %0.4f (optimal = %0.4f)", self.contentScaleFactor, nativeScale);
+    BE_LOG("Setting contentScaleFactor to %0.4f (optimal = %0.4f)", self.contentScaleFactor, nativeScale);
     
     if (self.contentScaleFactor == 1.0f || self.contentScaleFactor == 2.0f) {
         CAEAGLLayer *eaglLayer = (CAEAGLLayer *)self.layer;
@@ -223,9 +223,9 @@ BE_NAMESPACE_BEGIN
 static int          majorVersion = 0;
 static int          minorVersion = 0;
 
-static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
-static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"");
-static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
+static CVar         gl_debug("gl_debug", "1", CVar::Bool, "");
+static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Bool, "");
+static CVar         gl_finish("gl_finish", "0", CVar::Bool, "");
 
 static void GetGLVersion(int *major, int *minor) {
 	const char *verstr = (const char *)glGetString(GL_VERSION);

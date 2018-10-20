@@ -131,7 +131,7 @@ void ComSensor::CreateSensor() {
     }
 
     if (physicsDesc.shapes.Count() == 0) {
-        BE_WARNLOG(L"Entity %hs has sensor but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
+        BE_WARNLOG("Entity %s has sensor but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
     }
 
     sensor = static_cast<PhysSensor *>(physicsSystem.CreateCollidable(physicsDesc));

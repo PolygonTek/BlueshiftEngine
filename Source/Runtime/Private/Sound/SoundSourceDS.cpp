@@ -113,7 +113,7 @@ void SoundSource::UpdateStream() {
             void *lockedPtr;
             HRESULT hr = dsBuffer->Lock(bufferIndex * pcmBufferSize, pcmBufferSize, &lockedPtr, &lockedSize, nullptr, nullptr, 0);
             if (!SUCCEEDED(hr)) {
-                BE_ERRLOG(L"SoundSource::UpdateStream: failed to lock buffer\n");
+                BE_ERRLOG("SoundSource::UpdateStream: failed to lock buffer\n");
                 return;
             }
 
@@ -153,7 +153,7 @@ void SoundSource::UpdateStream() {
             void *lockedPtr;
             HRESULT hr = dsBuffer->Lock(streamWriteOffset, sound->soundBuffer->streamBufferSize, &lockedPtr, &lockedSize, nullptr, nullptr, 0);
             if (!SUCCEEDED(hr)) {
-                BE_ERRLOG(L"SoundSource::UpdateStream: failed to lock buffer\n");
+                BE_ERRLOG("SoundSource::UpdateStream: failed to lock buffer\n");
                 return;
             }
 

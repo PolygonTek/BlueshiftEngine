@@ -280,7 +280,7 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
 
     size_t numClusters = myHACD.GetNClusters();
 
-    BE_LOG(L"%i convex hulls generated\n", numClusters);
+    BE_LOG("%i convex hulls generated\n", numClusters);
 
     for (int i = 0; i < numClusters; i++) {
         size_t numPoints = myHACD.GetNPointsCH(i);

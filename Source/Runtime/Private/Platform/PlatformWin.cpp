@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "PlatformWin.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -86,12 +87,20 @@ void PlatformWin::Quit() {
     exit(0);
 }
 
-void PlatformWin::Log(const wchar_t *msg) {
-    OutputDebugString(msg);
+void PlatformWin::Log(const char *text) {
+    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
+    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+
+    OutputDebugString(wText);
 }
 
-void PlatformWin::Error(const wchar_t *msg) {
-    MessageBox(hwnd ? hwnd : GetDesktopWindow(), msg, L"Error", MB_OK);
+void PlatformWin::Error(const char *text) {
+    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
+    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+
+    MessageBox(hwnd ? hwnd : GetDesktopWindow(), wText, L"Error", MB_OK);
     
     Quit();
 }

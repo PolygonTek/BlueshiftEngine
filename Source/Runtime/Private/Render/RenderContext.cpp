@@ -564,16 +564,16 @@ void RenderContext::EndFrame() {
     if (r_showStats.GetInteger() > 0) {
         switch (r_showStats.GetInteger()) {
         case 1:
-            BE_LOG(L"draw:%i verts:%i tris:%i sdraw:%i sverts:%i stris:%i\n", 
+            BE_LOG("draw:%i verts:%i tris:%i sdraw:%i sverts:%i stris:%i\n", 
                 renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3, 
                 renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
             break;
         case 2:
-            BE_LOG(L"frame:%i rb:%i homGen:%i homQuery:%i homCull:%i\n", 
+            BE_LOG("frame:%i rb:%i homGen:%i homQuery:%i homCull:%i\n", 
                 renderCounter.frameMsec, renderCounter.backEndMsec, renderCounter.homGenMsec, renderCounter.homQueryMsec, renderCounter.homCullMsec);
             break;
         case 3:
-            BE_LOG(L"shadowmap:%i skinning:%i\n",
+            BE_LOG("shadowmap:%i skinning:%i\n",
                 renderCounter.numShadowMapDraw, renderCounter.numSkinningEntities);
             break;
         }
@@ -647,7 +647,7 @@ void RenderContext::UpdateCurrentRenderTexture() const {
     rhi.CopyTextureSubImage2D(0, 0, 0, 0, currentRenderTexture->GetWidth(), currentRenderTexture->GetHeight());
     //rhi.GenerateMipmap();
     
-    //BE_LOG(L"%f\n", PlatformTime::Seconds() - starttime);
+    //BE_LOG("%f\n", PlatformTime::Seconds() - starttime);
 }
 
 float RenderContext::QueryDepth(const Point &point) {
@@ -775,24 +775,24 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     char path[256];
 
     RenderView renderView;
-    RenderView::State renderViewDef;
-    memset(&renderViewDef, 0, sizeof(renderViewDef));
-    renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews | RenderView::Flag::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
-    renderViewDef.clearMethod = RenderView::SkyboxClear;
-    renderViewDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
-    renderViewDef.layerMask = layerMask;
-    renderViewDef.renderRect.Set(0, 0, width, height);
-    renderViewDef.origin = origin;
-    renderViewDef.axis = axis;
+    RenderView::State rvDef;
+    rvDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews | RenderView::Flag::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
+    rvDef.clearMethod = RenderView::SkyboxClear;
+    rvDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
+    rvDef.layerMask = layerMask;
+    rvDef.renderRect.Set(0, 0, width, height);
+    rvDef.origin = origin;
+    rvDef.axis = axis;
+    rvDef.orthogonal = false;
 
     Vec3 v;
     renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
-    renderViewDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
-    renderViewDef.zNear = BE1::CentiToUnit(5.0f);
+    rvDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
+    rvDef.zNear = BE1::CentiToUnit(5.0f);
 
-    RenderView::ComputeFov(fov, 1.25f, (float)width / height, &renderViewDef.fovX, &renderViewDef.fovY);
+    RenderView::ComputeFov(fov, 1.25f, (float)width / height, &rvDef.fovX, &rvDef.fovY);
 
-    renderView.Update(&renderViewDef);
+    renderView.Update(&rvDef);
 
     BeginFrame();
     renderWorld->RenderScene(&renderView);
@@ -800,22 +800,23 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     renderSystem.CmdScreenshot(0, 0, width, height, path);
     EndFrame();
 
-    BE_DLOG(L"Screenshot saved to \"%hs\"\n", path);
+    BE_DLOG("Screenshot saved to \"%s\"\n", path);
 }
 
 void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage) {
     RenderView renderView;
-    RenderView::State renderViewDef;
-    memset(&renderViewDef, 0, sizeof(renderViewDef));
-    renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::NoSubViews | RenderView::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
-    renderViewDef.clearMethod = RenderView::SkyboxClear;
-    renderViewDef.layerMask = layerMask;
-    renderViewDef.renderRect.Set(0, 0, size, size);
-    renderViewDef.fovX = 90;
-    renderViewDef.fovY = 90;
-    renderViewDef.zNear = BE1::CentiToUnit(5.0f);
-    renderViewDef.zFar = BE1::MeterToUnit(100.0f);
-    renderViewDef.origin = origin;
+    RenderView::State rvDef;
+    memset(&rvDef, 0, sizeof(rvDef));
+    rvDef.flags = RenderView::Flag::TexturedMode | RenderView::NoSubViews | RenderView::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
+    rvDef.clearMethod = RenderView::SkyboxClear;
+    rvDef.layerMask = layerMask;
+    rvDef.renderRect.Set(0, 0, size, size);
+    rvDef.fovX = 90;
+    rvDef.fovY = 90;
+    rvDef.zNear = BE1::CentiToUnit(5.0f);
+    rvDef.zFar = BE1::MeterToUnit(100.0f);
+    rvDef.origin = origin;
+    rvDef.orthogonal = false;
 
     Mat3 viewAxis[6];
     viewAxis[0] = Angles(0,   0,  90).ToMat3();
@@ -840,8 +841,8 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
     Image faceImages[6];
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        renderViewDef.axis = viewAxis[faceIndex];
-        renderView.Update(&renderViewDef);
+        rvDef.axis = viewAxis[faceIndex];
+        renderView.Update(&rvDef);
 
         BeginFrame();
 
@@ -883,8 +884,8 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
 
         targetCubeRT->Begin(0, 0);
 
-        renderViewDef.axis = viewAxis[faceIndex];
-        renderView.Update(&renderViewDef);
+        rvDef.axis = viewAxis[faceIndex];
+        renderView.Update(&rvDef);
 
         BeginFrame();
         
@@ -922,7 +923,7 @@ void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, 
     envCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
     envCubeImage.WriteDDS(path);
 
-    BE_LOG(L"Environment cubemap snapshot saved to \"%hs\"\n", path);
+    BE_LOG("Environment cubemap snapshot saved to \"%s\"\n", path);
 }
 
 void RenderContext::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin) {
@@ -941,7 +942,7 @@ void RenderContext::TakeIrradianceEnvShot(const char *filename, RenderWorld *ren
     irradianceEnvCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
     irradianceEnvCubeImage.WriteDDS(path);
 
-    BE_LOG(L"Generated diffuse irradiance cubemap to \"%hs\"\n", path);
+    BE_LOG("Generated diffuse irradiance cubemap to \"%s\"\n", path);
 }
 
 void RenderContext::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin) {
@@ -960,7 +961,7 @@ void RenderContext::TakePrefilteredEnvShot(const char *filename, RenderWorld *re
     prefilteredCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
     prefilteredCubeImage.WriteDDS(path);
 
-    BE_LOG(L"Generated specular prefiltered cubemap to \"%hs\"\n", path);
+    BE_LOG("Generated specular prefiltered cubemap to \"%s\"\n", path);
 }
 
 void RenderContext::WriteBRDFIntegrationLUT(const char *filename, int size) const {
@@ -971,7 +972,7 @@ void RenderContext::WriteBRDFIntegrationLUT(const char *filename, int size) cons
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
     integrationImage.WriteDDS(path);
 
-    BE_LOG(L"Generated GGX integration LUT to \"%hs\"\n", path);
+    BE_LOG("Generated GGX integration LUT to \"%s\"\n", path);
 }
 
 void RenderContext::GenerateIrradianceEnvCubeImageSHConvolv(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const {

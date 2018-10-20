@@ -133,8 +133,8 @@ Shader *            ShaderManager::generateHomShader;
 Shader *            ShaderManager::queryHomShader;
 
 void ShaderManager::Init() {
-    cmdSystem.AddCommand(L"listShaders", Cmd_ListShaders);
-    cmdSystem.AddCommand(L"reloadShader", Cmd_ReloadShader);
+    cmdSystem.AddCommand("listShaders", Cmd_ListShaders);
+    cmdSystem.AddCommand("reloadShader", Cmd_ReloadShader);
 
     shaderHashMap.Init(1024, 128, 128);
 
@@ -150,8 +150,8 @@ void ShaderManager::Init() {
 }
 
 void ShaderManager::Shutdown() {
-    cmdSystem.RemoveCommand(L"listShaders");
-    cmdSystem.RemoveCommand(L"reloadShader");
+    cmdSystem.RemoveCommand("listShaders");
+    cmdSystem.RemoveCommand("reloadShader");
 
     for (int i = 0; i < shaderHashMap.Count(); i++) {
         const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
@@ -237,7 +237,7 @@ void ShaderManager::LoadEngineShaders() {
         Shader *shader = AllocShader(filename);
         if (!shader->Load(filename)) {
             DestroyShader(shader);
-            BE_FATALERROR(L"Failed to create shader '%hs'", filename.c_str());
+            BE_FATALERROR("Failed to create shader '%s'", filename.c_str());
         }
 
         originalShaders[i] = shader;
@@ -397,7 +397,7 @@ void ShaderManager::DestroyUnusedShaders() {
 
 void ShaderManager::DestroyShader(Shader *shader) {
     if (shader->refCount > 1) {
-        BE_WARNLOG(L"ShaderManager::DestroyShader: shader '%hs' has %i reference count\n", shader->hashName.c_str(), shader->refCount);
+        BE_WARNLOG("ShaderManager::DestroyShader: shader '%s' has %i reference count\n", shader->hashName.c_str(), shader->refCount);
     }
 
     shaderHashMap.Remove(shader->hashName);
@@ -407,7 +407,7 @@ void ShaderManager::DestroyShader(Shader *shader) {
 
 Shader *ShaderManager::AllocShader(const char *hashName) {
     if (shaderHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs shader already allocated", hashName);
+        BE_FATALERROR("%s shader already allocated", hashName);
     }
 
     Shader *shader = new Shader;
@@ -535,27 +535,27 @@ void ShaderManager::RemoveGlobalHeader(const char *text) {
 void ShaderManager::Cmd_ListShaders(const CmdArgs &args) {
     int count = 0;
 
-    BE_LOG(L"NUM. REF. TYPE NAME\n");
+    BE_LOG("NUM. REF. TYPE NAME\n");
 
     for (int i = 0; i < shaderManager.shaderHashMap.Count(); i++) {
         const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
         Shader *shader = entry->second;
 
-        BE_LOG(L"%4d %4d %hs\n", i, shader->refCount, shader->hashName.c_str());
+        BE_LOG("%4d %4d %s\n", i, shader->refCount, shader->hashName.c_str());
 
         count++;
     }
 
-    BE_LOG(L"%i total shaders\n", count);
+    BE_LOG("%i total shaders\n", count);
 }
 
 void ShaderManager::Cmd_ReloadShader(const CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"reloadShader <filename>\n");
+        BE_LOG("reloadShader <filename>\n");
         return;
     }
 
-    if (!WStr::Icmp(args.Argv(1), L"all")) {
+    if (!Str::Icmp(args.Argv(1), "all")) {
         int count = shaderManager.shaderHashMap.Count();
 
         for (int i = 0; i < count; i++) {
@@ -566,9 +566,9 @@ void ShaderManager::Cmd_ReloadShader(const CmdArgs &args) {
             }
         }
     } else {
-        Shader *shader = shaderManager.FindShader(WStr::ToStr(args.Argv(1)));
+        Shader *shader = shaderManager.FindShader(args.Argv(1));
         if (!shader) {
-            BE_WARNLOG(L"Couldn't find shader to reload \"%ls\"\n", args.Argv(1));
+            BE_WARNLOG("Couldn't find shader to reload \"%s\"\n", args.Argv(1));
             return;
         }
 

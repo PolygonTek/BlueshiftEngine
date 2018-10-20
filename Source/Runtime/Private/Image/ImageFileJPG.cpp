@@ -134,7 +134,7 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
    */
 
   if (cinfo.output_components != 1 && cinfo.output_components != 2 && cinfo.output_components != 3 && cinfo.output_components != 4) {
-      BE_WARNLOG(L"Image::LoadJPGFromMemory: bad JPG format %hs (channels %i)\n", name, cinfo.out_color_components);
+      BE_WARNLOG("Image::LoadJPGFromMemory: bad JPG format %s (channels %i)\n", name, cinfo.out_color_components);
       jpeg_destroy_decompress(&cinfo);
       return false;
   }
@@ -285,7 +285,7 @@ bool Image::WriteJPG(const char *filename, int quality) const {
   }
     
   if ((outfile = fopen(absFilename, "wb")) == nullptr) {
-    BE_WARNLOG(L"can't open %hs\n", absFilename.c_str());
+    BE_WARNLOG("can't open %hs\n", absFilename.c_str());
     return false;
   }
   jpeg_stdio_dest(&cinfo, outfile);

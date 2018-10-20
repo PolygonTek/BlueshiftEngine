@@ -62,7 +62,7 @@ bool PhysConstraint::IsInWorld() const {
 
 void PhysConstraint::AddToWorld(PhysicsWorld *physicsWorld) {
     if (IsInWorld()) {
-        BE_WARNLOG(L"PhysConstraint::AddToWorld: already added\n");
+        BE_WARNLOG("PhysConstraint::AddToWorld: already added\n");
         return;
     }
 
@@ -73,7 +73,7 @@ void PhysConstraint::AddToWorld(PhysicsWorld *physicsWorld) {
 
 void PhysConstraint::RemoveFromWorld() {
     if (!IsInWorld()) {
-        BE_WARNLOG(L"PhysConstraint::RemoveFromWorld: already removed\n");
+        BE_WARNLOG("PhysConstraint::RemoveFromWorld: already removed\n");
         return;
     }
 

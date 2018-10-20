@@ -136,7 +136,7 @@ size_t File::ReadObject(Object &object) {
     Json::Value jsonValue;
     Json::Reader jsonReader;
     if (!jsonReader.parse(strValue.c_str(), jsonValue)) {
-        BE_WARNLOG(L"File::ReadObject: Failed to parse JSON text\n");
+        BE_WARNLOG("File::ReadObject: Failed to parse JSON text\n");
         return 0;
     }
 
@@ -303,12 +303,12 @@ int FileInZip::Tell() const {
 }
 
 int FileInZip::Seek(int64_t offset) {
-    BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
+    BE_FATALERROR("ZIP FILE FSEEK NOT YET IMPLEMENTED");
     return 0;
 }
 
 int FileInZip::SeekFromEnd(int64_t offset) {
-    BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
+    BE_FATALERROR("ZIP FILE FSEEK NOT YET IMPLEMENTED");
     return 0;
 }
 
@@ -317,7 +317,7 @@ size_t FileInZip::Read(void *buffer, size_t bytesToRead) const {
 }
 
 bool FileInZip::Write(const void *buffer, size_t len) {
-    BE_FATALERROR(L"ZIP FILE WRITE IS NOT ALLOWED");
+    BE_FATALERROR("ZIP FILE WRITE IS NOT ALLOWED");
     return false;
 }
 

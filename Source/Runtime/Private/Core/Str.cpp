@@ -232,7 +232,7 @@ Str Str::FormatBytes(int bytes) {
     return s;
 }
 
-void Str::AppendUTF8Char(uint32_t unicodeChar) {
+void Str::AppendUTF8Char(char32_t unicodeChar) {
 #if 0
     char temp[8];
     char *dest = temp;
@@ -448,7 +448,7 @@ Str &Str::AppendPath(const char *text, char pathSeparator) {
         }
     }
 
-    if (text[0] == L'/' || text[0] == L'\\') {
+    if (text[0] == '/' || text[0] == '\\') {
         text++;
     }
     
@@ -579,7 +579,7 @@ void Str::ExtractFileExtension(Str &dest) const {
 */
 
 int Str::Cmp(const char *s1, const char *s2) {
-    int	c1,  c2;
+    int c1, c2;
     
     do {
         c1 = *s1++;
@@ -595,7 +595,7 @@ int Str::Cmp(const char *s1, const char *s2) {
 }
 
 int Str::Cmpn(const char *s1, const char *s2, int n) {
-    int	c1,  c2;
+    int c1, c2;
 
     assert(n >= 0);
     
@@ -617,7 +617,7 @@ int Str::Cmpn(const char *s1, const char *s2, int n) {
 }
            
 int Str::Icmp(const char *s1, const char *s2) {
-    int	c1,  c2;
+    int c1, c2;
 
     do {
         c1 = *s1++;
@@ -647,7 +647,7 @@ int Str::Icmp(const char *s1, const char *s2) {
 }
 
 int Str::Icmpn(const char *s1, const char *s2, int n) {
-    int	c1,  c2;
+    int c1, c2;
 
     assert(n >= 0);
     
@@ -1033,29 +1033,29 @@ float Str::FuzzyScore(const char *s1, const char *s2, float fuzziness) {
 }
 
 // Safe strncpy that ensures a trailing zero
-void Str::Copynz(char *dest, const char *src, int destsize) {
+void Str::Copynz(char *dest, const char *src, int n) {
     if (!src) {
-        BE_WARNLOG(L"Str::Copynz: nullptr src\n");
+        BE_WARNLOG("Str::Copynz: nullptr src\n");
         return;
     }
 
-    if (destsize < 1) {
-        BE_WARNLOG(L"Str::Copynz: destsize < 1\n");
+    if (n < 1) {
+        BE_WARNLOG("Str::Copynz: destsize < 1\n");
         return;
     }
 
-    strncpy(dest, src, destsize-1);
-    dest[destsize-1] = 0;
+    strncpy(dest, src, n - 1);
+    dest[n - 1] = 0;
 }
 
 // never goes past bounds or leaves without a terminating 0
-void Str::Append(char *dest, int size, const char *src) {
+void Str::Append(char *dest, int n, const char *src) {
     int l1 = (int)strlen(dest);
-    if (l1 >= size) {
-        BE_ERRLOG(L"Str::Append: already overflowed\n");
+    if (l1 >= n) {
+        BE_ERRLOG("Str::Append: already overflowed\n");
     }
     
-    Str::Copynz(dest + l1, src, size - l1);
+    Str::Copynz(dest + l1, src, n - l1);
 }
 
 // returns -1 if not found otherwise the index of the char
@@ -1343,11 +1343,11 @@ int BE_CDECL Str::snPrintf(char *dest, int size, const char *fmt, ...) {
     va_end(argptr);
 
     if (len >= COUNT_OF(buffer)) {
-        BE_FATALERROR(L"Str::snPrintf: overflowed buffer\n");	
+        BE_FATALERROR("Str::snPrintf: overflowed buffer\n");
     }
 
     if (len >= size) {
-        BE_WARNLOG(L"Str::snPrintf: overflow of %i in %i\n", len, size);
+        BE_WARNLOG("Str::snPrintf: overflow of %i in %i\n", len, size);
         len = size;
     }
 
@@ -1371,24 +1371,17 @@ int BE_CDECL Str::vsnPrintf(char *dest, int size, const char *fmt, va_list argpt
 #ifdef __WIN32__
     #undef _vsnprintf
     int ret = _vsnprintf(dest, size - 1, fmt, argptr);
-    #define _vsnprintf	use_cStr_vsnPrintf
+    #define _vsnprintf use_cStr_vsnPrintf
 #else
     #undef vsnprintf
     int ret = vsnprintf(dest, size, fmt, argptr);
-    #define vsnprintf	use_cStr_vsnPrintf
+    #define vsnprintf use_cStr_vsnPrintf
 #endif
     dest[size-1] = '\0';
     if (ret < 0 || ret >= size) {
         return -1;
     }
     return ret;
-}
-
-WStr Str::ToWStr(const char *str) {
-    size_t count = mbstowcs(nullptr, str, 0); // wide character string 의 개수를 얻는다
-    wchar_t *wcstr = (wchar_t *)_alloca((count + 1) * sizeof(wchar_t)); // nullptr 문자도 포함해서 wchar 로 변환
-    mbstowcs(wcstr, str, count + 1);
-    return WStr(wcstr);
 }
 
 // Sets the value of the string using a printf interface.

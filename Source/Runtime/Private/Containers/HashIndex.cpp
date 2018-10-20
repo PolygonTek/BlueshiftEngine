@@ -14,7 +14,6 @@
 
 #include "Precompiled.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Core/Guid.h"
 #include "Math/Math.h"
 #include "Containers/HashIndex.h"
@@ -179,14 +178,6 @@ int HashIndex::GenerateHash(const char *string, bool caseSensitive) const {
         return (Str::Hash(string) & hashMask);
     } else {
         return (Str::IHash(string) & hashMask);
-    }
-}
-
-int HashIndex::GenerateHash(const wchar_t *string, bool caseSensitive) const {
-    if (caseSensitive) {
-        return (WStr::Hash(string) & hashMask);
-    } else {
-        return (WStr::IHash(string) & hashMask);
     }
 }
 

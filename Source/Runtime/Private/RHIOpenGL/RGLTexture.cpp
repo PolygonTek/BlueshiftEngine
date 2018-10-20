@@ -388,19 +388,19 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
     }
     
     if (srcCompressed && srcFormat != dstFormat) {
-        BE_WARNLOG(L"Wrong requested image format %hs -> %hs\n", Image::FormatName(srcFormat), Image::FormatName(dstFormat));
+        BE_WARNLOG("Wrong requested image format %s -> %s\n", Image::FormatName(srcFormat), Image::FormatName(dstFormat));
         return;
     }
 
     srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, useSRGB, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
 
     dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, useSRGB, nullptr, nullptr, &internalFormat);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
 
@@ -544,7 +544,7 @@ void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool useSRGB, int
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, useSRGB, nullptr, nullptr, &internalFormat);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
 
@@ -561,7 +561,7 @@ void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int wi
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
 
@@ -585,7 +585,7 @@ void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zo
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
     
@@ -609,11 +609,11 @@ void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, i
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
     
-    bool srcCompressed = Image::IsCompressed(srcFormat);	
+    bool srcCompressed = Image::IsCompressed(srcFormat);
 
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
@@ -633,7 +633,7 @@ void OpenGLRHI::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset,
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
     
@@ -657,7 +657,7 @@ void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int 
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
     
@@ -690,7 +690,7 @@ void OpenGLRHI::GetTextureImage2D(int level, Image::Format dstFormat, void *pixe
     
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, false, &format, &type, nullptr);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
     
@@ -706,7 +706,7 @@ void OpenGLRHI::GetTextureImage3D(int level, Image::Format dstFormat, void *pixe
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, false, &format, &type, nullptr);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
     
@@ -722,7 +722,7 @@ void OpenGLRHI::GetTextureImageCube(CubeMapFace face, int level, Image::Format d
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, false, &format, &type, nullptr);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
     
@@ -738,7 +738,7 @@ void OpenGLRHI::GetTextureImageRect(Image::Format dstFormat, void *pixels) {
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, false, &format, &type, nullptr);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
     

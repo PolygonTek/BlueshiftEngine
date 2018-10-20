@@ -14,7 +14,6 @@
 
 #include "Precompiled.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Platform/PlatformFile.h"
 #include "Platform/PlatformProcess.h"
 #include "File/FileMapping.h"
@@ -74,7 +73,7 @@ bool FileMapping::Open(const TCHAR *filename) {
     off_t nDelta = nStart & g_nPageMask;
     void *map = mmap(NULL, size + nDelta, PROT_READ, MAP_FILE | MAP_SHARED, hFile, nStart - nDelta);
     if (map == NULL) {
-        BE_ERRLOG(L"_FileMapping::Open: Could not map %ls to memory\n", towcs(filename));
+        BE_ERRLOG("_FileMapping::Open: Could not map %s to memory\n", filename);
         assert(0);
         close(hFile);
         hFile = -1;
@@ -85,7 +84,7 @@ bool FileMapping::Open(const TCHAR *filename) {
 #elif defined(__UNIX__)
     int fd = open(filename, O_RDONLY);
     if (fd == -1) {
-        BE_ERRLOG(L"_FileMapping::Open: Could not open %ls\n", towcs(filename));
+        BE_ERRLOG("_FileMapping::Open: Could not open %s\n", filename);
         return false;
     }
     struct stat fs;
@@ -94,33 +93,36 @@ bool FileMapping::Open(const TCHAR *filename) {
 
     data = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
     if (data == NULL) {
-        BE_ERRLOG(L"_FileMapping::Open: Could not map %ls to memory\n", towcs(filename));
+        BE_ERRLOG("_FileMapping::Open: Could not map %s to memory\n", filename);
         return false;
     }
 
     // close fd is error 
     //if (close(fd) != 0) {
-    //	BE_ERRLOG(L"_FileMapping::Open: unable to close file\n");
+    //	BE_ERRLOG("_FileMapping::Open: unable to close file\n");
     //	return false;
     //}
 
 #elif defined(__WIN32__)
     hFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) {
-        BE_ERRLOG(L"_FileMapping::Open: Could not open %ls: %ls\n", towcs(filename), PlatformProcess::GetLastErrorText().c_str());
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_ERRLOG("_FileMapping::Open: Could not open %s: %s\n", filename, lastErrorText.c_str());
         return false;
     }
     size = GetFileSize(hFile, 0);
 
     hMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (!hMapping) {
-        BE_ERRLOG(L"_FileMapping::Open: Create_FileMapping %ls: %ls\n", towcs(filename), PlatformProcess::GetLastErrorText().c_str());
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_ERRLOG("_FileMapping::Open: Create_FileMapping %ls: %ls\n", filename, lastErrorText.c_str());
         return false;
     }
 
     data = (void *)MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, 0);
     if (!data) {
-        BE_ERRLOG(L"_FileMapping::Open: Could not map %ls to memory: %ls\n", towcs(filename), PlatformProcess::GetLastErrorText().c_str());
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_ERRLOG("_FileMapping::Open: Could not map %ls to memory: %ls\n", filename, lastErrorText.c_str());
         CloseHandle(hMapping);
         CloseHandle(hFile);
         hMapping = NULL;
@@ -157,7 +159,7 @@ void FileMapping::Close() {
 #if defined(__UNIX__)
     int retval = munmap((void *) data, size);
     if (retval != 0) {
-        BE_ERRLOG(L"_FileMapping::Close: unable to unmap memory\n");
+        BE_ERRLOG("_FileMapping::Close: unable to unmap memory\n");
     }
     close(hFile);
 #elif defined(__WIN32__)

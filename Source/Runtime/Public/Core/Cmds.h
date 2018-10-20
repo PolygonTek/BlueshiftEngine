@@ -30,8 +30,8 @@ BE_NAMESPACE_BEGIN
 typedef void (*cmdFunction_t)(const CmdArgs &args);
 
 struct Cmd {
-    const wchar_t *         name;
-    const wchar_t *         description;
+    const char *            name;
+    const char *            description;
     cmdFunction_t           function;
     Cmd *                   next;
 };
@@ -51,27 +51,27 @@ public:
     void                    Init();
     void                    Shutdown();
 
-    const wchar_t *         CompleteCommand(const wchar_t *partial);
+    const char *            CompleteCommand(const char *partial);
 
     Cmd *                   GetList() const { return cmdList; }
 
-    Cmd *                   Find(const wchar_t *name);
+    Cmd *                   Find(const char *name);
 
-    void                    AddCommand(const wchar_t *name, cmdFunction_t function, const wchar_t *description = nullptr);
-    void                    RemoveCommand(const wchar_t *name);
+    void                    AddCommand(const char *name, cmdFunction_t function, const char *description = nullptr);
+    void                    RemoveCommand(const char *name);
 
-    void                    BufferCommandText(Execution exec, const wchar_t *text);
+    void                    BufferCommandText(Execution exec, const char *text);
 
                             // buffer 에 쌓여있는 command 실행
     void                    ExecuteCommandBuffer();
 
 private:
-    wchar_t                 commandBuffer[MaxBufferLength]; ///< space for commands and script files
-    unsigned int            commandBufferLen;
+    char                    commandBuffer[MaxBufferLength];     ///< space for commands and script files
+    unsigned int            commandBufferSize;
     unsigned int            commandBufferWait;
     Cmd *                   cmdList;
 
-    void                    ExecuteString(const wchar_t *text);
+    void                    ExecuteString(const char *text);
 
     static void             Cmd_ListCmds(const CmdArgs &args);
     static void             Cmd_Exec(const CmdArgs &args);

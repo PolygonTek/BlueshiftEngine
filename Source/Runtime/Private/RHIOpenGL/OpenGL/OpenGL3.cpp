@@ -75,7 +75,7 @@ void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *in
             break;
     }
     
-    if (severityLevel > cvarSystem.GetCVarInteger(L"gl_debugLevel")) {
+    if (severityLevel > cvarSystem.GetCVarInteger("gl_debugLevel")) {
         return;
     }
     
@@ -135,7 +135,7 @@ void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *in
             break;
     }
     
-    BE_WARNLOG(L"GL Debug: %hs %hs - %hs\n", sourceStr, typeStr, message);
+    BE_WARNLOG("GL Debug: %s %s - %s\n", sourceStr, typeStr, message);
 }
 
 void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format format) {

@@ -61,13 +61,13 @@ bool Skin::Create(const char *text) {
     lexer.Load(text, Str::Length(text), hashName.c_str());
 
     if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
-        BE_WARNLOG(L"expecting '{', found '%hs' instead in skin '%hs'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("expecting '{', found '%s' instead in skin '%s'\n", token.c_str(), hashName.c_str());
         return false;
     }
 
     while (lexer.ReadToken(&token)) {
         if (!token[0]) {
-            BE_WARNLOG(L"no concluding '}' in skin %hs\n", hashName.c_str());
+            BE_WARNLOG("no concluding '}' in skin %s\n", hashName.c_str());
             return false;
         }
         else if (token[0] == '}') {
@@ -76,7 +76,7 @@ bool Skin::Create(const char *text) {
             if (lexer.ReadToken(&token, false)) {
                 associatedMeshes.AddUnique(token);
             } else {
-                BE_WARNLOG(L"missing parameter mesh keyword in skin '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing parameter mesh keyword in skin '%s'\n", hashName.c_str());
             }
         } else {
             lexer.ReadToken(&token2, false);
@@ -128,7 +128,7 @@ bool Skin::Reload() {
 void Skin::Write(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Skin::Write: file open error\n");
+        BE_WARNLOG("Skin::Write: file open error\n");
         return;
     }
     /*

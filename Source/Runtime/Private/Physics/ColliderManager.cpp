@@ -71,7 +71,7 @@ Collider *ColliderManager::AllocUnnamedCollider() {
 
 Collider *ColliderManager::AllocCollider(const char *name) {
     if (colliderHashMap.Get(name)) {
-        BE_FATALERROR(L"%hs collider already allocated", name);
+        BE_FATALERROR("%s collider already allocated", name);
     }
     
     Collider *collider = new Collider;
@@ -84,7 +84,7 @@ Collider *ColliderManager::AllocCollider(const char *name) {
 
 void ColliderManager::DestroyCollider(Collider *collider) {
     if (collider->refCount > 1) {
-        BE_WARNLOG(L"ColliderManager::DestroyCollider: collider '%hs' has %i reference count\n", collider->name.c_str(), collider->refCount);
+        BE_WARNLOG("ColliderManager::DestroyCollider: collider '%s' has %i reference count\n", collider->name.c_str(), collider->refCount);
     }
 
     if (collider->name[0]) {
@@ -153,7 +153,7 @@ Collider *ColliderManager::GetCollider(const char *name, const Vec3 &scale, bool
     collider = AllocCollider(MangleName(name, scale, convexHull));
     if (!collider->Load(name, convexHull, scale)) {
         DestroyCollider(collider);
-        BE_WARNLOG(L"Couldn't load collider \"%hs\"\n", name);
+        BE_WARNLOG("Couldn't load collider \"%s\"\n", name);
         return nullptr;
     }
 

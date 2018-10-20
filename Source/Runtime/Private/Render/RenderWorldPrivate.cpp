@@ -411,16 +411,19 @@ void RenderWorld::AddSkyBoxMeshes(VisibleView *visView) {
     }
 
     // Skybox object parameters
-    RenderObject::State renderObjectDef;
-    memset(&renderObjectDef, 0, sizeof(renderObjectDef));
-    renderObjectDef.origin = visView->def->state.origin;
-    renderObjectDef.scale = Vec3(visView->def->zNear * 4);
-    renderObjectDef.axis = Mat3::identity;
-    renderObjectDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    RenderObject::State roDef;
+    roDef.flags = RenderObject::StaticFlag | RenderObject::SkipSelectionFlag;
+    roDef.origin = visView->def->state.origin;
+    roDef.scale = Vec3(visView->def->zNear * 4);
+    roDef.materialParms[RenderObject::RedParm] = 1.0f;
+    roDef.materialParms[RenderObject::GreenParm] = 1.0f;
+    roDef.materialParms[RenderObject::BlueParm] = 1.0f;
+    roDef.materialParms[RenderObject::AlphaParm] = 1.0f;
+    roDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
     static RenderObject renderObject;
     new (&renderObject) RenderObject();
-    renderObject.Update(&renderObjectDef);
+    renderObject.Update(&roDef);
 
     // Add skybox object
     VisibleObject *visObject = RegisterVisibleObject(visView, &renderObject);
@@ -803,7 +806,7 @@ void RenderWorld::RenderCamera(VisibleView *visView) {
             }
 
             if (drawSurf->material->GetSort() == BadSort) {
-                BE_ERRLOG(L"Material '%hs' with sort == BadSort\n", drawSurf->material->GetName());
+                BE_ERRLOG("Material '%s' with sort == BadSort\n", drawSurf->material->GetName());
             }
 
             RenderSubCamera(drawSurf->entity, drawSurf, drawSurf->material);
@@ -834,7 +837,7 @@ void RenderWorld::RenderSubCamera(VisibleObject *visObject, const DrawSurf *draw
 
 void RenderWorld::AddDrawSurf(VisibleView *visView, VisibleLight *visLight, VisibleObject *visObject, const Material *material, SubMesh *subMesh, int flags) {
     if (visView->numDrawSurfs + 1 > visView->maxDrawSurfs) {
-        BE_WARNLOG(L"RenderWorld::AddDrawSurf: not enough renderable surfaces\n");
+        BE_WARNLOG("RenderWorld::AddDrawSurf: not enough renderable surfaces\n");
         return;
     }
 
@@ -927,7 +930,7 @@ void RenderWorld::AddDrawSurf(VisibleView *visView, VisibleLight *visLight, Visi
 
 void RenderWorld::AddDrawSurfFromAmbient(VisibleView *visView, const VisibleLight *visLight, bool isShadowCaster, const DrawSurf *ambientDrawSurf) {
     if (visView->numDrawSurfs + 1 > visView->maxDrawSurfs) {
-        BE_WARNLOG(L"RenderWorld::AddDrawSurfFromAmbient: not enough renderable surfaces\n");
+        BE_WARNLOG("RenderWorld::AddDrawSurfFromAmbient: not enough renderable surfaces\n");
         return;
     }
 

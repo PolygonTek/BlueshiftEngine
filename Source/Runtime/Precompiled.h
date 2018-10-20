@@ -448,7 +448,7 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 
 //----------------------------------------------------------------------------------------------
 
-typedef void (*streamOutFunc_t)(int level, const wchar_t *msg);
+typedef void (*streamOutFunc_t)(int level, const char *msg);
 
 BE_NAMESPACE_BEGIN
 
@@ -603,8 +603,8 @@ BE_FORCE_INLINE constexpr T UnitToKm(T x) { return UnitToMeter(x) * 0.001f; }
 template <typename T>
 BE_FORCE_INLINE constexpr T KmToUnit(T x) { return MeterToUnit(x * 1000.0f); }
 
-void BE_CDECL BE_API Log(int logLevel, const wchar_t *msg, ...);
-void BE_CDECL BE_API Error(int errLevel, const wchar_t *msg, ...);
+void BE_CDECL BE_API Log(int logLevel, const char *msg, ...);
+void BE_CDECL BE_API Error(int errLevel, const char *msg, ...);
 void BE_CDECL BE_API Assert(bool expr);
 
 #define BE_LOG(...) do { \

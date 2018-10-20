@@ -45,7 +45,6 @@ void ComRenderable::RegisterProperties() {
 
 ComRenderable::ComRenderable() {
     renderObjectHandle = -1;
-    memset(&renderObjectDef, 0, sizeof(renderObjectDef));
     staticBatchIndex = -1;
     renderWorld = nullptr;
 }

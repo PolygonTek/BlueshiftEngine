@@ -263,17 +263,17 @@ void KeyCmdSystem::Init() {
         keyList[i].count = 0;
     }
 
-    cmdSystem.AddCommand(L"listBinds", Cmd_ListBinds);
-    cmdSystem.AddCommand(L"bind", Cmd_Bind);
-    cmdSystem.AddCommand(L"unbind", Cmd_Unbind);
-    cmdSystem.AddCommand(L"unbindall", Cmd_UnbindAll);
+    cmdSystem.AddCommand("listBinds", Cmd_ListBinds);
+    cmdSystem.AddCommand("bind", Cmd_Bind);
+    cmdSystem.AddCommand("unbind", Cmd_Unbind);
+    cmdSystem.AddCommand("unbindall", Cmd_UnbindAll);
 }
 
 void KeyCmdSystem::Shutdown() {
-    cmdSystem.RemoveCommand(L"listBinds");
-    cmdSystem.RemoveCommand(L"bind");
-    cmdSystem.RemoveCommand(L"unbind");
-    cmdSystem.RemoveCommand(L"unbindall");
+    cmdSystem.RemoveCommand("listBinds");
+    cmdSystem.RemoveCommand("bind");
+    cmdSystem.RemoveCommand("unbind");
+    cmdSystem.RemoveCommand("unbindall");
 
     for (int i = 0; i < COUNT_OF(keyList); i++) {
         if (keyList[i].binding) {
@@ -294,15 +294,15 @@ void KeyCmdSystem::ClearStates() {
     }
 }
 
-const wchar_t *KeyCmdSystem::GetBinding(KeyCode::Enum keynum) const {
+const char *KeyCmdSystem::GetBinding(KeyCode::Enum keynum) const {
     if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
-        return L"";
+        return "";
     }
 
     return keyList[(int)keynum].binding;
 }
 
-void KeyCmdSystem::SetBinding(KeyCode::Enum keynum, const wchar_t *cmd) {
+void KeyCmdSystem::SetBinding(KeyCode::Enum keynum, const char *cmd) {
     if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
         return;
     }
@@ -317,7 +317,7 @@ void KeyCmdSystem::SetBinding(KeyCode::Enum keynum, const wchar_t *cmd) {
         return;
     }
     
-    keyList[(int)keynum].binding = Mem_AllocWideString(cmd);
+    keyList[(int)keynum].binding = Mem_AllocString(cmd);
 }
 
 void KeyCmdSystem::WriteBindings(File *fp) const {
@@ -351,8 +351,8 @@ bool KeyCmdSystem::IsPressedAnyKey() const {
 }
 
 void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
-    wchar_t cmd[1024];
-    wchar_t *kb;
+    char cmd[1024];
+    char *kb;
 
     if (keynum == KeyCode::None || keynum >= KeyCode::LastKey) {
         return;
@@ -373,8 +373,8 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
             return;
         }
 
-        if (kb[0] == L'+') {
-            WStr::snPrintf(cmd, COUNT_OF(cmd), L"-%ls\n", kb + 1);
+        if (kb[0] == '+') {
+            Str::snPrintf(cmd, COUNT_OF(cmd), "-%s\n", kb + 1);
             cmdSystem.BufferCommandText(CmdSystem::Append, cmd);
         }
         return;
@@ -385,14 +385,14 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
     }
         
     if (keynum >= KeyCode::Joy1 && !key->binding) { // K_JOY1 이상은 키보드외 입력장치의 키 이벤트 신호
-        //BE_LOG(L"%s is unbound.\n", KeyCmdSystem::KeynumToString(keynum));
+        //BE_LOG("%s is unbound.\n", KeyCmdSystem::KeynumToString(keynum));
     }
     
     kb = key->binding;
     if (kb && kb[0]) {
         cmdSystem.BufferCommandText(CmdSystem::Append, kb);
-        cmdSystem.BufferCommandText(CmdSystem::Append, L"\n");
-    }	
+        cmdSystem.BufferCommandText(CmdSystem::Append, "\n");
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -401,7 +401,7 @@ void KeyCmdSystem::Cmd_ListBinds(const CmdArgs &args) {
     int count = 0;
     for (int i = 0; i < 256; i++) {
         if (keyCmdSystem.keyList[i].binding) {
-            BE_LOG(L"%hs \"%ls\"\n", KeyCmdSystem::KeynumToString((KeyCode::Enum)i), keyCmdSystem.keyList[i].binding);
+            BE_LOG("%s \"%s\"\n", KeyCmdSystem::KeynumToString((KeyCode::Enum)i), keyCmdSystem.keyList[i].binding);
             count++;
         }
     }
@@ -412,9 +412,9 @@ void KeyCmdSystem::Cmd_Bind(const CmdArgs &args) {
     KeyCode::Enum keynum;
 
     if (argc >= 2) {
-        keynum = KeyCmdSystem::StringToKeynum(WStr::ToStr(args.Argv(1)).c_str());
+        keynum = KeyCmdSystem::StringToKeynum(args.Argv(1));
         if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
-            BE_WARNLOG(L"\"%ls\" isn't a valid key\n", args.Argv(1));
+            BE_WARNLOG("\"%s\" isn't a valid key\n", args.Argv(1));
             return;
         }
     }
@@ -423,23 +423,23 @@ void KeyCmdSystem::Cmd_Bind(const CmdArgs &args) {
         keyCmdSystem.SetBinding(keynum, args.Argv(2));
     } else if (argc == 2) {
         if (keyCmdSystem.keyList[(int)keynum].binding)
-            BE_LOG(L"\"%ls\" = \"%ls\"\n", args.Argv(1), keyCmdSystem.keyList[(int)keynum].binding);
+            BE_LOG("\"%s\" = \"%s\"\n", args.Argv(1), keyCmdSystem.keyList[(int)keynum].binding);
         else
-            BE_LOG(L"\"%ls\" is not bound\n", args.Argv(1));
+            BE_LOG("\"%s\" is not bound\n", args.Argv(1));
     } else {
-        BE_LOG(L"bind <key> [command] : attach a command to a key\n");
+        BE_LOG("bind <key> [command] : attach a command to a key\n");
     }
 }
 
 void KeyCmdSystem::Cmd_Unbind(const CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"unbind <key> : remove commands from a key\n");
+        BE_LOG("unbind <key> : remove commands from a key\n");
         return;
     }
     
-    KeyCode::Enum keynum = KeyCmdSystem::StringToKeynum(WStr::ToStr(args.Argv(1)).c_str());
+    KeyCode::Enum keynum = KeyCmdSystem::StringToKeynum(args.Argv(1));
     if (keynum < KeyCode::None || keynum >= KeyCode::LastKey) {
-        BE_WARNLOG(L"\"%ls\" isn't a valid key\n", args.Argv(1));
+        BE_WARNLOG("\"%s\" isn't a valid key\n", args.Argv(1));
         return;
     }
 

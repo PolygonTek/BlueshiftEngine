@@ -146,7 +146,7 @@ void RB_SetupLight(VisibleLight *visLight) {
         visLight->lightColor = Color4(lightPass->constantColor);
     }
 
-    if (cvarSystem.GetCVarBool(L"gl_sRGB")) {
+    if (cvarSystem.GetCVarBool("gl_sRGB")) {
         // Linearize visLight color
         visLight->lightColor.ToColor3() = visLight->lightColor.ToColor3().SRGBtoLinear();
     }
@@ -252,7 +252,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) 
                     light->occlusionVisible = true;
                     numVisLights++;
                 } else {
-                    //BE_LOG(L"%i\n", lightQuery->resultSamples);
+                    //BE_LOG("%i\n", lightQuery->resultSamples);
                 }
 
                 numQueryWait++;
@@ -316,7 +316,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) 
     }
 
     if (r_showLights.GetInteger() > 0) {
-        BE_LOG(L"lights: %i/%i (visible/total), queries: %i/%i (result/wait)\n", numVisLights, numLights, numQueryResult, numQueryWait);
+        BE_LOG("lights: %i/%i (visible/total), queries: %i/%i (result/wait)\n", numVisLights, numLights, numQueryResult, numQueryWait);
     }*/
 }
 
@@ -511,7 +511,7 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
             occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(surf->subMesh->GetAABB() * space->def->state.scale, space->def->state.origin, space->def->state.axis);
         }
         
-        //BE_LOG(L"%.2f %.2f %.2f %.2f\n", nearPlane.a, nearPlane.b, nearPlane.c, nearPlane.d);
+        //BE_LOG("%.2f %.2f %.2f %.2f\n", nearPlane.a, nearPlane.b, nearPlane.c, nearPlane.d);
         if (occludeeAABB[numAmbientOccludees].PlaneSide(nearPlane) != Plane::Side::Back) {
             continue;
         }
@@ -737,7 +737,7 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     captureRect.y = backEnd.ctx->GetDeviceHeight() - captureRect.Y2();
 
     if (captureRect.X2() > backEnd.ctx->GetDeviceWidth() || captureRect.Y2() > backEnd.ctx->GetDeviceHeight()) {
-        BE_WARNLOG(L"larger than screen size: %i, %i, %i, %i\n", cmd->x, cmd->y, cmd->width, cmd->height);
+        BE_WARNLOG("larger than screen size: %i, %i, %i, %i\n", cmd->x, cmd->y, cmd->width, cmd->height);
     }
     
     Image screenImage;

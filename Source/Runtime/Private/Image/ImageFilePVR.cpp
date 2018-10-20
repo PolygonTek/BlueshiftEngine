@@ -28,7 +28,7 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
     
     PVR_Texture_Header *header = (PVR_Texture_Header *)ptr;
     if (header->dwPVR != PVRTEX_IDENTIFIER) {
-        BE_WARNLOG(L"bad PVR identifier %hs\n", name);
+        BE_WARNLOG("bad PVR identifier %s\n", name);
         return false;
     }
     
@@ -73,7 +73,7 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
             this->format = RGBA_PVRTC_4BPPV1;
             break;
         default:
-            BE_WARNLOG(L"invalid PVR pixel format %i in %hs\n", pixelType, name);
+            BE_WARNLOG("invalid PVR pixel format %i in %s\n", pixelType, name);
             return false;
     }
     
@@ -154,7 +154,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
             this->format = RGBE_9_9_9_5;
             break;
         default:
-            BE_WARNLOG(L"Image::LoadPVR3FromMemory: Unsupported pixel format %hs\n", name);
+            BE_WARNLOG("Image::LoadPVR3FromMemory: Unsupported pixel format %s\n", name);
             break;
         }
     } else {
@@ -280,7 +280,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
             this->format = A_32F;
             break;
         default:
-            BE_WARNLOG(L"Image::LoadPVR3FromMemory: Unsupported pixel format %hs\n", name);
+            BE_WARNLOG("Image::LoadPVR3FromMemory: Unsupported pixel format %s\n", name);
             break;
         }
     }
@@ -322,7 +322,7 @@ bool Image::LoadPVRFromMemory(const char *name, const byte *data, size_t size) {
 bool Image::WritePVR(const char *filename) const {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Image::WritePVR: file open error\n");
+        BE_WARNLOG("Image::WritePVR: file open error\n");
         return false;
     }
 
@@ -594,7 +594,7 @@ bool Image::WritePVR(const char *filename) const {
         break;
     default:
         fileSystem.CloseFile(fp);
-        BE_WARNLOG(L"Image::WritePVR: invalid format '%hs' for PVR\n", Image::FormatName(format));
+        BE_WARNLOG("Image::WritePVR: invalid format '%s' for PVR\n", Image::FormatName(format));
         return false;
     }
 

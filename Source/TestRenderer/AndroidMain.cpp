@@ -34,22 +34,22 @@ static ASensorEventQueue *  sensorEventQueue = nullptr;
 static BE1::RHI::Handle     mainContext = BE1::RHI::NullContext;
 static BE1::RHI::Handle     mainRenderTarget = BE1::RHI::NullRenderTarget;
 
-static void SystemLog(int logLevel, const wchar_t *msg) {
+static void SystemLog(int logLevel, const char *msg) {
     if (logLevel == BE1::DevLog) {
-        __android_log_print(ANDROID_LOG_VERBOSE, "TestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_VERBOSE, "TestRenderer", "%s", msg);
     } else if (logLevel == BE1::WarningLog) {
-        __android_log_print(ANDROID_LOG_WARN, "TestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_WARN, "TestRenderer", "%s", msg);
     } else if (logLevel == BE1::ErrorLog) {
-        __android_log_print(ANDROID_LOG_ERROR, "TestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_ERROR, "TestRenderer", "%s", msg);
     } else {
-        __android_log_print(ANDROID_LOG_INFO, "TestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_INFO, "TestRenderer", "%s", msg);
     }
 }
 
-static void SystemError(int errLevel, const wchar_t *msg) {
+static void SystemError(int errLevel, const char *msg) {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
-    jstring javaMsg = BE1::WStr(msg).ToJavaString(env);
+    jstring javaMsg = BE1::Str(msg).ToJavaString(env);
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, BE1::AndroidJNI::javaMethod_showAlert, javaMsg);
 
     env->DeleteLocalRef(javaMsg);

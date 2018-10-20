@@ -32,17 +32,17 @@ BE_NAMESPACE_BEGIN
 // MobDebug in ZeroBrane Studio https://github.com/pkulchenko/MobDebug
 // Set lua_debuggeeController to "mobdebug_controller"
 
-static CVAR(lua_debug, L"0", CVar::Bool | CVar::Archive, L"Enable Lua debugging");
-static CVAR(lua_debuggerServer, L"localhost", CVar::Archive, L"Lua debugger server address for remote debugging");
-static CVAR(lua_debuggeeController, L"mobdebug_controller", 0, L"Lua debuggee controller script name");
+static CVAR(lua_debug, "0", CVar::Bool | CVar::Archive, "Enable Lua debugging");
+static CVAR(lua_debuggerServer, "localhost", CVar::Archive, "Lua debugger server address for remote debugging");
+static CVAR(lua_debuggeeController, "mobdebug_controller", 0, "Lua debuggee controller script name");
 
 static int engine_print(lua_State *L) {
     int nargs = lua_gettop(L);
     for (int i = 1; i <= nargs; ++i) {
         const char *s = lua_tostring(L, i);
-        BE_LOG(L"%hs", s);
+        BE_LOG("%s", s);
     }
-    BE_LOG(L"\n");
+    BE_LOG("\n");
     return 0;
 }
 
@@ -58,7 +58,7 @@ void LuaVM::Init() {
 
     state = new LuaCpp::State(true);
 
-    //BE_LOG(L"Lua version %.1f\n", state->Version());
+    //BE_LOG("Lua version %.1f\n", state->Version());
 
     // Redirect global print function
     state->RegisterLib(printlib, nullptr);
@@ -84,7 +84,7 @@ void LuaVM::Init() {
             statusStr = "LUA_ERRERR";
             break;
         }
-        BE_ERRLOG(L"%hs - %hs\n", statusStr, msg.c_str());
+        BE_ERRLOG("%s - %s\n", statusStr, msg.c_str());
     });
 
     state->RegisterSearcher([this](const std::string &name) {
@@ -101,7 +101,7 @@ void LuaVM::Init() {
         }
 
         if (!state->RunBuffer(name, data, size, name.c_str())) {
-            BE_ERRLOG(L"Failed to run %hs\n", filename.c_str());
+            BE_ERRLOG("Failed to run %s\n", filename.c_str());
         }
 
         fileSystem.FreeFile(data);
@@ -161,7 +161,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 
     state->RegisterModule("blueshift", [this](LuaCpp::Module &module) {
         module["log"].SetFunc([](const std::string &msg) {
-            BE_LOG(L"%hs\n", msg.c_str());
+            BE_LOG("%s\n", msg.c_str());
         });
         module["unit_to_centi"].SetFunc(static_cast<float(*)(float)>(&UnitToCenti));
         module["unit_to_meter"].SetFunc(static_cast<float(*)(float)>(&UnitToMeter));

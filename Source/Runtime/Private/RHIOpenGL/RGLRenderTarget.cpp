@@ -26,43 +26,43 @@ static bool CheckFBOStatus() {
     
     switch (status) {
     case GL_FRAMEBUFFER_UNSUPPORTED:
-        BE_WARNLOG(L"FBO format unsupported\n");
+        BE_WARNLOG("FBO format unsupported\n");
         return false;
     case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-        BE_WARNLOG(L"FBO missing an image attachment\n");
+        BE_WARNLOG("FBO missing an image attachment\n");
         return false;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-        BE_WARNLOG(L"FBO has one or several incomplete image attachments\n");
+        BE_WARNLOG("FBO has one or several incomplete image attachments\n");
         return false;
 #ifdef GL_EXT_framebuffer_object
     case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-        BE_WARNLOG(L"FBO has one or several image attachments with different dimensions\n");
+        BE_WARNLOG("FBO has one or several image attachments with different dimensions\n");
         return false;
     case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-        BE_WARNLOG(L"FBO has one or several image attachments with different internal formats\n");
+        BE_WARNLOG("FBO has one or several image attachments with different internal formats\n");
         return false;
 #endif
 #ifdef GL_VERSION_3_0
     case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-        BE_WARNLOG(L"FBO has invalid draw buffer\n");
+        BE_WARNLOG("FBO has invalid draw buffer\n");
         return false;
     case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-        BE_WARNLOG(L"FBO has invalid read buffer\n");
+        BE_WARNLOG("FBO has invalid read buffer\n");
         return false;
 #endif
 #ifdef GL_VERSION_3_2
     case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
-        BE_WARNLOG(L"FBO missing layer target\n");
+        BE_WARNLOG("FBO missing layer target\n");
         return false;
 #endif
 #ifdef GL_EXT_geometry_shader4
     case GL_FRAMEBUFFER_INCOMPLETE_LAYER_COUNT_EXT:
-        BE_WARNLOG(L"FBO incomplete layer count\n");
+        BE_WARNLOG("FBO incomplete layer count\n");
         return false;
 #endif
     }
 
-    BE_WARNLOG(L"FBO unknown status %i\n", status);
+    BE_WARNLOG("FBO unknown status %i\n", status);
     return false;
 }
 
@@ -218,13 +218,13 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
 
 void OpenGLRHI::DestroyRenderTarget(Handle renderTargetHandle) {
     if (renderTargetHandle == NullRenderTarget) {
-        BE_WARNLOG(L"OpenGLRHI::DestroyRenderTarget: invalid render target\n");
+        BE_WARNLOG("OpenGLRHI::DestroyRenderTarget: invalid render target\n");
         return;
     }
     
     if (currentContext->state->renderTargetHandleStackDepth > 0 && 
         currentContext->state->renderTargetHandleStack[currentContext->state->renderTargetHandleStackDepth - 1] == renderTargetHandle) {
-        BE_WARNLOG(L"OpenGLRHI::DestroyRenderTarget: render target is using\n");
+        BE_WARNLOG("OpenGLRHI::DestroyRenderTarget: render target is using\n");
         return;
     }
 
@@ -245,7 +245,7 @@ void OpenGLRHI::DestroyRenderTarget(Handle renderTargetHandle) {
 
 void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int sliceIndex, unsigned int mrtBitMask) {
     if (currentContext->state->renderTargetHandleStackDepth > 0 && currentContext->state->renderTargetHandleStack[currentContext->state->renderTargetHandleStackDepth - 1] == renderTargetHandle) {
-        BE_WARNLOG(L"OpenGLRHI::BeginRenderTarget: same render target\n");
+        BE_WARNLOG("OpenGLRHI::BeginRenderTarget: same render target\n");
     }
 
     const GLRenderTarget *renderTarget = renderTargetList[renderTargetHandle];
@@ -308,7 +308,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
 
 void OpenGLRHI::EndRenderTarget() {
     if (currentContext->state->renderTargetHandleStackDepth == 0) {
-        BE_WARNLOG(L"unmatched BeginRenderTarget() / EndRenderTarget()\n");
+        BE_WARNLOG("unmatched BeginRenderTarget() / EndRenderTarget()\n");
         return;
     }
     
@@ -343,7 +343,7 @@ void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRe
 
     assert(glmask);
     if (!glmask) {
-        BE_WARNLOG(L"OpenGLRHI::BlitRenderTarget: NULL mask\n");
+        BE_WARNLOG("OpenGLRHI::BlitRenderTarget: NULL mask\n");
         return;
     }
 

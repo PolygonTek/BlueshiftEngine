@@ -66,7 +66,7 @@ public:
     Color4              GetColor() const { return currentColor; }
     Color4              GetTextColor() const { return currentTextColor; }
     Vec2                GetTextScale() const { return currentTextScale; }
-    Font *              GetFont() const { return currentFont; }	
+    Font *              GetFont() const { return currentFont; }
 
     void                SetColor(const Color4 &rgba);
     void                SetTextColor(const Color4 &rgba);
@@ -76,11 +76,11 @@ public:
     void                DrawPic(float x, float y, float w, float h, const Material *material);
     void                DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
     void                DrawBar(float x, float y, float w, float h, const Color4 &rgba);
-    void                DrawString(int x, int y, const wchar_t *str, int len = -1, int flags = 0);
-    void                DrawText(const Rect &rect, int xmargin, int ymargin, const wchar_t *str, int len = -1, int flags = 0);
+    void                DrawString(int x, int y, const Str &str, int size = -1, int flags = 0);
+    void                DrawStringInRect(const Rect &rect, int marginX, int marginY, const Str &str, int size = -1, int flags = 0);
 
     void                KeyEvent(KeyCode::Enum key, bool down);
-    void                CharEvent(wchar_t key);
+    void                CharEvent(char32_t key);
     void                CompositionEvent(int key);
     void                MouseMoveEvent(int x, int y, int time);
     void                MouseDeltaEvent(int dx, int dy, int time);
@@ -93,10 +93,9 @@ public:
 private:
     void                InitDefaultGuids();
     void                ConsoleKeyEvent(KeyCode::Enum key);
-    void                ConsoleCharEvent(wchar_t key);
-    void                ConsoleCompositionEvent(wchar_t key);
+    void                ConsoleCharEvent(char32_t unicodeChar);
+    void                ConsoleCompositionEvent(char32_t ch);
     void                UpdateConsole();
-    void                UpdateScreen();
 
     void                DrawConsoleScreen();
     void                DrawConsoleNotify();
@@ -122,10 +121,10 @@ private:
     int                 consoleUpScroll;
     Material *          consoleMaterial;
 
-    wchar_t             commandLines[CMDLINE_HISTORY][CMDLINE_SIZE];
-    int                 editLine;
-    int                 historyLine;
-    int                 linePos;
+    char                cmdLines[CMDLINE_HISTORY][CMDLINE_SIZE];
+    int                 editLine;       ///< Current edit line index
+    int                 historyLine;    ///< Current history line index
+    int                 lineOffset;     ///< Current command line position in byte offset
 
     int                 keyFocus;
     bool                composition;

@@ -54,13 +54,13 @@ void RenderWorld::ClearScene() {
 
 const RenderObject *RenderWorld::GetRenderObject(int handle) const {
     if (handle < 0 || handle >= renderObjects.Count()) {
-        BE_WARNLOG(L"RenderWorld::GetRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
+        BE_WARNLOG("RenderWorld::GetRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
         return nullptr;
     }
 
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
-        BE_WARNLOG(L"RenderWorld::GetRenderObject: handle %i is nullptr\n", handle);
+        BE_WARNLOG("RenderWorld::GetRenderObject: handle %i is nullptr\n", handle);
         return nullptr;
     }
 
@@ -163,13 +163,13 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *obje
 
 void RenderWorld::RemoveRenderObject(int handle) {
     if (handle < 0 || handle >= renderObjects.Count()) {
-        BE_WARNLOG(L"RenderWorld::RemoveRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
+        BE_WARNLOG("RenderWorld::RemoveRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
         return;
     }
 
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
-        BE_WARNLOG(L"RenderWorld::RemoveRenderObject: handle %i is nullptr\n", handle);
+        BE_WARNLOG("RenderWorld::RemoveRenderObject: handle %i is nullptr\n", handle);
         return;
     }
 
@@ -184,13 +184,13 @@ void RenderWorld::RemoveRenderObject(int handle) {
 
 const RenderLight *RenderWorld::GetRenderLight(int handle) const {
     if (handle < 0 || handle >= renderLights.Count()) {
-        BE_WARNLOG(L"RenderWorld::GetRenderLight: handle %i > %i\n", handle, renderLights.Count() - 1);
+        BE_WARNLOG("RenderWorld::GetRenderLight: handle %i > %i\n", handle, renderLights.Count() - 1);
         return nullptr;
     }
 
     RenderLight *renderLight = renderLights[handle];
     if (!renderLight) {
-        BE_WARNLOG(L"RenderWorld::GetRenderLight: handle %i is nullptr\n", handle);
+        BE_WARNLOG("RenderWorld::GetRenderLight: handle %i is nullptr\n", handle);
         return nullptr;
     }
 
@@ -241,13 +241,13 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *lightD
 
 void RenderWorld::RemoveRenderLight(int handle) {
     if (handle < 0 || handle >= renderLights.Count()) {
-        BE_WARNLOG(L"RenderWorld::RemoveRenderLight: handle %i > %i\n", handle, renderLights.Count() - 1);
+        BE_WARNLOG("RenderWorld::RemoveRenderLight: handle %i > %i\n", handle, renderLights.Count() - 1);
         return;
     }
 
     RenderLight *renderLight = renderLights[handle];
     if (!renderLight) {
-        BE_WARNLOG(L"RenderWorld::RemoveRenderLight: handle %i is nullptr\n", handle);
+        BE_WARNLOG("RenderWorld::RemoveRenderLight: handle %i is nullptr\n", handle);
         return;
     }
 
@@ -270,7 +270,7 @@ void RenderWorld::FinishMapLoading() {
 //    lightDbvt.RebuildBottomUp();
 //
 //    int elapsedTime = PlatformTime::Milliseconds() - startTime;
-//    BE_LOG(L"%i msec to build dynamic AABB tree\n", elapsedTime);
+//    BE_LOG("%i msec to build dynamic AABB tree\n", elapsedTime);
 //#endif
 }
 
@@ -304,35 +304,32 @@ void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
     viewCount++;
 
     // GUI view def
-    RenderView::State renderViewDef;
-    renderViewDef.renderRect    = Rect(0, 0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight());
-    renderViewDef.time          = PlatformTime::Milliseconds();
-    renderViewDef.orthogonal    = true;
-    renderViewDef.zNear         = 0.0f;
-    renderViewDef.zFar          = 1.0f;
-    renderViewDef.sizeX         = renderSystem.currentContext->GetDeviceWidth() * 0.5f;
-    renderViewDef.sizeY         = renderSystem.currentContext->GetDeviceHeight() * 0.5f;
-    renderViewDef.axis          = Mat3::identity;
-    renderViewDef.origin        = Vec3::origin;
+    RenderView::State rvDef;
+    rvDef.renderRect = Rect(0, 0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight());
+    rvDef.time = PlatformTime::Milliseconds();
+    rvDef.orthogonal = true;
+    rvDef.zNear = 0.0f;
+    rvDef.zFar = 1.0f;
+    rvDef.sizeX = renderSystem.currentContext->GetDeviceWidth() * 0.5f;
+    rvDef.sizeY = renderSystem.currentContext->GetDeviceHeight() * 0.5f;
+    rvDef.origin = Vec3::origin;
+    rvDef.axis = Mat3::identity;
 
     static RenderView renderView;
     new (&renderView) RenderView();
-    renderView.Update(&renderViewDef);
+    renderView.Update(&rvDef);
 
     // GUI object def
-    RenderObject::State objectDef;
-    memset(&objectDef, 0, sizeof(objectDef));
-    objectDef.scale = Vec3::one;
-    objectDef.axis = Mat3::identity;
-    objectDef.materialParms[RenderObject::RedParm] = 1.0f;
-    objectDef.materialParms[RenderObject::GreenParm] = 1.0f;
-    objectDef.materialParms[RenderObject::BlueParm] = 1.0f;
-    objectDef.materialParms[RenderObject::AlphaParm] = 1.0f;
-    objectDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    RenderObject::State roDef;
+    roDef.materialParms[RenderObject::RedParm] = 1.0f;
+    roDef.materialParms[RenderObject::GreenParm] = 1.0f;
+    roDef.materialParms[RenderObject::BlueParm] = 1.0f;
+    roDef.materialParms[RenderObject::AlphaParm] = 1.0f;
+    roDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
     
     static RenderObject renderObject;
     new (&renderObject) RenderObject();
-    renderObject.Update(&objectDef);
+    renderObject.Update(&roDef);
 
     // GUI view
     VisibleView *guiView    = (VisibleView *)frameData.ClearedAlloc(sizeof(*guiView));

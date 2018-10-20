@@ -71,7 +71,7 @@ int PlatformPosixFile::Seek(long offset, Origin origin) {
 size_t PlatformPosixFile::Read(void *buffer, size_t bytesToRead) const {
     size_t readBytes = fread(buffer, 1, bytesToRead, fp);
     if (readBytes == -1) {
-        BE_FATALERROR(L"PlatformPosixFile::Read: -1 bytes read");
+        BE_FATALERROR("PlatformPosixFile::Read: -1 bytes read");
         return 0;
     }
     
@@ -89,11 +89,11 @@ bool PlatformPosixFile::Write(const void *buffer, size_t bytesToWrite) {
             if (!failedOnce) {
                 failedOnce = true;
             } else {
-                BE_WARNLOG(L"PlatformPosixFile::Write: 0 bytes written");
+                BE_WARNLOG("PlatformPosixFile::Write: 0 bytes written");
                 return false;
             }
         } else if (written == -1) {
-            BE_WARNLOG(L"PlatformPosixFile::Write: -1 bytes written");
+            BE_WARNLOG("PlatformPosixFile::Write: -1 bytes written");
             return false;
         }
         
@@ -230,7 +230,7 @@ bool PlatformPosixFile::SetReadOnly(const char *filename, bool readOnly) {
 bool PlatformPosixFile::RemoveFile(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     if (remove(normalizedFilename)) {
-        BE_LOG(L"failed to remove file '%hs'\n", normalizedFilename.c_str());
+        BE_LOG("failed to remove file '%s'\n", normalizedFilename.c_str());
         return false;
     }
 
@@ -354,11 +354,11 @@ const char *PlatformPosixFile::ExecutablePath() {
     return Cwd();
 }
 
-void PlatformPosixFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
+static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
-    char		path[MaxAbsolutePath];
-    char		subpath[MaxAbsolutePath];
-    char		filename[MaxAbsolutePath];
+    char        path[MaxAbsolutePath];
+    char        subpath[MaxAbsolutePath];
+    char        filename[MaxAbsolutePath];
     
     if (subdir[0]) {
         Str::snPrintf(path, sizeof(path), "%s/%s", directory, subdir);
@@ -390,7 +390,7 @@ void PlatformPosixFile::ListFilesRecursive(const char *directory, const char *su
             }
             
             ListFilesRecursive(directory, subpath, nameFilter, includeSubDir, files);
-        } else if (Str::Filter(nameFilter, dent->d_name, false))	{
+        } else if (Str::Filter(nameFilter, dent->d_name, false)) {
             if (subdir[0]) {
                 Str::snPrintf(filename, sizeof(filename), "%s/%s", subdir, dent->d_name);
             } else {

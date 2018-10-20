@@ -61,11 +61,9 @@ void ComLight::RegisterProperties() {
 
 ComLight::ComLight() {
     renderLightHandle = -1;
-    memset(&renderLightDef, 0, sizeof(renderLightDef));
 
     spriteHandle = -1;
     spriteMesh = nullptr;
-    memset(&spriteDef, 0, sizeof(spriteDef));
 }
 
 ComLight::~ComLight() {
@@ -138,7 +136,6 @@ void ComLight::Init() {
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
-    memset(&spriteDef, 0, sizeof(spriteDef));
     spriteDef.flags = RenderObject::BillboardFlag;
     spriteDef.layer = TagLayerSettings::EditorLayer;
     spriteDef.maxVisDist = MeterToUnit(50.0f);

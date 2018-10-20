@@ -15,7 +15,6 @@
 #pragma once
 
 #include "Core/Str.h"
-#include "Core/WStr.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -38,7 +37,6 @@ public:
     static const char Mat3x3Type = 'm';
     static const char Mat4x4Type = 'M';
     static const char StringType = 's';
-    static const char WStringType = 'w';
     static const char GuidType = 'g';
 
     VariantArg() { type = IntType; pointer = 0; };
@@ -46,7 +44,6 @@ public:
     VariantArg(const float data) { type = FloatType; floatValue = data; };
     VariantArg(const void *data) { type = PointerType; pointer = reinterpret_cast<intptr_t>(data); };
     VariantArg(const char *data) { type = StringType; pointer = reinterpret_cast<intptr_t>(data); };
-    VariantArg(const wchar_t *data) { type = WStringType; pointer = reinterpret_cast<intptr_t>(data); };
     VariantArg(const Point &data) { type = PointType; pointer = reinterpret_cast<intptr_t>(&data); };
     VariantArg(const Rect &data) { type = RectType; pointer = reinterpret_cast<intptr_t>(&data); };
     VariantArg(const Vec3 &data) { type = Vec3Type; pointer = reinterpret_cast<intptr_t>(&data); };
@@ -54,7 +51,6 @@ public:
     VariantArg(const Mat4 &data) { type = Mat4x4Type; pointer = reinterpret_cast<intptr_t>(&data); };
     VariantArg(const Guid &data) { type = GuidType; pointer = reinterpret_cast<intptr_t>(&data); }
     VariantArg(const Str &data) { type = StringType; pointer = reinterpret_cast<intptr_t>(data.c_str()); };
-    VariantArg(const WStr &data) { type = WStringType; pointer = reinterpret_cast<intptr_t>(data.c_str()); };
 
     int                     type;
     union {

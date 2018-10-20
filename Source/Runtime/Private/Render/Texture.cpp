@@ -540,7 +540,7 @@ void Texture::Upload(const Image *srcImage) {
     
     // Can't upload texels for depth texture
     if (!srcImage->IsEmpty() && Image::IsDepthFormat(srcImage->GetFormat())) {
-        BE_FATALERROR(L"Texture::Upload: Couldn't upload texel data of depth texture");
+        BE_FATALERROR("Texture::Upload: Couldn't upload texel data of depth texture");
     }
     
     Image scaledImage;
@@ -637,12 +637,12 @@ bool Texture::Load(const char *filename, int flags) {
 
         for (int i = 0; i < 6; i++) {
             Str filename2 = name + "_" + ((flags & CameraCubeMap) ? camera_cubemap_postfix[i] : cubemap_postfix[i]);
-            BE_LOG(L"Loading texture '%hs'...\n", filename2.c_str());
+            BE_LOG("Loading texture '%s'...\n", filename2.c_str());
 
             images[i].Load(filename2.c_str());
             
             if (images[i].IsEmpty()) {
-                BE_WARNLOG(L"Couldn't load texture \"%hs\"\n", filename2.c_str());
+                BE_WARNLOG("Couldn't load texture \"%s\"\n", filename2.c_str());
                 return false;
             }
         }
@@ -651,13 +651,13 @@ bool Texture::Load(const char *filename, int flags) {
         cubeImage.CreateCubeFrom6Faces(images);
         Create(RHI::TextureCubeMap, cubeImage, flags);
     } else {
-        BE_LOG(L"Loading texture '%hs'...\n", filename);
+        BE_LOG("Loading texture '%s'...\n", filename);
 
         Image image;
         image.Load(filename);
         
         if (image.IsEmpty()) {
-            BE_WARNLOG(L"Couldn't load texture \"%hs\"\n", filename);
+            BE_WARNLOG("Couldn't load texture \"%s\"\n", filename);
             return false;
         }
 
@@ -699,14 +699,14 @@ void Texture::Bind() const {
 
 void TextureGenerator_CubicDiffuseIrradianceMap::Generate(Texture *texture) const {
     if (texture->GetType() != RHI::TextureCubeMap) {
-        BE_ERRLOG(L"TextureGenerator_CubicDiffuseIrradianceMap::Generate: src texture must be cube map\n");
+        BE_ERRLOG("TextureGenerator_CubicDiffuseIrradianceMap::Generate: src texture must be cube map\n");
         return;
     }
 }
 
 void TextureGenerator_CubicSpecularIrradianceMap::Generate(Texture *texture) const {
     if (texture->GetType() != RHI::TextureCubeMap) {
-        BE_ERRLOG(L"TextureGenerator_CubicSpecularIrradianceMap::Generate: src texture must be cube map\n");
+        BE_ERRLOG("TextureGenerator_CubicSpecularIrradianceMap::Generate: src texture must be cube map\n");
         return;
     }
 }

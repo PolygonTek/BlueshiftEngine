@@ -83,7 +83,7 @@ bool Material::Create(const char *text) {
                 return false;
             }
         } else {
-            BE_WARNLOG(L"unknown general material parameter '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown general material parameter '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -123,7 +123,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -138,10 +138,10 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 } else if (!token.Icmp("front") || !token.Icmp("frontSide") || !token.Icmp("frontSided")) {
                     pass->cullType = RHI::FrontCull;
                 } else {
-                    BE_WARNLOG(L"invalid cull parm '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+                    BE_WARNLOG("invalid cull parm '%s' in material '%s'\n", token.c_str(), hashName.c_str());
                 }
             } else {
-                BE_WARNLOG(L"missing parameter cull keyword in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing parameter cull keyword in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("shader")) {
             if (lexer.ReadToken(&token, false)) {
@@ -186,7 +186,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                     EndShaderPropertiesChanged();
                 }
             } else {
-                BE_WARNLOG(L"missing shader name in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing shader name in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("map")) {
             if (lexer.ReadToken(&token, false)) {
@@ -194,7 +194,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
                 pass->texture = textureManager.GetTexture(texturePath);
             } else {
-                BE_WARNLOG(L"missing map GUID in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing map GUID in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("mapPath")) {
             if (lexer.ReadToken(&token, false)) {
@@ -204,7 +204,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 }
                 pass->texture->AddRefCount();
             } else {
-                BE_WARNLOG(L"missing map name in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing map name in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("tc")) {
             lexer.ParseVec(2, pass->tcScale);
@@ -234,7 +234,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                     }
                 }
             } else {
-                BE_WARNLOG(L"missing color mask in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing color mask in material '%s'\n", hashName.c_str());
             }
         }/* else if (!token.Icmp("scale")) {
             exprChunk->ParseExpressions(lexer, 2, registers);
@@ -295,7 +295,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("instancingEnabled")) {
             pass->instancingEnabled = true;
         } else {
-            BE_WARNLOG(L"unknown material pass parameter '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown material pass parameter '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -437,7 +437,7 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
     Str propValue;
 
     if (!pass->referenceShader) {
-        BE_WARNLOG(L"shader must be specified before shader properties in material '%hs'\n", hashName.c_str());
+        BE_WARNLOG("shader must be specified before shader properties in material '%s'\n", hashName.c_str());
     }
 
     if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
@@ -448,7 +448,7 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -456,7 +456,7 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
             if (lexer.ReadToken(&propValue, false)) {
                 properties.Set(token, propValue);
             } else {
-                BE_WARNLOG(L"missing property value for property '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+                BE_WARNLOG("missing property value for property '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             }
         }
     }
@@ -475,13 +475,13 @@ bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) co
         } else if (!token.Icmp("alphaBlend")) {
             *renderingMode = RenderingMode::AlphaBlend;
         } else {
-            BE_WARNLOG(L"unknown renderingMode '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown renderingMode '%s' in material '%s'\n", token.c_str(), hashName.c_str());
         }
 
         return true;
     }
 
-    BE_WARNLOG(L"missing parameter for renderingMode keyword in material '%hs\n", hashName.c_str());
+    BE_WARNLOG("missing parameter for renderingMode keyword in material '%s\n", hashName.c_str());
     return false;
 }
 
@@ -525,7 +525,7 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
                 *blendSrc = RHI::BS_SrcAlphaSaturate;
             } else {
                 *blendSrc = RHI::BS_One;
-                BE_WARNLOG(L"unknown blend mode '%hs' in material '%hs', \nsubstituting GL_ONE\n", token.c_str(), hashName.c_str());
+                BE_WARNLOG("unknown blend mode '%s' in material '%s', \nsubstituting GL_ONE\n", token.c_str(), hashName.c_str());
             }
 
             if (lexer.ReadToken(&token, false)) {
@@ -547,17 +547,17 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
                     *blendDst = RHI::BD_OneMinusDstAlpha;
                 } else {
                     *blendDst = RHI::BD_One;
-                    BE_WARNLOG(L"unknown blend mode '%hs' in material '%hs', substituting GL_ONE\n", token.c_str(), hashName.c_str());
+                    BE_WARNLOG("unknown blend mode '%s' in material '%s', substituting GL_ONE\n", token.c_str(), hashName.c_str());
                 }
             } else {
-                BE_WARNLOG(L"missing parameter for blendFunc keyword in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing parameter for blendFunc keyword in material '%s'\n", hashName.c_str());
             }
         }
 
         return true;
     }
 
-    BE_WARNLOG(L"missing parameter for blendFunc keyword in material '%hs'\n", hashName.c_str());
+    BE_WARNLOG("missing parameter for blendFunc keyword in material '%s'\n", hashName.c_str());
     return false;
 }
 
@@ -598,7 +598,7 @@ void Material::Finish() {
 void Material::Write(const char *filename) {
     File *fp = fileSystem.OpenFile(filename, File::WriteMode);
     if (!fp) {
-        BE_WARNLOG(L"Material::Write: file open error\n");
+        BE_WARNLOG("Material::Write: file open error\n");
         return;
     }
 

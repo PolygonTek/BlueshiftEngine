@@ -14,79 +14,100 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 #include <mmsystem.h>
 #include <shlobj.h>
 
 BE_NAMESPACE_BEGIN
 
 void PlatformWinSystem::GetEnvVar(const char *variableName, char *result, uint32_t resultLength) {
-    DWORD err = ::GetEnvironmentVariableA(variableName, result, resultLength);
+    wchar_t wVariableName[64];
+    wchar_t wValue[4096];
+
+    PlatformWinUtils::UTF8ToUCS2(variableName, wVariableName, COUNT_OF(wVariableName));
+
+    DWORD err = ::GetEnvironmentVariableW(wVariableName, wValue, COUNT_OF(wValue));
     if (err <= 0) {
         *result = 0;
+        return;
     }
+    PlatformWinUtils::UCS2ToUTF8(wValue, result, resultLength);
 }
 
 void PlatformWinSystem::SetEnvVar(const char *variableName, const char *value) {
-    BOOL err = ::SetEnvironmentVariableA(variableName, value);
+    wchar_t wVariableName[64];
+    wchar_t wValue[4096];
+
+    PlatformWinUtils::UTF8ToUCS2(variableName, wVariableName, COUNT_OF(wVariableName));
+    PlatformWinUtils::UTF8ToUCS2(value, wValue, COUNT_OF(wValue));
+
+    BOOL err = ::SetEnvironmentVariableW(wVariableName, wValue);
     if (err == 0) {
-        BE_WARNLOG(L"Failed to SetEnvironmentVariable: %s to %s", variableName, value);
+        BE_WARNLOG("Failed to SetEnvironmentVariable: %s to %s", variableName, value);
     }
 }
 
 const char *PlatformWinSystem::UserDir() {
-    static char path[1024] = "";
+    static char userDir[1024] = "";
 
     const char *userProfile = getenv("USERPROFILE");
     if (userProfile) {
-        strcpy(path, userProfile);
+        strcpy(userDir, userProfile);
     } else {
         const char *homeDrive = getenv("HOMEDRIVE");
         const char *homePath = getenv("HOMEPATH");
-        strcpy(path, homeDrive);
-        strcat(path, homePath);
+
+        strcpy(userDir, homeDrive);
+        strcat(userDir, homePath);
     }
 
-    return path;
+    return userDir;
 }
 
 const char *PlatformWinSystem::UserDocumentDir() {
-    static char path[1024] = "";
+    static char userDocumentDir[1024] = "";
 
-    if (!path[0]) {
+    if (!userDocumentDir[0]) {
+        wchar_t wUserDocumentDir[1024];
+
         // Get the My Documents directory
-        if (!SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, path))) {
+        if (!SUCCEEDED(::SHGetFolderPathW(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, wUserDocumentDir))) {
             return nullptr;
         }
+        PlatformWinUtils::UCS2ToUTF8(wUserDocumentDir, userDocumentDir, COUNT_OF(userDocumentDir));
     }
-    return path;
+    return userDocumentDir;
 }
 
 const char *PlatformWinSystem::UserAppDataDir() {
-    static char path[1024] = "";
+    static char userAppDataDir[1024] = "";
 
-    if (!path[0]) {
-        if (!SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, path))) {
+    if (!userAppDataDir[0]) {
+        wchar_t wUserAppDataDir[1024];
+
+        if (!SUCCEEDED(::SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, wUserAppDataDir))) {
             return nullptr;
         }
+        PlatformWinUtils::UCS2ToUTF8(wUserAppDataDir, userAppDataDir, COUNT_OF(userAppDataDir));
     }
-    return path;
+    return userAppDataDir;
 }
 
 const char *PlatformWinSystem::UserTempDir() {
-    static char path[1024] = "";
+    static char userTempDir[1024] = "";
 
-    if (!path[0]) {
-        char tempPath[MAX_PATH];
-        ZeroMemory(tempPath, sizeof(tempPath[0]) * MAX_PATH);
-        ::GetTempPathA(MAX_PATH, tempPath);
+    if (!userTempDir[0]) {
+        wchar_t wTempPath[MAX_PATH];
+        ZeroMemory(wTempPath, sizeof(wTempPath[0]) * MAX_PATH);
+        ::GetTempPathW(MAX_PATH, wTempPath);
 
-        char fullTempPath[MAX_PATH];
-        ZeroMemory(fullTempPath, sizeof(fullTempPath[0]) * MAX_PATH);
-        ::GetLongPathNameA(tempPath, fullTempPath, MAX_PATH);
+        wchar_t wFullTempPath[MAX_PATH];
+        ZeroMemory(wFullTempPath, sizeof(wFullTempPath[0]) * MAX_PATH);
+        ::GetLongPathNameW(wTempPath, wFullTempPath, MAX_PATH);
 
-        strcpy(path, fullTempPath);
+        PlatformWinUtils::UCS2ToUTF8(wFullTempPath, userTempDir, COUNT_OF(userTempDir));
     }
-    return path;
+    return userTempDir;
 }
 
 int32_t PlatformWinSystem::NumCPUCores() {

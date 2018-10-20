@@ -32,7 +32,7 @@ static void RegisterApp(LuaCpp::Module &module) {
 }
 
 void Application::Init() {
-    BE1::cmdSystem.AddCommand(L"map", Cmd_Map_f);
+    BE1::cmdSystem.AddCommand("map", Cmd_Map_f);
 
     BE1::prefabManager.Init();
 
@@ -59,7 +59,7 @@ void Application::Shutdown() {
 
     BE1::GameSettings::Shutdown();
 
-    BE1::cmdSystem.RemoveCommand(L"map");
+    BE1::cmdSystem.RemoveCommand("map");
 }
 
 bool Application::LoadAppScript(const char *sandboxName) {
@@ -146,12 +146,12 @@ void Application::LoadMap(const char *mapName) {
 
 void Application::Cmd_Map_f(const BE1::CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"map <filename>\n");
+        BE_LOG("map <filename>\n");
         return;
     }
 
     BE1::Str filename;
-    filename.sPrintf("maps/%s", BE1::WStr::ToStr(args.Argv(1)).c_str());
+    filename.sPrintf("maps/%s", args.Argv(1));
     filename.DefaultFileExtension(".map");
 
     app.LoadMap(filename.c_str());

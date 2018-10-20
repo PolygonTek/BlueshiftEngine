@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-void UTF16::Encode(wchar_t *&dest, uint32_t unicodeChar) {
+void UTF16::Encode(wchar_t *&dest, char32_t unicodeChar) {
     if (unicodeChar < 0x10000) {
         *dest++ = unicodeChar;
     } else {
@@ -27,12 +27,12 @@ void UTF16::Encode(wchar_t *&dest, uint32_t unicodeChar) {
     }
 }
 
-unsigned UTF16::Decode(const wchar_t *&src) {
+char32_t UTF16::Decode(const wchar_t *&src) {
     if (!src) {
         return 0;
     }
 
-    unsigned short word1 = *src++;
+    uint16_t word1 = *src++;
 
     // Check if we are at a low surrogate
     if (word1 >= 0xDC00 && word1 < 0xE000) {
@@ -45,7 +45,7 @@ unsigned UTF16::Decode(const wchar_t *&src) {
     if (word1 < 0xD800 || word1 >= 0xE000) {
         return word1;
     } else {
-        unsigned short word2 = *src++;
+        uint16_t word2 = *src++;
         if (word2 < 0xDC00 || word2 >= 0xE000) {
             --src;
             return '?';

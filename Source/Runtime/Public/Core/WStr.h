@@ -351,8 +351,8 @@ public:
 
     static float        FuzzyScore(const wchar_t *s1, const wchar_t *s2, float fuzziness = 0.0f);
 
-    static void         Append(wchar_t *dest, int size, const wchar_t *src);
-    static void         Copynz(wchar_t *dest, const wchar_t *src, int destsize);
+    static void         Append(wchar_t *dest, int n, const wchar_t *src);
+    static void         Copynz(wchar_t *dest, const wchar_t *src, int n);
     static int          FindChar(const wchar_t *str, const wchar_t c, int start = 0, int end = -1);
     static int          FindLastChar(const wchar_t *str, const wchar_t c, int start = 0, int end = -1);
     static int          FindText(const wchar_t *str, const wchar_t *text, bool caseSensitive = true, int start = 0, int end = -1);
@@ -984,16 +984,16 @@ BE_INLINE int WStr::LineCount(const wchar_t *s) {
 }
 
 BE_INLINE int32_t WStr::ToI32(const wchar_t *s) {
-    return (int32_t)wcstol(s, nullptr, 10);
+    return (int32_t)wcstol(s, nullptr, 0);
 }
 
 BE_INLINE uint32_t WStr::ToUI32(const wchar_t *s) {
-    return (uint32_t)wcstoul(s, nullptr, 10);
+    return (uint32_t)wcstoul(s, nullptr, 0);
 }
 
 BE_INLINE int64_t WStr::ToI64(const wchar_t *s) {
 #if !defined(__ANDROID__) || __ANDROID_API__ >= 21
-    return wcstoll(s, nullptr, 10);
+    return wcstoll(s, nullptr, 0);
 #else
     int64_t i;
     swscanf(s, L"%" SCNi64, &i);
@@ -1003,7 +1003,7 @@ BE_INLINE int64_t WStr::ToI64(const wchar_t *s) {
 
 BE_INLINE uint64_t WStr::ToUI64(const wchar_t *s) {
 #if !defined(__ANDROID__) || __ANDROID_API__ >= 21
-    return wcstoull(s, nullptr, 10);
+    return wcstoull(s, nullptr, 0);
 #else
     uint64_t u;
     swscanf(s, L"%" SCNu64, &u);

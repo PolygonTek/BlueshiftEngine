@@ -24,7 +24,7 @@ Skin *          SkinManager::defaultSkin;
 SkinManager     skinManager;
 
 void SkinManager::Init() {
-    cmdSystem.AddCommand(L"listSkins", Cmd_ListSkins);
+    cmdSystem.AddCommand("listSkins", Cmd_ListSkins);
 
     skinHashMap.Init(1024, MAX_SKINS, 1024);
 
@@ -34,14 +34,14 @@ void SkinManager::Init() {
 }
 
 void SkinManager::Shutdown() {
-    cmdSystem.RemoveCommand(L"listSkins");
+    cmdSystem.RemoveCommand("listSkins");
 
     skinHashMap.DeleteContents(true);
 }
 
 Skin *SkinManager::AllocSkin(const char *hashName) {
     if (skinHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs skin already allocated", hashName);
+        BE_FATALERROR("%s skin already allocated", hashName);
     }
     
     Skin *skin = new Skin;
@@ -54,7 +54,7 @@ Skin *SkinManager::AllocSkin(const char *hashName) {
 
 void SkinManager::DestroySkin(Skin *skin) {
     if (skin->refCount > 1) {
-        BE_LOG(L"SkinManager::DestroySkin: skin '%hs' has %i reference count\n", skin->hashName.c_str(), skin->refCount);
+        BE_LOG("SkinManager::DestroySkin: skin '%s' has %i reference count\n", skin->hashName.c_str(), skin->refCount);
     }
 
     skinHashMap.Remove(skin->hashName);
@@ -124,17 +124,17 @@ void SkinManager::Cmd_ListSkins(const CmdArgs &args) {
         const auto *entry = skinManager.skinHashMap.GetByIndex(i);
         Skin *skin = entry->second;
 
-        BE_LOG(L"%4d:%hs\n", i, skin->hashName.c_str());
+        BE_LOG("%4d:%s\n", i, skin->hashName.c_str());
 
         for (int j = 0; j < skin->mappingList.Count(); j++) {
             const Skin::SkinMapping *mapping = &skin->mappingList[j];
-            BE_LOG(L"    %hs -> %hs\n", mapping->from, mapping->to);
+            BE_LOG("    %s -> %s\n", mapping->from, mapping->to);
         }
 
         count++;
     }
 
-    BE_LOG(L"%i total skins\n", count);
+    BE_LOG("%i total skins\n", count);
 }
 
 BE_NAMESPACE_END

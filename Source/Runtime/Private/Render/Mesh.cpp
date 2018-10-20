@@ -360,7 +360,7 @@ bool Mesh::Load(const char *filename) {
         bMeshFilename.SetFileExtension(".bmesh");
     }
 
-    BE_LOG(L"Loading mesh '%hs'...\n", bMeshFilename.c_str());
+    BE_LOG("Loading mesh '%s'...\n", bMeshFilename.c_str());
     
     bool ret = LoadBinaryMesh(bMeshFilename);
     if (!ret) {

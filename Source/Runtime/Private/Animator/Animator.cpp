@@ -121,7 +121,7 @@ void Animator::UpdateFrame(Entity *entity, int previousTime, int currentTime) {
         }
 
         float animTime = stateBlenders[0].NormalizedTime(currentTime);
-        //BE_LOG(L"%hs: %.3f\n", stateBlenders[0].animState->GetName().c_str(), animTime);
+        //BE_LOG("%s: %.3f\n", stateBlenders[0].animState->GetName().c_str(), animTime);
 
         // Gets the transitions which have src state currently blended in
         Array<const AnimLayer::AnimTransition *> transitionArray;
@@ -295,7 +295,7 @@ void Animator::ResetState(int currentTime) {
 
 const AnimState *Animator::CurrentAnimState(int layerNum) const {
     if (layerNum < 0 || layerNum >= MaxLayers) {
-        BE_WARNLOG(L"Animator::CurrentAnim: layerNum out of range\n");
+        BE_WARNLOG("Animator::CurrentAnim: layerNum out of range\n");
         return nullptr;
     }
 
@@ -305,19 +305,19 @@ const AnimState *Animator::CurrentAnimState(int layerNum) const {
 
 void Animator::TransitState(int layerNum, const char *stateName, int currentTime, float startOffset, int blendDuration, bool isAtomic) {
     if (layerNum < 0 || layerNum >= MaxLayers) {
-        BE_WARNLOG(L"Animator::TransitState: layerNum out of range\n");
+        BE_WARNLOG("Animator::TransitState: layerNum out of range\n");
         return;
     }
 
     const AnimLayer *animLayer = animController->GetAnimLayerByIndex(layerNum);
     if (!animLayer) {
-        BE_WARNLOG(L"Animator::TransitState: invalid layerNum %i\n", layerNum);
+        BE_WARNLOG("Animator::TransitState: invalid layerNum %i\n", layerNum);
         return;
     }
 
     const AnimState *state = animLayer->FindState(stateName);
     if (!state) {
-        BE_WARNLOG(L"Animator::TransitState: invalid state name '%hs'\n", stateName);
+        BE_WARNLOG("Animator::TransitState: invalid state name '%s'\n", stateName);
         return;
     }
 
@@ -350,7 +350,7 @@ void Animator::PushStateBlenders(int layerNum, int currentTime, int blendDuratio
 void Animator::ComputeFrame(int currentTime) {
     const JointPose *bindPoses = animController->GetBindPoses();
     if (!bindPoses) {
-        BE_WARNLOG(L"Animator::ComputeFrame: no bindPoses on '%hs'\n", animController->GetHashName());
+        BE_WARNLOG("Animator::ComputeFrame: no bindPoses on '%s'\n", animController->GetHashName());
         return;
     }
 
@@ -410,7 +410,7 @@ void Animator::ComputeFrame(int currentTime) {
             } else if (animLayer->GetBlending() == AnimLayer::Blending::Additive) {
                 simdProcessor->AdditiveBlendJoints(jointFrame1, jointFrame2, layerBlendWeight, maskJoints.Ptr(), maskJoints.Count());
             } else {
-                BE_WARNLOG(L"Animator::ComputeFrame: invalid layer blending method\n");
+                BE_WARNLOG("Animator::ComputeFrame: invalid layer blending method\n");
             }
         }
     }

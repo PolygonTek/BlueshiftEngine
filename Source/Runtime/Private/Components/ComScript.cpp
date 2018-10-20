@@ -163,7 +163,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
     size_t size = fileSystem.LoadFile(scriptPath, true, (void **)&data);
     if (!data) {
         sandboxName = "";
-        BE_WARNLOG(L"ComScript::ChangeScript: Failed to load script '%hs'\n", scriptPath.c_str());
+        BE_WARNLOG("ComScript::ChangeScript: Failed to load script '%s'\n", scriptPath.c_str());
         return;
     }
 

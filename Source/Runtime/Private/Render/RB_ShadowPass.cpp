@@ -165,7 +165,7 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const OBB &s
     float ymax =  cropBounds[1][UpAxis];
 
     R_Set2DCropMatrix(xmin, xmax, ymin, ymax, shadowCropMatrix);
-    //BE_LOG(L"%f %f, %f %f\n", xmin, xmax, ymin, ymax);
+    //BE_LOG("%f %f, %f %f\n", xmin, xmax, ymin, ymax);
 
     return true;
 }
@@ -180,7 +180,7 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const Frustu
     float ymax =  cropBounds[1][UpAxis];
 
     R_Set2DCropMatrix(xmin, xmax, ymin, ymax, shadowCropMatrix);
-    //BE_LOG(L"%f %f, %f %f\n", xmin, xmax, ymin, ymax);
+    //BE_LOG("%f %f, %f %f\n", xmin, xmax, ymin, ymax);
 
     return true;
 }

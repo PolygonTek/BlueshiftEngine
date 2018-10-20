@@ -416,7 +416,7 @@ void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
     }
 
     if (removeFrameNums.Count() > 0) {
-        BE_LOG(L"%.1f%% of frames removed\n", 100.0f * removeFrameNums.Count() / numFrames);
+        BE_LOG("%.1f%% of frames removed\n", 100.0f * removeFrameNums.Count() / numFrames);
     }
 
     RemoveFrames(removeFrameNums.Count(), removeFrameNums.Ptr());
