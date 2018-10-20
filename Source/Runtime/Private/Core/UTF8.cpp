@@ -64,7 +64,7 @@ bool UTF8::IsValid(const char *s, const int maxLen, Encoding &encoding) {
     // check for byte-order-marker
     encoding = UTF8_PURE_ASCII;
     Encoding utf8Type = UTF8_ENCODED_NO_BOM;
-    if (maxLen > 3 && s[0] == 0xEF && s[1] == 0xBB && s[2] == 0xBF) {
+    if (maxLen > 3 && (byte)s[0] == 0xEF && (byte)s[1] == 0xBB && (byte)s[2] == 0xBF) {
         utf8Type = UTF8_ENCODED_BOM;
     }
 

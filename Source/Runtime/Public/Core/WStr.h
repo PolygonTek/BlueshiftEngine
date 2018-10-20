@@ -448,23 +448,6 @@ wchar_t * BE_CDECL      wva(const wchar_t *format, ...);
 BE_INLINE const char *  tombs(const char *mbs) { return mbs; }
 char *                  tombs(const wchar_t *wcs);
 wchar_t *               towcs(const char *mbs);
-BE_INLINE const wchar_t *towcs(const wchar_t *wcs) { return wcs; }
-
-BE_INLINE const TCHAR * totcs(const char *mbs) {
-#ifdef  UNICODE
-    return towcs(mbs);
-#else
-    return mbs;
-#endif
-}
-
-BE_INLINE const TCHAR * totcs(const wchar_t *wcs) {
-#ifdef  UNICODE
-    return wcs;
-#else
-    return tombs(wcs);
-#endif
-}
 
 BE_INLINE void WStr::EnsureAlloced(int amount, bool keepOld) {
     if (amount > alloced) {

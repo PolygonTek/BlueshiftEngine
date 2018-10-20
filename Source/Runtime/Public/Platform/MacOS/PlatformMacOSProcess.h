@@ -41,7 +41,7 @@ public:
     static const wchar_t *      ComputerName();
     static const wchar_t *      UserName();
 
-    static ProcessHandle        CreateProccess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath);
+    static ProcessHandle        CreateProccess(const char *appPath, const char *args, const char *workingPath);
     static bool                 IsProccessRunning(ProcessHandle &processHandle);
     static void                 WaitForProccess(ProcessHandle &processHandle);
     static void                 TerminateProccess(ProcessHandle &processHandle);

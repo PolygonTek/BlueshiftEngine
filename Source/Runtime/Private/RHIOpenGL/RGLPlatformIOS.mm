@@ -79,7 +79,7 @@ const float userContentScaleFactor = 2.0f;
     const float nativeScale = [[UIScreen mainScreen] scale];
     
     self.contentScaleFactor = userContentScaleFactor;
-    BE_LOG(L"Setting contentScaleFactor to %0.4f (optimal = %0.4f)", self.contentScaleFactor, nativeScale);
+    BE_LOG("Setting contentScaleFactor to %0.4f (optimal = %0.4f)", self.contentScaleFactor, nativeScale);
     
     if (self.contentScaleFactor == 1.0f || self.contentScaleFactor == 2.0f) {
         CAEAGLLayer *eaglLayer = (CAEAGLLayer *)self.layer;
@@ -108,7 +108,7 @@ const float userContentScaleFactor = 2.0f;
     
     GLenum status = gglCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        BE_FATALERROR(L"failed to make complete framebuffer object 0x%x", status);
+        BE_FATALERROR("failed to make complete framebuffer object 0x%x", status);
         gglDeleteFramebuffers(1, &framebuffer);
         gglDeleteRenderbuffers(1, &colorbuffer);
         gglDeleteRenderbuffers(1, &depthbuffer);
@@ -190,7 +190,7 @@ const float userContentScaleFactor = 2.0f;
     
     GLenum status = gglCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        BE_FATALERROR(L"Failed to make complete framebuffer object 0x%x", status);
+        BE_FATALERROR("Failed to make complete framebuffer object 0x%x", status);
     }
     
     [self drawView:nil];
@@ -224,10 +224,10 @@ BE_NAMESPACE_BEGIN
 static int          majorVersion = 0;
 static int          minorVersion = 0;
 
-static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
-static CVar         gl_debugLevel(L"gl_debugLevel", L"3", CVar::Integer, L"");
-static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"");
-static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
+static CVar         gl_debug("gl_debug", "1", CVar::Bool, "");
+static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Integer, "");
+static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Bool, "");
+static CVar         gl_finish("gl_finish", "0", CVar::Bool, "");
 
 static void GetGLVersion(int *major, int *minor) {
     const char *verstr = (const char *)glGetString(GL_VERSION);
@@ -243,7 +243,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     // Create EAGLContext
     mainContext->eaglContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
     if (!mainContext->eaglContext) {
-        BE_FATALERROR(L"Couldn't create main EAGLContext");
+        BE_FATALERROR("Couldn't create main EAGLContext");
     }
     
     // Make current context
@@ -302,7 +302,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ctx->state = new GLState;
         ctx->eaglContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3 sharegroup:[mainContext->eaglContext sharegroup]];
         if (!ctx->eaglContext) {
-            BE_FATALERROR(L"Couldn't create main EAGLContext");
+            BE_FATALERROR("Couldn't create main EAGLContext");
         }
     }
     

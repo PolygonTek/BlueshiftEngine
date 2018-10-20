@@ -421,6 +421,19 @@ constexpr std::size_t count_of(T (&)[N]) {
 #endif // __OBJC__
 #endif // __MACOSX__
 
+BE_FORCE_INLINE void CFStringToString(CFStringRef cfstring, char *string) {
+    const size_t length = CFStringGetLength(cfstring);
+    CFRange range = CFRangeMake(0, length);
+    CFStringGetBytes(cfstring, range, kCFStringEncodingUTF8, '?', false, (UInt8 *)string, length * sizeof(string[0]) + 1, nullptr);
+    string[length] = 0;
+}
+
+BE_FORCE_INLINE CFStringRef StringToCFString(const char *string) {
+    const size_t length = strlen(string);
+    CFStringRef cfstring = CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8 *)string, length * sizeof(string[0]), kCFStringEncodingUTF8, false);
+    return cfstring;
+}
+
 BE_FORCE_INLINE void CFStringToWideString(CFStringRef cfstring, wchar_t *string) {
     const size_t length = CFStringGetLength(cfstring);
     CFRange range = CFRangeMake(0, length);
