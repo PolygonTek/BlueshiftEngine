@@ -39,17 +39,17 @@ void PlatformIOS::Quit() {
     exit(EXIT_SUCCESS);
 }
 
-void PlatformIOS::Log(const wchar_t *msg) {
+void PlatformIOS::Log(const char *msg) {
     NSString *nsmsg = [[NSString alloc] initWithBytes:msg
-                                               length:wcslen(msg) * sizeof(*msg)
-                                             encoding:NSUTF32LittleEndianStringEncoding];
+                                               length:strlen(msg) * sizeof(*msg)
+                                             encoding:NSUTF8StringEncoding];
     NSLog(@"%@", nsmsg);
 }
 
-void PlatformIOS::Error(const wchar_t *msg) {
+void PlatformIOS::Error(const char *msg) {
     NSString *nsmsg = [[NSString alloc] initWithBytes:msg
-                                               length:wcslen(msg) * sizeof(*msg)
-                                             encoding:NSUTF32LittleEndianStringEncoding];
+                                               length:strlen(msg) * sizeof(*msg)
+                                             encoding:NSUTF8StringEncoding];
     
     UIAlertController *alert = [UIAlertController
                                 alertControllerWithTitle:@"Error"

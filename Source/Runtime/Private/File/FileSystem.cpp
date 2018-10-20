@@ -940,12 +940,12 @@ void FileSystem::Cmd_Dir(const CmdArgs &args) {
         return;
     }
 
-    char directory[1024];
-    Str::Copynz(directory, tombs(args.Argv(1)), COUNT_OF(directory));
+    char directory[1024] = "";
+    Str::Copynz(directory, args.Argv(1), COUNT_OF(directory));
 
     char nameFilter[256] = "";
     if (argc > 2) {
-        Str::Copynz(nameFilter, tombs(args.Argv(2)), COUNT_OF(nameFilter));
+        Str::Copynz(nameFilter, args.Argv(2), COUNT_OF(nameFilter));
     }
 
     FileArray fileArray;

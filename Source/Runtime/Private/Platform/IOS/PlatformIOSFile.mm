@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/WStr.h"
 #include "Platform/PlatformFile.h"
 #include "File/FileSystem.h"
 #include <sys/stat.h>
@@ -169,8 +168,8 @@ bool PlatformIOSFile::DirectoryExists(const char *dirname) {
 }
 
 bool PlatformIOSFile::CreateDirectory(const char *dirname) {
-    WStr normalizedDirname = WStr(ConvertToIOSPath(NormalizeFilename(dirname), true).c_str());
-    CFStringRef directory = WideStringToCFString(normalizedDirname.c_str());
+    Str normalizedDirname = ConvertToIOSPath(NormalizeFilename(dirname), true);
+    CFStringRef directory = StringToCFString(normalizedDirname.c_str());
     bool Result = [[NSFileManager defaultManager] createDirectoryAtPath:(__bridge NSString *)directory
                                             withIntermediateDirectories:true
                                                              attributes:nil

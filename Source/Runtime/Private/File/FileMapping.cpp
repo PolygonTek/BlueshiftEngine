@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Core/Str.h"
+#include "Core/WStr.h"
 #include "Platform/PlatformFile.h"
 #include "Platform/PlatformProcess.h"
 #include "File/FileMapping.h"
@@ -145,7 +146,7 @@ FileMapping::FileMapping() {
 
 bool FileMapping::Open(const Str &filename) {
     this->filename = filename;
-    return Open(totcs(filename.c_str()));
+    return Open((TCHAR *)WStr(filename.c_str()).c_str());
 }
 
 void FileMapping::Close() {

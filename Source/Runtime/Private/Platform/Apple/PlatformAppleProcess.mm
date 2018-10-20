@@ -15,34 +15,38 @@
 #include "Precompiled.h"
 #include "Platform/PlatformProcess.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 
 BE_NAMESPACE_BEGIN
 
 // get the full path to the running executable
-const wchar_t *PlatformAppleProcess::ExecutableFileName() {
-	static wchar_t name[512] = L"";
+const char *PlatformAppleProcess::ExecutableFileName() {
+	static char name[512] = "";
 	if (!name[0]) {
-		NSString *nsExeName = [[[NSBundle mainBundle] executablePath] lastPathComponent];
-		CFStringToWideString((__bridge CFStringRef)nsExeName, name);
+        NSString *nsExeName = [[[NSBundle mainBundle] executablePath] lastPathComponent];
+        int l = [nsExeName length];
+        memcpy(name, [nsExeName cStringUsingEncoding:NSUTF8StringEncoding], l);
+        name[l] = '\0';
 	}
 	return name;
 }
 
-const wchar_t *PlatformAppleProcess::ComputerName() {
-	static wchar_t name[256] = L"";
+const char *PlatformAppleProcess::ComputerName() {
+	static char name[256] = "";
 	if (!name[0]) {
 		char cname[COUNT_OF(name)];
 		gethostname(cname, COUNT_OF(cname));
-		WStr::Copynz(name, Str::ToWStr(cname).c_str(), COUNT_OF(name));
+		Str::Copynz(name, cname, COUNT_OF(name));
 	}
 	return name;
 }
 
-const wchar_t *PlatformAppleProcess::UserName() {
-	static wchar_t name[256] = L"";
+const char *PlatformAppleProcess::UserName() {
+	static char name[256] = "";
 	if (!name[0]) {
-		CFStringToWideString((__bridge CFStringRef)NSUserName(), name);
+        NSString *nsUserName = NSUserName();
+        int l = [nsUserName length];
+        memcpy(name, [nsUserName cStringUsingEncoding:NSUTF8StringEncoding], l);
+        name[l] = '\0';
 	}
 	return name;
 }

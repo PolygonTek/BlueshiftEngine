@@ -27,9 +27,9 @@ struct ProcessHandle {
 
 class BE_API PlatformIOSProcess : public PlatformAppleProcess {
 public:
-    static const wchar_t *      ExecutableFileName();
-    static const wchar_t *		ComputerName();
-    static const wchar_t *		UserName();
+    static const char *         ExecutableFileName();
+    static const char *		    ComputerName();
+    static const char *		    UserName();
 };
 
 typedef PlatformIOSProcess      PlatformProcess;

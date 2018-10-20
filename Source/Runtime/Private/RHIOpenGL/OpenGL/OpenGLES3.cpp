@@ -48,12 +48,12 @@ void OpenGLES3::Init() {
     gglGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_MEDIUM_INT, range, &shaderIntPrecisionMedium);
     gglGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_HIGH_INT, range, &shaderIntPrecisionHigh);
 
-    BE_LOG(L"Fragment shader lowp float precision: %d\n", shaderFloatPrecisionLow);
-    BE_LOG(L"Fragment shader mediump float precision: %d\n", shaderFloatPrecisionMedium);
-    BE_LOG(L"Fragment shader highp float precision: %d\n", shaderFloatPrecisionHigh);
-    BE_LOG(L"Fragment shader lowp int precision: %d\n", shaderFloatPrecisionLow);
-    BE_LOG(L"Fragment shader mediump int precision: %d\n", shaderFloatPrecisionMedium);
-    BE_LOG(L"Fragment shader highp int precision: %d\n", shaderFloatPrecisionHigh);
+    BE_LOG("Fragment shader lowp float precision: %d\n", shaderFloatPrecisionLow);
+    BE_LOG("Fragment shader mediump float precision: %d\n", shaderFloatPrecisionMedium);
+    BE_LOG("Fragment shader highp float precision: %d\n", shaderFloatPrecisionHigh);
+    BE_LOG("Fragment shader lowp int precision: %d\n", shaderFloatPrecisionLow);
+    BE_LOG("Fragment shader mediump int precision: %d\n", shaderFloatPrecisionMedium);
+    BE_LOG("Fragment shader highp int precision: %d\n", shaderFloatPrecisionHigh);
 }
 
 void OpenGLES3::DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {

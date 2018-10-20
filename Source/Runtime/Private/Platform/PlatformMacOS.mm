@@ -45,13 +45,13 @@ void PlatformMacOS::Quit() {
     [NSApp terminate: nil];
 }
 
-void PlatformMacOS::Log(const wchar_t *msg) {
-    NSString *nsmsg = (__bridge NSString *)WideStringToCFString(msg);
+void PlatformMacOS::Log(const char *msg) {
+    NSString *nsmsg = (__bridge NSString *)StringToCFString(msg);
     NSLog(@"%@", nsmsg);
 }
 
-void PlatformMacOS::Error(const wchar_t *msg) {
-    NSString *nsmsg = (__bridge NSString *)WideStringToCFString(msg);
+void PlatformMacOS::Error(const char *msg) {
+    NSString *nsmsg = (__bridge NSString *)StringToCFString(msg);
     
     NSAlert *alert = [[NSAlert alloc] init];
     [alert setMessageText:[NSString stringWithUTF8String:"Error"]];
@@ -80,7 +80,7 @@ bool PlatformMacOS::LockCursor(bool lock) {
             // Disconnects the mouse and cursor while an application is in the foreground.
             CGEventErr err = CGAssociateMouseAndMouseCursorPosition(false);
             if (err != CGEventNoErr) {
-                BE_ERRLOG(L"Could not disable mouse movement, CGAssociateMouseAndMouseCursorPosition returned %d\n", err);
+                BE_ERRLOG("Could not disable mouse movement, CGAssociateMouseAndMouseCursorPosition returned %d\n", err);
             }
             
             CGDisplayHideCursor(kCGDirectMainDisplay);
@@ -88,7 +88,7 @@ bool PlatformMacOS::LockCursor(bool lock) {
             // Connect the mouse and cursor
             CGEventErr err = CGAssociateMouseAndMouseCursorPosition(true);
             if (err != CGEventNoErr) {
-                BE_ERRLOG(L"Could not reenable mouse movement, CGAssociateMouseAndMouseCursorPosition returned %d\n", err);
+                BE_ERRLOG("Could not reenable mouse movement, CGAssociateMouseAndMouseCursorPosition returned %d\n", err);
             }
         
             CGDisplayShowCursor(kCGDirectMainDisplay);

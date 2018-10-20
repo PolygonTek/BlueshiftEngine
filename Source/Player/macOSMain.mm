@@ -15,11 +15,11 @@
 #include "Precompiled.h"
 #include "Application.h"
 
-static BE1::CVar            disp_width(L"disp_width", L"1280", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_height(L"disp_height", L"720", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_fullscreen(L"disp_fullscreen", L"0", BE1::CVar::Bool | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_bpp(L"disp_bpp", L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_frequency(L"disp_frequency", L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"");
+static BE1::CVar            disp_width("disp_width", "1280", BE1::CVar::Integer | BE1::CVar::Archive, "");
+static BE1::CVar            disp_height("disp_height", "720", BE1::CVar::Integer | BE1::CVar::Archive, "");
+static BE1::CVar            disp_fullscreen("disp_fullscreen", "0", BE1::CVar::Bool | BE1::CVar::Archive, "");
+static BE1::CVar            disp_bpp("disp_bpp", "0", BE1::CVar::Integer | BE1::CVar::Archive, "");
+static BE1::CVar            disp_frequency("disp_frequency", "0", BE1::CVar::Integer | BE1::CVar::Archive, "");
 
 @interface MyWindow : NSWindow
 

@@ -80,7 +80,7 @@ PlatformPosixThread *PlatformPosixThread::Create(threadFunc_t startProc, void *p
     startup->affinity = affinity;
 
     if (pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup) != 0) {
-        BE_FATALERROR(L"pthread_create");
+        BE_FATALERROR("pthread_create");
     }
     
     PlatformPosixThread *posixThread = new PlatformPosixThread;
@@ -101,7 +101,7 @@ void PlatformPosixThread::SetAffinity(int affinity) {
 
 void PlatformPosixThread::Wait(PlatformPosixThread *posixThread) {
     if (pthread_join(*posixThread->thread, NULL) != 0) {
-        BE_FATALERROR(L"pthread_join");
+        BE_FATALERROR("pthread_join");
     }
     delete posixThread->thread;
     delete posixThread;
@@ -110,7 +110,7 @@ void PlatformPosixThread::Wait(PlatformPosixThread *posixThread) {
 void PlatformPosixThread::WaitAll(int numThreads, PlatformPosixThread *posixThreads[]) {
     for (int i = 0; i < numThreads; i++) {
         if (pthread_join(*posixThreads[i]->thread, NULL) != 0) {
-            BE_FATALERROR(L"pthread_join");
+            BE_FATALERROR("pthread_join");
         }
 
         delete posixThreads[i]->thread;
