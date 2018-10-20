@@ -367,7 +367,7 @@ bool Lexer::ReadIdentifier(Str *token) {
     do {
         token->Append(c);
         c = (*++ptr);
-    } while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '@');
+    } while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '@' || (c & 0x80));
 
     return true;
 }
@@ -469,7 +469,7 @@ bool Lexer::ReadToken(Str *token, bool allowLineBreaks) {
         if (!ReadNumber(token)) {
             return false;
         }
-    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '@') {
+    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '@' || (c & 0x80)) {
         // if there is a identifier
         if (!ReadIdentifier(token)) {
             return false;
