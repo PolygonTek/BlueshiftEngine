@@ -2,7 +2,7 @@ Version History
 ---------------
 
 ### 0.6.0 (Work In Progress)
-- Added suppport for UTF8 string in engine and editor
+- Added suppport for Unicode (UTF-8) almost everywhere
 
 ### 0.5.0
 - Added support for GPU instancing for static/skinned meshes
