@@ -288,7 +288,7 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::Te
 
     lineOffsets[0] = 0;
     
-    while (unicodeChar = text.UTF8CharAdvance(offset)) {
+    while ((unicodeChar = text.UTF8CharAdvance(offset))) {
         if (unicodeChar == U'\n') {
             if (currentLineWidth > maxWidth) {
                 maxWidth = currentLineWidth;
@@ -364,7 +364,7 @@ AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor anchor, flo
     int offset = 0;
     char32_t unicodeChar;
 
-    while (unicodeChar = text.UTF8CharAdvance(offset)) {
+    while ((unicodeChar = text.UTF8CharAdvance(offset))) {
         if (unicodeChar == U'\n') {
             numLines++;
 
