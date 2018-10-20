@@ -37,7 +37,7 @@ const char *CmdArgs::Args(int start, int end) const {
         // escape string
         if (Str::FindChar(argPtrs[i], '\\')) {
             for (const char *p = argPtrs[i]; *p != '\0'; p++) {
-                if (*p == L'\\') {
+                if (*p == '\\') {
                     Str::Append(args, COUNT_OF(args), "\\\\");
                 } else {
                     int l = Str::Length(args);

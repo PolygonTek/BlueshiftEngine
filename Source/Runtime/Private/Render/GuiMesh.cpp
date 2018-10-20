@@ -247,7 +247,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
 }
 
 float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar) {
-    if (unicodeChar == L' ') {
+    if (unicodeChar == U' ') {
         return font->GetGlyphAdvance(unicodeChar) * sx;
     }
 

@@ -309,7 +309,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     WORD fActive;
     BOOL fMinimize;
     wchar_t compStr[3];
-    wchar_t *charPtr;
     int key;
 
     switch (message) {
@@ -398,7 +397,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                 ImmGetCompositionString(hImmContext, GCS_COMPSTR, compStr, bytes);
                 BE1::platform->QueEvent(BE1::Platform::CompositionEvent, (char32_t)compStr[0], 0, 0, NULL);
             } else {
-                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, (char32_t)'\b', 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, U'\b', 0, 0, NULL);
             }
         } else if (lParam & GCS_RESULTSTR) {
             int bytes = ImmGetCompositionString(hImmContext, GCS_RESULTSTR, NULL, 0);

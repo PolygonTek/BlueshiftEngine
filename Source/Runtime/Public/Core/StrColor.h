@@ -22,9 +22,6 @@ BE_NAMESPACE_BEGIN
 #define C_COLOR_INDEX(c)            ((c) - '0')
 
 // color escape macro
-#define WC_COLOR_INDEX(c)           ((c) - L'0')
-
-// color escape macro
 #define UC_COLOR_INDEX(c)           ((c) - U'0')
 
 // color escape character
@@ -45,25 +42,6 @@ const int C_COLOR_LAWN              = '<';
 const int C_COLOR_MINT              = '=';
 const int C_COLOR_VIOLET            = '>';
 const int C_COLOR_TEAL              = '?';
-
-// color escape character in wide character
-const int WC_COLOR_ESCAPE           = L'^';
-const int WC_COLOR_DEFAULT          = L'0';
-const int WC_COLOR_RED              = L'1';
-const int WC_COLOR_GREEN            = L'2';
-const int WC_COLOR_YELLOW           = L'3';
-const int WC_COLOR_BLUE             = L'4';
-const int WC_COLOR_CYAN             = L'5';
-const int WC_COLOR_MAGENTA          = L'6';
-const int WC_COLOR_WHITE            = L'7';
-const int WC_COLOR_GRAY             = L'8';
-const int WC_COLOR_BLACK            = L'9';
-const int WC_COLOR_ORANGE           = L':';
-const int WC_COLOR_PINK             = L';';
-const int WC_COLOR_LAWN             = L'<';
-const int WC_COLOR_MINT             = L'=';
-const int WC_COLOR_VIOLET           = L'>';
-const int WC_COLOR_TEAL             = L'?';
 
 // color escape character in unicode
 const uint32_t UC_COLOR_ESCAPE      = U'^';
@@ -101,23 +79,5 @@ const uint32_t UC_COLOR_TEAL        = U'?';
 #define S_COLOR_MINT                "^="
 #define S_COLOR_VIOLET              "^>"
 #define S_COLOR_TEAL                "^?"
-
-// color escape string 
-#define WS_COLOR_DEFAULT            L"^0"
-#define WS_COLOR_RED                L"^1"
-#define WS_COLOR_GREEN              L"^2"
-#define WS_COLOR_YELLOW             L"^3"
-#define WS_COLOR_BLUE               L"^4"
-#define WS_COLOR_CYAN               L"^5"
-#define WS_COLOR_MAGENTA            L"^6"
-#define WS_COLOR_WHITE              L"^7"
-#define WS_COLOR_GRAY               L"^8"
-#define WS_COLOR_BLACK              L"^9"
-#define WS_COLOR_ORANGE             L"^:"
-#define WS_COLOR_PINK               L"^;"
-#define WS_COLOR_LAWN               L"^<"
-#define WS_COLOR_MINT               L"^="
-#define WS_COLOR_VIOLET             L"^>"
-#define WS_COLOR_TEAL               L"^?"
 
 BE_NAMESPACE_END
