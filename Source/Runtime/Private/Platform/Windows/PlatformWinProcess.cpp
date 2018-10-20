@@ -164,10 +164,13 @@ ProcessHandle PlatformWinProcess::CreateProccess(const char *appPath, const char
     wchar_t commandLine[32768];
     WStr::snPrintf(commandLine, COUNT_OF(commandLine), L"%hs %hs", appPath, args);
 
-    wchar_t workingDirectory2[256];
-    wchar_t expandedWorkingDirectory[256];
-    PlatformWinUtils::UTF8ToUCS2(workingDirectory, workingDirectory2, 256);
-    ExpandEnvironmentStringsW(workingDirectory2, expandedWorkingDirectory, COUNT_OF(expandedWorkingDirectory));
+    wchar_t workingDirectory2[256] = L"";
+    wchar_t expandedWorkingDirectory[256] = L"";
+
+    if (workingDirectory && workingDirectory[0]) {
+        PlatformWinUtils::UTF8ToUCS2(workingDirectory, workingDirectory2, 256);
+        ExpandEnvironmentStringsW(workingDirectory2, expandedWorkingDirectory, COUNT_OF(expandedWorkingDirectory));
+    }
 
     if (!CreateProcessW(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, expandedWorkingDirectory, &si, &pi)) {
         Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
