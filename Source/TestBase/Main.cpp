@@ -19,12 +19,12 @@
 #include "TestCUDA.h"
 #include "TestLua.h"
 
-void SystemLog(const int logLevel, const wchar_t *msg) {
-    printf("%ls", msg);
+void SystemLog(const int logLevel, const char *msg) {
+    printf("%s", msg);
 }
 
-void SystemError(const int errLevel, const wchar_t *msg) {
-    printf("ERROR: %ls", msg);
+void SystemError(const int errLevel, const char *msg) {
+    printf("ERROR: %s", msg);
 };
 
 int main(int argc, char *argv[]) {

@@ -404,9 +404,9 @@ const char *PlatformAndroidFile::ExecutablePath() {
 
 static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
-    char		path[MaxAbsolutePath];
-    char		subpath[MaxAbsolutePath];
-    char		filename[MaxAbsolutePath];
+    char        path[MaxAbsolutePath];
+    char        subpath[MaxAbsolutePath];
+    char        filename[MaxAbsolutePath];
 
     if (subdir[0]) {
         Str::snPrintf(path, sizeof(path), "%s/%s", directory, subdir);
@@ -414,8 +414,7 @@ static void ListFilesRecursive(const char *directory, const char *subdir, const 
         Str::snPrintf(path, sizeof(path), "%s", directory);
     }
 
-    Str normalizedPath = NormalizeFilename(path);
-    DIR *dp = opendir(normalizedPath);
+    DIR *dp = opendir(path);
     if (dp) {
         while (dirent *dent = readdir(dp)) {
             if (!Str::Cmp(dent->d_name, ".") || !Str::Cmp(dent->d_name, "..")) {
@@ -474,12 +473,13 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
         nameFilter = "*";
     }
 
+    Str normalizedDirectory = NormalizeFilename(directory);
+
     files.Clear();
 
     if (recursive) {
-        ListFilesRecursive(directory, "", nameFilter, includeSubDir, files);
+        ListFilesRecursive(normalizedDirectory, "", nameFilter, includeSubDir, files);
     } else {
-        Str normalizedDirectory = NormalizeFilename(directory);
         DIR *dp = opendir(normalizedDirectory);
         if (dp) {
             FileInfo fileInfo;

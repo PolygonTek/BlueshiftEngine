@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Str.h"
 #include "PlatformGeneric.h"
 #include "PlatformAndroid.h"
 #include "PlatformUtils/Android/AndroidJNI.h"

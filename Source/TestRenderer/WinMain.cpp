@@ -34,13 +34,21 @@ static BE1::RHI::Handle     subRenderTarget = BE1::RHI::NullRenderTarget;
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK            SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-static void SystemLog(int logLevel, const wchar_t *msg) {
-    OutputDebugString(msg);
+static void SystemLog(int logLevel, const char *text) {
+    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
+    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+
+    OutputDebugString(wText);
 }
 
-static void SystemError(int errLevel, const wchar_t *msg) {
+static void SystemError(int errLevel, const char *text) {
+    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
+    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
-    MessageBox(hwnd, msg, L"Error", MB_OK);
+    MessageBox(hwnd, wText, L"Error", MB_OK);
     if (errLevel == BE1::FatalErr) {
         exit(0);
     }

@@ -23,12 +23,12 @@ const char *PlatformLinuxProcess::ExecutableFileName() {
     return "";
 }
 
-const wchar_t *PlatformLinuxProcess::ComputerName() {
+const char *PlatformLinuxProcess::ComputerName() {
     assert(0);
     return "";
 }
 
-const wchar_t *PlatformLinuxProcess::UserName() {
+const char *PlatformLinuxProcess::UserName() {
     assert(0);
     return "";
 }
