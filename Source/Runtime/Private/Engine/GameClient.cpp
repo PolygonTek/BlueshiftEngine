@@ -277,7 +277,7 @@ void GameClient::DrawStretchPic(float x, float y, float w, float h, float s1, fl
 void GameClient::DrawBar(float x, float y, float w, float h, const Color4 &rgba) {
     renderSystem.GetCurrentRenderContext()->SetColor(rgba);
     
-    renderSystem.GetCurrentRenderContext()->DrawPic(x, y, w, h, rgba.a < 1.0f ? materialManager.blendMaterial : materialManager.whiteMaterial);	
+    renderSystem.GetCurrentRenderContext()->DrawPic(x, y, w, h, materialManager.blendMaterial);
 }
 
 void GameClient::DrawString(int x, int y, const Str &str, int size, int flags) {
@@ -316,6 +316,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
             char32_t nextUnicodeChar = text.UTF8CharAdvance(offset);
 
             if (nextUnicodeChar != 0 && nextUnicodeChar != UC_COLOR_ESCAPE) {
+                currentLineLength += 2;
                 continue;
             } else {
                 offset = prevOffset;
@@ -511,8 +512,8 @@ void GameClient::DrawConsoleScreen() {
     int screenWidth = renderSystem.GetCurrentRenderContext()->GetRenderingWidth();
 
     // Draw console background.
-    SetColor(Color4(1.0f, 1.0f, 1.0f, 0.8f));
-    DrawPic(0, 0, screenWidth, consoleHeight, consoleMaterial);
+    SetColor(Color4(0.0f, 0.0f, 0.0f, 0.8f));
+    DrawPic(0, 0, screenWidth, consoleHeight, materialManager.blendMaterial);
     DrawBar(0, consoleHeight, screenWidth, 3, Color4::black);
 
     // Draw version string.
@@ -520,29 +521,29 @@ void GameClient::DrawConsoleScreen() {
     SetTextColor(Color4(1.0f, 0.5f, 0.0f, 1.0f));
     DrawString(CONSOLE_TEXT_BORDER, consoleHeight - (CONSOLE_FONT_HEIGHT * 1.5f), versionString, -1, DTF_RIGHT | DTF_DROPSHADOW);
 
-    int y = consoleHeight - (CONSOLE_FONT_HEIGHT) * 3 - CONSOLE_FONT_Y_SPACING;
+    int y = consoleHeight - (CONSOLE_FONT_HEIGHT + CONSOLE_FONT_Y_SPACING) * 3;
 
     // Draw back scroll marks.
     if (consoleUpScroll > 0) {
         for (int x = CONSOLE_TEXT_BORDER; x < screenWidth; x += 100) {
             DrawString(x, y, "~");
         }
-        y -= CONSOLE_FONT_HEIGHT;
+        y -= (CONSOLE_FONT_HEIGHT + CONSOLE_FONT_Y_SPACING);
     }
 
     SetTextColor(Color4::white);
 
     // Calculate number of lines to show.
-    int numDrawLines = consoleHeight / (CONSOLE_FONT_HEIGHT + CONSOLE_FONT_Y_SPACING) - 2;
+    int numDrawLines = consoleHeight / (CONSOLE_FONT_HEIGHT + CONSOLE_FONT_Y_SPACING) - 3;
 
     // Draw content of console text.
     for (int i = console.currentLineIndex; i >= console.currentLineIndex - numDrawLines; i--) {
-        int j = i - consoleUpScroll;
-        if (j < 0) {
-            j = 0;
+        int index = (i - consoleUpScroll) % console.textLines.Count();
+        if (index < 0) {
+            index += console.textLines.Count();
         }
 
-        const Str &string = console.textLines[j % console.textLines.Count()];
+        const Str &string = console.textLines[index];
 
         DrawString(CONSOLE_TEXT_BORDER, y, string);
 
@@ -599,8 +600,8 @@ void GameClient::DrawConsoleCmdLine() {
         caretW = currentFont->GetGlyphAdvance(text[offset]);
         caretColor = Color4(1, 1, 1, 0.5f);
     } else {
-        caretW = 1;
-        caretColor = Color4(1, 1, 1, 1.0f);
+        caretW = 2;
+        caretColor = Color4(1, 1, 1, 0.8f);
     }
 
     // Draw caret.
@@ -696,9 +697,14 @@ void GameClient::ConsoleKeyEvent(KeyCode::Enum key) {
         return;
     case KeyCode::PageUp: // Scroll up
     case KeyCode::MouseWheelUp:
-        consoleUpScroll += 2;
-        if (consoleUpScroll > console.textLines.Count() - consoleHeight) {
-            consoleUpScroll = console.textLines.Count() - consoleHeight;
+        {
+            int numDrawLines = consoleHeight / (CONSOLE_FONT_HEIGHT + CONSOLE_FONT_Y_SPACING) - 3;
+            int maxLines = console.NumLines();
+
+            consoleUpScroll += 2;
+            if (consoleUpScroll > maxLines - numDrawLines) {
+                consoleUpScroll = maxLines - numDrawLines;
+            }
         }
         return;
     case KeyCode::PageDown: // Scroll down

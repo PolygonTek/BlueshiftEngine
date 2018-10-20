@@ -29,7 +29,7 @@ void Console::Init() {
     cmdSystem.AddCommand("clear", Cmd_ConClear);
     cmdSystem.AddCommand("condump", Cmd_ConDump);
 
-    textLines.SetCount(256);
+    textLines.SetCount(1024);
 
     currentLineIndex = 0;
 
@@ -63,6 +63,14 @@ int Console::GetFirstLineIndex() const {
     return index;
 }
 
+int Console::NumLines() const {
+    int numLines = console.currentLineIndex - console.GetFirstLineIndex();
+    if (numLines < 0) {
+        numLines += console.textLines.Count();
+    }
+    return numLines + 1;
+}
+
 void Console::Print(const Str &inString) {
     if (!initialized) {
         return;
@@ -75,13 +83,14 @@ void Console::Print(const Str &inString) {
 
     while ((unicodeChar = inString.UTF8CharAdvance(offset))) {
         switch (unicodeChar) {
-        case '\t':
+        case U'\t':
             textLines[currentLineIndex].Append("    ");
             break;
-        case '\r': // ignore CR
+        case U'\r': // ignore CR
             break;
-        case '\n':
+        case U'\n':
             currentLineIndex = (currentLineIndex + 1) % textLines.Count();
+            textLines[currentLineIndex].Clear();
             break;
         default:
             textLines[currentLineIndex].AppendUTF8Char(unicodeChar);

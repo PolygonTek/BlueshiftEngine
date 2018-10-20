@@ -34,6 +34,7 @@ public:
     void                Clear();
 
     int                 GetFirstLineIndex() const;
+    int                 NumLines() const;
 
     void                Print(const Str &string);
 
