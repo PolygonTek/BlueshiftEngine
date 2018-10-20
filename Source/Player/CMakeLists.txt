@@ -17,18 +17,7 @@ set(ALL_FILES
     Application.h
     Application.cpp)
 
-if (XAMARIN AND IOS)
-    list(APPEND ALL_FILES
-        XamarinIOSMain.cpp
-        Binding/XMCustomView.h 
-        Binding/XMCustomView.m 
-        Binding/XMCustomViewDelegate.h 
-        Binding/XMUtilities.h
-        Binding/XMUtilities.m
-        Binding/XMBindingLibrarySample/XMBindingLibrarySample-Prefix.pch
-        Binding/XMBindingLibrarySample/XMBindingLibrarySample.h
-        Binding/XMBindingLibrarySample/XMBindingLibrarySample.m)
-elseif (ANDROID)
+if (ANDROID)
     list(APPEND ALL_FILES
         android_native_app_glue.h
         android_native_app_glue.c
@@ -84,31 +73,6 @@ if (XAMARIN)
     set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
     set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
 
-    #APPLE
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++0x")
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO")
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES")
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu99")
-    #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS NO)
-    #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] YES)
-    if (WITHDEBUG)
-        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP NO)
-    else ()
-        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP YES)
-        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] NO)
-    endif ()
-
-    if (IOS)
-		add_framework(${PROJECT_NAME} Foundation)
-		add_framework(${PROJECT_NAME} UIKit)
-		add_framework(${PROJECT_NAME} OpenGLES)
-		add_framework(${PROJECT_NAME} CoreGraphics)
-		add_framework(${PROJECT_NAME} QuartzCore)
-		add_framework(${PROJECT_NAME} OpenAL)
-		add_framework(${PROJECT_NAME} AudioToolbox)
-		add_framework(${PROJECT_NAME} AVFoundation)
-	endif ()
     target_link_libraries(${PROJECT_NAME} 
         zlib
         minizip
