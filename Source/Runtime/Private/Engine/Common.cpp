@@ -217,7 +217,7 @@ int Common::ProcessPlatformEvent() {
             gameClient.CharEvent((char32_t)ev.value);
             break;
         case Platform::CompositionEvent:
-            gameClient.CompositionEvent((int)ev.value);
+            gameClient.CompositionEvent((char32_t)ev.value);
             break;
         case Platform::MouseDeltaEvent:
             gameClient.MouseDeltaEvent((int)ev.value, (int)ev.value2, ev.time);

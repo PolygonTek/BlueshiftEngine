@@ -74,8 +74,8 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     lineOffset = 1;
 
     keyFocus = KEYFOCUS_GAME;
-    composition = false;
-    insertMode = false;
+    compositionMode = false;
+    replaceMode = false;
 
     for (int i = 0; i < CMDLINE_HISTORY; i++) {
         cmdLines[i][0] = CMDLINE_PROMPT_MARK;
@@ -596,8 +596,8 @@ void GameClient::DrawConsoleCmdLine() {
     int caretH = CONSOLE_FONT_HEIGHT + 2;
     Color4 caretColor;
 
-    if (insertMode || composition) {
-        caretW = currentFont->GetGlyphAdvance(text[offset]);
+    if (replaceMode || compositionMode) {
+        caretW = currentFont->GetGlyphAdvance(UTF8::Char(text, offset));
         caretColor = Color4(1, 1, 1, 0.5f);
     } else {
         caretW = 2;
@@ -722,16 +722,12 @@ void GameClient::ConsoleKeyEvent(KeyCode::Enum key) {
         return;
     case KeyCode::LeftArrow:
         if (lineOffset > 1) {
-            int previousCharOffset = lineOffset;
-            UTF8::Previous(lineText, previousCharOffset);
-            lineOffset = previousCharOffset;
+            UTF8::Previous(lineText, lineOffset);
         }
         return;
     case KeyCode::RightArrow:
-        if (lineText[lineOffset] && !composition) {
-            int nextCharOffset = lineOffset;
-            UTF8::Advance(lineText, nextCharOffset);
-            lineOffset = nextCharOffset;
+        if (lineText[lineOffset] && !compositionMode) {
+            UTF8::Advance(lineText, lineOffset);
         }
         return;
     case KeyCode::UpArrow: // History up
@@ -783,7 +779,11 @@ void GameClient::ConsoleCharEvent(char32_t unicodeChar) {
     char *lineText = cmdLines[editLine];
     char buffer[CMDLINE_SIZE];
 
-    if (insertMode) {
+    if (!replaceMode && strlen(lineText) + charSize >= CMDLINE_SIZE) {
+        return;
+    }
+
+    if (replaceMode) {
         // Replace a character.
         int nextCharOffset = lineOffset;
         UTF8::Advance(lineText, nextCharOffset);
@@ -797,66 +797,79 @@ void GameClient::ConsoleCharEvent(char32_t unicodeChar) {
 
         strcpy(lineText, temp);
         strcpy(&lineText[charSize], buffer);
-
-        lineOffset += charSize;
-    } else if (strlen(lineText) + charSize < CMDLINE_SIZE) {
-        if (lineText[lineOffset]) {
-            // Insert a character.
-            if (!composition) {
-                strcpy(buffer, &lineText[lineOffset]);
-                strcpy(&lineText[lineOffset + charSize], buffer);
-            }
-            memcpy(&lineText[lineOffset], temp, charSize);
-
-            lineOffset += charSize;
-        } else {
-            // Append a character.
-            strcpy(&lineText[lineOffset], temp);
-
-            lineOffset += charSize;
+    } else if (lineText[lineOffset]) {
+        // Insert a character.
+        if (!compositionMode) {
+            strcpy(buffer, &lineText[lineOffset]);
+            strcpy(&lineText[lineOffset + charSize], buffer);
         }
+        memcpy(&lineText[lineOffset], temp, charSize);
+    } else {
+        // Append a character.
+        strcpy(&lineText[lineOffset], temp);
     }
 
-    composition = false;
+    lineOffset += charSize;
+
+    compositionMode = false;
 }
 
-void GameClient::ConsoleCompositionEvent(char32_t key) {
-    char buffer[CMDLINE_SIZE];
+void GameClient::ConsoleCompositionEvent(char32_t unicodeChar) {
+    char temp[7];
+    char *tempPtr = temp;
+    UTF8::Encode(tempPtr, unicodeChar);
+    int charSize = tempPtr - temp;
+    temp[charSize] = '\0';
+
     char *lineText = cmdLines[editLine];
+    char buffer[CMDLINE_SIZE];
 
-    if ((KeyCode::Enum)key == KeyCode::Backspace) {
-        if (lineOffset > 0) {
-            strcpy(buffer, &lineText[lineOffset + 1]);
-            strcpy(&lineText[lineOffset], buffer);
-            composition = false;
+    if (unicodeChar == U'\b' && lineOffset > 1) {
+        int nextCharOffset = lineOffset;
+        UTF8::Advance(lineText, nextCharOffset);
+
+        strcpy(buffer, &lineText[nextCharOffset]);
+        strcpy(&lineText[lineOffset], buffer);
+
+        compositionMode = false;
+        return;
+    }
+
+    if (unicodeChar < 32) {
+        return;
+    }
+
+    if (!replaceMode && strlen(lineText) + charSize >= CMDLINE_SIZE) {
+        return;
+    }
+
+    if (replaceMode) {
+        // Replace a character.
+        int nextCharOffset = lineOffset;
+        UTF8::Advance(lineText, nextCharOffset);
+
+        int appendedBytes = charSize - (nextCharOffset - lineOffset);
+        if (strlen(lineText) + appendedBytes >= CMDLINE_SIZE) {
+            return;
         }
-        return;
-    }
 
-    if (key < 32) {
-        return;
-    }
+        strcpy(buffer, &lineText[nextCharOffset]);
 
-    if (lineOffset >= CMDLINE_SIZE - 1) {
-        return;
-    }
-
-    if (insertMode) {
-        lineText[lineOffset] = key;
-    } else if (Str::Length(lineText) < CMDLINE_SIZE - 1) {
-        if (lineText[lineOffset]) {
-            if (!composition) {
-                strcpy(buffer, &lineText[lineOffset]);
-                strcpy(&lineText[lineOffset + 1], buffer);
-            }
-            lineText[lineOffset] = key;
-        } else {
-            lineText[lineOffset] = key;
-            lineText[lineOffset + 1] = 0;
+        strcpy(lineText, temp);
+        strcpy(&lineText[charSize], buffer);
+    } else if (lineText[lineOffset]) {
+        // Insert a character.
+        if (!compositionMode) {
+            strcpy(buffer, &lineText[lineOffset]);
+            strcpy(&lineText[lineOffset + charSize], buffer);
         }
+        memcpy(&lineText[lineOffset], temp, charSize);
+    } else {
+        // Append a character.
+        strcpy(&lineText[lineOffset], temp);
     }
 
-    composition = true;
+    compositionMode = true;
 }
 
 void GameClient::KeyEvent(KeyCode::Enum key, bool down) {
@@ -882,7 +895,7 @@ void GameClient::KeyEvent(KeyCode::Enum key, bool down) {
             }
 
             if (key == KeyCode::Insert) {
-                insertMode = ! insertMode;
+                replaceMode = !replaceMode;
                 return;
             }
             
@@ -903,9 +916,9 @@ void GameClient::CharEvent(char32_t unicodeChar) {
     }
 }
 
-void GameClient::CompositionEvent(int key) {
+void GameClient::CompositionEvent(char32_t unicodeChar) {
     if (keyFocus == KEYFOCUS_CONSOLE) {
-        ConsoleCompositionEvent(key);
+        ConsoleCompositionEvent(unicodeChar);
         return;
     }
 }

@@ -80,8 +80,8 @@ public:
     void                DrawStringInRect(const Rect &rect, int marginX, int marginY, const Str &str, int size = -1, int flags = 0);
 
     void                KeyEvent(KeyCode::Enum key, bool down);
-    void                CharEvent(char32_t key);
-    void                CompositionEvent(int key);
+    void                CharEvent(char32_t unicodeChar);
+    void                CompositionEvent(char32_t unicodeChar);
     void                MouseMoveEvent(int x, int y, int time);
     void                MouseDeltaEvent(int dx, int dy, int time);
     void                JoyAxisEvent(int dx, int dy, int time);
@@ -127,8 +127,8 @@ private:
     int                 lineOffset;     ///< Current command line position in byte offset
 
     int                 keyFocus;
-    bool                composition;
-    bool                insertMode;
+    bool                replaceMode;
+    bool                compositionMode;
 
     static void         Cmd_Connect(const CmdArgs &args);
     static void         Cmd_Disconnect(const CmdArgs &args);
