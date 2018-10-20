@@ -279,27 +279,27 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                BE_LOG(L"AMOTION_EVENT_ACTION_DOWN: %i %i", x, y);
+                BE_LOG("AMOTION_EVENT_ACTION_DOWN: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_UP:
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                BE_LOG(L"AMOTION_EVENT_ACTION_UP: %i %i", x, y);
+                BE_LOG("AMOTION_EVENT_ACTION_UP: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_DOWN:
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                BE_LOG(L"AMOTION_EVENT_ACTION_POINTER_DOWN: %i %i", x, y);
+                BE_LOG("AMOTION_EVENT_ACTION_POINTER_DOWN: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_UP:
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                BE_LOG(L"AMOTION_EVENT_ACTION_POINTER_UP: %i %i", x, y);
+                BE_LOG("AMOTION_EVENT_ACTION_POINTER_UP: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_MOVE:
                 // ACTION_MOVE events are batched, unlike the other events.
@@ -308,7 +308,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                     pointerId = (uint64_t)AMotionEvent_getPointerId(event, i);
                     x = (int)AMotionEvent_getX(event, i);
                     y = (int)AMotionEvent_getY(event, i);
-                    BE_LOG(L"AMOTION_EVENT_ACTION_MOVE(%i/%i): %i %i", (int)i, (int)pointerCount, x, y);
+                    BE_LOG("AMOTION_EVENT_ACTION_MOVE(%i/%i): %i %i", (int)i, (int)pointerCount, x, y);
                 }
                 break;
             }

@@ -108,7 +108,7 @@ const float userContentScaleFactor = 2.0f;
     
     GLenum status = gglCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        BE_FATALERROR(L"failed to make complete framebuffer object 0x%x", status);
+        BE_FATALERROR("failed to make complete framebuffer object 0x%x", status);
         gglDeleteFramebuffers(1, &framebuffer);
         gglDeleteRenderbuffers(1, &colorbuffer);
         gglDeleteRenderbuffers(1, &depthbuffer);
@@ -189,7 +189,7 @@ const float userContentScaleFactor = 2.0f;
     
     GLenum status = gglCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        BE_FATALERROR(L"Failed to make complete framebuffer object 0x%x", status);
+        BE_FATALERROR("Failed to make complete framebuffer object 0x%x", status);
     }
     
     [self drawView:nil];

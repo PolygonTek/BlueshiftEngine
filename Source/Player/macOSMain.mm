@@ -420,8 +420,8 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     
     const NSArray *arguments = [[NSProcessInfo processInfo] arguments];
     for (int i = 1; i < arguments.count; i++) { // skip executable path
-        const wchar_t *wstr = (const wchar_t *)[arguments[i] cStringUsingEncoding:NSUTF32LittleEndianStringEncoding];
-        initParms.args.AppendArg(wstr);
+        const char *str = (const char *)[arguments[i] cStringUsingEncoding:NSUTF8StringEncoding];
+        initParms.args.AppendArg(str);
     }
     
     BE1::Str playerDir = BE1::PlatformFile::ExecutablePath();

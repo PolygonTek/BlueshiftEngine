@@ -61,7 +61,7 @@ PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, voi
     startup->affinity = affinity;
 
     if (pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup) != 0) {
-        BE_FATALERROR(L"pthread_create");
+        BE_FATALERROR("pthread_create");
     }
     
     PlatformAndroidThread *androidThread = new PlatformAndroidThread;
@@ -82,7 +82,7 @@ void PlatformAndroidThread::SetAffinity(int affinity) {
 
 void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
     if (pthread_join(*androidThread->thread, NULL) != 0) {
-        BE_FATALERROR(L"pthread_join");
+        BE_FATALERROR("pthread_join");
     }
     delete androidThread->thread;
     delete androidThread;
@@ -91,7 +91,7 @@ void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
 void PlatformAndroidThread::WaitAll(int numThreads, PlatformAndroidThread *androidThreads[]) {
     for (int i = 0; i < numThreads; i++) {
         if (pthread_join(*androidThreads[i]->thread, NULL) != 0) {
-            BE_FATALERROR(L"pthread_join");
+            BE_FATALERROR("pthread_join");
         }
 
         delete androidThreads[i]->thread;
