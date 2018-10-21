@@ -591,17 +591,15 @@ void GameClient::DrawConsoleCmdLine() {
     
     // Determine caret shape.
     int caretX = CONSOLE_TEXT_BORDER + textWidth;
-    int caretY = consoleHeight - CONSOLE_FONT_HEIGHT * 2 + 2;
+    int caretY = consoleHeight - CONSOLE_FONT_HEIGHT * 2 + 1;
     int caretW = 0;
-    int caretH = CONSOLE_FONT_HEIGHT + 2;
-    Color4 caretColor;
+    int caretH = CONSOLE_FONT_HEIGHT;
+    Color4 caretColor = Color4(1, 1, 1, 0.5f);
 
     if (replaceMode || compositionMode) {
         caretW = currentFont->GetGlyphAdvance(UTF8::Char(text, offset));
-        caretColor = Color4(1, 1, 1, 0.5f);
     } else {
         caretW = 2;
-        caretColor = Color4(1, 1, 1, 0.8f);
     }
 
     // Draw caret.
