@@ -20,7 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const char *    FontManager::defaultFontFilename = "Data/EngineFonts/NanumGothic_Coding.ttf";//"Data/EngineFonts/Lucida Console12.font"
+const char *    FontManager::defaultFontFilename = "Data/EngineFonts/D2Coding.ttf";//"Data/EngineFonts/Lucida Console12.font"
 Font *          FontManager::defaultFont;
 FontManager     fontManager;
 
