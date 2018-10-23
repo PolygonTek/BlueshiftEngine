@@ -15,10 +15,23 @@
 package com.polygontek.BlueshiftPlayer;
 
 import java.util.concurrent.Semaphore;
+
+import android.graphics.drawable.BitmapDrawable;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.annotation.Keep;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.SurfaceView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.InterstitialAd;
@@ -33,15 +46,45 @@ import com.google.android.gms.ads.reward.RewardedVideoAdListener;
 
 @Keep
 public class GameAdMobActivity extends GameActivity implements RewardedVideoAdListener {
+    private static final String TAG = GameAdMobActivity.class.getName();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        mActivity = this;
+
         super.onCreate(savedInstanceState);
 
-        mActivity = this;
+        ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, 0);
+        mActivityLayout = new LinearLayout(this);
+        setContentView(mActivityLayout, params);
+
+        // tell Android that we want volume controls to change the media volume, aka music
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
+
+        String Language = java.util.Locale.getDefault().toString();
+
+        Log.d(TAG, "Android version is " + android.os.Build.VERSION.RELEASE);
+        Log.d(TAG, "Android manufacturer is " + android.os.Build.MANUFACTURER);
+        Log.d(TAG, "Android model is " + android.os.Build.MODEL);
+        Log.d(TAG, "OS language is set to " + Language);
+
+        // Tell the activity's window that we want to do our own drawing
+        // to its surface.  This prevents the view hierarchy from drawing to
+        // it, though we can still add views to capture input if desired.
+        getWindow().takeSurface(null);
+
+        mSurfaceView = new SurfaceView(this);
+        mSurfaceView.getHolder().addCallback(this);
+        setContentView(mSurfaceView);
     }
 
     @Override
     protected void onDestroy() {
+        if (mBannerAdView != null) {
+            mBannerAdView.destroy();
+            mBannerAdView = null;
+        }
         if (mRewardedVideoAd != null) {
             mRewardedVideoAd.destroy(this);
             mRewardedVideoAd = null;
@@ -51,6 +94,9 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
 
     @Override
     protected void onPause() {
+        if (mBannerAdView != null) {
+            mBannerAdView.pause();
+        }
         if (mRewardedVideoAd != null) {
             mRewardedVideoAd.pause(this);
         }
@@ -59,6 +105,9 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
 
     @Override
     protected void onResume() {
+        if (mBannerAdView != null) {
+            mBannerAdView.resume();
+        }
         if (mRewardedVideoAd != null) {
             mRewardedVideoAd.resume(this);
         }
@@ -70,6 +119,141 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
             @Override
             public void run() {
                 MobileAds.initialize(mActivity, appID);
+            }
+        });
+    }
+
+    public void initializeBannerAd() {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Set up event notifications for banner ads
+                mBannerAdListener = new AdListener() {
+                    @Override
+                    public void onAdLoaded() {
+                        // Code to be executed when an ad finishes loading.
+                        bannerAdLoaded();
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(int errorCode) {
+                        // Code to be executed when an ad request fails.
+                        String errorMessage;
+                        switch (errorCode) {
+                            case AdRequest.ERROR_CODE_INTERNAL_ERROR:
+                                errorMessage = "Internal error";
+                                break;
+                            case AdRequest.ERROR_CODE_INVALID_REQUEST:
+                                errorMessage = "Invalid request";
+                                break;
+                            case AdRequest.ERROR_CODE_NETWORK_ERROR:
+                                errorMessage = "Network Error";
+                                break;
+                            case AdRequest.ERROR_CODE_NO_FILL:
+                                errorMessage = "No fill";
+                                break;
+                            default:
+                                errorMessage = String.format("Unexpected error code: %s", errorCode);
+                                break;
+                        }
+                        bannerAdFailedToLoad(errorMessage);
+                    }
+
+                    @Override
+                    public void onAdOpened() {
+                        // Code to be executed when an ad opens an overlay that
+                        // covers the screen.
+                        bannerAdOpened();
+                    }
+
+                    @Override
+                    public void onAdClosed() {
+                        // Code to be executed when when the user is about to return
+                        // to the app after tapping on an ad.
+                        bannerAdClosed();
+                    }
+
+                    @Override
+                    public void onAdLeftApplication() {
+                        // Code to be executed when the user has left the app.
+                        bannerAdLeftApplication();
+                    }
+                };
+            }
+        });
+    }
+
+    public void requestBannerAd(final String unitID, final String testDevices[]) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AdRequest.Builder requestBuilder = new AdRequest.Builder();
+                requestBuilder.addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
+                for (int i = 0; i < testDevices.length; i++) {
+                    requestBuilder.addTestDevice(testDevices[i]);
+                }
+                AdRequest request = requestBuilder.build();
+
+                if (mBannerAdView != null) {
+                    mBannerAdView.destroy();
+                }
+                mBannerAdView = new AdView(mActivity);
+                mBannerAdView.setAdSize(AdSize.BANNER); // set size
+                mBannerAdView.setAdListener(mBannerAdListener);
+                mBannerAdView.setAdUnitId(unitID);
+
+                final DisplayMetrics dm = getResources().getDisplayMetrics();
+                final float scale = dm.density;
+                mAdPopupWindow = new PopupWindow(mActivity);
+                mAdPopupWindow.setWidth((int)(320 * scale));
+                mAdPopupWindow.setHeight((int)(50 * scale));
+                mAdPopupWindow.setWindowLayoutMode(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                mAdPopupWindow.setClippingEnabled(false);
+
+                LinearLayout popupLayout = new LinearLayout(mActivity);
+                final int padding = (int)(-5 * scale);
+                popupLayout.setPadding(padding, padding, padding, padding);
+                popupLayout.setOrientation(LinearLayout.VERTICAL);
+
+                ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                params.setMargins(0,0,0,0);
+                popupLayout.addView(mBannerAdView, params);
+
+                mAdPopupWindow.setContentView(popupLayout);
+
+                mBannerAdView.loadAd(request);
+            }
+        });
+    }
+
+    public void showBannerAd(final boolean showOnBottomOfScreen, final int offsetX, final int offsetY) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mAdPopupWindow.isShowing()) {
+                    return;
+                }
+
+                mAdPopupWindow.showAtLocation(mActivityLayout, showOnBottomOfScreen ? Gravity.BOTTOM : Gravity.TOP, offsetX, offsetY);
+                mAdPopupWindow.update();
+
+                mBannerAdView.resume();
+            }
+        });
+    }
+
+    public void hideBannerAd() {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!mAdPopupWindow.isShowing()) {
+                    return;
+                }
+
+                mAdPopupWindow.dismiss();
+                mAdPopupWindow.update();
+
+                mBannerAdView.pause();
             }
         });
     }
@@ -142,6 +326,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
                     requestBuilder.addTestDevice(testDevices[i]);
                 }
                 AdRequest request = requestBuilder.build();
+
                 mInterstitialAd = new InterstitialAd(mActivity);
                 mInterstitialAd.setAdListener(mInterstitialAdListener);
                 mInterstitialAd.setAdUnitId(unitID);
@@ -211,6 +396,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
                     requestBuilder.addTestDevice(testDevices[i]);
                 }
                 AdRequest request = requestBuilder.build();
+
                 mRewardedVideoAd.loadAd(unitID, request);
             }
         });
@@ -314,6 +500,12 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     //
     // JNI functions for passing events to script functions.
     //
+    private native void bannerAdLoaded();
+    private native void bannerAdFailedToLoad(String errorMessage);
+    private native void bannerAdOpened();
+    private native void bannerAdClosed();
+    private native void bannerAdLeftApplication();
+
     private native void interstitialAdLoaded();
     private native void interstitialAdFailedToLoad(String errorMessage);
     private native void interstitialAdOpened();
@@ -328,6 +520,11 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     private native void rewardBasedVideoAdClosed();
     private native void rewardBasedVideoAdLeftApplication();
 
+    private SurfaceView mSurfaceView;
+    private LinearLayout mActivityLayout = null;
+    private PopupWindow mAdPopupWindow = null;
+    private AdView mBannerAdView = null;
+    private AdListener mBannerAdListener = null;
     private InterstitialAd mInterstitialAd = null;
     private AdListener mInterstitialAdListener = null;
     private boolean mInterstitialAdLoaded = false;

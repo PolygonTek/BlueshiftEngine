@@ -16,6 +16,7 @@
 
 class AdMob {
 public:
+    class BannerAd;
     class InterstitialAd;
     class RewardBasedVideoAd;
 
@@ -25,8 +26,20 @@ public:
 
     static void ProcessQueue();
 
+    static BannerAd bannerAd;
     static InterstitialAd interstitialAd;
     static RewardBasedVideoAd rewardBasedVideoAd;
+};
+
+class AdMob::BannerAd {
+public:
+    void Init();
+
+    void Request(const char *unitID, const char *testDevices = "");
+
+    void Show(bool showOnBottomOfScreen, int offsetX, int offsetY);
+
+    void Hide();
 };
 
 class AdMob::InterstitialAd {
@@ -45,7 +58,7 @@ public:
     void Init();
 
     void Request(const char *unitID, const char *testDevices = "");
-    
+
     bool IsReady() const;
 
     void Present();

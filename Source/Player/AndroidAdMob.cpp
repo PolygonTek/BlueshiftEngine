@@ -17,10 +17,16 @@
 #include "android_native_app_glue.h"
 #include "AndroidAdMob.h"
 
+AdMob::BannerAd AdMob::bannerAd;
 AdMob::InterstitialAd AdMob::interstitialAd;
 AdMob::RewardBasedVideoAd AdMob::rewardBasedVideoAd;
 
 static jmethodID javaMethod_initializeAds = nullptr;
+
+static jmethodID javaMethod_initializeBannerAd = nullptr;
+static jmethodID javaMethod_requestBannerAd = nullptr;
+static jmethodID javaMethod_showBannerAd = nullptr;
+static jmethodID javaMethod_hideBannerAd = nullptr;
 
 static jmethodID javaMethod_initializeInterstitialAd = nullptr;
 static jmethodID javaMethod_requestInterstitialAd = nullptr;
@@ -42,6 +48,11 @@ void AdMob::RegisterLuaModule(LuaCpp::State *state) {
 
     javaMethod_initializeAds = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeAds", "(Ljava/lang/String;)V", false);
 
+    javaMethod_initializeBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeBannerAd", "()V", false);
+    javaMethod_requestBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "requestBannerAd", "(Ljava/lang/String;[Ljava/lang/String;)V", false);
+    javaMethod_showBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "showBannerAd", "(ZII)V", false);
+    javaMethod_hideBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "hideBannerAd", "()V", false);
+
     javaMethod_initializeInterstitialAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeInterstitialAd", "()V", false);
     javaMethod_requestInterstitialAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "requestInterstitialAd", "(Ljava/lang/String;[Ljava/lang/String;)V", false);
     javaMethod_isInterstitialAdLoaded = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "isInterstitialAdLoaded", "()Z", false);
@@ -57,6 +68,15 @@ void AdMob::RegisterLuaModule(LuaCpp::State *state) {
     state->RegisterModule("admob", [](LuaCpp::Module &module) {
         module["init"].SetFunc(AdMob::Init);
 
+        LuaCpp::Selector _BannerAd = module["BannerAd"];
+
+        _BannerAd.SetObj(bannerAd);
+        _BannerAd.AddObjMembers(bannerAd,
+            "init", &BannerAd::Init,
+            "request", &BannerAd::Request,
+            "show", &BannerAd::Show,
+            "hide", &BannerAd::Hide);
+
         LuaCpp::Selector _InterstitialAd = module["InterstitialAd"];
 
         _InterstitialAd.SetObj(interstitialAd);
@@ -67,7 +87,7 @@ void AdMob::RegisterLuaModule(LuaCpp::State *state) {
             "present", &InterstitialAd::Present);
 
         LuaCpp::Selector _RewardBasedVideoAd = module["RewardBasedVideoAd"];
-        
+
         _RewardBasedVideoAd.SetObj(rewardBasedVideoAd);
         _RewardBasedVideoAd.AddObjMembers(rewardBasedVideoAd,
             "init", &RewardBasedVideoAd::Init,
@@ -94,6 +114,50 @@ void AdMob::ProcessQueue() {
         callbackQueue.front()();
         callbackQueue.pop();
     }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void AdMob::BannerAd::Init() {
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_initializeBannerAd);
+}
+
+void AdMob::BannerAd::Request(const char *unitID, const char *testDevices) {
+    if (!unitID || !unitID[0]) {
+        // ad unit of interstitial provided by Google for testing purposes.
+        unitID = "ca-app-pub-3940256099942544/6300978111";
+    }
+
+    BE1::StrArray testDeviceList;
+    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
+
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    jobjectArray javaTestDevices = (jobjectArray)env->NewObjectArray(testDeviceList.Count(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
+
+    for (int i = 0; i < testDeviceList.Count(); i++) {
+        env->SetObjectArrayElement(javaTestDevices, i, env->NewStringUTF(testDeviceList[i].c_str()));
+    }
+
+    jstring javaUnitID = BE1::Str(unitID).ToJavaString(env);
+
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_requestBannerAd, javaUnitID, javaTestDevices);
+
+    env->DeleteLocalRef(javaUnitID);
+}
+
+void AdMob::BannerAd::Show(bool showOnBottomOfScreen, int offsetX, int offsetY) {
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_showBannerAd, showOnBottomOfScreen, offsetX, offsetY);
+}
+
+void AdMob::BannerAd::Hide() {
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_hideBannerAd);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -151,7 +215,7 @@ void AdMob::RewardBasedVideoAd::Init() {
 void AdMob::RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
     if (!unitID || !unitID[0]) {
         // ad unit of rewarded video provided by Google for testing purposes.
-        unitID = "ca-app-pub-3940256099942544/1712485313";
+        unitID = "ca-app-pub-3940256099942544/5224354917";
     }
 
     BE1::StrArray testDeviceList;
@@ -171,7 +235,7 @@ void AdMob::RewardBasedVideoAd::Request(const char *unitID, const char *testDevi
 
     env->DeleteLocalRef(javaUnitID);
 }
-    
+
 bool AdMob::RewardBasedVideoAd::IsReady() const {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
@@ -185,12 +249,53 @@ void AdMob::RewardBasedVideoAd::Present() {
 }
 
 //
-// Internal functions of JNI to call script functions
+// Internal functions to call script functions
 //
 
 // Called when an ad request has successfully loaded.
+static void bannerAdLoaded() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_loaded"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when an ad request failed to load.
+static void bannerAdFailedToLoad(const BE1::Str &errorMessage) {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_failed_to_load"];
+    if (function.IsFunction()) {
+        function(errorMessage.c_str());
+    }
+}
+
+// Called when an ad is shown.
+static void bannerAdOpened() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_opening"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when the ad is closed.
+static void bannerAdClosed() {
+    // Create new banner object and request again
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_closed"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when the ad click caused the user to leave the application.
+static void bannerAdLeftApplication() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_leaving_application"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when an ad request has successfully loaded.
 static void interstitialAdLoaded() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["loaded"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_loaded"];
     if (function.IsFunction()) {
         function();
     }
@@ -198,7 +303,7 @@ static void interstitialAdLoaded() {
 
 // Called when an ad request failed to load.
 static void interstitialAdFailedToLoad(const BE1::Str &errorMessage) {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["failed_to_load"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_failed_to_load"];
     if (function.IsFunction()) {
         function(errorMessage.c_str());
     }
@@ -206,7 +311,7 @@ static void interstitialAdFailedToLoad(const BE1::Str &errorMessage) {
 
 // Called when an ad is shown.
 static void interstitialAdOpened() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["opening"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_opening"];
     if (function.IsFunction()) {
         function();
     }
@@ -215,7 +320,7 @@ static void interstitialAdOpened() {
 // Called when the ad is closed.
 static void interstitialAdClosed() {
     // Create new interstitial object and request again
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["closed"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_closed"];
     if (function.IsFunction()) {
         function();
     }
@@ -223,7 +328,7 @@ static void interstitialAdClosed() {
 
 // Called when the ad click caused the user to leave the application.
 static void interstitialAdLeftApplication() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["leaving_application"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_leaving_application"];
     if (function.IsFunction()) {
         function();
     }
@@ -231,7 +336,7 @@ static void interstitialAdLeftApplication() {
 
 // Called when an ad request has successfully loaded.
 static void rewardBasedVideoAdLoaded() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["loaded"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_loaded"];
     if (function.IsFunction()) {
         function();
     }
@@ -239,7 +344,7 @@ static void rewardBasedVideoAdLoaded() {
 
 // Called when an ad request failed to load.
 static void rewardBasedVideoAdFailedToLoad(const BE1::Str &errorMessage) {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["failed_to_load"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_failed_to_load"];
     if (function.IsFunction()) {
         function(errorMessage.c_str());
     }
@@ -247,7 +352,7 @@ static void rewardBasedVideoAdFailedToLoad(const BE1::Str &errorMessage) {
 
 // Called when an ad is shown.
 static void rewardBasedVideoAdOpened() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["opening"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_opening"];
     if (function.IsFunction()) {
         function();
     }
@@ -255,7 +360,7 @@ static void rewardBasedVideoAdOpened() {
 
 // Called when the ad starts to play.
 static void rewardBasedVideoAdStarted() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["started"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_started"];
     if (function.IsFunction()) {
         function();
     }
@@ -263,7 +368,7 @@ static void rewardBasedVideoAdStarted() {
 
 // Called when the user should be rewarded for watching a video.
 static void rewardBasedVideoAdRewarded(const BE1::Str &type, int amount) {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["rewarded"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_rewarded"];
     if (function.IsFunction()) {
         function(type.c_str(), amount);
     }
@@ -271,7 +376,7 @@ static void rewardBasedVideoAdRewarded(const BE1::Str &type, int amount) {
 
 // Called when the ad is closed.
 static void rewardBasedVideoAdClosed() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["closed"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_closed"];
     if (function.IsFunction()) {
         function();
     }
@@ -279,17 +384,57 @@ static void rewardBasedVideoAdClosed() {
 
 // Called when the ad click caused the user to leave the application.
 static void rewardBasedVideoAdLeftApplication() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["leaving_application"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_leaving_application"];
     if (function.IsFunction()) {
         function();
     }
 }
 
 //
-// JNI functions to call in java source code
+// JNI callbacks invoked from the GameAdMobActivity class
 //
 
 extern "C" {
+
+// native void GameAdMobActivity::bannerAdLoaded()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_bannerAdLoaded(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { bannerAdLoaded(); });
+}
+
+// native void GameAdMobActivity::bannerAdFailedToLoad(String errorMessage)
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_bannerAdFailedToLoad(JNIEnv *env, jobject thiz, jstring javaErrMsg) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    const char *errMsg = env->GetStringUTFChars(javaErrMsg, nullptr);
+    BE1::Str errMsgStr = errMsg;
+
+    env->ReleaseStringUTFChars(javaErrMsg, errMsg);
+
+    callbackQueue.push([errMsgStr] { bannerAdFailedToLoad(errMsgStr); });
+}
+
+// native void GameAdMobActivity::bannerAdOpened()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_bannerAdOpened(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { bannerAdOpened(); });
+}
+
+// native void GameAdMobActivity::bannerAdClosed()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_bannerAdClosed(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { bannerAdClosed(); });
+}
+
+// native void GameAdMobActivity::bannerAdLeftApplication()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_bannerAdLeftApplication(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { bannerAdLeftApplication(); });
+}
 
 // native void GameAdMobActivity::interstitialAdLoaded()
 JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_interstitialAdLoaded(JNIEnv *env, jobject thiz) {
