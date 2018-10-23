@@ -16,12 +16,24 @@
 #include "Application.h"
 #include "iOSAdMob.h"
 
-RewardBasedVideoAd rewardBasedVideoAd;
+AdMob::InterstitialAd AdMob::interstitialAd;
+AdMob::RewardBasedVideoAd AdMob::rewardBasedVideoAd;
 
-void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state, UIViewController<GADRewardBasedVideoAdDelegate> *viewController) {
-    rewardBasedVideoAd.viewController = viewController;
+void AdMob::RegisterLuaModule(LuaCpp::State *state, UIViewController<GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController) {
+    AdMob::viewController = viewController;
 
     state->RegisterModule("admob", [](LuaCpp::Module &module) {
+        module["init"].SetFunc(AdMob::Init);
+
+        LuaCpp::Selector _InterstitialAd = module["InterstitialAd"];
+        
+        _InterstitialAd.SetObj(interstitialAd);
+        _InterstitialAd.AddObjMembers(interstitialAd,
+            "init", &InterstitialAd::Init,
+            "request", &InterstitialAd::Request,
+            "is_ready", &InterstitialAd::IsReady,
+            "present", &InterstitialAd::Present);
+
         LuaCpp::Selector _RewardBasedVideoAd = module["RewardBasedVideoAd"];
         
         _RewardBasedVideoAd.SetObj(rewardBasedVideoAd);
@@ -33,12 +45,18 @@ void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state, UIViewControlle
     });
 }
 
-void RewardBasedVideoAd::Init(const char *appID) {
+void AdMob::Init(const char *appID) {
+    // Initialize Google mobile ads
     NSString *nsAppID = [[NSString alloc] initWithBytes:appID length:strlen(appID) encoding:NSUTF8StringEncoding];
     [GADMobileAds configureWithApplicationID:nsAppID];
 }
 
-void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
+//-------------------------------------------------------------------------------------------------
+
+void AdMob::InterstitialAd::Init() {
+}
+
+void AdMob::InterstitialAd::Request(const char *unitID, const char *testDevices) {
     GADRequest *request = [GADRequest request];
 
     BE1::StrArray testDeviceList;
@@ -54,23 +72,64 @@ void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
     }
     
     if (!unitID || !unitID[0]) {
-        // Google-provided test ad units
+        // ad unit of interstitial provided by Google for testing purposes.
+        unitID = "ca-app-pub-3940256099942544/4411468910";
+    }
+
+    NSString *nsUnitID = [[NSString alloc] initWithBytes:unitID length:strlen(unitID) encoding:NSUTF8StringEncoding];
+
+    interstitial = [[GADInterstitial alloc] initWithAdUnitID:nsUnitID];
+    interstitial.delegate = AdMob::viewController;
+
+    [interstitial loadRequest:request];
+}
+
+bool AdMob::InterstitialAd::IsReady() const {
+    return [interstitial isReady];
+}
+
+void AdMob::InterstitialAd::Present() {
+    [interstitial presentFromRootViewController:AdMob::viewController];
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void AdMob::RewardBasedVideoAd::Init() {
+}
+
+void AdMob::RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
+    GADRequest *request = [GADRequest request];
+
+    BE1::StrArray testDeviceList;
+    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
+
+    if (testDeviceList.Count() > 0) {
+        NSString *nsTestDevices[256];
+        for (int i = 0; i < testDeviceList.Count(); i++) {
+            nsTestDevices[i] = [[NSString alloc] initWithBytes:testDeviceList[i].c_str() length:testDeviceList[i].Length() encoding:NSUTF8StringEncoding];
+        }
+    
+        request.testDevices = [NSArray arrayWithObjects:nsTestDevices count:testDeviceList.Count()];
+    }
+    
+    if (!unitID || !unitID[0]) {
+        // ad unit of rewarded video provided by Google for testing purposes.
         unitID = "ca-app-pub-3940256099942544/1712485313";
     }
+
     NSString *nsUnitID = [[NSString alloc] initWithBytes:unitID length:strlen(unitID) encoding:NSUTF8StringEncoding];
-    // Set up event notification
+
     // Required to set the delegate prior to loading an ad.
-    [GADRewardBasedVideoAd sharedInstance].delegate = viewController;
-    [[GADRewardBasedVideoAd sharedInstance] loadRequest:request
-                                            withAdUnitID:nsUnitID];
+    [GADRewardBasedVideoAd sharedInstance].delegate = AdMob::viewController;
+
+    // Request to load an ad.
+    [[GADRewardBasedVideoAd sharedInstance] loadRequest:request withAdUnitID:nsUnitID];
 }
-    
-bool RewardBasedVideoAd::IsReady() const {
+
+bool AdMob::RewardBasedVideoAd::IsReady() const {
     return [[GADRewardBasedVideoAd sharedInstance] isReady];
 }
 
-void RewardBasedVideoAd::Present() {
-    [[GADRewardBasedVideoAd sharedInstance] presentFromRootViewController:viewController];
+void AdMob::RewardBasedVideoAd::Present() {
+    [[GADRewardBasedVideoAd sharedInstance] presentFromRootViewController:AdMob::viewController];
 }
-
-

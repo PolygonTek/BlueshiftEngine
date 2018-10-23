@@ -15,20 +15,44 @@
 #include "Precompiled.h"
 #include "GoogleMobileAds/GoogleMobileAds.h"
 
-class RewardBasedVideoAd {
+class AdMob {
 public:
-	void Init(const char *appID);
+    class InterstitialAd;
+    class RewardBasedVideoAd;
+
+    static void Init(const char *appID);
+
+    static void RegisterLuaModule(LuaCpp::State *state, UIViewController<GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController);
+
+    static UIViewController<GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController;
+
+    static InterstitialAd interstitialAd;
+    static RewardBasedVideoAd rewardBasedVideoAd;
+};
+
+class AdMob::InterstitialAd {
+public:
+    void Init();
+
+    void Request(const char *unitID, const char *testDevices = "");
+
+    bool IsReady() const;
+
+    void Present();
+
+private:
+    GADInterstitial *interstitial;
+};
+
+class AdMob::RewardBasedVideoAd {
+public:
+    void Init();
 
     void Request(const char *unitID, const char *testDevices = "");
     
     bool IsReady() const;
-    
+
     void Present();
-    
-    static void RegisterLuaModule(LuaCpp::State *state, UIViewController<GADRewardBasedVideoAdDelegate> *viewController);
-    
-private:
-    UIViewController<GADRewardBasedVideoAdDelegate> *viewController;
 };
 
-extern RewardBasedVideoAd rewardBasedVideoAd;
+extern 

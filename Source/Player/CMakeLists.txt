@@ -7,7 +7,7 @@ set(BS_APP_VERSION "1.0" CACHE STRING "BS_APP_VERSION variable defaulting")
 set(BS_PRODUCT_NAME "BlueshiftPlayer" CACHE STRING "BS_PRODUCT_NAME variable defaulting")
 set(BS_TARGET_DEVICE "1,2" CACHE STRING "BS_TARGET_DEVICE variable defaulting")
 set(BS_ORIENTATION "<string>UIInterfaceOrientationPortrait</string>" CACHE STRING "BS_ORIENTATION variable defaulting")
-set(BS_USE_ADMOB_REWARD_BASED_VIDEO FALSE CACHE BOOL "BS_USE_ADMOB_REWARD_BASED_VIDEO variable defaulting")
+set(BS_USE_ADMOB FALSE CACHE BOOL "BS_USE_ADMOB variable defaulting")
 
 project(BlueshiftPlayer)
 
@@ -23,7 +23,7 @@ if (ANDROID)
         android_native_app_glue.c
         AndroidMain.cpp)
 
-    if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
+    if (BS_USE_ADMOB)
         list(APPEND ALL_FILES 
             AndroidAdMob.h
             AndroidAdMob.cpp)
@@ -35,7 +35,7 @@ elseif (APPLE)
             iOSLaunchScreen.xib
             Assets.xcassets)
 
-        if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
+        if (BS_USE_ADMOB)
             list(APPEND ALL_FILES 
                 iOSAdMob.h
                 iOSAdMob.mm)
@@ -121,8 +121,8 @@ else ()
     endif ()
 
     if (ANDROID)
-        if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
-            add_definitions(-DUSE_ADMOB_REWARD_BASED_VIDEO=1)
+        if (BS_USE_ADMOB)
+            add_definitions(-DUSE_ADMOB=1)
         endif ()
     elseif (APPLE)
         # App name
@@ -171,8 +171,8 @@ else ()
             add_framework(${PROJECT_NAME} AudioToolbox)
             add_framework(${PROJECT_NAME} AVFoundation)
 
-            if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
-                add_definitions(-DUSE_ADMOB_REWARD_BASED_VIDEO=1)
+            if (BS_USE_ADMOB)
+                add_definitions(-DUSE_ADMOB=1)
 
                 set(GoogleMobileAds ${ENGINE_INCLUDE_DIR}/ThirdParty/GoogleMobileAds/GoogleMobileAds)
 

@@ -17,7 +17,7 @@
 #include "android_native_app_glue.h"
 #include <dlfcn.h>
 #include <android/sensor.h>
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+#ifdef USE_ADMOB
 #include "AndroidAdMob.h"
 #endif
 
@@ -167,8 +167,8 @@ static void InitDisplay(ANativeWindow *window) {
 
         app.Init();
 
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
-        RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
+#ifdef USE_ADMOB
+        AdMob::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
 #endif
 
         app.LoadAppScript("Application");
@@ -546,8 +546,8 @@ void android_main(android_app *appState) {
 
             BE1::gameClient.RunFrame();
 
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
-            rewardBasedVideoAd.ProcessQueue();
+#ifdef USE_ADMOB
+            AdMob::ProcessQueue();
 #endif
 
             app.Update();

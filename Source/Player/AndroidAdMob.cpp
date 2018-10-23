@@ -17,9 +17,17 @@
 #include "android_native_app_glue.h"
 #include "AndroidAdMob.h"
 
-RewardBasedVideoAd rewardBasedVideoAd;
+AdMob::InterstitialAd AdMob::interstitialAd;
+AdMob::RewardBasedVideoAd AdMob::rewardBasedVideoAd;
 
 static jmethodID javaMethod_initializeAds = nullptr;
+
+static jmethodID javaMethod_initializeInterstitialAd = nullptr;
+static jmethodID javaMethod_requestInterstitialAd = nullptr;
+static jmethodID javaMethod_isInterstitialAdLoaded = nullptr;
+static jmethodID javaMethod_showInterstitialAd = nullptr;
+
+static jmethodID javaMethod_initializeRewardedVideoAd = nullptr;
 static jmethodID javaMethod_requestRewardedVideoAd = nullptr;
 static jmethodID javaMethod_isRewardedVideoAdLoaded = nullptr;
 static jmethodID javaMethod_showRewardedVideoAd = nullptr;
@@ -27,12 +35,19 @@ static jmethodID javaMethod_showRewardedVideoAd = nullptr;
 static std::queue<std::function<void()>> callbackQueue;
 static std::mutex callbackQueueMutex;
 
-void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state) {
+void AdMob::RegisterLuaModule(LuaCpp::State *state) {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
     jclass javaClassActivity = env->GetObjectClass(BE1::AndroidJNI::activity->clazz);
 
     javaMethod_initializeAds = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeAds", "(Ljava/lang/String;)V", false);
+
+    javaMethod_initializeInterstitialAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeInterstitialAd", "()V", false);
+    javaMethod_requestInterstitialAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "requestInterstitialAd", "(Ljava/lang/String;[Ljava/lang/String;)V", false);
+    javaMethod_isInterstitialAdLoaded = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "isInterstitialAdLoaded", "()Z", false);
+    javaMethod_showInterstitialAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "showInterstitialAd", "()V", false);
+
+    javaMethod_initializeRewardedVideoAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeRewardedVideoAd", "()V", false);
     javaMethod_requestRewardedVideoAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "requestRewardedVideoAd", "(Ljava/lang/String;[Ljava/lang/String;)V", false);
     javaMethod_isRewardedVideoAdLoaded = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "isRewardedVideoAdLoaded", "()Z", false);
     javaMethod_showRewardedVideoAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "showRewardedVideoAd", "()V", false);
@@ -40,6 +55,17 @@ void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state) {
     env->DeleteLocalRef(javaClassActivity);
 
     state->RegisterModule("admob", [](LuaCpp::Module &module) {
+        module["init"].SetFunc(AdMob::Init);
+
+        LuaCpp::Selector _InterstitialAd = module["InterstitialAd"];
+
+        _InterstitialAd.SetObj(interstitialAd);
+        _InterstitialAd.AddObjMembers(interstitialAd,
+            "init", &InterstitialAd::Init,
+            "request", &InterstitialAd::Request,
+            "is_ready", &InterstitialAd::IsReady,
+            "present", &InterstitialAd::Present);
+
         LuaCpp::Selector _RewardBasedVideoAd = module["RewardBasedVideoAd"];
         
         _RewardBasedVideoAd.SetObj(rewardBasedVideoAd);
@@ -51,7 +77,7 @@ void RewardBasedVideoAd::RegisterLuaModule(LuaCpp::State *state) {
     });
 }
 
-void RewardBasedVideoAd::Init(const char *appID) {
+void AdMob::Init(const char *appID) {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
     jstring javaAppID = BE1::Str(appID).ToJavaString(env);
@@ -61,9 +87,70 @@ void RewardBasedVideoAd::Init(const char *appID) {
     env->DeleteLocalRef(javaAppID);
 }
 
-void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
+void AdMob::ProcessQueue() {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    while (!callbackQueue.empty()) {
+        callbackQueue.front()();
+        callbackQueue.pop();
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void AdMob::InterstitialAd::Init() {
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_initializeInterstitialAd);
+}
+
+void AdMob::InterstitialAd::Request(const char *unitID, const char *testDevices) {
     if (!unitID || !unitID[0]) {
-        // Google-provided test ad units
+        // ad unit of interstitial provided by Google for testing purposes.
+        unitID = "ca-app-pub-3940256099942544/1033173712";
+    }
+
+    BE1::StrArray testDeviceList;
+    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
+
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    jobjectArray javaTestDevices = (jobjectArray)env->NewObjectArray(testDeviceList.Count(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
+
+    for (int i = 0; i < testDeviceList.Count(); i++) {
+        env->SetObjectArrayElement(javaTestDevices, i, env->NewStringUTF(testDeviceList[i].c_str()));
+    }
+
+    jstring javaUnitID = BE1::Str(unitID).ToJavaString(env);
+
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_requestInterstitialAd, javaUnitID, javaTestDevices);
+
+    env->DeleteLocalRef(javaUnitID);
+}
+
+bool AdMob::InterstitialAd::IsReady() const {
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    return BE1::AndroidJNI::CallBooleanMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_isInterstitialAdLoaded);
+}
+
+void AdMob::InterstitialAd::Present() {
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_showInterstitialAd);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void AdMob::RewardBasedVideoAd::Init() {
+    JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
+
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_initializeRewardedVideoAd);
+}
+
+void AdMob::RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
+    if (!unitID || !unitID[0]) {
+        // ad unit of rewarded video provided by Google for testing purposes.
         unitID = "ca-app-pub-3940256099942544/1712485313";
     }
 
@@ -85,79 +172,200 @@ void RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
     env->DeleteLocalRef(javaUnitID);
 }
     
-bool RewardBasedVideoAd::IsReady() const {
+bool AdMob::RewardBasedVideoAd::IsReady() const {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
     return BE1::AndroidJNI::CallBooleanMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_isRewardedVideoAdLoaded);
 }
 
-void RewardBasedVideoAd::Present() {
+void AdMob::RewardBasedVideoAd::Present() {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_showRewardedVideoAd);
 }
 
-void RewardBasedVideoAd::ProcessQueue() {
-    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+//
+// Internal functions of JNI to call script functions
+//
 
-    while (!callbackQueue.empty()) {
-        callbackQueue.front()();
-        callbackQueue.pop();
+// Called when an ad request has successfully loaded.
+static void interstitialAdLoaded() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["loaded"];
+    if (function.IsFunction()) {
+        function();
     }
 }
 
-static void DidRewardUser(const BE1::Str &type, int amount) {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
+// Called when an ad request failed to load.
+static void interstitialAdFailedToLoad(const BE1::Str &errorMessage) {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["failed_to_load"];
+    if (function.IsFunction()) {
+        function(errorMessage.c_str());
+    }
+}
+
+// Called when an ad is shown.
+static void interstitialAdOpened() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["opening"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when the ad is closed.
+static void interstitialAdClosed() {
+    // Create new interstitial object and request again
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["closed"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when the ad click caused the user to leave the application.
+static void interstitialAdLeftApplication() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["leaving_application"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when an ad request has successfully loaded.
+static void rewardBasedVideoAdLoaded() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["loaded"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when an ad request failed to load.
+static void rewardBasedVideoAdFailedToLoad(const BE1::Str &errorMessage) {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["failed_to_load"];
+    if (function.IsFunction()) {
+        function(errorMessage.c_str());
+    }
+}
+
+// Called when an ad is shown.
+static void rewardBasedVideoAdOpened() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["opening"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when the ad starts to play.
+static void rewardBasedVideoAdStarted() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["started"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Called when the user should be rewarded for watching a video.
+static void rewardBasedVideoAdRewarded(const BE1::Str &type, int amount) {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["rewarded"];
     if (function.IsFunction()) {
         function(type.c_str(), amount);
     }
 }
 
-static void DidReceiveAd() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_receive_ad"];
+// Called when the ad is closed.
+static void rewardBasedVideoAdClosed() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["closed"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-static void DidOpen() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_open"];
+// Called when the ad click caused the user to leave the application.
+static void rewardBasedVideoAdLeftApplication() {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["leaving_application"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-static void DidStartPlaying() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_start_playing"];
-    if (function.IsFunction()) {
-        function();
-    }
-}
-
-static void DidClose() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_close"];
-    if (function.IsFunction()) {
-        function();
-    }
-}
-
-static void WillLeaveApplication() {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["will_leave_application"];
-    if (function.IsFunction()) {
-        function();
-    }
-}
-
-static void DidFailToLoad(const BE1::Str &errorMessage) {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
-    if (function.IsFunction()) {    
-        function(errorMessage.c_str());
-    }
-}
+//
+// JNI functions to call in java source code
+//
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidRewardUser(JNIEnv *env, jobject thiz, jstring javaType, jint javaAmount) {
+// native void GameAdMobActivity::interstitialAdLoaded()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_interstitialAdLoaded(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { interstitialAdLoaded(); });
+}
+
+// native void GameAdMobActivity::interstitialAdFailedToLoad(String errorMessage)
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_interstitialAdFailedToLoad(JNIEnv *env, jobject thiz, jstring javaErrMsg) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    const char *errMsg = env->GetStringUTFChars(javaErrMsg, nullptr);
+    BE1::Str errMsgStr = errMsg;
+
+    env->ReleaseStringUTFChars(javaErrMsg, errMsg);
+
+    callbackQueue.push([errMsgStr] { interstitialAdFailedToLoad(errMsgStr); });
+}
+
+// native void GameAdMobActivity::interstitialAdOpened()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_interstitialAdOpened(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { interstitialAdOpened(); });
+}
+
+// native void GameAdMobActivity::interstitialAdClosed()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_interstitialAdClosed(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { interstitialAdClosed(); });
+}
+
+// native void GameAdMobActivity::interstitialAdLeftApplication()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_interstitialAdLeftApplication(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { interstitialAdLeftApplication(); });
+}
+
+// native void GameAdMobActivity::rewardBasedVideoAdLoaded()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdLoaded(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { rewardBasedVideoAdLoaded(); });
+}
+
+// native void GameAdMobActivity::rewardBasedVideoAdFailedToLoad(String errorMessage)
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdFailedToLoad(JNIEnv *env, jobject thiz, jstring javaErrMsg) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    const char *errMsg = env->GetStringUTFChars(javaErrMsg, nullptr);
+    BE1::Str errMsgStr = errMsg;
+
+    env->ReleaseStringUTFChars(javaErrMsg, errMsg);
+
+    callbackQueue.push([errMsgStr] { rewardBasedVideoAdFailedToLoad(errMsgStr); });
+}
+
+// native void GameAdMobActivity::rewardBasedVideoAdOpened()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdOpened(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { rewardBasedVideoAdOpened(); });
+}
+
+// native void GameAdMobActivity::rewardBasedVideoAdStarted()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdStarted(JNIEnv *env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(callbackQueueMutex);
+
+    callbackQueue.push([] { rewardBasedVideoAdStarted(); });
+}
+
+// native void GameAdMobActivity::rewardBasedVideoAdRewarded(String type, int amount)
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdRewarded(JNIEnv *env, jobject thiz, jstring javaType, jint javaAmount) {
     std::lock_guard<std::mutex> lock(callbackQueueMutex);
 
     const char *type = env->GetStringUTFChars(javaType, nullptr);
@@ -166,48 +374,21 @@ JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rew
 
     env->ReleaseStringUTFChars(javaType, type);
 
-    callbackQueue.push([typeStr, amount] { DidRewardUser(typeStr, amount); });
+    callbackQueue.push([typeStr, amount] { rewardBasedVideoAdRewarded(typeStr, amount); });
 }
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidReceiveAd(JNIEnv *env, jobject thiz) {
+// native void GameAdMobActivity::rewardBasedVideoAdClosed()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdClosed(JNIEnv *env, jobject thiz) {
     std::lock_guard<std::mutex> lock(callbackQueueMutex);
 
-    callbackQueue.push([] { DidReceiveAd(); });
+    callbackQueue.push([] { rewardBasedVideoAdClosed(); });
 }
 
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidOpen(JNIEnv *env, jobject thiz) {
+// native void GameAdMobActivity::rewardBasedVideoAdLeftApplication()
+JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdLeftApplication(JNIEnv *env, jobject thiz) {
     std::lock_guard<std::mutex> lock(callbackQueueMutex);
 
-    callbackQueue.push([] { DidOpen(); });
-}
-
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidStartPlaying(JNIEnv *env, jobject thiz) {
-    std::lock_guard<std::mutex> lock(callbackQueueMutex);
-
-    callbackQueue.push([] { DidStartPlaying(); });
-}
-
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidClose(JNIEnv *env, jobject thiz) {
-    std::lock_guard<std::mutex> lock(callbackQueueMutex);
-
-    callbackQueue.push([] { DidClose(); });
-}
-
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdWillLeaveApplication(JNIEnv *env, jobject thiz) {
-    std::lock_guard<std::mutex> lock(callbackQueueMutex);
-
-    callbackQueue.push([] { WillLeaveApplication(); });
-}
-
-JNIEXPORT void JNICALL Java_com_polygontek_BlueshiftPlayer_GameAdMobActivity_rewardBasedVideoAdDidFailToLoad(JNIEnv *env, jobject thiz, jstring javaErrMsg) {
-    std::lock_guard<std::mutex> lock(callbackQueueMutex);
-
-    const char *errMsg = env->GetStringUTFChars(javaErrMsg, nullptr);
-    BE1::Str errMsgStr = errMsg;
-
-    env->ReleaseStringUTFChars(javaErrMsg, errMsg);
-
-    callbackQueue.push([errMsgStr] { DidFailToLoad(errMsgStr); });
+    callbackQueue.push([] { rewardBasedVideoAdLeftApplication(); });
 }
 
 }

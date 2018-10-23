@@ -18,7 +18,7 @@
 #include <sys/sysctl.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+#ifdef USE_ADMOB
 #include "iOSAdMob.h"
 #endif
 
@@ -30,8 +30,9 @@
         _Pragma("clang diagnostic pop") \
     } while (0)
 
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
-@interface RootViewController : UIViewController<GADRewardBasedVideoAdDelegate> {
+// GADBannerViewDelegate
+#ifdef USE_ADMOB
+@interface RootViewController : UIViewController<GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> {
 #else
 @interface RootViewController : UIViewController {
 #endif
@@ -191,55 +192,98 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 #ifdef USE_ADMOB_BANNER
 
-/// Tells the delegate an ad request loaded an ad.
+// Tells the delegate an ad request loaded an ad.
 - (void)adViewDidReceiveAd:(GADBannerView *)adView {
 }
 
-/// Tells the delegate an ad request failed.
+// Tells the delegate an ad request failed.
 - (void)adView:(GADBannerView *)adView didFailToReceiveAdWithError:(GADRequestError *)error {
     const char *errorDescription = (const char *)[error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];    
 }
 
-/// Tells the delegate that a full-screen view will be presented in response
-/// to the user clicking on an ad.
+// Tells the delegate that a full-screen view will be presented in response to the user clicking on an ad.
 - (void)adViewWillPresentScreen:(GADBannerView *)adView {
 }
 
-/// Tells the delegate that the full-screen view will be dismissed.
+// Tells the delegate that the full-screen view will be dismissed.
 - (void)adViewWillDismissScreen:(GADBannerView *)adView {
 }
 
-/// Tells the delegate that the full-screen view has been dismissed.
+// Tells the delegate that the full-screen view has been dismissed.
 - (void)adViewDidDismissScreen:(GADBannerView *)adView {
 }
 
-/// Tells the delegate that a user click will open another app (such as
-/// the App Store), backgrounding the current app.
+// Tells the delegate that a user click will open another app (such as the App Store), backgrounding the current app.
 - (void)adViewWillLeaveApplication:(GADBannerView *)adView {
 }
 
 #endif
 
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+#ifdef USE_ADMOB
 
-- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didRewardUserWithReward:(GADAdReward *)reward {
-    const char *rewardType = (const char *)[reward.type cStringUsingEncoding:NSUTF8StringEncoding];
-    int rewardAmount = [reward.amount intValue];
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
-    if (function.IsFunction()) {
-       function(rewardType, rewardAmount);
-    }
-}
-
-- (void)rewardBasedVideoAdDidReceiveAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_receive_ad"];
+// Tells the delegate an ad request succeeded.
+- (void)interstitialDidReceiveAd:(GADInterstitial *)ad {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["loaded"];
     if (function.IsFunction()) {
         function();
     }
 }
 
+// Tells the delegate an ad request failed.
+- (void)interstitial:(GADInterstitial *)ad didFailToReceiveAdWithError:(GADRequestError *)error {
+    const char *errorDescription = (const char *)[error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["failed_to_load"];
+    if (function.IsFunction()) {
+        function(errorDescription);
+    }
+}
+
+// Tells the delegate that an interstitial will be presented.
+- (void)interstitialWillPresentScreen:(GADInterstitial *)ad {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["opening"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Tells the delegate the interstitial is to be animated off the screen.
+- (void)interstitialWillDismissScreen:(GADInterstitial *)ad {
+}
+
+// Tells the delegate the interstitial had been animated off the screen.
+- (void)interstitialDidDismissScreen:(GADInterstitial *)ad {
+    // Create new interstitial object and request again
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["closed"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Tells the delegate that a user click will open another app (such as the App Store), backgrounding the current app.
+- (void)interstitialWillLeaveApplication:(GADInterstitial *)ad {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["leaving_application"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAdDidReceiveAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["loaded"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didFailToLoadWithError:(NSError *)error {
+    const char *errorDescription = (const char *)[error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["failed_to_load"];
+    if (function.IsFunction()) {
+        function(errorDescription);
+    }
+}
+
 - (void)rewardBasedVideoAdDidOpen:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_open"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["opening"];
     if (function.IsFunction()) {
         function();
     }
@@ -248,14 +292,23 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 }
 
 - (void)rewardBasedVideoAdDidStartPlaying:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_start_playing"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["started"];
     if (function.IsFunction()) {
         function();
     }
 }
 
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didRewardUserWithReward:(GADAdReward *)reward {
+    const char *rewardType = (const char *)[reward.type cStringUsingEncoding:NSUTF8StringEncoding];
+    int rewardAmount = [reward.amount intValue];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["rewarded"];
+    if (function.IsFunction()) {
+        function(rewardType, rewardAmount);
+    }
+}
+
 - (void)rewardBasedVideoAdDidClose:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_close"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["closed"];
     if (function.IsFunction()) {
         function();
     }
@@ -264,21 +317,13 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 }
 
 - (void)rewardBasedVideoAdWillLeaveApplication:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["will_leave_application"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["leaving_application"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didFailToLoadWithError:(NSError *)error {
-    const char *errorDescription = (const char *)[error.description cStringUsingEncoding:NSUTF8StringEncoding];
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
-    if (function.IsFunction()) {
-        function(errorDescription);
-    }
-}
-
-#endif
+#endif // USE_ADMOB
 
 @end // @implementation RootViewController
 
@@ -356,13 +401,13 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     app.mainRenderContext->OnResize(renderWidth, renderHeight);
 
     app.OnApplicationResize(renderWidth, renderHeight);
-    
+
     app.Init();
-    
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
-    RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
+
+#ifdef USE_ADMOB
+    AdMob::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
 #endif
-    
+
     app.LoadAppScript("Application");
     
     app.StartAppScript();
