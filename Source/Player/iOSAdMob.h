@@ -70,5 +70,3 @@ public:
 
     void Present();
 };
-
-extern 

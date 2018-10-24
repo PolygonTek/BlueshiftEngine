@@ -16,7 +16,9 @@
 #include "Application.h"
 #include "iOSAdMob.h"
 
-AdMob::BannerAd AdMob::bannderAd;
+UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *AdMob::viewController;
+
+AdMob::BannerAd AdMob::bannerAd;
 AdMob::InterstitialAd AdMob::interstitialAd;
 AdMob::RewardBasedVideoAd AdMob::rewardBasedVideoAd;
 
