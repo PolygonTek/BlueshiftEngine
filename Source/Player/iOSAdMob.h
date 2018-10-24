@@ -17,17 +17,33 @@
 
 class AdMob {
 public:
+    class BannerAd;
     class InterstitialAd;
     class RewardBasedVideoAd;
 
     static void Init(const char *appID);
 
-    static void RegisterLuaModule(LuaCpp::State *state, UIViewController<GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController);
+    static void RegisterLuaModule(LuaCpp::State *state, UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController);
 
-    static UIViewController<GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController;
+    static UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController;
 
+    static BannerAd bannerAd;
     static InterstitialAd interstitialAd;
     static RewardBasedVideoAd rewardBasedVideoAd;
+};
+
+class AdMob::BannerAd {
+public:
+    void Init();
+
+    void Request(const char *unitID, const char *testDevices = "");
+
+    void Show(bool showOnBottomOfScreen, int offsetX, int offsetY);
+
+    void Hide();
+
+private:
+    GADBannerView *bannerView;
 };
 
 class AdMob::InterstitialAd {

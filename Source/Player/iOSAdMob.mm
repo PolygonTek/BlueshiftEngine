@@ -16,14 +16,24 @@
 #include "Application.h"
 #include "iOSAdMob.h"
 
+AdMob::BannerAd AdMob::bannderAd;
 AdMob::InterstitialAd AdMob::interstitialAd;
 AdMob::RewardBasedVideoAd AdMob::rewardBasedVideoAd;
 
-void AdMob::RegisterLuaModule(LuaCpp::State *state, UIViewController<GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController) {
+void AdMob::RegisterLuaModule(LuaCpp::State *state, UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController) {
     AdMob::viewController = viewController;
 
     state->RegisterModule("admob", [](LuaCpp::Module &module) {
         module["init"].SetFunc(AdMob::Init);
+
+        LuaCpp::Selector _BannerAd = module["BannerAd"];
+
+        _BannerAd.SetObj(bannerAd);
+        _BannerAd.AddObjMembers(bannerAd,
+            "init", &BannerAd::Init,
+            "request", &BannerAd::Request,
+            "show", &BannerAd::Show,
+            "hide", &BannerAd::Hide);
 
         LuaCpp::Selector _InterstitialAd = module["InterstitialAd"];
         
@@ -49,6 +59,73 @@ void AdMob::Init(const char *appID) {
     // Initialize Google mobile ads
     NSString *nsAppID = [[NSString alloc] initWithBytes:appID length:strlen(appID) encoding:NSUTF8StringEncoding];
     [GADMobileAds configureWithApplicationID:nsAppID];
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void AdMob::BannerAd::Init() {
+}
+
+void AdMob::BannerAd::Request(const char *unitID, const char *testDevices) {
+    GADRequest *request = [GADRequest request];
+
+    BE1::StrArray testDeviceList;
+    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
+
+    if (testDeviceList.Count() > 0) {
+        NSString *nsTestDevices[256];
+        for (int i = 0; i < testDeviceList.Count(); i++) {
+            nsTestDevices[i] = [[NSString alloc] initWithBytes:testDeviceList[i].c_str() length:testDeviceList[i].Length() encoding:NSUTF8StringEncoding];
+        }
+    
+        request.testDevices = [NSArray arrayWithObjects:nsTestDevices count:testDeviceList.Count()];
+    }
+    
+    if (!unitID || !unitID[0]) {
+        // ad unit of interstitial provided by Google for testing purposes.
+        unitID = "ca-app-pub-3940256099942544/2934735716";
+    }
+
+    NSString *nsUnitID = [[NSString alloc] initWithBytes:unitID length:strlen(unitID) encoding:NSUTF8StringEncoding];
+
+    //GADAdSize size = GADAdSizeFromCGSize(CGSizeMake(320, 50));
+    bannerView = [[GADBannerView alloc] initWithAdSize:kGADAdSizeBanner]; // set ad size.
+    bannerView.translatesAutoresizingMaskIntoConstraints = NO;
+    bannerView.adUnitID = nsUnitID;
+
+    // This view controller is used to present an overlay when the ad is clicked. 
+    // It should normally be set to the view controller that contains the GADBannerView.
+    bannerView.rootViewController = AdMob::viewController;
+
+    bannerView.delegate = AdMob::viewController;
+
+    [bannerView loadRequest:request];
+}
+
+void AdMob::BannerAd::Show(bool showOnBottomOfScreen, int offsetX, int offsetY) {
+    if (bannerView.superview) {
+        return;
+    }
+
+    UIView *view = AdMob::viewController.view;
+
+    [view addSubview:bannerView];
+
+    // Position the banner. Stick it to the bottom of the Safe Area.
+    // Make it constrained to the edges of the safe area.
+    UILayoutGuide *guide = view.safeAreaLayoutGuide;
+
+    [NSLayoutConstraint activateConstraints:@[
+        [guide.leftAnchor constraintEqualToAnchor:bannerView.leftAnchor],
+        [guide.rightAnchor constraintEqualToAnchor:bannerView.rightAnchor],
+        [guide.bottomAnchor constraintEqualToAnchor:bannerView.bottomAnchor]
+    ]];
+}
+
+void AdMob::BannerAd::Hide() {
+    if (bannerView.superview) {
+        [bannerView removeFromSuperview];
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
