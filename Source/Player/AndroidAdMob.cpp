@@ -52,7 +52,7 @@ void AdMob::RegisterLuaModule(LuaCpp::State *state) {
 
     javaMethod_initializeBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeBannerAd", "()V", false);
     javaMethod_requestBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "requestBannerAd", "(Ljava/lang/String;[Ljava/lang/String;II)V", false);
-    javaMethod_showBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "showBannerAd", "(ZII)V", false);
+    javaMethod_showBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "showBannerAd", "(ZFF)V", false);
     javaMethod_hideBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "hideBannerAd", "()V", false);
 
     javaMethod_initializeInterstitialAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeInterstitialAd", "()V", false);
@@ -154,7 +154,7 @@ void AdMob::BannerAd::Request(const char *unitID, int adWidth, int adHeight) {
     env->DeleteLocalRef(javaUnitID);
 }
 
-void AdMob::BannerAd::Show(bool showOnBottomOfScreen, int offsetX, int offsetY) {
+void AdMob::BannerAd::Show(bool showOnBottomOfScreen, float offsetX, float offsetY) {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_showBannerAd, showOnBottomOfScreen, offsetX, offsetY);

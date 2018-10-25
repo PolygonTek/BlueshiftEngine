@@ -40,7 +40,7 @@ public:
 
     void Request(const char *unitID, int adWidth, int adHeight);
 
-    void Show(bool showOnBottomOfScreen, int offsetX, int offsetY);
+    void Show(bool showOnBottomOfScreen, float offsetX, float offsetY);
 
     void Hide();
 

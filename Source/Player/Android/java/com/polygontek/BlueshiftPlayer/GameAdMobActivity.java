@@ -200,13 +200,14 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
 
                 final DisplayMetrics dm = getResources().getDisplayMetrics();
 
+                // NOTE: adWidth < 0 means full screen width
                 mBannerAdView = new AdView(mActivity);
                 mBannerAdView.setAdSize(new AdSize(adWidth, adHeight));
                 mBannerAdView.setAdListener(mBannerAdListener);
                 mBannerAdView.setAdUnitId(unitID);
 
                 mAdPopupWindow = new PopupWindow(mActivity);
-                mAdPopupWindow.setWidth((int)(adWidth * dm.density));
+                mAdPopupWindow.setWidth(adWidth > 0 ? (int)(adWidth * dm.density) : dm.widthPixels);
                 mAdPopupWindow.setHeight((int)(adHeight * dm.density));
                 //mAdPopupWindow.setWindowLayoutMode(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                 mAdPopupWindow.setClippingEnabled(false);
@@ -228,7 +229,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
         });
     }
 
-    public void showBannerAd(final boolean showOnBottomOfScreen, final int offsetX, final int offsetY) {
+    public void showBannerAd(final boolean showOnBottomOfScreen, final float offsetX, final float offsetY) {
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -236,8 +237,12 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
                     return;
                 }
 
-                // NOTE: offsetX and offsetY are pixel units
-                mAdPopupWindow.showAtLocation(mActivityLayout, showOnBottomOfScreen ? Gravity.BOTTOM : Gravity.TOP, offsetX, offsetY);
+                final DisplayMetrics dm = getResources().getDisplayMetrics();
+
+                int x = (int)(offsetX * dm.widthPixels + 0.5f);
+                int y = (int)(offsetY * dm.heightPixels + 0.5f);
+
+                mAdPopupWindow.showAtLocation(mActivityLayout, showOnBottomOfScreen ? Gravity.BOTTOM : Gravity.TOP, x, y);
                 mAdPopupWindow.update();
 
                 mBannerAdView.resume();
