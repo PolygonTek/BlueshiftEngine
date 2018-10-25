@@ -21,6 +21,8 @@ AdMob::BannerAd AdMob::bannerAd;
 AdMob::InterstitialAd AdMob::interstitialAd;
 AdMob::RewardBasedVideoAd AdMob::rewardBasedVideoAd;
 
+BE1::StrArray AdMob::testDeviceList;
+
 static jmethodID javaMethod_initializeAds = nullptr;
 
 static jmethodID javaMethod_initializeBannerAd = nullptr;
@@ -49,7 +51,7 @@ void AdMob::RegisterLuaModule(LuaCpp::State *state) {
     javaMethod_initializeAds = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeAds", "(Ljava/lang/String;)V", false);
 
     javaMethod_initializeBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "initializeBannerAd", "()V", false);
-    javaMethod_requestBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "requestBannerAd", "(Ljava/lang/String;[Ljava/lang/String;)V", false);
+    javaMethod_requestBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "requestBannerAd", "(Ljava/lang/String;[Ljava/lang/String;II)V", false);
     javaMethod_showBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "showBannerAd", "(ZII)V", false);
     javaMethod_hideBannerAd = BE1::AndroidJNI::FindMethod(env, javaClassActivity, "hideBannerAd", "()V", false);
 
@@ -97,7 +99,7 @@ void AdMob::RegisterLuaModule(LuaCpp::State *state) {
     });
 }
 
-void AdMob::Init(const char *appID) {
+void AdMob::Init(const char *appID, const char *testDevices) {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
     jstring javaAppID = BE1::Str(appID).ToJavaString(env);
@@ -105,6 +107,8 @@ void AdMob::Init(const char *appID) {
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_initializeAds, javaAppID);
 
     env->DeleteLocalRef(javaAppID);
+
+    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
 }
 
 void AdMob::ProcessQueue() {
@@ -124,14 +128,16 @@ void AdMob::BannerAd::Init() {
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_initializeBannerAd);
 }
 
-void AdMob::BannerAd::Request(const char *unitID, const char *testDevices) {
+void AdMob::BannerAd::Request(const char *unitID, int adWidth, int adHeight) {
+    // ad unit of interstitial provided by Google for testing purposes.
+    static const char *testUnitID = "ca-app-pub-3940256099942544/6300978111";
+#ifdef _DEBUG
+    unitID = testUnitID;
+#else
     if (!unitID || !unitID[0]) {
-        // ad unit of interstitial provided by Google for testing purposes.
-        unitID = "ca-app-pub-3940256099942544/6300978111";
+        unitID = testUnitID;
     }
-
-    BE1::StrArray testDeviceList;
-    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
+#endif
 
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
@@ -143,7 +149,7 @@ void AdMob::BannerAd::Request(const char *unitID, const char *testDevices) {
 
     jstring javaUnitID = BE1::Str(unitID).ToJavaString(env);
 
-    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_requestBannerAd, javaUnitID, javaTestDevices);
+    BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_requestBannerAd, javaUnitID, javaTestDevices, adWidth, adHeight);
 
     env->DeleteLocalRef(javaUnitID);
 }
@@ -168,14 +174,16 @@ void AdMob::InterstitialAd::Init() {
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_initializeInterstitialAd);
 }
 
-void AdMob::InterstitialAd::Request(const char *unitID, const char *testDevices) {
+void AdMob::InterstitialAd::Request(const char *unitID) {
+    // ad unit of interstitial provided by Google for testing purposes.
+    static const char *testUnitID = "ca-app-pub-3940256099942544/1033173712";
+#ifdef _DEBUG
+    unitID = testUnitID;
+#else
     if (!unitID || !unitID[0]) {
-        // ad unit of interstitial provided by Google for testing purposes.
-        unitID = "ca-app-pub-3940256099942544/1033173712";
+        unitID = testUnitID;
     }
-
-    BE1::StrArray testDeviceList;
-    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
+#endif
 
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
@@ -212,14 +220,16 @@ void AdMob::RewardBasedVideoAd::Init() {
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, javaMethod_initializeRewardedVideoAd);
 }
 
-void AdMob::RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
+void AdMob::RewardBasedVideoAd::Request(const char *unitID) {
+    // ad unit of rewarded video provided by Google for testing purposes.
+    static const char *testUnitID = "ca-app-pub-3940256099942544/5224354917";
+#ifdef _DEBUG
+    unitID = testUnitID;
+#else
     if (!unitID || !unitID[0]) {
-        // ad unit of rewarded video provided by Google for testing purposes.
-        unitID = "ca-app-pub-3940256099942544/5224354917";
+        unitID = testUnitID;
     }
-
-    BE1::StrArray testDeviceList;
-    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
+#endif
 
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 

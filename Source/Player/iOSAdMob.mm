@@ -22,6 +22,8 @@ AdMob::BannerAd AdMob::bannerAd;
 AdMob::InterstitialAd AdMob::interstitialAd;
 AdMob::RewardBasedVideoAd AdMob::rewardBasedVideoAd;
 
+BE1::StrArray AdMob::testDeviceList;
+
 void AdMob::RegisterLuaModule(LuaCpp::State *state, UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController) {
     AdMob::viewController = viewController;
 
@@ -57,10 +59,13 @@ void AdMob::RegisterLuaModule(LuaCpp::State *state, UIViewController<GADBannerVi
     });
 }
 
-void AdMob::Init(const char *appID) {
+void AdMob::Init(const char *appID, const char *testDevices) {
     // Initialize Google mobile ads
     NSString *nsAppID = [[NSString alloc] initWithBytes:appID length:strlen(appID) encoding:NSUTF8StringEncoding];
     [GADMobileAds configureWithApplicationID:nsAppID];
+
+    BE1::StrArray testDeviceList;
+    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -68,11 +73,8 @@ void AdMob::Init(const char *appID) {
 void AdMob::BannerAd::Init() {
 }
 
-void AdMob::BannerAd::Request(const char *unitID, const char *testDevices) {
+void AdMob::BannerAd::Request(const char *unitID, int adWidth, int adHeight) {
     GADRequest *request = [GADRequest request];
-
-    BE1::StrArray testDeviceList;
-    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
 
     if (testDeviceList.Count() > 0) {
         NSString *nsTestDevices[256];
@@ -90,8 +92,8 @@ void AdMob::BannerAd::Request(const char *unitID, const char *testDevices) {
 
     NSString *nsUnitID = [[NSString alloc] initWithBytes:unitID length:strlen(unitID) encoding:NSUTF8StringEncoding];
 
-    //GADAdSize size = GADAdSizeFromCGSize(CGSizeMake(320, 50));
-    bannerView = [[GADBannerView alloc] initWithAdSize:kGADAdSizeBanner]; // set ad size.
+    GADAdSize size = GADAdSizeFromCGSize(CGSizeMake(adWidth, adHeight));
+    bannerView = [[GADBannerView alloc] initWithAdSize:size];
     bannerView.translatesAutoresizingMaskIntoConstraints = NO;
     bannerView.adUnitID = nsUnitID;
 
@@ -113,15 +115,58 @@ void AdMob::BannerAd::Show(bool showOnBottomOfScreen, int offsetX, int offsetY) 
 
     [view addSubview:bannerView];
 
-    // Position the banner. Stick it to the bottom of the Safe Area.
-    // Make it constrained to the edges of the safe area.
-    UILayoutGuide *guide = view.safeAreaLayoutGuide;
+    if (@available(ios 11.0, *)) {
+        UILayoutGuide *guide = view.safeAreaLayoutGuide;
+        
+        NSMutableArray *constraints = [NSMutableArray array];
+        [constraints addObject:[bannerView.leftAnchor constraintEqualToAnchor:guide.leftAnchor constant:offsetX]];
+        [constraints addObject:[bannerView.rightAnchor constraintEqualToAnchor:guide.rightAnchor]];
+        
+        if (showOnBottomOfScreen) {
+            [constraints addObject:[bannerView.bottomAnchor constraintEqualToAnchor:guide.bottomAnchor constant:-offsetY]];
+        } else {
+            [constraints addObject:[bannerView.topAnchor constraintEqualToAnchor:guide.topAnchor constant:offsetY]];
+        }
+        
+        [NSLayoutConstraint activateConstraints:constraints];
+    } else {
+        NSMutableArray *constraints = [NSMutableArray array];
+        [constraints addObject:[NSLayoutConstraint constraintWithItem:bannerView
+                                                            attribute:NSLayoutAttributeLeading
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:view
+                                                            attribute:NSLayoutAttributeLeading
+                                                           multiplier:1
+                                                             constant:offsetX]];
 
-    [NSLayoutConstraint activateConstraints:@[
-        [guide.leftAnchor constraintEqualToAnchor:bannerView.leftAnchor],
-        [guide.rightAnchor constraintEqualToAnchor:bannerView.rightAnchor],
-        [guide.bottomAnchor constraintEqualToAnchor:bannerView.bottomAnchor]
-    ]];
+        [constraints addObject:[NSLayoutConstraint constraintWithItem:bannerView
+                                                            attribute:NSLayoutAttributeTrailing
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:view
+                                                            attribute:NSLayoutAttributeTrailing
+                                                           multiplier:1
+                                                             constant:0]];
+        
+        if (showOnBottomOfScreen) {
+            [constraints addObject:[NSLayoutConstraint constraintWithItem:bannerView
+                                                                attribute:NSLayoutAttributeBottom
+                                                                relatedBy:NSLayoutRelationEqual
+                                                                   toItem:AdMob::viewController.bottomLayoutGuide
+                                                                attribute:NSLayoutAttributeTop
+                                                               multiplier:1
+                                                                 constant:-offsetY]];
+        } else {
+            [constraints addObject:[NSLayoutConstraint constraintWithItem:bannerView
+                                                                attribute:NSLayoutAttributeTop
+                                                                relatedBy:NSLayoutRelationEqual
+                                                                   toItem:AdMob::viewController.topLayoutGuide
+                                                                attribute:NSLayoutAttributeTop
+                                                               multiplier:1
+                                                                 constant:offsetY]];
+        }
+        
+        [view addConstraints:constraints];
+    }
 }
 
 void AdMob::BannerAd::Hide() {
@@ -135,11 +180,8 @@ void AdMob::BannerAd::Hide() {
 void AdMob::InterstitialAd::Init() {
 }
 
-void AdMob::InterstitialAd::Request(const char *unitID, const char *testDevices) {
+void AdMob::InterstitialAd::Request(const char *unitID) {
     GADRequest *request = [GADRequest request];
-
-    BE1::StrArray testDeviceList;
-    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
 
     if (testDeviceList.Count() > 0) {
         NSString *nsTestDevices[256];
@@ -176,11 +218,8 @@ void AdMob::InterstitialAd::Present() {
 void AdMob::RewardBasedVideoAd::Init() {
 }
 
-void AdMob::RewardBasedVideoAd::Request(const char *unitID, const char *testDevices) {
+void AdMob::RewardBasedVideoAd::Request(const char *unitID) {
     GADRequest *request = [GADRequest request];
-
-    BE1::StrArray testDeviceList;
-    BE1::SplitStringIntoList(testDeviceList, testDevices, " ");
 
     if (testDeviceList.Count() > 0) {
         NSString *nsTestDevices[256];

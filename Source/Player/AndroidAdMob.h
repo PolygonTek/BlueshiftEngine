@@ -20,7 +20,7 @@ public:
     class InterstitialAd;
     class RewardBasedVideoAd;
 
-    static void Init(const char *appID);
+    static void Init(const char *appID, const char *testDevices = "");
 
     static void RegisterLuaModule(LuaCpp::State *state);
 
@@ -29,13 +29,15 @@ public:
     static BannerAd bannerAd;
     static InterstitialAd interstitialAd;
     static RewardBasedVideoAd rewardBasedVideoAd;
+
+    static BE1::StrArray testDeviceList;
 };
 
 class AdMob::BannerAd {
 public:
     void Init();
 
-    void Request(const char *unitID, const char *testDevices = "");
+    void Request(const char *unitID, int adWidth, int adHeight);
 
     void Show(bool showOnBottomOfScreen, int offsetX, int offsetY);
 
@@ -46,7 +48,7 @@ class AdMob::InterstitialAd {
 public:
     void Init();
 
-    void Request(const char *unitID, const char *testDevices = "");
+    void Request(const char *unitID);
 
     bool IsReady() const;
 
@@ -57,7 +59,7 @@ class AdMob::RewardBasedVideoAd {
 public:
     void Init();
 
-    void Request(const char *unitID, const char *testDevices = "");
+    void Request(const char *unitID);
 
     bool IsReady() const;
 

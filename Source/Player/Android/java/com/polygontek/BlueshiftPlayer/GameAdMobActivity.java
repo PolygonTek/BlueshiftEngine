@@ -16,7 +16,7 @@ package com.polygontek.BlueshiftPlayer;
 
 import java.util.concurrent.Semaphore;
 
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.annotation.Keep;
@@ -183,7 +183,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
         });
     }
 
-    public void requestBannerAd(final String unitID, final String testDevices[]) {
+    public void requestBannerAd(final String unitID, final String testDevices[], final int adWidth, final int adHeight) {
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -197,25 +197,27 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
                 if (mBannerAdView != null) {
                     mBannerAdView.destroy();
                 }
+
+                final DisplayMetrics dm = getResources().getDisplayMetrics();
+
                 mBannerAdView = new AdView(mActivity);
-                mBannerAdView.setAdSize(AdSize.BANNER); // set size
+                mBannerAdView.setAdSize(new AdSize(adWidth, adHeight));
                 mBannerAdView.setAdListener(mBannerAdListener);
                 mBannerAdView.setAdUnitId(unitID);
 
-                final DisplayMetrics dm = getResources().getDisplayMetrics();
-                final float scale = dm.density;
                 mAdPopupWindow = new PopupWindow(mActivity);
-                mAdPopupWindow.setWidth((int)(320 * scale));
-                mAdPopupWindow.setHeight((int)(50 * scale));
-                mAdPopupWindow.setWindowLayoutMode(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                mAdPopupWindow.setWidth((int)(adWidth * dm.density));
+                mAdPopupWindow.setHeight((int)(adHeight * dm.density));
+                //mAdPopupWindow.setWindowLayoutMode(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                 mAdPopupWindow.setClippingEnabled(false);
+                mAdPopupWindow.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
 
                 LinearLayout popupLayout = new LinearLayout(mActivity);
-                final int padding = (int)(-5 * scale);
-                popupLayout.setPadding(padding, padding, padding, padding);
+                popupLayout.setDividerPadding(0);
+                popupLayout.setPadding(0, 0, 0, 0);
                 popupLayout.setOrientation(LinearLayout.VERTICAL);
 
-                ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                 params.setMargins(0,0,0,0);
                 popupLayout.addView(mBannerAdView, params);
 
@@ -234,6 +236,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
                     return;
                 }
 
+                // NOTE: offsetX and offsetY are pixel units
                 mAdPopupWindow.showAtLocation(mActivityLayout, showOnBottomOfScreen ? Gravity.BOTTOM : Gravity.TOP, offsetX, offsetY);
                 mAdPopupWindow.update();
 
