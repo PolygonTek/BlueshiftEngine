@@ -138,9 +138,6 @@ void AdMob::BannerAd::Show(bool showOnBottomOfScreen, float offsetX, float offse
         
         [NSLayoutConstraint activateConstraints:constraints];
     } else {
-        int x = view.bounds.size.width * offsetX + 0.5f;
-        int y = view.bounds.size.height * offsetY + 0.5f;
-
         NSMutableArray *constraints = [NSMutableArray array];
         [constraints addObject:[NSLayoutConstraint constraintWithItem:bannerView
                                                             attribute:NSLayoutAttributeCenterX
