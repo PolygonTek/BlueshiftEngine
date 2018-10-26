@@ -30,6 +30,8 @@ public:
     static const char *     UserTempDir();
 
     static int32_t          NumCPUCores();
+
+    static bool             HasActiveWiFiConnection();
 };
 
 typedef PlatformIOSSystem   PlatformSystem;
