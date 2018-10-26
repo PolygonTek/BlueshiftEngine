@@ -27,7 +27,7 @@ public:
         }) {
         // NOTE: Assume that metatable of class is already pushed on top
         lua_pushlightuserdata(l, (void *)static_cast<BaseFunc *>(this));
-        lua_pushcclosure(l, &detail::_lua_dispatcher, 1);        
+        lua_pushcclosure(l, &detail::_lua_dispatcher, 1);
         lua_setfield(l, -2, name.c_str());
         _is_table_call = _name == "__call" ? true : false;
     }

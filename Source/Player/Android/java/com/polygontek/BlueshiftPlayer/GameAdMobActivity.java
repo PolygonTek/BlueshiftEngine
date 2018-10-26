@@ -200,7 +200,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
 
                 final DisplayMetrics dm = getResources().getDisplayMetrics();
 
-                // NOTE: adWidth < 0 means full screen width
+                // NOTE: adWidth <= 0 means full screen width
                 mBannerAdView = new AdView(mActivity);
                 mBannerAdView.setAdSize(new AdSize(adWidth, adHeight));
                 mBannerAdView.setAdListener(mBannerAdListener);

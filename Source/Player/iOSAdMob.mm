@@ -97,7 +97,7 @@ void AdMob::BannerAd::Request(const char *unitID, int adWidth, int adHeight) {
 
     NSString *nsUnitID = [[NSString alloc] initWithBytes:unitID length:strlen(unitID) encoding:NSUTF8StringEncoding];
 
-    // NOTE: adWidth < 0 means full screen width
+    // NOTE: adWidth <= 0 means full screen width
     GADAdSize size = GADAdSizeFromCGSize(CGSizeMake(adWidth > 0 ? adWidth : AdMob::viewController.view.bounds.size.width, adHeight));
     bannerView = [[GADBannerView alloc] initWithAdSize:size];
     bannerView.translatesAutoresizingMaskIntoConstraints = NO;
