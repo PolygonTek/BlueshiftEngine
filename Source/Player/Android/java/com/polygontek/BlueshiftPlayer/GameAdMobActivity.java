@@ -17,14 +17,10 @@ package com.polygontek.BlueshiftPlayer;
 import java.util.concurrent.Semaphore;
 
 import android.graphics.drawable.ColorDrawable;
-import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.annotation.Keep;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Gravity;
-import android.view.SurfaceView;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -46,37 +42,9 @@ import com.google.android.gms.ads.reward.RewardedVideoAdListener;
 
 @Keep
 public class GameAdMobActivity extends GameActivity implements RewardedVideoAdListener {
-    private static final String TAG = GameAdMobActivity.class.getName();
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        mActivity = this;
-
         super.onCreate(savedInstanceState);
-
-        ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, 0, 0, 0);
-        mActivityLayout = new LinearLayout(this);
-        setContentView(mActivityLayout, params);
-
-        // tell Android that we want volume controls to change the media volume, aka music
-        setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-        String Language = java.util.Locale.getDefault().toString();
-
-        Log.d(TAG, "Android version is " + android.os.Build.VERSION.RELEASE);
-        Log.d(TAG, "Android manufacturer is " + android.os.Build.MANUFACTURER);
-        Log.d(TAG, "Android model is " + android.os.Build.MODEL);
-        Log.d(TAG, "OS language is set to " + Language);
-
-        // Tell the activity's window that we want to do our own drawing
-        // to its surface.  This prevents the view hierarchy from drawing to
-        // it, though we can still add views to capture input if desired.
-        getWindow().takeSurface(null);
-
-        mSurfaceView = new SurfaceView(this);
-        mSurfaceView.getHolder().addCallback(this);
-        setContentView(mSurfaceView);
     }
 
     @Override
@@ -388,7 +356,7 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
             public void run() {
                 // Use an activity context to get the rewarded video instance.
                 mRewardedVideoAd = MobileAds.getRewardedVideoAdInstance(mActivity);
-                mRewardedVideoAd.setRewardedVideoAdListener(mActivity);
+                mRewardedVideoAd.setRewardedVideoAdListener((GameAdMobActivity)mActivity);
                 mRewardedVideoAd.setImmersiveMode(true);
             }
         });
@@ -528,8 +496,6 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     private native void rewardBasedVideoAdClosed();
     private native void rewardBasedVideoAdLeftApplication();
 
-    private SurfaceView mSurfaceView;
-    private LinearLayout mActivityLayout = null;
     private PopupWindow mAdPopupWindow = null;
     private AdView mBannerAdView = null;
     private AdListener mBannerAdListener = null;
@@ -538,6 +504,4 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     private boolean mInterstitialAdLoaded = false;
     private RewardedVideoAd mRewardedVideoAd = null;
     private boolean mRewardedVideoAdLoaded = false;
-
-    private GameAdMobActivity mActivity;
 }
