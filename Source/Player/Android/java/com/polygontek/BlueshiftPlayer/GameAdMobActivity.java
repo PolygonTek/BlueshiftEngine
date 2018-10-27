@@ -459,6 +459,10 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     }
 
     @Override
+    public void onRewardedVideoCompleted() {
+    }
+
+    @Override
     public void onRewarded(RewardItem reward) {
         rewardBasedVideoAdRewarded(reward.getType(), reward.getAmount());
     }
