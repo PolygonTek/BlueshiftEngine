@@ -377,15 +377,25 @@ bool Image::WritePVR(const char *filename) const {
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
+    case RGBA_8_1_ETC2:
+        header.u64PixelFormat = ePVRTPF_ETC2_RGB_A1;
+        header.u32ColourSpace = ePVRTCSpacesRGB;
+        header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
+        break;
     case RGBA_8_8_ETC2:
         header.u64PixelFormat = ePVRTPF_ETC2_RGBA;
         header.u32ColourSpace = ePVRTCSpacesRGB;
         header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
         break;
-    case RGBA_8_1_ETC2:
-        header.u64PixelFormat = ePVRTPF_ETC2_RGB_A1;
-        header.u32ColourSpace = ePVRTCSpacesRGB;
-        header.u32ChannelType = ePVRTVarTypeUnsignedByteNorm;
+    case RG_11_11_EAC:
+        header.u64PixelFormat = ePVRTPF_EAC_RG11;
+        header.u32ColourSpace = ePVRTCSpacelRGB;
+        header.u32ChannelType = ePVRTVarTypeUnsignedShortNorm;
+        break;
+    case SignedRG_11_11_EAC:
+        header.u64PixelFormat = ePVRTPF_EAC_RG11;
+        header.u32ColourSpace = ePVRTCSpacelRGB;
+        header.u32ChannelType = ePVRTVarTypeSignedShortNorm;
         break;
     case RGBA_8_8_8_8:
         header.u64PixelFormat = PVRTGENPIXELID4('r', 'g', 'b', 'a', 8, 8, 8, 8);

@@ -93,8 +93,8 @@ public:
         // ETC
         RGB_8_ETC1,
         RGB_8_ETC2,
-        RGBA_8_8_ETC2,
         RGBA_8_1_ETC2,
+        RGBA_8_8_ETC2,
         R_11_EAC,
         SignedR_11_EAC,
         RG_11_11_EAC,

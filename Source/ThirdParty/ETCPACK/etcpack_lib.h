@@ -6,6 +6,8 @@
 typedef unsigned char uint8;
 
 namespace etcpack {
+    extern int formatSigned;
+
     // common
     bool    readCompressParams(void);
     void    setupAlphaTableAndValtab();

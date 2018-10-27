@@ -475,28 +475,22 @@ Image::Format OpenGL3::ToUncompressedImageFormat(Image::Format inFormat) {
     case Image::RGBA_DXT1:
         outFormat = Image::RGBA_5_5_5_1;
         break;
-    case Image::RGBA_DXT3:
-        outFormat = Image::RGBA_4_4_4_4;
-        break;
-    case Image::RGBA_DXT5:
-        outFormat = Image::RGBA_8_8_8_8;
-        break;
     case Image::RGB_PVRTC_2BPPV1:
     case Image::RGB_PVRTC_4BPPV1:
+    case Image::RGB_8_ETC1:
+    case Image::RGB_8_ETC2:
+    case Image::RG_11_11_EAC:
+    case Image::SignedRG_11_11_EAC:
         outFormat = Image::RGB_8_8_8;
         break;
+    case Image::RGBA_DXT3:
+    case Image::RGBA_DXT5:
     case Image::RGBA_PVRTC_2BPPV1:
     case Image::RGBA_PVRTC_2BPPV2:
     case Image::RGBA_PVRTC_4BPPV1:
     case Image::RGBA_PVRTC_4BPPV2:
-        outFormat = Image::RGBA_8_8_8_8;
-        break;
-    case Image::RGB_8_ETC1:
-    case Image::RGB_8_ETC2:
-        outFormat = Image::RGB_8_8_8;
-        break;
-    case Image::RGBA_8_8_ETC2:
     case Image::RGBA_8_1_ETC2:
+    case Image::RGBA_8_8_ETC2:
         outFormat = Image::RGBA_8_8_8_8;
         break;
     default:

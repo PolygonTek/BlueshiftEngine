@@ -512,8 +512,8 @@ bool Image::HasAlpha(Image::Format imageFormat) {
         case RGBA_PVRTC_4BPPV1:
         case RGBA_PVRTC_2BPPV2:
         case RGBA_PVRTC_4BPPV2:
-        case RGBA_8_8_ETC2:
         case RGBA_8_1_ETC2:
+        case RGBA_8_8_ETC2:
         case RGBA_EA_ATC:
         case RGBA_IA_ATC:
             return true;

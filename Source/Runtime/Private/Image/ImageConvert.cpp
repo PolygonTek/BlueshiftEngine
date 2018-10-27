@@ -58,11 +58,17 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     case Image::RGB_8_ETC2:
         DecompressETC2_RGB8(srcImage, dstImage);
         break;
+    case Image::RGBA_8_1_ETC2:
+        DecompressETC2_RGB8A1(srcImage, dstImage);
+        break;
     case Image::RGBA_8_8_ETC2:
         DecompressETC2_RGBA8(srcImage, dstImage);
         break;
-    case Image::RGBA_8_1_ETC2:
-        DecompressETC2_RGB8A1(srcImage, dstImage);
+    case Image::RG_11_11_EAC:
+        DecompressETC2_RG11(srcImage, dstImage);
+        break;
+    case Image::SignedRG_11_11_EAC:
+        DecompressETC2_Signed_RG11(srcImage, dstImage);
         break;
     default:
         BE_WARNLOG("DecompressImage: unsupported format %s\n", srcImage.FormatName());
@@ -97,11 +103,14 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     case Image::RGB_8_ETC2:
         CompressETC2_RGB8(srcImage, dstImage, compressoinQuality);
         break;
+    case Image::RGBA_8_1_ETC2:
+        CompressETC2_RGBA1(srcImage, dstImage, compressoinQuality);
+        break;
     case Image::RGBA_8_8_ETC2:
         CompressETC2_RGBA8(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::RGBA_8_1_ETC2:
-        CompressETC2_RGBA1(srcImage, dstImage, compressoinQuality);
+    case Image::SignedRG_11_11_EAC:
+        CompressETC2_Signed_RG11(srcImage, dstImage, compressoinQuality);
         break;
     default:
         BE_WARNLOG("CompressImage: unsupported format %s\n", dstImage.FormatName());

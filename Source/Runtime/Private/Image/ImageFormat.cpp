@@ -1567,8 +1567,8 @@ static const ImageFormatInfo imageFormatInfo[] = {
     // ETC ----------------------------------------------------------------------------------------
     { "RGB_8_ETC1",             8,  3,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "RGB_8_ETC2",             8,  3,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_8_8_ETC2",          16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "RGBA_8_1_ETC2",          8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_8_8_ETC2",          16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "R_11_EAC",               8,  1,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "RG_11_11_EAC",           16, 2,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "SignedR_11_EAC",         8,  1,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
@@ -1621,8 +1621,8 @@ bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int
         return true;
     case Image::RGB_8_ETC1:
     case Image::RGB_8_ETC2:
-    case Image::RGBA_8_8_ETC2:
     case Image::RGBA_8_1_ETC2:
+    case Image::RGBA_8_8_ETC2:
     case Image::R_11_EAC:
     case Image::SignedR_11_EAC:
     case Image::RG_11_11_EAC:
@@ -1674,8 +1674,8 @@ bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth,
         return true;
     case Image::RGB_8_ETC1:
     case Image::RGB_8_ETC2:
-    case Image::RGBA_8_8_ETC2:
     case Image::RGBA_8_1_ETC2:
+    case Image::RGBA_8_8_ETC2:
     case Image::R_11_EAC:
     case Image::SignedR_11_EAC:
     case Image::RG_11_11_EAC:
