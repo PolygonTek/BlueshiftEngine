@@ -47,13 +47,18 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
     minAttribs[numMinAttribs++] = EGL_RGB_BUFFER;
 
     minAttribs[numMinAttribs++] = EGL_RED_SIZE;
-    minAttribs[numMinAttribs++] = 5;
+    minAttribs[numMinAttribs++] = 8;
     minAttribs[numMinAttribs++] = EGL_GREEN_SIZE;
-    minAttribs[numMinAttribs++] = 6;
+    minAttribs[numMinAttribs++] = 8;
     minAttribs[numMinAttribs++] = EGL_BLUE_SIZE;
-    minAttribs[numMinAttribs++] = 5;
+    minAttribs[numMinAttribs++] = 8;
     minAttribs[numMinAttribs++] = EGL_ALPHA_SIZE;
     minAttribs[numMinAttribs++] = 0;
+
+    //minAttribs[numMinAttribs++] = EGL_COLOR_COMPONENT_TYPE_EXT;
+    //minAttribs[numMinAttribs++] = EGL_COLOR_COMPONENT_TYPE_FIXED_EXT;
+    //minAttribs[numMinAttribs++] = EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT;
+
     minAttribs[numMinAttribs++] = EGL_DEPTH_SIZE;
     minAttribs[numMinAttribs++] = 16;
     minAttribs[numMinAttribs++] = EGL_STENCIL_SIZE;
@@ -159,7 +164,8 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
         score |= Min(Math::Abs(alphaSize - inAlphaBits), 31) << 0;
 
         if (score < bestScore || !bestConfig) {
-            BE_LOG("Best config: renderableType(%i), surfaceType(%i), r(%i), g(%i), b(%i), a(%i), d(%i), s(%i)\n", renderableType, surfaceType, redSize, greenSize, blueSize, alphaSize, depthSize, stencilSize);
+            BE_LOG("Best config: renderableType(%i), surfaceType(%i), r(%i), g(%i), b(%i), a(%i), d(%i), s(%i)\n", 
+                renderableType, surfaceType, redSize, greenSize, blueSize, alphaSize, depthSize, stencilSize);
 
             bestConfig = configs[i];
             bestScore = score;
@@ -284,7 +290,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ctx->eglDisplay = mainContext->eglDisplay;
         ctx->eglContext = mainContext->eglContext;
         ctx->eglSurface = mainContext->eglSurface;
-        ctx->defaultVAO = mainContext->defaultVAO;        
+        ctx->defaultVAO = mainContext->defaultVAO;
     } else {
         ctx->state = new GLState;
 

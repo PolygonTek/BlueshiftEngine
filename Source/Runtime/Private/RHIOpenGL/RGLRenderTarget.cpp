@@ -66,7 +66,7 @@ static bool CheckFBOStatus() {
     return false;
 }
 
-RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, bool sRGB, int flags) {
+RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags) {
     GLuint fbo;
     GLuint colorRenderBuffer = 0;
     GLuint depthRenderBuffer = 0;
@@ -201,7 +201,6 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
         renderTarget->colorTextureHandles[i] = colorTextureHandles[i];
     }
     renderTarget->depthTextureHandle = depthTextureHandle;
-    renderTarget->sRGB = sRGB;
     renderTarget->fbo = fbo;
     renderTarget->depthRenderBuffer = depthRenderBuffer;
     renderTarget->stencilRenderBuffer = stencilRenderBuffer;
@@ -298,11 +297,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
     }
 
     if (gl_sRGB.GetBool()) {
-        if (renderTarget->sRGB) {
-            SetSRGBWrite(true);
-        } else {
-            SetSRGBWrite(false);
-        }
+        SetSRGBWrite(!!(renderTarget->flags & SRGBWrite));
     }
 }
 
@@ -320,11 +315,7 @@ void OpenGLRHI::EndRenderTarget() {
     gglBindFramebuffer(GL_FRAMEBUFFER, oldRenderTarget->fbo);
 
     if (gl_sRGB.GetBool()) {
-        if (oldRenderTarget->sRGB) {
-            SetSRGBWrite(true);
-        } else {
-            SetSRGBWrite(false);
-        }
+        SetSRGBWrite(!!(oldRenderTarget->flags & SRGBWrite));
     }
 }
 

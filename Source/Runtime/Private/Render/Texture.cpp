@@ -513,7 +513,7 @@ void Texture::Upload(const Image *srcImage) {
     bool useNormalMap   = (flags & Flag::NormalMap) ? true : false;
     bool useCompression = !(flags & Flag::NoCompression) ? TextureManager::texture_useCompression.GetBool() : false;
     bool useNPOT        = (flags & Flag::NonPowerOfTwo) ? true : false;
-    bool useSRGB        = ((flags & Flag::SRGBColorSpace) && TextureManager::texture_sRGB.GetBool()) ? true : false;
+    bool isSRGB         = ((flags & Flag::SRGBColorSpace) && TextureManager::texture_sRGB.GetBool()) ? true : false;
 
     Image::Format dstFormat;
     if (forceFormat != Image::Format::UnknownFormat) {
@@ -572,7 +572,7 @@ void Texture::Upload(const Image *srcImage) {
         rhi.SetTextureShadowFunc(true);
     }
 
-    rhi.SetTextureImage(type, srcImage, dstFormat, hasMipmaps, useSRGB);
+    rhi.SetTextureImage(type, srcImage, dstFormat, hasMipmaps, isSRGB);
 
     rhi.SetTextureAddressMode(addressMode);
 

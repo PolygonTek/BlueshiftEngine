@@ -340,7 +340,7 @@ void OpenGLRHI::EndUnpackAlignment() {
     }
 }
 
-void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool useSRGB) {
+void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool isSRGB) {
     GLenum format;
     GLenum type;
     GLenum internalFormat;
@@ -392,13 +392,13 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
         return;
     }
 
-    srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, useSRGB, &format, &type, nullptr);
+    srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, isSRGB, &format, &type, nullptr);
     if (!srcFormatSupported) {
         BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
 
-    dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, useSRGB, nullptr, nullptr, &internalFormat);
+    dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, isSRGB, nullptr, nullptr, &internalFormat);
     if (!dstFormatSupported) {
         BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
@@ -539,10 +539,10 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool useSRGB, int bufferHandle) {
+void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool isSRGB, int bufferHandle) {
     GLenum internalFormat;
 
-    bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, useSRGB, nullptr, nullptr, &internalFormat);
+    bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, isSRGB, nullptr, nullptr, &internalFormat);
     if (!dstFormatSupported) {
         BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;

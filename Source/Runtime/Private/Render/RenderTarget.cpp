@@ -96,7 +96,6 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
     RHI::TextureType    textureType;
     int                 width;
     int                 height;
-    bool                sRGB = true;
     bool                colorMipmaps = false;
 
     if (numColorTextures > 0 && colorTextures[0]) {
@@ -107,7 +106,6 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
         textureType     = colorTextures[0]->type;
         width           = colorTextures[0]->width;
         height          = colorTextures[0]->height;
-        sRGB            = !Image::IsFloatFormat(colorTextures[0]->format) && !Image::IsHalfFormat(colorTextures[0]->format) && (colorTextures[0]->flags & Texture::SRGBColorSpace);
     }
 
     if (depthStencilTexture) {
@@ -143,7 +141,7 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
     }
     
     RenderTarget *rt = new RenderTarget;
-    rt->rtHandle = rhi.CreateRenderTarget(rtType, width, height, numColorTextures, colorTextureHandles, depthStencilTextureHandle, sRGB, flags);
+    rt->rtHandle = rhi.CreateRenderTarget(rtType, width, height, numColorTextures, colorTextureHandles, depthStencilTextureHandle, flags);
 
     int i = 0;
     for (; i < numColorTextures; i++) {

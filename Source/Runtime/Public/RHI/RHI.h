@@ -225,7 +225,8 @@ public:
     enum RenderTargetFlag {
         HasColorBuffer                      = BIT(0),
         HasDepthBuffer                      = BIT(1),
-        HasStencilBuffer                    = BIT(2)
+        HasStencilBuffer                    = BIT(2),
+        SRGBWrite                           = BIT(3)
     };
     
     enum RenderTargetBlitMask {

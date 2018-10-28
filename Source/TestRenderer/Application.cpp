@@ -160,7 +160,7 @@ void Application::FreeResources() {
 BE1::RHI::Handle Application::CreateRenderTarget(const BE1::RHI::Handle contextHandle) {
     BE1::rhi.SetContext(contextHandle);
 
-    return BE1::rhi.CreateRenderTarget(BE1::RHI::RenderTarget2D, 200, 200, 1, &renderTargetTexture, BE1::RHI::NullTexture, true, BE1::RHI::HasDepthBuffer);
+    return BE1::rhi.CreateRenderTarget(BE1::RHI::RenderTarget2D, 200, 200, 1, &renderTargetTexture, BE1::RHI::NullTexture, BE1::RHI::HasDepthBuffer & BE1::RHI::SRGBWrite);
 }
 
 void Application::DrawClipRect(float s, float t, float s2, float t2) {

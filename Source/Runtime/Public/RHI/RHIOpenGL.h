@@ -135,7 +135,7 @@ public:
     void                    SetTextureLevel(int baseLevel, int maxLevel = 1000);
     void                    GenerateMipmap();
 
-    void                    SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool useSRGB);
+    void                    SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool isSRGB);
     void                    SetTextureImageBuffer(Image::Format dstFormat, bool sRGB, int bufferHandle);
 
     void                    SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels);
@@ -151,7 +151,7 @@ public:
     void                    GetTextureImageCube(CubeMapFace face, int level, Image::Format format, void *pixels);
     void                    GetTextureImageRect(Image::Format format, void *pixels);
 
-    Handle                  CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, bool sRGB, int flags);
+    Handle                  CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags);
     void                    DestroyRenderTarget(Handle renderTargetHandle);
     void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0, unsigned int mrtBitMask = 0);
     void                    EndRenderTarget();

@@ -235,7 +235,6 @@ struct GLRenderTarget {
     int                 numColorTextures;
     RHI::Handle         colorTextureHandles[16];
     RHI::Handle         depthTextureHandle;
-    bool                sRGB;
     GLuint              fbo;
     GLuint              depthRenderBuffer;      // depth render buffer or depth/stencil render buffer
     GLuint              stencilRenderBuffer;    // just stencil render buffer

@@ -44,7 +44,7 @@ void OpenGLRHI::SetDefaultState() {
     *currentContext->state = GLState();
 
     renderTargetList[0]->fbo = currentContext->defaultFramebuffer;
-    renderTargetList[0]->sRGB = true;// !linearFrameBuffer;
+    renderTargetList[0]->flags = SRGBWrite;// !linearFrameBuffer;
     
     gglBindVertexArray(currentContext->defaultVAO);
     
