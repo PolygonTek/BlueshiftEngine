@@ -53,7 +53,7 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
     minAttribs[numMinAttribs++] = EGL_BLUE_SIZE;
     minAttribs[numMinAttribs++] = 8;
     minAttribs[numMinAttribs++] = EGL_ALPHA_SIZE;
-    minAttribs[numMinAttribs++] = 0;
+    minAttribs[numMinAttribs++] = 8;
 
     //minAttribs[numMinAttribs++] = EGL_COLOR_COMPONENT_TYPE_EXT;
     //minAttribs[numMinAttribs++] = EGL_COLOR_COMPONENT_TYPE_FIXED_EXT;
@@ -373,9 +373,13 @@ void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle
     surfaceAttribs[numSurfaceAttribs++] = EGL_RENDER_BUFFER;
     surfaceAttribs[numSurfaceAttribs++] = EGL_BACK_BUFFER;
 
-    if (geglext._EGL_KHR_gl_colorspace) {
-        surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_KHR;
-        surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_SRGB_KHR;
+    if (gl_sRGB.GetBool()) {
+        if (geglext._EGL_KHR_gl_colorspace) {
+            // NOTE: If the frame buffer color format does not contain alpha, sRGB capable buffer creation will fail !!
+            // https://android.googlesource.com/platform/frameworks/native/+/63108c34ec181e923b68ee840bb7960f205466a7/opengl/libs/EGL/eglApi.cpp
+            surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_KHR;
+            surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_SRGB_KHR;
+        }
     }
     surfaceAttribs[numSurfaceAttribs++] = EGL_NONE;
 
