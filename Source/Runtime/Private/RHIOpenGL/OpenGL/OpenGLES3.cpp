@@ -170,10 +170,14 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
     switch (imageFormat) {
     case Image::L_8:
     case Image::A_8:
-    case Image::R_8:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = GL_R8;
+        return true;
+    case Image::R_8:
+        if (glFormat)   *glFormat = GL_RED;
+        if (glType)     *glType = GL_UNSIGNED_BYTE;
+        if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_texture_sRGB_R8) ? GL_SR8_EXT : GL_R8;
         return true;
     case Image::R_SNORM_8:
         if (glFormat)   *glFormat = GL_RED;
@@ -181,10 +185,14 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glInternal) *glInternal = GL_R8_SNORM;
         return true;
     case Image::LA_8_8:
-    case Image::RG_8_8:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = GL_RG8;
+        return true;
+    case Image::RG_8_8:
+        if (glFormat)   *glFormat = GL_RG;
+        if (glType)     *glType = GL_UNSIGNED_BYTE;
+        if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_texture_sRGB_RG8) ? GL_SRG8_EXT : GL_RG8;
         return true;
     case Image::RG_SNORM_8_8:
         if (glFormat)   *glFormat = GL_RG;
@@ -206,20 +214,16 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RGB8_SNORM;
         return true;
-    case Image::BGR_8_8_8:
-        if (glFormat)   *glFormat = GL_RGB;
-        if (glType)     *glType = GL_UNSIGNED_BYTE;
-        if (glInternal) *glInternal = GL_RGB8;
-        return true;
     case Image::RGBX_8_8_8_8:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
-        if (glInternal) *glInternal = GL_RGB8;
+        if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
     case Image::BGRX_8_8_8_8:
-        if (glFormat)   *glFormat = GL_RGBA;
+        if (!gglext._GL_EXT_texture_format_BGRA8888) return false;
+        if (glFormat)   *glFormat = GL_BGRA_EXT;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
-        if (glInternal) *glInternal = GL_RGB8;
+        if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
     case Image::RGBA_8_8_8_8:
         if (glFormat)   *glFormat = GL_RGBA;
@@ -232,19 +236,10 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
         if (glInternal) *glInternal = GL_RGBA8_SNORM;
         return true;
     case Image::BGRA_8_8_8_8:
-        if (glFormat)   *glFormat = GL_RGBA;
+        if (!gglext._GL_EXT_texture_format_BGRA8888) return false;
+        if (glFormat)   *glFormat = GL_BGRA_EXT;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
-        if (glInternal) *glInternal = GL_RGBA8;
-        return true;
-    case Image::ABGR_8_8_8_8:
-        if (glFormat)   *glFormat = GL_RGBA;
-        if (glType)     *glType = GL_UNSIGNED_BYTE;
-        if (glInternal) *glInternal = GL_RGBA8;
-        return true;
-    case Image::ARGB_8_8_8_8:
-        if (glFormat)   *glFormat = GL_RGBA;
-        if (glType)     *glType = GL_UNSIGNED_BYTE;
-        if (glInternal) *glInternal = GL_RGBA8;
+        if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         return true;
 #ifdef GL_EXT_read_format_bgra
     case Image::RGBX_4_4_4_4:
