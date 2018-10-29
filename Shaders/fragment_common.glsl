@@ -8,12 +8,15 @@ $include "logluv.glsl"
 #define INV_PI 0.31830988618379067153776752674503
 #define INV_TWO_PI 0.15915494309189533576888376337251
 
-vec3 toLinear(vec3 v) {
-    return pow(v, vec3(2.2)); 
+vec3 gammaToLinearSpace(vec3 sRGB) {
+    // Approximate version from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
+    return sRGB * (sRGB * (sRGB * 0.305306011 + 0.682171111) + 0.012522878);
 }
 
-vec3 toSRGB(vec3 v) { 
-    return pow(v, vec3(1.0 / 2.2)); 
+vec3 linearToGammaSpace(vec3 linRGB) {
+    linRGB = max(linRGB, vec3(0.0, 0.0, 0.0));
+    // An almost-perfect approximation from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
+    return max(1.055 * pow(linRGB, vec3(0.416666667, 0.416666667, 0.416666667)) - 0.055, 0.0);
 }
 
 vec4 tex2D_bilinear(sampler2D tex, in vec2 uv, in float textureSize) {

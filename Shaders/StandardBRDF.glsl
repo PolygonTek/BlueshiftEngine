@@ -72,8 +72,8 @@ vec3 IndirectLit_Standard(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, ve
     //vec3 d2 = texCUBE(irradianceEnvCubeMap1, worldN).rgb;
 
 #if USE_SRGB_TEXTURE == 0
-    d1 = toSRGB(d1);
-    //d2 = toSRGB(d2);
+    d1 = linearToGammaSpace(d1);
+    //d2 = linearToGammaSpace(d2);
 #endif
 
     vec3 Cd = albedo * d1;//mix(d1, d2, ambientLerp);
@@ -86,8 +86,8 @@ vec3 IndirectLit_Standard(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, ve
     //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
 
 #if USE_SRGB_TEXTURE == 0
-    s1 = toSRGB(s1);
-    //s2 = toSRGB(s2);
+    s1 = linearToGammaSpace(s1);
+    //s2 = linearToGammaSpace(s2);
 #endif
 
     vec2 envBRDF = tex2D(integrationLUTMap, vec2(NdotV, roughness)).xy;
