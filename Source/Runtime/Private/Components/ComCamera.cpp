@@ -59,6 +59,8 @@ void ComCamera::RegisterProperties() {
         "", PropertyInfo::EditorFlag);
     REGISTER_PROPERTY("order", "Order", int, order, 0,
         "", PropertyInfo::EditorFlag);
+    REGISTER_PROPERTY("applyPostProcessing", "Apply Post Processing", bool, applyPostProcessing, true,
+        "", PropertyInfo::EditorFlag);
 }
 
 ComCamera::ComCamera() {
@@ -121,8 +123,8 @@ void ComCamera::Init() {
     }
 
     renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews;
-    if (!(renderViewDef.layerMask & BIT(TagLayerSettings::DefaultLayer))) {
-        renderViewDef.flags |= RenderView::Flag::NoShadows | RenderView::Flag::NoSubViews | RenderView::Flag::SkipPostProcess;
+    if (!applyPostProcessing) {
+        renderViewDef.flags |= RenderView::Flag::SkipPostProcess;
     }
     
     ComTransform *transform = GetEntity()->GetTransform();

@@ -549,39 +549,7 @@ static void RB_ClearView() {
     }
 }
 
-// FIXME: subview 일 경우를 생각
-static void RB_DrawView() {
-    if (backEnd.ctx->flags & RenderContext::UseSelectionBuffer) {
-        backEnd.ctx->screenSelectionRT->Begin();
-
-        float scaleX = (float)backEnd.ctx->screenSelectionRT->GetWidth() / backEnd.ctx->screenRT->GetWidth();
-        float scaleY = (float)backEnd.ctx->screenSelectionRT->GetHeight() / backEnd.ctx->screenRT->GetHeight();
-
-        Rect renderRect;
-        renderRect.x = backEnd.renderRect.x * scaleX;
-        renderRect.y = backEnd.renderRect.y * scaleY;
-        renderRect.w = backEnd.renderRect.w * scaleX;
-        renderRect.h = backEnd.renderRect.h * scaleY;
-
-        rhi.SetViewport(renderRect);
-        rhi.SetScissor(renderRect);
-        rhi.SetDepthRange(0, 1);
-        rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
-        rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4::white, 1.0f, 0);
-
-        RB_SelectionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-
-        backEnd.ctx->screenSelectionRT->End();
-    }
-
-    backEnd.ctx->screenRT->Begin();
-
-    rhi.SetViewport(backEnd.renderRect);
-    rhi.SetScissor(backEnd.renderRect);
-    rhi.SetDepthRange(0, 1);
-
-    RB_ClearView();
-
+static void RB_RenderView() {
     if (backEnd.view->def->state.flags & RenderView::TexturedMode) {
         if (r_HOM.GetBool()) {
             // Render occluder to HiZ occlusion buffer
@@ -642,41 +610,68 @@ static void RB_DrawView() {
         RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, true);
     }
 
-    // Render debug tools
+    // Render debug surfaces
     if (!(backEnd.view->def->state.flags & RenderView::SkipDebugDraw)) {
         RB_DebugPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
     }
+}
 
-    backEnd.ctx->screenRT->End();
+// FIXME: subview 일 경우를 생각
+static void RB_DrawView() {
+    if (backEnd.ctx->flags & RenderContext::UseSelectionBuffer) {
+        backEnd.ctx->screenSelectionRT->Begin();
 
-    // Post process & upscale
-    Rect upscaleRect = backEnd.renderRect;
-    upscaleRect.x = Math::Rint(upscaleRect.x * backEnd.upscaleFactor.x);
-    upscaleRect.y = Math::Rint(upscaleRect.y * backEnd.upscaleFactor.y);
-    upscaleRect.w = Math::Rint(upscaleRect.w * backEnd.upscaleFactor.x);
-    upscaleRect.h = Math::Rint(upscaleRect.h * backEnd.upscaleFactor.y);
+        float scaleX = (float)backEnd.ctx->screenSelectionRT->GetWidth() / backEnd.ctx->screenRT->GetWidth();
+        float scaleY = (float)backEnd.ctx->screenSelectionRT->GetHeight() / backEnd.ctx->screenRT->GetHeight();
 
-    rhi.SetViewport(upscaleRect);
-    rhi.SetScissor(upscaleRect);
+        Rect renderRect;
+        renderRect.x = backEnd.renderRect.x * scaleX;
+        renderRect.y = backEnd.renderRect.y * scaleY;
+        renderRect.w = backEnd.renderRect.w * scaleX;
+        renderRect.h = backEnd.renderRect.h * scaleY;
+
+        rhi.SetViewport(renderRect);
+        rhi.SetScissor(renderRect);
+        rhi.SetDepthRange(0, 1);
+        rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
+        rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4::white, 1.0f, 0);
+
+        RB_SelectionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+
+        backEnd.ctx->screenSelectionRT->End();
+    }
+
+    Rect upscaledRenderRect;
+    upscaledRenderRect.x = Math::Rint(backEnd.renderRect.x * backEnd.upscaleFactor.x);
+    upscaledRenderRect.y = Math::Rint(backEnd.renderRect.y * backEnd.upscaleFactor.y);
+    upscaledRenderRect.w = Math::Rint(backEnd.renderRect.w * backEnd.upscaleFactor.x);
+    upscaledRenderRect.h = Math::Rint(backEnd.renderRect.h * backEnd.upscaleFactor.y);
 
     if (!(backEnd.view->def->state.flags & RenderView::SkipPostProcess) && r_usePostProcessing.GetBool()) {
+        backEnd.ctx->screenRT->Begin();
+
+        rhi.SetViewport(backEnd.renderRect);
+        rhi.SetScissor(backEnd.renderRect);
+        rhi.SetDepthRange(0, 1);
+
+        RB_ClearView();
+
+        RB_RenderView();
+
+        backEnd.ctx->screenRT->End();
+
+        rhi.SetViewport(upscaledRenderRect);
+        rhi.SetScissor(upscaledRenderRect);
+
         RB_PostProcess();
     } else {
-        rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetViewport(upscaledRenderRect);
+        rhi.SetScissor(upscaledRenderRect);
+        rhi.SetDepthRange(0, 1);
 
-        const Shader *shader = ShaderManager::postPassThruShader;
+        RB_ClearView();
 
-        shader->Bind();
-        shader->SetTexture("tex0", backEnd.ctx->screenRT->ColorTexture());
-
-        float screenTc[4];
-        screenTc[0] = (float)backEnd.renderRect.x / backEnd.ctx->screenRT->GetWidth();
-        screenTc[1] = (float)backEnd.renderRect.y / backEnd.ctx->screenRT->GetHeight();
-        screenTc[2] = screenTc[0] + (float)backEnd.renderRect.w / backEnd.ctx->screenRT->GetWidth();
-        screenTc[3] = screenTc[1] + (float)backEnd.renderRect.h / backEnd.ctx->screenRT->GetHeight();
-
-        RB_DrawClipRect(screenTc[0], screenTc[1], screenTc[2], screenTc[3]);
+        RB_RenderView();
     }
 
     backEnd.viewMatrixPrev = backEnd.view->def->viewMatrix;

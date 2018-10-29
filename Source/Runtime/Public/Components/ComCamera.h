@@ -101,6 +101,7 @@ protected:
     float                   size;
     float                   nx, ny, nw, nh;     ///< normalized screen coordinates
     int                     order;              ///< rendering order
+    bool                    applyPostProcessing;
 
     RenderWorld *           renderWorld;
 
