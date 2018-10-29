@@ -71,6 +71,7 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/SunShaftsDisplay" },
     { "Shaders/luminanceAdaptation" },
     { "Shaders/brightFilter" },
+    { "Shaders/LDRFinal" },
     { "Shaders/HDRFinal" },
     { "Shaders/chromaShift" },
     { "Shaders/SSAO" },
@@ -126,6 +127,7 @@ Shader *            ShaderManager::sunShaftsGenShader;
 Shader *            ShaderManager::sunShaftsDisplayShader;
 Shader *            ShaderManager::brightFilterShader;
 Shader *            ShaderManager::luminanceAdaptationShader;
+Shader *            ShaderManager::ldrFinalShader;
 Shader *            ShaderManager::hdrFinalShader;
 Shader *            ShaderManager::chromaShiftShader;
 Shader *            ShaderManager::ssaoShader;
@@ -344,6 +346,7 @@ void ShaderManager::InstantiateEngineShaders() {
 
     brightFilterShader = originalShaders[BrightFilterShader]->InstantiateShader(Array<Shader::Define>());
     luminanceAdaptationShader = originalShaders[LuminanceAdaptationShader]->InstantiateShader(Array<Shader::Define>());
+    ldrFinalShader = originalShaders[LdrFinalShader]->InstantiateShader(Array<Shader::Define>());
     hdrFinalShader = originalShaders[HdrFinalShader]->InstantiateShader(Array<Shader::Define>());
 
     chromaShiftShader = originalShaders[ChromaShiftShader]->InstantiateShader(Array<Shader::Define>());

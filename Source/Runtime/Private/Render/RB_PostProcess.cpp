@@ -93,7 +93,7 @@ void RB_PostProcess() {
                 sunLight->state.materialParms[RenderObject::AlphaParm]);
 
             //sunColor *= sunLight->intensity;
-            PP_SunShaftsDisplay(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->ppRTs[PP_RT_TEMP_2X]->ColorTexture(), sunColor, bc->screenRT);			
+            PP_SunShaftsDisplay(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->ppRTs[PP_RT_TEMP_2X]->ColorTexture(), sunColor, bc->screenRT);
         }
     }
 
@@ -210,15 +210,15 @@ void RB_PostProcess() {
 
         RB_DrawClipRect(screenTc[0], screenTc[1], screenTc[2], screenTc[3]);
     } else {
+        //bc->screenRT->Blit();
+
         rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
         rhi.SetCullFace(RHI::NoCull);
 
-        const Shader *shader = ShaderManager::postPassThruShader;
+        const Shader *shader = ShaderManager::ldrFinalShader;
 
         shader->Bind();
         shader->SetTexture("tex0", bc->screenRT->ColorTexture());
-
-        //rhi.SetSRGBWrite(true);
  
         RB_DrawClipRect(screenTc[0], screenTc[1], screenTc[2], screenTc[3]);
     }

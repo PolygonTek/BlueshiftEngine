@@ -364,6 +364,7 @@ public:
         SunShaftsDisplayShader,
         LuminanceAdaptationShader,
         BrightFilterShader,
+        LdrFinalShader,
         HdrFinalShader,
         ChromaShiftShader,
         SsaoShader,
@@ -440,6 +441,7 @@ public:
     static Shader *         sunShaftsDisplayShader;
     static Shader *         brightFilterShader;
     static Shader *         luminanceAdaptationShader;
+    static Shader *         ldrFinalShader;
     static Shader *         hdrFinalShader;
     static Shader *         chromaShiftShader;
     static Shader *         ssaoShader;
