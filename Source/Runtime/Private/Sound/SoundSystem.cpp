@@ -394,7 +394,9 @@ void SoundSystem::Update() {
     if (s_volume.IsModified()) {
         s_volume.ClearModified();
 
-        for (int soundIndex = 0; soundIndex < Min(sources.Count(), prioritySounds.Count()); soundIndex++) {
+        int playingSoundCount = Min(sources.Count(), prioritySounds.Count());
+
+        for (int soundIndex = 0; soundIndex < playingSoundCount; soundIndex++) {
             Sound *playSound = prioritySounds[soundIndex];
 
             playSound->SetVolume(playSound->volume);
