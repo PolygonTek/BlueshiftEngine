@@ -38,8 +38,8 @@ void Analytics::Init(const char *trackingID) {
 #endif
 
 	id<GAITracker> tracker = [gai trackerWithTrackingId:nsTrackingID];
-	//[tracker set:kGAIScreenName value:@"BlueshiftGame"];
-	//[tracker send:[[GAIDictionaryBuilder createScreenView] build]];
+	[tracker set:kGAIScreenName value:@"BlueshiftGame"];
+	[tracker send:[[GAIDictionaryBuilder createScreenView] build]];
 }
 
 void Analytics::Log(const char *category, const char *action, const char *label, long value) {

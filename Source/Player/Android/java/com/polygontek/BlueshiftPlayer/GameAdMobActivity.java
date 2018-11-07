@@ -89,6 +89,8 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     public void initializeAnalytics(final String trackingID) {
         mAnalytics = GoogleAnalytics.getInstance(this);
         mTracker = mAnalytics.newTracker(trackingID);
+        mTracker.setScreenName("BlueshiftGame");
+        mTracker.send(new HitBuilders.ScreenViewBuilder().build());
     }
 
     public void logAnalyticsEvent(final String categoryName, final String actionName, final String labelName, long value) {
