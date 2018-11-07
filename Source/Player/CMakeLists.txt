@@ -196,9 +196,7 @@ else ()
                 else ()
                     target_link_libraries(${PROJECT_NAME} ${GoogleAnalyticsServices}/GoogleAnalyticsServices)
 
-                    target_include_directories(${PROJECT_NAME} PUBLIC
-                        $<BUILD_INTERFACE:${GoogleAnalyticsServices}/GoogleAnalytics/Library>
-                        $<INSTALL_INTERFACE:GoogleAnalyticsServices>)
+                    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${GoogleAnalyticsServices}/GoogleAnalytics/Library>)
                 endif ()
 
                 add_framework(${PROJECT_NAME} CoreData)
@@ -213,9 +211,7 @@ else ()
                 else ()
                     target_link_libraries(${PROJECT_NAME} ${GoogleMobileAds}.framework)
 
-                    target_include_directories(${PROJECT_NAME} PUBLIC
-                        $<BUILD_INTERFACE:${GoogleMobileAds}.framework/Headers>
-                        $<INSTALL_INTERFACE:GoogleMobileAds>)
+                    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${GoogleMobileAds}.framework/Headers>)
                 endif ()
 
                 add_framework(${PROJECT_NAME} AdSupport)
