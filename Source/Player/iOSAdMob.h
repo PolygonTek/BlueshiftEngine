@@ -21,9 +21,9 @@ public:
     class InterstitialAd;
     class RewardBasedVideoAd;
 
-    static void Init(const char *appID, const char *testDevices = "");
-
     static void RegisterLuaModule(LuaCpp::State *state, UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController);
+
+    static void Init(const char *appID, const char *testDevices = "");
 
     static UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController;
 
