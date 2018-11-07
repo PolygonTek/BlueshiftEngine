@@ -2,7 +2,12 @@ Version History
 ---------------
 
 ### 0.6.0 (Work In Progress)
-- Added suppport for Unicode (UTF-8) almost everywhere
+- Added support for UI system
+- Added support for environment probe for lighting
+- Added support for integrating [Google Analytics](https://analytics.google.com/) into the player
+- Added support for integrating three different ad formats of [Google AdMob](https://www.google.com/admob/) into the player
+- Added support for Unicode (UTF-8) almost everywhere
+- Fixed an issue where sRGB rendering on Android
 
 ### 0.5.0
 - Added support for GPU instancing for static/skinned meshes
