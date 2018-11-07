@@ -7,6 +7,7 @@ set(BS_APP_VERSION "1.0" CACHE STRING "BS_APP_VERSION variable defaulting")
 set(BS_PRODUCT_NAME "BlueshiftPlayer" CACHE STRING "BS_PRODUCT_NAME variable defaulting")
 set(BS_TARGET_DEVICE "1,2" CACHE STRING "BS_TARGET_DEVICE variable defaulting")
 set(BS_ORIENTATION "<string>UIInterfaceOrientationPortrait</string>" CACHE STRING "BS_ORIENTATION variable defaulting")
+set(BS_USE_ANALYTICS FALSE CACHE BOOL "BS_USE_ANALYTICS variable defaulting")
 set(BS_USE_ADMOB FALSE CACHE BOOL "BS_USE_ADMOB variable defaulting")
 
 project(BlueshiftPlayer)
@@ -23,8 +24,14 @@ if (ANDROID)
         android_native_app_glue.c
         AndroidMain.cpp)
 
+    if (BS_USE_ANALYTICS)
+        list(APPEND ALL_FILES
+            AndroidAnalytics.h
+            AndroidAnalytics.cpp)
+    endif ()
+
     if (BS_USE_ADMOB)
-        list(APPEND ALL_FILES 
+        list(APPEND ALL_FILES
             AndroidAdMob.h
             AndroidAdMob.cpp)
     endif ()
@@ -34,6 +41,12 @@ elseif (APPLE)
             iOSMain.mm
             iOSLaunchScreen.xib
             Assets.xcassets)
+
+        if (BS_USE_ANALYTICS)
+            list(APPEND ALL_FILES
+                iOSAnalytics.h
+                iOSAnalytics.cpp)
+        endif ()
 
         if (BS_USE_ADMOB)
             list(APPEND ALL_FILES 
@@ -112,7 +125,15 @@ else ()
         add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
     endif ()
 
-    if (NOT ANDROID AND NOT IOS)
+    if (ANDROID OR IOS)
+        if (BS_USE_ANALYTICS)
+            add_definitions(-DUSE_ANALYTICS=1)
+        endif ()
+
+        if (BS_USE_ADMOB)
+            add_definitions(-DUSE_ADMOB=1)
+        endif ()
+    else ()
         set_target_properties(${PROJECT_NAME} PROPERTIES
             PREFIX ""
             #DEBUG_POSTFIX "_d"
@@ -120,11 +141,7 @@ else ()
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
     endif ()
 
-    if (ANDROID)
-        if (BS_USE_ADMOB)
-            add_definitions(-DUSE_ADMOB=1)
-        endif ()
-    elseif (APPLE)
+    if (APPLE)
         # App name
         set(CMAKEVAR_APP_NAME ${BS_APP_NAME})
         # App version
@@ -171,15 +188,31 @@ else ()
             add_framework(${PROJECT_NAME} AudioToolbox)
             add_framework(${PROJECT_NAME} AVFoundation)
 
-            if (BS_USE_ADMOB)
-                add_definitions(-DUSE_ADMOB=1)
+            if (BS_USE_ANALYTICS)
+                set(GoogleAnalyticsServices ${ENGINE_INCLUDE_DIR}/ThirdParty/GoogleAnalyticsServices)
 
+                if (${GoogleAnalyticsServices} STREQUAL GoogleAnalyticsServices-NOTFOUND)
+                    message(ERROR ": GoogleAnalyticsServices folder not found")
+                else ()
+                    target_link_libraries(${PROJECT_NAME} ${GoogleAnalyticsServices}/GoogleAnalyticsServices)
+
+                    target_include_directories(${PROJECT_NAME} PUBLIC
+                        $<BUILD_INTERFACE:${GoogleAnalyticsServices}/GoogleAnalytics/Library>
+                        $<INSTALL_INTERFACE:GoogleAnalyticsServices>)
+                endif ()
+
+                add_framework(${PROJECT_NAME} CoreData)
+                add_framework(${PROJECT_NAME} SystemConfiguration)
+            endif ()
+            
+            if (BS_USE_ADMOB)
                 set(GoogleMobileAds ${ENGINE_INCLUDE_DIR}/ThirdParty/GoogleMobileAds/GoogleMobileAds)
 
                 if (${GoogleMobileAds} STREQUAL GoogleMobileAds-NOTFOUND)
                     message(ERROR ": Framework GoogleMobileAds not found")
                 else ()
                     target_link_libraries(${PROJECT_NAME} ${GoogleMobileAds}.framework)
+
                     target_include_directories(${PROJECT_NAME} PUBLIC
                         $<BUILD_INTERFACE:${GoogleMobileAds}.framework/Headers>
                         $<INSTALL_INTERFACE:GoogleMobileAds>)

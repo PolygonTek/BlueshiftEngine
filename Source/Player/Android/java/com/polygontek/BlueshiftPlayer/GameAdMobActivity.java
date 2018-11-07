@@ -25,6 +25,10 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 
+import com.google.android.gms.analytics.GoogleAnalytics;
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
+
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
@@ -80,6 +84,20 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
             mRewardedVideoAd.resume(this);
         }
         super.onResume();
+    }
+
+    public void initializeAnalytics(final String trackingID) {
+        mAnalytics = GoogleAnalytics.getInstance(this);
+        mTracker = mAnalytics.newTracker(trackingID);
+    }
+
+    public void logAnalyticsEvent(final String categoryName, final String actionName, final String labelName, long value) {
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory(categoryName)
+                .setAction(actionName)
+                .setLabel(labelName)
+                .setValue(value)
+                .build());
     }
 
     public void initializeAds(final String appID) {
@@ -499,6 +517,9 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
     private native void rewardBasedVideoAdRewarded(String type, int amount);
     private native void rewardBasedVideoAdClosed();
     private native void rewardBasedVideoAdLeftApplication();
+
+    private GoogleAnalytics mAnalytics;
+    private Tracker mTracker;
 
     private PopupWindow mAdPopupWindow = null;
     private AdView mBannerAdView = null;

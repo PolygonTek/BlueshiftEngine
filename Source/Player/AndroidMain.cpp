@@ -17,6 +17,11 @@
 #include "android_native_app_glue.h"
 #include <dlfcn.h>
 #include <android/sensor.h>
+
+#ifdef USE_ANALYTICS
+#include "AndroidAnalytics.h"
+#endif
+
 #ifdef USE_ADMOB
 #include "AndroidAdMob.h"
 #endif
@@ -166,6 +171,10 @@ static void InitDisplay(ANativeWindow *window) {
         app.OnApplicationResize(renderWidth, renderHeight);
 
         app.Init();
+
+#ifdef USE_ANALYTICS
+        Analytics::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
+#endif
 
 #ifdef USE_ADMOB
         AdMob::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());

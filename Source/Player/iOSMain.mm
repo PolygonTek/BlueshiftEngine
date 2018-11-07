@@ -18,6 +18,11 @@
 #include <sys/sysctl.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
+
+#ifdef USE_ANALYTICS
+#include "iOSAnalytics.h"
+#endif
+
 #ifdef USE_ADMOB
 #include "iOSAdMob.h"
 #endif
@@ -417,6 +422,10 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     app.OnApplicationResize(renderWidth, renderHeight);
 
     app.Init();
+
+#ifdef USE_ANALYTICS
+    Analytics::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
+#endif
 
 #ifdef USE_ADMOB
     AdMob::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
