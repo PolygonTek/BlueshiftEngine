@@ -194,10 +194,16 @@ else ()
                 if (${GoogleAnalyticsServices} STREQUAL GoogleAnalyticsServices-NOTFOUND)
                     message(ERROR ": GoogleAnalyticsServices folder not found")
                 else ()
-                    target_link_libraries(${PROJECT_NAME} ${GoogleAnalyticsServices}/GoogleAnalyticsServices)
+                    target_link_libraries(${PROJECT_NAME} ${GoogleAnalyticsServices}/libGoogleAnalyticsServices.a)
 
                     target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${GoogleAnalyticsServices}/GoogleAnalytics/Library>)
                 endif ()
+
+                find_package(ZLIB REQUIRED)
+                target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
+
+                find_library(SQLITE3_LIBRARY NAMES sqlite3)
+                target_link_libraries(${PROJECT_NAME} ${SQLITE3_LIBRARY})
 
                 add_framework(${PROJECT_NAME} CoreData)
                 add_framework(${PROJECT_NAME} SystemConfiguration)

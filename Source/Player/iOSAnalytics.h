@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "GoogleAnalytics/GAI.h"
-#include "GoogleAnalytics/GAIDictionaryBuilder.h"
-#include "GoogleAnalytics/GAIFields.h"
+#include "GAI.h"
+#include "GAIDictionaryBuilder.h"
+#include "GAIFields.h"
 
 class Analytics {
 public:

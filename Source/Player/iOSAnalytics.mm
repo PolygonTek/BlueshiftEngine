@@ -46,11 +46,12 @@ void Analytics::Log(const char *category, const char *action, const char *label,
 	NSString *nsCategory = [[NSString alloc] initWithBytes:category length:strlen(category) encoding:NSUTF8StringEncoding];
 	NSString *nsAction = [[NSString alloc] initWithBytes:action length:strlen(action) encoding:NSUTF8StringEncoding];
 	NSString *nsLabel = [[NSString alloc] initWithBytes:label length:strlen(label) encoding:NSUTF8StringEncoding];
+	NSNumber *nsValue = [NSNumber numberWithLong:value];
 
 	id<GAITracker> tracker = [GAI sharedInstance].defaultTracker;
 
 	[tracker send:[[GAIDictionaryBuilder createEventWithCategory:nsCategory
                                                       	  action:nsAction
                                                            label:nsLabel
-                                                           value:value] build]];
+                                                           value:nsValue] build]];
 }
