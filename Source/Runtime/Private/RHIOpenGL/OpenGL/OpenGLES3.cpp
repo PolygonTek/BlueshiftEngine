@@ -177,7 +177,11 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
     case Image::R_8:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
+#ifdef GL_EXT_texture_sRGB_R8
         if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_texture_sRGB_R8) ? GL_SR8_EXT : GL_R8;
+#else
+        if (glInternal) *glInternal = GL_R8;
+#endif
         return true;
     case Image::R_SNORM_8:
         if (glFormat)   *glFormat = GL_RED;
@@ -192,7 +196,11 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GL
     case Image::RG_8_8:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
+#ifdef GL_EXT_texture_sRGB_RG8
         if (glInternal) *glInternal = (isSRGB && gglext._GL_EXT_texture_sRGB_RG8) ? GL_SRG8_EXT : GL_RG8;
+#else
+        if (glInternal) *glInternal = GL_RG8;
+#endif
         return true;
     case Image::RG_SNORM_8_8:
         if (glFormat)   *glFormat = GL_RG;
