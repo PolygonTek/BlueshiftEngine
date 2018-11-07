@@ -45,7 +45,7 @@ elseif (APPLE)
         if (BS_USE_ANALYTICS)
             list(APPEND ALL_FILES
                 iOSAnalytics.h
-                iOSAnalytics.cpp)
+                iOSAnalytics.mm)
         endif ()
 
         if (BS_USE_ADMOB)
