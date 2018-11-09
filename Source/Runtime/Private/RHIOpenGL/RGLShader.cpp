@@ -720,7 +720,7 @@ static bool UseCachedProgram(const char *name, const uint32_t hash, GLuint progr
         return false;
     }
 
-    gglProgramBinary(programObject, *(GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum), fileMapping->GetSize() - (sizeof(uint32_t) + sizeof(GLenum)));
+    gglProgramBinary(programObject, *(GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum), (GLsizei)fileMapping->GetSize() - (sizeof(uint32_t) + sizeof(GLenum)));
 
     delete fileMapping;
 #endif

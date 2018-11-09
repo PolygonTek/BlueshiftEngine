@@ -53,11 +53,7 @@ protected:
     static Str                  NormalizeDirectoryName(const char *dirname);
 };
 
-class PlatformIOSFileMapping : public PlatformPosixFileMapping {
-public:
-};
-
 typedef PlatformIOSFile         PlatformFile;
-typedef PlatformIOSFileMapping  PlatformFileMapping;
+typedef PlatformPosixFileMapping PlatformFileMapping;
 
 BE_NAMESPACE_END

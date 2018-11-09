@@ -27,7 +27,7 @@ struct IOSDeviceModel {
 };
 
 // Matched with IOSDevice::Type enums
-static IOSDeviceModel models = {
+static IOSDeviceModel iOSModels[] = {
     { "iPod Touch 4th generation",  true, false, false, 960, 640 },
     { "iPod Touch 5th generation",  true, false, false, 1136, 640 },
     { "iPod Touch 6th generation",  true, false, false, 1136, 640 },

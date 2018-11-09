@@ -23,7 +23,7 @@ const char *PlatformAppleProcess::ExecutableFileName() {
 	static char name[512] = "";
 	if (!name[0]) {
         NSString *nsExeName = [[[NSBundle mainBundle] executablePath] lastPathComponent];
-        int l = [nsExeName length];
+        unsigned long l = [nsExeName length];
         memcpy(name, [nsExeName cStringUsingEncoding:NSUTF8StringEncoding], l);
         name[l] = '\0';
 	}
@@ -44,7 +44,7 @@ const char *PlatformAppleProcess::UserName() {
 	static char name[256] = "";
 	if (!name[0]) {
         NSString *nsUserName = NSUserName();
-        int l = [nsUserName length];
+        unsigned long l = [nsUserName length];
         memcpy(name, [nsUserName cStringUsingEncoding:NSUTF8StringEncoding], l);
         name[l] = '\0';
 	}
