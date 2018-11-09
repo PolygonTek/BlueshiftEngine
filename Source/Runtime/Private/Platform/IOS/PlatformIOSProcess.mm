@@ -14,7 +14,6 @@
 
 #include "Precompiled.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Platform/PlatformProcess.h"
 
 BE_NAMESPACE_BEGIN

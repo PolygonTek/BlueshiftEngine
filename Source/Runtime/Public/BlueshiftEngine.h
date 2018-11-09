@@ -23,7 +23,6 @@
 #include "Core/Heap.h"
 #include "Core/Allocator.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Core/Variant.h"
 #include "Core/Guid.h"
 #include "Core/StrColor.h"

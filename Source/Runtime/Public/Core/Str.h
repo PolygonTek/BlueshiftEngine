@@ -26,8 +26,6 @@
 
 BE_NAMESPACE_BEGIN
 
-class WStr;
-
 /// String class.
 class BE_API Str {
 public:

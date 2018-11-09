@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Core/WStr.h"
+#include "Core/Str.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -58,7 +58,7 @@ public:
     static const char *         UserName();
     static int                  NumberOfLogicalProcessors();
 
-    static WStr                 GetLastErrorText();
+    static Str                  GetLastErrorText();
 
     static ProcessHandle        CreateProccess(const char *appPath, const char *args, const char *workingPath);
     static bool                 IsProccessRunning(ProcessHandle &processHandle);

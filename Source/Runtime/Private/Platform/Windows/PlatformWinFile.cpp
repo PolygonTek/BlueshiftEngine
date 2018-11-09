@@ -179,7 +179,7 @@ PlatformWinFile *PlatformWinFile::OpenFileWrite(const char *filename) {
     PlatformWinUtils::UTF8ToUCS2(NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
     HANDLE handle = CreateFileW(wFilename, access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_WARNLOG("Failed to CreateFile : %s", lastErrorText.c_str());
         return nullptr;
     }
@@ -409,7 +409,7 @@ static bool RemoveDirRecursive(const wchar_t *path) {
     
     // remove the empty directory
     if (!RemoveDirectoryW(path)) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_WARNLOG("Failed to RemoveDirectory : %s", lastErrorText.c_str());
         return false;
     }
@@ -466,17 +466,19 @@ const char *PlatformWinFile::ExecutablePath() {
 static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo fileInfo;
     _wfinddata_t finddata;
-    wchar_t pattern[MaxAbsolutePath];
+    char pattern[MaxAbsolutePath];
     char subpath[MaxAbsolutePath];
     char filename[MaxAbsolutePath];
 
     if (subdir[0]) {
-        WStr::snPrintf(pattern, COUNT_OF(pattern), L"%hs%hs\\*", directory, subdir);
+        Str::snPrintf(pattern, COUNT_OF(pattern), "%s%s\\*", directory, subdir);
     } else {
-        WStr::snPrintf(pattern, COUNT_OF(pattern), L"%hs*", directory);
+        Str::snPrintf(pattern, COUNT_OF(pattern), "%s*", directory);
     }
 
-    intptr_t handle = _wfindfirst(pattern, &finddata);
+    wchar_t wPattern[MaxAbsolutePath];
+    PlatformWinUtils::UTF8ToUCS2(pattern, wPattern, COUNT_OF(wPattern));
+    intptr_t handle = _wfindfirst(wPattern, &finddata);
     if (handle == -1) {
         return;
     }
@@ -536,11 +538,14 @@ int PlatformWinFile::ListFiles(const char *directory, const char *nameFilter, bo
     if (recursive) {
         ListFilesRecursive(normalizedDirectory, "", nameFilter, includeSubDir, files);
     } else {
-        wchar_t pattern[MaxAbsolutePath];
-        WStr::snPrintf(pattern, COUNT_OF(pattern), L"%hs\\%hs", normalizedDirectory.c_str(), nameFilter);
+        char pattern[MaxAbsolutePath];
+        Str::snPrintf(pattern, COUNT_OF(pattern), "%s\\%s", normalizedDirectory.c_str(), nameFilter);
+
+        wchar_t wPattern[MaxAbsolutePath];
+        PlatformWinUtils::UTF8ToUCS2(pattern, wPattern, COUNT_OF(wPattern));
 
         _wfinddata_t finddata;
-        intptr_t handle = _wfindfirst(pattern, &finddata);
+        intptr_t handle = _wfindfirst(wPattern, &finddata);
         if (handle == -1) {
             return 0;
         }
@@ -600,14 +605,14 @@ PlatformWinFileMapping *PlatformWinFileMapping::OpenFileRead(const char *filenam
     PlatformWinUtils::UTF8ToUCS2(PlatformWinFile::NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
     HANDLE fileHandle = CreateFileW(wFilename, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (fileHandle == INVALID_HANDLE_VALUE) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_ERRLOG("PlatformWinFileMapping::Open: Couldn't open %s: %s\n", filename, lastErrorText.c_str());
         return nullptr;
     }
 
     HANDLE fileMappingHandle = CreateFileMappingW(fileHandle, nullptr, PAGE_READONLY, 0, 0, nullptr);
     if (!fileMappingHandle) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_ERRLOG("PlatformWinFileMapping::Open: Coudn't create file mapping %s: %s\n", filename, lastErrorText.c_str());
         CloseHandle(fileHandle);
         return nullptr;
@@ -615,7 +620,7 @@ PlatformWinFileMapping *PlatformWinFileMapping::OpenFileRead(const char *filenam
 
     LPVOID data = MapViewOfFile(fileMappingHandle, FILE_MAP_READ, 0, 0, 0);
     if (!data) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_ERRLOG("PlatformWinFileMapping::Open: Couldn't map %s to memory: %s\n", filename, lastErrorText.c_str());
         CloseHandle(fileMappingHandle);
         CloseHandle(fileHandle);
@@ -634,14 +639,14 @@ PlatformWinFileMapping *PlatformWinFileMapping::OpenFileReadWrite(const char *fi
     PlatformWinUtils::UTF8ToUCS2(PlatformWinFile::NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
     HANDLE fileHandle = CreateFileW(wFilename, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (fileHandle == INVALID_HANDLE_VALUE) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_ERRLOG("PlatformWinFileMapping::Open: Couldn't open %s: %s\n", filename, lastErrorText.c_str());
         return nullptr;
     }
 
     HANDLE fileMappingHandle = CreateFileMappingW(fileHandle, nullptr, PAGE_READWRITE, 0, newSize, nullptr);
     if (!fileMappingHandle) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_ERRLOG("PlatformWinFileMapping::Open: Coudn't create file mapping %s: %s\n", filename, lastErrorText.c_str());
         CloseHandle(fileHandle);
         return nullptr;
@@ -649,7 +654,7 @@ PlatformWinFileMapping *PlatformWinFileMapping::OpenFileReadWrite(const char *fi
 
     LPVOID data = MapViewOfFile(fileMappingHandle, FILE_MAP_WRITE, 0, 0, 0);
     if (!data) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_ERRLOG("PlatformWinFileMapping::Open: Couldn't map %s to memory: %s\n", filename, lastErrorText.c_str());
         CloseHandle(fileMappingHandle);
         CloseHandle(fileHandle);

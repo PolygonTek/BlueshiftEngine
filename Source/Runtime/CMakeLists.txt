@@ -22,7 +22,6 @@ set(ENGINE_FILES
     Public/Core/Variant.h
     Public/Core/VariantArg.h
     Public/Core/Guid.h
-    Public/Core/WStr.h
     Public/Core/ByteOrder.h
     Public/Core/CmdArgs.h
     Public/Core/Cmds.h
@@ -260,7 +259,6 @@ set(ENGINE_FILES
     Private/Core/UTF8.cpp
     Private/Core/UTF16.cpp
     Private/Core/Str.cpp
-    Private/Core/WStr.cpp
     Private/Core/Guid.cpp
     Private/Containers/HashIndex.cpp
     Private/Image/ImageInternal.h

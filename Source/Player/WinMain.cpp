@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 #include "Application.h"
 #include "WinResource.h"
 #include <windowsx.h>
@@ -197,9 +198,13 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     wcex.lpszClassName      = mainWindowClassName;
     RegisterClassEx(&wcex);
 
-    const wchar_t *fullTitle = BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    char temp[128];
+    BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
 
-    mainWnd = CreateRenderWindow(fullTitle, mainWindowClassName, disp_width.GetInteger(), disp_height.GetInteger(), disp_fullscreen.GetBool());
+    wchar_t szFullTitle[128];
+    BE1::PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
+
+    mainWnd = CreateRenderWindow(szFullTitle, mainWindowClassName, disp_width.GetInteger(), disp_height.GetInteger(), disp_fullscreen.GetBool());
 
     BE1::gameClient.Init(mainWnd, true);
 

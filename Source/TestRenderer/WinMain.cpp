@@ -214,7 +214,13 @@ BOOL InitInstance(int nCmdShow) {
     basePath.CleanPath();
     BE1::Engine::InitBase(basePath.c_str(), false, SystemLog, SystemError);
 
-    HWND hwndMain = CreateMainWindow(BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__), 1024, 768);
+    char temp[128];
+    BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+
+    wchar_t szFullTitle[128];
+    BE1::PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
+
+    HWND hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
 
     app.Init(hwndMain);
 

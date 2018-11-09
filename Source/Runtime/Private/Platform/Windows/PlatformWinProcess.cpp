@@ -89,7 +89,7 @@ int PlatformWinProcess::NumberOfLogicalProcessors() {
 #endif
 }
 
-WStr PlatformWinProcess::GetLastErrorText() {
+Str PlatformWinProcess::GetLastErrorText() {
     TCHAR *errorText;
     DWORD errCode = GetLastError();
 
@@ -99,7 +99,7 @@ WStr PlatformWinProcess::GetLastErrorText() {
         return "Internal error while looking up an error code";
     }
 
-    WStr result(errorText);
+    Str result = Str::UTF8StrFromWCharString(errorText);
     LocalFree(errorText);
     return result;
 }
@@ -112,7 +112,7 @@ SharedLib PlatformWinProcess::OpenLibrary(const char *filename) {
         handle = LoadLibraryA(str);
         // So you can see what the error is in the debugger...
         if (!handle) {
-            Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+            Str lastErrorText = PlatformWinProcess::GetLastErrorText();
             BE_WARNLOG("Failed to LoadLibrary : %s", lastErrorText.c_str());
         }
     }
@@ -161,19 +161,22 @@ ProcessHandle PlatformWinProcess::CreateProccess(const char *appPath, const char
     PROCESS_INFORMATION pi;
     memset(&pi, 0, sizeof(pi));
 
-    wchar_t commandLine[32768];
-    WStr::snPrintf(commandLine, COUNT_OF(commandLine), L"%hs %hs", appPath, args);
+    char commandLine[32768];
+    Str::snPrintf(commandLine, COUNT_OF(commandLine), "%s %s", appPath, args);
 
-    wchar_t expandedWorkingDirectory[256] = L"";
+    wchar_t wCommandLine[32768];
+    PlatformWinUtils::UTF8ToUCS2(commandLine, wCommandLine, COUNT_OF(wCommandLine));
+
+    wchar_t wExpandedWorkingDirectory[256] = L"";
 
     if (workingDirectory && workingDirectory[0]) {
-        wchar_t workingDirectory2[256] = L"";
-        PlatformWinUtils::UTF8ToUCS2(workingDirectory, workingDirectory2, 256);
-        ExpandEnvironmentStringsW(workingDirectory2, expandedWorkingDirectory, COUNT_OF(expandedWorkingDirectory));
+        wchar_t wWorkingDirectory[256] = L"";
+        PlatformWinUtils::UTF8ToUCS2(workingDirectory, wWorkingDirectory, COUNT_OF(wWorkingDirectory));
+        ExpandEnvironmentStringsW(wWorkingDirectory, wExpandedWorkingDirectory, COUNT_OF(wExpandedWorkingDirectory));
     }
 
-    if (!CreateProcessW(nullptr, commandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, expandedWorkingDirectory[0] ? expandedWorkingDirectory : nullptr, &si, &pi)) {
-        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+    if (!CreateProcessW(nullptr, wCommandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, wExpandedWorkingDirectory[0] ? wExpandedWorkingDirectory : nullptr, &si, &pi)) {
+        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_WARNLOG("Failed to CreateProcess : %s", lastErrorText.c_str());
         return ProcessHandle();
     }
