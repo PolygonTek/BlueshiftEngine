@@ -688,6 +688,7 @@ static bool UseCachedProgram(const char *name, const uint32_t hash, GLuint progr
     Str filename = GLShader::programCacheDir;
     filename.AppendPath(name);
     filename.SetFileExtension(".programbin");
+#if 0
     PlatformFile *file = PlatformFile::OpenFileRead(filename);
     if (!file) {
         return false;
@@ -704,8 +705,25 @@ static bool UseCachedProgram(const char *name, const uint32_t hash, GLuint progr
     }
 
     gglProgramBinary(programObject, *(GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum), fileSize - (sizeof(uint32_t) + sizeof(GLenum)));
-    
+
     Mem_AlignedFree(programBinary);
+#else
+    PlatformFileMapping *fileMapping = PlatformFileMapping::OpenFileRead(filename);
+    if (!fileMapping) {
+        return false;
+    }
+
+    const byte *programBinary = (const byte *)fileMapping->GetData();
+
+    if (*(uint32_t *)programBinary != hash) {
+        delete fileMapping;
+        return false;
+    }
+
+    gglProgramBinary(programObject, *(GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum), fileMapping->GetSize() - (sizeof(uint32_t) + sizeof(GLenum)));
+
+    delete fileMapping;
+#endif
 
     GLint status;
     gglGetProgramiv(programObject, GL_LINK_STATUS, &status);
