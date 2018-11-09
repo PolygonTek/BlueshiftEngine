@@ -361,7 +361,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 - (void)initInstance {
     BE1::IOSDevice::Type deviceType = BE1::IOSDevice::GetIOSDeviceType();
-    if (deviceType == BE1::IOSDevice::IOS_Unknown) {
+    if (deviceType == BE1::IOSDevice::IOS_UnknownDevice) {
         assert(0);
     }
     

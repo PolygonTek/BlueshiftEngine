@@ -16,6 +16,7 @@
 
 BE_NAMESPACE_BEGIN
 
+// This class uses ANSI-C fopen rather than POSIX open.
 class BE_API PlatformPosixFile : public PlatformBaseFile {
 public:
     PlatformPosixFile() {}

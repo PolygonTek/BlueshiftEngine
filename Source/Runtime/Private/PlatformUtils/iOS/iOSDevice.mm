@@ -20,88 +20,89 @@
 
 BE_NAMESPACE_BEGIN
 
+struct IOSDeviceModel {
+    const char *name;
+    bool iPod, iPhone, iPad;
+    int resolutionWidth, resolutionHeight;
+};
+
+// Matched with IOSDevice::Type enums
+static IOSDeviceModel models = {
+    { "iPod Touch 4th generation",  true, false, false, 960, 640 },
+    { "iPod Touch 5th generation",  true, false, false, 1136, 640 },
+    { "iPod Touch 6th generation",  true, false, false, 1136, 640 },
+
+    { "iPhone 4",                   false, true, false, 960, 640 },
+    { "iPhone 4s",                  false, true, false, 960, 640 },
+    { "iPhone 5",                   false, true, false, 1136, 640 },
+    { "iPhone 5s",                  false, true, false, 1136, 640 },
+    { "iPhone 6",                   false, true, false, 1334, 750 },
+    { "iPhone 6 Plus",              false, true, false, 1920, 1080 },
+    { "iPhone 6s",                  false, true, false, 1334, 750 },
+    { "iPhone SE",                  false, true, false, 1136, 640 },
+    { "iPhone 7",                   false, true, false, 1334, 750 },
+    { "iPhone 7 Plus",              false, true, false, 1920, 1080 },
+    { "iPhone 8",                   false, true, false, 1334, 750 },
+    { "iPhone 8 Plus",              false, true, false, 1920, 1080 },
+    { "iPhone X",                   false, true, false, 2436, 1125 },
+    { "iPhone Xs",                  false, true, false, 2436, 1125 },
+    { "iPhone Xs Max",              false, true, false, 2688, 1242 },
+    { "iPhone Xr",                  false, true, false, 1792, 828 },
+
+    { "iPad 2",                     false, false, true, 1024, 768 },
+    { "iPad Mini",                  false, false, true, 1024, 768 },
+    { "iPad 3",                     false, false, true, 2048, 1536 },
+    { "iPad 4",                     false, false, true, 2048, 1536 },
+    { "iPad Air",                   false, false, true, 2048, 1536 },
+    { "iPad Mini 2",                false, false, true, 2048, 1536 },    
+    { "iPad Mini 3",                false, false, true, 2048, 1536 },
+    { "iPad Air 2",                 false, false, true, 2048, 1536 },
+    { "iPad Mini 4",                false, false, true, 2048, 1536 },
+    { "iPad Pro 9.7",               false, false, true, 2048, 1536 },
+    { "iPad Pro 12.9",              false, false, true, 2732, 2048 },
+    { "iPad Pro 12.9 (2nd)",        false, false, true, 2732, 2048 },
+    { "iPad Pro 10.5",              false, false, true, 2224, 1668 },
+    { "iPad Pro 11",                false, false, true, 2388, 1668 },
+    { "iPad Pro 12.9 (3rd)",        false, false, true, 2732, 2048 },
+};
+
 bool IOSDevice::IsIPhone(IOSDevice::Type deviceType) {
-    return deviceType >= IOS_IPhone4 && deviceType <= IOS_IPhoneX;
+    int index = (int)deviceType;
+    assert(index >= 0 && index < IOS_UnknownDevice);
+
+    return iOSModels[index].iPhone;
 }
 
 bool IOSDevice::IsIPod(IOSDevice::Type deviceType) {
-    return deviceType >= IOS_IPodTouch4 && deviceType <= IOS_IPodTouch6;
+    int index = (int)deviceType;
+    assert(index >= 0 && index < IOS_UnknownDevice);
+
+    return iOSModels[index].iPod;
 }
 
 bool IOSDevice::IsIPad(IOSDevice::Type deviceType) {
-    return deviceType >= IOS_IPad2 && deviceType <= IOS_IPadPro2_10_5;
+    int index = (int)deviceType;
+    assert(index >= 0 && index < IOS_UnknownDevice);
+
+    return iOSModels[index].iPad;
 }
 
 void IOSDevice::GetDeviceResolution(IOSDevice::Type deviceType, int &width, int &height) {
-    switch (deviceType) {
-        case IOS_IPhone4:
-        case IOS_IPhone4S:
-        case IOS_IPodTouch4:
-            width = 960;
-            height = 640;
-            break;
-        case IOS_IPhone5:
-        case IOS_IPhone5S:
-        case IOS_IPhoneSE:
-        case IOS_IPodTouch5:
-        case IOS_IPodTouch6:
-            width = 1136;
-            height = 640;
-            break;
-        case IOS_IPhone6:
-        case IOS_IPhone6S:
-        case IOS_IPhone7:
-        case IOS_IPhone8:
-            width = 1334;
-            height = 750;
-            break;
-        case IOS_IPhone6Plus:
-        case IOS_IPhone6SPlus:
-        case IOS_IPhone7Plus:
-        case IOS_IPhone8Plus:
-            width = 1920;
-            height = 1080;
-            break;
-        case IOS_IPhoneX:
-            width = 2436;
-            height = 1125;
-            break;
-        case IOS_IPad2:
-        case IOS_IPadMini:
-            width = 1024;
-            height = 768;
-            break;
-        case IOS_IPad3:
-        case IOS_IPad4:
-        case IOS_IPadMini2:
-        case IOS_IPadMini3:
-        case IOS_IPadMini4:
-        case IOS_IPadAir:
-        case IOS_IPadAir2:
-        case IOS_IPadPro_9_7:
-            width = 2048;
-            height = 1536;
-            break;
-        case IOS_IPadPro_12_9:
-        case IOS_IPadPro2_12_9:
-            width = 2732;
-            height = 2048;
-            break;
-        case IOS_IPadPro2_10_5:
-            width = 2224;
-            height = 1668;
-            break;
-        default:
-            break;
-    }
+    int index = (int)deviceType;
+    assert(index >= 0 && index < IOS_UnknownDevice);
+
+    const auto &model = iOSModels[index];
+    width = model.resolutionWidth;
+    height = model.resolutionHeight;
 }
 
+// Refernce: https://www.theiphonewiki.com/wiki/Models
 IOSDevice::Type IOSDevice::GetIOSDeviceType() {
     // default to unknown
-    static IOSDevice::Type deviceType = IOSDevice::Type::IOS_Unknown;
+    static IOSDevice::Type deviceType = IOSDevice::Type::IOS_UnknownDevice;
     
     // if we've already figured it out, return it
-    if (deviceType != IOSDevice::Type::IOS_Unknown) {
+    if (deviceType != IOSDevice::Type::IOS_UnknownDevice) {
         return deviceType;
     }
     
@@ -170,6 +171,12 @@ IOSDevice::Type IOSDevice::GetIOSDeviceType() {
                 deviceType = IOS_IPadPro2_10_5;
             } else {
                 deviceType = IOS_IPadPro2_12_9;
+            }
+        } else if (major >= 8) {
+            if (minor >= 5) {
+                deviceType = IOS_IPadPro3_12_9;
+            } else {
+                deviceType = IOS_IPadPro3_11;
             }
         }
     } else if (!deviceIDString.Cmpn("iPhone", 6)) {
