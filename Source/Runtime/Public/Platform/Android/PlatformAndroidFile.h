@@ -19,6 +19,8 @@ struct AAsset;
 BE_NAMESPACE_BEGIN
 
 class BE_API PlatformAndroidFile : public PlatformBaseFile {
+    friend class PlatformAndroidFileMapping;
+
 public:
     PlatformAndroidFile(FILE *fp);
     PlatformAndroidFile(AAsset *fp);

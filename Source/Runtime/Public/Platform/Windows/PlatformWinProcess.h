@@ -69,11 +69,11 @@ public:
 
     static void                 Sleep(float seconds);
 
-    // Loads a shared library
+                                // Loads a shared library
     static SharedLib            OpenLibrary(const char *filename);
-    // Unloads a shared library
+                                // Unloads a shared library
     static void                 CloseLibrary(SharedLib lib);
-    // Returns address of a symbol from the library
+                                // Returns address of a symbol from the library
     static void *               GetSymbol(SharedLib lib, const char *sym);
 };
 

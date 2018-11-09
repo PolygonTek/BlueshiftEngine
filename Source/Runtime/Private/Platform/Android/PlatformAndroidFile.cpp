@@ -18,10 +18,12 @@
 #include "PlatformUtils/Android/AndroidJNI.h"
 #include <android/asset_manager.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <sys/types.h>
+#include <sys/mman.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <ftw.h>
+#include <fcntl.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -522,6 +524,8 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
     return files.Count();
 }
 
+off_t PlatformAndroidFileMapping::pageMask = 0;
+
 PlatformAndroidFileMapping::PlatformAndroidFileMapping(int fileHandle, size_t size, const void *data) {
     this->fileHandle = fileHandle;
     this->size = size;
@@ -549,10 +553,11 @@ void PlatformAndroidFileMapping::Touch() {
 
 PlatformAndroidFileMapping *PlatformAndroidFileMapping::Open(const char *filename) {
     off_t start, delta;
+    size_t size;
 
     pageMask = getpagesize() - 1;
 
-    Str normalizedFilename = NormalizeFilename(filename);
+    Str normalizedFilename = PlatformAndroidFile::NormalizeFilename(filename);
     int fd = open(normalizedFilename, O_RDONLY);
     if (fd >= 0) {
         struct stat fs;
@@ -562,28 +567,26 @@ PlatformAndroidFileMapping *PlatformAndroidFileMapping::Open(const char *filenam
     } else {
         AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_UNKNOWN);
         if (asset) {
-            off_t nLength;
-            fd = AAsset_openFileDescriptor(asset, &start, &nLength);
+            off_t length;
+            fd = AAsset_openFileDescriptor(asset, &start, &length);
             assert(fd > 0);
-            size = nLength;
+            size = length;
             AAsset_close(asset);
         }
     }
 
-    delta = start & pageMask;
+    delta = (start & pageMask);
 
     void *map = mmap(nullptr, size + delta, PROT_READ, MAP_FILE | MAP_SHARED, fd, start - delta);
     if (!map) {
         BE_ERRLOG("PlatformAndroidFileMapping::Open: Couldn't map %s to memory\n", filename);
         assert(0);
         close(fd);
-        fd = -1;
-        return false;
+        return nullptr;
     }
     assert(((size_t)map & pageMask) == 0);
-    data = (char *)map + delta;
 
-    return new PlatformAndroidFileMapping(fd, size, data);
+    return new PlatformAndroidFileMapping(fd, size, (byte *)map + delta);
 }
 
 BE_NAMESPACE_END
