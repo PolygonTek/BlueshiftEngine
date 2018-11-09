@@ -22,37 +22,42 @@ BE_NAMESPACE_BEGIN
 class BE_API PlatformIOSFile : public PlatformPosixFile {
 public:
     PlatformIOSFile(FILE *fp);
-    virtual ~PlatformIOSFile();   
+    virtual ~PlatformIOSFile();
     
-    static PlatformIOSFile *OpenFileRead(const char *filename);
-    static PlatformIOSFile *OpenFileWrite(const char *filename);
-    static PlatformIOSFile *OpenFileAppend(const char *filename);
+    static PlatformIOSFile *    OpenFileRead(const char *filename);
+    static PlatformIOSFile *    OpenFileWrite(const char *filename);
+    static PlatformIOSFile *    OpenFileAppend(const char *filename);
     
-    static bool             FileExists(const char *filename);
-    static size_t           FileSize(const char *filename);
-    static bool             IsFileWritable(const char *filename);
-    static bool             IsReadOnly(const char *filename);
-    static bool             RemoveFile(const char *filename);
-    static bool             MoveFile(const char *srcFilename, const char *dstFilename);
+    static bool                 FileExists(const char *filename);
+    static size_t               FileSize(const char *filename);
+    static bool                 IsFileWritable(const char *filename);
+    static bool                 IsReadOnly(const char *filename);
+    static bool                 RemoveFile(const char *filename);
+    static bool                 MoveFile(const char *srcFilename, const char *dstFilename);
     
-    static bool             DirectoryExists(const char *dirname);
-    static bool             CreateDirectory(const char *dirname);
-    static bool             RemoveDirectory(const char *dirname);
+    static bool                 DirectoryExists(const char *dirname);
+    static bool                 CreateDirectory(const char *dirname);
+    static bool                 RemoveDirectory(const char *dirname);
 
-    static const char *     ExecutablePath();
+    static const char *         ExecutablePath();
 
-    static const char *     UserDir();
-    static const char *     UserDocumentDir();
-    static const char *     UserAppDataDir();
-    static const char *     UserTempDir();
+    static const char *         UserDir();
+    static const char *         UserDocumentDir();
+    static const char *         UserAppDataDir();
+    static const char *         UserTempDir();
     
-    static Str              ConvertToIOSPath(const Str &filename, bool forWrite);
+    static Str                  ConvertToIOSPath(const Str &filename, bool forWrite);
 
 protected:
-    static Str              NormalizeFilename(const char *filename);
-    static Str              NormalizeDirectoryName(const char *dirname);
+    static Str                  NormalizeFilename(const char *filename);
+    static Str                  NormalizeDirectoryName(const char *dirname);
 };
 
-typedef PlatformIOSFile     PlatformFile;
+class PlatformIOSFileMapping : public PlatformPosixFileMapping {
+public:
+};
+
+typedef PlatformIOSFile         PlatformFile;
+typedef PlatformIOSFileMapping  PlatformFileMapping;
 
 BE_NAMESPACE_END

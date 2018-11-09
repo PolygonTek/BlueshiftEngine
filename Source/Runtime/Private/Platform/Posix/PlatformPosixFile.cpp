@@ -17,10 +17,12 @@
 #include "Platform/PlatformFile.h"
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <utime.h>
 #include <dirent.h>
 #include <pwd.h>
 #include <ftw.h>
+#include <fcntl.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -446,6 +448,50 @@ int PlatformPosixFile::ListFiles(const char *directory, const char *nameFilter, 
     }
     
     return files.Count();
+}
+
+PlatformPosixFileMapping::PlatformPosixFileMapping(int fileHandle, size_t size, const void *data) {
+    this->fileHandle = fileHandle;
+    this->size = size;
+    this->data = data;
+}
+
+PlatformPosixFileMapping::~PlatformPosixFileMapping() {
+    int retval = munmap((void *)data, size);
+    if (retval != 0) {
+        BE_ERRLOG("Unable to unmap memory\n");
+    }
+    close(fileHandle);
+}
+
+void PlatformPosixFileMapping::Touch() {
+    size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+
+    uint32_t checkSum = 0;
+    for (byte *ptr = (byte *)data; ptr < (byte *)data + size; ptr += pageSize) {
+        checkSum += *(uint32_t *)ptr;
+    }
+}
+
+PlatformPosixFileMapping *PlatformPosixFileMapping::Open(const char *filename) {
+    Str normalizedFilename = NormalizeFilename(filename);
+    int fd = open(normalizedFilename, O_RDONLY);
+    if (fd == -1) {
+        BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't open %s\n", filename);
+        return nullptr;
+    }
+
+    struct stat fs;
+    fstat(fileHandle, &fs);
+    size_t size = fs.st_size;
+
+    data = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformPosixFileMapping(fd, size, data);
 }
 
 BE_NAMESPACE_END

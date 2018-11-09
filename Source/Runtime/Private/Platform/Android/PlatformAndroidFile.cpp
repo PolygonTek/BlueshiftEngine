@@ -522,4 +522,68 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
     return files.Count();
 }
 
+PlatformAndroidFileMapping::PlatformAndroidFileMapping(int fileHandle, size_t size, const void *data) {
+    this->fileHandle = fileHandle;
+    this->size = size;
+    this->data = data;
+}
+
+PlatformAndroidFileMapping::~PlatformAndroidFileMapping() {
+    data = (void *)((off_t)data & ~pageMask);
+
+    int retval = munmap((void *)data, size);
+    if (retval != 0) {
+        BE_ERRLOG("Unable to unmap memory\n");
+    }
+    close(fileHandle);
+}
+
+void PlatformAndroidFileMapping::Touch() {
+    size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+
+    uint32_t checkSum = 0;
+    for (byte *ptr = (byte *)data; ptr < (byte *)data + size; ptr += pageSize) {
+        checkSum += *(uint32_t *)ptr;
+    }
+}
+
+PlatformAndroidFileMapping *PlatformAndroidFileMapping::Open(const char *filename) {
+    off_t start, delta;
+
+    pageMask = getpagesize() - 1;
+
+    Str normalizedFilename = NormalizeFilename(filename);
+    int fd = open(normalizedFilename, O_RDONLY);
+    if (fd >= 0) {
+        struct stat fs;
+        fstat(fd, &fs);
+        size = fs.st_size;
+        start = 0;
+    } else {
+        AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_UNKNOWN);
+        if (asset) {
+            off_t nLength;
+            fd = AAsset_openFileDescriptor(asset, &start, &nLength);
+            assert(fd > 0);
+            size = nLength;
+            AAsset_close(asset);
+        }
+    }
+
+    delta = start & pageMask;
+
+    void *map = mmap(nullptr, size + delta, PROT_READ, MAP_FILE | MAP_SHARED, fd, start - delta);
+    if (!map) {
+        BE_ERRLOG("PlatformAndroidFileMapping::Open: Couldn't map %s to memory\n", filename);
+        assert(0);
+        close(fd);
+        fd = -1;
+        return false;
+    }
+    assert(((size_t)map & pageMask) == 0);
+    data = (char *)map + delta;
+
+    return new PlatformAndroidFileMapping(fd, size, data);
+}
+
 BE_NAMESPACE_END

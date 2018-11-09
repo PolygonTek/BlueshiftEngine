@@ -25,55 +25,71 @@ public:
 
     virtual ~PlatformAndroidFile();
 
-                            /// Returns offset in file.
-    virtual int             Tell() const;
-                            /// Returns file size.
-    virtual int             Size() const;
-                            /// Seek from the start on a file.
-    virtual int             Seek(long offset, Origin origin);
+                                /// Returns offset in file.
+    virtual int                 Tell() const;
+                                /// Returns file size.
+    virtual int                 Size() const;
+                                /// Seek from the start on a file.
+    virtual int                 Seek(long offset, Origin origin);
 
-                            // Reads data from the file to the buffer.
-    virtual size_t          Read(void *buffer, size_t bytesToRead) const;
-                            // Writes data from the buffer to the file.
-    virtual bool            Write(const void *buffer, size_t bytesToWrite);
+                                // Reads data from the file to the buffer.
+    virtual size_t              Read(void *buffer, size_t bytesToRead) const;
+                                // Writes data from the buffer to the file.
+    virtual bool                Write(const void *buffer, size_t bytesToWrite);
 
     static PlatformAndroidFile *OpenFileRead(const char *filename);
     static PlatformAndroidFile *OpenFileWrite(const char *filename);
     static PlatformAndroidFile *OpenFileAppend(const char *filename);
 
-    static bool             FileExists(const char *filename);
-    static size_t           FileSize(const char *filename);
-    static bool             IsFileWritable(const char *filename);
-    static bool             IsReadOnly(const char *filename);
-    static bool             SetReadOnly(const char *filename, bool readOnly);
-    static bool             RemoveFile(const char *filename);
-    static bool             MoveFile(const char *srcFilename, const char *dstFilename);
-    static int              GetFileMode(const char *filename);
-    static void             SetFileMode(const char *filename, int mode);
+    static bool                 FileExists(const char *filename);
+    static size_t               FileSize(const char *filename);
+    static bool                 IsFileWritable(const char *filename);
+    static bool                 IsReadOnly(const char *filename);
+    static bool                 SetReadOnly(const char *filename, bool readOnly);
+    static bool                 RemoveFile(const char *filename);
+    static bool                 MoveFile(const char *srcFilename, const char *dstFilename);
+    static int                  GetFileMode(const char *filename);
+    static void                 SetFileMode(const char *filename, int mode);
 
-    static DateTime         GetTimeStamp(const char *filename);
-    static void             SetTimeStamp(const char *filename, const DateTime &timeStamp);
+    static DateTime             GetTimeStamp(const char *filename);
+    static void                 SetTimeStamp(const char *filename, const DateTime &timeStamp);
 
-    static bool             DirectoryExists(const char *dirname);
-    static bool             CreateDirectory(const char *dirname);
-    static bool             RemoveDirectory(const char *dirname);
-    static bool             RemoveDirectoryTree(const char *dirname);
+    static bool                 DirectoryExists(const char *dirname);
+    static bool                 CreateDirectory(const char *dirname);
+    static bool                 RemoveDirectory(const char *dirname);
+    static bool                 RemoveDirectoryTree(const char *dirname);
 
-    static const char *     Cwd();
-    static bool             SetCwd(const char *dirname);
+    static const char *         Cwd();
+    static bool                 SetCwd(const char *dirname);
     
-    static const char *     ExecutablePath();
+    static const char *         ExecutablePath();
 
-    static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
+    static int                  ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
 
 protected:
-    static Str              NormalizeFilename(const char *filename);
-    static Str              NormalizeDirectoryName(const char *dirname);
+    static Str                  NormalizeFilename(const char *filename);
+    static Str                  NormalizeDirectoryName(const char *dirname);
 
-    FILE *                  fp;
-    AAsset *                asset;
+    FILE *                      fp;
+    AAsset *                    asset;
 };
 
-typedef PlatformAndroidFile PlatformFile;
+class BE_API PlatformAndroidFileMapping : public PlatformBaseFileMapping {
+public:
+    PlatformAndroidFileMapping(int fileHandle, size_t size, const void *data);
+    virtual ~PlatformAndroidFileMapping();
+
+    virtual void                Touch();
+
+    static PlatformAndroidFileMapping *Open(const char *filename);
+
+protected:
+    int                         fileHandle = -1;
+
+    static off_t                pageMask;
+};
+
+typedef PlatformAndroidFile     PlatformFile;
+typedef PlatformAndroidFileMapping PlatformFileMapping;
 
 BE_NAMESPACE_END

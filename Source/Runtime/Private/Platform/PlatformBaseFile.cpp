@@ -155,4 +155,11 @@ int PlatformBaseFile::ListFiles(const char *directory, const char *nameFilter, b
     return 0;
 }
 
+PlatformBaseFileMapping::~PlatformBaseFileMapping() {
+}
+
+PlatformBaseFileMapping *PlatformBaseFileMapping::Open(const char *filename) {
+    return nullptr;
+}
+
 BE_NAMESPACE_END

@@ -130,7 +130,6 @@ set(ENGINE_FILES
 
     Public/File/File.h
     Public/File/FileSystem.h
-    Public/File/FileMapping.h
     Public/File/ZipArchiver.h
   
     Public/RHI/RHI.h
@@ -326,7 +325,6 @@ set(ENGINE_FILES
     Private/Platform/PlatformBaseSystem.cpp
     Private/File/File.cpp
     Private/File/FileSystem.cpp
-    Private/File/FileMapping.cpp
     Private/File/ZipArchiver.cpp
     Private/Core/ByteOrder.cpp
     Private/Core/CmdArgs.cpp

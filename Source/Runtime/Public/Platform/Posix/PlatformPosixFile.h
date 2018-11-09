@@ -18,57 +18,71 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixFile : public PlatformBaseFile {
 public:
-                            PlatformPosixFile() {}
-                            PlatformPosixFile(FILE *fp);
-    virtual                 ~PlatformPosixFile();
-    // Return offset in file.
-    virtual int             Tell() const;
-    virtual int             Size() const;
-    // Seek from the start on a file.
-    virtual int             Seek(long offset, Origin origin);
+    PlatformPosixFile() {}
+    PlatformPosixFile(FILE *fp);
+    virtual ~PlatformPosixFile();
+                                // Return offset in file.
+    virtual int                 Tell() const;
+    virtual int                 Size() const;
+                                // Seek from the start on a file.
+    virtual int                 Seek(long offset, Origin origin);
     
-    // Read data from the file to the buffer.
-    virtual size_t          Read(void *buffer, size_t bytesToRead) const;
-    // Write data from the buffer to the file.
-    virtual bool            Write(const void *buffer, size_t bytesToWrite);   
+                                // Read data from the file to the buffer.
+    virtual size_t              Read(void *buffer, size_t bytesToRead) const;
+                                // Write data from the buffer to the file.
+    virtual bool                Write(const void *buffer, size_t bytesToWrite);   
     
-    static PlatformPosixFile *OpenFileRead(const char *filename);
-    static PlatformPosixFile *OpenFileWrite(const char *filename);
-    static PlatformPosixFile *OpenFileAppend(const char *filename);
+    static PlatformPosixFile *  OpenFileRead(const char *filename);
+    static PlatformPosixFile *  OpenFileWrite(const char *filename);
+    static PlatformPosixFile *  OpenFileAppend(const char *filename);
 
-    static bool             FileExists(const char *filename);
-    static size_t           FileSize(const char *filename);
-    static bool             IsFileWritable(const char *filename);
-    static bool             IsReadOnly(const char *filename);
-    static bool             SetReadOnly(const char *filename, bool readOnly);
-    static bool             RemoveFile(const char *filename);
-    static bool             MoveFile(const char *srcFilename, const char *dstFilename);
-    static int              GetFileMode(const char *filename);
-    static void             SetFileMode(const char *filename, int mode);
+    static bool                 FileExists(const char *filename);
+    static size_t               FileSize(const char *filename);
+    static bool                 IsFileWritable(const char *filename);
+    static bool                 IsReadOnly(const char *filename);
+    static bool                 SetReadOnly(const char *filename, bool readOnly);
+    static bool                 RemoveFile(const char *filename);
+    static bool                 MoveFile(const char *srcFilename, const char *dstFilename);
+    static int                  GetFileMode(const char *filename);
+    static void                 SetFileMode(const char *filename, int mode);
     
-    static DateTime         GetTimeStamp(const char *filename);
-    static void             SetTimeStamp(const char *filename, const DateTime &timeStamp);
+    static DateTime             GetTimeStamp(const char *filename);
+    static void                 SetTimeStamp(const char *filename, const DateTime &timeStamp);
     
-    static bool             DirectoryExists(const char *dirname);
-    static bool             CreateDirectory(const char *dirname);
-    static bool             RemoveDirectory(const char *dirname);
-    static bool             RemoveDirectoryTree(const char *dirname);
+    static bool                 DirectoryExists(const char *dirname);
+    static bool                 CreateDirectory(const char *dirname);
+    static bool                 RemoveDirectory(const char *dirname);
+    static bool                 RemoveDirectoryTree(const char *dirname);
 
-    static const char *     Cwd();
-    static bool             SetCwd(const char *dirname);
-    static const char *     ExecutablePath();
+    static const char *         Cwd();
+    static bool                 SetCwd(const char *dirname);
+    static const char *         ExecutablePath();
     
-    static int              ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
+    static int                  ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files);
     
 protected:
-    static Str              NormalizeFilename(const char *filename);
-    static Str              NormalizeDirectoryName(const char *dirname);
+    static Str                  NormalizeFilename(const char *filename);
+    static Str                  NormalizeDirectoryName(const char *dirname);
 
-    FILE *                  fp;
+    FILE *                      fp;
+};
+
+class BE_API PlatformPosixFileMapping : public PlatformBaseFileMapping {
+public:
+    PlatformPosixFileMapping(int fileHandle, size_t size, const void *data);
+    virtual ~PlatformPosixFileMapping();
+
+    virtual void                Touch();
+
+    static PlatformPosixFileMapping *Open(const char *filename);
+
+protected:
+    int                         fileHandle = -1;
 };
 
 #ifndef USE_BASE_PLATFORM_POSIX_FILE
-typedef PlatformPosixFile   PlatformFile;
+typedef PlatformPosixFile       PlatformFile;
+typedef PlatformPosixFileMapping PlatformFileMapping;
 #endif
 
 BE_NAMESPACE_END
