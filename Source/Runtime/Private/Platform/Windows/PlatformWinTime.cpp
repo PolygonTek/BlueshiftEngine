@@ -60,6 +60,8 @@ void PlatformWinTime::Init() {
 
     timeBeginPeriod(1);
 
+    PlatformTime::Microseconds();
+
     secondsPerCycle = 1.0 / hrt_frequency.QuadPart;
 }
 
