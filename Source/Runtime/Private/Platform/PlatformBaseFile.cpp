@@ -158,7 +158,11 @@ int PlatformBaseFile::ListFiles(const char *directory, const char *nameFilter, b
 PlatformBaseFileMapping::~PlatformBaseFileMapping() {
 }
 
-PlatformBaseFileMapping *PlatformBaseFileMapping::Open(const char *filename) {
+PlatformBaseFileMapping *PlatformBaseFileMapping::OpenFileRead(const char *filename) {
+    return nullptr;
+}
+
+PlatformBaseFileMapping *PlatformBaseFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
     return nullptr;
 }
 

@@ -83,10 +83,12 @@ public:
 
     virtual void                Touch();
 
-    static PlatformAndroidFileMapping *Open(const char *filename);
+    static PlatformAndroidFileMapping *OpenFileRead(const char *filename);
+    static PlatformAndroidFileMapping *OpenFileReadWrite(const char *filename, int size);
 
 protected:
     int                         fileHandle = -1;
+    int                         alignBytes = 0;
 
     static off_t                pageMask;
 };

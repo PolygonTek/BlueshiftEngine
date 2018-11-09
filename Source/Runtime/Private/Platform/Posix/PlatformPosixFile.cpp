@@ -461,6 +461,7 @@ PlatformPosixFileMapping::~PlatformPosixFileMapping() {
     if (retval != 0) {
         BE_ERRLOG("Unable to unmap memory\n");
     }
+    msync(data, size, MS_SYNC);
     close(fileHandle);
 }
 
@@ -473,7 +474,7 @@ void PlatformPosixFileMapping::Touch() {
     }
 }
 
-PlatformPosixFileMapping *PlatformPosixFileMapping::Open(const char *filename) {
+PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileRead(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     int fd = open(normalizedFilename, O_RDONLY);
     if (fd == -1) {
@@ -485,7 +486,7 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::Open(const char *filename) {
     fstat(fileHandle, &fs);
     size_t size = fs.st_size;
 
-    data = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
+    void *data = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
     if (!data) {
         BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't map %s to memory\n", filename);
         return nullptr;
@@ -493,5 +494,30 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::Open(const char *filename) {
 
     return new PlatformPosixFileMapping(fd, size, data);
 }
+
+PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
+    Str normalizedFilename = NormalizeFilename(filename);
+    int fd = open(normalizedFilename, O_RDWR | O_CREAT);
+    if (fd == -1) {
+        BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't open %s\n", filename);
+        return nullptr;
+    }
+
+    size_t size = newSize;
+    if (size == 0) {
+        struct stat fs;
+        fstat(fileHandle, &fs);
+        size = fs.st_size;
+    }
+
+    void *data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformPosixFileMapping(fd, size, data);
+}
+
 
 BE_NAMESPACE_END

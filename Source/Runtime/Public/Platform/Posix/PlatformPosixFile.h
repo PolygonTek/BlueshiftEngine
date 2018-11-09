@@ -75,7 +75,8 @@ public:
 
     virtual void                Touch();
 
-    static PlatformPosixFileMapping *Open(const char *filename);
+    static PlatformPosixFileMapping *OpenFileRead(const char *filename);
+    static PlatformPosixFileMapping *OpenFileReadWrite(const char *filename, int newSize = 0);
 
 protected:
     int                         fileHandle = -1;

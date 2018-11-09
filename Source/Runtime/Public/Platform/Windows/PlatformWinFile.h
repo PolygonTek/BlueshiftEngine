@@ -78,7 +78,8 @@ public:
 
     virtual void                Touch();
 
-    static PlatformWinFileMapping *Open(const char *filename);
+    static PlatformWinFileMapping *OpenFileRead(const char *filename);
+    static PlatformWinFileMapping *OpenFileReadWrite(const char *filename, int newSize = 0);
 
 protected:
     HANDLE                      fileHandle;

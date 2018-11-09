@@ -595,17 +595,17 @@ void PlatformWinFileMapping::Touch() {
     }
 }
 
-PlatformWinFileMapping *PlatformWinFileMapping::Open(const char *filename) {
+PlatformWinFileMapping *PlatformWinFileMapping::OpenFileRead(const char *filename) {
     wchar_t wFilename[1024];
     PlatformWinUtils::UTF8ToUCS2(PlatformWinFile::NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
-    HANDLE fileHandle = CreateFileW(wFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE fileHandle = CreateFileW(wFilename, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (fileHandle == INVALID_HANDLE_VALUE) {
         Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
         BE_ERRLOG("PlatformWinFileMapping::Open: Couldn't open %s: %s\n", filename, lastErrorText.c_str());
         return nullptr;
     }
 
-    HANDLE fileMappingHandle = CreateFileMappingW(fileHandle, NULL, PAGE_READONLY, 0, 0, NULL);
+    HANDLE fileMappingHandle = CreateFileMappingW(fileHandle, nullptr, PAGE_READONLY, 0, 0, nullptr);
     if (!fileMappingHandle) {
         Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
         BE_ERRLOG("PlatformWinFileMapping::Open: Coudn't create file mapping %s: %s\n", filename, lastErrorText.c_str());
@@ -625,6 +625,43 @@ PlatformWinFileMapping *PlatformWinFileMapping::Open(const char *filename) {
     }
 
     size_t size = (size_t)GetFileSize(fileHandle, 0);
+
+    return new PlatformWinFileMapping(fileHandle, fileMappingHandle, size, data);
+}
+
+PlatformWinFileMapping *PlatformWinFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
+    wchar_t wFilename[1024];
+    PlatformWinUtils::UTF8ToUCS2(PlatformWinFile::NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    HANDLE fileHandle = CreateFileW(wFilename, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (fileHandle == INVALID_HANDLE_VALUE) {
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_ERRLOG("PlatformWinFileMapping::Open: Couldn't open %s: %s\n", filename, lastErrorText.c_str());
+        return nullptr;
+    }
+
+    HANDLE fileMappingHandle = CreateFileMappingW(fileHandle, nullptr, PAGE_READWRITE, 0, newSize, nullptr);
+    if (!fileMappingHandle) {
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_ERRLOG("PlatformWinFileMapping::Open: Coudn't create file mapping %s: %s\n", filename, lastErrorText.c_str());
+        CloseHandle(fileHandle);
+        return nullptr;
+    }
+
+    LPVOID data = MapViewOfFile(fileMappingHandle, FILE_MAP_WRITE, 0, 0, 0);
+    if (!data) {
+        Str lastErrorText = Str::UTF8StrFromWCharString(PlatformWinProcess::GetLastErrorText());
+        BE_ERRLOG("PlatformWinFileMapping::Open: Couldn't map %s to memory: %s\n", filename, lastErrorText.c_str());
+        CloseHandle(fileMappingHandle);
+        CloseHandle(fileHandle);
+        fileMappingHandle = nullptr;
+        fileHandle = INVALID_HANDLE_VALUE;
+        return nullptr;
+    }
+
+    size_t size = newSize;
+    if (size == 0) {
+        size = (size_t)GetFileSize(fileHandle, 0);
+    }
 
     return new PlatformWinFileMapping(fileHandle, fileMappingHandle, size, data);
 }

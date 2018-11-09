@@ -104,7 +104,8 @@ public:
     size_t                      GetSize() const { return size; }
     const void *                GetData() const { return data; }
 
-    static PlatformBaseFileMapping *Open(const char *filename);
+    static PlatformBaseFileMapping *OpenFileRead(const char *filename);
+    static PlatformBaseFileMapping *OpenFileReadWrite(const char *filename, int newSize = 0);
 
 protected:
     size_t                      size = 0;

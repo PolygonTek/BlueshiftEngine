@@ -533,9 +533,7 @@ PlatformAndroidFileMapping::PlatformAndroidFileMapping(int fileHandle, size_t si
 }
 
 PlatformAndroidFileMapping::~PlatformAndroidFileMapping() {
-    data = (void *)((off_t)data & ~pageMask);
-
-    int retval = munmap((void *)data, size);
+    int retval = munmap((byte *)data - alignBytes, size);
     if (retval != 0) {
         BE_ERRLOG("Unable to unmap memory\n");
     }
@@ -551,42 +549,71 @@ void PlatformAndroidFileMapping::Touch() {
     }
 }
 
-PlatformAndroidFileMapping *PlatformAndroidFileMapping::Open(const char *filename) {
-    off_t start, delta;
+PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileRead(const char *filename) {
+    off_t startOffset;
     size_t size;
-
-    pageMask = getpagesize() - 1;
 
     Str normalizedFilename = PlatformAndroidFile::NormalizeFilename(filename);
     int fd = open(normalizedFilename, O_RDONLY);
-    if (fd >= 0) {
+    if (fd < 0) {
+        AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_UNKNOWN);
+        if (asset) {
+            off_t fileLength;
+            // NOTE: AAsset_openFileDescriptor will work only with files that are not compressed.
+            fd = AAsset_openFileDescriptor(asset, &startOffset, &fileLength);
+            assert(fd > 0);
+            size = fileLength;
+            AAsset_close(asset);
+        }
+    } else {
         struct stat fs;
         fstat(fd, &fs);
         size = fs.st_size;
-        start = 0;
-    } else {
-        AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_UNKNOWN);
-        if (asset) {
-            off_t length;
-            fd = AAsset_openFileDescriptor(asset, &start, &length);
-            assert(fd > 0);
-            size = length;
-            AAsset_close(asset);
-        }
+        startOffset = 0;
     }
 
-    delta = (start & pageMask);
+    if (pageMask == 0) {
+        pageMask = getpagesize() - 1;
+    }
+    off_t alignBytes = (startOffset & pageMask);
 
-    void *map = mmap(nullptr, size + delta, PROT_READ, MAP_FILE | MAP_SHARED, fd, start - delta);
-    if (!map) {
+    void *data = mmap(nullptr, size + alignBytes, PROT_READ, MAP_SHARED, fd, startOffset - alignBytes);
+    if (!data) {
         BE_ERRLOG("PlatformAndroidFileMapping::Open: Couldn't map %s to memory\n", filename);
         assert(0);
         close(fd);
         return nullptr;
     }
-    assert(((size_t)map & pageMask) == 0);
+    assert(((size_t)data & pageMask) == 0);
 
-    return new PlatformAndroidFileMapping(fd, size, (byte *)map + delta);
+    auto newFileMapping = new PlatformAndroidFileMapping(fd, size, (byte *)data + alignBytes);
+    newFileMapping->alignBytes = alignBytes;
+
+    return newFileMapping;
+}
+
+PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
+    Str normalizedFilename = PlatformAndroidFile::NormalizeFilename(filename);
+    int fd = open(normalizedFilename, O_RDWR | O_CREAT);
+    if (fd == -1) {
+        BE_ERRLOG("PlatformAndroidFileMapping::Open: Couldn't open %s\n", filename);
+        return nullptr;
+    }
+
+    size_t size = newSize;
+    if (size == 0) {
+        struct stat fs;
+        fstat(fd, &fs);
+        size = fs.st_size;
+    }
+
+    void *data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformAndroidFileMapping::Open: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformAndroidFileMapping(fd, size, data);
 }
 
 BE_NAMESPACE_END
