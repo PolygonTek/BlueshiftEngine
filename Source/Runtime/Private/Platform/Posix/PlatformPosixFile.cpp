@@ -478,7 +478,6 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileRead(const char *fil
     Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
     int fd = open(normalizedFilename, O_RDONLY);
     if (fd == -1) {
-        BE_ERRLOG("PlatformPosixFileMapping::OpenFileRead: Couldn't open %s\n", filename);
         return nullptr;
     }
 
