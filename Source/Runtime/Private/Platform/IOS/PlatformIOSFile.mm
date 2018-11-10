@@ -216,4 +216,79 @@ Str PlatformIOSFile::ConvertToIOSPath(const Str &filename, bool forWrite) {
     return result;
 }
 
+PlatformIOSFileMapping::PlatformIOSFileMapping(int fileHandle, size_t size, const void *data) {
+    this->fileHandle = fileHandle;
+    this->size = size;
+    this->data = data;
+}
+
+PlatformIOSFileMapping::~PlatformIOSFileMapping() {
+    int retval = munmap((void *)data, size);
+    if (retval != 0) {
+        BE_ERRLOG("Unable to unmap memory\n");
+    }
+    msync((void *)data, size, MS_SYNC);
+    close(fileHandle);
+}
+
+void PlatformIOSFileMapping::Touch() {
+    size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+
+    uint32_t checkSum = 0;
+    for (byte *ptr = (byte *)data; ptr < (byte *)data + size; ptr += pageSize) {
+        checkSum += *(uint32_t *)ptr;
+    }
+}
+
+PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileRead(const char *filename) {
+    Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
+    int fd = open(ConvertToIOSPath(normalizedFilename, false), O_RDONLY);
+    if (fd == -1) {
+        int fd = open(ConvertToIOSPath(normalizedFilename, true), O_RDONLY);
+        if (fd == -1) {
+           BE_ERRLOG("PlatformIOSFileMapping::OpenFileRead: Couldn't open %s\n", filename);
+            return nullptr;
+        }
+    }
+
+    struct stat fs;
+    fstat(fd, &fs);
+    size_t size = fs.st_size;
+
+    void *data = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformIOSFileMapping::OpenFileRead: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformIOSFileMapping(fd, size, data);
+}
+
+PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
+    Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
+    int fd = open(ConvertToIOSPath(normalizedFilename, false), O_RDWR | O_CREAT);
+    if (fd == -1) {
+        int fd = open(ConvertToIOSPath(normalizedFilename, true), O_RDWR | O_CREAT);
+        if (fd == -1) {
+            BE_ERRLOG("PlatformIOSFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
+            return nullptr;
+        }
+    }
+
+    size_t size = newSize;
+    if (size == 0) {
+        struct stat fs;
+        fstat(fd, &fs);
+        size = fs.st_size;
+    }
+
+    void *data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformIOSFileMapping::OpenFileReadWrite: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformIOSFileMapping(fd, size, data);
+}
+
 BE_NAMESPACE_END

@@ -53,7 +53,21 @@ protected:
     static Str                  NormalizeDirectoryName(const char *dirname);
 };
 
+class BE_API PlatformIOSFileMapping : public PlatformBaseFileMapping {
+public:
+    PlatformIOSFileMapping(int fileHandle, size_t size, const void *data);
+    virtual ~PlatformIOSFileMapping();
+
+    virtual void                Touch();
+
+    static PlatformIOSFileMapping *OpenFileRead(const char *filename);
+    static PlatformIOSFileMapping *OpenFileReadWrite(const char *filename, int newSize = 0);
+
+protected:
+    int                         fileHandle = -1;
+};
+
 typedef PlatformIOSFile         PlatformFile;
-typedef PlatformPosixFileMapping PlatformFileMapping;
+typedef PlatformIOSFileMapping  PlatformFileMapping;
 
 BE_NAMESPACE_END
