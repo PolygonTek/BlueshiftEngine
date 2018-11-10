@@ -270,6 +270,7 @@ PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileReadWrite(const char *fi
     if (fd == -1) {
         fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, true), O_RDWR | O_CREAT);
         if (fd == -1) {
+            BE_ERRLOG("PlatformIOSFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
             return nullptr;
         }
     }
