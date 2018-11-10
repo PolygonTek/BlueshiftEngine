@@ -417,94 +417,95 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 
 - (void)initInstance {
     BE1::Engine::InitParms initParms;
-    
+
     const NSArray *arguments = [[NSProcessInfo processInfo] arguments];
     for (int i = 1; i < arguments.count; i++) { // skip executable path
         const char *str = (const char *)[arguments[i] cStringUsingEncoding:NSUTF8StringEncoding];
         initParms.args.AppendArg(str);
     }
-    
+
     BE1::Str playerDir = BE1::PlatformFile::ExecutablePath();
     playerDir.AppendPath("../../..");
     initParms.baseDir = playerDir;
-    
+
     BE1::Str dataDir = playerDir + "/Data";
 
-	BE1::Str assetDir = dataDir;
+    BE1::Str assetDir = dataDir;
     assetDir.AppendPath("Contents", '/');
 
     initParms.searchPath = assetDir + ";" + dataDir;
 
     BE1::Engine::Init(&initParms);
-    
+
     BE1::resourceGuidMapper.Read("Data/guidmap");
-        
+
     currentKeyboard = TISCopyCurrentKeyboardInputSource();
-    
-    const wchar_t *fullTitle = BE1::wva(L"%ls %hs %hs %hs", L"Blueshift Player", BE1::PlatformBaseProcess::PlatformName(), __DATE__, __TIME__);
-    NSString *nsFullTitle = (__bridge NSString *)WideStringToCFString(fullTitle);
-    
+
+    char fullTitle[128];
+    BE1::Str::snPrintf(fullTitle, sizeof(fullTitle), "%s %s %s %s", "Blueshift Player", BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    NSString *nsFullTitle = (__bridge NSString *)StringToCFString(fullTitle);
+
     mainWindow = [self createGLWindow:NSMakeSize(1280, 720) title:nsFullTitle];
 
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
     app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[mainWindow contentView], 1280, 720, DisplayContext, NULL);
-    
-	app.mainRenderContext->OnResize(1280, 720);
+
+    app.mainRenderContext->OnResize(1280, 720);
 
     app.OnApplicationResize(1280, 720);    
 
     [mainWindow makeKeyAndOrderFront:nil];
-    
+
     if (disp_fullscreen.GetBool()) {
         [mainWindow toggleFullScreen:nil];
         //app.mainRenderContext->SetFullscreen(disp_width.GetInteger(), disp_height.GetInteger());
     }
-        
+
     BE1::platform->AppActivate(true, false);
-    
+
     app.Init();
-    
+
     app.LoadAppScript("Application");
-    
+
     app.StartAppScript();
 }
 
 - (void)shutdownInstance {
     app.Shutdown();
-    
+
     app.mainRenderContext->Shutdown();
     BE1::renderSystem.FreeRenderContext(app.mainRenderContext);
-    
+
     [self destroyGLWindow:mainWindow];
-    
+
     BE1::gameClient.Shutdown();
-    
+
     BE1::Engine::Shutdown();
-    
+
     CFRelease(currentKeyboard);
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification *)notification {
     MyWindow *window = [notification object];
-    
+
     // set window is resizable to make fullscreen window
     NSInteger oldStyleMask = [window styleMask];
     [window setStyleMask:oldStyleMask | NSResizableWindowMask];
-    
+
     NSSize size = [[window contentView] frame].size;
-    
+
     BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), size.width, size.height);
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification {
     MyWindow *window = [notification object];
-    
+
     // set window is non-resizable not to allow resizable window
     NSInteger oldStyleMask = [window styleMask];
     [window setStyleMask:oldStyleMask & ~NSResizableWindowMask];
-    
+
     BE1::rhi.ResetFullscreen(app.mainRenderContext->GetContextHandle());
 }
 
