@@ -642,9 +642,13 @@ static bool CompileAndLinkProgram(const char *name, const char *vsText, const Ar
         }
 #endif
     }
-
+    
+    if (OpenGL::SupportsProgramBinary()) {
+        gglProgramParameteri(programObject, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+    }
+    
     gglLinkProgram(programObject);
-
+    
     // delete shader objects after linking GLSL program to save memory
     if (vsText && vsText[0]) {
         gglDeleteShader(vs);

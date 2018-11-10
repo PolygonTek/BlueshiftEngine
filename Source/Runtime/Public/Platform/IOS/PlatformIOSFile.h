@@ -20,6 +20,8 @@
 BE_NAMESPACE_BEGIN
 
 class BE_API PlatformIOSFile : public PlatformPosixFile {
+    friend class PlatformIOSFileMapping;
+    
 public:
     PlatformIOSFile(FILE *fp);
     virtual ~PlatformIOSFile();

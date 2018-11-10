@@ -16,6 +16,7 @@
 #include "Platform/PlatformFile.h"
 #include "File/FileSystem.h"
 #include <sys/stat.h>
+#include <sys/mman.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -63,7 +64,7 @@ PlatformIOSFile *PlatformIOSFile::OpenFileRead(const char *filename) {
     if (!fp) {
         fp = fopen(ConvertToIOSPath(normalizedFilename, true), "rb");
         if (!fp) {
-            return NULL;
+            return nullptr;
         }
     }
     
@@ -74,7 +75,7 @@ PlatformIOSFile *PlatformIOSFile::OpenFileWrite(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(ConvertToIOSPath(normalizedFilename, true), "wb");
     if (!fp) {
-        return NULL;
+        return nullptr;
     }
     
     return new PlatformIOSFile(fp);
@@ -84,7 +85,7 @@ PlatformIOSFile *PlatformIOSFile::OpenFileAppend(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(ConvertToIOSPath(normalizedFilename, true), "ab");
     if (!fp) {
-        return NULL;
+        return nullptr;
     }
     
     return new PlatformIOSFile(fp);
@@ -241,12 +242,11 @@ void PlatformIOSFileMapping::Touch() {
 }
 
 PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileRead(const char *filename) {
-    Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
-    int fd = open(ConvertToIOSPath(normalizedFilename, false), O_RDONLY);
+    Str normalizedFilename = PlatformIOSFile::NormalizeFilename(filename);
+    int fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, false), O_RDONLY);
     if (fd == -1) {
-        int fd = open(ConvertToIOSPath(normalizedFilename, true), O_RDONLY);
+        fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, true), O_RDONLY);
         if (fd == -1) {
-           BE_ERRLOG("PlatformIOSFileMapping::OpenFileRead: Couldn't open %s\n", filename);
             return nullptr;
         }
     }
@@ -265,12 +265,11 @@ PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileRead(const char *filenam
 }
 
 PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
-    Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
-    int fd = open(ConvertToIOSPath(normalizedFilename, false), O_RDWR | O_CREAT);
+    Str normalizedFilename = PlatformIOSFile::NormalizeFilename(filename);
+    int fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, false), O_RDWR | O_CREAT);
     if (fd == -1) {
-        int fd = open(ConvertToIOSPath(normalizedFilename, true), O_RDWR | O_CREAT);
+        fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, true), O_RDWR | O_CREAT);
         if (fd == -1) {
-            BE_ERRLOG("PlatformIOSFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
             return nullptr;
         }
     }
