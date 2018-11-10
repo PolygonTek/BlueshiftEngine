@@ -605,8 +605,6 @@ PlatformWinFileMapping *PlatformWinFileMapping::OpenFileRead(const char *filenam
     PlatformWinUtils::UTF8ToUCS2(PlatformWinFile::NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
     HANDLE fileHandle = CreateFileW(wFilename, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (fileHandle == INVALID_HANDLE_VALUE) {
-        Str lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_ERRLOG("PlatformWinFileMapping::OpenFileRead: Couldn't open %s: %s\n", filename, lastErrorText.c_str());
         return nullptr;
     }
 
