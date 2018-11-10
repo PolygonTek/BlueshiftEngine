@@ -579,7 +579,7 @@ PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileRead(const char 
 
     void *data = mmap(nullptr, size + alignBytes, PROT_READ, MAP_SHARED, fd, startOffset - alignBytes);
     if (!data) {
-        BE_ERRLOG("PlatformAndroidFileMapping::Open: Couldn't map %s to memory\n", filename);
+        BE_ERRLOG("PlatformAndroidFileMapping::OpenFileRead: Couldn't map %s to memory\n", filename);
         assert(0);
         close(fd);
         return nullptr;
@@ -596,7 +596,7 @@ PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileReadWrite(const 
     Str normalizedFilename = PlatformAndroidFile::NormalizeFilename(filename);
     int fd = open(normalizedFilename, O_RDWR | O_CREAT);
     if (fd == -1) {
-        BE_ERRLOG("PlatformAndroidFileMapping::Open: Couldn't open %s\n", filename);
+        BE_ERRLOG("PlatformAndroidFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
         return nullptr;
     }
 
@@ -609,7 +609,7 @@ PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileReadWrite(const 
 
     void *data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (!data) {
-        BE_ERRLOG("PlatformAndroidFileMapping::Open: Couldn't map %s to memory\n", filename);
+        BE_ERRLOG("PlatformAndroidFileMapping::OpenFileReadWrite: Couldn't map %s to memory\n", filename);
         return nullptr;
     }
 

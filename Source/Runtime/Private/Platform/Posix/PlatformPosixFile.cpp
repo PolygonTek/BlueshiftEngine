@@ -478,7 +478,7 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileRead(const char *fil
     Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
     int fd = open(normalizedFilename, O_RDONLY);
     if (fd == -1) {
-        BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't open %s\n", filename);
+        BE_ERRLOG("PlatformPosixFileMapping::OpenFileRead: Couldn't open %s\n", filename);
         return nullptr;
     }
 
@@ -488,7 +488,7 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileRead(const char *fil
 
     void *data = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
     if (!data) {
-        BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't map %s to memory\n", filename);
+        BE_ERRLOG("PlatformPosixFileMapping::OpenFileRead: Couldn't map %s to memory\n", filename);
         return nullptr;
     }
 
@@ -499,7 +499,7 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileReadWrite(const char
     Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
     int fd = open(normalizedFilename, O_RDWR | O_CREAT);
     if (fd == -1) {
-        BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't open %s\n", filename);
+        BE_ERRLOG("PlatformPosixFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
         return nullptr;
     }
 
@@ -512,12 +512,11 @@ PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileReadWrite(const char
 
     void *data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (!data) {
-        BE_ERRLOG("PlatformPosixFileMapping::Open: Couldn't map %s to memory\n", filename);
+        BE_ERRLOG("PlatformPosixFileMapping::OpenFileReadWrite: Couldn't map %s to memory\n", filename);
         return nullptr;
     }
 
     return new PlatformPosixFileMapping(fd, size, data);
 }
-
 
 BE_NAMESPACE_END
