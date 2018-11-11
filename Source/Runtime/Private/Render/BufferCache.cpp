@@ -23,11 +23,11 @@ BE_NAMESPACE_BEGIN
 
 BufferCacheManager      bufferCacheManager;
 
-static const int        TB_WIDTH    = 4096;
-static const int        TB_HEIGHT   = 32;
-static const int        TB_BPP      = 4 * sizeof(float); // size of float RGBA
-static const int        TB_PITCH    = TB_BPP * TB_WIDTH;
-static const int        TB_BYTES    = TB_PITCH * TB_HEIGHT;
+static constexpr int    TB_WIDTH    = 4096;
+static constexpr int    TB_HEIGHT   = 32;
+static constexpr int    TB_BPP      = 4 * sizeof(float); // size of float RGBA
+static constexpr int    TB_PITCH    = TB_BPP * TB_WIDTH;
+static constexpr int    TB_BYTES    = TB_PITCH * TB_HEIGHT;
 
 void BufferCacheManager::Init() {
     int vcSize = r_dynamicVertexCacheSize.GetInteger();

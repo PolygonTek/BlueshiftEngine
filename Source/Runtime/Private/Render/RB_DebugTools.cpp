@@ -36,8 +36,8 @@ struct DebugPrims {
     bool            depthTest;
 };
 
-static const int    MaxDebugPrims = 16384;
-static const int    MaxDebugPrimsVerts = 65536;
+static constexpr int MaxDebugPrims = 16384;
+static constexpr int MaxDebugPrimsVerts = 65536;
 
 static DebugPrims   rb_debugPrims[MaxDebugPrims];
 static int          rb_numDebugPrims = 0;

@@ -135,7 +135,7 @@ uint64_t PlatformWinTime::Cycles() {
 }
 
 int PlatformWinTime::GetTimeOfDay(struct timeval *tv) {
-    static const uint64_t delta_epoch_in_microsecs = 116444736000000000Ui64;
+    static constexpr uint64_t delta_epoch_in_microsecs = 116444736000000000Ui64;
     uint64_t tmpres = 0;
     FILETIME ft;
     

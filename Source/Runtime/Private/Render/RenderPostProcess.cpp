@@ -27,8 +27,8 @@ static LinearKernel<15> gaussKernel15x;
 static Vec3             ssaoRandomKernel[8];
                         
 // for camera motion blur
-static const int        sphereLats = 32;
-static const int        sphereLongs = 32;
+static constexpr int    sphereLats = 32;
+static constexpr int    sphereLongs = 32;
 static RHI::Handle      sphereVB;
 
 void PP_Init() {

@@ -22,7 +22,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const int MaxViewDrawSurfs = 0x4000;
+static constexpr int MaxViewDrawSurfs = 0x4000;
 
 RenderWorld::RenderWorld() {
     viewCount = 0;

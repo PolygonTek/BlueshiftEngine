@@ -17,8 +17,6 @@
 
 BE_NAMESPACE_BEGIN
 
-const char *OpenGLES3::GLSL_VERSION_STRING = "300 es";
-
 bool OpenGLES3::supportsFrameBufferSRGB = false;
 bool OpenGLES3::supportsTextureBuffer = false;
 

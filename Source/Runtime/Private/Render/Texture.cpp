@@ -18,8 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
-static const char   cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
-static const char   camera_cubemap_postfix[6][8] = { "rt", "lf", "up", "dn", "ft", "bk" };
+static constexpr char   cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
+static constexpr char   camera_cubemap_postfix[6][8] = { "rt", "lf", "up", "dn", "ft", "bk" };
 
 int Texture::MemRequired(bool includingMipmaps) const {
     int numMipmaps = includingMipmaps ? Image::MaxMipMapLevels(width, height, depth) : 1;

@@ -102,7 +102,7 @@ void GuiMesh::CacheIndexes() {
     }
 
     assert(totalIndexes % 6 == 0);
-    static const TriIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
+    static constexpr TriIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
 
     // Cache all indices in the dynamic index buffer
     BufferCache indexCache;
@@ -276,7 +276,7 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
 }
 
 void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::TextAlignment alignment, float lineSpacing, float textScale, const Str &text) {
-    static const int MaxTextLines = 256;
+    static constexpr int MaxTextLines = 256;
     int lineOffsets[MaxTextLines];
     int lineLen[MaxTextLines];
     int numLines = 0;

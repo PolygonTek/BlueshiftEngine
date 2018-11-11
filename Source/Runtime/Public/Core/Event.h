@@ -22,8 +22,8 @@ class Object;
 
 class BE_API EventDef {
 public:
-    static const int MaxArgs = 6;
-    static const int MaxEventDefs = 4096;
+    static constexpr int    MaxArgs = 6;
+    static constexpr int    MaxEventDefs = 4096;
 
     explicit EventDef(const char *name, bool guiEvent = false, const char *formatSpec = nullptr, char returnType = 0);
     /// Prevents copy constructor

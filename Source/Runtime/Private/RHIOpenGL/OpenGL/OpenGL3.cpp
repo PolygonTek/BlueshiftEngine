@@ -18,8 +18,6 @@
 
 BE_NAMESPACE_BEGIN
 
-const char *OpenGL3::GLSL_VERSION_STRING = "150";
-
 bool OpenGL3::supportsInstancedArrays = false;
 bool OpenGL3::supportsDrawIndirect = false;
 bool OpenGL3::supportsMultiDrawIndirect = false;
@@ -139,9 +137,9 @@ void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *in
 }
 
 void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format format) {
-    static const GLint swiz_l[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
-    static const GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
-    static const GLint swiz_la[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
+    static constexpr GLint swiz_l[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+    static constexpr GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+    static constexpr GLint swiz_la[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
 
     switch (format) {
     case Image::L_8:

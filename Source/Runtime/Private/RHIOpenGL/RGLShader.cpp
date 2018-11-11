@@ -780,9 +780,9 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     char *uniformName = (char *)_alloca(uniformMaxNameLength);
     char *uniformBlockName = (char *)_alloca(uniformBlockMaxNameLength);
 
-    static const int MAX_SAMPLERS = 64;
-    static const int MAX_UNIFORMS = 4096;
-    static const int MAX_UNIFORM_BLOCKS = 16;
+    static constexpr int MAX_SAMPLERS = 64;
+    static constexpr int MAX_UNIFORMS = 4096;
+    static constexpr int MAX_UNIFORM_BLOCKS = 16;
 
     GLSampler *tempSamplers = (GLSampler *)_alloca(sizeof(GLSampler) * MAX_SAMPLERS);
     GLUniform *tempUniforms = (GLUniform *)_alloca(sizeof(GLUniform) * MAX_UNIFORMS);

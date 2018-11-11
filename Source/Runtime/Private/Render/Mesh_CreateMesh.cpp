@@ -210,14 +210,14 @@ void Mesh::CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int 
 void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
     assert(numTess > 0);
 
-    static const float x = 0.525731112119133606f;
-    static const float z = 0.850650808352039932f;
+    static constexpr float x = 0.525731112119133606f;
+    static constexpr float z = 0.850650808352039932f;
     static const Vec3 icosa_verts[12] = {
         Vec3(-x, 0, z), Vec3(x, 0, z), Vec3(-x, 0, -z), Vec3(x, 0, -z),
         Vec3(0, z, x), Vec3(0, z, -x), Vec3(0, -z, x), Vec3(0, -z, -x),
         Vec3(z, x, 0), Vec3(-z, x, 0), Vec3(z, -x, 0), Vec3(-z, -x, 0)
     };
-    static const TriIndex icosa_tris[20][3] = { 
+    static constexpr TriIndex icosa_tris[20][3] = {
         { 0, 1, 4 }, { 0, 4, 9 }, { 9, 4, 5 }, { 4, 8, 5 }, { 4, 1, 8 },
         { 8, 1, 10 }, { 8, 10, 3 }, { 5, 8, 3 }, { 5, 3, 2 }, { 2, 3, 7 },
         { 7, 3, 10 }, { 7, 10, 6 }, { 7, 6, 11 }, { 11, 6, 0 }, { 0, 6, 1 },

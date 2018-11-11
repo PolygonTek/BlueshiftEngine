@@ -17,8 +17,6 @@
 
 BE_NAMESPACE_BEGIN
 
-const char *OpenGL4::GLSL_VERSION_STRING = "430";
-
 void OpenGL4::Init() {
     OpenGL3::Init();
 }

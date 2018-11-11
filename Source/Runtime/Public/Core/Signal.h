@@ -23,7 +23,7 @@ class SignalObject;
 
 class BE_API SignalDef {
 public:
-    static const int MaxSignalDefs = 4096;
+    static constexpr int MaxSignalDefs = 4096;
     
     explicit SignalDef(const char *name, const char *formatSpec = nullptr, char returnType = 0);
     /// Prevents copy constructor
@@ -77,7 +77,7 @@ private:
 
 class BE_API SignalSystem {
 public:
-    static const int MaxSignals = 4096;
+    static constexpr int MaxSignals = 4096;
 
     static void             Init();
     static void             Shutdown();

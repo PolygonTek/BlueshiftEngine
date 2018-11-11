@@ -20,7 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const int MEMORY_BLOCK_SIZE = 0x100000;
+static constexpr int MEMORY_BLOCK_SIZE = 0x100000;
 
 FrameData   frameData;
 

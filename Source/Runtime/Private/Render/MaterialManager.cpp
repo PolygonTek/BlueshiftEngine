@@ -20,17 +20,17 @@
 
 BE_NAMESPACE_BEGIN
 
-Material *          MaterialManager::defaultMaterial;
-Material *          MaterialManager::whiteMaterial;
-Material *          MaterialManager::blendMaterial;
-Material *          MaterialManager::whiteLightMaterial;
-Material *          MaterialManager::zeroClampLightMaterial;
-Material *          MaterialManager::defaultSkyboxMaterial;
+Material *              MaterialManager::defaultMaterial;
+Material *              MaterialManager::whiteMaterial;
+Material *              MaterialManager::blendMaterial;
+Material *              MaterialManager::whiteLightMaterial;
+Material *              MaterialManager::zeroClampLightMaterial;
+Material *              MaterialManager::defaultSkyboxMaterial;
 
-MaterialManager     materialManager;
+MaterialManager         materialManager;
 
-static int          materialCounter = 0;
-static const int    MaxMaterialCount = 65536;
+static int              materialCounter = 0;
+static constexpr int    MaxMaterialCount = 65536;
 
 void MaterialManager::Init() {
     cmdSystem.AddCommand("listMaterials", Cmd_ListMaterials);

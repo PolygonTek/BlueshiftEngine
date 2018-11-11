@@ -19,22 +19,22 @@ BE_NAMESPACE_BEGIN
 class BE_API Timespan {
 public:
     /// The number of Timespan ticks per week.
-    static const int64_t TicksPerWeek = 6048000000000;
+    static constexpr int64_t TicksPerWeek = 6048000000000;
     
     /// The number of Timespan ticks per day.
-    static const int64_t TicksPerDay = 864000000000;
+    static constexpr int64_t TicksPerDay = 864000000000;
     
     /// The number of Timespan ticks per hour.
-    static const int64_t TicksPerHour = 36000000000;
+    static constexpr int64_t TicksPerHour = 36000000000;
     
     /// The number of Timespan ticks per minute.
-    static const int64_t TicksPerMinute = 600000000;
+    static constexpr int64_t TicksPerMinute = 600000000;
     
     /// The number of Timespan ticks per second.
-    static const int64_t TicksPerSecond = 10000000;
+    static constexpr int64_t TicksPerSecond = 10000000;
     
     /// The number of Timespan ticks per millisecond.
-    static const int64_t TicksPerMillisecond = 10000;
+    static constexpr int64_t TicksPerMillisecond = 10000;
     
     Timespan() {}
     Timespan(int64_t ticks) { this->ticks = ticks; }

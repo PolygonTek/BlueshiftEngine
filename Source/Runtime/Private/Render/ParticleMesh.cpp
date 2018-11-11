@@ -357,7 +357,7 @@ void ParticleMesh::CacheIndexes() {
     }
 
     assert(totalIndexes % 6 == 0);
-    static const TriIndex quadTrisIndexes[6] = { 0, 2, 1, 1, 2, 3 };
+    static constexpr TriIndex quadTrisIndexes[6] = { 0, 2, 1, 1, 2, 3 };
 
     // Cache all indices in the dynamic index buffer
     BufferCache indexCache;

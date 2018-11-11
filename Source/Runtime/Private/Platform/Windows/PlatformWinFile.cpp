@@ -35,7 +35,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const size_t READWRITE_SIZE = 1024 * 1024;
+static constexpr size_t READWRITE_SIZE = 1024 * 1024;
 
 PlatformWinFile::PlatformWinFile(HANDLE fileHandle) {
     this->fileHandle = fileHandle;

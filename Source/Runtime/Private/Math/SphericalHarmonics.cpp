@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const float shConsts[] = { 0.282095f, 0.488603f, 1.092548f, 0.315392f, 0.546274f, 0.590044f, 2.890611f, 0.457046f, 0.373176f };
+static constexpr float shConsts[] = { 0.282095f, 0.488603f, 1.092548f, 0.315392f, 0.546274f, 0.590044f, 2.890611f, 0.457046f, 0.373176f };
 
 // number of terms = n^2
 // l = [0, n - 1]

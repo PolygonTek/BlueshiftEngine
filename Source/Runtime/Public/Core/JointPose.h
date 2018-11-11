@@ -111,27 +111,27 @@ BE_INLINE void JointPose::SetFromMat3x4(const Mat3x4 &mat) {
 
 class BE_API CompressedJointPose {
 public:
-    static const int    MaxBoneTranslation = MeterToUnit(4);
-    static const int    MaxBoneScale = 2;
+    static constexpr int    MaxBoneTranslation = MeterToUnit(4);
+    static constexpr int    MaxBoneScale = 2;
 
-    static short        QuatToShort(const float c);
-    static float        ShortToQuat(const short s);
-    static short        TranslationToShort(const float c);
-    static float        ShortToTranslation(const short s);
-    static short        ScaleToShort(const float c);
-    static float        ShortToScale(const short s);
+    static short            QuatToShort(const float c);
+    static float            ShortToQuat(const short s);
+    static short            TranslationToShort(const float c);
+    static float            ShortToTranslation(const short s);
+    static short            ScaleToShort(const float c);
+    static float            ShortToScale(const short s);
 
-    void                ClearQuat() { q[0] = q[1] = q[2] = 0; }
-    void                ClearTranslation() { t[0] = t[1] = t[2] = 0; }
-    void                ClearScale() { s[0] = s[1] = s[2] = ScaleToShort(1.0f); }
+    void                    ClearQuat() { q[0] = q[1] = q[2] = 0; }
+    void                    ClearTranslation() { t[0] = t[1] = t[2] = 0; }
+    void                    ClearScale() { s[0] = s[1] = s[2] = ScaleToShort(1.0f); }
 
-    Quat                ToQuat() const;
-    Vec3                ToTranslation() const;
-    Vec3                ToScale() const;
+    Quat                    ToQuat() const;
+    Vec3                    ToTranslation() const;
+    Vec3                    ToScale() const;
 
-    short               q[3];
-    short               t[3];
-    short               s[3];
+    short                   q[3];
+    short                   t[3];
+    short                   s[3];
 };
 
 BE_INLINE short CompressedJointPose::QuatToShort(const float x) {

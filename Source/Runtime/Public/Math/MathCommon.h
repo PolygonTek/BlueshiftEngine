@@ -125,37 +125,37 @@ struct Factorial<0> {
 
 class BE_API Math {
 public:
-    static const float          Pi;                         ///< pi
-    static const float          TwoPi;                      ///< pi * 2
-    static const float          HalfPi;                     ///< pi / 2
-    static const float          OneFourthPi;                ///< pi / 4
-    static const float          InvPi;                      ///< 1 / pi
-    static const float          InvTwoPi;                   ///< 1 / 2pi
-    static const float          E;                          ///< e
-    static const float          GoldenRatio;                ///< 1 / 1.61803398875
-    static const float          SqrtTwo;                    ///< sqrt( 2 )
-    static const float          SqrtThree;                  ///< sqrt( 3 )
-    static const float          SqrtOneOverTwo;             ///< sqrt( 1 / 2 )
-    static const float          SqrtOneOverThree;           ///< sqrt( 1 / 3 )
-    static const float          MulDegreeToRadian;          ///< degrees to radians multiplier
-    static const float          MulRadianToDegree;          ///< radians to degrees multiplier
-    static const float          MulSecondToMs;              ///< seconds to milliseconds multiplier
-    static const float          MulMsToSecond;              ///< milliseconds to seconds multiplier
-    static const float          Infinity;                   ///< huge number which should be larger than any valid number used
-    static const float          FloatEpsilon;               ///< smallest positive number such that 1.0 + FloatEpsilon != 1.0
-    static const float          FloatSmallestNonDenormal;   ///< smallest non-denormal 32-bit floating point value
+    static constexpr float      Pi = 3.14159265358979323846f;               ///< pi
+    static constexpr float      TwoPi = 2.0f * Pi;                          ///< pi * 2
+    static constexpr float      HalfPi = 0.5f * Pi;                         ///< pi / 2
+    static constexpr float      OneFourthPi = 0.25f * Pi;                   ///< pi / 4
+    static constexpr float      InvPi = 1.0f / Pi;                          ///< 1 / pi
+    static constexpr float      InvTwoPi = 1.0f / TwoPi;                    ///< 1 / 2pi
+    static constexpr float      E = 2.71828182845904523536f;                ///< e
+    static constexpr float      GoldenRatio = 1.61803398875f;               ///< 1 / 1.61803398875
+    static constexpr float      SqrtTwo = 1.41421356237309504880f;          ///< sqrt( 2 )
+    static constexpr float      SqrtThree = 1.73205080756887729352f;        ///< sqrt( 3 )
+    static constexpr float      SqrtOneOverTwo = 0.70710678118654752440f;   ///< sqrt( 1 / 2 )
+    static constexpr float      SqrtOneOverThree = 0.57735026918962576450f; ///< sqrt( 1 / 3 )
+    static constexpr float      MulDegreeToRadian = Pi / 180.0f;            ///< degrees to radians multiplier
+    static constexpr float      MulRadianToDegree = 180.0f / Pi;            ///< radians to degrees multiplier
+    static constexpr float      MulSecondToMs = 1000.0f;                    ///< seconds to milliseconds multiplier
+    static constexpr float      MulMsToSecond = 0.001f;                     ///< milliseconds to seconds multiplier
+    static constexpr float      Infinity = 1e30f;                           ///< huge number which should be larger than any valid number used
+    static constexpr float      FloatEpsilon = 1.192092896e-07f;            ///< smallest positive number such that 1.0 + FloatEpsilon != 1.0
+    static const float          FloatSmallestNonDenormal;                   ///< smallest non-denormal 32-bit floating point value
     
 #if defined(BE_WIN_X86_SSE_INTRIN)
-    static const __m128         SIMD_SP_zero;
-    static const __m128         SIMD_SP_255;
-    static const __m128         SIMD_SP_min_char;
-    static const __m128         SIMD_SP_max_char;
-    static const __m128         SIMD_SP_min_short;
-    static const __m128         SIMD_SP_max_short;
+    static constexpr __m128     SIMD_SP_zero = { 0.0f, 0.0f, 0.0f, 0.0f };
+    static constexpr __m128     SIMD_SP_255 = { 255.0f, 255.0f, 255.0f, 255.0f };
+    static constexpr __m128     SIMD_SP_min_char = { -128.0f, -128.0f, -128.0f, -128.0f };
+    static constexpr __m128     SIMD_SP_max_char = { 127.0f, 127.0f, 127.0f, 127.0f };
+    static constexpr __m128     SIMD_SP_min_short = { -32768.0f, -32768.0f, -32768.0f, -32768.0f };
+    static constexpr __m128     SIMD_SP_max_short = { 32767.0f, 32767.0f, 32767.0f, 32767.0f };
+    static constexpr __m128     SIMD_SP_rsqrt_c0 = { 3.0f, 3.0f, 3.0f, 3.0f };
+    static constexpr __m128     SIMD_SP_rsqrt_c1 = { -0.5f, -0.5f, -0.5f, -0.5f };
+    static constexpr __m128     SIMD_SP_tiny = { 1e-4f, 1e-4f, 1e-4f, 1e-4f };
     static const __m128         SIMD_SP_smallestNonDenorm;
-    static const __m128         SIMD_SP_tiny;
-    static const __m128         SIMD_SP_rsqrt_c0;
-    static const __m128         SIMD_SP_rsqrt_c1;
 #endif
 
     static void                 Init();

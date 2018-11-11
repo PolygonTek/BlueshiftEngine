@@ -20,7 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const int MaxSources = 32;
+static constexpr int MaxSources = 32;
 
 static CVar     s_khz("s_khz", "44", CVar::Integer | CVar::Archive, "");
 static CVar     s_doppler("s_doppler", "1.0", CVar::Float | CVar::Archive, "");
