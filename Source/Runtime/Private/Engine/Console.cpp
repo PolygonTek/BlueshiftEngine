@@ -109,7 +109,7 @@ void Console::DumpToFile(const char *filename) {
     int firstLineIndex = GetFirstLineIndex();
 
     for (int i = firstLineIndex; i != currentLineIndex; i = (i + 1) % textLines.Count()) {
-        fp->Printf("%s\n", (const char *)textLines[i]);
+        fp->Printf("%s\n", textLines[i].c_str());
     }
 
     fileSystem.CloseFile(fp);

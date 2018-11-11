@@ -29,8 +29,8 @@ File::~File() {
 }
 
 bool File::Printf(const char *format, ...) {
-    char buffer[4096];
-    va_list	args;
+    char buffer[16384];
+    va_list args;
     
     va_start(args, format);
     ::vsprintf(buffer, format, args);
@@ -40,8 +40,8 @@ bool File::Printf(const char *format, ...) {
 }
 
 bool File::Printf(const wchar_t *format, ...) {
-    wchar_t buffer[4096];
-    va_list	args;
+    wchar_t buffer[16384];
+    va_list args;
     
     va_start(args, format);
     ::vswprintf(buffer, COUNT_OF(buffer), format, args);
