@@ -246,14 +246,14 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
             "pass {\n"
             "   renderingMode alphaBlend\n"
             "   blendFunc blend\n"
-            "   mapPath \"%hs\"\n"
+            "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
         break;
     case Material::LightHint:
         Str::snPrintf(buffer, sizeof(buffer),
             "light\n"
             "pass {\n"
-            "   mapPath \"%hs\"\n"
+            "   mapPath \"%s\"\n"
             "   useOwnerColor\n"
             "}\n", texture->GetHashName());
         break;
@@ -265,13 +265,13 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
             "   renderingMode alphaBlend\n"
             "   blendFunc blend\n"
             "   vertexColor\n"
-            "   mapPath \"%hs\"\n"
+            "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
         break;
     default:
         Str::snPrintf(buffer, sizeof(buffer),
             "pass {\n"
-            "   mapPath \"%hs\"\n"
+            "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
         break;
     }

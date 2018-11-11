@@ -330,7 +330,7 @@ void OpenGLRHI::InitGL() {
         linearFrameBuffer = true;
     } else {
         linearFrameBuffer = false;
-    } 
+    }
     BE_LOG("default frame buffer encoding : %s\n", linearFrameBuffer ? "Linear" : "sRGB");
 
     if (gl_sRGB.GetBool()) {

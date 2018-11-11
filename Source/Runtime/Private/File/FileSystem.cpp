@@ -553,7 +553,7 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
     PlatformFile *pf = PlatformFile::OpenFileRead(filename);
     if (pf) {
         if (fs_debug.GetBool()) {
-            BE_LOG("FileSystem::OpenFileRead: %hs\n", filename);
+            BE_LOG("FileSystem::OpenFileRead: %s\n", filename);
         }
         
         FileReal *file = new FileReal(filename, pf);

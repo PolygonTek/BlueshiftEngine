@@ -129,7 +129,7 @@ void Console::Cmd_ConDump(const CmdArgs &args) {
         return;
     }
 
-    Str::snPrintf(name, sizeof(name), "%ls.txt", args.Argv(1));
+    Str::snPrintf(name, sizeof(name), "%s.txt", args.Argv(1));
 
     console.DumpToFile(name);
 

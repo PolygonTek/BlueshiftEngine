@@ -500,7 +500,7 @@ void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
     Str documentDir = fileSystem.GetDocumentDir();
     
     if (args.Argc() > 1) {
-        Str::snPrintf(path, sizeof(path), "%s/Screenshots/%ls", documentDir.c_str(), args.Argv(1));
+        Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir.c_str(), args.Argv(1));
     } else {
         char filename[16];
         strcpy(filename, "shot000.png");

@@ -323,7 +323,7 @@ void KeyCmdSystem::SetBinding(KeyCode::Enum keynum, const char *cmd) {
 void KeyCmdSystem::WriteBindings(File *fp) const {
     for (int i = 0; i < COUNT_OF(keyList); i++) {
         if (keyList[i].binding && *keyList[i].binding) {
-            fp->Printf("bind \"%s\" \"%ls\"\n", KeyCmdSystem::KeynumToString((KeyCode::Enum)i), keyList[i].binding);
+            fp->Printf("bind \"%s\" \"%s\"\n", KeyCmdSystem::KeynumToString((KeyCode::Enum)i), keyList[i].binding);
         }
     }
 }

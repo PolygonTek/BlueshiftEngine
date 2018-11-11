@@ -285,7 +285,7 @@ bool Image::WriteJPG(const char *filename, int quality) const {
   }
     
   if ((outfile = fopen(absFilename, "wb")) == nullptr) {
-    BE_WARNLOG("can't open %hs\n", absFilename.c_str());
+    BE_WARNLOG("can't open %s\n", absFilename.c_str());
     return false;
   }
   jpeg_stdio_dest(&cinfo, outfile);

@@ -31,10 +31,6 @@ enum GLContextProfile {
     ES2Profile      // ES2 profile including ES3
 };
 
-static GLContextProfile contextProfile = CoreProfile;
-static int          contextMajorVersion = 3;
-static int          contextMinorVersion = 2;
-
 static int          majorVersion;
 static int          minorVersion;
 
@@ -417,6 +413,13 @@ static void GetGLVersion(int *major, int *minor) {
 #endif
 }
 
+static void GetContextVersionFromCommandLine(int &majorVersion, int &minorVersion) {
+    majorVersion = 4;
+    minorVersion = 3;
+    //majorVersion = 3;
+    //minorVersion = 2;
+}
+
 static void InitGLFunctions() {
     HWND hwndFake = CreateFakeWindow();
     HDC hdcFake = GetDC(hwndFake);
@@ -473,6 +476,11 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
         BE_FATALERROR("set pixel format: failed");
     }
     BE_DLOG("set pixel format: ok\n");
+
+    GLContextProfile contextProfile = CoreProfile;
+    int contextMajorVersion = 0;
+    int contextMinorVersion = 0;
+    GetContextVersionFromCommandLine(contextMajorVersion, contextMinorVersion);
 
     // Create rendering context
     mainContext->hrc = CreateContextAttribs(mainContext->hdc, nullptr, contextProfile, contextMajorVersion, contextMinorVersion);
@@ -586,6 +594,11 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ctx->state = new GLState;
 
         if (gwglCreateContextAttribsARB) {
+            GLContextProfile contextProfile = CoreProfile;
+            int contextMajorVersion = 0;
+            int contextMinorVersion = 0;
+            GetContextVersionFromCommandLine(contextMajorVersion, contextMinorVersion);
+
             ctx->hrc = CreateContextAttribs(ctx->hdc, mainContext->hrc, contextProfile, contextMajorVersion, contextMinorVersion);
             if (!ctx->hrc) {
                 BE_FATALERROR("Couldn't create RC");

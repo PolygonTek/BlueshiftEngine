@@ -561,7 +561,7 @@ bool AnimController::Create(const char *text) {
                 return false;
             }
         } else {
-            lexer.Warning("unknown token '%hs'", token.c_str());
+            lexer.Warning("unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -588,7 +588,7 @@ bool AnimController::ParseSkeleton(Lexer &lexer) {
     
     skeleton = skeletonManager.GetSkeleton(skeletonPath);
     if (skeleton->IsDefaultSkeleton()) {
-        lexer.Warning("Skeleton '%hs' defaulted", skeleton->GetHashName());
+        lexer.Warning("Skeleton '%s' defaulted", skeleton->GetHashName());
         return false;
     }
     
@@ -626,7 +626,7 @@ bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
     Str token;
     
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -659,7 +659,7 @@ bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
                 return false;
             }
         } else {
-            lexer.Warning("unknown token '%hs'", token.c_str());
+            lexer.Warning("unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -677,7 +677,7 @@ bool AnimController::ParseAnimLayer(Lexer &lexer) {
     }
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -705,7 +705,7 @@ bool AnimController::ParseAnimLayer(Lexer &lexer) {
             } else if (token2 == "additive") {
                 animLayer->SetBlending(AnimLayer::Blending::Additive);
             } else {
-                lexer.Warning("Unknown blending type '%hs'", token2.c_str());
+                lexer.Warning("Unknown blending type '%s'", token2.c_str());
                 return false;
             }
         } else if (token == "weight") {
@@ -724,7 +724,7 @@ bool AnimController::ParseAnimLayer(Lexer &lexer) {
                 return false;
             }
         } else {
-            lexer.Warning("unknown token '%hs'", token.c_str());
+            lexer.Warning("unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -837,7 +837,7 @@ void AnimController::Write(const char *filename) {
                 for (int eventIndex = 0; eventIndex < animState->NumTimeEvents(); eventIndex++) {
                     AnimTimeEvent &event = animState->GetTimeEvent(eventIndex);
 
-                    fp->Printf("%s\"%hs\" %f\n", indentSpace.c_str(), event.string.c_str(), event.time);
+                    fp->Printf("%s\"%s\" %f\n", indentSpace.c_str(), event.string.c_str(), event.time);
                 }
 
                 indentSpace.Truncate(indentSpace.Length() - 2);
@@ -971,7 +971,7 @@ void AnimController::Write(const char *filename) {
                     for (int eventIndex = 0; eventIndex < animState->NumTimeEvents(); eventIndex++) {
                         AnimTimeEvent &event = animState->GetTimeEvent(eventIndex);
 
-                        fp->Printf("%s\"%hs\" %f\n", indentSpace.c_str(), event.string.c_str(), event.time);
+                        fp->Printf("%s\"%s\" %f\n", indentSpace.c_str(), event.string.c_str(), event.time);
                     }
 
                     indentSpace.Truncate(indentSpace.Length() - 2);

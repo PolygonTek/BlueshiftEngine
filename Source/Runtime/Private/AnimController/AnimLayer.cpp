@@ -341,7 +341,7 @@ bool AnimLayer::ParseState(Lexer &lexer) {
     }
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -413,7 +413,7 @@ bool AnimLayer::ParseState(Lexer &lexer) {
                 return false;
             }
         } else {
-            lexer.Warning("unknown token '%hs'", token.c_str());
+            lexer.Warning("unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -427,7 +427,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
     Str type;
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -528,7 +528,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
             AnimBlendTree *subBlendTree = CreateBlendTree(token2.c_str());
             int32_t subNodeNum = blendTree->AddChildBlendTree(subBlendTree, blendSpacePoint);
             if (subNodeNum == INVALID_ANIM_NODE) {
-                lexer.Warning("Failed to add child blend tree '%hs'\n", token2.c_str());
+                lexer.Warning("Failed to add child blend tree '%s'\n", token2.c_str());
                 return false;
             }
 
@@ -556,7 +556,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
                 return false;
             }
         } else {
-            lexer.Warning("Unknown token '%hs'", token.c_str());
+            lexer.Warning("Unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -568,7 +568,7 @@ bool AnimLayer::ParseEvents(Lexer &lexer, AnimState *state) {
     Str token;
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -602,7 +602,7 @@ bool AnimLayer::ParseTransition(Lexer &lexer) {
     }
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 

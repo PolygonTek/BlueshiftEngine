@@ -493,7 +493,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
     Image image2;
 
     for (int i = 0; i < numFiles; i++) {
-        Str::snPrintf(path, sizeof(path), "%ls/%hs", args.Argv(1), fileArray.GetFilename(i));
+        Str::snPrintf(path, sizeof(path), "%s/%s", args.Argv(1), fileArray.GetFilename(i));
         image1.Load(path);
         if (image1.IsEmpty())
             continue;
