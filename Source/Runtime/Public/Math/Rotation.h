@@ -88,8 +88,8 @@ private:
     mutable bool        axisValid;      ///< True if rotation axis is valid
 };
 
-BE_INLINE Rotation::Rotation(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle) : 
-    origin(rotOrigin), vec(rotVec), angle(rotAngle) {
+BE_INLINE Rotation::Rotation(const Vec3 &inOrigin, const Vec3 &inVec, const float inAngle) : 
+    origin(inOrigin), vec(inVec), angle(inAngle) {
     vec.Normalize();
     axisValid = false;
 }

@@ -36,7 +36,7 @@ class BE_API OBB {
 public:
     /// The default constructor does not initialize any members of this class.
     OBB() {}
-    OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis);
+    constexpr OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis);
     OBB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis);
     explicit OBB(const Vec3 &point);
     explicit OBB(const AABB &aabb);
@@ -158,10 +158,8 @@ private:
     Mat3                axis;
 };
 
-BE_INLINE OBB::OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis) {
-    this->center = center;
-    this->extents = extents;
-    this->axis = axis;
+BE_INLINE constexpr OBB::OBB(const Vec3 &inCenter, const Vec3 &inExtents, const Mat3 &inAxis) :
+    center(inCenter), extents(inExtents), axis(inAxis) {
 }
 
 BE_INLINE OBB::OBB(const Vec3 &point) {

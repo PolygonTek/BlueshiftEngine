@@ -40,7 +40,7 @@ public:
     /// The default constructor does not initialize any members of this class.
     Angles() = default;
     /// Constructs a Angles with the value (roll, pitch, yaw).
-    Angles(float roll, float pitch, float yaw);
+    constexpr Angles(float roll, float pitch, float yaw);
     /// Copy constructor
     explicit Angles(const Vec3 &v);
     /// Assignment operator
@@ -136,16 +136,12 @@ public:
     float               yaw;        ///< Angle of rotation around up axis in degrees
 };
 
-BE_INLINE Angles::Angles(float roll, float pitch, float yaw) {
-    this->roll = roll;
-    this->pitch = pitch;
-    this->yaw = yaw;
+BE_INLINE constexpr Angles::Angles(float inRoll, float inPitch, float inYaw) :
+    roll(inRoll), pitch(inPitch), yaw(inYaw) {
 }
 
-BE_INLINE Angles::Angles(const Vec3 &v) {
-    this->roll = v[0];
-    this->pitch = v[1];
-    this->yaw = v[2];
+BE_INLINE Angles::Angles(const Vec3 &v) :
+    roll(v[0]), pitch(v[1]), yaw(v[2]) {
 }
 
 BE_INLINE Angles &Angles::operator=(const Angles &a) {

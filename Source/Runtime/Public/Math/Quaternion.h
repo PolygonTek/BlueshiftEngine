@@ -49,9 +49,9 @@ public:
     /// The default constructor does not initialize any members of this class.
     Quat() = default;
     /// Constructs a Quat with the value (x, y, z, w).
-    Quat(float x, float y, float z, float w);
+    constexpr Quat(float x, float y, float z, float w);
     /// Constructs a Quat from a C array, to the value (data[0], data[1], data[2], data[3]).
-    explicit Quat(const float data[4]);
+    explicit constexpr Quat(const float data[4]);
     /// Assignment operator
     Quat &operator=(const Quat &rhs);
     
@@ -185,18 +185,12 @@ public:
     float               w;          ///< The scalar part.
 };
 
-BE_INLINE Quat::Quat(float x, float y, float z, float w) {
-    this->x = x;
-    this->y = y;
-    this->z = z;
-    this->w = w;
+BE_INLINE constexpr Quat::Quat(float inX, float inY, float inZ, float inW) :
+    x(inX), y(inY), z(inZ), w(inW) {
 }
 
-BE_INLINE Quat::Quat(const float data[4]) {
-    this->x = data[0];
-    this->y = data[1];
-    this->z = data[2];
-    this->w = data[3];
+BE_INLINE constexpr Quat::Quat(const float data[4]) :
+    x(data[0]), y(data[1]), z(data[2]), w(data[3]) {
 }
 
 BE_INLINE void Quat::Set(float x, float y, float z, float w) {

@@ -32,7 +32,7 @@ public:
     /// The default constructor does not initialize any members of this class.
     Sphere() = default;
     /// Constructs a sphere with a given position and radius.
-    Sphere(const Vec3 &origin, float radius);
+    constexpr Sphere(const Vec3 &origin, float radius);
 
     const Vec3 &    Origin() const { return origin; }
     float           Radius() const { return radius; }
@@ -78,8 +78,8 @@ public:
     float           radius;     ///< The radius of this sphere.
 };
 
-BE_INLINE Sphere::Sphere(const Vec3 &origin, float radius) :
-    origin(origin), radius(radius) {
+BE_INLINE constexpr Sphere::Sphere(const Vec3 &inOrigin, float inRadius) :
+    origin(inOrigin), radius(inRadius) {
 }
 
 BE_INLINE void Sphere::Clear() {

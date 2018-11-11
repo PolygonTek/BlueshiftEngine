@@ -31,7 +31,7 @@ public:
     /// The default constructor does not initialize any members of this class.
     Complex() {}
     /// Set complex number with the given real part and imagenary part.
-    Complex(const float re, const float im);
+    constexpr Complex(const float re, const float im);
     /// Assginment operator
     Complex &operator=(const Complex &rhs);
 
@@ -105,9 +105,8 @@ public:
     float                   im;     ///< imaginary part
 };
 
-BE_INLINE Complex::Complex(const float re, const float im) {
-    this->re = re;
-    this->im = im;
+BE_INLINE constexpr Complex::Complex(const float inRe, const float inIm) :
+    re(inRe), im(inIm) {
 }
 
 BE_INLINE Complex &Complex::operator=(const Complex &rhs) {

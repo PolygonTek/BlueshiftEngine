@@ -57,8 +57,8 @@ public:
 
     /// The default constructor does not initialize any members of this class.
     Plane() = default;
-    Plane(float a, float b, float c, float d);
-    Plane(const Vec3 &n, float d);
+    constexpr Plane(float a, float b, float c, float d);
+    constexpr Plane(const Vec3 &n, float d);
 
     void            SetNormal(const Vec3 &normal);
     void            SetDist(const float dist);
@@ -126,18 +126,12 @@ public:
     float           d;
 };
 
-BE_INLINE Plane::Plane(float a, float b, float c, float d) {
-    this->a = a;
-    this->b = b;
-    this->c = c;
-    this->d = d;
+BE_INLINE constexpr Plane::Plane(float inA, float inB, float inC, float inD) :
+    a(inA), b(inB), c(inC), d(inD) {
 }
 
-BE_INLINE Plane::Plane(const Vec3 &n, float d) {
-    this->a = n.x;
-    this->b = n.y;
-    this->c = n.z;
-    this->d = d;
+BE_INLINE constexpr Plane::Plane(const Vec3 &n, float inD) :
+    a(n.x), b(n.y), c(n.z), d(inD) {
 }
 
 BE_INLINE float Plane::operator[](int index) const {

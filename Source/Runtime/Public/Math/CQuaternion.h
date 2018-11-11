@@ -36,7 +36,7 @@ class BE_API CQuat {
 public:
     /// The default constructor does not initialize any members of this class.
     CQuat() = default;
-    CQuat(float x, float y, float z);
+    constexpr CQuat(float x, float y, float z);
 
                         /// Casts this Quat to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -86,10 +86,8 @@ public:
     float               z;      ///< The factor of k.
 };
 
-BE_INLINE CQuat::CQuat(float x, float y, float z) {
-    this->x = x;
-    this->y = y;
-    this->z = z;
+BE_INLINE constexpr CQuat::CQuat(float inX, float inY, float inZ) :
+    x(inX), y(inY), z(inZ) {
 }
 
 BE_INLINE void CQuat::Set(float x, float y, float z) {

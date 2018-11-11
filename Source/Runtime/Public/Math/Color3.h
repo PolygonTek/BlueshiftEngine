@@ -25,11 +25,11 @@ public:
     /// The default constructor does not initialize any members of this class.
     Color3() {}
     /// Constructs a Color3 with the value (r, g, b).
-    Color3(float r, float g, float b);
+    constexpr Color3(float r, float g, float b);
     /// Constructs a Color3 from a C array, to the value (data[0], data[1], data[2]).
-    explicit Color3(const float data[3]);
+    explicit constexpr Color3(const float data[3]);
     /// Constructs a Color3 from a single value (s, s, s)
-    explicit Color3(float s);    
+    explicit constexpr Color3(float s);
 
                         /// Casts this Color3 to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -206,22 +206,16 @@ public:
     float               b;          ///< The blue component.
 };
 
-BE_INLINE Color3::Color3(float r, float g, float b) {
-    this->r = r;
-    this->g = g;
-    this->b = b;
+BE_INLINE constexpr Color3::Color3(float inR, float inG, float inB) :
+    r(inR), g(inG), b(inB) {
 }
 
-BE_INLINE Color3::Color3(const float data[3]) {
-    this->r = data[0];
-    this->g = data[1];
-    this->b = data[2];
+BE_INLINE constexpr Color3::Color3(const float data[3]) :
+    r(data[0]), g(data[1]), b(data[2]) {
 }
 
-BE_INLINE Color3::Color3(float c) {
-    this->r = c;
-    this->g = c;
-    this->b = c;
+BE_INLINE constexpr Color3::Color3(float c) :
+    r(c), g(c), b(c) {
 }
 
 BE_INLINE void Color3::Set(float r, float g, float b) {

@@ -178,8 +178,8 @@ private:
     float           invFar;     ///< 1.0f / dFar
 };
 
-BE_INLINE Frustum::Frustum() {
-    dNear = dFar = 0.0f;
+BE_INLINE Frustum::Frustum() :
+    dNear(0.0f), dFar(0.0f) {
 }
 
 BE_INLINE void Frustum::SetSize(float dNear, float dFar, float dLeft, float dUp) {

@@ -34,7 +34,7 @@ public:
     /// The default constructor does not initialize any members of this class.
     Rect() = default;
     /// Constructs from coordinates.
-    Rect(int x, int y, int w, int h);
+    constexpr Rect(int x, int y, int w, int h);
     /// Assignment operator
     Rect &operator=(const Rect &rhs);
 
@@ -49,7 +49,7 @@ public:
 #endif
 
     /// Constructs from a point.
-    explicit Rect(const Point &p);
+    explicit constexpr Rect(const Point &p);
 
     int                 X2() const { return x + w; }
     int                 Y2() const { return y + h; }
@@ -132,18 +132,12 @@ public:
     int                 h;
 };
 
-BE_INLINE Rect::Rect(int x, int y, int w, int h) {
-    this->x = x;
-    this->y = y;
-    this->w = w;
-    this->h = h;
+BE_INLINE constexpr Rect::Rect(int inX, int inY, int inW, int inH) :
+    x(inX), y(inY), w(inW), h(inH) {
 }
 
-BE_INLINE Rect::Rect(const Point &p) {
-    x = p.x;
-    y = p.y;
-    w = 1;
-    h = 1;
+BE_INLINE constexpr Rect::Rect(const Point &p) :
+    x(p.x), y(p.y), w(1), h(1) {
 }
 
 BE_INLINE Rect &Rect::operator=(const Rect &rhs) {

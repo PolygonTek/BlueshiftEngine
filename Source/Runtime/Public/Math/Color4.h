@@ -25,13 +25,13 @@ public:
     /// The default constructor does not initialize any members of this class.
     Color4() = default;
     /// Constructs a Color4 with the value (r, g, b, a).
-    Color4(float r, float g, float b, float a);
+    constexpr Color4(float r, float g, float b, float a);
     /// Constructs a Color4 with the value (rgb.r, rgb.g, rgb.b, a).
-    Color4(const Color3 &rgb, float a);
+    constexpr Color4(const Color3 &rgb, float a);
     /// Constructs a Color4 from a C array, to the value (data[0], data[1], data[2], data[3]).
-    explicit Color4(const float data[4]);
+    explicit constexpr Color4(const float data[4]);
     /// Constructs a Color4 from a single value (s, s, s, s)
-    explicit Color4(float s);
+    explicit constexpr Color4(float s);
     
                         /// Casts this Color4 to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -218,32 +218,20 @@ public:
     float               a;          ///< The alpha component.
 };
 
-BE_INLINE Color4::Color4(float r, float g, float b, float a) {
-    this->r = r;
-    this->g = g;
-    this->b = b;
-    this->a = a;
+BE_INLINE constexpr Color4::Color4(float inR, float inG, float inB, float inA) :
+    r(inR), g(inG), b(inB), a(inA) {
 }
 
-BE_INLINE Color4::Color4(const Color3 &rgb, float a) {
-    this->r = rgb.r;
-    this->g = rgb.g;
-    this->b = rgb.b;
-    this->a = a;
+BE_INLINE constexpr Color4::Color4(const Color3 &inRgb, float inA) :
+    r(inRgb.r), g(inRgb.g), b(inRgb.b), a(inA) {
 }
 
-BE_INLINE Color4::Color4(const float data[4]) {
-    this->r = data[0];
-    this->g = data[1];
-    this->b = data[2];
-    this->a = data[3];
+BE_INLINE constexpr Color4::Color4(const float data[4]) :
+    r(data[0]), g(data[1]), b(data[2]), a(data[3]) {
 }
 
-BE_INLINE Color4::Color4(float c) {
-    this->r = c;
-    this->g = c;
-    this->b = c;
-    this->a = c;
+BE_INLINE constexpr Color4::Color4(float c) :
+    r(c), g(c), b(c), a(c) {
 }
 
 BE_INLINE void Color4::Set(float r, float g, float b, float a) {

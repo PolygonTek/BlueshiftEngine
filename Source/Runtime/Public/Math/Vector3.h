@@ -35,11 +35,11 @@ public:
     /// The default constructor does not initialize any members of this class.
     Vec3() = default;
     /// Constructs a Vec3 with the value (x, y, z).
-    Vec3(float x, float y, float z);
+    constexpr Vec3(float x, float y, float z);
     /// Constructs a Vec3 from a C array, to the value (data[0], data[1], data[2]).
-    explicit Vec3(const float data[3]);
+    explicit constexpr Vec3(const float data[3]);
     /// Constructs a Vec3 from a single value (s, s, s)
-    explicit Vec3(float s);
+    explicit constexpr Vec3(float s);
 
                         /// Casts this Vec3 to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -334,22 +334,16 @@ public:
     float               z;          ///< The z component.
 };
 
-BE_INLINE Vec3::Vec3(float x, float y, float z) {
-    this->x = x;
-    this->y = y;
-    this->z = z;
+BE_INLINE constexpr Vec3::Vec3(float inX, float inY, float inZ) :
+    x(inX), y(inY), z(inZ) {
 }
 
-BE_INLINE Vec3::Vec3(const float data[3]) {
-    this->x = data[0];
-    this->y = data[1];
-    this->z = data[2];
+BE_INLINE constexpr Vec3::Vec3(const float data[3]) :
+    x(data[0]), y(data[1]), z(data[2]) {
 }
 
-BE_INLINE Vec3::Vec3(float c) {
-    this->x = c;
-    this->y = c;
-    this->z = c;
+BE_INLINE constexpr Vec3::Vec3(float c) :
+    x(c), y(c), z(c) {
 }
 
 BE_INLINE void Vec3::Set(float x, float y, float z) {
