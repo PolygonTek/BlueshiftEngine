@@ -557,14 +557,16 @@ PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileRead(const char 
     int fd = open(normalizedFilename, O_RDONLY);
     if (fd < 0) {
         AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_UNKNOWN);
-        if (asset) {
-            off_t fileLength;
-            // NOTE: AAsset_openFileDescriptor will work only with files that are not compressed.
-            fd = AAsset_openFileDescriptor(asset, &startOffset, &fileLength);
-            assert(fd > 0);
-            size = fileLength;
-            AAsset_close(asset);
+        if (!asset) {
+            return nullptr;
         }
+
+        off_t fileLength;
+        // NOTE: AAsset_openFileDescriptor will work only with files that are not compressed.
+        fd = AAsset_openFileDescriptor(asset, &startOffset, &fileLength);
+        assert(fd > 0);
+        size = fileLength;
+        AAsset_close(asset);
     } else {
         struct stat fs;
         fstat(fd, &fs);
