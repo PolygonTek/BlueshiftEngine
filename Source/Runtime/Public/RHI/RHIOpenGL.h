@@ -155,6 +155,7 @@ public:
     void                    DestroyRenderTarget(Handle renderTargetHandle);
     void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0, unsigned int mrtBitMask = 0);
     void                    EndRenderTarget();
+    void                    DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask);
     void                    BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const;
 
     Handle                  CreateShader(const char *name, const char *vsText, const char *fsText);

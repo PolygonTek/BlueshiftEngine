@@ -127,6 +127,7 @@ public:
     static bool             SupportsDepthClamp() { return false; }
     static bool             SupportsDepthBufferFloat() { return true; }
     static bool             SupportsPixelBufferObject() { return true; }
+    static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return supportsFrameBufferSRGB; }
     static bool             SupportsTextureRectangle() { return true; }
     static bool             SupportsTextureArray() { return true; }
@@ -145,6 +146,7 @@ public:
     static void             DepthRange(GLdouble znear, GLdouble zfar) { gglDepthRangef(znear, zfar); }
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffers(1, &buffer); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer);
+    static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) { gglInvalidateFramebuffer(target, numAttachments, attachments); }
 
     static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisor(index, divisor); }
     static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex);

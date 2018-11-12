@@ -50,6 +50,10 @@ void RenderTarget::End() const {
     rhi.EndRenderTarget();
 }
 
+void RenderTarget::Discard(bool depth, bool stencil, int colorBitMask) const {
+    rhi.DiscardRenderTarget(depth, stencil, colorBitMask);
+}
+
 void RenderTarget::Clear(const Color4 &clearColor, float clearDepth, int clearStencil) const {
     Begin();
 

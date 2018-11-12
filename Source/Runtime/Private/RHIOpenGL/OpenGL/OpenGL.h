@@ -287,6 +287,7 @@ public:
     static bool             SupportsDepthBoundsTest() { return supportsDepthBoundsTest; }
     static bool             SupportsDepthBufferFloat() { return supportsDepthBufferFloat; }
     static bool             SupportsPixelBufferObject() { return supportsPixelBufferObject; }
+    static bool             SupportsDiscardFrameBuffer() { return false; }
     static bool             SupportsFrameBufferSRGB() { return false; }
     static bool             SupportsTextureRectangle() { return supportsTextureRectangle; }
     static bool             SupportsTextureArray() { return supportsTextureArray; }
@@ -312,6 +313,8 @@ public:
     static void             DepthRange(GLdouble znear, GLdouble zfar) {}
     static void             DrawBuffer(GLenum buffer) {}
     static void             BindDefaultFBO() { gglBindFramebuffer(GL_FRAMEBUFFER, 0); }
+    static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) {}
+
     static void             VertexAttribDivisor(int index, int divisor) {}
     static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {}
     static void             DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex) {}

@@ -42,6 +42,7 @@ public:
 
     void                    Begin(int level = 0, int sliceIndex = 0, unsigned int mrtBitMask = 0) const;
     void                    End() const;
+    void                    Discard(bool depth, bool stencil, int colorBitMask) const;
 
     void                    Clear(const Color4 &clearColor, float clearDepth, int clearStencil) const;
 

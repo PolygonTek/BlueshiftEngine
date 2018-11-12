@@ -319,6 +319,33 @@ void OpenGLRHI::EndRenderTarget() {
     }
 }
 
+void OpenGLRHI::DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask) {
+    if (!OpenGL::SupportsDiscardFrameBuffer()) {
+        return;
+    }
+
+    GLenum attachments[10];
+    int numAttachments = 0;
+
+    int colorIndex = 0;
+    while (colorBitMask) {
+        if (colorBitMask & 1) {
+            attachments[numAttachments++] = GL_COLOR_ATTACHMENT0 + colorIndex;
+        }
+
+        colorBitMask >>= 1;
+        colorIndex++;
+    }
+    if (depth) {
+        attachments[numAttachments++] = GL_DEPTH_ATTACHMENT;
+    }
+    if (stencil) {
+        attachments[numAttachments++] = GL_STENCIL_ATTACHMENT;
+    }
+
+    OpenGL::DiscardFramebuffer(GL_FRAMEBUFFER, numAttachments, attachments);
+}
+
 void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const {
     const GLRenderTarget *srcRenderTarget = renderTargetList[srcRenderTargetHandle];
     const GLRenderTarget *dstRenderTarget = renderTargetList[dstRenderTargetHandle];
