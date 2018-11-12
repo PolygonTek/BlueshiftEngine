@@ -632,7 +632,7 @@ static void RB_DrawView() {
         renderRect.h = backEnd.renderRect.h * scaleY;
 
         rhi.SetViewport(renderRect);
-        rhi.SetScissor(renderRect);
+        rhi.SetScissor(Rect::empty);
         rhi.SetDepthRange(0, 1);
         rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
         rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4::white, 1.0f, 0);
@@ -653,7 +653,7 @@ static void RB_DrawView() {
         backEnd.ctx->screenRT->Begin();
 
         rhi.SetViewport(backEnd.renderRect);
-        rhi.SetScissor(backEnd.renderRect);
+        rhi.SetScissor(Rect::empty);
         rhi.SetDepthRange(0, 1);
 
         RB_ClearView();
@@ -669,7 +669,7 @@ static void RB_DrawView() {
         RB_PostProcess();
     } else {
         rhi.SetViewport(upscaledRenderRect);
-        rhi.SetScissor(upscaledRenderRect);
+        rhi.SetScissor(Rect::empty);
         rhi.SetDepthRange(0, 1);
 
         RB_ClearView();
