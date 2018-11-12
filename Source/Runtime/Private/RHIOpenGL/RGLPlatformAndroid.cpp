@@ -485,8 +485,6 @@ bool OpenGLRHI::SwapBuffers() {
         gglFinish();
     }
 
-    //gglFlush();
-
     EGLBoolean succeeded = eglSwapBuffers(currentContext->eglDisplay, currentContext->eglSurface);
     if (!succeeded) {
         EGLint err = eglGetError();

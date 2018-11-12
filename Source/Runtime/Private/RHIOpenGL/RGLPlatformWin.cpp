@@ -826,8 +826,6 @@ bool OpenGLRHI::SwapBuffers() {
         gglFinish();
     }
 
-    //gglFlush();
-
     BOOL succeeded = ::SwapBuffers(currentContext->hdc);
     if (!succeeded) {
         Str lastErrorText = PlatformWinProcess::GetLastErrorText();
