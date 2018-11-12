@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+const char *OpenGL3::GLSL_VERSION_STRING = "150";
+
 bool OpenGL3::supportsInstancedArrays = false;
 bool OpenGL3::supportsDrawIndirect = false;
 bool OpenGL3::supportsMultiDrawIndirect = false;

@@ -29,7 +29,7 @@ BE_NAMESPACE_BEGIN
 class OpenGL3 : public OpenGLBase {
 public:
     static constexpr int    GLSL_VERSION = 150;
-    static constexpr char   GLSL_VERSION_STRING[] = "150";
+    static const char *     GLSL_VERSION_STRING;
 
     static void             Init();
 
