@@ -437,8 +437,8 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(occludeeBuffer[0]));
     rhi.DrawArrays(RHI::PointsPrim, 0, numAmbientOccludees);
 
-    backEnd.homCullingOutputRT->End();
     backEnd.homCullingOutputRT->Discard(true, true, 0);
+    backEnd.homCullingOutputRT->End();
 
     rhi.SetViewport(prevViewportRect);
 
@@ -639,8 +639,8 @@ static void RB_DrawView() {
 
         RB_SelectionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        backEnd.ctx->screenSelectionRT->End();
         backEnd.ctx->screenSelectionRT->Discard(true, true, 0);
+        backEnd.ctx->screenSelectionRT->End();
     }
 
     Rect upscaledRenderRect;
@@ -660,8 +660,8 @@ static void RB_DrawView() {
 
         RB_RenderView();
 
-        backEnd.ctx->screenRT->End();
         backEnd.ctx->screenRT->Discard(true, true, 0);
+        backEnd.ctx->screenRT->End();
 
         rhi.SetViewport(upscaledRenderRect);
         rhi.SetScissor(upscaledRenderRect);
