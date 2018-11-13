@@ -24,12 +24,12 @@ public:
     static void             Shutdown();
 
                             /// Returns time in seconds.
-    static float            Seconds();
+    static double           Seconds();
 
-                            /// Returns time in milliseconds.
+                            /// Returns time in milliseconds (1/1000 seconds).
     static uint32_t         Milliseconds();
 
-                            /// Returns time in microseconds.
+                            /// Returns time in microseconds (1/1000000 seconds).
     static uint64_t         Microseconds();
 
                             /// Returns CPU clocks counter.

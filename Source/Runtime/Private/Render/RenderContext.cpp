@@ -639,13 +639,13 @@ void RenderContext::UpdateCurrentRenderTexture() const {
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
     rhi.SelectTextureUnit(0);
     
-    //float starttime = PlatformTime::Seconds();
+    //double starttime = PlatformTime::Seconds();
 
     currentRenderTexture->Bind();
     rhi.CopyTextureSubImage2D(0, 0, 0, 0, currentRenderTexture->GetWidth(), currentRenderTexture->GetHeight());
     //rhi.GenerateMipmap();
     
-    //BE_LOG("%f\n", PlatformTime::Seconds() - starttime);
+    //BE_LOG("%lf\n", PlatformTime::Seconds() - starttime);
 }
 
 float RenderContext::QueryDepth(const Point &point) {

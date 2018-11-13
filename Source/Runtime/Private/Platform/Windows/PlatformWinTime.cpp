@@ -69,7 +69,7 @@ void PlatformWinTime::Shutdown() {
     timeEndPeriod(1);
 }
 
-float PlatformWinTime::Seconds() {
+double PlatformWinTime::Seconds() {
     static int first = 1;
     static int sametimecount;
     static unsigned int oldcount;
@@ -109,7 +109,7 @@ float PlatformWinTime::Seconds() {
         }
     }
 
-    return (float)hrt_curtime;
+    return hrt_curtime;
 }
 
 uint32_t PlatformWinTime::Milliseconds() {
@@ -125,7 +125,7 @@ uint32_t PlatformWinTime::Milliseconds() {
 }
 
 uint64_t PlatformWinTime::Microseconds() {
-    return (uint64_t)(PlatformTime::Seconds() * 1000000.0f);
+    return (uint64_t)(PlatformTime::Seconds() * 1000000.0);
 }
 
 uint64_t PlatformWinTime::Cycles() {

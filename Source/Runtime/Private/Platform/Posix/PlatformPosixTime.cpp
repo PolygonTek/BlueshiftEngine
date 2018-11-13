@@ -26,7 +26,7 @@ void PlatformPosixTime::Init() {
 void PlatformPosixTime::Shutdown() {
 }
 
-float PlatformPosixTime::Seconds() {
+double PlatformPosixTime::Seconds() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return ((double)tv.tv_sec) + (((double)tv.tv_usec) / 1000000.0);
@@ -52,7 +52,7 @@ uint32_t PlatformPosixTime::Milliseconds() {
 }
 
 uint64_t PlatformPosixTime::Microseconds() {
-    return (uint64_t)(PlatformPosixTime::Seconds() * 1000000.0f);
+    return (uint64_t)(PlatformPosixTime::Seconds() * 1000000.0);
 }
 
 uint64_t PlatformPosixTime::Cycles() {

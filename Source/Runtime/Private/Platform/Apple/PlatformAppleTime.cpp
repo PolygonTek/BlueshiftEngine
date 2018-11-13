@@ -25,7 +25,7 @@ void PlatformAppleTime::Init() {
 	secondsPerCycle = 1e-9 * (double)info.numer / (double)info.denom;
 }
 
-float PlatformAppleTime::Seconds() {
+double PlatformAppleTime::Seconds() {
 	uint64_t cycles = mach_absolute_time();
 	// Add big number to make bugs apparent where return value is being passed to float
 	return cycles * secondsPerCycle + 16777216.0f;

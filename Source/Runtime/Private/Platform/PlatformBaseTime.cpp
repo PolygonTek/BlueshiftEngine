@@ -26,8 +26,8 @@ void PlatformBaseTime::Init() {
 void PlatformBaseTime::Shutdown() {
 }
 
-float PlatformBaseTime::Seconds() {
-    return 0.0f;
+double PlatformBaseTime::Seconds() {
+    return 0.0;
 }
 
 uint32_t PlatformBaseTime::Milliseconds() {
