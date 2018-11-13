@@ -32,6 +32,9 @@ public:
                             /// Returns time in microseconds (1/1000000 seconds).
     static uint64_t         Microseconds();
 
+                            /// Returns time in nanoseconds (1/1000000000 seconds).
+    static uint64_t         Nanoseconds();
+
                             /// Returns CPU clocks counter.
     static uint64_t         Cycles();
 

@@ -22,8 +22,9 @@ public:
     static void             Shutdown();
 
     static float            Seconds();
-    static uint32_t         Milliseconds(); // 1/1000 seconds
-    static uint64_t         Microseconds(); // 1/1000000 seconds
+    static uint32_t         Milliseconds();
+    static uint64_t         Microseconds();
+    static uint64_t         Nanoseconds();
 
     static uint64_t         Cycles();
 

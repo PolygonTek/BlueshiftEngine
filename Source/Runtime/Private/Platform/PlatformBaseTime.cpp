@@ -38,6 +38,10 @@ uint64_t PlatformBaseTime::Microseconds() {
     return 0;
 }
 
+uint64_t PlatformBaseTime::Nanoseconds() {
+    return 0;
+}
+
 uint64_t PlatformBaseTime::Cycles() {
     return 0;
 }

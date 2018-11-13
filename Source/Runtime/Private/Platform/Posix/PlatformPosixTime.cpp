@@ -20,7 +20,7 @@ BE_NAMESPACE_BEGIN
 
 void PlatformPosixTime::Init() {
     // we use gettimeofday() instead of rdtsc, so it's 1000000 "cycles" per second on this faked CPU.
-    secondsPerCycle = 1.0f / 1000000.0f;
+    secondsPerCycle = 1.0f / 1000000.0;
 }
 
 void PlatformPosixTime::Shutdown() {
@@ -53,6 +53,10 @@ uint32_t PlatformPosixTime::Milliseconds() {
 
 uint64_t PlatformPosixTime::Microseconds() {
     return (uint64_t)(PlatformPosixTime::Seconds() * 1000000.0);
+}
+
+uint64_t PlatformPosixTime::Nanoseconds() {
+    return (uint64_t)(PlatformPosixTime::Seconds() * 1000000000.0);
 }
 
 uint64_t PlatformPosixTime::Cycles() {

@@ -60,7 +60,7 @@ void PlatformWinTime::Init() {
 
     timeBeginPeriod(1);
 
-    PlatformTime::Microseconds();
+    PlatformTime::Milliseconds();
 
     secondsPerCycle = 1.0 / hrt_frequency.QuadPart;
 }
@@ -126,6 +126,10 @@ uint32_t PlatformWinTime::Milliseconds() {
 
 uint64_t PlatformWinTime::Microseconds() {
     return (uint64_t)(PlatformTime::Seconds() * 1000000.0);
+}
+
+uint64_t PlatformWinTime::Nanoseconds() {
+    return (uint64_t)(PlatformTime::Seconds() * 1000000000.0);
 }
 
 uint64_t PlatformWinTime::Cycles() {
