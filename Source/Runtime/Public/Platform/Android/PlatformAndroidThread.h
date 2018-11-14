@@ -20,6 +20,8 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformAndroidThread : public PlatformBaseThread {
 public:
+    static uint32_t             GetCurrentThreadId();
+
     static PlatformAndroidThread *Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
     static void                 Delete(PlatformAndroidThread *thread);
     
