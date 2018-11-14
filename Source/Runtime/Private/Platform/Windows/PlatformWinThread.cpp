@@ -65,6 +65,10 @@ static void SetAffinity(HANDLE thread, int affinity) {
 #endif
 }
 
+uint32_t PlatformWinThread::GetCurrentThreadId() {
+    return ::GetCurrentThreadId();
+}
+
 // Creates a hardware thread running on specific core
 PlatformWinThread *PlatformWinThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     HANDLE threadHandle = CreateThread(nullptr, stackSize, (LPTHREAD_START_ROUTINE)startProc, param, 0, nullptr);

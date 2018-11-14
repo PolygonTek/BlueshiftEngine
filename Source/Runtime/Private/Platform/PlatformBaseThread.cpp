@@ -17,69 +17,73 @@
 
 BE_NAMESPACE_BEGIN
 
+uint32_t PlatformBaseThread::GetCurrentThreadId() {
+    return 0;
+}
+
 PlatformBaseThread *PlatformBaseThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
-    BE_FATALERROR("Thread::Create not implmeneted on this platform");
+    BE_FATALERROR("PlatformThread::Create not implmeneted on this platform");
     return nullptr;
 }
 
 void PlatformBaseThread::Delete(PlatformBaseThread *PlatformBaseThread) {
-    BE_FATALERROR("Thread::Delete not implmeneted on this platform");
+    BE_FATALERROR("PlatformThread::Delete not implmeneted on this platform");
 }
 
 void PlatformBaseThread::SetAffinity(int affinity) {
-    BE_FATALERROR("Thread::SetAffinity not implmeneted on this platform");
+    BE_FATALERROR("PlatformThread::SetAffinity not implmeneted on this platform");
 }
 
 void PlatformBaseThread::Wait(PlatformBaseThread *PlatformBaseThread) {
-    BE_FATALERROR("Thread::Wait not implmeneted on this platform");
+    BE_FATALERROR("PlatformThread::Wait not implmeneted on this platform");
 }
 
 void PlatformBaseThread::WaitAll(int numThreads, PlatformBaseThread *ThreadBases[]) {
-    BE_FATALERROR("Thread::WaitAll not implmeneted on this platform");
+    BE_FATALERROR("PlatformThread::WaitAll not implmeneted on this platform");
 }
 
 PlatformBaseMutex *PlatformBaseMutex::Create() {
-    BE_FATALERROR("Mutex::Create not implmeneted on this platform");
+    BE_FATALERROR("PlatformMutex::Create not implmeneted on this platform");
     return nullptr;
 }
 
 void PlatformBaseMutex::Delete(PlatformBaseMutex *PlatformBaseMutex) {
-    BE_FATALERROR("Mutex::Delete not implmeneted on this platform");
+    BE_FATALERROR("PlatformMutex::Delete not implmeneted on this platform");
 }
 
 void PlatformBaseMutex::Lock(const PlatformBaseMutex *PlatformBaseMutex) {
-    BE_FATALERROR("Mutex::Lock not implmeneted on this platform");
+    BE_FATALERROR("PlatformMutex::Lock not implmeneted on this platform");
 }
 
 bool PlatformBaseMutex::TryLock(const PlatformBaseMutex *PlatformBaseMutex) {
-    BE_FATALERROR("Mutex::TryLock not implmeneted on this platform");
+    BE_FATALERROR("PlatformMutex::TryLock not implmeneted on this platform");
     return false;
 }
 
 void PlatformBaseMutex::Unlock(const PlatformBaseMutex *PlatformBaseMutex) {
-    BE_FATALERROR("Mutex::Unlock not implmeneted on this platform");
+    BE_FATALERROR("PlatformMutex::Unlock not implmeneted on this platform");
 }
 
 PlatformBaseCondition *PlatformBaseCondition::Create() {
-    BE_FATALERROR("Condition::Create not implmeneted on this platform");
+    BE_FATALERROR("PlatformCondition::Create not implmeneted on this platform");
     return nullptr;
 }
 
 void PlatformBaseCondition::Delete(PlatformBaseCondition *PlatformBaseCondition) {
-    BE_FATALERROR("Condition::Delete not implmeneted on this platform");
+    BE_FATALERROR("PlatformCondition::Delete not implmeneted on this platform");
 }
 
 void PlatformBaseCondition::Wait(const PlatformBaseCondition *PlatformBaseCondition, const PlatformBaseMutex *PlatformBaseMutex) {
-    BE_FATALERROR("Condition::Wait not implmeneted on this platform");
+    BE_FATALERROR("PlatformCondition::Wait not implmeneted on this platform");
 }
 
 bool PlatformBaseCondition::TimedWait(const PlatformBaseCondition *PlatformBaseCondition, const PlatformBaseMutex *PlatformBaseMutex, int ms) {
-    BE_FATALERROR("Condition::TimedWait not implmeneted on this platform");
+    BE_FATALERROR("PlatformCondition::TimedWait not implmeneted on this platform");
     return false;
 }
 
 void PlatformBaseCondition::Broadcast(const PlatformBaseCondition *PlatformBaseCondition) {
-    BE_FATALERROR("Condition::Broadcast not implmeneted on this platform");
+    BE_FATALERROR("PlatformCondition::Broadcast not implmeneted on this platform");
 }
 
 BE_NAMESPACE_END

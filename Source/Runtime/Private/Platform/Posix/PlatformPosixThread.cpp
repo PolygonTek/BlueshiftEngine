@@ -58,12 +58,16 @@ struct ThreadStartupData {
 static void *ThreadStartup(ThreadStartupData *parg) {
     ThreadStartupData arg = *parg; 
     delete parg;
-    parg = NULL;
+    parg = nullptr;
 
     SetAffinity(arg.affinity);
     arg.startProc(arg.param);
 
-    return NULL;
+    return nullptr;
+}
+
+uint32_t PlatformPosixThread::GetCurrentThreadId() {
+    return pthread_self();
 }
 
 PlatformPosixThread *PlatformPosixThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
@@ -100,7 +104,7 @@ void PlatformPosixThread::SetAffinity(int affinity) {
 }
 
 void PlatformPosixThread::Wait(PlatformPosixThread *posixThread) {
-    if (pthread_join(*posixThread->thread, NULL) != 0) {
+    if (pthread_join(*posixThread->thread, nullptr) != 0) {
         BE_FATALERROR("pthread_join");
     }
     delete posixThread->thread;
@@ -109,7 +113,7 @@ void PlatformPosixThread::Wait(PlatformPosixThread *posixThread) {
 
 void PlatformPosixThread::WaitAll(int numThreads, PlatformPosixThread *posixThreads[]) {
     for (int i = 0; i < numThreads; i++) {
-        if (pthread_join(*posixThreads[i]->thread, NULL) != 0) {
+        if (pthread_join(*posixThreads[i]->thread, nullptr) != 0) {
             BE_FATALERROR("pthread_join");
         }
 
@@ -150,7 +154,7 @@ void PlatformPosixMutex::Unlock(const PlatformPosixMutex *posixMutex) {
 PlatformPosixCondition *PlatformPosixCondition::Create() {
     PlatformPosixCondition *posixCondition = new PlatformPosixCondition;
     posixCondition->cond = new pthread_cond_t;
-    pthread_cond_init(posixCondition->cond, NULL);
+    pthread_cond_init(posixCondition->cond, nullptr);
     return posixCondition;
 }
 

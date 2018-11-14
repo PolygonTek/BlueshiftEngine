@@ -20,6 +20,8 @@ typedef void (*threadFunc_t)(void *);
 
 class BE_API PlatformBaseThread {
 public:
+    static uint32_t             GetCurrentThreadId();
+
     static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
     static void                 Delete(PlatformBaseThread *thread);
 

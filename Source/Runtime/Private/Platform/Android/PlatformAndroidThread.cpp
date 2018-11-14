@@ -47,6 +47,10 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     return NULL;
 }
 
+uint32_t PlatformAndroidThread::GetCurrentThreadId() {
+    return static_cast<uint32>(gettid());
+}
+
 PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
