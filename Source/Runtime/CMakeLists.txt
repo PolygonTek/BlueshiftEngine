@@ -124,6 +124,7 @@ set(ENGINE_FILES
     Public/Platform/PlatformProcess.h
     Public/Platform/PlatformFile.h
     Public/Platform/PlatformThread.h
+    Public/Platform/PlatformTLS.h
     Public/Platform/PlatformTime.h
     Public/Platform/PlatformSystem.h
 
@@ -243,7 +244,7 @@ set(ENGINE_FILES
     Public/Render/Skeleton.h
     Public/Render/Skin.h
     Public/Render/SubMesh.h
-    Public/Render/Texture.h  
+    Public/Render/Texture.h
 
     Public/Platform/Platform.h
 
@@ -253,6 +254,8 @@ set(ENGINE_FILES
 
     Public/Scripting/LuaVM.h
 
+    Public/Profiler/Profiler.h
+
     Private/Core/Checksum_CRC32.cpp
     Private/Core/Checksum_MD5.cpp
     Private/Core/Heap.cpp
@@ -260,7 +263,23 @@ set(ENGINE_FILES
     Private/Core/UTF16.cpp
     Private/Core/Str.cpp
     Private/Core/Guid.cpp
+    Private/Core/ByteOrder.cpp
+    Private/Core/CmdArgs.cpp
+    Private/Core/Cmds.cpp
+    Private/Core/CVars.cpp
+    Private/Core/Timespan.cpp
+    Private/Core/DateTime.cpp
+    Private/Core/Dict.cpp
+    Private/Core/Expr.cpp
+    Private/Core/MinMaxCurve.cpp
+    Private/Core/Lexer.cpp
+    Private/Core/Task.cpp
+    Private/Core/Variant.cpp
+    Private/Core/DynamicAABBTree.cpp
+    Private/Core/Vec4Color.cpp
+
     Private/Containers/HashIndex.cpp
+
     Private/Image/ImageInternal.h
     Private/Image/Image.cpp
     Private/Image/ImageColorSpace.cpp
@@ -284,6 +303,7 @@ set(ENGINE_FILES
     Private/Image/ImageResize.cpp
     Private/Image/DXTDecoder.cpp
     Private/Image/DXTEncoder.cpp
+
     Private/Math/Vector3.cpp
     Private/Math/Vector4.cpp
     Private/Math/Color3.cpp
@@ -311,31 +331,23 @@ set(ENGINE_FILES
     Private/Math/Matrix3.cpp
     Private/Math/Point.cpp
     Private/Math/Vector2.cpp
+
     Private/SIMD/Simd.cpp
     Private/SIMD/Simd_AVX.cpp
     Private/SIMD/Simd_Generic.cpp
     Private/SIMD/Simd_SSE4.cpp
+
     Private/Platform/cpuid.cpp
     Private/Platform/PlatformBaseProcess.cpp
     Private/Platform/PlatformBaseFile.cpp
     Private/Platform/PlatformBaseThread.cpp
+    Private/Platform/PlatformBaseTLS.cpp
     Private/Platform/PlatformBaseTime.cpp
     Private/Platform/PlatformBaseSystem.cpp
+
     Private/File/File.cpp
     Private/File/FileSystem.cpp
     Private/File/ZipArchiver.cpp
-    Private/Core/ByteOrder.cpp
-    Private/Core/CmdArgs.cpp
-    Private/Core/Cmds.cpp
-    Private/Core/CVars.cpp
-    Private/Core/Timespan.cpp
-    Private/Core/DateTime.cpp
-    Private/Core/Dict.cpp
-    Private/Core/Expr.cpp
-    Private/Core/MinMaxCurve.cpp
-    Private/Core/Lexer.cpp
-    Private/Core/Task.cpp
-    Private/Core/Variant.cpp
 
     Private/RHIOpenGL/OpenGL/OpenGL.h
     Private/RHIOpenGL/OpenGL/OpenGL.cpp
@@ -628,13 +640,13 @@ set(ENGINE_FILES
     Private/Scripting/Game/LuaModule_Entity.cpp
     Private/Scripting/Game/LuaModule_GameWorld.cpp
 
-    Private/Core/DynamicAABBTree.cpp
-    Private/Core/Vec4Color.cpp)
+    Private/Profiler/Profiler.cpp)
 
 if (ANDROID)
     list(APPEND ENGINE_FILES
         Public/Platform/Posix/PlatformPosixProcess.h
         Public/Platform/Posix/PlatformPosixTime.h
+        Public/Platform/Posix/PlatformPosixTLS.h
         Public/Platform/Linux/PlatformLinuxProcess.h
         Public/Platform/Linux/PlatformLinuxTime.h
         Public/Platform/Android/PlatformAndroidProcess.h
@@ -644,6 +656,7 @@ if (ANDROID)
 
         Private/Platform/Posix/PlatformPosixProcess.cpp
         Private/Platform/Posix/PlatformPosixTime.cpp
+        Private/Platform/Posix/PlatformPosixTLS.cpp
         Private/Platform/Linux/PlatformLinuxProcess.cpp
         Private/Platform/Linux/PlatformLinuxTime.cpp
         Private/Platform/Android/PlatformAndroidProcess.cpp 
@@ -667,6 +680,7 @@ elseif (WIN32)
         Public/Platform/Windows/PlatformWinProcess.h
         Public/Platform/Windows/PlatformWinFile.h
         Public/Platform/Windows/PlatformWinThread.h
+        Public/Platform/Windows/PlatformWinTLS.h
         Public/Platform/Windows/PlatformWinTime.h
         Public/Platform/Windows/PlatformWinSystem.h
         Public/Platform/Windows/PlatformWinUtils.h
@@ -674,6 +688,7 @@ elseif (WIN32)
         Private/Platform/Windows/PlatformWinProcess.cpp
         Private/Platform/Windows/PlatformWinFile.cpp
         Private/Platform/Windows/PlatformWinThread.cpp
+        Private/Platform/Windows/PlatformWinTLS.cpp
         Private/Platform/Windows/PlatformWinTime.cpp
         Private/Platform/Windows/PlatformWinSystem.cpp
         Private/Platform/Windows/PlatformWinUtils.cpp
@@ -685,6 +700,7 @@ elseif (WIN32)
         Public/Network/Packet.h
         Private/Network/Socket.cpp
         Private/Network/Packet.cpp)
+
     if (USE_WINDOWS_OPENAL)
         list(APPEND ENGINE_FILES
             Private/Sound/SoundSystemAL.cpp
@@ -701,12 +717,14 @@ elseif (UNIX)
         Public/Platform/Posix/PlatformPosixProcess.h
         Public/Platform/Posix/PlatformPosixFile.h
         Public/Platform/Posix/PlatformPosixThread.h
+        Public/Platform/Posix/PlatformPosixTLS.h
         Public/Platform/Posix/PlatformPosixTime.h
         Public/Platform/Posix/PlatformPosixSystem.h
 
         Private/Platform/Posix/PlatformPosixProcess.cpp
         Private/Platform/Posix/PlatformPosixFile.cpp
         Private/Platform/Posix/PlatformPosixThread.cpp
+        Private/Platform/Posix/PlatformPosixTLS.cpp
         Private/Platform/Posix/PlatformPosixTime.cpp
         Private/Platform/Posix/PlatformPosixSystem.cpp
 
@@ -719,10 +737,12 @@ elseif (UNIX)
             Public/Platform/Apple/PlatformAppleTime.h
             Public/Platform/Apple/PlatformAppleProcess.h
             Public/Platform/Apple/PlatformAppleSystem.h
+            Public/Platform/Apple/PlatformAppleThread.h
 
             Private/Platform/Apple/PlatformAppleTime.cpp
             Private/Platform/Apple/PlatformAppleProcess.mm
-            Private/Platform/Apple/PlatformAppleSystem.mm)
+            Private/Platform/Apple/PlatformAppleSystem.mm
+            Private/Platform/Apple/PlatformAppleThread.cpp)
     
         if (IOS)
             list(APPEND ENGINE_FILES

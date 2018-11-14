@@ -68,6 +68,9 @@
 #include "PlatformUtils/Android/AndroidGPUInfo.h"
 #endif
 
+// Profiler
+#include "Profiler/Profiler.h"
+
 // File
 #include "File/File.h"
 #include "File/FileSystem.h"
