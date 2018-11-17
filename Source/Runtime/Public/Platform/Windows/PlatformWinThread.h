@@ -18,7 +18,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformWinThread : public PlatformBaseThread {
 public:
-    static uint32_t             GetCurrentThreadId();
+    static uint64_t             GetCurrentThreadId();
 
     static PlatformWinThread *  Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
     static void                 Delete(PlatformWinThread *thread);

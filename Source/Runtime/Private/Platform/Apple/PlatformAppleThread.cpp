@@ -18,8 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
-uint32_t PlatformAppleThread::GetCurrentThreadId() {
-    return (uint32_t)pthread_mach_thread_np(pthread_self());
+uint64_t PlatformAppleThread::GetCurrentThreadId() {
+    return (uint64_t)pthread_mach_thread_np(pthread_self());
 }
 
 BE_NAMESPACE_END

@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-uint32_t PlatformBaseThread::GetCurrentThreadId() {
+uint64_t PlatformBaseThread::GetCurrentThreadId() {
     return 0;
 }
 

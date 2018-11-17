@@ -65,7 +65,7 @@ static void SetAffinity(HANDLE thread, int affinity) {
 #endif
 }
 
-uint32_t PlatformWinThread::GetCurrentThreadId() {
+uint64_t PlatformWinThread::GetCurrentThreadId() {
     return ::GetCurrentThreadId();
 }
 

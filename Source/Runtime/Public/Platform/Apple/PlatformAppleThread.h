@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformAppleThread : public PlatformPosixThread {
 public:
-    static uint32_t             GetCurrentThreadId();
+    static uint64_t             GetCurrentThreadId();
 };
 
 typedef PlatformAppleThread     PlatformThread;

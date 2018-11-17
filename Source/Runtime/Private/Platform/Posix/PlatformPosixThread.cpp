@@ -66,7 +66,8 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     return nullptr;
 }
 
-uint32_t PlatformPosixThread::GetCurrentThreadId() {
+uint64_t PlatformPosixThread::GetCurrentThreadId() {
+    // NOTE: the POSIX standard no longer requires pthread_t to be an arithmetic type
     return pthread_self();
 }
 
