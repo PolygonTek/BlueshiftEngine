@@ -23,12 +23,12 @@ OBJC_CLASS(NSPipe);
 BE_NAMESPACE_BEGIN
 
 struct ProcessHandle {
-    ProcessHandle(void *task = NULL) {
+    ProcessHandle(void *task = nullptr) {
         this->task = task;
-        this->stdOutPipe = NULL;
+        this->stdOutPipe = nullptr;
     }
     
-    bool IsValid() const { return task != NULL; }
+    bool IsValid() const { return task != nullptr; }
     
     void Close();
     

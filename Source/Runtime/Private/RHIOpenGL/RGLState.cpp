@@ -83,7 +83,7 @@ void OpenGLRHI::SetDefaultState() {
     gglStencilMask(0);
     OpenGL::DepthRange(0, 1);
     
-    // deprecated at OpenGL 3.0
+    // Deprecated at OpenGL 3.0
     //gglShadeModel(GL_SMOOTH);
     //gglHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     //gglColor4f(1.0f, 1.0f, 1.0f, 1.0f);

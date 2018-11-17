@@ -99,7 +99,7 @@ bool PlatformMacOS::LockCursor(bool lock) {
 }
 
 void PlatformMacOS::GetMousePos(Point &pos) const {
-    CGEventRef ourEvent = CGEventCreate(NULL);
+    CGEventRef ourEvent = CGEventCreate(nullptr);
     CGPoint mouseLocation = CGEventGetLocation(ourEvent);
     CFRelease(ourEvent);
 
@@ -117,7 +117,7 @@ void PlatformMacOS::GenerateMouseDeltaEvent() {
     int32_t dx, dy;
     CGGetLastMouseDelta(&dx, &dy);
 
-    QueEvent(Platform::MouseDeltaEvent, dx, dy, 0, NULL);
+    QueEvent(Platform::MouseDeltaEvent, dx, dy, 0, nullptr);
 }
 
 BE_NAMESPACE_END

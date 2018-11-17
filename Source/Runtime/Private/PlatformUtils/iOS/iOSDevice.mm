@@ -108,11 +108,11 @@ IOSDevice::Type IOSDevice::GetIOSDeviceType() {
     
     // get the device hardware type string length
     size_t deviceIDLen;
-    sysctlbyname("hw.machine", NULL, &deviceIDLen, NULL, 0);
+    sysctlbyname("hw.machine", nullptr, &deviceIDLen, nullptr, 0);
     
     // get the device hardware type
     char *deviceID = (char *)malloc(deviceIDLen);
-    sysctlbyname("hw.machine", deviceID, &deviceIDLen, NULL, 0);
+    sysctlbyname("hw.machine", deviceID, &deviceIDLen, nullptr, 0);
     
     // convert to NSString
     BE1::Str deviceIDString([NSString stringWithCString:deviceID encoding:NSUTF8StringEncoding]);

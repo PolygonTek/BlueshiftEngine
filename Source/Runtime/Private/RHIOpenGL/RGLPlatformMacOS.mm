@@ -233,7 +233,7 @@ static int          minorVersion = 0;
 
 static uint32_t     availVRAM = 0;
 
-static CGDisplayModeRef desktopDisplayMode = NULL;
+static CGDisplayModeRef desktopDisplayMode = nullptr;
 
 static NSOpenGLPixelFormat *mainContextPixelFormat;
 
@@ -357,10 +357,10 @@ static void MacOS_ResetFullscreen() {
         return;
     }
     
-    CGDisplaySetDisplayMode(kCGDirectMainDisplay, desktopDisplayMode, NULL);
+    CGDisplaySetDisplayMode(kCGDirectMainDisplay, desktopDisplayMode, nullptr);
     CGDisplayModeRelease(desktopDisplayMode);
     CGDisplayShowCursor(kCGDirectMainDisplay);
-    desktopDisplayMode = NULL;
+    desktopDisplayMode = nullptr;
 }
 
 static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretched) {
@@ -374,7 +374,7 @@ static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretc
     
     // An array of display modes that the display supports, or NULL if the display is invalid.
     // The caller is responsible for releasing the array.
-    CFArrayRef modeList = (CFArrayRef)CGDisplayCopyAllDisplayModes(kCGDirectMainDisplay, NULL);
+    CFArrayRef modeList = (CFArrayRef)CGDisplayCopyAllDisplayModes(kCGDirectMainDisplay, nullptr);
     if (!modeList) {
         NSLog(@"CGDisplayAvailableModes returned NULL -- 0x%0x is an invalid display", kCGDirectMainDisplay);
         return false;
@@ -435,7 +435,7 @@ static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretc
     
     desktopDisplayMode = CGDisplayCopyDisplayMode(kCGDirectMainDisplay);
     CGDisplayHideCursor(kCGDirectMainDisplay);
-    CGDisplaySetDisplayMode(kCGDirectMainDisplay, fullscreenMode, NULL);
+    CGDisplaySetDisplayMode(kCGDirectMainDisplay, fullscreenMode, nullptr);
     CGDisplayCapture(kCGDirectMainDisplay);
     
     CFRelease(modeList);
@@ -572,7 +572,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     
     // Enable debug callback
     if (gl_debug.GetBool() && gglext._GL_ARB_debug_output) {
-        gglDebugMessageCallbackARB(OpenGL::DebugCallback, NULL);
+        gglDebugMessageCallbackARB(OpenGL::DebugCallback, nullptr);
         gglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     }
     
@@ -718,7 +718,7 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     }
 
     delete ctx;
-    contextList[ctxHandle] = NULL;
+    contextList[ctxHandle] = nullptr;
 }
 
 void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle) {
@@ -784,7 +784,7 @@ void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetri
 }
 
 bool OpenGLRHI::IsFullscreen() const {
-    return desktopDisplayMode != NULL ? true : false;
+    return desktopDisplayMode != nullptr ? true : false;
 }
 
 bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
@@ -875,10 +875,10 @@ bool OpenGLRHI::SwapBuffers() {
     if (gl_debug.IsModified()) {
         if (gglext._GL_ARB_debug_output) {
             if (gl_debug.GetBool()) {
-                gglDebugMessageCallbackARB(OpenGL::DebugCallback, NULL);
+                gglDebugMessageCallbackARB(OpenGL::DebugCallback, nullptr);
                 gglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
             } else {
-                gglDebugMessageCallbackARB(NULL, NULL);
+                gglDebugMessageCallbackARB(nullptr, nullptr);
                 gglDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
             }
         } else {

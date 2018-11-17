@@ -189,8 +189,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
 
         return NullRenderTarget;
     }
-    
-//    OpenGL::BindDefaultFBO();
+
     gglBindFramebuffer(GL_FRAMEBUFFER, oldFBO);
 
     GLRenderTarget *renderTarget = new GLRenderTarget;

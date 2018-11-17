@@ -88,7 +88,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
     BE_LOG("ChoosePixelFormat(%i, %i, %i, %i)\n", inColorBits, inAlphaBits, inDepthBits, inStencilBits);
 
     if (!gwglChoosePixelFormatARB) {
-        // DC 에서 지원하는 모든 pixel format 개수를 얻어온다
+        // Get the number of pixel formats supported by this DC.
         unsigned int numFormats = DescribePixelFormat(hDC, 0, 0, nullptr);
         if (numFormats > MAX_PIXEL_FORMAT) {
             BE_WARNLOG("numFormats > MAX_PIXEL_FORMAT\n");
@@ -104,14 +104,14 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
         PIXELFORMATDESCRIPTOR pfdList[MAX_PIXEL_FORMAT];
         PIXELFORMATDESCRIPTOR *pfd = pfdList;
 
-        // positive one-based integer indexes
+        // Use positive one-based integer indexes
         for (int i = 1; i <= numFormats; i++, pfd++) {
             DescribePixelFormat(hDC, i, sizeof(PIXELFORMATDESCRIPTOR), pfd);
         }
 
         pfd = pfdList;
         for (int i = 1; i <= numFormats; i++, pfd++) {
-            // is supported by GDI software implementation ?
+            // Is supported by GDI software implementation ?
             if (pfd->dwFlags & PFD_GENERIC_FORMAT) { 
                 BE_DLOG("PF %i rejected, software implementation\n", i);
                 continue;
@@ -122,7 +122,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
                 continue;
             }
 
-            // is color index pixel type ?
+            // Is color index pixel type ?
             if (pfd->iPixelType != PFD_TYPE_RGBA) { 
                 BE_DLOG("PF %i rejected, not RGBA\n", i);
                 continue;
@@ -143,7 +143,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
                 continue;
             }
 
-            // check color bits
+            // Check color bits
             if (pfdList[best-1].cColorBits != inColorBits) {
                 if (pfd->cColorBits == inColorBits || pfd->cColorBits > pfdList[best-1].cColorBits) {
                     best = i;
@@ -151,7 +151,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
                 }
             }
 
-            // check alpha bits
+            // Check alpha bits
             if (pfdList[best-1].cAlphaBits != inAlphaBits) {
                 if (pfd->cAlphaBits == inAlphaBits || pfd->cAlphaBits > pfdList[best-1].cAlphaBits) {
                     best = i;
@@ -159,7 +159,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
                 }
             }
 
-            // check depth bits
+            // Check depth bits
             if (pfdList[best-1].cDepthBits != inDepthBits) {
                 if (pfd->cDepthBits == inDepthBits || pfd->cDepthBits > pfdList[best-1].cDepthBits) {
                     best = i;
@@ -167,7 +167,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
                 }
             }
 
-            // check stencil bits
+            // Check stencil bits
             if (pfdList[best-1].cStencilBits != inStencilBits) {
                 if (pfd->cStencilBits == inStencilBits || (pfd->cStencilBits > inStencilBits && inStencilBits > 0)) {
                     best = i;
@@ -176,7 +176,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
             }
         }
 
-        // best PFD choosed !!
+        // Best PFD choosed !!
         if (!(best = ::ChoosePixelFormat(hDC, &pfdList[best-1]))) {
             BE_FATALERROR("ChoosePixelFormat: failed");
         }

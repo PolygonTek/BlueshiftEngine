@@ -38,6 +38,7 @@ RHI::Handle OpenGLRHI::CreateQuery(QueryType queryType) {
 
 void OpenGLRHI::DestroyQuery(Handle queryHandle) {
     GLQuery *query = queryList[queryHandle];
+
     gglDeleteQueries(1, &query->id);
 
     delete query;
@@ -70,6 +71,7 @@ void OpenGLRHI::QueryTimestamp(Handle queryHandle) {
 
 bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
+
     GLuint available;
     gglGetQueryObjectuiv(query->id, GL_QUERY_RESULT_AVAILABLE, &available);
     return available ? true : false;
@@ -77,6 +79,7 @@ bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
 
 unsigned int OpenGLRHI::QueryResult(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
+
     GLuint samples;
     gglGetQueryObjectuiv(query->id, GL_QUERY_RESULT, &samples);
     return samples;

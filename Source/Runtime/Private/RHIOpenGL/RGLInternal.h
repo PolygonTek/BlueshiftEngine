@@ -118,8 +118,8 @@ struct GLContext {
 #ifdef USE_DESKTOP_EGL
     EGLDisplay          eglDisplay;
     EGLConfig           eglConfig;
-    EGLSurface          eglSurface;
     EGLContext          eglContext;
+    EGLSurface          eglSurface;
 #endif
 #elif defined(__XAMARIN__)
     EGLUtil *           rootView;
