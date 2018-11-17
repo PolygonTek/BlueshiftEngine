@@ -39,12 +39,12 @@ struct ThreadStartupData {
 static void *ThreadStartup(ThreadStartupData *parg) {
     ThreadStartupData arg = *parg; 
     delete parg;
-    parg = NULL;
+    parg = nullptr;
 
     SetAffinity(arg.affinity);
     arg.startProc(arg.param);
 
-    return NULL;
+    return nullptr;
 }
 
 uint32_t PlatformAndroidThread::GetCurrentThreadId() {
@@ -85,7 +85,7 @@ void PlatformAndroidThread::SetAffinity(int affinity) {
 }
 
 void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
-    if (pthread_join(*androidThread->thread, NULL) != 0) {
+    if (pthread_join(*androidThread->thread, nullptr) != 0) {
         BE_FATALERROR("pthread_join");
     }
     delete androidThread->thread;
@@ -94,7 +94,7 @@ void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
 
 void PlatformAndroidThread::WaitAll(int numThreads, PlatformAndroidThread *androidThreads[]) {
     for (int i = 0; i < numThreads; i++) {
-        if (pthread_join(*androidThreads[i]->thread, NULL) != 0) {
+        if (pthread_join(*androidThreads[i]->thread, nullptr) != 0) {
             BE_FATALERROR("pthread_join");
         }
 
@@ -135,7 +135,7 @@ void PlatformAndroidMutex::Unlock(const PlatformAndroidMutex *androidMutex) {
 PlatformAndroidCondition *PlatformAndroidCondition::Create() {
     PlatformAndroidCondition *androidCondition = new PlatformAndroidCondition;
     androidCondition->cond = new pthread_cond_t;
-    pthread_cond_init(androidCondition->cond, NULL);
+    pthread_cond_init(androidCondition->cond, nullptr);
     return androidCondition;
 }
 
@@ -153,7 +153,7 @@ struct timespec *MillisecondsFromNow(struct timespec *time, int millisecs) {
     const int64_t NANOSEC_PER_SEC = 1000000000;
 
     struct timeval tvstruct;
-    gettimeofday(&tvstruct, NULL);
+    gettimeofday(&tvstruct, nullptr);
 
     int64_t secs = tvstruct.tv_sec;
     int64_t nanosecs = ((int64_t)(millisecs + tvstruct.tv_usec * 1000)) * NANOSEC_PER_MILLISEC;

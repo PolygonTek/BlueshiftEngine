@@ -140,7 +140,7 @@ void Application::LoadResources() {
 
     renderTargetTexture = BE1::rhi.CreateTexture(BE1::RHI::Texture2D);
     BE1::Image rtImage;
-    rtImage.InitFromMemory(200, 200, 1, 1, 1, BE1::Image::RGBA_8_8_8_8, NULL, 0);
+    rtImage.InitFromMemory(200, 200, 1, 1, 1, BE1::Image::RGBA_8_8_8_8, nullptr, 0);
 
     BE1::rhi.BindTexture(renderTargetTexture);
     BE1::rhi.SetTextureImage(BE1::RHI::Texture2D, &rtImage, BE1::Image::RGBA_8_8_8_8, false, false);

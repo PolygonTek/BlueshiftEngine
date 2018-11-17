@@ -356,7 +356,7 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     }
     
     delete ctx;
-    contextList[ctxHandle] = NULL;
+    contextList[ctxHandle] = nullptr;
 }
 
 void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle) {
