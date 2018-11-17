@@ -142,6 +142,8 @@ public:
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
     static bool             SupportsTimestampQueries() { return supportsTimestampQueries; }
 
+    static void             QueryTimestampCounter(GLuint queryId);
+
     static void             PolygonMode(GLenum face, GLenum mode) { }
     static void             ClearDepth(GLdouble depth) { gglClearDepthf(depth); }
     static void             DepthRange(GLdouble znear, GLdouble zfar) { gglDepthRangef(znear, zfar); }

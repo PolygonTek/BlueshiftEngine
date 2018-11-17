@@ -61,6 +61,10 @@ void OpenGLES3::Init() {
     BE_LOG("Fragment shader highp int precision: %d\n", shaderFloatPrecisionHigh);
 }
 
+void OpenGLES3::QueryTimestampCounter(GLuint queryId) {
+    gglQueryCounterEXT(queryId, GL_TIMESTAMP_EXT);
+}
+
 void OpenGLES3::DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {
 #ifdef GL_EXT_draw_elements_base_vertex
     if (gglext._GL_EXT_draw_elements_base_vertex) {
