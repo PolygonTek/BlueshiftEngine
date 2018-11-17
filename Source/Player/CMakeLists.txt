@@ -12,60 +12,91 @@ set(BS_USE_ADMOB FALSE CACHE BOOL "BS_USE_ADMOB variable defaulting")
 
 project(BlueshiftPlayer)
 
-set(ALL_FILES
+set(COMMON_SOURCE_FILES
     Precompiled.h
     Precompiled.cpp
     Application.h
     Application.cpp)
 
-if (ANDROID)
-    list(APPEND ALL_FILES
-        android_native_app_glue.h
-        android_native_app_glue.c
-        AndroidMain.cpp)
+set(WINDOWS_SOURCE_FILES
+    WinMain.cpp
+    WinResource.h
+    Manifest.xml
+    WinRes/player.rc
+    WinRes/player.ico)
 
-    if (BS_USE_ANALYTICS)
-        list(APPEND ALL_FILES
-            AndroidAnalytics.h
-            AndroidAnalytics.cpp)
-    endif ()
+set(MACOS_SOURCE_FILES
+    macOSMain.mm
+    macOSMainMenu.xib)
 
-    if (BS_USE_ADMOB)
-        list(APPEND ALL_FILES
-            AndroidAdMob.h
-            AndroidAdMob.cpp)
-    endif ()
-elseif (APPLE)
-    if (IOS)
-        list(APPEND ALL_FILES
-            iOSMain.mm
-            iOSLaunchScreen.xib
-            Assets.xcassets)
+set(ANDROID_SOURCE_FILES
+    android_native_app_glue.h
+    android_native_app_glue.c
+    AndroidMain.cpp
+    AndroidAnalytics.h
+    AndroidAnalytics.cpp
+    AndroidAdMob.h
+    AndroidAdMob.cpp)
 
-        if (BS_USE_ANALYTICS)
-            list(APPEND ALL_FILES
-                iOSAnalytics.h
-                iOSAnalytics.mm)
-        endif ()
+set(IOS_SOURCE_FILES
+    iOSMain.mm
+    iOSLaunchScreen.xib
+    Assets.xcassets
+    iOSAnalytics.h
+    iOSAnalytics.mm
+    iOSAdMob.h
+    iOSAdMob.mm)
 
-        if (BS_USE_ADMOB)
-            list(APPEND ALL_FILES 
-                iOSAdMob.h
-                iOSAdMob.mm)
-        endif ()
-    else ()
-        list(APPEND ALL_FILES
-            macOSMain.mm
-            macOSMainMenu.xib)
-    endif ()
-elseif (WIN32)
-    list(APPEND ALL_FILES
-        WinMain.cpp
-        WinResource.h
-        Manifest.xml
-        WinRes/player.rc
-        WinRes/player.ico)
+if (NOT PLATFORM_WINDOWS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${WINDOWS_SOURCE_FILES})
 endif ()
+
+if (NOT PLATFORM_MACOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${MACOS_SOURCE_FILES})
+endif ()
+
+if (NOT PLATFORM_ANDROID)
+    list(APPEND COMPILING_DISABLED_SOURCES ${ANDROID_SOURCE_FILES})
+endif ()
+
+if (NOT PLATFORM_IOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${IOS_SOURCE_FILES})
+endif ()
+
+set_source_files_properties(${COMPILING_DISABLED_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+
+if (PLATFORM_WINDOWS)
+    set_source_files_properties(${WINDOWS_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+elseif (PLATFORM_MACOS)
+    set_source_files_properties(${MACOS_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+elseif (PLATFORM_ANDROID)
+    set_source_files_properties(${ANDROID_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+
+    if (NOT BS_USE_ANALYTICS)
+        set_source_files_properties(AndroidAnalytics.h AndroidAnalytics.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
+    endif ()
+
+    if (NOT BS_USE_ADMOB)
+        set_source_files_properties(AndroidAdMob.h AndroidAdMob.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
+    endif ()
+elseif (PLATFORM_IOS)
+    set_source_files_properties(${IOS_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+
+    if (NOT BS_USE_ANALYTICS)
+        set_source_files_properties(iOSAnalytics.h iOSAnalytics.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
+    endif ()
+
+    if (NOT BS_USE_ADMOB)
+        set_source_files_properties(iOSAdMob.h iOSAdMob.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
+    endif ()
+endif ()
+
+set(ALL_FILES
+    ${COMMON_SOURCE_FILES}
+    ${WINDOWS_SOURCE_FILES}
+    ${MACOS_SOURCE_FILES}
+    ${ANDROID_SOURCE_FILES}
+    ${IOS_SOURCE_FILES})
 
 auto_source_group(${ALL_FILES})
 

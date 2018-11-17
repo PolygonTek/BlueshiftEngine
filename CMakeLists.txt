@@ -39,6 +39,19 @@ project(${ROOT_PROJECT_NAME})
 
 cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
+# Check platform
+if (ANDROID)
+    set(PLATFORM_ANDROID TRUE)
+elseif (WIN32)
+    set(PLATFORM_WINDOWS TRUE)
+elseif (APPLE AND IOS)
+    set(PLATFORM_IOS TRUE)
+elseif (APPLE AND ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(PLATFORM_MACOS TRUE)
+elseif (UNIX)
+    set(PLATFORM_LINUX TRUE)
+endif ()
+
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ENGINE_64BIT TRUE)
 endif ()
