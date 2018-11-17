@@ -19,6 +19,7 @@
 #include "Core/JointPose.h"
 #include "Core/Heap.h"
 #include "Platform/PlatformTime.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -275,6 +276,8 @@ void RenderWorld::FinishMapLoading() {
 }
 
 void RenderWorld::RenderScene(const RenderView *renderView) {
+    BE_PROFILE_CPU_SCOPE("RenderWorld::RenderScene");
+
     if (renderView->state.renderRect.w <= 0.0f || renderView->state.renderRect.h <= 0.0f) {
         return;
     }
@@ -296,7 +299,9 @@ void RenderWorld::RenderScene(const RenderView *renderView) {
     RenderCamera(currentView);
 }
 
-void RenderWorld::EmitGuiFullScreen(GuiMesh &guiMesh) {
+void RenderWorld::RenderGUI(GuiMesh &guiMesh) {
+    BE_PROFILE_CPU_SCOPE("RenderWorld::RenderGUI");
+
     if (guiMesh.NumSurfaces() == 0) {
         return;
     }

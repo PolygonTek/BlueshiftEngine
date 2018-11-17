@@ -13,3 +13,5 @@
 // limitations under the License.
 
 #pragma once
+
+#define BE_PROFILE_CPU_SCOPE(name)

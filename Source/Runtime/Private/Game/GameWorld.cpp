@@ -30,6 +30,7 @@
 #include "Scripting/LuaVM.h"
 #include "StaticBatching/StaticBatch.h"
 #include "../StaticBatching/MeshCombiner.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -670,6 +671,8 @@ void GameWorld::SaveMap(const char *filename) {
 }
 
 void GameWorld::Update(int elapsedTime) {
+    BE_PROFILE_CPU_SCOPE("GameWorld::Update");
+
     if (isDebuggable) {
         luaVM.PollDebuggee();
     }

@@ -18,6 +18,7 @@
 #include "Physics/Collider.h"
 #include "ColliderInternal.h"
 #include "PhysicsInternal.h"
+#include "Profiler/Profiler.h"
 
 //#define DETERMINISTIC
 
@@ -221,7 +222,7 @@ void PhysicsWorld::SetFrameRate(int frameRate) {
 }
 
 void PhysicsWorld::StepSimulation(int frameTime) {
-    //startFrameMsec = PlatformTime::Milliseconds();
+    BE_PROFILE_CPU_SCOPE("PhysicsWorld::StepSimulation");
 
     if (!physics_enable.GetBool()) {
         return;
@@ -252,8 +253,6 @@ void PhysicsWorld::StepSimulation(int frameTime) {
     
     accumulatedTimeDelta = 0.0f;
 #endif
-
-    //fc.frameTime = PlatformTime::Milliseconds() - startFrameMsec;
 }
 
 const Vec3 PhysicsWorld::GetGravity() const {

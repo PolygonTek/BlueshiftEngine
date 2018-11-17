@@ -125,7 +125,7 @@ private:
     void                        RenderCamera(VisibleView *visView);
     void                        RenderSubCamera(VisibleObject *visObject, const DrawSurf *drawSurf, const Material *material);
 
-    void                        EmitGuiFullScreen(GuiMesh &guiMesh);
+    void                        RenderGUI(GuiMesh &guiMesh);
 
     Color4                      color;
     Color4                      clearColor;

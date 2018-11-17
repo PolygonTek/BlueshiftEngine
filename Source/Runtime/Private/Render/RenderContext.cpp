@@ -541,7 +541,7 @@ void RenderContext::EndFrame() {
     frameCount++;
 
     // Adds GUI commands
-    renderSystem.primaryWorld->EmitGuiFullScreen(guiMesh);
+    renderSystem.primaryWorld->RenderGUI(guiMesh);
 
     // Adds swap buffer command
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)renderSystem.GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
