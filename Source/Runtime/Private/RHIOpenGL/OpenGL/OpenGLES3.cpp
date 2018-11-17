@@ -21,6 +21,7 @@ const char *OpenGLES3::GLSL_VERSION_STRING = "300 es";
 
 bool OpenGLES3::supportsFrameBufferSRGB = false;
 bool OpenGLES3::supportsTextureBuffer = false;
+bool OpenGLES3::supportsTimestampQueries = false;
 
 int OpenGLES3::shaderFloatPrecisionLow = 0;
 int OpenGLES3::shaderFloatPrecisionMedium = 0;
@@ -38,6 +39,10 @@ void OpenGLES3::Init() {
     
 #ifdef GL_EXT_texture_buffer
     supportsTextureBuffer = gglext._GL_EXT_texture_buffer ? true : false;
+#endif
+
+#ifdef GL_EXT_disjoint_timer_query
+    supportsTimestampQueries = gglext._GL_EXT_disjoint_timer_query ? true : false;
 #endif
 
     int range[2];

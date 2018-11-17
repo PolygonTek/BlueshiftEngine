@@ -55,7 +55,7 @@ static void RB_FreeStencilStates() {
 
 static void RB_InitLightQueries() {
     /*for (int i = 0; i < MAX_LIGHTS; i++) {
-        backEnd.lightQueries[i].queryHandle = rhi.CreateQuery();
+        backEnd.lightQueries[i].queryHandle = rhi.CreateQuery(RHI::OcclusionQuery);
         backEnd.lightQueries[i].light = nullptr;
         backEnd.lightQueries[i].frameCount = 0;
         backEnd.lightQueries[i].resultSamples = 0;
@@ -306,7 +306,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) 
                 
         rhi.BeginQuery(lightQuery->queryHandle);
         RB_DrawLightVolume(light->def);
-        rhi.EndQuery();
+        rhi.EndQuery(lightQuery->queryHandle);
     }
 
     rhi.SetStencilState(NullStencilState, 0);

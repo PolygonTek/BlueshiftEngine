@@ -241,6 +241,7 @@ struct GLRenderTarget {
 };
 
 struct GLQuery {
+    RHI::QueryType      queryType;
     GLuint              id;
 };
 

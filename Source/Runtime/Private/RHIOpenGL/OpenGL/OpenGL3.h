@@ -51,8 +51,11 @@ public:
     static bool             SupportsDrawIndirect() { return supportsDrawIndirect; }
     static bool             SupportsMultiDrawIndirect() { return supportsMultiDrawIndirect; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
-    
+    static bool             SupportsTimestampQueries() { return supportsTimestampQueries; }
+
     static void APIENTRY    DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
+
+    static void             QueryTimestampCounter(GLuint queryId);
 
     static void             PolygonMode(GLenum face, GLenum mode) { gglPolygonMode(face, mode); }
     static void             ClearDepth(GLdouble depth) { gglClearDepth(depth); }
@@ -75,6 +78,7 @@ private:
     static bool             supportsInstancedArrays;
     static bool             supportsDrawIndirect;
     static bool             supportsMultiDrawIndirect;
+    static bool             supportsTimestampQueries;
 };
 
 BE_NAMESPACE_END

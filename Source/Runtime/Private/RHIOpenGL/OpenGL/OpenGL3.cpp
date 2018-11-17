@@ -23,6 +23,7 @@ const char *OpenGL3::GLSL_VERSION_STRING = "150";
 bool OpenGL3::supportsInstancedArrays = false;
 bool OpenGL3::supportsDrawIndirect = false;
 bool OpenGL3::supportsMultiDrawIndirect = false;
+bool OpenGL3::supportsTimestampQueries = false;
 
 void OpenGL3::Init() {
     OpenGLBase::Init();
@@ -33,6 +34,10 @@ void OpenGL3::Init() {
 
 #ifdef GL_ARB_multi_draw_indirect // 4.3
     supportsMultiDrawIndirect = gglext._GL_ARB_multi_draw_indirect ? true : false;
+#endif
+
+#ifdef GL_ARB_timer_query // 3.3
+    supportsTimestampQueries = gglext._GL_ARB_timer_query ? true : false;
 #endif
 }
 
@@ -136,6 +141,10 @@ void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *in
     }
     
     BE_WARNLOG("GL Debug: %s %s - %s\n", sourceStr, typeStr, message);
+}
+
+void OpenGL3::QueryTimestampCounter(GLuint queryId) {
+    gglQueryCounter(queryId, GL_TIMESTAMP);
 }
 
 void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format format) {

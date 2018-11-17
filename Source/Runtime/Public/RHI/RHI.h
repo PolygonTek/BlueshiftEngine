@@ -238,6 +238,12 @@ public:
         NearestBlitFilter,
         LinearBlitFilter
     };
+
+    enum QueryType {
+        UndefinedQuery,
+        OcclusionQuery,     // Result is the number of samples that are not culled
+        TimestampQuery      // Result is time in micro seconds (1/1000000 sec)
+    };
     
     enum ShaderType {
         VertexShader,

@@ -140,6 +140,7 @@ public:
     static bool             SupportsDrawIndirect() { return false; }
     static bool             SupportsMultiDrawIndirect() { return false; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
+    static bool             SupportsTimestampQueries() { return supportsTimestampQueries; }
 
     static void             PolygonMode(GLenum face, GLenum mode) { }
     static void             ClearDepth(GLdouble depth) { gglClearDepthf(depth); }
@@ -163,6 +164,7 @@ public:
 private:
     static bool             supportsFrameBufferSRGB;
     static bool             supportsTextureBuffer;
+    static bool             supportsTimestampQueries;
 
     static int              shaderFloatPrecisionLow;
     static int              shaderFloatPrecisionMedium;

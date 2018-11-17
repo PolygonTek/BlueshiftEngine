@@ -307,7 +307,8 @@ public:
     static bool             SupportsDebugOutput() { return supportsDebugOutput; }
     static bool             SupportsBufferStorage() { return supportsBufferStorage; }
     static bool             SupportsProgramBinary() { return false; }
-    
+    static bool             SupportsTimestampQueries() { return false; }
+
     static void             PolygonMode(GLenum face, GLenum mode) {}
     static void             ClearDepth(GLdouble depth) {}
     static void             DepthRange(GLdouble znear, GLdouble zfar) {}

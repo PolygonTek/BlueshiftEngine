@@ -18,11 +18,12 @@
 
 BE_NAMESPACE_BEGIN
 
-RHI::Handle OpenGLRHI::CreateQuery() {
+RHI::Handle OpenGLRHI::CreateQuery(QueryType queryType) {
     GLuint id;
     gglGenQueries(1, &id);
 
     GLQuery *query = new GLQuery;
+    query->queryType = queryType;
     query->id = id;
 
     int handle = queryList.FindNull();
@@ -44,12 +45,27 @@ void OpenGLRHI::DestroyQuery(Handle queryHandle) {
 }
 
 void OpenGLRHI::BeginQuery(Handle queryHandle) {
-    GLQuery *query = queryList[queryHandle];
-    gglBeginQuery(GL_ANY_SAMPLES_PASSED, query->id);
+    const GLQuery *query = queryList[queryHandle];
+
+    if (query->queryType == RHI::OcclusionQuery) {
+        gglBeginQuery(GL_ANY_SAMPLES_PASSED, query->id);
+    }
 }
 
-void OpenGLRHI::EndQuery() {
-    gglEndQuery(GL_ANY_SAMPLES_PASSED);
+void OpenGLRHI::EndQuery(Handle queryHandle) {
+    const GLQuery *query = queryList[queryHandle];
+
+    if (query->queryType == RHI::OcclusionQuery) {
+        gglEndQuery(GL_ANY_SAMPLES_PASSED);
+    }
+}
+
+void OpenGLRHI::QueryTimestamp(Handle queryHandle) {
+    const GLQuery *query = queryList[queryHandle];
+
+    if (OpenGL::SupportsTimestampQueries() && query->queryType == RHI::TimestampQuery) {
+        OpenGL::QueryTimestampCounter(query->id);
+    }
 }
 
 bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {

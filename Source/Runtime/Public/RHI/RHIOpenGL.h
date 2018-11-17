@@ -258,10 +258,11 @@ public:
     void                    DrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset) const;
     void                    MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;
 
-    Handle                  CreateQuery();
+    Handle                  CreateQuery(QueryType queryType);
     void                    DestroyQuery(Handle queryHandle);
     void                    BeginQuery(Handle queryHandle);
-    void                    EndQuery();
+    void                    EndQuery(Handle queryHandle);
+    void                    QueryTimestamp(Handle queryHandle);
     bool                    QueryResultAvailable(Handle queryHandle) const;
     unsigned int            QueryResult(Handle queryHandle) const;
 
