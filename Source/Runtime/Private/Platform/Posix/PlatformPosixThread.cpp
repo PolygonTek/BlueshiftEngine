@@ -93,7 +93,7 @@ PlatformPosixThread *PlatformPosixThread::Create(threadFunc_t startProc, void *p
     return posixThread;
 }
 
-void PlatformPosixThread::Delete(PlatformPosixThread *posixThread) {
+void PlatformPosixThread::Destroy(PlatformPosixThread *posixThread) {
     assert(posixThread);
     pthread_cancel(*posixThread->thread);
     delete posixThread->thread;
@@ -133,7 +133,7 @@ PlatformPosixMutex *PlatformPosixMutex::Create() {
     return posixMutex;
 }
 
-void PlatformPosixMutex::Delete(PlatformPosixMutex *posixMutex) {
+void PlatformPosixMutex::Destroy(PlatformPosixMutex *posixMutex) {
     assert(posixMutex);
     pthread_mutex_destroy(posixMutex->mutex);
     delete posixMutex->mutex;
@@ -159,7 +159,7 @@ PlatformPosixCondition *PlatformPosixCondition::Create() {
     return posixCondition;
 }
 
-void PlatformPosixCondition::Delete(PlatformPosixCondition *posixCondition) {
+void PlatformPosixCondition::Destroy(PlatformPosixCondition *posixCondition) {
     assert(posixCondition);
     delete posixCondition->cond;
 }

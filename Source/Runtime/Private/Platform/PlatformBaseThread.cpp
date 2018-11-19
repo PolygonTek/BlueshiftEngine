@@ -26,8 +26,8 @@ PlatformBaseThread *PlatformBaseThread::Create(threadFunc_t startProc, void *par
     return nullptr;
 }
 
-void PlatformBaseThread::Delete(PlatformBaseThread *PlatformBaseThread) {
-    BE_FATALERROR("PlatformThread::Delete not implmeneted on this platform");
+void PlatformBaseThread::Destroy(PlatformBaseThread *PlatformBaseThread) {
+    BE_FATALERROR("PlatformThread::Destroy not implmeneted on this platform");
 }
 
 void PlatformBaseThread::SetAffinity(int affinity) {
@@ -47,8 +47,8 @@ PlatformBaseMutex *PlatformBaseMutex::Create() {
     return nullptr;
 }
 
-void PlatformBaseMutex::Delete(PlatformBaseMutex *PlatformBaseMutex) {
-    BE_FATALERROR("PlatformMutex::Delete not implmeneted on this platform");
+void PlatformBaseMutex::Destroy(PlatformBaseMutex *PlatformBaseMutex) {
+    BE_FATALERROR("PlatformMutex::Destroy not implmeneted on this platform");
 }
 
 void PlatformBaseMutex::Lock(const PlatformBaseMutex *PlatformBaseMutex) {
@@ -69,8 +69,8 @@ PlatformBaseCondition *PlatformBaseCondition::Create() {
     return nullptr;
 }
 
-void PlatformBaseCondition::Delete(PlatformBaseCondition *PlatformBaseCondition) {
-    BE_FATALERROR("PlatformCondition::Delete not implmeneted on this platform");
+void PlatformBaseCondition::Destroy(PlatformBaseCondition *PlatformBaseCondition) {
+    BE_FATALERROR("PlatformCondition::Destroy not implmeneted on this platform");
 }
 
 void PlatformBaseCondition::Wait(const PlatformBaseCondition *PlatformBaseCondition, const PlatformBaseMutex *PlatformBaseMutex) {

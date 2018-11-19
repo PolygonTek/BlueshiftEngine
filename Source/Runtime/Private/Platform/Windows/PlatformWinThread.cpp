@@ -83,7 +83,7 @@ PlatformWinThread *PlatformWinThread::Create(threadFunc_t startProc, void *param
     return thread;
 }
 
-void PlatformWinThread::Delete(PlatformWinThread *thread) {
+void PlatformWinThread::Destroy(PlatformWinThread *thread) {
     assert(thread);
     PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
     TerminateThread(winThread->threadHandle, 0);
@@ -125,7 +125,7 @@ PlatformWinMutex *PlatformWinMutex::Create() {
     return mutex;
 }
 
-void PlatformWinMutex::Delete(PlatformWinMutex *mutex) {
+void PlatformWinMutex::Destroy(PlatformWinMutex *mutex) {
     assert(0);
     DeleteCriticalSection(mutex->cs);
     delete mutex->cs;
@@ -151,7 +151,7 @@ PlatformWinCondition *PlatformWinCondition::Create() {
     return condition;
 }
 
-void PlatformWinCondition::Delete(PlatformWinCondition *condition) {
+void PlatformWinCondition::Destroy(PlatformWinCondition *condition) {
     assert(condition);
     delete condition->condVar;
     delete condition;

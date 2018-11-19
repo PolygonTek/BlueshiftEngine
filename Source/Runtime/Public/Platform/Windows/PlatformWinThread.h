@@ -21,7 +21,7 @@ public:
     static uint64_t             GetCurrentThreadId();
 
     static PlatformWinThread *  Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Delete(PlatformWinThread *thread);
+    static void                 Destroy(PlatformWinThread *thread);
 
     static void                 SetAffinity(int affinity);
 
@@ -37,7 +37,7 @@ class BE_API PlatformWinMutex : public PlatformBaseMutex {
 
 public:
     static PlatformWinMutex *   Create();
-    static void                 Delete(PlatformWinMutex *mutex);
+    static void                 Destroy(PlatformWinMutex *mutex);
 
     static void                 Lock(const PlatformWinMutex *mutex);
     static bool                 TryLock(const PlatformWinMutex *mutex);
@@ -50,7 +50,7 @@ private:
 class BE_API PlatformWinCondition : public PlatformBaseCondition {
 public:
     static PlatformWinCondition *Create();
-    static void                 Delete(PlatformWinCondition *condition);
+    static void                 Destroy(PlatformWinCondition *condition);
     
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex);

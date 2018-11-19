@@ -23,7 +23,7 @@ public:
     static uint64_t             GetCurrentThreadId();
 
     static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Delete(PlatformBaseThread *thread);
+    static void                 Destroy(PlatformBaseThread *thread);
 
     static void                 SetAffinity(int affinity);
 
@@ -34,7 +34,7 @@ public:
 class BE_API PlatformBaseMutex {
 public:
     static PlatformBaseMutex *  Create();
-    static void                 Delete(PlatformBaseMutex *mutex);
+    static void                 Destroy(PlatformBaseMutex *mutex);
     
     static void                 Lock(const PlatformBaseMutex *mutex);
     static bool                 TryLock(const PlatformBaseMutex *mutex);
@@ -44,7 +44,7 @@ public:
 class BE_API PlatformBaseCondition {
 public:
     static PlatformBaseCondition *Create();
-    static void                 Delete(PlatformBaseCondition *condition);
+    static void                 Destroy(PlatformBaseCondition *condition);
     
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex);

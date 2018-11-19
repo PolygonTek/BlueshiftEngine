@@ -73,7 +73,7 @@ PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, voi
     return androidThread;
 }
 
-void PlatformAndroidThread::Delete(PlatformAndroidThread *androidThread) {
+void PlatformAndroidThread::Destroy(PlatformAndroidThread *androidThread) {
     assert(androidThread);
     //pthread_cancel(*androidThread->thread);
     delete androidThread->thread;
@@ -113,7 +113,7 @@ PlatformAndroidMutex *PlatformAndroidMutex::Create() {
     return androidMutex;
 }
 
-void PlatformAndroidMutex::Delete(PlatformAndroidMutex *androidMutex) {
+void PlatformAndroidMutex::Destroy(PlatformAndroidMutex *androidMutex) {
     assert(androidMutex);
     pthread_mutex_destroy(androidMutex->mutex);
     delete androidMutex->mutex;
@@ -139,7 +139,7 @@ PlatformAndroidCondition *PlatformAndroidCondition::Create() {
     return androidCondition;
 }
 
-void PlatformAndroidCondition::Delete(PlatformAndroidCondition *androidCondition) {
+void PlatformAndroidCondition::Destroy(PlatformAndroidCondition *androidCondition) {
     assert(androidCondition);
     delete androidCondition->cond;
 }

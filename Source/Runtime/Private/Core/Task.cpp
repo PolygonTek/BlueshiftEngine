@@ -59,11 +59,11 @@ TaskScheduler::~TaskScheduler() {
         PlatformThread::Wait(threads[i]);
     }
 
-    PlatformCondition::Delete(taskCondition);
-    PlatformMutex::Delete(taskMutex);
+    PlatformCondition::Destroy(taskCondition);
+    PlatformMutex::Destroy(taskMutex);
 
-    PlatformCondition::Delete(finishCondition);
-    PlatformMutex::Delete(finishMutex);
+    PlatformCondition::Destroy(finishCondition);
+    PlatformMutex::Destroy(finishMutex);
 }
 
 void TaskScheduler::LockTask() {
