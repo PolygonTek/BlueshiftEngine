@@ -276,7 +276,7 @@ void RenderWorld::FinishMapLoading() {
 }
 
 void RenderWorld::RenderScene(const RenderView *renderView) {
-    BE_PROFILE_CPU_SCOPE("RenderWorld::RenderScene");
+    BE_PROFILE_CPU_SCOPE("RenderWorld::RenderScene", Color3::orange);
 
     if (renderView->state.renderRect.w <= 0.0f || renderView->state.renderRect.h <= 0.0f) {
         return;
@@ -300,7 +300,7 @@ void RenderWorld::RenderScene(const RenderView *renderView) {
 }
 
 void RenderWorld::RenderGUI(GuiMesh &guiMesh) {
-    BE_PROFILE_CPU_SCOPE("RenderWorld::RenderGUI");
+    BE_PROFILE_CPU_SCOPE("RenderWorld::RenderGUI", Color3::yellow);
 
     if (guiMesh.NumSurfaces() == 0) {
         return;

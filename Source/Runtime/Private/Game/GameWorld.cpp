@@ -671,7 +671,7 @@ void GameWorld::SaveMap(const char *filename) {
 }
 
 void GameWorld::Update(int elapsedTime) {
-    BE_PROFILE_CPU_SCOPE("GameWorld::Update");
+    BE_PROFILE_CPU_SCOPE("GameWorld::Update", Color3::white);
 
     if (isDebuggable) {
         luaVM.PollDebuggee();

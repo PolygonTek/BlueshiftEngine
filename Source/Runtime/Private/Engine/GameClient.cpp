@@ -28,6 +28,7 @@
 #include "Engine/Console.h"
 #include "Asset/GuidMapper.h"
 #include "Platform/PlatformProcess.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -113,6 +114,8 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     currentFont = nullptr;
     
     SetFont(fontManager.defaultFont);
+
+    BE_PROFILE_INIT();
 }
 
 void GameClient::InitDefaultGuids() {
@@ -160,6 +163,8 @@ void GameClient::Shutdown() {
     cmdSystem.RemoveCommand("disconnect");
     cmdSystem.RemoveCommand("toggleConsole");
 
+    BE_PROFILE_SHUTDOWN();
+
     //materialManager.ReleaseMaterial(consoleMaterial);
 
     animControllerManager.Shutdown();
@@ -174,6 +179,8 @@ void GameClient::Shutdown() {
 }
 
 void GameClient::RunFrame() {
+    BE_PROFILE_SYNC_FRAME();
+
     frameCount++;
 
     time += common.frameTime;
