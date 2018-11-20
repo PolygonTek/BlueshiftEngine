@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
+#include <cpu-features.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -31,6 +32,11 @@ const char *PlatformAndroidSystem::UserAppDataDir() {
 
 const char *PlatformAndroidSystem::UserTempDir() {
     return PlatformBaseSystem::UserTempDir();
+}
+
+int32_t PlatformAndroidSystem::NumCPUCores() {
+    int32_t numCores = android_getCpuCount();
+    return numCores;
 }
 
 BE_NAMESPACE_END

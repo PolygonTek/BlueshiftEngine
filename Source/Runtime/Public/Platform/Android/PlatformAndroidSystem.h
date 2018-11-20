@@ -22,6 +22,8 @@ public:
     static const char *     UserDocumentDir();
     static const char *     UserAppDataDir();
     static const char *     UserTempDir();
+
+    static int32_t          NumCPUCores();
 };
 
 typedef PlatformAndroidSystem   PlatformSystem;

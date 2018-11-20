@@ -64,8 +64,9 @@ PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, voi
     startup->param = param;
     startup->affinity = affinity;
 
-    if (pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup) != 0) {
-        BE_FATALERROR("pthread_create");
+    int err = pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup);
+    if (err != 0) {
+        BE_FATALERROR("Failed to create pthread - %s", strerror(err));
     }
     
     PlatformAndroidThread *androidThread = new PlatformAndroidThread;
@@ -85,8 +86,9 @@ void PlatformAndroidThread::SetAffinity(int affinity) {
 }
 
 void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
-    if (pthread_join(*androidThread->thread, nullptr) != 0) {
-        BE_FATALERROR("pthread_join");
+    int err = pthread_join(*androidThread->thread, nullptr);
+    if (err != 0) {
+        BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
     }
     delete androidThread->thread;
     delete androidThread;
@@ -94,8 +96,9 @@ void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
 
 void PlatformAndroidThread::WaitAll(int numThreads, PlatformAndroidThread *androidThreads[]) {
     for (int i = 0; i < numThreads; i++) {
-        if (pthread_join(*androidThreads[i]->thread, nullptr) != 0) {
-            BE_FATALERROR("pthread_join");
+        int err = pthread_join(*androidThreads[i]->thread, nullptr);
+        if (err != 0) {
+            BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
         }
 
         delete androidThreads[i]->thread;

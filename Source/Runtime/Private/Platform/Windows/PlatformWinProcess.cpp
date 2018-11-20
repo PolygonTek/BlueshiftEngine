@@ -73,22 +73,6 @@ const char *PlatformWinProcess::UserName() {
     return userName;
 }
 
-// return the number of logical threads of the system
-int PlatformWinProcess::NumberOfLogicalProcessors() {
-#if (_WIN32_WINNT >= 0x0601)
-    int groups = GetActiveProcessorGroupCount();
-    int totalProcessors = 0;
-    for (int i = 0; i < groups; i++) {
-        totalProcessors += GetActiveProcessorCount(i);
-    }
-    return totalProcessors;
-#else
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo(&sysinfo);
-    return sysinfo.dwNumberOfProcessors;
-#endif
-}
-
 Str PlatformWinProcess::GetLastErrorText() {
     TCHAR *errorText;
     DWORD errCode = GetLastError();

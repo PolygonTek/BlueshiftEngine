@@ -84,8 +84,9 @@ PlatformPosixThread *PlatformPosixThread::Create(threadFunc_t startProc, void *p
     startup->param = param;
     startup->affinity = affinity;
 
-    if (pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup) != 0) {
-        BE_FATALERROR("pthread_create");
+    int err = pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup);
+    if (err != 0) {
+        BE_FATALERROR("Failed to create pthread - %s", strerror(err));
     }
     
     PlatformPosixThread *posixThread = new PlatformPosixThread;
@@ -105,8 +106,9 @@ void PlatformPosixThread::SetAffinity(int affinity) {
 }
 
 void PlatformPosixThread::Wait(PlatformPosixThread *posixThread) {
-    if (pthread_join(*posixThread->thread, nullptr) != 0) {
-        BE_FATALERROR("pthread_join");
+    int err = pthread_join(*posixThread->thread, nullptr);
+    if (err != 0) {
+        BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
     }
     delete posixThread->thread;
     delete posixThread;
@@ -114,8 +116,9 @@ void PlatformPosixThread::Wait(PlatformPosixThread *posixThread) {
 
 void PlatformPosixThread::WaitAll(int numThreads, PlatformPosixThread *posixThreads[]) {
     for (int i = 0; i < numThreads; i++) {
-        if (pthread_join(*posixThreads[i]->thread, nullptr) != 0) {
-            BE_FATALERROR("pthread_join");
+        int err = pthread_join(*posixThreads[i]->thread, nullptr);
+        if (err != 0) {
+            BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
         }
 
         delete posixThreads[i]->thread;

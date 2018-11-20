@@ -27,7 +27,6 @@ public:
     static const char *         ExecutableFileName();
     static const char *         ComputerName();
     static const char *         UserName();
-    static int                  NumberOfLogicalProcessors();
 
     static bool                 ExecuteProcess(const char *appPath, const char *args, const char *workingPath);
 

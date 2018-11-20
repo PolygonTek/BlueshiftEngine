@@ -56,7 +56,6 @@ public:
     static const char *         ExecutableFileName();
     static const char *         ComputerName();
     static const char *         UserName();
-    static int                  NumberOfLogicalProcessors();
 
     static Str                  GetLastErrorText();
 

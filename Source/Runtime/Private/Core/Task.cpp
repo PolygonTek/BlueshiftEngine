@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformProcess.h"
+#include "Platform/PlatformSystem.h"
 #include "Core/Task.h"
 
 BE_NAMESPACE_BEGIN
@@ -30,12 +30,10 @@ TaskScheduler::TaskScheduler(int numThreads) {
     finishMutex = PlatformMutex::Create();
     finishCondition = PlatformCondition::Create();
 
-#ifdef __WIN32__
     if (numThreads < 0) {
         // Get thread count as number of logical processors
-        numThreads = PlatformProcess::NumberOfLogicalProcessors();
+        numThreads = PlatformSystem::NumCPUCoresIncludingHyperthreads();
     }
-#endif
 
     for (int i = 0; i < numThreads; i++) {
         PlatformThread *thread = PlatformThread::Create(TaskScheduler_ThreadProc, (void *)this, 0);

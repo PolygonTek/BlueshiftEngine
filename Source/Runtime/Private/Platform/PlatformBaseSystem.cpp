@@ -40,4 +40,12 @@ const char *PlatformBaseSystem::UserTempDir() {
     return PlatformFile::ExecutablePath();
 }
 
+int32_t PlatformBaseSystem::NumCPUCores() {
+    return 1;
+}
+
+int32_t PlatformBaseSystem::NumCPUCoresIncludingHyperthreads() {
+    return PlatformSystem::NumCPUCores();
+}
+
 BE_NAMESPACE_END

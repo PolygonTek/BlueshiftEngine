@@ -20,35 +20,35 @@ BE_NAMESPACE_BEGIN
 
 // get the full path to the running executable
 const char *PlatformAppleProcess::ExecutableFileName() {
-	static char name[512] = "";
-	if (!name[0]) {
+    static char name[512] = "";
+    if (!name[0]) {
         NSString *nsExeName = [[[NSBundle mainBundle] executablePath] lastPathComponent];
         unsigned long l = [nsExeName length];
         memcpy(name, [nsExeName cStringUsingEncoding:NSUTF8StringEncoding], l);
         name[l] = '\0';
-	}
-	return name;
+    }
+    return name;
 }
 
 const char *PlatformAppleProcess::ComputerName() {
-	static char name[256] = "";
-	if (!name[0]) {
-		char cname[COUNT_OF(name)];
-		gethostname(cname, COUNT_OF(cname));
-		Str::Copynz(name, cname, COUNT_OF(name));
-	}
-	return name;
+    static char name[256] = "";
+    if (!name[0]) {
+        char cname[COUNT_OF(name)];
+        gethostname(cname, COUNT_OF(cname));
+        Str::Copynz(name, cname, COUNT_OF(name));
+    }
+    return name;
 }
 
 const char *PlatformAppleProcess::UserName() {
-	static char name[256] = "";
-	if (!name[0]) {
+    static char name[256] = "";
+    if (!name[0]) {
         NSString *nsUserName = NSUserName();
         unsigned long l = [nsUserName length];
         memcpy(name, [nsUserName cStringUsingEncoding:NSUTF8StringEncoding], l);
         name[l] = '\0';
-	}
-	return name;
+    }
+    return name;
 }
 
 BE_NAMESPACE_END

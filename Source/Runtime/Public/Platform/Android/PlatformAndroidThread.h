@@ -23,7 +23,7 @@ public:
     static uint64_t             GetCurrentThreadId();
 
     static PlatformAndroidThread *Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Delete(PlatformAndroidThread *thread);
+    static void                 Destroy(PlatformAndroidThread *thread);
     
     static void                 SetAffinity(int affinity);
     
@@ -39,7 +39,7 @@ class BE_API PlatformAndroidMutex : public PlatformBaseMutex {
     
 public:
     static PlatformAndroidMutex * Create();
-    static void                 Delete(PlatformAndroidMutex *mutex);
+    static void                 Destroy(PlatformAndroidMutex *mutex);
     
     static void                 Lock(const PlatformAndroidMutex *mutex);
     static bool                 TryLock(const PlatformAndroidMutex *mutex);
@@ -52,7 +52,7 @@ private:
 class BE_API PlatformAndroidCondition : public PlatformBaseCondition {
 public:
     static PlatformAndroidCondition *Create();
-    static void                 Delete(PlatformAndroidCondition *condition);
+    static void                 Destroy(PlatformAndroidCondition *condition);
     
     // release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex);

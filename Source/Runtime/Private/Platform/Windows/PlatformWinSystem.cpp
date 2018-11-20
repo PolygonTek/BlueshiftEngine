@@ -144,6 +144,16 @@ int32_t PlatformWinSystem::NumCPUCores() {
 }
 
 int32_t PlatformWinSystem::NumCPUCoresIncludingHyperthreads() {
+#if (_WIN32_WINNT >= 0x0601)
+    static int32_t numCores = 0;
+    if (numCores == 0) {
+        static int32_t numGroups = GetActiveProcessorGroupCount();
+        for (int32_t i = 0; i < numGroups; i++) {
+            numCores += GetActiveProcessorCount(i);
+        }
+    }
+    return numCores;
+#else
     static int32_t numCores = 0;
     if (numCores == 0) {
         // Get the number of logical processors, including hyperthreaded ones.
@@ -152,6 +162,7 @@ int32_t PlatformWinSystem::NumCPUCoresIncludingHyperthreads() {
         numCores = (int32_t)si.dwNumberOfProcessors;
     }
     return numCores;
+#endif
 }
 
 BE_NAMESPACE_END
