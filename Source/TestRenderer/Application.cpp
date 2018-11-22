@@ -225,8 +225,8 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     BE1::Mat4 modelMatrix = BE1::Rotation(BE1::Vec3(0, 0, 0), BE1::Vec3(0, 0, 1), t * 40.0f).ToMat4();
 
     BE1::Mat4 projMatrix;
-    projMatrix.SetOrtho(-displayMetrics.screenWidth * 0.5f, displayMetrics.screenWidth * 0.5f, -screenHeight * 0.5f, screenHeight * 0.5f, -1, 1);
-    
+    projMatrix.SetOrtho(-displayMetrics.screenWidth * 0.5f, displayMetrics.screenWidth * 0.5f, -displayMetrics.screenHeight * 0.5f, displayMetrics.screenHeight * 0.5f, -1, 1);
+
     modelViewProjMatrix = projMatrix * modelMatrix;
 
     BE1::rhi.SetStateBits(BE1::RHI::ColorWrite | BE1::RHI::AlphaWrite);

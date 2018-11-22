@@ -153,15 +153,16 @@ static void ToggleFullscreen(BE1::RHI::Handle ctx) {
 }
 
 static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
-    static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
-    float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
+    static float t0 = BE1::PlatformTime::Seconds();
+
+    float t = BE1::PlatformTime::Seconds() - t0;
 
     ::app.Draw(context, mainRenderTarget, t);
 }
 
 static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
-    static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
-    float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
+    static float t0 = BE1::PlatformTime::Seconds();
+    float t = BE1::PlatformTime::Seconds() - t0;
 
     t *= -1.0f;
 
