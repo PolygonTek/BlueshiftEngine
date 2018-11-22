@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "Application.h"
 #include <tchar.h>
@@ -35,17 +36,17 @@ LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, 
 LRESULT CALLBACK            SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void SystemLog(int logLevel, const char *text) {
-    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
     wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
-    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     OutputDebugString(wText);
 }
 
 static void SystemError(int errLevel, const char *text) {
-    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
     wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
-    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
     MessageBox(hwnd, wText, L"Error", MB_OK);

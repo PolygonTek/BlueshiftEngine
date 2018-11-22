@@ -28,10 +28,10 @@ struct Vertex3D {
 
 Application         app;
 
-static CVAR(r_colorBits, L"32", BE1::CVar::Integer | BE1::CVar::Archive, L"number of color bits");
-static CVAR(r_depthBits, L"24", BE1::CVar::Integer | BE1::CVar::Archive, L"number of depth bits");
-static CVAR(r_stencilBits, L"8", BE1::CVar::Integer | BE1::CVar::Archive, L"number of stencil bits");
-static CVAR(r_multiSamples, L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"number of antialiasing samples");
+static CVAR(r_colorBits, "32", BE1::CVar::Integer | BE1::CVar::Archive, "number of color bits");
+static CVAR(r_depthBits, "24", BE1::CVar::Integer | BE1::CVar::Archive, "number of depth bits");
+static CVAR(r_stencilBits, "8", BE1::CVar::Integer | BE1::CVar::Archive, "number of stencil bits");
+static CVAR(r_multiSamples, "0", BE1::CVar::Integer | BE1::CVar::Archive, "number of antialiasing samples");
 
 void Application::InitVertexFormats() {
     const BE1::RHI::VertexElement vertex2DElements[] = {
