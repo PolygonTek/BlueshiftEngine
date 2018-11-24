@@ -68,6 +68,9 @@
 #include "PlatformUtils/Android/AndroidGPUInfo.h"
 #endif
 
+// Utils
+#include "Core/ScopeLock.h"
+
 // Profiler
 #include "Profiler/Profiler.h"
 
