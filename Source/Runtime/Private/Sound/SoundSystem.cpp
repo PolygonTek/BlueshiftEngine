@@ -18,6 +18,7 @@
 #include "Core/Cmds.h"
 #include "Platform/PlatformTime.h"
 #include "Sound/SoundSystem.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -281,12 +282,14 @@ Sound *SoundSystem::GetSound(const char *hashName) {
 
 // TODO: SoundSystem::Update 함수를 별도 쓰레드로 바꿀것
 void SoundSystem::Update() {
-    LinkList<Sound> *node;
-    LinkList<Sound> *nextNode;
+    BE_PROFILE_CPU_SCOPE("SoundSystem::Update", Color3::violet);
 
     if (!initialized) {
         return;
     }
+
+    LinkList<Sound> *node;
+    LinkList<Sound> *nextNode;
 
     static float lastTime = PlatformTime::Milliseconds();
     int currentTime = PlatformTime::Milliseconds();

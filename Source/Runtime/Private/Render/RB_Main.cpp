@@ -17,6 +17,7 @@
 #include "RenderInternal.h"
 #include "Platform/PlatformTime.h"
 #include "RBackEnd.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -619,6 +620,8 @@ static void RB_RenderView() {
 
 // FIXME: subview 일 경우를 생각
 static void RB_DrawView() {
+    BE_PROFILE_CPU_SCOPE("RB_DrawView", Color3::red);
+
     if (backEnd.ctx->flags & RenderContext::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
 
@@ -683,6 +686,8 @@ static void RB_DrawView() {
 }
 
 static void RB_Draw2DView() {
+    BE_PROFILE_CPU_SCOPE("RB_Draw2DView", Color3::blue);
+
     if (!backEnd.numDrawSurfs) {
         return;
     }
@@ -1070,6 +1075,8 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
 }
 
 void RB_Execute(const void *data) {
+    BE_PROFILE_CPU_SCOPE("RB_Execute", Color3::green);
+
     int t1, t2;
 
     t1 = PlatformTime::Milliseconds();

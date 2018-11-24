@@ -25,7 +25,19 @@ Profiler profiler;
 static PlatformMutex *mapAddMutex;
 
 void Profiler::Init() {
+    freezeState = Unfrozen;
+
     frameCount = 0;
+    currentFrameDataIndex = 0;
+    readFameDataIndex = -1;
+
+    for (int i = 0; i < COUNT_OF(frameData); i++) {
+        auto &fd = frameData[i];
+
+        fd.time = InvalidTime;
+    }
+
+    cpuThreadInfoMap.Init(MaxCpuThreads, MaxCpuThreads, MaxCpuThreads);
 
     for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
         auto &marker = gpuThreadInfo.markers[i];
@@ -49,7 +61,59 @@ void Profiler::Shutdown() {
 }
 
 void Profiler::SyncFrame() {
+    if (freezeState == WatingForFreeze) {
+        freezeState = Frozen;
+    } else if (freezeState == WatingForUnfreeze) {
+        freezeState = Unfrozen;
+    }
+
+    if (IsFrozen()) {
+        return;
+    }
+
+    readFameDataIndex = (currentFrameDataIndex + 1) % COUNT_OF(frameData);
+
+    // readFrameDataIndex is valid only if frameData[readFrameDataIndex].time != InvalidTime
+    if (frameData[readFameDataIndex].time != InvalidTime) {
+        
+    }
+
+    currentFrameDataIndex = frameCount % COUNT_OF(frameData);
+
+    FrameData &currentFrame = frameData[currentFrameDataIndex];
+
+    currentFrame.frameCount = frameCount;
+    currentFrame.time = PlatformTime::Nanoseconds();
+
+    for (int i = 0; i < cpuThreadInfoMap.Count(); i++) {
+        CpuThreadInfo &ti = cpuThreadInfoMap.GetByIndex(i)->second;
+
+        ti.frameMarkerIndexes[currentFrameDataIndex] = ti.writeMarkerIndex;
+    }
+
+    gpuThreadInfo.frameMarkerIndexes[currentFrameDataIndex] = gpuThreadInfo.writeMarkerIndex;
+
     frameCount++;
+}
+
+bool Profiler::ToggleFreeze() {
+    if (freezeState == Unfrozen) {
+        freezeState = WatingForFreeze;
+        return true;
+    }
+    if (freezeState == Frozen) {
+        freezeState = WatingForUnfreeze;
+        return true;
+    }
+    return false;
+}
+
+int Profiler::CreateTag(const char *name, const Color3 &color) {
+    Tag tag;
+    Str::Copynz(tag.name, name, COUNT_OF(tag.name));
+    tag.color = color;
+
+    return tags.Append(tag);
 }
 
 Profiler::CpuThreadInfo &Profiler::GetCpuThreadInfo() {
@@ -64,7 +128,7 @@ Profiler::CpuThreadInfo &Profiler::GetCpuThreadInfo() {
 
     CpuThreadInfo cpuThreadInfo;
     cpuThreadInfo.threadId = tid;
-    cpuThreadInfo.writeMarkerIndex = 0;
+    cpuThreadInfo.frameMarkerIndexes[currentFrameDataIndex] = cpuThreadInfo.writeMarkerIndex;
 
     entry = cpuThreadInfoMap.Set(tid, cpuThreadInfo);
 
@@ -73,7 +137,11 @@ Profiler::CpuThreadInfo &Profiler::GetCpuThreadInfo() {
     return entry->second;
 }
 
-void Profiler::PushCpuMarker(const char *name, const Color3 &color) {
+void Profiler::PushCpuMarker(int tagIndex) {
+    if (IsFrozen()) {
+        return;
+    }
+
     CpuThreadInfo &ti = GetCpuThreadInfo();
     CpuMarker &marker = ti.markers[ti.writeMarkerIndex];
 
@@ -81,8 +149,7 @@ void Profiler::PushCpuMarker(const char *name, const Color3 &color) {
 
     ti.writeMarkerIndex = (ti.writeMarkerIndex + 1) % COUNT_OF(ti.markers);
 
-    Str::Copynz(marker.name, name, COUNT_OF(marker.name));
-    marker.color = color;
+    marker.tagIndex = tagIndex;
     marker.startTime = PlatformTime::Nanoseconds();
     marker.endTime = InvalidTime;
     marker.frameCount = frameCount;
@@ -90,6 +157,10 @@ void Profiler::PushCpuMarker(const char *name, const Color3 &color) {
 }
 
 void Profiler::PopCpuMarker() {
+    if (IsFrozen()) {
+        return;
+    }
+
     CpuThreadInfo &ti = GetCpuThreadInfo();
     assert(!ti.markerIndexStack.IsEmpty());
 
@@ -100,7 +171,11 @@ void Profiler::PopCpuMarker() {
     marker.endTime = PlatformTime::Nanoseconds();
 }
 
-void Profiler::PushGpuMarker(const char *name, const Color3 &color) {
+void Profiler::PushGpuMarker(int tagIndex) {
+    if (IsFrozen()) {
+        return;
+    }
+
     GpuThreadInfo &ti = gpuThreadInfo;
     GpuMarker &marker = ti.markers[ti.writeMarkerIndex];
 
@@ -108,14 +183,17 @@ void Profiler::PushGpuMarker(const char *name, const Color3 &color) {
 
     ti.writeMarkerIndex = (ti.writeMarkerIndex + 1) % COUNT_OF(ti.markers);
 
-    Str::Copynz(marker.name, name, COUNT_OF(marker.name));
-    marker.color = color;
+    marker.tagIndex = tagIndex;
     rhi.QueryTimestamp(marker.startQueryHandle);
     marker.frameCount = frameCount;
     marker.depth = ti.markerIndexStack.Count();
 }
 
 void Profiler::PopGpuMarker() {
+    if (IsFrozen()) {
+        return;
+    }
+
     GpuThreadInfo &ti = gpuThreadInfo;
     assert(!ti.markerIndexStack.IsEmpty());
 
