@@ -220,7 +220,7 @@ bool                Object::initialized = false;
 Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
-static PlatformAtomic instanceCounter(0);
+static PlatformAtomic<int32_t> instanceCounter(0);
 
 void Object::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnlyFlag),
@@ -248,7 +248,7 @@ bool Object::InitInstance(Guid guid) {
     this->guid = guid;
     this->instanceID = instanceCounter.GetValue();
 
-    instanceCounter++;
+    instanceCounter += 1;
 
     Object *object = this;
     instanceHash.Set(guid, object);

@@ -88,7 +88,7 @@ void TaskScheduler::AddTask(taskFunction_t function, void *data) {
     }
     taskList.push(task);
 
-    numActiveTasks++;
+    numActiveTasks += 1;
 
     // Unlock for task addition
     PlatformMutex::Unlock(taskMutex);
@@ -160,7 +160,7 @@ static void TaskThreadProc(void *param) {
         task.function(task.data);
 
         // Decrease active task count after finishing task function.
-        atomic_add(&ts->numActiveTasks, -1);
+        ts->numActiveTasks -= 1;
 
         // Wake finish condition variable when there is no active tasks.
         if (ts->numActiveTasks == 0) {

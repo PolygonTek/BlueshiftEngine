@@ -97,10 +97,10 @@ private:
         void *              mappedIndexBase;
         void *              mappedUniformBase;
         void *              mappedTexelBase;
-        PlatformAtomic      vertexMemUsed;
-        PlatformAtomic      indexMemUsed;
-        PlatformAtomic      uniformMemUsed;
-        PlatformAtomic      texelMemUsed;
+        PlatformAtomic<int> vertexMemUsed;
+        PlatformAtomic<int> indexMemUsed;
+        PlatformAtomic<int> uniformMemUsed;
+        PlatformAtomic<int> texelMemUsed;
         int                 allocations;
     };
 

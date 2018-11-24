@@ -98,25 +98,21 @@ BE_FORCE_INLINE size_t __btr(size_t v, size_t i) {
 
 #if defined(__X86_64__) || defined(__ARM64__)
 
-typedef int64_t atomic_t;
-
-BE_FORCE_INLINE int64_t atomic_add(volatile int64_t *m, const int64_t v) {
-    return _InterlockedExchangeAdd64(m, v);
+BE_FORCE_INLINE int64_t atomic_add(volatile int64_t *p, int64_t v) {
+    return _InterlockedExchangeAdd64(p, v);
 }
 
 BE_FORCE_INLINE int64_t atomic_xchg(volatile int64_t *p, int64_t v) {
-    return _InterlockedExchange64((volatile long long *)p, v);
+    return _InterlockedExchange64(p, v);
 }
 
-BE_FORCE_INLINE int64_t atomic_cmpxchg(volatile int64_t *m, const int64_t v, const int64_t c) {
-    return _InterlockedCompareExchange64(m, v, c);
+BE_FORCE_INLINE int64_t atomic_cmpxchg(volatile int64_t *p, int64_t v, int64_t c) {
+    return _InterlockedCompareExchange64(p, v, c);
 }
 
-#else // !defined(__X86_64__) && !defined(__ARM64__)
+#endif // !defined(__X86_64__) && !defined(__ARM64__)
 
-typedef int32_t atomic_t;
-
-BE_FORCE_INLINE int32_t atomic_add(volatile int32_t *p, const int32_t v) {
+BE_FORCE_INLINE int32_t atomic_add(volatile int32_t *p, int32_t v) {
     return _InterlockedExchangeAdd((volatile long *)p, v);
 }
 
@@ -124,11 +120,9 @@ BE_FORCE_INLINE int32_t atomic_xchg(volatile int32_t *p, int32_t v) {
     return _InterlockedExchange((volatile long *)p, v);
 }
 
-BE_FORCE_INLINE int32_t atomic_cmpxchg(volatile int32_t *p, const int32_t v, const int32_t c) {
+BE_FORCE_INLINE int32_t atomic_cmpxchg(volatile int32_t *p, int32_t v, int32_t c) {
     return _InterlockedCompareExchange((volatile long *)p, v, c);
 }
-
-#endif // !defined(__X86_64__) && !defined(__ARM64__)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Unix Platform
@@ -224,8 +218,6 @@ BE_FORCE_INLINE size_t __btr(size_t v, size_t i) {
 
 #if defined(__X86_64__) || defined(__ARM64__)
 
-typedef int64_t atomic_t;
-
 BE_FORCE_INLINE int64_t atomic_add(int64_t volatile *value, int64_t input) {
     return __sync_fetch_and_add(value, input);
 }
@@ -234,13 +226,11 @@ BE_FORCE_INLINE int64_t atomic_xchg(int64_t volatile *value, int64_t input) {
     return __sync_lock_test_and_set(value, input);
 }
 
-BE_FORCE_INLINE int64_t atomic_cmpxchg(int64_t volatile *value, const int64_t input, int64_t comparand) {
+BE_FORCE_INLINE int64_t atomic_cmpxchg(int64_t volatile *value, int64_t input, int64_t comparand) {
     return __sync_val_compare_and_swap(value, comparand, input);
 }
 
-#else // !defined(__X86_64__) && !defined(__ARM64__)
-
-typedef int32_t atomic_t;
+#endif // !defined(__X86_64__) && !defined(__ARM64__)
 
 BE_FORCE_INLINE int32_t atomic_add(int32_t volatile *value, int32_t input) {
     return __sync_fetch_and_add(value, input);
@@ -250,43 +240,15 @@ BE_FORCE_INLINE int32_t atomic_xchg(int32_t volatile *value, int32_t input) {
     return __sync_lock_test_and_set(value, input);
 }
 
-BE_FORCE_INLINE int32_t atomic_cmpxchg(int32_t volatile *value, const int32_t input, int32_t comparand) {
+BE_FORCE_INLINE int32_t atomic_cmpxchg(int32_t volatile *value, int32_t input, int32_t comparand) {
     return __sync_val_compare_and_swap(value, comparand, input);
 }
-
-#endif // !defined(__X86_64__) && !defined(__ARM64__)
 
 #endif // __UNIX__
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
-
-#if defined(__X86_64__) || defined(__ARM64__)
-
-template <typename T>
-BE_FORCE_INLINE T *atomic_xchg(T *volatile *value, const T *input) {
-    return (T *)atomic_xchg((int64_t *)value, (int64_t)input); 
-}
-
-template <typename T>
-BE_FORCE_INLINE T *atomic_cmpxchg(T *volatile *value, const T *input, T *comparand) {  
-    return (T *)atomic_cmpxchg((int64_t *)value, (int64_t)input, (int64_t)comparand); 
-}
-
-#else // !defined(__X86_64__) && !defined(__ARM64__)
-
-template <typename T>
-BE_FORCE_INLINE T *atomic_xchg(T *volatile *value, const T *input) {  
-    return (T *)atomic_xchg((int32_t *)value, (int32_t)input); 
-}
-
-template <typename T>
-BE_FORCE_INLINE T *atomic_cmpxchg(T *volatile *value, const T *input, T *comparand) {  
-    return (T *)atomic_cmpxchg((int32_t *)value, (int32_t)input, (int32_t)comparand); 
-}
-
-#endif // !defined(__X86_64__) && !defined(__ARM64__)
 
 #if defined(__X86__)
 

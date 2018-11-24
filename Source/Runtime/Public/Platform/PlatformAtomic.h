@@ -18,36 +18,33 @@
 
 BE_NAMESPACE_BEGIN
 
+template <typename T>
 class BE_API PlatformAtomic {
-protected:
+public:
     PlatformAtomic(const PlatformAtomic &) = delete;
     PlatformAtomic &operator=(const PlatformAtomic &) = delete;
 
-public:
-    BE_FORCE_INLINE PlatformAtomic() : data(0) {}
-    BE_FORCE_INLINE PlatformAtomic(const atomic_t data) : data(data) {}
+    BE_FORCE_INLINE PlatformAtomic() : value(0) {}
+    BE_FORCE_INLINE PlatformAtomic(const T v) : value(v) {}
 
-    BE_FORCE_INLINE PlatformAtomic &operator=(const atomic_t input) { data = input; return *this; }
-    BE_FORCE_INLINE                 operator atomic_t() const { return data; }
+    BE_FORCE_INLINE                 operator T() const { return value; }
 
-    BE_FORCE_INLINE int             GetValue() const { return (int)data; }
-    BE_FORCE_INLINE void            SetValue(int value) { data = (atomic_t)value; }
+    BE_FORCE_INLINE PlatformAtomic &operator=(const T v) { SetValue(v); return *this; }
 
-    BE_FORCE_INLINE atomic_t        Add(const atomic_t input) { return atomic_add(&data, input) + input; }
-    BE_FORCE_INLINE atomic_t        Sub(const atomic_t input) { return atomic_add(&data, -input) - input; }
+    BE_FORCE_INLINE T               GetValue() const { return value; }
+    BE_FORCE_INLINE T               SetValue(int v) { return atomic_xchg(&value, v); }
 
-    BE_FORCE_INLINE friend atomic_t operator+=(PlatformAtomic &value, const atomic_t input) { return atomic_add(&value.data, input) + input; }
-    BE_FORCE_INLINE friend atomic_t operator++(PlatformAtomic &value) { return atomic_add(&value.data, 1) + 1; }
-    BE_FORCE_INLINE friend atomic_t operator--(PlatformAtomic &value) { return atomic_add(&value.data, -1) - 1; }
-    BE_FORCE_INLINE friend atomic_t operator++(PlatformAtomic &value, int) { return atomic_add(&value.data, 1); }
-    BE_FORCE_INLINE friend atomic_t operator--(PlatformAtomic &value, int) { return atomic_add(&value.data, -1); }
+                                    /// Adds a value from this counter and returns old value.
+    BE_FORCE_INLINE T               Add(const T v) { return atomic_add(&value, +v); }
 
-    BE_FORCE_INLINE friend atomic_t CompareExchange(PlatformAtomic &value, const atomic_t v, const atomic_t c) { return atomic_cmpxchg(&value.data, v, c); }
+                                    /// Subtracts a value from this counter and returns old value.
+    BE_FORCE_INLINE T               Sub(const T v) { return atomic_add(&value, -v); }
+
+    BE_FORCE_INLINE PlatformAtomic &operator+=(const T v) { atomic_add(&value, +v); return *this; }
+    BE_FORCE_INLINE PlatformAtomic &operator-=(const T v) { atomic_add(&value, -v); return *this; }
 
 private:
-    volatile atomic_t               data;
+    volatile T                      value;
 };
 
 BE_NAMESPACE_END
-
-

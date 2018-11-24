@@ -17,6 +17,7 @@
 #include "Containers/Array.h"
 #include "Platform/Intrinsics.h"
 #include "Platform/PlatformThread.h"
+#include "Platform/PlatformAtomic.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -57,7 +58,7 @@ public:
 private:
     bool                    terminate;          ///< terminate flag
     std::queue<Task>        taskList;           ///< task queue
-    atomic_t                numActiveTasks;     ///< Number of tasks in active state
+    PlatformAtomic<int>     numActiveTasks;     ///< Number of tasks in active state
 
     PlatformMutex *         taskMutex;          ///< task 함수 실행을 위한 mutex
     PlatformCondition *     taskCondition;      ///< task 함수 실행을 위한 condition variable
