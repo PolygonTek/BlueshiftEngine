@@ -85,7 +85,7 @@ message(STATUS "System: ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_VERSION} ${CMAKE_SYS
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "CXX Compiler: ${CMAKE_CXX_COMPILER}")
 
-set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo)
+set(CMAKE_CONFIGURATION_TYPES Debug Release Development)
 
 # Set this variable to specify a common place where CMake should put all executable files
 set(RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_GENERATOR})
@@ -96,6 +96,10 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
 # Add DEBUG, _DEBUG definition to compiler in debug build
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
+
+# Add DEVELOPMENT, _DEVELOPMENT definition to compiler in development build
+set(CMAKE_C_FLAGS_DEVELOPMENT "${CMAKE_C_FLAGS_RELEASE} -DDEVELOPMENT -D_DEVELOPMENT")
+set(CMAKE_CXX_FLAGS_DEVELOPMENT "${CMAKE_CXX_FLAGS_RELEASE} -DDEVELOPMENT -D_DEVELOPMENT")
 
 ################################################################################
 
