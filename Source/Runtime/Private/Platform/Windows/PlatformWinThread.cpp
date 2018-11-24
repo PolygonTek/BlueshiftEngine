@@ -95,24 +95,24 @@ void PlatformWinThread::SetAffinity(int affinity) {
     BE1::SetAffinity(GetCurrentThread(), affinity);
 }
 
-void PlatformWinThread::Wait(PlatformWinThread *thread) {
+void PlatformWinThread::Join(PlatformWinThread *thread) {
     const PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
     WaitForSingleObject(winThread->threadHandle, INFINITE);
     CloseHandle(winThread->threadHandle);
     delete winThread;
 }
 
-void PlatformWinThread::WaitAll(int numThreads, PlatformWinThread *threads) {
+void PlatformWinThread::JoinAll(int numThreads, PlatformWinThread *threads[]) {
     HANDLE *threadHandles = (HANDLE *)_alloca(sizeof(HANDLE) * numThreads);
     for (int i = 0; i < numThreads; i++) {
-        const PlatformWinThread *winThread = static_cast<PlatformWinThread *>(&threads[i]);
+        const PlatformWinThread *winThread = static_cast<PlatformWinThread *>(threads[i]);
         threadHandles[i] = winThread->threadHandle;
     }
     
     WaitForMultipleObjects(numThreads, threadHandles, TRUE, INFINITE);
     
     for (int i = 0; i < numThreads; i++) {
-        PlatformWinThread *winThread = static_cast<PlatformWinThread *>(&threads[i]);
+        PlatformWinThread *winThread = static_cast<PlatformWinThread *>(threads[i]);
         CloseHandle(winThread->threadHandle);
         delete winThread;
     }
@@ -122,6 +122,7 @@ PlatformWinMutex *PlatformWinMutex::Create() {
     PlatformWinMutex *mutex = new PlatformWinMutex;
     mutex->cs = new CRITICAL_SECTION;
     InitializeCriticalSection(mutex->cs);
+    SetCriticalSectionSpinCount(mutex->cs, 4000);
     return mutex;
 }
 
@@ -133,7 +134,10 @@ void PlatformWinMutex::Destroy(PlatformWinMutex *mutex) {
 }
 
 void PlatformWinMutex::Lock(const PlatformWinMutex *mutex) {
-    EnterCriticalSection(mutex->cs);
+    // Spin first before entering critical section, causing ring-0 transition and context switch.
+    if (TryEnterCriticalSection(mutex->cs) == 0) {
+        EnterCriticalSection(mutex->cs);
+    }
 }
 
 bool PlatformWinMutex::TryLock(const PlatformWinMutex *mutex) {

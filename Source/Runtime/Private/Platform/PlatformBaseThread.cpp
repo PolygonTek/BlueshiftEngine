@@ -26,7 +26,7 @@ PlatformBaseThread *PlatformBaseThread::Create(threadFunc_t startProc, void *par
     return nullptr;
 }
 
-void PlatformBaseThread::Destroy(PlatformBaseThread *PlatformBaseThread) {
+void PlatformBaseThread::Destroy(PlatformBaseThread *thread) {
     BE_FATALERROR("PlatformThread::Destroy not implmeneted on this platform");
 }
 
@@ -34,12 +34,12 @@ void PlatformBaseThread::SetAffinity(int affinity) {
     BE_FATALERROR("PlatformThread::SetAffinity not implmeneted on this platform");
 }
 
-void PlatformBaseThread::Wait(PlatformBaseThread *PlatformBaseThread) {
-    BE_FATALERROR("PlatformThread::Wait not implmeneted on this platform");
+void PlatformBaseThread::Join(PlatformBaseThread *thread) {
+    BE_FATALERROR("PlatformThread::Join not implmeneted on this platform");
 }
 
-void PlatformBaseThread::WaitAll(int numThreads, PlatformBaseThread *ThreadBases[]) {
-    BE_FATALERROR("PlatformThread::WaitAll not implmeneted on this platform");
+void PlatformBaseThread::JoinAll(int numThreads, PlatformBaseThread *threads[]) {
+    BE_FATALERROR("PlatformThread::JoinAll not implmeneted on this platform");
 }
 
 PlatformBaseMutex *PlatformBaseMutex::Create() {
@@ -47,20 +47,20 @@ PlatformBaseMutex *PlatformBaseMutex::Create() {
     return nullptr;
 }
 
-void PlatformBaseMutex::Destroy(PlatformBaseMutex *PlatformBaseMutex) {
+void PlatformBaseMutex::Destroy(PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformMutex::Destroy not implmeneted on this platform");
 }
 
-void PlatformBaseMutex::Lock(const PlatformBaseMutex *PlatformBaseMutex) {
+void PlatformBaseMutex::Lock(const PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformMutex::Lock not implmeneted on this platform");
 }
 
-bool PlatformBaseMutex::TryLock(const PlatformBaseMutex *PlatformBaseMutex) {
+bool PlatformBaseMutex::TryLock(const PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformMutex::TryLock not implmeneted on this platform");
     return false;
 }
 
-void PlatformBaseMutex::Unlock(const PlatformBaseMutex *PlatformBaseMutex) {
+void PlatformBaseMutex::Unlock(const PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformMutex::Unlock not implmeneted on this platform");
 }
 
@@ -69,20 +69,20 @@ PlatformBaseCondition *PlatformBaseCondition::Create() {
     return nullptr;
 }
 
-void PlatformBaseCondition::Destroy(PlatformBaseCondition *PlatformBaseCondition) {
+void PlatformBaseCondition::Destroy(PlatformBaseCondition *cond) {
     BE_FATALERROR("PlatformCondition::Destroy not implmeneted on this platform");
 }
 
-void PlatformBaseCondition::Wait(const PlatformBaseCondition *PlatformBaseCondition, const PlatformBaseMutex *PlatformBaseMutex) {
+void PlatformBaseCondition::Wait(const PlatformBaseCondition *cond, const PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformCondition::Wait not implmeneted on this platform");
 }
 
-bool PlatformBaseCondition::TimedWait(const PlatformBaseCondition *PlatformBaseCondition, const PlatformBaseMutex *PlatformBaseMutex, int ms) {
+bool PlatformBaseCondition::TimedWait(const PlatformBaseCondition *cond, const PlatformBaseMutex *mutex, int ms) {
     BE_FATALERROR("PlatformCondition::TimedWait not implmeneted on this platform");
     return false;
 }
 
-void PlatformBaseCondition::Broadcast(const PlatformBaseCondition *PlatformBaseCondition) {
+void PlatformBaseCondition::Broadcast(const PlatformBaseCondition *cond) {
     BE_FATALERROR("PlatformCondition::Broadcast not implmeneted on this platform");
 }
 

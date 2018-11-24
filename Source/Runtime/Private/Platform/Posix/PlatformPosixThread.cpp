@@ -105,7 +105,7 @@ void PlatformPosixThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
-void PlatformPosixThread::Wait(PlatformPosixThread *posixThread) {
+void PlatformPosixThread::Join(PlatformPosixThread *posixThread) {
     int err = pthread_join(*posixThread->thread, nullptr);
     if (err != 0) {
         BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
@@ -114,7 +114,7 @@ void PlatformPosixThread::Wait(PlatformPosixThread *posixThread) {
     delete posixThread;
 }
 
-void PlatformPosixThread::WaitAll(int numThreads, PlatformPosixThread *posixThreads[]) {
+void PlatformPosixThread::JoinAll(int numThreads, PlatformPosixThread *posixThreads[]) {
     for (int i = 0; i < numThreads; i++) {
         int err = pthread_join(*posixThreads[i]->thread, nullptr);
         if (err != 0) {

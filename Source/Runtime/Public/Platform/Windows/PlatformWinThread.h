@@ -25,8 +25,8 @@ public:
 
     static void                 SetAffinity(int affinity);
 
-    static void                 Wait(PlatformWinThread *thread);
-    static void                 WaitAll(int numThreads, PlatformWinThread *threads);
+    static void                 Join(PlatformWinThread *thread);
+    static void                 JoinAll(int numThreads, PlatformWinThread *threads[]);
     
 private:
     HANDLE                      threadHandle;

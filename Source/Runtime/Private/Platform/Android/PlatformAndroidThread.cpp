@@ -85,7 +85,7 @@ void PlatformAndroidThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
-void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
+void PlatformAndroidThread::Join(PlatformAndroidThread *androidThread) {
     int err = pthread_join(*androidThread->thread, nullptr);
     if (err != 0) {
         BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
@@ -94,7 +94,7 @@ void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
     delete androidThread;
 }
 
-void PlatformAndroidThread::WaitAll(int numThreads, PlatformAndroidThread *androidThreads[]) {
+void PlatformAndroidThread::JoinAll(int numThreads, PlatformAndroidThread *androidThreads[]) {
     for (int i = 0; i < numThreads; i++) {
         int err = pthread_join(*androidThreads[i]->thread, nullptr);
         if (err != 0) {

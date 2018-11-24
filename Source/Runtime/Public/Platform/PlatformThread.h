@@ -27,8 +27,8 @@ public:
 
     static void                 SetAffinity(int affinity);
 
-    static void                 Wait(PlatformBaseThread *thread);
-    static void                 WaitAll(int numThreads, PlatformBaseThread *threads[]);
+    static void                 Join(PlatformBaseThread *thread);
+    static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
 };
 
 class BE_API PlatformBaseMutex {

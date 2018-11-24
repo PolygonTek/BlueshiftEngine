@@ -27,8 +27,8 @@ public:
     
     static void                 SetAffinity(int affinity);
     
-    static void                 Wait(PlatformAndroidThread *thread);
-    static void                 WaitAll(int numThreads, PlatformAndroidThread *threads[]);
+    static void                 Join(PlatformAndroidThread *thread);
+    static void                 JoinAll(int numThreads, PlatformAndroidThread *threads[]);
     
 private:
     pthread_t *                 thread;

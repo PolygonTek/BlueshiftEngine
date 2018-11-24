@@ -36,22 +36,18 @@ public:
     explicit TaskScheduler(int numThreads = -1);
     ~TaskScheduler();
 
+    void                    Terminate();
+
                             /// Returns number of active threads.
-    size_t                  NumActiveThread() const { return threads.Count(); }
+    size_t                  NumActiveThread() const { return taskThreads.Count(); }
 
                             /// Returns number of active tasks.
     int64_t                 NumActiveTasks() const { return numActiveTasks; }
 
-                            /// task 추가와 관련된 Lock 
-    void                    LockTask();
-
-                            /// task 추가와 관련된 Unlock
-    void                    UnlockTask();
-
                             /// Adds a task with the given task function.
     void                    AddTask(taskFunction_t function, void *data);
 
-                            /// Waits until finished all tasks.
+                            /// Waits until finishing all tasks.
     void                    WaitFinish();
 
                             /// Waits given time (milliseconds) for finishing all tasks.
@@ -59,20 +55,19 @@ public:
     bool                    TimedWaitFinish(int msec);
 
 private:
-    std::list<Task>         taskList;           ///< Number of tasks to be run
-    atomic_t                numActiveTasks;     ///< Number of tasks in active state
-                            
     bool                    terminate;          ///< terminate flag
-                            
-    PlatformMutex *         taskMutex;          ///< task 함수 실행을 위한 동기화 객체
-    PlatformCondition *     taskCondition;      ///< task 함수 실행을 위한 condition
-                            
-    PlatformMutex *         finishMutex;        ///< task list 를 모두 마쳤을 때 사용할 동기화 객체
-    PlatformCondition *     finishCondition;    ///< task list 를 모두 마쳤을 때 사용할 condition
+    std::queue<Task>        taskList;           ///< task queue
+    atomic_t                numActiveTasks;     ///< Number of tasks in active state
 
-    Array<PlatformThread *> threads;
+    PlatformMutex *         taskMutex;          ///< task 함수 실행을 위한 mutex
+    PlatformCondition *     taskCondition;      ///< task 함수 실행을 위한 condition variable
+                            
+    PlatformMutex *         finishMutex;        ///< task list 를 모두 마쳤을 때 사용할 mutex
+    PlatformCondition *     finishCondition;    ///< task list 를 모두 마쳤을 때 사용할 condition variable
 
-    friend void             TaskScheduler_ThreadProc(void *param);
+    Array<PlatformThread *> taskThreads;
+
+    friend void             TaskThreadProc(void *param);
 };
 
 BE_NAMESPACE_END
