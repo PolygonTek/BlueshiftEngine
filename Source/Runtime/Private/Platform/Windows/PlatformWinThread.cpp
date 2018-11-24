@@ -127,7 +127,6 @@ PlatformWinMutex *PlatformWinMutex::Create() {
 }
 
 void PlatformWinMutex::Destroy(PlatformWinMutex *mutex) {
-    assert(0);
     DeleteCriticalSection(mutex->cs);
     delete mutex->cs;
     delete mutex;
