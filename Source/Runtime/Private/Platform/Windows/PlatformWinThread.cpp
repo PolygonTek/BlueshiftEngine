@@ -121,8 +121,7 @@ void PlatformWinThread::JoinAll(int numThreads, PlatformWinThread *threads[]) {
 PlatformWinMutex *PlatformWinMutex::Create() {
     PlatformWinMutex *mutex = new PlatformWinMutex;
     mutex->cs = new CRITICAL_SECTION;
-    InitializeCriticalSection(mutex->cs);
-    SetCriticalSectionSpinCount(mutex->cs, 4000);
+    InitializeCriticalSectionAndSpinCount(mutex->cs, 4000);
     return mutex;
 }
 
