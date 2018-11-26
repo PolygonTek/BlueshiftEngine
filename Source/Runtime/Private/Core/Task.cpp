@@ -21,16 +21,22 @@ BE_NAMESPACE_BEGIN
 
 void TaskThreadProc(void *param);
 
-TaskScheduler::TaskScheduler(int numThreads) {
-    numActiveTasks = 0;
-    terminate = false;
+TaskManager::TaskManager(int maxTasks, int numThreads) {
+    this->maxTasks = maxTasks;
+    this->taskBuffer = new Task[maxTasks];
+
+    this->headTaskIndex = 0;
+    this->tailTaskIndex = 0;
+
+    this->numActiveTasks = 0;
+    this->terminating = 0;
 
     // Create synchronization objects.
-    taskMutex = PlatformMutex::Create();
-    taskCondition = PlatformCondition::Create();
+    this->taskMutex = PlatformMutex::Create();
+    this->taskCondition = PlatformCondition::Create();
 
-    finishMutex = PlatformMutex::Create();
-    finishCondition = PlatformCondition::Create();
+    this->finishMutex = PlatformMutex::Create();
+    this->finishCondition = PlatformCondition::Create();
 
     if (numThreads < 0) {
         // Get thread count as number of logical processors
@@ -40,11 +46,11 @@ TaskScheduler::TaskScheduler(int numThreads) {
     // Create task threads.
     for (int i = 0; i < numThreads; i++) {
         PlatformThread *thread = PlatformThread::Create(TaskThreadProc, (void *)this, 0);
-        taskThreads.Append(thread);
+        this->taskThreads.Append(thread);
     }
 }
 
-TaskScheduler::~TaskScheduler() {
+TaskManager::~TaskManager() {
     Terminate();
 
     // Destroy all the synchronization objects.
@@ -59,22 +65,23 @@ TaskScheduler::~TaskScheduler() {
         PlatformThread::Destroy(taskThreads[i]);
     }
     taskThreads.Clear();
+
+    delete [] taskBuffer;
 }
 
-void TaskScheduler::Terminate() {
+void TaskManager::Terminate() {
+    // Set the terminating and wake all the task threads.
+    terminating = 1;
+
     PlatformMutex::Lock(taskMutex);
-
-    // Set the terminate and wake all the task threads.
-    terminate = true;
     PlatformCondition::Broadcast(taskCondition);
-
     PlatformMutex::Unlock(taskMutex);
 
     // Wait until finishing all the task threads.
     PlatformThread::JoinAll(taskThreads.Count(), taskThreads.Ptr());
 }
 
-void TaskScheduler::AddTask(taskFunction_t function, void *data) {
+bool TaskManager::AddTask(TaskFunc function, void *data) {
     Task task;
     task.function = function;
     task.data = data;
@@ -82,21 +89,31 @@ void TaskScheduler::AddTask(taskFunction_t function, void *data) {
     // Lock for task addition
     PlatformMutex::Lock(taskMutex);
 
-    if (taskList.size() >= MaxTasks) {
-        PlatformMutex::Unlock(taskMutex);
-        BE_FATALERROR("Too many tasks are added");
-    }
-    taskList.push(task);
+    int nextTaskIndex = (tailTaskIndex + 1) % maxTasks;
 
-    numActiveTasks += 1;
+    if (nextTaskIndex == headTaskIndex) {
+        PlatformMutex::Unlock(taskMutex);
+        BE_ERRLOG("Too many tasks");
+        return false;
+    }
+
+    taskBuffer[tailTaskIndex] = task;
+
+    tailTaskIndex = nextTaskIndex;
 
     // Unlock for task addition
     PlatformMutex::Unlock(taskMutex);
 
+    numActiveTasks += 1;
+
+    return true;
+}
+
+void TaskManager::Submit() {
     PlatformCondition::Broadcast(taskCondition);
 }
 
-void TaskScheduler::WaitFinish() {
+void TaskManager::WaitFinish() {
     PlatformMutex::Lock(finishMutex);
 
     while (numActiveTasks > 0) {
@@ -106,7 +123,7 @@ void TaskScheduler::WaitFinish() {
     PlatformMutex::Unlock(finishMutex);
 }
 
-bool TaskScheduler::TimedWaitFinish(int ms) {
+bool TaskManager::TimedWaitFinish(int ms) {
     bool ret = true;
 
     PlatformMutex::Lock(finishMutex);
@@ -134,39 +151,39 @@ static void InitCPU() {
 static void TaskThreadProc(void *param) {
     InitCPU();
 
-    TaskScheduler *ts = (TaskScheduler *)param;
+    TaskManager *tm = (TaskManager *)param;
 
     while (1) {
-        PlatformMutex::Lock(ts->taskMutex);
+        PlatformMutex::Lock(tm->taskMutex);
 
         // Wait for task condition variable.
-        while (ts->taskList.empty() && !ts->terminate) {
-            PlatformCondition::Wait(ts->taskCondition, ts->taskMutex);
+        while (tm->IsEmpty() && !tm->terminating) {
+            PlatformCondition::Wait(tm->taskCondition, tm->taskMutex);
         }
 
-        // Exit thread when terminating.
-        if (ts->terminate) {
-            PlatformMutex::Unlock(ts->taskMutex);
+        if (tm->terminating) {
+            PlatformMutex::Unlock(tm->taskMutex);
             break;
         }
 
-        // Get the task from the queue.
-        Task task = ts->taskList.front();
-        ts->taskList.pop();
+        // Get the task from the ring buffer.
+        Task task = tm->taskBuffer[tm->headTaskIndex];
 
-        PlatformMutex::Unlock(ts->taskMutex);
+        tm->headTaskIndex = (tm->headTaskIndex + 1) % tm->maxTasks;
+
+        PlatformMutex::Unlock(tm->taskMutex);
 
         // Do the task.
         task.function(task.data);
 
-        // Decrease active task count after finishing task function.
-        ts->numActiveTasks -= 1;
+        // Decrease active task count after finishing a task function.
+        tm->numActiveTasks -= 1;
 
         // Wake finish condition variable when there is no active tasks.
-        if (ts->numActiveTasks == 0) {
-            PlatformMutex::Lock(ts->finishMutex);
-            PlatformCondition::Signal(ts->finishCondition);
-            PlatformMutex::Unlock(ts->finishMutex);
+        if (tm->numActiveTasks == 0) {
+            PlatformMutex::Lock(tm->finishMutex);
+            PlatformCondition::Signal(tm->finishCondition);
+            PlatformMutex::Unlock(tm->finishMutex);
         }
     }
 }

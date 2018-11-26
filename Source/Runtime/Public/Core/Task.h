@@ -15,38 +15,42 @@
 #pragma once
 
 #include "Containers/Array.h"
-#include "Platform/Intrinsics.h"
 #include "Platform/PlatformThread.h"
-#include "Platform/PlatformAtomic.h"
 
 BE_NAMESPACE_BEGIN
 
-typedef void (*taskFunction_t)(void *data);
+using TaskFunc = void (*)(void *data);
 
 struct Task {
-    taskFunction_t          function;
+    TaskFunc                function;
     void *                  data;
 };
 
-class BE_API TaskScheduler {
+class BE_API TaskManager {
 public:
-    enum {
-        MaxTasks            = 1000000
-    };
+    explicit TaskManager(int maxTasks, int numThreads = -1);
+    ~TaskManager();
 
-    explicit TaskScheduler(int numThreads = -1);
-    ~TaskScheduler();
+                            /// Returns number of threads.
+    size_t                  NumThreads() const { return taskThreads.Count(); }
 
+                            /// Is task list empty ?
+    bool                    IsEmpty() const { return headTaskIndex == tailTaskIndex; }
+
+                            /// Is terminating now ?
+    bool                    IsTerminating() const { return terminating; }
+
+                            /// Terminates all the tasks.
     void                    Terminate();
-
-                            /// Returns number of active threads.
-    size_t                  NumActiveThread() const { return taskThreads.Count(); }
 
                             /// Returns number of active tasks.
     int64_t                 NumActiveTasks() const { return numActiveTasks; }
 
                             /// Adds a task with the given task function.
-    void                    AddTask(taskFunction_t function, void *data);
+    bool                    AddTask(TaskFunc function, void *data);
+
+                            /// Submits to start task threads.
+    void                    Submit();
 
                             /// Waits until finishing all tasks.
     void                    WaitFinish();
@@ -56,17 +60,21 @@ public:
     bool                    TimedWaitFinish(int msec);
 
 private:
-    bool                    terminate;          ///< terminate flag
-    std::queue<Task>        taskList;           ///< task queue
-    PlatformAtomic<int>     numActiveTasks;     ///< Number of tasks in active state
+    Task *                  taskBuffer;         ///< Ring buffer of task list.
+    int                     maxTasks;
+    int                     headTaskIndex;
+    int                     tailTaskIndex;
 
-    PlatformMutex *         taskMutex;          ///< task 함수 실행을 위한 mutex
-    PlatformCondition *     taskCondition;      ///< task 함수 실행을 위한 condition variable
-                            
-    PlatformMutex *         finishMutex;        ///< task list 를 모두 마쳤을 때 사용할 mutex
-    PlatformCondition *     finishCondition;    ///< task list 를 모두 마쳤을 때 사용할 condition variable
+    std::atomic<int>        numActiveTasks;     ///< Number of tasks in active state.
+    std::atomic<int>        terminating;        ///< Is terminating ?
 
     Array<PlatformThread *> taskThreads;
+
+    PlatformMutex *         taskMutex;          ///< Mutex for accessing task list and execution.
+    PlatformCondition *     taskCondition;      ///< Condition variable for task execution.
+                            
+    PlatformMutex *         finishMutex;        ///< Mutex for finishing task list.
+    PlatformCondition *     finishCondition;    ///< Condition variable for finishing task list.
 
     friend void             TaskThreadProc(void *param);
 };
