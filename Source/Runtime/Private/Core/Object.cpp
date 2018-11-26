@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformAtomic.h"
 #include "Core/Object.h"
 #include "Core/Heap.h"
 #include "Containers/HashTable.h"
@@ -220,7 +219,7 @@ bool                Object::initialized = false;
 Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
-static PlatformAtomic<int32_t> instanceCounter(0);
+static std::atomic<int> instanceCounter(0);
 
 void Object::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnlyFlag),
@@ -246,7 +245,7 @@ bool Object::InitInstance(Guid guid) {
 #endif
 
     this->guid = guid;
-    this->instanceID = instanceCounter.GetValue();
+    this->instanceID = instanceCounter;
 
     instanceCounter += 1;
 

@@ -156,18 +156,10 @@
 #include <utility>
 #include <cmath>
 #include <memory>
-#include <tuple>
 #include <string>
-#include <vector>
-#include <list>
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <unordered_set>
-#include <stack>
-#include <queue>
 #include <limits>
 #include <exception>
+#include <atomic>
 
 #define BE1                         BE1
 #define BE_NAMESPACE_BEGIN          namespace BE1 {

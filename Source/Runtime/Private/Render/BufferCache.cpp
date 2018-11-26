@@ -162,8 +162,8 @@ void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
 void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flush) {
     if (bufferSet.mappedVertexBase) {
         rhi.BindBuffer(RHI::VertexBuffer, bufferSet.vertexBuffer);
-        if (flush && bufferSet.vertexMemUsed.GetValue() > 0) {
-            rhi.FlushMappedBufferRange(bufferSet.vertexBuffer, 0, bufferSet.vertexMemUsed.GetValue());
+        if (flush && bufferSet.vertexMemUsed.load() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.vertexBuffer, 0, bufferSet.vertexMemUsed.load());
         }
         rhi.UnmapBuffer(bufferSet.vertexBuffer);
         rhi.BindBuffer(RHI::VertexBuffer, RHI::NullBuffer);
@@ -172,8 +172,8 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flus
 
     if (bufferSet.mappedIndexBase) {
         rhi.BindBuffer(RHI::IndexBuffer, bufferSet.indexBuffer);
-        if (flush && bufferSet.indexMemUsed.GetValue() > 0) {
-            rhi.FlushMappedBufferRange(bufferSet.indexBuffer, 0, bufferSet.indexMemUsed.GetValue());
+        if (flush && bufferSet.indexMemUsed.load() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.indexBuffer, 0, bufferSet.indexMemUsed.load());
         }
         rhi.UnmapBuffer(bufferSet.indexBuffer);
         rhi.BindBuffer(RHI::IndexBuffer, RHI::NullBuffer);
@@ -182,8 +182,8 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flus
 
     if (bufferSet.mappedUniformBase) {
         rhi.BindBuffer(RHI::UniformBuffer, bufferSet.uniformBuffer);
-        if (flush && bufferSet.uniformMemUsed.GetValue() > 0) {
-            rhi.FlushMappedBufferRange(bufferSet.uniformBuffer, 0, bufferSet.uniformMemUsed.GetValue());
+        if (flush && bufferSet.uniformMemUsed.load() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.uniformBuffer, 0, bufferSet.uniformMemUsed.load());
         }
         rhi.UnmapBuffer(bufferSet.uniformBuffer);
         rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
@@ -192,8 +192,8 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flus
 
     if (bufferSet.mappedTexelBase && bufferSet.texelBuffer) {
         rhi.BindBuffer(bufferSet.texelBufferType, bufferSet.texelBuffer);
-        if (flush && bufferSet.texelMemUsed.GetValue() > 0) {
-            rhi.FlushMappedBufferRange(bufferSet.texelBuffer, 0, bufferSet.texelMemUsed.GetValue());
+        if (flush && bufferSet.texelMemUsed.load() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.texelBuffer, 0, bufferSet.texelMemUsed.load());
         }
         rhi.UnmapBuffer(bufferSet.texelBuffer);
         rhi.BindBuffer(bufferSet.texelBufferType, RHI::NullBuffer);
@@ -221,18 +221,18 @@ void BufferCacheManager::EndDrawCommand() {
 }
 
 void BufferCacheManager::BeginBackEnd() {
-    mostUsedVertexMem = Max(mostUsedVertexMem, (int)frameData[mappedNum].vertexMemUsed.GetValue());
-    mostUsedIndexMem = Max(mostUsedIndexMem, (int)frameData[mappedNum].indexMemUsed.GetValue());
-    mostUsedUniformMem = Max(mostUsedUniformMem, (int)frameData[mappedNum].uniformMemUsed.GetValue());
-    mostUsedTexelMem = Max(mostUsedTexelMem, (int)frameData[mappedNum].texelMemUsed.GetValue());
+    mostUsedVertexMem = Max(mostUsedVertexMem, (int)frameData[mappedNum].vertexMemUsed.load());
+    mostUsedIndexMem = Max(mostUsedIndexMem, (int)frameData[mappedNum].indexMemUsed.load());
+    mostUsedUniformMem = Max(mostUsedUniformMem, (int)frameData[mappedNum].uniformMemUsed.load());
+    mostUsedTexelMem = Max(mostUsedTexelMem, (int)frameData[mappedNum].texelMemUsed.load());
 
     if (r_showBufferCache.GetBool()) {
         BE_LOG("%08d: %d alloc, vMem(%s), iMem(%s), uMem(%s), tMem(%s) : vMem(%s), iMem(%s), uMem(%s), tMem(%s)\n",
             frameCount, frameData[mappedNum].allocations,
-            Str::FormatBytes(frameData[mappedNum].vertexMemUsed.GetValue()).c_str(),
-            Str::FormatBytes(frameData[mappedNum].indexMemUsed.GetValue()).c_str(),
-            Str::FormatBytes(frameData[mappedNum].uniformMemUsed.GetValue()).c_str(),
-            Str::FormatBytes(frameData[mappedNum].texelMemUsed.GetValue()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].vertexMemUsed.load()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].indexMemUsed.load()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].uniformMemUsed.load()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].texelMemUsed.load()).c_str(),
             Str::FormatBytes(mostUsedVertexMem).c_str(),
             Str::FormatBytes(mostUsedIndexMem).c_str(),
             Str::FormatBytes(mostUsedUniformMem).c_str(),
@@ -282,17 +282,17 @@ void BufferCacheManager::BeginBackEnd() {
 
     // Clear current frame data
     rhi.BufferRewind(frameData[mappedNum].vertexBuffer);
-    frameData[mappedNum].vertexMemUsed.SetValue(0);
+    frameData[mappedNum].vertexMemUsed = 0;
 
     rhi.BufferRewind(frameData[mappedNum].indexBuffer);
-    frameData[mappedNum].indexMemUsed.SetValue(0);
+    frameData[mappedNum].indexMemUsed = 0;
 
     rhi.BufferRewind(frameData[mappedNum].uniformBuffer);
-    frameData[mappedNum].uniformMemUsed.SetValue(0);
+    frameData[mappedNum].uniformMemUsed = 0;
 
     if (frameData[mappedNum].texelBuffer) {
         rhi.BufferRewind(frameData[mappedNum].texelBuffer);
-        frameData[mappedNum].texelMemUsed.SetValue(0);
+        frameData[mappedNum].texelMemUsed = 0;
     }
 
     frameData[mappedNum].allocations = 0;
