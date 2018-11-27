@@ -25,12 +25,15 @@ BE_NAMESPACE_BEGIN
 #undef RemoveDirectory
 
 struct BE_API FileInfo {
-    bool                        operator==(const FileInfo &rhs) const { return (isSubDir == rhs.isSubDir && relativePath.IcmpPath(rhs.relativePath) == 0); }
+    FileInfo() = default;
+    FileInfo(const Str &filename, bool isSubDir) : filename(filename), isSubDir(isSubDir) {}
 
-    bool                        operator<(const FileInfo &rhs) const { return relativePath.IcmpPath(rhs.relativePath) < 0; }
+    bool                        operator==(const FileInfo &rhs) const { return (isSubDir == rhs.isSubDir && filename.IcmpPath(rhs.filename) == 0); }
+
+    bool                        operator<(const FileInfo &rhs) const { return filename.IcmpPath(rhs.filename) < 0; }
         
     bool                        isSubDir;
-    Str                         relativePath;
+    Str                         filename;
 };
 
 class BE_API PlatformBaseFile {

@@ -55,6 +55,26 @@ struct ZipArchive {
 
 //--------------------------------------------------------------------------------------------------
 //
+// FileArray
+//
+//--------------------------------------------------------------------------------------------------
+
+int FileArray::AddUnique(const FileInfo &file, HashIndex &hashIndex) {
+    int hashKey = hashIndex.GenerateHash(file.filename);
+    int i = hashIndex.First(hashKey);
+
+    for (; i != -1; i = hashIndex.Next(i)) {
+        if (!array[i].filename.Icmp(file.filename)) {
+            return i;
+        }
+    }
+    i = array.Append(file);
+    hashIndex.Add(hashKey, i);
+    return i;
+}
+
+//--------------------------------------------------------------------------------------------------
+//
 // FileSystem
 //
 //--------------------------------------------------------------------------------------------------
@@ -119,7 +139,7 @@ void FileSystem::AddSearchPath(const char *path) {
     int num = PlatformFile::ListFiles(ToRelativePath(path), "*.zip", false, false, files);
 
     for (int i = 0; i < num; i++) {
-        AddSearchPath_ZIP(path, files[i].relativePath);
+        AddSearchPath_ZIP(path, files[i].filename);
     }
 }
 
@@ -502,10 +522,10 @@ bool FileSystem::CopyDirectoryTree(const char *from, const char *to) {
         const auto &fileInfo = fileArray.GetArray()[i];
 
         Str srcFilename = from;
-        srcFilename.AppendPath(fileInfo.relativePath);
+        srcFilename.AppendPath(fileInfo.filename);
 
         Str dstFilename = to;
-        dstFilename.AppendPath(fileInfo.relativePath);
+        dstFilename.AppendPath(fileInfo.filename);
 
         if (!CopyFile(srcFilename, dstFilename)) {
             return false;
@@ -850,6 +870,7 @@ bool FileSystem::WriteDict(const char *filename, const Dict &dict) {
 
 int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArray &fileArray, bool searchDirs, bool includeSubDir, bool sort, bool recursive) {
     Array<FileInfo> files;
+    HashIndex       fileHash(4096, 4096);
     FileInfo        fileInfo;
 
     if (!nameFilter) {
@@ -863,7 +884,7 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
         int numEntries = PlatformFile::ListFiles(findPath, nameFilter, recursive, includeSubDir, files);
 
         for (int i = 0; i < numEntries; i++) {
-            fileArray.array.AddUnique(files[i]);
+            fileArray.AddUnique(files[i], fileHash);
         }
     } else {
         fileArray.array.Clear();
@@ -893,9 +914,9 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
 
                     fileInfo.isSubDir = false;
                     //fileInfo.size = entry->size;
-                    fileInfo.relativePath = name;
+                    fileInfo.filename = name;
 
-                    fileArray.array.AddUnique(fileInfo);
+                    fileArray.AddUnique(fileInfo, fileHash);
                 }
             } else if (s->pathname) {
                 char path[MaxAbsolutePath];
@@ -904,7 +925,7 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
                 int numEntries = PlatformFile::ListFiles(path, nameFilter, recursive, includeSubDir, files);
 
                 for (int i = 0; i < numEntries; i++) {
-                    fileArray.array.AddUnique(files[i]);
+                    fileArray.AddUnique(files[i], fileHash);
                 }
             }
         }
@@ -948,16 +969,16 @@ void FileSystem::Cmd_Dir(const CmdArgs &args) {
         Str::Copynz(nameFilter, args.Argv(2), COUNT_OF(nameFilter));
     }
 
-    FileArray fileArray;
-    fileSystem.ListFiles(directory, nameFilter, fileArray, true);
+    FileArray files;
+    fileSystem.ListFiles(directory, nameFilter, files, true);
 
     BE_LOG("Directory of %s %s\n", directory, nameFilter);
 
-    for (int i = 0; i < fileArray.NumFiles(); i++) {
-        BE_LOG("%s\n", fileArray.GetFilename(i));
+    for (int i = 0; i < files.NumFiles(); i++) {
+        BE_LOG("%s\n", files.GetFileName(i));
     }
     
-    BE_LOG("%i files found\n", fileArray.NumFiles());
+    BE_LOG("%i files found\n", files.NumFiles());
 }
 
 void FileSystem::Cmd_Path(const CmdArgs &args) {

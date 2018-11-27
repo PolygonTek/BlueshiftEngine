@@ -67,7 +67,7 @@ public:
     static const Str            NormalizeAssetPath(const Str &assetPath);
 
                                 // Gets .meta filename associated with an asset
-    static const Str            GetMetaFilenameFromAssetPath(const char *assetPath);
+    static const Str            GetMetaFileNameFromAssetPath(const char *assetPath);
 
     static const SignalDef      SIG_Reloaded;
     static const SignalDef      SIG_Modified;

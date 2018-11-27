@@ -37,11 +37,8 @@ public:
                             /// Is task list empty ?
     bool                    IsEmpty() const { return headTaskIndex == tailTaskIndex; }
 
-                            /// Is terminating now ?
-    bool                    IsTerminating() const { return terminating; }
-
-                            /// Terminates all the tasks.
-    void                    Terminate();
+                            /// Is stopping now ?
+    bool                    IsStopping() const { return stopping; }
 
                             /// Returns number of active tasks.
     int64_t                 NumActiveTasks() const { return numActiveTasks; }
@@ -49,9 +46,12 @@ public:
                             /// Adds a task with the given task function.
     bool                    AddTask(TaskFunc function, void *data);
 
-                            /// Submits to start task threads.
-    void                    Submit();
+                            /// Starts task threads.
+    void                    Start();
 
+                            /// Stops all the tasks.
+    void                    Stop();
+    
                             /// Waits until finishing all tasks.
     void                    WaitFinish();
 
@@ -66,7 +66,7 @@ private:
     int                     tailTaskIndex;
 
     std::atomic<int>        numActiveTasks;     ///< Number of tasks in active state.
-    std::atomic<int>        terminating;        ///< Is terminating ?
+    std::atomic<int>        stopping;
 
     Array<PlatformThread *> taskThreads;
 

@@ -499,7 +499,7 @@ static void ListFilesRecursive(const char *directory, const char *subdir, const 
 
             fileInfo.isSubDir = true;
             if (includeSubDir) {
-                fileInfo.relativePath = subpath;
+                fileInfo.filename = subpath;
                 files.Append(fileInfo);
             }
 
@@ -518,7 +518,7 @@ static void ListFilesRecursive(const char *directory, const char *subdir, const 
                 Str::snPrintf(filename, sizeof(filename), "%ls", finddata.name);
             }
 
-            fileInfo.relativePath = filename;
+            fileInfo.filename = filename;
             files.Append(fileInfo);
         }
     } while (_wfindnext(handle, &finddata) != -1);
@@ -565,7 +565,7 @@ int PlatformWinFile::ListFiles(const char *directory, const char *nameFilter, bo
             PlatformWinUtils::UCS2ToUTF8(finddata.name, name, COUNT_OF(name));
 
             //fileInfo.size = finddata.size;
-            fileInfo.relativePath = name;
+            fileInfo.filename = name;
 
             files.Append(fileInfo);
         } while (_wfindnext(handle, &finddata) != -1);

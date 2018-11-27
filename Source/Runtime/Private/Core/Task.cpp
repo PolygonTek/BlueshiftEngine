@@ -29,7 +29,7 @@ TaskManager::TaskManager(int maxTasks, int numThreads) {
     this->tailTaskIndex = 0;
 
     this->numActiveTasks = 0;
-    this->terminating = 0;
+    this->stopping = 0;
 
     // Create synchronization objects.
     this->taskMutex = PlatformMutex::Create();
@@ -51,7 +51,7 @@ TaskManager::TaskManager(int maxTasks, int numThreads) {
 }
 
 TaskManager::~TaskManager() {
-    Terminate();
+    Stop();
 
     // Destroy all the synchronization objects.
     PlatformCondition::Destroy(taskCondition);
@@ -67,18 +67,6 @@ TaskManager::~TaskManager() {
     taskThreads.Clear();
 
     delete [] taskBuffer;
-}
-
-void TaskManager::Terminate() {
-    // Set the terminating and wake all the task threads.
-    terminating = 1;
-
-    PlatformMutex::Lock(taskMutex);
-    PlatformCondition::Broadcast(taskCondition);
-    PlatformMutex::Unlock(taskMutex);
-
-    // Wait until finishing all the task threads.
-    PlatformThread::JoinAll(taskThreads.Count(), taskThreads.Ptr());
 }
 
 bool TaskManager::AddTask(TaskFunc function, void *data) {
@@ -109,8 +97,20 @@ bool TaskManager::AddTask(TaskFunc function, void *data) {
     return true;
 }
 
-void TaskManager::Submit() {
+void TaskManager::Start() {
     PlatformCondition::Broadcast(taskCondition);
+}
+
+void TaskManager::Stop() {
+    // Set the stopping and wake all the task threads.
+    stopping = 1;
+
+    PlatformMutex::Lock(taskMutex);
+    PlatformCondition::Broadcast(taskCondition);
+    PlatformMutex::Unlock(taskMutex);
+
+    // Wait until finishing all the task threads.
+    PlatformThread::JoinAll(taskThreads.Count(), taskThreads.Ptr());
 }
 
 void TaskManager::WaitFinish() {
@@ -157,11 +157,11 @@ static void TaskThreadProc(void *param) {
         PlatformMutex::Lock(tm->taskMutex);
 
         // Wait for task condition variable.
-        while (tm->IsEmpty() && !tm->terminating) {
+        while (tm->IsEmpty() && !tm->stopping) {
             PlatformCondition::Wait(tm->taskCondition, tm->taskMutex);
         }
 
-        if (tm->terminating) {
+        if (tm->stopping) {
             PlatformMutex::Unlock(tm->taskMutex);
             break;
         }

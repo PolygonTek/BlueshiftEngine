@@ -81,7 +81,7 @@ int PlatformBaseFile::GetFileMode(const char *filename) {
 void PlatformBaseFile::SetFileMode(const char *filename, int mode) {
 }
 
-DateTime GetTimeStamp(const char *filename) {
+DateTime PlatformBaseFile::GetTimeStamp(const char *filename) {
     return DateTime(0);
 }
 

@@ -149,7 +149,7 @@ bool ZipArchiver::Archive(const char *zipFilename, const char *archiveDirectory,
         }
 
         Str filename = archiveDirectory;
-        filename.AppendPath(fileInfo.relativePath);
+        filename.AppendPath(fileInfo.filename);
         zipFile.AddFile(filename);
 
         if (progress) {

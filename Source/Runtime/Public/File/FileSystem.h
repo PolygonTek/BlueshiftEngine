@@ -39,11 +39,13 @@ class BE_API FileArray {
     friend class FileSystem;
 
 public:
-    /// Get the absolute path
+                        /// Get the absolute path
     const char *        GetPath() const { return path; }
-    int                 NumFiles() const { return array.Count(); }
-    const char *        GetFilename(int index) const { return array[index].relativePath; }
+    const char *        GetFileName(int index) const { return array[index].filename; }
+    Str                 GetFullFileName(int index) const { Str fullFileName = path; return fullFileName.AppendPath(array[index].filename); }
     Array<FileInfo> &   GetArray() { return array; }
+    int                 NumFiles() const { return array.Count(); }
+    int                 AddUnique(const FileInfo &file, HashIndex &hashIndex);
 
 private:
     Str                 path;

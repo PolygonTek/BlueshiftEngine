@@ -67,7 +67,7 @@ void PrefabAsset::Reload() {
 void PrefabAsset::Save() {
     Prefab *existingPrefab = prefabManager.FindPrefab(GetResourceFilename());
     if (existingPrefab) {
-        existingPrefab->Write(existingPrefab->GetFilename());
+        existingPrefab->Write(existingPrefab->GetFileName());
         EmitSignal(&SIG_Modified, 0);
     }
 }
