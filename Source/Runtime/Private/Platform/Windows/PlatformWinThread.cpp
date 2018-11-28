@@ -91,6 +91,36 @@ void PlatformWinThread::Destroy(PlatformWinThread *thread) {
     delete winThread;
 }
 
+void PlatformWinThread::SetName(const char *name) {
+    /**
+    * Code setting the thread name for use in the debugger.
+    *
+    * http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
+    */
+    const DWORD MS_VC_EXCEPTION = 0x406D1388;
+
+#pragma pack(push, 8)
+    struct THREADNAME_INFO {
+        DWORD dwType;       // Must be 0x1000.
+        LPCSTR szName;      // Pointer to name (in user addr space).
+        DWORD dwThreadID;   // Thread ID (-1=caller thread).
+        DWORD dwFlags;      // Reserved for future use, must be zero.
+    };
+#pragma pack(pop)
+    THREADNAME_INFO threadNameInfo;
+    threadNameInfo.dwType = 0x1000;
+    threadNameInfo.szName = name;
+    threadNameInfo.dwThreadID = ::GetCurrentThreadId();
+    threadNameInfo.dwFlags = 0;
+#pragma warning(push)
+#pragma warning(disable: 6320 6322)
+    __try {
+        RaiseException(MS_VC_EXCEPTION, 0, sizeof(threadNameInfo) / sizeof(ULONG_PTR), (ULONG_PTR *)&threadNameInfo);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+#pragma warning(pop)
+}
+
 void PlatformWinThread::SetAffinity(int affinity) {
     BE1::SetAffinity(GetCurrentThread(), affinity);
 }

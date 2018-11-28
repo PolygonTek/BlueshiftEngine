@@ -22,4 +22,8 @@ uint64_t PlatformAppleThread::GetCurrentThreadId() {
     return (uint64_t)pthread_mach_thread_np(pthread_self());
 }
 
+void PlatformAppleThread::SetName(const char *name) {
+    pthread_setname_np(name);
+}
+
 BE_NAMESPACE_END

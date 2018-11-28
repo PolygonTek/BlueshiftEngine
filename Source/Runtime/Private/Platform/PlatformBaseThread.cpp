@@ -30,6 +30,10 @@ void PlatformBaseThread::Destroy(PlatformBaseThread *thread) {
     BE_FATALERROR("PlatformThread::Destroy not implmeneted on this platform");
 }
 
+void PlatformBaseThread::SetName(const char *name) {
+    BE_FATALERROR("PlatformThread::SetName not implmeneted on this platform");
+}
+
 void PlatformBaseThread::SetAffinity(int affinity) {
     BE_FATALERROR("PlatformThread::SetAffinity not implmeneted on this platform");
 }

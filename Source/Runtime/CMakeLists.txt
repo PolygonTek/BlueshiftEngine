@@ -731,7 +731,9 @@ set(UNIX_ENGINE_FILES
 set(LINUX_ENGINE_FILES
     ${UNIX_ENGINE_FILES}
     Public/Platform/Linux/PlatformLinuxProcess.h
-    Private/Platform/Linux/PlatformLinuxProcess.cpp)
+    Public/Platform/Linux/PlatformLinuxThread.h
+    Private/Platform/Linux/PlatformLinuxProcess.cpp
+    Private/Platform/Linux/PlatformLinuxThread.cpp)
 
 set(APPLE_ENGINE_FILES
     ${UNIX_ENGINE_FILES}

@@ -23,6 +23,7 @@ public:
     static PlatformWinThread *  Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
     static void                 Destroy(PlatformWinThread *thread);
 
+    static void                 SetName(const char *name);
     static void                 SetAffinity(int affinity);
 
     static void                 Join(PlatformWinThread *thread);

@@ -24,12 +24,13 @@ public:
 
     static PlatformAndroidThread *Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
     static void                 Destroy(PlatformAndroidThread *thread);
-    
+
     static void                 SetAffinity(int affinity);
+    static void                 SetName(const char *name);
     
     static void                 Join(PlatformAndroidThread *thread);
     static void                 JoinAll(int numThreads, PlatformAndroidThread *threads[]);
-    
+
 private:
     pthread_t *                 thread;
 };

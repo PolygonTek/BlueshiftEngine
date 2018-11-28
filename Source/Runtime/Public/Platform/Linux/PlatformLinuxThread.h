@@ -19,14 +19,12 @@
 
 BE_NAMESPACE_BEGIN
 
-class BE_API PlatformAppleThread : public PlatformPosixThread {
+class BE_API PlatformLinuxThread : public PlatformPosixThread {
 public:
-    static uint64_t             GetCurrentThreadId();
-
     static void                 SetName(const char *name);
 };
 
-typedef PlatformAppleThread     PlatformThread;
+typedef PlatformLinuxThread     PlatformThread;
 typedef PlatformPosixMutex      PlatformMutex;
 typedef PlatformPosixCondition  PlatformCondition;
 

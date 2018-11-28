@@ -12,22 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#define USE_BASE_PLATFORM_POSIX_THREAD
-#include "../Posix/PlatformPosixThread.h"
+#include "Precompiled.h"
+#include "Platform/PlatformThread.h"
+#include <pthread.h>
 
 BE_NAMESPACE_BEGIN
 
-class BE_API PlatformAppleThread : public PlatformPosixThread {
-public:
-    static uint64_t             GetCurrentThreadId();
-
-    static void                 SetName(const char *name);
-};
-
-typedef PlatformAppleThread     PlatformThread;
-typedef PlatformPosixMutex      PlatformMutex;
-typedef PlatformPosixCondition  PlatformCondition;
+void PlatformLinuxThread::SetName(const char *name) {
+    pthread_setname_np(pthread_self(), name);
+}
 
 BE_NAMESPACE_END

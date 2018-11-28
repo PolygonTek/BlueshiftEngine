@@ -85,6 +85,10 @@ void PlatformAndroidThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
+void PlatformAndroidThread::SetName(const char *name) {
+    pthread_setname_np(pthread_self(), name);
+}
+
 void PlatformAndroidThread::Join(PlatformAndroidThread *androidThread) {
     int err = pthread_join(*androidThread->thread, nullptr);
     if (err != 0) {
