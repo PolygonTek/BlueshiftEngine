@@ -487,6 +487,18 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     CFRelease(currentKeyboard);
 }
 
+- (void)runFrameInstance:(int)elapsedMsec {
+    BE1::Engine::RunFrame(elapsedMsec);
+        
+    BE1::gameClient.RunFrame();
+        
+    app.Update();
+        
+    BE1::gameClient.EndFrame();
+        
+    app.mainRenderContext->Display();
+}
+
 - (void)windowWillEnterFullScreen:(NSNotification *)notification {
     MyWindow *window = [notification object];
 
@@ -536,15 +548,7 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
             }
         }
         
-        BE1::Engine::RunFrame(elapsedMsec);
-        
-        BE1::gameClient.RunFrame();
-        
-        app.Update();
-        
-        BE1::gameClient.EndFrame();
-        
-        app.mainRenderContext->Display();
+        [self runFrameInstance:elapsedMsec];
     }
 }
 

@@ -63,7 +63,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     }
 
     t0 = t;
-    
+
     BE1::Engine::RunFrame(elapsedMsec);
     
     BE1::gameClient.RunFrame();

@@ -488,6 +488,22 @@ static void ShutdownInstance() {
     BE1::Engine::Shutdown();
 }
 
+static void RunFrameInstance(int elapsedMsec) {
+    BE1::Engine::RunFrame(elapsedMsec);
+
+    BE1::gameClient.RunFrame();
+
+#ifdef USE_ADMOB
+    AdMob::ProcessQueue();
+#endif
+
+    app.Update();
+
+    app.mainRenderContext->Display();
+
+    BE1::gameClient.EndFrame();
+}
+
 extern "C" {
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -551,19 +567,7 @@ void android_main(android_app *appState) {
 
             t0 = t;
 
-            BE1::Engine::RunFrame(elapsedMsec);
-
-            BE1::gameClient.RunFrame();
-
-#ifdef USE_ADMOB
-            AdMob::ProcessQueue();
-#endif
-
-            app.Update();
-
-            app.mainRenderContext->Display();
-
-            BE1::gameClient.EndFrame();
+            RunFrameInstance(elapsedMsec);
         }
     }
 }

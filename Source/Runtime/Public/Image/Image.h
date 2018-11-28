@@ -425,7 +425,7 @@ BE_INLINE Image::Image(Image &&rhs) : Image() {
 BE_INLINE Image::~Image() {
     Clear();
 }
-    
+
 BE_INLINE int Image::GetWidth(int mipMapLevel) const {
     int a = width >> mipMapLevel;
     return (a == 0) ? 1 : a;
