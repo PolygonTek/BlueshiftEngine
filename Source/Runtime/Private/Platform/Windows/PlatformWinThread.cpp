@@ -70,7 +70,7 @@ uint64_t PlatformWinThread::GetCurrentThreadId() {
 }
 
 // Creates a hardware thread running on specific core
-PlatformWinThread *PlatformWinThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformWinThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     HANDLE threadHandle = CreateThread(nullptr, stackSize, (LPTHREAD_START_ROUTINE)startProc, param, 0, nullptr);
     if (threadHandle == nullptr) {
         BE_FATALERROR("cannot create thread");
@@ -83,7 +83,7 @@ PlatformWinThread *PlatformWinThread::Create(threadFunc_t startProc, void *param
     return thread;
 }
 
-void PlatformWinThread::Destroy(PlatformWinThread *thread) {
+void PlatformWinThread::Destroy(PlatformBaseThread *thread) {
     assert(thread);
     PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
     TerminateThread(winThread->threadHandle, 0);
@@ -125,14 +125,14 @@ void PlatformWinThread::SetAffinity(int affinity) {
     BE1::SetAffinity(GetCurrentThread(), affinity);
 }
 
-void PlatformWinThread::Join(PlatformWinThread *thread) {
+void PlatformWinThread::Join(PlatformBaseThread *thread) {
     const PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
     WaitForSingleObject(winThread->threadHandle, INFINITE);
     CloseHandle(winThread->threadHandle);
     delete winThread;
 }
 
-void PlatformWinThread::JoinAll(int numThreads, PlatformWinThread *threads[]) {
+void PlatformWinThread::JoinAll(int numThreads, PlatformBaseThread *threads[]) {
     HANDLE *threadHandles = (HANDLE *)_alloca(sizeof(HANDLE) * numThreads);
     for (int i = 0; i < numThreads; i++) {
         const PlatformWinThread *winThread = static_cast<PlatformWinThread *>(threads[i]);
@@ -148,61 +148,77 @@ void PlatformWinThread::JoinAll(int numThreads, PlatformWinThread *threads[]) {
     }
 }
 
-PlatformWinMutex *PlatformWinMutex::Create() {
+PlatformBaseMutex *PlatformWinMutex::Create() {
     PlatformWinMutex *mutex = new PlatformWinMutex;
     mutex->cs = new CRITICAL_SECTION;
     InitializeCriticalSectionAndSpinCount(mutex->cs, 4000);
     return mutex;
 }
 
-void PlatformWinMutex::Destroy(PlatformWinMutex *mutex) {
-    DeleteCriticalSection(mutex->cs);
-    delete mutex->cs;
-    delete mutex;
+void PlatformWinMutex::Destroy(PlatformBaseMutex *mutex) {
+    PlatformWinMutex *winMutex = static_cast<PlatformWinMutex *>(mutex);
+    DeleteCriticalSection(winMutex->cs);
+    delete winMutex->cs;
+    delete winMutex;
 }
 
-void PlatformWinMutex::Lock(const PlatformWinMutex *mutex) {
+void PlatformWinMutex::Lock(const PlatformBaseMutex *mutex) {
+    const PlatformWinMutex *winMutex = static_cast<const PlatformWinMutex *>(mutex);
     // Spin first before entering critical section, causing ring-0 transition and context switch.
-    if (TryEnterCriticalSection(mutex->cs) == 0) {
-        EnterCriticalSection(mutex->cs);
+    if (TryEnterCriticalSection(winMutex->cs) == 0) {
+        EnterCriticalSection(winMutex->cs);
     }
 }
 
-bool PlatformWinMutex::TryLock(const PlatformWinMutex *mutex) {
-    return TryEnterCriticalSection(mutex->cs) ? true : false;
+bool PlatformWinMutex::TryLock(const PlatformBaseMutex *mutex) {
+    const PlatformWinMutex *winMutex = static_cast<const PlatformWinMutex *>(mutex);
+    return TryEnterCriticalSection(winMutex->cs) ? true : false;
 }
 
-void PlatformWinMutex::Unlock(const PlatformWinMutex *mutex) {
-    LeaveCriticalSection(mutex->cs);
+void PlatformWinMutex::Unlock(const PlatformBaseMutex *mutex) {
+    const PlatformWinMutex *winMutex = static_cast<const PlatformWinMutex *>(mutex);
+    LeaveCriticalSection(winMutex->cs);
 }
 
-PlatformWinCondition *PlatformWinCondition::Create() {
+PlatformBaseCondition *PlatformWinCondition::Create() {
     PlatformWinCondition *condition = new PlatformWinCondition;
     condition->condVar = new CONDITION_VARIABLE;
     InitializeConditionVariable(condition->condVar);
     return condition;
 }
 
-void PlatformWinCondition::Destroy(PlatformWinCondition *condition) {
-    assert(condition);
-    delete condition->condVar;
-    delete condition;
+void PlatformWinCondition::Destroy(PlatformBaseCondition *condition) {
+    PlatformWinCondition *winCondition = static_cast<PlatformWinCondition *>(condition);
+
+    assert(winCondition);
+    delete winCondition->condVar;
+    delete winCondition;
 }
 
-void PlatformWinCondition::Wait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex) {
-    SleepConditionVariableCS(condition->condVar, mutex->cs, INFINITE);
+void PlatformWinCondition::Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex) {
+    const PlatformWinCondition *winCondition = static_cast<const PlatformWinCondition *>(condition);
+    const PlatformWinMutex *winMutex = static_cast<const PlatformWinMutex *>(mutex);
+
+    SleepConditionVariableCS(winCondition->condVar, winMutex->cs, INFINITE);
 }
 
-bool PlatformWinCondition::TimedWait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, int ms) {
-    return SleepConditionVariableCS(condition->condVar, mutex->cs, (DWORD)ms) ? true : false;
+bool PlatformWinCondition::TimedWait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex, int ms) {
+    const PlatformWinCondition *winCondition = static_cast<const PlatformWinCondition *>(condition);
+    const PlatformWinMutex *winMutex = static_cast<const PlatformWinMutex *>(mutex);
+
+    return SleepConditionVariableCS(winCondition->condVar, winMutex->cs, (DWORD)ms) ? true : false;
 }
 
-void PlatformWinCondition::Signal(const PlatformWinCondition *condition) {
-    WakeConditionVariable(condition->condVar);
+void PlatformWinCondition::Signal(const PlatformBaseCondition *condition) {
+    const PlatformWinCondition *winCondition = static_cast<const PlatformWinCondition *>(condition);
+
+    WakeConditionVariable(winCondition->condVar);
 }
 
-void PlatformWinCondition::Broadcast(const PlatformWinCondition *condition) {
-    WakeAllConditionVariable(condition->condVar);
+void PlatformWinCondition::Broadcast(const PlatformBaseCondition *condition) {
+    const PlatformWinCondition *winCondition = static_cast<const PlatformWinCondition *>(condition);
+
+    WakeAllConditionVariable(winCondition->condVar);
 }
 
 BE_NAMESPACE_END

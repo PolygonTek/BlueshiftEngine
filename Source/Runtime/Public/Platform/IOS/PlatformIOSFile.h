@@ -26,9 +26,9 @@ public:
     PlatformIOSFile(FILE *fp);
     virtual ~PlatformIOSFile();
     
-    static PlatformIOSFile *    OpenFileRead(const char *filename);
-    static PlatformIOSFile *    OpenFileWrite(const char *filename);
-    static PlatformIOSFile *    OpenFileAppend(const char *filename);
+    static PlatformBaseFile *   OpenFileRead(const char *filename);
+    static PlatformBaseFile *   OpenFileWrite(const char *filename);
+    static PlatformBaseFile *   OpenFileAppend(const char *filename);
     
     static bool                 FileExists(const char *filename);
     static size_t               FileSize(const char *filename);

@@ -58,7 +58,7 @@ Str PlatformIOSFile::NormalizeDirectoryName(const char *dirname) {
     return normalizedDirname;
 }
 
-PlatformIOSFile *PlatformIOSFile::OpenFileRead(const char *filename) {
+PlatformBaseFile *PlatformIOSFile::OpenFileRead(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(ConvertToIOSPath(normalizedFilename, false), "rb");
     if (!fp) {
@@ -71,7 +71,7 @@ PlatformIOSFile *PlatformIOSFile::OpenFileRead(const char *filename) {
     return new PlatformIOSFile(fp);
 }
 
-PlatformIOSFile *PlatformIOSFile::OpenFileWrite(const char *filename) {
+PlatformBaseFile *PlatformIOSFile::OpenFileWrite(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(ConvertToIOSPath(normalizedFilename, true), "wb");
     if (!fp) {
@@ -81,7 +81,7 @@ PlatformIOSFile *PlatformIOSFile::OpenFileWrite(const char *filename) {
     return new PlatformIOSFile(fp);
 }
 
-PlatformIOSFile *PlatformIOSFile::OpenFileAppend(const char *filename) {
+PlatformBaseFile *PlatformIOSFile::OpenFileAppend(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(ConvertToIOSPath(normalizedFilename, true), "ab");
     if (!fp) {

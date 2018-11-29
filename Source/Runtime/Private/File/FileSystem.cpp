@@ -570,7 +570,7 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
         return nullptr;
     }
 
-    PlatformFile *pf = PlatformFile::OpenFileRead(filename);
+    PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileRead(filename);
     if (pf) {
         if (fs_debug.GetBool()) {
             BE_LOG("FileSystem::OpenFileRead: %s\n", filename);
@@ -628,7 +628,7 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
             relativePath.AppendPath(filename);
             relativePath.CleanPath();
 
-            PlatformFile *pf = PlatformFile::OpenFileRead(relativePath);
+            PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileRead(relativePath);
             if (pf) {
                 if (fs_debug.GetBool()) {
                     BE_LOG("FileSystem::OpenFileRead: %s (found in '%s')\n", relativePath.c_str(), s->pathname);
@@ -660,13 +660,13 @@ File *FileSystem::OpenFileWrite(const char *filename) {
         CreateDirectory(writeDir, true);
     }
     
-    PlatformFile *pf = PlatformFile::OpenFileWrite(filename);
+    PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
     if (!pf) {
         if (PlatformFile::FileExists(filename)) {
             int fileMode = PlatformFile::GetFileMode(filename);
             if (!(fileMode & PlatformFile::Writable)) {
                 PlatformFile::SetFileMode(filename, fileMode | PlatformFile::Writable);
-                pf = PlatformFile::OpenFileWrite(filename);
+                pf = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
             }
         }
         
@@ -690,7 +690,7 @@ File *FileSystem::OpenFileAppend(const char *filename) {
         CreateDirectory(writeDir, true);
     }
 
-    PlatformFile *pf = PlatformFile::OpenFileAppend(filename);
+    PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileAppend(filename);
     if (!pf) {
         return nullptr;
     }

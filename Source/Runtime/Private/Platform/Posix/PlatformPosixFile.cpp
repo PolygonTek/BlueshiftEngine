@@ -144,7 +144,7 @@ Str PlatformPosixFile::NormalizeDirectoryName(const char *dirname) {
     return normalizedDirname;
 }
 
-PlatformPosixFile *PlatformPosixFile::OpenFileRead(const char *filename) {
+PlatformBaseFile *PlatformPosixFile::OpenFileRead(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "rb");
     if (!fp) {
@@ -153,7 +153,7 @@ PlatformPosixFile *PlatformPosixFile::OpenFileRead(const char *filename) {
     return new PlatformPosixFile(fp);
 }
 
-PlatformPosixFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
+PlatformBaseFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "wb");
     if (!fp) {
@@ -162,7 +162,7 @@ PlatformPosixFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
     return new PlatformPosixFile(fp);
 }
 
-PlatformPosixFile *PlatformPosixFile::OpenFileAppend(const char *filename) {
+PlatformBaseFile *PlatformPosixFile::OpenFileAppend(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "ab");
     if (!fp) {

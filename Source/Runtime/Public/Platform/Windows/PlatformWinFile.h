@@ -35,9 +35,9 @@ public:
                                 /// Writes data from the buffer to the file.
     virtual bool                Write(const void *buffer, size_t bytesToWrite);
 
-    static PlatformWinFile *    OpenFileRead(const char *filename);
-    static PlatformWinFile *    OpenFileWrite(const char *filename);
-    static PlatformWinFile *    OpenFileAppend(const char *filename);
+    static PlatformBaseFile *   OpenFileRead(const char *filename);
+    static PlatformBaseFile *   OpenFileWrite(const char *filename);
+    static PlatformBaseFile *   OpenFileAppend(const char *filename);
     
     static bool                 FileExists(const char *filename);
     static size_t               FileSize(const char *filename);

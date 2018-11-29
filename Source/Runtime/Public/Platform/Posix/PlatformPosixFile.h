@@ -33,11 +33,11 @@ public:
                                 // Read data from the file to the buffer.
     virtual size_t              Read(void *buffer, size_t bytesToRead) const;
                                 // Write data from the buffer to the file.
-    virtual bool                Write(const void *buffer, size_t bytesToWrite);   
+    virtual bool                Write(const void *buffer, size_t bytesToWrite);
     
-    static PlatformPosixFile *  OpenFileRead(const char *filename);
-    static PlatformPosixFile *  OpenFileWrite(const char *filename);
-    static PlatformPosixFile *  OpenFileAppend(const char *filename);
+    static PlatformBaseFile *   OpenFileRead(const char *filename);
+    static PlatformBaseFile *   OpenFileWrite(const char *filename);
+    static PlatformBaseFile *   OpenFileAppend(const char *filename);
 
     static bool                 FileExists(const char *filename);
     static size_t               FileSize(const char *filename);

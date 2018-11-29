@@ -60,7 +60,9 @@ public:
 
 BE_NAMESPACE_END
 
-#if defined(__ANDROID__)
+#if defined(__APPLE__)
+#include "Apple/PlatformAppleThread.h"
+#elif defined(__ANDROID__)
 #include "Android/PlatformAndroidThread.h"
 #elif defined(__UNIX__) 
 #include "Posix/PlatformPosixThread.h"

@@ -190,7 +190,7 @@ Str PlatformAndroidFile::NormalizeDirectoryName(const char *dirname) {
     return normalizedDirname;
 }
 
-PlatformAndroidFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
+PlatformBaseFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
     // FIXME: Read newest file
     // Read from external data directory
     Str normalizedFilename = NormalizeFilename(filename);
@@ -206,7 +206,7 @@ PlatformAndroidFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
     return nullptr;
 }
 
-PlatformAndroidFile *PlatformAndroidFile::OpenFileWrite(const char *filename) {
+PlatformBaseFile *PlatformAndroidFile::OpenFileWrite(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "wb");
     if (!fp) {
@@ -215,7 +215,7 @@ PlatformAndroidFile *PlatformAndroidFile::OpenFileWrite(const char *filename) {
     return new PlatformAndroidFile(fp);
 }
 
-PlatformAndroidFile *PlatformAndroidFile::OpenFileAppend(const char *filename) {
+PlatformBaseFile *PlatformAndroidFile::OpenFileAppend(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "ab");
     if (!fp) {

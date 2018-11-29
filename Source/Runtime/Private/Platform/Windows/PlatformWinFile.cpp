@@ -158,7 +158,7 @@ Str PlatformWinFile::NormalizeDirectory(const char *dirname) {
     return normalizedDirname;
 }
 
-PlatformWinFile *PlatformWinFile::OpenFileRead(const char *filename) {
+PlatformBaseFile *PlatformWinFile::OpenFileRead(const char *filename) {
     DWORD access = GENERIC_READ;
     DWORD shareMode = FILE_SHARE_READ;
     DWORD creation = OPEN_EXISTING;
@@ -171,7 +171,7 @@ PlatformWinFile *PlatformWinFile::OpenFileRead(const char *filename) {
     return new PlatformWinFile(handle);
 }
 
-PlatformWinFile *PlatformWinFile::OpenFileWrite(const char *filename) {
+PlatformBaseFile *PlatformWinFile::OpenFileWrite(const char *filename) {
     DWORD access = GENERIC_WRITE;
     DWORD shareMode = 0;
     DWORD creation = CREATE_ALWAYS;
@@ -186,7 +186,7 @@ PlatformWinFile *PlatformWinFile::OpenFileWrite(const char *filename) {
     return new PlatformWinFile(handle);
 }
 
-PlatformWinFile *PlatformWinFile::OpenFileAppend(const char *filename) {
+PlatformBaseFile *PlatformWinFile::OpenFileAppend(const char *filename) {
     DWORD access = GENERIC_WRITE;
     DWORD shareMode = 0;
     DWORD creation = OPEN_ALWAYS;

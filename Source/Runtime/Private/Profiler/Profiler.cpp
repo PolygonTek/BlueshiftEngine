@@ -46,7 +46,7 @@ void Profiler::Init() {
         marker.endQueryHandle = rhi.CreateQuery(RHI::TimestampQuery);
     }
 
-    mapAddMutex = PlatformMutex::Create();
+    mapAddMutex = (PlatformMutex *)PlatformMutex::Create();
 }
 
 void Profiler::Shutdown() {

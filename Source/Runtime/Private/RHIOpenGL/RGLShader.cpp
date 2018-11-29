@@ -678,7 +678,7 @@ static void CacheProgram(const char *name, const uint32_t hash, GLuint programOb
         Str filename = GLShader::programCacheDir;
         filename.AppendPath(name);
         filename.SetFileExtension(".programbin");
-        PlatformFile *file = PlatformFile::OpenFileWrite(filename);
+        PlatformFile *file = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
         if (file) {
             file->Write(programBinary, binaryLength + sizeof(uint32_t) + sizeof(GLenum));
             delete file;
