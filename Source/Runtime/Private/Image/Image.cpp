@@ -257,7 +257,7 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
     if (info->type & Float) {
         // [0] [1]
         // [2] [3]
-        ALIGN16(float rgba32f[4][4]);
+        ALIGN_AS16 float rgba32f[4][4];
 
         info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
         info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
@@ -273,7 +273,7 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
     } else {
         // [0] [1]
         // [2] [3]
-        ALIGN16(byte rgba8888[4][4]);
+        ALIGN_AS16 byte rgba8888[4][4];
 
         info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
         info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
@@ -324,7 +324,7 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
     if (info->type & Float) {
         // [0] [1]
         // [2] [3]
-        ALIGN16(float rgba32f[4][4]);
+        ALIGN_AS16 float rgba32f[4][4];
 
         info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
         info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
@@ -340,7 +340,7 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
     } else {
         // [0] [1]
         // [2] [3]
-        ALIGN16(byte rgba8888[4][4]);
+        ALIGN_AS16 byte rgba8888[4][4];
 
         info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
         info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);

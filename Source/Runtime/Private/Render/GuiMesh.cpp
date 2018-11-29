@@ -173,9 +173,9 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
 
     if (w <= 0 || h <= 0) {
         return; // completely clipped away
-    }    
+    }
 
-    ALIGN16(VertexGeneric) localVerts[4];
+    ALIGN_AS16 VertexGeneric localVerts[4];
 
     if (coordFrame == CoordFrame2D) {
         // 2D frame

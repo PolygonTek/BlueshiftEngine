@@ -168,17 +168,17 @@
 #define BE_STATIC_LINK
 
 #if defined(BE_STATIC_LINK) || !defined(__WIN32__)
-#define BE_API
+    #define BE_API
 #elif defined(BE_EXPORTS)
-#define BE_API __declspec (dllexport)
+    #define BE_API __declspec (dllexport)
 #else 
-#define BE_API __declspec (dllimport)
+    #define BE_API __declspec (dllimport)
 #endif
 
 #if defined(__WIN32__) && !defined(__X86_64__)
-#define BE_FASTCALL                 __fastcall
+    #define BE_FASTCALL             __fastcall
 #else
-#define BE_FASTCALL
+    #define BE_FASTCALL
 #endif
 
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
@@ -186,7 +186,7 @@
 #define OFFSET_OF(type, member)     ((intptr_t)&((type *)0)->member)
 
 #ifndef BIT
-#define BIT(num)                    (1 << (num))
+    #define BIT(num)                (1 << (num))
 #endif
 #define ADD_BIT(x, num)             (x |= BIT(num))
 #define SUB_BIT(x, num)             (x &= ~BIT(num))
@@ -203,22 +203,22 @@
 #define SAFE_DELETE_ARRAY(p)        if (p) { delete[] p; p = nullptr; }
 
 #ifndef FLT_INFINITY
-#define FLT_INFINITY                std::numeric_limits<float>::infinity()
+    #define FLT_INFINITY            std::numeric_limits<float>::infinity()
 #endif
 
 #if defined(_MSC_VER) && !defined(__SSE4_2__)
-#define __SSE4_2__  // enable to activate SSE4.2 under Windows
+    #define __SSE4_2__  // enable to activate SSE4.2 under Windows
 #endif
 
 #if defined(_MSC_VER) && !defined(__AVX__)
-#define __AVX__  // enable to activate AVX under Windows
+    #define __AVX__  // enable to activate AVX under Windows
 #endif
 
 // useful macro for forward declaration of Objective-C class in C/C++
 #ifdef __OBJC__
-#define OBJC_CLASS(name) @class name
+    #define OBJC_CLASS(name) @class name
 #else
-#define OBJC_CLASS(name) typedef struct objc_object name
+    #define OBJC_CLASS(name) typedef struct objc_object name
 #endif
 
 typedef uint8_t         byte;       // 8 bits
@@ -241,6 +241,46 @@ typedef uint64_t        qword;      // 64 bits
 #define assert_64_byte_aligned(pointer)
 
 #endif
+
+#ifdef _MSC_VER
+    #if (_MSC_VER >= 1800)
+        #define __alignas_is_defined 1
+    #endif
+    #if (_MSC_VER >= 1900)
+        #define __alignof_is_defined 1
+    #endif
+#else
+    #include <stdalign.h>   // __alignas/of_is_defined directly from the implementation
+#endif
+
+#ifdef __alignas_is_defined
+    #define ALIGN_AS(x) alignas(x)
+#else
+    #pragma message("C++11 alignas unsupported :( Falling back to compiler attributes")
+    #ifdef __GNUG__
+        #define ALIGN_AS(x) __attribute__ ((aligned(x)))
+    #elif defined(_MSC_VER)
+        #define ALIGN_AS(x) __declspec(align(x))
+    #else
+        #error Unknown compiler, unknown alignment attribute!
+    #endif
+#endif
+
+#ifdef __alignof_is_defined
+    #define ALIGN_OF(x) alignof(x)
+#else
+    #pragma message("C++11 alignof unsupported :( Falling back to compiler attributes")
+    #ifdef __GNUG__
+        #define ALIGN_OF(x) __alignof__ (x)
+    #elif defined(_MSC_VER)
+        #define ALIGN_OF(x) __alignof(x)
+    #else
+        #error Unknown compiler, unknown alignment attribute!
+    #endif
+#endif
+
+#define ALIGN_AS16 ALIGN_AS(16)
+#define ALIGN_AS32 ALIGN_AS(32)
 
 template <typename T>
 inline T *address_of(T &&in) {
@@ -299,10 +339,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 #define PATHSEPERATOR_WSTR          L"\\"
 #define PATHSEPERATOR_WCHAR         L'\\'
-
-#define ALIGN(a, x)                 __declspec(align(a)) x
-#define ALIGN16(x)                  __declspec(align(16)) x
-#define ALIGN32(x)                  __declspec(align(32)) x
 
 #define _alloca16(x)                ((void *)((((intptr_t)_alloca((x) + 15)) + 15) & ~15))
 #define _alloca32(x)                ((void *)((((intptr_t)_alloca((x) + 31)) + 31) & ~31))
@@ -377,10 +413,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 #define PATHSEPERATOR_WSTR          L"/"
 #define PATHSEPERATOR_WCHAR         L'/'
-
-#define ALIGN(a, x)                 x __attribute__ ((aligned(a))
-#define ALIGN16(x)                  x __attribute__ ((aligned(16)))
-#define ALIGN32(x)                  x __attribute__ ((aligned(32)))
 
 #define _alloca                     alloca
 #define _alloca16(x)                ((void *)((((intptr_t)alloca((x) + 15)) + 15) & ~15))

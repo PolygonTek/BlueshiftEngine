@@ -381,7 +381,7 @@ void DXTEncoder::ComputeAlphaIndicesFast(const byte *colorBlock, const int alpha
     const int ALPHA_RANGE = 7;
 
     byte ab1, ab2, ab3, ab4, ab5, ab6, ab7;
-    ALIGN16(byte indexes[16]);
+    ALIGN_AS16 byte indexes[16];
 
     ab1 = (13 * maxAlpha +  1 * minAlpha + ALPHA_RANGE) / (ALPHA_RANGE * 2);
     ab2 = (11 * maxAlpha +  3 * minAlpha + ALPHA_RANGE) / (ALPHA_RANGE * 2);
@@ -473,7 +473,7 @@ void DXTEncoder::Compute4BitsAlpha(const byte *colorBlock, const int alphaOffset
 }
 
 void DXTEncoder::ComputeColorIndicesFast(const byte *colorBlock, const byte *maxColor, const byte *minColor, uint32_t *out) {
-    ALIGN16(uint16_t colors[4][4]);
+    ALIGN_AS16 uint16_t colors[4][4];
     uint32_t result = 0;
 
     colors[0][0] = (maxColor[0] & C565_5_MASK) | (maxColor[0] >> 5);
@@ -602,9 +602,9 @@ int DXTEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color
 }
 
 void DXTEncoder::EncodeDXT1BlockFast(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
 
     GetMinMaxBBox(colorBlock, minColor, maxColor);
     InsetColorsBBox(minColor, maxColor);
@@ -619,10 +619,10 @@ void DXTEncoder::EncodeDXT1BlockFast(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT3BlockFast(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
-    ALIGN16(DXTBlock::AlphaExplicitBlock dxtAlphaBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
+    ALIGN_AS16 DXTBlock::AlphaExplicitBlock dxtAlphaBlock;
 
     GetMinMaxBBox(colorBlock, minColor, maxColor);
     InsetColorsBBox(minColor, maxColor);
@@ -642,10 +642,10 @@ void DXTEncoder::EncodeDXT3BlockFast(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT5BlockFast(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock;
 
     GetMinMaxBBox(colorBlock, minColor, maxColor);
     InsetColorsBBox(minColor, maxColor);
@@ -668,9 +668,9 @@ void DXTEncoder::EncodeDXT5BlockFast(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXN2BlockFast(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minNormal[4]);
-    ALIGN16(byte maxNormal[4]);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock);
+    ALIGN_AS16 byte minNormal[4];
+    ALIGN_AS16 byte maxNormal[4];
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock;
 
     GetMinMaxBBox(colorBlock, minNormal, maxNormal);
     InsetNormalsBBox3Dc(minNormal, maxNormal);
@@ -687,9 +687,9 @@ void DXTEncoder::EncodeDXN2BlockFast(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT1BlockHQ(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
 
     bool transparent = false;
     for (int i = 0; i < 16; i++) {
@@ -719,10 +719,10 @@ void DXTEncoder::EncodeDXT1BlockHQ(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT3BlockHQ(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
-    ALIGN16(DXTBlock::AlphaExplicitBlock dxtAlphaBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
+    ALIGN_AS16 DXTBlock::AlphaExplicitBlock dxtAlphaBlock;
 
     Compute4BitsAlpha(colorBlock, 3, dxtAlphaBlock.row);
 
@@ -741,11 +741,11 @@ void DXTEncoder::EncodeDXT3BlockHQ(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT5BlockHQ(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock1);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock2);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock1;
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock2;
 
     GetMinMaxAlpha(colorBlock, 3, minColor, maxColor);
     GetMinMaxColorHQ(colorBlock, minColor, maxColor);
@@ -777,10 +777,10 @@ void DXTEncoder::EncodeDXT5BlockHQ(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXN2BlockHQ(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minNormal[4]);
-    ALIGN16(byte maxNormal[4]);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock1);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock2);
+    ALIGN_AS16 byte minNormal[4];
+    ALIGN_AS16 byte maxNormal[4];
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock1;
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock2;
 
     for (int i = 0; i < 2; i++) {
         GetMinMaxAlpha(colorBlock, i, minNormal, maxNormal);
@@ -819,7 +819,7 @@ BE_INLINE void DXTEncoder::ExtractBlock(const byte *src, int srcPitch, int block
 }
 
 void DXTEncoder::CompressImageDXT1Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
     
     for (int z = 0; z < depth; z++) {
@@ -837,7 +837,7 @@ void DXTEncoder::CompressImageDXT1Fast(const byte *src, const int width, const i
 }
 
 void DXTEncoder::CompressImageDXT1HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -855,7 +855,7 @@ void DXTEncoder::CompressImageDXT1HQ(const byte *src, const int width, const int
 }
 
 void DXTEncoder::CompressImageDXT3Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -873,7 +873,7 @@ void DXTEncoder::CompressImageDXT3Fast(const byte *src, const int width, const i
 }
 
 void DXTEncoder::CompressImageDXT3HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -891,7 +891,7 @@ void DXTEncoder::CompressImageDXT3HQ(const byte *src, const int width, const int
 }
 
 void DXTEncoder::CompressImageDXT5Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -909,7 +909,7 @@ void DXTEncoder::CompressImageDXT5Fast(const byte *src, const int width, const i
 }
 
 void DXTEncoder::CompressImageDXT5HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -927,7 +927,7 @@ void DXTEncoder::CompressImageDXT5HQ(const byte *src, const int width, const int
 }
 
 void DXTEncoder::CompressImageDXN2Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -945,7 +945,7 @@ void DXTEncoder::CompressImageDXN2Fast(const byte *src, const int width, const i
 }
 
 void DXTEncoder::CompressImageDXN2HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {

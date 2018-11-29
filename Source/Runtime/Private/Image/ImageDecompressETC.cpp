@@ -250,7 +250,7 @@ static void ReadColorBlockETC2(const byte *data, uint32_t &block1, uint32_t &blo
 }
 
 static void DecompressImageETC2_RGB8(const byte *src, const int width, const int height, const int depth, byte *out) {
-    ALIGN16(byte unpackedBlock[64]);
+    ALIGN_AS16 byte unpackedBlock[64];
     uint32_t block1;
     uint32_t block2;
 
@@ -282,7 +282,7 @@ static void DecompressImageETC2_RGB8(const byte *src, const int width, const int
 }
 
 static void DecompressImageETC2_RGB8A1(const byte *src, const int width, const int height, const int depth, byte *out) {
-    ALIGN16(byte unpackedBlock[64]);
+    ALIGN_AS16 byte unpackedBlock[64];
     uint32_t block1;
     uint32_t block2;
 
@@ -311,7 +311,7 @@ static void DecompressImageETC2_RGB8A1(const byte *src, const int width, const i
 }
 
 static void DecompressImageETC2_RGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
-    ALIGN16(byte unpackedBlock[64]);
+    ALIGN_AS16 byte unpackedBlock[64];
     uint32_t block1;
     uint32_t block2;
 
@@ -343,7 +343,7 @@ static void DecompressImageETC2_RGBA8(const byte *src, const int width, const in
 }
 
 static void DecompressImageETC2_RG11(const byte *src, const int width, const int height, const int depth, bool signedFormat, byte *out) {
-    ALIGN16(byte unpackedBlock[64]);
+    ALIGN_AS16 byte unpackedBlock[64];
 
     etcpack::formatSigned = signedFormat;
 

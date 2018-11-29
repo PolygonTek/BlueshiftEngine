@@ -128,7 +128,7 @@ void DXTDecoder::DecodeAlphaExplicitBlock(const DXTBlock::AlphaExplicitBlock *bl
 }
 
 void DXTDecoder::DecompressImageDXT1(const DXTBlock *dxtBlock, const int width, const int height, const int depth, byte *out) {
-    ALIGN16(byte unpackedBlock[64]);
+    ALIGN_AS16 byte unpackedBlock[64];
 
     for (int z = 0; z < depth; z++) {
         byte *dst_z = out + 4 * (width * height * z);
@@ -155,7 +155,7 @@ void DXTDecoder::DecompressImageDXT1(const DXTBlock *dxtBlock, const int width, 
 }
 
 void DXTDecoder::DecompressImageDXT3(const DXTBlock *dxtBlock, const int width, const int height, const int depth, byte *out) {
-    ALIGN16(byte unpackedBlock[64]);
+    ALIGN_AS16 byte unpackedBlock[64];
 
     for (int z = 0; z < depth; z++) {
         byte *dst_z = out + 4 * (width * height * z);
@@ -184,7 +184,7 @@ void DXTDecoder::DecompressImageDXT3(const DXTBlock *dxtBlock, const int width, 
 }
 
 void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, const int height, const int depth, byte *out) {
-    ALIGN16(byte unpackedBlock[64]);
+    ALIGN_AS16 byte unpackedBlock[64];
 
     for (int z = 0; z < depth; z++) {
         byte *dst_z = out + 4 * (width * height * z);
@@ -213,7 +213,7 @@ void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, 
 }
 
 void DXTDecoder::DecompressImageDXN2(const DXTBlock *dxtBlock, const int width, const int height, const int depth, byte *out) {
-    ALIGN16(byte unpackedBlock[64]);
+    ALIGN_AS16 byte unpackedBlock[64];
 
     for (int z = 0; z < depth; z++) {
         byte *dst_z = out + 4 * (width * height * z);
