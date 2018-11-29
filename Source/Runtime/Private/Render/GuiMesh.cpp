@@ -295,7 +295,7 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::Te
             }
 
             // Save current line length
-            lineLen[numLines++] = currentLineLength; 
+            lineLen[numLines++] = currentLineLength;
 
             currentLineLength = 0;
             currentLineWidth = 0;
@@ -305,9 +305,9 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::Te
         } else {
             float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
             currentLineWidth += charWidth;
-        }
 
-        currentLineLength++;
+            currentLineLength++;
+        }
     }
 
     if (currentLineLength > 0) {

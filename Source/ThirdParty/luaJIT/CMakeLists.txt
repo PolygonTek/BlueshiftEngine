@@ -19,7 +19,7 @@ add_custom_target(${PROJECT_NAME} SOURCES ${ALL_FILES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ThirdParty)
 
-# Skip LuaJIT compilation if library already exists
+# Skip LuaJIT compilation if library file already exists
 if (NOT LUAJIT_FOUND)
     set(STATIC_LIB TRUE)
 
