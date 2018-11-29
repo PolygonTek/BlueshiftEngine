@@ -304,8 +304,8 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define ALIGN16(x)                  __declspec(align(16)) x
 #define ALIGN32(x)                  __declspec(align(32)) x
 
-#define _alloca16(x)                ((void *)((((intptr_t)_alloca((x)+15)) + 15) & ~15))
-#define _alloca32(x)                ((void *)((((intptr_t)_alloca((x)+31)) + 31) & ~31))
+#define _alloca16(x)                ((void *)((((intptr_t)_alloca((x) + 15)) + 15) & ~15))
+#define _alloca32(x)                ((void *)((((intptr_t)_alloca((x) + 31)) + 31) & ~31))
 
 #define strtoll                     _strtoi64
 #define strtoull                    _strtoui64
@@ -378,13 +378,13 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define PATHSEPERATOR_WSTR          L"/"
 #define PATHSEPERATOR_WCHAR         L'/'
 
-#define ALIGN(a, x)                 __attribute__((aligned(a)) x
-#define ALIGN16(x)                  __attribute__((aligned(16))) x
-#define ALIGN32(x)                  __attribute__((aligned(32))) x
+#define ALIGN(a, x)                 x __attribute__ ((aligned(a))
+#define ALIGN16(x)                  x __attribute__ ((aligned(16)))
+#define ALIGN32(x)                  x __attribute__ ((aligned(32)))
 
 #define _alloca                     alloca
-#define _alloca16(x)                ((void *)((((intptr_t)alloca((x)+15)) + 15) & ~15))
-#define _alloca32(x)                ((void *)((((intptr_t)alloca((x)+31)) + 31) & ~31))
+#define _alloca16(x)                ((void *)((((intptr_t)alloca((x) + 15)) + 15) & ~15))
+#define _alloca32(x)                ((void *)((((intptr_t)alloca((x) + 31)) + 31) & ~31))
 
 #define debugbreak()                asm("int $3")
 #define TCHAR   char
