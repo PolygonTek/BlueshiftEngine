@@ -18,6 +18,11 @@
 
 BE_NAMESPACE_BEGIN
 
+uint64_t PlatformLinuxThread::GetCurrentThreadId() {
+    // NOTE: the POSIX standard no longer requires pthread_t to be an arithmetic type
+    return pthread_self();
+}
+
 void PlatformLinuxThread::SetName(const char *name) {
     pthread_setname_np(pthread_self(), name);
 }

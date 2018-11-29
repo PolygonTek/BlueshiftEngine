@@ -66,11 +66,6 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     return nullptr;
 }
 
-uint64_t PlatformPosixThread::GetCurrentThreadId() {
-    // NOTE: the POSIX standard no longer requires pthread_t to be an arithmetic type
-    return pthread_self();
-}
-
 PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
@@ -119,7 +114,7 @@ void PlatformPosixThread::Join(PlatformBaseThread *thread) {
 void PlatformPosixThread::JoinAll(int numThreads, PlatformBaseThread *threads[]) {
     for (int i = 0; i < numThreads; i++) {
         PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(threads[i]);
-        int err = pthread_join(posixThread->thread, nullptr);
+        int err = pthread_join(*posixThread->thread, nullptr);
         if (err != 0) {
             BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
         }
@@ -175,7 +170,7 @@ void PlatformPosixCondition::Destroy(PlatformBaseCondition *condition) {
     delete posixCondition->cond;
 }
 
-void PlatformPosixCondition::Wait(const PlatformPosixCondition *condition, const PlatformBaseMutex *mutex) {
+void PlatformPosixCondition::Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex) {
     const PlatformPosixCondition *posixCondition = static_cast<const PlatformPosixCondition *>(condition);
     const PlatformPosixMutex *posixMutex = static_cast<const PlatformPosixMutex *>(mutex);
 

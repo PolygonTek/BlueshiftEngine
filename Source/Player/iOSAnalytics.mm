@@ -26,32 +26,32 @@ void Analytics::RegisterLuaModule(LuaCpp::State *state) {
 void Analytics::Init(const char *trackingID) {
     NSString *nsTrackingID = [[NSString alloc] initWithBytes:trackingID length:strlen(trackingID) encoding:NSUTF8StringEncoding];
 
-	GAI *gai = [GAI sharedInstance];
+    GAI *gai = [GAI sharedInstance];
 
-	// Optional: automatically report uncaught exceptions.
-	gai.trackUncaughtExceptions = YES;
+    // Optional: automatically report uncaught exceptions.
+    gai.trackUncaughtExceptions = YES;
 
-	// Optional: set Logger to VERBOSE for debug information.
+    // Optional: set Logger to VERBOSE for debug information.
 #ifdef _DEBUG
-	gai.logger.logLevel = kGAILogLevelVerbose;
-	//gai.dispatchInterval = 20;
+    gai.logger.logLevel = kGAILogLevelVerbose;
+    //gai.dispatchInterval = 20;
 #endif
 
-	id<GAITracker> tracker = [gai trackerWithTrackingId:nsTrackingID];
-	[tracker set:kGAIScreenName value:@"BlueshiftGame"];
-	[tracker send:[[GAIDictionaryBuilder createScreenView] build]];
+    id<GAITracker> tracker = [gai trackerWithTrackingId:nsTrackingID];
+    [tracker set:kGAIScreenName value:@"BlueshiftGame"];
+    [tracker send:[[GAIDictionaryBuilder createScreenView] build]];
 }
 
 void Analytics::Log(const char *category, const char *action, const char *label, long value) {
-	NSString *nsCategory = [[NSString alloc] initWithBytes:category length:strlen(category) encoding:NSUTF8StringEncoding];
-	NSString *nsAction = [[NSString alloc] initWithBytes:action length:strlen(action) encoding:NSUTF8StringEncoding];
-	NSString *nsLabel = [[NSString alloc] initWithBytes:label length:strlen(label) encoding:NSUTF8StringEncoding];
-	NSNumber *nsValue = [NSNumber numberWithLong:value];
-
-	id<GAITracker> tracker = [GAI sharedInstance].defaultTracker;
-
-	[tracker send:[[GAIDictionaryBuilder createEventWithCategory:nsCategory
-                                                      	  action:nsAction
+    NSString *nsCategory = [[NSString alloc] initWithBytes:category length:strlen(category) encoding:NSUTF8StringEncoding];
+    NSString *nsAction = [[NSString alloc] initWithBytes:action length:strlen(action) encoding:NSUTF8StringEncoding];
+    NSString *nsLabel = [[NSString alloc] initWithBytes:label length:strlen(label) encoding:NSUTF8StringEncoding];
+    NSNumber *nsValue = [NSNumber numberWithLong:value];
+    
+    id<GAITracker> tracker = [GAI sharedInstance].defaultTracker;
+    
+    [tracker send:[[GAIDictionaryBuilder createEventWithCategory:nsCategory
+                                                          action:nsAction
                                                            label:nsLabel
                                                            value:nsValue] build]];
 }

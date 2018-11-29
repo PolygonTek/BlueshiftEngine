@@ -83,11 +83,11 @@ elseif (PLATFORM_IOS)
     set_source_files_properties(${IOS_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
 
     if (NOT BS_USE_ANALYTICS)
-        set_source_files_properties(iOSAnalytics.h iOSAnalytics.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
+        set_source_files_properties(iOSAnalytics.h iOSAnalytics.mm PROPERTIES HEADER_FILE_ONLY TRUE)
     endif ()
 
     if (NOT BS_USE_ADMOB)
-        set_source_files_properties(iOSAdMob.h iOSAdMob.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
+        set_source_files_properties(iOSAdMob.h iOSAdMob.mm PROPERTIES HEADER_FILE_ONLY TRUE)
     endif ()
 endif ()
 

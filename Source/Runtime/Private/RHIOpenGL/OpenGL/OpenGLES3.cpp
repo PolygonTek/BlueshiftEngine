@@ -62,7 +62,9 @@ void OpenGLES3::Init() {
 }
 
 void OpenGLES3::QueryTimestampCounter(GLuint queryId) {
+#ifdef GL_EXT_disjoint_timer_query
     gglQueryCounterEXT(queryId, GL_TIMESTAMP_EXT);
+#endif
 }
 
 void OpenGLES3::DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {

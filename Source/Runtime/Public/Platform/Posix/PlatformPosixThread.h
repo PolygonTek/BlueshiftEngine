@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 class BE_API PlatformPosixThread : public PlatformBaseThread {
 public:
     static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Delete(PlatformBaseThread *thread);
+    static void                 Destroy(PlatformBaseThread *thread);
     
     static void                 SetAffinity(int affinity);
     
@@ -37,7 +37,7 @@ class BE_API PlatformPosixMutex : public PlatformBaseMutex {
     
 public:
     static PlatformBaseMutex *  Create();
-    static void                 Delete(PlatformBaseMutex *mutex);
+    static void                 Destroy(PlatformBaseMutex *mutex);
     
     static void                 Lock(const PlatformBaseMutex *mutex);
     static bool                 TryLock(const PlatformBaseMutex *mutex);
@@ -50,7 +50,7 @@ private:
 class BE_API PlatformPosixCondition : public PlatformBaseCondition {
 public:
     static PlatformBaseCondition *Create();
-    static void                 Delete(PlatformBaseCondition *condition);
+    static void                 Destroy(PlatformBaseCondition *condition);
     
     // release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex);
