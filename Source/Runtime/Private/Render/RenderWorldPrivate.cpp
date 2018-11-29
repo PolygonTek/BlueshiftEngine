@@ -959,6 +959,7 @@ static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
 }
 
 void RenderWorld::SortDrawSurfs(VisibleView *visView) {
+    // FIXME: Use radix sort to boost up speed
     qsort(visView->drawSurfs, visView->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);
 
     VisibleLight *visLight = visView->visLights.Next();

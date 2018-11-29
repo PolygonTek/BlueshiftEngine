@@ -242,11 +242,11 @@ void BufferCacheManager::BeginBackEnd() {
 #if PINNED_MEMORY
     if (!usePersistentMappedBuffers) {
         // Unmap the current frame so the GPU can read it
-        const uint32_t startUnmap = PlatformTime::Milliseconds();
+        const double startUnmap = PlatformTime::Seconds();
         UnmapBufferSet(frameData[mappedNum], true);
-        const uint32_t endUnmap = PlatformTime::Milliseconds();
-        if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1) {
-            BE_DLOG("BufferCacheManager::BeginBackEnd: unmap took %i msec\n", endUnmap - startUnmap);
+        const double endUnmap = PlatformTime::Seconds();
+        if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1.0) {
+            BE_DLOG("BufferCacheManager::BeginBackEnd: unmap took %.3f seconds\n", endUnmap - startUnmap);
         }
     }
 #endif
@@ -271,11 +271,11 @@ void BufferCacheManager::BeginBackEnd() {
     
 #if PINNED_MEMORY
     if (!usePersistentMappedBuffers) {
-        const uint32_t startMap = PlatformTime::Milliseconds();
+        const double startMap = PlatformTime::Seconds();
         MapBufferSet(frameData[mappedNum]);
-        const uint32_t endMap = PlatformTime::Milliseconds();
-        if (r_showBufferCacheTiming.GetBool() && endMap - startMap > 1) {
-            BE_DLOG("BufferCacheManager::BeginBackEnd: map took %i msec\n", endMap - startMap);
+        const double endMap = PlatformTime::Seconds();
+        if (r_showBufferCacheTiming.GetBool() && endMap - startMap > 1.0) {
+            BE_DLOG("BufferCacheManager::BeginBackEnd: map took %.3f seconds\n", endMap - startMap);
         }
     }
 #endif
@@ -609,13 +609,13 @@ void BufferCacheManager::UpdatePBOTexture() const {
         // If asynchronous DMA transfer is supported, glTexSubImage2D() should return immediately.
         rhi.BindBuffer(currentBufferSet->texelBufferType, currentBufferSet->texelBuffer);
 
-        const uint32_t startUpdatePBO = PlatformTime::Milliseconds();
+        const double startUpdatePBO = PlatformTime::Seconds();
 
         frameData[0].texture->Update2D(0, 0, updateW, updateH, Image::RGBA_32F_32F_32F_32F, nullptr);
 
-        const uint32_t endUpdatePBO = PlatformTime::Milliseconds();
+        const double endUpdatePBO = PlatformTime::Seconds();
         if (endUpdatePBO - startUpdatePBO > 1) {
-            BE_DLOG("BufferCacheManager::UpdatePBOTexture: update pbo took %i msec\n", endUpdatePBO - startUpdatePBO);
+            BE_DLOG("BufferCacheManager::UpdatePBOTexture: update pbo took %.3f msec\n", endUpdatePBO - startUpdatePBO);
         }
 
         rhi.BindBuffer(currentBufferSet->texelBufferType, RHI::NullBuffer);

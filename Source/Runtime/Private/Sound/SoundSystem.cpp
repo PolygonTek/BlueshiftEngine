@@ -291,7 +291,7 @@ void SoundSystem::Update() {
     LinkList<Sound> *node;
     LinkList<Sound> *nextNode;
 
-    static float lastTime = PlatformTime::Milliseconds();
+    static int lastTime = PlatformTime::Milliseconds();
     int currentTime = PlatformTime::Milliseconds();
     int elapsedTime = currentTime - lastTime;
     lastTime = currentTime;
