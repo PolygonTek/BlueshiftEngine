@@ -9,6 +9,7 @@ Version History
 - Added support for integration three ad formats of [Google AdMob](https://www.google.com/admob/) into the player
 - Added support for Unicode (UTF-8) almost everywhere
 - Fixed an issue where sRGB rendering on Android was incorrect
+- Improved speed of project loading in editor
 
 ### 0.5.0
 - Added support for GPU instancing for static/skinned meshes
