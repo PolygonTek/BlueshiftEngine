@@ -257,12 +257,12 @@ OpenGL 4.6 (2017)
 */
 
 #if defined(__IOS__)
-#include "GGL/ggles3.h"
+    #include "GGL/ggles3.h"
 #elif defined(__ANDROID__)
-#include "GGL/ggles3.h"
-#include "GGL/gegl.h"
+    #include "GGL/ggles3.h"
+    #include "GGL/gegl.h"
 #elif defined(__WIN32__) || defined(__MACOSX__) || defined(__LINUX__)
-#include "GGL/gglcore32.h"
+    #include "GGL/gglcore32.h"
     #if defined(__WIN32__)
         #include "GGL/gwgl.h"
     #elif defined(__LINUX__)

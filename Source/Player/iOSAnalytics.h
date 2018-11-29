@@ -19,9 +19,9 @@
 
 class Analytics {
 public:
-	static void RegisterLuaModule(LuaCpp::State *state);
+    static void RegisterLuaModule(LuaCpp::State *state);
 
-	static void Init(const char *trackingID);
+    static void Init(const char *trackingID);
 
-	static void Log(const char *category, const char *action, const char *label, long value);
+    static void Log(const char *category, const char *action, const char *label, long value);
 };
