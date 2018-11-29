@@ -51,7 +51,7 @@ uint64_t PlatformAndroidThread::GetCurrentThreadId() {
     return static_cast<uint64_t>(gettid());
 }
 
-PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -74,7 +74,7 @@ PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, voi
     return androidThread;
 }
 
-void PlatformAndroidThread::Destroy(PlatformAndroidThread *thread) {
+void PlatformAndroidThread::Destroy(PlatformBaseThread *thread) {
     assert(thread);
     PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
     //pthread_cancel(*androidThread->thread);
@@ -90,7 +90,7 @@ void PlatformAndroidThread::SetName(const char *name) {
     pthread_setname_np(pthread_self(), name);
 }
 
-void PlatformAndroidThread::Join(PlatformAndroidThread *thread) {
+void PlatformAndroidThread::Join(PlatformBaseThread *thread) {
     PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
     int err = pthread_join(*androidThread->thread, nullptr);
     if (err != 0) {
@@ -113,7 +113,7 @@ void PlatformAndroidThread::JoinAll(int numThreads, PlatformBaseThread *threads[
     } 
 }
 
-PlatformAndroidMutex *PlatformAndroidMutex::Create() {
+PlatformBaseMutex *PlatformAndroidMutex::Create() {
     PlatformAndroidMutex *androidMutex = new PlatformAndroidMutex;
     androidMutex->mutex = new pthread_mutex_t;
     pthread_mutexattr_t attr;
@@ -149,7 +149,7 @@ void PlatformAndroidMutex::Unlock(const PlatformBaseMutex *mutex) {
     pthread_mutex_unlock(androidMutex->mutex);
 }
 
-PlatformAndroidCondition *PlatformAndroidCondition::Create() {
+PlatformBaseCondition *PlatformAndroidCondition::Create() {
     PlatformAndroidCondition *androidCondition = new PlatformAndroidCondition;
     androidCondition->cond = new pthread_cond_t;
     pthread_cond_init(androidCondition->cond, nullptr);

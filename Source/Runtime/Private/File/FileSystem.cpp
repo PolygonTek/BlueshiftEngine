@@ -147,7 +147,7 @@ void FileSystem::AddSearchPath(const char *path) {
 
 static voidpf ZCALLBACK _fopen_file_func(voidpf opaque, const char* filename, int mode) {
     PlatformFile *file = nullptr;
-    PlatformFile *(*mode_fopen)(const char *filename) = nullptr;
+    PlatformBaseFile *(*mode_fopen)(const char *filename) = nullptr;
     if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER) == ZLIB_FILEFUNC_MODE_READ) {
         mode_fopen = PlatformFile::OpenFileRead;
     } else {
@@ -161,7 +161,7 @@ static voidpf ZCALLBACK _fopen_file_func(voidpf opaque, const char* filename, in
     }
 
     if ((filename != nullptr) && (mode_fopen != nullptr)) {
-        file = (*mode_fopen)(filename);
+        file = (PlatformFile *)(*mode_fopen)(filename);
     }
     return (FILE *) file;
 }
