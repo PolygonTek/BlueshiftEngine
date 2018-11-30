@@ -524,7 +524,7 @@ void GameClient::DrawConsoleScreen() {
     DrawBar(0, consoleHeight, screenWidth, 3, Color4::black);
 
     // Draw version string.
-    Str::snPrintf(versionString, COUNT_OF(versionString), "%s-%s %i.%i.%i", B_ENGINE_NAME, PlatformProcess::PlatformName(), B_ENGINE_VERSION_MAJOR, B_ENGINE_VERSION_MINOR, B_ENGINE_VERSION_PATCH);
+    Str::snPrintf(versionString, COUNT_OF(versionString), "%s-%s %s", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION);
     SetTextColor(Color4(1.0f, 0.5f, 0.0f, 1.0f));
     DrawString(CONSOLE_TEXT_BORDER, consoleHeight - (CONSOLE_FONT_HEIGHT * 1.5f), versionString, -1, DTF_RIGHT | DTF_DROPSHADOW);
 

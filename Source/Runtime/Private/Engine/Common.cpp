@@ -179,9 +179,9 @@ void Common::RunFrame(int frameMsec) {
 
 Common::PlatformId Common::GetPlatformId() const {
 #if defined(__IOS__)
-return PlatformId::IOSPlatform;
+    return PlatformId::IOSPlatform;
 #elif defined(__ANDROID__)
-return PlatformId::AndroidPlatform;
+    return PlatformId::AndroidPlatform;
 #elif defined(__WIN32__)
     return PlatformId::WindowsPlatform;
 #elif defined(__MACOSX__)
@@ -263,8 +263,8 @@ void Common::GetPlatformEvent(Platform::Event *ev) {
 }
 
 void Common::Cmd_Version(const CmdArgs &args) {
-    BE_LOG("%s-%s %i.%i.%i %s %s\n", B_ENGINE_NAME, PlatformProcess::PlatformName(),
-        B_ENGINE_VERSION_MAJOR, B_ENGINE_VERSION_MINOR, B_ENGINE_VERSION_PATCH, __DATE__, __TIME__);
+    BE_LOG("%s-%s %s %s %s\n", BE_NAME, PlatformProcess::PlatformName(),
+        BE_VERSION, __DATE__, __TIME__);
 }
 
 void Common::Cmd_Error(const CmdArgs &args) {

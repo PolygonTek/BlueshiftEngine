@@ -14,12 +14,13 @@
 
 #pragma once
 
-#define B_ENGINE_NAME "Blueshift Engine"
+#define BE_NAME "Blueshift Engine"
 
 #include "Version.h"
 
-#define B_STRINGIZE(x) #x
-#define B_ENGINE_VERSION_STRING B_STRINGIZE(B_ENGINE_VERSION_MAJOR) B_STRINGIZE(B_ENGINE_VERSION_MINOR) B_STRINGIZE(B_ENGINE_VERSION_PATCH) 
+#define BE_STRINGIZE(x) #x
+#define BE_CONCAT_VERSION(a, b, c) BE_STRINGIZE(a) "." BE_STRINGIZE(b) "." BE_STRINGIZE(c)
+#define BE_VERSION BE_CONCAT_VERSION(BE_VERSION_MAJOR, BE_VERSION_MINOR, BE_VERSION_PATCH)
 
 //----------------------------------------------------------------------------------------------
 // Platform detection defines

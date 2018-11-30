@@ -73,9 +73,14 @@ else ()
 endif ()
 
 set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
-set(VERSION_MINOR 5 CACHE INTERNAL "Project minor version number.")
+set(VERSION_MINOR 6 CACHE INTERNAL "Project minor version number.")
 set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
-mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+
+string(TIMESTAMP NOW "%Y-%m-%d %H:%M:%S")
+set(VERSION_DATE ${NOW} CACHE INTERNAL "Project version date")
+
+# Advanced variables will not be displayed in any of the cmake GUIs unless the show advanced option is on.
+mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH VERSION_DATE)
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
 
