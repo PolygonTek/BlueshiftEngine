@@ -57,7 +57,7 @@ public:
 
     struct JointInfo {
         int32_t             nameIndex;
-        int32_t             parentNum;
+        int32_t             parentIndex;
         int32_t             animBits;
         int32_t             firstComponent;
     };
@@ -65,7 +65,7 @@ public:
     struct FrameInterpolation {
         int32_t             frame1;
         int32_t             frame2;
-        int32_t             cycleCount;     // how many times the anim has wrapped to the begining (0 for clamped anims)
+        int32_t             cycleCount;     // how many times the animation has wrapped to the begining (0 for clamped anims)
         float               frontlerp;
         float               backlerp;
     };
@@ -118,10 +118,10 @@ public:
     void                    Write(const char *filename);
     const Anim *            AddRefCount() const { refCount++; return this; }
     
-                            // Anim 과 Skeleton 의 hierarchy 관계가 같은지 검사한다. (joint 이름도 같아야 한다)
+                            /// Check if the hierarchy is the same with the given skeleton (must have same joint names)
     bool                    CheckHierarchy(const Skeleton *skeleton) const;
 
-                            // 모든 frame 별로 mesh 의 AABB 를 계산해서 Array 에 담는다.
+                            /// Compute mesh AABB for each frames.
     void                    ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<AABB> &frameAABBs) const;
 
                             /// Converts time in milliseconds to the FrameInterpolation
@@ -153,19 +153,19 @@ private:
 
     void                    ComputeTimeFrames();
 
-    void                    LerpFrame(int framenum1, int framenum2, float backlerp, JointPose *joints);
-    void                    RemoveFrames(int numRemoveFrames, const int *removeFramenums);
+    void                    LerpFrame(int frameNum1, int frameNum2, float backlerp, JointPose *joints);
+    void                    RemoveFrames(int numRemoveFrames, const int *removeFrameNums);
     void                    OptimizeFrames(float epsilonT = CentiToUnit(0.01f), float epsilonQ = 0.0015f, float epsilonS = 0.0001f);
 
     Str                     hashName;
     Str                     name;
     mutable int             refCount;
 
-    int                     numJoints;
-    int                     numFrames;
-    int                     numAnimatedComponents;
-    uint32_t                animLength;             // animation length by milliseconds
-    int                     maxCycleCount;          // 0 means infinite cycle loop
+    int                     numJoints;              ///< Number of joints
+    int                     numFrames;              ///< Number of frames
+    int                     numAnimatedComponents;  ///< Number of animation components [0, 9]
+    uint32_t                animLength;             ///< Animation length in milliseconds
+    int                     maxCycleCount;          ///< 0 means infinite cycle loop
 
     bool                    rootRotation;
     bool                    rootTranslationXY;
@@ -174,11 +174,11 @@ private:
     bool                    isAdditiveAnim;
 
     Array<JointInfo>        jointInfo;
-    Array<JointPose>        baseFrame;              // local transform for the first frame
+    Array<JointPose>        baseFrame;              ///< Local transform for the first frame
     Array<float>            frameComponents;
-    Array<int>              frameToTimeMap;         // times for each frame
-    Array<int>              timeToFrameMap;         // frames for each 100 milliseconds
-    Vec3                    totalDelta;             // 전체 animation 에서 root 가 이동한 offset
+    Array<int>              frameToTimeMap;         ///< Times for each frame
+    Array<int>              timeToFrameMap;         ///< Frames for each 100 milliseconds
+    Vec3                    totalDelta;             ///< Root translation offset in the total animation evaluation
 };
 
 BE_INLINE Anim::Anim() {
@@ -230,7 +230,7 @@ public:
 private:
     StrIHashMap<Anim *>     animHashMap;
 
-    StrArray                jointNameList;
+    StrArray                jointNames;
     HashIndex               jointNameHash;
 };
 

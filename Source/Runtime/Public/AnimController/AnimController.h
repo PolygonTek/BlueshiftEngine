@@ -30,8 +30,8 @@ class AnimClip;
 class AnimLayer;
 
 struct JointInfo {
-    int                         num;            ///< Joint number 
-    int                         parentNum;      ///< Parent joint number, -1 means it has no parent
+    int                         index;          ///< Joint index 
+    int                         parentIndex;    ///< Parent joint index, -1 means it has no parent
 };
 
 struct AnimParm {

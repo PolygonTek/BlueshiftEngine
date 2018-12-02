@@ -84,10 +84,11 @@ void Anim::CreateDefaultAnim(const Skeleton *skeleton) {
     for (int i = 0; i < numJoints; i++) {
         JointInfo *jai = &jointInfo[i];
         jai->nameIndex = animManager.JointIndexByName(skeleton->GetJointName(i));
+
         if (joints[i].parent) {
-            jai->parentNum = (int32_t)(joints[i].parent - joints);
+            jai->parentIndex = (int32_t)(joints[i].parent - joints);
         } else {
-            jai->parentNum = -1;
+            jai->parentIndex = -1;
         }
         jai->animBits = 0;
         jai->firstComponent = 0;
@@ -251,27 +252,33 @@ void Anim::Write(const char *filename) {
 }
 
 bool Anim::CheckHierarchy(const Skeleton *skeleton) const {
+    // Checks if both have the same number of joints.
     if (jointInfo.Count() != skeleton->NumJoints()) {
         BE_ERRLOG("Mesh '%s' has different number of joints than anim '%s'", skeleton->GetHashName(), hashName.c_str());
         return false;
     }
 
-    const Joint *otherJoints = skeleton->GetJoints();
-    for (int i = 0; i < jointInfo.Count(); i++) {
-        int jointNum = jointInfo[i].nameIndex;
-        if (otherJoints[i].name != animManager.JointNameByIndex(jointNum)) {
+    const Joint *skeletonJoints = skeleton->GetJoints();
+
+    for (int jointIndex = 0; jointIndex < jointInfo.Count(); jointIndex++) {
+        const JointInfo &joint = jointInfo[jointIndex];
+        const Joint &skeletonJoint = skeletonJoints[jointIndex];
+
+        // Checks if both have the same joint names.
+        if (skeletonJoint.name != animManager.JointNameByIndex(joint.nameIndex)) {
             BE_ERRLOG("Skeleton '%s''s joint names don't match anim '%s''s", skeleton->GetHashName(), hashName.c_str());
             return false;
         }
 
-        int	parent;
-        if (otherJoints[i].parent)  {
-            parent = (int)(otherJoints[i].parent - otherJoints);
+        int parentIndex;
+        if (skeletonJoint.parent) {
+            parentIndex = (int)(skeletonJoint.parent - skeletonJoints);
         } else {
-            parent = -1;
+            parentIndex = -1;
         }
 
-        if (parent != jointInfo[i].parentNum) {
+        // Checks if both have the same parent-child relationships.
+        if (parentIndex != joint.parentIndex) {
             BE_ERRLOG("Skeleton '%s' has different joint hierarchy than anim '%s'", skeleton->GetHashName(), hashName.c_str());
             return false;
         }
@@ -284,29 +291,31 @@ void Anim::ComputeTotalDelta() {
     if (!numAnimatedComponents) {
         totalDelta.SetFromScalar(0);
     } else {
-        float *componentPtr = &frameComponents[jointInfo[0].firstComponent];
-        if (jointInfo[0].animBits & Tx) {
+        const JointInfo &rootJoint = jointInfo[0];
+        const float *componentPtr = &frameComponents[rootJoint.firstComponent];
+
+        if (rootJoint.animBits & Tx) {
             totalDelta.x = componentPtr[numAnimatedComponents * (numFrames - 1)] - baseFrame[0].t[0];
             componentPtr++;
         } else {
             totalDelta.x = 0.0f;
         }
 
-        if (jointInfo[0].animBits & Ty) {
+        if (rootJoint.animBits & Ty) {
             totalDelta.y = componentPtr[numAnimatedComponents * (numFrames - 1)] - baseFrame[0].t[1];
             componentPtr++;
         } else {
             totalDelta.y = 0.0f;
         }
 
-        if (jointInfo[0].animBits & Tz) {
+        if (rootJoint.animBits & Tz) {
             totalDelta.z = componentPtr[numAnimatedComponents * (numFrames - 1)] - baseFrame[0].t[2];
         } else {
             totalDelta.z = 0.0f;
         }
     }
 
-    BE_DLOG("animation '%s' total delta (%.4f, %.4f, %.4f)\n", name.c_str(), totalDelta.x, totalDelta.y, totalDelta.z);
+    BE_DLOG("animation '%s' total delta (%s)\n", name.c_str(), totalDelta.ToString(4));
 }
 
 void Anim::ComputeTimeFrames() {
@@ -314,10 +323,12 @@ void Anim::ComputeTimeFrames() {
 
     int lastFrameNum = numFrames - 1;
     int lastFrameTime = frameToTimeMap[lastFrameNum];
+
     timeToFrameMap.SetCount(lastFrameTime / 100 + 1);
 
     for (int t = 0; t < lastFrameTime; t += 100) {
         int i = lastFrameNum;
+
         for (; i >= 0; i--) {
             if (t >= frameToTimeMap[i]) {
                 break;
@@ -335,9 +346,10 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
 
     int *jointIndexes = (int *)_alloca16(numJoints * sizeof(int));
     int *jointParents = (int *)_alloca16(numJoints * sizeof(jointParents[0]));
-    for (int i = 0; i < numJoints; i++) {
-        jointIndexes[i] = i;
-        jointParents[i] = jointInfo[i].parentNum;
+
+    for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
+        jointIndexes[jointIndex] = jointIndex;
+        jointParents[jointIndex] = jointInfo[jointIndex].parentIndex;
     }
     
     JointPose *jointFrame = (JointPose *)_alloca16(numJoints * sizeof(jointFrame[0]));
@@ -364,9 +376,10 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
             const SubMesh *subMesh = mesh->GetSurface(surfaceIndex)->subMesh;
 
             switch (subMesh->MaxVertexWeights()) {
-            case 8:
+            case 8: {
+                const VertexWeight8 *vertWeights = (const VertexWeight8 *)subMesh->VertexWeights();
+
                 for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
-                    const VertexWeight8 *vertWeights = (const VertexWeight8 *)subMesh->VertexWeights();
                     const VertexWeight8 *vw = &vertWeights[vertexIndex];
                     const Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     Vec3 resultPos = Vec3::zero;
@@ -384,10 +397,11 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
 
                     frameAABB.AddPoint(resultPos);
                 }
-                break;
-            case 4:
+                break; }
+            case 4: {
+                const VertexWeight4 *vertWeights = (const VertexWeight4 *)subMesh->VertexWeights();
+
                 for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
-                    const VertexWeight4 *vertWeights = (const VertexWeight4 *)subMesh->VertexWeights();
                     const VertexWeight4 *vw = &vertWeights[vertexIndex];
                     const Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     Vec3 resultPos = Vec3::zero;
@@ -404,17 +418,18 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
 
                     frameAABB.AddPoint(resultPos);
                 }
-                break;
-            case 1:
+                break; }
+            case 1: {
+                const VertexWeight1 *vertWeights = (const VertexWeight1 *)subMesh->VertexWeights();
+
                 for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
-                    const VertexWeight1 *vertWeights = (const VertexWeight1 *)subMesh->VertexWeights();
                     const VertexWeight1 *vw = &vertWeights[vertexIndex];
                     const Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
                     Vec3 resultPos = jointMats2[vw->jointIndex].Transform(pos);
 
                     frameAABB.AddPoint(resultPos);
                 }
-                break;
+                break; }
             }
         }
     }
@@ -485,29 +500,31 @@ void Anim::GetTranslation(Vec3 &outTranslation, int time, bool cyclicTranslation
     outTranslation[1] = baseFrame[0].t[1];
     outTranslation[2] = baseFrame[0].t[2];
 
-    if (!(jointInfo[0].animBits & (Tx | Ty | Tz))) {
+    const JointInfo &rootJoint = jointInfo[0];
+
+    if (!(rootJoint.animBits & (Tx | Ty | Tz))) {
         // just use the baseframe
         return;
     }
 
     TimeToFrameInterpolation(time, frame);
 
-    const float *componentPtr1 = &frameComponents[numAnimatedComponents * frame.frame1 + jointInfo[0].firstComponent];
-    const float *componentPtr2 = &frameComponents[numAnimatedComponents * frame.frame2 + jointInfo[0].firstComponent];
+    const float *componentPtr1 = &frameComponents[numAnimatedComponents * frame.frame1 + rootJoint.firstComponent];
+    const float *componentPtr2 = &frameComponents[numAnimatedComponents * frame.frame2 + rootJoint.firstComponent];
 
-    if (jointInfo[0].animBits & Tx) {
+    if (rootJoint.animBits & Tx) {
         outTranslation.x = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
         componentPtr1++;
         componentPtr2++;
     }
 
-    if (jointInfo[0].animBits & Ty) {
+    if (rootJoint.animBits & Ty) {
         outTranslation.y = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
         componentPtr1++;
         componentPtr2++;
     }
 
-    if (jointInfo[0].animBits & Tz) {
+    if (rootJoint.animBits & Tz) {
         outTranslation.z = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
     }
 
@@ -735,11 +752,11 @@ void Anim::GetAABB(AABB &outAabb, const Array<AABB> &frameAABBs, int time) const
 }
 
 void Anim::GetSingleFrame(int frameNum, int numJointIndexes, const int *jointIndexes, JointPose *joints) const {
-    // copy the baseframe
+    // Copy the base frame
     simdProcessor->Memcpy(joints, baseFrame.Ptr(), baseFrame.Count() * sizeof(baseFrame[0]));
 
     if (frameNum == 0 || !numAnimatedComponents) {
-        // just use the base frame
+        // Just use the base frame
         return;
     }
 
@@ -823,11 +840,11 @@ void Anim::GetSingleFrame(int frameNum, int numJointIndexes, const int *jointInd
 }
 
 void Anim::GetInterpolatedFrame(FrameInterpolation &frame, int numJointIndexes, const int *jointIndexes, JointPose *joints) const {
-    // copy the baseframe
+    // Copy the base frame
     simdProcessor->Memcpy(joints, baseFrame.Ptr(), baseFrame.Count() * sizeof(baseFrame[0]));
 
     if (!numAnimatedComponents) {
-        // just use the base frame
+        // Just use the base frame
         return;
     }
 
@@ -1063,7 +1080,7 @@ void Anim::GetInterpolatedFrame(FrameInterpolation &frame, int numJointIndexes, 
     if (frame.cycleCount) {
         joints[0].t += totalDelta * (float)frame.cycleCount;
     }
-#endif    
+#endif
 
     if (!rootTranslationXY) {
         joints[0].t.x = baseFrame[0].t.x;

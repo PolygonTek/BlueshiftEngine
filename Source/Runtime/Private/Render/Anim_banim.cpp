@@ -74,7 +74,7 @@ bool Anim::LoadBinaryAnim(const char *filename) {
         JointInfo *jointInfo = &this->jointInfo[jointIndex];
 
         jointInfo->nameIndex = animManager.JointIndexByName(bAnimJoint->name);
-        jointInfo->parentNum = bAnimJoint->parentIndex;
+        jointInfo->parentIndex = bAnimJoint->parentIndex;
         jointInfo->animBits = bAnimJoint->animBits;
         jointInfo->firstComponent = bAnimJoint->firstComponent;
     }
@@ -147,7 +147,7 @@ void Anim::WriteBinaryAnim(const char *filename) {
 
         BAnimJoint bAnimJoint;
         Str::Copynz(bAnimJoint.name, animManager.JointNameByIndex(jointInfo->nameIndex), sizeof(bAnimJoint.name));
-        bAnimJoint.parentIndex = jointInfo->parentNum;
+        bAnimJoint.parentIndex = jointInfo->parentIndex;
         bAnimJoint.animBits = jointInfo->animBits;
         bAnimJoint.firstComponent = jointInfo->firstComponent;
         fp->Write(&bAnimJoint, sizeof(bAnimJoint));

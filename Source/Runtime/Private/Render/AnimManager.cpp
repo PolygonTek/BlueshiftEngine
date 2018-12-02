@@ -29,7 +29,7 @@ void AnimManager::Shutdown() {
         
     animHashMap.DeleteContents(true);
     
-    jointNameList.Clear();
+    jointNames.Clear();
     jointNameHash.Free();
 }
 
@@ -110,18 +110,18 @@ int	AnimManager::JointIndexByName(const char *name) {
     int index;
     int hash = jointNameHash.GenerateHash(name);
     for (index = jointNameHash.First(hash); index != -1; index = jointNameHash.Next(index)) {
-        if (jointNameList[index].Cmp(name) == 0) {
+        if (jointNames[index].Cmp(name) == 0) {
             return index;
         }
     }
 
-    index = jointNameList.Append(name);
+    index = jointNames.Append(name);
     jointNameHash.Add(hash, index);
     return index;
 }
 
 const char *AnimManager::JointNameByIndex(int index) const {
-    return jointNameList[index];
+    return jointNames[index];
 }
 
 Anim *AnimManager::FindAnim(const char *hashName) const {
@@ -194,13 +194,13 @@ void AnimManager::Cmd_ListAnims(const CmdArgs &args) {
         }
     }
 
-    size_t namesize = animManager.jointNameList.Size() + animManager.jointNameHash.Size();
-    for (int i = 0; i < animManager.jointNameList.Count(); i++) {
-        namesize += animManager.jointNameList[i].Size();
+    size_t namesize = animManager.jointNames.Size() + animManager.jointNameHash.Size();
+    for (int i = 0; i < animManager.jointNames.Count(); i++) {
+        namesize += animManager.jointNames[i].Size();
     }
 
     BE_LOG("total %s used in %i anims\n", Str::FormatBytes((int)size).c_str(), num);
-    BE_LOG("total %s used in %i joint names\n", Str::FormatBytes((int)namesize).c_str(), animManager.jointNameList.Count());
+    BE_LOG("total %s used in %i joint names\n", Str::FormatBytes((int)namesize).c_str(), animManager.jointNames.Count());
 }
 
 BE_NAMESPACE_END

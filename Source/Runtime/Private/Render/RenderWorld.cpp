@@ -1073,9 +1073,9 @@ void RenderWorld::DebugJoints(const RenderObject *renderObject, bool showJointsN
         Mat3 mat = jointMat->ToMat3();
 
         if (joint->parent) {
-            int parentNum = (int)(joint->parent - renderObject->state.mesh->GetJoints());
+            int parentIndex = (int)(joint->parent - renderObject->state.mesh->GetJoints());
             SetDebugColor(Color4::white, Color4::zero);
-            DebugLine(pos, renderObject->state.origin + renderObject->state.axis * (renderObject->state.scale * renderObject->state.joints[parentNum].ToTranslationVec3()), 1);
+            DebugLine(pos, renderObject->state.origin + renderObject->state.axis * (renderObject->state.scale * renderObject->state.joints[parentIndex].ToTranslationVec3()), 1);
         }
 
         SetDebugColor(Color4::red, Color4::zero);

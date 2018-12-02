@@ -62,14 +62,14 @@ static float CompareJointsS(const JointPose *joints1, const JointPose *joints2, 
     return maxDeltaS;
 }
 
-void Anim::LerpFrame(int framenum1, int framenum2, float backlerp, JointPose *joints) {
-    assert(0 <= framenum1 && framenum1 < numFrames);
-    assert(0 <= framenum2 && framenum2 < numFrames);
+void Anim::LerpFrame(int frameNum1, int frameNum2, float backlerp, JointPose *joints) {
+    assert(0 <= frameNum1 && frameNum1 < numFrames);
+    assert(0 <= frameNum2 && frameNum2 < numFrames);
 
     // copy the baseframe
     simdProcessor->Memcpy(joints, baseFrame.Ptr(), baseFrame.Count() * sizeof(baseFrame[0]));
 
-    if (framenum1 == framenum2) {
+    if (frameNum1 == frameNum2) {
         return;
     }
 
@@ -79,8 +79,8 @@ void Anim::LerpFrame(int framenum1, int framenum2, float backlerp, JointPose *jo
     JointPose *jointFrame = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
     JointPose *blendJoints = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
 
-    const float *frame1 = &frameComponents[framenum1 * numAnimatedComponents];
-    const float *frame2 = &frameComponents[framenum2 * numAnimatedComponents];
+    const float *frame1 = &frameComponents[frameNum1 * numAnimatedComponents];
+    const float *frame2 = &frameComponents[frameNum2 * numAnimatedComponents];
 
     for (int i = 0; i < numJoints; i++) {
         const Anim::JointInfo *infoPtr = &jointInfo[i];
@@ -303,15 +303,16 @@ void Anim::LerpFrame(int framenum1, int framenum2, float backlerp, JointPose *jo
     simdProcessor->BlendJoints(joints, blendJoints, backlerp, lerpIndex, numLerpJoints);
 }
 
-void Anim::RemoveFrames(int numRemoveFrames, const int *removeFramenums) {
-    Array<float>	newFrameComponents;
-    Array<int>	newFrameTimes;
-    Array<AABB>	newAABBs;
-
+void Anim::RemoveFrames(int numRemoveFrames, const int *removeFrameNums) {
+    Array<float> newFrameComponents;
     newFrameComponents.SetGranularity(1);
     newFrameComponents.SetCount(frameComponents.Count() - numRemoveFrames * numAnimatedComponents);
+
+    Array<int> newFrameTimes;
     newFrameTimes.SetGranularity(1);
     newFrameTimes.SetCount(frameToTimeMap.Count() - numRemoveFrames);
+
+    Array<AABB> newAABBs;
     newAABBs.SetGranularity(1);
 
     int numNewFrames = 0;
@@ -319,7 +320,7 @@ void Anim::RemoveFrames(int numRemoveFrames, const int *removeFramenums) {
     for (int frameNum = 0; frameNum < numFrames; frameNum++) {
         bool remove = false;
         for (int i = 0; i < numRemoveFrames; i++) {
-            if (frameNum == removeFramenums[i]) {
+            if (frameNum == removeFrameNums[i]) {
                 remove = true;
                 break;
             }
@@ -359,60 +360,62 @@ void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
         jointIndexes[i] = i;
     }
 
-    int framenum1 = 0;
-    int framenum2 = numFrames - 1;
+    int frameNum1 = 0;
+    int frameNum2 = numFrames - 1;
 
-    while (framenum1 != framenum2) {
-        if (framenum2 - framenum1 <= 1) {
-            framenum1 = framenum2;
-            framenum2 = numFrames - 1;
+    while (frameNum1 < frameNum2) {
+        if (frameNum2 - frameNum1 <= 1) {
+            frameNum1 = frameNum2;
+            frameNum2 = numFrames - 1;
             continue;
         }
 
-        float blockTime = frameToTimeMap[framenum2] - frameToTimeMap[framenum1];
-        float maxdt = 0.0f;
-        float maxdq = 0.0f;
-        float maxds = 0.0f;
-        int framenum3 = framenum1;
-        int framenum4 = framenum1;
-        int framenum5 = framenum1;
+        float blockTime = frameToTimeMap[frameNum2] - frameToTimeMap[frameNum1];
+        float maxDt = 0.0f;
+        float maxDq = 0.0f;
+        float maxDs = 0.0f;
+        int frameNumMaxDt = frameNum1;
+        int frameNumMaxDq = frameNum1;
+        int frameNumMaxDs = frameNum1;
 
-        for (int i = framenum1 + 1; i < framenum2; i++) {
+        for (int i = frameNum1 + 1; i < frameNum2; i++) {
+            // Get the reference joints.
             GetSingleFrame(i, numJoints, jointIndexes, joints);
 
-            float backlerp = (frameToTimeMap[i] - frameToTimeMap[framenum1]) / blockTime;
-            LerpFrame(framenum1, framenum2, backlerp, lerpedJoints);
+            // Get the interpolated joints.
+            float backlerp = (frameToTimeMap[i] - frameToTimeMap[frameNum1]) / blockTime;
+            LerpFrame(frameNum1, frameNum2, backlerp, lerpedJoints);
 
             float dt = CompareJointsT(joints, lerpedJoints, numJoints);
-            if (dt > maxdt) {
-                maxdt = dt;
-                framenum3 = i;
+            if (dt > maxDt) {
+                maxDt = dt;
+                frameNumMaxDt = i;
             }
 
             float dq = CompareJointsQ(joints, lerpedJoints, numJoints);
-            if (dq > maxdq) {
-                maxdq = dq;
-                framenum4 = i;
+            if (dq > maxDq) {
+                maxDq = dq;
+                frameNumMaxDq = i;
             }
 
             float ds = CompareJointsS(joints, lerpedJoints, numJoints);
-            if (ds > maxds) {
-                maxds = ds;
-                framenum5 = i;
+            if (ds > maxDs) {
+                maxDs = ds;
+                frameNumMaxDs = i;
             }
         }
     
-        if (maxdt > epsilonT || maxdq > epsilonQ || maxds > epsilonS) {	
-            framenum2 = Max3(framenum3, framenum4, framenum5);
+        if (maxDt > epsilonT || maxDq > epsilonQ || maxDs > epsilonS) {
+            frameNum2 = Max3(frameNumMaxDt, frameNumMaxDq, frameNumMaxDs);
             continue;
         }
 
-        for (int i = framenum1 + 1; i < framenum2; i++) {
+        for (int i = frameNum1 + 1; i < frameNum2; i++) {
             removeFrameNums.Append(i);
         }
 
-        framenum1 = framenum2;
-        framenum2 = numFrames - 1;
+        frameNum1 = frameNum2;
+        frameNum2 = numFrames - 1;
     }
 
     if (removeFrameNums.Count() > 0) {

@@ -129,7 +129,6 @@ AnimController *AnimControllerManager::FindAnimController(const char *hashName) 
     if (entry) {
         return entry->second;
     }
-
     return nullptr;
 }
 
@@ -248,7 +247,6 @@ const JointInfo *AnimController::GetJoint(const char *name) const {
             return &joints[i];
         }
     }
-
     return nullptr;
 }
 
@@ -256,7 +254,6 @@ const JointInfo *AnimController::GetJoint(int jointIndex) const {
     if ((jointIndex < 0) || (jointIndex > joints.Count())) {
         BE_FATALERROR("AnimController::GetJoint : joint index out of range");
     }
-
     return &joints[jointIndex];
 }
 
@@ -325,23 +322,23 @@ void AnimController::GetJointNumListByString(const char *jointNames, Array<int> 
         }
 
         if (!subtract) {
-            jointNumArray.AddUnique(joint->num);
+            jointNumArray.AddUnique(joint->index);
         } else {
-            jointNumArray.Remove(joint->num);
+            jointNumArray.Remove(joint->index);
         }
 
         if (getChildren) {
             // include all joint's children
             const JointInfo *child = joint + 1;
-            for (int i = joint->num + 1; i < numJoints; i++, child++) {
-                if (child->parentNum < joint->num) {
+            for (int i = joint->index + 1; i < numJoints; i++, child++) {
+                if (child->parentIndex < joint->index) {
                     break;
                 }
 
                 if (!subtract) {
-                    jointNumArray.AddUnique(child->num);
+                    jointNumArray.AddUnique(child->index);
                 } else {
-                    jointNumArray.Remove(child->num);
+                    jointNumArray.Remove(child->index);
                 }
             }
         }
@@ -354,7 +351,6 @@ AnimClip *AnimController::GetAnimClip(int index) const {
     if ((index < 0) || (index >= animClips.Count())) {
         return nullptr;
     }
-
     return animClips[index];
 }
 
@@ -411,7 +407,6 @@ AnimParm *AnimController::GetParameterByIndex(int index) {
     if (index < 0 || index >= animParameters.Count()) {
         return nullptr;
     }
-
     return animParameters[index];
 }
 
@@ -426,7 +421,6 @@ int AnimController::FindParameterIndex(const char *name) const {
             return i;
         }
     }
-
     return -1;
 }
 
@@ -450,7 +444,6 @@ AnimLayer *AnimController::GetAnimLayerByIndex(int index) const {
     if ((index < 0) || (index >= animLayers.Count())) {
         return nullptr;
     }
-
     return animLayers[index]; 
 }
 
@@ -465,7 +458,6 @@ int AnimController::FindAnimLayerIndex(const char *name) const {
             return i;
         }
     }
-
     return -1;
 }
 
@@ -609,16 +601,18 @@ void AnimController::SetSkeleton(Skeleton *skeleton) {
 
     const Joint *skeletonJoint = skeleton->GetJoints();
 
-    for (int i = 0; i < skeleton->NumJoints(); i++, skeletonJoint++) {
-        joints[i].num = i;
+    for (int jointIndex = 0; jointIndex < skeleton->NumJoints(); jointIndex++, skeletonJoint++) {
+        JointInfo &joint = joints[jointIndex];
+
+        joint.index = jointIndex;
 
         if (skeletonJoint->parent) {
-            joints[i].parentNum = static_cast<int>(skeletonJoint->parent - skeleton->GetJoints());
+            joint.parentIndex = static_cast<int>(skeletonJoint->parent - skeleton->GetJoints());
         } else {
-            joints[i].parentNum = -1;
+            joint.parentIndex = -1;
         }
 
-        jointParents[i] = joints[i].parentNum;
+        jointParents[jointIndex] = joint.parentIndex;
     }
 }
 
@@ -636,7 +630,7 @@ bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
     animLayer->SetWeight(1.0f);
     animLayer->maskJoints.SetCount(joints.Count());
     for (int i = 0; i < joints.Count(); i++) {
-        animLayer->maskJoints[i] = joints[i].num;
+        animLayer->maskJoints[i] = joints[i].index;
     }
     // first layer should be a base layer
     animLayers.Append(animLayer);
