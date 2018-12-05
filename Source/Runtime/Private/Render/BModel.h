@@ -80,7 +80,7 @@ struct BAnimHeader {
     uint32_t        flags;
     uint32_t        numJoints;
     uint32_t        numFrames;
-    uint32_t        numAnimatedComponents;
+    uint32_t        numComponentsPerFrame;
     uint32_t        length;
     uint32_t        maxCycleCount;
 };
@@ -88,8 +88,8 @@ struct BAnimHeader {
 struct BAnimJoint {
     char            name[60];
     int32_t         parentIndex;
-    int32_t         animBits;
-    int32_t         firstComponent;
+    int32_t         componentBits;
+    int32_t         componentOffset;
 };
 
 #pragma pack()

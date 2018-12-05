@@ -18,7 +18,7 @@
 -------------------------------------------------------------------------------
 
     Anim
-    
+
 -------------------------------------------------------------------------------
 */
 
@@ -42,7 +42,7 @@ class Anim {
     friend class ::AnimImporter;
 
 public:
-    enum AnimBit {
+    enum ComponentBit {
         Tx                  = BIT(0),
         Ty                  = BIT(1),
         Tz                  = BIT(2),
@@ -56,18 +56,18 @@ public:
     };
 
     struct JointInfo {
-        int32_t             nameIndex;
-        int32_t             parentIndex;
-        int32_t             animBits;
-        int32_t             firstComponent;
+        int32_t             nameIndex;          ///< Joint name index managed by AnimManager class.
+        int32_t             parentIndex;        ///< Parent joint index. -1 means has no parent.
+        int32_t             componentBits;      ///< Animation component bits for this joint.
+        int32_t             componentOffset;    ///< Offset of the component buffer for this joint.
     };
 
     struct FrameInterpolation {
-        int32_t             frame1;         // Frame number 1 for interpolation.
-        int32_t             frame2;         // Frame number 2 for interpolation.
-        int32_t             cycleCount;     // How many times the animation has wrapped to the begining (0 for clamped anims)
-        float               backlerp;       // A fractional value that maps [0, 1] to [frame1, frame2]
-        float               frontlerp;      // A fractional value that maps [1, 0] to [frame1, frame2]
+        int32_t             frame1;             ///< Frame number 1 for interpolation.
+        int32_t             frame2;             ///< Frame number 2 for interpolation.
+        int32_t             cycleCount;         ///< How many times the animation has wrapped to the begining (0 for clamped anims)
+        float               backlerp;           ///< A fractional value that maps [0, 1] to [frame1, frame2]
+        float               frontlerp;          ///< A fractional value that maps [1, 0] to [frame1, frame2]
     };
 
     Anim();
@@ -79,35 +79,35 @@ public:
     bool                    IsDefaultAnim() const { return isDefaultAnim; }
     bool                    IsAdditiveAnim() const { return isAdditiveAnim; }
 
-                            /// Returns number of frames
+                            /// Returns number of frames.
     int                     NumFrames() const { return numFrames; }
 
-                            /// Returns number of joints
+                            /// Returns number of joints.
     int                     NumJoints() const { return numJoints; }
 
-                            /// Returns joint anim info
-    const JointInfo &       GetJointInfo(int index) const { return jointInfo[index]; }
+                            /// Returns joint info of animation.
+    const JointInfo &       GetJointInfo(int index) const { return joints[index]; }
 
-                            /// Returns animation length by milliseconds
+                            /// Returns animation length by milliseconds.
     uint32_t                Length() const { return length; }
 
-                            /// Returns maximum cycle count. 0 means infinite cycle loop
+                            /// Returns maximum cycle count. 0 means infinite cycle loop.
     int                     MaxCycleCount() const { return maxCycleCount; }
 
-                            /// Returns movement delta of root joint
+                            /// Returns movement delta of root joint.
     const Vec3 &            TotalMovementDelta() const { return totalDelta; }
 
-                            /// Returns total size of allocated memory
+                            /// Returns total size of allocated memory.
     size_t                  Allocated() const;
-                            /// Returns total size of allocated memory including size of this type
+                            /// Returns total size of allocated memory including size of this type.
     size_t                  Size() const { return sizeof(*this) + Allocated(); };
 
     void                    Purge();
 
-                            /// Creates additive anim from other anim
+                            /// Creates additive anim from other anim.
     Anim *                  CreateAdditiveAnim(const Anim *refAnim, int numJointIndexes, const int *jointIndexes);
 
-                            /// Creates additive anim from bind-pose
+                            /// Creates additive anim from bind-pose.
     Anim *                  CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, const int *jointIndexes);
 
                             // TODO: IMPLEMENT THIS
@@ -124,25 +124,30 @@ public:
                             /// Compute mesh AABB for each frames.
     void                    ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<AABB> &frameAABBs) const;
 
-                            /// Converts time in milliseconds to the FrameInterpolation
+                            /// Converts time in milliseconds to the FrameInterpolation.
     void                    TimeToFrameInterpolation(int time, FrameInterpolation &frameInterpolation) const;
 
+                            /// Compute translation of the root joint with the given time.
     void                    GetTranslation(Vec3 &outTranslation, int time, bool isCyclicTranslation = true) const;
 
+                            /// Compute rotation of the root joint with the given time.
     void                    GetRotation(Quat &outRotation, int time) const;
 
+                            /// Compute scaling of the root joint with the given time.
     void                    GetScaling(Vec3 &outScaling, int time) const;
 
+                            /// Compute AABB with the given time and each frame AABBs.
     void                    GetAABB(AABB &outAabb, const Array<AABB> &frameAABBs, int time) const;
 
-                            // frameNum 의 JointPose 를 얻는다. (NOTE: animation 의 frame 은 JointPose 배열을 말함)
-    void                    GetSingleFrame(int frameNum, int numJointIndexes, const int *jointIndexes, JointPose *joints) const;
+                            /// Compute single frame without interpolation.
+    void                    GetSingleFrame(int frameNum, int numJointIndexes, const int *jointIndexes, JointPose *frame) const;
 
-                            // frameInterpolation 의 JointPose 를 얻는다.
-    void                    GetInterpolatedFrame(FrameInterpolation &frameInterpolation, int numJointIndexes, const int *jointIndexes, JointPose *joints) const;
+                            /// Compute interpolated frame.
+    void                    GetInterpolatedFrame(FrameInterpolation &frameInterpolation, int numJointIndexes, const int *jointIndexes, JointPose *frame) const;
 
 private:
     Anim &                  Copy(const Anim &other);
+
     void                    CreateDefaultAnim(const Skeleton *skeleton);
     Anim *                  CreateAdditiveAnim(const char *name, const JointPose *firstFrame, int numJointIndexes, const int *jointIndexes);
 
@@ -159,12 +164,6 @@ private:
     Str                     name;
     mutable int             refCount;
 
-    int                     numJoints;              ///< Number of joints.
-    int                     numFrames;              ///< Number of frames.
-    int                     numAnimatedComponents;  ///< Number of animation components [1, 9]
-    uint32_t                length;                 ///< Animation length in milliseconds.
-    int                     maxCycleCount;          ///< 0 means infinite cycle loop.
-
     bool                    rootRotation;
     bool                    rootTranslationXY;
     bool                    rootTranslationZ;
@@ -172,9 +171,15 @@ private:
     bool                    isDefaultAnim;
     bool                    isAdditiveAnim;
 
-    Array<JointInfo>        jointInfo;              ///< Joints informations.
+    int                     numJoints;              ///< Number of joints.
+    int                     numFrames;              ///< Number of frames.
+    int                     numComponentsPerFrame;  ///< Number of animated components of all joints.
+    uint32_t                length;                 ///< Animation length in milliseconds.
+    int                     maxCycleCount;          ///< 0 means infinite cycle loop.
+
+    Array<JointInfo>        joints;                 ///< Joints informations.
     Array<JointPose>        baseFrame;              ///< Local transform of all joints in the 0'th frame.
-    Array<float>            frameComponents;
+    Array<float>            components;             ///< Components for each animated joints of all frames.
     Array<int>              frameTimes;             ///< Times for each frames.
     Vec3                    totalDelta;             ///< Root translation offset in total animation evaluation.
 };
@@ -183,7 +188,7 @@ BE_INLINE Anim::Anim() {
     refCount                = 0;
     numJoints               = 0;
     numFrames               = 0;
-    numAnimatedComponents   = 0;
+    numComponentsPerFrame   = 0;
     length                  = 0;
     totalDelta.SetFromScalar(0);
 }

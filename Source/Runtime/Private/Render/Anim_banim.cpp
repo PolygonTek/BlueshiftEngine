@@ -39,7 +39,7 @@ bool Anim::LoadBinaryAnim(const char *filename) {
 
     numFrames = bAnimHeader->numFrames;
     numJoints = bAnimHeader->numJoints;
-    numAnimatedComponents = bAnimHeader->numAnimatedComponents;
+    numComponentsPerFrame = bAnimHeader->numComponentsPerFrame;
     length = bAnimHeader->length;
     maxCycleCount = bAnimHeader->maxCycleCount;
     rootRotation = (bAnimHeader->flags & BAnimFlag::RootRotation) ? true : false;
@@ -62,19 +62,19 @@ bool Anim::LoadBinaryAnim(const char *filename) {
     }
 
     // --- joint info ---
-    jointInfo.SetGranularity(1);
-    jointInfo.SetCount(numJoints);
+    joints.SetGranularity(1);
+    joints.SetCount(numJoints);
 
     for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
         const BAnimJoint *bAnimJoint = (const BAnimJoint *)ptr;
         ptr += sizeof(BAnimJoint);
 
-        JointInfo *jointInfo = &this->jointInfo[jointIndex];
+        JointInfo *jointInfo = &this->joints[jointIndex];
 
         jointInfo->nameIndex = animManager.JointIndexByName(bAnimJoint->name);
         jointInfo->parentIndex = bAnimJoint->parentIndex;
-        jointInfo->animBits = bAnimJoint->animBits;
-        jointInfo->firstComponent = bAnimJoint->firstComponent;
+        jointInfo->componentBits = bAnimJoint->componentBits;
+        jointInfo->componentOffset = bAnimJoint->componentOffset;
     }
 
     // --- base frame ---
@@ -93,10 +93,10 @@ bool Anim::LoadBinaryAnim(const char *filename) {
     }
 
     // --- frames ---
-    frameComponents.SetGranularity(1);
-    frameComponents.SetCount(numAnimatedComponents * numFrames);
-    memcpy(frameComponents.Ptr(), ptr, frameComponents.MemoryUsed());
-    ptr += frameComponents.MemoryUsed();
+    components.SetGranularity(1);
+    components.SetCount(numComponentsPerFrame * numFrames);
+    memcpy(components.Ptr(), ptr, components.MemoryUsed());
+    ptr += components.MemoryUsed();
 
     // --- total delta ---
     memcpy(&totalDelta, ptr, sizeof(totalDelta));
@@ -125,7 +125,7 @@ void Anim::WriteBinaryAnim(const char *filename) {
     bAnimHeader.flags = flags;
     bAnimHeader.numJoints = numJoints;
     bAnimHeader.numFrames = numFrames;
-    bAnimHeader.numAnimatedComponents = numAnimatedComponents;
+    bAnimHeader.numComponentsPerFrame = numComponentsPerFrame;
     bAnimHeader.length = length;
     bAnimHeader.maxCycleCount = maxCycleCount;
     fp->Write(&bAnimHeader, sizeof(bAnimHeader));
@@ -137,13 +137,13 @@ void Anim::WriteBinaryAnim(const char *filename) {
 
     // --- joint info ---
     for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
-        const JointInfo *jointInfo = &this->jointInfo[jointIndex];
+        const JointInfo *jointInfo = &this->joints[jointIndex];
 
         BAnimJoint bAnimJoint;
         Str::Copynz(bAnimJoint.name, animManager.JointNameByIndex(jointInfo->nameIndex), sizeof(bAnimJoint.name));
         bAnimJoint.parentIndex = jointInfo->parentIndex;
-        bAnimJoint.animBits = jointInfo->animBits;
-        bAnimJoint.firstComponent = jointInfo->firstComponent;
+        bAnimJoint.componentBits = jointInfo->componentBits;
+        bAnimJoint.componentOffset = jointInfo->componentOffset;
         fp->Write(&bAnimJoint, sizeof(bAnimJoint));
     }
 
@@ -155,7 +155,7 @@ void Anim::WriteBinaryAnim(const char *filename) {
     }
 
     // --- frames ---
-    fp->Write(frameComponents.Ptr(), frameComponents.MemoryUsed());
+    fp->Write(components.Ptr(), components.MemoryUsed());
     
     // --- total delta ---
     fp->Write(&totalDelta, sizeof(totalDelta));

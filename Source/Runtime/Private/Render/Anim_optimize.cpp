@@ -62,12 +62,12 @@ static float CompareJointsS(const JointPose *joints1, const JointPose *joints2, 
     return maxDeltaS;
 }
 
-void Anim::LerpFrame(int frameNum1, int frameNum2, float backlerp, JointPose *joints) {
+void Anim::LerpFrame(int frameNum1, int frameNum2, float backlerp, JointPose *frame) {
     assert(0 <= frameNum1 && frameNum1 < numFrames);
     assert(0 <= frameNum2 && frameNum2 < numFrames);
 
     // copy the baseframe
-    simdProcessor->Memcpy(joints, baseFrame.Ptr(), baseFrame.Count() * sizeof(baseFrame[0]));
+    simdProcessor->Memcpy(frame, baseFrame.Ptr(), baseFrame.Count() * sizeof(baseFrame[0]));
 
     if (frameNum1 == frameNum2) {
         return;
@@ -76,237 +76,236 @@ void Anim::LerpFrame(int frameNum1, int frameNum2, float backlerp, JointPose *jo
     int *lerpIndex = (int *)_alloca16(numJoints * sizeof(lerpIndex[0]));
     int numLerpJoints = 0;
 
-    JointPose *jointFrame = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
-    JointPose *blendJoints = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
+    JointPose *blendFrame = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
 
-    const float *frame1 = &frameComponents[frameNum1 * numAnimatedComponents];
-    const float *frame2 = &frameComponents[frameNum2 * numAnimatedComponents];
+    const float *frameComponents1 = &components[frameNum1 * numComponentsPerFrame];
+    const float *frameComponents2 = &components[frameNum2 * numComponentsPerFrame];
 
     for (int i = 0; i < numJoints; i++) {
-        const Anim::JointInfo *infoPtr = &jointInfo[i];
+        const Anim::JointInfo *jointInfoPtr = &joints[i];
 
-        int animBits = infoPtr->animBits;
-        if (animBits == 0) {
+        int componentBits = jointInfoPtr->componentBits;
+        if (componentBits == 0) {
             continue;
         }
 
         lerpIndex[numLerpJoints++] = i;
 
-        JointPose *jointPtr = &joints[i];
-        JointPose *blendPtr = &blendJoints[i];
+        JointPose *frameJointPtr = &frame[i];
+        JointPose *blendJointPtr = &blendFrame[i];
 
-        const float *jointframe1 = frame1 + infoPtr->firstComponent;
-        const float *jointframe2 = frame2 + infoPtr->firstComponent;
+        const float *jointComponentPtr1 = frameComponents1 + jointInfoPtr->componentOffset;
+        const float *jointComponentPtr2 = frameComponents2 + jointInfoPtr->componentOffset;
 
-        switch (animBits & (Tx | Ty | Tz)) {
+        switch (componentBits & (Tx | Ty | Tz)) {
         case 0:
-            blendPtr->t = jointPtr->t;
+            blendJointPtr->t = frameJointPtr->t;
             break;
         case Tx:
-            jointPtr->t.x = jointframe1[0];
-            blendPtr->t.x = jointframe2[0];
-            blendPtr->t.y = jointPtr->t.y;
-            blendPtr->t.z = jointPtr->t.z;
-            jointframe1++;
-            jointframe2++;
+            frameJointPtr->t.x = jointComponentPtr1[0];
+            blendJointPtr->t.x = jointComponentPtr2[0];
+            blendJointPtr->t.y = frameJointPtr->t.y;
+            blendJointPtr->t.z = frameJointPtr->t.z;
+            jointComponentPtr1++;
+            jointComponentPtr2++;
             break;
         case Ty:
-            jointPtr->t.y = jointframe1[0];
-            blendPtr->t.y = jointframe2[0];
-            blendPtr->t.x = jointPtr->t.x;
-            blendPtr->t.z = jointPtr->t.z;
-            jointframe1++;
-            jointframe2++;
+            frameJointPtr->t.y = jointComponentPtr1[0];
+            blendJointPtr->t.y = jointComponentPtr2[0];
+            blendJointPtr->t.x = frameJointPtr->t.x;
+            blendJointPtr->t.z = frameJointPtr->t.z;
+            jointComponentPtr1++;
+            jointComponentPtr2++;
             break;
         case Tz:
-            jointPtr->t.z = jointframe1[0];
-            blendPtr->t.z = jointframe2[0];
-            blendPtr->t.x = jointPtr->t.x;
-            blendPtr->t.y = jointPtr->t.y;
-            jointframe1++;
-            jointframe2++;
+            frameJointPtr->t.z = jointComponentPtr1[0];
+            blendJointPtr->t.z = jointComponentPtr2[0];
+            blendJointPtr->t.x = frameJointPtr->t.x;
+            blendJointPtr->t.y = frameJointPtr->t.y;
+            jointComponentPtr1++;
+            jointComponentPtr2++;
             break;
         case Tx | Ty:
-            jointPtr->t.x = jointframe1[0];
-            jointPtr->t.y = jointframe1[1];
-            blendPtr->t.x = jointframe2[0];
-            blendPtr->t.y = jointframe2[1];
-            blendPtr->t.z = jointPtr->t.z;
-            jointframe1 += 2;
-            jointframe2 += 2;
+            frameJointPtr->t.x = jointComponentPtr1[0];
+            frameJointPtr->t.y = jointComponentPtr1[1];
+            blendJointPtr->t.x = jointComponentPtr2[0];
+            blendJointPtr->t.y = jointComponentPtr2[1];
+            blendJointPtr->t.z = frameJointPtr->t.z;
+            jointComponentPtr1 += 2;
+            jointComponentPtr2 += 2;
             break;
         case Tx | Tz:
-            jointPtr->t.x = jointframe1[0];
-            jointPtr->t.z = jointframe1[1];
-            blendPtr->t.x = jointframe2[0];
-            blendPtr->t.z = jointframe2[1];
-            blendPtr->t.y = jointPtr->t.y;
-            jointframe1 += 2;
-            jointframe2 += 2;
+            frameJointPtr->t.x = jointComponentPtr1[0];
+            frameJointPtr->t.z = jointComponentPtr1[1];
+            blendJointPtr->t.x = jointComponentPtr2[0];
+            blendJointPtr->t.z = jointComponentPtr2[1];
+            blendJointPtr->t.y = frameJointPtr->t.y;
+            jointComponentPtr1 += 2;
+            jointComponentPtr2 += 2;
             break;
         case Ty | Tz:
-            jointPtr->t.y = jointframe1[0];
-            jointPtr->t.z = jointframe1[1];
-            blendPtr->t.y = jointframe2[0];
-            blendPtr->t.z = jointframe2[1];
-            blendPtr->t.x = jointPtr->t.x;
-            jointframe1 += 2;
-            jointframe2 += 2;
+            frameJointPtr->t.y = jointComponentPtr1[0];
+            frameJointPtr->t.z = jointComponentPtr1[1];
+            blendJointPtr->t.y = jointComponentPtr2[0];
+            blendJointPtr->t.z = jointComponentPtr2[1];
+            blendJointPtr->t.x = frameJointPtr->t.x;
+            jointComponentPtr1 += 2;
+            jointComponentPtr2 += 2;
             break;
         case Tx | Ty | Tz:
-            jointPtr->t.x = jointframe1[0];
-            jointPtr->t.y = jointframe1[1];
-            jointPtr->t.z = jointframe1[2];
-            blendPtr->t.x = jointframe2[0];
-            blendPtr->t.y = jointframe2[1];
-            blendPtr->t.z = jointframe2[2];
-            jointframe1 += 3;
-            jointframe2 += 3;
+            frameJointPtr->t.x = jointComponentPtr1[0];
+            frameJointPtr->t.y = jointComponentPtr1[1];
+            frameJointPtr->t.z = jointComponentPtr1[2];
+            blendJointPtr->t.x = jointComponentPtr2[0];
+            blendJointPtr->t.y = jointComponentPtr2[1];
+            blendJointPtr->t.z = jointComponentPtr2[2];
+            jointComponentPtr1 += 3;
+            jointComponentPtr2 += 3;
             break;
         }
 
-        switch (animBits & (Qx | Qy | Qz)) {
+        switch (componentBits & (Qx | Qy | Qz)) {
         case 0:
-            blendPtr->q = jointPtr->q;
+            blendJointPtr->q = frameJointPtr->q;
             break;
         case Qx:
-            jointPtr->q.x = jointframe1[0];
-            blendPtr->q.x = jointframe2[0];
-            blendPtr->q.y = jointPtr->q.y;
-            blendPtr->q.z = jointPtr->q.z;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
+            frameJointPtr->q.x = jointComponentPtr1[0];
+            blendJointPtr->q.x = jointComponentPtr2[0];
+            blendJointPtr->q.y = frameJointPtr->q.y;
+            blendJointPtr->q.z = frameJointPtr->q.z;
+            frameJointPtr->q.w = frameJointPtr->q.CalcW();
+            blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
         case Qy:
-            jointPtr->q.y = jointframe1[0];
-            blendPtr->q.y = jointframe2[0];
-            blendPtr->q.x = jointPtr->q.x;
-            blendPtr->q.z = jointPtr->q.z;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
+            frameJointPtr->q.y = jointComponentPtr1[0];
+            blendJointPtr->q.y = jointComponentPtr2[0];
+            blendJointPtr->q.x = frameJointPtr->q.x;
+            blendJointPtr->q.z = frameJointPtr->q.z;
+            frameJointPtr->q.w = frameJointPtr->q.CalcW();
+            blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
         case Qz:
-            jointPtr->q.z = jointframe1[0];
-            blendPtr->q.z = jointframe2[0];
-            blendPtr->q.x = jointPtr->q.x;
-            blendPtr->q.y = jointPtr->q.y;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
+            frameJointPtr->q.z = jointComponentPtr1[0];
+            blendJointPtr->q.z = jointComponentPtr2[0];
+            blendJointPtr->q.x = frameJointPtr->q.x;
+            blendJointPtr->q.y = frameJointPtr->q.y;
+            frameJointPtr->q.w = frameJointPtr->q.CalcW();
+            blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
         case Qx | Qy:
-            jointPtr->q.x = jointframe1[0];
-            jointPtr->q.y = jointframe1[1];
-            blendPtr->q.x = jointframe2[0];
-            blendPtr->q.y = jointframe2[1];
-            blendPtr->q.z = jointPtr->q.z;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
+            frameJointPtr->q.x = jointComponentPtr1[0];
+            frameJointPtr->q.y = jointComponentPtr1[1];
+            blendJointPtr->q.x = jointComponentPtr2[0];
+            blendJointPtr->q.y = jointComponentPtr2[1];
+            blendJointPtr->q.z = frameJointPtr->q.z;
+            frameJointPtr->q.w = frameJointPtr->q.CalcW();
+            blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
         case Qx | Qz:
-            jointPtr->q.x = jointframe1[0];
-            jointPtr->q.z = jointframe1[1];
-            blendPtr->q.x = jointframe2[0];
-            blendPtr->q.z = jointframe2[1];
-            blendPtr->q.y = jointPtr->q.y;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
+            frameJointPtr->q.x = jointComponentPtr1[0];
+            frameJointPtr->q.z = jointComponentPtr1[1];
+            blendJointPtr->q.x = jointComponentPtr2[0];
+            blendJointPtr->q.z = jointComponentPtr2[1];
+            blendJointPtr->q.y = frameJointPtr->q.y;
+            frameJointPtr->q.w = frameJointPtr->q.CalcW();
+            blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
         case Qy | Qz:
-            jointPtr->q.y = jointframe1[0];
-            jointPtr->q.z = jointframe1[1];
-            blendPtr->q.y = jointframe2[0];
-            blendPtr->q.z = jointframe2[1];
-            blendPtr->q.x = jointPtr->q.x;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
+            frameJointPtr->q.y = jointComponentPtr1[0];
+            frameJointPtr->q.z = jointComponentPtr1[1];
+            blendJointPtr->q.y = jointComponentPtr2[0];
+            blendJointPtr->q.z = jointComponentPtr2[1];
+            blendJointPtr->q.x = frameJointPtr->q.x;
+            frameJointPtr->q.w = frameJointPtr->q.CalcW();
+            blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
         case Qx | Qy | Qz:
-            jointPtr->q.x = jointframe1[0];
-            jointPtr->q.y = jointframe1[1];
-            jointPtr->q.z = jointframe1[2];
-            blendPtr->q.x = jointframe2[0];
-            blendPtr->q.y = jointframe2[1];
-            blendPtr->q.z = jointframe2[2];
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
+            frameJointPtr->q.x = jointComponentPtr1[0];
+            frameJointPtr->q.y = jointComponentPtr1[1];
+            frameJointPtr->q.z = jointComponentPtr1[2];
+            blendJointPtr->q.x = jointComponentPtr2[0];
+            blendJointPtr->q.y = jointComponentPtr2[1];
+            blendJointPtr->q.z = jointComponentPtr2[2];
+            frameJointPtr->q.w = frameJointPtr->q.CalcW();
+            blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
         }
 
-        switch (animBits & (Sx | Sy | Sz)) {
+        switch (componentBits & (Sx | Sy | Sz)) {
         case 0:
-            blendPtr->s = jointPtr->s;
+            blendJointPtr->s = frameJointPtr->s;
             break;
         case Sx:
-            jointPtr->s.x = jointframe1[0];
-            blendPtr->s.x = jointframe2[0];
-            blendPtr->s.y = jointPtr->s.y;
-            blendPtr->s.z = jointPtr->s.z;
-            jointframe1++;
-            jointframe2++;
+            frameJointPtr->s.x = jointComponentPtr1[0];
+            blendJointPtr->s.x = jointComponentPtr2[0];
+            blendJointPtr->s.y = frameJointPtr->s.y;
+            blendJointPtr->s.z = frameJointPtr->s.z;
+            jointComponentPtr1++;
+            jointComponentPtr2++;
             break;
         case Sy:
-            jointPtr->s.y = jointframe1[0];
-            blendPtr->s.y = jointframe2[0];
-            blendPtr->s.x = jointPtr->s.x;
-            blendPtr->s.z = jointPtr->s.z;
-            jointframe1++;
-            jointframe2++;
+            frameJointPtr->s.y = jointComponentPtr1[0];
+            blendJointPtr->s.y = jointComponentPtr2[0];
+            blendJointPtr->s.x = frameJointPtr->s.x;
+            blendJointPtr->s.z = frameJointPtr->s.z;
+            jointComponentPtr1++;
+            jointComponentPtr2++;
             break;
         case Sz:
-            jointPtr->s.z = jointframe1[0];
-            blendPtr->s.z = jointframe2[0];
-            blendPtr->s.x = jointPtr->s.x;
-            blendPtr->s.y = jointPtr->s.y;
-            jointframe1++;
-            jointframe2++;
+            frameJointPtr->s.z = jointComponentPtr1[0];
+            blendJointPtr->s.z = jointComponentPtr2[0];
+            blendJointPtr->s.x = frameJointPtr->s.x;
+            blendJointPtr->s.y = frameJointPtr->s.y;
+            jointComponentPtr1++;
+            jointComponentPtr2++;
             break;
         case Sx | Sy:
-            jointPtr->s.x = jointframe1[0];
-            jointPtr->s.y = jointframe1[1];
-            blendPtr->s.x = jointframe2[0];
-            blendPtr->s.y = jointframe2[1];
-            blendPtr->s.z = jointPtr->s.z;
-            jointframe1 += 2;
-            jointframe2 += 2;
+            frameJointPtr->s.x = jointComponentPtr1[0];
+            frameJointPtr->s.y = jointComponentPtr1[1];
+            blendJointPtr->s.x = jointComponentPtr2[0];
+            blendJointPtr->s.y = jointComponentPtr2[1];
+            blendJointPtr->s.z = frameJointPtr->s.z;
+            jointComponentPtr1 += 2;
+            jointComponentPtr2 += 2;
             break;
         case Sx | Sz:
-            jointPtr->s.x = jointframe1[0];
-            jointPtr->s.z = jointframe1[1];
-            blendPtr->s.x = jointframe2[0];
-            blendPtr->s.z = jointframe2[1];
-            blendPtr->s.y = jointPtr->s.y;
-            jointframe1 += 2;
-            jointframe2 += 2;
+            frameJointPtr->s.x = jointComponentPtr1[0];
+            frameJointPtr->s.z = jointComponentPtr1[1];
+            blendJointPtr->s.x = jointComponentPtr2[0];
+            blendJointPtr->s.z = jointComponentPtr2[1];
+            blendJointPtr->s.y = frameJointPtr->s.y;
+            jointComponentPtr1 += 2;
+            jointComponentPtr2 += 2;
             break;
         case Sy | Sz:
-            jointPtr->s.y = jointframe1[0];
-            jointPtr->s.z = jointframe1[1];
-            blendPtr->s.y = jointframe2[0];
-            blendPtr->s.z = jointframe2[1];
-            blendPtr->s.x = jointPtr->s.x;
-            jointframe1 += 2;
-            jointframe2 += 2;
+            frameJointPtr->s.y = jointComponentPtr1[0];
+            frameJointPtr->s.z = jointComponentPtr1[1];
+            blendJointPtr->s.y = jointComponentPtr2[0];
+            blendJointPtr->s.z = jointComponentPtr2[1];
+            blendJointPtr->s.x = frameJointPtr->s.x;
+            jointComponentPtr1 += 2;
+            jointComponentPtr2 += 2;
             break;
         case Sx | Sy | Sz:
-            jointPtr->s.x = jointframe1[0];
-            jointPtr->s.y = jointframe1[1];
-            jointPtr->s.z = jointframe1[2];
-            blendPtr->s.x = jointframe2[0];
-            blendPtr->s.y = jointframe2[1];
-            blendPtr->s.z = jointframe2[2];
-            jointframe1 += 3;
-            jointframe2 += 3;
+            frameJointPtr->s.x = jointComponentPtr1[0];
+            frameJointPtr->s.y = jointComponentPtr1[1];
+            frameJointPtr->s.z = jointComponentPtr1[2];
+            blendJointPtr->s.x = jointComponentPtr2[0];
+            blendJointPtr->s.y = jointComponentPtr2[1];
+            blendJointPtr->s.z = jointComponentPtr2[2];
+            jointComponentPtr1 += 3;
+            jointComponentPtr2 += 3;
             break;
         }
     }
 
-    simdProcessor->BlendJoints(joints, blendJoints, backlerp, lerpIndex, numLerpJoints);
+    simdProcessor->BlendJoints(frame, blendFrame, backlerp, lerpIndex, numLerpJoints);
 }
 
 void Anim::RemoveFrames(int numRemoveFrames, const int *removeFrameNums) {
     Array<float> newFrameComponents;
     newFrameComponents.SetGranularity(1);
-    newFrameComponents.SetCount(frameComponents.Count() - numRemoveFrames * numAnimatedComponents);
+    newFrameComponents.SetCount(components.Count() - numRemoveFrames * numComponentsPerFrame);
 
     Array<int> newFrameTimes;
     newFrameTimes.SetGranularity(1);
@@ -330,27 +329,27 @@ void Anim::RemoveFrames(int numRemoveFrames, const int *removeFrameNums) {
             continue;
         }
 
-        for (int i = 0; i < numAnimatedComponents; i++) {
-            newFrameComponents[numNewFrames * numAnimatedComponents + i] = frameComponents[frameNum * numAnimatedComponents + i];
+        for (int i = 0; i < numComponentsPerFrame; i++) {
+            newFrameComponents[numNewFrames * numComponentsPerFrame + i] = components[frameNum * numComponentsPerFrame + i];
         }
         newFrameTimes[numNewFrames] = frameTimes[frameNum];
 
         numNewFrames++;
     }
 
-    frameComponents = newFrameComponents;
+    components = newFrameComponents;
     frameTimes = newFrameTimes;
 
     numFrames = numNewFrames;
 }
 
 void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
-    if (!numAnimatedComponents) {
+    if (!numComponentsPerFrame) {
         return;
     }
 
     Array<int> removeFrameNums;
-    removeFrameNums.Resize(numFrames);
+    removeFrameNums.Reserve(numFrames);
 
     JointPose *joints = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
     JointPose *lerpedJoints = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
