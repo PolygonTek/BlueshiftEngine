@@ -16,7 +16,7 @@
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 #include "Platform/PlatformFile.h"
-#include "Containers/BinSearch.h"
+#include "Core/BinSearch.h"
 #include "Simd/Simd.h"
 #include "Core/Checksum_MD5.h"
 #include "Core/Heap.h"

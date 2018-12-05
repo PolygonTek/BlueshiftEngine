@@ -13,6 +13,7 @@ set(COMMON_ENGINE_FILES
     Public/BlueshiftEngine.h
 
     Public/Core/Allocator.h
+    Public/Core/BinSearch.h
     Public/Core/Checksum_CRC32.h
     Public/Core/Checksum_MD5.h
     Public/Core/Heap.h
@@ -47,7 +48,6 @@ set(COMMON_ENGINE_FILES
     Public/Core/Vertex.h 
 
     Public/Containers/StaticArray.h
-    Public/Containers/BinSearch.h
     Public/Containers/HashIndex.h
     Public/Containers/HashMap.h
     Public/Containers/HashTable.h

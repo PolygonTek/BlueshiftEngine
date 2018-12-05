@@ -19,6 +19,7 @@
 // Common
 #include "Core/Checksum_CRC32.h"
 #include "Core/Checksum_MD5.h"
+#include "Core/BinSearch.h"
 #include "Core/Range.h"
 #include "Core/Heap.h"
 #include "Core/Allocator.h"
@@ -45,7 +46,6 @@
 #include "Containers/StrPool.h"
 #include "Containers/HashMap.h"
 #include "Containers/Hierarchy.h"
-#include "Containers/BinSearch.h"
 
 #include "Core/Timespan.h"
 #include "Core/DateTime.h"
