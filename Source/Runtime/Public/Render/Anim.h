@@ -156,7 +156,8 @@ private:
 
     void                    ComputeTotalDelta();
 
-    void                    LerpFrame(int frameNum1, int frameNum2, float backlerp, JointPose *joints);
+    void                    ComputeRemovableFrames(const JointPose *frameJoints, const int *jointIndexes, JointPose *lerpedJoints,
+                                float epsilonT, float epsilonQ, float epsilonS, int frameNum1, int frameNum2, Array<int> &removableFrameNums);
     void                    RemoveFrames(int numRemoveFrames, const int *removeFrameNums);
     void                    OptimizeFrames(float epsilonT = CentiToUnit(0.01f), float epsilonQ = 0.0015f, float epsilonS = 0.0001f);
 
