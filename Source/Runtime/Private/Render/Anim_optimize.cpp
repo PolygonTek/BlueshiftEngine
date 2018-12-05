@@ -63,23 +63,20 @@ static float CompareJointsS(const JointPose *joints1, const JointPose *joints2, 
     return maxDeltaS;
 }
 
-void Anim::RemoveFrames(int numRemoveFrames, const int *removableFrameNums) {
+void Anim::RemoveFrames(const Array<int> &removableFrameNums) {
     Array<float> newFrameComponents;
     newFrameComponents.SetGranularity(1);
-    newFrameComponents.SetCount(components.Count() - numRemoveFrames * numComponentsPerFrame);
+    newFrameComponents.SetCount(components.Count() - removableFrameNums.Count() * numComponentsPerFrame);
 
     Array<int> newFrameTimes;
     newFrameTimes.SetGranularity(1);
-    newFrameTimes.SetCount(frameTimes.Count() - numRemoveFrames);
-
-    Array<AABB> newAABBs;
-    newAABBs.SetGranularity(1);
+    newFrameTimes.SetCount(frameTimes.Count() - removableFrameNums.Count());
 
     int numNewFrames = 0;
 
     for (int frameNum = 0; frameNum < numFrames; frameNum++) {
         bool remove = false;
-        for (int i = 0; i < numRemoveFrames; i++) {
+        for (int i = 0; i < removableFrameNums.Count(); i++) {
             if (frameNum == removableFrameNums[i]) {
                 remove = true;
                 break;
@@ -172,9 +169,9 @@ void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
         jointIndexes[i] = i;
     }
 
+    // Set up the reference joints of all frames.
     JointPose *frameJoints = (JointPose *)Mem_Alloc16(numFrames * numJoints * sizeof(JointPose));
 
-    // Get the reference joints.
     for (int frameNum = 0; frameNum < numFrames; frameNum++) {
         GetSingleFrame(frameNum, numJoints, jointIndexes, &frameJoints[frameNum * numJoints]);
     }
@@ -191,9 +188,9 @@ void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
 
     if (removableFrameNums.Count() > 0) {
         BE_LOG("%.1f%% of frames removed\n", 100.0f * removableFrameNums.Count() / numFrames);
-    }
 
-    RemoveFrames(removableFrameNums.Count(), removableFrameNums.Ptr());
+        RemoveFrames(removableFrameNums);
+    }
 
     Mem_AlignedFree(frameJoints);
 }
