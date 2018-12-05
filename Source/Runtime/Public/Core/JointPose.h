@@ -114,12 +114,12 @@ public:
     static constexpr int    MaxBoneTranslation = MeterToUnit(4);
     static constexpr int    MaxBoneScale = 2;
 
-    static short            QuatToShort(const float c);
-    static float            ShortToQuat(const short s);
-    static short            TranslationToShort(const float c);
-    static float            ShortToTranslation(const short s);
-    static short            ScaleToShort(const float c);
-    static float            ShortToScale(const short s);
+    static short            QuatToShort(const float x);
+    static float            ShortToQuat(const short x);
+    static short            TranslationToShort(const float x);
+    static float            ShortToTranslation(const short x);
+    static short            ScaleToShort(const float x);
+    static float            ShortToScale(const short x);
 
     void                    ClearQuat() { q[0] = q[1] = q[2] = 0; }
     void                    ClearTranslation() { t[0] = t[1] = t[2] = 0; }
@@ -164,7 +164,7 @@ BE_INLINE Quat CompressedJointPose::ToQuat() const {
     quat.x = ShortToQuat(q[0]);
     quat.y = ShortToQuat(q[1]);
     quat.z = ShortToQuat(q[2]);
-    // take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1
+    // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1
     quat.w = Math::Sqrt(Math::Fabs(1.0f - (quat.x * quat.x + quat.y * quat.y + quat.z * quat.z)));
     return quat;
 }

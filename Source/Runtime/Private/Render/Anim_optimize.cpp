@@ -310,7 +310,7 @@ void Anim::RemoveFrames(int numRemoveFrames, const int *removeFrameNums) {
 
     Array<int> newFrameTimes;
     newFrameTimes.SetGranularity(1);
-    newFrameTimes.SetCount(frameToTimeMap.Count() - numRemoveFrames);
+    newFrameTimes.SetCount(frameTimes.Count() - numRemoveFrames);
 
     Array<AABB> newAABBs;
     newAABBs.SetGranularity(1);
@@ -333,13 +333,13 @@ void Anim::RemoveFrames(int numRemoveFrames, const int *removeFrameNums) {
         for (int i = 0; i < numAnimatedComponents; i++) {
             newFrameComponents[numNewFrames * numAnimatedComponents + i] = frameComponents[frameNum * numAnimatedComponents + i];
         }
-        newFrameTimes[numNewFrames] = frameToTimeMap[frameNum];
+        newFrameTimes[numNewFrames] = frameTimes[frameNum];
 
         numNewFrames++;
     }
 
     frameComponents = newFrameComponents;
-    frameToTimeMap = newFrameTimes;
+    frameTimes = newFrameTimes;
 
     numFrames = numNewFrames;
 }
@@ -370,7 +370,7 @@ void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
             continue;
         }
 
-        float blockTime = frameToTimeMap[frameNum2] - frameToTimeMap[frameNum1];
+        float blockTime = frameTimes[frameNum2] - frameTimes[frameNum1];
         float maxDt = 0.0f;
         float maxDq = 0.0f;
         float maxDs = 0.0f;
@@ -383,7 +383,7 @@ void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
             GetSingleFrame(i, numJoints, jointIndexes, joints);
 
             // Get the interpolated joints.
-            float backlerp = (frameToTimeMap[i] - frameToTimeMap[frameNum1]) / blockTime;
+            float backlerp = (frameTimes[i] - frameTimes[frameNum1]) / blockTime;
             LerpFrame(frameNum1, frameNum2, backlerp, lerpedJoints);
 
             float dt = CompareJointsT(joints, lerpedJoints, numJoints);

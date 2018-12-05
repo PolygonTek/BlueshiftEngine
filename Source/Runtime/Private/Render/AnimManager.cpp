@@ -187,7 +187,7 @@ void AnimManager::Cmd_ListAnims(const CmdArgs &args) {
         if (anim) {
             size_t s = anim->Size();
             BE_LOG("%2i refs %9s %.2f secs: %s\n", 
-                anim->refCount, Str::FormatBytes((int)s).c_str(), anim->animLength / 1000.0f, anim->hashName.c_str());
+                anim->refCount, Str::FormatBytes((int)s).c_str(), anim->length / 1000.0f, anim->hashName.c_str());
 
             size += s;
             num++;

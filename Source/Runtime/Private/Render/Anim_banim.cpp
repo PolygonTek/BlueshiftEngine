@@ -40,28 +40,26 @@ bool Anim::LoadBinaryAnim(const char *filename) {
     numFrames = bAnimHeader->numFrames;
     numJoints = bAnimHeader->numJoints;
     numAnimatedComponents = bAnimHeader->numAnimatedComponents;
-    animLength = bAnimHeader->animLength;
+    length = bAnimHeader->length;
     maxCycleCount = bAnimHeader->maxCycleCount;
     rootRotation = (bAnimHeader->flags & BAnimFlag::RootRotation) ? true : false;
     rootTranslationXY = (bAnimHeader->flags & BAnimFlag::RootTranslationXY) ? true : false;
     rootTranslationZ = (bAnimHeader->flags & BAnimFlag::RootTranslationZ) ? true : false;
 
-    // --- frameToTimeMap & timeToFrameMap ---
-    int frameToTimeMapCount = *(const int *)ptr;
-    ptr += sizeof(frameToTimeMapCount);
+    // --- frame times ---
+    int frameTimesCount = *(const int *)ptr;
+    ptr += sizeof(frameTimesCount);
 
-    frameToTimeMap.SetGranularity(1);
-    frameToTimeMap.SetCount(frameToTimeMapCount);
-    simdProcessor->Memcpy(frameToTimeMap.Ptr(), ptr, (int)frameToTimeMap.MemoryUsed());
-    ptr += frameToTimeMap.MemoryUsed();
+    frameTimes.SetGranularity(1);
+    frameTimes.SetCount(frameTimesCount);
+    simdProcessor->Memcpy(frameTimes.Ptr(), ptr, (int)frameTimes.MemoryUsed());
+    ptr += frameTimes.MemoryUsed();
 
-    int timeToFrameMapCount = *(const int *)ptr;
-    ptr += sizeof(timeToFrameMapCount);
-
-    timeToFrameMap.SetGranularity(1);
-    timeToFrameMap.SetCount(timeToFrameMapCount);
-    simdProcessor->Memcpy(timeToFrameMap.Ptr(), ptr, (int)timeToFrameMap.MemoryUsed());
-    ptr += timeToFrameMap.MemoryUsed();
+    if (bAnimHeader->version == 1) {
+        int timeToFramesCount = *(const int *)ptr;
+        ptr += sizeof(timeToFramesCount);
+        ptr += sizeof(int) * timeToFramesCount;
+    }
 
     // --- joint info ---
     jointInfo.SetGranularity(1);
@@ -128,18 +126,14 @@ void Anim::WriteBinaryAnim(const char *filename) {
     bAnimHeader.numJoints = numJoints;
     bAnimHeader.numFrames = numFrames;
     bAnimHeader.numAnimatedComponents = numAnimatedComponents;
-    bAnimHeader.animLength = animLength;
+    bAnimHeader.length = length;
     bAnimHeader.maxCycleCount = maxCycleCount;
     fp->Write(&bAnimHeader, sizeof(bAnimHeader));
     
-    // --- frameToTimeMap & timeToFrameMap ---
-    int frameToTimeMapCount = frameToTimeMap.Count();
-    fp->Write(&frameToTimeMapCount, sizeof(frameToTimeMapCount)); 
-    fp->Write(frameToTimeMap.Ptr(), frameToTimeMap.MemoryUsed());
-
-    int timeToFrameMapCount = timeToFrameMap.Count();
-    fp->Write(&timeToFrameMapCount, sizeof(timeToFrameMapCount));
-    fp->Write(timeToFrameMap.Ptr(), timeToFrameMap.MemoryUsed());
+    // --- frame times ---
+    int frameTimesCount = frameTimes.Count();
+    fp->Write(&frameTimesCount, sizeof(frameTimesCount));
+    fp->Write(frameTimes.Ptr(), frameTimes.MemoryUsed());
 
     // --- joint info ---
     for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {

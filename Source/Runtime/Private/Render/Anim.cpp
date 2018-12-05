@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/BinSearch.h"
 #include "Render/Render.h"
 #include "Core/JointPose.h"
 #include "Simd/Simd.h"
@@ -23,14 +24,14 @@
 BE_NAMESPACE_BEGIN
 
 size_t Anim::Allocated() const {
-    size_t size = jointInfo.Allocated() + frameComponents.Allocated() + frameToTimeMap.Allocated() + timeToFrameMap.Allocated() + hashName.Allocated();
+    size_t size = jointInfo.Allocated() + frameComponents.Allocated() + frameTimes.Allocated() + hashName.Allocated();
     return size;
 }
 
 void Anim::Purge() {
     numFrames = 0;
     numJoints = 0;
-    animLength = 0;
+    length = 0;
     maxCycleCount = 1;
 
     rootRotation = false;
@@ -41,15 +42,14 @@ void Anim::Purge() {
     
     jointInfo.Clear();
     frameComponents.Clear();
-    frameToTimeMap.Clear();
-    timeToFrameMap.Clear();
+    frameTimes.Clear();
 }
 
 Anim &Anim::Copy(const Anim &other) {
     numJoints = other.numJoints;
     numFrames = other.numFrames;
     numAnimatedComponents = other.numAnimatedComponents;
-    animLength = other.animLength;
+    length = other.length;
     maxCycleCount = other.maxCycleCount;
 
     rootRotation = other.rootRotation;
@@ -59,8 +59,7 @@ Anim &Anim::Copy(const Anim &other) {
     jointInfo = other.jointInfo;
     baseFrame = other.baseFrame;
     frameComponents = other.frameComponents;
-    frameToTimeMap = other.frameToTimeMap;
-    timeToFrameMap = other.timeToFrameMap;
+    frameTimes = other.frameTimes;
     totalDelta = other.totalDelta;
 
     return *this;
@@ -72,7 +71,7 @@ void Anim::CreateDefaultAnim(const Skeleton *skeleton) {
     numJoints = skeleton->NumJoints();
     numFrames = 1;
 
-    animLength = 1000;
+    length = 1000;
 
     numAnimatedComponents = 0;
 
@@ -81,17 +80,17 @@ void Anim::CreateDefaultAnim(const Skeleton *skeleton) {
 
     const Joint *joints = skeleton->GetJoints();
 
-    for (int i = 0; i < numJoints; i++) {
-        JointInfo *jai = &jointInfo[i];
-        jai->nameIndex = animManager.JointIndexByName(skeleton->GetJointName(i));
+    for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
+        JointInfo *ji = &jointInfo[jointIndex];
+        ji->nameIndex = animManager.JointIndexByName(skeleton->GetJointName(jointIndex));
 
-        if (joints[i].parent) {
-            jai->parentIndex = (int32_t)(joints[i].parent - joints);
+        if (joints[jointIndex].parent) {
+            ji->parentIndex = (int32_t)(joints[jointIndex].parent - joints);
         } else {
-            jai->parentIndex = -1;
+            ji->parentIndex = -1;
         }
-        jai->animBits = 0;
-        jai->firstComponent = 0;
+        ji->animBits = 0;
+        ji->firstComponent = 0;
     }
     
     baseFrame.SetGranularity(1);
@@ -101,11 +100,9 @@ void Anim::CreateDefaultAnim(const Skeleton *skeleton) {
         baseFrame[i] = skeleton->GetBindPoses()[i];
     }
 
-    frameToTimeMap.SetGranularity(1);
-    frameToTimeMap.SetCount(1);
-    frameToTimeMap[0] = 0;
-
-    ComputeTimeFrames();
+    frameTimes.SetGranularity(1);
+    frameTimes.SetCount(1);
+    frameTimes[0] = 0;
 
     ComputeTotalDelta();
 }
@@ -131,7 +128,7 @@ Anim *Anim::CreateAdditiveAnim(const char *hashName, const JointPose *firstFrame
 
             jointFrame[jointIndex] -= firstFrame[jointIndex];
 
-            float *componentPtr = &additiveAnim->frameComponents[i * numAnimatedComponents + infoPtr->firstComponent];
+            float *componentPtr = &additiveAnim->frameComponents[infoPtr->firstComponent + i * numAnimatedComponents];
 
             if (infoPtr->animBits & (Tx | Ty | Tz)) {
                 if (infoPtr->animBits & Tx) {
@@ -318,27 +315,6 @@ void Anim::ComputeTotalDelta() {
     BE_DLOG("animation '%s' total delta (%s)\n", name.c_str(), totalDelta.ToString(4));
 }
 
-void Anim::ComputeTimeFrames() {
-    timeToFrameMap.Clear();
-
-    int lastFrameNum = numFrames - 1;
-    int lastFrameTime = frameToTimeMap[lastFrameNum];
-
-    timeToFrameMap.SetCount(lastFrameTime / 100 + 1);
-
-    for (int t = 0; t < lastFrameTime; t += 100) {
-        int i = lastFrameNum;
-
-        for (; i >= 0; i--) {
-            if (t >= frameToTimeMap[i]) {
-                break;
-            }
-        }
-
-        timeToFrameMap[t / 100] = i;
-    }
-}
-
 void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<AABB> &frameAABBs) const {
     if (skeleton->NumJoints() == 0) {
         return;
@@ -436,59 +412,54 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
 }
 
 void Anim::TimeToFrameInterpolation(int time, FrameInterpolation &frameInterpolation) const {
-    // only one frame exists
     if (numFrames <= 1) {
+        // only one frame exists
         frameInterpolation.frame1 = 0;
         frameInterpolation.frame2 = 0;
-        frameInterpolation.frontlerp = 1.0f;
         frameInterpolation.backlerp = 0.0f;
+        frameInterpolation.frontlerp = 1.0f;
         frameInterpolation.cycleCount = 0;
         return;
     }
 
     if (time <= 0) {
+        // time is less than or equal to zero
         frameInterpolation.frame1 = 0;
         frameInterpolation.frame2 = 1;
-        frameInterpolation.frontlerp = 1.0f;
         frameInterpolation.backlerp = 0.0f;
+        frameInterpolation.frontlerp = 1.0f;
         frameInterpolation.cycleCount = 0;
         return;
     }
 
-    int lastFrameTime = frameToTimeMap[frameToTimeMap.Count() - 1];
+    int lastFrameTime = frameTimes.Last();
 
     frameInterpolation.cycleCount = time / lastFrameTime;
 
-    // time 이 maxCycleCount 를 넘어갔다면
     if (maxCycleCount > 0 && frameInterpolation.cycleCount >= maxCycleCount) {
         frameInterpolation.cycleCount = maxCycleCount - 1;
         frameInterpolation.frame1 = numFrames - 1;
         frameInterpolation.frame2 = frameInterpolation.frame1;
-        frameInterpolation.frontlerp = 1.0f;
         frameInterpolation.backlerp = 0.0f;
+        frameInterpolation.frontlerp = 1.0f;
         return;
     }
-    
-    time = time % lastFrameTime;
 
-    int frameNum = timeToFrameMap[time / 100];
-    for (; frameNum < frameToTimeMap.Count() - 1; frameNum++) {
-        if (time < frameToTimeMap[frameNum + 1]) {
-            break;
-        }
-    }
+    int t = time % lastFrameTime;
+
+    int frameNum = BinSearch_LessEqual<int>(frameTimes.Ptr(), frameTimes.Count(), t);
 
     frameInterpolation.frame1 = frameNum;
     frameInterpolation.frame2 = frameInterpolation.frame1 + 1;
 
-    int t1 = frameToTimeMap[frameNum];
-    int t2 = frameToTimeMap[frameNum + 1];
+    int t1 = frameTimes[frameNum];
+    int t2 = frameTimes[frameNum + 1];
 
-    frameInterpolation.backlerp = (float)(time - t1) / (float)(t2 - t1);
+    frameInterpolation.backlerp = (float)(t - t1) / (float)(t2 - t1);
     frameInterpolation.frontlerp = 1.0f - frameInterpolation.backlerp;
 }
 
-void Anim::GetTranslation(Vec3 &outTranslation, int time, bool cyclicTranslation) const {
+void Anim::GetTranslation(Vec3 &outTranslation, int time, bool isCyclicTranslation) const {
     //if (rootTranslationXY && rootTranslationZ) {
     //    outTranslation = baseFrame[0].t;
     //    return;
@@ -509,8 +480,8 @@ void Anim::GetTranslation(Vec3 &outTranslation, int time, bool cyclicTranslation
 
     TimeToFrameInterpolation(time, frame);
 
-    const float *componentPtr1 = &frameComponents[numAnimatedComponents * frame.frame1 + rootJoint.firstComponent];
-    const float *componentPtr2 = &frameComponents[numAnimatedComponents * frame.frame2 + rootJoint.firstComponent];
+    const float *componentPtr1 = &frameComponents[rootJoint.firstComponent + numAnimatedComponents * frame.frame1];
+    const float *componentPtr2 = &frameComponents[rootJoint.firstComponent + numAnimatedComponents * frame.frame2];
 
     if (rootJoint.animBits & Tx) {
         outTranslation.x = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
@@ -528,7 +499,7 @@ void Anim::GetTranslation(Vec3 &outTranslation, int time, bool cyclicTranslation
         outTranslation.z = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
     }
 
-    if (frame.cycleCount && cyclicTranslation) {
+    if (frame.cycleCount && isCyclicTranslation) {
         outTranslation += totalDelta * (float)frame.cycleCount;
     }
 
@@ -561,8 +532,8 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
     FrameInterpolation frame;
     TimeToFrameInterpolation(time, frame);
 
-    const float *componentPtr1 = &frameComponents[numAnimatedComponents * frame.frame1 + jointInfo[0].firstComponent];
-    const float *componentPtr2 = &frameComponents[numAnimatedComponents * frame.frame2 + jointInfo[0].firstComponent];
+    const float *componentPtr1 = &frameComponents[jointInfo[0].firstComponent + numAnimatedComponents * frame.frame1];
+    const float *componentPtr2 = &frameComponents[jointInfo[0].firstComponent + numAnimatedComponents * frame.frame2];
 
     if (animBits & Tx) {
         componentPtr1++;
@@ -669,8 +640,8 @@ void Anim::GetScaling(Vec3 &outScaling, int time) const {
     FrameInterpolation frame;
     TimeToFrameInterpolation(time, frame);
 
-    const float *componentPtr1 = &frameComponents[numAnimatedComponents * frame.frame1 + jointInfo[0].firstComponent];
-    const float *componentPtr2 = &frameComponents[numAnimatedComponents * frame.frame2 + jointInfo[0].firstComponent];
+    const float *componentPtr1 = &frameComponents[jointInfo[0].firstComponent + numAnimatedComponents * frame.frame1];
+    const float *componentPtr2 = &frameComponents[jointInfo[0].firstComponent + numAnimatedComponents * frame.frame2];
 
     if (animBits & (Tx | Ty | Tz)) {
         if (animBits & Tx) {

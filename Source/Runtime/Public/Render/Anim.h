@@ -63,11 +63,11 @@ public:
     };
 
     struct FrameInterpolation {
-        int32_t             frame1;
-        int32_t             frame2;
-        int32_t             cycleCount;     // how many times the animation has wrapped to the begining (0 for clamped anims)
-        float               frontlerp;
-        float               backlerp;
+        int32_t             frame1;         // Frame number 1 for interpolation.
+        int32_t             frame2;         // Frame number 2 for interpolation.
+        int32_t             cycleCount;     // How many times the animation has wrapped to the begining (0 for clamped anims)
+        float               backlerp;       // A fractional value that maps [0, 1] to [frame1, frame2]
+        float               frontlerp;      // A fractional value that maps [1, 0] to [frame1, frame2]
     };
 
     Anim();
@@ -89,7 +89,7 @@ public:
     const JointInfo &       GetJointInfo(int index) const { return jointInfo[index]; }
 
                             /// Returns animation length by milliseconds
-    uint32_t                Length() const { return animLength; }
+    uint32_t                Length() const { return length; }
 
                             /// Returns maximum cycle count. 0 means infinite cycle loop
     int                     MaxCycleCount() const { return maxCycleCount; }
@@ -110,7 +110,7 @@ public:
                             /// Creates additive anim from bind-pose
     Anim *                  CreateAdditiveAnim(const Skeleton *skeleton, int numJointIndexes, const int *jointIndexes);
 
-                            // IMPLEMENT THIS
+                            // TODO: IMPLEMENT THIS
     Anim *                  CreateMirroredAnim(const int *jointMirrorTable);
 
     bool                    Load(const char *filename);
@@ -127,7 +127,7 @@ public:
                             /// Converts time in milliseconds to the FrameInterpolation
     void                    TimeToFrameInterpolation(int time, FrameInterpolation &frameInterpolation) const;
 
-    void                    GetTranslation(Vec3 &outTranslation, int time, bool cyclicTranslation = true) const;
+    void                    GetTranslation(Vec3 &outTranslation, int time, bool isCyclicTranslation = true) const;
 
     void                    GetRotation(Quat &outRotation, int time) const;
 
@@ -151,8 +151,6 @@ private:
 
     void                    ComputeTotalDelta();
 
-    void                    ComputeTimeFrames();
-
     void                    LerpFrame(int frameNum1, int frameNum2, float backlerp, JointPose *joints);
     void                    RemoveFrames(int numRemoveFrames, const int *removeFrameNums);
     void                    OptimizeFrames(float epsilonT = CentiToUnit(0.01f), float epsilonQ = 0.0015f, float epsilonS = 0.0001f);
@@ -161,24 +159,24 @@ private:
     Str                     name;
     mutable int             refCount;
 
-    int                     numJoints;              ///< Number of joints
-    int                     numFrames;              ///< Number of frames
-    int                     numAnimatedComponents;  ///< Number of animation components [0, 9]
-    uint32_t                animLength;             ///< Animation length in milliseconds
-    int                     maxCycleCount;          ///< 0 means infinite cycle loop
+    int                     numJoints;              ///< Number of joints.
+    int                     numFrames;              ///< Number of frames.
+    int                     numAnimatedComponents;  ///< Number of animation components [1, 9]
+    uint32_t                length;                 ///< Animation length in milliseconds.
+    int                     maxCycleCount;          ///< 0 means infinite cycle loop.
 
     bool                    rootRotation;
     bool                    rootTranslationXY;
     bool                    rootTranslationZ;
+
     bool                    isDefaultAnim;
     bool                    isAdditiveAnim;
 
-    Array<JointInfo>        jointInfo;
-    Array<JointPose>        baseFrame;              ///< Local transform for the first frame
+    Array<JointInfo>        jointInfo;              ///< Joints informations.
+    Array<JointPose>        baseFrame;              ///< Local transform of all joints in the 0'th frame.
     Array<float>            frameComponents;
-    Array<int>              frameToTimeMap;         ///< Times for each frame
-    Array<int>              timeToFrameMap;         ///< Frames for each 100 milliseconds
-    Vec3                    totalDelta;             ///< Root translation offset in the total animation evaluation
+    Array<int>              frameTimes;             ///< Times for each frames.
+    Vec3                    totalDelta;             ///< Root translation offset in total animation evaluation.
 };
 
 BE_INLINE Anim::Anim() {
@@ -186,7 +184,7 @@ BE_INLINE Anim::Anim() {
     numJoints               = 0;
     numFrames               = 0;
     numAnimatedComponents   = 0;
-    animLength              = 0;
+    length                  = 0;
     totalDelta.SetFromScalar(0);
 }
 

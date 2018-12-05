@@ -326,6 +326,16 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 #ifdef __WIN32__
 
+#if defined(_MSC_VER)
+#pragma warning (disable: 4018)     // signed/unsigned mismatch
+#pragma warning (disable: 4221)     // ignore object file does not define any previously undefined public symbols
+#pragma warning (disable: 4244)     // disable conversion warnings (double -> float)
+#pragma warning (disable: 4267)     // conversion from 'size_t' to 'int', possible loss of data
+#pragma warning (disable: 4305)     // truncation from const double to float
+#pragma warning (disable: 4819)     // The file contains a character that cannot be represented in the current code page
+#pragma warning (disable: 4996)     // This function or variable may be unsafe
+#endif
+
 #define BE_WIN_X86_SSE_INTRIN       1
 
 #define BE_CDECL
@@ -351,16 +361,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define wcstoull                    _wcstoui64
 
 #define debugbreak()                __debugbreak()
-
-#if defined(_MSC_VER)
-#pragma warning (disable: 4018)     // signed/unsigned mismatch
-#pragma warning (disable: 4221)     // ignore object file does not define any previously undefined public symbols
-#pragma warning (disable: 4244)     // disable conversion warnings (double -> float)
-#pragma warning (disable: 4267)     // conversion from 'size_t' to 'int', possible loss of data
-#pragma warning (disable: 4305)     // truncation from const double to float
-#pragma warning (disable: 4819)     // The file contains a character that cannot be represented in the current code page
-#pragma warning (disable: 4996)     // This function or variable may be unsafe
-#endif
 
 // Including SDKDDKVer.h defines the highest available Windows platform.
 
@@ -391,7 +391,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 // Windows specific headers
 #include <windows.h>
-//#include <malloc.h>
 #include <intrin.h>
 
 #endif
