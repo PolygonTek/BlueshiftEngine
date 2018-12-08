@@ -118,12 +118,14 @@ set(SRC_FILES
     src/BulletCollision/CollisionShapes/btEmptyShape.h
     src/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h
     src/BulletCollision/CollisionShapes/btMaterial.h
+    src/BulletCollision/CollisionShapes/btMiniSDF.h
     src/BulletCollision/CollisionShapes/btMinkowskiSumShape.h
     src/BulletCollision/CollisionShapes/btMultimaterialTriangleMeshShape.h
     src/BulletCollision/CollisionShapes/btMultiSphereShape.h
     src/BulletCollision/CollisionShapes/btOptimizedBvh.h
     src/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h
     src/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h
+    src/BulletCollision/CollisionShapes/btSdfCollisionShape.h
     src/BulletCollision/CollisionShapes/btShapeHull.h
     src/BulletCollision/CollisionShapes/btSphereShape.h
     src/BulletCollision/CollisionShapes/btStaticPlaneShape.h
@@ -156,12 +158,14 @@ set(SRC_FILES
     src/BulletCollision/CollisionShapes/btCylinderShape.cpp
     src/BulletCollision/CollisionShapes/btEmptyShape.cpp
     src/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.cpp
+    src/BulletCollision/CollisionShapes/btMiniSDF.cpp
     src/BulletCollision/CollisionShapes/btMinkowskiSumShape.cpp
     src/BulletCollision/CollisionShapes/btMultimaterialTriangleMeshShape.cpp
     src/BulletCollision/CollisionShapes/btMultiSphereShape.cpp
     src/BulletCollision/CollisionShapes/btOptimizedBvh.cpp
     src/BulletCollision/CollisionShapes/btPolyhedralConvexShape.cpp
     src/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.cpp
+    src/BulletCollision/CollisionShapes/btSdfCollisionShape.cpp
     src/BulletCollision/CollisionShapes/btShapeHull.cpp
     src/BulletCollision/CollisionShapes/btSphereShape.cpp
     src/BulletCollision/CollisionShapes/btStaticPlaneShape.cpp
