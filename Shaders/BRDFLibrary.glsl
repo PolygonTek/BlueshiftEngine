@@ -46,29 +46,32 @@ float litDiffuseOrenNayar(in float NdotL, in float NdotV, in float LdotV, in flo
 // Normal distribution functions
 //---------------------------------------------------
 
-float D_Blinn(float NdotH, float m) {
-    float m2 = m * m;
-    float n = 2.0 / m2 - 2.0;
+float D_Blinn(float NdotH, float a) {
+    float a2 = a * a;
+    float n = 2.0 / a2 - 2.0;
     n = max(n, 1e-4); // prevent possible zero
     return pow(NdotH, n) * (n + 2.0) * INV_TWO_PI;
 }
 
-float D_Beckmann(float NdotH, float m) {
-    float m2 = m * m;
+float D_Beckmann(float NdotH, float a) {
+    float a2 = a * a;
     float NdotH2 = NdotH * NdotH;
-    return exp((NdotH2 - 1.0) / (m2 * NdotH2)) * INV_PI / (m2 * NdotH2 * NdotH2);
+    return exp((NdotH2 - 1.0) / (a2 * NdotH2)) * INV_PI / (a2 * NdotH2 * NdotH2);
 }
 
 // Trowbridge-Reitz aka GGX
-float D_GGX(float NdotH, float m) {
-    float m2 = m * m;
-    float denom = NdotH * NdotH * (m2 - 1.0) + 1.0;
-    return m2 * INV_PI / (denom * denom + 1e-7);
+float D_GGX(float NdotH, float a) {
+    float a2 = a * a;
+    float denom = NdotH * NdotH * (a2 - 1.0) + 1.0;
+    return a2 * INV_PI / (denom * denom + 1e-7);
 }
 
-float D_GGXAniso(float NdotH, float XdotH, float YdotH, float mx, float my) {
-    float denom = XdotH * XdotH / (mx * mx) + YdotH * YdotH / (my * my) + NdotH * NdotH;
-    return INV_PI * mx * my * denom * denom;
+float D_GGXAniso(float NdotH, float XdotH, float YdotH, float ax, float ay) {
+    float ax2 = ax * ax;
+    float ay2 = ay * ay;
+    float axy = ax * ay;
+    float denom = XdotH * XdotH / ax2 + YdotH * YdotH / ay2 + NdotH * NdotH;
+    return INV_PI * axy * denom * denom;
 }
 
 //---------------------------------------------------

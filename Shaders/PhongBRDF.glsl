@@ -40,7 +40,7 @@ vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float s
 }
 
 // Phong/Blinn-Phong lighting with Fresnel
-vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
+vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float specularPower) {
     float NdotL = dot(N, L);
 
 #if defined(_WRAPPED_DIFFUSE)
@@ -57,10 +57,12 @@ vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, 
         float NdotH = max(dot(N, H), 0.0);
         float VdotH = max(dot(V, H), 0.0);
     
-        vec3 F = F_SchlickSG(specular.rgb, VdotH);
+        // Fresnel reflection term
+        vec3 F = F_SchlickSG(F0.rgb, VdotH);
 
         float normFactor = specularPower * 0.125 + 1.0;
 
+        // Final specular lighting
         vec3 Cs = F * normFactor * pow(NdotH, specularPower);
     #else
         vec3 R = reflect(-L, N);
@@ -68,20 +70,24 @@ vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, 
         float RdotV = max(dot(R, V), 0.0);
         float NdotV = max(dot(N, V), 0.0);
 
-        vec3 F = F_SchlickSG(specular.rgb, NdotV);
+        // Fresnel reflection term
+        vec3 F = F_SchlickSG(F0.rgb, NdotV);
 
         float normFactor = specularPower * 0.5 + 1.0;
 
+        // Final specular lighting
         vec3 Cs = F * normFactor * pow(RdotV, specularPower);
     #endif
 
+    // Final diffuse lighting
+    // From reflection term F, we can directly calculate the ratio of refraction
     return Cd * (vec3(1.0) - F) + Cs;
 #else
     return Cd;
 #endif
 }
 
-vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 specular, float specularPower, float roughness) {
+vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 F0, float specularPower, float roughness) {
     vec3 d1 = texCUBE(irradianceEnvCubeMap0, worldN).rgb;
     //vec3 d2 = texCUBE(irradianceEnvCubeMap1, worldN).rgb;
 
@@ -98,7 +104,8 @@ vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo
     vec3 s1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
     //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
 
-    vec3 F = F_SchlickRoughness(specular, roughness, NdotV);
+    vec3 F = F_SchlickRoughness(F0, roughness, NdotV);
+
     vec3 Cs = F * s1;
 
     return Cd * (vec3(1.0) - F) + Cs;

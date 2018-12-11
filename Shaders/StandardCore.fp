@@ -270,6 +270,7 @@ void main() {
             float roughness = metallic.a * roughnessScale;
         #endif
 
+        // A base reflectivity of 0.04 holds for most dielectrics
         vec4 specular = vec4(mix(vec3(0.04), albedo.rgb, metalness), 1.0);
         
         vec4 diffuse = vec4(albedo.rgb * ((1.0 - 0.04) - metalness), albedo.a);

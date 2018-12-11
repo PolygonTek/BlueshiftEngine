@@ -27,17 +27,19 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
     //----------------------------------
     // Specular BRDF
     //----------------------------------
-    float m = roughness * roughness;
+
+    // We adopted Disney's reparameterization of a = roughness^2
+    float a = roughness * roughness;
 
     // Normal distribution term
 #if PBR_SPEC_D == 0
-    float D = D_Blinn(NdotH, m);
+    float D = D_Blinn(NdotH, a);
 #elif PBR_SPEC_D == 1
-    float D = D_Beckmann(NdotH, m);
+    float D = D_Beckmann(NdotH, a);
 #elif PBR_SPEC_D == 2
-    float D = D_GGX(NdotH, m);
+    float D = D_GGX(NdotH, a);
 #elif PBR_SPEC_D == 3
-    float D = D_GGXAniso(NdotH, XdotH, YdotH, mx, my);
+    float D = D_GGXAniso(NdotH, XdotH, YdotH, ax, ay);
 #endif
 
     // Geometric visibility term
@@ -48,20 +50,23 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
 #elif PBR_SPEC_G == 2
     float G = G_CookTorrance(NdotV, NdotL, NdotH, VdotH);
 #elif PBR_SPEC_G == 3
+    // Disney's modification to reduce "hotness" by remapping roughness using (roughness + 1) / 2 before squaring.
     float k = roughness + 1.0; // k for direct lighting
     float G = G_SchlickGGX(NdotV, NdotL, (k * k) * 0.125);
 #endif
 
-    // Specular Fresnel term
+    // Fresnel reflection term
     vec3 F = F_SchlickSG(F0, VdotH);
 
-    // Microfacets specular BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
+    // Microfacets specular BRDF = D * G * F / 4 (G term is already divided by (NdotL * NdotV))
     vec3 BRDFspec = D * G * F * 0.25;
 
     // Final specular lighting
-    vec3 Cs = PI * NdotL * BRDFspec;
+    // Incident radiance is translated to LightColor * PI in direct lighting computation
+    vec3 Cs = BRDFspec * PI * NdotL;
 
-    // Final diffuse lighting with fresnel
+    // Final diffuse lighting
+    // From reflection term F, we can directly calculate the ratio of refraction
     Cd *= (vec3(1.0) - F);
 
     return Cd + Cs;

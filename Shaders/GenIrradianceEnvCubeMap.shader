@@ -20,6 +20,7 @@ shader "GenIrradianceEnvCubeMap" {
         out vec4 o_fragColor : FRAG_COLOR;
 
         uniform samplerCube radianceCubeMap;
+        uniform int radianceCubeMapSize;
         uniform int targetCubeMapSize;
         uniform int targetCubeMapFace;
         
@@ -50,7 +51,7 @@ shader "GenIrradianceEnvCubeMap" {
             }
 
             o_fragColor = vec4(color / numSamples, 1.0);
-#else
+#else // Brute force way integration
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int y = 0; y < radianceCubeMapSize; y++) {
                     for (int x = 0; x < radianceCubeMapSize; x++) {
@@ -61,7 +62,7 @@ shader "GenIrradianceEnvCubeMap" {
                         if (NdotL > 0.0) {
                             float dw = cubeMapTexelSolidAngle(x, y, radianceCubeMapSize);
                         
-                            color += texCUBE(radianceCubeMap, L).rgb * pow(NdotL, specularPower) * dw;
+                            color += texCUBE(radianceCubeMap, L).rgb * NdotL * dw;
                         }
                     }
                 }
