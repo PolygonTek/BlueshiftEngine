@@ -949,9 +949,9 @@ void RenderContext::TakePrefilteredEnvShot(const char *filename, RenderWorld *re
 
     Image prefilteredCubeImage;
 #if 1
-    GenerateGGXPrefilteredEnvCubeImage(envCubeImage, 256, prefilteredCubeImage);
+    GeneratePFCMGGXSpecular(envCubeImage, 256, prefilteredCubeImage);
 #else
-    GeneratePhongSpecularPrefilteredEnvCubeImage(envCubeImage, 128, 2048, prefilteredCubeImage);
+    GeneratePFCMPhongSpecular(envCubeImage, 128, 2048, prefilteredCubeImage);
 #endif
 
     char path[256];
@@ -1129,14 +1129,17 @@ void RenderContext::GenerateIrradianceEnvCubeImage(const Image &envCubeImage, in
     Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMap");
     Shader *shader = genDiffuseCubeMapShader->InstantiateShader(Array<Shader::Define>());
 
+    // Input radiance cube map
     Texture *radianceCubeTexture = new Texture;
     radianceCubeTexture->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
+    // Computed irradiance cube map
     Texture *irradianceEnvCubeTexture = new Texture;
     irradianceEnvCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
     
     RenderTarget *irradianceEnvCubeRT = RenderTarget::Create(irradianceEnvCubeTexture, nullptr, 0);
 
+    // Output images for each cubemap faces.
     Image faceImages[6];
 
     for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
@@ -1178,9 +1181,9 @@ void RenderContext::GenerateIrradianceEnvCubeImage(const Image &envCubeImage, in
     shaderManager.ReleaseShader(genDiffuseCubeMapShader);
 }
 
-void RenderContext::GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const {
-    Shader *genSpecularCubeMapShader = shaderManager.GetShader("Shaders/GenPhongSpecularPrefilteredEnvCubeMap");
-    Shader *shader = genSpecularCubeMapShader->InstantiateShader(Array<Shader::Define>());
+void RenderContext::GeneratePFCMPhongSpecular(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const {
+    Shader *genPFCMPhongSpecularShader = shaderManager.GetShader("Shaders/GenPFCMPhongSpecular");
+    Shader *shader = genPFCMPhongSpecularShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *radianceCubeTexture = new Texture;
     radianceCubeTexture->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
@@ -1241,12 +1244,12 @@ void RenderContext::GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &en
     RenderTarget::Delete(prefilteredCubeRT);
 
     shaderManager.ReleaseShader(shader);
-    shaderManager.ReleaseShader(genSpecularCubeMapShader);
+    shaderManager.ReleaseShader(genPFCMPhongSpecularShader);
 }
 
-void RenderContext::GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const {
-    Shader *genSpecularCubeMapShader = shaderManager.GetShader("Shaders/GenGGXSpecularPrefilteredEnvCubeMap");
-    Shader *shader = genSpecularCubeMapShader->InstantiateShader(Array<Shader::Define>());
+void RenderContext::GeneratePFCMGGXSpecular(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const {
+    Shader *genPFCMGGXSpecularShader = shaderManager.GetShader("Shaders/GenPFCMGGXSpecular");
+    Shader *shader = genPFCMGGXSpecularShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *radianceCubeTexture = new Texture;
     radianceCubeTexture->Create(RHI::TextureCubeMap, envCubeImage, Texture::CubeMap | Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
@@ -1303,12 +1306,12 @@ void RenderContext::GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage
     RenderTarget::Delete(prefilteredCubeRT);
 
     shaderManager.ReleaseShader(shader);
-    shaderManager.ReleaseShader(genSpecularCubeMapShader);
+    shaderManager.ReleaseShader(genPFCMGGXSpecularShader);
 }
 
 void RenderContext::GenerateGGXIntegrationLUTImage(int size, Image &integrationImage) const {
-    Shader *genBrdfIntegrationLutShader = shaderManager.GetShader("Shaders/GenBRDFIntegrationLUT");
-    Shader *shader = genBrdfIntegrationLutShader->InstantiateShader(Array<Shader::Define>());
+    Shader *genGGXIntegrationLUTShader = shaderManager.GetShader("Shaders/GenGGXIntegrationLUT");
+    Shader *shader = genGGXIntegrationLUTShader->InstantiateShader(Array<Shader::Define>());
 
     Texture *integrationLutTexture = new Texture;
     integrationLutTexture->CreateEmpty(RHI::Texture2D, size, size, 1, 1, 1, Image::RG_16F_16F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
@@ -1339,7 +1342,7 @@ void RenderContext::GenerateGGXIntegrationLUTImage(int size, Image &integrationI
     RenderTarget::Delete(integrationLutRT);
 
     shaderManager.ReleaseShader(shader);
-    shaderManager.ReleaseShader(genBrdfIntegrationLutShader);
+    shaderManager.ReleaseShader(genGGXIntegrationLUTShader);
 }
 
 BE_NAMESPACE_END

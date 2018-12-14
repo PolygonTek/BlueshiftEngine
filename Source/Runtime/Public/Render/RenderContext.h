@@ -170,10 +170,10 @@ public:
     void                    GenerateIrradianceEnvCubeImage(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const;
 
                             // Generate Phong specular prefiltered environment cubemap
-    void                    GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const;
+    void                    GeneratePFCMPhongSpecular(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const;
 
                             // Generate GGX specular prefiltered environment cubemap
-    void                    GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const;
+    void                    GeneratePFCMGGXSpecular(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const;
 
                             // Generate GGX BRDF integration 2D LUT
     void                    GenerateGGXIntegrationLUTImage(int size, Image &integrationImage) const;

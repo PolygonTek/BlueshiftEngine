@@ -1,4 +1,4 @@
-shader "GenGGXSpecularPrefilteredEnvCubeMap" {
+shader "GenPFCMGGXSpecular" {
     glsl_vp {
         in vec4 in_position : POSITION;
         in vec2 in_st : TEXCOORD0;
@@ -42,7 +42,6 @@ shader "GenGGXSpecularPrefilteredEnvCubeMap" {
                     vec3 L = 2.0 * dot(V, H) * H - V;
 
                     float NdotL = max(dot(N, L), 0.0);
-                    float NdotH = max(dot(N, H), 0.0);
 
                     if (NdotL > 0.0) {
                         color += texCUBE(radianceCubeMap, L).rgb * NdotL;
