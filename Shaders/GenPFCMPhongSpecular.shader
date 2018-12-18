@@ -37,15 +37,16 @@ shader "GenPFCMPhongSpecular" {
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
-                    vec3 sampleDir = importanceSamplePhongSpecular(vec2(x, y), specularPower, S);
-
+                    vec3 L = importanceSamplePhongSpecular(vec2(x, y), specularPower, S);
                     // BRDF = (power + 2) * pow(LdotS, power) / (NdotL * TWO_PI)
                     // PDF = (power + 1) * pow(LdotS, power) / TWO_PI
                     //
                     // Integrate { Li * BRDF * NdotL }
+                    //
                     // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
-                    // = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
-                    color += texCUBE(radianceCubeMap, sampleDir).rgb;
+                    //     = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
+                    //     = (power + 2) / (power + 1) * Sigma^N { Li } / N
+                    color += texCUBE(radianceCubeMap, L).rgb;
 
                     numSamples += 1.0;
                 }

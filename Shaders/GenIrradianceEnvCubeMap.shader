@@ -36,15 +36,15 @@ shader "GenIrradianceEnvCubeMap" {
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
-                    vec3 sampleDir = importanceSampleLambert(vec2(x, y), N);
-
+                    vec3 L = importanceSampleLambert(vec2(x, y), N);
                     // BRDF = 1 / PI
                     // PDF = NdotL / PI
                     //
                     // Integrate { Li * BRDF * NdotL }
+                    //
                     // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
-                    // = 1/N * Sigma^N { Li }
-                    color += texCUBE(radianceCubeMap, sampleDir).rgb;
+                    //     = 1/N * Sigma^N { Li }
+                    color += texCUBE(radianceCubeMap, L).rgb;
 
                     numSamples += 1.0;
                 }

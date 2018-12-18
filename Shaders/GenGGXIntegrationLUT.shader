@@ -19,13 +19,15 @@ shader "GenGGXIntegrationLUT" {
 
         out vec4 o_fragColor : FRAG_COLOR;
 
+        // Compute second sum (Real Shading in Unreal Engine 4 p6)
         vec2 integrateBRDF(float NdotV, float roughness) {
             vec3 N = vec3(0.0, 0.0, 1.0);
 
+            // theta = cos^-1(NdotV), phi = 0
             vec3 V;
-            V.x = sqrt(1.0 - NdotV * NdotV);
-            V.y = 0.0;
-            V.z = NdotV;
+            V.x = sqrt(1.0 - NdotV * NdotV); // sin(theta) cos(phi)
+            V.y = 0.0; // sin(theta) sin(phi)
+            V.z = NdotV; // cos(theta)
 
             float A = 0.0;
             float B = 0.0;
@@ -45,7 +47,18 @@ shader "GenGGXIntegrationLUT" {
 
                     if (NdotL > 0.0) {
                         float G = G_SchlickGGX(NdotV, NdotL, k);
+                        // BRDF/F = D * G / 4 (G term is divided by (NdotL * NdotV))
+                        //
+                        // PDF(H) = D * NdotH
+                        // PDF(L) = PDF(H) * dH / dL = D * NdotH / (4 * VdotH) (ref. PBRT 2nd Edition p698)
+                        //
+                        // Integrate { BRDF/F * NdotL }
+                        //
+                        // F_N = 1/N Sigma^N { BRDF/F * NdotL / PDF(L) }
+                        //     = 1/N Sigma^N { (D * G * NdotL / 4) / (D * NdotH / (4 * VdotH)) }
+                        //     = 1/N Sigma^N { G * NdotL * VdotH / NdotH }
                         float G_Vis = G * NdotL * VdotH / NdotH;
+
                         float Fc = pow5(1.0 - VdotH);
 
                         A += (1.0 - Fc) * G_Vis;

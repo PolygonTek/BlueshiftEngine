@@ -26,7 +26,7 @@ vec3 rotateWithUpVector(vec3 tangentDir, vec3 tangentZ) {
     return mat3(tangentX, tangentY, tangentZ) * tangentDir;
 }
 
-// Returns importance sampled incident direction for Lambert diffuse reflectance with respect to N
+// Returns importance sampled incident light direction for Lambert diffuse reflectance with respect to N
 vec3 importanceSampleLambert(vec2 xi, vec3 N) {
     float cosTheta = sqrt(1.0 - xi.x);
     float sinTheta = sqrt(xi.x);
@@ -41,7 +41,7 @@ vec3 importanceSampleLambert(vec2 xi, vec3 N) {
     return rotateWithUpVector(sampleDir, N);
 }
 
-// Returns importance sampled incident direction for Phong specular reflectance with respect to S
+// Returns importance sampled incident light direction for Phong specular reflectance with respect to S
 vec3 importanceSamplePhongSpecular(vec2 xi, float power, vec3 S) {
     float cosTheta = pow(xi.x, 1.0 / (power + 1.0));
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
@@ -171,7 +171,8 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
 
     vec3 specularLighting = vec3(0.0);
 
-    float k = roughness * roughness * 0.5; // k for IBL
+    // k for IBL
+    float k = roughness * roughness * 0.5;
 
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = hammersley(i, numSamples);
@@ -198,8 +199,8 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
             //
             // Integrate { Li * BRDF * NdotL }
             // F_N = 1/N Sigma^N { Li * BRDF * NdotL / PDF(L)  }
-            // = 1/N Sigma^N { (Li * D * G * F * NdotL / 4) / (D * NdotH / (4 * VdotH)) }
-            // = 1/N Sigma^N { Li * G * F * NdotL * VdotH / NdotH }
+            //     = 1/N Sigma^N { (Li * D * G * F * NdotL / 4) / (D * NdotH / (4 * VdotH)) }
+            //     = 1/N Sigma^N { Li * G * F * NdotL * VdotH / NdotH }
             specularLighting += radiance * G * F * NdotL * VdotH / NdotH;
         }
     }
@@ -213,6 +214,9 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 a
     vec3 diffuseLighting = vec3(0.0);
 
     vec3 specularLighting = vec3(0.0);
+
+    // k for IBL
+    float k = roughness * roughness * 0.5;
 
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = hammersley(i, numSamples);
@@ -235,7 +239,6 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 a
             float NdotH = max(dot(N, H), 0.0);
             float NdotV = max(dot(N, V), 0.0);
 
-            float k = roughness * roughness * 0.5; // k for IBL
             float G = G_SchlickGGX(NdotV, NdotL, k);
 
             specularLighting += texCUBE(radMap, Ls).rgb * G * F * NdotL * VdotH / NdotH;
