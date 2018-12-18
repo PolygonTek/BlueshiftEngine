@@ -805,7 +805,7 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
     RenderView renderView;
     RenderView::State rvDef;
     memset(&rvDef, 0, sizeof(rvDef));
-    rvDef.flags = RenderView::Flag::TexturedMode | RenderView::NoSubViews | RenderView::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
+    rvDef.flags = RenderView::Flag::TexturedMode | RenderView::NoSubViews /*| RenderView::SkipPostProcess*/ | RenderView::Flag::SkipDebugDraw;
     rvDef.clearMethod = RenderView::SkyboxClear;
     rvDef.layerMask = layerMask;
     rvDef.renderRect.Set(0, 0, size, size);
@@ -857,6 +857,8 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
 
         faceImages[faceIndex].FlipX(); // Flip for environment image to cubemap face image
         faceImages[faceIndex].FlipY(); // Flip upside down
+
+        //faceImages[faceIndex].WriteDDS(va("EnvProbes/%i.dds", faceIndex));
     }
 
     envCubeImage.CreateCubeFrom6Faces(faceImages);
