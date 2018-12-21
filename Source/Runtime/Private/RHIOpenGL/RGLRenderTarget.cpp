@@ -94,6 +94,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
         break;
     }
 
+    // numColorTextures may be greater than 1 due to MRT.
     if (numColorTextures > 0) {
         for (int i = 0; i < numColorTextures; i++) {
             GLuint textureObject = textureList[colorTextureHandles[i]]->object;
@@ -121,8 +122,8 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
         }
 
         GLenum color0 = GL_COLOR_ATTACHMENT0;
-        gglDrawBuffers(1, &color0);
-        gglReadBuffer(GL_COLOR_ATTACHMENT0);
+        OpenGL::DrawBuffers(1, &color0);
+        OpenGL::ReadBuffer(GL_COLOR_ATTACHMENT0);
     } else if (flags & HasColorBuffer) {
         gglGenRenderbuffers(1, &colorRenderBuffer);
         gglBindRenderbuffer(GL_RENDERBUFFER, colorRenderBuffer);
@@ -157,7 +158,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
         if (numColorTextures == 0) {
             // NOTE: this is per-FBO state
             OpenGL::DrawBuffer(GL_NONE);
-            gglReadBuffer(GL_NONE);
+            OpenGL::ReadBuffer(GL_NONE);
         }
     } else if (flags & HasDepthBuffer) {
         if (flags & HasStencilBuffer) {
@@ -292,7 +293,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
             mrtBitMask >>= 1;
         }
 
-        gglDrawBuffers(numDrawBuffers, drawBuffers);
+        OpenGL::DrawBuffers(numDrawBuffers, drawBuffers);
     }
 
     if (gl_sRGB.GetBool()) {

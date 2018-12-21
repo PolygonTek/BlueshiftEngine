@@ -313,6 +313,8 @@ public:
     static void             ClearDepth(GLdouble depth) {}
     static void             DepthRange(GLdouble znear, GLdouble zfar) {}
     static void             DrawBuffer(GLenum buffer) {}
+    static void             ReadBuffer(GLenum buffer) {}
+    static void             DrawBuffers(GLsizei count, const GLenum *buffers) {}
     static void             BindDefaultFBO() { gglBindFramebuffer(GL_FRAMEBUFFER, 0); }
     static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) {}
 

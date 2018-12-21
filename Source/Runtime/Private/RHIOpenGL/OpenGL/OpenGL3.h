@@ -61,6 +61,8 @@ public:
     static void             ClearDepth(GLdouble depth) { gglClearDepth(depth); }
     static void             DepthRange(GLdouble znear, GLdouble zfar) { gglDepthRange(znear, zfar); }
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffer(buffer); }
+    static void             ReadBuffer(GLenum buffer) { gglReadBuffer(buffer); }
+    static void             DrawBuffers(GLsizei count, const GLenum *buffers) { gglDrawBuffers(count, buffers); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer) { gglTexBuffer(GL_TEXTURE_BUFFER, internalFormat, buffer); }
     static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisorARB(index, divisor); }
     static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) { gglDrawElementsBaseVertex(mode, count, type, indices, basevertex); }
