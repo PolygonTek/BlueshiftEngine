@@ -11,6 +11,7 @@ float pow5(float f) {
     return f2 * f2 * f;
 }
 
+// Convert perceptual glossiness to specular power from [0, 1] to [2, 4096]
 float glossinessToSpecularPower(float glossiness) {
     return exp2(10.0 * glossiness + 1.0); 
 }
