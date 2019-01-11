@@ -524,16 +524,12 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
         return false;
     }
 
-    Quat q = axis.ToQuat();
-
     btTransform fromTrans;
-    fromTrans.setRotation(ToBtQuaternion(q));
-    fromTrans.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(origin)));
+    fromTrans = ToBtTransform(axis, SystemUnitToPhysicsUnit(origin));
     fromTrans.mult(shapeTransform, fromTrans);
 
     btTransform toTrans;
-    toTrans.setRotation(ToBtQuaternion(q));
-    toTrans.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(dest)));
+    toTrans = ToBtTransform(axis, SystemUnitToPhysicsUnit(dest));
     toTrans.mult(shapeTransform, toTrans);
 
     MyClosestConvexResultCallback cb(me, fromTrans.getOrigin(), toTrans.getOrigin());
