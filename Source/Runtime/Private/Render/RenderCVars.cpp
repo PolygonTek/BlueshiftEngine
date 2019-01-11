@@ -41,7 +41,7 @@ CVAR(r_shadowMapQuality, "1", CVar::Integer | CVar::Archive, "shadow map PCF lev
 CVAR(r_shadowMapCropAlign, "1", CVar::Bool, "");
 
 CVAR(r_CSM_count, "4", CVar::Integer | CVar::Archive, "");
-CVAR(r_CSM_maxDistance, "100", CVar::Float, "");
+CVAR(r_CSM_maxDistance, "150", CVar::Float, "");
 CVAR(r_CSM_pancaking, "0", CVar::Bool, "");
 CVAR(r_CSM_nonCachedDistance, "50", CVar::Float, "");
 CVAR(r_CSM_updateRatio, "1.0", CVar::Float, "");
