@@ -355,8 +355,14 @@ void OpenGLRHI::SetSRGBWrite(bool enable) {
         } else {
             gglDisable(GL_FRAMEBUFFER_SRGB);
         }
+
+        currentContext->state->sRGBWriteEnabled = enable;
     }
 };
+
+bool OpenGLRHI::IsSRGBWriteEnabled() const {
+    return currentContext->state->sRGBWriteEnabled;
+}
 
 void OpenGLRHI::EnableLineSmooth(bool enable) {
     if (OpenGL::SupportsLineSmooth()) {
