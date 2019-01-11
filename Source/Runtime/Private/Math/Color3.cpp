@@ -151,7 +151,7 @@ Color3 Color3::FromHSL() const {
 }
 
 // http://chilliant.blogspot.kr/2012/08/srgb-approximations-for-hlsl.html
-Color3 Color3::SRGBtoLinear() const {
+Color3 Color3::SRGBToLinear() const {
     float r2 = r * r;
     float g2 = g * g;
     float b2 = b * b;

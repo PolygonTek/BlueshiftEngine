@@ -89,10 +89,10 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
             shader->SetConstant4f(key, prop.data.As<Vec4>());
             break;
         case Variant::Color3Type:
-            shader->SetConstant3f(key, prop.data.As<Color3>());
+            shader->SetConstant3f(key, rhi.IsSRGBWriteEnabled() ? prop.data.As<Color3>().SRGBToLinear() : prop.data.As<Color3>());
             break;
         case Variant::Color4Type:
-            shader->SetConstant4f(key, prop.data.As<Color4>());
+            shader->SetConstant4f(key, rhi.IsSRGBWriteEnabled() ? prop.data.As<Color4>().SRGBToLinear() : prop.data.As<Color4>());
             break;
         case Variant::Mat2Type:
             shader->SetConstant2x2f(key, true, prop.data.As<Mat2>());
@@ -958,8 +958,8 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
 
     Color3 blendColor(&surfLight->def->state.materialParms[RenderObject::RedParm]);
 
-    if (cvarSystem.GetCVarBool("gl_sRGB")) {
-        blendColor = blendColor.SRGBtoLinear();
+    if (rhi.IsSRGBWriteEnabled()) {
+        blendColor = blendColor.SRGBToLinear();
     }
 
     shader->Bind();

@@ -147,9 +147,9 @@ void RB_SetupLight(VisibleLight *visLight) {
         visLight->lightColor = Color4(lightPass->constantColor);
     }
 
-    if (cvarSystem.GetCVarBool("gl_sRGB")) {
+    if (rhi.IsSRGBWriteEnabled()) {
         // Linearize visLight color
-        visLight->lightColor.ToColor3() = visLight->lightColor.ToColor3().SRGBtoLinear();
+        visLight->lightColor.ToColor3() = visLight->lightColor.ToColor3().SRGBToLinear();
     }
 
     // visLight texture transform matrix
@@ -618,6 +618,192 @@ static void RB_RenderView() {
     }
 }
 
+static void RB_DrawDebugShadowMap() {
+    rhi.SetStateBits(RHI::ColorWrite);
+
+    if (r_showShadows.GetInteger() == 1) {
+        float w = 100.0f;
+        float h = 100.0f;
+
+        backEnd.ctx->AdjustFrom640x480(nullptr, nullptr, &w, &h);
+
+        float space = 1;
+        float x = space;
+        float y = space;
+
+        const Texture *shadowTexture = backEnd.ctx->shadowMapRT->DepthStencilTexture();
+
+        shadowTexture->Bind();
+        rhi.SetTextureShadowFunc(false);
+
+        const Shader *shader = ShaderManager::drawArrayTextureShader;
+
+        shader->Bind();
+        shader->SetTexture("tex0", shadowTexture);
+
+        for (int i = 0; i < r_CSM_count.GetInteger(); i++) {
+            RB_DrawScreenRectSlice(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, i);
+            x += w + space;
+        }
+
+        rhi.SetTextureShadowFunc(true);
+
+        x = space;
+        y += h + space;
+    } else if (r_showShadows.GetInteger() == 2) {
+        float w = 200.0f;
+        float h = 200.0f;
+
+        backEnd.ctx->AdjustFrom640x480(nullptr, nullptr, &w, &h);
+
+        float space = 1;
+        float x = space;
+        float y = space;
+
+        const Texture *shadowTexture = backEnd.ctx->vscmRT->DepthStencilTexture();
+
+        shadowTexture->Bind();
+        rhi.SetTextureShadowFunc(false);
+
+        const Shader *shader = ShaderManager::postPassThruShader;
+
+        shader->Bind();
+        shader->SetTexture("tex0", shadowTexture);
+
+        RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
+
+        rhi.SetTextureShadowFunc(true);
+
+        x += w + space;
+
+        if (x + w > backEnd.ctx->GetDeviceWidth()) {
+            x = space;
+            y += h + space;
+        }
+    }
+}
+
+void RB_DrawRenderTargetTexture() {
+    float x, y, w, h;
+
+    if (r_showRenderTarget_fullscreen.GetBool()) {
+        x = 0.0f;
+        y = 0.0f;
+
+        w = backEnd.ctx->GetDeviceWidth();
+        h = backEnd.ctx->GetDeviceHeight();
+    } else {
+        x = 10.0f;
+        y = 10.0f;
+
+        w = backEnd.ctx->GetDeviceWidth() / 4;
+        h = backEnd.ctx->GetDeviceHeight() / 4;
+    }
+
+    rhi.SetStateBits(RHI::ColorWrite);
+
+    int index = r_showRenderTarget.GetInteger() - 1;
+    if (index < RenderTarget::rts.Count()) {
+        const RenderTarget *rt = RenderTarget::rts[index];
+        if (rt && rt->ColorTexture()) {
+            const Shader *shader = ShaderManager::postPassThruShader;
+
+            shader->Bind();
+            shader->SetTexture("tex0", rt->ColorTexture());
+
+            RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
+        }
+    }
+}
+
+void RB_DrawDebugHdrMap() {
+    int space = 10;
+
+    float x = space;
+    float y = 100.0f + space;
+
+    float w = 100.0f;
+    float h = 100.0f;
+
+    rhi.SetStateBits(RHI::ColorWrite);
+
+    const Shader *shader = ShaderManager::postPassThruShader;
+
+    shader->Bind();
+    shader->SetTexture("tex0", backEnd.ctx->screenColorTexture);
+
+    RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
+
+    x += w + space;
+
+    for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrBloomTexture); i++) {
+        shader->Bind();
+        shader->SetTexture("tex0", backEnd.ctx->hdrBloomTexture[i]);
+
+        RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
+
+        x += w + space;
+    }
+
+    y += h + space;
+    x = space;
+
+    for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrLumAverageTexture); i++) {
+        if (!backEnd.ctx->hdrLumAverageTexture[i]) {
+            break;
+        }
+
+        shader->Bind();
+        shader->SetTexture("tex0", backEnd.ctx->hdrLumAverageTexture[i]);
+
+        RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
+
+        x += w + space;
+    }
+
+    for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrLuminanceTexture); i++) {
+        shader->Bind();
+        shader->SetTexture("tex0", backEnd.ctx->hdrLuminanceTexture[i]);
+
+        RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
+
+        x += w + space;
+    }
+}
+
+static void RB_DrawDebugHOMap() {
+    int space = 10;
+
+    float x = space;
+    float y = space;
+
+    float w = 100.0f;
+    float h = 100.0f;
+
+    float size = Max(backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight());
+    int numLevels = Math::Log(2, size);
+
+    rhi.SetStateBits(RHI::ColorWrite);
+
+    for (int i = 0; i < numLevels; i++) {
+        backEnd.ctx->homRT->DepthStencilTexture()->Bind();
+        rhi.SetTextureLevel(i, i);
+
+        const Shader *shader = ShaderManager::postPassThruShader;
+
+        shader->Bind();
+        shader->SetTexture("tex0", backEnd.ctx->homRT->DepthStencilTexture());
+        //shader->SetConstant2f("depthRange", Vec2(backEnd.view->zNear, backEnd.view->zFar));
+
+        RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
+
+        x += w + space;
+    }
+
+    backEnd.ctx->homRT->DepthStencilTexture()->Bind();
+    rhi.SetTextureLevel(0, numLevels);
+}
+
 // FIXME: subview 일 경우를 생각
 static void RB_DrawView() {
     BE_PROFILE_CPU_SCOPE("RB_DrawView", Color3::red);
@@ -681,6 +867,31 @@ static void RB_DrawView() {
     }
 
     backEnd.viewMatrixPrev = backEnd.view->def->viewMatrix;
+
+    rhi.SetViewport(backEnd.screenRect);
+    rhi.SetScissor(backEnd.screenRect);
+    rhi.SetDepthRange(0, 0);
+    rhi.SetCullFace(RHI::NoCull);
+
+    if (r_showTextures.GetInteger() > 0) {
+        RB_DrawDebugTextures();
+    }
+
+    if (r_showShadows.GetInteger() > 0 && r_shadows.GetInteger() == 1) {
+        RB_DrawDebugShadowMap();
+    }
+
+    if (r_showRenderTarget.GetInteger() > 0) {
+        RB_DrawRenderTargetTexture();
+    }
+
+    if (r_HDR.GetInteger() > 0 && r_HDR_debug.GetInteger() > 0) {
+        RB_DrawDebugHdrMap();
+    }
+
+    if (r_HOM.GetBool() && r_HOM_debug.GetBool()) {
+        RB_DrawDebugHOMap();
+    }
 
     rhi.SetScissor(Rect::empty);
 }
@@ -805,7 +1016,7 @@ void RB_DrawDebugTextures() {
     int x = 0;
     int y = 0;
 
-    rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);	
+    rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);
     
     for (int i = start; i < end; i++) {
         const auto *entry = textureManager.textureHashMap.GetByIndex(i);
@@ -815,9 +1026,7 @@ void RB_DrawDebugTextures() {
             continue;
         }
 
-        if (texture->GetType() == RHI::TextureBuffer || texture->GetType() == RHI::Texture2DArray) {
-            // do nothing
-        } else {
+        if (texture->GetType() == RHI::Texture2D || texture->GetType() == RHI::TextureRectangle) {
             const Shader *shader = ShaderManager::postPassThruShader;
 
             shader->Bind();
@@ -852,222 +1061,8 @@ void RB_DrawDebugTextures() {
     }
 }
 
-static void RB_DrawDebugShadowMap() {
-    rhi.SetStateBits(RHI::ColorWrite);
-
-    if (r_showShadows.GetInteger() == 1) {
-        float w = 100.0f;
-        float h = 100.0f;
-
-        backEnd.ctx->AdjustFrom640x480(nullptr, nullptr, &w, &h);
-
-        float space = 1;
-        float x = space;
-        float y = space;
-
-        const Texture *shadowTexture = backEnd.ctx->shadowMapRT->DepthStencilTexture();
-
-        shadowTexture->Bind();
-        rhi.SetTextureShadowFunc(false);
-
-        const Shader *shader = ShaderManager::drawArrayTextureShader;
-
-        shader->Bind();
-        shader->SetTexture("tex0", shadowTexture);
-
-        for (int i = 0; i < r_CSM_count.GetInteger(); i++) {
-            RB_DrawScreenRectSlice(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, i);
-            x += w + space;
-        }
-
-        rhi.SetTextureShadowFunc(true);
-
-        x = space;
-        y += h + space;
-    } else if (r_showShadows.GetInteger() == 2) {
-        float w = 200.0f;
-        float h = 200.0f;
-
-        backEnd.ctx->AdjustFrom640x480(nullptr, nullptr, &w, &h);
-
-        float space = 1;
-        float x = space;
-        float y = space;
-
-        const Texture *shadowTexture = backEnd.ctx->vscmRT->DepthStencilTexture();
-
-        shadowTexture->Bind();
-        rhi.SetTextureShadowFunc(false);
-
-        const Shader *shader = ShaderManager::postPassThruShader;
-        
-        shader->Bind();
-        shader->SetTexture("tex0", shadowTexture);
-
-        RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
-
-        rhi.SetTextureShadowFunc(true);
-
-        x += w + space;
-
-        if (x + w > backEnd.ctx->GetDeviceWidth()) {
-            x = space;
-            y += h + space;
-        }
-    }
-}
-
-void RB_DrawRenderTargetTexture() {
-    float x, y, w, h;
-
-    if (r_showRenderTarget_fullscreen.GetBool()) {
-        x = 0.0f;
-        y = 0.0f;
-
-        w = backEnd.ctx->GetDeviceWidth();
-        h = backEnd.ctx->GetDeviceHeight();
-    } else {
-        x = 10.0f;
-        y = 10.0f;
-
-        w = backEnd.ctx->GetDeviceWidth() / 4;
-        h = backEnd.ctx->GetDeviceHeight() / 4;
-    }
-
-    rhi.SetStateBits(RHI::ColorWrite);
-    
-    int index = r_showRenderTarget.GetInteger() - 1;
-    if (index < RenderTarget::rts.Count()) {
-        const RenderTarget *rt = RenderTarget::rts[index];
-        if (rt && rt->ColorTexture()) {
-            const Shader *shader = ShaderManager::postPassThruShader;
-            
-            shader->Bind();
-            shader->SetTexture("tex0", rt->ColorTexture());
-            
-            RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
-        }
-    }
-}
-
-void RB_DrawDebugHdrMap() {
-    int space = 10;
-
-    float x = space;
-    float y = 100.0f + space;
-
-    float w = 100.0f;
-    float h = 100.0f;
-
-    rhi.SetStateBits(RHI::ColorWrite);
-
-    const Shader *shader = ShaderManager::postPassThruShader;
-
-    shader->Bind();
-    shader->SetTexture("tex0", backEnd.ctx->screenColorTexture);
-            
-    RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
-    
-    x += w + space;
-
-    for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrBloomTexture); i++) {
-        shader->Bind();
-        shader->SetTexture("tex0", backEnd.ctx->hdrBloomTexture[i]);
-            
-        RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
-
-        x += w + space;
-    }
-
-    y += h + space;
-    x = space;
-
-    for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrLumAverageTexture); i++) {
-        if (!backEnd.ctx->hdrLumAverageTexture[i]) {
-            break;
-        }
-
-        shader->Bind();
-        shader->SetTexture("tex0", backEnd.ctx->hdrLumAverageTexture[i]);
-            
-        RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
-
-        x += w + space;
-    }
-
-    for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrLuminanceTexture); i++) {
-        shader->Bind();
-        shader->SetTexture("tex0", backEnd.ctx->hdrLuminanceTexture[i]);
-            
-        RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
-
-        x += w + space;
-    }
-}
-
-static void RB_DrawDebugHOMap() {
-    int space = 10;
-
-    float x = space;
-    float y = space;
-
-    float w = 100.0f;
-    float h = 100.0f;
-
-    float size = Max(backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight());
-    int numLevels = Math::Log(2, size);
-
-    rhi.SetStateBits(RHI::ColorWrite);
-
-    for (int i = 0; i < numLevels; i++) {
-        backEnd.ctx->homRT->DepthStencilTexture()->Bind();
-        rhi.SetTextureLevel(i, i);
-
-        const Shader *shader = ShaderManager::postPassThruShader;
-        
-        shader->Bind();
-        shader->SetTexture("tex0", backEnd.ctx->homRT->DepthStencilTexture());
-        //shader->SetConstant2f("depthRange", Vec2(backEnd.view->zNear, backEnd.view->zFar));
-
-        RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
-
-        x += w + space;
-    }
-
-    backEnd.ctx->homRT->DepthStencilTexture()->Bind();
-    rhi.SetTextureLevel(0, numLevels);
-}
-
 static const void *RB_ExecuteSwapBuffers(const void *data) {
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
-
-    // Draw redundant surfaces
-    backEnd.batch.Flush();
-
-    rhi.SetViewport(backEnd.screenRect);
-    rhi.SetScissor(backEnd.screenRect);
-    rhi.SetDepthRange(0, 0);
-    rhi.SetCullFace(RHI::NoCull);
-
-    if (r_showTextures.GetInteger() > 0) {
-        RB_DrawDebugTextures();
-    }
-
-    if (r_showShadows.GetInteger() > 0 && r_shadows.GetInteger() == 1) {
-        RB_DrawDebugShadowMap();
-    }
-
-    if (r_showRenderTarget.GetInteger() > 0) {
-        RB_DrawRenderTargetTexture();
-    }
-
-    if (r_HDR.GetInteger() > 0 && r_HDR_debug.GetInteger() > 0) {
-        RB_DrawDebugHdrMap();
-    }
-
-    if (r_HOM.GetBool() && r_HOM_debug.GetBool()) {
-        RB_DrawDebugHOMap();
-    }
 
     rhi.SwapBuffers();
     

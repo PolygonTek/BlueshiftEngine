@@ -176,7 +176,7 @@ public:
     Color3              FromHSL() const;
 
                         /// Convert sRGB to Linear
-    Color3              SRGBtoLinear() const;
+    Color3              SRGBToLinear() const;
                         /// Convert Linear to sRGB
     Color3              LinearToSRGB() const;
 

@@ -109,6 +109,7 @@ public:
     void                    SetViewport(const Rect &viewportRect);
     void                    SetScissor(const Rect &scissorRect);
     void                    SetSRGBWrite(bool enable);
+    bool                    IsSRGBWriteEnabled() const;
 
     void                    EnableLineSmooth(bool enable);
     float                   GetLineWidth() const;
