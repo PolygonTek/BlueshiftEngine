@@ -13,7 +13,7 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
     float VdotH = max(dot(V, H), 0.0);
 
     //----------------------------------
-    // Diffuse BRDF
+    // Diffuse BRDF (already multiplied by PI)
     //----------------------------------
 #if PBR_DIFFUSE == 0
     vec3 Cd = albedo * litDiffuseLambert(NdotL);
@@ -63,7 +63,7 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
 
     // Final specular lighting
     // Incident radiance is translated to LightColor * PI in direct lighting computation
-    vec3 Cs = BRDFspec * PI * NdotL;
+    vec3 Cs = BRDFspec * NdotL * PI;
 
     // Final diffuse lighting
     // From reflection term F, we can directly calculate the ratio of refraction

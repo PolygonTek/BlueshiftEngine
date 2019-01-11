@@ -10,8 +10,10 @@ vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float s
 #if defined(_WRAPPED_DIFFUSE)
     float oneMinusW = 1.0 + wrappedDiffuse;
     vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (oneMinusW * oneMinusW);
+    NdotL = max(NdotL, 0.0);
 #else // Lambertian
-    vec3 Cd = albedo.rgb * max(NdotL, 0.0);
+    NdotL = max(NdotL, 0.0);
+    vec3 Cd = albedo.rgb * NdotL;
 #endif
 
 #ifdef USE_BLINN_PHONG
@@ -31,7 +33,7 @@ vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float s
 
     vec3 Cs = specular.rgb * normFactor * pow(RdotV, specularPower);
 #endif
-    
+
     return Cd * (vec3(1.0) - specular.rgb) + Cs;
 }
 
@@ -42,13 +44,15 @@ vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float 
 #if defined(_WRAPPED_DIFFUSE)
     float oneMinusW = 1.0 + wrappedDiffuse;
     vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (oneMinusW * oneMinusW);
+    NdotL = max(NdotL, 0.0);
 #else // Lambertian
-    vec3 Cd = albedo.rgb * max(NdotL, 0.0);
+    NdotL = max(NdotL, 0.0);
+    vec3 Cd = albedo.rgb * NdotL;
 #endif
 
 #ifdef USE_BLINN_PHONG
     vec3 H = normalize(L + V);
-    
+
     float NdotH = max(dot(N, H), 0.0);
     float VdotH = max(dot(V, H), 0.0);
     

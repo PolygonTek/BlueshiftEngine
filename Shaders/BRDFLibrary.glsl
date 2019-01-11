@@ -11,10 +11,14 @@ float pow5(float f) {
     return f2 * f2 * f;
 }
 
-// Convert perceptual glossiness to specular power from [0, 1] to [2, 4096]
+// Convert perceptual glossiness to specular power from [0, 1] to [2, 8192]
 float glossinessToSpecularPower(float glossiness) {
-    return exp2(10.0 * glossiness + 1.0); 
+    return exp2(11.0 * glossiness + 1.0); 
 }
+
+// 
+// diffuse lighting function - multiplied by PI
+//
 
 float litDiffuseLambert(in float NdotL) {
     return NdotL;
@@ -104,18 +108,18 @@ float G_SchlickGGX(float NdotV, float NdotL, float k) {
 //---------------------------------------------------
 
 // Fresnel using Schlick's approximation
-vec3 F_Schlick(vec3 F0, float NdotV) {
-    return F0 + (vec3(1.0) - F0) * pow5(1.0 - NdotV);
+vec3 F_Schlick(vec3 F0, float cosTheta) {
+    return F0 + (vec3(1.0) - F0) * pow5(1.0 - cosTheta);
 }
 
 // Fresnel using Schlick's approximation with spherical Gaussian approximation
-vec3 F_SchlickSG(vec3 F0, float NdotV) {
-    return F0 + (vec3(1.0) - F0) * exp2((-5.55473 * NdotV - 6.98316) * NdotV);
+vec3 F_SchlickSG(vec3 F0, float cosTheta) {
+    return F0 + (vec3(1.0) - F0) * exp2((-5.55473 * cosTheta - 6.98316) * cosTheta);
 }
 
 // Fresnel injected roughness term
-vec3 F_SchlickRoughness(vec3 F0, float roughness, float NdotV) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - NdotV);
+vec3 F_SchlickRoughness(vec3 F0, float roughness, float cosTheta) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cosTheta);
 }
 
 #endif
