@@ -18,14 +18,16 @@ shader "downscale4x4ExpLum" {
 		uniform vec2 sampleOffsets[SAMPLES];
 
 		void main() {
-			float lum = 0.0;
+			float logLum = 0.0;
 
 			for (int i = 0; i < SAMPLES; i++) {
-				lum += tex2D(tex0, v2f_texCoord.st + sampleOffsets[i]).x;
+				logLum += tex2D(tex0, v2f_texCoord.st + sampleOffsets[i]).x;
 			}
-			lum = exp(lum / float(SAMPLES));
 
-			o_fragColor = vec4(lum, lum, lum, 1.0);
+            // Geometric mean of screen luminances = e^{ sum^N { log(pixel(x, y)) } / N }
+			float avgLuminance = exp(logLum / float(SAMPLES));
+
+			o_fragColor = vec4(avgLuminance, avgLuminance, avgLuminance, 1.0);
 		}
 	}
 }

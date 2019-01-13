@@ -30,11 +30,11 @@ shader "brightFilter" {
 			float magnitude = length(c);
 			c = min(magnitude, brightMax) * normalize(c);
 
-			c *= brightLevel / (adaptedLum + 0.001);
+			c *= brightLevel / (adaptedLum + 0.0001);
 
 			//float Lw = dot(c, lumVector);
-			//float Ls = Lw * brightLevel / (adaptedLum + 0.001);
-			//c = c * Ls / (Lw + 0.001);
+			//float Ls = Lw * brightLevel / (adaptedLum + 0.0001);
+			//c = c * Ls / (Lw + 0.0001);
 
 			c = max(c - brightThrehold, 0.0);
 			c /= (c + brightOffset);

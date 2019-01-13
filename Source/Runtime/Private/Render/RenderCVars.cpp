@@ -74,7 +74,7 @@ CVAR(r_maxInstancingCount, "1024", CVar::Integer | CVar::Archive, "");
 CVAR(r_HDR, "2", CVar::Integer | CVar::Archive, "HDR rendering type, 0 = no HDR, 1 = FP11 or FP16, 2 = FP16, 3 = FP32");
 CVAR(r_HDR_debug, "0", CVar::Integer, "");
 CVAR(r_HDR_bloomScale, "1.0", CVar::Float, "");
-CVAR(r_HDR_middleGray, "0.18", CVar::Float, "");
+CVAR(r_HDR_middleGray, "0.18", CVar::Float, "key value for tone mapping [0.045, 0.72]");
 CVAR(r_HDR_brightLevel, "1.01", CVar::Float, "");
 CVAR(r_HDR_brightMax, "4.5", CVar::Float, "");
 CVAR(r_HDR_brightThrehold, "7.6", CVar::Float, "");
