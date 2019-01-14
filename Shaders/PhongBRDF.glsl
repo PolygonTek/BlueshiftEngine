@@ -50,7 +50,7 @@ vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float 
     vec3 Cd = albedo.rgb * NdotL;
 #endif
 
-#ifdef USE_BLINN_PHONG
+#ifdef USE_BLINN_PHONG // Microfacet Blinn-Phong
     vec3 H = normalize(L + V);
 
     float NdotH = max(dot(N, H), 0.0);

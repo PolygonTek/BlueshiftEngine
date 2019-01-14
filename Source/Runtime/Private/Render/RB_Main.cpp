@@ -761,6 +761,9 @@ void RB_DrawDebugHdrMap() {
         x += w + space;
     }
 
+    y += h + space;
+    x = space;
+
     for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrLuminanceTexture); i++) {
         shader->Bind();
         shader->SetTexture("tex0", backEnd.ctx->hdrLuminanceTexture[i]);
