@@ -106,6 +106,8 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
 
     const ImageFormatInfo *info = GetImageFormatInfo(format);
 
+    bool isGamma = !(flags & LinearSpaceFlag);
+
     float invSize = 1.0f / (faceSize - 1);
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
@@ -130,7 +132,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 float srcT = Math::Fract(theta * Math::InvPi);
 
                 Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::RepeatMode, Image::SampleWrapMode::ClampMode);
-                info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
+                info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1, isGamma);
             }
         }
     }
@@ -155,6 +157,8 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
 
     const ImageFormatInfo *info = GetImageFormatInfo(format);
 
+    bool isGamma = !(flags & LinearSpaceFlag);
+
     byte *dst = GetPixels(0);
 
     for (int dstY = 0; dstY < height; dstY++) {
@@ -171,7 +175,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
             dir.SetFromSpherical(1.0f, theta, phi);
 
             Color4 color = cubeImage.SampleCube(dir);
-            info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
+            info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1, isGamma);
         }
     }
 
@@ -238,6 +242,8 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
 
+    bool isGamma = !(flags & LinearSpaceFlag);
+
     float x = WrapCoord(st[0] * width, (float)(width - 1), wrapModeS);
     int iX0 = (int)x;
     int iX1 = WrapCoord(iX0 + 1, width - 1, wrapModeS);
@@ -259,10 +265,10 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
         // [2] [3]
         ALIGN_AS16 float rgba32f[4][4];
 
-        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
-        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
-        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
-        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
+        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1, isGamma);
+        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1, isGamma);
+        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1, isGamma);
+        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
             float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
@@ -275,10 +281,10 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
         // [2] [3]
         ALIGN_AS16 byte rgba8888[4][4];
 
-        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
-        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
-        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
-        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
+        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1, isGamma);
+        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1, isGamma);
+        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1, isGamma);
+        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
             byte a = Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
@@ -301,6 +307,8 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
     int numComponents = NumComponents();
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
+
+    bool isGamma = !(flags & LinearSpaceFlag);
 
     float x, y;
     CubeMapFace cubeMapFace = CubeMapToFaceCoords(str, x, y);
@@ -326,10 +334,10 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
         // [2] [3]
         ALIGN_AS16 float rgba32f[4][4];
 
-        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
-        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
-        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
-        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
+        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1, isGamma);
+        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1, isGamma);
+        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1, isGamma);
+        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
             float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
@@ -342,10 +350,10 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
         // [2] [3]
         ALIGN_AS16 byte rgba8888[4][4];
 
-        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
-        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
-        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
-        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
+        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1, isGamma);
+        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1, isGamma);
+        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1, isGamma);
+        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
             byte a = Lerp(rgba8888[0][i], rgba8888[1][i], fracX);

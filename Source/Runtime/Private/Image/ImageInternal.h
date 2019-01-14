@@ -19,8 +19,8 @@ BE_NAMESPACE_BEGIN
 //--------------------------------------------------------------------------------------------------
 // various pack/unpack function type for each color format
 //--------------------------------------------------------------------------------------------------
-using ImageUnpackFunc = void (*)(const byte *src, byte *dst, int numPixels);
-using ImagePackFunc = void (*)(const byte *src, byte *dst, int numPixels);
+using ImageUnpackFunc = void(*)(const byte *src, byte *dst, int numPixels, bool isGamma);
+using ImagePackFunc = void(*)(const byte *src, byte *dst, int numPixels, bool isGamma);
 
 struct ImageFormatInfo {
     const char *name;
@@ -36,6 +36,8 @@ struct ImageFormatInfo {
     ImageUnpackFunc unpackRGBA32F;
     ImagePackFunc packRGBA32F;
 };
+
+extern float gammaToLinearTable[256];
 
 void DecompressDXT1(const Image &srcImage, Image &dstImage);
 void DecompressDXT3(const Image &srcImage, Image &dstImage);

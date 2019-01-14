@@ -177,9 +177,18 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         return true;
     }
 
-    bool toFloat = (dstFormatInfo->type & Float) ? true : false;
-    ImageUnpackFunc unpackFunc = toFloat ? srcFormatInfo->unpackRGBA32F : srcFormatInfo->unpackRGBA8888;
-    ImagePackFunc packFunc = toFloat ? dstFormatInfo->packRGBA32F : dstFormatInfo->packRGBA8888;
+    ImageUnpackFunc unpackFunc;
+    ImagePackFunc packFunc;
+
+    bool unpackFloat = (srcFormatInfo->type & Float) || (dstFormatInfo->type & Float);
+
+    if (unpackFloat) {
+        unpackFunc = srcFormatInfo->unpackRGBA32F;
+        packFunc = dstFormatInfo->packRGBA32F;
+    } else {
+        unpackFunc = srcFormatInfo->unpackRGBA8888;
+        packFunc = dstFormatInfo->packRGBA8888;
+    }
     
     if (!unpackFunc || !packFunc) {
         BE_WARNLOG("Image::ConvertFormat: unsupported convert type (from %s to %s)\n", srcImage->FormatName(), dstImage.FormatName());
@@ -187,7 +196,9 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         return false;
     }
 
-    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (toFloat ? sizeof(float) : 1));
+    bool isGamma = !(flags & LinearSpaceFlag);
+
+    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (unpackFloat ? sizeof(float) : 1));
 
     byte *srcPtr = srcImage->GetPixels();
     byte *dstPtr = dstImage.GetPixels();
@@ -202,9 +213,8 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
 
         for (int sliceIndex = 0; sliceIndex < srcImage->numSlices; sliceIndex++) {
             for (int y = 0; y < h * d; y++) {
-                unpackFunc(srcPtr, unpackedBuffer, w);
-                // TODO: convert sRGB to linear color space or vice versa
-                packFunc(unpackedBuffer, dstPtr, w);
+                unpackFunc(srcPtr, unpackedBuffer, w, isGamma);
+                packFunc(unpackedBuffer, dstPtr, w, isGamma);
 
                 srcPtr += srcPitch;
                 dstPtr += dstPitch;

@@ -352,6 +352,9 @@ public:
                         /// Converts a linear value in the range [0, 1] to an sRGB value in the range [0, 1].
     static float        LinearToGamma(float value);
 
+    static float        GammaToLinearFast(float value);
+    static float        LinearToGammaFast(float value);
+
                         /// Converts 2D face coordinates to cubemap coordinates.
     static Vec3         FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t);
                         /// Converts cubemap coordinates to 2D face coordinates.
@@ -480,6 +483,14 @@ BE_INLINE float Image::LinearToGamma(float f) {
     } else {
         return 1.055f * Math::Pow(f, 1.0f / 2.4f) - 0.055f;
     }
+}
+
+BE_INLINE float Image::GammaToLinearFast(float f) {
+    return Math::Pow(f, 2.2f);
+}
+
+BE_INLINE float Image::LinearToGammaFast(float f) {
+    return Math::Pow(f, 1.0f / 2.2f);
 }
 
 template <typename T>
