@@ -155,7 +155,7 @@ Image &Image::AdjustBrightness(float factor) {
     return *this;
 }
 
-Image &Image::GammaCorrectRGB888(uint16_t ramp[768]) {
+Image &Image::ApplyGammaRampRGB888(uint16_t ramp[768]) {
     int numPixels = NumPixels(0, numMipmaps);
 
     for (int i = 0; i < numPixels; i++) {

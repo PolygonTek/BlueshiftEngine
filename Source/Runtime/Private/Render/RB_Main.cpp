@@ -962,11 +962,11 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     rhi.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::BGR_8_8_8, screenImage.GetPixels());
     screenImage.FlipY();
 
-    // apply gamma ramp table
+    // Apply gamma ramp table
     if (r_gamma.GetFloat() != 1.0) {
-        unsigned short ramp[768];
+        uint16_t ramp[768];
         rhi.GetGammaRamp(ramp);
-        screenImage.GammaCorrectRGB888(ramp);
+        screenImage.ApplyGammaRampRGB888(ramp);
     }
 
     Str filename = cmd->filename;

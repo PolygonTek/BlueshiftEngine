@@ -205,7 +205,7 @@ void DXTDecoder::DecompressImageDXT5(const DXTBlock *dxtBlock, const int width, 
                 int dstBlockWidth = Min(4, width - x);
 
                 for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
-                    memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);                    
+                    memcpy(dstPtr + i * 4 * width, srcPtr, dstBlockWidth * 4);
                 }
             }
         }

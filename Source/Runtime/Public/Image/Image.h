@@ -303,7 +303,7 @@ public:
     Image &             FlipY();
 
     Image &             AdjustBrightness(float factor);
-    Image &             GammaCorrectRGB888(uint16_t ramp[768]);
+    Image &             ApplyGammaRampRGB888(uint16_t ramp[768]);
 
                         /// Swaps the component red with alpha.
     Image &             SwapRedAlphaRGBA8888();
