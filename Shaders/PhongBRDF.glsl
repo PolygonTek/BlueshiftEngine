@@ -83,9 +83,9 @@ vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float 
     return Cd * (vec3(1.0) - F) + Cs;
 }
 
-vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 F0, float specularPower, float roughness) {
-    vec3 d1 = texCUBE(irradianceEnvCubeMap0, worldN).rgb;
-    //vec3 d2 = texCUBE(irradianceEnvCubeMap1, worldN).rgb;
+vec3 IndirectLit_PhongFresnel(vec3 N, vec3 S, float NdotV, vec3 albedo, vec3 F0, float specularPower, float roughness) {
+    vec3 d1 = texCUBE(irradianceEnvCubeMap0, N).rgb;
+    //vec3 d2 = texCUBE(irradianceEnvCubeMap1, N).rgb;
 
     vec3 Cd = albedo * d1;//mix(d1, d2, ambientLerp);
 
@@ -94,7 +94,7 @@ vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo
     float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
 
     vec4 sampleVec;
-    sampleVec.xyz = worldS;
+    sampleVec.xyz = S;
     sampleVec.w = specularMipLevel;
 
     // This is single cubemap texture lookup with Phong not Blinn-Phong

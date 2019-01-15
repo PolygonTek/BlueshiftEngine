@@ -1,7 +1,12 @@
 #ifndef STANDARD_CONFIG_INCLUDED
 #define STANDARD_CONFIG_INCLUDED
 
+#ifdef GL_ES
 #define PBR_DIFFUSE 0
+#else
+#define PBR_DIFFUSE 2
+#endif
+
 #define PBR_SPEC_D 2
 #define PBR_SPEC_G 3
 

@@ -7,37 +7,29 @@ $include "BRDFLibrary.glsl"
 vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roughness) {
     vec3 H = normalize(L + V);
 
-    float NdotL = max(dot(N, L), 0.0);
-    float NdotH = max(dot(N, H), 0.0);
-    float NdotV = max(dot(N, V), 0.0);
-    float VdotH = max(dot(V, H), 0.0);
+    float NdotL = saturate(dot(N, L));
+    float NdotH = saturate(dot(N, H));
+    float NdotV = saturate(dot(N, V));
+    float VdotH = saturate(dot(V, H));
 
-    //----------------------------------
-    // Diffuse BRDF (already multiplied by PI)
-    //----------------------------------
-#if PBR_DIFFUSE == 0
-    vec3 Cd = albedo * litDiffuseLambert(NdotL);
-#elif PBR_DIFFUSE == 1
-    vec3 Cd = albedo * litDiffuseBurley(NdotL, NdotV, VdotH, sqrt(roughness));
-#elif PBR_DIFFUSE == 2
-    float LdotV = max(dot(L, V), 0);
-    vec3 Cd = albedo * litDiffuseOrenNayar(NdotL, NdotV, LdotV, roughness);
-#endif
+    // We adopted Disney's reparameterization of a = roughness^2
+    // a means perceptual linear roughness.
+    float linearRoughness = roughness * roughness;
 
     //----------------------------------
     // Specular BRDF
     //----------------------------------
 
-    // We adopted Disney's reparameterization of a = roughness^2
-    float a = roughness * roughness;
+    // Fresnel reflection term
+    vec3 F = F_SchlickSG(F0, VdotH);
 
     // Normal distribution term
 #if PBR_SPEC_D == 0
-    float D = D_Blinn(NdotH, a);
+    float D = D_Blinn(NdotH, linearRoughness);
 #elif PBR_SPEC_D == 1
-    float D = D_Beckmann(NdotH, a);
+    float D = D_Beckmann(NdotH, linearRoughness);
 #elif PBR_SPEC_D == 2
-    float D = D_GGX(NdotH, a);
+    float D = D_GGX(NdotH, linearRoughness);
 #elif PBR_SPEC_D == 3
     float D = D_GGXAniso(NdotH, XdotH, YdotH, ax, ay);
 #endif
@@ -55,15 +47,27 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
     float G = G_SchlickGGX(NdotV, NdotL, (k * k) * 0.125);
 #endif
 
-    // Fresnel reflection term
-    vec3 F = F_SchlickSG(F0, VdotH);
-
     // Microfacets specular BRDF = D * G * F / 4 (G term is already divided by (NdotL * NdotV))
     vec3 BRDFspec = D * G * F * 0.25;
 
     // Final specular lighting
     // Incident radiance is translated to LightColor * PI in direct lighting computation
     vec3 Cs = BRDFspec * NdotL * PI;
+
+    //----------------------------------
+    // Diffuse BRDF (already multiplied by PI)
+    //----------------------------------
+
+#if PBR_DIFFUSE == 0
+    vec3 Cd = albedo * Fd_Lambert(NdotL);
+#elif PBR_DIFFUSE == 1
+    vec3 Cd = albedo * Fd_Wrap(NdotL, diffuseWrap);
+#elif PBR_DIFFUSE == 2
+    vec3 Cd = albedo * Fd_Burley(NdotL, NdotV, VdotH, linearRoughness);
+#elif PBR_DIFFUSE == 3
+    float LdotV = max(dot(L, V), 0);
+    vec3 Cd = albedo * Fd_OrenNayar(NdotL, NdotV, LdotV, linearRoughness);
+#endif
 
     // Final diffuse lighting
     // From reflection term F, we can directly calculate the ratio of refraction
@@ -72,9 +76,9 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
     return Cd + Cs;
 }
 
-vec3 IndirectLit_Standard(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 F0, float roughness) {
-    vec3 d1 = texCUBE(irradianceEnvCubeMap0, worldN).rgb;
-    //vec3 d2 = texCUBE(irradianceEnvCubeMap1, worldN).rgb;
+vec3 IndirectLit_Standard(vec3 N, vec3 S, float NdotV, vec3 albedo, vec3 F0, float roughness) {
+    vec3 d1 = texCUBE(irradianceEnvCubeMap0, N).rgb;
+    //vec3 d2 = texCUBE(irradianceEnvCubeMap1, N).rgb;
 
 #if USE_SRGB_TEXTURE == 0
     d1 = linearToGammaSpace(d1);
@@ -84,7 +88,7 @@ vec3 IndirectLit_Standard(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, ve
     vec3 Cd = albedo * d1;//mix(d1, d2, ambientLerp);
 
     vec4 sampleVec;
-    sampleVec.xyz = worldS;
+    sampleVec.xyz = S;
     sampleVec.w = roughness * 7.0; // FIXME: 7.0 == maximum mip level
 
     vec3 s1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;

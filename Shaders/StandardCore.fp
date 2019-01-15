@@ -24,6 +24,18 @@ $include "fragment_common.glsl"
 #define _ROUGHNESS 0
 #endif
 
+#ifndef _CLEARCOAT
+#define _CLEARCOAT 0
+#endif
+
+#ifndef _CLEARCOAT_NORMAL
+#define _CLEARCOAT_NORMAL 0
+#endif
+
+#ifndef _CLEARCOAT_ROUGHNESS
+#define _CLEARCOAT_ROUGHNESS 0
+#endif
+
 #ifndef _PRALLAX_SOURCE
 #define _PRALLAX_SOURCE 0
 #endif
@@ -90,6 +102,10 @@ uniform LOWP float metallicScale;
 
 uniform sampler2D roughnessMap;
 uniform LOWP float roughnessScale;
+
+uniform sampler2D clearCoatMap;
+uniform sampler2D clearCoatNormalMap;
+uniform sampler2D clearCoatRoughnessMap;
 
 uniform sampler2D heightMap;
 uniform LOWP float heightScale;
@@ -273,8 +289,11 @@ void main() {
         // A base reflectivity of 0.04 holds for most dielectrics
         vec4 specular = vec4(mix(vec3(0.04), albedo.rgb, metalness), 1.0);
         
-        vec4 diffuse = vec4(albedo.rgb * ((1.0 - 0.04) - metalness), albedo.a);
+        vec4 diffuse = vec4(albedo.rgb * (1.0 - metalness), albedo.a);
     #endif
+
+    // Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
+    roughness = clamp(roughness, MIN_ROUGHNESS, 1.0);
 #endif
 
     vec3 shadingColor = vec3(0.0);
