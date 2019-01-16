@@ -72,6 +72,7 @@ vec3 ToneMapFilmicALU(vec3 color) {
 }
 
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
+// https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
 vec3 ToneMapFilmicACES(vec3 x) {
     const float a = 2.51;
     const float b = 0.03;
@@ -102,8 +103,8 @@ vec3 U2Func(vec3 x) {
 
 // Uncharted 2 filmic tone mapping operator
 vec3 ToneMapFilmicUncharted2(vec3 color) {
-    float linearWhite = 3.2;
-    float exposureBias = 2.1;
+    float linearWhite = 3.3466;
+    float exposureBias = 2.0;
     vec3 numerator = U2Func(exposureBias * color);
     vec3 denominator = U2Func(vec3(linearWhite));
 
