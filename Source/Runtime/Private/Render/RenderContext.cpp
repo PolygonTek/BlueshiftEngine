@@ -351,19 +351,19 @@ void RenderContext::InitHdrMapRT() {
         lumImageFormat = Image::L_32F;
     }
 
-    int size = renderingWidth >> 2;
+    int size = Math::CeilPowerOfTwo(Max3(renderingWidth, renderingHeight, 2048)) >> 2;
 
     for (int i = 0; i < COUNT_OF(hdrLumAverageRT); i++) {
-        size = size >> 2;
-
         hdrLumAverageTexture[i] = textureManager.AllocTexture(va("_%i_hdrLumAverage%i", (int)contextHandle, i));
         hdrLumAverageTexture[i]->CreateEmpty(RHI::Texture2D, size, size, 1, 1, 1, lumImageFormat, 
             Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality | Texture::NonPowerOfTwo | Texture::HighPriority);
         hdrLumAverageRT[i] = RenderTarget::Create(hdrLumAverageTexture[i], nullptr, 0);
             
-        if (size <= 4) {
+        if (size <= 2) {
             break;
         }
+
+        size = size >> 2;
     }
 
     for (int i = 0; i < COUNT_OF(hdrLuminanceTexture); i++) {
@@ -371,7 +371,7 @@ void RenderContext::InitHdrMapRT() {
         hdrLuminanceTexture[i]->CreateEmpty(RHI::Texture2D, 1, 1, 1, 1, 1, lumImageFormat, 
             Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality | Texture::HighPriority);
         hdrLuminanceRT[i] = RenderTarget::Create(hdrLuminanceTexture[i], nullptr, 0);
-        //hdrLuminanceRT[i]->Clear(Vec4(0.5, 0.5, 0.5, 1.0), 0.0f, 0.0f);
+        //hdrLuminanceRT[i]->Clear(Color4(0.5, 0.5, 0.5, 1.0), 0.0f, 0.0f);
     }
 }
 
@@ -824,11 +824,12 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
     viewAxis[4] = Angles(0,   0,   0).ToMat3();
     viewAxis[5] = Angles(0,   0, 180).ToMat3();
 
-#if 1
-    Image image;
-    image.Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
+#if 0
+    Image emptyImage;
+    emptyImage.Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
+
     Texture *targetTexture = new Texture;
-    targetTexture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    targetTexture->Create(RHI::Texture2D, emptyImage, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
     RenderTarget *targetRT = RenderTarget::Create(targetTexture, nullptr, 0);
 
     Rect srcRect = Rect(0, 0, size, size);
@@ -872,17 +873,8 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
     
     RenderTarget *targetCubeRT = RenderTarget::Create(targetCubeTexture, nullptr, 0);
 
-    //Rect srcRect = Rect(0, 0, size, size);
-    //Rect dstRect = Rect(0, 0, size, size);
-
-    //srcRect.y = screenRT->GetHeight() - (srcRect.y + srcRect.h);
-
-    Image faceImages[6];
-
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        faceImages[faceIndex].Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
-
-        targetCubeRT->Begin(0, 0);
+        targetCubeRT->Begin(0, faceIndex);
 
         rvDef.axis = viewAxis[faceIndex];
         renderView.Update(&rvDef);
@@ -893,14 +885,16 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
         
         EndFrame();
 
-        //screenRT->Blit(srcRect, dstRect, targetRT, RHI::ColorBlitMask, RHI::NearestBlitFilter);
-
-        rhi.ReadPixels(0, 0, size, size, Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
-
         targetCubeRT->End();
+    }
 
-        //targetRT->ColorTexture()->Bind();
-        //targetRT->ColorTexture()->GetTexels2D(Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
+    Image faceImages[6];
+
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        faceImages[faceIndex].Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
+
+        targetCubeRT->ColorTexture()->Bind();
+        targetCubeRT->ColorTexture()->GetTexelsCubemap(faceIndex, Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
 
         faceImages[faceIndex].FlipX(); // Flip for environment image to cubemap face image
         faceImages[faceIndex].FlipY(); // Flip upside down

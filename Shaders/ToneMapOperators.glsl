@@ -1,6 +1,28 @@
+#define TONE_MAPPING_LINEAR             0
+#define TONE_MAPPING_EXPONENTIAL        1
+#define TONE_MAPPING_LOGARITHMIC        2
+#define TONE_MAPPING_DRAGO_LOGARITHMIC  3
+#define TONE_MAPPING_REINHARD           4
+#define TONE_MAPPING_REINHARD_EX        5
+#define TONE_MAPPING_FILMIC_ALU         6
+#define TONE_MAPPING_FILMIC_ACES        7
+#define TONE_MAPPING_FILMIC_UNREAL      8
+#define TONE_MAPPING_FILMIC_UNCHARTED2  9
+
+#define TONE_MAPPING_OPERATOR           TONE_MAPPING_FILMIC_ACES
+
+const vec3 lumVector = vec3(0.2125, 0.7154, 0.0721);
+
+const float whiteLevel = 5.0;
+
 float log10(float x) {
     // 1.0 / log(10) = 0.4342944819
     return 0.4342944819 * log(x);
+}
+
+// Linear tone mapping operator
+vec3 ToneMapLinear(vec3 color) {
+    return color;
 }
 
 // Exponential tone mapping operator
@@ -49,23 +71,40 @@ vec3 ToneMapFilmicALU(vec3 color) {
     return pow(color, vec3(2.2));
 }
 
+// Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
+vec3 ToneMapFilmicACES(vec3 x) {
+    const float a = 2.51;
+    const float b = 0.03;
+    const float c = 2.43;
+    const float d = 0.59;
+    const float e = 0.14;
+
+    return (x * (a * x + b)) / (x * (c * x + d) + e);
+}
+
+// Unreal, Documentation: "Color Grading"
+// Adapted to be close to ToneMapFilmicACES, with similar range
+vec3 ToneMapFilmicUnreal(vec3 x) {
+    return pow(x / (x + 0.155) * 1.019, vec3(2.2));
+}
+
 // Function used by the Uncharted2 tone mapping curve
 vec3 U2Func(vec3 x) {
-    float A = 0.15; // ShoulderStrength;
-    float B = 0.50; // LinearStrength;
-    float C = 0.10; // LinearAngle;
-    float D = 0.20; // ToeStrength;
-    float E = 0.02; // ToeNumerator;
-    float F = 0.30; // ToeDenominator;
+    const float A = 0.22; // Shoulder Strength;
+    const float B = 0.30; // Linear Strength;
+    const float C = 0.10; // Linear Angle;
+    const float D = 0.20; // Toe Strength;
+    const float E = 0.01; // Toe Numerator;
+    const float F = 0.30; // Toe Denominator;
 
-    return ((x*(A*x + C * B) + D * E) / (x*(A*x + B) + D * F)) - E / F;
+    return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
 // Uncharted 2 filmic tone mapping operator
-vec3 ToneMapFilmicU2(vec3 color) {
-    vec3 linearWhite = vec3(11.2);
+vec3 ToneMapFilmicUncharted2(vec3 color) {
+    float linearWhite = 11.2;
     vec3 numerator = U2Func(2.0 * color);
-    vec3 denominator = U2Func(linearWhite);
+    vec3 denominator = U2Func(vec3(linearWhite));
 
     return numerator / denominator;
 }

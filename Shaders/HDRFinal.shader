@@ -24,7 +24,10 @@ shader "HDRFinal" {
 		#ifdef LOGLUV_HDR
 		$include "logluv.glsl"
 		#endif
+
 		$include "image_processing.glsl"
+        $include "ToneMapOperators.glsl"
+
 		uniform HIGHP sampler2D luminanceMap;
 		uniform HIGHP sampler2D colorMap;
 		uniform HIGHP sampler2D bloomMap0;
@@ -38,11 +41,6 @@ shader "HDRFinal" {
 		uniform float colorScale;
 		uniform vec3 selectiveColor;
 		uniform vec4 additiveCmyk;
-
-		const float maxLuminance = 5.0;
-
-		//const vec3 lumVector = vec3(0.2125, 0.7154, 0.0721);
-		const vec3 lumVector = vec3(0.299, 0.587, 0.114);
 
 		// vignetting effect (makes corners of image darker)
 		float Vignette(vec2 pos, float inner, float outer) {
@@ -63,20 +61,32 @@ shader "HDRFinal" {
             return exp2(exposure) * color;
         }
 
-        $include "ToneMapOperators.glsl"
+        
+        vec3 ToneMap(vec3 color, float averageLuminance, float keyValue, float luminanceSaturation) {
+            color = CalcExposedColor(color, averageLuminance, 2.0, keyValue);
 
-        vec3 ToneMap(vec3 color, float keyValue, float luminanceSaturation, float averageLuminance, float whiteLevel) {
-            color = CalcExposedColor(color, averageLuminance, 0.0, keyValue);
-
-            //return color;
-            //return ToneMapLogarithmic(color, whiteLevel, luminanceSaturation);
-            //return ToneMapExponential(color, whiteLevel, luminanceSaturation);
-            //return ToneMapReinhard(color, luminanceSaturation);
-            //return ToneMapReinhardExtended(color, whiteLevel, luminanceSaturation);
-            //return ToneMapDragoLogarithmic(color, whiteLevel, luminanceSaturation, 0.5);
-            return ToneMapFilmicU2(color);
+        #if TONE_MAPPING_OPERATOR == TONE_MAPPING_LINEAR
+            return ToneMapLinear(color);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_EXPONENTIAL
+            return ToneMapExponential(color, luminanceSaturation);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_LOGARITHMIC
+            return ToneMapLogarithmic(color, luminanceSaturation);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_DRAGO_LOGARITHMIC
+            return ToneMapDragoLogarithmic(color, luminanceSaturation, 0.5);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_REINHARD
+            return ToneMapReinhard(color, luminanceSaturation);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_REINHARD_EX
+            return ToneMapReinhardExtended(color, luminanceSaturation);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_ALU
+            return ToneMapFilmicALU(color);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_ACES
+            return ToneMapFilmicACES(color);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_UNREAL
+            return ToneMapFilmicUnreal(color);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_UNCHARTED2
+            return ToneMapFilmicUncharted2(color);
+        #endif
         }
-            
 
 	#ifdef COLOR_GRADING
 		vec3 SelectiveColor(vec3 color) {
@@ -103,7 +113,7 @@ shader "HDRFinal" {
 			//bloomColor += tex2D(bloomMap4, v2f_texCoord0.st).rgb;
 		#endif
 
-			vec3 color = ToneMap(sceneColor, middleGray, 1.0, avgLuminance, maxLuminance);
+			vec3 color = ToneMap(sceneColor, avgLuminance, middleGray, 1.0);
 
 			//sceneColor = mix((vec3(0.5,0.5,0.5) + 0.5*tex2D(randomDir4x4Map, v2f_texCoord1.st).xyz) * pixelLuminance * vec3(0.8,0.8,1.8)*2.0, sceneColor, clamp(5.0*pixelLuminance, 0.0, 1.0));
 			//sceneColor = mix(pixelLuminance * vec3(0.8,0.8,1.4) * 1.0, sceneColor, clamp(5.0*pixelLuminance, 0.0, 1.0));

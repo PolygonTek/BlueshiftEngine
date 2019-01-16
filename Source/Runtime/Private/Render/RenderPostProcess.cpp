@@ -145,8 +145,6 @@ void PP_Downscale2x2(const Texture *srcTexture, RenderTarget *dstRT) {
 }
 
 void PP_Downscale4x4(const Texture *srcTexture, RenderTarget *dstRT) {
-    float s, t, s2, t2;
-    Vec2 sampleOffsets[16];
     Rect prevViewportRect = rhi.GetViewport();
 
     dstRT->Begin();
@@ -157,31 +155,21 @@ void PP_Downscale4x4(const Texture *srcTexture, RenderTarget *dstRT) {
 
     const Shader *shader = ShaderManager::downscale4x4Shader;
 
+    Vec2 sampleOffsets[16];
+
+    float texelOffsetX = 1.0f / srcTexture->GetWidth();
+    float texelOffsetY = 1.0f / srcTexture->GetHeight();
+
     if (!(srcTexture->GetFlags() & Texture::Nearest)) {
-        float texelOffsetX = 2.0f / srcTexture->GetWidth();
-        float texelOffsetY = 2.0f / srcTexture->GetHeight();
-
-        Vec2 *ptr = sampleOffsets;
-
-        for (int y = 0; y < 2; y++) {
-            for (int x = 0; x < 2; x++, ptr++) {
-                ptr->x = x * texelOffsetX;
-                ptr->y = y * texelOffsetY;
-            }
-        }
+        sampleOffsets[0] = Vec2(-texelOffsetX, -texelOffsetX);
+        sampleOffsets[1] = Vec2(+texelOffsetX, -texelOffsetX);
+        sampleOffsets[2] = Vec2(-texelOffsetX, +texelOffsetX);
+        sampleOffsets[3] = Vec2(+texelOffsetX, +texelOffsetX);
 
         shader->Bind();
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
-
-        s = -1.0f / srcTexture->GetWidth();
-        t = -1.0f / srcTexture->GetHeight();
-        s2 = 1.0f - 1.0f / srcTexture->GetWidth();
-        t2 = 1.0f - 1.0f / srcTexture->GetHeight();
     } else {
-        float texelOffsetX = 1.0f / srcTexture->GetWidth();
-        float texelOffsetY = 1.0f / srcTexture->GetHeight();
-
         Vec2 *ptr = sampleOffsets;
 
         for (int y = -2; y < 2; y++) {
@@ -194,22 +182,15 @@ void PP_Downscale4x4(const Texture *srcTexture, RenderTarget *dstRT) {
         shader->Bind();
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 16, sampleOffsets);
-
-        s = 0.0f;
-        t = 0.0f;
-        s2 = 1.0f;
-        t2 = 1.0f;
     }
 
-    RB_DrawClipRect(s, t, s2, t2);
+    RB_DrawClipRect(0, 0, 1, 1);
 
     dstRT->End();
     rhi.SetViewport(prevViewportRect);
 }
 
 void PP_Downscale4x4LogLum(const Texture *srcTexture, float s, float t, float s2, float t2, RenderTarget *dstRT) {
-    //float s, t, s2, t2;
-    Vec2 sampleOffsets[16];
     Rect prevViewportRect = rhi.GetViewport();
 
     dstRT->Begin();
@@ -219,32 +200,22 @@ void PP_Downscale4x4LogLum(const Texture *srcTexture, float s, float t, float s2
     rhi.SetCullFace(RHI::NoCull);
 
     const Shader *shader = ShaderManager::downscale4x4LogLumShader;
+
+    float texelOffsetX = 1.0f / srcTexture->GetWidth();
+    float texelOffsetY = 1.0f / srcTexture->GetHeight();
+
+    Vec2 sampleOffsets[16];
     
     if (!(srcTexture->GetFlags() & Texture::Nearest)) {
-        float texelOffsetX = 1.0f / srcTexture->GetWidth();
-        float texelOffsetY = 1.0f / srcTexture->GetHeight();
-
-        Vec2 *ptr = sampleOffsets;
-
-        for (int y = 0; y < 2; y++) {
-            for (int x = 0; x < 2; x++, ptr++) {
-                ptr->x = x * texelOffsetX;
-                ptr->y = y * texelOffsetY;
-            }
-        }
+        sampleOffsets[0] = Vec2(-texelOffsetX, -texelOffsetX);
+        sampleOffsets[1] = Vec2(+texelOffsetX, -texelOffsetX);
+        sampleOffsets[2] = Vec2(-texelOffsetX, +texelOffsetX);
+        sampleOffsets[3] = Vec2(+texelOffsetX, +texelOffsetX);
 
         shader->Bind();
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
-
-        s = -1.0f / srcTexture->GetWidth();
-        t = -1.0f / srcTexture->GetHeight();
-        s2 = 1.0f - 1.0f / srcTexture->GetWidth();
-        t2 = 1.0f - 1.0f / srcTexture->GetHeight();
     } else {
-        float texelOffsetX = 1.0f / srcTexture->GetWidth();
-        float texelOffsetY = 1.0f / srcTexture->GetHeight();
-
         Vec2 *ptr = sampleOffsets;
 
         for (int y = -2; y < 2; y++) {
@@ -257,22 +228,15 @@ void PP_Downscale4x4LogLum(const Texture *srcTexture, float s, float t, float s2
         shader->Bind();
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 16, sampleOffsets);
-
-        s = 0.0f;
-        t = 0.0f;
-        s2 = 1.0f;
-        t2 = 1.0f;
     }
 
-    RB_DrawClipRect(s, t, s2, t2);
+    RB_DrawClipRect(0, 0, 1, 1);
 
     dstRT->End();
     rhi.SetViewport(prevViewportRect);
 }
 
 void PP_Downscale4x4ExpLum(const Texture *srcTexture, RenderTarget *dstRT) {
-    float s, t, s2, t2;
-    Vec2 sampleOffsets[16];
     Rect prevViewportRect = rhi.GetViewport();
 
     dstRT->Begin();
@@ -282,32 +246,22 @@ void PP_Downscale4x4ExpLum(const Texture *srcTexture, RenderTarget *dstRT) {
     rhi.SetCullFace(RHI::NoCull);
 
     const Shader *shader = ShaderManager::downscale4x4ExpLumShader;
-  
+
+    Vec2 sampleOffsets[16];
+
+    float texelOffsetX = 1.0f / srcTexture->GetWidth();
+    float texelOffsetY = 1.0f / srcTexture->GetHeight();
+
     if (!(srcTexture->GetFlags() & Texture::Nearest)) {
-        float texelOffsetX = 2.0f / srcTexture->GetWidth();
-        float texelOffsetY = 2.0f / srcTexture->GetHeight();
-
-        Vec2 *ptr = sampleOffsets;
-
-        for (int y = 0; y < 2; y++) {
-            for (int x = 0; x < 2; x++, ptr++) {
-                ptr->x = x * texelOffsetX;
-                ptr->y = y * texelOffsetY;
-            }
-        }
+        sampleOffsets[0] = Vec2(-texelOffsetX, -texelOffsetX);
+        sampleOffsets[1] = Vec2(+texelOffsetX, -texelOffsetX);
+        sampleOffsets[2] = Vec2(-texelOffsetX, +texelOffsetX);
+        sampleOffsets[3] = Vec2(+texelOffsetX, +texelOffsetX);
 
         shader->Bind();
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
-
-        s = -1.0f / srcTexture->GetWidth();
-        t = -1.0f / srcTexture->GetHeight();
-        s2 = 1.0f - 1.0f / srcTexture->GetWidth();
-        t2 = 1.0f - 1.0f / srcTexture->GetHeight();
     } else {
-        float texelOffsetX = 1.0f / srcTexture->GetWidth();
-        float texelOffsetY = 1.0f / srcTexture->GetHeight();
-
         Vec2 *ptr = sampleOffsets;
 
         for (int y = -2; y < 2; y++) {
@@ -320,14 +274,9 @@ void PP_Downscale4x4ExpLum(const Texture *srcTexture, RenderTarget *dstRT) {
         shader->Bind();
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 16, sampleOffsets);
-
-        s = 0.0f;
-        t = 0.0f;
-        s2 = 1.0f;
-        t2 = 1.0f;
     }
 
-    RB_DrawClipRect(s, t, s2, t2);
+    RB_DrawClipRect(0, 0, 1, 1);
 
     dstRT->End();
     rhi.SetViewport(prevViewportRect);

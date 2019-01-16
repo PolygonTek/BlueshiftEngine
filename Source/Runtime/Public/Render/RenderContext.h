@@ -226,7 +226,7 @@ public:
     Texture *               ppTextures[MAX_PP_TEXTURES];
 
     Texture *               hdrBloomTexture[2];
-    Texture *               hdrLumAverageTexture[5];
+    Texture *               hdrLumAverageTexture[6];
     Texture *               hdrLuminanceTexture[3];
 
     Texture *               currentRenderTexture;
@@ -239,7 +239,7 @@ public:
     RenderTarget *          ppRTs[MAX_PP_RTS];
 
     RenderTarget *          hdrBloomRT[2];
-    RenderTarget *          hdrLumAverageRT[5];
+    RenderTarget *          hdrLumAverageRT[6];
     RenderTarget *          hdrLuminanceRT[3];
 
     Texture *               indirectionCubeMapTexture;
