@@ -193,9 +193,8 @@ void RB_PostProcess() {
 
         rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
         rhi.SetCullFace(RHI::NoCull);
-        
-        // HDR combine all = backBufferMap + bloomMap + luminanceMap
 
+        // Do HDR composition.
         const Shader *shader = ShaderManager::hdrFinalShader;
 
         shader->Bind();

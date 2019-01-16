@@ -900,7 +900,7 @@ void PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture,
 }
 
 void PP_MeasureLuminance(const Texture *srcTexture, const float *screenTc, RenderTarget *dstRT) {
-    // luminance 값을 구하면서 4분의 1로 downscale
+    // luminance 값을 구하면서 4x downscale
     PP_Downscale4x4LogLum(srcTexture, screenTc[0], screenTc[1], screenTc[2], screenTc[3], backEnd.ctx->hdrLumAverageRT[0]);
 
     // 4x4 이하가 될때까지 downsampling

@@ -717,13 +717,13 @@ void RB_DrawRenderTargetTexture() {
 }
 
 void RB_DrawDebugHdrMap() {
-    int space = 10;
+    int space = 16;
 
     float x = space;
-    float y = 100.0f + space;
+    float y = space;
 
-    float w = 100.0f;
-    float h = 100.0f;
+    float w = 128.0f;
+    float h = 128.0f;
 
     rhi.SetStateBits(RHI::ColorWrite);
 
@@ -763,6 +763,9 @@ void RB_DrawDebugHdrMap() {
 
     y += h + space;
     x = space;
+
+    w = 32;
+    h = 32;
 
     for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrLuminanceTexture); i++) {
         shader->Bind();
