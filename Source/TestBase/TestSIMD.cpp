@@ -40,9 +40,9 @@ static void RandomFloatArrayInit(float *dst, int count, float minimum, float max
 static void TestAdd() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src0[1024]);
-    ALIGN32(float src1[1024]);
-    ALIGN32(float dst[1024]);
+    ALIGN_AS32 float src0[1024];
+    ALIGN_AS32 float src1[1024];
+    ALIGN_AS32 float dst[1024];
     float c = 65535;
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
@@ -99,9 +99,9 @@ static void TestAdd() {
 static void TestSub() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src0[1024]);
-    ALIGN32(float src1[1024]);
-    ALIGN32(float dst[1024]);
+    ALIGN_AS32 float src0[1024];
+    ALIGN_AS32 float src1[1024];
+    ALIGN_AS32 float dst[1024];
     float c = 65535;
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
@@ -158,9 +158,9 @@ static void TestSub() {
 static void TestMul() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src0[1024]);
-    ALIGN32(float src1[1024]);
-    ALIGN32(float dst[1024]);
+    ALIGN_AS32 float src0[1024];
+    ALIGN_AS32 float src1[1024];
+    ALIGN_AS32 float dst[1024];
     float c = 65535;
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
@@ -217,9 +217,9 @@ static void TestMul() {
 static void TestDiv() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src0[1024]);
-    ALIGN32(float src1[1024]);
-    ALIGN32(float dst[1024]);
+    ALIGN_AS32 float src0[1024];
+    ALIGN_AS32 float src1[1024];
+    ALIGN_AS32 float dst[1024];
     float c = 65535;
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
@@ -276,7 +276,7 @@ static void TestDiv() {
 static void TestSum() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src[1024]);
+    ALIGN_AS32 float src[1024];
     float sum;
 
     RandomFloatArrayInit(src, COUNT_OF(src), -100.0f, 100.0f);
@@ -383,9 +383,9 @@ static void TestMemset() {
 static void TestMatrixMultiply() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float matrixA[16]);
-    ALIGN32(float matrixB[16]);
-    ALIGN32(float matrixC[16]);
+    ALIGN_AS32 float matrixA[16];
+    ALIGN_AS32 float matrixB[16];
+    ALIGN_AS32 float matrixC[16];
 
     RandomFloatArrayInit(matrixA, COUNT_OF(matrixA), -100.0f, 100.0f);
     RandomFloatArrayInit(matrixB, COUNT_OF(matrixB), -100.0f, 100.0f);
@@ -418,8 +418,8 @@ static void TestMatrixMultiply() {
 static void TestMatrixTranspose() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float matrixA[16]);
-    ALIGN32(float matrixB[16]);
+    ALIGN_AS32 float matrixA[16];
+    ALIGN_AS32 float matrixB[16];
 
     RandomFloatArrayInit(matrixA, COUNT_OF(matrixA), -100.0f, 100.0f);
 
