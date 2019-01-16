@@ -108,21 +108,16 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
                 gglFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, textureObject, 0, 0);
                 break;
             case GL_TEXTURE_CUBE_MAP:
-            case GL_TEXTURE_CUBE_MAP_ARRAY:
-#ifdef GL_VERSION_3_2
-                gglFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, textureObject, 0);
-#else
-                gglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, textureObject, 0);
-#endif
+                gglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_CUBE_MAP_POSITIVE_X, textureObject, 0);
                 break;
+            case GL_TEXTURE_CUBE_MAP_ARRAY:
             default:
                 assert(0);
                 break;
             }
         }
 
-        GLenum color0 = GL_COLOR_ATTACHMENT0;
-        OpenGL::DrawBuffers(1, &color0);
+        OpenGL::DrawBuffer(GL_COLOR_ATTACHMENT0);
         OpenGL::ReadBuffer(GL_COLOR_ATTACHMENT0);
     } else if (flags & HasColorBuffer) {
         gglGenRenderbuffers(1, &colorRenderBuffer);
@@ -143,13 +138,9 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
             gglFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureObject, 0, 0);
             break;
         case GL_TEXTURE_CUBE_MAP:
-        case GL_TEXTURE_CUBE_MAP_ARRAY:
-#ifdef GL_VERSION_3_2
-            gglFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureObject, 0);
-#else
-            gglFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, textureObject, 0);
-#endif
+            gglFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP_POSITIVE_X, textureObject, 0);
             break;
+        case GL_TEXTURE_CUBE_MAP_ARRAY:
         default:
             assert(0);
             break;
