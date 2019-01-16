@@ -82,6 +82,7 @@ extern CVar     r_maxInstancingCount;
 
 extern CVar     r_HDR;
 extern CVar     r_HDR_debug;
+extern CVar     r_HDR_toneMapOp;
 extern CVar     r_HDR_middleGray;
 extern CVar     r_HDR_brightLevel;
 extern CVar     r_HDR_brightMax;

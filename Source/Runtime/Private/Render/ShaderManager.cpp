@@ -215,6 +215,8 @@ void ShaderManager::InitGlobalDefines() {
         shaderManager.AddGlobalHeader("#define USE_SHADOW_MAP\n");
     }
 
+    shaderManager.AddGlobalHeader(va("#define TONE_MAPPING_OPERATOR %i\n", r_HDR_toneMapOp.GetInteger()));
+
     shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
     
     int maxShaderJoints = (rhi.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);

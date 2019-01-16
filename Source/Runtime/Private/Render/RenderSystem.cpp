@@ -351,6 +351,14 @@ void RenderSystem::CheckModifiedCVars() {
         RecreateHDRMapRT();
     }
 
+    if (r_HDR_toneMapOp.IsModified()) {
+        r_HDR_toneMapOp.ClearModified();
+
+        shaderManager.RemoveGlobalHeader(va("#define TONE_MAPPING_OPERATOR"));
+
+        shaderManager.AddGlobalHeader(va("#define TONE_MAPPING_OPERATOR %i\n", r_HDR_toneMapOp.GetInteger()));
+    }
+
     if (r_motionBlur.IsModified()) {
         r_motionBlur.ClearModified();
         
