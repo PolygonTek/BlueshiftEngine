@@ -28,24 +28,19 @@ shader "downscale4x4LogLum" {
 			float luminance;
 
 			for (int i = 0; i < SAMPLES; i++) {
-                vec3 color = tex2D(tex0, v2f_texCoord.st + sampleOffsets[i]).rgb;
+                vec4 color = tex2D(tex0, v2f_texCoord.st + sampleOffsets[i]).rgba;
 
 		#ifdef LOGLUV_HDR
-				luminance = max(dot(decodeLogLuv(color).xyz, lumVector), 0.0001);
+				luminance = max(dot(decodeLogLuv(color).rgb, lumVector), 0.0001);
 		#else
-                luminance = max(dot(color, lumVector), 0.0001);
+                luminance = max(dot(color.rgb, lumVector), 0.0001);
 		#endif
-				//luminance = max(luminance, 0.08);
-
 				sumLogLum += log(luminance);
 			}
+
             float avgLogLum = sumLogLum / float(SAMPLES);
 
-		#ifdef LOGLUV_HDR
-			o_fragColor = encodeLogLuv(vec3(avgLogLum, avgLogLum, avgLogLum));
-		#else
-			o_fragColor = vec4(avgLogLum, avgLogLum, avgLogLum, 1.0);
-		#endif
+            o_fragColor = vec4(avgLogLum, avgLogLum, avgLogLum, 1.0);
 		}
 	}
 }

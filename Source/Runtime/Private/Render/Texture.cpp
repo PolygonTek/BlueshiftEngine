@@ -588,7 +588,7 @@ void Texture::Upload(const Image *srcImage) {
 }
 
 void Texture::Update2D(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
-    rhi.SetTextureSubImage2D(0, xoffset, yoffset, width, height, format, data);	
+    rhi.SetTextureSubImage2D(0, xoffset, yoffset, width, height, format, data);
 }
 
 void Texture::Update3D(int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data) {

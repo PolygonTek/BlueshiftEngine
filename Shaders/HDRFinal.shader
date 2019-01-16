@@ -42,7 +42,7 @@ shader "HDRFinal" {
 		uniform vec3 selectiveColor;
 		uniform vec4 additiveCmyk;
 
-		// vignetting effect (makes corners of image darker)
+		// Vignetting effect (makes corners of image darker)
 		float Vignette(vec2 pos, float inner, float outer) {
 			float r = length(pos);
 			r = 1.0 - smoothstep(inner, outer, r);
@@ -87,7 +87,6 @@ shader "HDRFinal" {
         #endif
         }
 
-	#ifdef COLOR_GRADING
 		vec3 SelectiveColor(vec3 color) {
 			float colorPickRange = 1.0 - length(color - selectiveColor);
 
@@ -95,38 +94,21 @@ shader "HDRFinal" {
 			cmyk = mix(cmyk, clamp(cmyk + additiveCmyk, vec4(-1.0), vec4(1.0)), colorPickRange);
 			return mix(color, CMYK2RGB(cmyk), colorPickRange);
 		}
-	#endif
 
 		void main() {
-		#ifdef LOGLUV_HDR
-			float avgLuminance = decodeLogLuv(tex2D(luminanceMap, vec2(0.0, 0.0))).x;
-			vec3 sceneColor = decodeLogLuv(tex2D(colorMap, v2f_texCoord0.st));
-			vec3 bloomColor = decodeLogLuv(tex2D(bloomMap, v2f_texCoord0.st));
-		#else
             float avgLuminance = tex2D(luminanceMap, vec2(0.0, 0.0)).x;
+		#ifdef LOGLUV_HDR
+			vec3 sceneColor = decodeLogLuv(tex2D(colorMap, v2f_texCoord0.st));
+			vec3 bloomColor = decodeLogLuv(tex2D(bloomMap0, v2f_texCoord0.st));
+		#else
 			vec3 sceneColor = tex2D(colorMap, v2f_texCoord0.st).rgb;
 			vec3 bloomColor = tex2D(bloomMap0, v2f_texCoord0.st).rgb;
-			//bloomColor += tex2D(bloomMap1, v2f_texCoord0.st).rgb;
-			//bloomColor += tex2D(bloomMap2, v2f_texCoord0.st).rgb;
-			//bloomColor += tex2D(bloomMap3, v2f_texCoord0.st).rgb;
-			//bloomColor += tex2D(bloomMap4, v2f_texCoord0.st).rgb;
 		#endif
 
 			vec3 color = ToneMap(sceneColor, avgLuminance, middleGray);
 
-			//sceneColor = mix((vec3(0.5,0.5,0.5) + 0.5*tex2D(randomDir4x4Map, v2f_texCoord1.st).xyz) * pixelLuminance * vec3(0.8,0.8,1.8)*2.0, sceneColor, clamp(5.0*pixelLuminance, 0.0, 1.0));
-			//sceneColor = mix(pixelLuminance * vec3(0.8,0.8,1.4) * 1.0, sceneColor, clamp(5.0*pixelLuminance, 0.0, 1.0));
-
-		//	float saturation = 0.9; // 1.0 = full saturation, 0.0 = grayscale
-		//	float finalLum = dot(color, lumVector);
-		//	color.rgb = mix(vec3(finalLum, finalLum, finalLum), color.rgb, saturation);
-
-		//	float invContrast = 1.05; // 2.0 = contrast enhanced, 1.0 = normal contrast, 0.01 = max contrast reduced
-		//	color = (color - vec3(0.5, 0.5, 0.5)) * invContrast + vec3(0.5, 0.5, 0.5);
-
-			color *= colorScale;
+    		color *= colorScale;
 			color += bloomColor * bloomScale;
-			//color = 2.0 * pow(color, vec3(1.5, 1.5, 1.5));
 
 		#ifdef COLOR_GRADING
 			color = SelectiveColor(color);
