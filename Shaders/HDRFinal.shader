@@ -49,7 +49,7 @@ shader "HDRFinal" {
 			return r;
 		}
 
-        vec3 CalcExposedColor(vec3 color, float averageLuminance, float threshold, float keyValue) {
+        vec3 CalcExposedColor(vec3 color, float averageLuminance, float keyValue, float threshold) {
             averageLuminance = max(averageLuminance, 0.0001);
 
             // Compute current pixel luminance
@@ -61,22 +61,21 @@ shader "HDRFinal" {
             return exp2(exposure) * color;
         }
 
-        
-        vec3 ToneMap(vec3 color, float averageLuminance, float keyValue, float luminanceSaturation) {
-            color = CalcExposedColor(color, averageLuminance, 2.0, keyValue);
+        vec3 ToneMap(vec3 color, float averageLuminance, float keyValue) {
+            color = CalcExposedColor(color, averageLuminance, keyValue, 2.0);
 
         #if TONE_MAPPING_OPERATOR == TONE_MAPPING_LINEAR
             return ToneMapLinear(color);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_EXPONENTIAL
-            return ToneMapExponential(color, luminanceSaturation);
+            return ToneMapExponential(color);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_LOGARITHMIC
-            return ToneMapLogarithmic(color, luminanceSaturation);
+            return ToneMapLogarithmic(color);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_DRAGO_LOGARITHMIC
-            return ToneMapDragoLogarithmic(color, luminanceSaturation, 0.5);
+            return ToneMapDragoLogarithmic(color, 0.5);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_REINHARD
-            return ToneMapReinhard(color, luminanceSaturation);
+            return ToneMapReinhard(color);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_REINHARD_EX
-            return ToneMapReinhardExtended(color, luminanceSaturation);
+            return ToneMapReinhardExtended(color);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_ALU
             return ToneMapFilmicALU(color);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_ACES
@@ -113,7 +112,7 @@ shader "HDRFinal" {
 			//bloomColor += tex2D(bloomMap4, v2f_texCoord0.st).rgb;
 		#endif
 
-			vec3 color = ToneMap(sceneColor, avgLuminance, middleGray, 1.0);
+			vec3 color = ToneMap(sceneColor, avgLuminance, middleGray);
 
 			//sceneColor = mix((vec3(0.5,0.5,0.5) + 0.5*tex2D(randomDir4x4Map, v2f_texCoord1.st).xyz) * pixelLuminance * vec3(0.8,0.8,1.8)*2.0, sceneColor, clamp(5.0*pixelLuminance, 0.0, 1.0));
 			//sceneColor = mix(pixelLuminance * vec3(0.8,0.8,1.4) * 1.0, sceneColor, clamp(5.0*pixelLuminance, 0.0, 1.0));

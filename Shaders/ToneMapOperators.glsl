@@ -9,11 +9,11 @@
 #define TONE_MAPPING_FILMIC_UNREAL      8
 #define TONE_MAPPING_FILMIC_UNCHARTED2  9
 
-#define TONE_MAPPING_OPERATOR           TONE_MAPPING_FILMIC_ACES
-
 const vec3 lumVector = vec3(0.2125, 0.7154, 0.0721);
 
 const float whiteLevel = 5.0;
+
+const float luminanceSaturation = 1.0;
 
 float log10(float x) {
     // 1.0 / log(10) = 0.4342944819
@@ -26,21 +26,21 @@ vec3 ToneMapLinear(vec3 color) {
 }
 
 // Exponential tone mapping operator
-vec3 ToneMapExponential(vec3 color, float whiteLevel, float luminanceSaturation) {
+vec3 ToneMapExponential(vec3 color) {
     float pixelLuminance = max(dot(color, lumVector), 0.0001);
     float toneMappedLuminance = 1.0 - exp(-pixelLuminance / whiteLevel);
     return toneMappedLuminance * pow(color / pixelLuminance, vec3(luminanceSaturation));
 }
 
 // Logarithmic mapping operator
-vec3 ToneMapLogarithmic(vec3 color, float whiteLevel, float luminanceSaturation) {
+vec3 ToneMapLogarithmic(vec3 color) {
     float pixelLuminance = max(dot(color, lumVector), 0.0001);
     float toneMappedLuminance = log10(1.0 + pixelLuminance) / log10(1.0 + whiteLevel);
     return toneMappedLuminance * pow(color / pixelLuminance, vec3(luminanceSaturation));
 }
 
 // Drago's Logarithmic mapping operator
-vec3 ToneMapDragoLogarithmic(vec3 color, float whiteLevel, float luminanceSaturation, float bias) {
+vec3 ToneMapDragoLogarithmic(vec3 color, float bias) {
     float pixelLuminance = max(dot(color, lumVector), 0.0001);
     float toneMappedLuminance = log10(1 + pixelLuminance);
     toneMappedLuminance /= log10(1.0 + whiteLevel);
@@ -49,14 +49,14 @@ vec3 ToneMapDragoLogarithmic(vec3 color, float whiteLevel, float luminanceSatura
 }
 
 // Reinhard's basic tone mapping operator
-vec3 ToneMapReinhard(vec3 color, float luminanceSaturation) {
+vec3 ToneMapReinhard(vec3 color) {
     float pixelLuminance = max(dot(color, lumVector), 0.0001);
     float toneMappedLuminance = pixelLuminance / (pixelLuminance + 1.0);
     return toneMappedLuminance * pow(color / pixelLuminance, vec3(luminanceSaturation));
 }
 
 // Reinhard's extended tone mapping operator
-vec3 ToneMapReinhardExtended(vec3 color, float whiteLevel, float luminanceSaturation) {
+vec3 ToneMapReinhardExtended(vec3 color) {
     float pixelLuminance = max(dot(color, lumVector), 0.0001);
     float toneMappedLuminance = pixelLuminance * (1.0 + pixelLuminance / (whiteLevel * whiteLevel)) / (1.0 + pixelLuminance);
     return toneMappedLuminance * pow(color / pixelLuminance, vec3(luminanceSaturation));
@@ -90,20 +90,21 @@ vec3 ToneMapFilmicUnreal(vec3 x) {
 
 // Function used by the Uncharted2 tone mapping curve
 vec3 U2Func(vec3 x) {
-    const float A = 0.22; // Shoulder Strength;
-    const float B = 0.30; // Linear Strength;
-    const float C = 0.10; // Linear Angle;
-    const float D = 0.20; // Toe Strength;
-    const float E = 0.01; // Toe Numerator;
-    const float F = 0.30; // Toe Denominator;
+    const float A = 0.22; // Shoulder Strength
+    const float B = 0.30; // Linear Strength
+    const float C = 0.10; // Linear Angle
+    const float D = 0.20; // Toe Strength
+    const float E = 0.01; // Toe Numerator
+    const float F = 0.30; // Toe Denominator
 
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
 // Uncharted 2 filmic tone mapping operator
 vec3 ToneMapFilmicUncharted2(vec3 color) {
-    float linearWhite = 11.2;
-    vec3 numerator = U2Func(2.0 * color);
+    float linearWhite = 3.2;
+    float exposureBias = 2.1;
+    vec3 numerator = U2Func(exposureBias * color);
     vec3 denominator = U2Func(vec3(linearWhite));
 
     return numerator / denominator;

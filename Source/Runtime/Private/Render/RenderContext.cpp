@@ -351,7 +351,7 @@ void RenderContext::InitHdrMapRT() {
         lumImageFormat = Image::L_32F;
     }
 
-    int size = Math::CeilPowerOfTwo(Max3(renderingWidth, renderingHeight, 2048)) >> 2;
+    int size = Min(Math::CeilPowerOfTwo(Max(renderingWidth, renderingHeight) >> 2) >> 2, 1024);
 
     for (int i = 0; i < COUNT_OF(hdrLumAverageRT); i++) {
         hdrLumAverageTexture[i] = textureManager.AllocTexture(va("_%i_hdrLumAverage%i", (int)contextHandle, i));
@@ -359,11 +359,11 @@ void RenderContext::InitHdrMapRT() {
             Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality | Texture::NonPowerOfTwo | Texture::HighPriority);
         hdrLumAverageRT[i] = RenderTarget::Create(hdrLumAverageTexture[i], nullptr, 0);
             
-        if (size <= 2) {
+        if (size == 1) {
             break;
         }
 
-        size = size >> 2;
+        size = Max(size >> 2, 1);
     }
 
     for (int i = 0; i < COUNT_OF(hdrLuminanceTexture); i++) {
