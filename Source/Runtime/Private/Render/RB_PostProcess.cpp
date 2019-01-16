@@ -159,22 +159,28 @@ void RB_PostProcess() {
     }
 
     if (r_HDR.GetInteger() > 0) {
-        // log luminance 값을 구한다
-        PP_Downscale4x4(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_4X]);
-        PP_MeasureLuminance(bc->ppRTs[PP_RT_4X]->ColorTexture(), screenTc, bc->hdrLuminanceRT[0]);
-
         RenderTarget *luminanceRT;
-        
-        if (bc->flags & RenderContext::InstantToneMapping) {
+
+        if (bc->flags & RenderContext::ConstantToneMapping) {
             luminanceRT = bc->hdrLuminanceRT[0];
+
+            PP_WriteDefaultLuminance(luminanceRT);
         } else {
-            // 이전 프레임의 luminance 값을 이용해 luminance adaptation
-            PP_LuminanceAdaptation(bc->hdrLuminanceRT[0]->ColorTexture(),
-                bc->hdrLuminanceRT[bc->prevLumTarget]->ColorTexture(), bc->frameTime, bc->hdrLuminanceRT[bc->currLumTarget]);
+            // log luminance 값을 구한다
+            PP_Downscale4x4(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_4X]);
+            PP_MeasureLuminance(bc->ppRTs[PP_RT_4X]->ColorTexture(), screenTc, bc->hdrLuminanceRT[0]);
 
-            luminanceRT = bc->hdrLuminanceRT[bc->currLumTarget];
+            if (bc->flags & RenderContext::InstantToneMapping) {
+                luminanceRT = bc->hdrLuminanceRT[0];
+            } else {
+                // 이전 프레임의 luminance 값을 이용해 luminance adaptation
+                PP_LuminanceAdaptation(bc->hdrLuminanceRT[0]->ColorTexture(),
+                    bc->hdrLuminanceRT[bc->prevLumTarget]->ColorTexture(), bc->frameTime, bc->hdrLuminanceRT[bc->currLumTarget]);
 
-            Swap(bc->currLumTarget, bc->prevLumTarget);
+                luminanceRT = bc->hdrLuminanceRT[bc->currLumTarget];
+
+                Swap(bc->currLumTarget, bc->prevLumTarget);
+            }
         }
 
         if (r_HDR_bloomScale.GetFloat() > 0) {

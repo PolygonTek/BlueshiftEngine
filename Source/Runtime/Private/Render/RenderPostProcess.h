@@ -73,6 +73,7 @@ void    PP_SunShaftsDisplay(const Texture *screenTexture, const Texture *shaftTe
 void    PP_ObjectMotionBlur(const Texture *srcTexture, const Texture *velocityTexture, float s, float t, float s2, float t2, RenderTarget *dstRT);
 void    PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture, const Mat4 viewProjectionMatrix[2], const Vec3 &cameraPos, float blurScale, float frameTime, RenderTarget *dstRT);
 
+void    PP_WriteDefaultLuminance(RenderTarget *dstRT);
 void    PP_MeasureLuminance(const Texture *srcTexture, const float *screenTc, RenderTarget *dstRT);
 void    PP_LuminanceAdaptation(const Texture *srcTexture0, const Texture *srcTexture1, float frameTime, RenderTarget *dstRT);
 

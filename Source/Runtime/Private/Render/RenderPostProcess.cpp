@@ -899,6 +899,25 @@ void PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture,
     rhi.SetViewport(prevViewportRect);
 }
 
+void PP_WriteDefaultLuminance(RenderTarget *dstRT) {
+    Rect prevViewportRect = rhi.GetViewport();
+    dstRT->Begin();
+    rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
+
+    rhi.SetStateBits(RHI::ColorWrite);
+    rhi.SetCullFace(RHI::NoCull);
+
+    const Shader *shader = ShaderManager::writeValueShader;
+
+    shader->Bind();
+    shader->SetConstant1f("value", 0.18f);
+
+    RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
+
+    dstRT->End();
+    rhi.SetViewport(prevViewportRect);
+}
+
 void PP_MeasureLuminance(const Texture *srcTexture, const float *screenTc, RenderTarget *dstRT) {
     // luminance 값을 구하면서 4x downscale
     PP_Downscale4x4LogLum(srcTexture, screenTc[0], screenTc[1], screenTc[2], screenTc[3], backEnd.ctx->hdrLumAverageRT[0]);

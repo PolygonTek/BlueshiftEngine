@@ -83,10 +83,11 @@ public:
 
     /// Flags for initialization
     enum Flag {
-        OnDemandDrawing     = BIT(0),
-        UseSelectionBuffer  = BIT(1),
-        InstantToneMapping  = BIT(2),
-        UseSharedContext    = BIT(3),
+        OnDemandDrawing         = BIT(0),
+        UseSelectionBuffer      = BIT(1),
+        InstantToneMapping      = BIT(2),
+        ConstantToneMapping     = BIT(3),
+        UseSharedContext        = BIT(4),
     };
 
     /// Inclusion type for query selection

@@ -24,6 +24,7 @@ struct engineShader_t {
 };
 
 static const engineShader_t originalShaderList[] = {
+    { "Shaders/WriteValue" },
     { "Shaders/drawArrayTexture" },
     { "Shaders/Simple" },
     { "Shaders/selectionId" },
@@ -83,6 +84,7 @@ ShaderManager       shaderManager;
 
 Shader *            ShaderManager::originalShaders[MaxPredefinedOriginalShaders];
 
+Shader *            ShaderManager::writeValueShader;
 Shader *            ShaderManager::drawArrayTextureShader;
 Shader *            ShaderManager::simpleShader;
 Shader *            ShaderManager::selectionIdShader;
@@ -250,6 +252,8 @@ void ShaderManager::LoadEngineShaders() {
 
 void ShaderManager::InstantiateEngineShaders() {
     Array<Shader::Define> defineArray;
+
+    writeValueShader = originalShaders[WriteValueShader]->InstantiateShader(Array<Shader::Define>());
 
     drawArrayTextureShader = originalShaders[DrawArrayTextureShader]->InstantiateShader(Array<Shader::Define>());
 

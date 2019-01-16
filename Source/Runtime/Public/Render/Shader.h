@@ -321,6 +321,7 @@ class ShaderManager {
 
 public:
     enum PredefinedOriginalShader {
+        WriteValueShader,
         DrawArrayTextureShader,
         SimpleShader,
         SelectionIdShader,
@@ -397,6 +398,7 @@ public:
 
     static Shader *         originalShaders[MaxPredefinedOriginalShaders];
 
+    static Shader *         writeValueShader;
     static Shader *         drawArrayTextureShader;
     static Shader *         simpleShader;
     static Shader *         selectionIdShader;
