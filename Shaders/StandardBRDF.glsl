@@ -24,24 +24,24 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
     vec3 F = F_SchlickSG(F0, VdotH);
 
     // Normal distribution term
-#if PBR_SPEC_D == 0
+#if PBR_SPEC_D == PBR_SPEC_D_BLINN
     float D = D_Blinn(NdotH, linearRoughness);
-#elif PBR_SPEC_D == 1
+#elif PBR_SPEC_D == PBR_SPEC_D_BECKMANN
     float D = D_Beckmann(NdotH, linearRoughness);
-#elif PBR_SPEC_D == 2
+#elif PBR_SPEC_D == PBR_SPEC_D_GGX
     float D = D_GGX(NdotH, linearRoughness);
-#elif PBR_SPEC_D == 3
+#elif PBR_SPEC_D == PBR_SPEC_D_GGX_ANISO
     float D = D_GGXAniso(NdotH, XdotH, YdotH, ax, ay);
 #endif
 
     // Geometric visibility term
-#if PBR_SPEC_G == 0
+#if PBR_SPEC_G == PBR_SPEC_G_NEUMANN
     float G = G_Neumann(NdotV, NdotL);
-#elif PBR_SPEC_G == 1
+#elif PBR_SPEC_G == PBR_SPEC_G_KELEMEN
     float G = G_Kelemen(VdotH);
-#elif PBR_SPEC_G == 2
+#elif PBR_SPEC_G == PBR_SPEC_G_COOK_TORRANCE
     float G = G_CookTorrance(NdotV, NdotL, NdotH, VdotH);
-#elif PBR_SPEC_G == 3
+#elif PBR_SPEC_G == PBR_SPEC_G_GGX
     // Disney's modification to reduce "hotness" by remapping roughness using (roughness + 1) / 2 before squaring.
     float k = roughness + 1.0; // k for direct lighting
     float G = G_SchlickGGX(NdotV, NdotL, (k * k) * 0.125);
@@ -58,13 +58,13 @@ vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roug
     // Diffuse BRDF (already multiplied by PI)
     //----------------------------------
 
-#if PBR_DIFFUSE == 0
+#if PBR_DIFFUSE == PBR_DIFFUSE_LAMBERT
     vec3 Cd = albedo * Fd_Lambert(NdotL);
-#elif PBR_DIFFUSE == 1
+#elif PBR_DIFFUSE == PBR_DIFFUSE_WRAPPED
     vec3 Cd = albedo * Fd_Wrap(NdotL, diffuseWrap);
-#elif PBR_DIFFUSE == 2
+#elif PBR_DIFFUSE == PBR_DIFFUSE_BURLEY
     vec3 Cd = albedo * Fd_Burley(NdotL, NdotV, VdotH, linearRoughness);
-#elif PBR_DIFFUSE == 3
+#elif PBR_DIFFUSE == PBR_DIFFUSE_OREN_NAYAR
     float LdotV = max(dot(L, V), 0);
     vec3 Cd = albedo * Fd_OrenNayar(NdotL, NdotV, LdotV, linearRoughness);
 #endif
