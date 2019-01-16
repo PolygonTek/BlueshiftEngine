@@ -74,7 +74,7 @@ CVAR(r_maxInstancingCount, "1024", CVar::Integer | CVar::Archive, "");
 CVAR(r_HDR, "2", CVar::Integer | CVar::Archive, "HDR rendering type, 0 = no HDR, 1 = FP11 or FP16, 2 = FP16, 3 = FP32");
 CVAR(r_HDR_debug, "0", CVar::Integer, "");
 CVAR(r_HDR_bloomScale, "1.5", CVar::Float, "");
-CVAR(r_HDR_toneMapOp, "7", CVar::Integer, "");
+CVAR(r_HDR_toneMapOp, "9", CVar::Integer, "0 = Linear, 1 = Exponential, 2 = Logarithmic, 3 = Drago Logarithmic, 4 = Reinhard, 5 = Reinhard Extended, 6 = Filmic ALU, 7 = Flimic ACES, 8 = Filmic Unreal, 9 = Filmic Uncharted 2");
 CVAR(r_HDR_middleGray, "0.18", CVar::Float, "key value for tone mapping [0.045, 0.72]");
 CVAR(r_HDR_brightLevel, "1.01", CVar::Float, "");
 CVAR(r_HDR_brightMax, "5.0", CVar::Float, "");
