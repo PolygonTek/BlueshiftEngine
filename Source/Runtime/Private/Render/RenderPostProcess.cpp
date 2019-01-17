@@ -91,8 +91,6 @@ void PP_PassThruPass(const Texture *srcTexture, float s, float t, float s2, floa
 }
 
 void PP_Downscale2x2(const Texture *srcTexture, RenderTarget *dstRT) {
-    float s, t, s2, t2;
-    Vec2 sampleOffsets[4];
     Rect prevViewportRect = rhi.GetViewport();
 
     dstRT->Begin();
@@ -103,22 +101,18 @@ void PP_Downscale2x2(const Texture *srcTexture, RenderTarget *dstRT) {
 
     const Shader *shader = ShaderManager::downscale2x2Shader;
 
+    Vec2 sampleOffsets[4];
+
+    float texelOffsetX = 1.0f / srcTexture->GetWidth();
+    float texelOffsetY = 1.0f / srcTexture->GetHeight();
+
     if (!(srcTexture->GetFlags() & Texture::Nearest)) {
-        sampleOffsets[0].x = 0.0f;
-        sampleOffsets[0].y = 0.0f;
+        sampleOffsets[0] = Vec2(0.0f, 0.0f);
 
         shader->Bind();
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 1, sampleOffsets);
-
-        s = 0;
-        t = 0;
-        s2 = 1.0f;
-        t2 = 1.0f;
     } else {
-        float texelOffsetX = 1.0f / srcTexture->GetWidth();
-        float texelOffsetY = 1.0f / srcTexture->GetHeight();
-
         Vec2 *ptr = sampleOffsets;
 
         for (int y = -1; y < 1; y++) {
@@ -131,14 +125,9 @@ void PP_Downscale2x2(const Texture *srcTexture, RenderTarget *dstRT) {
         shader->Bind();
         shader->SetTexture("tex0", srcTexture);
         shader->SetConstantArray2f("sampleOffsets", 4, sampleOffsets);
-
-        s = 0;
-        t = 0;
-        s2 = 1.0f;
-        t2 = 1.0f;
     }
 
-    RB_DrawClipRect(s, t, s2, t2);
+    RB_DrawClipRect(0, 0, 1, 1);
 
     dstRT->End();
     rhi.SetViewport(prevViewportRect);
@@ -971,7 +960,6 @@ void PP_BrightFilter(const Texture *srcTexture, const Texture *luminanceTexture,
    
     shader->Bind();
     shader->SetTexture("tex0", srcTexture);
-    //shader->SetConstant2f("texelOffset", Vec2(1.0f / srcTexture->GetWidth(), 1.0f / srcTexture->GetHeight()));
     shader->SetTexture("luminanceMap", luminanceTexture);
     shader->SetConstant1f("brightLevel", r_HDR_brightLevel.GetFloat());
     shader->SetConstant1f("brightThrehold", r_HDR_brightThrehold.GetFloat());
