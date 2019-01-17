@@ -1,10 +1,6 @@
 #ifndef COLORS_INCLUDED
 #define COLORS_INCLUDED
 
-#ifdef LOGLUV_HDR
-$include "logluv.glsl"
-#endif
-
 vec3 GammaToLinear(vec3 sRGB) {
     // Approximate version from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
     return sRGB * (sRGB * (sRGB * 0.305306011 + 0.682171111) + 0.012522878);
@@ -18,6 +14,49 @@ vec3 LinearToGamma(vec3 linRGB) {
 
 float GetLuma(vec3 color) {
     return dot(color, vec3(0.212655, 0.715158, 0.072187));
+}
+
+vec4 EncodeRGBE(vec3 color) {
+    float maxChannel = max(max(color.r, color.g), color.b);
+    float exponent = ceil(log2(max(maxChannel, 1e-8)));
+    vec3 mantissa = clamp(color / exp2(exponent), 0.0, 1.0);
+    return vec4(mantissa, (exponent + 128.0) / 256.0);
+}
+
+vec3 DecodeRGBE(vec4 v) {
+    float exponent = exp2(v.a * 256.0 - 128.0);
+    return v.rgb * exponent;
+}
+
+//
+// LOGLUV ENCODING FOR HDR
+// https://mynameismjp.wordpress.com/2008/12/12/logluv-encoding-for-hdr/
+//
+vec4 EncodeLogLuv(vec3 vRGB) {
+    vec3 Xp_Y_XYZp = vRGB * mat3(
+        0.2209, 0.3390, 0.4184,
+        0.1138, 0.6780, 0.7319,
+        0.0102, 0.1130, 0.2969);
+    Xp_Y_XYZp = max(Xp_Y_XYZp, vec3(1e-6, 1e-6, 1e-6));
+    vec4 vResult;
+    vResult.xy = Xp_Y_XYZp.xy / Xp_Y_XYZp.z;
+    float Le = 2.0 * log2(Xp_Y_XYZp.y) + 127.0;
+    vResult.w = fract(Le);
+    vResult.z = (Le - (floor(vResult.w * 255.0)) / 255.0) / 255.0; 
+    return vResult;
+}
+
+vec3 DecodeLogLuv(vec4 vLogLuv) {
+    float Le = vLogLuv.z * 255.0 + vLogLuv.w;
+    vec3 Xp_Y_XYZp;
+    Xp_Y_XYZp.y = exp2((Le - 127.0) / 2.0);
+    Xp_Y_XYZp.z = Xp_Y_XYZp.y / vLogLuv.y;
+    Xp_Y_XYZp.x = vLogLuv.x * Xp_Y_XYZp.z;
+    vec3 vRGB = Xp_Y_XYZp * mat3(
+        6.0013, -2.700, -1.7995,
+        -1.332, 3.1029, -5.7720,
+        0.3007, -1.088, 5.6268);
+    return max(vRGB, vec3(0.0, 0.0, 0.0));
 }
 
 vec4 EncodeFloatToRGBA(float v) {

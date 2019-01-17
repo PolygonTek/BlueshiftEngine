@@ -10,10 +10,6 @@ shader "downscale4x4LogLum" {
 
 		out vec4 o_fragColor : FRAG_COLOR;
 
-		#ifdef LOGLUV_HDR
-		$include "logluv.glsl"
-		#endif
-
 		#if 1// BILINEAR_FP16
 		#define SAMPLES 4
 		#else

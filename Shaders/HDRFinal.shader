@@ -21,10 +21,6 @@ shader "HDRFinal" {
 
 		out vec4 o_fragColor : FRAG_COLOR;
 
-		#ifdef LOGLUV_HDR
-		$include "logluv.glsl"
-		#endif
-
 		$include "Colors.glsl"
         $include "ToneMapOperators.glsl"
 

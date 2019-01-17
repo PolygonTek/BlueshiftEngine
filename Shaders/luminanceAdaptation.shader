@@ -4,13 +4,12 @@ shader "luminanceAdaptation" {
 	}
 
 	glsl_fp {
+        $include "Colors.glsl"
+
 		in vec2 v2f_texCoord;
 
 		out vec4 o_fragColor : FRAG_COLOR;
 
-		#ifdef LOGLUV_HDR
-		$include "logluv.glsl"
-		#endif
 		uniform sampler2D currLuminanceMap;
 		uniform sampler2D prevLuminanceMap;
 		uniform float frameTime;
