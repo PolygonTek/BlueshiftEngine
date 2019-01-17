@@ -53,9 +53,9 @@ void    PP_VBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets,
 void    PP_HBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *masktex, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT);
 void    PP_VBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *masktex, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT);
 
-void    PP_GaussBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
-void    PP_GaussBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
-void    PP_GaussBlur15x15(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
+void    PP_GaussianBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
+void    PP_GaussianBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
+void    PP_GaussianBlur15x15(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
 void    PP_KawaseBlur(const Texture *srcTexture, int iteration, RenderTarget *dstRT);
 
 void    PP_AoBlur(const Texture *aoTexture, const Texture *depthTexture, RenderTarget *tempRT, const Mat4 &projectionMatrix, RenderTarget *dstRT);

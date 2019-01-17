@@ -112,7 +112,7 @@ void RB_PostProcess() {
 
         PP_CopyColorAndCoc(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_LINEAR_DEPTH]->ColorTexture(), backEnd.view->def->zFar, bc->ppRTs[PP_RT_TEMP]);
         
-        PP_GaussBlur7x7(bc->ppRTs[PP_RT_4X]->ColorTexture(), bc->ppRTs[PP_RT_TEMP_4X], bc->ppRTs[PP_RT_BLUR]);
+        PP_GaussianBlur7x7(bc->ppRTs[PP_RT_4X]->ColorTexture(), bc->ppRTs[PP_RT_TEMP_4X], bc->ppRTs[PP_RT_BLUR]);
 
         PP_ApplyDOF(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->ppRTs[PP_RT_BLUR]->ColorTexture(), bc->screenRT);
     }
@@ -166,14 +166,16 @@ void RB_PostProcess() {
 
             PP_WriteDefaultLuminance(luminanceRT);
         } else {
-            // log luminance 값을 구한다
+            // Downscale current screen to 1/4 scale
             PP_Downscale4x4(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_4X]);
+
+            // Compute Geometric average luminance.
             PP_MeasureLuminance(bc->ppRTs[PP_RT_4X]->ColorTexture(), screenTc, bc->hdrLuminanceRT[0]);
 
             if (bc->flags & RenderContext::InstantToneMapping) {
                 luminanceRT = bc->hdrLuminanceRT[0];
             } else {
-                // 이전 프레임의 luminance 값을 이용해 luminance adaptation
+                // Luminance adaptation using luminance of previous frame.
                 PP_LuminanceAdaptation(bc->hdrLuminanceRT[0]->ColorTexture(),
                     bc->hdrLuminanceRT[bc->prevLumTarget]->ColorTexture(), bc->frameTime, bc->hdrLuminanceRT[bc->currLumTarget]);
 
@@ -184,8 +186,11 @@ void RB_PostProcess() {
         }
 
         if (r_HDR_bloomScale.GetFloat() > 0) {
+            if (bc->flags & RenderContext::ConstantToneMapping) {
+                PP_Downscale4x4(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_4X]);
+            }
+
             PP_BrightFilter(bc->ppRTs[PP_RT_4X]->ColorTexture(), luminanceRT->ColorTexture(), bc->hdrBloomRT[0]);
-            PP_Downscale4x4(bc->hdrBloomRT[0]->ColorTexture(), bc->hdrBloomRT[1]);
 
             PP_KawaseBlur(bc->hdrBloomRT[0]->ColorTexture(), 0, bc->hdrBloomRT[1]);
             PP_KawaseBlur(bc->hdrBloomRT[1]->ColorTexture(), 1, bc->hdrBloomRT[0]);

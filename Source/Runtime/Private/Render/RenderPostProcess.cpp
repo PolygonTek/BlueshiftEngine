@@ -586,7 +586,7 @@ void PP_VBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *mas
     rhi.SetViewport(prevViewportRect);
 }
 
-void PP_GaussBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
+void PP_GaussianBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
     if (srcTexture->GetFlags() & Texture::Nearest) {
         PP_HBlur5x(srcTexture, gaussKernel5x.discreteWeights, tempRT);
         PP_VBlur5x(tempRT->ColorTexture(), gaussKernel5x.discreteWeights, dstRT);
@@ -596,7 +596,7 @@ void PP_GaussBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderTarg
     }
 }
 
-void PP_GaussBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
+void PP_GaussianBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
     if (srcTexture->GetFlags() & Texture::Nearest) {
         PP_HBlur7x(srcTexture, gaussKernel7x.discreteWeights, tempRT);
         PP_VBlur7x(tempRT->ColorTexture(), gaussKernel7x.discreteWeights, dstRT);
@@ -606,7 +606,7 @@ void PP_GaussBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderTarg
     }
 }
 
-void PP_GaussBlur15x15(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
+void PP_GaussianBlur15x15(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
     if (srcTexture->GetFlags() & Texture::Nearest) {
         PP_HBlur15x(srcTexture, gaussKernel15x.discreteWeights, tempRT);
         PP_VBlur15x(tempRT->ColorTexture(), gaussKernel15x.discreteWeights, dstRT);
