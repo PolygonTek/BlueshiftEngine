@@ -774,7 +774,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
 
     RenderView renderView;
     RenderView::State rvDef;
-    rvDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews | RenderView::Flag::SkipPostProcess | RenderView::Flag::SkipDebugDraw;
+    rvDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews | RenderView::Flag::SkipDebugDraw;
     rvDef.clearMethod = RenderView::SkyboxClear;
     rvDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
     rvDef.layerMask = layerMask;
