@@ -352,8 +352,14 @@ public:
                         /// Converts a linear value in the range [0, 1] to an sRGB value in the range [0, 1].
     static float        LinearToGamma(float value);
 
+    static float        GammaToLinearApprox(float value);
+    static float        LinearToGammaApprox(float value);
+
     static float        GammaToLinearFast(float value);
     static float        LinearToGammaFast(float value);
+
+                        /// Convert RGB to luminance with RGB in linear space with sRGB primaries and D65 white point.
+    static float        GetLuminance(const Color3 &linearColor);
 
                         /// Converts 2D face coordinates to cubemap coordinates.
     static Vec3         FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t);
@@ -485,12 +491,29 @@ BE_INLINE float Image::LinearToGamma(float f) {
     }
 }
 
+// Fast sRGB to linear approximation.
+// Reference: http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
+BE_INLINE float Image::GammaToLinearApprox(float f) {
+    return f * (f * (f * 0.305306011f + 0.682171111f) + 0.012522878f);
+}
+
+// An almost-perfect approximation.
+// Reference: http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
+BE_INLINE float Image::LinearToGammaApprox(float f) {
+    f = Max(f, 0.0f);
+    return Max(1.055f * Math::Pow(f, 0.416666667f) - 0.055f, 0.0f);
+}
+
 BE_INLINE float Image::GammaToLinearFast(float f) {
     return Math::Pow(f, 2.2f);
 }
 
 BE_INLINE float Image::LinearToGammaFast(float f) {
     return Math::Pow(f, 1.0f / 2.2f);
+}
+
+BE_INLINE float Image::GetLuminance(const Color3 &linearRgb) {
+    return linearRgb[0] * 0.2126729f + linearRgb[1] * 0.7151522f + linearRgb[2] * 0.0721750f;
 }
 
 template <typename T>
