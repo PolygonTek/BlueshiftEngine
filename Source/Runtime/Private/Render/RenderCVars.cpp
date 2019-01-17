@@ -78,7 +78,7 @@ CVAR(r_HDR_toneMapOp, "9", CVar::Integer, "0 = Linear, 1 = Exponential, 2 = Loga
 CVAR(r_HDR_middleGray, "0.18", CVar::Float, "key value for tone mapping [0.045, 0.72]");
 CVAR(r_HDR_brightLevel, "0.18", CVar::Float, "");
 CVAR(r_HDR_brightMax, "0.8", CVar::Float, "");
-CVAR(r_HDR_brightThrehold, "5.0", CVar::Float, "");
+CVAR(r_HDR_brightThreshold, "5.0", CVar::Float, "");
 CVAR(r_HDR_brightOffset, "10.0", CVar::Float, "");
 
 CVAR(r_sunShafts, "1", CVar::Bool | CVar::Archive, "sun shaft");
@@ -102,7 +102,7 @@ CVAR(r_DOF_noBlurFraction, "0.3", CVar::Float, "");
 
 CVAR(r_motionBlur, "0", CVar::Integer | CVar::Archive, "motion blur, 0 = no blur, 1 = camera motion blur, 2 = object motion blur, 3 = camera & object motion blur");
 CVAR(r_motionBlur_ShutterSpeed, "0.0167", CVar::Float, "camera shutter speed, default are 60hz");
-CVAR(r_motionBlur_CameraAngleThrehold, "1.2", CVar::Float, "");
+CVAR(r_motionBlur_CameraAngleThreshold, "1.2", CVar::Float, "");
 CVAR(r_motionBlur_Scale, "1.0", CVar::Float, "");
 CVAR(r_motionBlur_MaxBlur, "0.024", CVar::Float, "");
 

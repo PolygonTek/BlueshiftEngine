@@ -131,7 +131,7 @@ void RB_PostProcess() {
         }
 
         // camera motion blur 를 적용할지 결정
-        float thresholdCos = Math::Cos(DEG2RAD(r_motionBlur_CameraAngleThrehold.GetFloat()));
+        float thresholdCos = Math::Cos(DEG2RAD(r_motionBlur_CameraAngleThreshold.GetFloat()));
         if (minCos < thresholdCos) {
             // 카메라의 rotation 에 대해서만 적용, translation 은 적용하지 않는다
             backEnd.viewMatrixPrev[0][3] = -(backEnd.view->def->state.origin.Dot(prevAxis[0]));

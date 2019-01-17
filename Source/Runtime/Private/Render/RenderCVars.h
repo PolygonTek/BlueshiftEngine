@@ -86,7 +86,7 @@ extern CVar     r_HDR_toneMapOp;
 extern CVar     r_HDR_middleGray;
 extern CVar     r_HDR_brightLevel;
 extern CVar     r_HDR_brightMax;
-extern CVar     r_HDR_brightThrehold;
+extern CVar     r_HDR_brightThreshold;
 extern CVar     r_HDR_brightOffset;
 extern CVar     r_HDR_bloomScale;
 
@@ -113,7 +113,7 @@ extern CVar     r_motionBlur;
 extern CVar     r_motionBlur_ShutterSpeed;
 extern CVar     r_motionBlur_Scale;
 extern CVar     r_motionBlur_MaxBlur;
-extern CVar     r_motionBlur_CameraAngleThrehold;
+extern CVar     r_motionBlur_CameraAngleThreshold;
 
 extern CVar     r_useDepthClamp;
 extern CVar     r_useDepthBoundTest;

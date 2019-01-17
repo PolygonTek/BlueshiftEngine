@@ -962,7 +962,7 @@ void PP_BrightFilter(const Texture *srcTexture, const Texture *luminanceTexture,
     shader->SetTexture("tex0", srcTexture);
     shader->SetTexture("luminanceMap", luminanceTexture);
     shader->SetConstant1f("brightLevel", r_HDR_brightLevel.GetFloat());
-    shader->SetConstant1f("brightThrehold", r_HDR_brightThrehold.GetFloat());
+    shader->SetConstant1f("brightThreshold", r_HDR_brightThreshold.GetFloat());
     shader->SetConstant1f("brightOffset", r_HDR_brightOffset.GetFloat());
     shader->SetConstant1f("brightMax", r_HDR_brightMax.GetFloat());
 
