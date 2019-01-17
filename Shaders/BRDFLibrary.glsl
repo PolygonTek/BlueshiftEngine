@@ -10,16 +10,6 @@
 #define MIN_LINEAR_ROUGHNESS    0.002025
 #endif
 
-float pow4(float f) {
-    float f2 = f * f;
-    return f2 * f2;
-}
-
-float pow5(float f) {
-    float f2 = f * f;
-    return f2 * f2 * f;
-}
-
 // Convert perceptual glossiness to specular power from [0, 1] to [2, 8192]
 float glossinessToSpecularPower(float glossiness) {
     return exp2(11.0 * glossiness + 1.0); 

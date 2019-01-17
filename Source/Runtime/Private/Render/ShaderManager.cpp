@@ -70,8 +70,8 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/SunShaftsMaskGen" },
     { "Shaders/SunShaftsGen" },
     { "Shaders/SunShaftsDisplay" },
-    { "Shaders/luminanceAdaptation" },
-    { "Shaders/brightFilter" },
+    { "Shaders/LuminanceAdaptation" },
+    { "Shaders/BrightFilter" },
     { "Shaders/LDRFinal" },
     { "Shaders/HDRFinal" },
     { "Shaders/chromaShift" },
@@ -234,6 +234,8 @@ void ShaderManager::InitGlobalDefines() {
     if (r_showShadows.GetInteger() == 1) {
         shaderManager.AddGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
     }
+
+    shaderManager.AddGlobalHeader("$include \"Global.glsl\"\n");
 }
 
 void ShaderManager::LoadEngineShaders() {

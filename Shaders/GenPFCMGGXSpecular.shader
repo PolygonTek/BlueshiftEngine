@@ -30,7 +30,7 @@ shader "GenPFCMGGXSpecular" {
             int targetFaceX = int(min(floor(v2f_texCoord.x * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
             int targetFaceY = int(min(floor(v2f_texCoord.y * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
 
-            vec3 N = faceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
+            vec3 N = FaceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
 
             // As we don't know beforehand the view direction when convoluting the environment map,
             // We make a further approximation by assuming the view direction is always equal to the surface normal.

@@ -28,7 +28,7 @@ shader "GenIrradianceEnvCubeMap" {
             int targetFaceX = int(min(floor(v2f_texCoord.x * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
             int targetFaceY = int(min(floor(v2f_texCoord.y * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
 
-            vec3 N = faceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
+            vec3 N = FaceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
 
             vec3 color = vec3(0.0);
 #if 1 // Quasi Monte Carlo integration
@@ -55,12 +55,12 @@ shader "GenIrradianceEnvCubeMap" {
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int y = 0; y < radianceCubeMapSize; y++) {
                     for (int x = 0; x < radianceCubeMapSize; x++) {
-                        vec3 L = faceToGLCubeMapCoords(faceIndex, x, y, radianceCubeMapSize).xyz;
+                        vec3 L = FaceToGLCubeMapCoords(faceIndex, x, y, radianceCubeMapSize).xyz;
                         
                         float NdotL = max(dot(N, L), 0.0);
 
                         if (NdotL > 0.0) {
-                            float dw = cubeMapTexelSolidAngle(x, y, radianceCubeMapSize);
+                            float dw = CubeMapTexelSolidAngle(x, y, radianceCubeMapSize);
                         
                             color += texCUBE(radianceCubeMap, L).rgb * NdotL * dw;
                         }

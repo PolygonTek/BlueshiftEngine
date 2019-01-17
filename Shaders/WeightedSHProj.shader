@@ -37,7 +37,7 @@ shader "WeightedSHProj" {
                         vec2 weightCoords = vec2(float(blockCoords.s * radianceCubeMapSize + x), float(blockCoords.t * radianceCubeMapSize + y)) * weightMapInvSize;
                         float weight = tex2D(weightMap[faceIndex], weightCoords).x;
 
-                        vec3 radianceDir = faceToGLCubeMapCoords(faceIndex, x, y, radianceCubeMapSize).xyz;
+                        vec3 radianceDir = FaceToGLCubeMapCoords(faceIndex, x, y, radianceCubeMapSize).xyz;
                         vec3 radianceColor = texCUBE(radianceCubeMap, radianceDir).xyz * radianceScale;
 
                         shCoeff += radianceColor * weight;

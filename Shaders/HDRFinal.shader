@@ -25,7 +25,7 @@ shader "HDRFinal" {
 		$include "logluv.glsl"
 		#endif
 
-		$include "image_processing.glsl"
+		$include "Colors.glsl"
         $include "ToneMapOperators.glsl"
 
 		uniform HIGHP sampler2D luminanceMap;
@@ -90,9 +90,9 @@ shader "HDRFinal" {
 		vec3 SelectiveColor(vec3 color) {
 			float colorPickRange = 1.0 - length(color - selectiveColor);
 
-			vec4 cmyk = RGB2CMYK(color);
+			vec4 cmyk = RgbToCmyk(color);
 			cmyk = mix(cmyk, clamp(cmyk + additiveCmyk, vec4(-1.0), vec4(1.0)), colorPickRange);
-			return mix(color, CMYK2RGB(cmyk), colorPickRange);
+			return mix(color, CmykToRgb(cmyk), colorPickRange);
 		}
 
 		void main() {

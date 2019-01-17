@@ -4,6 +4,8 @@ shader "downscale4x4LogLum" {
 	}
 
 	glsl_fp {
+        $include "Colors.glsl"
+
 		in vec2 v2f_texCoord;
 
 		out vec4 o_fragColor : FRAG_COLOR;
@@ -21,22 +23,14 @@ shader "downscale4x4LogLum" {
 		uniform sampler2D tex0;
 		uniform vec2 sampleOffsets[SAMPLES];
 
-		const vec3 lumVector = vec3(0.2125, 0.7154, 0.0721);
-
 		void main() {
 			float sumLogLum = 0.0;
-			float luminance;
 
-			for (int i = 0; i < SAMPLES; i++) {
+            for (int i = 0; i < SAMPLES; i++) {
                 vec4 color = tex2D(tex0, v2f_texCoord.st + sampleOffsets[i]).rgba;
 
-		#ifdef LOGLUV_HDR
-				luminance = max(dot(decodeLogLuv(color).rgb, lumVector), 0.0001);
-		#else
-                luminance = max(dot(color.rgb, lumVector), 0.0001);
-		#endif
-				sumLogLum += log(luminance);
-			}
+                sumLogLum += log(max(GetLuma(color.rgb), 0.0001));
+            }
 
             float avgLogLum = sumLogLum / float(SAMPLES);
 

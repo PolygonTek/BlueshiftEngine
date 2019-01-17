@@ -4,7 +4,7 @@ shader "LDRFinal" {
     }
 
     glsl_fp {
-        $include "fragment_common.glsl"
+        $include "Colors.glsl"
 
         in vec2 v2f_texCoord;
 

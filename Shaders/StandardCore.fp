@@ -213,7 +213,7 @@ void main() {
         vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
         //vec3 toWorldMatrixR = normalize(cross(toWorldMatrixS, toWorldMatrixT) * v2f_toWorldT.w);
 
-        vec3 tangentN = normalize(getNormal(normalMap, baseTc)); 
+        vec3 tangentN = normalize(GetNormal(normalMap, baseTc)); 
 
         #if _NORMAL == 2
             vec3 tangentN2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
@@ -327,7 +327,7 @@ void main() {
             #endif
 
             vec4 sampleVec;
-            sampleVec.xyz = boxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 250, 1.0), vec3(-2500, 0, -2500), vec3(2500, 250, 2500)); // FIXME
+            sampleVec.xyz = BoxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 250, 1.0), vec3(-2500, 0, -2500), vec3(2500, 250, 2500)); // FIXME
         #else
             vec4 sampleVec;
             sampleVec.xyz = worldS;
