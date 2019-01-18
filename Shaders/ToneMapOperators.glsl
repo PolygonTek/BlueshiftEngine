@@ -8,8 +8,9 @@ $include "Colors.glsl"
 #define TONE_MAPPING_REINHARD_EX        5
 #define TONE_MAPPING_FILMIC_ALU         6
 #define TONE_MAPPING_FILMIC_ACES        7
-#define TONE_MAPPING_FILMIC_UNREAL      8
+#define TONE_MAPPING_FILMIC_UNREAL3     8
 #define TONE_MAPPING_FILMIC_UNCHARTED2  9
+#define TONE_MAPPING_FILMIC_GT          10
 
 const float whiteLevel = 5.0;
 
@@ -78,9 +79,9 @@ vec3 ToneMapFilmicACES(vec3 x) {
     return (x * (a * x + b)) / (x * (c * x + d) + e);
 }
 
-// Unreal, Documentation: "Color Grading"
+// Unreal 3, Documentation: "Color Grading"
 // Adapted to be close to ToneMapFilmicACES, with similar range
-vec3 ToneMapFilmicUnreal(vec3 x) {
+vec3 ToneMapFilmicUnreal3(vec3 x) {
     return pow(x / (x + 0.155) * 1.019, vec3(2.2));
 }
 
@@ -104,4 +105,38 @@ vec3 ToneMapFilmicUncharted2(vec3 color) {
     vec3 denominator = U2Func(vec3(linearWhite));
 
     return numerator / denominator;
+}
+
+// Uchimura 2017, "HDR theory and practice"
+// Math: https://www.desmos.com/calculator/gslcdxvipg
+// Source: https://www.slideshare.net/nikuque/hdr-theory-and-practicce-jp
+vec3 ToneMapFilmicUchimura(vec3 x, float P, float a, float m, float l, float c, float b) {
+    float l0 = ((P - m) * l) / a;
+    float L0 = m - m / a;
+    float L1 = m + (1.0 - m) / a;
+    float S0 = m + l0;
+    float S1 = m + a * l0;
+    float C2 = (a * P) / (P - S1);
+    float CP = -C2 / P;
+
+    vec3 w0 = 1.0 - smoothstep(vec3(0.0), vec3(m), x);
+    vec3 w2 = step(m + l0, x);
+    vec3 w1 = 1.0 - w0 - w2;
+
+    vec3 T = m * pow(x / m, vec3(c)) + b;
+    vec3 S = P - (P - S1) * exp(CP * (x - S0));
+    vec3 L = m + a * (x - m);
+
+    return T * w0 + L * w1 + S * w2;
+}
+
+vec3 ToneMapFilmicGT(vec3 x) {
+    const float P = 1.0;  // max display brightness
+    const float a = 1.0;  // contrast
+    const float m = 0.22; // linear section start
+    const float l = 0.4;  // linear section length
+    const float c = 1.33; // black
+    const float b = 0.0;  // pedestal
+
+    return ToneMapFilmicUchimura(x, P, a, m, l, c, b);
 }

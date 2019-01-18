@@ -45,20 +45,24 @@ shader "HDRFinal" {
 			return r;
 		}
 
-        vec3 CalcExposedColor(vec3 color, float averageLuminance, float keyValue, float threshold) {
-            averageLuminance = max(averageLuminance, 0.0001);
-
-            // Compute current pixel luminance
-            float linearExposure = max(keyValue / averageLuminance, 0.0001);
+        float Log2Exposure(float luminance) {
+            float linearExposure = max(middleGray / luminance, 0.00001);
             float exposure = log2(linearExposure);
 
-            //exposure -= threshold;
+            return exposure;
+        }
+
+        vec3 CalcExposedColor(vec3 color, float avgLuminance, float offset) {
+            avgLuminance = max(avgLuminance, 0.00001);
+
+            float exposure = Log2Exposure(avgLuminance);
+            exposure += offset;
 
             return exp2(exposure) * color;
         }
 
-        vec3 ToneMap(vec3 color, float averageLuminance, float keyValue) {
-            color = CalcExposedColor(color, averageLuminance, keyValue, 2.0);
+        vec3 ToneMap(vec3 color, float avgLuminance) {
+            color = CalcExposedColor(color, avgLuminance, 0.0);
 
         #if TONE_MAPPING_OPERATOR == TONE_MAPPING_LINEAR
             return ToneMapLinear(color);
@@ -76,10 +80,12 @@ shader "HDRFinal" {
             return ToneMapFilmicALU(color);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_ACES
             return ToneMapFilmicACES(color);
-        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_UNREAL
-            return ToneMapFilmicUnreal(color);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_UNREAL3
+            return ToneMapFilmicUnreal3(color);
         #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_UNCHARTED2
             return ToneMapFilmicUncharted2(color);
+        #elif TONE_MAPPING_OPERATOR == TONE_MAPPING_FILMIC_GT
+            return ToneMapFilmicGT(color);
         #endif
         }
 
@@ -101,7 +107,7 @@ shader "HDRFinal" {
 			vec3 bloomColor = tex2D(bloomMap0, v2f_texCoord0.st).rgb;
 		#endif
 
-			vec3 color = ToneMap(sceneColor, avgLuminance, middleGray);
+			vec3 color = ToneMap(sceneColor, avgLuminance);
 
     		color *= colorScale;
 			color += bloomColor * bloomScale;
