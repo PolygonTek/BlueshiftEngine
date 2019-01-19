@@ -88,7 +88,7 @@ vec3 importanceSampleGGX(vec2 xi, float roughness, vec3 N) {
     return rotateWithUpVector(sampleDir, N);
 }
 
-vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec3 diffuseColor) {
+vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N) {
     const int numSamples = 64;
 
     vec3 diffuseLighting = vec3(0.0);
@@ -107,10 +107,10 @@ vec3 IBLDiffuseLambert(samplerCube radMap, vec3 N, vec3 diffuseColor) {
         diffuseLighting += texCUBE(radMap, L).rgb;
     }
 
-    return diffuseLighting * diffuseColor / float(numSamples);
+    return diffuseLighting * material.diffuse.rgb / float(numSamples);
 }
 
-vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float specularPower) {
+vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V) {
     const int numSamples = 64;
 
     vec3 S = reflect(-V, N);
@@ -120,7 +120,7 @@ vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, fl
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = hammersley(i, numSamples);
 
-        vec3 L = importanceSamplePhongSpecular(xi, specularPower, S);
+        vec3 L = importanceSamplePhongSpecular(xi, material.specularPower, S);
 
         // BRDF = (power + 2) * pow(LdotS, power) / (NdotL * TWO_PI)
         // PDF(L) = (power + 1) * pow(LdotS, power) / TWO_PI
@@ -131,10 +131,10 @@ vec3 IBLSpecularPhong(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, fl
         specularLighting += texCUBE(radMap, L).rgb;
     }
 
-    return specularLighting * specularColor * (specularPower + 2.0) / (specularPower + 1.0) / float(numSamples);
+    return specularLighting * material.specular.rgb * (material.specularPower + 2.0) / (material.specularPower + 1.0) / float(numSamples);
 }
 
-vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, vec3 specularColor, float specularPower, float roughness) {
+vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V) {
     const int numSamples = 64;
 
     vec3 diffuseLighting = vec3(0.0);
@@ -148,7 +148,7 @@ vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, 
 
         vec3 Ld = importanceSampleLambert(xi, N);
 
-        vec3 Ls = importanceSamplePhongSpecular(xi, specularPower, S);
+        vec3 Ls = importanceSamplePhongSpecular(xi, material.specularPower, S);
         
         diffuseLighting += texCUBE(radMap, Ld).rgb;
 
@@ -157,27 +157,27 @@ vec3 IBLPhongWithFresnel(samplerCube radMap, vec3 N, vec3 V, vec3 diffuseColor, 
 
     float NdotV = max(dot(N, V), 0.0);
 
-    vec3 F = F_SchlickRoughness(specularColor, roughness, NdotV);
+    vec3 F = F_SchlickRoughness(material.specular.rgb, material.roughness, NdotV);
 
-    specularLighting *= F * specularColor * ((specularPower + 2.0) / (specularPower + 1.0));
+    specularLighting *= F * material.specular.rgb * ((material.specularPower + 2.0) / (material.specularPower + 1.0));
 
-    diffuseLighting *= (vec3(1.0) - F) * diffuseColor;
+    diffuseLighting *= (vec3(1.0) - F) * material.diffuse.rgb;
 
     return (diffuseLighting + specularLighting) / float(numSamples);
 }
 
-vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, float roughness) {
+vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V) {
     const int numSamples = 64;
 
     vec3 specularLighting = vec3(0.0);
 
     // k for IBL
-    float k = roughness * roughness * 0.5;
+    float k = material.roughness * material.roughness * 0.5;
 
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = hammersley(i, numSamples);
 
-        vec3 H = importanceSampleGGX(xi, roughness, N); 
+        vec3 H = importanceSampleGGX(xi, material.roughness, N); 
         vec3 L = 2.0 * dot(V, H) * H - V;
 
         float NdotL = max(dot(N, L), 0.0);
@@ -191,7 +191,7 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
 
             float G = G_SchlickGGX(NdotV, NdotL, k);
 
-            vec3 F = F_SchlickSG(specularColor, VdotH); 
+            vec3 F = F_SchlickSG(material.specular.rgb, VdotH); 
 
             // BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
             // PDF(H) = D * NdotH
@@ -208,7 +208,7 @@ vec3 IBLSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 specularColor, floa
     return specularLighting / float(numSamples);
 }
 
-vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 albedo, vec3 F0, float roughness) {
+vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V) {
     const int numSamples = 64;
 
     vec3 diffuseLighting = vec3(0.0);
@@ -216,18 +216,18 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 a
     vec3 specularLighting = vec3(0.0);
 
     // k for IBL
-    float k = roughness * roughness * 0.5;
+    float k = material.roughness * material.roughness * 0.5;
 
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = hammersley(i, numSamples);
 
         vec3 Ld = importanceSampleLambert(xi, N);
 
-        vec3 H = importanceSampleGGX(xi, roughness, N); 
+        vec3 H = importanceSampleGGX(xi, material.roughness, N); 
 
         float VdotH = max(dot(V, H), 0.0);
 
-        vec3 F = F_SchlickSG(F0, VdotH);
+        vec3 F = F_SchlickSG(material.specular.rgb, VdotH);
 
         diffuseLighting += (vec3(1.0) - F) * texCUBE(radMap, Ld).rgb;
 
@@ -245,7 +245,7 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap, vec3 N, vec3 V, vec3 a
         }
     }
 
-    diffuseLighting *= albedo;
+    diffuseLighting *= material.diffuse.rgb;
 
     return (diffuseLighting + specularLighting) / float(numSamples);
 }

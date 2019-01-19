@@ -10,62 +10,24 @@
 #define MIN_LINEAR_ROUGHNESS    0.002025
 #endif
 
+// Clear coat layers are almost always glossy.
+#define MIN_CLEARCOAT_ROUGHNESS MIN_ROUGHNESS
+#define MAX_CLEARCOAT_ROUGHNESS 0.6
+
 // Convert perceptual glossiness to specular power from [0, 1] to [2, 8192]
 float glossinessToSpecularPower(float glossiness) {
     return exp2(11.0 * glossiness + 1.0); 
 }
 
 //---------------------------------------------------
-// Fresnel functions
-//---------------------------------------------------
-
-// Fresnel using Schlick's approximation
-vec3 F_Schlick(vec3 F0, float cosTheta) {
-    return F0 + (vec3(1.0) - F0) * pow5(1.0 - cosTheta);
-}
-
-// Fresnel using Schlick's approximation with spherical Gaussian approximation
-vec3 F_SchlickSG(vec3 F0, float cosTheta) {
-    return F0 + (vec3(1.0) - F0) * exp2((-5.55473 * cosTheta - 6.98316) * cosTheta);
-}
-
-// Fresnel injected roughness term
-vec3 F_SchlickRoughness(vec3 F0, float roughness, float cosTheta) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cosTheta);
-}
-
-//---------------------------------------------------
-// IOR
-//---------------------------------------------------
-
-float IorToF0(float transmittedIor, float incidentIor) {
-    float r = (transmittedIor - incidentIor) / (transmittedIor + incidentIor);
-    return r * r;
-}
-
-float F0ToIor(float f0) {
-    float r = sqrt(f0);
-    return (1.0 + r) / (1.0 - r);
-}
-
-vec3 F0ClearCoatToSurface(const vec3 f0) {
-    // Approximation of IorTof0(f0ToIor(f0), 1.5)
-    // This assumes that the clear coat layer has an IOR of 1.5
-#if defined(GL_ES)
-    return saturate(f0 * (f0 * 0.526868 + 0.529324) - 0.0482256);
-#else
-    return saturate(f0 * (f0 * (0.941892 - 0.263008 * f0) + 0.346479) - 0.0285998);
-#endif
-}
-
-//---------------------------------------------------
-// diffuse lighting function - multiplied by PI
+// diffuse BRDF function
 //---------------------------------------------------
 
 float Fd_Lambert(float NdotL) {
-    return NdotL;
+    return INV_PI;
 }
 
+// Energy conserving wrap diffuse term, does *not* include the divide by PI
 float Fd_Wrap(float NdotL, float w) {
     float onePlusW = 1.0 + w;
     return saturate((NdotL + w) / (onePlusW * onePlusW));
@@ -75,7 +37,7 @@ float Fd_Burley(float NdotL, float NdotV, float VdotH, float roughness) {
     float F90 = 0.5 + 2.0 * VdotH * VdotH * roughness;
     float FdL = 1.0 + (F90 - 1.0) * pow5(1.0 - NdotL);
     float FdV = 1.0 + (F90 - 1.0) * pow5(1.0 - NdotV);
-    return NdotL * FdL * FdV;
+    return FdL * FdV * INV_PI;
 }
 
 float Fd_OrenNayar(float NdotL, float NdotV, float LdotV, float roughness) { 
@@ -91,7 +53,7 @@ float Fd_OrenNayar(float NdotL, float NdotV, float LdotV, float roughness) {
     float s = LdotV - NdotL * NdotV;
     float t = mix(1.0, max(NdotL, NdotV), step(0.0, s));
     
-    return NdotL * (A + B * s / t);
+    return (A + B * s / t) * INV_PI;
 }
 
 //---------------------------------------------------
@@ -149,6 +111,54 @@ float G_SchlickGGX(float NdotV, float NdotL, float k) {
     float GV = NdotV * oneMinusK + k;
     float GL = NdotL * oneMinusK + k;
     return 1.0 / (GL * GV);
+}
+
+//---------------------------------------------------
+// Fresnel functions
+//---------------------------------------------------
+
+// Fresnel using Schlick's approximation
+vec3 F_Schlick(vec3 F0, float cosTheta) {
+    return F0 + (vec3(1.0) - F0) * pow5(1.0 - cosTheta);
+}
+
+// Fresnel using Schlick's approximation with spherical Gaussian approximation
+vec3 F_SchlickSG(vec3 F0, float cosTheta) {
+    return F0 + (vec3(1.0) - F0) * exp2((-5.55473 * cosTheta - 6.98316) * cosTheta);
+}
+
+// Fresnel injected roughness term
+vec3 F_SchlickRoughness(vec3 F0, float roughness, float cosTheta) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cosTheta);
+}
+
+//---------------------------------------------------
+// IOR
+//---------------------------------------------------
+
+float IorToF0(float transmittedIor, float incidentIor) {
+    float r = (incidentIor - transmittedIor) / (incidentIor + transmittedIor);
+    return r * r;
+}
+
+float IorToF0(float transmittedIor) {
+    float r = (1.0 - transmittedIor) / (1.0 + transmittedIor);
+    return r * r;
+}
+
+float F0ToIor(float f0) {
+    float r = sqrt(f0);
+    return (1.0 - r) / (1.0 + r);
+}
+
+vec3 F0ToClearCoatToSurfaceF0(vec3 airToSurfaceF0) {
+    // Approximation of IorToF0(F0ToIor(airToSurfaceF0), 1.5)
+    // This assumes that the clear coat layer has an IOR of 1.5
+#if defined(GL_ES)
+    return saturate(airToSurfaceF0 * (airToSurfaceF0 * 0.526868 + 0.529324) - 0.0482256);
+#else
+    return saturate(airToSurfaceF0 * (airToSurfaceF0 * (0.941892 - 0.263008 * airToSurfaceF0) + 0.346479) - 0.0285998);
+#endif
 }
 
 #endif

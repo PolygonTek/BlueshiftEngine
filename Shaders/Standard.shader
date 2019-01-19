@@ -15,6 +15,14 @@ shader "Lit/Standard" {
         normalMap("Normal Map") : texture = "_flatNormalTexture"
         detailNormalMap("Detail Normal Map") : texture = "_flatNormalTexture"
         detailRepeat("Detail Repeat") : float = "8"
+        _CLEARCOAT("Clear Coat") : enum "None;Scale;Texture (R);From Metallic Map (R);From Metallic Map (G);From Metallic Map (B);From Metallic Map (A)" = "0" (shaderDefine)
+        clearCoatMap("Clear Coat Map") : texture = "_whiteTexture"
+        clearCoatScale("Clear Coat Scale") : float range 0 1.0 0.01 = "1.0"
+        _CLEARCOAT_ROUGHNESS("Clear Coat Roughness") : enum "Scale;Texture (R);From Metallic Map (R);From Metallic Map (G);From Metallic Map (B);From Metallic Map (A);" = "0" (shaderDefine)
+        clearCoatRoughnessMap("Clear Coat Roughness Map") : texture = "_whiteTexture"
+        clearCoatRoughnessScale("Clear Coat Roughness Scale") : float range 0 1.0 0.01 = "0.0"
+        _CLEARCOAT_NORMAL("Clear Coat Normal") : enum "Same Normal;Texture" = "0" (shaderDefine)
+        clearCoatNormalMap("Clear Coat Normal Map") : texture = "_flatNormalTexture"
         _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" (shaderDefine)
         heightMap("Height Map") : texture = "_whiteTexture"
         heightScale("Height Scale") : float range 0.01 1.0 0.001 = "0.008"

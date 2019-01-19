@@ -1,29 +1,33 @@
 #ifndef STANDARD_CONFIG_INCLUDED
 #define STANDARD_CONFIG_INCLUDED
 
-#define PBR_DIFFUSE_LAMBERT         0
-#define PBR_DIFFUSE_WRAPPED         1
-#define PBR_DIFFUSE_BURLEY          2
-#define PBR_DIFFUSE_OREN_NAYAR      3
+#define PBR_DIFFUSE_LAMBERT             0
+#define PBR_DIFFUSE_WRAPPED             1
+#define PBR_DIFFUSE_BURLEY              2
+#define PBR_DIFFUSE_OREN_NAYAR          3
 
-#define PBR_SPEC_D_BLINN            0
-#define PBR_SPEC_D_BECKMANN         1
-#define PBR_SPEC_D_GGX              2
-#define PBR_SPEC_D_GGX_ANISO        3
+#define PBR_SPECULAR_D_BLINN            0
+#define PBR_SPECULAR_D_BECKMANN         1
+#define PBR_SPECULAR_D_GGX              2
+#define PBR_SPECULAR_D_GGX_ANISO        3
 
-#define PBR_SPEC_G_NEUMANN          0
-#define PBR_SPEC_G_KELEMEN          1
-#define PBR_SPEC_G_COOK_TORRANCE    2
-#define PBR_SPEC_G_GGX              3
+#define PBR_SPECULAR_G_NEUMANN          0
+#define PBR_SPECULAR_G_KELEMEN          1
+#define PBR_SPECULAR_G_COOK_TORRANCE    2
+#define PBR_SPECULAR_G_GGX              3
 
 #ifdef GL_ES
-#define PBR_DIFFUSE PBR_DIFFUSE_LAMBERT
+#define PBR_DIFFUSE         PBR_DIFFUSE_LAMBERT
+#define PBR_SPECULAR_D      PBR_SPECULAR_D_GGX
+#define PBR_SPECULAR_G      PBR_SPECULAR_G_GGX
 #else
-#define PBR_DIFFUSE PBR_DIFFUSE_BURLEY
+#define PBR_DIFFUSE         PBR_DIFFUSE_BURLEY
+#define PBR_SPECULAR_D      PBR_SPECULAR_D_GGX
+#define PBR_SPECULAR_G      PBR_SPECULAR_G_GGX
 #endif
 
-#define PBR_SPEC_D PBR_SPEC_D_GGX
-#define PBR_SPEC_G PBR_SPEC_G_GGX
+#define PBR_CLEARCOAT_D     PBR_SPECULAR_D_GGX
+#define PBR_CLEARCOAT_G     PBR_SPECULAR_G_GGX //PBR_SPECULAR_G_KELEMEN
 
 #define USE_BLINN_PHONG
 
