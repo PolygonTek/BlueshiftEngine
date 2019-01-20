@@ -28,12 +28,12 @@ $include "fragment_common.glsl"
 #define _CLEARCOAT 0
 #endif
 
-#ifndef _CLEARCOAT_ROUGHNESS
-#define _CLEARCOAT_ROUGHNESS 0
+#ifndef _CC_ROUGHNESS
+#define _CC_ROUGHNESS 0
 #endif
 
-#ifndef _CLEARCOAT_NORMAL
-#define _CLEARCOAT_NORMAL 0
+#ifndef _CC_NORMAL
+#define _CC_NORMAL 0
 #endif
 
 #ifndef _PRALLAX_SOURCE
@@ -166,10 +166,7 @@ struct MaterialParms {
 #if _CLEARCOAT != 0
     float clearCoat;
     float clearCoatRoughness;
-
-    #if _CLEARCOAT_NORMAL == 1
-        vec3 clearCoatN;
-    #endif
+    vec3 clearCoatN;
 #endif
 };
 
@@ -198,7 +195,7 @@ MaterialParms material;
     #define _PARALLAX 0
 #endif
 
-#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL == 1)
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
     #define NEED_BASE_TC
 #endif
 
@@ -241,7 +238,7 @@ void main() {
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    #if _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL == 1)
+    #if _NORMAL != 0
         vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
         vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
         vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
@@ -284,24 +281,24 @@ void main() {
             float glossiness = tex2D(glossMap, baseTc).r * glossScale;
         #endif
 
-        #if _CLEARCOAT == 1
-            material.clearCoat = clearCoatScale;
-        #elif _CLEARCOAT == 2
-            material.clearCoat = tex2D(clearCoatMap, baseTc).r * clearCoatScale;
-        #elif _CLEARCOAT == 3
-            material.clearCoat = albedo.a * clearCoatScale;
-        #elif _CLEARCOAT == 4
-            material.clearCoat = material.specular.a * clearCoatScale;
-        #endif
-
         #if _CLEARCOAT != 0
-            #if _CLEARCOAT_ROUGHNESS == 0
+            #if _CLEARCOAT == 1
+                material.clearCoat = clearCoatScale;
+            #elif _CLEARCOAT == 2
+                material.clearCoat = tex2D(clearCoatMap, baseTc).r * clearCoatScale;
+            #elif _CLEARCOAT == 3
+                material.clearCoat = albedo.a * clearCoatScale;
+            #elif _CLEARCOAT == 4
+                material.clearCoat = material.specular.a * clearCoatScale;
+            #endif
+
+            #if _CC_ROUGHNESS == 0
                 material.clearCoatRoughness = clearCoatRoughnessScale;
-            #elif _CLEARCOAT_ROUGHNESS == 1
+            #elif _CC_ROUGHNESS == 1
                 material.clearCoatRoughness = tex2D(clearCoatRoughnessMap, baseTc).r * clearCoatRoughnessScale;
-            #elif _CLEARCOAT_ROUGHNESS == 2
+            #elif _CC_ROUGHNESS == 2
                 material.clearCoatRoughness = albedo.a * clearCoatRoughnessScale;
-            #elif _CLEARCOAT_ROUGHNESS == 3
+            #elif _CC_ROUGHNESS == 3
                 material.clearCoatRoughness = material.specular.a * clearCoatRoughnessScale;
             #endif
         #endif
@@ -346,32 +343,32 @@ void main() {
             material.roughness = metallic.a * roughnessScale;
         #endif
 
-        #if _CLEARCOAT == 1
-            material.clearCoat = clearCoatScale;
-        #elif _CLEARCOAT == 2
-            material.clearCoat = tex2D(clearCoatMap, baseTc).r * clearCoatScale;
-        #elif _CLEARCOAT == 3
-            material.clearCoat = metallic.r * clearCoatScale;
-        #elif _CLEARCOAT == 4
-            material.clearCoat = metallic.g * clearCoatScale;
-        #elif _CLEARCOAT == 5
-            material.clearCoat = metallic.b * clearCoatScale;
-        #elif _CLEARCOAT == 6
-            material.clearCoat = metallic.a * clearCoatScale;
-        #endif
-
         #if _CLEARCOAT != 0
-            #if _CLEARCOAT_ROUGHNESS == 0
+            #if _CLEARCOAT == 1
+                material.clearCoat = clearCoatScale;
+            #elif _CLEARCOAT == 2
+                material.clearCoat = tex2D(clearCoatMap, baseTc).r * clearCoatScale;
+            #elif _CLEARCOAT == 3
+                material.clearCoat = metallic.r * clearCoatScale;
+            #elif _CLEARCOAT == 4
+                material.clearCoat = metallic.g * clearCoatScale;
+            #elif _CLEARCOAT == 5
+                material.clearCoat = metallic.b * clearCoatScale;
+            #elif _CLEARCOAT == 6
+                material.clearCoat = metallic.a * clearCoatScale;
+            #endif
+
+            #if _CC_ROUGHNESS == 0
                 material.clearCoatRoughness = clearCoatRoughnessScale;
-            #elif _CLEARCOAT_ROUGHNESS == 1
+            #elif _CC_ROUGHNESS == 1
                 material.clearCoatRoughness = tex2D(clearCoatRoughnessMap, baseTc).r * clearCoatRoughnessScale;
-            #elif _CLEARCOAT_ROUGHNESS == 2
+            #elif _CC_ROUGHNESS == 2
                 material.clearCoatRoughness = metallic.r * clearCoatRoughnessScale;
-            #elif _CLEARCOAT_ROUGHNESS == 3
+            #elif _CC_ROUGHNESS == 3
                 material.clearCoatRoughness = metallic.g * clearCoatRoughnessScale;
-            #elif _CLEARCOAT_ROUGHNESS == 4
+            #elif _CC_ROUGHNESS == 4
                 material.clearCoatRoughness = metallic.b * clearCoatRoughnessScale;
-            #elif _CLEARCOAT_ROUGHNESS == 5
+            #elif _CC_ROUGHNESS == 5
                 material.clearCoatRoughness = metallic.a * clearCoatRoughnessScale;
             #endif
         #endif
@@ -384,18 +381,22 @@ void main() {
 
     #if !defined(LEGACY_PHONG_LIGHTING)
         #if _CLEARCOAT != 0
-            material.specular.rgb = F0ToClearCoatToSurfaceF0(material.specular.rgb);
+            material.specular.rgb = mix(material.specular.rgb, F0ToClearCoatToSurfaceF0(material.specular.rgb), material.clearCoat);
 
             // Remapping of clear coat roughness
             material.clearCoatRoughness = mix(MIN_CLEARCOAT_ROUGHNESS, MAX_CLEARCOAT_ROUGHNESS, material.clearCoatRoughness);
 
-            #if _CLEARCOAT_NORMAL == 1
+            #if _CC_NORMAL == 1
                 vec3 tangentClearCoatN = normalize(GetNormal(clearCoatNormalMap, baseTc));
 
                 // Convert coordinates from tangent space to GL world space
                 material.clearCoatN.x = dot(toWorldMatrixS, tangentClearCoatN);
                 material.clearCoatN.y = dot(toWorldMatrixT, tangentClearCoatN);
                 material.clearCoatN.z = dot(toWorldMatrixR, tangentClearCoatN);
+            #elif _NORMAL == 0
+                material.clearCoatN = worldN;
+            #else
+                material.clearCoatN = normalize(vec3(toWorldMatrixS.z, toWorldMatrixT.z, toWorldMatrixR.z));
             #endif
         #endif
     #endif

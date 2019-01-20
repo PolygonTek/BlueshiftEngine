@@ -117,19 +117,27 @@ float G_SchlickGGX(float NdotV, float NdotL, float k) {
 // Fresnel functions
 //---------------------------------------------------
 
+float F_SecondFactorSchlick(float cosTheta) {
+    return pow5(1.0 - cosTheta);
+}
+
 // Fresnel using Schlick's approximation
 vec3 F_Schlick(vec3 F0, float cosTheta) {
-    return F0 + (vec3(1.0) - F0) * pow5(1.0 - cosTheta);
+    return F0 + (vec3(1.0) - F0) * F_SecondFactorSchlick(cosTheta);
+}
+
+float F_SecondFactorSchlickSG(float cosTheta) {
+    return exp2((-5.55473 * cosTheta - 6.98316) * cosTheta);
 }
 
 // Fresnel using Schlick's approximation with spherical Gaussian approximation
 vec3 F_SchlickSG(vec3 F0, float cosTheta) {
-    return F0 + (vec3(1.0) - F0) * exp2((-5.55473 * cosTheta - 6.98316) * cosTheta);
+    return F0 + (vec3(1.0) - F0) * F_SecondFactorSchlickSG(cosTheta);
 }
 
 // Fresnel injected roughness term
 vec3 F_SchlickRoughness(vec3 F0, float roughness, float cosTheta) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cosTheta);
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * F_SecondFactorSchlick(cosTheta);
 }
 
 //---------------------------------------------------
