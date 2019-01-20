@@ -667,7 +667,7 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
     }
 
     if (generateParallelShadowVersion) {
-        const Str shaderNamePostfix = "-parallelShadowed";
+        const Str shaderNamePostfix = "-dirShadowed";
         const Str vsHeaderText = "#define USE_SHADOW_CASCADE\n";
         const Str fsHeaderText = "#define USE_SHADOW_CASCADE\n";
 
