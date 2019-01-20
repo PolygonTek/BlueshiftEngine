@@ -180,7 +180,7 @@ PlatformBaseFile *PlatformWinFile::OpenFileWrite(const char *filename) {
     HANDLE handle = CreateFileW(wFilename, access, shareMode, nullptr, creation, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE) {
         Str lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_WARNLOG("Failed to CreateFile : %s", lastErrorText.c_str());
+        BE_WARNLOG("Failed to CreateFile %s: %s", filename, lastErrorText.c_str());
         return nullptr;
     }
     return new PlatformWinFile(handle);
@@ -410,7 +410,7 @@ static bool RemoveDirRecursive(const wchar_t *path) {
     // remove the empty directory
     if (!RemoveDirectoryW(path)) {
         Str lastErrorText = PlatformWinProcess::GetLastErrorText();
-        BE_WARNLOG("Failed to RemoveDirectory : %s", lastErrorText.c_str());
+        BE_WARNLOG("Failed to RemoveDirectory %ls: %s", path, lastErrorText.c_str());
         return false;
     }
     
