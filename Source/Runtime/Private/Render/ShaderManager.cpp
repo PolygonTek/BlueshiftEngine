@@ -274,7 +274,7 @@ void ShaderManager::InstantiateEngineShaders() {
     defineArray.Append(Shader::Define("_GLOSS", 0));
     defineArray.Append(Shader::Define("_NORMAL", 0));
     defineArray.Append(Shader::Define("_PARALLAX", 0));
-    defineArray.Append(Shader::Define("_OCCLUSION", 0));
+    defineArray.Append(Shader::Define("_OCC", 0));
     defineArray.Append(Shader::Define("_EMISSION", 0));
     standardDefaultShader = originalShaders[StandardSpecShader]->InstantiateShader(defineArray);
 
@@ -284,7 +284,7 @@ void ShaderManager::InstantiateEngineShaders() {
     defineArray.Append(Shader::Define("_GLOSS", 0));
     defineArray.Append(Shader::Define("_NORMAL", 0));
     defineArray.Append(Shader::Define("_PARALLAX", 0));
-    defineArray.Append(Shader::Define("_OCCLUSION", 0));
+    defineArray.Append(Shader::Define("_OCC", 0));
     defineArray.Append(Shader::Define("_EMISSION", 0));
     standardDefaultAmbientLitShader = originalShaders[StandardSpecShader]->ambientLitVersion->InstantiateShader(defineArray);
 
@@ -294,7 +294,7 @@ void ShaderManager::InstantiateEngineShaders() {
     defineArray.Append(Shader::Define("_GLOSS", 0));
     defineArray.Append(Shader::Define("_NORMAL", 0));
     defineArray.Append(Shader::Define("_PARALLAX", 0));
-    defineArray.Append(Shader::Define("_OCCLUSION", 0));
+    defineArray.Append(Shader::Define("_OCC", 0));
     defineArray.Append(Shader::Define("_EMISSION", 0));
     standardDefaultDirectLitShader = originalShaders[StandardSpecShader]->directLitVersion->InstantiateShader(defineArray);
 
@@ -304,7 +304,7 @@ void ShaderManager::InstantiateEngineShaders() {
     defineArray.Append(Shader::Define("_GLOSS", 0));
     defineArray.Append(Shader::Define("_NORMAL", 0));
     defineArray.Append(Shader::Define("_PARALLAX", 0));
-    defineArray.Append(Shader::Define("_OCCLUSION", 0));
+    defineArray.Append(Shader::Define("_OCC", 0));
     defineArray.Append(Shader::Define("_EMISSION", 0));
     standardDefaultAmbientLitDirectLitShader = originalShaders[StandardSpecShader]->ambientLitDirectLitVersion->InstantiateShader(defineArray);
 

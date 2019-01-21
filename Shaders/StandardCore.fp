@@ -24,6 +24,10 @@ $include "fragment_common.glsl"
 #define _ROUGHNESS 0
 #endif
 
+#ifndef _ANISO
+#define _ANISO 0
+#endif
+
 #ifndef _CLEARCOAT
 #define _CLEARCOAT 0
 #endif
@@ -36,8 +40,8 @@ $include "fragment_common.glsl"
 #define _CC_NORMAL 0
 #endif
 
-#ifndef _PRALLAX_SOURCE
-#define _PRALLAX_SOURCE 0
+#ifndef _PARALLAX
+#define _PARALLAX 0
 #endif
 
 #ifndef _EMISSION
@@ -105,6 +109,10 @@ uniform LOWP float metallicScale;
 uniform sampler2D roughnessMap;
 uniform LOWP float roughnessScale;
 
+uniform sampler2D anisotropyMap
+uniform LOWP float anisotropyRotation;
+uniform LOWP float anisotropyScale;
+
 uniform sampler2D clearCoatMap;
 uniform LOWP float clearCoatScale;
 uniform sampler2D clearCoatRoughnessMap;
@@ -163,10 +171,22 @@ struct MaterialParms {
     float specularPower;
 #endif
 
+#if _ANISO != 0
+    float anisotropy;
+#endif
+
 #if _CLEARCOAT != 0
     float clearCoat;
     float clearCoatRoughness;
     vec3 clearCoatN;
+#endif
+
+#if _OCC != 0
+    float occlusion;
+#endif
+
+#if _EMISSION != 0
+    vec3 emission;
 #endif
 };
 
@@ -195,33 +215,208 @@ MaterialParms material;
     #define _PARALLAX 0
 #endif
 
-#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || _ANISO == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
     #define NEED_BASE_TC
 #endif
 
+vec2 baseTc;
+
 //#define PARALLAX_CORRECTED_INDIRECT_LIGHTING
 
+void SetupMaterial(vec3 worldN, vec4 albedo) {
+#if defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
+    material.diffuse = albedo;
+
+    #if _SPECULAR == 0
+        material.specular = specularColor;
+    #elif _SPECULAR == 1
+        material.specular = tex2D(specularMap, baseTc);
+    #endif
+
+    #if _GLOSS == 0
+        float glossiness = glossScale;
+    #elif _GLOSS == 1
+        float glossiness = albedo.a * glossScale;
+    #elif _GLOSS == 2
+        float glossiness = material.specular.a * glossScale;
+    #elif _GLOSS == 3
+        float glossiness = tex2D(glossMap, baseTc).r * glossScale;
+    #endif
+
+    #if _ANISO != 0
+        #if _ANISO == 1
+            material.anisotropy = anisotropyScale;
+        #elif _ANISO == 2
+            material.anisotropy = tex2D(anisotropyMap, baseTc).r * anisotropyScale;
+        #endif
+    #endif
+
+    #if _CLEARCOAT != 0
+        #if _CLEARCOAT == 1
+            material.clearCoat = clearCoatScale;
+        #elif _CLEARCOAT == 2
+            material.clearCoat = tex2D(clearCoatMap, baseTc).r * clearCoatScale;
+        #elif _CLEARCOAT == 3
+            material.clearCoat = albedo.a * clearCoatScale;
+        #elif _CLEARCOAT == 4
+            material.clearCoat = material.specular.a * clearCoatScale;
+        #endif
+
+        #if _CC_ROUGHNESS == 0
+            material.clearCoatRoughness = clearCoatRoughnessScale;
+        #elif _CC_ROUGHNESS == 1
+            material.clearCoatRoughness = tex2D(clearCoatRoughnessMap, baseTc).r * clearCoatRoughnessScale;
+        #elif _CC_ROUGHNESS == 2
+            material.clearCoatRoughness = albedo.a * clearCoatRoughnessScale;
+        #elif _CC_ROUGHNESS == 3
+            material.clearCoatRoughness = material.specular.a * clearCoatRoughnessScale;
+        #endif
+    #endif
+
+    #if _OCC == 1
+        material.occlusion = tex2D(occlusionMap, baseTc).r;
+    #elif _OCC == 2
+        material.occlusion = albedo.a;
+    #elif _OCC == 3
+        material.occlusion = material.specular.a;
+    #endif
+
+    // Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
+    material.roughness = clamp(1.0 - glossiness, MIN_ROUGHNESS, 1.0);
+
+    #ifdef LEGACY_PHONG_LIGHTING
+        material.specularPower = glossinessToSpecularPower(glossiness);
+    #endif
+#elif defined(STANDARD_METALLIC_LIGHTING)
+    #if _METALLIC == 0
+        vec4 metallic = vec4(1.0, 0.0, 0.0, 0.0);
+    #elif _METALLIC >= 1
+        vec4 metallic = tex2D(metallicMap, baseTc);
+    #endif
+
+    #if _METALLIC == 0
+        float metalness = metallicScale;
+    #elif _METALLIC == 1
+        float metalness = metallic.r * metallicScale;
+    #elif _METALLIC == 2
+        float metalness = metallic.g * metallicScale;
+    #elif _METALLIC == 3
+        float metalness = metallic.b * metallicScale;
+    #elif _METALLIC == 4
+        float metalness = metallic.a * metallicScale;
+    #endif
+
+    #if _ROUGHNESS == 0
+        material.roughness = roughnessScale;
+    #elif _ROUGHNESS == 1
+        material.roughness = tex2D(roughnessMap, baseTc).r * roughnessScale;
+    #elif _ROUGHNESS == 2
+        material.roughness = (1.0 - tex2D(roughnessMap, baseTc).r) * roughnessScale;
+    #elif _ROUGHNESS == 3
+        material.roughness = metallic.r * roughnessScale;
+    #elif _ROUGHNESS == 4
+        material.roughness = metallic.g * roughnessScale;
+    #elif _ROUGHNESS == 5
+        material.roughness = metallic.b * roughnessScale;
+    #elif _ROUGHNESS == 6
+        material.roughness = metallic.a * roughnessScale;
+    #endif
+
+    // Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
+    material.roughness = clamp(material.roughness, MIN_ROUGHNESS, 1.0);
+
+    #if _ANISO != 0
+        #if _ANISO == 1
+            material.anisotropy = anisotropyScale;
+        #elif _ANISO == 2
+            material.anisotropy = tex2D(anisotropyMap, baseTc).r * anisotropyScale;
+        #endif
+    #endif
+
+    #if _CLEARCOAT != 0
+        #if _CLEARCOAT == 1
+            material.clearCoat = clearCoatScale;
+        #elif _CLEARCOAT == 2
+            material.clearCoat = tex2D(clearCoatMap, baseTc).r * clearCoatScale;
+        #elif _CLEARCOAT == 3
+            material.clearCoat = metallic.r * clearCoatScale;
+        #elif _CLEARCOAT == 4
+            material.clearCoat = metallic.g * clearCoatScale;
+        #elif _CLEARCOAT == 5
+            material.clearCoat = metallic.b * clearCoatScale;
+        #elif _CLEARCOAT == 6
+            material.clearCoat = metallic.a * clearCoatScale;
+        #endif
+
+        #if _CC_ROUGHNESS == 0
+            material.clearCoatRoughness = clearCoatRoughnessScale;
+        #elif _CC_ROUGHNESS == 1
+            material.clearCoatRoughness = tex2D(clearCoatRoughnessMap, baseTc).r * clearCoatRoughnessScale;
+        #elif _CC_ROUGHNESS == 2
+            material.clearCoatRoughness = metallic.r * clearCoatRoughnessScale;
+        #elif _CC_ROUGHNESS == 3
+            material.clearCoatRoughness = metallic.g * clearCoatRoughnessScale;
+        #elif _CC_ROUGHNESS == 4
+            material.clearCoatRoughness = metallic.b * clearCoatRoughnessScale;
+        #elif _CC_ROUGHNESS == 5
+            material.clearCoatRoughness = metallic.a * clearCoatRoughnessScale;
+        #endif
+    #endif
+
+    #if _OCC == 1
+        material.occlusion = tex2D(occlusionMap, baseTc).r;
+    #elif _OCC == 2
+        material.occlusion = metallic.r;
+    #elif _OCC == 3
+        material.occlusion = metallic.g;
+    #elif _OCC == 4
+        material.occlusion = metallic.b;
+    #elif _OCC == 5
+        material.occlusion = metallic.a;
+    #endif
+
+    // A base reflectivity of 0.04 holds for most dielectrics
+    material.specular = vec4(mix(vec3(0.04), albedo.rgb, metalness), 1.0);
+
+    material.diffuse = vec4(albedo.rgb * (1.0 - metalness), albedo.a);
+#endif
+
+#if !defined(LEGACY_PHONG_LIGHTING) && _CLEARCOAT != 0
+    material.specular.rgb = mix(material.specular.rgb, F0ToClearCoatToSurfaceF0(material.specular.rgb), material.clearCoat);
+
+    // Remapping of clear coat roughness
+    material.clearCoatRoughness = mix(MIN_CLEARCOAT_ROUGHNESS, MAX_CLEARCOAT_ROUGHNESS, material.clearCoatRoughness);
+
+    #if _CC_NORMAL == 1
+        vec3 tangentClearCoatN = normalize(GetNormal(clearCoatNormalMap, baseTc));
+
+        // Convert coordinates from tangent space to GL world space
+        material.clearCoatN.x = dot(toWorldMatrixS, tangentClearCoatN);
+        material.clearCoatN.y = dot(toWorldMatrixT, tangentClearCoatN);
+        material.clearCoatN.z = dot(toWorldMatrixR, tangentClearCoatN);
+    #elif _NORMAL == 0
+        material.clearCoatN = worldN;
+    #else
+        material.clearCoatN = normalize(vec3(toWorldMatrixS.z, toWorldMatrixT.z, toWorldMatrixR.z));
+    #endif
+#endif
+
+#if defined(INDIRECT_LIGHTING)
+    #if _EMISSION == 1
+        material.emission = emissionColor * emissionScale;
+    #elif _EMISSION == 2
+        material.emission = tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
+    #endif
+#endif
+}
+
 void main() {
-#ifdef DIRECT_LIGHTING
-    float attenuation = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
-    attenuation = pow(attenuation, lightFallOffExponent);
-
-    vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * attenuation;
-    /*if (Cl == vec3(0.0)) {
-        discard;
-    }*/
-#endif
-
-#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    vec3 worldV = normalize(v2f_viewVector.yzx);
-#endif
-
 #ifdef NEED_BASE_TC
     #if _PARALLAX != 0
         float h = tex2D(heightMap, v2f_tex).x * 2.0 - 1.0;
-        vec2 baseTc = v2f_tex + h * heightScale * 0.1 * (v2f_tangentViewDir.xy / v2f_tangentViewDir.z);
+        baseTc = v2f_tex + h * heightScale * 0.1 * (v2f_tangentViewDir.xy / v2f_tangentViewDir.z);
     #else
-        vec2 baseTc = v2f_tex;
+        baseTc = v2f_tex;
     #endif
 #endif
 
@@ -238,6 +433,8 @@ void main() {
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
+    vec3 worldV = normalize(v2f_viewVector.yzx);
+
     #if _NORMAL != 0
         vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
         vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
@@ -262,158 +459,14 @@ void main() {
         worldN.z = dot(toWorldMatrixR, tangentN);
     #endif
 
-    #if defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
-        material.diffuse = albedo;
-
-        #if _SPECULAR == 0
-            material.specular = specularColor;
-        #elif _SPECULAR == 1
-            material.specular = tex2D(specularMap, baseTc);
-        #endif
-
-        #if _GLOSS == 0
-            float glossiness = glossScale;
-        #elif _GLOSS == 1
-            float glossiness = albedo.a * glossScale;
-        #elif _GLOSS == 2
-            float glossiness = material.specular.a * glossScale;
-        #elif _GLOSS == 3
-            float glossiness = tex2D(glossMap, baseTc).r * glossScale;
-        #endif
-
-        #if _CLEARCOAT != 0
-            #if _CLEARCOAT == 1
-                material.clearCoat = clearCoatScale;
-            #elif _CLEARCOAT == 2
-                material.clearCoat = tex2D(clearCoatMap, baseTc).r * clearCoatScale;
-            #elif _CLEARCOAT == 3
-                material.clearCoat = albedo.a * clearCoatScale;
-            #elif _CLEARCOAT == 4
-                material.clearCoat = material.specular.a * clearCoatScale;
-            #endif
-
-            #if _CC_ROUGHNESS == 0
-                material.clearCoatRoughness = clearCoatRoughnessScale;
-            #elif _CC_ROUGHNESS == 1
-                material.clearCoatRoughness = tex2D(clearCoatRoughnessMap, baseTc).r * clearCoatRoughnessScale;
-            #elif _CC_ROUGHNESS == 2
-                material.clearCoatRoughness = albedo.a * clearCoatRoughnessScale;
-            #elif _CC_ROUGHNESS == 3
-                material.clearCoatRoughness = material.specular.a * clearCoatRoughnessScale;
-            #endif
-        #endif
-
-        material.roughness = 1.0 - glossiness;
-
-        #ifdef LEGACY_PHONG_LIGHTING
-            material.specularPower = glossinessToSpecularPower(glossiness);
-        #endif
-    #elif defined(STANDARD_METALLIC_LIGHTING)
-        #if _METALLIC == 0
-            vec4 metallic = vec4(1.0, 0.0, 0.0, 0.0);
-        #elif _METALLIC >= 1
-            vec4 metallic = tex2D(metallicMap, baseTc);
-        #endif
-
-        #if _METALLIC == 0
-            float metalness = metallicScale;
-        #elif _METALLIC == 1
-            float metalness = metallic.r * metallicScale;
-        #elif _METALLIC == 2
-            float metalness = metallic.g * metallicScale;
-        #elif _METALLIC == 3
-            float metalness = metallic.b * metallicScale;
-        #elif _METALLIC == 4
-            float metalness = metallic.a * metallicScale;
-        #endif
-
-        #if _ROUGHNESS == 0
-            material.roughness = roughnessScale;
-        #elif _ROUGHNESS == 1
-            material.roughness = tex2D(roughnessMap, baseTc).r * roughnessScale;
-        #elif _ROUGHNESS == 2
-            material.roughness = (1.0 - tex2D(roughnessMap, baseTc).r) * roughnessScale;
-        #elif _ROUGHNESS == 3
-            material.roughness = metallic.r * roughnessScale;
-        #elif _ROUGHNESS == 4
-            material.roughness = metallic.g * roughnessScale;
-        #elif _ROUGHNESS == 5
-            material.roughness = metallic.b * roughnessScale;
-        #elif _ROUGHNESS == 6
-            material.roughness = metallic.a * roughnessScale;
-        #endif
-
-        #if _CLEARCOAT != 0
-            #if _CLEARCOAT == 1
-                material.clearCoat = clearCoatScale;
-            #elif _CLEARCOAT == 2
-                material.clearCoat = tex2D(clearCoatMap, baseTc).r * clearCoatScale;
-            #elif _CLEARCOAT == 3
-                material.clearCoat = metallic.r * clearCoatScale;
-            #elif _CLEARCOAT == 4
-                material.clearCoat = metallic.g * clearCoatScale;
-            #elif _CLEARCOAT == 5
-                material.clearCoat = metallic.b * clearCoatScale;
-            #elif _CLEARCOAT == 6
-                material.clearCoat = metallic.a * clearCoatScale;
-            #endif
-
-            #if _CC_ROUGHNESS == 0
-                material.clearCoatRoughness = clearCoatRoughnessScale;
-            #elif _CC_ROUGHNESS == 1
-                material.clearCoatRoughness = tex2D(clearCoatRoughnessMap, baseTc).r * clearCoatRoughnessScale;
-            #elif _CC_ROUGHNESS == 2
-                material.clearCoatRoughness = metallic.r * clearCoatRoughnessScale;
-            #elif _CC_ROUGHNESS == 3
-                material.clearCoatRoughness = metallic.g * clearCoatRoughnessScale;
-            #elif _CC_ROUGHNESS == 4
-                material.clearCoatRoughness = metallic.b * clearCoatRoughnessScale;
-            #elif _CC_ROUGHNESS == 5
-                material.clearCoatRoughness = metallic.a * clearCoatRoughnessScale;
-            #endif
-        #endif
-
-        // A base reflectivity of 0.04 holds for most dielectrics
-        material.specular = vec4(mix(vec3(0.04), albedo.rgb, metalness), 1.0);
-
-        material.diffuse = vec4(albedo.rgb * (1.0 - metalness), albedo.a);
+    #ifdef TWO_SIDED
+        worldN = gl_FrontFacing ? worldN : -worldN;
     #endif
 
-    #if !defined(LEGACY_PHONG_LIGHTING)
-        #if _CLEARCOAT != 0
-            material.specular.rgb = mix(material.specular.rgb, F0ToClearCoatToSurfaceF0(material.specular.rgb), material.clearCoat);
-
-            // Remapping of clear coat roughness
-            material.clearCoatRoughness = mix(MIN_CLEARCOAT_ROUGHNESS, MAX_CLEARCOAT_ROUGHNESS, material.clearCoatRoughness);
-
-            #if _CC_NORMAL == 1
-                vec3 tangentClearCoatN = normalize(GetNormal(clearCoatNormalMap, baseTc));
-
-                // Convert coordinates from tangent space to GL world space
-                material.clearCoatN.x = dot(toWorldMatrixS, tangentClearCoatN);
-                material.clearCoatN.y = dot(toWorldMatrixT, tangentClearCoatN);
-                material.clearCoatN.z = dot(toWorldMatrixR, tangentClearCoatN);
-            #elif _NORMAL == 0
-                material.clearCoatN = worldN;
-            #else
-                material.clearCoatN = normalize(vec3(toWorldMatrixS.z, toWorldMatrixT.z, toWorldMatrixR.z));
-            #endif
-        #endif
-    #endif
-
-    // Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
-    material.roughness = clamp(material.roughness, MIN_ROUGHNESS, 1.0);
+    SetupMaterial(worldN, albedo);
 #endif
 
     vec3 shadingColor = vec3(0.0);
-
-#if (defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)) || !defined(DIRECT_LIGHTING)
-    #if _EMISSION == 1
-        shadingColor += emissionColor * emissionScale;
-    #elif _EMISSION == 2
-        shadingColor += tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
-    #endif
-#endif
 
 #ifdef INDIRECT_LIGHTING
     #ifdef BRUTE_FORCE_IBL
@@ -448,11 +501,24 @@ void main() {
             shadingColor += IndirectLit_PhongFresnel(worldN, worldV, sampleVec.xyz);
         #endif
     #endif
+
+    #if _OCC != 0
+        shadingColor *= (1.0 - occlusionStrength) + material.occlusion * occlusionStrength;
+    #endif
+
+    #if _EMISSION != 0
+        shadingColor += material.emission;
+    #endif
 #else
     shadingColor += albedo.rgb * ambientScale;
 #endif
 
 #ifdef DIRECT_LIGHTING
+    float attenuation = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
+    attenuation = pow(attenuation, lightFallOffExponent);
+
+    vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).xyz * lightColor.xyz * attenuation;
+
     #ifdef USE_SHADOW_MAP
         vec3 shadowLighting = ShadowFunc();
     #else
@@ -480,35 +546,9 @@ void main() {
     #endif
 
     shadingColor += Cl * lightingColor * shadowLighting;
-#endif
 
-#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    #if _OCCLUSION != 0
-        #if _OCCLUSION == 1
-            float occ = tex2D(occlusionMap, baseTc).r;
-        #elif defined(STANDARD_METALLIC_LIGHTING)
-            #if _OCCLUSION == 2
-                float occ = metallic.r;
-            #elif _OCCLUSION == 3
-                float occ = metallic.g;
-            #elif _OCCLUSION == 4
-                float occ = metallic.b;
-            #elif _OCCLUSION == 5
-                float occ = metallic.a;
-            #else
-                float occ = 1.0;
-            #endif
-        #elif defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
-            #if _OCCLUSION == 2
-                float occ = albedo.a;
-            #elif _OCCLUSION == 3
-                float occ = material.specular.a;
-            #else
-                float occ = 1.0;
-            #endif
-        #endif
-
-        shadingColor *= (1.0 - occlusionStrength) + occ * occlusionStrength;
+    #if _OCC != 0
+        shadingColor *= (1.0 - occlusionStrength) + material.occlusion * occlusionStrength;
     #endif
 #endif
 

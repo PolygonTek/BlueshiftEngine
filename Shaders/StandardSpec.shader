@@ -15,6 +15,10 @@ shader "Lit/StandardSpec" {
         normalMap("Normal Map") : texture = "_flatNormalTexture"
         detailNormalMap("Detail Normal Map") : texture = "_flatNormalTexture"
         detailRepeat("Detail Repeat") : float = "8"
+        _ANISO("Anisotropy") : enum "None;Rotation;Texture" = "0" (shaderDefine)
+        anisotropyMap("Anisotropy Map") : texture = "_whiteTexture"
+        anisotropyRotation("Anisotropy Rotation") : float range - 1.0 1.0 0.01 = "0.0"
+        anisotropyScale("Anisotropy Scale") : float range 0 1.0 0.01 = "1.0"
         _CLEARCOAT("Clear Coat") : enum "None;Scale;Texture (R);From Albedo Alpha;From Specular Alpha" = "0" (shaderDefine)
         clearCoatMap("Clear Coat Map") : texture = "_whiteTexture"
         clearCoatScale("Clear Coat Scale") : float range 0 1.0 0.01 = "1.0"
@@ -26,7 +30,7 @@ shader "Lit/StandardSpec" {
         _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" (shaderDefine)
         heightMap("Height Map") : texture = "_whiteTexture"
         heightScale("Height Scale") : float range 0.01 1.0 0.001 = "0.008"
-        _OCCLUSION("Occlusion") : enum "None;Texture (R);From Albedo Map (A);From Specular Map (A)" = "0" (shaderDefine)
+        _OCC("Occlusion") : enum "None;Texture (R);From Albedo Map (A);From Specular Map (A)" = "0" (shaderDefine)
         occlusionMap("Occlusion Map") : texture = "_whiteTexture"
         occlusionStrength("Occlusion Strength") : float range 0 1 0.001 = "1"
         _EMISSION("Emission") : enum "None;Color;Texture" = "0" (shaderDefine)

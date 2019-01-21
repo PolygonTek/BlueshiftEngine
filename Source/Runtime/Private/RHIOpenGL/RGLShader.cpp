@@ -677,7 +677,7 @@ static void CacheProgram(const char *name, const uint32_t hash, GLuint programOb
 
         Str filename = GLShader::programCacheDir;
         filename.AppendPath(name);
-        filename.SetFileExtension(".programbin");
+        filename.SetFileExtension(".bin");
         PlatformFile *file = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
         if (file) {
             file->Write(programBinary, binaryLength + sizeof(uint32_t) + sizeof(GLenum));
@@ -691,7 +691,7 @@ static void CacheProgram(const char *name, const uint32_t hash, GLuint programOb
 static bool UseCachedProgram(const char *name, const uint32_t hash, GLuint programObject) {
     Str filename = GLShader::programCacheDir;
     filename.AppendPath(name);
-    filename.SetFileExtension(".programbin");
+    filename.SetFileExtension(".bin");
 #if 0
     PlatformFile *file = PlatformFile::OpenFileRead(filename);
     if (!file) {
