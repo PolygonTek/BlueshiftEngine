@@ -9,7 +9,6 @@
 #define PBR_SPECULAR_D_BLINN            0
 #define PBR_SPECULAR_D_BECKMANN         1
 #define PBR_SPECULAR_D_GGX              2
-#define PBR_SPECULAR_D_GGX_ANISO        3
 
 #define PBR_SPECULAR_G_NEUMANN          0
 #define PBR_SPECULAR_G_KELEMEN          1

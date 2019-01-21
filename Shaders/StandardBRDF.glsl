@@ -27,14 +27,36 @@ vec3 DiffuseBRDF(float NdotL, float NdotV, float VdotH, vec3 albedo, float rough
 #endif
 }
 
-//----------------------------------
-// Specular BRDF
-//----------------------------------
-vec3 SpecularBRDF(float NdotL, float NdotH, float NdotV, float VdotH, float roughness, vec3 F0, float FSecondFactor, out vec3 Fs) {
-    // We adopted Disney's reparameterization of a = roughness^2
-    // a means perceptual linear roughness.
-    float linearRoughness = roughness * roughness;
+#if _ANISO == 1
+vec3 AnisotropicBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, float linearRoughness, vec3 F0, float FSecondFactor, out vec3 Fs) {
+    // Anisotropic parameters: at and ab are the roughness along the tangent and bitangent.
+    // to simplify materials, we derive them from a single roughness parameter.
+    // Kulla 2017, "Revisiting Physically Based Shading at Imageworks"
+    float at = max(linearRoughness * (1.0 + shading.anisotropy), MIN_LINEAR_ROUGHNESS);
+    float ab = max(linearRoughness * (1.0 - shading.anisotropy), MIN_LINEAR_ROUGHNESS);
 
+    float TdotL = saturate(dot(shading.anisotropicT, shading.l));
+    float BdotL = saturate(dot(shading.anisotropicB, shading.l));
+    float TdotV = saturate(dot(shading.anisotropicT, shading.v));
+    float BdotV = saturate(dot(shading.anisotropicB, shading.v));
+    float TdotH = saturate(dot(shading.anisotropicT, H));
+    float BdotH = saturate(dot(shading.anisotropicB, H));
+
+    // Normal distribution term
+    float D = D_GGXAniso(NdotH, TdotH, BdotH, at, ab);
+
+    // Geometric visibility term
+    float G = G_SmithGGXCorrelatedAniso(NdotV, NdotL, TdotV, BdotV, TdotL, BdotL, at, ab);
+
+    // Fresnel reflection term
+    Fs = F0 + (vec3(1.0) - F0) * FSecondFactor;
+
+    // Microfacets specular BRDF = D * G * F / 4 (G term is already divided by (NdotL * NdotV))
+    return D * G * Fs * 0.25;
+}
+#endif
+
+vec3 IsotropicBRDF(float NdotL, float NdotV, float NdotH, float VdotH, float roughness, float linearRoughness, vec3 F0, float FSecondFactor, out vec3 Fs) {
     // Normal distribution term
 #if PBR_SPECULAR_D == PBR_SPECULAR_D_BLINN
     float D = D_Blinn(NdotH, linearRoughness);
@@ -42,8 +64,6 @@ vec3 SpecularBRDF(float NdotL, float NdotH, float NdotV, float VdotH, float roug
     float D = D_Beckmann(NdotH, linearRoughness);
 #elif PBR_SPECULAR_D == PBR_SPECULAR_D_GGX
     float D = D_GGX(NdotH, linearRoughness);
-#elif PBR_SPECULAR_D == PBR_SPECULAR_D_GGX_ANISO
-    float D = D_GGXAniso(NdotH, XdotH, YdotH, ax, ay);
 #endif
 
     // Geometric visibility term
@@ -64,6 +84,21 @@ vec3 SpecularBRDF(float NdotL, float NdotH, float NdotV, float VdotH, float roug
 
     // Microfacets specular BRDF = D * G * F / 4 (G term is already divided by (NdotL * NdotV))
     return D * G * Fs * 0.25;
+}
+
+//----------------------------------
+// Specular BRDF
+//----------------------------------
+vec3 SpecularBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, vec3 F0, float FSecondFactor, out vec3 Fs) {
+    // We adopted Disney's reparameterization of a = roughness^2
+    // a means perceptual linear roughness.
+    float linearRoughness = roughness * roughness;
+
+#if _ANISO == 1
+    return AnisotropicBRDF(H, NdotL, NdotV, NdotH, VdotH, roughness, linearRoughness, F0, FSecondFactor, Fs);
+#else
+    return IsotropicBRDF(NdotL, NdotV, NdotH, VdotH, roughness, linearRoughness, F0, FSecondFactor, Fs);
+#endif
 }
 
 //----------------------------------
@@ -92,35 +127,35 @@ float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float
 //----------------------------------
 // Direct Lighting
 //----------------------------------
-vec3 DirectLit_Standard(vec3 L, vec3 N, vec3 V) {
-    vec3 H = normalize(L + V);
+vec3 DirectLit_Standard() {
+    vec3 H = normalize(shading.l + shading.v);
 
-    float NdotL = saturate(dot(N, L));
-    float NdotH = saturate(dot(N, H));
-    float NdotV = saturate(dot(N, V));
-    float VdotH = saturate(dot(V, H));
+    float NdotL = saturate(dot(shading.n, shading.l));
+    float NdotV = saturate(dot(shading.n, shading.v));
+    float NdotH = saturate(dot(shading.n, H));
+    float VdotH = saturate(dot(shading.v, H));
 
     float FSecondFactor = F_SecondFactorSchlickSG(VdotH);
 
     vec3 Fs;
-    vec3 Cs = SpecularBRDF(NdotL, NdotH, NdotV, VdotH, material.roughness, material.specular.rgb, FSecondFactor, Fs);
+    vec3 Cs = SpecularBRDF(H, NdotL, NdotV, NdotH, VdotH, shading.roughness, shading.specular.rgb, FSecondFactor, Fs);
 
     // From specular reflection term Fs, we can directly calculate the ratio of refraction.
-    vec3 Cd = DiffuseBRDF(NdotL, NdotV, VdotH, material.diffuse.rgb, material.roughness) * (vec3(1.0) - Fs);
+    vec3 Cd = DiffuseBRDF(NdotL, NdotV, VdotH, shading.diffuse.rgb, shading.roughness) * (vec3(1.0) - Fs);
 
 #if _CLEARCOAT == 0
     vec3 color = (Cd + Cs) * NdotL;
 #else
     #if _CC_NORMAL == 1
-        float clearCoatNdotL = saturate(dot(material.clearCoatN, L));
-        float clearCoatNdotH = saturate(dot(material.clearCoatN, H));
+        float clearCoatNdotL = saturate(dot(shading.clearCoatN, shading.l));
+        float clearCoatNdotH = saturate(dot(shading.clearCoatN, H));
     #else
         float clearCoatNdotL = NdotL;
         float clearCoatNdotH = NdotH;
     #endif
 
     float Fcc;
-    float Ccc = ClearCoatBRDF(clearCoatNdotH, VdotH, material.clearCoat, material.clearCoatRoughness, FSecondFactor, Fcc);
+    float Ccc = ClearCoatBRDF(clearCoatNdotH, VdotH, shading.clearCoat, shading.clearCoatRoughness, FSecondFactor, Fcc);
 
     vec3 color = (Cd + Cs) * (1.0 - Fcc) * NdotL;
 
@@ -168,44 +203,44 @@ vec3 GetSpecularEnvSecondSum(float NdotV, float roughness, vec3 F0) {
 //----------------------------------
 // Indirect Lighting
 //----------------------------------
-vec3 IndirectLit_Standard(vec3 N, vec3 V, vec3 S) {
-    float NdotV = saturate(dot(N, V));
+vec3 IndirectLit_Standard(vec3 S) {
+    float NdotV = saturate(dot(shading.n, shading.v));
 
-    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(S, material.roughness);
-    vec3 specularEnvSum2 = GetSpecularEnvSecondSum(NdotV, material.roughness, material.specular.rgb);
+    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(S, shading.roughness);
+    vec3 specularEnvSum2 = GetSpecularEnvSecondSum(NdotV, shading.roughness, shading.specular.rgb);
 
     vec3 Cs = specularEnvSum1 * specularEnvSum2;
 
     float FSecondFactor = F_SecondFactorSchlickSG(NdotV);
 
     // F_SchlickRoughness
-    vec3 Fs = material.specular.rgb + (max(vec3(1.0 - material.roughness), material.specular.rgb) - material.specular.rgb) * FSecondFactor;
-    //vec3 Fs = material.specular.rgb + (vec3(1.0) - material.specular.rgb) * FSecondFactor;
+    vec3 Fs = shading.specular.rgb + (max(vec3(1.0 - shading.roughness), shading.specular.rgb) - shading.specular.rgb) * FSecondFactor;
+    //vec3 Fs = shading.specular.rgb + (vec3(1.0) - shading.specular.rgb) * FSecondFactor;
 
-    vec3 Cd = GetDiffuseEnv(N, material.diffuse.rgb) * (vec3(1.0) - Fs);
+    vec3 Cd = GetDiffuseEnv(shading.n, shading.diffuse.rgb) * (vec3(1.0) - Fs);
 
 #if _CLEARCOAT == 0
     vec3 color = Cd + Cs;
 #else
     #if _CC_NORMAL == 1
-        float clearCoatNdotV = max(dot(material.clearCoatN, V), 0.0);
+        float clearCoatNdotV = max(dot(shading.clearCoatN, shading.v), 0.0);
 
-        vec3 clearCoatS = reflect(-V, material.clearCoatN);
+        vec3 clearCoatS = reflect(-shading.v, shading.clearCoatN);
     #else
         float clearCoatNdotV = NdotV;
 
         vec3 clearCoatS = S;
     #endif
     
-    vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(S, material.clearCoatRoughness);
-    vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(clearCoatNdotV, material.clearCoatRoughness, vec3(0.04));
+    vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(S, shading.clearCoatRoughness);
+    vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(clearCoatNdotV, shading.clearCoatRoughness, vec3(0.04));
 
-    vec3 Ccc = clearCoatEnvSum1 * clearCoatEnvSum2 * material.clearCoat;
+    vec3 Ccc = clearCoatEnvSum1 * clearCoatEnvSum2 * shading.clearCoat;
     
     // IOR of clear coatted layer is 1.5
     float F0 = 0.04; // 0.04 == IorToF0(1.5)
     float Fcc = F0 + (1.0 - F0) * FSecondFactor;
-    Fcc *= material.clearCoat;
+    Fcc *= shading.clearCoat;
 
     vec3 color = (Cd + Cs) * (1.0 - Fcc) + Ccc;
 #endif
