@@ -92,9 +92,9 @@ shader "HDRFinal" {
 		vec3 SelectiveColor(vec3 color) {
 			float colorPickRange = 1.0 - length(color - selectiveColor);
 
-			vec4 cmyk = RgbToCmyk(color);
+			vec4 cmyk = RGBToCMYK(color);
 			cmyk = mix(cmyk, clamp(cmyk + additiveCmyk, vec4(-1.0), vec4(1.0)), colorPickRange);
-			return mix(color, CmykToRgb(cmyk), colorPickRange);
+			return mix(color, CMYKToRGB(cmyk), colorPickRange);
 		}
 
 		void main() {
