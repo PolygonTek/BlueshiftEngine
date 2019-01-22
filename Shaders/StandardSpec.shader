@@ -15,10 +15,9 @@ shader "Lit/StandardSpec" {
         normalMap("Normal Map") : texture = "_flatNormalTexture"
         detailNormalMap("Detail Normal Map") : texture = "_flatNormalTexture"
         detailRepeat("Detail Repeat") : float = "8"
-        _ANISO("Anisotropy") : enum "None;Rotation;Texture" = "0" (shaderDefine)
-        anisotropyMap("Anisotropy Map") : texture = "_whiteTexture"
-        anisotropyRotation("Anisotropy Rotation") : float range - 1.0 1.0 0.01 = "0.0"
-        anisotropyScale("Anisotropy Scale") : float range 0 1.0 0.01 = "1.0"
+        _ANISO("Anisotropy") : enum "None;Value;Texture" = "0" (shaderDefine)
+        anisotropyMap("Anisotropy Map") : texture = "_flatNormalTexture"
+        anisotropy("Anisotropy") : float range - 1.0 1.0 0.01 = "0.0"
         _CLEARCOAT("Clear Coat") : enum "None;Scale;Texture (R);From Albedo Alpha;From Specular Alpha" = "0" (shaderDefine)
         clearCoatMap("Clear Coat Map") : texture = "_whiteTexture"
         clearCoatScale("Clear Coat Scale") : float range 0 1.0 0.01 = "1.0"

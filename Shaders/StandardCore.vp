@@ -3,7 +3,7 @@ in LOWP vec3 in_normal      : NORMAL;
 in LOWP vec4 in_color       : COLOR;
 in MEDIUMP vec2 in_st       : TEXCOORD0;
 
-#if _NORMAL != 0
+#if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
     in LOWP vec4 in_tangent : TANGENT;
 #endif
 
@@ -27,21 +27,21 @@ out MEDIUMP vec2 v2f_tex;
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     out vec3 v2f_viewVector;
 
-    #if _NORMAL == 0
-        out vec3 v2f_worldPos;
-    #else
+    #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
         out vec4 v2f_toWorldAndPackedWorldPosS;
         out vec4 v2f_toWorldAndPackedWorldPosT;
         out vec4 v2f_toWorldAndPackedWorldPosR;
+    #else
+        out vec3 v2f_worldPos;
     #endif
 #endif
 
 #ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.vp"
+    $include "ShadowLibrary.vp"
 #endif
 
 #if defined(INSTANCING)
-$include "Instancing.vp"
+    $include "Instancing.vp"
 #else
     uniform vec4 localToWorldMatrixS;
     uniform vec4 localToWorldMatrixT;
@@ -77,23 +77,7 @@ uniform mat4 lightTextureMatrix;
 uniform bool useShadowMap;
 
 void main() {
-#if _NORMAL == 0
-    vec4 localPos;
-    vec3 localNormal;
-
-    #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-        vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-    #else
-        vec3 vNormal = in_normal.xyz;
-    #endif
-    
-    #ifdef GPU_SKINNING
-        skinningMatrix(in_position, localPos, vNormal, localNormal);
-    #else
-        localPos = in_position;
-        localNormal = vNormal;
-    #endif
-#else
+#if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
     vec4 localPos;
     vec3 localNormal;
     vec3 localTangent;
@@ -115,6 +99,22 @@ void main() {
         localTangent = vTangent.xyz;
         localBiTangent = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
     #endif
+#else
+    vec4 localPos;
+    vec3 localNormal;
+
+    #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+        vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
+    #else
+        vec3 vNormal = in_normal.xyz;
+    #endif
+    
+    #ifdef GPU_SKINNING
+        skinningMatrix(in_position, localPos, vNormal, localNormal);
+    #else
+        localPos = in_position;
+        localNormal = vNormal;
+    #endif
 #endif
 
     vec4 worldPos;
@@ -127,13 +127,7 @@ void main() {
     vec3 worldV = viewOrigin.xyz - worldPos.xyz;
     v2f_viewVector = worldV;
 
-    #if _NORMAL == 0
-        v2f_normal.x = dot(localToWorldMatrixS.xyz, localNormal);
-        v2f_normal.y = dot(localToWorldMatrixT.xyz, localNormal);
-        v2f_normal.z = dot(localToWorldMatrixR.xyz, localNormal);
-
-        v2f_worldPos = worldPos.xyz;
-    #else
+    #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
         mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
 
         #if _PARALLAX
@@ -156,6 +150,12 @@ void main() {
             v2f_toWorldAndPackedWorldPosT.w = worldPos.y;
             v2f_toWorldAndPackedWorldPosR.w = worldPos.z;
         #endif 
+    #else
+        v2f_normal.x = dot(localToWorldMatrixS.xyz, localNormal);
+        v2f_normal.y = dot(localToWorldMatrixT.xyz, localNormal);
+        v2f_normal.z = dot(localToWorldMatrixR.xyz, localNormal);
+
+        v2f_worldPos = worldPos.xyz;
     #endif
 #endif
 

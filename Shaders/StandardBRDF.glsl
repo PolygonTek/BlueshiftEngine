@@ -27,36 +27,36 @@ vec3 DiffuseBRDF(float NdotL, float NdotV, float VdotH, vec3 albedo, float rough
 #endif
 }
 
-#if _ANISO == 1
-vec3 AnisotropicBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, float linearRoughness, vec3 F0, float FSecondFactor, out vec3 Fs) {
+#if _ANISO != 0
+vec3 AnisotropicBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, float linearRoughness, vec3 F0, float FSecondFactor, out vec3 F) {
+    float TdotL = dot(shading.anisotropicT, shading.l);
+    float BdotL = dot(shading.anisotropicB, shading.l);
+    float TdotV = dot(shading.anisotropicT, shading.v);
+    float BdotV = dot(shading.anisotropicB, shading.v);
+    float TdotH = dot(shading.anisotropicT, H);
+    float BdotH = dot(shading.anisotropicB, H);
+
     // Anisotropic parameters: at and ab are the roughness along the tangent and bitangent.
     // to simplify materials, we derive them from a single roughness parameter.
     // Kulla 2017, "Revisiting Physically Based Shading at Imageworks"
     float at = max(linearRoughness * (1.0 + shading.anisotropy), MIN_LINEAR_ROUGHNESS);
     float ab = max(linearRoughness * (1.0 - shading.anisotropy), MIN_LINEAR_ROUGHNESS);
-
-    float TdotL = saturate(dot(shading.anisotropicT, shading.l));
-    float BdotL = saturate(dot(shading.anisotropicB, shading.l));
-    float TdotV = saturate(dot(shading.anisotropicT, shading.v));
-    float BdotV = saturate(dot(shading.anisotropicB, shading.v));
-    float TdotH = saturate(dot(shading.anisotropicT, H));
-    float BdotH = saturate(dot(shading.anisotropicB, H));
-
+    
     // Normal distribution term
     float D = D_GGXAniso(NdotH, TdotH, BdotH, at, ab);
-
+    
     // Geometric visibility term
     float G = G_SmithGGXCorrelatedAniso(NdotV, NdotL, TdotV, BdotV, TdotL, BdotL, at, ab);
-
+    
     // Fresnel reflection term
-    Fs = F0 + (vec3(1.0) - F0) * FSecondFactor;
+    F = F0 + (vec3(1.0) - F0) * FSecondFactor;
 
     // Microfacets specular BRDF = D * G * F (G term is already divided by (4 * NdotL * NdotV))
-    return D * G * Fs;
+    return D * G * F;
 }
 #endif
 
-vec3 IsotropicBRDF(float NdotL, float NdotV, float NdotH, float VdotH, float roughness, float linearRoughness, vec3 F0, float FSecondFactor, out vec3 Fs) {
+vec3 IsotropicBRDF(float NdotL, float NdotV, float NdotH, float VdotH, float roughness, float linearRoughness, vec3 F0, float FSecondFactor, out vec3 F) {
     // Normal distribution term
 #if PBR_SPECULAR_D == PBR_SPECULAR_D_BLINN
     float D = D_Blinn(NdotH, linearRoughness);
@@ -76,35 +76,35 @@ vec3 IsotropicBRDF(float NdotL, float NdotV, float NdotH, float VdotH, float rou
 #elif PBR_SPECULAR_G == PBR_SPECULAR_G_GGX
     // Disney's modification to reduce "hotness" by remapping roughness using (roughness + 1) / 2 before squaring.
     float k = roughness + 1.0; // k for direct lighting
-    float G = G_SchlickGGX(NdotV, NdotL, (k * k) * 0.125);
+    float G = G_Schlick(NdotV, NdotL, k * k * 0.25);
 #endif
 
     // Fresnel reflection term
-    Fs = F0 + (vec3(1.0) - F0) * FSecondFactor;
+    F = F0 + (vec3(1.0) - F0) * FSecondFactor;
 
     // Microfacets specular BRDF = D * G * F (G term is already divided by (4 * NdotL * NdotV))
-    return D * G * Fs;
+    return D * G * F;
 }
 
 //----------------------------------
 // Specular BRDF
 //----------------------------------
-vec3 SpecularBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, vec3 F0, float FSecondFactor, out vec3 Fs) {
+vec3 SpecularBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, vec3 F0, float FSecondFactor, out vec3 F) {
     // We adopted Disney's reparameterization of a = roughness^2
     // a means perceptual linear roughness.
     float linearRoughness = roughness * roughness;
 
-#if _ANISO == 1
-    return AnisotropicBRDF(H, NdotL, NdotV, NdotH, VdotH, roughness, linearRoughness, F0, FSecondFactor, Fs);
+#if _ANISO != 0
+    return AnisotropicBRDF(H, NdotL, NdotV, NdotH, VdotH, roughness, linearRoughness, F0, FSecondFactor, F);
 #else
-    return IsotropicBRDF(NdotL, NdotV, NdotH, VdotH, roughness, linearRoughness, F0, FSecondFactor, Fs);
+    return IsotropicBRDF(NdotL, NdotV, NdotH, VdotH, roughness, linearRoughness, F0, FSecondFactor, F);
 #endif
 }
 
 //----------------------------------
 // ClearCoat BRDF
 //----------------------------------
-float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float clearCoatRoughness, float FSecondFactor, out float Fcc) {
+float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float clearCoatRoughness, float FSecondFactor, out float F) {
     float clearCoatLinearRoughness = clearCoatRoughness * clearCoatRoughness;
 
 #if PBR_CLEARCOAT_D == PBR_SPECULAR_D_GGX
@@ -118,10 +118,10 @@ float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float
     // IOR of clear coatted layer is 1.5
     float F0 = 0.04; // 0.04 == IorToF0(1.5)
     // F_Schlick
-    Fcc = F0 + (1.0 - F0) * FSecondFactor;
-    Fcc *= clearCoatReflectivity;
+    F = F0 + (1.0 - F0) * FSecondFactor;
+    F *= clearCoatReflectivity;
 
-    return D * G * Fcc;
+    return D * G * F;
 }
 
 //----------------------------------

@@ -80,6 +80,8 @@ float D_GGX(float NdotH, float a) {
     return a2 * INV_PI / (denom * denom + 1e-7);
 }
 
+// Anisotropic GGX
+// Burley 2012, Physically-Based Shading at Disney
 float D_GGXAniso(float NdotH, float XdotH, float YdotH, float ax, float ay) {
     float ax2 = ax * ax;
     float ay2 = ay * ay;
