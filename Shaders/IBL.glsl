@@ -203,15 +203,15 @@ vec3 IBLSpecularGGX(samplerCube radMap) {
 
             vec3 F = F_SchlickSG(shading.specular.rgb, VdotH);
 
-            // BRDF = D * G * F / 4 (G term is divided by (NdotL * NdotV))
+            // BRDF = D * G * F (G term is divided by (4 * NdotL * NdotV))
             // PDF(H) = D * NdotH
             // PDF(L) = PDF(H) * dH / dL = D * NdotH / (4 * VdotH) (ref. PBRT 2nd Edition p698)
             //
             // Integrate { Li * BRDF * NdotL }
             // F_N = 1/N Sigma^N { Li * BRDF * NdotL / PDF(L)  }
-            //     = 1/N Sigma^N { (Li * D * G * F * NdotL / 4) / (D * NdotH / (4 * VdotH)) }
-            //     = 1/N Sigma^N { Li * G * F * NdotL * VdotH / NdotH }
-            specularLighting += radiance * G * F * NdotL * VdotH / NdotH;
+            //     = 1/N Sigma^N { (Li * D * G * F * NdotL) / (D * NdotH / (4 * VdotH)) }
+            //     = 1/N Sigma^N { 4.0 * Li * G * F * NdotL * VdotH / NdotH }
+            specularLighting += 4.0 * radiance * G * F * NdotL * VdotH / NdotH;
         }
     }
 
@@ -253,7 +253,7 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap) {
 
             float G = G_SchlickGGX(NdotV, NdotL, k);
 
-            specularLighting += texCUBE(radMap, Ls).rgb * G * F * NdotL * VdotH / NdotH;
+            specularLighting += 4.0 * texCUBE(radMap, Ls).rgb * G * F * NdotL * VdotH / NdotH;
         }
     }
 

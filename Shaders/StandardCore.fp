@@ -167,6 +167,10 @@ struct ShadingParms {
     vec3 l; // light vector in world space
     vec3 n; // normal vector in world space
 
+    vec3 toWorldMatrixS;
+    vec3 toWorldMatrixT;
+    vec3 toWorldMatrixR;
+
     vec4 diffuse;
     vec4 specular;
     float roughness;
@@ -230,6 +234,35 @@ ShadingParms shading;
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
 void PrepareShadingParms(vec4 albedo) {
+    shading.v = normalize(v2f_viewVector.yzx);
+
+#if _NORMAL != 0
+    shading.toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
+    shading.toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
+    shading.toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
+    //shading.toWorldMatrixR = normalize(cross(shading.toWorldMatrixS, shading.toWorldMatrixT) * v2f_toWorldT.w);
+#endif
+
+#if _NORMAL == 0
+    shading.n = normalize(v2f_normal.yzx);
+#else
+    vec3 tangentN = normalize(GetNormal(normalMap, baseTc));
+
+    #if _NORMAL == 2
+        vec3 tangentN2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
+        tangentN = normalize(tangentN + tangentN2);
+    #endif
+
+    // Convert coordinates from tangent space to GL world space
+    shading.n.x = dot(shading.toWorldMatrixS, tangentN);
+    shading.n.y = dot(shading.toWorldMatrixT, tangentN);
+    shading.n.z = dot(shading.toWorldMatrixR, tangentN);
+#endif
+
+#ifdef TWO_SIDED
+    shading.n = gl_FrontFacing ? shading.n : -shading.n;
+#endif
+
 #if defined(STANDARD_METALLIC_LIGHTING)
     #if _METALLIC == 0
         vec4 metallic = vec4(1.0, 0.0, 0.0, 0.0);
@@ -409,8 +442,8 @@ void PrepareShadingParms(vec4 albedo) {
     shading.specularPower = glossinessToSpecularPower(glossiness);
 #endif
 
-// Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
-shading.roughness = clamp(shading.roughness, MIN_ROUGHNESS, 1.0);
+    // Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
+    shading.roughness = clamp(shading.roughness, MIN_ROUGHNESS, 1.0);
 
 #if (defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)) && _CLEARCOAT != 0
     shading.specular.rgb = mix(shading.specular.rgb, F0ToClearCoatToSurfaceF0(shading.specular.rgb), shading.clearCoat);
@@ -422,13 +455,13 @@ shading.roughness = clamp(shading.roughness, MIN_ROUGHNESS, 1.0);
         vec3 tangentClearCoatN = normalize(GetNormal(clearCoatNormalMap, baseTc));
 
         // Convert coordinates from tangent space to GL world space
-        shading.clearCoatN.x = dot(toWorldMatrixS, tangentClearCoatN);
-        shading.clearCoatN.y = dot(toWorldMatrixT, tangentClearCoatN);
-        shading.clearCoatN.z = dot(toWorldMatrixR, tangentClearCoatN);
+        shading.clearCoatN.x = dot(shading.toWorldMatrixS, tangentClearCoatN);
+        shading.clearCoatN.y = dot(shading.toWorldMatrixT, tangentClearCoatN);
+        shading.clearCoatN.z = dot(shading.toWorldMatrixR, tangentClearCoatN);
     #elif _NORMAL == 0
         shading.clearCoatN = shading.n;
     #else
-        shading.clearCoatN = normalize(vec3(toWorldMatrixS.z, toWorldMatrixT.z, toWorldMatrixR.z));
+        shading.clearCoatN = normalize(vec3(shading.toWorldMatrixS.z, shading.toWorldMatrixT.z, shading.toWorldMatrixR.z));
     #endif
 #endif
 
@@ -465,35 +498,6 @@ void main() {
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    shading.v = normalize(v2f_viewVector.yzx);
-
-    #if _NORMAL != 0
-        vec3 toWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
-        vec3 toWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
-        vec3 toWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
-        //vec3 toWorldMatrixR = normalize(cross(toWorldMatrixS, toWorldMatrixT) * v2f_toWorldT.w);
-    #endif
-
-    #if _NORMAL == 0
-        shading.n = normalize(v2f_normal.yzx);
-    #else
-        vec3 tangentN = normalize(GetNormal(normalMap, baseTc));
-
-        #if _NORMAL == 2
-            vec3 tangentN2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
-            tangentN = normalize(tangentN + tangentN2);
-        #endif
-
-        // Convert coordinates from tangent space to GL world space
-        shading.n.x = dot(toWorldMatrixS, tangentN);
-        shading.n.y = dot(toWorldMatrixT, tangentN);
-        shading.n.z = dot(toWorldMatrixR, tangentN);
-    #endif
-
-    #ifdef TWO_SIDED
-        shading.n = gl_FrontFacing ? shading.n : -shading.n;
-    #endif
-
     PrepareShadingParms(albedo);
 #endif
 

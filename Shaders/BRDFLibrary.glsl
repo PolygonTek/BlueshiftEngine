@@ -85,32 +85,38 @@ float D_GGXAniso(float NdotH, float XdotH, float YdotH, float ax, float ay) {
     float ay2 = ay * ay;
     float axy = ax * ay;
     float denom = XdotH * XdotH / ax2 + YdotH * YdotH / ay2 + NdotH * NdotH;
-    return INV_PI * axy * denom * denom;
+    return INV_PI / (axy * denom * denom);
 }
 
 //---------------------------------------------------
-// Geometric visibility functions - divided by (NdotL * NdotV)
+// Geometric visibility functions - divided by (4 * NdotL * NdotV)
 //---------------------------------------------------
 
 float G_Neumann(float NdotV, float NdotL) {
-    return 1.0 / max(NdotL, NdotV);
+    return 0.25 / max(NdotL, NdotV);
 }
 
 // Kelemen 2001, "A Microfacet Based Coupled Specular-Matte BRDF Model with Importance Sampling"
 float G_Kelemen(float VdotH) {
-    return 1.0 / (VdotH * VdotH);
+    return 0.25 / (VdotH * VdotH);
 }
 
 float G_CookTorrance(float NdotV, float NdotL, float NdotH, float VdotH) {
     float G = min(1.0, min(2.0 * NdotH * NdotV / VdotH, (2.0 * NdotH * NdotL) / VdotH));
-    return G / (NdotL * NdotV);
+    return G / (4.0 * NdotL * NdotV);
 }
 
 float G_SchlickGGX(float NdotV, float NdotL, float k) {
     float oneMinusK = 1.0 - k;
     float GV = NdotV * oneMinusK + k;
     float GL = NdotL * oneMinusK + k;
-    return 1.0 / (GL * GV);
+    return 0.25 / (GL * GV);
+}
+
+float G_SmithGGXCorrelatedAniso(float NdotV, float NdotL, float XdotV, float YdotV, float XdotL, float YdotL, float ax, float ay) {
+    float lambdaV = NdotL * length(vec3(ax * XdotV, ay * YdotV, NdotV));
+    float lambdaL = NdotV * length(vec3(ax * XdotL, ay * YdotL, NdotL));
+    return 0.5 / (lambdaV + lambdaL);
 }
 
 //---------------------------------------------------

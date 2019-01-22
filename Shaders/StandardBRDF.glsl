@@ -51,8 +51,8 @@ vec3 AnisotropicBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH,
     // Fresnel reflection term
     Fs = F0 + (vec3(1.0) - F0) * FSecondFactor;
 
-    // Microfacets specular BRDF = D * G * F / 4 (G term is already divided by (NdotL * NdotV))
-    return D * G * Fs * 0.25;
+    // Microfacets specular BRDF = D * G * F (G term is already divided by (4 * NdotL * NdotV))
+    return D * G * Fs;
 }
 #endif
 
@@ -82,8 +82,8 @@ vec3 IsotropicBRDF(float NdotL, float NdotV, float NdotH, float VdotH, float rou
     // Fresnel reflection term
     Fs = F0 + (vec3(1.0) - F0) * FSecondFactor;
 
-    // Microfacets specular BRDF = D * G * F / 4 (G term is already divided by (NdotL * NdotV))
-    return D * G * Fs * 0.25;
+    // Microfacets specular BRDF = D * G * F (G term is already divided by (4 * NdotL * NdotV))
+    return D * G * Fs;
 }
 
 //----------------------------------
@@ -121,7 +121,7 @@ float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float
     Fcc = F0 + (1.0 - F0) * FSecondFactor;
     Fcc *= clearCoatReflectivity;
 
-    return D * G * Fcc * 0.25;
+    return D * G * Fcc;
 }
 
 //----------------------------------

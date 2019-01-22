@@ -46,7 +46,7 @@ shader "GenGGXIntegrationLUT" {
 
                     if (NdotL > 0.0) {
                         float G = G_SchlickGGX(NdotV, NdotL, k);
-                        // BRDF/F = D * G / 4 (G term is divided by (NdotL * NdotV))
+                        // BRDF/F = D * G (G term is divided by (4 * NdotL * NdotV))
                         //
                         // PDF(H) = D * NdotH
                         // PDF(L) = PDF(H) * dH / dL = D * NdotH / (4 * VdotH) (ref. PBRT 2nd Edition p698)
@@ -54,9 +54,9 @@ shader "GenGGXIntegrationLUT" {
                         // Integrate { BRDF/F * NdotL }
                         //
                         // F_N = 1/N Sigma^N { BRDF/F * NdotL / PDF(L) }
-                        //     = 1/N Sigma^N { (D * G * NdotL / 4) / (D * NdotH / (4 * VdotH)) }
-                        //     = 1/N Sigma^N { G * NdotL * VdotH / NdotH }
-                        float G_Vis = G * NdotL * VdotH / NdotH;
+                        //     = 1/N Sigma^N { (D * G * NdotL) / (D * NdotH / (4 * VdotH)) }
+                        //     = 1/N Sigma^N { 4 * G * NdotL * VdotH / NdotH }
+                        float G_Vis = 4.0 * G * NdotL * VdotH / NdotH;
 
                         float Fc = pow5(1.0 - VdotH);
 
