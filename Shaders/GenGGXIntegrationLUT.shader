@@ -45,7 +45,7 @@ shader "GenGGXIntegrationLUT" {
                     float VdotH = max(dot(V, H), 0.0);
 
                     if (NdotL > 0.0) {
-                        float G = G_SchlickGGX(NdotV, NdotL, k);
+                        float G = G_Schlick(NdotV, NdotL, k);
                         // BRDF/F = D * G (G term is divided by (4 * NdotL * NdotV))
                         //
                         // PDF(H) = D * NdotH

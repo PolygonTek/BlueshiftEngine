@@ -199,7 +199,7 @@ vec3 IBLSpecularGGX(samplerCube radMap) {
             float NdotV = max(dot(shading.n, shading.v), 0.0);
             float VdotH = max(dot(shading.v, H), 0.0);
 
-            float G = G_SchlickGGX(NdotV, NdotL, k);
+            float G = G_Schlick(NdotV, NdotL, k);
 
             vec3 F = F_SchlickSG(shading.specular.rgb, VdotH);
 
@@ -251,7 +251,7 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap) {
             float NdotH = max(dot(shading.n, H), 0.0);
             float NdotV = max(dot(shading.n, shading.v), 0.0);
 
-            float G = G_SchlickGGX(NdotV, NdotL, k);
+            float G = G_Schlick(NdotV, NdotL, k);
 
             specularLighting += 4.0 * texCUBE(radMap, Ls).rgb * G * F * NdotL * VdotH / NdotH;
         }

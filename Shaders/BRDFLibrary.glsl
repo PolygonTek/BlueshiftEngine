@@ -85,14 +85,17 @@ float D_GGX(float NdotH, float a) {
 float D_GGXAniso(float NdotH, float XdotH, float YdotH, float ax, float ay) {
     float ax2 = ax * ax;
     float ay2 = ay * ay;
-    float axy = ax * ay;
     float denom = XdotH * XdotH / ax2 + YdotH * YdotH / ay2 + NdotH * NdotH;
-    return INV_PI / (axy * denom * denom);
+    return 1.0 / (PI * ax * ay * denom * denom);
 }
 
 //---------------------------------------------------
 // Geometric visibility functions - divided by (4 * NdotL * NdotV)
 //---------------------------------------------------
+
+float G_Implicit() {
+    return 0.25;
+}
 
 float G_Neumann(float NdotV, float NdotL) {
     return 0.25 / max(NdotL, NdotV);
@@ -104,15 +107,18 @@ float G_Kelemen(float VdotH) {
 }
 
 float G_CookTorrance(float NdotV, float NdotL, float NdotH, float VdotH) {
-    float G = min(1.0, min(2.0 * NdotH * NdotV / VdotH, (2.0 * NdotH * NdotL) / VdotH));
+    float k = 2.0 * NdotH / VdotH;
+    float G = min(1.0, min(k * NdotV, k * NdotL));
     return G / (4.0 * NdotL * NdotV);
 }
 
-float G_SchlickGGX(float NdotV, float NdotL, float k) {
+float G_Schlick(float NdotV, float NdotL, float k) {
     float oneMinusK = 1.0 - k;
-    float GV = NdotV * oneMinusK + k;
-    float GL = NdotL * oneMinusK + k;
-    return 0.25 / (GL * GV);
+    //float GV = NdotV * oneMinusK + k;
+    //float GL = NdotL * oneMinusK + k;
+    //return 0.25 / (GL * GV);
+    vec2 G = vec2(NdotV, NdotL) * oneMinusK + k;
+    return 0.25 * G.x * G.y;
 }
 
 float G_SmithGGXCorrelatedAniso(float NdotV, float NdotL, float XdotV, float YdotV, float XdotL, float YdotL, float ax, float ay) {
