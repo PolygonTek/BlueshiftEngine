@@ -79,6 +79,17 @@ vec3 ToneMapFilmicACES(vec3 x) {
     return (x * (a * x + b)) / (x * (c * x + d) + e);
 }
 
+// https://knarkowicz.wordpress.com/2016/08/31/hdr-display-first-steps/
+vec3 ToneMapFilmicACESRec2020(vec3 x) {
+    float a = 15.8;
+    float b = 2.12;
+    float c = 1.2;
+    float d = 5.92;
+    float e = 1.9;
+
+    return (x * (a * x + b)) / (x * (c * x + d) + e);
+}
+
 // Unreal 3, Documentation: "Color Grading"
 // Adapted to be close to ToneMapFilmicACES, with similar range
 vec3 ToneMapFilmicUnreal3(vec3 x) {
@@ -114,8 +125,8 @@ vec3 ToneMapFilmicUchimura(vec3 x, float P, float a, float m, float l, float c, 
     float l0 = ((P - m) * l) / a;
     float L0 = m - m / a;
     float L1 = m + (1.0 - m) / a;
-    float S0 = m + l0;
     float S1 = m + a * l0;
+    float S0 = m + l0;
     float C2 = (a * P) / (P - S1);
     float CP = -C2 / P;
 
