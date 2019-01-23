@@ -166,7 +166,7 @@ public:
 
     void                    SetConstant1f(int index, const float constant) const;
     void                    SetConstant2f(int index, const float *constant) const;
-    void                    SetConstant3f(int index, const float *constant) const;	
+    void                    SetConstant3f(int index, const float *constant) const;
     void                    SetConstant4f(int index, const float *constant) const;
     void                    SetConstant2f(int index, const Vec2 &constant) const;
     void                    SetConstant3f(int index, const Vec3 &constant) const;

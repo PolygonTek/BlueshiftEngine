@@ -29,7 +29,7 @@ void Console::Init() {
     cmdSystem.AddCommand("clear", Cmd_ConClear);
     cmdSystem.AddCommand("condump", Cmd_ConDump);
 
-    textLines.SetCount(1024);
+    textLines.SetCount(4096);
 
     currentLineIndex = 0;
 
