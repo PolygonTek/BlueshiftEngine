@@ -154,9 +154,9 @@ vec3 DirectLit_Standard() {
     float Fcc;
     float Ccc = ClearCoatBRDF(clearCoatNdotH, VdotH, shading.clearCoat, shading.clearCoatRoughness, FSecondFactor, Fcc);
 
-    float attenuation = 1.0 - Fcc;
+    float Fattenuation = 1.0 - Fcc;
 
-    vec3 color = (Cd + Cs) * attenuation * attenuation * NdotL;
+    vec3 color = (Cd + Cs) * Fattenuation * Fattenuation * NdotL;
 
     color += vec3(Ccc * clearCoatNdotL);
 #endif
@@ -241,9 +241,9 @@ vec3 IndirectLit_Standard(vec3 S) {
     float Fcc = F0 + (1.0 - F0) * FSecondFactor;
     Fcc *= shading.clearCoat;
 
-    float attenuation = 1.0 - Fcc;
+    float Fattenuation = 1.0 - Fcc;
 
-    vec3 color = (Cd + Cs) * attenuation * attenuation + Ccc;
+    vec3 color = (Cd + Cs) * Fattenuation * Fattenuation + Ccc;
 #endif
 
     return color;

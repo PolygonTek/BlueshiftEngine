@@ -472,7 +472,7 @@ void PrepareShadingParms(vec4 albedo) {
     #if _EMISSION == 1
         shading.emission = emissionColor * emissionScale;
     #elif _EMISSION == 2
-        shading.emission = tex2D(emissionMap, baseTc).rgb * emissionColor * emissionScale;
+        shading.emission = tex2D(emissionMap, baseTc).rgb * emissionScale;
     #endif
 #endif
 }

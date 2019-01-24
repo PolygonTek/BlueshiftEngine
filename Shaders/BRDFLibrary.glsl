@@ -183,7 +183,7 @@ float IorToF0(float transmittedIor, float incidentIor) {
 }
 
 float IorToF0(float transmittedIor) {
-    float r = (1.0 + transmittedIor) / (1.0 - transmittedIor);
+    float r = (transmittedIor - 1.0) / (transmittedIor + 1.0);
     return r * r;
 }
 
