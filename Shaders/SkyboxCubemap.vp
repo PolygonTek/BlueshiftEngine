@@ -7,9 +7,7 @@ out MEDIUMP vec3 v2f_texCoord;
 uniform mat4 modelViewMatrix;
 uniform mat4 modelViewProjectionMatrix;
 
-uniform vec4 localToWorldMatrixS;
-uniform vec4 localToWorldMatrixT;
-uniform vec4 localToWorldMatrixR;
+uniform mat4x3 localToWorldMatrix;
 uniform vec4 lightOrigin;
 uniform vec4 textureMatrixS;
 uniform vec4 textureMatrixT;

@@ -22,6 +22,8 @@ shader "GenGGXIntegrationLUT" {
         vec2 integrateBRDF(float NdotV, float roughness) {
             vec3 N = vec3(0.0, 0.0, 1.0);
 
+            mat3 tangentToWorld = GetLocalFrame(N);
+
             // theta = cos^-1(NdotV), phi = 0
             vec3 V;
             V.x = sqrt(1.0 - NdotV * NdotV); // sin(theta) cos(phi)
@@ -37,7 +39,7 @@ shader "GenGGXIntegrationLUT" {
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
-                    vec3 H = importanceSampleGGX(vec2(x, y), roughness, N);
+                    vec3 H = tangentToWorld * ImportanceSampleGGX(vec2(x, y), roughness);
                     vec3 L = normalize(2.0 * dot(V, H) * H - V);
 
                     float NdotL = max(L.z, 0.0);

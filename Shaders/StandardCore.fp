@@ -69,9 +69,9 @@ in MEDIUMP vec2 v2f_tex;
     in vec3 v2f_viewVector;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        in vec4 v2f_toWorldAndPackedWorldPosS;
-        in vec4 v2f_toWorldAndPackedWorldPosT;
-        in vec4 v2f_toWorldAndPackedWorldPosR;
+        in vec4 v2f_tangentToWorldAndPackedWorldPosS;
+        in vec4 v2f_tangentToWorldAndPackedWorldPosT;
+        in vec4 v2f_tangentToWorldAndPackedWorldPosR;
     #else
         in vec3 v2f_worldPos;
     #endif
@@ -166,9 +166,7 @@ struct ShadingParms {
     vec3 l; // light vector in world space
     vec3 n; // normal vector in world space
 
-    vec3 tagentToWorldMatrixS;
-    vec3 tagentToWorldMatrixT;
-    vec3 tagentToWorldMatrixR;
+    mat3 tagentToWorldMatrix;
 
     vec4 diffuse;
     vec4 specular;
@@ -236,10 +234,9 @@ void PrepareShadingParms(vec4 albedo) {
     shading.v = normalize(v2f_viewVector.yzx);
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-    shading.tagentToWorldMatrixS = normalize(v2f_toWorldAndPackedWorldPosT.xyz);
-    shading.tagentToWorldMatrixT = normalize(v2f_toWorldAndPackedWorldPosR.xyz);
-    shading.tagentToWorldMatrixR = normalize(v2f_toWorldAndPackedWorldPosS.xyz);
-    //shading.tagentToWorldMatrixR = normalize(cross(shading.tagentToWorldMatrixS, shading.tagentToWorldMatrixT) * v2f_toWorldT.w);
+    shading.tagentToWorldMatrix[0] = normalize(v2f_tangentToWorldAndPackedWorldPosS.yzx);
+    shading.tagentToWorldMatrix[1] = normalize(v2f_tangentToWorldAndPackedWorldPosT.yzx);
+    shading.tagentToWorldMatrix[2] = normalize(v2f_tangentToWorldAndPackedWorldPosR.yzx);
 
     #if _NORMAL != 0
         vec3 tangentN = normalize(GetNormal(normalMap, baseTc));
@@ -250,12 +247,9 @@ void PrepareShadingParms(vec4 albedo) {
         #endif
 
         // Convert coordinates from tangent space to GL world space
-        shading.n.x = dot(shading.tagentToWorldMatrixS, tangentN);
-        shading.n.y = dot(shading.tagentToWorldMatrixT, tangentN);
-        shading.n.z = dot(shading.tagentToWorldMatrixR, tangentN);
-        shading.n = normalize(shading.n);
+        shading.n = shading.tagentToWorldMatrix * tangentN;
     #else
-        shading.n = normalize(vec3(shading.tagentToWorldMatrixS.z, shading.tagentToWorldMatrixT.z, shading.tagentToWorldMatrixR.z));
+        shading.n = shading.tagentToWorldMatrix[2];
     #endif
 #else
     shading.n = normalize(v2f_normal.yzx);
@@ -445,7 +439,7 @@ void PrepareShadingParms(vec4 albedo) {
 
     shading.roughness = 1.0 - glossiness;
 
-    shading.specularPower = glossinessToSpecularPower(glossiness);
+    shading.specularPower = GlossinessToSpecularPower(glossiness);
 #endif
 
     // Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
@@ -453,22 +447,12 @@ void PrepareShadingParms(vec4 albedo) {
 
 #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
     #if _ANISO != 0
-        // Convert coordinates from tangent space to GL world space.
-        shading.anisotropicT.x = dot(shading.tagentToWorldMatrixS, anisotropyDir);
-        shading.anisotropicT.y = dot(shading.tagentToWorldMatrixT, anisotropyDir);
-        shading.anisotropicT.z = dot(shading.tagentToWorldMatrixR, anisotropyDir);
-        shading.anisotropicT = normalize(shading.anisotropicT);
-
-        //shading.anisotropicB.x = dot(shading.tagentToWorldMatrixS, vec3(0.0, 1.0, 0.0));
-        //shading.anisotropicB.y = dot(shading.tagentToWorldMatrixT, vec3(0.0, 1.0, 0.0));
-        //shading.anisotropicB.z = dot(shading.tagentToWorldMatrixR, vec3(0.0, 1.0, 0.0));
-
-        vec3 N = normalize(vec3(shading.tagentToWorldMatrixS.z, shading.tagentToWorldMatrixT.z, shading.tagentToWorldMatrixR.z));
-        shading.anisotropicB = normalize(cross(N, shading.anisotropicT));
+        shading.anisotropicT = shading.tagentToWorldMatrix * anisotropyDir;
+        shading.anisotropicB = normalize(cross(shading.tagentToWorldMatrix[2], shading.anisotropicT));
     #endif
 
     #if _CLEARCOAT != 0
-        shading.specular.rgb = mix(shading.specular.rgb, F0ToClearCoatToSurfaceF0(shading.specular.rgb), shading.clearCoat);
+        shading.specular.rgb = mix(shading.specular.rgb, F0ForAirInterfaceToF0ForClearCoat15(shading.specular.rgb), shading.clearCoat);
 
         // Remapping of clear coat roughness
         shading.clearCoatRoughness = mix(MIN_CLEARCOAT_ROUGHNESS, MAX_CLEARCOAT_ROUGHNESS, shading.clearCoatRoughness);
@@ -477,10 +461,7 @@ void PrepareShadingParms(vec4 albedo) {
             vec3 tangentClearCoatN = normalize(GetNormal(clearCoatNormalMap, baseTc));
 
             // Convert coordinates from tangent space to GL world space
-            shading.clearCoatN.x = dot(shading.tagentToWorldMatrixS, tangentClearCoatN);
-            shading.clearCoatN.y = dot(shading.tagentToWorldMatrixT, tangentClearCoatN);
-            shading.clearCoatN.z = dot(shading.tagentToWorldMatrixR, tangentClearCoatN);
-            shading.clearCoatN = normalize(shading.clearCoatN);
+            shading.clearCoatN = shading.tagentToWorldMatrix * tangentClearCoatN;
         #else
             shading.clearCoatN = shading.n;
         #endif
@@ -538,9 +519,9 @@ void main() {
         #ifdef PARALLAX_CORRECTED_INDIRECT_LIGHTING
             #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
                 vec3 worldPos;
-                worldPos.x = v2f_toWorldAndPackedWorldPosT.w;
-                worldPos.y = v2f_toWorldAndPackedWorldPosR.w;
-                worldPos.z = v2f_toWorldAndPackedWorldPosS.w;
+                worldPos.x = v2f_tangentToWorldAndPackedWorldPosS.w;
+                worldPos.y = v2f_tangentToWorldAndPackedWorldPosT.w;
+                worldPos.z = v2f_tangentToWorldAndPackedWorldPosR.w;
             #else
                 worldPos = v2f_worldPos.yzx;
             #endif

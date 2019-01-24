@@ -28,9 +28,9 @@ out MEDIUMP vec2 v2f_tex;
     out vec3 v2f_viewVector;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        out vec4 v2f_toWorldAndPackedWorldPosS;
-        out vec4 v2f_toWorldAndPackedWorldPosT;
-        out vec4 v2f_toWorldAndPackedWorldPosR;
+        out vec4 v2f_tangentToWorldAndPackedWorldPosS;
+        out vec4 v2f_tangentToWorldAndPackedWorldPosT;
+        out vec4 v2f_tangentToWorldAndPackedWorldPosR;
     #else
         out vec3 v2f_worldPos;
     #endif
@@ -43,12 +43,8 @@ out MEDIUMP vec2 v2f_tex;
 #if defined(INSTANCING)
     $include "Instancing.vp"
 #else
-    uniform vec4 localToWorldMatrixS;
-    uniform vec4 localToWorldMatrixT;
-    uniform vec4 localToWorldMatrixR;
-    uniform vec4 worldToLocalMatrixS;
-    uniform vec4 worldToLocalMatrixT;
-    uniform vec4 worldToLocalMatrixR;
+    uniform mat4x3 localToWorldMatrix;
+    uniform mat3 worldToLocalMatrix;
     uniform LOWP vec4 constantColor;
 #endif
 
@@ -117,43 +113,34 @@ void main() {
     #endif
 #endif
 
-    vec4 worldPos;
-    worldPos.x = dot(localToWorldMatrixS, localPos);
-    worldPos.y = dot(localToWorldMatrixT, localPos);
-    worldPos.z = dot(localToWorldMatrixR, localPos);
-    worldPos.w = 1.0;
+    vec4 worldPos = vec4(localToWorldMatrix * localPos, 1.0);
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     vec3 worldV = viewOrigin.xyz - worldPos.xyz;
+
     v2f_viewVector = worldV;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
-
         #if _PARALLAX
-            vec3 localV;
-            localV.x = dot(worldToLocalMatrixS.xyz, worldV);
-            localV.y = dot(worldToLocalMatrixT.xyz, worldV);
-            localV.z = dot(worldToLocalMatrixR.xyz, worldV);
+            vec3 localV = worldToLocalMatrix * worldV;
 
-            v2f_tangentViewDir = localV * TBN;
+            v2f_tangentViewDir.x = dot(localTangent, localV);
+            v2f_tangentViewDir.y = dot(localBiTangent, localV);
+            v2f_tangentViewDir.z = dot(localNormal, localV);
         #endif
 
         // Build the matrix to transform tangent space into GL world space
-        v2f_toWorldAndPackedWorldPosS.xyz = localToWorldMatrixS.xyz * TBN;
-        v2f_toWorldAndPackedWorldPosT.xyz = localToWorldMatrixT.xyz * TBN;
-        v2f_toWorldAndPackedWorldPosR.xyz = localToWorldMatrixR.xyz * TBN;
-        //v2f_toWorldAndPackedWorldPosT.w = in_tangent.w;
+        v2f_tangentToWorldAndPackedWorldPosS.xyz = localToWorldMatrix * vec4(localTangent, 0.0);
+        v2f_tangentToWorldAndPackedWorldPosT.xyz = localToWorldMatrix * vec4(localBiTangent, 0.0);
+        v2f_tangentToWorldAndPackedWorldPosR.xyz = localToWorldMatrix * vec4(localNormal, 0.0);
 
         #ifdef INDIRECT_LIGHTING
-            v2f_toWorldAndPackedWorldPosS.w = worldPos.x;
-            v2f_toWorldAndPackedWorldPosT.w = worldPos.y;
-            v2f_toWorldAndPackedWorldPosR.w = worldPos.z;
+            v2f_tangentToWorldAndPackedWorldPosS.w = worldPos.x;
+            v2f_tangentToWorldAndPackedWorldPosT.w = worldPos.y;
+            v2f_tangentToWorldAndPackedWorldPosR.w = worldPos.z;
         #endif 
     #else
-        v2f_normal.x = dot(localToWorldMatrixS.xyz, localNormal);
-        v2f_normal.y = dot(localToWorldMatrixT.xyz, localNormal);
-        v2f_normal.z = dot(localToWorldMatrixR.xyz, localNormal);
+        v2f_normal = localToWorldMatrix * vec4(localNormal, 0.0);
 
         v2f_worldPos = worldPos.xyz;
     #endif

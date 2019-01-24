@@ -677,13 +677,13 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
                 byte *instanceData = ((byte *)renderGlobal.instanceBufferData + numInstances * renderGlobal.instanceBufferOffsetAlignment);
 
                 const Mat3x4 &localToWorldMatrix = renderObject->GetObjectToWorldMatrix();
-                *(Mat3x4 *)instanceData = localToWorldMatrix; 
+                *(Mat3x4 *)instanceData = localToWorldMatrix;
                 instanceData += 48;
 
                 /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyInfoHashMap().Get("_PARALLAX")) {
-                    Mat3x4 worldToLocalMatrix = Mat3x4(renderObject->state.axis.Transpose(), -renderObject->state.origin);
-                    *(Mat3x4 *)instanceData = worldToLocalMatrix; 
-                    instanceData += 48;
+                    Mat3 worldToLocalMatrix = renderObject->state.axis.Transpose();
+                    *(Mat3 *)instanceData = worldToLocalMatrix; 
+                    instanceData += 36;
                 }*/
 
                 if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {

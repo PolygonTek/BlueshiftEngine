@@ -32,6 +32,8 @@ shader "GenPFCMGGXSpecular" {
 
             vec3 N = FaceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
 
+            mat3 tangentToWorld = GetLocalFrame(N);
+
             // As we don't know beforehand the view direction when convoluting the environment map,
             // We make a further approximation by assuming the view direction is always equal to the surface normal.
             // So we don't get lengthy reflections at grazing angles.
@@ -43,7 +45,7 @@ shader "GenPFCMGGXSpecular" {
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
-                    vec3 H = importanceSampleGGX(vec2(x, y), roughness, N);
+                    vec3 H = tangentToWorld * ImportanceSampleGGX(vec2(x, y), roughness);
                     vec3 L = 2.0 * dot(V, H) * H - V;
 
                     // Integrate { Li * NdotL }

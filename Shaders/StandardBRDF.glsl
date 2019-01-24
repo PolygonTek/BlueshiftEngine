@@ -29,25 +29,22 @@ vec3 DiffuseBRDF(float NdotL, float NdotV, float VdotH, vec3 albedo, float rough
 
 #if _ANISO != 0
 vec3 AnisotropicBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, float linearRoughness, vec3 F0, float FSecondFactor, out vec3 F) {
+    float TdotH = dot(shading.anisotropicT, H);
+    float BdotH = dot(shading.anisotropicB, H);
     float TdotL = dot(shading.anisotropicT, shading.l);
     float BdotL = dot(shading.anisotropicB, shading.l);
     float TdotV = dot(shading.anisotropicT, shading.v);
     float BdotV = dot(shading.anisotropicB, shading.v);
-    float TdotH = dot(shading.anisotropicT, H);
-    float BdotH = dot(shading.anisotropicB, H);
 
-    // Anisotropic parameters: at and ab are the roughness along the tangent and bitangent.
-    // to simplify materials, we derive them from a single roughness parameter.
-    // Kulla 2017, "Revisiting Physically Based Shading at Imageworks"
-    float at = max(linearRoughness * (1.0 + shading.anisotropy), MIN_LINEAR_ROUGHNESS);
-    float ab = max(linearRoughness * (1.0 - shading.anisotropy), MIN_LINEAR_ROUGHNESS);
-    
+    float at, ab;
+    RoughnessToAnisotropyRoughness(shading.anisotropy, linearRoughness, at, ab);
+
     // Normal distribution term
     float D = D_GGXAniso(NdotH, TdotH, BdotH, at, ab);
     
     // Geometric visibility term
     float G = G_SmithGGXCorrelatedAniso(NdotV, NdotL, TdotV, BdotV, TdotL, BdotL, at, ab);
-    
+
     // Fresnel reflection term
     F = F0 + (vec3(1.0) - F0) * FSecondFactor;
 
@@ -157,7 +154,9 @@ vec3 DirectLit_Standard() {
     float Fcc;
     float Ccc = ClearCoatBRDF(clearCoatNdotH, VdotH, shading.clearCoat, shading.clearCoatRoughness, FSecondFactor, Fcc);
 
-    vec3 color = (Cd + Cs) * (1.0 - Fcc) * NdotL;
+    float attenuation = 1.0 - Fcc;
+
+    vec3 color = (Cd + Cs) * attenuation * attenuation * NdotL;
 
     color += vec3(Ccc * clearCoatNdotL);
 #endif
@@ -242,7 +241,9 @@ vec3 IndirectLit_Standard(vec3 S) {
     float Fcc = F0 + (1.0 - F0) * FSecondFactor;
     Fcc *= shading.clearCoat;
 
-    vec3 color = (Cd + Cs) * (1.0 - Fcc) + Ccc;
+    float attenuation = 1.0 - Fcc;
+
+    vec3 color = (Cd + Cs) * attenuation * attenuation + Ccc;
 #endif
 
     return color;

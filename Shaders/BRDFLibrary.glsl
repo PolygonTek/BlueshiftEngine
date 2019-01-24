@@ -15,8 +15,16 @@
 #define MAX_CLEARCOAT_ROUGHNESS 0.6
 
 // Convert perceptual glossiness to specular power from [0, 1] to [2, 8192]
-float glossinessToSpecularPower(float glossiness) {
+float GlossinessToSpecularPower(float glossiness) {
     return exp2(11.0 * glossiness + 1.0); 
+}
+
+// Anisotropic parameters: at and ab are the roughness along the tangent and bitangent.
+// to simplify materials, we derive them from a single roughness parameter.
+// Kulla 2017, "Revisiting Physically Based Shading at Imageworks"
+void RoughnessToAnisotropyRoughness(float anisotropy, float linearRoughness, out float roughnessT, out float roughnessB) {
+    roughnessT = max(linearRoughness * (1.0 + anisotropy), MIN_LINEAR_ROUGHNESS);
+    roughnessB = max(linearRoughness * (1.0 - anisotropy), MIN_LINEAR_ROUGHNESS);
 }
 
 //---------------------------------------------------
@@ -70,7 +78,7 @@ float D_Blinn(float NdotH, float a) {
 float D_Beckmann(float NdotH, float a) {
     float a2 = a * a;
     float NdotH2 = NdotH * NdotH;
-    return exp((NdotH2 - 1.0) / (a2 * NdotH2)) * INV_PI / (a2 * NdotH2 * NdotH2);
+    return exp((NdotH2 - 1.0) / (a2 * NdotH2 + 1e-7)) * INV_PI / (a2 * NdotH2 * NdotH2 + 1e-7);
 }
 
 // Trowbridge-Reitz aka GGX
@@ -82,11 +90,23 @@ float D_GGX(float NdotH, float a) {
 
 // Anisotropic GGX
 // Burley 2012, Physically-Based Shading at Disney
-float D_GGXAniso(float NdotH, float XdotH, float YdotH, float ax, float ay) {
-    float ax2 = ax * ax;
-    float ay2 = ay * ay;
-    float denom = XdotH * XdotH / ax2 + YdotH * YdotH / ay2 + NdotH * NdotH;
-    return 1.0 / (PI * ax * ay * denom * denom);
+float D_GGXAniso(float NdotH, float TdotH, float BdotH, float roughnessT, float roughnessB) {
+#if 0
+    // scalar mul: 9
+    // scalar div: 3
+    float ax2 = roughnessT * roughnessT;
+    float ay2 = roughnessB * roughnessB;
+    float denom = TdotH * TdotH / ax2 + BdotH * BdotH / ay2 + NdotH * NdotH;
+    return 1.0 / (PI * roughnessT * roughnessB * denom * denom);
+#else
+    // scalar mul: 7
+    // scalar div: 1
+    // vec3 dot: 1
+    float a2 = roughnessT * roughnessB;
+    vec3 v = vec3(roughnessB * TdotH, roughnessT * BdotH, a2 * NdotH);
+    float a2_v2 = a2 / dot(v, v);
+    return INV_PI * a2 * a2_v2 * a2_v2;
+#endif
 }
 
 //---------------------------------------------------
@@ -98,32 +118,31 @@ float G_Implicit() {
 }
 
 float G_Neumann(float NdotV, float NdotL) {
-    return 0.25 / max(NdotL, NdotV);
+    return 0.25 / (max(NdotL, NdotV) + 1e-7);
 }
 
 // Kelemen 2001, "A Microfacet Based Coupled Specular-Matte BRDF Model with Importance Sampling"
 float G_Kelemen(float VdotH) {
-    return 0.25 / (VdotH * VdotH);
+    return 0.25 / (VdotH * VdotH + 1e-7);
 }
 
 float G_CookTorrance(float NdotV, float NdotL, float NdotH, float VdotH) {
     float k = 2.0 * NdotH / VdotH;
     float G = min(1.0, min(k * NdotV, k * NdotL));
-    return G / (4.0 * NdotL * NdotV);
+    return G / (4.0 * NdotL * NdotV + 1e-7);
 }
 
 float G_Schlick(float NdotV, float NdotL, float k) {
     float oneMinusK = 1.0 - k;
-    //float GV = NdotV * oneMinusK + k;
-    //float GL = NdotL * oneMinusK + k;
-    //return 0.25 / (GL * GV);
     vec2 G = vec2(NdotV, NdotL) * oneMinusK + k;
-    return 0.25 * G.x * G.y;
+    return 0.25 / (G.x * G.y + 1e-7);
 }
 
-float G_SmithGGXCorrelatedAniso(float NdotV, float NdotL, float XdotV, float YdotV, float XdotL, float YdotL, float ax, float ay) {
-    float lambdaV = NdotL * length(vec3(ax * XdotV, ay * YdotV, NdotV));
-    float lambdaL = NdotV * length(vec3(ax * XdotL, ay * YdotL, NdotL));
+// Smith Joint GGX Anisotropic Visibility
+// Taken from https://cedec.cesa.or.jp/2015/session/ENG/14698.html
+float G_SmithGGXCorrelatedAniso(float NdotV, float NdotL, float TdotV, float BdotV, float TdotL, float BdotL, float roughnessT, float roughnessB) {
+    float lambdaV = NdotL * length(vec3(roughnessT * TdotV, roughnessB * BdotV, NdotV));
+    float lambdaL = NdotV * length(vec3(roughnessT * TdotL, roughnessB * BdotL, NdotL));
     return 0.5 / (lambdaV + lambdaL);
 }
 
@@ -159,27 +178,27 @@ vec3 F_SchlickRoughness(vec3 F0, float roughness, float cosTheta) {
 //---------------------------------------------------
 
 float IorToF0(float transmittedIor, float incidentIor) {
-    float r = (incidentIor - transmittedIor) / (incidentIor + transmittedIor);
+    float r = (transmittedIor - incidentIor) / (transmittedIor + incidentIor);
     return r * r;
 }
 
 float IorToF0(float transmittedIor) {
-    float r = (1.0 - transmittedIor) / (1.0 + transmittedIor);
+    float r = (1.0 + transmittedIor) / (1.0 - transmittedIor);
     return r * r;
 }
 
 float F0ToIor(float f0) {
     float r = sqrt(f0);
-    return (1.0 - r) / (1.0 + r);
+    return (1.0 + r) / (1.0 - r);
 }
 
-vec3 F0ToClearCoatToSurfaceF0(vec3 airToSurfaceF0) {
-    // Approximation of IorToF0(F0ToIor(airToSurfaceF0), 1.5)
+vec3 F0ForAirInterfaceToF0ForClearCoat15(vec3 f0) {
+    // Approximation of IorToF0(F0ToIor(f0), 1.5)
     // This assumes that the clear coat layer has an IOR of 1.5
 #if defined(GL_ES)
-    return saturate(airToSurfaceF0 * (airToSurfaceF0 * 0.526868 + 0.529324) - 0.0482256);
+    return saturate(f0 * (f0 * 0.526868 + 0.529324) - 0.0482256);
 #else
-    return saturate(airToSurfaceF0 * (airToSurfaceF0 * (0.941892 - 0.263008 * airToSurfaceF0) + 0.346479) - 0.0285998);
+    return saturate(f0 * (f0 * (0.941892 - 0.263008 * f0) + 0.346479) - 0.0285998);
 #endif
 }
 

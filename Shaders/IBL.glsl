@@ -59,8 +59,9 @@ vec3 ImportanceSamplePhongSpecular(vec2 xi, float power) {
 // Returns importance sampled halfway direction for Beckmann specular NDF with respect to N
 vec3 ImportanceSampleBeckmann(vec2 xi, float roughness) {
     float alpha = roughness * roughness;
-    float cosTheta = sqrt(1.0 / (1.0 - alpha * alpha * log(xi.x)));
-    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float cosTheta2 = 1.0 / (1.0 - alpha * alpha * log(xi.x))
+    float cosTheta = sqrt(cosTheta2);
+    float sinTheta = sqrt(1.0 - cosTheta2);
     float phi = TWO_PI * xi.y;
 
     // Transform from spherical into cartesian
@@ -75,8 +76,9 @@ vec3 ImportanceSampleBeckmann(vec2 xi, float roughness) {
 // Returns importance sampled halfway direction for GGX specular NDF with respect to N
 vec3 ImportanceSampleGGX(vec2 xi, float roughness) {
     float alpha = roughness * roughness;
-    float cosTheta = sqrt(xi.x / (alpha * alpha * (1.0 - xi.x) + xi.x));
-    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float cosTheta2 = xi.x / (alpha * alpha * (1.0 - xi.x) + xi.x);
+    float cosTheta = sqrt(cosTheta2);
+    float sinTheta = sqrt(1.0 - cosTheta2);
     float phi = TWO_PI * xi.y;
 
     // Transform from spherical into cartesian

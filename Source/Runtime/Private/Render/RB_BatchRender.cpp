@@ -229,18 +229,14 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
 
         shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::InstanceIndexesConst], numInstances, instanceLocalIndexes);
     } else {
-        if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst] >= 0) {
+        if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixConst] >= 0) {
             const Mat3x4 &localToWorldMatrix = surfSpace->def->GetObjectToWorldMatrix();
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixSConst], localToWorldMatrix[0]);
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixTConst], localToWorldMatrix[1]);
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixRConst], localToWorldMatrix[2]);
+            shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixConst], true, localToWorldMatrix);
         }
 
-        if (shader->builtInConstantIndices[Shader::WorldToLocalMatrixSConst] >= 0) {
-            Mat3x4 worldToLocalMatrix = Mat3x4(surfSpace->def->state.axis.Transpose(), -surfSpace->def->state.origin);
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixSConst], worldToLocalMatrix[0]);
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixTConst], worldToLocalMatrix[1]);
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixRConst], worldToLocalMatrix[2]);
+        if (shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst] >= 0) {
+            Mat3 worldToLocalMatrix = surfSpace->def->state.axis.Transpose();
+            shader->SetConstant3x3f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst], false, worldToLocalMatrix);
         }
 
         if (shader->builtInConstantIndices[Shader::ConstantColorConst] >= 0) {
