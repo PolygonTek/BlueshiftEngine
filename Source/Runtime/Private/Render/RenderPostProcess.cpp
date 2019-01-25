@@ -940,7 +940,7 @@ void PP_LuminanceAdaptation(const Texture *srcTexture0, const Texture *srcTextur
     shader->Bind();
     shader->SetTexture("currLuminanceMap", srcTexture0);
     shader->SetTexture("prevLuminanceMap", srcTexture1);
-    shader->SetConstant1f("frameTime", frameTime);
+    //shader->SetConstant1f("frameTime", frameTime);
 
     RB_DrawClipRect(0.0f, 0.0f, 1.0f, 1.0f);
 

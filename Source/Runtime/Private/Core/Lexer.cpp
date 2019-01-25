@@ -395,7 +395,7 @@ bool Lexer::ReadPunctuation(Str *token) {
 }
 
 bool Lexer::ReadToken(Str *token, bool allowLineBreaks) {
-    int	c;
+    int c;
     int oldLine;
 
     if (!loaded) {

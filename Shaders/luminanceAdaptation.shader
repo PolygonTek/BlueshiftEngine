@@ -1,4 +1,4 @@
-shader "luminanceAdaptation" {
+shader "LuminanceAdaptation" {
 	glsl_vp {
 		$include "clipQuad.vp"
 	}
@@ -12,8 +12,9 @@ shader "luminanceAdaptation" {
 
 		uniform sampler2D currLuminanceMap;
 		uniform sampler2D prevLuminanceMap;
-		uniform float frameTime;
+		//uniform float frameTime;
 
+        const float frameTime = 1.0 / 60.0;
         const float adaptationRate = 1.25;
 
 		void main() {

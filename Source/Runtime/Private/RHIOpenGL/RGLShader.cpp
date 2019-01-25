@@ -271,6 +271,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
             processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
 
             ParseInOut(lexer, isVertexShader, inOut);
+
             lexer.SkipUntilString(";");
 
             if (isVertexShader) {
@@ -302,6 +303,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
             processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
 
             ParseInOut(lexer, !isVertexShader, inOut);
+
             lexer.SkipUntilString(";");
 
             if (isVertexShader) {
