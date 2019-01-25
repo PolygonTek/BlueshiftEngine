@@ -161,7 +161,7 @@ void RB_PostProcess() {
     if (r_HDR.GetInteger() > 0) {
         RenderTarget *luminanceRT;
 
-        if (bc->flags & RenderContext::ConstantToneMapping) {
+        if (!r_HDR_toneMapping.GetBool() || (bc->flags & RenderContext::ConstantToneMapping)) {
             luminanceRT = bc->hdrLuminanceRT[0];
 
             PP_WriteDefaultLuminance(luminanceRT);
@@ -186,7 +186,7 @@ void RB_PostProcess() {
         }
 
         if (r_HDR_bloomScale.GetFloat() > 0) {
-            if (bc->flags & RenderContext::ConstantToneMapping) {
+            if (!r_HDR_toneMapping.GetBool() || (bc->flags & RenderContext::ConstantToneMapping)) {
                 PP_Downscale4x4(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_4X]);
             }
 
