@@ -4,8 +4,7 @@
 $include "StandardConfig.glsl"
 $include "BRDFLibrary.glsl"
 
-float clearCoatReflectivity = 1.0;
-float clearCoatRoughness = 0.1;
+#if defined(DIRECT_LIGHTING)
 
 //----------------------------------
 // Diffuse BRDF
@@ -165,13 +164,17 @@ vec3 DirectLit_Standard() {
     return color * PI;
 }
 
+#endif
+
+#if defined(INDIRECT_LIGHTING)
+
 vec3 GetDiffuseEnv(vec3 N, vec3 albedo) {
     vec3 d1 = texCUBE(irradianceEnvCubeMap0, N).rgb;
     //vec3 d2 = texCUBE(irradianceEnvCubeMap1, N).rgb;
 
 #if USE_SRGB_TEXTURE == 0
-    d1 = linearToGammaSpace(d1);
-    //d2 = linearToGammaSpace(d2);
+    d1 = LinearToGamma(d1);
+    //d2 = LinearToGamma(d2);
 #endif
 
     return albedo * d1;//mix(d1, d2, ambientLerp);
@@ -186,8 +189,8 @@ vec3 GetSpecularEnvFirstSum(vec3 S, float roughness) {
     //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
 
 #if USE_SRGB_TEXTURE == 0
-    s1 = linearToGammaSpace(s1);
-    //s2 = linearToGammaSpace(s2);
+    s1 = LinearToGamma(s1);
+    //s2 = LinearToGamma(s2);
 #endif
 
     return s1;
@@ -248,5 +251,7 @@ vec3 IndirectLit_Standard(vec3 S) {
 
     return color;
 }
+
+#endif
 
 #endif

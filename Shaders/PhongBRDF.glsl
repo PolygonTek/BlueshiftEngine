@@ -3,6 +3,8 @@
 
 $include "BRDFLibrary.glsl"
 
+#if defined(DIRECT_LIGHTING)
+
 // Phong/Blinn-Phong lighting
 vec3 DirectLit_Phong() {
     float NdotL = dot(shading.n, shading.l);
@@ -83,6 +85,10 @@ vec3 DirectLit_PhongFresnel() {
     return Cd * (vec3(1.0) - F) + Cs;
 }
 
+#endif
+
+#if defined(INDIRECT_LIGHTING)
+
 vec3 IndirectLit_PhongFresnel(vec3 S) {
     vec3 d1 = texCUBE(irradianceEnvCubeMap0, shading.n).rgb;
     //vec3 d2 = texCUBE(irradianceEnvCubeMap1, shading.n).rgb;
@@ -109,5 +115,7 @@ vec3 IndirectLit_PhongFresnel(vec3 S) {
 
     return Cd * (vec3(1.0) - F) + Cs;
 }
+
+#endif
 
 #endif

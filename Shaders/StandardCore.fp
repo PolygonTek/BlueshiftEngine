@@ -86,80 +86,128 @@ out vec4 o_fragColor : FRAG_COLOR;
 //
 // Material parameters
 //
-uniform sampler2D albedoMap;
-uniform LOWP vec3 albedoColor;
-uniform LOWP float albedoAlpha;
-uniform LOWP float perforatedAlpha;
 
+#if _ALBEDO == 0
+    uniform LOWP vec3 albedoColor;
+    uniform LOWP float albedoAlpha;
+#elif _ALBEDO == 1
+    uniform sampler2D albedoMap;
+#endif
+
+uniform LOWP float perforatedAlpha;
 uniform LOWP float wrappedDiffuse;
 
-uniform sampler2D normalMap;
-uniform sampler2D detailNormalMap;
-uniform MEDIUMP float detailRepeat;
+#if _NORMAL != 0
+    uniform sampler2D normalMap;
+    #if _NORMAL == 2
+        uniform sampler2D detailNormalMap;
+        uniform MEDIUMP float detailRepeat;
+    #endif
+#endif
 
-uniform sampler2D specularMap;
-uniform LOWP vec4 specularColor;
+#if defined(STANDARD_METALLIC_LIGHTING)
+    uniform LOWP float metallicScale;
+    #if _METALLIC == 1
+        uniform sampler2D metallicMap;
+    #endif
 
-uniform sampler2D glossMap;
-uniform LOWP float glossScale;
+    uniform LOWP float roughnessScale;
+    #if _ROUGHNESS == 1 || _ROUGHNESS == 2
+        uniform sampler2D roughnessMap;
+    #endif
+#elif defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
+    #if _SPECULAR == 0
+        uniform LOWP vec4 specularColor;
+    #elif _SPECULAR == 1
+        uniform sampler2D specularMap;
+    #endif
 
-uniform sampler2D metallicMap;
-uniform LOWP float metallicScale;
+    uniform LOWP float glossScale;
+    #if _GLOSS == 3
+        uniform sampler2D glossMap;
+    #endif
+#endif
 
-uniform sampler2D roughnessMap;
-uniform LOWP float roughnessScale;
+#if _ANISO != 0
+    uniform LOWP float anisotropy;
+    #if _ANISO == 2
+        uniform sampler2D anisotropyMap;
+    #endif
+#endif
 
-uniform sampler2D anisotropyMap;
-uniform LOWP float anisotropy;
+#if _CLEARCOAT != 0
+    uniform LOWP float clearCoatScale;
+    #if _CLEARCOAT == 2
+        uniform sampler2D clearCoatMap;
+    #endif
 
-uniform sampler2D clearCoatMap;
-uniform LOWP float clearCoatScale;
-uniform sampler2D clearCoatRoughnessMap;
-uniform LOWP float clearCoatRoughnessScale;
-uniform sampler2D clearCoatNormalMap;
+    uniform LOWP float clearCoatRoughnessScale;
+    #if _CC_ROUGHNESS == 2
+        uniform sampler2D clearCoatRoughnessMap;
+    #endif
+    
+    #if _CC_NORMAL == 1
+        uniform sampler2D clearCoatNormalMap;
+    #endif
+#endif
 
-uniform sampler2D heightMap;
-uniform LOWP float heightScale;
+#if _PARALLAX != 0
+    uniform sampler2D heightMap;
+    uniform LOWP float heightScale;
+#endif
 
-uniform sampler2D occlusionMap;
-uniform LOWP float occlusionStrength;
+#if _OCC != 0
+    uniform LOWP float occlusionStrength;
+    #if _OCC == 1
+        uniform sampler2D occlusionMap;
+    #endif
+#endif
 
-uniform sampler2D emissionMap;
-uniform LOWP vec3 emissionColor;
-uniform MEDIUMP float emissionScale;
+#if _EMISSION != 0
+    uniform MEDIUMP float emissionScale;
+    #if _EMISSION == 1
+        uniform LOWP vec3 emissionColor;
+    #elif _EMISSION == 2
+        uniform sampler2D emissionMap;
+    #endif
+#endif
 
 uniform sampler2D subSurfaceColorMap;
 uniform float subSurfaceRollOff;
 uniform float subSurfaceShadowDensity;// = 0.5;
 
+uniform LOWP float ambientScale;
+
 //
 // Light parameters
 //
-uniform sampler2D lightProjectionMap;
-uniform MEDIUMP vec4 lightColor;
-uniform MEDIUMP float lightFallOffExponent;
-uniform samplerCube lightCubeMap;
-uniform bool useLightCube;
-uniform bool useShadowMap;
-uniform LOWP float ambientScale;
+#if defined(DIRECT_LIGHTING)
+    uniform sampler2D lightProjectionMap;
+    uniform MEDIUMP vec4 lightColor;
+    uniform MEDIUMP float lightFallOffExponent;
+    uniform samplerCube lightCubeMap;
+    uniform bool useLightCube;
+    uniform bool useShadowMap;
+#endif
 
-// IBL
-uniform samplerCube envCubeMap;
+#if defined(INDIRECT_LIGHTING)
+    uniform samplerCube envCubeMap;
 
-uniform samplerCube irradianceEnvCubeMap0;
-uniform samplerCube prefilteredEnvCubeMap0;
-uniform vec3 probePosition0;
-uniform vec3 probeMins0;
-uniform vec3 probeMaxs0;
+    uniform samplerCube irradianceEnvCubeMap0;
+    uniform samplerCube prefilteredEnvCubeMap0;
+    uniform vec3 probePosition0;
+    uniform vec3 probeMins0;
+    uniform vec3 probeMaxs0;
 
-uniform samplerCube irradianceEnvCubeMap1;
-uniform samplerCube prefilteredEnvCubeMap1;
-uniform vec3 probePosition1;
-uniform vec3 probeMins1;
-uniform vec3 probeMaxs1;
+    uniform samplerCube irradianceEnvCubeMap1;
+    uniform samplerCube prefilteredEnvCubeMap1;
+    uniform vec3 probePosition1;
+    uniform vec3 probeMins1;
+    uniform vec3 probeMaxs1;
 
-uniform sampler2D integrationLUTMap;
-uniform LOWP float ambientLerp;
+    uniform sampler2D integrationLUTMap;
+    uniform LOWP float ambientLerp;
+#endif
 
 struct ShadingParms {
     vec3 v; // view vector in world space
@@ -171,7 +219,10 @@ struct ShadingParms {
     vec4 diffuse;
     vec4 specular;
     float roughness;
+
+#ifdef LEGACY_PHONG_LIGHTING
     float specularPower;
+#endif
 
 #if _ANISO != 0
     vec3 anisotropicT;
