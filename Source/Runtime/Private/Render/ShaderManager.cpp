@@ -26,7 +26,7 @@ struct engineShader_t {
 static const engineShader_t originalShaderList[] = {
     { "Shaders/WriteValue" },
     { "Shaders/drawArrayTexture" },
-    { "Shaders/Simple" },
+    { "Shaders/Unlit" },
     { "Shaders/selectionId" },
     { "Shaders/depth" },
     { "Shaders/constantColor" },

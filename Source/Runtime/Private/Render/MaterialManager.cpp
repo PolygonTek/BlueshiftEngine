@@ -75,7 +75,7 @@ void MaterialManager::CreateEngineMaterials() {
         "   shader \"%s\" {\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
-        "}", GuidMapper::simpleShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::unlitShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
     blendMaterial->permanence = true;
 
     // Create white light material

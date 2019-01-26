@@ -39,7 +39,7 @@ Guid        GuidMapper::standardSpecularShaderGuid(0, 0, 0, 200);
 Guid        GuidMapper::skyboxCubemapShaderGuid(0, 0, 0, 201);
 Guid        GuidMapper::skyboxSixSidedShaderGuid(0, 0, 0, 202);
 Guid        GuidMapper::standardShaderGuid(0, 0, 0, 203);
-Guid        GuidMapper::simpleShaderGuid(0, 0, 0, 204);
+Guid        GuidMapper::unlitShaderGuid(0, 0, 0, 204);
 Guid        GuidMapper::phongLightingShaderGuid(0, 0, 0, 205);
 // predefined material GUID
 Guid        GuidMapper::defaultMaterialGuid(0, 0, 0, 300);

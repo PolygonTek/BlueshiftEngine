@@ -1,13 +1,41 @@
+#if _ALBEDO != 0 || _EMISSION == 2
+    #define NEED_BASE_TC
+#endif
+
 in HIGHP vec4 in_position   : POSITION;
 in MEDIUMP vec2 in_st       : TEXCOORD0;
 in LOWP vec4 in_color       : COLOR;
 
-out MEDIUMP vec2 v2f_texCoord;
 out LOWP vec4 v2f_color;
+
+#ifdef NEED_BASE_TC
+    out MEDIUMP vec2 v2f_texCoord;
+#endif
+
+#ifdef USE_SHADOW_MAP
+    $include "ShadowLibrary.vp"
+#endif
+
+#if defined(INSTANCING)
+    $include "Instancing.vp"
+#else
+    uniform mat4x3 localToWorldMatrix;
+    uniform mat3 worldToLocalMatrix;
+    uniform LOWP vec4 constantColor;
+#endif
+
+#ifdef GPU_SKINNING
+    #if defined(GPU_SKINNING_1_WEIGHTS)
+        $include "SkinningMatrix1.glsl"
+    #elif defined(GPU_SKINNING_4_WEIGHTS)
+        $include "SkinningMatrix4.glsl"
+    #elif defined(GPU_SKINNING_8_WEIGHTS)
+        $include "SkinningMatrix8.glsl"
+    #endif
+#endif
 
 uniform vec4 textureMatrixS;
 uniform vec4 textureMatrixT;
-uniform LOWP vec4 constantColor;
 
 uniform LOWP vec4 vertexColorScale;
 uniform LOWP vec4 vertexColorAdd;
@@ -23,8 +51,10 @@ void main() {
     localPos = in_position;
 #endif
 
+#ifdef NEED_BASE_TC
     v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
     v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+#endif
 
     v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
