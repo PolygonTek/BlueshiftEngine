@@ -980,7 +980,7 @@ void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
 
         SetShaderProperties(shader, mtrlPass->shaderProperties);
     } else {
-        shader = ShaderManager::simpleShader;
+        shader = ShaderManager::unlitShader;
         shader->Bind();
 
         shader->SetTexture("albedoMap", mtrlPass->texture);

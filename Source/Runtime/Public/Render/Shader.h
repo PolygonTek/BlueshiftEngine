@@ -319,7 +319,7 @@ public:
     enum PredefinedOriginalShader {
         WriteValueShader,
         DrawArrayTextureShader,
-        SimpleShader,
+        UnlitShader,
         SelectionIdShader,
         DepthShader,
         ConstantColorShader,
@@ -396,7 +396,7 @@ public:
 
     static Shader *         writeValueShader;
     static Shader *         drawArrayTextureShader;
-    static Shader *         simpleShader;
+    static Shader *         unlitShader;
     static Shader *         selectionIdShader;
     static Shader *         depthShader;
     static Shader *         constantColorShader;
