@@ -101,6 +101,8 @@ void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderi
     InitHdrMapRT();
 
     InitShadowMapRT();
+
+    //WriteBRDFIntegrationLUT("IntegrationLUT_GGX", 512);
     
     this->random.SetSeed(123123);
 

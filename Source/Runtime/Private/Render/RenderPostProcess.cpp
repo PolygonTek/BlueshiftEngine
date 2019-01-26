@@ -915,8 +915,7 @@ void PP_MeasureLuminance(const Texture *srcTexture, const float *screenTc, Rende
     RenderTarget *lsrc = backEnd.ctx->hdrLumAverageRT[0];
     RenderTarget *ldst = backEnd.ctx->hdrLumAverageRT[1];
 
-    int i;
-    for (i = 1; lsrc->GetWidth() > 4 || lsrc->GetHeight() > 4; i++) {
+    for (int i = 1; lsrc->GetWidth() > 4 || lsrc->GetHeight() > 4; i++) {
         PP_Downscale4x4(lsrc->ColorTexture(), ldst);
 
         lsrc = ldst;
