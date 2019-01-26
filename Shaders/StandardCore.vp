@@ -1,3 +1,7 @@
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || _ANISO == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _OCC == 1
+    #define NEED_BASE_TC
+#endif
+
 in HIGHP vec4 in_position   : POSITION;
 in LOWP vec3 in_normal      : NORMAL;
 in LOWP vec4 in_color       : COLOR;
@@ -8,7 +12,10 @@ in MEDIUMP vec2 in_st       : TEXCOORD0;
 #endif
 
 out LOWP vec4 v2f_color;
-out MEDIUMP vec2 v2f_tex;
+
+#ifdef NEED_BASE_TC
+    out MEDIUMP vec2 v2f_tex;
+#endif
 
 #if _NORMAL == 0
     out LOWP vec3 v2f_normal;
@@ -163,8 +170,10 @@ void main() {
     v2f_lightFallOff = lightFallOffMatrix * worldPos;
 #endif
 
+#ifdef NEED_BASE_TC
     v2f_tex.s = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
     v2f_tex.t = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+#endif
 
 #ifdef LIGHTMAP
     v2f_tex.rq = in_st2.st;

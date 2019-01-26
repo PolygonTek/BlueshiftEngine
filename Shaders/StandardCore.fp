@@ -48,8 +48,25 @@ $include "fragment_common.glsl"
 #define _EMISSION 0
 #endif
 
+#if _NORMAL == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
+    #undef _NORMAL
+    #define _NORMAL 1
+#endif
+
+#if _PARALLAX == 1 && !defined(ENABLE_PARALLAXMAP)
+    #undef _PARALLAX 
+    #define _PARALLAX 0
+#endif
+
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || _ANISO == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _OCC == 1
+    #define NEED_BASE_TC
+#endif
+
 in LOWP vec4 v2f_color;
-in MEDIUMP vec2 v2f_tex;
+
+#ifdef NEED_BASE_TC
+    in MEDIUMP vec2 v2f_tex;
+#endif
 
 #if _NORMAL == 0
     in LOWP vec3 v2f_normal;
@@ -108,7 +125,7 @@ uniform LOWP float wrappedDiffuse;
 
 #if defined(STANDARD_METALLIC_LIGHTING)
     uniform LOWP float metallicScale;
-    #if _METALLIC == 1
+    #if _METALLIC >= 1
         uniform sampler2D metallicMap;
     #endif
 
@@ -262,20 +279,6 @@ ShadingParms shading;
     #ifdef BRUTE_FORCE_IBL
         $include "IBL.glsl"
     #endif
-#endif
-
-#if _NORMAL == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
-    #undef _NORMAL
-    #define _NORMAL 1
-#endif
-
-#if _PARALLAX == 1 && !defined(ENABLE_PARALLAXMAP)
-    #undef _PARALLAX 
-    #define _PARALLAX 0
-#endif
-
-#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || _ANISO == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _OCC == 1
-    #define NEED_BASE_TC
 #endif
 
 #ifdef NEED_BASE_TC
