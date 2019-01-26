@@ -771,6 +771,10 @@ const char *Shader::MangleNameWithDefineList(const Str &basename, const Array<Sh
         });
     
         for (int i = 0; i < defineArray.Count(); i++) {
+            // Skip define value is 0
+            if (defineArray[i].value == 0) {
+                continue;
+            }
             mangledName += "+" + defineArray[i].name + "=" + defineArray[i].value;
         }
     }
