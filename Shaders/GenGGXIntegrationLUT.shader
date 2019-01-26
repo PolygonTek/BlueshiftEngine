@@ -35,11 +35,13 @@ shader "GenGGXIntegrationLUT" {
 
             float numSamples = 0.0;
 
-            float k = roughness * roughness * 0.5; // k for IBL
+            float linearRoughness = roughness * roughness;
+
+            float k = linearRoughness * 0.5; // k for IBL
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
-                    vec3 H = tangentToWorld * ImportanceSampleGGX(vec2(x, y), roughness);
+                    vec3 H = tangentToWorld * ImportanceSampleGGX(vec2(x, y), linearRoughness);
                     vec3 L = normalize(2.0 * dot(V, H) * H - V);
 
                     float NdotL = max(L.z, 0.0);
@@ -47,7 +49,7 @@ shader "GenGGXIntegrationLUT" {
                     float VdotH = max(dot(V, H), 0.0);
 
                     if (NdotL > 0.0) {
-                        float G = G_Schlick(NdotV, NdotL, k);
+                        float G = G_SchlickGGX(NdotV, NdotL, k);
                         // BRDF/F = D * G (G term is divided by (4 * NdotL * NdotV))
                         //
                         // PDF(H) = D * NdotH

@@ -9,11 +9,7 @@ $include "BRDFLibrary.glsl"
 //----------------------------------
 // Diffuse BRDF
 //----------------------------------
-vec3 DiffuseBRDF(float NdotL, float NdotV, float VdotH, vec3 albedo, float roughness) {
-    // We adopted Disney's reparameterization of a = roughness^2
-    // a means perceptual linear roughness.
-    float linearRoughness = roughness * roughness;
-
+vec3 DiffuseBRDF(float NdotL, float NdotV, float VdotH, vec3 albedo, float roughness, float linearRoughness) {
 #if PBR_DIFFUSE == PBR_DIFFUSE_LAMBERT
     return albedo * Fd_Lambert(NdotL);
 #elif PBR_DIFFUSE == PBR_DIFFUSE_WRAPPED
@@ -69,10 +65,15 @@ vec3 IsotropicBRDF(float NdotL, float NdotV, float NdotH, float VdotH, float rou
     float G = G_Kelemen(VdotH);
 #elif PBR_SPECULAR_G == PBR_SPECULAR_G_COOK_TORRANCE
     float G = G_CookTorrance(NdotV, NdotL, NdotH, VdotH);
-#elif PBR_SPECULAR_G == PBR_SPECULAR_G_GGX
+#elif PBR_SPECULAR_G == PBR_SPECULAR_G_SCHLICK_GGX
     // Disney's modification to reduce "hotness" by remapping roughness using (roughness + 1) / 2 before squaring.
-    float k = roughness + 1.0; // k for direct lighting
-    float G = G_Schlick(NdotV, NdotL, k * k * 0.25);
+    float k = roughness + 1.0;
+    k = k * k * 0.25; // k for direct lighting
+    float G = G_SchlickGGX(NdotV, NdotL, k);
+#elif PBR_SPECULAR_G == PBR_SPECULAR_G_SMITH_GGX
+    float G = G_SmithGGXCorrelated(NdotV, NdotL, linearRoughness);
+#elif PBR_SPECULAR_G == PBR_SPECULAR_G_SMITH_GGX_FAST
+    float G = G_SmithGGXCorrelatedFast(NdotV, NdotL, linearRoughness);
 #endif
 
     // Fresnel reflection term
@@ -85,11 +86,7 @@ vec3 IsotropicBRDF(float NdotL, float NdotV, float NdotH, float VdotH, float rou
 //----------------------------------
 // Specular BRDF
 //----------------------------------
-vec3 SpecularBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, vec3 F0, float FSecondFactor, out vec3 F) {
-    // We adopted Disney's reparameterization of a = roughness^2
-    // a means perceptual linear roughness.
-    float linearRoughness = roughness * roughness;
-
+vec3 SpecularBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, float roughness, float linearRoughness, vec3 F0, float FSecondFactor, out vec3 F) {
 #if _ANISO != 0
     return AnisotropicBRDF(H, NdotL, NdotV, NdotH, VdotH, roughness, linearRoughness, F0, FSecondFactor, F);
 #else
@@ -100,9 +97,7 @@ vec3 SpecularBRDF(vec3 H, float NdotL, float NdotV, float NdotH, float VdotH, fl
 //----------------------------------
 // ClearCoat BRDF
 //----------------------------------
-float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float clearCoatRoughness, float FSecondFactor, out float F) {
-    float clearCoatLinearRoughness = clearCoatRoughness * clearCoatRoughness;
-
+float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float clearCoatRoughness, float clearCoatLinearRoughness, float FSecondFactor, out float F) {
 #if PBR_CLEARCOAT_D == PBR_SPECULAR_D_GGX
     float D = D_GGX(NdotH, clearCoatLinearRoughness);
 #endif
@@ -134,10 +129,10 @@ vec3 DirectLit_Standard() {
     float FSecondFactor = F_SecondFactorSchlickSG(VdotH);
 
     vec3 Fs;
-    vec3 Cs = SpecularBRDF(H, NdotL, NdotV, NdotH, VdotH, shading.roughness, shading.specular.rgb, FSecondFactor, Fs);
+    vec3 Cs = SpecularBRDF(H, NdotL, NdotV, NdotH, VdotH, shading.roughness, shading.linearRoughness, shading.specular.rgb, FSecondFactor, Fs);
 
     // From specular reflection term Fs, we can directly calculate the ratio of refraction.
-    vec3 Cd = DiffuseBRDF(NdotL, NdotV, VdotH, shading.diffuse.rgb, shading.roughness) * (vec3(1.0) - Fs);
+    vec3 Cd = DiffuseBRDF(NdotL, NdotV, VdotH, shading.diffuse.rgb, shading.roughness, shading.linearRoughness) * (vec3(1.0) - Fs);
 
 #if _CLEARCOAT == 0
     vec3 color = (Cd + Cs) * NdotL;
@@ -151,7 +146,7 @@ vec3 DirectLit_Standard() {
     #endif
 
     float Fcc;
-    float Ccc = ClearCoatBRDF(clearCoatNdotH, VdotH, shading.clearCoat, shading.clearCoatRoughness, FSecondFactor, Fcc);
+    float Ccc = ClearCoatBRDF(clearCoatNdotH, VdotH, shading.clearCoat, shading.clearCoatRoughness, shading.clearCoatLinearRoughness, FSecondFactor, Fcc);
 
     float Fattenuation = 1.0 - Fcc;
 
@@ -180,10 +175,12 @@ vec3 GetDiffuseEnv(vec3 N, vec3 albedo) {
     return albedo * d1;//mix(d1, d2, ambientLerp);
 }
 
-vec3 GetSpecularEnvFirstSum(vec3 S, float roughness) {
+vec3 GetSpecularEnvFirstSum(vec3 S, float linearRoughness) {
     vec4 sampleVec;
     sampleVec.xyz = S;
-    sampleVec.w = roughness * 7.0; // FIXME: 7.0 == maximum mip level
+
+    // Convert linear roughness to mip level
+    sampleVec.w = 7.0 * linearRoughness * (1.7 - 0.7 * linearRoughness);
 
     vec3 s1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
     //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
@@ -208,7 +205,7 @@ vec3 GetSpecularEnvSecondSum(float NdotV, float roughness, vec3 F0) {
 vec3 IndirectLit_Standard(vec3 S) {
     float NdotV = saturate(dot(shading.n, shading.v));
 
-    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(S, shading.roughness);
+    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(S, shading.linearRoughness);
     vec3 specularEnvSum2 = GetSpecularEnvSecondSum(NdotV, shading.roughness, shading.specular.rgb);
 
     vec3 Cs = specularEnvSum1 * specularEnvSum2;
@@ -234,7 +231,7 @@ vec3 IndirectLit_Standard(vec3 S) {
         vec3 clearCoatS = S;
     #endif
     
-    vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(S, shading.clearCoatRoughness);
+    vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(S, shading.clearCoatLinearRoughness);
     vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(clearCoatNdotV, shading.clearCoatRoughness, vec3(0.04));
 
     vec3 Ccc = clearCoatEnvSum1 * clearCoatEnvSum2 * shading.clearCoat;

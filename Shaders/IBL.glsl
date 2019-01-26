@@ -57,9 +57,8 @@ vec3 ImportanceSamplePhongSpecular(vec2 xi, float power) {
 }
 
 // Returns importance sampled halfway direction for Beckmann specular NDF with respect to N
-vec3 ImportanceSampleBeckmann(vec2 xi, float roughness) {
-    float alpha = roughness * roughness;
-    float cosTheta2 = 1.0 / (1.0 - alpha * alpha * log(xi.x))
+vec3 ImportanceSampleBeckmann(vec2 xi, float linearRoughness) {
+    float cosTheta2 = 1.0 / (1.0 - linearRoughness * linearRoughness * log(xi.x));
     float cosTheta = sqrt(cosTheta2);
     float sinTheta = sqrt(1.0 - cosTheta2);
     float phi = TWO_PI * xi.y;
@@ -74,9 +73,8 @@ vec3 ImportanceSampleBeckmann(vec2 xi, float roughness) {
 }
 
 // Returns importance sampled halfway direction for GGX specular NDF with respect to N
-vec3 ImportanceSampleGGX(vec2 xi, float roughness) {
-    float alpha = roughness * roughness;
-    float cosTheta2 = xi.x / (alpha * alpha * (1.0 - xi.x) + xi.x);
+vec3 ImportanceSampleGGX(vec2 xi, float linearRoughness) {
+    float cosTheta2 = xi.x / (linearRoughness * linearRoughness * (1.0 - xi.x) + xi.x);
     float cosTheta = sqrt(cosTheta2);
     float sinTheta = sqrt(1.0 - cosTheta2);
     float phi = TWO_PI * xi.y;
@@ -89,6 +87,8 @@ vec3 ImportanceSampleGGX(vec2 xi, float roughness) {
 
     return sampleDir;
 }
+
+#ifdef INDIRECT_LIGHTING
 
 vec3 IBLDiffuseLambert(samplerCube radMap) {
     const int numSamples = 64;
@@ -183,13 +183,13 @@ vec3 IBLSpecularGGX(samplerCube radMap) {
 
     mat3 tangentToWorld = GetLocalFrame(shading.n);
 
-    // k for IBL
-    float k = shading.roughness * shading.roughness * 0.5;
+    // k for IBL = roughness^2 / 2
+    float k = shading.linearRoughness * 0.5;
 
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = Hammersley(i, numSamples);
 
-        vec3 H = tangentToWorld * ImportanceSampleGGX(xi, shading.roughness); 
+        vec3 H = tangentToWorld * ImportanceSampleGGX(xi, shading.linearRoughness);
         vec3 L = 2.0 * dot(shading.v, H) * H - shading.v;
 
         float NdotL = max(dot(shading.n, L), 0.0);
@@ -201,7 +201,7 @@ vec3 IBLSpecularGGX(samplerCube radMap) {
             float NdotV = max(dot(shading.n, shading.v), 0.0);
             float VdotH = max(dot(shading.v, H), 0.0);
 
-            float G = G_Schlick(NdotV, NdotL, k);
+            float G = G_SchlickGGX(NdotV, NdotL, k);
 
             vec3 F = F_SchlickSG(shading.specular.rgb, VdotH);
 
@@ -229,15 +229,15 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap) {
 
     mat3 tangentToWorld = GetLocalFrame(shading.n);
 
-    // k for IBL
-    float k = shading.roughness * shading.roughness * 0.5;
+    // k for IBL = roughness^2 / 2
+    float k = shading.linearRoughness * 0.5;
 
     for (int i = 0; i < numSamples; i++) {
         vec2 xi = Hammersley(i, numSamples);
 
         vec3 Ld = tangentToWorld * ImportanceSampleLambert(xi);
 
-        vec3 H = tangentToWorld * ImportanceSampleGGX(xi, shading.roughness);
+        vec3 H = tangentToWorld * ImportanceSampleGGX(xi, shading.linearRoughness);
 
         float VdotH = max(dot(shading.v, H), 0.0);
 
@@ -253,7 +253,7 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap) {
             float NdotH = max(dot(shading.n, H), 0.0);
             float NdotV = max(dot(shading.n, shading.v), 0.0);
 
-            float G = G_Schlick(NdotV, NdotL, k);
+            float G = G_SchlickGGX(NdotV, NdotL, k);
 
             specularLighting += 4.0 * texCUBE(radMap, Ls).rgb * G * F * NdotL * VdotH / NdotH;
         }
@@ -263,5 +263,7 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap) {
 
     return (diffuseLighting + specularLighting) / float(numSamples);
 }
+
+#endif
 
 #endif

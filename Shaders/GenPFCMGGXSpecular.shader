@@ -41,11 +41,13 @@ shader "GenPFCMGGXSpecular" {
 
             vec3 color = vec3(0.0);
 
+            float linearRoughness = roughness * roughness;
+
             float totalWeights = 0.0;
 
             for (float y = 0.0; y < 1.0; y += 0.01) {
                 for (float x = 0.0; x < 1.0; x += 0.01) {
-                    vec3 H = tangentToWorld * ImportanceSampleGGX(vec2(x, y), roughness);
+                    vec3 H = tangentToWorld * ImportanceSampleGGX(vec2(x, y), linearRoughness);
                     vec3 L = 2.0 * dot(V, H) * H - V;
 
                     // Integrate { Li * NdotL }

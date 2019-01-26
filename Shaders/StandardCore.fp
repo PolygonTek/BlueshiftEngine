@@ -219,6 +219,7 @@ struct ShadingParms {
     vec4 diffuse;
     vec4 specular;
     float roughness;
+    float linearRoughness;
 
 #ifdef LEGACY_PHONG_LIGHTING
     float specularPower;
@@ -233,6 +234,7 @@ struct ShadingParms {
 #if _CLEARCOAT != 0
     float clearCoat;
     float clearCoatRoughness;
+    float clearCoatLinearRoughness;
     vec3 clearCoatN;
 #endif
 
@@ -496,6 +498,9 @@ void PrepareShadingParms(vec4 albedo) {
     // Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
     shading.roughness = clamp(shading.roughness, MIN_ROUGHNESS, 1.0);
 
+    // We adopted Disney's reparameterization of linearRoughness = roughness^2
+    shading.linearRoughness = shading.roughness * shading.roughness;
+
 #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
     #if _ANISO != 0
         shading.anisotropicT = shading.tagentToWorldMatrix * anisotropyDir;
@@ -507,6 +512,8 @@ void PrepareShadingParms(vec4 albedo) {
 
         // Remapping of clear coat roughness
         shading.clearCoatRoughness = mix(MIN_CLEARCOAT_ROUGHNESS, MAX_CLEARCOAT_ROUGHNESS, shading.clearCoatRoughness);
+
+        shading.clearCoatLinearRoughness = shading.clearCoatRoughness * shading.clearCoatRoughness;
 
         #if _CC_NORMAL == 1
             vec3 tangentClearCoatN = normalize(GetNormal(clearCoatNormalMap, baseTc));

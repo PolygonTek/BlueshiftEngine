@@ -68,22 +68,22 @@ float Fd_OrenNayar(float NdotL, float NdotV, float LdotV, float roughness) {
 // Normal distribution functions
 //---------------------------------------------------
 
-float D_Blinn(float NdotH, float a) {
-    float a2 = a * a;
+float D_Blinn(float NdotH, float linearRoughness) {
+    float a2 = linearRoughness * linearRoughness;
     float n = 2.0 / a2 - 2.0;
     n = max(n, 1e-4); // prevent possible zero
     return pow(NdotH, n) * (n + 2.0) * INV_TWO_PI;
 }
 
-float D_Beckmann(float NdotH, float a) {
-    float a2 = a * a;
+float D_Beckmann(float NdotH, float linearRoughness) {
+    float a2 = linearRoughness * linearRoughness;
     float NdotH2 = NdotH * NdotH;
     return exp((NdotH2 - 1.0) / (a2 * NdotH2 + 1e-7)) * INV_PI / (a2 * NdotH2 * NdotH2 + 1e-7);
 }
 
 // Trowbridge-Reitz aka GGX
-float D_GGX(float NdotH, float a) {
-    float a2 = a * a;
+float D_GGX(float NdotH, float linearRoughness) {
+    float a2 = linearRoughness * linearRoughness;
     float denom = NdotH * NdotH * (a2 - 1.0) + 1.0;
     return a2 * INV_PI / (denom * denom + 1e-7);
 }
@@ -132,10 +132,28 @@ float G_CookTorrance(float NdotV, float NdotL, float NdotH, float VdotH) {
     return G / (4.0 * NdotL * NdotV + 1e-7);
 }
 
-float G_Schlick(float NdotV, float NdotL, float k) {
+// k_direct = (roughness + 1)^2 / 8
+// k_indirect = roughness^2 / 2
+float G_SchlickGGX(float NdotV, float NdotL, float k) {
     float oneMinusK = 1.0 - k;
     vec2 G = vec2(NdotV, NdotL) * oneMinusK + k;
     return 0.25 / (G.x * G.y + 1e-7);
+}
+
+// Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
+float G_SmithGGXCorrelated(float NdotV, float NdotL, float linearRoughness) {
+    float a2 = linearRoughness * linearRoughness;
+    // TODO: lambdaV can be pre-computed for all the lights, it should be moved out of this function
+    float lambdaV = NdotL * sqrt((NdotV - a2 * NdotV) * NdotV + a2);
+    float lambdaL = NdotV * sqrt((NdotL - a2 * NdotL) * NdotL + a2);
+    // a2 = 0 => v = 1 / (4 * NdotL * NdotV)   => min = 1/4, max = +inf
+    // a2 = 1 => v = 1 / (2 * (NdotL + NdotV)) => min = 1/4, max = +inf
+    return 0.5 / (lambdaV + lambdaL);
+}
+
+// Hammon 2017, "PBR Diffuse Lighting for GGX+Smith Microsurfaces"
+float G_SmithGGXCorrelatedFast(float NdotV, float NdotL, float linearRoughness) {
+    return 0.5 / mix(2.0 * NdotL * NdotV, NdotL + NdotV, linearRoughness);
 }
 
 // Smith Joint GGX Anisotropic Visibility
