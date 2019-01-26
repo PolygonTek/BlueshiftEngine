@@ -87,15 +87,16 @@ out vec4 o_fragColor : FRAG_COLOR;
 // Material parameters
 //
 
+uniform LOWP float ambientScale;
+uniform LOWP float perforatedAlpha;
+uniform LOWP float wrappedDiffuse;
+
 #if _ALBEDO == 0
     uniform LOWP vec3 albedoColor;
     uniform LOWP float albedoAlpha;
 #elif _ALBEDO == 1
     uniform sampler2D albedoMap;
 #endif
-
-uniform LOWP float perforatedAlpha;
-uniform LOWP float wrappedDiffuse;
 
 #if _NORMAL != 0
     uniform sampler2D normalMap;
@@ -176,10 +177,8 @@ uniform sampler2D subSurfaceColorMap;
 uniform float subSurfaceRollOff;
 uniform float subSurfaceShadowDensity;// = 0.5;
 
-uniform LOWP float ambientScale;
-
 //
-// Light parameters
+// Direct lighting parameters
 //
 #if defined(DIRECT_LIGHTING)
     uniform sampler2D lightProjectionMap;
@@ -190,6 +189,9 @@ uniform LOWP float ambientScale;
     uniform bool useShadowMap;
 #endif
 
+//
+// Indirect lighting parameters
+//
 #if defined(INDIRECT_LIGHTING)
     uniform samplerCube envCubeMap;
 
@@ -272,7 +274,7 @@ ShadingParms shading;
     #define _PARALLAX 0
 #endif
 
-#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || _ANISO == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || _ANISO == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _OCC == 1
     #define NEED_BASE_TC
 #endif
 

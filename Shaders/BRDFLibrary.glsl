@@ -19,7 +19,7 @@ float GlossinessToSpecularPower(float glossiness) {
     return exp2(11.0 * glossiness + 1.0); 
 }
 
-// Anisotropic parameters: at and ab are the roughness along the tangent and bitangent.
+// Anisotropic parameters: roughnessT and roughnessB are the roughness along the tangent and bitangent.
 // to simplify materials, we derive them from a single roughness parameter.
 // Kulla 2017, "Revisiting Physically Based Shading at Imageworks"
 void RoughnessToAnisotropyRoughness(float anisotropy, float linearRoughness, out float roughnessT, out float roughnessB) {

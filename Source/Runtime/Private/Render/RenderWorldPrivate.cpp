@@ -692,14 +692,14 @@ void RenderWorld::CacheInstanceBuffer(VisibleView *visView) {
                     } else {
                         *(uint32_t *)instanceData = surf->drawSurf->material->GetPass()->constantColor.ToUInt32();
                     }
-                    instanceData += 4;
+                    instanceData += sizeof(uint32_t);
                 } else {
                     if (surf->drawSurf->material->GetPass()->useOwnerColor) {
                         *(Color4 *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]);
                     } else {
                         *(Color4 *)instanceData = surf->drawSurf->material->GetPass()->constantColor;
                     }
-                    instanceData += 16;
+                    instanceData += sizeof(Color4);
                 }
 
                 if (surf->subMesh->IsGpuSkinning()) {
