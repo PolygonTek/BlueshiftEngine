@@ -584,9 +584,6 @@ static void RB_RenderView() {
             RB_ForwardAdditivePass(backEnd.visLights);
         }
 
-        // Render wireframe for option
-        RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, false);
-
         // Render any stage with unlit surfaces
         if (!r_skipBlendPass.GetBool()) {
             RB_UnlitPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
@@ -601,6 +598,9 @@ static void RB_RenderView() {
         if (!r_skipFinalPass.GetBool()) {
             RB_FinalPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
+
+        // Render wireframe for option
+        RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, false);
     }
 
     if (backEnd.view->def->state.flags & RenderView::WireFrameMode) {
