@@ -522,6 +522,8 @@ void PrepareShadingParms(vec4 albedo) {
         // Energy compensation for multiple scattering in a microfacet model
         // See "Multiple-Scattering Microfacet BSDFs with the Smith Model"
         shading.energyCompensation = 1.0 + shading.specular.rgb * (1.0 / shading.dfg.x - 1.0);
+    #else
+        shading.energyCompensation = vec3(1.0);
     #endif
 
     #if _ANISO != 0

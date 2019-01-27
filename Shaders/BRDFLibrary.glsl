@@ -31,7 +31,7 @@ void RoughnessToAnisotropyRoughness(float anisotropy, float linearRoughness, out
 // diffuse BRDF function
 //---------------------------------------------------
 
-float Fd_Lambert(float NdotL) {
+float Fd_Lambert() {
     return INV_PI;
 }
 

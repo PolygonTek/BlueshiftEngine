@@ -11,7 +11,7 @@ $include "BRDFLibrary.glsl"
 //----------------------------------
 vec3 DiffuseBRDF(float NdotL, float NdotV, float VdotH, vec3 albedo, float roughness, float linearRoughness) {
 #if PBR_DIFFUSE == PBR_DIFFUSE_LAMBERT
-    return albedo * Fd_Lambert(NdotL);
+    return albedo * Fd_Lambert();
 #elif PBR_DIFFUSE == PBR_DIFFUSE_WRAPPED
     return albedo * Fd_Wrap(NdotL, diffuseWrap);
 #elif PBR_DIFFUSE == PBR_DIFFUSE_BURLEY
@@ -226,7 +226,11 @@ vec3 IndirectLit_Standard(vec3 S) {
     vec3 specularEnvSum1 = GetSpecularEnvFirstSum(S, shading.linearRoughness);
     vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.dfg, shading.specular.rgb);
 
-    vec3 Cs = specularEnvSum1 * specularEnvSum2 * shading.energyCompensation;
+    vec3 Cs = specularEnvSum1 * specularEnvSum2;
+
+#ifdef USE_MULTIPLE_SCATTERING_COMPENSATION
+    Cs *= shading.energyCompensation;
+#endif
 
     float FSecondFactor = F_SecondFactorSchlickSG(shading.ndotv);
 
