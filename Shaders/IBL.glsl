@@ -165,9 +165,7 @@ vec3 IBLPhongWithFresnel(samplerCube radMap) {
         specularLighting += texCUBE(radMap, Ls).rgb;
     }
 
-    float NdotV = max(dot(shading.n, shading.v), 0.0);
-
-    vec3 F = F_SchlickRoughness(shading.specular.rgb, shading.roughness, NdotV);
+    vec3 F = F_SchlickRoughness(shading.specular.rgb, shading.roughness, shading.ndotv);
 
     specularLighting *= F * shading.specular.rgb * ((shading.specularPower + 2.0) / (shading.specularPower + 1.0));
 
@@ -198,10 +196,9 @@ vec3 IBLSpecularGGX(samplerCube radMap) {
             vec3 radiance = texCUBE(radMap, L).rgb;
 
             float NdotH = max(dot(shading.n, H), 0.0);
-            float NdotV = max(dot(shading.n, shading.v), 0.0);
             float VdotH = max(dot(shading.v, H), 0.0);
 
-            float G = G_SchlickGGX(NdotV, NdotL, k);
+            float G = G_SchlickGGX(shading.ndotv, NdotL, k);
 
             vec3 F = F_SchlickSG(shading.specular.rgb, VdotH);
 
@@ -251,9 +248,8 @@ vec3 IBLDiffuseLambertWithSpecularGGX(samplerCube radMap) {
 
         if (NdotL > 0.0) {
             float NdotH = max(dot(shading.n, H), 0.0);
-            float NdotV = max(dot(shading.n, shading.v), 0.0);
 
-            float G = G_SchlickGGX(NdotV, NdotL, k);
+            float G = G_SchlickGGX(shading.ndotv, NdotL, k);
 
             specularLighting += 4.0 * texCUBE(radMap, Ls).rgb * G * F * NdotL * VdotH / NdotH;
         }

@@ -115,6 +115,20 @@ float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float
     return D * G * F;
 }
 
+vec2 GetPrefilteredDFG(float NdotV, float roughness) {
+#if 0
+    // Zioma's approximation based on Karis
+    return vec2(1.0, pow(1.0 - max(roughness, NdotV), 3.0));
+#else
+    // Karis' approximation based on Lazarov's
+    const vec4 c0 = vec4(-1.0, -0.0275, -0.572,  0.022);
+    const vec4 c1 = vec4( 1.0,  0.0425,  1.040, -0.040);
+    vec4 r = roughness * c0 + c1;
+    float a004 = min(r.x * r.x, exp2(-9.28 * NdotV)) * r.x + r.y;
+    return vec2(-1.04, 1.04) * a004 + r.zw;
+#endif
+}
+
 //----------------------------------
 // Direct Lighting
 //----------------------------------
@@ -122,7 +136,7 @@ vec3 DirectLit_Standard() {
     vec3 H = normalize(shading.l + shading.v);
 
     float NdotL = saturate(dot(shading.n, shading.l));
-    float NdotV = saturate(dot(shading.n, shading.v));
+    float NdotV = shading.ndotv;
     float NdotH = saturate(dot(shading.n, H));
     float VdotH = saturate(dot(shading.v, H));
 
@@ -130,6 +144,10 @@ vec3 DirectLit_Standard() {
 
     vec3 Fs;
     vec3 Cs = SpecularBRDF(H, NdotL, NdotV, NdotH, VdotH, shading.roughness, shading.linearRoughness, shading.specular.rgb, FSecondFactor, Fs);
+
+#ifdef USE_MULTIPLE_SCATTERING_COMPENSATION
+    Cs *= shading.energyCompensation;
+#endif
 
     // From specular reflection term Fs, we can directly calculate the ratio of refraction.
     vec3 Cd = DiffuseBRDF(NdotL, NdotV, VdotH, shading.diffuse.rgb, shading.roughness, shading.linearRoughness) * (vec3(1.0) - Fs);
@@ -193,30 +211,32 @@ vec3 GetSpecularEnvFirstSum(vec3 S, float linearRoughness) {
     return s1;
 }
 
-vec3 GetSpecularEnvSecondSum(float NdotV, float roughness, vec3 F0) {
-    vec2 envBRDFs = tex2D(integrationLUTMap, vec2(NdotV, roughness)).xy;
+vec2 GetPrefilteredDFG_LUT(float NdotV, float roughness) {
+    return tex2D(prefilteredDfgMap, vec2(NdotV, roughness)).xy;
+}
 
-    return F0 * envBRDFs.x + envBRDFs.yyy;
+vec3 GetSpecularEnvSecondSum(vec2 prefilteredDfg, vec3 F0) {
+    return F0 * prefilteredDfg.x + prefilteredDfg.yyy;
 }
 
 //----------------------------------
 // Indirect Lighting
 //----------------------------------
 vec3 IndirectLit_Standard(vec3 S) {
-    float NdotV = saturate(dot(shading.n, shading.v));
-
     vec3 specularEnvSum1 = GetSpecularEnvFirstSum(S, shading.linearRoughness);
-    vec3 specularEnvSum2 = GetSpecularEnvSecondSum(NdotV, shading.roughness, shading.specular.rgb);
+    vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.dfg, shading.specular.rgb);
 
-    vec3 Cs = specularEnvSum1 * specularEnvSum2;
+    vec3 Cs = specularEnvSum1 * specularEnvSum2 * shading.energyCompensation;
 
-    float FSecondFactor = F_SecondFactorSchlickSG(NdotV);
+    float FSecondFactor = F_SecondFactorSchlickSG(shading.ndotv);
 
     // F_SchlickRoughness
     vec3 Fs = shading.specular.rgb + (max(vec3(1.0 - shading.roughness), shading.specular.rgb) - shading.specular.rgb) * FSecondFactor;
     //vec3 Fs = shading.specular.rgb + (vec3(1.0) - shading.specular.rgb) * FSecondFactor;
 
-    vec3 Cd = GetDiffuseEnv(shading.n, shading.diffuse.rgb) * (vec3(1.0) - Fs);
+    vec3 diffuseEnv = GetDiffuseEnv(shading.n, shading.diffuse.rgb);
+
+    vec3 Cd = diffuseEnv * (vec3(1.0) - Fs);
 
 #if _CLEARCOAT == 0
     vec3 color = Cd + Cs;
@@ -226,13 +246,15 @@ vec3 IndirectLit_Standard(vec3 S) {
 
         vec3 clearCoatS = reflect(-shading.v, shading.clearCoatN);
     #else
-        float clearCoatNdotV = NdotV;
+        float clearCoatNdotV = shading.ndotv;
 
         vec3 clearCoatS = S;
     #endif
+
+    vec2 ccDfg = GetPrefilteredDFG_LUT(clearCoatNdotV, shading.clearCoatRoughness);
     
     vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(S, shading.clearCoatLinearRoughness);
-    vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(clearCoatNdotV, shading.clearCoatRoughness, vec3(0.04));
+    vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(ccDfg, vec3(0.04));
 
     vec3 Ccc = clearCoatEnvSum1 * clearCoatEnvSum2 * shading.clearCoat;
     

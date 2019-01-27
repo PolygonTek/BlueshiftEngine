@@ -69,10 +69,9 @@ vec3 DirectLit_PhongFresnel() {
     vec3 R = reflect(-shading.l, shading.n);
 
     float RdotV = max(dot(R, shading.v), 0.0);
-    float NdotV = max(dot(shading.n, shading.v), 0.0);
 
     // Fresnel reflection term
-    vec3 F = F_SchlickSG(shading.specular.rgb, NdotV);
+    vec3 F = F_SchlickSG(shading.specular.rgb, shading.ndotv);
 
     float normFactor = shading.specularPower * 0.5 + 1.0;
 
@@ -107,9 +106,7 @@ vec3 IndirectLit_PhongFresnel(vec3 S) {
     vec3 s1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
     //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
 
-    float NdotV = max(dot(shading.n, shading.v), 0.0);
-
-    vec3 F = F_SchlickRoughness(shading.specular.rgb, shading.roughness, NdotV);
+    vec3 F = F_SchlickRoughness(shading.specular.rgb, shading.roughness, shading.ndotv);
 
     vec3 Cs = F * s1;
 

@@ -570,7 +570,7 @@ void Batch::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambient
 
     // TODO:
     shader->SetTexture("envCubeMap", backEnd.envCubeTexture);
-    shader->SetTexture("integrationLUTMap", backEnd.integrationLUTTexture);
+    shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
     shader->SetTexture("irradianceEnvCubeMap0", backEnd.irradianceEnvCubeTexture);
     shader->SetTexture("irradianceEnvCubeMap1", backEnd.irradianceEnvCubeTexture);
     shader->SetTexture("prefilteredEnvCubeMap0", backEnd.prefilteredEnvCubeTexture);
@@ -704,7 +704,7 @@ void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, flo
 
     // TODO:
     shader->SetTexture("envCubeMap", backEnd.envCubeTexture);
-    shader->SetTexture("integrationLUTMap", backEnd.integrationLUTTexture);
+    shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
     shader->SetTexture("irradianceEnvCubeMap0", backEnd.irradianceEnvCubeTexture);
     shader->SetTexture("irradianceEnvCubeMap1", backEnd.irradianceEnvCubeTexture);
     shader->SetTexture("prefilteredEnvCubeMap0", backEnd.prefilteredEnvCubeTexture);

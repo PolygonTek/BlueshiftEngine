@@ -224,21 +224,24 @@ uniform float subSurfaceShadowDensity;// = 0.5;
     uniform vec3 probeMins1;
     uniform vec3 probeMaxs1;
 
-    uniform sampler2D integrationLUTMap;
+    uniform sampler2D prefilteredDfgMap;
     uniform LOWP float ambientLerp;
 #endif
 
 struct ShadingParms {
-    vec3 v; // view vector in world space
-    vec3 l; // light vector in world space
-    vec3 n; // normal vector in world space
-
-    mat3 tagentToWorldMatrix;
-
     vec4 diffuse;
     vec4 specular;
     float roughness;
     float linearRoughness;
+
+    vec3 v; // view vector in world space
+    vec3 l; // light vector in world space
+    vec3 n; // normal vector in world space
+    float ndotv;
+    vec2 dfg;
+    vec3 energyCompensation;
+
+    mat3 tagentToWorldMatrix;
 
 #ifdef LEGACY_PHONG_LIGHTING
     float specularPower;
@@ -316,6 +319,8 @@ void PrepareShadingParms(vec4 albedo) {
 #ifdef TWO_SIDED
     shading.n = gl_FrontFacing ? shading.n : -shading.n;
 #endif
+
+    shading.ndotv = saturate(dot(shading.n, shading.v));
 
 #if defined(STANDARD_METALLIC_LIGHTING)
     #if _METALLIC == 0
@@ -507,6 +512,18 @@ void PrepareShadingParms(vec4 albedo) {
     shading.linearRoughness = shading.roughness * shading.roughness;
 
 #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
+    #if defined(INDIRECT_LIGHTING)
+        shading.dfg = GetPrefilteredDFG_LUT(shading.ndotv, shading.roughness);
+    #else
+        shading.dfg = GetPrefilteredDFG(shading.ndotv, shading.roughness);
+    #endif
+
+    #ifdef USE_MULTIPLE_SCATTERING_COMPENSATION
+        // Energy compensation for multiple scattering in a microfacet model
+        // See "Multiple-Scattering Microfacet BSDFs with the Smith Model"
+        shading.energyCompensation = 1.0 + shading.specular.rgb * (1.0 / shading.dfg.x - 1.0);
+    #endif
+
     #if _ANISO != 0
         shading.anisotropicT = shading.tagentToWorldMatrix * anisotropyDir;
         shading.anisotropicB = normalize(cross(shading.tagentToWorldMatrix[2], shading.anisotropicT));
