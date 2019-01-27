@@ -69,6 +69,7 @@ public:
 
     static Guid             defaultMaterialGuid;
     static Guid             whiteMaterialGuid;
+    static Guid             unlitMaterialGuid;
     static Guid             blendMaterialGuid;
     static Guid             whiteLightMaterialGuid;
     static Guid             zeroClampLightMaterialGuid;

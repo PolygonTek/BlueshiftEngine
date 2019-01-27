@@ -624,7 +624,7 @@ void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1,
 
 void RenderContext::DrawBar(float x, float y, float w, float h) {
     guiMesh.SetColor(color);
-    guiMesh.DrawPic(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, color.a < 1.0f ? materialManager.blendMaterial : materialManager.whiteMaterial);
+    guiMesh.DrawPic(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, color.a < 1.0f ? materialManager.blendMaterial : materialManager.unlitMaterial);
 }
 
 void RenderContext::DrawRect(float x, float y, float w, float h) {

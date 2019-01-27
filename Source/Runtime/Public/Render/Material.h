@@ -202,6 +202,7 @@ public:
                             // pre-defined materials
     static Material *       defaultMaterial;
     static Material *       whiteMaterial;
+    static Material *       unlitMaterial;
     static Material *       blendMaterial;
     static Material *       whiteLightMaterial;
     static Material *       zeroClampLightMaterial;

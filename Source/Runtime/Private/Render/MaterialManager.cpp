@@ -22,6 +22,7 @@ BE_NAMESPACE_BEGIN
 
 Material *              MaterialManager::defaultMaterial;
 Material *              MaterialManager::whiteMaterial;
+Material *              MaterialManager::unlitMaterial;
 Material *              MaterialManager::blendMaterial;
 Material *              MaterialManager::whiteLightMaterial;
 Material *              MaterialManager::zeroClampLightMaterial;
@@ -59,11 +60,21 @@ void MaterialManager::CreateEngineMaterials() {
         "pass {\n"
         "   useOwnerColor\n"
         "   shader \"%s\" {\n"
-        "       _ALBEDO \"1\"\n"
-        "       albedoMap \"%s\"\n"
+        "       albedoColor \"1 1 1\"\n"
         "   }\n"
-        "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::standardShaderGuid.ToString()));
     whiteMaterial->permanence = true;
+
+    // Create unlit surface material
+    unlitMaterial = AllocMaterial("_unlitMaterial");
+    unlitMaterial->Create(va(
+        "pass {\n"
+        "   useOwnerColor\n"
+        "   shader \"%s\" {\n"
+        "       albedoColor \"1 1 1\"\n"
+        "   }\n"
+        "}", GuidMapper::unlitShaderGuid.ToString()));
+    unlitMaterial->permanence = true;
 
     // Create blend unlit surface material
     blendMaterial = AllocMaterial("_blendMaterial");
@@ -73,9 +84,9 @@ void MaterialManager::CreateEngineMaterials() {
         "   useOwnerColor\n"
         "   blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
         "   shader \"%s\" {\n"
-        "       albedoMap \"%s\"\n"
+        "       albedoColor \"1 1 1\"\n"
         "   }\n"
-        "}", GuidMapper::unlitShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::unlitShaderGuid.ToString()));
     blendMaterial->permanence = true;
 
     // Create white light material
@@ -88,7 +99,7 @@ void MaterialManager::CreateEngineMaterials() {
         "}", GuidMapper::whiteTextureGuid.ToString()));
     whiteLightMaterial->permanence = true;
 
-    // Create zero clamped white light material
+    // Create white light (zero clamped) material
     zeroClampLightMaterial = AllocMaterial("_zeroClampLightMaterial");
     zeroClampLightMaterial->Create(va(
         "light\n"

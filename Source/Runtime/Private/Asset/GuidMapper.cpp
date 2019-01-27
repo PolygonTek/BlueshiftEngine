@@ -44,6 +44,7 @@ Guid        GuidMapper::phongLightingShaderGuid(0, 0, 0, 205);
 // predefined material GUID
 Guid        GuidMapper::defaultMaterialGuid(0, 0, 0, 300);
 Guid        GuidMapper::whiteMaterialGuid(0, 0, 0, 301);
+Guid        GuidMapper::unlitMaterialGuid(0, 0, 0, 306);
 Guid        GuidMapper::blendMaterialGuid(0, 0, 0, 302);
 Guid        GuidMapper::whiteLightMaterialGuid(0, 0, 0, 303);
 Guid        GuidMapper::zeroClampLightMaterialGuid(0, 0, 0, 304);
