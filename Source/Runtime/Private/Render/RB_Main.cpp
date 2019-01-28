@@ -810,6 +810,63 @@ static void RB_DrawDebugHOMap() {
     rhi.SetTextureLevel(0, numLevels);
 }
 
+void RB_DrawDebugTextures() {
+    int start = 0;
+    int end = textureManager.textureHashMap.Count();
+    
+    float w = 40.0f;
+    float h = 40.0f;
+    
+    backEnd.ctx->AdjustFrom640x480(nullptr, nullptr, &w, &h);
+    
+    int x = 0;
+    int y = 0;
+    
+    rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);
+    
+    for (int i = start; i < end; i++) {
+        const auto *entry = textureManager.textureHashMap.GetByIndex(i);
+        Texture *texture = entry->second;
+        
+        if (!texture) {
+            continue;
+        }
+        
+        if (texture->GetType() == RHI::Texture2D || texture->GetType() == RHI::TextureRectangle) {
+            const Shader *shader = ShaderManager::postPassThruShader;
+            
+            shader->Bind();
+            shader->SetTexture("tex0", texture);
+            
+            if (texture->GetFlags() & Texture::Shadow) {
+                texture->Bind();
+                rhi.SetTextureShadowFunc(false);
+            }
+            
+            if (texture->GetType() == RHI::TextureRectangle) {
+                RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, texture->GetWidth(), texture->GetHeight());
+            } else {
+                RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
+            }
+            
+            if (texture->GetFlags() & Texture::Shadow) {
+                rhi.SetTextureShadowFunc(true);
+            }
+        }
+        
+        x += w;
+        
+        if ((int)(x + w) > backEnd.ctx->GetDeviceWidth()) {
+            x = 0.0f;
+            y += h;
+        }
+        
+        if (y > backEnd.ctx->GetDeviceHeight()) {
+            break;
+        }
+    }
+}
+
 // FIXME: subview 일 경우를 생각
 static void RB_DrawView() {
     BE_PROFILE_CPU_SCOPE("RB_DrawView", Color3::red);
@@ -1008,63 +1065,6 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     Mem_Free16(temp2);*/
 
     return (const void *)(cmd + 1);
-}
-
-void RB_DrawDebugTextures() {
-    int start = 0;
-    int end = textureManager.textureHashMap.Count();
-    
-    float w = 40.0f;
-    float h = 40.0f;
-
-    backEnd.ctx->AdjustFrom640x480(nullptr, nullptr, &w, &h);
-
-    int x = 0;
-    int y = 0;
-
-    rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);
-    
-    for (int i = start; i < end; i++) {
-        const auto *entry = textureManager.textureHashMap.GetByIndex(i);
-        Texture *texture = entry->second;
-
-        if (!texture) {
-            continue;
-        }
-
-        if (texture->GetType() == RHI::Texture2D || texture->GetType() == RHI::TextureRectangle) {
-            const Shader *shader = ShaderManager::postPassThruShader;
-
-            shader->Bind();
-            shader->SetTexture("tex0", texture);
-
-            if (texture->GetFlags() & Texture::Shadow) {
-                texture->Bind();
-                rhi.SetTextureShadowFunc(false);
-            }
-
-            if (texture->GetType() == RHI::TextureRectangle) {
-                RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, texture->GetWidth(), texture->GetHeight());
-            } else {
-                RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
-            }
-
-            if (texture->GetFlags() & Texture::Shadow) {
-                rhi.SetTextureShadowFunc(true);
-            }
-        }
-
-        x += w;
-
-        if ((int)(x + w) > backEnd.ctx->GetDeviceWidth()) {
-            x = 0.0f;
-            y += h;
-        }
-
-        if (y > backEnd.ctx->GetDeviceHeight()) {
-            break;
-        }
-    }
 }
 
 static const void *RB_ExecuteSwapBuffers(const void *data) {
