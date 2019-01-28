@@ -241,7 +241,7 @@ struct ShadingParms {
     vec2 dfg;
     vec3 energyCompensation;
 
-    mat3 tagentToWorldMatrix;
+    HIGHP mat3 tagentToWorldMatrix;
 
 #ifdef LEGACY_PHONG_LIGHTING
     float specularPower;

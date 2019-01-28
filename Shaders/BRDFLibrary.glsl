@@ -89,22 +89,26 @@ float D_GGX(float NdotH, float linearRoughness) {
 }
 
 // Anisotropic GGX
-// Burley 2012, Physically-Based Shading at Disney
+// Burley 2012, "Physically-Based Shading at Disney"
 float D_GGXAniso(float NdotH, float TdotH, float BdotH, float roughnessT, float roughnessB) {
+    // The values roughnessT and roughnessB are roughness^2, a2 is therefore roughness^4
+    // The dot product below computes roughness^8. We cannot fit in fp16 without clamping
+    // the roughness to too high values so we perform the dot product and the division in fp32
 #if 0
     // scalar mul: 9
     // scalar div: 3
     float ax2 = roughnessT * roughnessT;
     float ay2 = roughnessB * roughnessB;
-    float denom = TdotH * TdotH / ax2 + BdotH * BdotH / ay2 + NdotH * NdotH;
+    HIGHP float denom = TdotH * TdotH / ax2 + BdotH * BdotH / ay2 + NdotH * NdotH;
     return 1.0 / (PI * roughnessT * roughnessB * denom * denom);
 #else
     // scalar mul: 7
     // scalar div: 1
     // vec3 dot: 1
     float a2 = roughnessT * roughnessB;
-    vec3 v = vec3(roughnessB * TdotH, roughnessT * BdotH, a2 * NdotH);
-    float a2_v2 = a2 / dot(v, v);
+    HIGHP vec3 v = vec3(roughnessB * TdotH, roughnessT * BdotH, a2 * NdotH);
+    HIGHP v2 = dot(v, v);
+    float a2_v2 = a2 / v2;
     return INV_PI * a2 * a2_v2 * a2_v2;
 #endif
 }
