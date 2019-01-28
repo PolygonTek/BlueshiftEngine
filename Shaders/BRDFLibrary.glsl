@@ -107,7 +107,7 @@ float D_GGXAniso(float NdotH, float TdotH, float BdotH, float roughnessT, float 
     // vec3 dot: 1
     float a2 = roughnessT * roughnessB;
     HIGHP vec3 v = vec3(roughnessB * TdotH, roughnessT * BdotH, a2 * NdotH);
-    HIGHP v2 = dot(v, v);
+    HIGHP float v2 = dot(v, v);
     float a2_v2 = a2 / v2;
     return INV_PI * a2 * a2_v2 * a2_v2;
 #endif
