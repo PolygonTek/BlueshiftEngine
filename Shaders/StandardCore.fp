@@ -320,7 +320,7 @@ void PrepareShadingParms(vec4 albedo) {
     shading.n = gl_FrontFacing ? shading.n : -shading.n;
 #endif
 
-    shading.ndotv = saturate(dot(shading.n, shading.v));
+    shading.ndotv = abs(dot(shading.n, shading.v)) + 1e-7; // avoid artifact
 
 #if defined(STANDARD_METALLIC_LIGHTING)
     #if _METALLIC == 0

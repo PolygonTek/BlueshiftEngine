@@ -121,6 +121,7 @@ vec2 GetPrefilteredDFG(float NdotV, float roughness) {
     return vec2(1.0, pow(1.0 - max(roughness, NdotV), 3.0));
 #else
     // Karis' approximation based on Lazarov's
+    // https://www.unrealengine.com/blog/physically-based-shading-on-mobile
     const vec4 c0 = vec4(-1.0, -0.0275, -0.572,  0.022);
     const vec4 c1 = vec4( 1.0,  0.0425,  1.040, -0.040);
     vec4 r = roughness * c0 + c1;

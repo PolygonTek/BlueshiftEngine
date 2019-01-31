@@ -41,15 +41,26 @@ float Fd_Wrap(float NdotL, float w) {
     return saturate((NdotL + w) / (onePlusW * onePlusW));
 }
 
-float Fd_Burley(float NdotL, float NdotV, float VdotH, float roughness) {
-    float F90 = 0.5 + 2.0 * VdotH * VdotH * roughness;
+// Disney diffuse
+float Fd_Burley(float NdotL, float NdotV, float VdotH, float linearRoughness) {
+#if 1
+    // renormalized version
+    float energyBias = mix(0.0, 0.5, linearRoughness);
+    float energyFactor = mix(1.0, 1.0 / 1.51, linearRoughness);
+    float F90 = energyBias + 2.0 * VdotH * VdotH * linearRoughness;
+    float FdL = 1.0 + (F90 - 1.0) * pow5(1.0 - NdotL);
+    float FdV = 1.0 + (F90 - 1.0) * pow5(1.0 - NdotV);
+    return FdL * FdV * energyFactor * INV_PI;
+#else
+    float F90 = 0.5 + 2.0 * VdotH * VdotH * linearRoughness;
     float FdL = 1.0 + (F90 - 1.0) * pow5(1.0 - NdotL);
     float FdV = 1.0 + (F90 - 1.0) * pow5(1.0 - NdotV);
     return FdL * FdV * INV_PI;
+#endif
 }
 
-float Fd_OrenNayar(float NdotL, float NdotV, float LdotV, float roughness) { 
-    float sigma2 = roughness * roughness;
+float Fd_OrenNayar(float NdotL, float NdotV, float LdotV, float linearRoughness) {
+    float sigma2 = linearRoughness * linearRoughness;
     float A = 1.0 - sigma2 * (0.5 / (sigma2 + 0.33) + 0.17 / (sigma2 + 0.13));
     float B = 0.45 * sigma2 / (sigma2  + 0.09);
 
@@ -78,14 +89,14 @@ float D_Blinn(float NdotH, float linearRoughness) {
 float D_Beckmann(float NdotH, float linearRoughness) {
     float a2 = linearRoughness * linearRoughness;
     float NdotH2 = NdotH * NdotH;
-    return exp((NdotH2 - 1.0) / (a2 * NdotH2 + 1e-7)) * INV_PI / (a2 * NdotH2 * NdotH2 + 1e-7);
+    return exp((NdotH2 - 1.0) / (a2 * NdotH2)) * INV_PI / (a2 * NdotH2 * NdotH2);
 }
 
 // Trowbridge-Reitz aka GGX
 float D_GGX(float NdotH, float linearRoughness) {
     float a2 = linearRoughness * linearRoughness;
     float denom = NdotH * NdotH * (a2 - 1.0) + 1.0;
-    return a2 * INV_PI / (denom * denom + 1e-7);
+    return a2 * INV_PI / (denom * denom);
 }
 
 // Anisotropic GGX
@@ -122,18 +133,18 @@ float G_Implicit() {
 }
 
 float G_Neumann(float NdotV, float NdotL) {
-    return 0.25 / (max(NdotL, NdotV) + 1e-7);
+    return 0.25 / (max(NdotL, NdotV));
 }
 
 // Kelemen 2001, "A Microfacet Based Coupled Specular-Matte BRDF Model with Importance Sampling"
 float G_Kelemen(float VdotH) {
-    return 0.25 / (VdotH * VdotH + 1e-7);
+    return 0.25 / (VdotH * VdotH);
 }
 
 float G_CookTorrance(float NdotV, float NdotL, float NdotH, float VdotH) {
     float k = 2.0 * NdotH / VdotH;
     float G = min(1.0, min(k * NdotV, k * NdotL));
-    return G / (4.0 * NdotL * NdotV + 1e-7);
+    return G / (4.0 * NdotL * NdotV);
 }
 
 // k_direct = (roughness + 1)^2 / 8
@@ -141,7 +152,7 @@ float G_CookTorrance(float NdotV, float NdotL, float NdotH, float VdotH) {
 float G_SchlickGGX(float NdotV, float NdotL, float k) {
     float oneMinusK = 1.0 - k;
     vec2 G = vec2(NdotV, NdotL) * oneMinusK + k;
-    return 0.25 / (G.x * G.y + 1e-7);
+    return 0.25 / (G.x * G.y);
 }
 
 // Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
