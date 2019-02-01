@@ -167,18 +167,21 @@ public:
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();
 
-                        /// Convert color to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
+                        /// Converts color to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 
-                        /// Convert RGB to HSL
+                        /// Converts RGB to HSL
     Color3              ToHSL() const;
-                        /// Convert HSL to RGB
+                        /// Converts HSL to RGB
     Color3              FromHSL() const;
 
-                        /// Convert sRGB to Linear
+                        /// Converts sRGB to Linear
     Color3              SRGBToLinear() const;
-                        /// Convert Linear to sRGB
+                        /// Converts Linear to sRGB
     Color3              LinearToSRGB() const;
+
+                        /// Converts temperature in Kelvins of a black body radiator to RGB chromaticity (linear).
+    static Color3       FromColorTemperature(float temp);
 
                         /// Returns dimension of this type
     int                 GetDimension() const { return Size; }
