@@ -1,4 +1,4 @@
-$include "fragment_common.glsl"
+$include "FragmentCommon.glsl"
 
 in vec4 v2f_color;
 in vec2 v2f_texCoord;

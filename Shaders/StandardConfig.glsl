@@ -34,7 +34,67 @@
 
 #define USE_MULTIPLE_SCATTERING_COMPENSATION
 
+//#define PARALLAX_CORRECTED_INDIRECT_LIGHTING
+
 #define ENABLE_DETAIL_NORMALMAP
 #define ENABLE_PARALLAXMAP
+
+#ifndef _ALBEDO
+#define _ALBEDO 0
+#endif
+
+#ifndef _NORMAL
+#define _NORMAL 0
+#endif
+
+#ifndef _SPECULAR
+#define _SPECULAR 0
+#endif
+
+#ifndef _GLOSS
+#define _GLOSS 0
+#endif
+
+#ifndef _METALLIC
+#define _METALLIC 0
+#endif
+
+#ifndef _ROUGHNESS
+#define _ROUGHNESS 0
+#endif
+
+#ifndef _ANISO
+#define _ANISO 0
+#endif
+
+#ifndef _CLEARCOAT
+#define _CLEARCOAT 0
+#endif
+
+#ifndef _CC_ROUGHNESS
+#define _CC_ROUGHNESS 0
+#endif
+
+#ifndef _CC_NORMAL
+#define _CC_NORMAL 0
+#endif
+
+#ifndef _PARALLAX
+#define _PARALLAX 0
+#endif
+
+#ifndef _EMISSION
+#define _EMISSION 0
+#endif
+
+#if _NORMAL == 2 && !defined(ENABLE_DETAIL_NORMALMAP)
+    #undef _NORMAL
+    #define _NORMAL 1
+#endif
+
+#if _PARALLAX == 1 && !defined(ENABLE_PARALLAXMAP)
+    #undef _PARALLAX 
+    #define _PARALLAX 0
+#endif
 
 #endif

@@ -1,8 +1,8 @@
 #ifndef IBL_INCLUDED
 #define IBL_INCLUDED
 
-$include "ShadingParms.glsl"
 $include "BRDFLibrary.glsl"
+$include "ShadingParms.glsl"
 
 // http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
 // efficient VanDerCorpus calculation.

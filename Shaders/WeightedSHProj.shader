@@ -13,7 +13,7 @@ shader "WeightedSHProj" {
 
     glsl_fp {
         $include "sh_common.glsl"
-        $include "fragment_common.glsl"
+        $include "FragmentCommon.glsl"
 
         in vec2 v2f_texCoord;
 

@@ -12,7 +12,7 @@ shader "GenPFCMPhongSpecular" {
     }
 
     glsl_fp {
-        $include "fragment_common.glsl"
+        $include "FragmentCommon.glsl"
         $include "IBL.glsl"
 
         in vec2 v2f_texCoord;

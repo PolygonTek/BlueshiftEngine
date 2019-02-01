@@ -2,8 +2,8 @@
 #define STANDARD_BRDF_INCLUDED
 
 $include "StandardConfig.glsl"
-$include "ShadingParms.glsl"
 $include "BRDFLibrary.glsl"
+$include "ShadingParms.glsl"
 
 #if defined(DIRECT_LIGHTING)
 
@@ -116,21 +116,6 @@ float ClearCoatBRDF(float NdotH, float VdotH, float clearCoatReflectivity, float
     return D * G * F;
 }
 
-vec2 GetPrefilteredDFG(float NdotV, float roughness) {
-#if 0
-    // Zioma's approximation based on Karis
-    return vec2(1.0, pow(1.0 - max(roughness, NdotV), 3.0));
-#else
-    // Karis' approximation based on Lazarov's
-    // https://www.unrealengine.com/blog/physically-based-shading-on-mobile
-    const vec4 c0 = vec4(-1.0, -0.0275, -0.572,  0.022);
-    const vec4 c1 = vec4( 1.0,  0.0425,  1.040, -0.040);
-    vec4 r = roughness * c0 + c1;
-    float a004 = min(r.x * r.x, exp2(-9.28 * NdotV)) * r.x + r.y;
-    return vec2(-1.04, 1.04) * a004 + r.zw;
-#endif
-}
-
 //----------------------------------
 // Direct Lighting
 //----------------------------------
@@ -213,10 +198,6 @@ vec3 GetSpecularEnvFirstSum(vec3 S, float linearRoughness) {
     return s1;
 }
 
-vec2 GetPrefilteredDFG_LUT(float NdotV, float roughness) {
-    return tex2D(prefilteredDfgMap, vec2(NdotV, roughness)).xy;
-}
-
 vec3 GetSpecularEnvSecondSum(vec2 prefilteredDfg, vec3 F0) {
     return F0 * prefilteredDfg.x + prefilteredDfg.yyy;
 }
@@ -257,8 +238,8 @@ vec3 IndirectLit_Standard(vec3 S) {
         vec3 clearCoatS = S;
     #endif
 
-    vec2 ccDfg = GetPrefilteredDFG_LUT(clearCoatNdotV, shading.clearCoatRoughness);
-    
+    vec2 ccDfg = tex2D(prefilteredDfgMap, vec2(clearCoatNdotV, shading.clearCoatRoughness)).xy;
+
     vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(S, shading.clearCoatLinearRoughness);
     vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(ccDfg, vec3(0.04));
 
