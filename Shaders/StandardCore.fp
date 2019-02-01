@@ -1,4 +1,5 @@
 $include "fragment_common.glsl"
+$include "StandardConfig.glsl"
 
 #ifndef _ALBEDO
 #define _ALBEDO 0
@@ -228,51 +229,9 @@ uniform float subSurfaceShadowDensity;// = 0.5;
     uniform LOWP float ambientLerp;
 #endif
 
-struct ShadingParms {
-    vec4 diffuse;
-    vec4 specular;
-    float roughness;
-    float linearRoughness;
-
-    vec3 v; // view vector in world space
-    vec3 l; // light vector in world space
-    vec3 n; // normal vector in world space
-    float ndotv;
-    vec2 dfg;
-    vec3 energyCompensation;
-
-    HIGHP mat3 tagentToWorldMatrix;
-
-#ifdef LEGACY_PHONG_LIGHTING
-    float specularPower;
-#endif
-
-#if _ANISO != 0
-    vec3 anisotropicT;
-    vec3 anisotropicB;
-    float anisotropy;
-#endif
-
-#if _CLEARCOAT != 0
-    float clearCoat;
-    float clearCoatRoughness;
-    float clearCoatLinearRoughness;
-    vec3 clearCoatN;
-#endif
-
-#if _OCC != 0
-    float occlusion;
-#endif
-
-#if _EMISSION != 0
-    vec3 emission;
-#endif
-};
-
-ShadingParms shading;
-
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     $include "StandardBRDF.glsl"
+
     #ifdef LEGACY_PHONG_LIGHTING
         $include "PhongBRDF.glsl"
     #endif 

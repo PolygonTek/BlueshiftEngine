@@ -2,6 +2,7 @@
 #define STANDARD_BRDF_INCLUDED
 
 $include "StandardConfig.glsl"
+$include "ShadingParms.glsl"
 $include "BRDFLibrary.glsl"
 
 #if defined(DIRECT_LIGHTING)
