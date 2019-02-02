@@ -1,4 +1,4 @@
-#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || _ANISO == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _OCC == 1
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _ANISO == 2 || _OCC == 1
     #define NEED_BASE_TC
 #endif
 

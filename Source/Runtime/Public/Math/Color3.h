@@ -180,7 +180,7 @@ public:
                         /// Converts Linear to sRGB
     Color3              LinearToSRGB() const;
 
-                        /// Converts temperature in Kelvins of a black body radiator to RGB chromaticity (linear).
+                        /// Converts temperature in Kelvins [1000, 15000] of a black body radiator to RGB chromaticity (linear).
     static Color3       FromColorTemperature(float temp);
 
                         /// Returns dimension of this type
