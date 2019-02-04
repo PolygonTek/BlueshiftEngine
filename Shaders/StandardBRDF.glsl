@@ -1,6 +1,10 @@
 #ifndef STANDARD_BRDF_INCLUDED
 #define STANDARD_BRDF_INCLUDED
 
+#ifndef GL_ES
+#define IBL_OFF_SPECULAR_PEAK
+#endif
+
 $include "StandardConfig.glsl"
 $include "BRDFLibrary.glsl"
 $include "ShadingParms.glsl"
@@ -202,11 +206,22 @@ vec3 GetSpecularEnvSecondSum(vec2 prefilteredDfg, vec3 F0) {
     return F0 * prefilteredDfg.x + prefilteredDfg.yyy;
 }
 
+vec3 GetSpecularDominantDirection(vec3 N, vec3 S, float linearRoughness) {
+#if defined(IBL_OFF_SPECULAR_PEAK)
+    float linearSmoothness = 1.0 - linearRoughness;
+    return mix(N, S, linearSmoothness * (sqrt(linearSmoothness) + linearRoughness));
+#else
+    return S;
+#endif
+}
+
 //----------------------------------
 // Indirect Lighting
 //----------------------------------
 vec3 IndirectLit_Standard(vec3 S) {
-    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(S, shading.linearRoughness);
+    vec3 DS = GetSpecularDominantDirection(shading.n, S, shading.linearRoughness);
+
+    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(DS, shading.linearRoughness);
     vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.dfg, shading.specular.rgb);
 
     vec3 Cs = specularEnvSum1 * specularEnvSum2;
