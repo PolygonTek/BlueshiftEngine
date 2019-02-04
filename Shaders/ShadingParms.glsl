@@ -162,8 +162,9 @@ void PrepareShadingParms(vec4 albedo) {
         shading.occlusion = metallic.a;
     #endif
 
-    // A base reflectivity of 0.04 holds for most dielectrics
+    // A base reflectivity (F0) of 0.04 holds for most dielectrics
     shading.specular = vec4(mix(vec3(0.04), albedo.rgb, metalness), 1.0);
+    //shading.specular = vec4(mix(0.16 * shading.reflectance * shading.reflectance, albedo.rgb, metalness), 1.0);
 
     shading.diffuse = vec4(albedo.rgb * (1.0 - metalness), albedo.a);
 #elif defined(STANDARD_SPECULAR_LIGHTING)
