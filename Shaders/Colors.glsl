@@ -1,18 +1,43 @@
 #ifndef COLORS_INCLUDED
 #define COLORS_INCLUDED
 
-// Used to convert from linear RGB to XYZ space.
-const mat3 RGB_2_XYZ = mat3(
+// REC 709 (sRGB) primaries
+const mat3 Rec709_2_XYZ = mat3(
     0.4124564, 0.3575761, 0.1804375,
     0.2126729, 0.7151522, 0.0721750,
     0.0193339, 0.1191920, 0.9503041
 );
 
-// Used to convert from XYZ to linear RGB space.
-const mat3 XYZ_2_RGB = mat3(
+const mat3 XYZ_2_Rec709 = mat3(
     3.2404542,-1.5371385,-0.4985314,
     -0.9692660, 1.8760108, 0.0415560,
     0.0556434,-0.2040259, 1.0572252
+);
+
+// REC 2020 primaries
+const mat3 XYZ_2_Rec2020 = mat3(
+    1.7166084, -0.3556621, -0.2533601,
+    -0.6666829, 1.6164776, 0.0157685,
+    0.0176422, -0.0427763, 0.94222867
+);
+
+const mat3 Rec2020_2_XYZ = mat3(
+    0.6369736, 0.1446172, 0.1688585,
+    0.2627066, 0.6779996, 0.0592938,
+    0.0000000, 0.0280728, 1.0608437
+);
+
+// P3, D65 primaries
+const mat3 XYZ_2_P3D65 = mat3(
+    2.4933963, -0.9313459, -0.4026945,
+    -0.8294868, 1.7626597, 0.0236246,
+    0.0358507, -0.0761827, 0.9570140
+);
+
+const mat3 P3D65_2_XYZ = mat3(
+    0.4865906, 0.2656683, 0.1981905,
+    0.2289838, 0.6917402, 0.0792762,
+    0.0000000, 0.0451135, 1.0438031
 );
 
 vec3 GammaToLinear(vec3 sRGB) {
@@ -32,17 +57,17 @@ float GetLuma(vec3 color) {
 }
 
 // Converts a color from linear RGB to XYZ space.
-vec3 RGBToXYZ(vec3 rgb) {
-    return RGB_2_XYZ * rgb;
+vec3 RGB_to_XYZ(vec3 rgb) {
+    return Rec709_2_XYZ * rgb;
 }
 
 // Converts a color from XYZ to linear RGB space.
-vec3 XYZToRGB(vec3 xyz) {
-    return XYZ_2_RGB * xyz;
+vec3 XYZ_to_RGB(vec3 xyz) {
+    return XYZ_2_Rec709 * xyz;
 }
 
 // Converts a color from XYZ to xyY space (Y is luminosity).
-vec3 XYZToxyY(vec3 xyz) {
+vec3 XYZ_to_xyY(vec3 xyz) {
     float Y = xyz.y;
     float x = xyz.x / (xyz.x + xyz.y + xyz.z);
     float y = xyz.y / (xyz.x + xyz.y + xyz.z);
@@ -50,7 +75,7 @@ vec3 XYZToxyY(vec3 xyz) {
 }
 
 // Converts a color from xyY space to XYZ space.
-vec3 xyYToXYZ(vec3 xyY) {
+vec3 xyY_to_XYZ(vec3 xyY) {
     float Y = xyY.z;
     float x = Y * xyY.x / xyY.y;
     float z = Y * (1.0 - xyY.x - xyY.y) / xyY.y;
@@ -58,13 +83,13 @@ vec3 xyYToXYZ(vec3 xyY) {
 }
 
 // Converts a color from linear RGB to xyY space.
-vec3 RGBToxyY(vec3 rgb) {
-    return XYZToxyY(RGBToXYZ(rgb));
+vec3 RGB_to_xyY(vec3 rgb) {
+    return XYZ_to_xyY(RGB_to_XYZ(rgb));
 }
 
 // Converts a color from xyY space to linear RGB.
-vec3 xyYToRGB(vec3 xyY) {
-    return XYZToRGB(xyYToXYZ(xyY));
+vec3 xyY_to_RGB(vec3 xyY) {
+    return XYZ_to_RGB(xyY_to_XYZ(xyY));
 }
 
 //
@@ -74,7 +99,7 @@ vec3 xyYToRGB(vec3 xyY) {
 //  Sat [0.0, 1.0]
 //  Lum [0.0, HALF_MAX]
 //
-vec3 RGBToHSV(vec3 c) {
+vec3 RGB_to_HSV(vec3 c) {
     vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
     vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
     vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
@@ -83,13 +108,13 @@ vec3 RGBToHSV(vec3 c) {
     return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
-vec3 HSVToRGB(vec3 c) {
+vec3 HSV_to_RGB(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, saturate(p - K.xxx), c.y);
 }
 
-vec3 RGBToYUV(const vec3 rgb) {
+vec3 RGB_to_YUV(const vec3 rgb) {
     vec3 yuv;
     yuv.x = dot(rgb, vec3(0.299, 0.587, 0.114));
     yuv.y = (rgb.z - yuv.x) * 0.565;
@@ -97,7 +122,7 @@ vec3 RGBToYUV(const vec3 rgb) {
     return yuv;
 }
 
-vec3 YUVToRGB(const vec3 yuv) {
+vec3 YUV_to_RGB(const vec3 yuv) {
     vec3 rgb;
     rgb.r = yuv.x + 1.403 * yuv.z;
     rgb.g = yuv.x - 0.344 * yuv.y - 1.403 * yuv.z;
@@ -105,14 +130,14 @@ vec3 YUVToRGB(const vec3 yuv) {
     return rgb;
 }
 
-vec4 RGBToCMYK(const vec3 rgb) {
+vec4 RGB_to_CMYK(const vec3 rgb) {
     vec4 cmyk = vec4(vec3(1.0) - rgb, 0.0);
     cmyk.w = min(min(cmyk.x, cmyk.y), cmyk.z);
     cmyk.xyz = (cmyk.xyz - cmyk.w) / (1.0 - cmyk.w);
     return cmyk;
 }
 
-vec3 CMYKToRGB(const vec4 cmyk) {
+vec3 CMYK_to_RGB(const vec4 cmyk) {
     vec3 rgb = min(vec3(1.0), cmyk.xyz * (1.0 - cmyk.w) + vec3(cmyk.w));
     return vec3(1.0) - rgb;
 }
@@ -120,14 +145,14 @@ vec3 CMYKToRGB(const vec4 cmyk) {
 //
 // RGB / Full-range YCbCr conversions (ITU-R BT.601)
 //
-vec3 RGBToYCbCr(vec3 c) {
+vec3 RGB_to_YCbCr(vec3 c) {
     float Y  =  0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
     float Cb = -0.169 * c.r - 0.331 * c.g + 0.500 * c.b;
     float Cr =  0.500 * c.r - 0.419 * c.g - 0.081 * c.b;
     return vec3(Y, Cb, Cr);
 }
 
-vec3 YCbCrToRGB(vec3 c) {
+vec3 YCbCr_to_RGB(vec3 c) {
     float R = c.x + 0.000 * c.y + 1.403 * c.z;
     float G = c.x - 0.344 * c.y - 0.714 * c.z;
     float B = c.x - 1.773 * c.y + 0.000 * c.z;

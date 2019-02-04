@@ -216,7 +216,6 @@ public:
     Texture *               whiteTexture;
     Texture *               blackTexture;
     Texture *               greyTexture;
-    Texture *               linearTexture;
     Texture *               exponentTexture;
     Texture *               flatNormalTexture;
     Texture *               normalCubeMapTexture;

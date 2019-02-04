@@ -24,14 +24,10 @@ shader "HDRFinal" {
 		$include "Colors.glsl"
         $include "ToneMapOperators.glsl"
 
-		uniform HIGHP sampler2D luminanceMap;
-		uniform HIGHP sampler2D colorMap;
-		uniform HIGHP sampler2D bloomMap0;
-		uniform HIGHP sampler2D bloomMap1;
-		uniform HIGHP sampler2D bloomMap2;
-		uniform HIGHP sampler2D bloomMap3;
-		uniform HIGHP sampler2D bloomMap4;
-		uniform sampler2D randomDir4x4Map;
+		uniform HIGHP sampler2D lumaSampler;
+		uniform HIGHP sampler2D colorSampler;
+		uniform HIGHP sampler2D bloomSampler;
+		uniform sampler2D randomDir4x4Sampler;
 		uniform float middleGray;
 		uniform float bloomScale;
 		uniform float colorScale;
@@ -92,19 +88,19 @@ shader "HDRFinal" {
 		vec3 SelectiveColor(vec3 color) {
 			float colorPickRange = 1.0 - length(color - selectiveColor);
 
-			vec4 cmyk = RGBToCMYK(color);
+			vec4 cmyk = RGB_to_CMYK(color);
 			cmyk = mix(cmyk, clamp(cmyk + additiveCmyk, vec4(-1.0), vec4(1.0)), colorPickRange);
-			return mix(color, CMYKToRGB(cmyk), colorPickRange);
+			return mix(color, CMYK_to_RGB(cmyk), colorPickRange);
 		}
 
 		void main() {
-            float avgLuminance = tex2D(luminanceMap, vec2(0.0, 0.0)).x;
+            float avgLuminance = tex2D(lumaSampler, vec2(0.0, 0.0)).x;
 		#ifdef LOGLUV_HDR
-			vec3 sceneColor = decodeLogLuv(tex2D(colorMap, v2f_texCoord0.st));
-			vec3 bloomColor = decodeLogLuv(tex2D(bloomMap0, v2f_texCoord0.st));
+			vec3 sceneColor = decodeLogLuv(tex2D(colorSampler, v2f_texCoord0.st));
+			vec3 bloomColor = decodeLogLuv(tex2D(bloomSampler, v2f_texCoord0.st));
 		#else
-			vec3 sceneColor = tex2D(colorMap, v2f_texCoord0.st).rgb;
-			vec3 bloomColor = tex2D(bloomMap0, v2f_texCoord0.st).rgb;
+			vec3 sceneColor = tex2D(colorSampler, v2f_texCoord0.st).rgb;
+			vec3 bloomColor = tex2D(bloomSampler, v2f_texCoord0.st).rgb;
 		#endif
 
 			vec3 color = ToneMap(sceneColor, avgLuminance);

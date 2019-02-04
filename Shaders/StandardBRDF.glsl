@@ -136,7 +136,7 @@ vec3 DirectLit_Standard() {
     Cs *= shading.energyCompensation;
 #endif
 
-    // From specular reflection term Fs, we can directly calculate the ratio of refraction.
+    // From specular reflection term Fs, we can directly calculate the ratio of refraction (1 - Fs).
     vec3 Cd = DiffuseBRDF(NdotL, NdotV, VdotH, shading.diffuse.rgb, shading.roughness, shading.linearRoughness) * (vec3(1.0) - Fs);
 
 #if _CLEARCOAT == 0

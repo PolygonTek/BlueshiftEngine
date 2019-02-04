@@ -10,10 +10,10 @@ shader "LDRFinal" {
 
         out vec4 o_fragColor : FRAG_COLOR;
 
-        uniform sampler2D tex0;
+        uniform sampler2D colorSampler;
 
         void main() {
-            o_fragColor = tex2D(tex0, v2f_texCoord.st);
+            o_fragColor = tex2D(colorSampler, v2f_texCoord.st);
         }
     }
 }

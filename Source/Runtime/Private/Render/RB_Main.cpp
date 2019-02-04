@@ -867,7 +867,7 @@ void RB_DrawDebugTextures() {
     }
 }
 
-// FIXME: subview 일 경우를 생각
+// FIXME: Consider this view is subview
 static void RB_DrawView() {
     BE_PROFILE_CPU_SCOPE("RB_DrawView", Color3::red);
 

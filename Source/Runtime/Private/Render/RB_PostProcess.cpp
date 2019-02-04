@@ -209,10 +209,10 @@ void RB_PostProcess() {
         const Shader *shader = ShaderManager::hdrFinalShader;
 
         shader->Bind();
-        //shader->SetTexture("randomDir4x4Map", textureManager.randomDir4x4Texture);
-        shader->SetTexture("colorMap", bc->screenRT->ColorTexture());
-        shader->SetTexture("bloomMap0", bc->hdrBloomRT[0]->ColorTexture());
-        shader->SetTexture("luminanceMap", luminanceRT->ColorTexture());
+        shader->SetTexture("colorSampler", bc->screenRT->ColorTexture());
+        shader->SetTexture("bloomSampler", bc->hdrBloomRT[0]->ColorTexture());
+        shader->SetTexture("lumaSampler", luminanceRT->ColorTexture());
+        //shader->SetTexture("randomDir4x4Sampler", textureManager.randomDir4x4Texture);
         shader->SetConstant1f("middleGray", r_HDR_middleGray.GetFloat());
         shader->SetConstant1f("bloomScale", bloomScale);
         shader->SetConstant1f("colorScale", r_showBloom.GetBool() ? 0.0f : 1.0f);
@@ -228,7 +228,7 @@ void RB_PostProcess() {
         const Shader *shader = ShaderManager::ldrFinalShader;
 
         shader->Bind();
-        shader->SetTexture("tex0", bc->screenRT->ColorTexture());
+        shader->SetTexture("colorSampler", bc->screenRT->ColorTexture());
  
         RB_DrawClipRect(screenTc[0], screenTc[1], screenTc[2], screenTc[3]);
     }

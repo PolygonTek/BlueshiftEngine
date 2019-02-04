@@ -108,15 +108,6 @@ void TextureManager::CreateEngineTextures() {
     greyTexture = AllocTexture("_greyTexture");
     greyTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoScaleDown);
 
-    // Create linear texture
-    /*image.Create2D(256, 1, 1, Image::L_8, nullptr, Image::LinearSpaceFlag);
-    data = image.GetPixels();
-    for (int i = 0; i < 256; i++) {
-    data[i] = i;
-    }
-    linearTexture = AllocTexture("_linearTexture");
-    linearTexture->Create(RHI::Texture2D, image, Texture::Permanence | Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality);*/
-
     // Create flatNormal texture
     flatNormalTexture = AllocTexture("_flatNormalTexture");
     flatNormalTexture->CreateFlatNormalTexture(16, Texture::Permanence);
