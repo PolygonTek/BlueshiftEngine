@@ -160,7 +160,7 @@ public:
     void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin);
     void                    TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin);
 
-    void                    WriteBRDFIntegrationLUT(const char *filename, int size) const;
+    void                    WriteDFGSumGGX(const char *filename, int size) const;
 
     void                    CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage);
 
@@ -171,13 +171,13 @@ public:
     void                    GenerateIrradianceEnvCubeImage(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const;
 
                             // Generate Phong specular prefiltered environment cubemap
-    void                    GeneratePFCMPhongSpecular(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const;
+    void                    GenerateLDSumPhongSpecular(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const;
 
                             // Generate GGX specular prefiltered environment cubemap
-    void                    GeneratePFCMGGXSpecular(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const;
+    void                    GenerateLDSumGGX(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const;
 
-                            // Generate GGX BRDF integration 2D LUT
-    void                    GenerateGGXIntegrationLUTImage(int size, Image &integrationImage) const;
+                            // Generate GGX DFG integration 2D LUT
+    void                    GenerateDFGSumGGXImage(int size, Image &integrationImage) const;
 
 //private:
     void                    InitScreenMapRT();

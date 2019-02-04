@@ -1,4 +1,4 @@
-shader "GenPFCMGGXSpecular" {
+shader "GenLDSumGGX" {
     glsl_vp {
         in vec4 in_position : POSITION;
         in vec2 in_st : TEXCOORD0;
@@ -25,7 +25,7 @@ shader "GenPFCMGGXSpecular" {
         uniform int targetCubeMapFace;
         uniform float roughness;
         
-        // Compute first sum (Real Shading in Unreal Engine 4 p6)
+        // Compute LD term (first sum on Real Shading in Unreal Engine 4 p6)
         void main() {
             int targetFaceX = int(min(floor(v2f_texCoord.x * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
             int targetFaceY = int(min(floor(v2f_texCoord.y * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));

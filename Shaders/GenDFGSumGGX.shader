@@ -1,4 +1,4 @@
-shader "GenGGXIntegrationLUT" {
+shader "GenDFGSumGGX" {
     glsl_vp {
         in vec4 in_position : POSITION;
         in vec2 in_st : TEXCOORD0;
@@ -18,8 +18,8 @@ shader "GenGGXIntegrationLUT" {
 
         out vec4 o_fragColor : FRAG_COLOR;
 
-        // Compute second sum (Real Shading in Unreal Engine 4 p6)
-        vec2 integrateBRDF(float NdotV, float roughness) {
+        // Compute DFG term (second sum on Real Shading in Unreal Engine 4 p6)
+        vec2 integrateDFG(float NdotV, float roughness) {
             vec3 N = vec3(0.0, 0.0, 1.0);
 
             mat3 tangentToWorld = GetLocalFrame(N);
@@ -77,8 +77,8 @@ shader "GenGGXIntegrationLUT" {
         }
 
         void main() {
-            vec2 integratedBRDF = integrateBRDF(v2f_texCoord.x, v2f_texCoord.y);
-            o_fragColor = vec4(integratedBRDF, 0.0, 1.0);
+            vec2 integratedDFG = integrateDFG(v2f_texCoord.x, v2f_texCoord.y);
+            o_fragColor = vec4(integratedDFG, 0.0, 1.0);
         }
     }
 }
