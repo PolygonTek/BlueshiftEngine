@@ -11,7 +11,7 @@ struct ShadingParms {
     vec3 l; // light vector in world space
     vec3 n; // normal vector in world space
     float ndotv;
-    vec2 dfg;
+    vec2 preDFG;
     vec3 energyCompensation;
 
     HIGHP mat3 tagentToWorldMatrix;
@@ -34,7 +34,7 @@ struct ShadingParms {
 #endif
 
 #if _OCC != 0
-    float occlusion;
+    float ambientOcclusion;
 #endif
 
 #if _EMISSION != 0
@@ -151,15 +151,15 @@ void PrepareShadingParms(vec4 albedo) {
     #endif
 
     #if _OCC == 1
-        shading.occlusion = tex2D(occlusionMap, baseTc).r;
+        shading.ambientOcclusion = tex2D(occlusionMap, baseTc).r;
     #elif _OCC == 2
-        shading.occlusion = metallic.r;
+        shading.ambientOcclusion = metallic.r;
     #elif _OCC == 3
-        shading.occlusion = metallic.g;
+        shading.ambientOcclusion = metallic.g;
     #elif _OCC == 4
-        shading.occlusion = metallic.b;
+        shading.ambientOcclusion = metallic.b;
     #elif _OCC == 5
-        shading.occlusion = metallic.a;
+        shading.ambientOcclusion = metallic.a;
     #endif
 
     // A base reflectivity (F0) of 0.04 holds for most dielectrics
@@ -219,11 +219,11 @@ void PrepareShadingParms(vec4 albedo) {
     #endif
 
     #if _OCC == 1
-        shading.occlusion = tex2D(occlusionMap, baseTc).r;
+        shading.ambientOcclusion = tex2D(occlusionMap, baseTc).r;
     #elif _OCC == 2
-        shading.occlusion = albedo.a;
+        shading.ambientOcclusion = albedo.a;
     #elif _OCC == 3
-        shading.occlusion = shading.specular.a;
+        shading.ambientOcclusion = shading.specular.a;
     #endif
 
     shading.roughness = 1.0 - glossiness;
@@ -247,16 +247,20 @@ void PrepareShadingParms(vec4 albedo) {
     #endif
 
     #if _OCC == 1
-        shading.occlusion = tex2D(occlusionMap, baseTc).r;
+        shading.ambientOcclusion = tex2D(occlusionMap, baseTc).r;
     #elif _OCC == 2
-        shading.occlusion = albedo.a;
+        shading.ambientOcclusion = albedo.a;
     #elif _OCC == 3
-        shading.occlusion = shading.specular.a;
+        shading.ambientOcclusion = shading.specular.a;
     #endif
 
     shading.roughness = 1.0 - glossiness;
 
     shading.specularPower = GlossinessToSpecularPower(glossiness);
+#endif
+
+#if _OCC != 0
+    shading.ambientOcclusion = mix(1.0, shading.ambientOcclusion, occlusionStrength);
 #endif
 
     // Clamp the roughness to a minimum value to avoid divisions by 0 in the lighting code
@@ -267,15 +271,15 @@ void PrepareShadingParms(vec4 albedo) {
 
 #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
     #if defined(INDIRECT_LIGHTING)
-        shading.dfg = tex2D(prefilteredDfgMap, vec2(shading.ndotv, shading.roughness)).xy;
+        shading.preDFG = tex2D(prefilteredDfgMap, vec2(shading.ndotv, shading.roughness)).xy;
     #else
-        shading.dfg = GetPrefilteredDFG(shading.ndotv, shading.roughness);
+        shading.preDFG = GetPrefilteredDFG(shading.ndotv, shading.roughness);
     #endif
 
     #ifdef USE_MULTIPLE_SCATTERING_COMPENSATION
         // Energy compensation for multiple scattering in a microfacet model
         // See "Multiple-Scattering Microfacet BSDFs with the Smith Model"
-        shading.energyCompensation = 1.0 + shading.specular.rgb * (1.0 / shading.dfg.x - 1.0);
+        shading.energyCompensation = 1.0 + shading.specular.rgb * (1.0 / shading.preDFG.x - 1.0);
     #else
         shading.energyCompensation = vec3(1.0);
     #endif

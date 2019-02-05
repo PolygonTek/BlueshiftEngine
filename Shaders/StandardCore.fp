@@ -250,10 +250,6 @@ void main() {
         #endif
     #endif
 
-    #if _OCC != 0
-        shadingColor *= (1.0 - occlusionStrength) + shading.occlusion * occlusionStrength;
-    #endif
-
     #if _EMISSION != 0
         shadingColor += shading.emission;
     #endif
@@ -294,10 +290,6 @@ void main() {
     #endif
 
     shadingColor += Cl * lightingColor * shadowLighting;
-
-    #if _OCC != 0
-        shadingColor *= (1.0 - occlusionStrength) + shading.occlusion * occlusionStrength;
-    #endif
 #endif
 
     vec4 finalColor = v2f_color * vec4(shadingColor, albedo.a);

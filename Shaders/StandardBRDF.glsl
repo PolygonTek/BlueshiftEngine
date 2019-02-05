@@ -3,6 +3,7 @@
 
 #ifndef GL_ES
 #define IBL_OFF_SPECULAR_PEAK
+#define IBL_SPECULAR_OCCLUSION
 #endif
 
 $include "StandardConfig.glsl"
@@ -184,29 +185,29 @@ vec3 GetDiffuseEnv(vec3 N, vec3 albedo) {
     return albedo * d1;//mix(d1, d2, ambientLerp);
 }
 
+float LinearRoughnessToMipLevel(float linearRoughness) {
+    return 7.0 * linearRoughness * (1.7 - 0.7 * linearRoughness);
+}
+
 vec3 GetSpecularEnvFirstSum(vec3 S, float linearRoughness) {
-    vec4 sampleVec;
-    sampleVec.xyz = S;
+    vec4 sampleVec = vec4(S, LinearRoughnessToMipLevel(linearRoughness));
 
-    // Convert linear roughness to mip level
-    sampleVec.w = 7.0 * linearRoughness * (1.7 - 0.7 * linearRoughness);
-
-    vec3 s1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
-    //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
+    vec3 preLD1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
+    //vec3 preLD2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
 
 #if USE_SRGB_TEXTURE == 0
-    s1 = LinearToGamma(s1);
-    //s2 = LinearToGamma(s2);
+    preLD1 = LinearToGamma(preLD1);
+    //preLD2 = LinearToGamma(preLD2);
 #endif
 
-    return s1;
+    return preLD1;
 }
 
-vec3 GetSpecularEnvSecondSum(vec2 prefilteredDfg, vec3 F0) {
-    return F0 * prefilteredDfg.x + prefilteredDfg.yyy;
+vec3 GetSpecularEnvSecondSum(vec2 preDFG, vec3 F0) {
+    return F0 * preDFG.x + preDFG.yyy;
 }
 
-vec3 GetSpecularDominantDirection(vec3 N, vec3 S, float linearRoughness) {
+vec3 GetSpecularDominantDir(vec3 N, vec3 S, float linearRoughness) {
 #if defined(IBL_OFF_SPECULAR_PEAK)
     float linearSmoothness = 1.0 - linearRoughness;
     return mix(N, S, linearSmoothness * (sqrt(linearSmoothness) + linearRoughness));
@@ -215,14 +216,19 @@ vec3 GetSpecularDominantDirection(vec3 N, vec3 S, float linearRoughness) {
 #endif
 }
 
+// Computes a specular occlusion term from the ambient occlusion term.
+float GetSpecularOcclusionFromAmbientOcclusion(float NdotV, float ao, float roughness) {
+    return saturate(pow(NdotV + ao, exp2(-16.0 * roughness - 1.0)) - 1.0 + ao);
+}
+
 //----------------------------------
 // Indirect Lighting
 //----------------------------------
 vec3 IndirectLit_Standard(vec3 S) {
-    vec3 DS = GetSpecularDominantDirection(shading.n, S, shading.linearRoughness);
+    vec3 DS = GetSpecularDominantDir(shading.n, S, shading.linearRoughness);
 
     vec3 specularEnvSum1 = GetSpecularEnvFirstSum(DS, shading.linearRoughness);
-    vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.dfg, shading.specular.rgb);
+    vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.preDFG, shading.specular.rgb);
 
     vec3 Cs = specularEnvSum1 * specularEnvSum2;
 
@@ -240,6 +246,17 @@ vec3 IndirectLit_Standard(vec3 S) {
 
     vec3 Cd = diffuseEnv * (vec3(1.0) - Fs);
 
+#if _OCC != 0
+    #if defined(IBL_SPECULAR_OCCLUSION)
+        float specularOcclusion = GetSpecularOcclusionFromAmbientOcclusion(shading.ndotv, shading.ambientOcclusion, shading.roughness);
+    #else
+        float specularOcclusion = 1.0;
+    #endif
+
+    Cd *= shading.ambientOcclusion;
+    Cs *= specularOcclusion;
+#endif
+
 #if _CLEARCOAT == 0
     vec3 color = Cd + Cs;
 #else
@@ -253,12 +270,16 @@ vec3 IndirectLit_Standard(vec3 S) {
         vec3 clearCoatS = S;
     #endif
 
-    vec2 ccDfg = tex2D(prefilteredDfgMap, vec2(clearCoatNdotV, shading.clearCoatRoughness)).xy;
+    vec2 preDfgCC = tex2D(prefilteredDfgMap, vec2(clearCoatNdotV, shading.clearCoatRoughness)).xy;
 
     vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(S, shading.clearCoatLinearRoughness);
-    vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(ccDfg, vec3(0.04));
+    vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(preDfgCC, vec3(0.04));
 
     vec3 Ccc = clearCoatEnvSum1 * clearCoatEnvSum2 * shading.clearCoat;
+
+    #if _OCC != 0
+        Ccc *= specularOcclusion;
+    #endif
     
     // IOR of clear coatted layer is 1.5
     float F0 = 0.04; // 0.04 == IorToF0(1.5)
