@@ -131,6 +131,7 @@ private:
     void                        AddSkyBoxMeshes(VisCamera *camera);
     void                        AddStaticMeshesForLights(VisCamera *camera);
     void                        AddSkinnedMeshesForLights(VisCamera *camera);
+    void                        AddSubCamera(VisCamera *camera);
     void                        CacheInstanceBuffer(VisCamera *camera);
     void                        OptimizeLights(VisCamera *camera);
     void                        AddDrawSurf(VisCamera *camera, VisLight *light, VisObject *entity, const Material *material, SubMesh *subMesh, int flags);
@@ -138,7 +139,7 @@ private:
     void                        SortDrawSurfs(VisCamera *camera);
 
     void                        DrawCamera(VisCamera *camera);
-    void                        DrawSubCamera(VisObject *object, const DrawSurf *drawSurf, const Material *material);
+    void                        DrawSubCamera(const VisObject *object, const DrawSurf *drawSurf, const Material *material);
     void                        DrawGUICamera(GuiMesh &guiMesh);
 
     Color4                      color;

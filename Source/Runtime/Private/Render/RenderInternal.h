@@ -66,7 +66,7 @@ class VisCamera {
 public:
     const RenderCamera *    def;
 
-    bool                    isSubview;
+    bool                    isSubCamera;
     bool                    isMirror;
     bool                    is2D;
 

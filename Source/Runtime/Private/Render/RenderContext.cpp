@@ -815,7 +815,7 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
     RenderCamera renderCamera;
     RenderCamera::State rvDef;
     memset(&rvDef, 0, sizeof(rvDef));
-    rvDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::NoSubViews | RenderCamera::Flag::SkipDebugDraw;
+    rvDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw;
     rvDef.clearMethod = RenderCamera::SkyboxClear;
     rvDef.layerMask = layerMask;
     rvDef.renderRect.Set(0, 0, size, size);

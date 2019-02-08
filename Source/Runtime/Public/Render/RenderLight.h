@@ -142,6 +142,7 @@ public:
     Mat4                    projMatrix;
     Mat4                    viewProjScaleBiasMatrix;
     Mat3x4                  fallOffMatrix;
+    float                   maxVisDistSquared;
 
     VisLight *              visLight;
     int                     viewCount;

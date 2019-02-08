@@ -68,6 +68,8 @@ void RenderObject::Update(const State *stateDef) {
         prevWorldMatrix = worldMatrix;
         worldMatrix.SetTRS(state.origin, state.axis, state.scale);
     }
+
+    maxVisDistSquared = state.maxVisDist * state.maxVisDist;
 }
 
 const AABB RenderObject::GetLocalAABB() const {

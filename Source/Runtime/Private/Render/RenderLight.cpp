@@ -99,6 +99,8 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5f, 0.0f, 0.0f, 0.5f), Vec4(0.0f, 0.5f, 0.0f, 0.5f), Vec4(0.0f, 0.0f, 0.5f, 0.5f), Vec4(0.0, 0.0, 0.0, 1.0f));
     viewProjScaleBiasMatrix = textureScaleBiasMatrix * projMatrix * viewMatrix;
 
+    maxVisDistSquared = state.maxVisDist * state.maxVisDist;
+
     firstUpdate = false;
 }
 

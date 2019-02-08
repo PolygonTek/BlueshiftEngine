@@ -169,6 +169,7 @@ public:
     OBB                     worldOBB;
     Mat3x4                  worldMatrix;
     Mat3x4                  prevWorldMatrix;
+    float                   maxVisDistSquared;
 
     VisObject *             visObject;
     int                     viewCount;
