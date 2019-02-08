@@ -27,17 +27,17 @@ BE_NAMESPACE_BEGIN
 */
 
 class DrawSurf;
-class VisibleView;
+class VisCamera;
 
-// Proxy node in the dynamic bounding volume tree
+/// Proxy node in the dynamic bounding volume tree
 struct DbvtProxy {
-    int32_t                     id;             // proxy id
-    AABB                        worldAABB;      // bounding volume for this node
+    int32_t                     id;             ///< Proxy id
+    AABB                        worldAABB;      ///< World bounding volume for this node
     RenderObject *              renderObject;
     RenderLight *               renderLight;
-    //ReflectionProbe *         reflectionProbe;
-    Mesh *                      mesh;           // static mesh
-    int32_t                     meshSurfIndex;  // sub mesh index
+    //ReflectionProbe *         localProbe;
+    Mesh *                      mesh;           ///< Static mesh pointer
+    int32_t                     meshSurfIndex;  ///< Sub mesh index
 };
 
 class RenderWorld {
@@ -50,19 +50,33 @@ public:
 
     void                        ClearScene();
 
-    const RenderObject *        GetRenderObject(int handle) const;
-    int                         AddRenderObject(const RenderObject::State *objectDef);
-    void                        UpdateRenderObject(int handle, const RenderObject::State *objectDef);
+                                /// Adds render object to this world.
+    int                         AddRenderObject(const RenderObject::State *def);
+
+                                /// Updates render object.
+    void                        UpdateRenderObject(int handle, const RenderObject::State *def);
+
+                                /// Removes render object.
     void                        RemoveRenderObject(int handle);
 
-    const RenderLight *         GetRenderLight(int handle) const;
-    int                         AddRenderLight(const RenderLight::State *lightDef);
-    void                        UpdateRenderLight(int handle, const RenderLight::State *lightDef);
+                                /// Gets RenderObject pointer by given render object handle.
+    const RenderObject *        GetRenderObject(int handle) const;
+
+                                /// Adds render light to this world.
+    int                         AddRenderLight(const RenderLight::State *def);
+
+                                /// Updates render light.
+    void                        UpdateRenderLight(int handle, const RenderLight::State *def);
+
+                                /// Removes render light.
     void                        RemoveRenderLight(int handle);
+
+                                /// Gets RenderLight pointer by given render light handle.
+    const RenderLight *         GetRenderLight(int handle) const;
 
     int                         GetViewCount() const { return viewCount; }
 
-    void                        RenderScene(const RenderView *view);
+    void                        RenderScene(const RenderCamera *camera);
 
     void                        SetSkyboxMaterial(Material *skyboxMaterial);
 
@@ -76,6 +90,7 @@ public:
     void                        SetDebugColor(const Color4 &lineColor, const Color4 &fillColor) { debugLineColor = lineColor; debugFillColor = fillColor; }
 
     void                        ClearDebugPrimitives(int time);
+
     void                        DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth, bool depthTest = false, int lifeTime = 0);
     void                        DebugTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                        DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &up, float size, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
@@ -103,29 +118,28 @@ public:
     void                        ClearDebugText(int time);
     void                        DebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis, float scale, float lineWidth = 1, const int align = 1, bool depthTest = false, int lifeTime = 0);
 
-    void                        DebugJoints(const RenderObject *ent, bool showJointsNames, const Mat3 &viewAxis);
+    void                        DebugJoints(const RenderObject *object, bool showJointsNames, const Mat3 &viewAxis);
 
 private:
-    VisibleObject *             RegisterVisibleObject(VisibleView *visView, RenderObject *renderObject);
-    VisibleLight *              RegisterVisibleLight(VisibleView *visView, RenderLight *renderLight);
-    void                        FindVisibleLightsAndObjects(VisibleView *visView);
-    void                        AddStaticMeshes(VisibleView *visView);
-    void                        AddSkinnedMeshes(VisibleView *visView);
-    void                        AddParticleMeshes(VisibleView *visView);
-    void                        AddTextMeshes(VisibleView *visView);
-    void                        AddSkyBoxMeshes(VisibleView *visView);
-    void                        AddStaticMeshesForLights(VisibleView *visView);
-    void                        AddSkinnedMeshesForLights(VisibleView *visView);
-    void                        CacheInstanceBuffer(VisibleView *visView);
-    void                        OptimizeLights(VisibleView *visView);
-    void                        AddDrawSurf(VisibleView *visView, VisibleLight *light, VisibleObject *entity, const Material *material, SubMesh *subMesh, int flags);
-    void                        AddDrawSurfFromAmbient(VisibleView *visView, const VisibleLight *light, bool isShadowCaster, const DrawSurf *ambientDrawSurf);
-    void                        SortDrawSurfs(VisibleView *visView);
+    VisObject *                 RegisterVisObject(VisCamera *camera, RenderObject *object);
+    VisLight *                  RegisterVisLight(VisCamera *camera, RenderLight *light);
+    void                        FindVisLightsAndObjects(VisCamera *camera);
+    void                        AddStaticMeshes(VisCamera *camera);
+    void                        AddSkinnedMeshes(VisCamera *camera);
+    void                        AddParticleMeshes(VisCamera *camera);
+    void                        AddTextMeshes(VisCamera *camera);
+    void                        AddSkyBoxMeshes(VisCamera *camera);
+    void                        AddStaticMeshesForLights(VisCamera *camera);
+    void                        AddSkinnedMeshesForLights(VisCamera *camera);
+    void                        CacheInstanceBuffer(VisCamera *camera);
+    void                        OptimizeLights(VisCamera *camera);
+    void                        AddDrawSurf(VisCamera *camera, VisLight *light, VisObject *entity, const Material *material, SubMesh *subMesh, int flags);
+    void                        AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *light, bool isShadowCaster, const DrawSurf *ambientDrawSurf);
+    void                        SortDrawSurfs(VisCamera *camera);
 
-    void                        RenderCamera(VisibleView *visView);
-    void                        RenderSubCamera(VisibleObject *visObject, const DrawSurf *drawSurf, const Material *material);
-
-    void                        RenderGUI(GuiMesh &guiMesh);
+    void                        DrawCamera(VisCamera *camera);
+    void                        DrawSubCamera(VisObject *object, const DrawSurf *drawSurf, const Material *material);
+    void                        DrawGUICamera(GuiMesh &guiMesh);
 
     Color4                      color;
     Color4                      clearColor;
@@ -134,7 +148,7 @@ private:
     Color4                      debugLineColor;
     Color4                      debugFillColor;
 
-    VisibleView *               currentView;
+    VisCamera *                 currentCamera;
     int                         viewCount;
 
     Material *                  skyboxMaterial;
@@ -143,9 +157,9 @@ private:
 
     Array<RenderObject *>       renderObjects;      ///< Array of render objects
     Array<RenderLight *>        renderLights;       ///< Array of render lights
-    //Array<SceneReflectionProbe *>sceneReflectionProbes;
+    //Array<ReflectionProbe *>  localProbes;        ///< Array of local light probes
 
-    //SceneReflectionProbe *      defaultReflectionProbe;
+    //ReflectionProbe *         globalProbe;        ///< Global light probe
 
     DynamicAABBTree             objectDbvt;         ///< Dynamic bounding volume tree for render objects
     DynamicAABBTree             lightDbvt;          ///< Dynamic bounding volume tree for render lights and reflection probes

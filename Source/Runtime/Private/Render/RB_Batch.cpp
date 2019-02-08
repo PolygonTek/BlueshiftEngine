@@ -78,11 +78,11 @@ void Batch::Shutdown() {
     rhi.DestroyBuffer(indirectBuffer);
 }
 
-void Batch::SetCurrentLight(const VisibleLight *surfLight) {
+void Batch::SetCurrentLight(const VisLight *surfLight) {
     this->surfLight = surfLight;
 }
 
-void Batch::Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace) {
+void Batch::Begin(int flushType, const Material *material, const float *materialRegisters, const VisObject *surfSpace) {
     this->flushType = flushType;
     this->material = const_cast<Material *>(material);
     this->materialRegisters = materialRegisters;
@@ -330,7 +330,7 @@ void Batch::Flush_SelectionPass() {
     int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite | RHI::DF_LEqual;
     stateBits &= ~RHI::MaskBF;
 
-    if (backEnd.view->def->state.flags & RenderView::WireFrameMode) {
+    if (backEnd.camera->def->state.flags & RenderCamera::WireFrameMode) {
         stateBits |= RHI::PM_Wireframe;
 
         rhi.SetLineWidth(8);
@@ -340,7 +340,7 @@ void Batch::Flush_SelectionPass() {
 
     RenderSelection(mtrlPass, id);
 
-    if (backEnd.view->def->state.flags & RenderView::WireFrameMode) {
+    if (backEnd.camera->def->state.flags & RenderCamera::WireFrameMode) {
         rhi.SetLineWidth(1);
     }
 }
@@ -575,7 +575,7 @@ void Batch::DrawDebugWireframe(int mode, const Color4 &rgba) const {
     }
 }
 /*
-void BackEnd::DrawDebugNormals(int mode) const {
+void RenderBackEnd::DrawDebugNormals(int mode) const {
     cDrawVert *vptr;
     float drawLength;
     //	float distanceScale;
@@ -626,7 +626,7 @@ void BackEnd::DrawDebugNormals(int mode) const {
     }
 }
 
-void BackEnd::DrawDebugTangents(int mode) const {
+void RenderBackEnd::DrawDebugTangents(int mode) const {
     cDrawVert *vptr;
     float drawLength;
     Vec3 tan, bitan;
@@ -686,7 +686,7 @@ void BackEnd::DrawDebugTangents(int mode) const {
     }
 }
 
-void BackEnd::DrawDebugTangentSpace(int tangentIndex) const {
+void RenderBackEnd::DrawDebugTangentSpace(int tangentIndex) const {
     GL_BindBuffer(BGL_VERTEX_BUFFER, vertexBuffer);
 
     bglColor4ub(255, 255, 255, 255);
@@ -709,7 +709,7 @@ void BackEnd::DrawDebugTangentSpace(int tangentIndex) const {
     DrawPrimitives();	
 }
 
-void BackEnd::DrawDebugBatch(const byte *rgb) const {
+void RenderBackEnd::DrawDebugBatch(const byte *rgb) const {
     GL_BindShader(BGL_NULL_SHADER);
 
     GL_BindBuffer(BGL_VERTEX_BUFFER, vertexBuffer);
@@ -729,7 +729,7 @@ void BackEnd::DrawDebugBatch(const byte *rgb) const {
 }*/
 
 /*
-void BackEnd::RenderFogSurface(const volumeFog_t *fog) {
+void RenderBackEnd::RenderFogSurface(const volumeFog_t *fog) {
     Shader *		fogMaterial;
     Plane *		fogPlane;
     byte			fogColor[4];
@@ -805,7 +805,7 @@ void BackEnd::RenderFogSurface(const volumeFog_t *fog) {
     DrawPrimitives();	
 }
 
-void BackEnd::ModifyColorsForFog(const stage_t *pass) {
+void RenderBackEnd::ModifyColorsForFog(const stage_t *pass) {
     rBspFog_t	*fog;
     Shader		*fogShader;
     Plane		*fogPlane;

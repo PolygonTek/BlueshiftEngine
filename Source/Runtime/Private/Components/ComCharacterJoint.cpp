@@ -248,7 +248,7 @@ void ComCharacterJoint::SetTwistDamping(float damping) {
     }
 }
 
-void ComCharacterJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComCharacterJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();

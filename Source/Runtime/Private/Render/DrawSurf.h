@@ -28,10 +28,10 @@ public:
 
     uint64_t                sortKey;
     uint32_t                flags;
-    const VisibleObject *   space;              ///< Visible object pointer of this surface
-    const Material *        material;           ///< Material pointer of this surface
-    const float *           materialRegisters;
     SubMesh *               subMesh;
+    const VisObject *       space;              ///< Parent of this surface
+    const Material *        material;           ///< Material of this surface
+    const float *           materialRegisters;
     int                     instanceIndex;
 };
 

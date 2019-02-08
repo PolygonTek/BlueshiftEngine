@@ -196,7 +196,7 @@ float ComVehicleWheel::GetSuspensionRelativeVelocity() const {
     return 1.0f;
 }
 
-void ComVehicleWheel::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComVehicleWheel::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();

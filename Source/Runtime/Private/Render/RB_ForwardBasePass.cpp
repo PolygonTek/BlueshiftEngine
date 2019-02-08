@@ -19,8 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLight *light) {
-    const VisibleObject *prevSpace = nullptr;
+static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *light) {
+    const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
@@ -106,7 +106,7 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         RB_SetupLight(backEnd.primaryLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((backEnd.primaryLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.view->def->state.flags & RenderView::NoShadows)) {
+            if ((backEnd.primaryLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.camera->def->state.flags & RenderCamera::NoShadows)) {
                 RB_ShadowPass(backEnd.primaryLight);
             }
         }

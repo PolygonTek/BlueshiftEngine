@@ -28,12 +28,12 @@ BE_NAMESPACE_BEGIN
 
 struct DbvtProxy;
 
-class VisibleLight;
 class Material;
-class RenderView;
+class VisLight;
+class RenderCamera;
 
 class RenderLight {
-    friend class RenderView;
+    friend class RenderCamera;
     friend class RenderWorld;
 
 public:
@@ -73,9 +73,10 @@ public:
     RenderLight();
     ~RenderLight();
 
+                            /// Updates this render light with the given state.
     void                    Update(const State *state);
 
-                            /// Returns light type (Point, Spot, Directional).
+                            /// Returns light type one of the [Point, Spot, Directional].
     Type                    GetType() const { return state.type; }
 
                             /// Returns light material.
@@ -87,22 +88,22 @@ public:
                             /// Returns extent for each axis.
     const Vec3 &            GetExtents() const { return state.size; }
 
-                            // 라이트 타원체의 각 axis 당 반지름 - Point 라이트인 경우에만
+                            /// Returns radius for each axis. Valid only for point light.
     const Vec3 &            GetRadius() const { return state.size; }
 
-                            // axis 별 가장 큰 반지름 - Point 라이트인 경우에만
+                            /// Returns maximum radius of each axis. Valid only for point light.
     const float             GetMajorRadius() const { return BE1::Max3(state.size.x, state.size.y, state.size.z); }
 
-                            // axis 별 반지름의 크기가 동일한가 - Point 라이트인 경우에만
+                            /// Is the radius the same for each axis? Valid only for point light.
     bool                    IsRadiusUniform() const { return (state.size.x == state.size.y && state.size.x == state.size.z) ? true : false; }
 
-                            // AABB - 개략적인 bounding volume
+                            /// Returns world AABB.
     const AABB              GetWorldAABB() const;
 
-                            // frustum - Projected 라이트인 경우에만
+                            /// Returns world bounding frustum. Valid only for projected light.
     const Frustum &         GetWorldFrustum() const { return worldFrustum; }
 
-                            // OBB - Directional/Point 라이트인 경우에만
+                            /// Returns world object-oriendted bounding box. Valid only for directional/point light.
     const OBB &             GetWorldOBB() const { return worldOBB; }
 
                             /// Returns view matrix.
@@ -127,9 +128,10 @@ public:
     bool                    CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const;
 
                             //
-    bool                    ComputeScreenClipRect(const RenderView *viewDef, Rect &clipRect) const;
+    bool                    ComputeScreenClipRect(const RenderCamera *viewDef, Rect &clipRect) const;
 
-    int                     index;
+    int                     index;              // light index in world
+
     bool                    firstUpdate;
 
     State                   state;
@@ -141,7 +143,7 @@ public:
     Mat4                    viewProjScaleBiasMatrix;
     Mat3x4                  fallOffMatrix;
 
-    VisibleLight *          visLight;
+    VisLight *              visLight;
     int                     viewCount;
 
     DbvtProxy *             proxy;

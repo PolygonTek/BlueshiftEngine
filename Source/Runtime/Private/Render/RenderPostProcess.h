@@ -81,6 +81,6 @@ void    PP_BrightFilter(const Texture *srcTexture, const Texture *luminanceTextu
 
 void    PP_ChromaShift(const Texture *srcTexture, RenderTarget *dstRT);
 
-void    PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture, const VisibleView *visView, RenderTarget *dstRT);
+void    PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture, const VisCamera *camera, RenderTarget *dstRT);
 
 BE_NAMESPACE_END

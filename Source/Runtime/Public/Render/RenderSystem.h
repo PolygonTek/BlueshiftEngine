@@ -25,7 +25,7 @@ BE_NAMESPACE_BEGIN
 */
 
 class CmdArgs;
-class VisibleView;
+class VisCamera;
 
 class RenderSystem {
     friend class RenderContext;
@@ -67,7 +67,7 @@ private:
     void *                  GetCommandBuffer(int bytes);
     void                    IssueCommands();
 
-    void                    CmdDrawView(const VisibleView *visView);
+    void                    CmdDrawCamera(const VisCamera *camera);
     void                    CmdScreenshot(int x, int y, int width, int height, const char *filename);
 
     bool                    initialized;

@@ -83,7 +83,7 @@ bool ComConeCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool b
     return false;
 }
 
-void ComConeCollider::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComConeCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {

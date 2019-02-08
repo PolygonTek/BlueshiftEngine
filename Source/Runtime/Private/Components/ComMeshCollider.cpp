@@ -62,7 +62,7 @@ bool ComMeshCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool b
     return false;
 }
 
-void ComMeshCollider::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComMeshCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     //collider;
 }
 

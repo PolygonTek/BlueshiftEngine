@@ -325,25 +325,25 @@ bool RenderLight::CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewF
     return false;
 }
 
-bool RenderLight::ComputeScreenClipRect(const RenderView *viewDef, Rect &clipRect) const {
+bool RenderLight::ComputeScreenClipRect(const RenderCamera *viewDef, Rect &clipRect) const {
     switch (state.type) {
     case DirectionalLight:
-        if (!viewDef->GetClipRectFromOBB(worldOBB, clipRect)) {
+        if (!viewDef->CalcClipRectFromOBB(worldOBB, clipRect)) {
             return false;
         }
         break;
     case SpotLight:
-        if (!viewDef->GetClipRectFromFrustum(worldFrustum, clipRect)) {
+        if (!viewDef->CalcClipRectFromFrustum(worldFrustum, clipRect)) {
             return false;
         }
         break;
     case PointLight:
         if (IsRadiusUniform()) {
-            if (!viewDef->GetClipRectFromSphere(Sphere(state.origin, GetRadius()[0]), clipRect)) {
+            if (!viewDef->CalcClipRectFromSphere(Sphere(state.origin, GetRadius()[0]), clipRect)) {
                 return false;
             }
         } else {
-            if (!viewDef->GetClipRectFromOBB(worldOBB, clipRect)) {
+            if (!viewDef->CalcClipRectFromOBB(worldOBB, clipRect)) {
                 return false;
             }
         }

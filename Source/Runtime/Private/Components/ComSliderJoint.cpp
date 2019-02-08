@@ -245,7 +245,7 @@ void ComSliderJoint::SetMaxAngularMotorImpulse(float maxAngularMotorImpulse) {
     }
 }
 
-void ComSliderJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComSliderJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();

@@ -535,7 +535,7 @@ const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait, bool includingChildr
     return vec;
 }
 
-void Entity::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void Entity::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 

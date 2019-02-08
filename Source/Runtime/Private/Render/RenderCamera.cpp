@@ -18,10 +18,9 @@
 
 BE_NAMESPACE_BEGIN
 
-void RenderView::Update(const State *stateCopy) {
+void RenderCamera::Update(const State *stateCopy) {
     state = *stateCopy;
 
-    // near/far
     zNear = state.zNear;
     zFar = state.zFar;
 
@@ -57,7 +56,7 @@ void RenderView::Update(const State *stateCopy) {
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
-void RenderView::RecalcZFar(float zFar) {
+void RenderCamera::RecalcZFar(float zFar) {
     this->zFar = zFar;
 
     if (state.orthogonal) {
@@ -86,18 +85,19 @@ void RenderView::RecalcZFar(float zFar) {
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
-Vec4 RenderView::WorldToNormalizedDevice(const Vec3 &worldPosition) const {
+Vec4 RenderCamera::WorldToNormalizedDevice(const Vec3 &worldPosition) const {
     return viewProjMatrix * Vec4(worldPosition, 1.0f);
 }
 
-bool RenderView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec3 &pixelCoords) const {
+bool RenderCamera::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec3 &pixelCoords) const {
     if (normalizedDeviceCoords.w > 0) {
         float invW = 1.0f / normalizedDeviceCoords.w;
 
         float fx = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f;
         float fy = (normalizedDeviceCoords.y * invW + 1.0f) * 0.5f;
 
-        fy = 1.0f - fy; // invert Y axis
+        // invert Y axis
+        fy = 1.0f - fy;
 
         pixelCoords.x = fx * (state.renderRect.x + state.renderRect.w);
         pixelCoords.y = fy * (state.renderRect.y + state.renderRect.h);
@@ -108,7 +108,7 @@ bool RenderView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec
     }
 }
 
-bool RenderView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Point &pixelPoint) const {
+bool RenderCamera::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Point &pixelPoint) const {
     if (normalizedDeviceCoords.w > 0) {
         float invW = 1.0f / normalizedDeviceCoords.w;
 
@@ -125,26 +125,26 @@ bool RenderView::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Poi
     }
 }
 
-bool RenderView::WorldToPixel(const Vec3 &worldPosition, Vec3 &pixelCoords) const {
+bool RenderCamera::WorldToPixel(const Vec3 &worldPosition, Vec3 &pixelCoords) const {
     Vec4 normalizedDeviceCoords = WorldToNormalizedDevice(worldPosition);
 
     return NormalizedDeviceToPixel(normalizedDeviceCoords, pixelCoords);
 }
 
-bool RenderView::WorldToPixel(const Vec3 &worldPosition, Point &pixelPoint) const {
+bool RenderCamera::WorldToPixel(const Vec3 &worldPosition, Point &pixelPoint) const {
     Vec4 normalizedDeviceCoords = WorldToNormalizedDevice(worldPosition);
 
     return NormalizedDeviceToPixel(normalizedDeviceCoords, pixelPoint);
 }
 
-bool RenderView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const {
+bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const {
     Vec3 planeNormal1, planeNormal2;
     int xmin, xmax, ymax, ymin;
     float x, y;
 
     float r2 = sphere.radius * sphere.radius;
 
-    // 카메라가 sphere 안에 있을 경우
+    // in case camera in in sphere
     if (state.origin.DistanceSqr(sphere.origin) < r2) {
         clipRect = state.renderRect;
         return true;
@@ -178,12 +178,12 @@ bool RenderView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) con
             d = -d;
         }
 
-        // planeNormal1 = 왼쪽 평면
+        // planeNormal1 = left plane
         planeNormal1.x = (sphere.radius * -localOrigin.y + d) / (y2 + x2);
         planeNormal1.y = (sphere.radius - planeNormal1.x * -localOrigin.y) / -localOrigin.x;
         planeNormal1.z = 0.0f;
 
-        // planeNormal2 = 오른쪽 평면
+        // planeNormal2 = right plane
         planeNormal2.x = (sphere.radius * -localOrigin.y - d) / (y2 + x2);
         planeNormal2.y = (sphere.radius - planeNormal2.x * -localOrigin.y) / -localOrigin.x;
         planeNormal2.z = 0.0f;
@@ -220,7 +220,7 @@ bool RenderView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) con
         if (xmax - xmin <= 0) {
             return false;
         }
-    }	
+    }
 
     // 가로 접평면 T 는 y 축에 평행하고 카메라(C) 를 지나므로,
     // T = (Nx, 0, Nz, 0) 이면
@@ -242,12 +242,12 @@ bool RenderView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) con
             d = -d;
         }
 
-        // planeNormal1 = 위쪽 평면
+        // planeNormal1 = upper plane
         planeNormal1.z = (sphere.radius * localOrigin.z - d) / (z2 + x2);
         planeNormal1.x = (sphere.radius - planeNormal1.z * localOrigin.z) / -localOrigin.x;
         planeNormal1.y = 0.0f;
 
-        // planeNormal2 = 아래쪽 평면
+        // planeNormal2 = bottom plane
         planeNormal2.z = (sphere.radius * localOrigin.z + d) / (z2 + x2);
         planeNormal2.x = (sphere.radius - planeNormal2.z * localOrigin.z) / -localOrigin.x;
         planeNormal2.y = 0.0f;
@@ -294,11 +294,11 @@ bool RenderView::GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) con
     return true;
 }
 
-bool RenderView::GetClipRectFromAABB(const AABB &aabb, Rect &clipRect) const {
-    return GetClipRectFromOBB(OBB(aabb, Vec3::origin, Mat3::identity), clipRect);
+bool RenderCamera::CalcClipRectFromAABB(const AABB &aabb, Rect &clipRect) const {
+    return CalcClipRectFromOBB(OBB(aabb, Vec3::origin, Mat3::identity), clipRect);
 }
 
-bool RenderView::GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
+bool RenderCamera::CalcClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
     AABB bounds;
 
     if (state.orthogonal) {
@@ -327,7 +327,7 @@ bool RenderView::GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const {
     return true;
 }
 
-bool RenderView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const {
+bool RenderCamera::CalcClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const {
     AABB bounds;
 
     if (state.orthogonal) {
@@ -357,7 +357,7 @@ bool RenderView::GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) 
     return true;
 }
 
-bool RenderView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     float localMin = Math::Infinity;
     float localMax = -Math::Infinity;
 
@@ -386,48 +386,48 @@ bool RenderView::GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, con
     return false;
 }
 
-bool RenderView::GetDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderCamera::CalcDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[2];
     points[0] = sphere.Origin() + state.axis[0] * sphere.Radius();
     points[1] = sphere.Origin() - state.axis[0] * sphere.Radius();
-    return GetDepthBoundsFromPoints(2, points, mvp, depthMin, depthMax);
+    return CalcDepthBoundsFromPoints(2, points, mvp, depthMin, depthMax);
 }
 
-bool RenderView::GetDepthBoundsFromAABB(const AABB &aabb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderCamera::CalcDepthBoundsFromAABB(const AABB &aabb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[8];
     aabb.ToPoints(points);
-    return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
+    return CalcDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
 
-bool RenderView::GetDepthBoundsFromOBB(const OBB &obb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderCamera::CalcDepthBoundsFromOBB(const OBB &obb, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[8];
     obb.ToPoints(points);
-    return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
+    return CalcDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
 
-bool RenderView::GetDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const {
+bool RenderCamera::CalcDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[8];
     frustum.ToPoints(points);
-    return GetDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
+    return CalcDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
 
-bool RenderView::GetDepthBoundsFromLight(const RenderLight *light, const Mat4 &viewProjMatrix, float *depthMin, float *depthMax) const {
+bool RenderCamera::CalcDepthBoundsFromLight(const RenderLight *light, const Mat4 &viewProjMatrix, float *depthMin, float *depthMax) const {
     if (light->state.type == RenderLight::DirectionalLight) {
-        if (!GetDepthBoundsFromOBB(light->worldOBB, viewProjMatrix, depthMin, depthMax)) {
+        if (!CalcDepthBoundsFromOBB(light->worldOBB, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
     } else if (light->state.type == RenderLight::PointLight) {
         if (light->IsRadiusUniform()) {
-            if (!GetDepthBoundsFromSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), viewProjMatrix, depthMin, depthMax)) {
+            if (!CalcDepthBoundsFromSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), viewProjMatrix, depthMin, depthMax)) {
                 return false;
             }
         } else {
-            if (!GetDepthBoundsFromOBB(light->worldOBB, viewProjMatrix, depthMin, depthMax)) {
+            if (!CalcDepthBoundsFromOBB(light->worldOBB, viewProjMatrix, depthMin, depthMax)) {
                 return false;
             }
         }
     } else if (light->state.type == RenderLight::SpotLight) {
-        if (!GetDepthBoundsFromFrustum(light->worldFrustum, viewProjMatrix, depthMin, depthMax)) {
+        if (!CalcDepthBoundsFromFrustum(light->worldFrustum, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
     } else {
@@ -437,7 +437,7 @@ bool RenderView::GetDepthBoundsFromLight(const RenderLight *light, const Mat4 &v
     return true;
 }
 
-void RenderView::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
+void RenderCamera::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
     float tanFovX = Math::Tan(DEG2RAD(fromFovX * 0.5f));
     float tanFovY = tanFovX / fromAspectRatio;
 
@@ -445,25 +445,25 @@ void RenderView::ComputeFov(float fromFovX, float fromAspectRatio, float toAspec
     *toFovY = RAD2DEG(Math::ATan(tanFovY) * 2.0f);
 }
 
-const Ray RenderView::RayFromScreenND(const RenderView::State &renderView, float ndx, float ndy) {
+const Ray RenderCamera::RayFromScreenND(const RenderCamera::State &renderCamera, float ndx, float ndy) {
     Ray ray;
 
-    if (renderView.orthogonal) {
-        ray.origin = renderView.origin + renderView.axis[0] * renderView.zNear; // zNear can be negative number in orthogonal view
-        ray.origin -= renderView.axis[1] * ndx * renderView.sizeX;
-        ray.origin -= renderView.axis[2] * ndy * renderView.sizeY;
+    if (renderCamera.orthogonal) {
+        ray.origin = renderCamera.origin + renderCamera.axis[0] * renderCamera.zNear; // zNear can be negative number in orthogonal view
+        ray.origin -= renderCamera.axis[1] * ndx * renderCamera.sizeX;
+        ray.origin -= renderCamera.axis[2] * ndy * renderCamera.sizeY;
 
-        ray.direction = renderView.axis[0];
+        ray.direction = renderCamera.axis[0];
         ray.direction.Normalize();
     } else {
-        float half_w = Math::Tan(DEG2RAD(renderView.fovX * 0.5f)) * renderView.zNear;
-        float half_h = Math::Tan(DEG2RAD(renderView.fovY * 0.5f)) * renderView.zNear;
+        float half_w = Math::Tan(DEG2RAD(renderCamera.fovX * 0.5f)) * renderCamera.zNear;
+        float half_h = Math::Tan(DEG2RAD(renderCamera.fovY * 0.5f)) * renderCamera.zNear;
 
-        ray.direction = renderView.axis[0] * renderView.zNear;
-        ray.direction -= renderView.axis[1] * ndx * half_w;
-        ray.direction -= renderView.axis[2] * ndy * half_h;
+        ray.direction = renderCamera.axis[0] * renderCamera.zNear;
+        ray.direction -= renderCamera.axis[1] * ndx * half_w;
+        ray.direction -= renderCamera.axis[2] * ndy * half_h;
         
-        ray.origin = renderView.origin + ray.direction;
+        ray.origin = renderCamera.origin + ray.direction;
 
         ray.direction.Normalize();
     }

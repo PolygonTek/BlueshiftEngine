@@ -29,7 +29,7 @@
 BE_NAMESPACE_BEGIN
 
 struct DbvtProxy;
-class VisibleObject;
+class VisObject;
 class Mat3x4;
 class Skeleton;
 class Material;
@@ -64,7 +64,7 @@ public:
         AlphaParm,
         TimeOffsetParm,
         TimeScaleParm,
-        MaxMaterialParms    // should be less than MAX_EXPR_LOCALPARMS
+        MaxMaterialParms                // should be less than MAX_EXPR_LOCALPARMS
     };
 
     enum TextAnchor {
@@ -98,36 +98,48 @@ public:
         int                 time = 0;
         float               maxVisDist = MeterToUnit(100);
 
-        // transform info
-        Vec3                origin = Vec3::origin;  // object position in world space
-        Vec3                scale = Vec3::one;      // object scaling
-        Mat3                axis = Mat3::identity;  // object orientation
-        AABB                localAABB = AABB::zero; // non-scaled local AABB (shouldn't be empty)
+        //
+        // Transform info
+        //
+        Vec3                origin = Vec3::origin;      ///< Object position in world space
+        Vec3                scale = Vec3::one;          ///< Object scaling
+        Mat3                axis = Mat3::identity;      ///< Object orientation
+        AABB                localAABB = AABB::zero;     ///< Non-scaled local AABB (shouldn't be empty)
 
-        // wire frame info
+        //
+        // Wireframe info
+        //
         WireframeMode       wireframeMode = ShowNone;
         Color4              wireframeColor = Color4::white;
 
+        //
         // static/skinned mesh
-        Mesh *              mesh = nullptr;         // instantiated mesh
-        const Skeleton *    skeleton = nullptr;     // skeleton information for skeletal mesh
-        int                 numJoints = 0;          // number of joints
-        Mat3x4 *            joints = nullptr;       // joint transform matrices to animate skeletal mesh
+        //
+        Mesh *              mesh = nullptr;             ///< Instantiated mesh
+        const Skeleton *    skeleton = nullptr;         ///< Skeleton information for skeletal mesh
+        int                 numJoints = 0;              ///< Number of joints
+        Mat3x4 *            joints = nullptr;           ///< Joint transform matrices to animate skeletal mesh
 
-        // text rendering
+        //
+        // Text rendering
+        //
         Font *              font = nullptr;
-        Str                 text;                   // UTF8 encoded string
+        Str                 text;                       ///< UTF8 encoded string
         TextAnchor          textAnchor = UpperLeft;
         TextAlignment       textAlignment = Left;
         float               textScale = 1.0f;
         float               lineSpacing = 1.0f;
 
-        // particle system
+        //
+        // Particle system
+        //
         ParticleSystem *    particleSystem = nullptr;
         Array<Particle *>   stageParticles;
         Array<float>        stageStartDelay;
         
-        // materials
+        //
+        // Materials
+        //
         Array<Material *>   materials;
         float               materialParms[MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
         Skin *              customSkin = nullptr;
@@ -136,6 +148,7 @@ public:
     RenderObject();
     ~RenderObject();
 
+                            /// Updates this render object with the given state.
     void                    Update(const State *state);
 
                             /// Returns non-scaled AABB in local space.
@@ -147,7 +160,8 @@ public:
                             /// Returns local to world matrix.
     const Mat3x4 &          GetObjectToWorldMatrix() const { return worldMatrix; }
 
-    int                     index;
+    int                     index;                      // object index in world
+
     bool                    firstUpdate;
 
     State                   state;
@@ -156,12 +170,12 @@ public:
     Mat3x4                  worldMatrix;
     Mat3x4                  prevWorldMatrix;
 
-    VisibleObject *         visObject;
+    VisObject *             visObject;
     int                     viewCount;
 
-    DbvtProxy *             proxy;
-    int                     numMeshSurfProxies;
-    DbvtProxy *             meshSurfProxies;            // mesh surf proxy for static sub mesh
+    DbvtProxy *             proxy;                      // proxy for render object
+    int                     numMeshSurfProxies;         // number of proxies for static sub mesh
+    DbvtProxy *             meshSurfProxies;            // proxies for static sub mesh
 };
 
 BE_NAMESPACE_END

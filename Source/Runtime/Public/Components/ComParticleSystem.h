@@ -43,7 +43,7 @@ public:
     virtual void            Update() override;
 
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
 
     void                    UpdateSimulation(int currentTime);
 

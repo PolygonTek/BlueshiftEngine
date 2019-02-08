@@ -33,7 +33,7 @@ public:
     virtual void            Init() override;
 
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
 
     const Vec3 &            GetLocalAnchor() const;
     void                    SetLocalAnchor(const Vec3 &anchor);

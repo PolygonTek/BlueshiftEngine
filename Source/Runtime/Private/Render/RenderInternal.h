@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class VisibleObject {
+class VisObject {
 public:
     int                     index;
 
@@ -32,10 +32,10 @@ public:
     bool                    ambientVisible;
     bool                    shadowVisible;
 
-    LinkList<VisibleObject> node;
+    LinkList<VisObject>     node;
 };
 
-class VisibleLight {
+class VisLight {
 public:
     int                     index;
 
@@ -56,15 +56,15 @@ public:
                             // light bounding volume 에 포함되고, view frustum 에 보이는 surfaces
     AABB                    litSurfsAABB;
 
-                            // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfs 를 포함한다)
-    AABB                    shadowCasterAABB;
+                            // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfsAABB 를 포함한다)
+    AABB                    shadowCastersAABB;
 
-    LinkList<VisibleLight>  node;
+    LinkList<VisLight>      node;
 };
 
-class VisibleView {
+class VisCamera {
 public:
-    const RenderView *      def;
+    const RenderCamera *    def;
 
     bool                    isSubview;
     bool                    isMirror;
@@ -84,9 +84,9 @@ public:
 
     BufferCache *           instanceBufferCache;
 
-    LinkList<VisibleObject> visObjects;
-    LinkList<VisibleLight>  visLights;
-    VisibleLight *          primaryLight;
+    LinkList<VisObject>     visObjects;
+    LinkList<VisLight>      visLights;
+    VisLight *              primaryLight;
 };
 
 struct renderGlobal_t {

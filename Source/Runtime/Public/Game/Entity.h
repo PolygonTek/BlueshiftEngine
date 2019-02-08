@@ -24,7 +24,7 @@
 
 #include "Containers/HashTable.h"
 #include "Core/Object.h"
-#include "Render/RenderView.h"
+#include "Render/RenderCamera.h"
 #include "Components/Component.h"
 
 BE_NAMESPACE_BEGIN
@@ -212,7 +212,7 @@ public:
     const Vec3                  GetWorldPosition(WorldPosTrait posTrait, bool includingChildren = false) const;
 
                                 /// Visualizes the component in editor.
-    void                        DrawGizmos(const RenderView::State &viewState, bool selected);
+    void                        DrawGizmos(const RenderCamera::State &viewState, bool selected);
 
                                 /// Ray cast to this entity.
     bool                        RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;

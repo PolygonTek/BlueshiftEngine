@@ -190,7 +190,7 @@ bool ComLight::HasRenderEntity(int renderEntityHandle) const {
     return false;
 }
 
-void ComLight::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     const Color4 lightColor = Color4(GetColor(), 1.0f);
 
     if (renderLightDef.type == RenderLight::DirectionalLight || renderLightDef.type == RenderLight::SpotLight) {

@@ -186,7 +186,7 @@ void ComSpringJoint::SetDamping(float damping) {
     }
 }
 
-void ComSpringJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComSpringJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();

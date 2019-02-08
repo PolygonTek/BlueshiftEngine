@@ -188,7 +188,7 @@ void ComHingeJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     }
 }
 
-void ComHingeJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComHingeJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();

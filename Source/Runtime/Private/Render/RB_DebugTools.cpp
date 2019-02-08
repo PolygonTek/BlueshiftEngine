@@ -159,7 +159,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     const Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
-    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);
+    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->viewProjMatrix);
     
     rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
@@ -463,7 +463,7 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     const Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
-    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);
+    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->viewProjMatrix);
     
     rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
@@ -503,7 +503,7 @@ static void RB_DrawDebugTextWithDepthTest(bool depthTest) {
 
     const DebugText *text = rb_debugText;
     for (int i = 0; i < rb_numDebugText; i++, text++) {
-        //if (text->origin.DistanceSqr(backEnd.view->def->state.origin) > MeterToUnit(100*100)) {
+        //if (text->origin.DistanceSqr(backEnd.camera->def->state.origin) > MeterToUnit(100*100)) {
         //	continue;
         //}
 
@@ -548,7 +548,7 @@ static void RB_DrawDebugText() {
 
 void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
     const Material *    prevMaterial = nullptr;
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     bool                depthhack = false;
     bool                prevDepthHack = false;
@@ -631,7 +631,7 @@ static void RB_DrawDebugLights(int mode) {
         rhi.SetDepthRange(0.0f, 0.0f);
     }
 
-    for (VisibleLight *visLight = backEnd.visLights->Next(); visLight; visLight = visLight->node.Next()) {
+    for (VisLight *visLight = backEnd.visLights->Next(); visLight; visLight = visLight->node.Next()) {
         if (r_useLightOcclusionQuery.GetBool() && !visLight->occlusionVisible) {
             continue;
         }
@@ -642,7 +642,7 @@ static void RB_DrawDebugLights(int mode) {
         const Shader *shader = ShaderManager::constantColorShader;
 
         shader->Bind();
-        shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);
+        shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->viewProjMatrix);
 
         shader->SetConstant4f("color", Color4(Color3(&visLight->def->state.materialParms[RenderObject::RedParm]), 0.25f));
         RB_DrawLightVolume(visLight->def);
@@ -663,7 +663,7 @@ static void RB_DrawDebugLights(int mode) {
 }
 
 static void RB_DrawDebugLightScissorRects() {
-    for (VisibleLight *visLight = backEnd.visLights->Next(); visLight; visLight = visLight->node.Next()) {
+    for (VisLight *visLight = backEnd.visLights->Next(); visLight; visLight = visLight->node.Next()) {
         if (r_useLightOcclusionQuery.GetBool() && !visLight->occlusionVisible) {
             continue;
         }

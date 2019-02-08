@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 
 // Render sky only
 void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *   prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
 
     backEnd.batch.SetCurrentLight(nullptr);
@@ -65,7 +65,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *   prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -135,7 +135,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *   prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -208,7 +208,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
@@ -288,7 +288,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
@@ -364,8 +364,8 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
-    const VisibleObject *skipObject = nullptr;
+    const VisObject *   prevSpace = nullptr;
+    const VisObject *   skipObject = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
 
@@ -455,7 +455,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
@@ -540,7 +540,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *   prevSpace = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 

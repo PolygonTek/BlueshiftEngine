@@ -113,7 +113,7 @@ void ComSocketJoint::SetImpulseClamp(float impulseClamp) {
     }
 }
 
-void ComSocketJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComSocketJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();

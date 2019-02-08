@@ -160,7 +160,7 @@ void ParticleMesh::ComputeTextureCoordinates(const ParticleSystem::StandardModul
     }
 }
 
-void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const RenderObject *renderObject, const RenderView *renderView) {
+void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const RenderObject *renderObject, const RenderCamera *renderCamera) {
     Vec3 worldPos[Particle::MaxTrails + 1];
     Vec3 cameraDir[Particle::MaxTrails + 1];
     Vec3 tangentDir[Particle::MaxTrails + 1];
@@ -204,7 +204,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
             if (stage.standardModule.orientation != ParticleSystem::StandardModule::Aimed &&
                 stage.standardModule.orientation != ParticleSystem::StandardModule::AimedZ) {
-                localAxis = ComputeParticleAxis(stage.standardModule.orientation, renderObject->state.axis, renderView->state.axis);
+                localAxis = ComputeParticleAxis(stage.standardModule.orientation, renderObject->state.axis, renderCamera->state.axis);
             }
 
             // Cache vertices
@@ -240,13 +240,13 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
                         const Particle::Trail *trail = &particle->trails[pivotIndex];
 
                         if (pivotIndex == 0) {
-                            cameraDir[pivotIndex] = renderView->state.origin - (worldPos[pivotIndex + 1] + worldPos[pivotIndex]) * 0.5f;
+                            cameraDir[pivotIndex] = renderCamera->state.origin - (worldPos[pivotIndex + 1] + worldPos[pivotIndex]) * 0.5f;
                             tangentDir[pivotIndex] = worldPos[pivotIndex + 1] - worldPos[pivotIndex];
                         } else if (pivotIndex == trailCount) {
-                            cameraDir[pivotIndex] = renderView->state.origin - (worldPos[pivotIndex] + worldPos[pivotIndex - 1]) * 0.5f;
+                            cameraDir[pivotIndex] = renderCamera->state.origin - (worldPos[pivotIndex] + worldPos[pivotIndex - 1]) * 0.5f;
                             tangentDir[pivotIndex] = worldPos[pivotIndex] - worldPos[pivotIndex - 1];
                         } else {
-                            cameraDir[pivotIndex] = renderView->state.origin - worldPos[pivotIndex];
+                            cameraDir[pivotIndex] = renderCamera->state.origin - worldPos[pivotIndex];
                             tangentDir[pivotIndex] = worldPos[pivotIndex + 1] - worldPos[pivotIndex - 1];
                         }
 

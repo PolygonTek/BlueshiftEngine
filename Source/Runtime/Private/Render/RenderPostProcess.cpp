@@ -991,7 +991,7 @@ void PP_ChromaShift(const Texture *srcTexture, RenderTarget *dstRT) {
     rhi.SetViewport(prevViewportRect);
 }
 
-void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture, const VisibleView *visView, RenderTarget *dstRT) {
+void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture, const VisCamera *camera, RenderTarget *dstRT) {
     Rect prevViewportRect = rhi.GetViewport();
     dstRT->Begin();
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
@@ -1006,10 +1006,10 @@ void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture,
     shader->SetTexture("downscaledDepthMap", downscaledDepthTexture);
     shader->SetTexture("randomDir4x4Map", textureManager.randomDir4x4Texture);
     shader->SetConstantArray3f("randomKernel", 8, ssaoRandomKernel);
-    shader->SetConstant2f("screenSize", Vec2(visView->def->state.renderRect.w, visView->def->state.renderRect.h));
-    shader->SetConstant2f("screenTanHalfFov", Vec2(visView->def->frustum.GetLeft() / visView->def->frustum.GetFarDistance(), visView->def->frustum.GetUp() / visView->def->frustum.GetFarDistance()));
-    shader->SetConstant4f("projComp1", Vec4(visView->def->projMatrix[0][0], visView->def->projMatrix[1][1], visView->def->projMatrix[0][2], visView->def->projMatrix[1][2]));
-    shader->SetConstant4f("projComp2", Vec4(visView->def->projMatrix[2][2], visView->def->projMatrix[2][3], 0.0f, 0.0f));
+    shader->SetConstant2f("screenSize", Vec2(camera->def->state.renderRect.w, camera->def->state.renderRect.h));
+    shader->SetConstant2f("screenTanHalfFov", Vec2(camera->def->frustum.GetLeft() / camera->def->frustum.GetFarDistance(), camera->def->frustum.GetUp() / camera->def->frustum.GetFarDistance()));
+    shader->SetConstant4f("projComp1", Vec4(camera->def->projMatrix[0][0], camera->def->projMatrix[1][1], camera->def->projMatrix[0][2], camera->def->projMatrix[1][2]));
+    shader->SetConstant4f("projComp2", Vec4(camera->def->projMatrix[2][2], camera->def->projMatrix[2][3], 0.0f, 0.0f));
     shader->SetConstant1f("radius", CentiToUnit(r_SSAO_radius.GetFloat()));
     shader->SetConstant1f("validRange", CentiToUnit(r_SSAO_validRange.GetFloat()));
     shader->SetConstant1f("threshold", CentiToUnit(r_SSAO_threshold.GetFloat()));

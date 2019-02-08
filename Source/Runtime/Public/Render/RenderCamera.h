@@ -17,7 +17,7 @@
 /*
 -------------------------------------------------------------------------------
 
-    RenderView
+    RenderCamera
 
 -------------------------------------------------------------------------------
 */
@@ -28,7 +28,7 @@ BE_NAMESPACE_BEGIN
 
 class RenderLight;
 
-class RenderView {
+class RenderCamera {
 public:
     enum Flag {
         WireFrameMode       = BIT(0),
@@ -71,34 +71,39 @@ public:
 
     void                RecalcZFar(float zFar);
 
-                        /// Transforms world coordinates to normalized deivice coordinates
+                        /// Transforms world coordinates to NDC (normalized deivice coordinates).
     Vec4                WorldToNormalizedDevice(const Vec3 &worldCoords) const;
-                        /// Transforms normalized device coordinates to pixel coordinates
+
+                        /// Transforms NDC (normalized device coordinates) to pixel coordinates.
     bool                NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec3 &pixelCoords) const;
     bool                NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Point &pixelPoint) const;
+
                         /// Transforms world coordinates to pixel coordinates
     bool                WorldToPixel(const Vec3 &worldCoords, Vec3 &pixelCoords) const;
     bool                WorldToPixel(const Vec3 &worldCoords, Point &pixelPoint) const;
 
-                        /// sphere 바운딩 볼륨으로부터 clipRect 를 만든다 (Eric Lengyel's method 와 카메라 축이 다르다)
-    bool                GetClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const;
+                        /// Calculates clipping rectangle from bounding sphere (Eric Lengyel's method 와 카메라 축이 다르다)
+    bool                CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const;
 
-    bool                GetClipRectFromAABB(const AABB &aabb, Rect &clipRect) const;
+                        /// Calculates clipping rectangle from axis-aligned bounding box.
+    bool                CalcClipRectFromAABB(const AABB &aabb, Rect &clipRect) const;
     
-    bool                GetClipRectFromOBB(const OBB &obb, Rect &clipRect) const;
+                        /// Calculates clipping rectangle from oriented bounding box.
+    bool                CalcClipRectFromOBB(const OBB &obb, Rect &clipRect) const;
     
-    bool                GetClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const;
+                        /// Calculates clipping rectangle from bounding frustum.
+    bool                CalcClipRectFromFrustum(const Frustum &frustum, Rect &clipRect) const;
 
-    bool                GetDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                GetDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                GetDepthBoundsFromAABB(const AABB &bounds, const Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                GetDepthBoundsFromOBB(const OBB &box, const Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                GetDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const;
-    bool                GetDepthBoundsFromLight(const RenderLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                CalcDepthBoundsFromPoints(int numPoints, const Vec3 *points, const Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                CalcDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                CalcDepthBoundsFromAABB(const AABB &bounds, const Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                CalcDepthBoundsFromOBB(const OBB &box, const Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                CalcDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const;
+    bool                CalcDepthBoundsFromLight(const RenderLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
 
     static void         ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
-    static const Ray    RayFromScreenND(const RenderView::State &sceneView, float ndx, float ndy);
+    static const Ray    RayFromScreenND(const RenderCamera::State &sceneView, float ndx, float ndy);
 
     State               state;
 

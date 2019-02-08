@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 class Texture;
 
 class RenderTarget {
-    friend class RenderBackEnd;
+    friend struct RenderBackEnd;
 
 public:
     enum {

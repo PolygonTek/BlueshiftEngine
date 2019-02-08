@@ -129,7 +129,7 @@ bool ComReflectionProbe::RayIntersection(const Vec3 &start, const Vec3 &dir, boo
     return false;
 }
 
-void ComReflectionProbe::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComReflectionProbe::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {

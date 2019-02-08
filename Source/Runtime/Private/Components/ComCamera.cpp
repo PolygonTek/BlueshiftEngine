@@ -49,7 +49,7 @@ void ComCamera::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("h", "Viewport Rect/H", float, nh, 1.f, 
         "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("clear", "Clear/Clear Method", RenderView::ClearMethod, GetClearMethod, SetClearMethod, 1, 
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear/Clear Method", RenderCamera::ClearMethod, GetClearMethod, SetClearMethod, 1, 
         "", PropertyInfo::EditorFlag).SetEnumString("No Clear;Depth Only;Color;Skybox");
     REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear/Color", Color3, GetClearColor, SetClearColor, Color3::black, 
         "", PropertyInfo::EditorFlag);
@@ -64,7 +64,7 @@ void ComCamera::RegisterProperties() {
 }
 
 ComCamera::ComCamera() {
-    renderView = nullptr;
+    renderCamera = nullptr;
 
     spriteHandle = -1;
     spriteMesh = nullptr;
@@ -78,9 +78,9 @@ ComCamera::~ComCamera() {
 }
 
 void ComCamera::Purge(bool chainPurge) {
-    if (renderView) {
-        delete renderView;
-        renderView = nullptr;
+    if (renderCamera) {
+        delete renderCamera;
+        renderCamera = nullptr;
     }
 
     for (int i = 0; i < spriteDef.materials.Count(); i++) {
@@ -118,19 +118,19 @@ void ComCamera::Init() {
 
     renderWorld = GetGameWorld()->GetRenderWorld();
 
-    if (!renderView) {
-        renderView = new RenderView;
+    if (!renderCamera) {
+        renderCamera = new RenderCamera;
     }
 
-    renderViewDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews;
+    renderCameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews;
     if (!applyPostProcessing) {
-        renderViewDef.flags |= RenderView::Flag::SkipPostProcess;
+        renderCameraDef.flags |= RenderCamera::Flag::SkipPostProcess;
     }
     
     ComTransform *transform = GetEntity()->GetTransform();
     
-    renderViewDef.origin = transform->GetOrigin();
-    renderViewDef.axis = transform->GetAxis();
+    renderCameraDef.origin = transform->GetOrigin();
+    renderCameraDef.axis = transform->GetAxis();
 
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
@@ -186,14 +186,14 @@ bool ComCamera::HasRenderEntity(int renderEntityHandle) const {
 }
 
 void ComCamera::Update() {
-    renderViewDef.time = GetGameWorld()->GetTime();
+    renderCameraDef.time = GetGameWorld()->GetTime();
 }
 
 bool ComCamera::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
     return false;
 }
 
-void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected) {
+void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     if (selected) {
@@ -210,26 +210,26 @@ void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected
         float h = renderingHeight * nh;
         float aspectRatio = w / h;
 
-        if (this->renderViewDef.orthogonal) {
-            this->renderViewDef.sizeX = size;
-            this->renderViewDef.sizeY = size / aspectRatio;
-            float sizeZ = (this->renderViewDef.zNear + this->renderViewDef.zFar) * 0.5f;
+        if (this->renderCameraDef.orthogonal) {
+            this->renderCameraDef.sizeX = size;
+            this->renderCameraDef.sizeY = size / aspectRatio;
+            float sizeZ = (this->renderCameraDef.zNear + this->renderCameraDef.zFar) * 0.5f;
 
             OBB cameraBox;
-            cameraBox.SetAxis(this->renderViewDef.axis);
-            cameraBox.SetCenter(this->renderViewDef.origin + this->renderViewDef.axis[0] * sizeZ);
-            cameraBox.SetExtents(Vec3(sizeZ, this->renderViewDef.sizeX, this->renderViewDef.sizeY));
+            cameraBox.SetAxis(this->renderCameraDef.axis);
+            cameraBox.SetCenter(this->renderCameraDef.origin + this->renderCameraDef.axis[0] * sizeZ);
+            cameraBox.SetExtents(Vec3(sizeZ, this->renderCameraDef.sizeX, this->renderCameraDef.sizeY));
 
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
             renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);
         } else {
-            RenderView::ComputeFov(fov, 1.25f, aspectRatio, &this->renderViewDef.fovX, &this->renderViewDef.fovY);
+            RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &this->renderCameraDef.fovX, &this->renderCameraDef.fovY);
 
             Frustum cameraFrustum;
-            cameraFrustum.SetOrigin(this->renderViewDef.origin);
-            cameraFrustum.SetAxis(this->renderViewDef.axis);
-            cameraFrustum.SetSize(this->renderViewDef.zNear, this->renderViewDef.zFar,
-                this->renderViewDef.zFar * Math::Tan(DEG2RAD(this->renderViewDef.fovX * 0.5f)), this->renderViewDef.zFar * Math::Tan(DEG2RAD(this->renderViewDef.fovY * 0.5f)));
+            cameraFrustum.SetOrigin(this->renderCameraDef.origin);
+            cameraFrustum.SetAxis(this->renderCameraDef.axis);
+            cameraFrustum.SetSize(this->renderCameraDef.zNear, this->renderCameraDef.zFar,
+                this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovX * 0.5f)), this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovY * 0.5f)));
 
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
             renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
@@ -244,12 +244,12 @@ void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected
             int x = renderingWidth - (w + 10 / upscaleFactorX);
             int y = renderingHeight - (h + 10 / upscaleFactorY);
 
-            RenderView::State previewViewState = this->renderViewDef;
+            RenderCamera::State previewViewState = this->renderCameraDef;
 
             previewViewState.renderRect.Set(x, y, w, h);
-            previewViewState.flags |= RenderView::SkipDebugDraw;
+            previewViewState.flags |= RenderCamera::SkipDebugDraw;
 
-            static RenderView previewView;
+            static RenderCamera previewView;
             previewView.Update(&previewViewState);
 
             GetGameWorld()->GetRenderWorld()->RenderScene(&previewView);
@@ -257,7 +257,7 @@ void ComCamera::DrawGizmos(const RenderView::State &renderViewDef, bool selected
     }
 
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.origin.Distance(renderViewDef.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = BE1::Clamp(spriteDef.origin.Distance(renderCameraDef.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
@@ -288,12 +288,12 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
         screenHeight = ctx->GetScreenHeight();
     }
 
-    Vec3 localPos = renderViewDef.axis.TransposedMulVec(worldPos - renderViewDef.origin);
+    Vec3 localPos = renderCameraDef.axis.TransposedMulVec(worldPos - renderCameraDef.origin);
     float aspectRatio = (float)screenWidth / screenHeight;
     float ndx, ndy;
 
-    if (renderViewDef.orthogonal) {
-        // Compute right/down normalized screen coordinates [ -1.0 ~ 1.0 ]
+    if (renderCameraDef.orthogonal) {
+        // Compute right/down normalized screen coordinates [-1.0, +1.0]
         ndx = -localPos.y / size;
         ndy = -localPos.z / (size / aspectRatio);
     } else {
@@ -302,7 +302,7 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
 
         tanFovX = tanFovY * aspectRatio;
 
-        // Compute right/down normalized screen coordinates [ -1.0 ~ 1.0 ]
+        // Compute right/down normalized screen coordinates [-1.0, +1.0]
         ndx = -localPos.y / (localPos.x * tanFovX);
         ndy = -localPos.z / (localPos.x * tanFovY);
     }
@@ -331,20 +331,20 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
     screenRect.w = screenWidth * nw;
     screenRect.h = screenHeight * nh;
 
-    // right/down normalized screen coordinates [ -1.0 ~ 1.0 ]
+    // right/down normalized screen coordinates [-1.0, +1.0]
     float ndx = ((float)(screenPoint.x - screenRect.x) / screenRect.w) * 2.0f - 1.0f;
     float ndy = ((float)(screenPoint.y - screenRect.y) / screenRect.h) * 2.0f - 1.0f;
 
     float aspectRatio = (float)screenWidth / screenHeight;
 
-    if (renderViewDef.orthogonal) {
-        renderViewDef.sizeX = size;
-        renderViewDef.sizeY = size / aspectRatio;
+    if (renderCameraDef.orthogonal) {
+        renderCameraDef.sizeX = size;
+        renderCameraDef.sizeY = size / aspectRatio;
     } else {
-        RenderView::ComputeFov(fov, 1.25f, aspectRatio, &renderViewDef.fovX, &renderViewDef.fovY);
+         RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
 
-    return RenderView::RayFromScreenND(renderViewDef, ndx, ndy);
+    return RenderCamera::RayFromScreenND(renderCameraDef, ndx, ndy);
 }
 
 bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
@@ -545,28 +545,28 @@ void ComCamera::RenderScene() {
     float renderingHeight = ctx->GetRenderingHeight();
 
     // Offset and scale with the normalized [0, 1] screen fraction values
-    renderViewDef.renderRect.x = renderingWidth * nx;
-    renderViewDef.renderRect.y = renderingHeight * ny;
-    renderViewDef.renderRect.w = renderingWidth * nw;
-    renderViewDef.renderRect.h = renderingHeight * nh;
+    renderCameraDef.renderRect.x = renderingWidth * nx;
+    renderCameraDef.renderRect.y = renderingHeight * ny;
+    renderCameraDef.renderRect.w = renderingWidth * nw;
+    renderCameraDef.renderRect.h = renderingHeight * nh;
 
     // Get the aspect ratio from device screen size
     float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
 
-    if (renderViewDef.orthogonal) {
+    if (renderCameraDef.orthogonal) {
         // Compute viewport rectangle size in orthogonal projection
-        renderViewDef.sizeX = size;
-        renderViewDef.sizeY = size / aspectRatio;
+        renderCameraDef.sizeX = size;
+        renderCameraDef.sizeY = size / aspectRatio;
     } else {
         // Compute fovX, fovY with the given fov and aspect ratio
-        RenderView::ComputeFov(fov, 1.25f, aspectRatio, &renderViewDef.fovX, &renderViewDef.fovY);
+        RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
 
-    // Update render view with parameters
-    renderView->Update(&renderViewDef);
+    // Update render camera with the given parameters
+    renderCamera->Update(&renderCameraDef);
 
     // Render scene scene view
-    GetGameWorld()->GetRenderWorld()->RenderScene(renderView);
+    GetGameWorld()->GetRenderWorld()->RenderScene(renderCamera);
 }
 
 void ComCamera::UpdateVisuals() {
@@ -582,80 +582,80 @@ void ComCamera::UpdateVisuals() {
 }
 
 void ComCamera::TransformUpdated(const ComTransform *transform) {
-    renderViewDef.origin = transform->GetOrigin();
-    renderViewDef.axis = transform->GetAxis();
+    renderCameraDef.origin = transform->GetOrigin();
+    renderCameraDef.axis = transform->GetAxis();
 
-    spriteDef.origin = renderViewDef.origin;
+    spriteDef.origin = renderCameraDef.origin;
     
     UpdateVisuals();
 }
 
 int ComCamera::GetLayerMask() const {
-    return renderViewDef.layerMask;
+    return renderCameraDef.layerMask;
 }
 
 void ComCamera::SetLayerMask(int layerMask) {
-    renderViewDef.layerMask = layerMask;
+    renderCameraDef.layerMask = layerMask;
 
     UpdateVisuals();
 }
 
 int ComCamera::GetProjectionMethod() const {
-    return renderViewDef.orthogonal ? 1 : 0;
+    return renderCameraDef.orthogonal ? 1 : 0;
 }
 
 void ComCamera::SetProjectionMethod(const int projectionMethod) {
-    renderViewDef.orthogonal = projectionMethod == 1 ? true : false;
+    renderCameraDef.orthogonal = projectionMethod == 1 ? true : false;
 
     UpdateVisuals();
 }
 
 float ComCamera::GetNear() const {
-    return renderViewDef.zNear;
+    return renderCameraDef.zNear;
 }
 
 void ComCamera::SetNear(float zNear) {
-    renderViewDef.zNear = zNear;
+    renderCameraDef.zNear = zNear;
 
     UpdateVisuals();
 }
 
 float ComCamera::GetFar() const {
-    return renderViewDef.zFar;
+    return renderCameraDef.zFar;
 }
 
 void ComCamera::SetFar(float zFar) {
-    renderViewDef.zFar = zFar;
+    renderCameraDef.zFar = zFar;
 
     UpdateVisuals();
 }
 
-RenderView::ClearMethod ComCamera::GetClearMethod() const {
-    return renderViewDef.clearMethod;
+RenderCamera::ClearMethod ComCamera::GetClearMethod() const {
+    return renderCameraDef.clearMethod;
 }
 
-void ComCamera::SetClearMethod(RenderView::ClearMethod clearMethod) {
-    renderViewDef.clearMethod = clearMethod;
+void ComCamera::SetClearMethod(RenderCamera::ClearMethod clearMethod) {
+    renderCameraDef.clearMethod = clearMethod;
 
     UpdateVisuals();
 }
 
 const Color3 &ComCamera::GetClearColor() const {
-    return renderViewDef.clearColor.ToColor3();
+    return renderCameraDef.clearColor.ToColor3();
 }
 
 void ComCamera::SetClearColor(const Color3 &clearColor) {
-    renderViewDef.clearColor.ToColor3() = clearColor;
+    renderCameraDef.clearColor.ToColor3() = clearColor;
 
     UpdateVisuals();
 }
 
 float ComCamera::GetClearAlpha() const {
-    return renderViewDef.clearColor.a;
+    return renderCameraDef.clearColor.a;
 }
 
 void ComCamera::SetClearAlpha(const float clearAlpha) {
-    renderViewDef.clearColor.a = clearAlpha;
+    renderCameraDef.clearColor.a = clearAlpha;
 
     UpdateVisuals();
 }

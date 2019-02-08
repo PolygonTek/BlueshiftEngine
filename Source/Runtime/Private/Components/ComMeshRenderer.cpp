@@ -252,7 +252,7 @@ void ComMeshRenderer::SetReceiveShadows(bool receiveShadows) {
     UpdateVisuals();
 }
 
-bool ComMeshRenderer::GetClosestVertex(const RenderView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const {
+bool ComMeshRenderer::GetClosestVertex(const RenderCamera *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const {
     const float initialClosestDistance = closestDistance;
 
     const ComTransform *transform = GetEntity()->GetTransform();

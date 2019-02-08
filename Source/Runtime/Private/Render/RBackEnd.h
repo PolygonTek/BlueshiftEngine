@@ -24,7 +24,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class VisibleObject;
+class VisObject;
 
 class Batch {
 public:
@@ -48,8 +48,8 @@ public:
     void                    Init();
     void                    Shutdown();
 
-    void                    SetCurrentLight(const VisibleLight *surfLight);
-    void                    Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace);
+    void                    SetCurrentLight(const VisLight *surfLight);
+    void                    Begin(int flushType, const Material *material, const float *materialRegisters, const VisObject *surfSpace);
     void                    AddInstance(const DrawSurf *drawSurf);
     void                    DrawSubMesh(SubMesh *subMesh);
 
@@ -109,8 +109,8 @@ private:
     const float *           materialRegisters;
     SubMesh *               subMesh;
 
-    const VisibleObject *   surfSpace;
-    const VisibleLight *    surfLight;
+    const VisObject *       surfSpace;
+    const VisLight *        surfLight;
 
     RHI::Handle             vertexBuffer;
     RHI::Handle             indexBuffer;
@@ -136,19 +136,19 @@ private:
 /*
 -------------------------------------------------------------------------------
 
-    BackEnd
+    RenderBackEnd
 
 -------------------------------------------------------------------------------
 */
 
 struct LightQuery {
-    const VisibleLight *    light;
+    const VisLight *        light;
     RHI::Handle             queryHandle;
     unsigned int            resultSamples;
     int                     frameCount;
 };
 
-struct BackEnd {
+struct RenderBackEnd {
     enum PreDefinedStencilState {
         VolumeIntersectionZPass,
         VolumeIntersectionZFail,
@@ -170,10 +170,10 @@ struct BackEnd {
     int                     numAmbientSurfs;
     DrawSurf **             drawSurfs;
     BufferCache *           instanceBufferCache;
-    LinkList<VisibleObject> *visObjects;
-    LinkList<VisibleLight> *visLights;
-    VisibleLight *          primaryLight;
-    VisibleView *           view;
+    LinkList<VisObject> *   visObjects;
+    LinkList<VisLight> *    visLights;
+    VisLight *              primaryLight;
+    VisCamera *             camera;
 
     Rect                    renderRect;
     Rect                    screenRect;
@@ -213,7 +213,7 @@ void    RB_Shutdown();
 
 void    RB_Execute(const void *data);
 
-void    RB_SetupLight(VisibleLight *visLight);
+void    RB_SetupLight(VisLight *visLight);
 
 void    RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs);
@@ -226,9 +226,9 @@ void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);
 void    RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs);
 
-void    RB_ShadowPass(const VisibleLight *visLight);
+void    RB_ShadowPass(const VisLight *visLight);
 void    RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_ForwardAdditivePass(const LinkList<VisibleLight> *visLights);
+void    RB_ForwardAdditivePass(const LinkList<VisLight> *visLights);
 
 void    RB_PostProcessDepth();
 void    RB_PostProcess();
@@ -241,6 +241,6 @@ Vec3 *  RB_ReserveDebugPrimsVerts(int prims, int numVerts, const Color4 &color, 
 void    RB_ClearDebugText(int time);
 void    RB_AddDebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis, float scale, float lineWidth, const Color4 &color, const int align, const int lifeTime, const bool depthTest);
 
-extern BackEnd backEnd;
+extern RenderBackEnd backEnd;
 
 BE_NAMESPACE_END

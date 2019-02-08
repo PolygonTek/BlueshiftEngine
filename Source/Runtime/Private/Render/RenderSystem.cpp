@@ -210,14 +210,14 @@ void *RenderSystem::GetCommandBuffer(int bytes) {
     return cmds->data + cmds->used - bytes;
 }
 
-void RenderSystem::CmdDrawView(const VisibleView *visView) {
-    DrawViewRenderCommand *cmd = (DrawViewRenderCommand *)GetCommandBuffer(sizeof(DrawViewRenderCommand));
+void RenderSystem::CmdDrawCamera(const VisCamera *camera) {
+    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
     if (!cmd) {
         return;
     }
 
-    cmd->commandId      = DrawViewCommand;
-    cmd->view           = *visView;
+    cmd->commandId      = DrawCameraCommand;
+    cmd->camera         = *camera;
 }
 
 void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char *filename) {

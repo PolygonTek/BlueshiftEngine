@@ -239,7 +239,7 @@ set(COMMON_ENGINE_FILES
     Public/Render/ReflectionProbe.h
     Public/Render/RenderObject.h
     Public/Render/RenderLight.h
-    Public/Render/RenderView.h
+    Public/Render/RenderCamera.h
     Public/Render/RenderWorld.h
     Public/Render/Shader.h
     Public/Render/Skeleton.h
@@ -507,9 +507,10 @@ set(COMMON_ENGINE_FILES
     Private/Render/ReflectionProbe.cpp
     Private/Render/RenderObject.cpp
     Private/Render/RenderLight.cpp
-    Private/Render/RenderView.cpp
+    Private/Render/RenderCamera.cpp
     Private/Render/RenderWorld.cpp
-    Private/Render/RenderWorldPrivate.cpp
+    Private/Render/RenderWorldDrawCamera.cpp
+    Private/Render/RenderWorldDebug.cpp
     Private/Render/Shader.cpp
     Private/Render/ShaderManager.cpp
     Private/Render/Skeleton.cpp

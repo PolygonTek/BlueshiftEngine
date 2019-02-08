@@ -46,7 +46,7 @@ public:
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
 
     virtual const AABB      GetAABB() override;
 
@@ -70,8 +70,8 @@ public:
     float                   GetFar() const;
     void                    SetFar(const float zFar);
 
-    RenderView::ClearMethod GetClearMethod() const;
-    void                    SetClearMethod(RenderView::ClearMethod clearMethod);
+    RenderCamera::ClearMethod GetClearMethod() const;
+    void                    SetClearMethod(RenderCamera::ClearMethod clearMethod);
 
     const Color3 &          GetClearColor() const;
     void                    SetClearColor(const Color3 &clearColor);
@@ -95,8 +95,8 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    RenderView *            renderView;
-    RenderView::State       renderViewDef;
+    RenderCamera *          renderCamera;
+    RenderCamera::State     renderCameraDef;
     float                   fov;
     float                   size;
     float                   nx, ny, nw, nh;     ///< normalized screen coordinates

@@ -551,7 +551,7 @@ void RenderContext::EndFrame() {
     frameCount++;
 
     // Adds GUI commands
-    renderSystem.primaryWorld->RenderGUI(guiMesh);
+    renderSystem.primaryWorld->DrawGUICamera(guiMesh);
 
     // Adds swap buffer command
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)renderSystem.GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
@@ -782,10 +782,10 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion inclusion, Array<
 void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height) {
     char path[256];
 
-    RenderView renderView;
-    RenderView::State rvDef;
-    rvDef.flags = RenderView::Flag::TexturedMode | RenderView::Flag::NoSubViews | RenderView::Flag::SkipDebugDraw;
-    rvDef.clearMethod = RenderView::SkyboxClear;
+    RenderCamera renderCamera;
+    RenderCamera::State rvDef;
+    rvDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw;
+    rvDef.clearMethod = RenderCamera::SkyboxClear;
     rvDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
     rvDef.layerMask = layerMask;
     rvDef.renderRect.Set(0, 0, width, height);
@@ -798,12 +798,12 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     rvDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
     rvDef.zNear = BE1::CentiToUnit(5.0f);
 
-    RenderView::ComputeFov(fov, 1.25f, (float)width / height, &rvDef.fovX, &rvDef.fovY);
+    RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &rvDef.fovX, &rvDef.fovY);
 
-    renderView.Update(&rvDef);
+    renderCamera.Update(&rvDef);
 
     BeginFrame();
-    renderWorld->RenderScene(&renderView);
+    renderWorld->RenderScene(&renderCamera);
     Str::snPrintf(path, sizeof(path), "%s.png", filename);
     renderSystem.CmdScreenshot(0, 0, width, height, path);
     EndFrame();
@@ -812,11 +812,11 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
 }
 
 void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage) {
-    RenderView renderView;
-    RenderView::State rvDef;
+    RenderCamera renderCamera;
+    RenderCamera::State rvDef;
     memset(&rvDef, 0, sizeof(rvDef));
-    rvDef.flags = RenderView::Flag::TexturedMode | RenderView::NoSubViews | RenderView::Flag::SkipDebugDraw;
-    rvDef.clearMethod = RenderView::SkyboxClear;
+    rvDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::NoSubViews | RenderCamera::Flag::SkipDebugDraw;
+    rvDef.clearMethod = RenderCamera::SkyboxClear;
     rvDef.layerMask = layerMask;
     rvDef.renderRect.Set(0, 0, size, size);
     rvDef.fovX = 90;
@@ -851,11 +851,11 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         rvDef.axis = viewAxis[faceIndex];
-        renderView.Update(&rvDef);
+        renderCamera.Update(&rvDef);
 
         BeginFrame();
 
-        renderWorld->RenderScene(&renderView);
+        renderWorld->RenderScene(&renderCamera);
 
         EndFrame();
 
@@ -887,11 +887,11 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
         targetCubeRT->Begin(0, faceIndex);
 
         rvDef.axis = viewAxis[faceIndex];
-        renderView.Update(&rvDef);
+        renderCamera.Update(&rvDef);
 
         BeginFrame();
         
-        renderWorld->RenderScene(&renderView);
+        renderWorld->RenderScene(&renderCamera);
         
         EndFrame();
 
@@ -1272,6 +1272,7 @@ void RenderContext::GenerateLDSumGGX(const Image &envCubeImage, int size, Image 
     for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
         faceImages[faceIndex].Create2D(size, size, numMipLevels, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
 
+        // TODO: We can skip mip level 0 for perfect specular mirror.
         for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
             int mipSize = size >> mipLevel;
 

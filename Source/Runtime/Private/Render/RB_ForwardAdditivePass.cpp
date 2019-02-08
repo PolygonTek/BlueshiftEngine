@@ -19,8 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-static void RB_LitPass(const VisibleLight *visLight) {
-    const VisibleObject *prevSpace = nullptr;
+static void RB_LitPass(const VisLight *visLight) {
+    const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
@@ -111,8 +111,8 @@ static void RB_LitPass(const VisibleLight *visLight) {
 }
 
 // Forward lighting renders each surfaces depending on lights that affect the surface.
-void RB_ForwardAdditivePass(const LinkList<VisibleLight> *visLights) {
-    for (VisibleLight *visLight = visLights->Next(); visLight; visLight = visLight->node.Next()) {
+void RB_ForwardAdditivePass(const LinkList<VisLight> *visLights) {
+    for (VisLight *visLight = visLights->Next(); visLight; visLight = visLight->node.Next()) {
         const RenderLight *renderLight = visLight->def;
 
         if (renderLight->state.flags & RenderLight::PrimaryLightFlag) {
@@ -126,13 +126,13 @@ void RB_ForwardAdditivePass(const LinkList<VisibleLight> *visLights) {
         if (r_useDepthBoundTest.GetBool()) {
             float lightDepthMin, lightDepthMax;
 
-            if (!backEnd.view->def->GetDepthBoundsFromLight(renderLight, backEnd.view->def->viewProjMatrix, &lightDepthMin, &lightDepthMax)) {
+            if (!backEnd.camera->def->CalcDepthBoundsFromLight(renderLight, backEnd.camera->def->viewProjMatrix, &lightDepthMin, &lightDepthMax)) {
                 continue;
             }
 
             float visSurfDepthMin, visSurfDepthMax;
 
-            if (backEnd.view->def->GetDepthBoundsFromAABB(visLight->litSurfsAABB, backEnd.view->def->viewProjMatrix, &visSurfDepthMin, &visSurfDepthMax)) {
+            if (backEnd.camera->def->CalcDepthBoundsFromAABB(visLight->litSurfsAABB, backEnd.camera->def->viewProjMatrix, &visSurfDepthMin, &visSurfDepthMax)) {
                 // FIXME:
                 visSurfDepthMin = Max(visSurfDepthMin - 0.001, 0.0);
                 visSurfDepthMax = Min(visSurfDepthMax + 0.001, 1.0);
@@ -145,7 +145,7 @@ void RB_ForwardAdditivePass(const LinkList<VisibleLight> *visLights) {
         RB_SetupLight(visLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((visLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.view->def->state.flags & RenderView::NoShadows)) {
+            if ((visLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.camera->def->state.flags & RenderCamera::NoShadows)) {
                 RB_ShadowPass(visLight);
             }
         }

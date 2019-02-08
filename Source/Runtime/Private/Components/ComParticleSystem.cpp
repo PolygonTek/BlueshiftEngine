@@ -665,7 +665,7 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
     assert(0);
 }
 
-void ComParticleSystem::DrawGizmos(const RenderView::State &viewState, bool selected) {
+void ComParticleSystem::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(spriteDef.origin.Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 

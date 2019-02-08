@@ -29,7 +29,7 @@ const int RenderCommandBufferSize = 0x80000;
 enum RenderCommand {
     EndOfCommand,
     BeginContextCommand,
-    DrawViewCommand,
+    DrawCameraCommand,
     ScreenShotCommand,
     SwapBuffersCommand
 };
@@ -44,9 +44,9 @@ struct BeginContextRenderCommand {
     RenderContext * renderContext;
 };
 
-struct DrawViewRenderCommand {
+struct DrawCameraRenderCommand {
     int             commandId;
-    VisibleView     view;
+    VisCamera       camera;
 };
 
 struct ScreenShotRenderCommand {

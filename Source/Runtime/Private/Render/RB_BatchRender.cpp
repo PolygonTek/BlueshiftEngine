@@ -392,10 +392,10 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
 
     SetMatrixConstants(shader);
 
-    Mat4 prevModelViewMatrix = backEnd.view->def->viewMatrix * surfSpace->def->prevWorldMatrix;
+    Mat4 prevModelViewMatrix = backEnd.camera->def->viewMatrix * surfSpace->def->prevWorldMatrix;
     //shader->SetConstantMatrix4fv("prevModelViewMatrix", 1, true, prevModelViewMatrix);
 
-    Mat4 prevModelViewProjMatrix = backEnd.view->def->projMatrix * prevModelViewMatrix;
+    Mat4 prevModelViewProjMatrix = backEnd.camera->def->projMatrix * prevModelViewMatrix;
     shader->SetConstant4x4f("prevModelViewProjectionMatrix", true, prevModelViewProjMatrix);
 
     shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / backEnd.ctx->frameTime);
@@ -484,7 +484,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
 
     SetMaterialConstants(mtrlPass, shader);
 
-    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.view->def->state.origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.camera->def->state.origin);
 
     DrawPrimitives();
 }
@@ -584,7 +584,7 @@ void Batch::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambient
 
     SetMaterialConstants(mtrlPass, shader);
 
-    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.view->def->state.origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.camera->def->state.origin);
 
     DrawPrimitives();
 }
@@ -764,7 +764,7 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
     shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::LightFallOffMatrixConst], true, surfLight->def->fallOffMatrix);
     shader->SetConstant1f(shader->builtInConstantIndices[Shader::LightFallOffExponentConst], surfLight->def->state.fallOffExponent);
 
-    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.view->def->state.origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.camera->def->state.origin);
 
     if (useShadowMap) {
         if (surfLight->def->state.type == RenderLight::PointLight) {
@@ -919,7 +919,7 @@ void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) cons
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, viewProjScaleBiasMat);
     shader->SetConstant3f("fogColor", &surfLight->def->state.materialParms[RenderObject::RedParm]);
 
-    Vec3 vec = surfLight->def->state.origin - backEnd.view->def->state.origin;
+    Vec3 vec = surfLight->def->state.origin - backEnd.camera->def->state.origin;
     bool fogEnter = vec.Dot(surfLight->def->state.axis[0]) < 0.0f ? true : false;
 
     if (fogEnter) {
